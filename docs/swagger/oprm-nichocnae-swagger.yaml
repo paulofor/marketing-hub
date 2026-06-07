@@ -640,6 +640,10 @@ components:
           example: 90.0
         triggerSource:
           type: string
+          description: Origem do ciclo; `AUTO_SCORE_QUEUE` para fila automática e `MANUAL_REPROCESS` para ciclos criados pelo botão Reprocessar CNAE.
+          enum:
+            - AUTO_SCORE_QUEUE
+            - MANUAL_REPROCESS
           example: AUTO_SCORE_QUEUE
         cycleStatus:
           type: string

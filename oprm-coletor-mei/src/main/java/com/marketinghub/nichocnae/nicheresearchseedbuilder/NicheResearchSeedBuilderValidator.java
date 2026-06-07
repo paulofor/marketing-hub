@@ -117,7 +117,7 @@ public class NicheResearchSeedBuilderValidator {
     /** Rejeita linguagem de solução que não aparece literalmente na descrição CNAE do ciclo. */
     private void rejectSolutionTerms(String queryText, String allowedCnaeText) {
         String normalizedQuery = normalizeForTerms(queryText);
-        Set<String> queryTokens = Set.of(normalizedQuery.split("[^a-z0-9]+"));
+        Set<String> queryTokens = tokenizeNormalizedText(normalizedQuery);
         for (String term : SOLUTION_TERMS) {
             if (containsTerm(normalizedQuery, queryTokens, term) && !containsAllowedCnaeTerm(allowedCnaeText, term)) {
                 throw new IllegalArgumentException("Query com linguagem de solução proibida na etapa dois: " + queryText);
@@ -127,8 +127,19 @@ public class NicheResearchSeedBuilderValidator {
 
     /** Verifica se a descrição CNAE contém literalmente o termo sensível e autoriza sua presença na query. */
     private boolean containsAllowedCnaeTerm(String allowedCnaeText, String term) {
-        Set<String> allowedTokens = Set.of(allowedCnaeText.split("[^a-z0-9]+"));
+        Set<String> allowedTokens = tokenizeNormalizedText(allowedCnaeText);
         return containsTerm(allowedCnaeText, allowedTokens, term);
+    }
+
+    /** Tokeniza texto normalizado tolerando repetição de palavras comuns retornadas pela IA. */
+    private Set<String> tokenizeNormalizedText(String normalizedText) {
+        Set<String> tokens = new HashSet<>();
+        for (String token : normalizedText.split("[^a-z0-9]+")) {
+            if (!token.isBlank()) {
+                tokens.add(token);
+            }
+        }
+        return tokens;
     }
 
     /** Detecta termos simples por token e expressões compostas por ocorrência textual normalizada. */

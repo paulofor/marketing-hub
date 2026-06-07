@@ -29,6 +29,7 @@ public class BackendRoutineResearchOrchestratorService {
     private static final String CYCLE_STATUS_RUNNING = "RUNNING";
     private static final String CYCLE_STATUS_FAILED = "FAILED";
     private static final String TRIGGER_SOURCE_AUTO_SCORE_QUEUE = "AUTO_SCORE_QUEUE";
+    private static final String TRIGGER_SOURCE_MANUAL_REPROCESS = "MANUAL_REPROCESS";
     private static final String RESEARCH_MODE_ROUTINE_REALITY = "ROUTINE_REALITY_RESEARCH";
 
     private final OprmNicheCandidateRepository nicheCandidateRepository;
@@ -92,13 +93,14 @@ public class BackendRoutineResearchOrchestratorService {
         String previousRoutineResearchStatus = candidate.getRoutineResearchStatus();
         Instant now = Instant.now();
         OprmRoutineResearchCycle newCycle = createCycle(candidate, now);
+        newCycle.setTriggerSource(TRIGGER_SOURCE_MANUAL_REPROCESS);
         OprmRoutineResearchCycle savedCycle = routineResearchCycleRepository.save(newCycle);
         candidate.setRoutineResearchStatus(ROUTINE_STATUS_RUNNING);
         candidate.setLastRoutineResearchCycleId(savedCycle.getId());
         candidate.setUpdatedAt(now);
         OprmNicheCandidate savedCandidate = nicheCandidateRepository.save(candidate);
         LOGGER.info(
-                "Novo ciclo criado imediatamente para reprocessamento OPRM nichocnae (failedResearchCycleId={}, newResearchCycleId={}, sourceNicheId={}, cnaeCode={}, previousCycleStatus={}, previousRoutineResearchStatus={}, routineResearchStatus={}, lastRoutineResearchCycleId={})",
+                "Novo ciclo criado imediatamente para reprocessamento OPRM nichocnae (failedResearchCycleId={}, newResearchCycleId={}, sourceNicheId={}, cnaeCode={}, previousCycleStatus={}, previousRoutineResearchStatus={}, routineResearchStatus={}, lastRoutineResearchCycleId={}, triggerSource={})",
                 cycle.getId(),
                 savedCycle.getId(),
                 savedCandidate.getId(),
@@ -106,7 +108,8 @@ public class BackendRoutineResearchOrchestratorService {
                 cycle.getStatus(),
                 previousRoutineResearchStatus,
                 savedCandidate.getRoutineResearchStatus(),
-                savedCandidate.getLastRoutineResearchCycleId());
+                savedCandidate.getLastRoutineResearchCycleId(),
+                savedCycle.getTriggerSource());
         return new RecordRoutineResearchOrchestratorReprocessResult(
                 savedCycle.getId(),
                 savedCandidate.getId(),

@@ -4037,3 +4037,9 @@
 - foi feito: `page_view` com `visitorId`, `sessionId`, `eventType` e `pageUrl` repetidos na janela canônica de 3 segundos é deduplicado na estrutura normalizada, preservando o evento bruto para auditoria.
 - foi feito: o reset do funil apaga primeiro os eventos normalizados para evitar violação de chave estrangeira antes de limpar os eventos brutos de analytics.
 - validação: testes unitários cobrem persistência normalizada com `visitorId`, compatibilidade com legado sem `visitorId`, deduplicação de `page_view`, reset do funil e fluxos existentes de submissão.
+## 2026-06-07 — Correção MySQL 1093 no changelog do pipeline GeraLanding
+
+- solicitação: corrigir falha de bootstrap do backend causada pelo Liquibase ao aplicar o changeset `2026-06-07-experiment-pipeline-geralanding-stages`.
+- causa-raiz: o changelog atualizava `pipeline_stage` e `pipeline_stage_definition` enquanto consultava as mesmas tabelas em subconsultas `NOT EXISTS`, padrão bloqueado pelo MySQL 5.7 com o erro 1093 (`You can't specify target table ... for update in FROM clause`).
+- foi feito: as validações de existência/conflito foram reescritas para `LEFT JOIN ... IS NULL`, evitando subconsultas sobre a tabela-alvo durante `UPDATE` e mantendo a idempotência das inserções das etapas GeraLanding.
+- impacto esperado: o backend deve conseguir concluir a execução do Liquibase e subir sem interromper o contexto Spring por essa migração.

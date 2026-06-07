@@ -16,6 +16,7 @@ import com.marketinghub.pipeline.PipelineStage;
 import com.marketinghub.pipeline.PipelineStageConfig;
 import com.marketinghub.pipeline.PipelineStageDefinitionEntity;
 import com.marketinghub.pipeline.definition.PipelineDefinitionRegistry;
+import com.marketinghub.pipeline.dto.GeraLandingStageModelDto;
 import com.marketinghub.pipeline.dto.PipelineDiagnosticsDto;
 import com.marketinghub.pipeline.dto.PipelineRequest;
 import com.marketinghub.pipeline.dto.PipelineStageRequest;
@@ -90,6 +91,43 @@ class PipelineServiceTest {
 
         assertThat(result).extracting(Pipeline::getName).containsExactly("Pipeline A", "Pipeline B");
         assertThat(first.getStages()).extracting(PipelineStage::getPosition).containsExactly(1, 2);
+    }
+
+    /**
+     * Garante que a consulta de modelos do Gera Landing usa as etapas ativas persistidas no banco.
+     */
+    @Test
+    void shouldListGeraLandingStageModelsFromPersistedPipelineStages() {
+        OpenAiModel model = OpenAiModel.builder()
+                .id(77L)
+                .name("GPT Vendas")
+                .code("gpt-vendas")
+                .build();
+        PipelineStage wireframe = stage(1L, 1, "LANDING_PAGE_WIREFRAME");
+        wireframe.setOpenAiModel(model);
+        PipelineStage copyWithoutModel = stage(2L, 2, "landing-page-copy");
+        Pipeline pipeline = officialPipelineWith(wireframe, copyWithoutModel);
+        when(pipelineRepository.findAll()).thenReturn(List.of(pipeline));
+
+        List<GeraLandingStageModelDto> result = service.listGeraLandingStageModels();
+
+        assertThat(result).hasSize(7);
+        GeraLandingStageModelDto wireframeModel = result.stream()
+                .filter(stageModel -> stageModel.getStageCode().equals("landing-page-wireframe"))
+                .findFirst()
+                .orElseThrow();
+        assertThat(wireframeModel.getPipelineId()).isEqualTo(10L);
+        assertThat(wireframeModel.getPipelineCode()).isEqualTo("experiment-pipeline");
+        assertThat(wireframeModel.getPipelineStageId()).isEqualTo(1L);
+        assertThat(wireframeModel.getPipelineStageCode()).isEqualTo("LANDING_PAGE_WIREFRAME");
+        assertThat(wireframeModel.getOpenAiModelId()).isEqualTo(77L);
+        assertThat(wireframeModel.getOpenAiModelName()).isEqualTo("GPT Vendas");
+        assertThat(wireframeModel.getOpenAiModelCode()).isEqualTo("gpt-vendas");
+        GeraLandingStageModelDto copyModel = result.stream()
+                .filter(stageModel -> stageModel.getStageCode().equals("landing-page-copy"))
+                .findFirst()
+                .orElseThrow();
+        assertThat(copyModel.getOpenAiModelId()).isNull();
     }
 
     /**

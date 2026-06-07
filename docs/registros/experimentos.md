@@ -3871,3 +3871,14 @@
   - `frontend/src/pages/pipeline/PipelineCrudPage.tsx`
   - `frontend/src/api/pipeline/types.ts`
   - `docs/registros/experimentos.md`
+
+## 2026-06-07 — Correção dos testes de publicação Facebook com targeting aprovado
+
+- solicitação: corrigir as falhas do `FacebookCampaignServiceTest` em que os testes aguardavam uma requisição Facebook, mas a publicação era bloqueada antes de chamar a Meta.
+- causa-raiz: o `FailFastMockWebServer` consumia respostas FIFO antes dos stubs condicionais auxiliares; com a nova regra de falha fechada por targeting manual aprovado, chamadas auxiliares do backend (logs, hash de imagem, status e pacote manual) deslocavam respostas dos cenários e faziam o worker receber `{}`/`[]` no lugar do pacote de segmentação aprovado.
+- correção aplicada: o wrapper de teste passou a suportar respostas condicionais prioritárias para endpoints auxiliares que não devem deslocar os stubs principais do cenário, e os testes de campanha passaram a usar um pacote manual aprovado padrão para cenários sem playbook pronto.
+- validação: a suíte completa do `facebook-ads-worker` voltou a passar com `mvn test`.
+- arquivos alterados:
+  - `facebook-ads-worker/src/test/java/com/marketinghub/facebookadsworker/testsupport/FailFastMockWebServer.java`
+  - `facebook-ads-worker/src/test/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignServiceTest.java`
+  - `docs/registros/experimentos.md`

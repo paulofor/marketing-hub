@@ -238,6 +238,7 @@ class FacebookCampaignServiceTest {
     }
 
     @Test
+    // Verifies that a released experiment publishes the full Facebook campaign hierarchy.
     void createsCampaignHierarchyForEachExperiment() throws Exception {
         backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"dailyBudget\":25.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
             .addHeader("Content-Type", "application/json"));
@@ -272,7 +273,7 @@ class FacebookCampaignServiceTest {
         assertEquals("/api/facebook-campaigns/experiments-ready", get.getPath());
 
         RecordedRequest creativesGet = takeBackendRequest("backend request");
-        assertEquals("/api/experiments/1/creatives", creativesGet.getPath());
+        assertEquals("/api/facebook-campaigns/experiments/1/creatives-ready", creativesGet.getPath());
 
         RecordedRequest playbookGet = takeBackendRequestMatching(
             "playbook request",
@@ -383,6 +384,7 @@ class FacebookCampaignServiceTest {
 
     
     @Test
+    // Verifies cleanup of a Facebook campaign when ad set creation fails.
     void deletesFacebookCampaignWhenAdSetCreationFails() throws Exception {
         backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"dailyBudget\":25.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
             .addHeader("Content-Type", "application/json"));
@@ -430,6 +432,7 @@ class FacebookCampaignServiceTest {
     }
 
     @Test
+    // Verifies instant form share links are used when the journey requires a form destination.
     void usesInstantFormShareLinkWhenJourneyRequiresForm() throws Exception {
         backend.enqueueResponse(new MockResponse().setBody("[{"
             + "\"id\":1,\"name\":\"Exp\",\"pageId\":\"84\","
@@ -474,7 +477,7 @@ class FacebookCampaignServiceTest {
         assertEquals("/api/facebook-campaigns/experiments-ready", experimentRequest.getPath());
 
         RecordedRequest creativesRequest = takeBackendRequest("backend request");
-        assertEquals("/api/experiments/1/creatives", creativesRequest.getPath());
+        assertEquals("/api/facebook-campaigns/experiments/1/creatives-ready", creativesRequest.getPath());
 
         RecordedRequest statusCheckRequest = takeFacebookRequest("facebook request");
         assertEquals("GET", statusCheckRequest.getMethod());
@@ -525,6 +528,7 @@ class FacebookCampaignServiceTest {
     }
 
     @Test
+    // Verifies AI-provided instant form identifiers are normalized before Graph API calls.
     void normalizesAiInstantFormIdentifierBeforeCallingFacebook() throws Exception {
         backend.enqueueResponse(new MockResponse().setBody("[{"
             + "\"id\":1,\"name\":\"Exp\",\"pageId\":\"84\","
@@ -606,6 +610,7 @@ class FacebookCampaignServiceTest {
 
 
     @Test
+    // Verifies draft instant forms can be published from share links when form IDs are missing.
     void publishesInstantFormUsingShareLinkWhenFormIdMissing() throws Exception {
         backend.enqueueResponse(new MockResponse()
             .setBody(
@@ -692,6 +697,7 @@ class FacebookCampaignServiceTest {
     }
 
     @Test
+    // Verifies lead generation campaigns use the form ID supplied by the approved creative.
     void createsLeadGenCampaignWhenCreativeProvidesFormId() throws Exception {
         configurationClient.setConfiguration(new FacebookWorkerConfiguration(
             1L,
@@ -843,7 +849,7 @@ class FacebookCampaignServiceTest {
 
         RecordedRequest creativesGet = takeBackendRequest("backend request");
         assertEquals("GET", creativesGet.getMethod());
-        assertEquals("/api/experiments/1/creatives", creativesGet.getPath());
+        assertEquals("/api/facebook-campaigns/experiments/1/creatives-ready", creativesGet.getPath());
 
         RecordedRequest postCampaign = takeFacebookRequest("facebook request");
         assertEquals("POST", postCampaign.getMethod());
@@ -862,6 +868,7 @@ class FacebookCampaignServiceTest {
      * Verifies that a permission-blocked experiment is not retried in the same worker lifecycle.
      */
     @Test
+    // Verifies experiments blocked by permission errors are skipped on later worker cycles.
     void skipsExperimentAfterPermissionErrorEvenIfBackendKeepsReturningIt() throws Exception {
         backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
             .addHeader("Content-Type", "application/json"));
@@ -890,7 +897,7 @@ class FacebookCampaignServiceTest {
 
         RecordedRequest firstCreativesGet = takeBackendRequest("backend request");
         assertEquals("GET", firstCreativesGet.getMethod());
-        assertEquals("/api/experiments/1/creatives", firstCreativesGet.getPath());
+        assertEquals("/api/facebook-campaigns/experiments/1/creatives-ready", firstCreativesGet.getPath());
 
         RecordedRequest campaignPost = takeFacebookRequest("facebook request");
         assertEquals("POST", campaignPost.getMethod());
@@ -911,6 +918,7 @@ class FacebookCampaignServiceTest {
     }
 
     @Test
+    // Verifies processing resumes after automatic token renewal clears an expired token.
     void resumesProcessingAfterAutomaticTokenRenewalWhenPreviouslyExpired() throws Exception {
         StubFacebookAccessTokenManager renewingManager = new StubFacebookAccessTokenManager(adsService, configurationClient);
         renewingManager.enqueue(new FacebookAccessTokenManager.RenewalAttemptResult(
@@ -982,7 +990,7 @@ class FacebookCampaignServiceTest {
         RecordedRequest firstExperimentRequest = takeBackendRequest("backend request");
         assertEquals("/api/facebook-campaigns/experiments-ready", firstExperimentRequest.getPath());
         RecordedRequest firstCreativeRequest = takeBackendRequest("backend request");
-        assertEquals("/api/experiments/1/creatives", firstCreativeRequest.getPath());
+        assertEquals("/api/facebook-campaigns/experiments/1/creatives-ready", firstCreativeRequest.getPath());
         RecordedRequest firstPlaybookRequest = takeBackendRequestMatching(
             "first playbook request",
             request -> "/api/experiments/1/adset-playbook".equals(request.getPath())
@@ -1008,6 +1016,7 @@ class FacebookCampaignServiceTest {
     }
 
     @Test
+    // Verifies processing resumes when the backend supplies a renewed token without app credentials.
     void resumesProcessingAfterBackendRenewsTokenWithoutAppCredentials() throws Exception {
         StubFacebookAccessTokenManager manager = new StubFacebookAccessTokenManager(adsService, configurationClient);
         manager.enqueue(new FacebookAccessTokenManager.RenewalAttemptResult(
@@ -1078,7 +1087,7 @@ class FacebookCampaignServiceTest {
         RecordedRequest firstExperiment = takeBackendRequest("backend request");
         assertEquals("/api/facebook-campaigns/experiments-ready", firstExperiment.getPath());
         RecordedRequest firstCreative = takeBackendRequest("backend request");
-        assertEquals("/api/experiments/1/creatives", firstCreative.getPath());
+        assertEquals("/api/facebook-campaigns/experiments/1/creatives-ready", firstCreative.getPath());
         RecordedRequest firstPlaybookRequest = takeBackendRequestMatching(
             "first playbook request",
             request -> "/api/experiments/1/adset-playbook".equals(request.getPath())
@@ -1100,7 +1109,7 @@ class FacebookCampaignServiceTest {
         );
         assertEquals("/api/facebook-campaigns/experiments-ready", secondExperiment.getPath());
         RecordedRequest secondCreative = takeBackendRequest("backend request");
-        assertEquals("/api/experiments/1/creatives", secondCreative.getPath());
+        assertEquals("/api/facebook-campaigns/experiments/1/creatives-ready", secondCreative.getPath());
         RecordedRequest secondPlaybookRequest = takeBackendRequestMatching(
             "second playbook request",
             request -> "/api/experiments/1/adset-playbook".equals(request.getPath())
@@ -1126,6 +1135,7 @@ class FacebookCampaignServiceTest {
     }
 
     @Test
+    // Verifies the experiment page is used when worker configuration has no default page.
     void fallsBackToExperimentFacebookPageWhenConfigurationDoesNotProvideOne() throws Exception {
         configurationClient.setConfiguration(configurationWithoutDefaultPageId("token"));
 
@@ -1181,6 +1191,7 @@ class FacebookCampaignServiceTest {
     }
 
     @Test
+    // Verifies page aliases from the experiment payload resolve the Facebook page ID.
     void resolvesPageIdFromAssociatedFacebookPageAlias() throws Exception {
         configurationClient.setConfiguration(configurationWithoutDefaultPageId("token"));
 
@@ -1238,6 +1249,7 @@ class FacebookCampaignServiceTest {
      * Ensures the Facebook Ads worker uses approved manual job-title targeting when no ad set was pre-generated.
      */
     @Test
+    // Verifies approved manual targeting is used when no playbook ad set exists.
     void createsCampaignUsingApprovedManualTargetingPackageWhenNoAdSetExists() throws Exception {
         backend.enqueueResponse(
             new MockResponse()
@@ -1302,6 +1314,7 @@ class FacebookCampaignServiceTest {
     }
 
     @Test
+    // Verifies experiments without a resolvable page are skipped before Facebook publication.
     void skipsExperimentWhenNoPageCanBeResolved() throws Exception {
         configurationClient.setConfiguration(configurationWithoutDefaultPageId("token"));
 
@@ -1315,7 +1328,7 @@ class FacebookCampaignServiceTest {
         RecordedRequest experimentsRequest = takeBackendRequest("backend request");
         assertEquals("/api/facebook-campaigns/experiments-ready", experimentsRequest.getPath());
         RecordedRequest creativesRequest = takeBackendRequest("backend request");
-        assertEquals("/api/experiments/1/creatives", creativesRequest.getPath());
+        assertEquals("/api/facebook-campaigns/experiments/1/creatives-ready", creativesRequest.getPath());
         assertEquals(0, facebook.getRequestCount());
     }
 

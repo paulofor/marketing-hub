@@ -19,6 +19,7 @@ tags:
   - name: Facebook Interests
   - name: Facebook Instant Forms
   - name: Facebook Campaigns
+  - name: Facebook Creatives
   - name: Facebook Ad Sets
   - name: Facebook Pixels
   - name: Facebook Configuration
@@ -273,6 +274,24 @@ paths:
       summary: Lista campanhas que precisam sincronizar métricas da Meta.
       responses:
         '200': { description: Alvos de sincronização retornados. }
+  /api/facebook-campaigns/experiments/{experimentId}/creatives-ready:
+    get:
+      tags: [Facebook Creatives]
+      summary: Lista criativos aprovados para consumo exclusivo do Facebook Ads Worker.
+      description: |
+        Endpoint de leitura do módulo Facebook. A criação, edição, aprovação e exclusão dos
+        criativos continuam pertencendo exclusivamente ao módulo Experimentos; este contrato
+        expõe somente os criativos READY que podem ser consumidos pela publicação Facebook.
+      parameters:
+        - $ref: '#/components/parameters/ExperimentId'
+      responses:
+        '200':
+          description: Criativos aprovados retornados para publicação.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/FacebookCreativeConsumptionResponse' }
   /api/facebook-campaigns:
     post:
       tags: [Facebook Campaigns]
@@ -615,6 +634,26 @@ components:
       type: object
       additionalProperties: true
       description: IDs e status retornados pela publicação do formulário na Meta.
+    FacebookCreativeConsumptionResponse:
+      type: object
+      description: Criativo aprovado do domínio Experimentos exposto apenas para consumo da publicação Facebook.
+      properties:
+        id: { type: integer, format: int64 }
+        experimentId: { type: integer, format: int64 }
+        format: { type: string, nullable: true }
+        headline: { type: string, nullable: true }
+        primaryText: { type: string, nullable: true }
+        imageUrl: { type: string, nullable: true }
+        description: { type: string, nullable: true }
+        cta: { type: string, nullable: true }
+        destinationUrl: { type: string, nullable: true }
+        leadGenFormId: { type: string, nullable: true }
+        instagramUserId: { type: string, nullable: true }
+        status:
+          type: string
+          enum: [READY]
+          description: O endpoint filtra e retorna apenas criativos aprovados para publicação.
+      required: [id, experimentId, status]
     CreateCampaignRequest:
       type: object
       additionalProperties: true

@@ -1026,7 +1026,7 @@ public class FacebookCampaignService {
     }
 
     private List<Creative> resolveCreatives(long experimentId) {
-        String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/experiments/" + experimentId + "/creatives");
+        String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/facebook-campaigns/experiments/" + experimentId + "/creatives-ready");
         LOGGER.info(
             "Requesting creatives for experiment from backend: url==>{}, params={}",
             url,

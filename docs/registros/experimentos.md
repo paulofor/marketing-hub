@@ -3848,6 +3848,21 @@
   - `docs/canonical/facebook-campaign-publication-canon.v1.md`
   - `docs/registros/experimentos.md`
 
+## 2026-06-07 — Endpoint Facebook para consumo de criativos aprovados
+
+- solicitação: separar claramente a responsabilidade dos criativos: criação/edição/aprovação exclusiva do módulo Experimentos e consumo operacional pelo módulo Facebook.
+- regra canônica atualizada: o cânone de publicação Facebook e o procedimento do experimento agora registram que o `facebook-ads-worker` deve consumir criativos pelo contrato exclusivo `GET /api/facebook-campaigns/experiments/{experimentId}/creatives-ready`, enquanto os endpoints do módulo Experimentos permanecem para gestão dos artefatos.
+- correção aplicada: o backend passou a expor no módulo Facebook uma leitura de criativos `READY` para publicação, e o `facebook-ads-worker` foi ajustado para consumir esse novo endpoint.
+- documentação sincronizada: o Swagger novo do Facebook Ads ganhou a tag `Facebook Creatives`, o endpoint de consumo e o schema `FacebookCreativeConsumptionResponse`.
+- arquivos alterados:
+  - `backend/ads-service/src/main/java/com/marketinghub/facebookads/controller/FacebookAdsCampaignController.java`
+  - `backend/ads-service/src/test/java/com/marketinghub/facebookads/controller/FacebookAdsCampaignControllerTest.java`
+  - `facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java`
+  - `facebook-ads-worker/src/test/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignServiceTest.java`
+  - `docs/swagger/facebook-ads-swagger.yaml`
+  - `docs/facebook-ads-worker/endpoint-flow.md`
+  - `docs/canonical/facebook-campaign-publication-canon.v1.md`
+  - `docs/canonical/procedimento-experimento-canon.v1.md`
 ## 2026-06-07 — Simplificação dos cards de etapas do pipeline
 
 - solicitação: remover ações manuais e rótulos operacionais redundantes dos cards de etapas, ocultar módulo executor ausente e permitir trocar modelo OpenAI diretamente no card apenas em etapas com acesso de IA.

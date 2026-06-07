@@ -38,10 +38,10 @@ public class BackendRoutineResearchOrchestratorController {
         return executionService.listRecentProcessed(limit);
     }
 
-    /** Cria imediatamente um novo ciclo para reprocessar um nicho CNAE com ciclo falho. */
+    /** Cria imediatamente um novo ciclo para falhas, pesquisas insuficientes ou resultados genéricos. */
     @PostMapping("/oprm/nichocnae/routine-research-orchestrator/recent-processed/{researchCycleId}/reprocess")
     public RecordRoutineResearchOrchestratorReprocessResult reprocess(@PathVariable Long researchCycleId) {
-        return executionService.reprocessFailedCycle(researchCycleId);
+        return executionService.reprocessCycle(researchCycleId);
     }
 
     /** Executa a etapa zero para iniciar o próximo ciclo de pesquisa de rotina por score. */

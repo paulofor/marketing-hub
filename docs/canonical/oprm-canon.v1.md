@@ -59,18 +59,20 @@ Evitar fechamento prematuro de `import run` que destrói a totalização de mark
 - A pesquisa deve parar na descrição realista da rotina e das dificuldades; ela não deve procurar, inferir, preparar ou validar solução, produto, campanha, oferta, promessa comercial, landing page, hipótese de experimento ou tese de mecanismo comercial.
 - Termos de solução, como IA, automação, sistema, app, software, ferramenta, curso ou marketing digital, não podem direcionar a pesquisa inicial quando vierem apenas de enquadramento comercial do nome do candidato.
 - O nome operacional usado para pesquisa deve representar o nicho/CNAE de forma neutra; nomes originais contaminados por linguagem de solução devem ser preservados apenas para auditoria e não como fonte de direcionamento da busca.
-- A etapa inicial deve priorizar evidências públicas sobre execução do trabalho, problemas operacionais, dúvidas reais, atividades, responsabilidades, limitações, sazonalidade, riscos, custos, retrabalho, gargalos e vocabulário usado pelo próprio mercado.
+- A etapa inicial deve priorizar evidências públicas sobre execução do trabalho, problemas operacionais, dúvidas reais, atividades, responsabilidades, limitações, sazonalidade, riscos, custos, retrabalho, gargalos e vocabulário usado pelo próprio mercado brasileiro.
 - A etapa `oprmNicheResearchSeedBuilder` deve aceitar somente objetivos de query compatíveis com rotina real: `ROUTINE_DISCOVERY`, `ROUTINE_TASK_DISCOVERY`, `OPERATIONAL_DIFFICULTY_DISCOVERY`, `NICHE_OWNER_QUESTION_DISCOVERY`, `FINAL_CUSTOMER_QUESTION_DISCOVERY`, `LANGUAGE_DISCOVERY` e `OPERATIONAL_CONTEXT_DISCOVERY`.
+- As queries e buscas do pipeline OPRM NichoCNAE devem ser Brasil-first: português do Brasil, mercado brasileiro, preferência por fontes brasileiras, domínios `.br`, instituições brasileiras, entidades setoriais brasileiras, notícias/fóruns brasileiros e páginas que descrevam a rotina do nicho no Brasil.
+- Quando a pesquisa cair em `NEEDS_MORE_RESEARCH` ou `GENERIC`, a UI deve oferecer saída operacional simples para o usuário abrir nova pesquisa manual do mesmo CNAE, criando um novo ciclo rastreável sem avançar material fraco para hipótese/oferta.
 - A etapa `oprmNicheResearchSeedBuilder` deve rejeitar objetivos e termos que direcionem busca por produto, oferta, campanha ou solução quando não fizerem parte literal da descrição CNAE.
 - A etapa `oprmSourceFetcher` deve propagar para o snapshot curto a classificação da fonte definida na busca: `sourceIntent`, `routineEvidenceScore`, `commercialPageRisk` e `solutionLanguageRisk`, sem armazenar HTML completo.
 
 ## Critério de efetividade — pesquisa inicial NichoCNAE sem viés de solução
 
 - Ciclos de pesquisa inicial devem expor ou persistir o modo `ROUTINE_REALITY_RESEARCH` para rastreabilidade operacional.
-- Seeds, queries, fontes, sinais, sínteses e gates da fase inicial devem ser aceitos somente quando servirem à compreensão da rotina real e das dificuldades do nicho.
+- Seeds, queries, fontes, sinais, sínteses e gates da fase inicial devem ser aceitos somente quando servirem à compreensão da rotina real e das dificuldades do nicho no Brasil.
 - Snapshots da etapa quatro devem persistir indicadores próprios de intenção da fonte, evidência de rotina, risco comercial e risco de linguagem de solução, mantendo política de armazenamento curto.
 - Qualquer conteúdo de solução, produto, campanha, oferta ou hipótese comercial deve pertencer a fluxo posterior, separado e rastreável, depois da conclusão da pesquisa de realidade operacional.
-- A tela `/oprm/pipeline` deve orientar o usuário de que o NichoCNAE está levantando realidade operacional e não montando solução ou campanha nessa etapa.
+- A tela `/oprm/pipeline` deve orientar o usuário de que o NichoCNAE está levantando realidade operacional no Brasil e não montando solução ou campanha nessa etapa; ciclos em `FAILED`, `NEEDS_MORE_RESEARCH` ou `GENERIC` devem oferecer ação de novo ciclo manual/reprocessamento.
 
 ## Regra obrigatória — materialização final do NichoCNAE em nicho enriquecido
 

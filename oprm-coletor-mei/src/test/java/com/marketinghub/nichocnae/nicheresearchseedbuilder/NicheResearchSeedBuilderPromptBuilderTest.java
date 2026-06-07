@@ -16,7 +16,10 @@ class NicheResearchSeedBuilderPromptBuilderTest {
         String prompt = promptBuilder.buildPrompt(pending());
 
         assertThat(prompt)
-                .contains("pesquisar a rotina real do nicho CNAE")
+                .contains("pesquisar a rotina real do nicho CNAE no mercado brasileiro")
+                .contains("português do Brasil")
+                .contains("fontes do Brasil")
+                .contains("domínios .br")
                 .contains("tarefas")
                 .contains("dificuldades")
                 .contains("Não proponha solução")

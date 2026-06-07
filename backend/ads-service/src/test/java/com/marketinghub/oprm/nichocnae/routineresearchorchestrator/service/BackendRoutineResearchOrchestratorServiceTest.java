@@ -102,7 +102,7 @@ class BackendRoutineResearchOrchestratorServiceTest {
         when(nicheCandidateRepository.save(any(OprmNicheCandidate.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        var result = service.reprocessFailedCycle(321L);
+        var result = service.reprocessCycle(321L);
 
         assertThat(result.researchCycleId()).isEqualTo(322L);
         assertThat(result.sourceNicheId()).isEqualTo(55L);
@@ -110,10 +110,49 @@ class BackendRoutineResearchOrchestratorServiceTest {
         assertThat(result.previousRoutineResearchStatus()).isEqualTo("RESEARCH_RUNNING");
         assertThat(result.routineResearchStatus()).isEqualTo("RESEARCH_RUNNING");
         assertThat(result.lastRoutineResearchCycleId()).isEqualTo(322L);
+        assertThat(result.message()).contains("CNAE com falha");
 
         ArgumentCaptor<OprmRoutineResearchCycle> cycleCaptor = ArgumentCaptor.forClass(OprmRoutineResearchCycle.class);
         verify(routineResearchCycleRepository).save(cycleCaptor.capture());
         assertThat(cycleCaptor.getValue().getSourceNicheId()).isEqualTo(55L);
+        assertThat(cycleCaptor.getValue().getStatus()).isEqualTo("RUNNING");
+        assertThat(cycleCaptor.getValue().getTriggerSource()).isEqualTo("MANUAL_REPROCESS");
+
+        ArgumentCaptor<OprmNicheCandidate> candidateCaptor = ArgumentCaptor.forClass(OprmNicheCandidate.class);
+        verify(nicheCandidateRepository).save(candidateCaptor.capture());
+        assertThat(candidateCaptor.getValue().getRoutineResearchStatus()).isEqualTo("RESEARCH_RUNNING");
+        assertThat(candidateCaptor.getValue().getLastRoutineResearchCycleId()).isEqualTo(322L);
+    }
+
+    /** Deve criar novo ciclo imediato quando a pesquisa chegou fraca e precisa de mais evidência. */
+    @Test
+    void reprocessNeedsMoreResearchCycleCreatesNewCycleImmediately() {
+        OprmRoutineResearchCycle weakCycle = cycle(321L, 55L, "Cabeleireiros e manicures", "2026-06-03T01:00:00Z");
+        weakCycle.setStatus("NEEDS_MORE_RESEARCH");
+        weakCycle.setFinishedAt(null);
+        weakCycle.setErrorMessage(null);
+        OprmNicheCandidate candidate = candidate();
+        candidate.setRoutineResearchStatus("RESEARCH_RUNNING");
+        candidate.setLastRoutineResearchCycleId(321L);
+        when(routineResearchCycleRepository.findById(321L)).thenReturn(Optional.of(weakCycle));
+        when(nicheCandidateRepository.findById(55L)).thenReturn(Optional.of(candidate));
+        when(routineResearchCycleRepository.save(any(OprmRoutineResearchCycle.class)))
+                .thenAnswer(invocation -> {
+                    OprmRoutineResearchCycle newCycle = invocation.getArgument(0);
+                    newCycle.setId(322L);
+                    return newCycle;
+                });
+        when(nicheCandidateRepository.save(any(OprmNicheCandidate.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        var result = service.reprocessCycle(321L);
+
+        assertThat(result.researchCycleId()).isEqualTo(322L);
+        assertThat(result.previousCycleStatus()).isEqualTo("NEEDS_MORE_RESEARCH");
+        assertThat(result.message()).contains("precisava de mais pesquisa");
+
+        ArgumentCaptor<OprmRoutineResearchCycle> cycleCaptor = ArgumentCaptor.forClass(OprmRoutineResearchCycle.class);
+        verify(routineResearchCycleRepository).save(cycleCaptor.capture());
         assertThat(cycleCaptor.getValue().getStatus()).isEqualTo("RUNNING");
         assertThat(cycleCaptor.getValue().getTriggerSource()).isEqualTo("MANUAL_REPROCESS");
 

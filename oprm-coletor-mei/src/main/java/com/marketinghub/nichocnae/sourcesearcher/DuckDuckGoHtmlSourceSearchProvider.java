@@ -1,10 +1,12 @@
 package com.marketinghub.nichocnae.sourcesearcher;
 
 import java.net.URI;
+import java.text.Normalizer;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Locale;
 import java.util.List;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -31,16 +33,36 @@ public class DuckDuckGoHtmlSourceSearchProvider implements PublicSourceSearchPro
             Document document = Jsoup.connect(SEARCH_URL)
                     .userAgent(USER_AGENT)
                     .timeout(TIMEOUT_MILLIS)
-                    .data("q", queryText)
+                    .data("q", buildBrazilianMarketQuery(queryText))
+                    .data("kl", "br-pt")
+                    .data("df", "")
                     .get();
             return parseResults(document, maxResults);
         } catch (RuntimeException ex) {
             log.error("Erro runtime ao buscar fontes no DuckDuckGo HTML (queryText={})", queryText, ex);
             throw ex;
         } catch (Exception ex) {
-            log.error("Erro de integração ao buscar fontes no DuckDuckGo HTML (queryText={})", queryText, ex);
+            log.error("Erro de integração ao buscar fontes no DuckDuckGo HTML (queryText={}, localizedQuery={})", queryText, buildBrazilianMarketQuery(queryText), ex);
             throw new IllegalStateException("Falha ao consultar DuckDuckGo HTML: " + ex.getMessage(), ex);
         }
+    }
+
+    /** Adiciona marcador Brasil quando a query ainda não deixa explícito que o mercado pesquisado é brasileiro. */
+    String buildBrazilianMarketQuery(String queryText) {
+        if (!StringUtils.hasText(queryText)) {
+            return "Brasil";
+        }
+        String normalized = Normalizer.normalize(queryText, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}+", "")
+                .toLowerCase(Locale.ROOT);
+        if (normalized.contains("brasil")
+                || normalized.contains("brasileir")
+                || normalized.contains("portugues do brasil")
+                || normalized.contains(".br")
+                || normalized.contains("site:br")) {
+            return queryText.trim();
+        }
+        return queryText.trim() + " Brasil";
     }
 
     /** Informa o código operacional do provedor DuckDuckGo HTML. */

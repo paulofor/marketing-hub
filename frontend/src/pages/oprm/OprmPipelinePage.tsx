@@ -163,6 +163,24 @@ function formatQualityNotes(value: string) {
   );
 }
 
+function canCreateNewResearchCycle(status: string) {
+  return ["FAILED", "NEEDS_MORE_RESEARCH", "GENERIC"].includes(status);
+}
+
+function getNewResearchCycleButtonLabel(status: string) {
+  if (status === "FAILED") {
+    return "Reprocessar CNAE";
+  }
+  return "Pesquisar novamente";
+}
+
+function getNewResearchCycleButtonClass(status: string) {
+  if (status === "FAILED") {
+    return "btn btn-outline-danger btn-sm text-nowrap";
+  }
+  return "btn btn-outline-warning btn-sm text-nowrap";
+}
+
 function buildStatusBadgeClass(status: string) {
   if (status === "LIGHTLY_RESEARCHED") {
     return "badge text-bg-success-subtle border border-success-subtle text-success";
@@ -433,10 +451,10 @@ export default function OprmPipelinePage() {
                         ) : null}
                       </td>
                       <td className="text-end">
-                        {item.cycleStatus === "FAILED" ? (
+                        {canCreateNewResearchCycle(item.cycleStatus) ? (
                           <button
                             type="button"
-                            className="btn btn-outline-danger btn-sm text-nowrap"
+                            className={getNewResearchCycleButtonClass(item.cycleStatus)}
                             disabled={
                               reprocessCycleMutation.isPending &&
                               reprocessCycleMutation.variables ===
@@ -456,10 +474,10 @@ export default function OprmPipelinePage() {
                                   className="spinner-border spinner-border-sm me-1"
                                   aria-hidden="true"
                                 />
-                                Liberando...
+                                Criando ciclo...
                               </>
                             ) : (
-                              "Reprocessar CNAE"
+                              getNewResearchCycleButtonLabel(item.cycleStatus)
                             )}
                           </button>
                         ) : (

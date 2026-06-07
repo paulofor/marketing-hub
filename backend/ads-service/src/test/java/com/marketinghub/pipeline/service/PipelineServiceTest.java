@@ -28,6 +28,7 @@ import com.marketinghub.repository.jpa.pipeline.PipelineStageConfigRepository;
 import com.marketinghub.repository.jpa.pipeline.PipelineStageDefinitionEntityRepository;
 import com.marketinghub.repository.jpa.pipeline.PipelineStageRepository;
 import java.util.ArrayList;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -102,7 +103,19 @@ class PipelineServiceTest {
                 .id(77L)
                 .name("GPT Vendas")
                 .code("gpt-vendas")
+                .priceInputBatch(new BigDecimal("0.50"))
+                .priceInputCachedBatch(new BigDecimal("0.05"))
+                .priceOutputBatch(new BigDecimal("2.00"))
                 .build();
+        OpenAiModel defaultTextModel = OpenAiModel.builder()
+                .id(88L)
+                .name("GPT-5.2")
+                .code("gpt-5.2")
+                .priceInputBatch(new BigDecimal("0.875"))
+                .priceInputCachedBatch(new BigDecimal("0.0875"))
+                .priceOutputBatch(new BigDecimal("7.00"))
+                .build();
+        when(openAiModelRepository.findByCode("gpt-5.2")).thenReturn(Optional.of(defaultTextModel));
         PipelineStage wireframe = stage(1L, 1, "LANDING_PAGE_WIREFRAME");
         wireframe.setOpenAiModel(model);
         PipelineStage copyWithoutModel = stage(2L, 2, "landing-page-copy");
@@ -123,11 +136,20 @@ class PipelineServiceTest {
         assertThat(wireframeModel.getOpenAiModelId()).isEqualTo(77L);
         assertThat(wireframeModel.getOpenAiModelName()).isEqualTo("GPT Vendas");
         assertThat(wireframeModel.getOpenAiModelCode()).isEqualTo("gpt-vendas");
+        assertThat(wireframeModel.getPricingMode()).isEqualTo("flex");
+        assertThat(wireframeModel.getGeneratedAssetType()).isEqualTo("texto");
+        assertThat(wireframeModel.getPriceInputFlex()).isEqualByComparingTo("0.50");
+        assertThat(wireframeModel.getPriceInputCachedFlex()).isEqualByComparingTo("0.05");
+        assertThat(wireframeModel.getPriceOutputFlex()).isEqualByComparingTo("2.00");
+        assertThat(wireframeModel.isDefaultModelApplied()).isFalse();
         GeraLandingStageModelDto copyModel = result.stream()
                 .filter(stageModel -> stageModel.getStageCode().equals("landing-page-copy"))
                 .findFirst()
                 .orElseThrow();
-        assertThat(copyModel.getOpenAiModelId()).isNull();
+        assertThat(copyModel.getOpenAiModelId()).isEqualTo(88L);
+        assertThat(copyModel.getOpenAiModelCode()).isEqualTo("gpt-5.2");
+        assertThat(copyModel.getPriceInputFlex()).isEqualByComparingTo("0.875");
+        assertThat(copyModel.isDefaultModelApplied()).isTrue();
     }
 
     /**

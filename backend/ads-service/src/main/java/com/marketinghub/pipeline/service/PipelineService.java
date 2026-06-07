@@ -20,6 +20,7 @@ import com.marketinghub.repository.jpa.openai.OpenAiModelRepository;
 import com.marketinghub.repository.jpa.pipeline.PipelineRepository;
 import com.marketinghub.repository.jpa.pipeline.PipelineStageRepository;
 import jakarta.persistence.EntityNotFoundException;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -40,6 +41,11 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class PipelineService {
     private static final Map<String, List<String>> GERA_LANDING_STAGE_ALIASES = buildGeraLandingStageAliases();
+    private static final String TEXT_DEFAULT_MODEL_CODE = "gpt-5.2";
+    private static final String TEXT_DEFAULT_MODEL_NAME = "GPT-5.2";
+    private static final String IMAGE_DEFAULT_MODEL_CODE = "gpt-image-1.5";
+    private static final String IMAGE_DEFAULT_MODEL_NAME = "GPT Image 1.5";
+    private static final String PRICING_MODE_FLEX = "flex";
 
     private final PipelineRepository pipelineRepository;
     private final PipelineStageRepository stageRepository;
@@ -536,19 +542,62 @@ public class PipelineService {
                 .filter(stage -> matchesGeraLandingStage(stage, stageCode))
                 .filter(stage -> stage.getOpenAiModel() != null)
                 .findFirst()
-                .map(stage -> GeraLandingStageModelDto.builder()
-                        .stageCode(stageCode)
-                        .pipelineId(stage.getPipeline().getId())
-                        .pipelineCode(stage.getPipeline().getCode())
-                        .pipelineStageId(stage.getId())
-                        .pipelineStageCode(stage.getCode())
-                        .openAiModelId(stage.getOpenAiModel().getId())
-                        .openAiModelName(stage.getOpenAiModel().getName())
-                        .openAiModelCode(stage.getOpenAiModel().getCode())
-                        .build())
-                .orElseGet(() -> GeraLandingStageModelDto.builder()
-                        .stageCode(stageCode)
+                .map(stage -> buildGeraLandingStageModelDto(stageCode, stage, stage.getOpenAiModel(), false))
+                .orElseGet(() -> buildDefaultGeraLandingStageModelDto(stageCode));
+    }
+
+    /** Monta o DTO de modelo da etapa preenchendo os custos do modo flex e o tipo de artefato gerado. */
+    private GeraLandingStageModelDto buildGeraLandingStageModelDto(
+            String stageCode, PipelineStage stage, OpenAiModel openAiModel, boolean defaultModelApplied) {
+        GeraLandingStageModelDto.GeraLandingStageModelDtoBuilder builder = GeraLandingStageModelDto.builder()
+                .stageCode(stageCode)
+                .generatedAssetType(resolveGeneratedAssetType(stageCode))
+                .pricingMode(PRICING_MODE_FLEX)
+                .defaultModelApplied(defaultModelApplied)
+                .openAiModelId(openAiModel.getId())
+                .openAiModelName(openAiModel.getName())
+                .openAiModelCode(openAiModel.getCode())
+                .priceInputFlex(openAiModel.getPriceInputBatch())
+                .priceInputCachedFlex(openAiModel.getPriceInputCachedBatch())
+                .priceOutputFlex(openAiModel.getPriceOutputBatch());
+
+        if (stage != null) {
+            builder.pipelineId(stage.getPipeline().getId())
+                    .pipelineCode(stage.getPipeline().getCode())
+                    .pipelineStageId(stage.getId())
+                    .pipelineStageCode(stage.getCode());
+        }
+
+        return builder.build();
+    }
+
+    /** Monta o DTO usando o modelo default quando a etapa não possui modelo associado no pipeline. */
+    private GeraLandingStageModelDto buildDefaultGeraLandingStageModelDto(String stageCode) {
+        String defaultCode = resolveDefaultModelCode(stageCode);
+        OpenAiModel fallbackModel = openAiModelRepository.findByCode(defaultCode)
+                .orElseGet(() -> OpenAiModel.builder()
+                        .name(resolveDefaultModelName(stageCode))
+                        .code(defaultCode)
+                        .priceInputBatch(BigDecimal.ZERO)
+                        .priceInputCachedBatch(BigDecimal.ZERO)
+                        .priceOutputBatch(BigDecimal.ZERO)
                         .build());
+        return buildGeraLandingStageModelDto(stageCode, null, fallbackModel, true);
+    }
+
+    /** Resolve o modelo default conforme o tipo de geração da etapa. */
+    private String resolveDefaultModelCode(String stageCode) {
+        return "landing-page-image-generation".equals(stageCode) ? IMAGE_DEFAULT_MODEL_CODE : TEXT_DEFAULT_MODEL_CODE;
+    }
+
+    /** Resolve o nome legível do modelo default quando o catálogo ainda não possui o registro. */
+    private String resolveDefaultModelName(String stageCode) {
+        return "landing-page-image-generation".equals(stageCode) ? IMAGE_DEFAULT_MODEL_NAME : TEXT_DEFAULT_MODEL_NAME;
+    }
+
+    /** Classifica o tipo de artefato gerado por cada etapa com uso de IA. */
+    private String resolveGeneratedAssetType(String stageCode) {
+        return "landing-page-image-generation".equals(stageCode) ? "imagem" : "texto";
     }
 
     /**

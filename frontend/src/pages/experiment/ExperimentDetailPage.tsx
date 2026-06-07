@@ -44,15 +44,52 @@ import {
 } from "../../api/pipeline/useGeraLandingStageModels";
 
 function formatPipelineStageModel(stageModel?: GeraLandingStageModel) {
-  if (!stageModel?.openAiModelId) {
-    return null;
-  }
-  const name = stageModel.openAiModelName?.trim();
-  const code = stageModel.openAiModelCode?.trim();
+  const name = stageModel?.openAiModelName?.trim();
+  const code = stageModel?.openAiModelCode?.trim();
   if (name && code) {
     return `${name} (${code})`;
   }
-  return name || code || `Modelo #${stageModel.openAiModelId}`;
+  return (
+    name ||
+    code ||
+    (stageModel?.openAiModelId ? `Modelo #${stageModel.openAiModelId}` : null)
+  );
+}
+
+function parseCostValue(value?: number | string | null) {
+  if (value == null) return null;
+  if (typeof value === "number") return Number.isFinite(value) ? value : null;
+  const normalizedValue = value.replace(",", ".").trim();
+  if (!normalizedValue) return null;
+  const parsedValue = Number(normalizedValue);
+  return Number.isFinite(parsedValue) ? parsedValue : null;
+}
+
+function formatModelCostPerMillion(value?: number | string | null) {
+  const parsedValue = parseCostValue(value);
+  return parsedValue == null
+    ? "—"
+    : new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD",
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 5,
+      }).format(parsedValue);
+}
+
+function formatGeneratedAssetType(value?: string | null) {
+  switch (value) {
+    case "texto":
+      return "Texto";
+    case "imagem":
+      return "Imagem";
+    case "video":
+      return "Vídeo";
+    case "audio":
+      return "Áudio";
+    default:
+      return value?.trim() || "Texto";
+  }
 }
 
 type ChecklistItem = {
@@ -1444,18 +1481,51 @@ export default function ExperimentDetailPage() {
   }, [geraLandingStageModels]);
 
   const renderSelectedGeraLandingModel = (stageCode: string) => {
-    const selectedModelLabel = formatPipelineStageModel(
-      selectedGeraLandingModelByStage.get(stageCode),
-    );
+    const selectedStageModel = selectedGeraLandingModelByStage.get(stageCode);
+    const selectedModelLabel = formatPipelineStageModel(selectedStageModel);
+    const pricingModeLabel = selectedStageModel?.pricingMode
+      ? selectedStageModel.pricingMode.toUpperCase()
+      : "FLEX";
 
     return (
-      <div className="small text-muted">
-        Modelo selecionado no pipeline:{" "}
-        <span className="fw-semibold text-body">
-          {isLoadingStageModels
-            ? "Carregando..."
-            : (selectedModelLabel ?? "Sem modelo fixo configurado")}
-        </span>
+      <div className="small text-muted d-flex flex-column gap-1">
+        <div>
+          Modelo selecionado no pipeline:{" "}
+          <span className="fw-semibold text-body">
+            {isLoadingStageModels
+              ? "Carregando..."
+              : (selectedModelLabel ?? "GPT-5.2 (gpt-5.2)")}
+          </span>
+          {!isLoadingStageModels && selectedStageModel?.defaultModelApplied ? (
+            <span className="badge text-bg-secondary ms-2">default</span>
+          ) : null}
+        </div>
+        <div className="d-flex flex-wrap align-items-center gap-2">
+          <span className="badge text-bg-light border">
+            Gera:{" "}
+            {formatGeneratedAssetType(selectedStageModel?.generatedAssetType)}
+          </span>
+          <span className="badge text-bg-light border">
+            Modo: {pricingModeLabel}
+          </span>
+          <span>
+            Entrada:{" "}
+            {formatModelCostPerMillion(selectedStageModel?.priceInputFlex)}/1M
+            tokens
+          </span>
+          <span>
+            Cache:{" "}
+            {formatModelCostPerMillion(
+              selectedStageModel?.priceInputCachedFlex,
+            )}
+            /1M tokens
+          </span>
+          <span>
+            Saída:{" "}
+            {formatModelCostPerMillion(selectedStageModel?.priceOutputFlex)}/1M
+            tokens
+          </span>
+        </div>
       </div>
     );
   };

@@ -142,6 +142,37 @@ components:
           type: string
           nullable: true
           example: gpt-vendas
+        priceInputFlex:
+          type: number
+          format: decimal
+          nullable: true
+          description: Preço flex por 1 milhão de tokens de entrada.
+          example: 0.875
+        priceInputCachedFlex:
+          type: number
+          format: decimal
+          nullable: true
+          description: Preço flex por 1 milhão de tokens de entrada em cache.
+          example: 0.0875
+        priceOutputFlex:
+          type: number
+          format: decimal
+          nullable: true
+          description: Preço flex por 1 milhão de tokens de saída.
+          example: 7.0
+        pricingMode:
+          type: string
+          nullable: true
+          example: flex
+        generatedAssetType:
+          type: string
+          nullable: true
+          enum: [texto, imagem, video, audio]
+          example: texto
+        defaultModelApplied:
+          type: boolean
+          description: Indica se o backend aplicou o modelo default por ausência de associação na etapa.
+          example: false
     PipelineMetadata:
       type: object
       required: [validModules, officialPipelines]

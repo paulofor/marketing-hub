@@ -4044,6 +4044,13 @@
 - foi feito: as validações de existência/conflito foram reescritas para `LEFT JOIN ... IS NULL`, evitando subconsultas sobre a tabela-alvo durante `UPDATE` e mantendo a idempotência das inserções das etapas GeraLanding.
 - impacto esperado: o backend deve conseguir concluir a execução do Liquibase e subir sem interromper o contexto Spring por essa migração.
 
+## 2026-06-07 — Custos flex e defaults de modelo na tela Gera Landing
+
+- solicitação: na aba Gera landing do experimento, exibir ao lado do modelo os custos em modo flex, calcular e totalizar custos por execução, por etapa e no total do experimento, além de explicitar se a etapa gera texto, imagem, vídeo ou áudio.
+- foi feito: o contrato `GET /api/pipelines/geralanding/stage-models` passou a retornar preços flex por 1M tokens, tipo de artefato gerado, modo de preço e indicação de modelo default aplicado quando a etapa não possui modelo associado.
+- foi feito: a tela passou a mostrar modelo, badge de default, tipo gerado, modo FLEX e custos de entrada/cache/saída; as totalizações já existentes por execução, etapa e total Gera Landing continuam somando `costUsd` das execuções concluídas/falhas retornadas pelos endpoints de histórico.
+- decisão operacional: quando a etapa não tem modelo configurado no pipeline, o backend usa `gpt-5.2` para etapas de texto e `gpt-image-1.5` para a etapa de geração de imagem; se o catálogo ainda não tiver o registro, o contrato mantém o código/nome default e retorna preços zerados para não quebrar a UI.
+- impacto esperado: o operador passa a enxergar antes de executar qual modelo/custo flex será usado e consegue acompanhar o custo acumulado no fluxo de geração da landing do experimento.
 ## 2026-06-07 — Percentuais mobile e tamanho de tela no analytics do experimento
 
 - solicitação: exibir no analytics do experimento os percentuais de sistemas operacionais mobile (`iOS`/`Android`) e, quando possível, o tamanho de tela dos visitantes.

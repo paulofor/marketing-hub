@@ -1,5 +1,6 @@
 package com.marketinghub.pipeline.dto;
 
+import java.math.BigDecimal;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -21,4 +22,10 @@ public class GeraLandingStageModelDto {
     private Long openAiModelId;
     private String openAiModelName;
     private String openAiModelCode;
+    private BigDecimal priceInputFlex;
+    private BigDecimal priceInputCachedFlex;
+    private BigDecimal priceOutputFlex;
+    private String pricingMode;
+    private String generatedAssetType;
+    private boolean defaultModelApplied;
 }

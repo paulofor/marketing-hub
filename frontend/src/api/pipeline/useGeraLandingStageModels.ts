@@ -10,6 +10,12 @@ export interface GeraLandingStageModel {
   openAiModelId?: number | null;
   openAiModelName?: string | null;
   openAiModelCode?: string | null;
+  priceInputFlex?: number | string | null;
+  priceInputCachedFlex?: number | string | null;
+  priceOutputFlex?: number | string | null;
+  pricingMode?: string | null;
+  generatedAssetType?: "texto" | "imagem" | "video" | "audio" | string | null;
+  defaultModelApplied?: boolean | null;
 }
 
 export function useGeraLandingStageModels() {

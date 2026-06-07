@@ -458,14 +458,14 @@ public class MoisSalesLibraryService {
     }
 
     /**
-     * Calcula os contadores globais da biblioteca diretamente em mois_sales_page para eliminar paginação ambígua.
+     * Calcula os contadores globais da biblioteca usando html_bytes > 0 como critério canônico de página capturada.
      */
     public MoisSalesLibraryDtos.SalesLibraryPageSummaryResponse summarizePages(String workspaceId) {
         return jdbcTemplate.queryForObject("""
                 SELECT COUNT(*) AS total,
                        SUM(current_status = 'PENDING') AS pending,
                        SUM(current_status IN ('FETCHING', 'CAPTURING')) AS capturing,
-                       SUM(current_status IN ('CAPTURED', 'DUPLICATE')) AS captured,
+                       SUM(COALESCE(html_bytes, 0) > 0) AS captured,
                        SUM(current_status IN ('DONE', 'ANALYZED')) AS analyzed,
                        SUM(current_status = 'FAILED') AS failed,
                        SUM(current_status = 'BLOCKED_COOLDOWN') AS blocked_cooldown,

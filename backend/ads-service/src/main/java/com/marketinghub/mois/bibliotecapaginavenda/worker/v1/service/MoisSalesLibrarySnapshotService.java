@@ -193,13 +193,13 @@ public class MoisSalesLibrarySnapshotService {
     }
 
     /**
-     * Seleciona páginas da biblioteca elegíveis para captura de HTML bruto usando somente as tabelas consolidadas.
+     * Seleciona páginas sem HTML útil, usando html_bytes = 0 como critério para processamento da etapa 1.
      */
     private List<PageToCapture> findPagesToCapture(String workspaceId, int limit, boolean force) {
         String forceClause = force ? "" : """
                 AND NOT EXISTS (
                     SELECT 1 FROM mois_sales_page_job_execution e
-                    WHERE e.sales_page_id = sp.id AND e.stage = 'CAPTURE' AND e.status IN ('CAPTURED', 'FETCHING')
+                    WHERE e.sales_page_id = sp.id AND e.stage = 'CAPTURE' AND e.status = 'FETCHING'
                 )
                 AND NOT EXISTS (
                     SELECT 1 FROM mois_sales_page_job_execution recent_failure
@@ -221,6 +221,7 @@ public class MoisSalesLibrarySnapshotService {
                 FROM mois_sales_page sp
                 WHERE sp.workspace_id = ?
                   AND sp.current_status NOT IN ('FETCHING', 'CAPTURING', 'DISCARDED')
+                  AND COALESCE(sp.html_bytes, 0) = 0
                 """ + forceClause + """
                 ORDER BY sp.updated_at DESC, sp.id DESC
                 LIMIT ?

@@ -191,12 +191,10 @@ export default function MoisSalesPagesPipelinePage() {
               <div className="col-sm-6 col-lg-4">
                 <div className="bg-light rounded-3 p-3 h-100">
                   <p className="text-secondary mb-1">
-                    Total com página obtida (HTML/imagem)
+                    Total com HTML útil (html_bytes &gt; 0)
                   </p>
                   <h3 className="mb-0">
-                    {summaryQuery.isLoading
-                      ? "..."
-                      : (summary?.captured ?? 0) + (summary?.analyzed ?? 0)}
+                    {summaryQuery.isLoading ? "..." : (summary?.captured ?? 0)}
                   </h3>
                 </div>
               </div>
@@ -209,8 +207,8 @@ export default function MoisSalesPagesPipelinePage() {
                 <h3 className="h6 mb-1">Executar captura agora</h3>
                 <p className="text-secondary small mb-0">
                   O acionamento usa o backend existente e processa até{" "}
-                  {DEFAULT_CAPTURE_LIMIT} URLs por execução para evitar
-                  bloqueios e timeouts longos.
+                  {DEFAULT_CAPTURE_LIMIT} URLs sem HTML útil por execução para
+                  evitar bloqueios e timeouts longos.
                 </p>
               </div>
               <div className="d-flex flex-wrap align-items-center gap-3">
@@ -227,7 +225,7 @@ export default function MoisSalesPagesPipelinePage() {
                     className="form-check-label small"
                     htmlFor="forceCapture"
                   >
-                    Recapturar mesmo com snapshot
+                    Forçar URLs sem HTML (ignorar cooldown)
                   </label>
                 </div>
                 <button

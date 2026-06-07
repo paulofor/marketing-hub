@@ -91,6 +91,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CollectedReferenceUrlSummaryResponse'
+  /pages/summary:
+    get:
+      summary: Resume páginas operacionais consolidadas
+      description: Retorna contadores de `mois_sales_page`; o campo `captured` usa `html_bytes > 0` como critério canônico de HTML útil obtido para a etapa 1.
+      tags: [MOIS Sales Library]
+      parameters:
+        - in: query
+          name: workspaceId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Contadores globais da biblioteca operacional
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SalesLibraryPageSummaryResponse'
   /jobs:
     get:
       summary: Lista execuções operacionais consolidadas
@@ -311,7 +329,8 @@ paths:
                 $ref: '#/components/schemas/HtmlCapturePersistResponse'
   /snapshots:capture:
     post:
-      summary: Executa captura HTML backend para páginas sem captura recente usando o modelo operacional novo
+      summary: Executa captura HTML backend para páginas sem HTML útil usando o modelo operacional novo
+      description: A etapa 1 seleciona páginas com `COALESCE(html_bytes, 0) = 0`; quando `force=true`, ignora cooldown/limite de falhas, mas continua sem recapturar páginas com `html_bytes > 0`.
       tags: [MOIS Sales Library]
       requestBody:
         required: true
@@ -585,6 +604,44 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/CollectedReferenceUrlTypeBreakdown'
+    SalesLibraryPageSummaryResponse:
+      type: object
+      properties:
+        workspaceId:
+          type: string
+        total:
+          type: integer
+          format: int64
+        pending:
+          type: integer
+          format: int64
+        capturing:
+          type: integer
+          format: int64
+        captured:
+          type: integer
+          format: int64
+          description: Total de páginas com HTML útil consolidado, calculado por `html_bytes > 0`.
+        analyzed:
+          type: integer
+          format: int64
+          description: Total por status de análise (`DONE` ou `ANALYZED`), mantido como métrica complementar.
+        failed:
+          type: integer
+          format: int64
+        blockedCooldown:
+          type: integer
+          format: int64
+        hotmart:
+          type: integer
+          format: int64
+        clickbank:
+          type: integer
+          format: int64
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
     CollectedReferenceUrlSourceBreakdown:
       type: object
       properties:

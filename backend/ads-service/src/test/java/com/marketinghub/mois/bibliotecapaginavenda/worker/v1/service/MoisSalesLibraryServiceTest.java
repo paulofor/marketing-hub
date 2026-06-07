@@ -106,6 +106,34 @@ class MoisSalesLibraryServiceTest {
     }
 
     /**
+     * Garante que o resumo operacional considera captura correta somente quando html_bytes é maior que zero.
+     */
+    @Test
+    void shouldSummarizeCapturedPagesByUsefulHtmlBytes() {
+        given(jdbcTemplate.queryForObject(
+                contains("SUM(COALESCE(html_bytes, 0) > 0) AS captured"),
+                isA(RowMapper.class),
+                eq("workspace-001")))
+                .willReturn(new MoisSalesLibraryDtos.SalesLibraryPageSummaryResponse(
+                        "workspace-001",
+                        421L,
+                        0L,
+                        0L,
+                        327L,
+                        106L,
+                        91L,
+                        0L,
+                        402L,
+                        19L,
+                        Instant.parse("2026-06-07T05:38:13Z")
+                ));
+
+        MoisSalesLibraryDtos.SalesLibraryPageSummaryResponse response = service.summarizePages("workspace-001");
+
+        org.assertj.core.api.Assertions.assertThat(response.captured()).isEqualTo(327L);
+    }
+
+    /**
      * Garante que o claim de HTML bruto lê a tabela de referências coletadas e retorna a URL reservada.
      */
     @Test

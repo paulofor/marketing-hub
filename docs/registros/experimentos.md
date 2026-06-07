@@ -3882,3 +3882,12 @@
   - `facebook-ads-worker/src/test/java/com/marketinghub/facebookadsworker/testsupport/FailFastMockWebServer.java`
   - `facebook-ads-worker/src/test/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignServiceTest.java`
   - `docs/registros/experimentos.md`
+
+## 2026-06-07 — Ocultação de iniciar Gera Landing em experimento publicado
+
+- solicitação: em experimentos já publicados, ocultar os botões `Iniciar` das etapas do Gera Landing, mantendo o histórico e o acompanhamento das execuções visíveis.
+- causa-raiz: a tela já bloqueava alterações depois da liberação/publicação do experimento, mas ainda exibia os botões `Iniciar` desabilitados, criando ruído visual para um experimento que não deve mais receber novas execuções manuais.
+- correção aplicada: a aba `Gera landing` agora só renderiza os botões de início enquanto `facebookReleaseRequestedAt` não estiver preenchido; após a publicação/liberação, permanecem apenas totais, jobs em andamento e histórico das etapas.
+- arquivos alterados:
+  - `frontend/src/pages/experiment/ExperimentDetailPage.tsx`
+  - `docs/registros/experimentos.md`

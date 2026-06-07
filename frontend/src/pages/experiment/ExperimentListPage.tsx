@@ -5,15 +5,26 @@ import { useUpdateExperimentStatus } from "../../api/experiment/useUpdateExperim
 import { useCloseExperimentPipelineJobs } from "../../api/experiment/useCloseExperimentPipelineJobs";
 import PageTitle from "../../components/PageTitle";
 import experimentIcon from "../../assets/icons/experiment-icon.svg";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
+
+const PAGE_SIZE = 25;
 
 function parseDate(date?: string | null) {
   if (!date) return 0;
   const timestamp = new Date(date).getTime();
   return Number.isNaN(timestamp) ? 0 : timestamp;
+}
+
+function formatDate(value?: string | null) {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+  }).format(date);
 }
 
 function formatCurrency(value?: number | null) {
@@ -49,29 +60,47 @@ export default function ExperimentListPage() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [niche, setNiche] = useState("");
-  const [stoppingExperimentId, setStoppingExperimentId] = useState<string | null>(null);
-  const [retryingExperimentId, setRetryingExperimentId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [stoppingExperimentId, setStoppingExperimentId] = useState<
+    string | null
+  >(null);
+  const [retryingExperimentId, setRetryingExperimentId] = useState<
+    string | null
+  >(null);
   const retryRelease = useMutation({
     mutationFn: async (experimentId: string) => {
-      const { data } = await axios.post(`/api/experiments/${experimentId}/facebook-release`);
+      const { data } = await axios.post(
+        `/api/experiments/${experimentId}/facebook-release`,
+      );
       return data;
     },
     onSuccess: async (_, experimentId) => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["experiments"] }),
-        queryClient.invalidateQueries({ queryKey: ["experiment", experimentId] }),
-        queryClient.invalidateQueries({ queryKey: ["experiment-readiness", experimentId] }),
-        queryClient.invalidateQueries({ queryKey: ["experiment", experimentId, "funnel"] }),
+        queryClient.invalidateQueries({
+          queryKey: ["experiment", experimentId],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["experiment-readiness", experimentId],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["experiment", experimentId, "funnel"],
+        }),
       ]);
     },
   });
   const experiments = Array.isArray(data) ? data : [];
+  const nicheNameById = useMemo(() => {
+    if (!Array.isArray(niches)) return new Map<number, string>();
+    return new Map(niches.map((item) => [item.id, item.name]));
+  }, [niches]);
 
   const nicheTotalCostMap = useMemo(() => {
     return experiments.reduce<Record<number, number>>((acc, experiment) => {
       if (typeof experiment.nicheId !== "number") return acc;
       const experimentCost = resolveExperimentCost(experiment);
-      if (typeof experimentCost !== "number" || Number.isNaN(experimentCost)) return acc;
+      if (typeof experimentCost !== "number" || Number.isNaN(experimentCost))
+        return acc;
       acc[experiment.nicheId] = (acc[experiment.nicheId] ?? 0) + experimentCost;
       return acc;
     }, {});
@@ -90,19 +119,61 @@ export default function ExperimentListPage() {
     return [...filtered].sort((a, b) => {
       const bDate = parseDate(b.startDate ?? b.createdAt);
       const aDate = parseDate(a.startDate ?? a.createdAt);
-      return bDate - aDate;
+      const dateComparison = bDate - aDate;
+      if (dateComparison !== 0) return dateComparison;
+      return Number(b.id) - Number(a.id);
     });
   }, [filtered]);
+
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
+  const pageStart = (currentPage - 1) * PAGE_SIZE;
+  const paginated = sorted.slice(pageStart, pageStart + PAGE_SIZE);
+  const visibleStart = sorted.length === 0 ? 0 : pageStart + 1;
+  const visibleEnd = Math.min(pageStart + PAGE_SIZE, sorted.length);
+  const paginationItems = useMemo(() => {
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, index) => index + 1);
+    }
+
+    const middleStart = Math.max(2, currentPage - 1);
+    const middleEnd = Math.min(totalPages - 1, currentPage + 1);
+    const items: Array<number | string> = [1];
+
+    if (middleStart > 2) items.push("start-ellipsis");
+    for (let page = middleStart; page <= middleEnd; page += 1) {
+      items.push(page);
+    }
+    if (middleEnd < totalPages - 1) items.push("end-ellipsis");
+    items.push(totalPages);
+
+    return items;
+  }, [currentPage, totalPages]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, status, niche]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   async function handleUserStop(experimentId: string) {
     setStoppingExperimentId(experimentId);
     try {
-      await updateStatus.mutateAsync({ id: experimentId, status: "USER_STOPPED" });
+      await updateStatus.mutateAsync({
+        id: experimentId,
+        status: "USER_STOPPED",
+      });
       await closePipelineJobs.mutateAsync({
         experimentId,
-        reason: "Encerrado pela ação de parada do usuário na tela de experimentos",
+        reason:
+          "Encerrado pela ação de parada do usuário na tela de experimentos",
       });
-      toast.success("Experimento encerrado e jobs de pipeline abertos foram finalizados.");
+      toast.success(
+        "Experimento encerrado e jobs de pipeline abertos foram finalizados.",
+      );
     } catch {
       toast.error("Não foi possível concluir a parada do usuário.");
     } finally {
@@ -114,7 +185,9 @@ export default function ExperimentListPage() {
     setRetryingExperimentId(experimentId);
     try {
       await retryRelease.mutateAsync(experimentId);
-      toast.success("Experimento reenviado para a fila do Facebook Ads Worker.");
+      toast.success(
+        "Experimento reenviado para a fila do Facebook Ads Worker.",
+      );
     } catch {
       toast.error("Não foi possível reenviar o experimento para a fila.");
     } finally {
@@ -140,7 +213,11 @@ export default function ExperimentListPage() {
           />
         </div>
         <div className="col">
-          <select className="form-select" value={niche} onChange={(e) => setNiche(e.target.value)}>
+          <select
+            className="form-select"
+            value={niche}
+            onChange={(e) => setNiche(e.target.value)}
+          >
             <option value="">Todos Nichos</option>
             {Array.isArray(niches) &&
               niches.map((n) => (
@@ -151,7 +228,11 @@ export default function ExperimentListPage() {
           </select>
         </div>
         <div className="col">
-          <select className="form-select" value={status} onChange={(e) => setStatus(e.target.value)}>
+          <select
+            className="form-select"
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+          >
             <option value="">Todos Status</option>
             <option value="PLANNED">PLANNED</option>
             <option value="RUNNING">RUNNING</option>
@@ -162,34 +243,52 @@ export default function ExperimentListPage() {
           </select>
         </div>
       </div>
+      <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-2">
+        <span className="text-muted small">
+          Exibindo {visibleStart}-{visibleEnd} de {sorted.length} experimentos,
+          com {PAGE_SIZE} por página.
+        </span>
+        <span className="badge text-bg-light align-self-start align-self-md-center">
+          Mais recentes primeiro
+        </span>
+      </div>
       <div className="table-responsive">
-        <table className="table">
+        <table className="table align-middle">
           <thead>
             <tr>
-              <th>Nome</th>
+              <th>ID do experimento</th>
+              <th>Nome do experimento</th>
+              <th>Data de criação</th>
+              <th>Nicho</th>
               <th>Hipótese</th>
-              <th>Variável</th>
-              <th>Custo</th>
+              <th>Valor</th>
               <th>Status</th>
-              <th>Início</th>
-              <th>Ações</th>
+              <th>Botões/Ações</th>
             </tr>
           </thead>
           <tbody>
-            {sorted.map((e) => {
+            {paginated.map((e) => {
               const canStop = e.status === "RUNNING";
               const isStopping = stoppingExperimentId === String(e.id);
               const isRetrying = retryingExperimentId === String(e.id);
               return (
                 <tr key={e.id}>
+                  <td className="text-nowrap">{e.id}</td>
                   <td>{e.name}</td>
-                  <td>{e.hypothesis || "—"}</td>
-                  <td>{e.primaryVariable || "—"}</td>
-                  <td>{formatCurrency(resolveExperimentCost(e))}</td>
-                  <td>{e.status}</td>
-                  <td>{e.startDate}</td>
+                  <td className="text-nowrap">{formatDate(e.createdAt)}</td>
                   <td>
-                    <Link className="btn btn-sm btn-outline-primary" to={`/experiments/${e.id}`}>
+                    {nicheNameById.get(e.nicheId) || `Nicho #${e.nicheId}`}
+                  </td>
+                  <td>{e.hypothesis || "—"}</td>
+                  <td>
+                    {formatCurrency(e.unitPrice ?? resolveExperimentCost(e))}
+                  </td>
+                  <td>{e.status}</td>
+                  <td>
+                    <Link
+                      className="btn btn-sm btn-outline-primary"
+                      to={`/experiments/${e.id}`}
+                    >
                       Visualizar
                     </Link>
                     {canStop && (
@@ -233,6 +332,72 @@ export default function ExperimentListPage() {
           </tbody>
         </table>
       </div>
+      {sorted.length === 0 && (
+        <div className="alert alert-light border" role="status">
+          Nenhum experimento encontrado para os filtros selecionados.
+        </div>
+      )}
+      {totalPages > 1 && (
+        <nav
+          className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2"
+          aria-label="Paginação dos experimentos"
+        >
+          <span className="text-muted small">
+            Página {currentPage} de {totalPages}
+          </span>
+          <ul className="pagination mb-0">
+            <li className={`page-item${currentPage === 1 ? " disabled" : ""}`}>
+              <button
+                type="button"
+                className="page-link"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+              >
+                Anterior
+              </button>
+            </li>
+            {paginationItems.map((page) =>
+              typeof page === "number" ? (
+                <li
+                  key={page}
+                  className={`page-item${page === currentPage ? " active" : ""}`}
+                >
+                  <button
+                    type="button"
+                    className="page-link"
+                    aria-current={page === currentPage ? "page" : undefined}
+                    onClick={() => setCurrentPage(page)}
+                  >
+                    {page}
+                  </button>
+                </li>
+              ) : (
+                <li
+                  key={page}
+                  className="page-item disabled"
+                  aria-hidden="true"
+                >
+                  <span className="page-link">…</span>
+                </li>
+              ),
+            )}
+            <li
+              className={`page-item${currentPage === totalPages ? " disabled" : ""}`}
+            >
+              <button
+                type="button"
+                className="page-link"
+                disabled={currentPage === totalPages}
+                onClick={() =>
+                  setCurrentPage((page) => Math.min(totalPages, page + 1))
+                }
+              >
+                Próxima
+              </button>
+            </li>
+          </ul>
+        </nav>
+      )}
     </div>
   );
 }

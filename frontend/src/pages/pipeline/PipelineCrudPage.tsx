@@ -13,7 +13,6 @@ import type {
   PipelineStagePayload,
 } from "../../api/pipeline/types";
 import {
-  useDeletePipeline,
   useRebuildOfficialPipelineStages,
   useUpdatePipeline,
   useUpdatePipelineStage,
@@ -98,7 +97,6 @@ export default function PipelineCrudPage() {
   const { data: openAiModels, isLoading: isLoadingOpenAiModels } =
     useOpenAiModels();
   const updatePipeline = useUpdatePipeline();
-  const deletePipeline = useDeletePipeline();
   const updateStage = useUpdatePipelineStage();
   const rebuildOfficialStages = useRebuildOfficialPipelineStages();
 
@@ -976,33 +974,12 @@ export default function PipelineCrudPage() {
           </div>
           <div className="list-group list-group-flush">
             {pipelines.map((pipeline) => {
-              const diagnostic = diagnosticsByPipelineId.get(pipeline.id);
-              const isOfficialPipeline = officialPipelines.some(
-                (official) =>
-                  normalizeCode(official.code) === normalizeCode(pipeline.code),
-              );
-
               return (
                 <article className="list-group-item" key={pipeline.id}>
-                  <div className="d-flex flex-wrap justify-content-between align-items-start gap-3">
-                    <div className="flex-grow-1">
+                  <div className="pipeline-list-row">
+                    <div className="pipeline-list-content">
                       <div className="d-flex flex-wrap align-items-center gap-2 mb-1">
                         <h3 className="h5 mb-0">{pipeline.name}</h3>
-                        {isOfficialPipeline ? (
-                          <span className="badge text-bg-primary">Oficial</span>
-                        ) : null}
-                        <span
-                          className={`badge ${pipeline.active ? "text-bg-success" : "text-bg-secondary"}`}
-                        >
-                          {pipeline.active ? "Ativo" : "Inativo"}
-                        </span>
-                        {diagnostic ? (
-                          <span
-                            className={`badge ${statusBadgeClass(diagnostic.status)}`}
-                          >
-                            Contrato {diagnostic.status}
-                          </span>
-                        ) : null}
                       </div>
                       <div className="d-flex flex-wrap gap-2 small text-body-secondary">
                         <span>{pipeline.module}</span>
@@ -1020,36 +997,13 @@ export default function PipelineCrudPage() {
                         </p>
                       ) : null}
                     </div>
-                    <div className="d-flex flex-wrap gap-2">
+                    <div className="pipeline-list-action">
                       <button
                         type="button"
-                        className="btn btn-primary btn-sm"
+                        className="btn btn-primary btn-sm pipeline-list-stage-button"
                         onClick={() => openPipelineStages(pipeline.id)}
                       >
                         Ver etapas
-                      </button>
-                      <button
-                        className="btn btn-sm btn-outline-primary"
-                        onClick={() => startPipelineEdit(pipeline)}
-                      >
-                        Editar
-                      </button>
-                      <button
-                        className="btn btn-sm btn-outline-danger"
-                        disabled={
-                          deletePipeline.isPending || isOfficialPipeline
-                        }
-                        onClick={() => {
-                          if (
-                            confirm(
-                              "Deseja remover este pipeline e todas as etapas?",
-                            )
-                          ) {
-                            deletePipeline.mutate(pipeline.id);
-                          }
-                        }}
-                      >
-                        {deletePipeline.isPending ? "Excluindo..." : "Excluir"}
                       </button>
                     </div>
                   </div>

@@ -3882,3 +3882,12 @@
   - `facebook-ads-worker/src/test/java/com/marketinghub/facebookadsworker/testsupport/FailFastMockWebServer.java`
   - `facebook-ads-worker/src/test/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignServiceTest.java`
   - `docs/registros/experimentos.md`
+
+## 2026-06-07 — Simplificação visual da lista de pipelines
+
+- solicitação: limpar a lista de pipelines removendo os rótulos `Oficial`, `Ativo` e `Contrato`, retirar os botões `Editar` e `Excluir`, e manter o botão `Ver etapas` sempre alinhado na mesma posição entre os pipelines.
+- correção aplicada: a listagem passou a exibir apenas nome, módulo, código, quantidade de etapas e descrição, com uma única ação para abrir as etapas; a linha do pipeline usa grade com coluna fixa de ação para evitar deslocamento vertical/horizontal do botão quando a descrição varia de tamanho.
+- arquivos alterados:
+  - `frontend/src/pages/pipeline/PipelineCrudPage.tsx`
+  - `frontend/src/pages/pipeline/PipelineCrudPage.css`
+  - `docs/registros/experimentos.md`

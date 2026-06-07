@@ -3937,3 +3937,10 @@
   - AGENTS.md
   - frontend/AGENTS.md
   - docs/registros/experimentos.md
+
+## 2026-06-07 — Plano futuro para identificação de visitante recorrente na landing
+
+- solicitação: criar plano de implementação para permitir dizer, no futuro, se a mesma pessoa provável acessou a landing de um experimento mais de uma vez em horários diferentes.
+- diagnóstico base: o rastreio atual por `sessionId` permite medir sessão, mas não prova recorrência de pessoa/dispositivo entre horários diferentes.
+- registro criado: `docs/implementação/plano-identificacao-visitante-landing-experimento.md`.
+- escopo planejado: cânone/contrato, banco, backend, script público da landing, API de recorrência, frontend, compatibilidade com legado e validação operacional por MCP.

@@ -1,0 +1,229 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-07-pipeline-stage-implementation-columns-safety
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: pipeline_stage
+        - not:
+            - columnExists:
+                tableName: pipeline_stage
+                columnName: execution_module
+      changes:
+        - addColumn:
+            tableName: pipeline_stage
+            columns:
+              - column:
+                  name: execution_module
+                  type: VARCHAR(80)
+              - column:
+                  name: root_package
+                  type: VARCHAR(200)
+  - changeSet:
+      id: 2026-06-07-pipeline-stage-definition-implementation-columns-safety
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: pipeline_stage_definition
+        - not:
+            - columnExists:
+                tableName: pipeline_stage_definition
+                columnName: execution_module
+      changes:
+        - addColumn:
+            tableName: pipeline_stage_definition
+            columns:
+              - column:
+                  name: execution_module
+                  type: VARCHAR(80)
+              - column:
+                  name: root_package
+                  type: VARCHAR(200)
+  - changeSet:
+      id: 2026-06-07-experiment-pipeline-geralanding-stages
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: pipeline
+        - tableExists:
+            tableName: pipeline_stage
+        - tableExists:
+            tableName: pipeline_definition
+        - tableExists:
+            tableName: pipeline_stage_definition
+        - tableExists:
+            tableName: pipeline_stage_config
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE pipeline_stage ps
+              INNER JOIN pipeline p ON p.id = ps.pipeline_id
+              SET ps.position = 107,
+                  ps.updated_at = NOW()
+              WHERE p.code = 'experiment-pipeline'
+                AND ps.code = 'landing-page-design-preset'
+                AND ps.position = 7
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage conflict WHERE conflict.pipeline_id = ps.pipeline_id AND conflict.position = 107)
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage image_generation WHERE image_generation.pipeline_id = ps.pipeline_id AND image_generation.code = 'landing-page-image-generation');
+
+              UPDATE pipeline_stage ps
+              INNER JOIN pipeline p ON p.id = ps.pipeline_id
+              SET ps.position = 10,
+                  ps.code = 'landing-page-deliverables',
+                  ps.name = 'Landing Page Deliverables',
+                  ps.description = COALESCE(ps.description, 'Organiza os entregáveis digitais da oferta para uso no funil e no portal do lead.'),
+                  ps.root_package = 'com.marketinghub.geralanding.deliverables',
+                  ps.updated_at = NOW()
+              WHERE p.code = 'experiment-pipeline'
+                AND ps.code = 'landing-page-html'
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage deliverables WHERE deliverables.pipeline_id = ps.pipeline_id AND deliverables.code = 'landing-page-deliverables')
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage conflict WHERE conflict.pipeline_id = ps.pipeline_id AND conflict.position = 10);
+
+              INSERT INTO pipeline_stage (pipeline_id, position, name, code, description, execution_module, root_package, required, active, openai_model_id, created_at, updated_at)
+              SELECT p.id, 7, 'Landing Page Image Generation', 'landing-page-image-generation', 'Materializa as imagens finais da landing a partir do planejamento visual.', NULL, 'com.marketinghub.geralanding.imagegeneration', 1, 1, NULL, NOW(), NOW()
+              FROM pipeline p
+              WHERE p.code = 'experiment-pipeline'
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage ps WHERE ps.pipeline_id = p.id AND ps.code = 'landing-page-image-generation')
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage conflict WHERE conflict.pipeline_id = p.id AND conflict.position = 7);
+
+              UPDATE pipeline_stage ps
+              INNER JOIN pipeline p ON p.id = ps.pipeline_id
+              SET ps.position = 8,
+                  ps.root_package = 'com.marketinghub.geralanding.presetdesign',
+                  ps.updated_at = NOW()
+              WHERE p.code = 'experiment-pipeline'
+                AND ps.code = 'landing-page-design-preset'
+                AND ps.position = 107
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage conflict WHERE conflict.pipeline_id = ps.pipeline_id AND conflict.position = 8);
+
+              INSERT INTO pipeline_stage (pipeline_id, position, name, code, description, execution_module, root_package, required, active, openai_model_id, created_at, updated_at)
+              SELECT p.id, 9, 'Landing Page Quality Review', 'landing-page-quality-review', 'Quality Gate comercial visual da landing renderizada antes de gerar entregáveis.', NULL, 'com.marketinghub.geralanding.qualityreview', 1, 1, (SELECT om.id FROM openai_model om WHERE om.code = 'gpt-5.5' LIMIT 1), NOW(), NOW()
+              FROM pipeline p
+              WHERE p.code = 'experiment-pipeline'
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage ps WHERE ps.pipeline_id = p.id AND ps.code = 'landing-page-quality-review')
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage conflict WHERE conflict.pipeline_id = p.id AND conflict.position = 9);
+
+              INSERT INTO pipeline_stage (pipeline_id, position, name, code, description, execution_module, root_package, required, active, openai_model_id, created_at, updated_at)
+              SELECT p.id, 10, 'Landing Page Deliverables', 'landing-page-deliverables', 'Organiza os entregáveis digitais da oferta para uso no funil e no portal do lead.', NULL, 'com.marketinghub.geralanding.deliverables', 1, 1, NULL, NOW(), NOW()
+              FROM pipeline p
+              WHERE p.code = 'experiment-pipeline'
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage ps WHERE ps.pipeline_id = p.id AND ps.code = 'landing-page-deliverables')
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage conflict WHERE conflict.pipeline_id = p.id AND conflict.position = 10);
+
+              UPDATE pipeline_stage ps
+              INNER JOIN pipeline p ON p.id = ps.pipeline_id
+              SET ps.root_package = CASE ps.code
+                    WHEN 'landing-page-wireframe' THEN 'com.marketinghub.geralanding.wireframe'
+                    WHEN 'landing-page-copy' THEN 'com.marketinghub.geralanding.copy'
+                    WHEN 'landing-page-image-planning' THEN 'com.marketinghub.geralanding.imageplanning'
+                    WHEN 'landing-page-image-generation' THEN 'com.marketinghub.geralanding.imagegeneration'
+                    WHEN 'landing-page-design-preset' THEN 'com.marketinghub.geralanding.presetdesign'
+                    WHEN 'landing-page-quality-review' THEN 'com.marketinghub.geralanding.qualityreview'
+                    WHEN 'landing-page-deliverables' THEN 'com.marketinghub.geralanding.deliverables'
+                    ELSE ps.root_package
+                  END,
+                  ps.updated_at = NOW()
+              WHERE p.code = 'experiment-pipeline'
+                AND ps.code IN ('landing-page-wireframe', 'landing-page-copy', 'landing-page-image-planning', 'landing-page-image-generation', 'landing-page-design-preset', 'landing-page-quality-review', 'landing-page-deliverables');
+
+              UPDATE pipeline_stage_definition psd
+              INNER JOIN pipeline_definition pd ON pd.id = psd.pipeline_definition_id
+              SET psd.position = 107,
+                  psd.updated_at = NOW()
+              WHERE pd.code = 'experiment-pipeline'
+                AND pd.canonical_version = 'procedimento-experimento-canon.v1'
+                AND psd.canonical_code = 'LANDING_PAGE_DESIGN_PRESET'
+                AND psd.position = 7
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage_definition conflict WHERE conflict.pipeline_definition_id = psd.pipeline_definition_id AND conflict.position = 107)
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage_definition image_generation WHERE image_generation.pipeline_definition_id = psd.pipeline_definition_id AND image_generation.canonical_code = 'LANDING_PAGE_IMAGE_GENERATION');
+
+              UPDATE pipeline_stage_definition psd
+              INNER JOIN pipeline_definition pd ON pd.id = psd.pipeline_definition_id
+              SET psd.position = 10,
+                  psd.canonical_code = 'LANDING_PAGE_DELIVERABLES',
+                  psd.display_name = 'Landing Page Deliverables',
+                  psd.implemented_stage_enum = 'LANDING_PAGE_DELIVERABLES',
+                  psd.root_package = 'com.marketinghub.geralanding.deliverables',
+                  psd.updated_at = NOW()
+              WHERE pd.code = 'experiment-pipeline'
+                AND pd.canonical_version = 'procedimento-experimento-canon.v1'
+                AND psd.canonical_code = 'LANDING_PAGE_HTML'
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage_definition deliverables WHERE deliverables.pipeline_definition_id = psd.pipeline_definition_id AND deliverables.canonical_code = 'LANDING_PAGE_DELIVERABLES')
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage_definition conflict WHERE conflict.pipeline_definition_id = psd.pipeline_definition_id AND conflict.position = 10);
+
+              INSERT INTO pipeline_stage_definition (pipeline_definition_id, canonical_code, display_name, position, required, implemented_stage_enum, requires_openai_model, configurable, execution_module, root_package, created_at, updated_at)
+              SELECT pd.id, 'LANDING_PAGE_IMAGE_GENERATION', 'Landing Page Image Generation', 7, 1, 'LANDING_PAGE_IMAGE_GENERATION', 1, 1, NULL, 'com.marketinghub.geralanding.imagegeneration', NOW(), NOW()
+              FROM pipeline_definition pd
+              WHERE pd.code = 'experiment-pipeline'
+                AND pd.canonical_version = 'procedimento-experimento-canon.v1'
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage_definition psd WHERE psd.pipeline_definition_id = pd.id AND psd.canonical_code = 'LANDING_PAGE_IMAGE_GENERATION')
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage_definition conflict WHERE conflict.pipeline_definition_id = pd.id AND conflict.position = 7);
+
+              UPDATE pipeline_stage_definition psd
+              INNER JOIN pipeline_definition pd ON pd.id = psd.pipeline_definition_id
+              SET psd.position = 8,
+                  psd.root_package = 'com.marketinghub.geralanding.presetdesign',
+                  psd.updated_at = NOW()
+              WHERE pd.code = 'experiment-pipeline'
+                AND pd.canonical_version = 'procedimento-experimento-canon.v1'
+                AND psd.canonical_code = 'LANDING_PAGE_DESIGN_PRESET'
+                AND psd.position = 107
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage_definition conflict WHERE conflict.pipeline_definition_id = psd.pipeline_definition_id AND conflict.position = 8);
+
+              INSERT INTO pipeline_stage_definition (pipeline_definition_id, canonical_code, display_name, position, required, implemented_stage_enum, requires_openai_model, configurable, execution_module, root_package, created_at, updated_at)
+              SELECT pd.id, 'LANDING_PAGE_QUALITY_REVIEW', 'Landing Page Quality Review', 9, 1, 'LANDING_PAGE_QUALITY_REVIEW', 1, 1, NULL, 'com.marketinghub.geralanding.qualityreview', NOW(), NOW()
+              FROM pipeline_definition pd
+              WHERE pd.code = 'experiment-pipeline'
+                AND pd.canonical_version = 'procedimento-experimento-canon.v1'
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage_definition psd WHERE psd.pipeline_definition_id = pd.id AND psd.canonical_code = 'LANDING_PAGE_QUALITY_REVIEW')
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage_definition conflict WHERE conflict.pipeline_definition_id = pd.id AND conflict.position = 9);
+
+              INSERT INTO pipeline_stage_definition (pipeline_definition_id, canonical_code, display_name, position, required, implemented_stage_enum, requires_openai_model, configurable, execution_module, root_package, created_at, updated_at)
+              SELECT pd.id, 'LANDING_PAGE_DELIVERABLES', 'Landing Page Deliverables', 10, 1, 'LANDING_PAGE_DELIVERABLES', 1, 1, NULL, 'com.marketinghub.geralanding.deliverables', NOW(), NOW()
+              FROM pipeline_definition pd
+              WHERE pd.code = 'experiment-pipeline'
+                AND pd.canonical_version = 'procedimento-experimento-canon.v1'
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage_definition psd WHERE psd.pipeline_definition_id = pd.id AND psd.canonical_code = 'LANDING_PAGE_DELIVERABLES')
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage_definition conflict WHERE conflict.pipeline_definition_id = pd.id AND conflict.position = 10);
+
+              UPDATE pipeline_stage_definition psd
+              INNER JOIN pipeline_definition pd ON pd.id = psd.pipeline_definition_id
+              SET psd.root_package = CASE psd.canonical_code
+                    WHEN 'LANDING_PAGE_WIREFRAME' THEN 'com.marketinghub.geralanding.wireframe'
+                    WHEN 'LANDING_PAGE_COPY' THEN 'com.marketinghub.geralanding.copy'
+                    WHEN 'LANDING_PAGE_IMAGE_PLANNING' THEN 'com.marketinghub.geralanding.imageplanning'
+                    WHEN 'LANDING_PAGE_IMAGE_GENERATION' THEN 'com.marketinghub.geralanding.imagegeneration'
+                    WHEN 'LANDING_PAGE_DESIGN_PRESET' THEN 'com.marketinghub.geralanding.presetdesign'
+                    WHEN 'LANDING_PAGE_QUALITY_REVIEW' THEN 'com.marketinghub.geralanding.qualityreview'
+                    WHEN 'LANDING_PAGE_DELIVERABLES' THEN 'com.marketinghub.geralanding.deliverables'
+                    ELSE psd.root_package
+                  END,
+                  psd.updated_at = NOW()
+              WHERE pd.code = 'experiment-pipeline'
+                AND pd.canonical_version = 'procedimento-experimento-canon.v1'
+                AND psd.canonical_code IN ('LANDING_PAGE_WIREFRAME', 'LANDING_PAGE_COPY', 'LANDING_PAGE_IMAGE_PLANNING', 'LANDING_PAGE_IMAGE_GENERATION', 'LANDING_PAGE_DESIGN_PRESET', 'LANDING_PAGE_QUALITY_REVIEW', 'LANDING_PAGE_DELIVERABLES');
+
+              INSERT INTO pipeline_stage_config (pipeline_stage_definition_id, active, openai_model_id, description_override, updated_by, created_at, updated_at)
+              SELECT psd.id, 1, ps.openai_model_id, ps.description, 'liquibase-geralanding-stage', NOW(), NOW()
+              FROM pipeline_stage_definition psd
+              INNER JOIN pipeline_definition pd ON pd.id = psd.pipeline_definition_id
+              LEFT JOIN pipeline p ON p.code = pd.code
+              LEFT JOIN pipeline_stage ps ON ps.pipeline_id = p.id AND UPPER(REPLACE(ps.code, '-', '_')) = psd.canonical_code
+              WHERE pd.code = 'experiment-pipeline'
+                AND pd.canonical_version = 'procedimento-experimento-canon.v1'
+                AND psd.canonical_code IN ('LANDING_PAGE_IMAGE_GENERATION', 'LANDING_PAGE_QUALITY_REVIEW', 'LANDING_PAGE_DELIVERABLES')
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage_config psc WHERE psc.pipeline_stage_definition_id = psd.id);

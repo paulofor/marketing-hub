@@ -255,7 +255,7 @@ class PipelineServiceTest {
         PipelineDiagnosticsDto diagnostics = service.diagnostics(10L);
 
         assertThat(diagnostics.status()).isEqualTo("BLOQUEADO");
-        assertThat(diagnostics.expectedStages()).isEqualTo(8);
+        assertThat(diagnostics.expectedStages()).isEqualTo(10);
         assertThat(diagnostics.configuredStages()).isEqualTo(1);
         assertThat(diagnostics.issues())
                 .anySatisfy(issue -> {
@@ -288,16 +288,29 @@ class PipelineServiceTest {
         assertThat(definitionRegistry.officialPipelines()).hasSize(2);
         assertThat(definitionRegistry.findByPipelineCode("experiment-pipeline")).hasValueSatisfying(pipeline -> {
             assertThat(pipeline.code()).isEqualTo("experiment-pipeline");
-            assertThat(pipeline.stages()).hasSize(8);
+            assertThat(pipeline.stages()).hasSize(10);
             assertThat(pipeline.stages())
                     .allSatisfy(stage -> {
                         assertThat(stage.canonicalCode()).isNotBlank();
                         assertThat(stage.operationalCode()).isNotBlank();
                         assertThat(stage.executionModule()).isNull();
-                        assertThat(stage.rootPackage()).isEqualTo("com.marketinghub.experiment.pipeline");
+                        assertThat(stage.rootPackage()).isNotBlank();
                         assertThat(definitionRegistry.findStage(pipeline, stage.canonicalCode())).contains(stage);
                         assertThat(definitionRegistry.findStage(pipeline, stage.operationalCode())).contains(stage);
                     });
+            assertThat(pipeline.stages())
+                    .filteredOn(stage -> stage.canonicalCode().startsWith("LANDING_PAGE_"))
+                    .allSatisfy(stage -> assertThat(stage.rootPackage()).startsWith("com.marketinghub.geralanding."));
+            assertThat(pipeline.stages())
+                    .filteredOn(stage -> stage.canonicalCode().equals("LANDING_PAGE_IMAGE_GENERATION"))
+                    .singleElement()
+                    .satisfies(stage -> assertThat(stage.modulePackage())
+                            .isEqualTo("com.marketinghub.worker.openai.core.imagegeneration"));
+            assertThat(pipeline.stages())
+                    .filteredOn(stage -> stage.canonicalCode().equals("LANDING_PAGE_DELIVERABLES"))
+                    .singleElement()
+                    .satisfies(stage -> assertThat(stage.modulePackage())
+                            .isEqualTo("com.marketinghub.worker.geralanding.deliverables"));
         });
     }
 
@@ -331,10 +344,15 @@ class PipelineServiceTest {
         PipelineSyncResultDto result = synchronizer.sync(10L);
 
         assertThat(result.appliedActions()).anyMatch(action -> action.contains("Etapa oficial ausente criada"));
-        assertThat(pipeline.getStages()).hasSize(8);
-        assertThat(pipeline.getStages()).extracting(PipelineStage::getCode).contains("landing-page-html");
+        assertThat(pipeline.getStages()).hasSize(10);
+        assertThat(pipeline.getStages()).extracting(PipelineStage::getCode)
+                .contains(
+                        "landing-page-image-generation",
+                        "landing-page-quality-review",
+                        "landing-page-deliverables");
         assertThat(pipeline.getStages())
-                .allSatisfy(stage -> assertThat(stage.getRootPackage()).isEqualTo("com.marketinghub.experiment.pipeline"));
+                .filteredOn(stage -> stage.getCode().startsWith("landing-page-"))
+                .allSatisfy(stage -> assertThat(stage.getRootPackage()).startsWith("com.marketinghub.geralanding."));
     }
 
     /**
@@ -407,7 +425,7 @@ class PipelineServiceTest {
 
         assertThat(result.status()).isEqualTo("OK");
         assertThat(result.synchronizedSafely()).isTrue();
-        assertThat(pipeline.getStages()).hasSize(8);
+        assertThat(pipeline.getStages()).hasSize(10);
         assertThat(pipeline.getStages()).extracting(PipelineStage::getCode)
                 .containsExactly(
                         "campaign-angle",
@@ -416,15 +434,17 @@ class PipelineServiceTest {
                         "landing-page-wireframe",
                         "landing-page-copy",
                         "landing-page-image-planning",
+                        "landing-page-image-generation",
                         "landing-page-design-preset",
-                        "landing-page-html");
+                        "landing-page-quality-review",
+                        "landing-page-deliverables");
         assertThat(pipeline.getStages())
                 .filteredOn(stage -> stage.getCode().equals("landing-page-wireframe"))
                 .singleElement()
                 .satisfies(stage -> {
                     assertThat(stage.getDescription()).isEqualTo("Descrição operacional preservada");
                     assertThat(stage.getOpenAiModel()).isEqualTo(model);
-                    assertThat(stage.getRootPackage()).isEqualTo("com.marketinghub.experiment.pipeline");
+                    assertThat(stage.getRootPackage()).isEqualTo("com.marketinghub.geralanding.wireframe");
                 });
         assertThat(result.appliedActions()).anyMatch(action -> action.contains("Etapas operacionais antigas removidas"));
         verify(stageRepository).flush();
@@ -458,7 +478,7 @@ class PipelineServiceTest {
 
         PipelineSyncResultDto result = synchronizer.syncOfficialByCode("experiment-pipeline");
 
-        assertThat(result.appliedActions()).hasSize(8);
+        assertThat(result.appliedActions()).hasSize(10);
         assertThat(result.canonicalPipelineCode()).isEqualTo("experiment-pipeline");
     }
 

@@ -4051,3 +4051,10 @@
 - foi feito: a tela passou a mostrar modelo, badge de default, tipo gerado, modo FLEX e custos de entrada/cache/saída; as totalizações já existentes por execução, etapa e total Gera Landing continuam somando `costUsd` das execuções concluídas/falhas retornadas pelos endpoints de histórico.
 - decisão operacional: quando a etapa não tem modelo configurado no pipeline, o backend usa `gpt-5.2` para etapas de texto e `gpt-image-1.5` para a etapa de geração de imagem; se o catálogo ainda não tiver o registro, o contrato mantém o código/nome default e retorna preços zerados para não quebrar a UI.
 - impacto esperado: o operador passa a enxergar antes de executar qual modelo/custo flex será usado e consegue acompanhar o custo acumulado no fluxo de geração da landing do experimento.
+## 2026-06-07 — Percentuais mobile e tamanho de tela no analytics do experimento
+
+- solicitação: exibir no analytics do experimento os percentuais de sistemas operacionais mobile (`iOS`/`Android`) e, quando possível, o tamanho de tela dos visitantes.
+- foi feito: o script público de analytics da landing passou a enviar `operatingSystem`, `screenWidth` e `screenHeight` junto com `deviceType`, `userAgent` e sessão.
+- foi feito: o resumo backend do funil passou a consolidar percentuais por sistema operacional dentro das sessões mobile e as principais resoluções de tela capturadas.
+- foi feito: a aba Analytics do experimento passou a mostrar cards específicos para iOS/Android/outros e para resoluções de tela, além de detalhar esses dados nas sessões recentes.
+- impacto esperado: a decisão comercial sobre páginas e criativos mobile fica mais precisa, permitindo detectar predominância de iOS/Android e adaptar layout/oferta aos tamanhos reais de tela.

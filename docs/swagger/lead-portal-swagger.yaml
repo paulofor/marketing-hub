@@ -674,6 +674,18 @@ components:
           type: string
           nullable: true
           enum: [mobile, desktop, tablet]
+        operatingSystem:
+          type: string
+          nullable: true
+          enum: [ios, android, other]
+        screenWidth:
+          type: integer
+          nullable: true
+          minimum: 1
+        screenHeight:
+          type: integer
+          nullable: true
+          minimum: 1
     CreateLeadMultipartRequest:
       type: object
       required: [name, email, image]

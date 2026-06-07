@@ -26,16 +26,25 @@ public class LeadPortalPublicFlowController {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private final LeadPortalFlowService flowService;
 
+    /**
+     * Inicializa o controller público com o serviço de fluxos aprovados.
+     */
     public LeadPortalPublicFlowController(LeadPortalFlowService flowService) {
         this.flowService = flowService;
     }
 
+    /**
+     * Retorna o contrato público de publicação do fluxo aprovado pelo slug.
+     */
     @GetMapping("/{slug}")
     public LeadPortalFlowPublicationRequest getBySlug(@PathVariable String slug) {
         LeadPortalFlow flow = flowService.getApprovedBySlug(slug);
         return LeadPortalFlowPublicationRequest.from(flow);
     }
 
+    /**
+     * Entrega a landing standalone aprovada já instrumentada com analytics público.
+     */
     @GetMapping(value = "/{slug}/page", produces = MediaType.TEXT_HTML_VALUE)
     public ResponseEntity<String> getLandingPageBySlug(@PathVariable String slug) {
         LeadPortalFlow flow = flowService.getApprovedBySlug(slug);
@@ -45,6 +54,9 @@ public class LeadPortalPublicFlowController {
                 .body(htmlDocument);
     }
 
+    /**
+     * Extrai o documento HTML final de fontes salvas como HTML direto, JSON ou híbrido.
+     */
     private String extractHtmlDocument(String sourceHtml) {
         if (!StringUtils.hasText(sourceHtml)) {
             return "";
@@ -67,6 +79,9 @@ public class LeadPortalPublicFlowController {
         return sourceHtml;
     }
 
+    /**
+     * Tenta localizar um documento HTML completo dentro de uma string textual.
+     */
     private String tryExtractInlineHtmlDocument(String value) {
         if (!StringUtils.hasText(value)) {
             return null;
@@ -83,6 +98,9 @@ public class LeadPortalPublicFlowController {
         return null;
     }
 
+    /**
+     * Verifica se o conteúdo tem formato provável de payload JSON.
+     */
     private boolean looksLikeJsonPayload(String value) {
         if (!StringUtils.hasText(value)) {
             return false;
@@ -91,6 +109,9 @@ public class LeadPortalPublicFlowController {
         return firstChar == '{' || firstChar == '[';
     }
 
+    /**
+     * Tenta extrair HTML de um conteúdo híbrido que contém JSON serializado.
+     */
     private String tryExtractFromHybridHtml(String html) {
         if (!StringUtils.hasText(html)) {
             return null;
@@ -109,11 +130,17 @@ public class LeadPortalPublicFlowController {
         return null;
     }
 
+    /**
+     * Verifica se um candidato textual contém indícios de HTML de landing.
+     */
     private boolean containsLandingPageSignature(String candidate) {
         String lowered = candidate.toLowerCase();
         return lowered.contains("landingpagehtml") || lowered.contains("htmldocument");
     }
 
+    /**
+     * Extrai um bloco JSON balanceado a partir do índice informado.
+     */
     private String extractJsonCandidate(String source, int startIndex) {
         if (startIndex < 0 || startIndex >= source.length() || source.charAt(startIndex) != '{') {
             return null;
@@ -147,6 +174,9 @@ public class LeadPortalPublicFlowController {
         return null;
     }
 
+    /**
+     * Tenta extrair o HTML final de campos conhecidos dentro de um payload JSON.
+     */
     private String tryExtractFromJsonPayload(String payload) {
         if (!StringUtils.hasText(payload)) {
             return null;
@@ -163,6 +193,9 @@ public class LeadPortalPublicFlowController {
         return null;
     }
 
+    /**
+     * Percorre um nó JSON em busca do primeiro documento HTML publicável.
+     */
     private String extractHtmlDocumentFromNode(JsonNode node) throws java.io.IOException {
         if (node == null || node.isNull()) {
             return null;
@@ -216,10 +249,16 @@ public class LeadPortalPublicFlowController {
         return null;
     }
 
+    /**
+     * Extrai o HTML a partir do nó específico de landingPageHtml.
+     */
     private String extractFromLandingPageNode(JsonNode landingPageHtmlNode) throws java.io.IOException {
         return extractHtmlDocumentFromNode(landingPageHtmlNode);
     }
 
+    /**
+     * Injeta o script público que mede sessão, dispositivo, sistema operacional e tamanho de tela.
+     */
     private String injectLandingAnalyticsScript(String slug, String htmlDocument) {
         if (!StringUtils.hasText(htmlDocument)) {
             return htmlDocument;
@@ -242,7 +281,22 @@ public class LeadPortalPublicFlowController {
                     const isMobile = /mobi|iphone|ipod|android/i.test(userAgent);
                     return isMobile ? 'mobile' : 'desktop';
                   };
+                  const resolveOperatingSystem = function(){
+                    const userAgent = navigator.userAgent || '';
+                    if (/iphone|ipad|ipod/i.test(userAgent)) return 'ios';
+                    if (/android/i.test(userAgent)) return 'android';
+                    return 'other';
+                  };
+                  const resolveScreenSize = function(){
+                    const width = window.innerWidth || document.documentElement.clientWidth || screen.width || null;
+                    const height = window.innerHeight || document.documentElement.clientHeight || screen.height || null;
+                    return {
+                      width: typeof width === 'number' ? Math.round(width) : null,
+                      height: typeof height === 'number' ? Math.round(height) : null
+                    };
+                  };
                   const deviceType = resolveDeviceType();
+                  const operatingSystem = resolveOperatingSystem();
                   const sendEvent = function(eventType, sectionId, elapsedMs){
                     const payload = {
                       eventId: crypto.randomUUID ? crypto.randomUUID() : (Date.now().toString(36) + '-' + Math.random().toString(36).slice(2)),
@@ -254,7 +308,10 @@ public class LeadPortalPublicFlowController {
                       pageUrl: window.location.href,
                       occurredAt: new Date().toISOString(),
                       userAgent: navigator.userAgent,
-                      deviceType: deviceType
+                      deviceType: deviceType,
+                      operatingSystem: operatingSystem,
+                      screenWidth: resolveScreenSize().width,
+                      screenHeight: resolveScreenSize().height
                     };
                     if (navigator.sendBeacon) {
                       navigator.sendBeacon(endpoint, new Blob([JSON.stringify(payload)], {type: 'application/json'}));
@@ -292,6 +349,9 @@ public class LeadPortalPublicFlowController {
         return htmlDocument + "\n" + analyticsScript;
     }
 
+    /**
+     * Escapa um valor Java para uso seguro como literal de string JavaScript.
+     */
     private String toJsStringLiteral(String rawValue) {
         String safeValue = rawValue == null ? "" : rawValue;
         return "\"" + safeValue
@@ -299,6 +359,9 @@ public class LeadPortalPublicFlowController {
                 .replace("\"", "\\\"") + "\"";
     }
 
+    /**
+     * Verifica presença textual ignorando caixa e valores ausentes.
+     */
     private boolean containsIgnoreCase(String source, String token) {
         return source.toLowerCase(Locale.ROOT).contains(token.toLowerCase(Locale.ROOT));
     }

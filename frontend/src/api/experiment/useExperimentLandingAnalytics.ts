@@ -14,6 +14,22 @@ export interface ExperimentLandingAnalyticsDevice {
   percentage: number;
 }
 
+export interface ExperimentLandingAnalyticsOperatingSystem {
+  operatingSystem: "ios" | "android" | "other" | string;
+  label: string;
+  sessions: number;
+  percentage: number;
+}
+
+export interface ExperimentLandingAnalyticsScreenSize {
+  screenSize: string;
+  label: string;
+  width?: number | null;
+  height?: number | null;
+  sessions: number;
+  percentage: number;
+}
+
 export interface ExperimentLandingAnalyticsSession {
   sessionId: string;
   eventCount: number;
@@ -26,6 +42,11 @@ export interface ExperimentLandingAnalyticsSession {
   lastUserAgent?: string | null;
   deviceType?: string | null;
   deviceLabel?: string | null;
+  operatingSystem?: string | null;
+  operatingSystemLabel?: string | null;
+  screenWidth?: number | null;
+  screenHeight?: number | null;
+  screenSizeLabel?: string | null;
   topSections: ExperimentLandingAnalyticsSection[];
 }
 
@@ -38,6 +59,8 @@ export interface ExperimentLandingAnalytics {
   averageVisibleMsPerSession: number;
   lastEventAt?: string | null;
   deviceBreakdown: ExperimentLandingAnalyticsDevice[];
+  mobileOperatingSystemBreakdown: ExperimentLandingAnalyticsOperatingSystem[];
+  screenSizeBreakdown: ExperimentLandingAnalyticsScreenSize[];
   sessions: ExperimentLandingAnalyticsSession[];
 }
 

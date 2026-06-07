@@ -18,5 +18,8 @@ public record RegisterLandingPageAnalyticsEventRequest(
         String pageUrl,
         Instant occurredAt,
         String userAgent,
-        String deviceType) {
+        String deviceType,
+        String operatingSystem,
+        Integer screenWidth,
+        Integer screenHeight) {
 }

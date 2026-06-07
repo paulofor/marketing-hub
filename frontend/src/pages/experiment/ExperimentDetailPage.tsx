@@ -1571,6 +1571,7 @@ export default function ExperimentDetailPage() {
   if (isLoading) return <p>Carregando...</p>;
   if (!data) return <p>Não encontrado</p>;
   const alterationLocked = isExperimentAlterationLocked(data);
+  const hasPublishedFacebookCampaigns = Boolean(facebookCampaigns?.length);
   const showGeraLandingStartButtons = !Boolean(data.facebookReleaseRequestedAt);
   const preset = presets?.find((p) => p.id === data.metricPresetId);
   const resetPreviewSummary: ExperimentCampaignResetSummary =
@@ -3580,6 +3581,8 @@ export default function ExperimentDetailPage() {
               campaignAngle={data?.campaignAngle}
               adCopy={data?.adCopy}
               alterationLocked={alterationLocked}
+              hasPublishedFacebookCampaigns={hasPublishedFacebookCampaigns}
+              isCheckingPublishedFacebookCampaigns={isLoadingFacebookCampaigns}
             />
           </Tabs.Content>
           <Tabs.Content value="publico" asChild>

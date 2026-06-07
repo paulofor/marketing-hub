@@ -630,6 +630,8 @@ interface ExperimentContentGenerationTabProps {
   campaignAngle?: string | null;
   adCopy?: string | null;
   alterationLocked?: boolean;
+  hasPublishedFacebookCampaigns?: boolean;
+  isCheckingPublishedFacebookCampaigns?: boolean;
 }
 
 interface AiGenerationRecord {
@@ -1210,6 +1212,8 @@ export default function ExperimentContentGenerationTab({
   campaignAngle,
   adCopy,
   alterationLocked = false,
+  hasPublishedFacebookCampaigns = false,
+  isCheckingPublishedFacebookCampaigns = false,
 }: ExperimentContentGenerationTabProps) {
   const [activeSection, setActiveSection] =
     useState<ContentGenerationSectionKey>(CONTENT_GENERATION_SECTIONS[0].key);
@@ -1218,6 +1222,10 @@ export default function ExperimentContentGenerationTab({
     CampaignAngleGenerationRow[]
   >([]);
   const [isLoadingCampaignAngles, setIsLoadingCampaignAngles] = useState(false);
+  const aiGenerationActionsHidden =
+    alterationLocked ||
+    hasPublishedFacebookCampaigns ||
+    isCheckingPublishedFacebookCampaigns;
   const [adCopyGenerations, setAdCopyGenerations] = useState<
     AdCopyGenerationRow[]
   >([]);
@@ -1908,6 +1916,15 @@ export default function ExperimentContentGenerationTab({
   ]);
 
   async function requestSectionGeneration(section: ContentGenerationSection) {
+    if (aiGenerationActionsHidden) {
+      toast.info(
+        hasPublishedFacebookCampaigns
+          ? "Experimento já enviado para campanha; geração com IA bloqueada."
+          : "Experimento bloqueado para alteração; geração com IA bloqueada.",
+      );
+      return false;
+    }
+
     const nowIso = new Date().toISOString();
     setPendingGenerationSection(section.key);
     setIsGeneratingSection(true);
@@ -2143,10 +2160,13 @@ export default function ExperimentContentGenerationTab({
 
   return (
     <div className="mt-3 d-flex flex-column gap-3">
-      {alterationLocked ? (
+      {aiGenerationActionsHidden ? (
         <div className="alert alert-secondary mb-0" role="status">
-          Gerações de conteúdo bloqueadas para alteração porque o experimento já
-          foi liberado ou está em execução.
+          {isCheckingPublishedFacebookCampaigns
+            ? "Verificando se o experimento já foi enviado para campanha antes de liberar novas gerações."
+            : hasPublishedFacebookCampaigns
+              ? "Gerações de conteúdo bloqueadas porque o experimento já foi enviado para campanha."
+              : "Gerações de conteúdo bloqueadas para alteração porque o experimento já foi liberado ou está em execução."}
         </div>
       ) : null}
       <div className="d-flex justify-content-end">
@@ -2281,7 +2301,8 @@ export default function ExperimentContentGenerationTab({
                         ) : null}
                       </div>
                       <div className="d-flex align-items-start flex-wrap gap-2">
-                        {section.key === "landing-html" ? (
+                        {aiGenerationActionsHidden ? null : section.key ===
+                          "landing-html" ? (
                           <>
                             <button
                               type="button"

@@ -10,6 +10,7 @@ import ch.qos.logback.core.read.ListAppender;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.worker.openai.core.exception.OpenAiHttpException;
+import com.marketinghub.worker.openai.core.exception.StageWorkerException;
 import com.marketinghub.worker.openai.core.model.OpenAiRequest;
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -62,14 +63,7 @@ class ResponsesApiOpenAiClientTest {
         ResponsesApiOpenAiClient client = new ResponsesApiOpenAiClient(
                 WebClient.builder(),
                 new ObjectMapper(),
-                new OpenAiClientProperties(
-                        "test-key",
-                        server.url("/").toString(),
-                        "gpt-test",
-                        Duration.ofSeconds(5),
-                        BigDecimal.ZERO,
-                        BigDecimal.ZERO,
-                        true));
+                properties("gpt-test"));
         String requestBodyJson = "{\"model\":\"gpt-test\",\"input\":\"Prompt\"}";
         OpenAiRequest request = new OpenAiRequest(
                 "gpt-test",
@@ -123,17 +117,11 @@ class ResponsesApiOpenAiClientTest {
                           "usage": {"input_tokens": 10, "output_tokens": 5}
                         }
                         """));
+        enqueuePricingCatalog("gpt-test", "1.00", "4.00");
         ResponsesApiOpenAiClient client = new ResponsesApiOpenAiClient(
                 WebClient.builder(),
                 new ObjectMapper(),
-                new OpenAiClientProperties(
-                        "test-key",
-                        server.url("/").toString(),
-                        "gpt-test",
-                        Duration.ofSeconds(5),
-                        BigDecimal.ZERO,
-                        BigDecimal.ZERO,
-                        true));
+                properties("gpt-test"));
         OpenAiRequest request = new OpenAiRequest(
                 "gpt-test",
                 "Prompt",
@@ -157,4 +145,109 @@ class ResponsesApiOpenAiClientTest {
                 new TypeReference<>() {});
         assertThat(dispatchPayload).containsEntry("service_tier", "flex");
     }
+
+    /** Deve estimar custo em modo flex pelo modelo do request quando a configuração não informa tarifa explícita. */
+    @Test
+    void dispatchShouldEstimateFlexCostFromRequestModelWhenPricingPropertiesAreUnset() throws Exception {
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "application/json")
+                .setBody("""
+                        {
+                          "id": "resp-cost",
+                          "output": [
+                            {
+                              "type": "message",
+                              "content": [
+                                {"type": "output_text", "text": "{\\"ok\\":true}"}
+                              ]
+                            }
+                          ],
+                          "usage": {"input_tokens": 1000000, "output_tokens": 1000000}
+                        }
+                        """));
+        enqueuePricingCatalog("gpt-5.4", "1.25", "7.50");
+        ResponsesApiOpenAiClient client = new ResponsesApiOpenAiClient(
+                WebClient.builder(),
+                new ObjectMapper(),
+                properties("gpt-5.4"));
+        OpenAiRequest request = new OpenAiRequest(
+                "gpt-5.4",
+                "Prompt",
+                "{\"model\":\"gpt-5.4\",\"input\":\"Prompt\"}",
+                "schema-wireframe",
+                "{\"type\":\"object\"}",
+                "# Prompt markdown bruto",
+                Map.of("idJob", "job-cost"));
+
+        var dispatch = client.dispatch(request);
+        var result = client.awaitResult(dispatch);
+
+        assertThat(result.inputTokens()).isEqualTo(1000000);
+        assertThat(result.outputTokens()).isEqualTo(1000000);
+        assertThat(result.costUsd()).isEqualByComparingTo(new BigDecimal("8.75000000"));
+    }
+
+    /** Deve falhar quando o modelo efetivo não existir no catálogo persistido do backend. */
+    @Test
+    void dispatchShouldFailWhenRequestModelIsMissingFromBackendPricingCatalog() throws Exception {
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "application/json")
+                .setBody("""
+                        {
+                          "id": "resp-missing-cost",
+                          "output_text": "{\\"ok\\":true}",
+                          "usage": {"input_tokens": 1000, "output_tokens": 2000}
+                        }
+                        """));
+        enqueuePricingCatalog("gpt-other", "10", "20");
+        ResponsesApiOpenAiClient client = new ResponsesApiOpenAiClient(
+                WebClient.builder(),
+                new ObjectMapper(),
+                properties("gpt-test"));
+        OpenAiRequest request = new OpenAiRequest(
+                "gpt-test",
+                "Prompt",
+                "{\"model\":\"gpt-test\",\"input\":\"Prompt\"}",
+                "schema-wireframe",
+                "{\"type\":\"object\"}",
+                "# Prompt markdown bruto",
+                Map.of("idJob", "job-missing-cost"));
+
+        Throwable thrown = catchThrowable(() -> client.dispatch(request));
+
+        assertThat(thrown)
+                .isInstanceOf(StageWorkerException.class)
+                .hasMessageContaining("Modelo OpenAI não encontrado no catálogo persistido")
+                .hasMessageContaining("gpt-test");
+    }
+
+    /** Monta propriedades OpenAI apontando o catálogo de preços para o mock do backend. */
+    private OpenAiClientProperties properties(String model) {
+        return new OpenAiClientProperties(
+                "test-key",
+                server.url("/").toString(),
+                model,
+                Duration.ofSeconds(5),
+                server.url("/api/modelos/openai/catalogo/v1/modelos").toString(),
+                true);
+    }
+
+    /** Simula o endpoint backend que lista os modelos persistidos na tabela openai_model. */
+    private void enqueuePricingCatalog(String code, String inputBatchPrice, String outputBatchPrice) {
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "application/json")
+                .setBody("""
+                        [
+                          {
+                            "code": "%s",
+                            "priceInputBatch": %s,
+                            "priceOutputBatch": %s
+                          }
+                        ]
+                        """.formatted(code, inputBatchPrice, outputBatchPrice)));
+    }
+
 }

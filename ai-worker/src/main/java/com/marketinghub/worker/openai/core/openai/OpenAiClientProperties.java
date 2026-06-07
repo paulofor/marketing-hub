@@ -5,10 +5,9 @@ import jakarta.validation.constraints.NotNull;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
-import java.math.BigDecimal;
 import java.time.Duration;
 
-/** Responsabilidade: centralizar credenciais, modelo, custo e URL efetiva dos clientes OpenAI. */
+/** Responsabilidade: centralizar credenciais, modelo, catálogo de preços e URL efetiva dos clientes OpenAI. */
 @Validated
 @ConfigurationProperties(prefix = "openai")
 public record OpenAiClientProperties(
@@ -24,9 +23,8 @@ public record OpenAiClientProperties(
         @NotNull
         Duration timeout,
 
-        BigDecimal inputUsdPerMillionTokens,
-
-        BigDecimal outputUsdPerMillionTokens,
+        @NotBlank
+        String pricingCatalogUrl,
 
         boolean allowLocalBaseUrl
 ) {
@@ -36,11 +34,8 @@ public record OpenAiClientProperties(
         if (timeout == null) {
             timeout = Duration.ofMinutes(30);
         }
-        if (inputUsdPerMillionTokens == null) {
-            inputUsdPerMillionTokens = BigDecimal.ZERO;
-        }
-        if (outputUsdPerMillionTokens == null) {
-            outputUsdPerMillionTokens = BigDecimal.ZERO;
+        if (pricingCatalogUrl == null || pricingCatalogUrl.isBlank()) {
+            pricingCatalogUrl = "http://191.252.181.168/api/modelos/openai/catalogo/v1/modelos";
         }
     }
 }

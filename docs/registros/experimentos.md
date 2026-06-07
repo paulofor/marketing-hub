@@ -4089,3 +4089,13 @@
   - docs/implementação/plano-identificacao-visitante-landing-experimento.md
   - docs/canonical/procedimento-experimento-canon.v1.md
   - docs/registros/experimentos.md
+
+## 2026-06-07 — Correção do cálculo de custo OpenAI no Worker AI
+
+- solicitação: verificar por que o custo das execuções do GeraLanding aparecia como `$0.00` mesmo com modelo selecionado e resposta concluída.
+- causa-raiz: o cliente compartilhado da Responses API forçava `service_tier=flex`, mas o estimador de custo dependia apenas das propriedades `openai.inputUsdPerMillionTokens` e `openai.outputUsdPerMillionTokens`; como essas propriedades não estavam configuradas, o construtor normalizava ambas para zero e persistia `costUsd=0` nas conclusões enviadas ao backend.
+- foi feito: removida a tabela hardcoded de preços do Worker AI; o estimador passou a identificar o modelo efetivo do request e consultar o catálogo persistido no backend, que lê a tabela `openai_model`.
+- foi feito: configurado `openai.pricing-catalog-url` apontando para `GET /api/modelos/openai/catalogo/v1/modelos`, preservando a regra de que o Worker AI não acessa o banco diretamente.
+- foi feito: o cliente Responses API agora calcula o custo com `priceInputBatch` e `priceOutputBatch` retornados do banco para o modelo efetivo, mantendo a auditoria de tokens (`inputTokens`/`outputTokens`) e enviando `costUsd` calculado ao backend.
+- validação: adicionados testes unitários para confirmar cálculo via catálogo backend, URL de catálogo configurada e falha explícita quando o modelo não existe na tabela de preços.
+- observação operacional: os jobs já concluídos com `costUsd=0` não são recalculados automaticamente por essa alteração; novas execuções passam a gravar o custo correto a partir dos tokens retornados pela OpenAI.

@@ -40,11 +40,8 @@ public class ResponsesApiOpenAiClient implements OpenAiClientPort {
     ) {
         this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper must not be null");
         this.properties = Objects.requireNonNull(properties, "properties must not be null");
-        this.costEstimator = new OpenAiCostEstimator(
-                properties.inputUsdPerMillionTokens(),
-                properties.outputUsdPerMillionTokens()
-        );
-        this.webClient = builder
+        this.costEstimator = new OpenAiCostEstimator(new OpenAiModelPricingCatalogClient(builder.clone(), properties));
+        this.webClient = builder.clone()
                 .baseUrl(properties.baseUrl())
                 .defaultHeader("Authorization", "Bearer " + properties.apiKey())
                 .defaultHeader("Content-Type", "application/json")
@@ -91,7 +88,7 @@ public class ResponsesApiOpenAiClient implements OpenAiClientPort {
                     modelResponse,
                     inputTokens,
                     outputTokens,
-                    costEstimator.estimate(inputTokens, outputTokens)
+                    costEstimator.estimate(request.model(), inputTokens, outputTokens)
             );
 
             if (openAiJobId != null) {

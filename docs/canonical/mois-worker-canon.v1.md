@@ -58,7 +58,7 @@ O worker seleciona a fonte por ciclo com a seguinte ordem canônica:
 - `worker.source` → `${MOIS_SOURCE:CLICKBANK}`
 - `worker.sources` → `${MOIS_SOURCES:}`
 - `worker.poll-interval-ms` → `${MOIS_POLL_INTERVAL_MS:15000}`
-- `worker.request-timeout-ms` → `${MOIS_REQUEST_TIMEOUT_MS:30000}`
+- `worker.request-timeout-ms` → `${MOIS_REQUEST_TIMEOUT_MS:300000}`
 
 ### 7.2 OpenAI
 - `openai.model` → `${OPENAI_MODEL:gpt-5.2}`
@@ -569,6 +569,7 @@ A primeira etapa do pipeline de páginas de venda deve separar responsabilidades
 8. URLs com 3 ou mais snapshots `FAILED` devem sair da seleção automática normal até uma revisão/acionamento forçado, preservando capacidade do pipeline para páginas que realmente entregam HTML útil.
 9. Falhas de captura devem ser categorizadas no `error_message` com prefixo operacional claro, por exemplo `HTTP_404`, `DESTINATION_DNS_FAILURE`, `REDIRECT_WITHOUT_HTML`, `TIMEOUT`, `FINAL_URL_UNAVAILABLE` ou `CAPTURE_EXCEPTION`.
 10. O acionamento `force=true` é reservado para revisão operacional e pode ignorar cooldown/limite de falhas, mantendo a decisão explícita e auditável.
+11. O timeout operacional padrão para captura HTTP/HTML da Biblioteca de Páginas de Vendas é de **5 minutos** (`300000 ms` / `PT5M`) tanto no backend quanto no worker, para reduzir falhas falsas em páginas lentas sem remover a auditoria de falhas reais.
 
 Contratos operacionais do backend:
 

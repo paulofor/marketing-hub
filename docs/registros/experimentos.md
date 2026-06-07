@@ -3898,3 +3898,13 @@
 - arquivos alterados:
   - `frontend/src/pages/experiment/ExperimentDetailPage.tsx`
   - `docs/registros/experimentos.md`
+
+## 2026-06-07 — Ocultação de Gerar com IA em experimento enviado para campanha
+
+- solicitação: em experimentos já enviados para campanha, remover o botão `Gerar com IA` da aba de estrutura de conteúdo.
+- causa-raiz: a tela bloqueava a ação em alguns estados do experimento, mas ainda podia renderizar o comando de geração quando já existiam campanhas Facebook vinculadas, deixando uma ação inadequada para conteúdo já publicado.
+- correção aplicada: a aba `Estrutura de conteúdo` agora recebe a informação de campanhas Facebook publicadas e oculta os botões de geração com IA quando o experimento já foi enviado para campanha, mantendo apenas a visualização do conteúdo e um aviso explicativo.
+- arquivos alterados:
+  - `frontend/src/pages/experiment/ExperimentDetailPage.tsx`
+  - `frontend/src/pages/experiment/ExperimentContentGenerationTab.tsx`
+  - `docs/registros/experimentos.md`

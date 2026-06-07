@@ -665,6 +665,13 @@ components:
           type: string
           format: date-time
           nullable: true
+        userAgent:
+          type: string
+          nullable: true
+        deviceType:
+          type: string
+          nullable: true
+          enum: [mobile, desktop, tablet]
     CreateLeadMultipartRequest:
       type: object
       required: [name, email, image]

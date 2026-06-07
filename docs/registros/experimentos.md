@@ -3938,6 +3938,23 @@
   - frontend/AGENTS.md
   - docs/registros/experimentos.md
 
+## 2026-06-07 — Percentuais de acesso por dispositivo no analytics da landing
+
+- solicitação: coletar e mostrar na aba Analytics os percentuais de acesso Mobile x Computador x Tablet.
+- causa-raiz/decisão: o endpoint público já recebia user-agent, mas não persistia um tipo de dispositivo normalizado nem retornava uma distribuição percentual própria para a tela.
+- correção aplicada: o script público da landing passou a enviar `deviceType`; o backend normaliza `mobile`, `desktop` e `tablet` com fallback por user-agent, inclui esse dado no payload rastreável e retorna `deviceBreakdown` com sessões e percentual; a aba Analytics passou a exibir cards com barras percentuais por dispositivo.
+- arquivos alterados:
+  - `backend/ads-service/src/main/java/com/marketinghub/leadportal/web/LeadPortalPublicFlowController.java`
+  - `backend/ads-service/src/main/java/com/marketinghub/leadportal/dto/RegisterLandingPageAnalyticsEventRequest.java`
+  - `backend/ads-service/src/main/java/com/marketinghub/leadportal/web/LeadPortalFlowEngagementController.java`
+  - `backend/ads-service/src/main/java/com/marketinghub/experiment/funnel/ExperimentFunnelService.java`
+  - `backend/ads-service/src/main/java/com/marketinghub/experiment/funnel/service/analytics/ExperimentLandingAnalyticsDto.java`
+  - `backend/ads-service/src/main/java/com/marketinghub/experiment/funnel/service/analytics/ExperimentLandingAnalyticsDeviceDto.java`
+  - `backend/ads-service/src/main/java/com/marketinghub/experiment/funnel/service/analytics/ExperimentLandingAnalyticsSessionDto.java`
+  - `frontend/src/api/experiment/useExperimentLandingAnalytics.ts`
+  - `frontend/src/pages/experiment/ExperimentLandingAnalyticsTab.tsx`
+  - `docs/swagger/openapi.yaml`
+  - `docs/swagger/lead-portal-swagger.yaml`
 ## 2026-06-07 — Plano futuro para identificação de visitante recorrente na landing
 
 - solicitação: criar plano de implementação para permitir dizer, no futuro, se a mesma pessoa provável acessou a landing de um experimento mais de uma vez em horários diferentes.

@@ -14,5 +14,6 @@ public record ExperimentLandingAnalyticsDto(
         long totalVisibleMs,
         long averageVisibleMsPerSession,
         Instant lastEventAt,
+        List<ExperimentLandingAnalyticsDeviceDto> deviceBreakdown,
         List<ExperimentLandingAnalyticsSessionDto> sessions) {
 }

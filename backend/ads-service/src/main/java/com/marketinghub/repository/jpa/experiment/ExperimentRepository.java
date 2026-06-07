@@ -3,6 +3,8 @@ package com.marketinghub.repository.jpa.experiment;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentPlatform;
 import com.marketinghub.experiment.ExperimentStatus;
+import com.marketinghub.facebookads.FacebookCampaignStopReason;
+import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.niche.MarketNiche;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -25,6 +27,26 @@ public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
     boolean existsByNicheAndName(MarketNiche niche, String name);
     List<Experiment> findByStatus(ExperimentStatus status);
     List<Experiment> findByStatusAndPlatform(ExperimentStatus status, ExperimentPlatform platform);
+
+    /**
+     * Busca experimentos reprovados por 100 acessos sem envio de formulário para a mesma hipótese.
+     */
+    @Query("""
+            select distinct e from Experiment e
+            where e.hypothesisRef = :hypothesisRef
+              and e.id <> :id
+              and e.status = com.marketinghub.experiment.ExperimentStatus.INVALIDATED
+              and exists (
+                    select 1 from FacebookAdsCampaign campaign
+                    where campaign.experiment = e
+                      and campaign.stopReason = :stopReason
+              )
+            order by e.updatedAt desc
+            """)
+    List<Experiment> findFormZeroRuleRejectedByHypothesis(
+            @Param("hypothesisRef") Hypothesis hypothesisRef,
+            @Param("id") Long id,
+            @Param("stopReason") FacebookCampaignStopReason stopReason);
 
     /**
      * Busca o experimento vinculado diretamente ao slug do fluxo interno do Lead Portal.

@@ -35,6 +35,10 @@ Regras fixas da etapa:
 12. Campos úteis para raciocínio interno (ex.: síntese de papéis da oferta, CTA primária, mecanismo principal) não podem aparecer no contrato final.
 13. Não invente nicho, persona, hipótese, mecanismo, prova, oferta, camada de ativação, continuidade ou entregáveis fora dos dados recebidos.
 14. Nunca assuma nomes fixos de oferta (ex.: kit, ciclo, plano, PDF, regeneração) como regra universal.
+15. Se `HISTORICO_EXPERIMENTOS_REPROVADOS_100_ACESSOS_MESMA_HIPOTESE` estiver presente em `CASE_DATA`, trate-o como restrição estratégica obrigatória: o novo ângulo precisa mudar radicalmente a materialização comercial da hipótese.
+16. Para diferenciar radicalmente, altere pelo menos uma destas alavancas em relação aos experimentos reprovados: dor de entrada, resultado imediato prometido, isca digital/prova inicial, framing visual ou CTA.
+17. Não declare a hipótese como reprovada apenas porque experimentos anteriores foram reprovados com 100 acessos sem envio de formulário; preserve a hipótese estratégica e crie uma rota de mercado nova, adequada a uma landing de isca digital e validação de interesse.
+18. Evite semelhança com headlines, promessas, CTAs, mecanismos de entrada e mensagens de landing dos experimentos reprovados listados no histórico.
 
 CASE_DATA
 {{CASE_DATA_BLOCK}}

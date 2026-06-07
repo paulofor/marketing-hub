@@ -21,6 +21,7 @@ import com.marketinghub.experiment.pipeline.dto.LandingPagePublicationResultDto;
 import com.marketinghub.experiment.pipeline.dto.LandingPageVariantLinksDto;
 import com.marketinghub.experiment.pipeline.dto.internal.ExperimentPipelineGenerationJobCompletionRequest;
 import com.marketinghub.experiment.pipeline.dto.internal.ExperimentPipelineGenerationJobDto;
+import com.marketinghub.facebookads.FacebookCampaignStopReason;
 import com.marketinghub.experiment.frameworkimage.service.FrameworkImageGenerationService;
 import com.marketinghub.repository.jpa.experiment.pipeline.ExperimentPipelineGenerationJobRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
@@ -101,6 +102,9 @@ public class ExperimentPipelineGenerationService {
     private static final Set<ExperimentPipelineGenerationJobStatus> ACTIVE_JOB_STATUSES = Set.of(
             ExperimentPipelineGenerationJobStatus.PENDING,
             ExperimentPipelineGenerationJobStatus.PROCESSING);
+    private static final int PREVIOUS_REJECTED_EXPERIMENTS_LIMIT = 4;
+    private static final FacebookCampaignStopReason FORM_ZERO_REJECTION_REASON =
+            FacebookCampaignStopReason.FORM_ZERO_CONVERSION_RULE_OF_THREE;
     private static final Set<ExperimentStatus> PIPELINE_ELIGIBLE_EXPERIMENT_STATUSES = Set.of(
             ExperimentStatus.PLANNED,
             ExperimentStatus.RUNNING,
@@ -981,6 +985,7 @@ public class ExperimentPipelineGenerationService {
         return reference.plus(timeout).isBefore(now);
     }
 
+    /** Monta o prompt do usuário com contexto da hipótese, experimento atual e histórico relevante. */
     private String buildUserPrompt(Experiment experiment,
                                    ExperimentPipelineSection section,
                                    String customInstructions) {
@@ -1001,6 +1006,7 @@ public class ExperimentPipelineGenerationService {
         sb.append("- asset_role: ").append(section.path()).append("\n");
         if (section == ExperimentPipelineSection.CAMPAIGN_ANGLE) {
             appendCampaignAngleStructuredContext(sb, experiment);
+            appendPreviousRejectedExperimentsForCampaignAngle(sb, experiment);
         }
         sb.append("\nTarefa alvo: ").append(section.path()).append("\n");
         if (section == ExperimentPipelineSection.LANDING_PAGE_HTML) {
@@ -1274,6 +1280,7 @@ public class ExperimentPipelineGenerationService {
         }
     }
 
+    /** Acrescenta somente outputs concluídos que pertencem à cadeia de predecessores da etapa alvo. */
     private void appendPreviousOutputs(StringBuilder sb,
                                        Experiment experiment,
                                        ExperimentPipelineSection section) {
@@ -1290,6 +1297,7 @@ public class ExperimentPipelineGenerationService {
         appendSectionOutputIfEligible(sb, section, ExperimentPipelineSection.LANDING_PAGE_DESIGN_PRESET, "Preset de design da landing", completedOutputs);
     }
 
+    /** Verifica se um output pertence à cadeia canônica anterior da etapa alvo. */
     private boolean shouldIncludeSectionOutput(ExperimentPipelineSection targetSection,
                                                ExperimentPipelineSection outputSection) {
         if (targetSection == null || outputSection == null) {
@@ -1305,6 +1313,7 @@ public class ExperimentPipelineGenerationService {
         return false;
     }
 
+    /** Inclui no prompt o output concluído quando ele é predecessor direto ou indireto da etapa alvo. */
     private void appendSectionOutputIfEligible(StringBuilder sb,
                                                ExperimentPipelineSection targetSection,
                                                ExperimentPipelineSection outputSection,
@@ -1320,6 +1329,7 @@ public class ExperimentPipelineGenerationService {
         sb.append("\n").append(label).append(":\n").append(content.trim()).append("\n");
     }
 
+    /** Carrega o último output concluído de cada seção do experimento atual. */
     private Map<ExperimentPipelineSection, String> loadLatestCompletedOutputs(Experiment experiment) {
         if (experiment == null || experiment.getId() == null) {
             return Map.of();
@@ -1342,6 +1352,7 @@ public class ExperimentPipelineGenerationService {
         return bySection;
     }
 
+    /** Extrai o conteúdo persistido de um job concluído para reutilização como contexto. */
     private String extractCompletedSectionContent(ExperimentPipelineGenerationJob completedJob) {
         if (completedJob == null) {
             return "";
@@ -2537,6 +2548,62 @@ public class ExperimentPipelineGenerationService {
         return "";
     }
 
+    /** Resume experimentos reprovados por 100 acessos sem envio para orientar mudança radical de ângulo. */
+    private void appendPreviousRejectedExperimentsForCampaignAngle(StringBuilder sb, Experiment experiment) {
+        if (experiment == null || experiment.getId() == null || experiment.getHypothesisRef() == null) {
+            return;
+        }
+        List<Experiment> rejectedExperiments = experimentRepository
+                .findFormZeroRuleRejectedByHypothesis(
+                        experiment.getHypothesisRef(),
+                        experiment.getId(),
+                        FORM_ZERO_REJECTION_REASON);
+        if (rejectedExperiments == null || rejectedExperiments.isEmpty()) {
+            return;
+        }
+        sb.append("\nHISTORICO_EXPERIMENTOS_REPROVADOS_100_ACESSOS_MESMA_HIPOTESE:\n");
+        sb.append("Use somente este histórico de reprovação estatística por 100 acessos sem envio de formulário. ")
+                .append("Experimentos falhos, inconclusivos ou cancelados pelo usuário não entram nesta lista. ")
+                .append("A hipótese ainda pode estar viva; o experimento anterior é que foi reprovado como materialização de mercado.\n");
+        rejectedExperiments.stream()
+                .filter(Objects::nonNull)
+                .limit(PREVIOUS_REJECTED_EXPERIMENTS_LIMIT)
+                .forEach(previous -> appendRejectedExperimentSummary(sb, previous));
+        sb.append("REGRA_DE_DIFERENCIACAO_RADICAL:\n");
+        sb.append("- Criar um ângulo de campanha radicalmente diferente dos reprovados por 100 acessos sem envio listados acima.\n");
+        sb.append("- Trocar pelo menos a dor de entrada OU o resultado imediato OU a isca digital/prova inicial.\n");
+        sb.append("- Não reaproveitar headline, CTA, promessa central ou framing visual semelhantes aos experimentos reprovados por 100 acessos sem envio.\n");
+        sb.append("- Manter a mesma hipótese estratégica, mas materializá-la por uma rota comercial nova.\n");
+    }
+
+    /** Acrescenta um resumo curto de um experimento reprovado por 100 acessos sem envio. */
+    private void appendRejectedExperimentSummary(StringBuilder sb, Experiment previous) {
+        sb.append("- Experimento #").append(previous.getId()).append(" | status=")
+                .append(previous.getStatus() != null ? previous.getStatus().name() : "")
+                .append(" | nome=").append(nonBlank(previous.getName())).append("\n");
+        appendIfPresent(sb, "  Hipótese resumida", previous.getHypothesis());
+        appendIfPresent(sb, "  Ângulo usado", summarizeArtifactForPrompt(previous.getCampaignAngle()));
+        appendIfPresent(sb, "  Texto de anúncio usado", summarizeArtifactForPrompt(previous.getAdCopy()));
+        appendIfPresent(sb, "  Landing/isca usada", summarizeArtifactForPrompt(firstNonBlank(
+                previous.getLandingPageCopy(),
+                previous.getLandingPageWireframe(),
+                previous.getLandingPageHtml())));
+    }
+
+    /** Reduz artefatos longos para evitar que o histórico domine o prompt de geração. */
+    private String summarizeArtifactForPrompt(String value) {
+        if (!StringUtils.hasText(value)) {
+            return "";
+        }
+        String compact = value.trim().replaceAll("\\s+", " ");
+        int maxLength = 900;
+        if (compact.length() <= maxLength) {
+            return compact;
+        }
+        return compact.substring(0, maxLength) + "...";
+    }
+
+    /** Adiciona os resumos estruturados da hipótese para a geração do ângulo de campanha. */
     private void appendCampaignAngleStructuredContext(StringBuilder sb, Experiment experiment) {
         if (experiment == null || experiment.getHypothesisRef() == null) {
             return;

@@ -15,8 +15,10 @@ import com.marketinghub.experiment.pipeline.dto.LandingPagePublicationResultDto;
 import com.marketinghub.experiment.pipeline.dto.internal.ExperimentPipelineGenerationJobCompletionRequest;
 import com.marketinghub.repository.jpa.experiment.pipeline.ExperimentPipelineGenerationJobRepository;
 import com.marketinghub.experiment.frameworkimage.service.FrameworkImageGenerationService;
+import com.marketinghub.facebookads.FacebookCampaignStopReason;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.geralanding.copy.provisorio.CopyProvisionalHtmlAssembler;
+import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.leadportal.integration.LeadPortalFlowPublisher;
 import com.marketinghub.leadportal.integration.LeadPortalPublicationException;
@@ -57,6 +59,9 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.times;
 
+/**
+ * Valida a orquestração das etapas do pipeline de experimento e as garantias de prompt/publicação.
+ */
 @ExtendWith(MockitoExtension.class)
 class ExperimentPipelineGenerationServiceTest {
 
@@ -240,6 +245,60 @@ class ExperimentPipelineGenerationServiceTest {
         assertEquals("Gera Landing", result.variantLinks().get(0).variant());
         assertEquals("https://lead.portal/api/flows/exp-22-landing-gerar-com-ia/page", result.variantLinks().get(0).standaloneUrl());
         verify(leadPortalFlowPublisher, times(1)).publish(any(LeadPortalFlow.class));
+    }
+
+    /**
+     * Confirma que o prompt do ângulo recebe somente experimentos reprovados por 100 acessos sem envio
+     * para diferenciar a próxima rota comercial.
+     */
+    @Test
+    void generateCampaignAngleIncludesRejectedExperimentsFromSameHypothesis() {
+        Hypothesis hypothesis = Hypothesis.builder()
+                .id(UUID.randomUUID())
+                .title("Personal trainer com agenda cheia")
+                .problem("Personal não consegue captar alunos previsivelmente")
+                .promise("Captar alunos sem depender apenas de indicação")
+                .build();
+        Experiment experiment = new Experiment();
+        experiment.setId(77L);
+        experiment.setName("Experimento 77");
+        experiment.setHypothesisRef(hypothesis);
+        experiment.setHypothesis("Validar interesse em IA para personal trainer");
+
+        Experiment rejected = new Experiment();
+        rejected.setId(37L);
+        rejected.setName("Experimento 37");
+        rejected.setHypothesisRef(hypothesis);
+        rejected.setStatus(ExperimentStatus.INVALIDATED);
+        rejected.setHypothesis("Mesma hipótese materializada com agenda cheia");
+        rejected.setCampaignAngle("{\"hook\":\"Agenda cheia sem desconto\",\"promise\":\"atrair alunos em 8 semanas\"}");
+        rejected.setAdCopy("Anúncio sobre agenda cheia e desconto");
+        rejected.setLandingPageCopy("Landing com kit agenda cheia sem desconto");
+
+        when(experimentRepository.findById(77L)).thenReturn(Optional.of(experiment));
+        when(jobRepository.findByExperimentIdAndStatusInOrderByCreatedAtDesc(
+                77L,
+                Set.of(ExperimentPipelineGenerationJobStatus.PENDING, ExperimentPipelineGenerationJobStatus.PROCESSING)))
+                .thenReturn(List.of());
+        when(experimentRepository.findFormZeroRuleRejectedByHypothesis(
+                hypothesis,
+                77L,
+                FacebookCampaignStopReason.FORM_ZERO_CONVERSION_RULE_OF_THREE))
+                .thenReturn(List.of(rejected));
+        when(jobRepository.save(any(ExperimentPipelineGenerationJob.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(experimentMapper.toDto(experiment)).thenReturn(new ExperimentDto());
+
+        service.generate(77L, ExperimentPipelineSection.CAMPAIGN_ANGLE, new ExperimentPipelineGenerationRequest());
+
+        verify(jobRepository).save(argThat(job -> {
+            String prompt = job.getPrompt();
+            return prompt != null
+                    && prompt.contains("HISTORICO_EXPERIMENTOS_REPROVADOS_100_ACESSOS_MESMA_HIPOTESE")
+                    && prompt.contains("Experimento #37")
+                    && prompt.contains("Agenda cheia sem desconto")
+                    && prompt.contains("REGRA_DE_DIFERENCIACAO_RADICAL")
+                    && prompt.contains("Manter a mesma hipótese estratégica");
+        }));
     }
 
     @Test

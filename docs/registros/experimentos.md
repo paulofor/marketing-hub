@@ -4068,3 +4068,10 @@
 - foi feito: o resumo backend do funil passou a consolidar percentuais por sistema operacional dentro das sessões mobile e as principais resoluções de tela capturadas.
 - foi feito: a aba Analytics do experimento passou a mostrar cards específicos para iOS/Android/outros e para resoluções de tela, além de detalhar esses dados nas sessões recentes.
 - impacto esperado: a decisão comercial sobre páginas e criativos mobile fica mais precisa, permitindo detectar predominância de iOS/Android e adaptar layout/oferta aos tamanhos reais de tela.
+
+## 2026-06-07 — Correção de compilação dos testes de analytics da landing
+
+- solicitação: corrigir a falha de compilação em `ExperimentFunnelServiceRenderCompleteTest` causada pela assinatura atual do contrato `RegisterLandingPageAnalyticsEventRequest`.
+- causa-raiz: três cenários de teste ainda instanciavam o record com a assinatura antiga de 11 campos, enquanto o contrato público de analytics passou a exigir também `operatingSystem`, `screenWidth` e `screenHeight`.
+- foi feito: os testes foram atualizados para enviar o sistema operacional e dimensões ausentes como parte do contrato atual, preservando os cenários de evento normalizado, evento legado sem `visitorId` e deduplicação de `page_view`.
+- validação: executados o teste específico de analytics do funil e a suíte unitária do módulo `ads-service`.

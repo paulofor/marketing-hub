@@ -71,6 +71,8 @@ class ArquiteturaTest {
     private static final Pattern BACKEND_SERVICE_NAME_PATTERN = Pattern.compile("^Backend([A-Za-z0-9]+)Service$");
     private static final Pattern EPM_CONTROLLER_PACKAGE_PATTERN = Pattern.compile("^com\\.marketinghub\\.epm\\.controller$");
     private static final Pattern EPM_SERVICE_PACKAGE_PATTERN = Pattern.compile("^com\\.marketinghub\\.epm\\.service$");
+    private static final String PIPELINE_WEB_PACKAGE = "com.marketinghub.pipeline.web";
+    private static final String PIPELINE_SERVICE_PACKAGE = "com.marketinghub.pipeline.service";
     private static final List<String> REQUIRED_BACKEND_SERVICE_SUBPACKAGES = List.of(
             "detailStageExecution", "listStageExecutions", "pending", "recebePrompt", "recebeResposta");
     private static final List<String> REQUIRED_EPM_SERVICE_SUBPACKAGES = List.of(
@@ -208,6 +210,18 @@ class ArquiteturaTest {
                     .because("[ARQUITETURA] [BACKEND][EPM] service em epm.service só pode acessar domínio EPM, subpacotes service e repositories EPM");
 
     @ArchTest
+    static final ArchRule pipelineWebPackagesShouldOnlyDependOnPipelineContractsAndServices =
+            classes().that().resideInAPackage("com.marketinghub.pipeline.web..")
+                    .should(onlyDependOnAllowedPipelineWebMarketingHubClasses())
+                    .because("[ARQUITETURA] [BACKEND][Pipeline] web em pipeline.web só pode acessar domínio, DTOs, mapper e services do próprio pacote pipeline");
+
+    @ArchTest
+    static final ArchRule pipelineServicePackagesShouldOnlyAccessAllowedMarketingHubClasses =
+            classes().that().resideInAPackage("com.marketinghub.pipeline.service..")
+                    .should(onlyDependOnAllowedPipelineServiceMarketingHubClasses())
+                    .because("[ARQUITETURA] [BACKEND][Pipeline] service em pipeline.service só pode acessar pipeline, repositories canônicos de pipeline e exceção explícita do modelo OpenAI");
+
+    @ArchTest
     static final ArchRule backendStageControllersMustExposePendingMethod =
             classes().that().resideInAPackage("com.marketinghub.geralanding.*.web..")
                     .and().haveNameMatching(".*\\.Backend[A-Za-z0-9]+Controller")
@@ -322,6 +336,56 @@ class ArquiteturaTest {
                                             + " está no subpacote obrigatório " + requiredSubpackage
                                             + " e deve ser declarada como record"));
                 }));
+        failWithArchitectureViolations(violations);
+    }
+
+    /**
+     * Garante que o pacote pipeline possua a borda HTTP e o service principal no padrão backend.
+     */
+    @ArchTest
+    static void pipelinePackageMustHaveSingleCanonicalControllerAndService(JavaClasses importedClasses) {
+        List<String> violations = new ArrayList<>();
+        List<JavaClass> webPackageClasses = pipelineDirectPackageClasses(importedClasses, PIPELINE_WEB_PACKAGE);
+        List<JavaClass> controllers = webPackageClasses.stream()
+                .filter(javaClass -> javaClass.getSimpleName().equals("PipelineController"))
+                .toList();
+        if (webPackageClasses.size() != 1) {
+            violations.add("[ARQUITETURA] [BACKEND][Pipeline] pacote=" + PIPELINE_WEB_PACKAGE
+                    + " deve conter apenas PipelineController; classes=" + simpleNames(webPackageClasses));
+        }
+        if (controllers.size() != 1) {
+            violations.add("[ARQUITETURA] [BACKEND][Pipeline] pacote=" + PIPELINE_WEB_PACKAGE
+                    + " deve conter exatamente uma classe PipelineController; controllers=" + simpleNames(controllers));
+        } else {
+            JavaClass controller = controllers.get(0);
+            if (!controller.isAnnotatedWith(RestController.class)) {
+                violations.add("[ARQUITETURA] [BACKEND][Pipeline] classe=" + controller.getName()
+                        + " deve possuir @RestController");
+            }
+            if (!hasRequestMapping(controller, "/api/pipelines")) {
+                violations.add("[ARQUITETURA] [BACKEND][Pipeline] classe=" + controller.getName()
+                        + " deve possuir @RequestMapping(\"/api/pipelines\")");
+            }
+        }
+
+        List<JavaClass> servicePackageClasses = pipelineDirectPackageClasses(importedClasses, PIPELINE_SERVICE_PACKAGE);
+        List<JavaClass> services = servicePackageClasses.stream()
+                .filter(javaClass -> javaClass.getSimpleName().equals("PipelineService"))
+                .toList();
+        long annotatedServices = servicePackageClasses.stream()
+                .filter(javaClass -> javaClass.isAnnotatedWith(Service.class))
+                .count();
+        if (services.size() != 1) {
+            violations.add("[ARQUITETURA] [BACKEND][Pipeline] pacote=" + PIPELINE_SERVICE_PACKAGE
+                    + " deve conter exatamente uma classe PipelineService; services=" + simpleNames(services));
+        } else if (!services.get(0).isAnnotatedWith(Service.class)) {
+            violations.add("[ARQUITETURA] [BACKEND][Pipeline] classe=" + services.get(0).getName()
+                    + " deve possuir @Service");
+        }
+        if (annotatedServices != 1) {
+            violations.add("[ARQUITETURA] [BACKEND][Pipeline] pacote=" + PIPELINE_SERVICE_PACKAGE
+                    + " deve possuir exatamente um @Service principal; quantidade=" + annotatedServices);
+        }
         failWithArchitectureViolations(violations);
     }
 
@@ -552,6 +616,17 @@ class ArquiteturaTest {
                         .computeIfAbsent(javaClass.getPackageName(), ignored -> new ArrayList<>())
                         .add(javaClass));
         return packages;
+    }
+
+    /**
+     * Lista classes diretas de produção em um pacote do módulo pipeline.
+     */
+    private static List<JavaClass> pipelineDirectPackageClasses(JavaClasses importedClasses, String packageName) {
+        return importedClasses.stream()
+                .filter(ArquiteturaTest::isProductionTopLevelClass)
+                .filter(javaClass -> javaClass.getPackageName().equals(packageName))
+                .sorted(Comparator.comparing(JavaClass::getName))
+                .toList();
     }
 
     /**
@@ -947,6 +1022,80 @@ class ArquiteturaTest {
                         + " acessa JPA via Spring Data JpaRepository e deve ficar em algum subpacote dentro de "
                         + "com.marketinghub.repository.jpa";
                 events.add(SimpleConditionEvent.violated(item, message));
+            }
+        };
+    }
+
+    /**
+     * Garante que a borda HTTP do pipeline dependa somente de contratos e orquestrações do próprio pipeline.
+     */
+    private static ArchCondition<JavaClass> onlyDependOnAllowedPipelineWebMarketingHubClasses() {
+        return new ArchCondition<>(
+                "[ARQUITETURA] [BACKEND][Pipeline] web only depends on pipeline contracts/services") {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                if (item.getSimpleName().endsWith("Test")) {
+                    return;
+                }
+                item.getDirectDependenciesFromSelf().forEach(dependency -> {
+                    JavaClass targetClass = dependency.getTargetClass();
+                    String targetName = targetClass.getName();
+                    if (!targetName.startsWith("com.marketinghub.")) {
+                        return;
+                    }
+                    String targetPackage = targetClass.getPackageName();
+                    boolean valid = targetPackage.equals("com.marketinghub.pipeline")
+                            || targetPackage.startsWith("com.marketinghub.pipeline.web")
+                            || targetPackage.startsWith("com.marketinghub.pipeline.service")
+                            || targetPackage.startsWith("com.marketinghub.pipeline.dto")
+                            || targetPackage.startsWith("com.marketinghub.pipeline.mapper");
+                    if (!valid) {
+                        String message = "[ARQUITETURA] [BACKEND][Pipeline] classe-origem=" + item.getName()
+                                + " possui import/dependência violadora: " + dependency.getDescription()
+                                + " (alvo: " + targetName + ")"
+                                + " | regra: pipeline.web só pode acessar domínio, DTOs, mapper e services "
+                                + "do próprio pacote com.marketinghub.pipeline.";
+                        events.add(SimpleConditionEvent.violated(item, message));
+                    }
+                });
+            }
+        };
+    }
+
+    /**
+     * Garante que services do pipeline usem somente domínio próprio e repositories centralizados permitidos.
+     */
+    private static ArchCondition<JavaClass> onlyDependOnAllowedPipelineServiceMarketingHubClasses() {
+        return new ArchCondition<>(
+                "[ARQUITETURA] [BACKEND][Pipeline] service only depends on pipeline/openai/repository contracts") {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                if (item.getSimpleName().endsWith("Test")) {
+                    return;
+                }
+                item.getDirectDependenciesFromSelf().forEach(dependency -> {
+                    JavaClass targetClass = dependency.getTargetClass();
+                    String targetName = targetClass.getName();
+                    if (!targetName.startsWith("com.marketinghub.")) {
+                        return;
+                    }
+                    String targetPackage = targetClass.getPackageName();
+                    boolean valid = targetPackage.equals("com.marketinghub.pipeline")
+                            || targetPackage.startsWith("com.marketinghub.pipeline.service")
+                            || targetPackage.startsWith("com.marketinghub.pipeline.definition")
+                            || targetPackage.startsWith("com.marketinghub.pipeline.dto")
+                            || targetPackage.startsWith("com.marketinghub.repository.jpa.pipeline")
+                            || targetPackage.startsWith("com.marketinghub.openai")
+                            || targetPackage.startsWith("com.marketinghub.repository.jpa.openai");
+                    if (!valid) {
+                        String message = "[ARQUITETURA] [BACKEND][Pipeline] classe-origem=" + item.getName()
+                                + " possui import/dependência violadora: " + dependency.getDescription()
+                                + " (alvo: " + targetName + ")"
+                                + " | regra: pipeline.service só pode acessar domínio/definition/DTOs do pipeline, "
+                                + "repositories canônicos de pipeline e a exceção explícita OpenAI usada na configuração de modelo.";
+                        events.add(SimpleConditionEvent.violated(item, message));
+                    }
+                });
             }
         };
     }

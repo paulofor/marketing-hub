@@ -21,6 +21,7 @@ public class PipelineDefinitionRegistry {
     private static final String EXPERIMENT_MODULE = "EXPERIMENT";
     private static final String EXPERIMENT_CANONICAL_VERSION = "procedimento-experimento-canon.v1";
     private static final String EXPERIMENT_BACKEND_ROOT_PACKAGE = "com.marketinghub.experiment.pipeline";
+    private static final String EXPERIMENT_MODULE_ROOT_PACKAGE = "com.marketinghub.worker.experimentpipeline";
     private static final String OPRM_NICHO_CNAE_PIPELINE_CODE = "oprm-nicho-cnae-pipeline";
     private static final String OPRM_MODULE = "OPRM";
     private static final String OPRM_NICHO_CNAE_CANONICAL_VERSION = "oprm-nichocnae-canon.v1";
@@ -101,6 +102,7 @@ public class PipelineDefinitionRegistry {
                         true,
                         null,
                         EXPERIMENT_BACKEND_ROOT_PACKAGE,
+                        EXPERIMENT_MODULE_ROOT_PACKAGE,
                         Set.of(section.path(), section.name(), section.name().toLowerCase(Locale.ROOT))))
                 .toList();
         return new PipelineDefinition(
@@ -129,6 +131,7 @@ public class PipelineDefinitionRegistry {
                         true,
                         section.executionModule(),
                         section.rootPackage(),
+                        section.modulePackage(),
                         section.aliases()))
                 .toList();
         return new PipelineDefinition(
@@ -240,6 +243,7 @@ public class PipelineDefinitionRegistry {
             boolean configurable,
             String executionModule,
             String rootPackage,
+            String modulePackage,
             Set<String> aliases) {
         /**
          * Informa se o código recebido é o código operacional ou alias da etapa.

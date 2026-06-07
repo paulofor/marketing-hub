@@ -11,54 +11,63 @@ public enum OprmNichoCnaePipelineSection {
             1,
             "routine-research-orchestrator",
             "Seleção de candidato CNAE",
+            false,
             "com.marketinghub.oprm.nichocnae.routineresearchorchestrator",
             Set.of("routineresearchorchestrator", "oprmRoutineResearchOrchestrator")),
     ROUTINE_RESEARCH_CYCLE(
             2,
             "routine-research-cycle",
             "Controle do ciclo de rotina",
+            false,
             "com.marketinghub.oprm.nichocnae.routineresearchcycle",
             Set.of("routineresearchcycle", "oprmRoutineResearchCycle")),
     NICHE_RESEARCH_SEED_BUILDER(
             3,
             "niche-research-seed-builder",
             "Seed e queries de pesquisa",
+            true,
             "com.marketinghub.oprm.nichocnae.nicheresearchseedbuilder",
             Set.of("nicheresearchseedbuilder", "oprmNicheResearchSeedBuilder")),
     SOURCE_SEARCHER(
             4,
             "source-searcher",
             "Busca de fontes públicas",
+            false,
             "com.marketinghub.oprm.nichocnae.sourcesearcher",
             Set.of("sourcesearcher", "oprmSourceSearcher")),
     SOURCE_FETCHER(
             5,
             "source-fetcher",
             "Coleta curta de fontes",
+            false,
             "com.marketinghub.oprm.nichocnae.sourcefetcher",
             Set.of("sourcefetcher", "oprmSourceFetcher")),
     SIGNAL_EXTRACTOR(
             6,
             "signal-extractor",
             "Extração de sinais de rotina",
+            false,
             "com.marketinghub.oprm.nichocnae.signalextractor",
             Set.of("signalextractor", "oprmSignalExtractor")),
     ROUTINE_SYNTHESIZER(
             7,
             "routine-synthesizer",
             "Síntese do cartão de rotina",
+            false,
             "com.marketinghub.oprm.nichocnae.routinesynthesizer",
             Set.of("routinesynthesizer", "oprmRoutineSynthesizer")),
     ROUTINE_QUALITY_GATE(
             8,
             "routine-quality-gate",
             "Gate de qualidade da rotina",
+            false,
             "com.marketinghub.oprm.nichocnae.routinequalitygate",
             Set.of("routinequalitygate", "oprmRoutineQualityGate")),
     ENRICHED_NICHE_MATERIALIZER(
             9,
             "enriched-niche-materializer",
             "Materialização do nicho enriquecido",
+            false,
             "com.marketinghub.oprm.nichocnae.enrichednichematerializer",
             Set.of("enrichednichematerializer", "oprmEnrichedNicheMaterializer"));
 
@@ -67,6 +76,7 @@ public enum OprmNichoCnaePipelineSection {
     private final int position;
     private final String path;
     private final String displayName;
+    private final boolean requiresOpenAiModel;
     private final String rootPackage;
     private final String modulePackage;
     private final Set<String> aliases;
@@ -78,11 +88,13 @@ public enum OprmNichoCnaePipelineSection {
             int position,
             String path,
             String displayName,
+            boolean requiresOpenAiModel,
             String rootPackage,
             Set<String> aliases) {
         this.position = position;
         this.path = path;
         this.displayName = displayName;
+        this.requiresOpenAiModel = requiresOpenAiModel;
         this.rootPackage = rootPackage;
         this.modulePackage =
                 rootPackage.replace("com.marketinghub.oprm.nichocnae", "com.marketinghub.nichocnae");
@@ -108,6 +120,13 @@ public enum OprmNichoCnaePipelineSection {
      */
     public String displayName() {
         return displayName;
+    }
+
+    /**
+     * Informa se a etapa consome diretamente um modelo OpenAI configurável.
+     */
+    public boolean requiresOpenAiModel() {
+        return requiresOpenAiModel;
     }
 
     /**

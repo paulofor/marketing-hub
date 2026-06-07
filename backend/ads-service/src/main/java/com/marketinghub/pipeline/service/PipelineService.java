@@ -457,6 +457,7 @@ public class PipelineService {
                 .name(definition.name())
                 .position(definition.position())
                 .required(definition.required())
+                .requiresOpenAiModel(definition.requiresOpenAiModel())
                 .configurable(definition.configurable())
                 .executionModule(definition.executionModule())
                 .rootPackage(definition.rootPackage())

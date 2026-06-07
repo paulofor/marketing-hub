@@ -113,7 +113,7 @@ Defaults atuais no projeto:
 - `MOIS_WORKSPACE_ID=workspace-001`
 - `MOIS_SOURCE=CLICKBANK`
 - `MOIS_POLL_INTERVAL_MS=15000`
-- `MOIS_REQUEST_TIMEOUT_MS=30000`
+- `MOIS_REQUEST_TIMEOUT_MS=300000`
 
 ## 8. Observabilidade (obrigatório)
 

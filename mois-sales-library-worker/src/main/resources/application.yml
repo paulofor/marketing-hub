@@ -32,7 +32,7 @@ worker:
   html-capture-poll-interval-ms: ${MOIS_HTML_CAPTURE_POLL_INTERVAL_MS:20000}
   html-capture-limit: ${MOIS_HTML_CAPTURE_LIMIT:1}
   html-capture-force: ${MOIS_HTML_CAPTURE_FORCE:false}
-  request-timeout-ms: ${MOIS_REQUEST_TIMEOUT_MS:30000}
+  request-timeout-ms: ${MOIS_REQUEST_TIMEOUT_MS:300000}
 
 openai:
   api-key: ${OPENAI_API_KEY:}

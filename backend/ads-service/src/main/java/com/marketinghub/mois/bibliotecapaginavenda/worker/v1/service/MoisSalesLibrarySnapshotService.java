@@ -42,10 +42,11 @@ public class MoisSalesLibrarySnapshotService {
     private static final int MAX_LIMIT = 20;
     private static final Duration FAILED_RETRY_COOLDOWN = Duration.ofHours(24);
     private static final int MAX_FAILED_ATTEMPTS_WITHOUT_FORCE = 3;
+    private static final Duration CAPTURE_REQUEST_TIMEOUT = Duration.ofMinutes(5);
 
     private final JdbcTemplate jdbcTemplate;
     private final HttpClient httpClient = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(15))
+            .connectTimeout(CAPTURE_REQUEST_TIMEOUT)
             .followRedirects(HttpClient.Redirect.NORMAL)
             .build();
 
@@ -474,7 +475,7 @@ public class MoisSalesLibrarySnapshotService {
     /** Executa GET HTTP com follow redirect para obter o HTML efetivo. */
     private CaptureResponse fetchUrl(String url) throws Exception {
         HttpRequest request = HttpRequest.newBuilder(URI.create(url))
-                .timeout(Duration.ofSeconds(30))
+                .timeout(CAPTURE_REQUEST_TIMEOUT)
                 .GET()
                 .header("User-Agent", "MarketingHub-MOIS-SalesLibrary/1.0")
                 .build();

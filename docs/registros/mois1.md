@@ -1,3 +1,14 @@
+## 2026-06-07 — Timeout de captura HTML ampliado para 5 minutos
+
+- aumentado o timeout de captura HTTP/HTML da Biblioteca de Páginas de Vendas do MOIS para 5 minutos (`300000 ms`) no backend e no worker.
+- atualizado o cânone MOIS para registrar o novo timeout operacional padrão de captura, mantendo cooldown e limite de falhas como proteção contra loops improdutivos.
+- atualizado o documento de especificação do worker para refletir o novo valor padrão de `MOIS_REQUEST_TIMEOUT_MS`.
+- documentos/códigos consultados:
+  - backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibrarySnapshotService.java
+  - mois-sales-library-worker/src/main/resources/application.yml
+  - docs/canonical/mois-worker-canon.v1.md
+  - docs/novos-modulos/mois-biblioteca-pagina-venda/especificacao-worker-biblioteca-sales-pages.md
+
 
 ## 2026-06-03 — Bootstrap Hotmart 400 para Biblioteca de Páginas de Vendas
 

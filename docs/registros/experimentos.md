@@ -4004,3 +4004,12 @@
 
 - Formalizado no cânone do procedimento de experimento o contrato público de analytics da landing com `visitorId`, `sessionId`, eventos, deduplicação de `page_view` em 3 segundos e compatibilidade com eventos legados sem `visitorId`.
 - Reforçada a regra de que `visitorId` identifica apenas visitante provável por navegador/dispositivo, sem comprovar pessoa real.
+
+## 2026-06-07 00:00:00 UTC
+- solicitação: executar a etapa 2 do plano `docs/implementação/plano-identificacao-visitante-landing-experimento.md` para preparar o modelo de banco dos analytics de visitante recorrente na landing do experimento.
+- decisão técnica: criada tabela derivada `experiment_landing_analytics_event`, vinculada por `funnel_event_id` ao evento bruto em `experiment_funnel_event`, em vez de adicionar colunas normalizadas diretamente na tabela legada; essa escolha preserva compatibilidade com eventos existentes, mantém a auditoria bruta intacta e permite consultas relacionais eficientes para recorrência por `visitorId`/`sessionId`.
+- foi feito:
+  - criado changelog Liquibase YAML MySQL 5.7 com `databaseChangeLog`, `preConditions` de `dbms:mysql`, `splitStatements: true` e `stripComments: true`;
+  - adicionados campos normalizados para `experiment_id`, `funnel_event_id`, `event_id`, `visitor_id`, `session_id`, `event_type`, `section_id`, `page_url`, `user_agent`, `occurred_at` e `created_at`;
+  - adicionados índices `(experiment_id, visitor_id, occurred_at)`, `(experiment_id, session_id, occurred_at)` e `(experiment_id, event_type, occurred_at)` para sustentar a etapa futura de API de recorrência.
+- impacto esperado: a etapa 3 poderá manter a gravação legada em `experiment_funnel_event` e gravar a estrutura normalizada sem quebrar analytics históricos sem `visitorId`.

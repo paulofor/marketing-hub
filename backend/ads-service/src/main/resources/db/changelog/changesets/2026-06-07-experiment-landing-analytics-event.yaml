@@ -1,0 +1,45 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-07-experiment-landing-analytics-event
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: experiment_landing_analytics_event
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE experiment_landing_analytics_event (
+                id BIGINT AUTO_INCREMENT NOT NULL,
+                experiment_id BIGINT NOT NULL,
+                funnel_event_id BIGINT NOT NULL,
+                event_id VARCHAR(128) NULL,
+                visitor_id VARCHAR(128) NULL,
+                session_id VARCHAR(128) NULL,
+                event_type VARCHAR(64) NOT NULL,
+                section_id VARCHAR(190) NULL,
+                page_url VARCHAR(2048) NULL,
+                user_agent VARCHAR(512) NULL,
+                occurred_at DATETIME(6) NOT NULL,
+                created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+                CONSTRAINT pk_experiment_landing_analytics_event PRIMARY KEY (id),
+                CONSTRAINT fk_landing_analytics_event_experiment FOREIGN KEY (experiment_id) REFERENCES experiment(id),
+                CONSTRAINT fk_landing_analytics_event_funnel_event FOREIGN KEY (funnel_event_id) REFERENCES experiment_funnel_event(id),
+                CONSTRAINT uk_landing_analytics_event_funnel_event UNIQUE (funnel_event_id),
+                CONSTRAINT uk_landing_analytics_event_event_id UNIQUE (experiment_id, event_id)
+              );
+
+              CREATE INDEX idx_landing_analytics_experiment_visitor_occurred
+                ON experiment_landing_analytics_event (experiment_id, visitor_id, occurred_at);
+
+              CREATE INDEX idx_landing_analytics_experiment_session_occurred
+                ON experiment_landing_analytics_event (experiment_id, session_id, occurred_at);
+
+              CREATE INDEX idx_landing_analytics_experiment_type_occurred
+                ON experiment_landing_analytics_event (experiment_id, event_type, occurred_at);

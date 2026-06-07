@@ -72,16 +72,20 @@ databaseChangeLog:
             sql: |
               UPDATE pipeline_stage ps
               INNER JOIN pipeline p ON p.id = ps.pipeline_id
+              LEFT JOIN pipeline_stage conflict ON conflict.pipeline_id = ps.pipeline_id AND conflict.position = 107
+              LEFT JOIN pipeline_stage image_generation ON image_generation.pipeline_id = ps.pipeline_id AND image_generation.code = 'landing-page-image-generation'
               SET ps.position = 107,
                   ps.updated_at = NOW()
               WHERE p.code = 'experiment-pipeline'
                 AND ps.code = 'landing-page-design-preset'
                 AND ps.position = 7
-                AND NOT EXISTS (SELECT 1 FROM pipeline_stage conflict WHERE conflict.pipeline_id = ps.pipeline_id AND conflict.position = 107)
-                AND NOT EXISTS (SELECT 1 FROM pipeline_stage image_generation WHERE image_generation.pipeline_id = ps.pipeline_id AND image_generation.code = 'landing-page-image-generation');
+                AND conflict.id IS NULL
+                AND image_generation.id IS NULL;
 
               UPDATE pipeline_stage ps
               INNER JOIN pipeline p ON p.id = ps.pipeline_id
+              LEFT JOIN pipeline_stage deliverables ON deliverables.pipeline_id = ps.pipeline_id AND deliverables.code = 'landing-page-deliverables'
+              LEFT JOIN pipeline_stage conflict ON conflict.pipeline_id = ps.pipeline_id AND conflict.position = 10
               SET ps.position = 10,
                   ps.code = 'landing-page-deliverables',
                   ps.name = 'Landing Page Deliverables',
@@ -90,39 +94,47 @@ databaseChangeLog:
                   ps.updated_at = NOW()
               WHERE p.code = 'experiment-pipeline'
                 AND ps.code = 'landing-page-html'
-                AND NOT EXISTS (SELECT 1 FROM pipeline_stage deliverables WHERE deliverables.pipeline_id = ps.pipeline_id AND deliverables.code = 'landing-page-deliverables')
-                AND NOT EXISTS (SELECT 1 FROM pipeline_stage conflict WHERE conflict.pipeline_id = ps.pipeline_id AND conflict.position = 10);
+                AND deliverables.id IS NULL
+                AND conflict.id IS NULL;
 
               INSERT INTO pipeline_stage (pipeline_id, position, name, code, description, execution_module, root_package, required, active, openai_model_id, created_at, updated_at)
               SELECT p.id, 7, 'Landing Page Image Generation', 'landing-page-image-generation', 'Materializa as imagens finais da landing a partir do planejamento visual.', NULL, 'com.marketinghub.geralanding.imagegeneration', 1, 1, NULL, NOW(), NOW()
               FROM pipeline p
+              LEFT JOIN pipeline_stage ps ON ps.pipeline_id = p.id AND ps.code = 'landing-page-image-generation'
+              LEFT JOIN pipeline_stage conflict ON conflict.pipeline_id = p.id AND conflict.position = 7
               WHERE p.code = 'experiment-pipeline'
-                AND NOT EXISTS (SELECT 1 FROM pipeline_stage ps WHERE ps.pipeline_id = p.id AND ps.code = 'landing-page-image-generation')
-                AND NOT EXISTS (SELECT 1 FROM pipeline_stage conflict WHERE conflict.pipeline_id = p.id AND conflict.position = 7);
+                AND ps.id IS NULL
+                AND conflict.id IS NULL;
 
               UPDATE pipeline_stage ps
               INNER JOIN pipeline p ON p.id = ps.pipeline_id
+              LEFT JOIN pipeline_stage conflict ON conflict.pipeline_id = ps.pipeline_id AND conflict.position = 8
               SET ps.position = 8,
                   ps.root_package = 'com.marketinghub.geralanding.presetdesign',
                   ps.updated_at = NOW()
               WHERE p.code = 'experiment-pipeline'
                 AND ps.code = 'landing-page-design-preset'
                 AND ps.position = 107
-                AND NOT EXISTS (SELECT 1 FROM pipeline_stage conflict WHERE conflict.pipeline_id = ps.pipeline_id AND conflict.position = 8);
+                AND conflict.id IS NULL;
 
               INSERT INTO pipeline_stage (pipeline_id, position, name, code, description, execution_module, root_package, required, active, openai_model_id, created_at, updated_at)
-              SELECT p.id, 9, 'Landing Page Quality Review', 'landing-page-quality-review', 'Quality Gate comercial visual da landing renderizada antes de gerar entregáveis.', NULL, 'com.marketinghub.geralanding.qualityreview', 1, 1, (SELECT om.id FROM openai_model om WHERE om.code = 'gpt-5.5' LIMIT 1), NOW(), NOW()
+              SELECT p.id, 9, 'Landing Page Quality Review', 'landing-page-quality-review', 'Quality Gate comercial visual da landing renderizada antes de gerar entregáveis.', NULL, 'com.marketinghub.geralanding.qualityreview', 1, 1, om.id, NOW(), NOW()
               FROM pipeline p
+              LEFT JOIN (SELECT id FROM openai_model WHERE code = 'gpt-5.5' LIMIT 1) om ON 1 = 1
+              LEFT JOIN pipeline_stage ps ON ps.pipeline_id = p.id AND ps.code = 'landing-page-quality-review'
+              LEFT JOIN pipeline_stage conflict ON conflict.pipeline_id = p.id AND conflict.position = 9
               WHERE p.code = 'experiment-pipeline'
-                AND NOT EXISTS (SELECT 1 FROM pipeline_stage ps WHERE ps.pipeline_id = p.id AND ps.code = 'landing-page-quality-review')
-                AND NOT EXISTS (SELECT 1 FROM pipeline_stage conflict WHERE conflict.pipeline_id = p.id AND conflict.position = 9);
+                AND ps.id IS NULL
+                AND conflict.id IS NULL;
 
               INSERT INTO pipeline_stage (pipeline_id, position, name, code, description, execution_module, root_package, required, active, openai_model_id, created_at, updated_at)
               SELECT p.id, 10, 'Landing Page Deliverables', 'landing-page-deliverables', 'Organiza os entregáveis digitais da oferta para uso no funil e no portal do lead.', NULL, 'com.marketinghub.geralanding.deliverables', 1, 1, NULL, NOW(), NOW()
               FROM pipeline p
+              LEFT JOIN pipeline_stage ps ON ps.pipeline_id = p.id AND ps.code = 'landing-page-deliverables'
+              LEFT JOIN pipeline_stage conflict ON conflict.pipeline_id = p.id AND conflict.position = 10
               WHERE p.code = 'experiment-pipeline'
-                AND NOT EXISTS (SELECT 1 FROM pipeline_stage ps WHERE ps.pipeline_id = p.id AND ps.code = 'landing-page-deliverables')
-                AND NOT EXISTS (SELECT 1 FROM pipeline_stage conflict WHERE conflict.pipeline_id = p.id AND conflict.position = 10);
+                AND ps.id IS NULL
+                AND conflict.id IS NULL;
 
               UPDATE pipeline_stage ps
               INNER JOIN pipeline p ON p.id = ps.pipeline_id
@@ -142,17 +154,21 @@ databaseChangeLog:
 
               UPDATE pipeline_stage_definition psd
               INNER JOIN pipeline_definition pd ON pd.id = psd.pipeline_definition_id
+              LEFT JOIN pipeline_stage_definition conflict ON conflict.pipeline_definition_id = psd.pipeline_definition_id AND conflict.position = 107
+              LEFT JOIN pipeline_stage_definition image_generation ON image_generation.pipeline_definition_id = psd.pipeline_definition_id AND image_generation.canonical_code = 'LANDING_PAGE_IMAGE_GENERATION'
               SET psd.position = 107,
                   psd.updated_at = NOW()
               WHERE pd.code = 'experiment-pipeline'
                 AND pd.canonical_version = 'procedimento-experimento-canon.v1'
                 AND psd.canonical_code = 'LANDING_PAGE_DESIGN_PRESET'
                 AND psd.position = 7
-                AND NOT EXISTS (SELECT 1 FROM pipeline_stage_definition conflict WHERE conflict.pipeline_definition_id = psd.pipeline_definition_id AND conflict.position = 107)
-                AND NOT EXISTS (SELECT 1 FROM pipeline_stage_definition image_generation WHERE image_generation.pipeline_definition_id = psd.pipeline_definition_id AND image_generation.canonical_code = 'LANDING_PAGE_IMAGE_GENERATION');
+                AND conflict.id IS NULL
+                AND image_generation.id IS NULL;
 
               UPDATE pipeline_stage_definition psd
               INNER JOIN pipeline_definition pd ON pd.id = psd.pipeline_definition_id
+              LEFT JOIN pipeline_stage_definition deliverables ON deliverables.pipeline_definition_id = psd.pipeline_definition_id AND deliverables.canonical_code = 'LANDING_PAGE_DELIVERABLES'
+              LEFT JOIN pipeline_stage_definition conflict ON conflict.pipeline_definition_id = psd.pipeline_definition_id AND conflict.position = 10
               SET psd.position = 10,
                   psd.canonical_code = 'LANDING_PAGE_DELIVERABLES',
                   psd.display_name = 'Landing Page Deliverables',
@@ -162,19 +178,22 @@ databaseChangeLog:
               WHERE pd.code = 'experiment-pipeline'
                 AND pd.canonical_version = 'procedimento-experimento-canon.v1'
                 AND psd.canonical_code = 'LANDING_PAGE_HTML'
-                AND NOT EXISTS (SELECT 1 FROM pipeline_stage_definition deliverables WHERE deliverables.pipeline_definition_id = psd.pipeline_definition_id AND deliverables.canonical_code = 'LANDING_PAGE_DELIVERABLES')
-                AND NOT EXISTS (SELECT 1 FROM pipeline_stage_definition conflict WHERE conflict.pipeline_definition_id = psd.pipeline_definition_id AND conflict.position = 10);
+                AND deliverables.id IS NULL
+                AND conflict.id IS NULL;
 
               INSERT INTO pipeline_stage_definition (pipeline_definition_id, canonical_code, display_name, position, required, implemented_stage_enum, requires_openai_model, configurable, execution_module, root_package, created_at, updated_at)
               SELECT pd.id, 'LANDING_PAGE_IMAGE_GENERATION', 'Landing Page Image Generation', 7, 1, 'LANDING_PAGE_IMAGE_GENERATION', 1, 1, NULL, 'com.marketinghub.geralanding.imagegeneration', NOW(), NOW()
               FROM pipeline_definition pd
+              LEFT JOIN pipeline_stage_definition psd ON psd.pipeline_definition_id = pd.id AND psd.canonical_code = 'LANDING_PAGE_IMAGE_GENERATION'
+              LEFT JOIN pipeline_stage_definition conflict ON conflict.pipeline_definition_id = pd.id AND conflict.position = 7
               WHERE pd.code = 'experiment-pipeline'
                 AND pd.canonical_version = 'procedimento-experimento-canon.v1'
-                AND NOT EXISTS (SELECT 1 FROM pipeline_stage_definition psd WHERE psd.pipeline_definition_id = pd.id AND psd.canonical_code = 'LANDING_PAGE_IMAGE_GENERATION')
-                AND NOT EXISTS (SELECT 1 FROM pipeline_stage_definition conflict WHERE conflict.pipeline_definition_id = pd.id AND conflict.position = 7);
+                AND psd.id IS NULL
+                AND conflict.id IS NULL;
 
               UPDATE pipeline_stage_definition psd
               INNER JOIN pipeline_definition pd ON pd.id = psd.pipeline_definition_id
+              LEFT JOIN pipeline_stage_definition conflict ON conflict.pipeline_definition_id = psd.pipeline_definition_id AND conflict.position = 8
               SET psd.position = 8,
                   psd.root_package = 'com.marketinghub.geralanding.presetdesign',
                   psd.updated_at = NOW()
@@ -182,23 +201,27 @@ databaseChangeLog:
                 AND pd.canonical_version = 'procedimento-experimento-canon.v1'
                 AND psd.canonical_code = 'LANDING_PAGE_DESIGN_PRESET'
                 AND psd.position = 107
-                AND NOT EXISTS (SELECT 1 FROM pipeline_stage_definition conflict WHERE conflict.pipeline_definition_id = psd.pipeline_definition_id AND conflict.position = 8);
+                AND conflict.id IS NULL;
 
               INSERT INTO pipeline_stage_definition (pipeline_definition_id, canonical_code, display_name, position, required, implemented_stage_enum, requires_openai_model, configurable, execution_module, root_package, created_at, updated_at)
               SELECT pd.id, 'LANDING_PAGE_QUALITY_REVIEW', 'Landing Page Quality Review', 9, 1, 'LANDING_PAGE_QUALITY_REVIEW', 1, 1, NULL, 'com.marketinghub.geralanding.qualityreview', NOW(), NOW()
               FROM pipeline_definition pd
+              LEFT JOIN pipeline_stage_definition psd ON psd.pipeline_definition_id = pd.id AND psd.canonical_code = 'LANDING_PAGE_QUALITY_REVIEW'
+              LEFT JOIN pipeline_stage_definition conflict ON conflict.pipeline_definition_id = pd.id AND conflict.position = 9
               WHERE pd.code = 'experiment-pipeline'
                 AND pd.canonical_version = 'procedimento-experimento-canon.v1'
-                AND NOT EXISTS (SELECT 1 FROM pipeline_stage_definition psd WHERE psd.pipeline_definition_id = pd.id AND psd.canonical_code = 'LANDING_PAGE_QUALITY_REVIEW')
-                AND NOT EXISTS (SELECT 1 FROM pipeline_stage_definition conflict WHERE conflict.pipeline_definition_id = pd.id AND conflict.position = 9);
+                AND psd.id IS NULL
+                AND conflict.id IS NULL;
 
               INSERT INTO pipeline_stage_definition (pipeline_definition_id, canonical_code, display_name, position, required, implemented_stage_enum, requires_openai_model, configurable, execution_module, root_package, created_at, updated_at)
               SELECT pd.id, 'LANDING_PAGE_DELIVERABLES', 'Landing Page Deliverables', 10, 1, 'LANDING_PAGE_DELIVERABLES', 1, 1, NULL, 'com.marketinghub.geralanding.deliverables', NOW(), NOW()
               FROM pipeline_definition pd
+              LEFT JOIN pipeline_stage_definition psd ON psd.pipeline_definition_id = pd.id AND psd.canonical_code = 'LANDING_PAGE_DELIVERABLES'
+              LEFT JOIN pipeline_stage_definition conflict ON conflict.pipeline_definition_id = pd.id AND conflict.position = 10
               WHERE pd.code = 'experiment-pipeline'
                 AND pd.canonical_version = 'procedimento-experimento-canon.v1'
-                AND NOT EXISTS (SELECT 1 FROM pipeline_stage_definition psd WHERE psd.pipeline_definition_id = pd.id AND psd.canonical_code = 'LANDING_PAGE_DELIVERABLES')
-                AND NOT EXISTS (SELECT 1 FROM pipeline_stage_definition conflict WHERE conflict.pipeline_definition_id = pd.id AND conflict.position = 10);
+                AND psd.id IS NULL
+                AND conflict.id IS NULL;
 
               UPDATE pipeline_stage_definition psd
               INNER JOIN pipeline_definition pd ON pd.id = psd.pipeline_definition_id
@@ -223,7 +246,8 @@ databaseChangeLog:
               INNER JOIN pipeline_definition pd ON pd.id = psd.pipeline_definition_id
               LEFT JOIN pipeline p ON p.code = pd.code
               LEFT JOIN pipeline_stage ps ON ps.pipeline_id = p.id AND UPPER(REPLACE(ps.code, '-', '_')) = psd.canonical_code
+              LEFT JOIN pipeline_stage_config psc ON psc.pipeline_stage_definition_id = psd.id
               WHERE pd.code = 'experiment-pipeline'
                 AND pd.canonical_version = 'procedimento-experimento-canon.v1'
                 AND psd.canonical_code IN ('LANDING_PAGE_IMAGE_GENERATION', 'LANDING_PAGE_QUALITY_REVIEW', 'LANDING_PAGE_DELIVERABLES')
-                AND NOT EXISTS (SELECT 1 FROM pipeline_stage_config psc WHERE psc.pipeline_stage_definition_id = psd.id);
+                AND psc.id IS NULL;

@@ -263,6 +263,9 @@ databaseChangeLog:
       file: changesets/2025-10-30-experiment-funnel-events.yaml
       relativeToChangelogFile: true
   - include:
+      file: changesets/2026-06-07-experiment-landing-analytics-event.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2025-11-05-hypothesis-framework-json.yaml
       relativeToChangelogFile: true
   - include:

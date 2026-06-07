@@ -33,6 +33,23 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/RoutineResearchOrchestratorRecent'
+  /api/oprm/nichocnae/routine-research-orchestrator/recent-processed/{researchCycleId}/reprocess:
+    post:
+      summary: Libera um CNAE de ciclo falho para novo ciclo automático.
+      tags: [OPRM Nicho CNAE]
+      parameters:
+        - $ref: '#/components/parameters/ResearchCycleId'
+      responses:
+        '200':
+          description: Nicho CNAE marcado como pendente para o próximo ciclo automático.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoutineResearchOrchestratorReprocessResult'
+        '404':
+          description: Ciclo ou nicho CNAE de origem não encontrado.
+        '409':
+          description: Ciclo não está em status FAILED e não pode ser reprocessado.
   /api/internal/oprm/nichocnae/routine-research-orchestrator/run-next:
     post:
       summary: Executa a etapa zero e abre o próximo ciclo de pesquisa de rotina.
@@ -638,6 +655,38 @@ components:
           type: string
           nullable: true
           example: '500 Internal Server Error: nicheName is required'
+    RoutineResearchOrchestratorReprocessResult:
+      type: object
+      properties:
+        researchCycleId:
+          type: integer
+          format: int64
+        sourceNicheId:
+          type: integer
+          format: int64
+        cnaeCode:
+          type: string
+          example: '9602501'
+        cnaeDescription:
+          type: string
+          example: Cabeleireiros, manicure e pedicure
+        previousCycleStatus:
+          type: string
+          example: FAILED
+        previousRoutineResearchStatus:
+          type: string
+          nullable: true
+          example: RESEARCH_RUNNING
+        routineResearchStatus:
+          type: string
+          example: PENDING
+        lastRoutineResearchCycleId:
+          type: integer
+          format: int64
+          nullable: true
+        message:
+          type: string
+          example: Nicho CNAE liberado para novo ciclo automático de pesquisa de rotina.
     NicheResearchSeedBuilderPending:
       type: object
       properties:

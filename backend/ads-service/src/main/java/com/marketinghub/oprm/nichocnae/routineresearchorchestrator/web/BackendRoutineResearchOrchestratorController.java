@@ -3,10 +3,12 @@ package com.marketinghub.oprm.nichocnae.routineresearchorchestrator.web;
 import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.BackendRoutineResearchOrchestratorService;
 import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.pending.RecordRoutineResearchOrchestratorPending;
 import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.recent.RecordRoutineResearchOrchestratorRecent;
+import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.reprocess.RecordRoutineResearchOrchestratorReprocessResult;
 import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.runNext.RecordRoutineResearchOrchestratorResult;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -34,6 +36,12 @@ public class BackendRoutineResearchOrchestratorController {
     public List<RecordRoutineResearchOrchestratorRecent> recentProcessed(
             @RequestParam(defaultValue = "10") int limit) {
         return executionService.listRecentProcessed(limit);
+    }
+
+    /** Libera um nicho CNAE de ciclo falho para que o orquestrador automático possa criar novo ciclo. */
+    @PostMapping("/oprm/nichocnae/routine-research-orchestrator/recent-processed/{researchCycleId}/reprocess")
+    public RecordRoutineResearchOrchestratorReprocessResult reprocess(@PathVariable Long researchCycleId) {
+        return executionService.reprocessFailedCycle(researchCycleId);
     }
 
     /** Executa a etapa zero para iniciar o próximo ciclo de pesquisa de rotina por score. */

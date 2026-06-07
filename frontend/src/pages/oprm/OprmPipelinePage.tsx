@@ -2,7 +2,10 @@ import { Link } from "react-router-dom";
 import { useOprmNicheResearchSeedBuilderDetail } from "../../api/oprm/useOprmNicheResearchSeedBuilderDetail";
 import { useOprmNicheResearchSeedBuilderPending } from "../../api/oprm/useOprmNicheResearchSeedBuilderPending";
 import { useOprmEnrichedNicheMaterializerDetail } from "../../api/oprm/useOprmEnrichedNicheMaterializerDetail";
-import { useOprmRoutineResearchOrchestratorRecent } from "../../api/oprm/useOprmRoutineResearchOrchestratorRecent";
+import {
+  useOprmRoutineResearchOrchestratorRecent,
+  useReprocessOprmRoutineResearchCycle,
+} from "../../api/oprm/useOprmRoutineResearchOrchestratorRecent";
 import { useOprmRoutineSynthesizerDetail } from "../../api/oprm/useOprmRoutineSynthesizerDetail";
 import { useOprmRoutineQualityGateDetail } from "../../api/oprm/useOprmRoutineQualityGateDetail";
 import { useOprmSourceFetcherDetail } from "../../api/oprm/useOprmSourceFetcherDetail";
@@ -218,6 +221,7 @@ export default function OprmPipelinePage() {
     isError,
     isLoading,
   } = useOprmRoutineResearchOrchestratorRecent(10);
+  const reprocessCycleMutation = useReprocessOprmRoutineResearchCycle(10);
   const latestCycle = recentProcessed[0];
   const latestRunningCycle = recentProcessed.find(
     (item) => item.cycleStatus === "RUNNING",
@@ -375,6 +379,9 @@ export default function OprmPipelinePage() {
                       Score
                     </th>
                     <th scope="col">Status</th>
+                    <th scope="col" className="text-end">
+                      Ação
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -425,10 +432,60 @@ export default function OprmPipelinePage() {
                           </div>
                         ) : null}
                       </td>
+                      <td className="text-end">
+                        {item.cycleStatus === "FAILED" ? (
+                          <button
+                            type="button"
+                            className="btn btn-outline-danger btn-sm text-nowrap"
+                            disabled={
+                              reprocessCycleMutation.isPending &&
+                              reprocessCycleMutation.variables ===
+                                item.researchCycleId
+                            }
+                            onClick={() =>
+                              reprocessCycleMutation.mutate(
+                                item.researchCycleId,
+                              )
+                            }
+                          >
+                            {reprocessCycleMutation.isPending &&
+                            reprocessCycleMutation.variables ===
+                              item.researchCycleId ? (
+                              <>
+                                <span
+                                  className="spinner-border spinner-border-sm me-1"
+                                  aria-hidden="true"
+                                />
+                                Liberando...
+                              </>
+                            ) : (
+                              "Reprocessar CNAE"
+                            )}
+                          </button>
+                        ) : (
+                          <span className="text-secondary small">—</span>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+              {reprocessCycleMutation.isError ? (
+                <div
+                  className="alert alert-warning py-2 px-3 mt-3 mb-0 small"
+                  role="alert"
+                >
+                  {formatErrorMessage(reprocessCycleMutation.error)}
+                </div>
+              ) : null}
+              {reprocessCycleMutation.isSuccess ? (
+                <div
+                  className="alert alert-success py-2 px-3 mt-3 mb-0 small"
+                  role="status"
+                >
+                  {reprocessCycleMutation.data.message}
+                </div>
+              ) : null}
             </div>
           )}
         </div>

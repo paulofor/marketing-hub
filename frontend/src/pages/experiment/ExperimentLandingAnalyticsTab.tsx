@@ -71,6 +71,9 @@ export default function ExperimentLandingAnalyticsTab({
 
   const sessions = data?.sessions ?? [];
   const deviceBreakdown = data?.deviceBreakdown ?? [];
+  const mobileOperatingSystemBreakdown =
+    data?.mobileOperatingSystemBreakdown ?? [];
+  const screenSizeBreakdown = data?.screenSizeBreakdown ?? [];
   const deviceIcons = {
     mobile: Smartphone,
     desktop: Monitor,
@@ -195,6 +198,109 @@ export default function ExperimentLandingAnalyticsTab({
         </div>
       </div>
 
+      <div className="row g-3">
+        <div className="col-12 col-lg-5">
+          <div className="card h-100">
+            <div className="card-body">
+              <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                <div>
+                  <h5 className="card-title mb-1">
+                    Mobile por sistema operacional
+                  </h5>
+                  <p className="text-muted small mb-0">
+                    Percentual calculado somente sobre as sessões mobile
+                    identificadas como iOS, Android ou outros.
+                  </p>
+                </div>
+                <span className="badge text-bg-light border">
+                  iOS / Android
+                </span>
+              </div>
+              <div className="d-flex flex-column gap-3">
+                {mobileOperatingSystemBreakdown.map((system) => (
+                  <div key={system.operatingSystem}>
+                    <div className="d-flex align-items-center justify-content-between gap-2 mb-2">
+                      <span className="fw-semibold">{system.label}</span>
+                      <strong>{system.percentage.toFixed(1)}%</strong>
+                    </div>
+                    <div
+                      className="progress"
+                      role="progressbar"
+                      aria-label={`Percentual mobile ${system.label}`}
+                      aria-valuenow={system.percentage}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                    >
+                      <div
+                        className="progress-bar"
+                        style={{
+                          width: `${Math.min(100, Math.max(0, system.percentage))}%`,
+                        }}
+                      />
+                    </div>
+                    <div className="text-muted small mt-1">
+                      {system.sessions} sessões mobile
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="col-12 col-lg-7">
+          <div className="card h-100">
+            <div className="card-body">
+              <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                <div>
+                  <h5 className="card-title mb-1">Tamanho de tela</h5>
+                  <p className="text-muted small mb-0">
+                    Principais resoluções capturadas em pixels CSS da janela
+                    visível no momento do evento.
+                  </p>
+                </div>
+                <span className="badge text-bg-light border">
+                  {screenSizeBreakdown.length} resoluções
+                </span>
+              </div>
+              {screenSizeBreakdown.length === 0 ? (
+                <p className="text-muted small mb-0">
+                  Nenhuma resolução capturada ainda. Novos acessos da landing
+                  passarão a enviar largura e altura da tela.
+                </p>
+              ) : (
+                <div className="d-flex flex-column gap-3">
+                  {screenSizeBreakdown.map((screen) => (
+                    <div key={screen.screenSize}>
+                      <div className="d-flex align-items-center justify-content-between gap-2 mb-2">
+                        <span className="fw-semibold">{screen.label}</span>
+                        <strong>{screen.percentage.toFixed(1)}%</strong>
+                      </div>
+                      <div
+                        className="progress"
+                        role="progressbar"
+                        aria-label={`Percentual de tela ${screen.label}`}
+                        aria-valuenow={screen.percentage}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                      >
+                        <div
+                          className="progress-bar"
+                          style={{
+                            width: `${Math.min(100, Math.max(0, screen.percentage))}%`,
+                          }}
+                        />
+                      </div>
+                      <div className="text-muted small mt-1">
+                        {screen.sessions} sessões
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
       <div className="card">
         <div className="card-body">
           <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
@@ -243,6 +349,13 @@ export default function ExperimentLandingAnalyticsTab({
                         </div>
                         <div className="text-muted small">
                           {session.deviceLabel ?? "Computador"}
+                        </div>
+                        <div className="text-muted small">
+                          {session.operatingSystemLabel ??
+                            "SO não identificado"}
+                        </div>
+                        <div className="text-muted small">
+                          {session.screenSizeLabel ?? "Tela não capturada"}
                         </div>
                       </td>
                       <td className="small">

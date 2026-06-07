@@ -4043,3 +4043,11 @@
 - causa-raiz: o changelog atualizava `pipeline_stage` e `pipeline_stage_definition` enquanto consultava as mesmas tabelas em subconsultas `NOT EXISTS`, padrão bloqueado pelo MySQL 5.7 com o erro 1093 (`You can't specify target table ... for update in FROM clause`).
 - foi feito: as validações de existência/conflito foram reescritas para `LEFT JOIN ... IS NULL`, evitando subconsultas sobre a tabela-alvo durante `UPDATE` e mantendo a idempotência das inserções das etapas GeraLanding.
 - impacto esperado: o backend deve conseguir concluir a execução do Liquibase e subir sem interromper o contexto Spring por essa migração.
+
+## 2026-06-07 — Percentuais mobile e tamanho de tela no analytics do experimento
+
+- solicitação: exibir no analytics do experimento os percentuais de sistemas operacionais mobile (`iOS`/`Android`) e, quando possível, o tamanho de tela dos visitantes.
+- foi feito: o script público de analytics da landing passou a enviar `operatingSystem`, `screenWidth` e `screenHeight` junto com `deviceType`, `userAgent` e sessão.
+- foi feito: o resumo backend do funil passou a consolidar percentuais por sistema operacional dentro das sessões mobile e as principais resoluções de tela capturadas.
+- foi feito: a aba Analytics do experimento passou a mostrar cards específicos para iOS/Android/outros e para resoluções de tela, além de detalhar esses dados nas sessões recentes.
+- impacto esperado: a decisão comercial sobre páginas e criativos mobile fica mais precisa, permitindo detectar predominância de iOS/Android e adaptar layout/oferta aos tamanhos reais de tela.

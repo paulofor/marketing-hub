@@ -1064,6 +1064,14 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ExperimentLandingAnalyticsDevice'
+        mobileOperatingSystemBreakdown:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExperimentLandingAnalyticsOperatingSystem'
+        screenSizeBreakdown:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExperimentLandingAnalyticsScreenSize'
         sessions:
           type: array
           items:
@@ -1104,6 +1112,20 @@ components:
           enum: [mobile, desktop, tablet]
         deviceLabel:
           type: string
+        operatingSystem:
+          type: string
+          enum: [ios, android, other]
+        operatingSystemLabel:
+          type: string
+        screenWidth:
+          type: integer
+          nullable: true
+        screenHeight:
+          type: integer
+          nullable: true
+        screenSizeLabel:
+          type: string
+          nullable: true
         topSections:
           type: array
           items:
@@ -1116,6 +1138,40 @@ components:
           enum: [mobile, desktop, tablet]
         label:
           type: string
+        sessions:
+          type: integer
+          format: int64
+        percentage:
+          type: number
+          format: double
+    ExperimentLandingAnalyticsOperatingSystem:
+      type: object
+      properties:
+        operatingSystem:
+          type: string
+          enum: [ios, android, other]
+        label:
+          type: string
+        sessions:
+          type: integer
+          format: int64
+        percentage:
+          type: number
+          format: double
+    ExperimentLandingAnalyticsScreenSize:
+      type: object
+      properties:
+        screenSize:
+          type: string
+          example: 390x844
+        label:
+          type: string
+        width:
+          type: integer
+          nullable: true
+        height:
+          type: integer
+          nullable: true
         sessions:
           type: integer
           format: int64

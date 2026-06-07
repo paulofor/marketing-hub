@@ -117,16 +117,16 @@ class FacebookCampaignServiceTest {
             objectMapper,
             apiLogClient
         );
-        backend.enqueueConditionalResponse(
+        backend.enqueuePriorityConditionalResponse(
             request -> "/api/experiments/1/facebook-api-logs".equals(request.getPath()) && "POST".equals(request.getMethod()),
             () -> new MockResponse().setBody("{}").addHeader("Content-Type", "application/json")
         );
-        backend.enqueueConditionalResponse(
+        backend.enqueuePriorityConditionalResponse(
             request -> "/api/facebook-campaigns".equals(request.getPath())
                 && "POST".equals(request.getMethod()),
             () -> new MockResponse().setBody("{}").addHeader("Content-Type", "application/json")
         );
-        backend.enqueueConditionalResponse(
+        backend.enqueuePriorityConditionalResponse(
             request -> request.getPath() != null
                 && request.getPath().contains("/api/instant-forms/")
                 && request.getPath().endsWith("/publication")
@@ -139,7 +139,7 @@ class FacebookCampaignServiceTest {
                 && "GET".equals(request.getMethod()),
             () -> new MockResponse().setBody("[]").addHeader("Content-Type", "application/json")
         );
-        backend.enqueueConditionalResponse(
+        backend.enqueuePriorityConditionalResponse(
             request -> request.getPath() != null
                 && request.getPath().startsWith("/api/facebook-adsets/experiments-ready")
                 && "GET".equals(request.getMethod()),
@@ -151,20 +151,20 @@ class FacebookCampaignServiceTest {
                 && "GET".equals(request.getMethod()),
             () -> new MockResponse().setBody("[]").addHeader("Content-Type", "application/json")
         );
-        backend.enqueueConditionalResponse(
+        backend.enqueuePriorityConditionalResponse(
             request -> request.getPath() != null
                 && request.getPath().startsWith("/api/internal/facebook-campaigns/image-hash-mappings/resolve")
                 && "GET".equals(request.getMethod()),
             () -> new MockResponse().setResponseCode(404)
         );
-        backend.enqueueConditionalResponse(
+        backend.enqueuePriorityConditionalResponse(
             request -> "/api/internal/facebook-campaigns/image-hash-mappings".equals(request.getPath())
                 && "POST".equals(request.getMethod()),
             () -> new MockResponse()
                 .setBody("{\"metaImageHash\":\"hash-preloaded\"}")
                 .addHeader("Content-Type", "application/json")
         );
-        backend.enqueueConditionalResponse(
+        backend.enqueuePriorityConditionalResponse(
             request -> request.getPath() != null
                 && request.getPath().contains("/api/experiments/")
                 && request.getPath().contains("/status?status=")
@@ -190,6 +190,9 @@ class FacebookCampaignServiceTest {
     }
 
 
+    /**
+     * Provides a backend-approved manual targeting package used when no ready playbook exists.
+     */
     private String defaultManualTargetingPackage() {
         return """
             [{
@@ -203,6 +206,15 @@ class FacebookCampaignServiceTest {
               }
             }]
             """;
+    }
+
+    /**
+     * Builds the default approved manual targeting response for campaign publication tests.
+     */
+    private MockResponse defaultManualTargetingPackageResponse() {
+        return new MockResponse()
+            .setBody(defaultManualTargetingPackage())
+            .addHeader("Content-Type", "application/json");
     }
 
     private RecordedRequest takeBackendRequest(String description) throws InterruptedException {
@@ -256,8 +268,7 @@ class FacebookCampaignServiceTest {
             .addHeader("Content-Type", "application/json"));
         backend.enqueueResponse(new MockResponse().setBody("[]")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueueResponse(new MockResponse().setBody("[]")
-            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(defaultManualTargetingPackageResponse());
         backend.enqueueResponse(new MockResponse().setBody("{}")
             .addHeader("Content-Type", "application/json"));
         backend.enqueueResponse(new MockResponse().setBody("{}")
@@ -402,6 +413,7 @@ class FacebookCampaignServiceTest {
             .addHeader("Content-Type", "application/json"));
         backend.enqueueResponse(new MockResponse().setBody("{\"specs\":[]}")
             .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(defaultManualTargetingPackageResponse());
         backend.enqueueResponse(new MockResponse().setBody("{}")
             .addHeader("Content-Type", "application/json"));
         backend.enqueueResponse(new MockResponse().setBody("{}")
@@ -462,8 +474,7 @@ class FacebookCampaignServiceTest {
             .addHeader("Content-Type", "application/json"));
         backend.enqueueResponse(new MockResponse().setBody("{}")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueueResponse(new MockResponse().setBody("{}")
-            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(defaultManualTargetingPackageResponse());
         backend.enqueueResponse(new MockResponse().setBody("{}")
             .addHeader("Content-Type", "application/json"));
         backend.enqueueResponse(new MockResponse().setBody("{}")
@@ -557,8 +568,7 @@ class FacebookCampaignServiceTest {
             .addHeader("Content-Type", "application/json"));
         backend.enqueueResponse(new MockResponse().setBody("{}")
             .addHeader("Content-Type", "application/json"));
-        backend.enqueueResponse(new MockResponse().setBody("{}")
-            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(defaultManualTargetingPackageResponse());
         backend.enqueueResponse(new MockResponse().setBody("{}")
             .addHeader("Content-Type", "application/json"));
         backend.enqueueResponse(new MockResponse().setBody("{}")

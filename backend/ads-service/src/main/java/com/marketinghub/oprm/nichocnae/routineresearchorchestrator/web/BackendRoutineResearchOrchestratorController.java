@@ -38,7 +38,7 @@ public class BackendRoutineResearchOrchestratorController {
         return executionService.listRecentProcessed(limit);
     }
 
-    /** Libera um nicho CNAE de ciclo falho para que o orquestrador automático possa criar novo ciclo. */
+    /** Cria imediatamente um novo ciclo para reprocessar um nicho CNAE com ciclo falho. */
     @PostMapping("/oprm/nichocnae/routine-research-orchestrator/recent-processed/{researchCycleId}/reprocess")
     public RecordRoutineResearchOrchestratorReprocessResult reprocess(@PathVariable Long researchCycleId) {
         return executionService.reprocessFailedCycle(researchCycleId);

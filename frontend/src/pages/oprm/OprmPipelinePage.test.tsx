@@ -107,7 +107,7 @@ describe("OprmPipelinePage", () => {
     });
   });
 
-  it("libera o CNAE com ciclo falho para novo ciclo automático", async () => {
+  it("cria novo ciclo imediato para reprocessar CNAE com ciclo falho", async () => {
     const fetchMock = vi.fn(
       async (input: RequestInfo | URL, init?: RequestInit) => {
         const url = input.toString();
@@ -117,16 +117,16 @@ describe("OprmPipelinePage", () => {
         ) {
           return new Response(
             JSON.stringify({
-              researchCycleId: 1,
+              researchCycleId: 3,
               sourceNicheId: 1,
               cnaeCode: "9602501",
               cnaeDescription: "Cabeleireiros, manicure e pedicure",
               previousCycleStatus: "FAILED",
               previousRoutineResearchStatus: "RESEARCH_RUNNING",
-              routineResearchStatus: "PENDING",
-              lastRoutineResearchCycleId: null,
+              routineResearchStatus: "RESEARCH_RUNNING",
+              lastRoutineResearchCycleId: 3,
               message:
-                "Nicho CNAE liberado para novo ciclo automático de pesquisa de rotina.",
+                "Novo ciclo de pesquisa de rotina criado imediatamente para reprocessar o CNAE.",
             }),
             { status: 200, headers: { "Content-Type": "application/json" } },
           );
@@ -183,7 +183,7 @@ describe("OprmPipelinePage", () => {
     });
     expect(
       await screen.findByText(
-        "Nicho CNAE liberado para novo ciclo automático de pesquisa de rotina.",
+        "Novo ciclo de pesquisa de rotina criado imediatamente para reprocessar o CNAE.",
       ),
     ).toBeTruthy();
   });

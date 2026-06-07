@@ -70,11 +70,11 @@ public class BackendRoutineResearchOrchestratorService {
         return recentCycles;
     }
 
-    /** Libera um nicho CNAE de ciclo falho para que o orquestrador automático crie um novo ciclo. */
+    /** Cria imediatamente um novo ciclo para reprocessar um nicho CNAE com ciclo falho. */
     @Transactional
     public RecordRoutineResearchOrchestratorReprocessResult reprocessFailedCycle(Long researchCycleId) {
         LOGGER.info(
-                "Liberando nicho CNAE para reprocessamento pela etapa zero OPRM nichocnae (researchCycleId={})",
+                "Criando novo ciclo para reprocessamento pela etapa zero OPRM nichocnae (failedResearchCycleId={})",
                 researchCycleId);
         OprmRoutineResearchCycle cycle = routineResearchCycleRepository
                 .findById(researchCycleId)
@@ -83,20 +83,24 @@ public class BackendRoutineResearchOrchestratorService {
         if (!CYCLE_STATUS_FAILED.equals(cycle.getStatus())) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
-                    "Only FAILED routine research cycles can be released for reprocessing: " + researchCycleId);
+                    "Only FAILED routine research cycles can be reprocessed: " + researchCycleId);
         }
         OprmNicheCandidate candidate = nicheCandidateRepository
                 .findById(cycle.getSourceNicheId())
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "Niche candidate not found: " + cycle.getSourceNicheId()));
         String previousRoutineResearchStatus = candidate.getRoutineResearchStatus();
-        candidate.setRoutineResearchStatus(ROUTINE_STATUS_PENDING);
-        candidate.setLastRoutineResearchCycleId(null);
-        candidate.setUpdatedAt(Instant.now());
+        Instant now = Instant.now();
+        OprmRoutineResearchCycle newCycle = createCycle(candidate, now);
+        OprmRoutineResearchCycle savedCycle = routineResearchCycleRepository.save(newCycle);
+        candidate.setRoutineResearchStatus(ROUTINE_STATUS_RUNNING);
+        candidate.setLastRoutineResearchCycleId(savedCycle.getId());
+        candidate.setUpdatedAt(now);
         OprmNicheCandidate savedCandidate = nicheCandidateRepository.save(candidate);
         LOGGER.info(
-                "Nicho CNAE liberado para novo ciclo automático OPRM nichocnae (researchCycleId={}, sourceNicheId={}, cnaeCode={}, previousCycleStatus={}, previousRoutineResearchStatus={}, routineResearchStatus={}, lastRoutineResearchCycleId={})",
+                "Novo ciclo criado imediatamente para reprocessamento OPRM nichocnae (failedResearchCycleId={}, newResearchCycleId={}, sourceNicheId={}, cnaeCode={}, previousCycleStatus={}, previousRoutineResearchStatus={}, routineResearchStatus={}, lastRoutineResearchCycleId={})",
                 cycle.getId(),
+                savedCycle.getId(),
                 savedCandidate.getId(),
                 savedCandidate.getCnaeCode(),
                 cycle.getStatus(),
@@ -104,7 +108,7 @@ public class BackendRoutineResearchOrchestratorService {
                 savedCandidate.getRoutineResearchStatus(),
                 savedCandidate.getLastRoutineResearchCycleId());
         return new RecordRoutineResearchOrchestratorReprocessResult(
-                cycle.getId(),
+                savedCycle.getId(),
                 savedCandidate.getId(),
                 savedCandidate.getCnaeCode(),
                 savedCandidate.getCnaeDescription(),
@@ -112,7 +116,7 @@ public class BackendRoutineResearchOrchestratorService {
                 previousRoutineResearchStatus,
                 savedCandidate.getRoutineResearchStatus(),
                 savedCandidate.getLastRoutineResearchCycleId(),
-                "Nicho CNAE liberado para novo ciclo automático de pesquisa de rotina.");
+                "Novo ciclo de pesquisa de rotina criado imediatamente para reprocessar o CNAE.");
     }
 
     /** Executa a etapa zero, marcando o nicho selecionado como em pesquisa e criando o ciclo pai. */

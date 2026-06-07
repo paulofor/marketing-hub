@@ -15,5 +15,7 @@ public record ExperimentLandingAnalyticsDto(
         long averageVisibleMsPerSession,
         Instant lastEventAt,
         List<ExperimentLandingAnalyticsDeviceDto> deviceBreakdown,
+        List<ExperimentLandingAnalyticsOperatingSystemDto> mobileOperatingSystemBreakdown,
+        List<ExperimentLandingAnalyticsScreenSizeDto> screenSizeBreakdown,
         List<ExperimentLandingAnalyticsSessionDto> sessions) {
 }

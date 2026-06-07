@@ -101,7 +101,10 @@ class LeadPortalFlowEngagementControllerTest {
                                   "eventId":"evt-1",
                                   "eventType":"page_view",
                                   "sessionId":"session-1",
-                                  "pageUrl":"https://oportunidadebrasil.shop/api/flows/flow-slug/page"
+                                  "pageUrl":"https://oportunidadebrasil.shop/api/flows/flow-slug/page",
+                                  "operatingSystem":"ios",
+                                  "screenWidth":390,
+                                  "screenHeight":844
                                 }
                                 """))
                 .andExpect(status().isOk());
@@ -111,7 +114,10 @@ class LeadPortalFlowEngagementControllerTest {
                 org.mockito.ArgumentMatchers.argThat((RegisterLandingPageAnalyticsEventRequest request) ->
                         "evt-1".equals(request.eventId())
                                 && "page_view".equals(request.eventType())
-                                && "session-1".equals(request.sessionId())));
+                                && "session-1".equals(request.sessionId())
+                                && "ios".equals(request.operatingSystem())
+                                && Integer.valueOf(390).equals(request.screenWidth())
+                                && Integer.valueOf(844).equals(request.screenHeight())));
     }
 
 }

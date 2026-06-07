@@ -112,7 +112,10 @@ class ExperimentFunnelServiceRenderCompleteTest {
                         "https://oportunidadebrasil.shop/api/flows/exp-36-landing-geralanding/page",
                         Instant.parse("2026-06-04T21:00:00Z"),
                         "JUnit",
-                        "desktop"));
+                        "desktop",
+                        "other",
+                        1366,
+                        768));
 
         ArgumentCaptor<ExperimentFunnelEvent> eventCaptor = ArgumentCaptor.forClass(ExperimentFunnelEvent.class);
         verify(eventRepository).save(eventCaptor.capture());
@@ -147,6 +150,9 @@ class ExperimentFunnelServiceRenderCompleteTest {
         assertEquals(0, summary.sectionViewEvents());
         assertEquals(3, summary.deviceBreakdown().size());
         assertTrue(summary.deviceBreakdown().stream().allMatch(device -> device.percentage() == 0));
+        assertEquals(3, summary.mobileOperatingSystemBreakdown().size());
+        assertTrue(summary.mobileOperatingSystemBreakdown().stream().allMatch(os -> os.percentage() == 0));
+        assertTrue(summary.screenSizeBreakdown().isEmpty());
     }
 
     /**
@@ -162,13 +168,13 @@ class ExperimentFunnelServiceRenderCompleteTest {
                 eq(null),
                 any(Pageable.class)))
                 .thenReturn(List.of(
-                        landingEvent(1L, "eventId=e1;eventType=page_view;sessionId=s1;deviceType=mobile;userAgent=Mobile",
+                        landingEvent(1L, "eventId=e1;eventType=page_view;sessionId=s1;deviceType=mobile;operatingSystem=ios;screenWidth=390;screenHeight=844;userAgent=iPhone",
                                 Instant.parse("2026-06-04T21:00:00Z")),
-                        landingEvent(2L, "eventId=e2;eventType=page_view;sessionId=s2;deviceType=desktop;userAgent=Desktop",
+                        landingEvent(2L, "eventId=e2;eventType=page_view;sessionId=s2;deviceType=desktop;operatingSystem=other;screenWidth=1366;screenHeight=768;userAgent=Desktop",
                                 Instant.parse("2026-06-04T21:01:00Z")),
-                        landingEvent(3L, "eventId=e3;eventType=page_view;sessionId=s3;deviceType=tablet;userAgent=iPad",
+                        landingEvent(3L, "eventId=e3;eventType=page_view;sessionId=s3;deviceType=tablet;operatingSystem=ios;screenWidth=820;screenHeight=1180;userAgent=iPad",
                                 Instant.parse("2026-06-04T21:02:00Z")),
-                        landingEvent(4L, "eventId=e4;eventType=section_view_time;sessionId=s1;elapsedMs=1500;deviceType=mobile",
+                        landingEvent(4L, "eventId=e4;eventType=section_view_time;sessionId=s1;elapsedMs=1500;deviceType=mobile;operatingSystem=ios;screenWidth=390;screenHeight=844",
                                 Instant.parse("2026-06-04T21:03:00Z"))));
 
         var summary = service.summarizeLandingAnalytics(39L);
@@ -178,11 +184,15 @@ class ExperimentFunnelServiceRenderCompleteTest {
         assertEquals(33.33, findDevicePercentage(summary.deviceBreakdown(), "mobile"));
         assertEquals(33.33, findDevicePercentage(summary.deviceBreakdown(), "desktop"));
         assertEquals(33.33, findDevicePercentage(summary.deviceBreakdown(), "tablet"));
-        assertEquals("Mobile", summary.sessions().stream()
+        var mobileSession = summary.sessions().stream()
                 .filter(session -> "s1".equals(session.sessionId()))
                 .findFirst()
-                .orElseThrow()
-                .deviceLabel());
+                .orElseThrow();
+        assertEquals("Mobile", mobileSession.deviceLabel());
+        assertEquals("iOS", mobileSession.operatingSystemLabel());
+        assertEquals("390x844 px", mobileSession.screenSizeLabel());
+        assertEquals(100.0, findOperatingSystemPercentage(summary.mobileOperatingSystemBreakdown(), "ios"));
+        assertEquals(33.33, findScreenSizePercentage(summary.screenSizeBreakdown(), "390x844"));
     }
 
     /**
@@ -246,6 +256,32 @@ class ExperimentFunnelServiceRenderCompleteTest {
                 return occurredAt;
             }
         };
+    }
+
+    /**
+     * Localiza o percentual de um sistema operacional mobile no resumo de analytics.
+     */
+    private double findOperatingSystemPercentage(
+            List<com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsOperatingSystemDto> systems,
+            String operatingSystem) {
+        return systems.stream()
+                .filter(system -> operatingSystem.equals(system.operatingSystem()))
+                .map(com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsOperatingSystemDto::percentage)
+                .findFirst()
+                .orElseThrow();
+    }
+
+    /**
+     * Localiza o percentual de uma resolução de tela no resumo de analytics.
+     */
+    private double findScreenSizePercentage(
+            List<com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsScreenSizeDto> screens,
+            String screenSize) {
+        return screens.stream()
+                .filter(screen -> screenSize.equals(screen.screenSize()))
+                .map(com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsScreenSizeDto::percentage)
+                .findFirst()
+                .orElseThrow();
     }
 
     /**

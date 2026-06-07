@@ -18,5 +18,10 @@ public record ExperimentLandingAnalyticsSessionDto(
         String lastUserAgent,
         String deviceType,
         String deviceLabel,
+        String operatingSystem,
+        String operatingSystemLabel,
+        Integer screenWidth,
+        Integer screenHeight,
+        String screenSizeLabel,
         List<ExperimentLandingAnalyticsSectionDto> topSections) {
 }

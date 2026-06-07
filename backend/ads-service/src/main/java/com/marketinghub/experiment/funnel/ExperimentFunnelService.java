@@ -5,6 +5,8 @@ import com.marketinghub.experiment.funnel.dto.ExperimentFunnelStageDto;
 import com.marketinghub.experiment.funnel.dto.RegisterExperimentFunnelEventRequest;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsDeviceDto;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsDto;
+import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsOperatingSystemDto;
+import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsScreenSizeDto;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsSectionDto;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsSessionDto;
 import com.marketinghub.leadportal.dto.LeadPortalSubmissionEngagementContractV1;
@@ -99,11 +101,15 @@ public class ExperimentFunnelService {
             String pageUrl = payload.get("pageUrl");
             String userAgent = payload.get("userAgent");
             String deviceType = normalizeLandingAnalyticsDeviceType(payload.get("deviceType"), userAgent);
+            String operatingSystem = normalizeLandingAnalyticsOperatingSystem(payload.get("operatingSystem"), userAgent);
+            Integer screenWidth = parsePositiveInteger(payload.get("screenWidth"));
+            Integer screenHeight = parsePositiveInteger(payload.get("screenHeight"));
             long elapsedMs = parseLong(payload.get("elapsedMs"));
 
             LandingAnalyticsSessionAccumulator session = sessions.computeIfAbsent(
                     sessionId, LandingAnalyticsSessionAccumulator::new);
-            session.record(row.occurredAt(), eventType, sectionId, elapsedMs, pageUrl, userAgent, deviceType);
+            session.record(row.occurredAt(), eventType, sectionId, elapsedMs, pageUrl, userAgent, deviceType,
+                    operatingSystem, screenWidth, screenHeight);
 
             if ("page_view".equalsIgnoreCase(eventType)) {
                 pageViews++;
@@ -123,6 +129,9 @@ public class ExperimentFunnelService {
                 .toList();
         long averageVisibleMsPerSession = sessions.isEmpty() ? 0 : totalVisibleMs / sessions.size();
         List<ExperimentLandingAnalyticsDeviceDto> deviceBreakdown = buildDeviceBreakdown(sessions);
+        List<ExperimentLandingAnalyticsOperatingSystemDto> mobileOperatingSystemBreakdown =
+                buildMobileOperatingSystemBreakdown(sessions);
+        List<ExperimentLandingAnalyticsScreenSizeDto> screenSizeBreakdown = buildScreenSizeBreakdown(sessions);
         return new ExperimentLandingAnalyticsDto(
                 rows.size(),
                 sessions.size(),
@@ -132,6 +141,8 @@ public class ExperimentFunnelService {
                 averageVisibleMsPerSession,
                 lastEventAt,
                 deviceBreakdown,
+                mobileOperatingSystemBreakdown,
+                screenSizeBreakdown,
                 sessionDtos);
     }
 
@@ -343,6 +354,10 @@ public class ExperimentFunnelService {
         String userAgent = sanitizePayloadValue(request.userAgent());
         String deviceType = sanitizePayloadValue(
                 normalizeLandingAnalyticsDeviceType(request.deviceType(), request.userAgent()));
+        String operatingSystem = sanitizePayloadValue(
+                normalizeLandingAnalyticsOperatingSystem(request.operatingSystem(), request.userAgent()));
+        String screenWidth = request.screenWidth() == null ? "" : request.screenWidth().toString();
+        String screenHeight = request.screenHeight() == null ? "" : request.screenHeight().toString();
         String duration = elapsedMs == null ? "" : elapsedMs.toString();
         return "eventId=" + sanitizePayloadValue(request.eventId())
                 + ";eventType=" + sanitizePayloadValue(request.eventType())
@@ -351,7 +366,10 @@ public class ExperimentFunnelService {
                 + ";elapsedMs=" + duration
                 + ";pageUrl=" + url
                 + ";userAgent=" + userAgent
-                + ";deviceType=" + deviceType;
+                + ";deviceType=" + deviceType
+                + ";operatingSystem=" + operatingSystem
+                + ";screenWidth=" + sanitizePayloadValue(screenWidth)
+                + ";screenHeight=" + sanitizePayloadValue(screenHeight);
     }
 
     private Lead resolveLead(UUID leadId) {
@@ -649,6 +667,60 @@ public class ExperimentFunnelService {
     }
 
     /**
+     * Consolida a distribuição percentual de sessões mobile por sistema operacional.
+     */
+    private List<ExperimentLandingAnalyticsOperatingSystemDto> buildMobileOperatingSystemBreakdown(
+            Map<String, LandingAnalyticsSessionAccumulator> sessions) {
+        Map<String, Long> counts = new LinkedHashMap<>();
+        counts.put("ios", 0L);
+        counts.put("android", 0L);
+        counts.put("other", 0L);
+        sessions.values().stream()
+                .filter(session -> "mobile".equals(session.deviceType()))
+                .forEach(session -> counts.compute(
+                        session.operatingSystem(),
+                        (key, count) -> (count == null ? 0 : count) + 1));
+        long mobileSessions = counts.values().stream().mapToLong(Long::longValue).sum();
+        return counts.entrySet().stream()
+                .map(entry -> new ExperimentLandingAnalyticsOperatingSystemDto(
+                        entry.getKey(),
+                        landingAnalyticsOperatingSystemLabel(entry.getKey()),
+                        entry.getValue(),
+                        mobileSessions == 0 ? 0 : Math.round((entry.getValue() * 10000.0) / mobileSessions) / 100.0))
+                .toList();
+    }
+
+    /**
+     * Consolida a distribuição percentual das principais resoluções de tela por sessão.
+     */
+    private List<ExperimentLandingAnalyticsScreenSizeDto> buildScreenSizeBreakdown(
+            Map<String, LandingAnalyticsSessionAccumulator> sessions) {
+        long totalSessionsWithScreen = sessions.values().stream()
+                .filter(LandingAnalyticsSessionAccumulator::hasScreenSize)
+                .count();
+        Map<String, ScreenSizeAccumulator> counts = new LinkedHashMap<>();
+        sessions.values().stream()
+                .filter(LandingAnalyticsSessionAccumulator::hasScreenSize)
+                .forEach(session -> counts.computeIfAbsent(
+                        session.screenSizeKey(),
+                        key -> new ScreenSizeAccumulator(session.screenWidth(), session.screenHeight()))
+                        .record());
+        return counts.values().stream()
+                .sorted(Comparator.comparingLong(ScreenSizeAccumulator::sessions).reversed())
+                .limit(8)
+                .map(screen -> new ExperimentLandingAnalyticsScreenSizeDto(
+                        screen.key(),
+                        screen.label(),
+                        screen.width(),
+                        screen.height(),
+                        screen.sessions(),
+                        totalSessionsWithScreen == 0
+                                ? 0
+                                : Math.round((screen.sessions() * 10000.0) / totalSessionsWithScreen) / 100.0))
+                .toList();
+    }
+
+    /**
      * Normaliza o tipo de dispositivo enviado pela landing, usando user-agent como fallback.
      */
     private static String normalizeLandingAnalyticsDeviceType(String rawDeviceType, String userAgent) {
@@ -674,6 +746,41 @@ public class ExperimentFunnelService {
             return "mobile";
         }
         return "desktop";
+    }
+
+    /**
+     * Normaliza o sistema operacional mobile enviado pela landing, usando user-agent como fallback.
+     */
+    private static String normalizeLandingAnalyticsOperatingSystem(String rawOperatingSystem, String userAgent) {
+        if (rawOperatingSystem != null && !rawOperatingSystem.isBlank()) {
+            String normalized = rawOperatingSystem.trim().toLowerCase();
+            if ("ios".equals(normalized) || "iphone".equals(normalized) || "ipad".equals(normalized)) {
+                return "ios";
+            }
+            if ("android".equals(normalized)) {
+                return "android";
+            }
+        }
+        String normalizedUserAgent = userAgent == null ? "" : userAgent.toLowerCase();
+        if (normalizedUserAgent.contains("iphone") || normalizedUserAgent.contains("ipod")
+                || normalizedUserAgent.contains("ipad")) {
+            return "ios";
+        }
+        if (normalizedUserAgent.contains("android")) {
+            return "android";
+        }
+        return "other";
+    }
+
+    /**
+     * Retorna o rótulo do sistema operacional mobile exibido no painel de analytics.
+     */
+    private static String landingAnalyticsOperatingSystemLabel(String operatingSystem) {
+        return switch (normalizeLandingAnalyticsOperatingSystem(operatingSystem, null)) {
+            case "ios" -> "iOS";
+            case "android" -> "Android";
+            default -> "Outros";
+        };
     }
 
     /**
@@ -746,6 +853,22 @@ public class ExperimentFunnelService {
     }
 
     /**
+     * Converte números textuais positivos de tela para Integer, retornando null quando ausentes ou inválidos.
+     */
+    private Integer parsePositiveInteger(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            int parsed = Integer.parseInt(value.trim());
+            return parsed > 0 ? parsed : null;
+        } catch (NumberFormatException ex) {
+            log.warn("Landing analytics dimensão de tela inválida. valor={}", value, ex);
+            return null;
+        }
+    }
+
+    /**
      * Linha mínima de evento de analytics retornada da tabela de eventos do funil.
      */
     private record LandingAnalyticsEventRow(long id, String payload, Instant occurredAt) {
@@ -765,6 +888,9 @@ public class ExperimentFunnelService {
         private String lastPageUrl;
         private String lastUserAgent;
         private String deviceType = "desktop";
+        private String operatingSystem = "other";
+        private Integer screenWidth;
+        private Integer screenHeight;
         private final Map<String, SectionAccumulator> sections = new LinkedHashMap<>();
 
         private LandingAnalyticsSessionAccumulator(String sessionId) {
@@ -775,7 +901,8 @@ public class ExperimentFunnelService {
          * Acrescenta um evento recebido na sessão e atualiza contadores de página e seção.
          */
         private void record(Instant occurredAt, String eventType, String sectionId, long elapsedMs,
-                            String pageUrl, String userAgent, String deviceType) {
+                            String pageUrl, String userAgent, String deviceType, String operatingSystem,
+                            Integer screenWidth, Integer screenHeight) {
             eventCount++;
             if (firstEventAt == null || (occurredAt != null && occurredAt.isBefore(firstEventAt))) {
                 firstEventAt = occurredAt;
@@ -790,6 +917,11 @@ public class ExperimentFunnelService {
                 }
             }
             this.deviceType = normalizeLandingAnalyticsDeviceType(deviceType, userAgent);
+            this.operatingSystem = normalizeLandingAnalyticsOperatingSystem(operatingSystem, userAgent);
+            if (screenWidth != null && screenHeight != null) {
+                this.screenWidth = screenWidth;
+                this.screenHeight = screenHeight;
+            }
             if ("page_view".equalsIgnoreCase(eventType)) {
                 pageViews++;
             }
@@ -816,6 +948,48 @@ public class ExperimentFunnelService {
         }
 
         /**
+         * Retorna o sistema operacional mobile normalizado da sessão para agregação percentual.
+         */
+        private String operatingSystem() {
+            return operatingSystem;
+        }
+
+        /**
+         * Informa se a sessão tem dimensões de tela válidas capturadas pelo script público.
+         */
+        private boolean hasScreenSize() {
+            return screenWidth != null && screenHeight != null;
+        }
+
+        /**
+         * Retorna a largura de tela da sessão para agregação de resoluções.
+         */
+        private Integer screenWidth() {
+            return screenWidth;
+        }
+
+        /**
+         * Retorna a altura de tela da sessão para agregação de resoluções.
+         */
+        private Integer screenHeight() {
+            return screenHeight;
+        }
+
+        /**
+         * Retorna a chave textual de resolução da sessão.
+         */
+        private String screenSizeKey() {
+            return screenWidth + "x" + screenHeight;
+        }
+
+        /**
+         * Retorna o rótulo textual da resolução da sessão.
+         */
+        private String screenSizeLabel() {
+            return hasScreenSize() ? screenSizeKey() + " px" : null;
+        }
+
+        /**
          * Converte o acumulador interno em DTO serializável pela API.
          */
         private ExperimentLandingAnalyticsSessionDto toDto() {
@@ -836,7 +1010,68 @@ public class ExperimentFunnelService {
                     lastUserAgent,
                     deviceType,
                     landingAnalyticsDeviceLabel(deviceType),
+                    operatingSystem,
+                    landingAnalyticsOperatingSystemLabel(operatingSystem),
+                    screenWidth,
+                    screenHeight,
+                    screenSizeLabel(),
                     topSections);
+        }
+    }
+
+    /**
+     * Acumula sessões por resolução de tela capturada na landing.
+     */
+    private static final class ScreenSizeAccumulator {
+        private final Integer width;
+        private final Integer height;
+        private long sessions;
+
+        private ScreenSizeAccumulator(Integer width, Integer height) {
+            this.width = width;
+            this.height = height;
+        }
+
+        /**
+         * Soma uma sessão à resolução de tela.
+         */
+        private void record() {
+            sessions++;
+        }
+
+        /**
+         * Retorna a chave canônica da resolução para a API.
+         */
+        private String key() {
+            return width + "x" + height;
+        }
+
+        /**
+         * Retorna o rótulo amigável da resolução para a UI.
+         */
+        private String label() {
+            return key() + " px";
+        }
+
+        /**
+         * Retorna a largura da tela em pixels CSS.
+         */
+        private Integer width() {
+            return width;
+        }
+
+        /**
+         * Retorna a altura da tela em pixels CSS.
+         */
+        private Integer height() {
+            return height;
+        }
+
+        /**
+         * Retorna a quantidade de sessões nesta resolução.
+         */
+        private long sessions() {
+            return sessions;
         }
     }
 

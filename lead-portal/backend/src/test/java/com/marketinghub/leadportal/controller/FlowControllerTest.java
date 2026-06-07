@@ -277,7 +277,9 @@ class FlowControllerTest {
                 .andExpect(content().string(containsString("/api/flows/")))
                 .andExpect(content().string(containsString("/page-analytics")))
                 .andExpect(content().string(containsString("mhAnalyticsDebug")))
-                .andExpect(content().string(containsString("[MH Landing Analytics]")));
+                .andExpect(content().string(containsString("[MH Landing Analytics]")))
+                .andExpect(content().string(containsString("operatingSystem")))
+                .andExpect(content().string(containsString("screenWidth")));
     }
 
     /**

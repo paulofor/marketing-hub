@@ -51,18 +51,22 @@ class FlowEngagementControllerTest {
         when(trackingClient.registerPageAnalytics(
                 org.mockito.ArgumentMatchers.eq("flow-slug"),
                 argThat(payload -> "page_view".equals(payload.get("eventType"))
-                        && "evt-1".equals(payload.get("eventId")))))
+                        && "evt-1".equals(payload.get("eventId"))
+                        && "android".equals(payload.get("operatingSystem"))
+                        && Integer.valueOf(390).equals(payload.get("screenWidth")))))
                 .thenReturn(TrackingResult.FORWARDED);
 
         mockMvc.perform(post("/api/flows/flow-slug/page-analytics")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"eventId\":\"evt-1\",\"eventType\":\"page_view\"}"))
+                        .content("{\"eventId\":\"evt-1\",\"eventType\":\"page_view\",\"operatingSystem\":\"android\",\"screenWidth\":390,\"screenHeight\":844}"))
                 .andExpect(status().isAccepted());
 
         verify(trackingClient).registerPageAnalytics(
                 org.mockito.ArgumentMatchers.eq("flow-slug"),
                 argThat(payload -> "page_view".equals(payload.get("eventType"))
-                        && "evt-1".equals(payload.get("eventId"))));
+                        && "evt-1".equals(payload.get("eventId"))
+                        && "android".equals(payload.get("operatingSystem"))
+                        && Integer.valueOf(390).equals(payload.get("screenWidth"))));
     }
 
     /**

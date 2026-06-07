@@ -191,6 +191,29 @@ public class FlowController {
                   const buildEventId = function(){
                     return crypto.randomUUID ? crypto.randomUUID() : (Date.now().toString(36) + '-' + Math.random().toString(36).slice(2));
                   };
+                  const resolveDeviceType = function(){
+                    const userAgent = navigator.userAgent || '';
+                    const isTablet = /ipad|tablet/i.test(userAgent) || (/android/i.test(userAgent) && !/mobile/i.test(userAgent));
+                    if (isTablet) return 'tablet';
+                    const isMobile = /mobi|iphone|ipod|android/i.test(userAgent);
+                    return isMobile ? 'mobile' : 'desktop';
+                  };
+                  const resolveOperatingSystem = function(){
+                    const userAgent = navigator.userAgent || '';
+                    if (/iphone|ipad|ipod/i.test(userAgent)) return 'ios';
+                    if (/android/i.test(userAgent)) return 'android';
+                    return 'other';
+                  };
+                  const resolveScreenSize = function(){
+                    const width = window.innerWidth || document.documentElement.clientWidth || screen.width || null;
+                    const height = window.innerHeight || document.documentElement.clientHeight || screen.height || null;
+                    return {
+                      width: typeof width === 'number' ? Math.round(width) : null,
+                      height: typeof height === 'number' ? Math.round(height) : null
+                    };
+                  };
+                  const deviceType = resolveDeviceType();
+                  const operatingSystem = resolveOperatingSystem();
                   const sendEvent = function(eventType, sectionId, elapsedMs){
                     const roundedElapsed = typeof elapsedMs === 'number' ? Math.round(elapsedMs) : null;
                     const payload = {
@@ -202,7 +225,11 @@ public class FlowController {
                       visibleMs: roundedElapsed,
                       pageUrl: window.location.href,
                       occurredAt: new Date().toISOString(),
-                      userAgent: navigator.userAgent
+                      userAgent: navigator.userAgent,
+                      deviceType: deviceType,
+                      operatingSystem: operatingSystem,
+                      screenWidth: resolveScreenSize().width,
+                      screenHeight: resolveScreenSize().height
                     };
                     debugLog('enviando evento', {endpoint: endpoint, payload: payload});
                     if (navigator.sendBeacon) {

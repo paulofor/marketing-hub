@@ -201,7 +201,7 @@ public class BackendNicheResearchSeedBuilderService {
     String allowedCnaeText = normalizeForTerms(cycle.getCnaeDescription());
     for (NicheResearchQueryRequest query : queries) {
       String rawQueryText = requiredText(query == null ? null : query.queryText(), "queryText");
-      String queryText = rawQueryText.toLowerCase(Locale.ROOT);
+      String queryText = normalizeForTerms(rawQueryText);
       if (!uniqueQueryTexts.add(queryText)) {
         throw new IllegalArgumentException("Duplicate queryText is not allowed: " + query.queryText());
       }
@@ -216,7 +216,7 @@ public class BackendNicheResearchSeedBuilderService {
   /** Rejeita queries que nascem procurando solução sem esse termo existir literalmente na descrição CNAE. */
   private void rejectSolutionTerms(String queryText, String allowedCnaeText) {
     String normalizedQuery = normalizeForTerms(queryText);
-    Set<String> queryTokens = Set.of(normalizedQuery.split("[^a-z0-9]+"));
+    Set<String> queryTokens = tokenizeNormalizedText(normalizedQuery);
     for (String term : SOLUTION_TERMS) {
       if (containsTerm(normalizedQuery, queryTokens, term) && !containsAllowedCnaeTerm(allowedCnaeText, term)) {
         throw new IllegalArgumentException("Query contains forbidden solution language: " + queryText);
@@ -226,8 +226,19 @@ public class BackendNicheResearchSeedBuilderService {
 
   /** Verifica se a descrição CNAE autoriza literalmente o uso de um termo sensível. */
   private boolean containsAllowedCnaeTerm(String allowedCnaeText, String term) {
-    Set<String> allowedTokens = Set.of(allowedCnaeText.split("[^a-z0-9]+"));
+    Set<String> allowedTokens = tokenizeNormalizedText(allowedCnaeText);
     return containsTerm(allowedCnaeText, allowedTokens, term);
+  }
+
+  /** Tokeniza texto normalizado sem falhar quando palavras comuns aparecem repetidas no payload da IA. */
+  private Set<String> tokenizeNormalizedText(String normalizedText) {
+    Set<String> tokens = new HashSet<>();
+    for (String token : normalizedText.split("[^a-z0-9]+")) {
+      if (StringUtils.hasText(token)) {
+        tokens.add(token);
+      }
+    }
+    return tokens;
   }
 
   /** Detecta termos simples por token e expressões compostas por ocorrência textual normalizada. */

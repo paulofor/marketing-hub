@@ -174,7 +174,10 @@ class ExperimentFunnelServiceRenderCompleteTest {
                         "https://oportunidadebrasil.shop/page",
                         Instant.parse("2026-06-07T10:00:00Z"),
                         "JUnit Browser",
-                        "desktop"));
+                        "desktop",
+                        "other",
+                        null,
+                        null));
 
         ArgumentCaptor<ExperimentLandingAnalyticsEvent> normalizedCaptor =
                 ArgumentCaptor.forClass(ExperimentLandingAnalyticsEvent.class);
@@ -213,7 +216,10 @@ class ExperimentFunnelServiceRenderCompleteTest {
                         "https://oportunidadebrasil.shop/page",
                         Instant.parse("2026-06-07T10:01:00Z"),
                         "JUnit Browser",
-                        "desktop"));
+                        "desktop",
+                        "other",
+                        null,
+                        null));
 
         ArgumentCaptor<ExperimentLandingAnalyticsEvent> normalizedCaptor =
                 ArgumentCaptor.forClass(ExperimentLandingAnalyticsEvent.class);
@@ -253,7 +259,10 @@ class ExperimentFunnelServiceRenderCompleteTest {
                         "https://oportunidadebrasil.shop/page",
                         Instant.parse("2026-06-07T10:02:00Z"),
                         "JUnit Browser",
-                        "desktop"));
+                        "desktop",
+                        "other",
+                        null,
+                        null));
 
         verify(eventRepository).save(any(ExperimentFunnelEvent.class));
         verify(landingAnalyticsEventRepository).existsPageViewInDeduplicationWindow(

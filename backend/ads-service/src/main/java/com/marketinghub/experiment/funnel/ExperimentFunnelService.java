@@ -9,6 +9,8 @@ import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAna
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsScreenSizeDto;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsSectionDto;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsSessionDto;
+import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsVisitorDto;
+import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsVisitorsDto;
 import com.marketinghub.leadportal.dto.LeadPortalSubmissionEngagementContractV1;
 import com.marketinghub.leadportal.dto.RegisterLandingPageAnalyticsEventRequest;
 import com.marketinghub.leadportal.dto.RegisterLeadPortalSubmissionRequest;
@@ -26,6 +28,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Timestamp;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -135,6 +138,7 @@ public class ExperimentFunnelService {
         List<ExperimentLandingAnalyticsOperatingSystemDto> mobileOperatingSystemBreakdown =
                 buildMobileOperatingSystemBreakdown(sessions);
         List<ExperimentLandingAnalyticsScreenSizeDto> screenSizeBreakdown = buildScreenSizeBreakdown(sessions);
+        ExperimentLandingAnalyticsVisitorsDto visitors = summarizeLandingAnalyticsVisitors(experiment, baseline);
         return new ExperimentLandingAnalyticsDto(
                 rows.size(),
                 sessions.size(),
@@ -146,7 +150,85 @@ public class ExperimentFunnelService {
                 deviceBreakdown,
                 mobileOperatingSystemBreakdown,
                 screenSizeBreakdown,
+                visitors,
                 sessionDtos);
+    }
+
+    /**
+     * Consolida visitantes prováveis recorrentes da landing para apoiar decisão comercial do experimento.
+     */
+    public ExperimentLandingAnalyticsVisitorsDto summarizeLandingAnalyticsVisitors(Long experimentId) {
+        Experiment experiment = experimentRepository.findById(experimentId).orElseThrow();
+        Instant baseline = resolveBaseline(experiment);
+        return summarizeLandingAnalyticsVisitors(experiment, baseline);
+    }
+
+    /**
+     * Agrega visitantes prováveis a partir dos page_views normalizados já deduplicados.
+     */
+    private ExperimentLandingAnalyticsVisitorsDto summarizeLandingAnalyticsVisitors(Experiment experiment,
+                                                                                     Instant baseline) {
+        List<ExperimentLandingAnalyticsVisitorDto> visitors = landingAnalyticsEventRepository
+                .aggregateVisitorsByExperiment(experiment.getId(), baseline)
+                .stream()
+                .map(this::toVisitorDto)
+                .toList();
+        long recurrentVisitors = visitors.stream()
+                .filter(ExperimentLandingAnalyticsVisitorDto::recurrent)
+                .count();
+        return new ExperimentLandingAnalyticsVisitorsDto(
+                visitors.size(),
+                recurrentVisitors,
+                visitors.size() - recurrentVisitors,
+                visitors);
+    }
+
+    /**
+     * Converte a agregação SQL em DTO público, mascarando o visitorId antes de responder à API.
+     */
+    private ExperimentLandingAnalyticsVisitorDto toVisitorDto(
+            ExperimentLandingAnalyticsEventRepository.VisitorRecurrenceProjection projection) {
+        long intervalSeconds = secondsBetween(projection.getFirstAccessAt(), projection.getLastAccessAt());
+        boolean recurrent = projection.getTotalSessions() >= 2
+                || (projection.getValidPageViews() >= 2
+                        && intervalSeconds > PAGE_VIEW_DEDUPLICATION_WINDOW_SECONDS);
+        String deviceType = normalizeLandingAnalyticsDeviceType(null, projection.getLastUserAgent());
+        return new ExperimentLandingAnalyticsVisitorDto(
+                maskVisitorId(projection.getVisitorId()),
+                projection.getTotalSessions(),
+                projection.getValidPageViews(),
+                projection.getFirstAccessAt(),
+                projection.getLastAccessAt(),
+                intervalSeconds,
+                projection.getDistinctPages(),
+                projection.getLastUserAgent(),
+                deviceType,
+                landingAnalyticsDeviceLabel(deviceType),
+                recurrent);
+    }
+
+    /**
+     * Calcula o intervalo em segundos entre primeiro e último acesso válido do visitante provável.
+     */
+    private long secondsBetween(Instant firstAccessAt, Instant lastAccessAt) {
+        if (firstAccessAt == null || lastAccessAt == null) {
+            return 0;
+        }
+        return Math.max(0, Duration.between(firstAccessAt, lastAccessAt).getSeconds());
+    }
+
+    /**
+     * Mascara o identificador first-party para evitar exposição completa em resposta administrativa.
+     */
+    private String maskVisitorId(String visitorId) {
+        if (visitorId == null || visitorId.isBlank()) {
+            return "sem-visitante";
+        }
+        String normalized = visitorId.trim();
+        if (normalized.length() <= 8) {
+            return normalized.charAt(0) + "…" + normalized.charAt(normalized.length() - 1);
+        }
+        return normalized.substring(0, 4) + "…" + normalized.substring(normalized.length() - 4);
     }
 
     /**

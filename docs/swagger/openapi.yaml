@@ -127,6 +127,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ExperimentLandingAnalytics'
+  /api/experiments/{experimentId}/funnel/analytics/visitors:
+    get:
+      tags: [Experiments]
+      summary: Consultar recorrência de visitantes prováveis da landing do experimento
+      parameters:
+        - in: path
+          name: experimentId
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Visitantes prováveis agrupados por visitorId mascarado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExperimentLandingAnalyticsVisitors'
   /api/experiments/{id}/creatives:
     post:
       tags: [Creatives]
@@ -1072,10 +1090,65 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ExperimentLandingAnalyticsScreenSize'
+        visitors:
+          $ref: '#/components/schemas/ExperimentLandingAnalyticsVisitors'
         sessions:
           type: array
           items:
             $ref: '#/components/schemas/ExperimentLandingAnalyticsSession'
+    ExperimentLandingAnalyticsVisitors:
+      type: object
+      properties:
+        probableVisitors:
+          type: integer
+          format: int64
+        recurrentVisitors:
+          type: integer
+          format: int64
+        singleVisitVisitors:
+          type: integer
+          format: int64
+        visitors:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExperimentLandingAnalyticsVisitor'
+    ExperimentLandingAnalyticsVisitor:
+      type: object
+      properties:
+        visitorId:
+          type: string
+          description: visitorId mascarado/abreviado; não identifica pessoa comprovada.
+          example: visi…-123
+        totalSessions:
+          type: integer
+          format: int64
+        validPageViews:
+          type: integer
+          format: int64
+        firstAccessAt:
+          type: string
+          format: date-time
+          nullable: true
+        lastAccessAt:
+          type: string
+          format: date-time
+          nullable: true
+        intervalSeconds:
+          type: integer
+          format: int64
+        distinctPages:
+          type: integer
+          format: int64
+        lastUserAgent:
+          type: string
+          nullable: true
+        deviceType:
+          type: string
+          enum: [mobile, desktop, tablet]
+        deviceLabel:
+          type: string
+        recurrent:
+          type: boolean
     ExperimentLandingAnalyticsSession:
       type: object
       properties:

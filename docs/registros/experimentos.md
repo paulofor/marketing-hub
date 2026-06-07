@@ -3999,3 +3999,8 @@
   - `backend/ads-service/src/main/java/com/marketinghub/pipeline/service/PipelineService.java`
   - `frontend/src/pages/pipeline/PipelineCrudPage.tsx`
   - `frontend/src/pages/pipeline/PipelineCrudPage.css`
+
+## 2026-06-07 — Etapa 1 da identificação de visitante recorrente na landing
+
+- Formalizado no cânone do procedimento de experimento o contrato público de analytics da landing com `visitorId`, `sessionId`, eventos, deduplicação de `page_view` em 3 segundos e compatibilidade com eventos legados sem `visitorId`.
+- Reforçada a regra de que `visitorId` identifica apenas visitante provável por navegador/dispositivo, sem comprovar pessoa real.

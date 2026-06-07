@@ -1,19 +1,20 @@
 package com.marketinghub.experiment.funnel;
 
-import com.marketinghub.repository.jpa.experiment.funnel.ExperimentFunnelEventRepository;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.funnel.dto.ExperimentFunnelStageDto;
+import com.marketinghub.experiment.funnel.dto.RegisterExperimentFunnelEventRequest;
+import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsDeviceDto;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsDto;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsSectionDto;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsSessionDto;
-import com.marketinghub.experiment.funnel.dto.RegisterExperimentFunnelEventRequest;
-import com.marketinghub.repository.jpa.experiment.funnel.ExperimentFunnelEventRepository.StageAggregation;
 import com.marketinghub.leadportal.dto.LeadPortalSubmissionEngagementContractV1;
-import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
+import com.marketinghub.leadportal.dto.RegisterLandingPageAnalyticsEventRequest;
+import com.marketinghub.leadportal.dto.RegisterLeadPortalSubmissionRequest;
 import com.marketinghub.model.Lead;
 import com.marketinghub.repository.jpa.core.LeadRepository;
-import com.marketinghub.leadportal.dto.RegisterLeadPortalSubmissionRequest;
-import com.marketinghub.leadportal.dto.RegisterLandingPageAnalyticsEventRequest;
+import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
+import com.marketinghub.repository.jpa.experiment.funnel.ExperimentFunnelEventRepository;
+import com.marketinghub.repository.jpa.experiment.funnel.ExperimentFunnelEventRepository.StageAggregation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -97,11 +98,12 @@ public class ExperimentFunnelService {
             String sectionId = payload.get("sectionId");
             String pageUrl = payload.get("pageUrl");
             String userAgent = payload.get("userAgent");
+            String deviceType = normalizeLandingAnalyticsDeviceType(payload.get("deviceType"), userAgent);
             long elapsedMs = parseLong(payload.get("elapsedMs"));
 
             LandingAnalyticsSessionAccumulator session = sessions.computeIfAbsent(
                     sessionId, LandingAnalyticsSessionAccumulator::new);
-            session.record(row.occurredAt(), eventType, sectionId, elapsedMs, pageUrl, userAgent);
+            session.record(row.occurredAt(), eventType, sectionId, elapsedMs, pageUrl, userAgent, deviceType);
 
             if ("page_view".equalsIgnoreCase(eventType)) {
                 pageViews++;
@@ -120,6 +122,7 @@ public class ExperimentFunnelService {
                 .map(LandingAnalyticsSessionAccumulator::toDto)
                 .toList();
         long averageVisibleMsPerSession = sessions.isEmpty() ? 0 : totalVisibleMs / sessions.size();
+        List<ExperimentLandingAnalyticsDeviceDto> deviceBreakdown = buildDeviceBreakdown(sessions);
         return new ExperimentLandingAnalyticsDto(
                 rows.size(),
                 sessions.size(),
@@ -128,6 +131,7 @@ public class ExperimentFunnelService {
                 totalVisibleMs,
                 averageVisibleMsPerSession,
                 lastEventAt,
+                deviceBreakdown,
                 sessionDtos);
     }
 
@@ -279,7 +283,7 @@ public class ExperimentFunnelService {
         Instant occurredAt = Optional.ofNullable(request.occurredAt()).orElse(Instant.now());
         String payload = buildLandingAnalyticsPayload(request, elapsedMs);
 
-        log.info("landing_page_analytics experimentId={} flowSlug={} eventId={} eventType={} sectionId={} elapsedMs={} sessionId={} pageUrl={} occurredAt={} userAgent={}",
+        log.info("landing_page_analytics experimentId={} flowSlug={} eventId={} eventType={} sectionId={} elapsedMs={} sessionId={} pageUrl={} occurredAt={} userAgent={} deviceType={}",
                 experiment.getId(),
                 flowSlug.trim(),
                 request.eventId().trim(),
@@ -289,7 +293,8 @@ public class ExperimentFunnelService {
                 request.sessionId(),
                 request.pageUrl(),
                 occurredAt,
-                request.userAgent());
+                request.userAgent(),
+                normalizeLandingAnalyticsDeviceType(request.deviceType(), request.userAgent()));
 
         ExperimentFunnelStage stage = resolveStageForLandingAnalyticsEvent(eventType);
         if (stage != null) {
@@ -336,6 +341,8 @@ public class ExperimentFunnelService {
         String sessionId = sanitizePayloadValue(request.sessionId());
         String url = sanitizePayloadValue(request.pageUrl());
         String userAgent = sanitizePayloadValue(request.userAgent());
+        String deviceType = sanitizePayloadValue(
+                normalizeLandingAnalyticsDeviceType(request.deviceType(), request.userAgent()));
         String duration = elapsedMs == null ? "" : elapsedMs.toString();
         return "eventId=" + sanitizePayloadValue(request.eventId())
                 + ";eventType=" + sanitizePayloadValue(request.eventType())
@@ -343,7 +350,8 @@ public class ExperimentFunnelService {
                 + ";sectionId=" + sectionId
                 + ";elapsedMs=" + duration
                 + ";pageUrl=" + url
-                + ";userAgent=" + userAgent;
+                + ";userAgent=" + userAgent
+                + ";deviceType=" + deviceType;
     }
 
     private Lead resolveLead(UUID leadId) {
@@ -616,6 +624,70 @@ public class ExperimentFunnelService {
     }
 
     /**
+     * Consolida a distribuição percentual de sessões por tipo de dispositivo.
+     */
+    private List<ExperimentLandingAnalyticsDeviceDto> buildDeviceBreakdown(
+            Map<String, LandingAnalyticsSessionAccumulator> sessions) {
+        long totalSessions = sessions.size();
+        Map<String, Long> counts = new LinkedHashMap<>();
+        counts.put("mobile", 0L);
+        counts.put("desktop", 0L);
+        counts.put("tablet", 0L);
+        sessions.values().forEach(session -> counts.compute(
+                session.deviceType(),
+                (key, count) -> (count == null ? 0 : count) + 1));
+        return counts.entrySet().stream()
+                .filter(entry -> "mobile".equals(entry.getKey())
+                        || "desktop".equals(entry.getKey())
+                        || "tablet".equals(entry.getKey()))
+                .map(entry -> new ExperimentLandingAnalyticsDeviceDto(
+                        entry.getKey(),
+                        landingAnalyticsDeviceLabel(entry.getKey()),
+                        entry.getValue(),
+                        totalSessions == 0 ? 0 : Math.round((entry.getValue() * 10000.0) / totalSessions) / 100.0))
+                .toList();
+    }
+
+    /**
+     * Normaliza o tipo de dispositivo enviado pela landing, usando user-agent como fallback.
+     */
+    private static String normalizeLandingAnalyticsDeviceType(String rawDeviceType, String userAgent) {
+        if (rawDeviceType != null && !rawDeviceType.isBlank()) {
+            String normalized = rawDeviceType.trim().toLowerCase();
+            if ("mobile".equals(normalized) || "tablet".equals(normalized) || "desktop".equals(normalized)) {
+                return normalized;
+            }
+            if ("computador".equals(normalized) || "computer".equals(normalized)) {
+                return "desktop";
+            }
+        }
+        String normalizedUserAgent = userAgent == null ? "" : userAgent.toLowerCase();
+        if (normalizedUserAgent.contains("ipad")
+                || normalizedUserAgent.contains("tablet")
+                || (normalizedUserAgent.contains("android") && !normalizedUserAgent.contains("mobile"))) {
+            return "tablet";
+        }
+        if (normalizedUserAgent.contains("mobi")
+                || normalizedUserAgent.contains("iphone")
+                || normalizedUserAgent.contains("ipod")
+                || normalizedUserAgent.contains("android")) {
+            return "mobile";
+        }
+        return "desktop";
+    }
+
+    /**
+     * Retorna o rótulo do dispositivo exibido no painel de analytics.
+     */
+    private static String landingAnalyticsDeviceLabel(String deviceType) {
+        return switch (normalizeLandingAnalyticsDeviceType(deviceType, null)) {
+            case "mobile" -> "Mobile";
+            case "tablet" -> "Tablet";
+            default -> "Computador";
+        };
+    }
+
+    /**
      * Busca no repositório centralizado os eventos de analytics da landing para o marco temporal atual.
      */
     private List<LandingAnalyticsEventRow> fetchLandingAnalyticsEvents(Long experimentId, Instant baseline) {
@@ -692,6 +764,7 @@ public class ExperimentFunnelService {
         private Instant lastEventAt;
         private String lastPageUrl;
         private String lastUserAgent;
+        private String deviceType = "desktop";
         private final Map<String, SectionAccumulator> sections = new LinkedHashMap<>();
 
         private LandingAnalyticsSessionAccumulator(String sessionId) {
@@ -702,7 +775,7 @@ public class ExperimentFunnelService {
          * Acrescenta um evento recebido na sessão e atualiza contadores de página e seção.
          */
         private void record(Instant occurredAt, String eventType, String sectionId, long elapsedMs,
-                            String pageUrl, String userAgent) {
+                            String pageUrl, String userAgent, String deviceType) {
             eventCount++;
             if (firstEventAt == null || (occurredAt != null && occurredAt.isBefore(firstEventAt))) {
                 firstEventAt = occurredAt;
@@ -716,6 +789,7 @@ public class ExperimentFunnelService {
                     lastUserAgent = userAgent;
                 }
             }
+            this.deviceType = normalizeLandingAnalyticsDeviceType(deviceType, userAgent);
             if ("page_view".equalsIgnoreCase(eventType)) {
                 pageViews++;
             }
@@ -732,6 +806,13 @@ public class ExperimentFunnelService {
          */
         private Instant lastEventAt() {
             return lastEventAt;
+        }
+
+        /**
+         * Retorna o tipo de dispositivo normalizado da sessão para agregação percentual.
+         */
+        private String deviceType() {
+            return deviceType;
         }
 
         /**
@@ -753,6 +834,8 @@ public class ExperimentFunnelService {
                     lastEventAt,
                     lastPageUrl,
                     lastUserAgent,
+                    deviceType,
+                    landingAnalyticsDeviceLabel(deviceType),
                     topSections);
         }
     }

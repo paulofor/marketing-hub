@@ -7,6 +7,13 @@ export interface ExperimentLandingAnalyticsSection {
   events: number;
 }
 
+export interface ExperimentLandingAnalyticsDevice {
+  deviceType: "mobile" | "desktop" | "tablet" | string;
+  label: string;
+  sessions: number;
+  percentage: number;
+}
+
 export interface ExperimentLandingAnalyticsSession {
   sessionId: string;
   eventCount: number;
@@ -17,6 +24,8 @@ export interface ExperimentLandingAnalyticsSession {
   lastEventAt?: string | null;
   lastPageUrl?: string | null;
   lastUserAgent?: string | null;
+  deviceType?: string | null;
+  deviceLabel?: string | null;
   topSections: ExperimentLandingAnalyticsSection[];
 }
 
@@ -28,6 +37,7 @@ export interface ExperimentLandingAnalytics {
   totalVisibleMs: number;
   averageVisibleMsPerSession: number;
   lastEventAt?: string | null;
+  deviceBreakdown: ExperimentLandingAnalyticsDevice[];
   sessions: ExperimentLandingAnalyticsSession[];
 }
 

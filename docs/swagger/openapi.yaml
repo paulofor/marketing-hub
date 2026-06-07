@@ -1060,6 +1060,10 @@ components:
           type: string
           format: date-time
           nullable: true
+        deviceBreakdown:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExperimentLandingAnalyticsDevice'
         sessions:
           type: array
           items:
@@ -1095,10 +1099,29 @@ components:
         lastUserAgent:
           type: string
           nullable: true
+        deviceType:
+          type: string
+          enum: [mobile, desktop, tablet]
+        deviceLabel:
+          type: string
         topSections:
           type: array
           items:
             $ref: '#/components/schemas/ExperimentLandingAnalyticsSection'
+    ExperimentLandingAnalyticsDevice:
+      type: object
+      properties:
+        deviceType:
+          type: string
+          enum: [mobile, desktop, tablet]
+        label:
+          type: string
+        sessions:
+          type: integer
+          format: int64
+        percentage:
+          type: number
+          format: double
     ExperimentLandingAnalyticsSection:
       type: object
       properties:

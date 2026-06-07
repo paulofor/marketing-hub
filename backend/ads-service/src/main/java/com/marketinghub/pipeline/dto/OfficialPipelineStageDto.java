@@ -16,5 +16,6 @@ public record OfficialPipelineStageDto(
         boolean configurable,
         String executionModule,
         String rootPackage,
+        String modulePackage,
         StageFieldPolicyDto fieldPolicy,
         List<String> aliases) {}

@@ -11,6 +11,7 @@ import type {
   PipelineStage,
   PipelineDiagnostics,
   PipelineStagePayload,
+  OfficialPipelineMetadata,
 } from "../../api/pipeline/types";
 import {
   useRebuildOfficialPipelineStages,
@@ -78,6 +79,99 @@ function stageToPayload(stage: PipelineStage): PipelineStagePayload {
   };
 }
 
+type PipelineImplementationSummary = {
+  implementationModules: string[];
+  backendPackages: string[];
+  modulePackages: string[];
+};
+
+function uniqueText(values: Array<string | null | undefined>) {
+  return Array.from(
+    new Set(values.map((value) => value?.trim()).filter(Boolean) as string[]),
+  ).sort((first, second) => first.localeCompare(second));
+}
+
+function findOfficialPipeline(
+  pipeline: Pipeline,
+  officialPipelines: OfficialPipelineMetadata[],
+) {
+  return officialPipelines.find(
+    (official) =>
+      normalizeCode(official.code) === normalizeCode(pipeline.code) ||
+      official.aliases.some(
+        (alias) => normalizeCode(alias) === normalizeCode(pipeline.code),
+      ),
+  );
+}
+
+function pipelineImplementationSummary(
+  pipeline: Pipeline,
+  officialPipelines: OfficialPipelineMetadata[],
+): PipelineImplementationSummary {
+  const official = findOfficialPipeline(pipeline, officialPipelines);
+  return {
+    implementationModules: uniqueText([
+      ...(official?.implementationModules ?? []),
+      ...pipeline.stages.map((stage) => stage.executionModule),
+    ]),
+    backendPackages: uniqueText([
+      ...(official?.backendPackages ?? []),
+      ...pipeline.stages.map((stage) => stage.rootPackage),
+    ]),
+    modulePackages: uniqueText([
+      ...(official?.modulePackages ?? []),
+      ...(official?.stages.map((stage) => stage.modulePackage) ?? []),
+    ]),
+  };
+}
+
+function PipelineImplementationDetails({
+  summary,
+}: {
+  summary: PipelineImplementationSummary;
+}) {
+  const implementationModules =
+    summary.implementationModules.length > 0
+      ? summary.implementationModules
+      : ["Backend principal"];
+  const backendPackages =
+    summary.backendPackages.length > 0
+      ? summary.backendPackages
+      : ["Não informado"];
+  const modulePackages =
+    summary.modulePackages.length > 0
+      ? summary.modulePackages
+      : ["Não informado"];
+
+  return (
+    <dl className="pipeline-implementation-details">
+      <div>
+        <dt>Módulo que implementa</dt>
+        <dd>
+          {implementationModules.map((module) => (
+            <code key={module}>{module}</code>
+          ))}
+        </dd>
+      </div>
+      <div>
+        <dt>Nome do pacote no backend</dt>
+        <dd>
+          {backendPackages.map((packageName) => (
+            <code key={packageName}>{packageName}</code>
+          ))}
+        </dd>
+      </div>
+      <div>
+        <dt>Nome do pacote no módulo</dt>
+        <dd>
+          {modulePackages.map((packageName) => (
+            <code key={packageName}>{packageName}</code>
+          ))}
+        </dd>
+      </div>
+    </dl>
+  );
+}
 function stageUsesOpenAi(
   stage: PipelineStage,
   stageDefinition?: { fieldPolicy?: { openAiModelOperational: boolean } },
@@ -332,6 +426,12 @@ export default function PipelineCrudPage() {
                 {pipeline.description}
               </p>
             ) : null}
+            <PipelineImplementationDetails
+              summary={pipelineImplementationSummary(
+                pipeline,
+                officialPipelines,
+              )}
+            />
           </div>
         </section>
 
@@ -992,6 +1092,12 @@ export default function PipelineCrudPage() {
                           {pipeline.description}
                         </p>
                       ) : null}
+                      <PipelineImplementationDetails
+                        summary={pipelineImplementationSummary(
+                          pipeline,
+                          officialPipelines,
+                        )}
+                      />
                     </div>
                     <div className="pipeline-list-action">
                       <button

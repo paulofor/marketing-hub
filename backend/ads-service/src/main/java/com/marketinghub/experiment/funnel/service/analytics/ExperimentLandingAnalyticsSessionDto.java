@@ -16,5 +16,7 @@ public record ExperimentLandingAnalyticsSessionDto(
         Instant lastEventAt,
         String lastPageUrl,
         String lastUserAgent,
+        String deviceType,
+        String deviceLabel,
         List<ExperimentLandingAnalyticsSectionDto> topSections) {
 }

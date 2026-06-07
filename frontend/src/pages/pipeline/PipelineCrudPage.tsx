@@ -14,7 +14,6 @@ import type {
 } from "../../api/pipeline/types";
 import {
   useDeletePipeline,
-  useDeletePipelineStage,
   useRebuildOfficialPipelineStages,
   useUpdatePipeline,
   useUpdatePipelineStage,
@@ -80,6 +79,18 @@ function stageToPayload(stage: PipelineStage): PipelineStagePayload {
   };
 }
 
+function stageUsesOpenAi(
+  stage: PipelineStage,
+  stageDefinition?: { fieldPolicy?: { openAiModelOperational: boolean } },
+) {
+  if (stageDefinition?.fieldPolicy?.openAiModelOperational) return true;
+  if (stage.openAiModelId || stage.openAiModelName || stage.openAiModelCode) {
+    return true;
+  }
+  const executionContext = `${stage.executionModule ?? ""} ${stage.rootPackage ?? ""}`;
+  return /\b(ai|openai)\b/i.test(executionContext);
+}
+
 export default function PipelineCrudPage() {
   const { data, isLoading, isError } = usePipelines();
   const { data: metadata, isLoading: isLoadingMetadata } =
@@ -89,7 +100,6 @@ export default function PipelineCrudPage() {
   const updatePipeline = useUpdatePipeline();
   const deletePipeline = useDeletePipeline();
   const updateStage = useUpdatePipelineStage();
-  const deleteStage = useDeletePipelineStage();
   const rebuildOfficialStages = useRebuildOfficialPipelineStages();
 
   const pipelines = useMemo(() => data ?? [], [data]);
@@ -201,6 +211,37 @@ export default function PipelineCrudPage() {
     ) {
       rebuildOfficialStages.mutate(pipeline.id);
     }
+  };
+
+  const confirmOpenAiModelChange = (
+    pipelineId: number,
+    stage: PipelineStage,
+    openAiModelId: number | null,
+  ) => {
+    const selectedModel = modelOptions.find(
+      (model) => model.id === openAiModelId,
+    );
+    const targetLabel = selectedModel
+      ? `${selectedModel.name} (${selectedModel.code})`
+      : "Sem modelo fixo";
+
+    if (
+      !confirm(
+        `Deseja alterar o modelo OpenAI da etapa "${stage.name}" para "${targetLabel}"?`,
+      )
+    ) {
+      return false;
+    }
+
+    updateStage.mutate({
+      pipelineId,
+      stageId: stage.id,
+      payload: {
+        ...stageToPayload(stage),
+        openAiModelId,
+      },
+    });
+    return true;
   };
 
   if (isLoading) return <p>Carregando pipelines...</p>;
@@ -391,11 +432,10 @@ export default function PipelineCrudPage() {
                         normalizeCode(alias) === normalizeCode(stage.code),
                     ),
                 );
-                const protectionLabel = rowDefinition?.required
-                  ? "Estrutural"
-                  : isOfficialPipeline
-                    ? "Não mapeada"
-                    : "Editável";
+                const showExecutionModule = Boolean(
+                  stage.executionModule?.trim(),
+                );
+                const showOpenAiModel = stageUsesOpenAi(stage, rowDefinition);
 
                 return (
                   <div className="pipeline-stage-grid-item" key={stage.id}>
@@ -418,58 +458,10 @@ export default function PipelineCrudPage() {
                               </h4>
                             </div>
                           </div>
-                          <div className="pipeline-stage-actions">
-                            <button
-                              type="button"
-                              className="btn btn-sm btn-outline-primary"
-                              onClick={() => {
-                                setEditingStageId(stage.id);
-                                setStageForms((current) => ({
-                                  ...current,
-                                  [pipeline.id]: stageToPayload(stage),
-                                }));
-                              }}
-                            >
-                              Editar
-                            </button>
-                            <button
-                              type="button"
-                              className="btn btn-sm btn-outline-danger"
-                              disabled={
-                                deleteStage.isPending ||
-                                Boolean(rowDefinition?.required)
-                              }
-                              onClick={() => {
-                                if (confirm("Deseja remover esta etapa?")) {
-                                  deleteStage.mutate({
-                                    pipelineId: pipeline.id,
-                                    stageId: stage.id,
-                                  });
-                                }
-                              }}
-                            >
-                              {deleteStage.isPending
-                                ? "Excluindo..."
-                                : "Excluir"}
-                            </button>
-                          </div>
                         </div>
                         <div className="pipeline-stage-badges">
                           <span className="badge text-bg-light border">
                             {stage.code}
-                          </span>
-                          <span
-                            className={`badge ${stage.active ? "text-bg-success" : "text-bg-secondary"}`}
-                          >
-                            {stage.active ? "Ativa" : "Inativa"}
-                          </span>
-                          {stage.required ? (
-                            <span className="badge text-bg-primary">
-                              Obrigatória
-                            </span>
-                          ) : null}
-                          <span className="badge text-bg-light border">
-                            {protectionLabel}
                           </span>
                         </div>
                         {stage.description ? (
@@ -479,26 +471,63 @@ export default function PipelineCrudPage() {
                           </div>
                         ) : null}
                         <div className="pipeline-stage-meta">
-                          <div>
-                            <span>Módulo executor</span>
-                            <strong>
-                              {stage.executionModule || "Não informado"}
-                            </strong>
-                          </div>
+                          {showExecutionModule ? (
+                            <div>
+                              <span>Módulo executor</span>
+                              <strong>{stage.executionModule}</strong>
+                            </div>
+                          ) : null}
                           <div>
                             <span>Pacote raiz</span>
                             <strong>
                               {stage.rootPackage || "Não informado"}
                             </strong>
                           </div>
-                          <div>
-                            <span>Modelo OpenAI</span>
-                            <strong>
-                              {stage.openAiModelName
-                                ? `${stage.openAiModelName} (${stage.openAiModelCode})`
-                                : "Sem modelo fixo"}
-                            </strong>
-                          </div>
+                          {showOpenAiModel ? (
+                            <div className="pipeline-stage-model-control">
+                              <label htmlFor={`stage-model-${stage.id}`}>
+                                Modelo OpenAI
+                              </label>
+                              <select
+                                id={`stage-model-${stage.id}`}
+                                className="form-select form-select-sm"
+                                disabled={
+                                  isLoadingOpenAiModels ||
+                                  (updateStage.isPending &&
+                                    updateStage.variables?.stageId === stage.id)
+                                }
+                                value={stage.openAiModelId ?? ""}
+                                onChange={(event) => {
+                                  const confirmed = confirmOpenAiModelChange(
+                                    pipeline.id,
+                                    stage,
+                                    event.target.value
+                                      ? Number(event.target.value)
+                                      : null,
+                                  );
+                                  if (!confirmed) {
+                                    event.currentTarget.value = String(
+                                      stage.openAiModelId ?? "",
+                                    );
+                                  }
+                                }}
+                              >
+                                <option value="">
+                                  {isLoadingOpenAiModels
+                                    ? "Carregando modelos..."
+                                    : "Sem modelo fixo"}
+                                </option>
+                                {modelOptions.map((model) => (
+                                  <option key={model.id} value={model.id}>
+                                    {model.name} ({model.code})
+                                    {model.acceptsImageInput
+                                      ? " · aceita imagem"
+                                      : ""}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          ) : null}
                         </div>
                       </div>
                     </article>

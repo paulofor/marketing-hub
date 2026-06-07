@@ -318,6 +318,16 @@
   overflow-wrap: anywhere;
 }
 
+.pipeline-stage-model-control label {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: var(--pipeline-muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 @media (max-width: 767.98px) {
   .pipeline-contract-grid {
     grid-template-columns: 1fr;

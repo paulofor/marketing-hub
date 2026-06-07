@@ -1571,6 +1571,7 @@ export default function ExperimentDetailPage() {
   if (isLoading) return <p>Carregando...</p>;
   if (!data) return <p>Não encontrado</p>;
   const alterationLocked = isExperimentAlterationLocked(data);
+  const showGeraLandingStartButtons = !Boolean(data.facebookReleaseRequestedAt);
   const preset = presets?.find((p) => p.id === data.metricPresetId);
   const resetPreviewSummary: ExperimentCampaignResetSummary =
     resetPreviewData ?? { campaigns: 0, adSets: 0, ads: 0, creatives: 0 };
@@ -2466,29 +2467,31 @@ export default function ExperimentDetailPage() {
                     </span>
                   </div>
                   <div className="d-flex flex-column gap-3">
-                    <button
-                      type="button"
-                      className="btn btn-primary align-self-start"
-                      onClick={handleStartWireframe}
-                      disabled={
-                        alterationLocked ||
-                        isStartingWireframe ||
-                        hasRunningGeraLandingExecution
-                      }
-                    >
-                      {isStartingWireframe ? (
-                        <>
-                          <span
-                            className="spinner-border spinner-border-sm me-2"
-                            role="status"
-                            aria-hidden="true"
-                          />
-                          Iniciando...
-                        </>
-                      ) : (
-                        "Iniciar"
-                      )}
-                    </button>
+                    {showGeraLandingStartButtons ? (
+                      <button
+                        type="button"
+                        className="btn btn-primary align-self-start"
+                        onClick={handleStartWireframe}
+                        disabled={
+                          alterationLocked ||
+                          isStartingWireframe ||
+                          hasRunningGeraLandingExecution
+                        }
+                      >
+                        {isStartingWireframe ? (
+                          <>
+                            <span
+                              className="spinner-border spinner-border-sm me-2"
+                              role="status"
+                              aria-hidden="true"
+                            />
+                            Iniciando...
+                          </>
+                        ) : (
+                          "Iniciar"
+                        )}
+                      </button>
+                    ) : null}
                     {isLoadingPendingGeraLandingExecutions ? (
                       <p className="text-muted mb-0">
                         Carregando jobs da etapa...
@@ -2597,29 +2600,31 @@ export default function ExperimentDetailPage() {
                     </span>
                   </div>
                   <div className="d-flex flex-column gap-3">
-                    <button
-                      type="button"
-                      className="btn btn-primary align-self-start"
-                      onClick={handleStartCopy}
-                      disabled={
-                        alterationLocked ||
-                        isStartingCopy ||
-                        hasRunningGeraLandingCopyExecution
-                      }
-                    >
-                      {isStartingCopy ? (
-                        <>
-                          <span
-                            className="spinner-border spinner-border-sm me-2"
-                            role="status"
-                            aria-hidden="true"
-                          />
-                          Iniciando...
-                        </>
-                      ) : (
-                        "Iniciar"
-                      )}
-                    </button>
+                    {showGeraLandingStartButtons ? (
+                      <button
+                        type="button"
+                        className="btn btn-primary align-self-start"
+                        onClick={handleStartCopy}
+                        disabled={
+                          alterationLocked ||
+                          isStartingCopy ||
+                          hasRunningGeraLandingCopyExecution
+                        }
+                      >
+                        {isStartingCopy ? (
+                          <>
+                            <span
+                              className="spinner-border spinner-border-sm me-2"
+                              role="status"
+                              aria-hidden="true"
+                            />
+                            Iniciando...
+                          </>
+                        ) : (
+                          "Iniciar"
+                        )}
+                      </button>
+                    ) : null}
                     {isLoadingPendingGeraLandingCopyExecutions ? (
                       <p className="text-muted mb-0">
                         Carregando jobs da etapa...
@@ -2737,29 +2742,31 @@ export default function ExperimentDetailPage() {
                   </div>
                   <div className="rounded border bg-light-subtle p-3 d-flex flex-column gap-3">
                     <h6 className="mb-0">Execução dos prompts de imagem</h6>
-                    <button
-                      type="button"
-                      className="btn btn-primary align-self-start"
-                      onClick={handleStartImagePrompts}
-                      disabled={
-                        alterationLocked ||
-                        isStartingImagePrompts ||
-                        hasRunningGeraLandingImagePromptsExecution
-                      }
-                    >
-                      {isStartingImagePrompts ? (
-                        <>
-                          <span
-                            className="spinner-border spinner-border-sm me-2"
-                            role="status"
-                            aria-hidden="true"
-                          />
-                          Iniciando...
-                        </>
-                      ) : (
-                        "Iniciar"
-                      )}
-                    </button>
+                    {showGeraLandingStartButtons ? (
+                      <button
+                        type="button"
+                        className="btn btn-primary align-self-start"
+                        onClick={handleStartImagePrompts}
+                        disabled={
+                          alterationLocked ||
+                          isStartingImagePrompts ||
+                          hasRunningGeraLandingImagePromptsExecution
+                        }
+                      >
+                        {isStartingImagePrompts ? (
+                          <>
+                            <span
+                              className="spinner-border spinner-border-sm me-2"
+                              role="status"
+                              aria-hidden="true"
+                            />
+                            Iniciando...
+                          </>
+                        ) : (
+                          "Iniciar"
+                        )}
+                      </button>
+                    ) : null}
                     {isLoadingPendingGeraLandingImagePromptsExecutions ? (
                       <p className="text-muted mb-0">
                         Carregando jobs da etapa...
@@ -2926,29 +2933,31 @@ export default function ExperimentDetailPage() {
                     >
                       Ver detalhes das imagens
                     </Link>
-                    <button
-                      type="button"
-                      className="btn btn-primary align-self-start"
-                      onClick={handleStartImageGeneration}
-                      disabled={
-                        alterationLocked ||
-                        isStartingImageGeneration ||
-                        hasRunningGeraLandingImageGenerationExecution
-                      }
-                    >
-                      {isStartingImageGeneration ? (
-                        <>
-                          <span
-                            className="spinner-border spinner-border-sm me-2"
-                            role="status"
-                            aria-hidden="true"
-                          />
-                          Iniciando...
-                        </>
-                      ) : (
-                        "Iniciar"
-                      )}
-                    </button>
+                    {showGeraLandingStartButtons ? (
+                      <button
+                        type="button"
+                        className="btn btn-primary align-self-start"
+                        onClick={handleStartImageGeneration}
+                        disabled={
+                          alterationLocked ||
+                          isStartingImageGeneration ||
+                          hasRunningGeraLandingImageGenerationExecution
+                        }
+                      >
+                        {isStartingImageGeneration ? (
+                          <>
+                            <span
+                              className="spinner-border spinner-border-sm me-2"
+                              role="status"
+                              aria-hidden="true"
+                            />
+                            Iniciando...
+                          </>
+                        ) : (
+                          "Iniciar"
+                        )}
+                      </button>
+                    ) : null}
                     <span className="small text-muted">
                       Acompanhe a timeline detalhada na aba{" "}
                       <strong>Conteúdo</strong>, bloco{" "}
@@ -3126,29 +3135,31 @@ export default function ExperimentDetailPage() {
                     </span>
                   </div>
                   <div className="d-flex flex-column gap-3">
-                    <button
-                      type="button"
-                      className="btn btn-primary align-self-start"
-                      onClick={handleStartDesignPreset}
-                      disabled={
-                        alterationLocked ||
-                        isStartingDesignPreset ||
-                        hasRunningGeraLandingDesignPresetExecution
-                      }
-                    >
-                      {isStartingDesignPreset ? (
-                        <>
-                          <span
-                            className="spinner-border spinner-border-sm me-2"
-                            role="status"
-                            aria-hidden="true"
-                          />
-                          Iniciando...
-                        </>
-                      ) : (
-                        "Iniciar"
-                      )}
-                    </button>
+                    {showGeraLandingStartButtons ? (
+                      <button
+                        type="button"
+                        className="btn btn-primary align-self-start"
+                        onClick={handleStartDesignPreset}
+                        disabled={
+                          alterationLocked ||
+                          isStartingDesignPreset ||
+                          hasRunningGeraLandingDesignPresetExecution
+                        }
+                      >
+                        {isStartingDesignPreset ? (
+                          <>
+                            <span
+                              className="spinner-border spinner-border-sm me-2"
+                              role="status"
+                              aria-hidden="true"
+                            />
+                            Iniciando...
+                          </>
+                        ) : (
+                          "Iniciar"
+                        )}
+                      </button>
+                    ) : null}
                     {isLoadingPendingGeraLandingDesignPresetExecutions ? (
                       <p className="text-muted mb-0">
                         Carregando jobs da etapa...
@@ -3297,29 +3308,31 @@ export default function ExperimentDetailPage() {
                       </span>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    className="btn btn-primary align-self-start"
-                    onClick={handleStartQualityReview}
-                    disabled={
-                      alterationLocked ||
-                      isStartingQualityReview ||
-                      hasRunningGeraLandingQualityReviewExecution
-                    }
-                  >
-                    {isStartingQualityReview ? (
-                      <>
-                        <span
-                          className="spinner-border spinner-border-sm me-2"
-                          role="status"
-                          aria-hidden="true"
-                        />
-                        Iniciando...
-                      </>
-                    ) : (
-                      "Iniciar"
-                    )}
-                  </button>
+                  {showGeraLandingStartButtons ? (
+                    <button
+                      type="button"
+                      className="btn btn-primary align-self-start"
+                      onClick={handleStartQualityReview}
+                      disabled={
+                        alterationLocked ||
+                        isStartingQualityReview ||
+                        hasRunningGeraLandingQualityReviewExecution
+                      }
+                    >
+                      {isStartingQualityReview ? (
+                        <>
+                          <span
+                            className="spinner-border spinner-border-sm me-2"
+                            role="status"
+                            aria-hidden="true"
+                          />
+                          Iniciando...
+                        </>
+                      ) : (
+                        "Iniciar"
+                      )}
+                    </button>
+                  ) : null}
                   {isLoadingPendingGeraLandingQualityReviewExecutions ? (
                     <p className="text-muted mb-0">
                       Carregando jobs da etapa...
@@ -3434,29 +3447,31 @@ export default function ExperimentDetailPage() {
                       )}
                     </span>
                   </div>
-                  <button
-                    type="button"
-                    className="btn btn-primary align-self-start"
-                    onClick={handleStartDeliverables}
-                    disabled={
-                      alterationLocked ||
-                      isStartingDeliverables ||
-                      hasRunningGeraLandingDeliverablesExecution
-                    }
-                  >
-                    {isStartingDeliverables ? (
-                      <>
-                        <span
-                          className="spinner-border spinner-border-sm me-2"
-                          role="status"
-                          aria-hidden="true"
-                        />
-                        Iniciando...
-                      </>
-                    ) : (
-                      "Iniciar"
-                    )}
-                  </button>
+                  {showGeraLandingStartButtons ? (
+                    <button
+                      type="button"
+                      className="btn btn-primary align-self-start"
+                      onClick={handleStartDeliverables}
+                      disabled={
+                        alterationLocked ||
+                        isStartingDeliverables ||
+                        hasRunningGeraLandingDeliverablesExecution
+                      }
+                    >
+                      {isStartingDeliverables ? (
+                        <>
+                          <span
+                            className="spinner-border spinner-border-sm me-2"
+                            role="status"
+                            aria-hidden="true"
+                          />
+                          Iniciando...
+                        </>
+                      ) : (
+                        "Iniciar"
+                      )}
+                    </button>
+                  ) : null}
                   {isLoadingPendingGeraLandingDeliverablesExecutions ? (
                     <p className="text-muted mb-0">
                       Carregando jobs da etapa...

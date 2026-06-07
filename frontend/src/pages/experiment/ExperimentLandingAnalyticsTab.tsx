@@ -1,4 +1,14 @@
-import { Activity, Clock, Eye, MousePointer2, Timer, Users } from "lucide-react";
+import {
+  Activity,
+  Clock,
+  Eye,
+  Monitor,
+  MousePointer2,
+  Smartphone,
+  Tablet,
+  Timer,
+  Users,
+} from "lucide-react";
 import { useExperimentLandingAnalytics } from "../../api/experiment/useExperimentLandingAnalytics";
 
 interface ExperimentLandingAnalyticsTabProps {
@@ -38,7 +48,8 @@ function shortUrl(value?: string | null) {
 export default function ExperimentLandingAnalyticsTab({
   experimentId,
 }: ExperimentLandingAnalyticsTabProps) {
-  const { data, isLoading, isError } = useExperimentLandingAnalytics(experimentId);
+  const { data, isLoading, isError } =
+    useExperimentLandingAnalytics(experimentId);
 
   if (isLoading) {
     return (
@@ -59,6 +70,12 @@ export default function ExperimentLandingAnalyticsTab({
   }
 
   const sessions = data?.sessions ?? [];
+  const deviceBreakdown = data?.deviceBreakdown ?? [];
+  const deviceIcons = {
+    mobile: Smartphone,
+    desktop: Monitor,
+    tablet: Tablet,
+  } as const;
   const cards = [
     {
       label: "Sessões",
@@ -94,8 +111,8 @@ export default function ExperimentLandingAnalyticsTab({
             <Activity size={18} /> Analytics de sessões da landing
           </h5>
           <p className="text-muted small mb-0">
-            Dados capturados pelo endpoint público de analytics da landing e salvos em
-            experiment_funnel_event com source landing-page-analytics.
+            Dados capturados pelo endpoint público de analytics da landing e
+            salvos em experiment_funnel_event com source landing-page-analytics.
           </p>
         </div>
         <span className="badge text-bg-light border d-inline-flex align-items-center gap-1">
@@ -127,12 +144,70 @@ export default function ExperimentLandingAnalyticsTab({
         <div className="card-body">
           <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
             <div>
-              <h5 className="card-title mb-1">Sessões recentes</h5>
+              <h5 className="card-title mb-1">Acessos por dispositivo</h5>
               <p className="text-muted small mb-0">
-                Mostra até 50 sessões mais recentes com páginas acessadas e seções mais vistas.
+                Percentual de sessões identificadas como Mobile, Computador ou
+                Tablet.
               </p>
             </div>
-            <span className="badge text-bg-primary">{data?.totalEvents ?? 0} eventos</span>
+            <span className="badge text-bg-light border">
+              {data?.totalSessions ?? 0} sessões
+            </span>
+          </div>
+          <div className="row g-3">
+            {deviceBreakdown.map((device) => {
+              const Icon =
+                deviceIcons[device.deviceType as keyof typeof deviceIcons] ??
+                Monitor;
+              return (
+                <div className="col-12 col-md-4" key={device.deviceType}>
+                  <div className="border rounded-3 p-3 h-100">
+                    <div className="d-flex align-items-center justify-content-between gap-2 mb-2">
+                      <span className="fw-semibold d-inline-flex align-items-center gap-2">
+                        <Icon size={18} className="text-primary" />{" "}
+                        {device.label}
+                      </span>
+                      <strong>{device.percentage.toFixed(1)}%</strong>
+                    </div>
+                    <div
+                      className="progress"
+                      role="progressbar"
+                      aria-label={`Percentual de ${device.label}`}
+                      aria-valuenow={device.percentage}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                    >
+                      <div
+                        className="progress-bar"
+                        style={{
+                          width: `${Math.min(100, Math.max(0, device.percentage))}%`,
+                        }}
+                      />
+                    </div>
+                    <div className="text-muted small mt-2">
+                      {device.sessions} sessões
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-body">
+          <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+            <div>
+              <h5 className="card-title mb-1">Sessões recentes</h5>
+              <p className="text-muted small mb-0">
+                Mostra até 50 sessões mais recentes com páginas acessadas e
+                seções mais vistas.
+              </p>
+            </div>
+            <span className="badge text-bg-primary">
+              {data?.totalEvents ?? 0} eventos
+            </span>
           </div>
 
           {sessions.length === 0 ? (
@@ -140,8 +215,8 @@ export default function ExperimentLandingAnalyticsTab({
               <Activity size={32} />
               <h6 className="mb-1">Nenhum analytics capturado ainda</h6>
               <p className="mb-0">
-                Publique a landing do experimento e acesse a URL pública para gerar page_view e
-                tempos por seção.
+                Publique a landing do experimento e acesse a URL pública para
+                gerar page_view e tempos por seção.
               </p>
             </div>
           ) : (
@@ -163,18 +238,32 @@ export default function ExperimentLandingAnalyticsTab({
                     <tr key={session.sessionId}>
                       <td>
                         <code className="small">{session.sessionId}</code>
-                        <div className="text-muted small">{session.eventCount} eventos</div>
+                        <div className="text-muted small">
+                          {session.eventCount} eventos
+                        </div>
+                        <div className="text-muted small">
+                          {session.deviceLabel ?? "Computador"}
+                        </div>
                       </td>
                       <td className="small">
                         <div>{formatDate(session.firstEventAt)}</div>
-                        <div className="text-muted">até {formatDate(session.lastEventAt)}</div>
+                        <div className="text-muted">
+                          até {formatDate(session.lastEventAt)}
+                        </div>
                       </td>
-                      <td className="text-end fw-semibold">{session.pageViews}</td>
-                      <td className="text-end fw-semibold">{session.sectionViewEvents}</td>
+                      <td className="text-end fw-semibold">
+                        {session.pageViews}
+                      </td>
+                      <td className="text-end fw-semibold">
+                        {session.sectionViewEvents}
+                      </td>
                       <td className="text-end fw-semibold">
                         {formatDuration(session.totalVisibleMs)}
                       </td>
-                      <td className="small text-break" title={session.lastPageUrl ?? undefined}>
+                      <td
+                        className="small text-break"
+                        title={session.lastPageUrl ?? undefined}
+                      >
                         {shortUrl(session.lastPageUrl)}
                       </td>
                       <td>
@@ -187,7 +276,8 @@ export default function ExperimentLandingAnalyticsTab({
                                 key={`${session.sessionId}-${section.sectionId}`}
                                 className="badge text-bg-light border text-start"
                               >
-                                {section.sectionId}: {formatDuration(section.visibleMs)}
+                                {section.sectionId}:{" "}
+                                {formatDuration(section.visibleMs)}
                               </span>
                             ))
                           )}

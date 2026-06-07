@@ -1117,3 +1117,11 @@ Arquivos alterados:
 - `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibrarySnapshotService.java`
 - `backend/ads-service/src/test/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibrarySnapshotServiceTest.java`
 - `frontend/src/pages/mois/MoisSalesPagesPipelinePage.tsx`
+
+## 2026-06-07 — Card da etapa 2 no pipeline de páginas de vendas
+- Verificado que a etapa 2 de análise comercial já está implementada no backend da Biblioteca de Páginas de Vendas do MOIS via endpoints de claim, complete e fail de jobs de análise.
+- Adicionado card da **Etapa 2 — Análise comercial da página** na tela `/mois/sales-pages-library/pipeline`, usando os contadores consolidados já expostos pelo backend para mostrar páginas capturadas, analisadas e backlog estimado.
+
+Arquivos alterados:
+- `frontend/src/pages/mois/MoisSalesPagesPipelinePage.tsx`
+- `docs/registros/mois1.md`

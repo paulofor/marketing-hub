@@ -11,6 +11,13 @@ import type { MoisSalesLibrarySnapshotCaptureItem } from "../../api/mois/types";
 const WORKSPACE_ID = "workspace-001";
 const DEFAULT_CAPTURE_LIMIT = 5;
 
+const analysisChecklist = [
+  "Jobs pendentes para análise por IA",
+  "Páginas com HTML útil disponíveis como entrada",
+  "Score comercial e blocos de oferta, promessa, mecanismo e prova",
+  "Falhas de análise registradas no histórico operacional",
+];
+
 const htmlAcquisitionChecklist = [
   "URLs pendentes para captura",
   "Snapshots com HTML bruto salvo",
@@ -65,13 +72,18 @@ function getResultMessage(item: MoisSalesLibrarySnapshotCaptureItem) {
 export default function MoisSalesPagesPipelinePage() {
   const [forceCapture, setForceCapture] = useState(false);
   const summaryQuery = useMoisSalesLibraryPageSummary(WORKSPACE_ID);
-  const collectedUrlSummaryQuery = useMoisCollectedReferenceUrlSummary(WORKSPACE_ID);
+  const collectedUrlSummaryQuery =
+    useMoisCollectedReferenceUrlSummary(WORKSPACE_ID);
   const captureMutation = useCaptureMoisSalesLibrarySnapshots(WORKSPACE_ID);
   const summary = summaryQuery.data;
   const collectedUrlSummary = collectedUrlSummaryQuery.data;
 
   const lastRun = captureMutation.data;
   const isRunning = captureMutation.isPending;
+  const capturedPages = summary?.captured ?? 0;
+  const analyzedPages = summary?.analyzed ?? 0;
+  const analysisBacklog = Math.max(capturedPages - analyzedPages, 0);
+  const pendingPages = summary?.pending ?? 0;
 
   return (
     <div className="d-flex flex-column gap-4">
@@ -79,8 +91,8 @@ export default function MoisSalesPagesPipelinePage() {
         <div>
           <PageTitle>Pipeline de Páginas de Vendas</PageTitle>
           <p className="text-secondary mb-0">
-            Execute e acompanhe a primeira etapa operacional: obter HTML bruto
-            versionado das URLs normalizadas da biblioteca.
+            Execute e acompanhe o pipeline operacional: obter HTML bruto
+            versionado e analisar comercialmente as páginas capturadas.
           </p>
         </div>
         <Link
@@ -182,7 +194,9 @@ export default function MoisSalesPagesPipelinePage() {
               </div>
               <div className="col-sm-6 col-lg-4">
                 <div className="bg-light rounded-3 p-3 h-100">
-                  <p className="text-secondary mb-1">Total na tabela de sales</p>
+                  <p className="text-secondary mb-1">
+                    Total na tabela de sales
+                  </p>
                   <h3 className="mb-0">
                     {summaryQuery.isLoading ? "..." : (summary?.total ?? 0)}
                   </h3>
@@ -276,6 +290,133 @@ export default function MoisSalesPagesPipelinePage() {
                 <li key={item}>{item}</li>
               ))}
             </ul>
+          </div>
+        </div>
+      </section>
+
+      <section className="card border-0 shadow-sm">
+        <div className="card-body d-flex flex-column gap-4">
+          <div className="d-flex flex-wrap align-items-start justify-content-between gap-3">
+            <div>
+              <span className="badge text-bg-primary mb-2">Etapa 2</span>
+              <h2 className="h4 mb-2">Análise comercial da página</h2>
+              <p className="text-secondary mb-0">
+                Etapa já implementada no backend: o worker reserva jobs de
+                análise pendentes, processa o HTML capturado e grava score,
+                promessa, mecanismo, prova, oferta e histórico auditável da
+                execução.
+              </p>
+            </div>
+            <span className="badge text-bg-success align-self-start">
+              Implementada via worker
+            </span>
+          </div>
+
+          <div className="row g-3">
+            <div className="col-12 col-lg-4">
+              <div className="border rounded-3 p-3 h-100 bg-light">
+                <p className="text-uppercase text-secondary small fw-semibold mb-1">
+                  Entrada
+                </p>
+                <h3 className="h6 mb-2">HTML útil capturado</h3>
+                <p className="text-secondary small mb-0">
+                  Páginas com html_bytes &gt; 0 ficam aptas para análise
+                  comercial por IA, sem depender de dados simulados.
+                </p>
+              </div>
+            </div>
+            <div className="col-12 col-lg-4">
+              <div className="border rounded-3 p-3 h-100 bg-light">
+                <p className="text-uppercase text-secondary small fw-semibold mb-1">
+                  Saída esperada
+                </p>
+                <h3 className="h6 mb-2">Diagnóstico comercial estruturado</h3>
+                <p className="text-secondary small mb-0">
+                  A execução atualiza score e resumos de oferta, promessa,
+                  mecanismo e prova para apoiar decisões de produto e vendas.
+                </p>
+              </div>
+            </div>
+            <div className="col-12 col-lg-4">
+              <div className="border rounded-3 p-3 h-100 bg-light">
+                <p className="text-uppercase text-secondary small fw-semibold mb-1">
+                  Critério de qualidade
+                </p>
+                <h3 className="h6 mb-2">Análise rastreável</h3>
+                <p className="text-secondary small mb-0">
+                  Cada análise deve ficar vinculada à página e à execução, com
+                  status, erro e data para auditoria operacional.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="border rounded-3 p-3">
+            <div className="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-3">
+              <div>
+                <h3 className="h6 mb-1">Resumo da etapa 2</h3>
+                <p className="text-secondary small mb-0">
+                  Mostra se a análise já está consumindo o volume obtido na
+                  etapa 1.
+                </p>
+              </div>
+              {summaryQuery.isLoading ? (
+                <span className="badge text-bg-secondary">Carregando...</span>
+              ) : null}
+            </div>
+
+            <div className="row g-3">
+              <div className="col-sm-6 col-lg-4">
+                <div className="bg-light rounded-3 p-3 h-100">
+                  <p className="text-secondary mb-1">
+                    Disponíveis para análise
+                  </p>
+                  <h3 className="mb-0">
+                    {summaryQuery.isLoading ? "..." : capturedPages}
+                  </h3>
+                </div>
+              </div>
+              <div className="col-sm-6 col-lg-4">
+                <div className="bg-light rounded-3 p-3 h-100">
+                  <p className="text-secondary mb-1">Já analisadas</p>
+                  <h3 className="mb-0">
+                    {summaryQuery.isLoading ? "..." : analyzedPages}
+                  </h3>
+                </div>
+              </div>
+              <div className="col-sm-6 col-lg-4">
+                <div className="bg-light rounded-3 p-3 h-100">
+                  <p className="text-secondary mb-1">Backlog estimado</p>
+                  <h3 className="mb-0">
+                    {summaryQuery.isLoading ? "..." : analysisBacklog}
+                  </h3>
+                </div>
+              </div>
+            </div>
+
+            {pendingPages > 0 ? (
+              <div className="alert alert-info mt-3 mb-0">
+                Existem {pendingPages} página(s) pendente(s) no pipeline para o
+                worker consumir.
+              </div>
+            ) : null}
+          </div>
+
+          <div className="d-flex flex-wrap align-items-start justify-content-between gap-3">
+            <div>
+              <h3 className="h6 mb-2">Informações que este card acompanha</h3>
+              <ul className="mb-0 text-secondary">
+                {analysisChecklist.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </div>
+            <Link
+              className="btn btn-outline-primary align-self-start"
+              to="/mois/sales-pages-library"
+            >
+              Ver páginas analisadas
+            </Link>
           </div>
         </div>
       </section>

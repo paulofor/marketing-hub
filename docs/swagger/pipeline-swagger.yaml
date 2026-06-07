@@ -16,6 +16,19 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PipelineMetadata"
+  /pipelines/geralanding/stage-models:
+    get:
+      summary: Lista modelos OpenAI configurados no banco para as etapas do Gera Landing.
+      description: Retorna uma posição para cada etapa exibida na aba Gera landing do experimento, usando as configurações ativas salvas em pipeline_stage/openai_model.
+      responses:
+        "200":
+          description: Modelos configurados por etapa do Gera Landing.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GeraLandingStageModel"
   /pipelines/{id}/diagnostics:
     get:
       summary: Diagnostica aderência do pipeline salvo no banco à definição oficial do backend.
@@ -94,6 +107,41 @@ paths:
                 $ref: "#/components/schemas/PipelineSyncResult"
 components:
   schemas:
+    GeraLandingStageModel:
+      type: object
+      required: [stageCode]
+      properties:
+        stageCode:
+          type: string
+          example: landing-page-wireframe
+        pipelineId:
+          type: integer
+          format: int64
+          nullable: true
+        pipelineCode:
+          type: string
+          nullable: true
+          example: experiment-pipeline
+        pipelineStageId:
+          type: integer
+          format: int64
+          nullable: true
+        pipelineStageCode:
+          type: string
+          nullable: true
+          example: LANDING_PAGE_WIREFRAME
+        openAiModelId:
+          type: integer
+          format: int64
+          nullable: true
+        openAiModelName:
+          type: string
+          nullable: true
+          example: GPT Vendas
+        openAiModelCode:
+          type: string
+          nullable: true
+          example: gpt-vendas
     PipelineMetadata:
       type: object
       required: [validModules, officialPipelines]

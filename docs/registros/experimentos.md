@@ -3944,3 +3944,18 @@
 - diagnóstico base: o rastreio atual por `sessionId` permite medir sessão, mas não prova recorrência de pessoa/dispositivo entre horários diferentes.
 - registro criado: `docs/implementação/plano-identificacao-visitante-landing-experimento.md`.
 - escopo planejado: cânone/contrato, banco, backend, script público da landing, API de recorrência, frontend, compatibilidade com legado e validação operacional por MCP.
+
+## 2026-06-07 — Modelo selecionado nas etapas do Gera Landing
+
+- solicitação: exibir na aba `Gera landing` do experimento o modelo selecionado para cada etapa na tela de pipelines.
+- causa-raiz: a tela de Gera Landing mostrava apenas totais, ações e histórico de execução; a configuração operacional de modelo OpenAI ficava visível apenas em `/pipelines`, obrigando o usuário a alternar de tela para conferir o modelo de cada etapa.
+- correção aplicada: o backend passou a expor `GET /api/pipelines/geralanding/stage-models`, consultar as etapas ativas salvas no banco e correlacionar as etapas do Gera Landing pelos códigos canônicos/aliases no servidor; a tela passou a consumir esse contrato específico e exibir, no cabeçalho de cada etapa, o modelo fixo configurado ou a indicação de ausência de modelo fixo.
+- arquivos alterados:
+  - `backend/ads-service/src/main/java/com/marketinghub/pipeline/web/PipelineController.java`
+  - `backend/ads-service/src/main/java/com/marketinghub/pipeline/service/PipelineService.java`
+  - `backend/ads-service/src/main/java/com/marketinghub/pipeline/dto/GeraLandingStageModelDto.java`
+  - `backend/ads-service/src/test/java/com/marketinghub/pipeline/service/PipelineServiceTest.java`
+  - `docs/swagger/pipeline-swagger.yaml`
+  - `frontend/src/api/pipeline/useGeraLandingStageModels.ts`
+  - `frontend/src/pages/experiment/ExperimentDetailPage.tsx`
+  - `docs/registros/experimentos.md`

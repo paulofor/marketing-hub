@@ -7,6 +7,7 @@ import com.marketinghub.pipeline.definition.PipelineDefinitionRegistry;
 import com.marketinghub.pipeline.definition.PipelineDefinitionRegistry.PipelineDefinition;
 import com.marketinghub.pipeline.definition.PipelineDefinitionRegistry.PipelineStageDefinition;
 import com.marketinghub.pipeline.dto.OfficialPipelineDto;
+import com.marketinghub.pipeline.dto.GeraLandingStageModelDto;
 import com.marketinghub.pipeline.dto.OfficialPipelineStageDto;
 import com.marketinghub.pipeline.dto.PipelineDiagnosticsDto;
 import com.marketinghub.pipeline.dto.PipelineDiagnosticsIssueDto;
@@ -22,7 +23,10 @@ import jakarta.persistence.EntityNotFoundException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -35,6 +39,8 @@ import org.springframework.web.server.ResponseStatusException;
  */
 @Service
 public class PipelineService {
+    private static final Map<String, List<String>> GERA_LANDING_STAGE_ALIASES = buildGeraLandingStageAliases();
+
     private final PipelineRepository pipelineRepository;
     private final PipelineStageRepository stageRepository;
     private final OpenAiModelRepository openAiModelRepository;
@@ -71,6 +77,23 @@ public class PipelineService {
         Pipeline pipeline = findPipeline(id);
         sortStages(pipeline);
         return pipeline;
+    }
+
+    /**
+     * Lista os modelos OpenAI configurados no banco para as etapas exibidas na aba Gera Landing.
+     */
+    @Transactional(readOnly = true)
+    public List<GeraLandingStageModelDto> listGeraLandingStageModels() {
+        List<PipelineStage> activeStages = pipelineRepository.findAll().stream()
+                .filter(Pipeline::isActive)
+                .peek(this::sortStages)
+                .flatMap(pipeline -> pipeline.getStages().stream())
+                .filter(PipelineStage::isActive)
+                .toList();
+
+        return GERA_LANDING_STAGE_ALIASES.keySet().stream()
+                .map(stageCode -> toGeraLandingStageModelDto(stageCode, activeStages))
+                .toList();
     }
 
     /**
@@ -459,6 +482,92 @@ public class PipelineService {
                 .activeOperational(definition.stageFieldPolicy().activeOperational())
                 .openAiModelOperational(definition.stageFieldPolicy().openAiModelOperational())
                 .build();
+    }
+
+    /**
+     * Converte a etapa configurada no banco para DTO específico da tela Gera Landing.
+     */
+    private GeraLandingStageModelDto toGeraLandingStageModelDto(String stageCode, List<PipelineStage> activeStages) {
+        return activeStages.stream()
+                .filter(stage -> matchesGeraLandingStage(stage, stageCode))
+                .filter(stage -> stage.getOpenAiModel() != null)
+                .findFirst()
+                .map(stage -> GeraLandingStageModelDto.builder()
+                        .stageCode(stageCode)
+                        .pipelineId(stage.getPipeline().getId())
+                        .pipelineCode(stage.getPipeline().getCode())
+                        .pipelineStageId(stage.getId())
+                        .pipelineStageCode(stage.getCode())
+                        .openAiModelId(stage.getOpenAiModel().getId())
+                        .openAiModelName(stage.getOpenAiModel().getName())
+                        .openAiModelCode(stage.getOpenAiModel().getCode())
+                        .build())
+                .orElseGet(() -> GeraLandingStageModelDto.builder()
+                        .stageCode(stageCode)
+                        .build());
+    }
+
+    /**
+     * Verifica se a etapa persistida corresponde ao código canônico usado pela tela Gera Landing.
+     */
+    private boolean matchesGeraLandingStage(PipelineStage stage, String stageCode) {
+        String normalizedStageCode = normalizePipelineCode(stage.getCode());
+        return GERA_LANDING_STAGE_ALIASES.getOrDefault(stageCode, List.of(stageCode)).stream()
+                .map(this::normalizePipelineCode)
+                .anyMatch(normalizedStageCode::equals);
+    }
+
+    /**
+     * Normaliza códigos operacionais de pipeline para comparar aliases históricos e canônicos.
+     */
+    private String normalizePipelineCode(String code) {
+        return StringUtils.hasText(code) ? code.trim().toLowerCase(Locale.ROOT).replace('_', '-') : "";
+    }
+
+    /**
+     * Monta os aliases de etapas do Gera Landing preservando a ordem visual da aba do experimento.
+     */
+    private static Map<String, List<String>> buildGeraLandingStageAliases() {
+        Map<String, List<String>> aliases = new LinkedHashMap<>();
+        aliases.put("landing-page-wireframe", List.of(
+                "landing-page-wireframe",
+                "LANDING_PAGE_WIREFRAME",
+                "landing-wireframe"));
+        aliases.put("landing-page-copy", List.of(
+                "landing-page-copy",
+                "LANDING_PAGE_COPY",
+                "landing-copy"));
+        aliases.put("landing-page-image-planning", List.of(
+                "landing-page-image-planning",
+                "LANDING_PAGE_IMAGE_PLANNING",
+                "image-planning",
+                "landing-image-planning"));
+        aliases.put("landing-page-image-generation", List.of(
+                "landing-page-image-generation",
+                "LANDING_PAGE_IMAGE_GENERATION",
+                "image-generation",
+                "landing-image-generation",
+                "framework-image-generation"));
+        aliases.put("landing-page-design-preset", List.of(
+                "landing-page-design-preset",
+                "LANDING_PAGE_DESIGN_PRESET",
+                "preset-design",
+                "design-preset"));
+        aliases.put("landing-page-quality-review", List.of(
+                "landing-page-quality-review",
+                "LANDING_PAGE_QUALITY_REVIEW",
+                "quality-review",
+                "landing-quality-review"));
+        aliases.put("landing-page-deliverables", List.of(
+                "landing-page-deliverables",
+                "LANDING_PAGE_DELIVERABLES",
+                "deliverables",
+                "landing-deliverables",
+                "LANDING_PAGE_HTML",
+                "landing-page-html",
+                "landing-html",
+                "geralanding-html"));
+        return aliases;
     }
 
     /**

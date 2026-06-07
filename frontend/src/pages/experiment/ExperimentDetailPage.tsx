@@ -38,6 +38,22 @@ import {
 } from "../../api/experiment/useGeraLandingStageExecutions";
 import { useFrameworkImageStatuses } from "../../api/experiment/useFrameworkImageStatuses";
 import { useFrameworkImageSummary } from "../../api/experiment/useFrameworkImageSummary";
+import {
+  useGeraLandingStageModels,
+  type GeraLandingStageModel,
+} from "../../api/pipeline/useGeraLandingStageModels";
+
+function formatPipelineStageModel(stageModel?: GeraLandingStageModel) {
+  if (!stageModel?.openAiModelId) {
+    return null;
+  }
+  const name = stageModel.openAiModelName?.trim();
+  const code = stageModel.openAiModelCode?.trim();
+  if (name && code) {
+    return `${name} (${code})`;
+  }
+  return name || code || `Modelo #${stageModel.openAiModelId}`;
+}
 
 type ChecklistItem = {
   id: string;
@@ -229,6 +245,8 @@ export default function ExperimentDetailPage() {
   const expId = id as string;
   const navigate = useNavigate();
   const { data, isLoading } = useExperiment(expId);
+  const { data: geraLandingStageModels, isLoading: isLoadingStageModels } =
+    useGeraLandingStageModels();
   const {
     data: diagnostics,
     isLoading: isLoadingDiagnostics,
@@ -1416,6 +1434,32 @@ export default function ExperimentDetailPage() {
     pendingGeraLandingDeliverablesExecutions,
   ]);
 
+  const selectedGeraLandingModelByStage = useMemo(() => {
+    return new Map(
+      (geraLandingStageModels ?? []).map((stageModel) => [
+        stageModel.stageCode,
+        stageModel,
+      ]),
+    );
+  }, [geraLandingStageModels]);
+
+  const renderSelectedGeraLandingModel = (stageCode: string) => {
+    const selectedModelLabel = formatPipelineStageModel(
+      selectedGeraLandingModelByStage.get(stageCode),
+    );
+
+    return (
+      <div className="small text-muted">
+        Modelo selecionado no pipeline:{" "}
+        <span className="fw-semibold text-body">
+          {isLoadingStageModels
+            ? "Carregando..."
+            : (selectedModelLabel ?? "Sem modelo fixo configurado")}
+        </span>
+      </div>
+    );
+  };
+
   const latestSuccessfulImagePromptExecution =
     historyGeraLandingImagePromptsExecutions.find((execution) =>
       isCompletedExecution(execution.status),
@@ -2461,7 +2505,10 @@ export default function ExperimentDetailPage() {
               <div className="card">
                 <div className="card-body d-flex flex-column gap-3">
                   <div className="d-flex flex-wrap justify-content-between align-items-start gap-2">
-                    <h5 className="card-title mb-0">1 - Gera WireFrame</h5>
+                    <div>
+                      <h5 className="card-title mb-1">1 - Gera WireFrame</h5>
+                      {renderSelectedGeraLandingModel("landing-page-wireframe")}
+                    </div>
                     <span className="badge text-bg-light border fs-6 fw-semibold">
                       Total execuções:{" "}
                       {formatCurrencyUsd(totalCompletedGeraLandingCostUsd)}
@@ -2594,7 +2641,10 @@ export default function ExperimentDetailPage() {
               <div className="card">
                 <div className="card-body d-flex flex-column gap-3">
                   <div className="d-flex flex-wrap justify-content-between align-items-start gap-2">
-                    <h5 className="card-title mb-0">2 - Gera Copy</h5>
+                    <div>
+                      <h5 className="card-title mb-1">2 - Gera Copy</h5>
+                      {renderSelectedGeraLandingModel("landing-page-copy")}
+                    </div>
                     <span className="badge text-bg-light border fs-6 fw-semibold">
                       Total execuções:{" "}
                       {formatCurrencyUsd(totalCompletedGeraLandingCopyCostUsd)}
@@ -2729,7 +2779,14 @@ export default function ExperimentDetailPage() {
               <div className="card">
                 <div className="card-body d-flex flex-column gap-3">
                   <div className="d-flex flex-wrap justify-content-between align-items-start gap-2">
-                    <h5 className="card-title mb-0">3 - Gera Prompt Imagem</h5>
+                    <div>
+                      <h5 className="card-title mb-1">
+                        3 - Gera Prompt Imagem
+                      </h5>
+                      {renderSelectedGeraLandingModel(
+                        "landing-page-image-planning",
+                      )}
+                    </div>
                     <span className="badge text-bg-light border fs-6 fw-semibold">
                       Total execuções:{" "}
                       {formatCurrencyUsd(
@@ -2906,7 +2963,12 @@ export default function ExperimentDetailPage() {
               <div className="card">
                 <div className="card-body d-flex flex-column gap-3">
                   <div className="d-flex flex-wrap justify-content-between align-items-start gap-2">
-                    <h5 className="card-title mb-0">4 - Gera Imagem</h5>
+                    <div>
+                      <h5 className="card-title mb-1">4 - Gera Imagem</h5>
+                      {renderSelectedGeraLandingModel(
+                        "landing-page-image-generation",
+                      )}
+                    </div>
                     <div className="d-flex flex-wrap gap-2">
                       <span className="badge text-bg-light border fs-6 fw-semibold">
                         Pendentes: {frameworkImagePendingCount}
@@ -3127,7 +3189,14 @@ export default function ExperimentDetailPage() {
               <div className="card">
                 <div className="card-body d-flex flex-column gap-3">
                   <div className="d-flex flex-wrap justify-content-between align-items-start gap-2">
-                    <h5 className="card-title mb-0">5 - Gera Preset Design</h5>
+                    <div>
+                      <h5 className="card-title mb-1">
+                        5 - Gera Preset Design
+                      </h5>
+                      {renderSelectedGeraLandingModel(
+                        "landing-page-design-preset",
+                      )}
+                    </div>
                     <span className="badge text-bg-light border fs-6 fw-semibold">
                       Total execuções:{" "}
                       {formatCurrencyUsd(
@@ -3267,7 +3336,12 @@ export default function ExperimentDetailPage() {
               <div className="card">
                 <div className="card-body d-flex flex-column gap-3">
                   <div className="d-flex flex-wrap justify-content-between align-items-start gap-2">
-                    <h5 className="card-title mb-0">6 - Quality Review</h5>
+                    <div>
+                      <h5 className="card-title mb-1">6 - Quality Review</h5>
+                      {renderSelectedGeraLandingModel(
+                        "landing-page-quality-review",
+                      )}
+                    </div>
                     <span className="badge text-bg-light border fs-6 fw-semibold">
                       Total execuções:{" "}
                       {formatCurrencyUsd(
@@ -3436,7 +3510,12 @@ export default function ExperimentDetailPage() {
               <div className="card">
                 <div className="card-body d-flex flex-column gap-3">
                   <div className="d-flex flex-wrap justify-content-between align-items-start gap-2">
-                    <h5 className="card-title mb-0">7 - Gera Entregáveis</h5>
+                    <div>
+                      <h5 className="card-title mb-1">7 - Gera Entregáveis</h5>
+                      {renderSelectedGeraLandingModel(
+                        "landing-page-deliverables",
+                      )}
+                    </div>
                     <span className="badge text-bg-light border fs-6 fw-semibold">
                       Total execuções:{" "}
                       {formatCurrencyUsd(

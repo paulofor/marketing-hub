@@ -1,6 +1,10 @@
+import { useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import PageTitle from "../../components/PageTitle";
-import { useOpenAiModels } from "../../api/openAiModel/useOpenAiModels";
+import {
+  OpenAiModel,
+  useOpenAiModels,
+} from "../../api/openAiModel/useOpenAiModels";
 
 const priceFormatter = new Intl.NumberFormat("pt-BR", {
   minimumFractionDigits: 5,
@@ -12,10 +16,37 @@ function formatPrice(value?: number | null) {
   return priceFormatter.format(value);
 }
 
+function getHighestModelPrice(model: OpenAiModel) {
+  return Math.max(
+    model.priceInputStandard ?? 0,
+    model.priceInputCachedStandard ?? 0,
+    model.priceOutputStandard ?? 0,
+    model.priceInputBatch ?? 0,
+    model.priceInputCachedBatch ?? 0,
+    model.priceOutputBatch ?? 0,
+  );
+}
+
+export function sortOpenAiModelsByHighestPrice(models: OpenAiModel[]) {
+  return [...models].sort((first, second) => {
+    const priceDifference =
+      getHighestModelPrice(second) - getHighestModelPrice(first);
+
+    if (priceDifference !== 0) return priceDifference;
+
+    return first.name.localeCompare(second.name, "pt-BR", {
+      sensitivity: "base",
+    });
+  });
+}
+
 export default function OpenAiModelListPage() {
   const navigate = useNavigate();
   const { data, isLoading } = useOpenAiModels();
-  const models = Array.isArray(data) ? data : [];
+  const models = useMemo(
+    () => sortOpenAiModelsByHighestPrice(Array.isArray(data) ? data : []),
+    [data],
+  );
 
   if (isLoading) return <p>Carregando...</p>;
 

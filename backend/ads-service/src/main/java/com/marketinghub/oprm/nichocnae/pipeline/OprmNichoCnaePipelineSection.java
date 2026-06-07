@@ -68,6 +68,7 @@ public enum OprmNichoCnaePipelineSection {
     private final String path;
     private final String displayName;
     private final String rootPackage;
+    private final String modulePackage;
     private final Set<String> aliases;
 
     /**
@@ -83,6 +84,8 @@ public enum OprmNichoCnaePipelineSection {
         this.path = path;
         this.displayName = displayName;
         this.rootPackage = rootPackage;
+        this.modulePackage =
+                rootPackage.replace("com.marketinghub.oprm.nichocnae", "com.marketinghub.nichocnae");
         this.aliases = aliases;
     }
 
@@ -119,6 +122,13 @@ public enum OprmNichoCnaePipelineSection {
      */
     public String rootPackage() {
         return rootPackage;
+    }
+
+    /**
+     * Retorna o pacote no módulo executor que implementa a etapa.
+     */
+    public String modulePackage() {
+        return modulePackage;
     }
 
     /**

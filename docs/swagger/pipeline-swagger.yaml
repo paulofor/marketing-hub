@@ -16,6 +16,19 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PipelineMetadata"
+  /pipelines/geralanding/stage-models:
+    get:
+      summary: Lista modelos OpenAI configurados no banco para as etapas do Gera Landing.
+      description: Retorna uma posição para cada etapa exibida na aba Gera landing do experimento, usando as configurações ativas salvas em pipeline_stage/openai_model.
+      responses:
+        "200":
+          description: Modelos configurados por etapa do Gera Landing.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GeraLandingStageModel"
   /pipelines/{id}/diagnostics:
     get:
       summary: Diagnostica aderência do pipeline salvo no banco à definição oficial do backend.
@@ -94,6 +107,41 @@ paths:
                 $ref: "#/components/schemas/PipelineSyncResult"
 components:
   schemas:
+    GeraLandingStageModel:
+      type: object
+      required: [stageCode]
+      properties:
+        stageCode:
+          type: string
+          example: landing-page-wireframe
+        pipelineId:
+          type: integer
+          format: int64
+          nullable: true
+        pipelineCode:
+          type: string
+          nullable: true
+          example: experiment-pipeline
+        pipelineStageId:
+          type: integer
+          format: int64
+          nullable: true
+        pipelineStageCode:
+          type: string
+          nullable: true
+          example: LANDING_PAGE_WIREFRAME
+        openAiModelId:
+          type: integer
+          format: int64
+          nullable: true
+        openAiModelName:
+          type: string
+          nullable: true
+          example: GPT Vendas
+        openAiModelCode:
+          type: string
+          nullable: true
+          example: gpt-vendas
     PipelineMetadata:
       type: object
       required: [validModules, officialPipelines]
@@ -108,7 +156,7 @@ components:
             $ref: "#/components/schemas/OfficialPipeline"
     OfficialPipeline:
       type: object
-      required: [module, code, name, canonicalVersion, official, aliases, fieldPolicy, stages]
+      required: [module, code, name, canonicalVersion, official, aliases, implementationModules, backendPackages, modulePackages, fieldPolicy, stages]
       properties:
         module:
           type: string
@@ -129,6 +177,24 @@ components:
           type: array
           items:
             type: string
+        implementationModules:
+          type: array
+          description: Módulos executores que implementam etapas do pipeline quando existirem.
+          items:
+            type: string
+          example: [ai-worker]
+        backendPackages:
+          type: array
+          description: Pacotes do backend que definem contrato, persistência ou orquestração das etapas.
+          items:
+            type: string
+          example: [com.marketinghub.experiment.pipeline]
+        modulePackages:
+          type: array
+          description: Pacotes dentro dos módulos executores que implementam as etapas.
+          items:
+            type: string
+          example: [com.marketinghub.worker.experimentpipeline]
         fieldPolicy:
           $ref: "#/components/schemas/PipelineFieldPolicy"
         stages:
@@ -165,8 +231,13 @@ components:
         rootPackage:
           type: string
           nullable: true
-          description: Pacote raiz no backend ou no módulo executor onde a etapa é implementada.
+          description: Pacote raiz no backend onde a etapa é definida ou orquestrada.
           example: com.marketinghub.experiment.pipeline
+        modulePackage:
+          type: string
+          nullable: true
+          description: Pacote no módulo executor onde a etapa é implementada quando existir.
+          example: com.marketinghub.worker.experimentpipeline
         fieldPolicy:
           $ref: "#/components/schemas/StageFieldPolicy"
         aliases:

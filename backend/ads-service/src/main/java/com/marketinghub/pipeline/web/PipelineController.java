@@ -2,6 +2,7 @@ package com.marketinghub.pipeline.web;
 
 import com.marketinghub.pipeline.Pipeline;
 import com.marketinghub.pipeline.PipelineStage;
+import com.marketinghub.pipeline.dto.GeraLandingStageModelDto;
 import com.marketinghub.pipeline.dto.PipelineDiagnosticsDto;
 import com.marketinghub.pipeline.dto.PipelineDto;
 import com.marketinghub.pipeline.dto.PipelineMetadataDto;
@@ -57,6 +58,14 @@ public class PipelineController {
     @GetMapping("/metadata")
     public PipelineMetadataDto metadata() {
         return service.metadata();
+    }
+
+    /**
+     * Lista os modelos OpenAI configurados no banco para as etapas do Gera Landing.
+     */
+    @GetMapping("/geralanding/stage-models")
+    public List<GeraLandingStageModelDto> listGeraLandingStageModels() {
+        return service.listGeraLandingStageModels();
     }
 
     /**

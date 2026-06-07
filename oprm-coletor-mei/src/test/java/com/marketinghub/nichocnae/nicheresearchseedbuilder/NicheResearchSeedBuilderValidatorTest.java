@@ -85,6 +85,29 @@ class NicheResearchSeedBuilderValidatorTest {
                 .hasMessageContaining("linguagem de solução proibida");
     }
 
+
+    /** Deve aceitar palavras repetidas nas queries porque repetição de conectivos não é duplicidade operacional. */
+    @Test
+    void shouldAcceptRepeatedCommonWordsInQueryText() {
+        NicheResearchSeedBuilderPending pending = pending();
+        List<String> texts = new ArrayList<>(List.of(
+                "manicure rotina de atendimento e agenda e cliente",
+                "manicure responsabilidades agenda",
+                "cliente unha em gel dúvidas",
+                "unha em gel quanto tempo dura",
+                "manicure tarefas atendimento semanal",
+                "agenda manicure horários vazios",
+                "salão beleza comunicação clientes whatsapp",
+                "hidratação cabelo cliente pergunta",
+                "cabeleireiro rotina salão pequeno",
+                "pedicure biossegurança atendimento",
+                "manicure preço unha decorada",
+                "salão beleza recorrência clientes"));
+        NicheResearchSeedBuilderOutput output = outputWithQueries(texts);
+
+        assertThatNoException().isThrownBy(() -> validator.validate(pending, output));
+    }
+
     /** Deve rejeitar saída com menos de doze queries para manter cobertura mínima do MVP. */
     @Test
     void shouldRejectTooFewQueries() {

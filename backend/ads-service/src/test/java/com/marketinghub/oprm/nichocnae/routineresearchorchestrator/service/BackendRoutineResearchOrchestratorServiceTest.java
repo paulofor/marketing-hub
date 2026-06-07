@@ -115,6 +115,7 @@ class BackendRoutineResearchOrchestratorServiceTest {
         verify(routineResearchCycleRepository).save(cycleCaptor.capture());
         assertThat(cycleCaptor.getValue().getSourceNicheId()).isEqualTo(55L);
         assertThat(cycleCaptor.getValue().getStatus()).isEqualTo("RUNNING");
+        assertThat(cycleCaptor.getValue().getTriggerSource()).isEqualTo("MANUAL_REPROCESS");
 
         ArgumentCaptor<OprmNicheCandidate> candidateCaptor = ArgumentCaptor.forClass(OprmNicheCandidate.class);
         verify(nicheCandidateRepository).save(candidateCaptor.capture());

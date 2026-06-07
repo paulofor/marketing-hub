@@ -162,6 +162,37 @@ class BackendNicheResearchSeedBuilderServiceTest {
     verify(nicheResearchSeedRepository, never()).save(any());
   }
 
+  /** Deve aceitar queries com palavras comuns repetidas sem gerar duplicate element na tokenização. */
+  @Test
+  void completeAcceptsRepeatedCommonWordsInQueryText() {
+    OprmRoutineResearchCycle cycle = cycle();
+    when(routineResearchCycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
+    when(nicheResearchSeedRepository.existsByResearchCycleId(1001L)).thenReturn(false);
+    when(nicheResearchSeedRepository.save(any(OprmNicheResearchSeed.class)))
+        .thenAnswer(invocation -> {
+          OprmNicheResearchSeed seed = invocation.getArgument(0);
+          seed.setId(44L);
+          return seed;
+        });
+    when(researchQueryRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
+    CompleteNicheResearchSeedBuilderRequest request = new CompleteNicheResearchSeedBuilderRequest(
+        "Cabeleireiros, manicures e pedicures",
+        "serviço local de beleza",
+        "agenda e atendimento recorrente",
+        "consumidor final recorrente",
+        "manicure, pedicure, escova",
+        "depende de agenda cheia",
+        "INFERRED_FROM_CNAE",
+        "AI",
+        List.of(new NicheResearchQueryRequest(
+            "rotina de manicure e atendimento e organização diária", "ROUTINE_DISCOVERY", "web", 1)));
+
+    CompleteNicheResearchSeedBuilderResponse response = service.complete(1001L, request);
+
+    assertThat(response.totalQueries()).isEqualTo(1);
+    verify(nicheResearchSeedRepository).save(any());
+  }
+
   /** Deve rejeitar payloads com mais de quinze queries para preservar o MVP documentado. */
   @Test
   void completeRejectsMoreThanFifteenQueries() {

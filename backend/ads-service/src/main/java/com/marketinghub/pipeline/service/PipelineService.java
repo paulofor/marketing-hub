@@ -409,6 +409,9 @@ public class PipelineService {
                 .canonicalVersion(definition.canonicalVersion())
                 .official(definition.official())
                 .aliases(definition.aliases().stream().sorted().toList())
+                .implementationModules(implementationModules(definition))
+                .backendPackages(backendPackages(definition))
+                .modulePackages(modulePackages(definition))
                 .fieldPolicy(toPipelineFieldPolicyDto(definition))
                 .stages(definition.stages().stream().map(stage -> toOfficialStageDto(definition, stage)).toList())
                 .build();
@@ -428,9 +431,50 @@ public class PipelineService {
                 .configurable(definition.configurable())
                 .executionModule(definition.executionModule())
                 .rootPackage(definition.rootPackage())
+                .modulePackage(definition.modulePackage())
                 .fieldPolicy(toStageFieldPolicyDto(pipelineDefinition))
                 .aliases(definition.aliases().stream().sorted().toList())
                 .build();
+    }
+
+    /**
+     * Lista os módulos executores declarados pelas etapas oficiais do pipeline.
+     */
+    private List<String> implementationModules(PipelineDefinition definition) {
+        List<String> modules = definition.stages().stream()
+                .map(PipelineStageDefinition::executionModule)
+                .filter(StringUtils::hasText)
+                .distinct()
+                .sorted()
+                .toList();
+        if (!modules.isEmpty()) {
+            return modules;
+        }
+        return modulePackages(definition).isEmpty() ? List.of() : List.of("ai-worker");
+    }
+
+    /**
+     * Lista os pacotes do backend declarados pelas etapas oficiais do pipeline.
+     */
+    private List<String> backendPackages(PipelineDefinition definition) {
+        return definition.stages().stream()
+                .map(PipelineStageDefinition::rootPackage)
+                .filter(StringUtils::hasText)
+                .distinct()
+                .sorted()
+                .toList();
+    }
+
+    /**
+     * Lista os pacotes do módulo executor declarados pelas etapas oficiais do pipeline.
+     */
+    private List<String> modulePackages(PipelineDefinition definition) {
+        return definition.stages().stream()
+                .map(PipelineStageDefinition::modulePackage)
+                .filter(StringUtils::hasText)
+                .distinct()
+                .sorted()
+                .toList();
     }
 
     /**

@@ -3944,3 +3944,13 @@
 - diagnóstico base: o rastreio atual por `sessionId` permite medir sessão, mas não prova recorrência de pessoa/dispositivo entre horários diferentes.
 - registro criado: `docs/implementação/plano-identificacao-visitante-landing-experimento.md`.
 - escopo planejado: cânone/contrato, banco, backend, script público da landing, API de recorrência, frontend, compatibilidade com legado e validação operacional por MCP.
+
+## 2026-06-07 — Metadados de implementação na lista de pipelines
+
+- solicitação: exibir em cada pipeline o módulo que implementa, o pacote no backend e o pacote no módulo executor.
+- correção aplicada: a tela de pipelines passou a mostrar os metadados de implementação por pipeline e o contrato `/api/pipelines/metadata` passou a expor listas agregadas de módulos executores, pacotes backend e pacotes dos módulos para pipelines oficiais, incluindo o pipeline de experimento.
+- arquivos alterados:
+  - `backend/ads-service/src/main/java/com/marketinghub/pipeline/definition/PipelineDefinitionRegistry.java`
+  - `backend/ads-service/src/main/java/com/marketinghub/pipeline/service/PipelineService.java`
+  - `frontend/src/pages/pipeline/PipelineCrudPage.tsx`
+  - `frontend/src/pages/pipeline/PipelineCrudPage.css`

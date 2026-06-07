@@ -108,7 +108,7 @@ components:
             $ref: "#/components/schemas/OfficialPipeline"
     OfficialPipeline:
       type: object
-      required: [module, code, name, canonicalVersion, official, aliases, fieldPolicy, stages]
+      required: [module, code, name, canonicalVersion, official, aliases, implementationModules, backendPackages, modulePackages, fieldPolicy, stages]
       properties:
         module:
           type: string
@@ -129,6 +129,24 @@ components:
           type: array
           items:
             type: string
+        implementationModules:
+          type: array
+          description: Módulos executores que implementam etapas do pipeline quando existirem.
+          items:
+            type: string
+          example: [ai-worker]
+        backendPackages:
+          type: array
+          description: Pacotes do backend que definem contrato, persistência ou orquestração das etapas.
+          items:
+            type: string
+          example: [com.marketinghub.experiment.pipeline]
+        modulePackages:
+          type: array
+          description: Pacotes dentro dos módulos executores que implementam as etapas.
+          items:
+            type: string
+          example: [com.marketinghub.worker.experimentpipeline]
         fieldPolicy:
           $ref: "#/components/schemas/PipelineFieldPolicy"
         stages:
@@ -165,8 +183,13 @@ components:
         rootPackage:
           type: string
           nullable: true
-          description: Pacote raiz no backend ou no módulo executor onde a etapa é implementada.
+          description: Pacote raiz no backend onde a etapa é definida ou orquestrada.
           example: com.marketinghub.experiment.pipeline
+        modulePackage:
+          type: string
+          nullable: true
+          description: Pacote no módulo executor onde a etapa é implementada quando existir.
+          example: com.marketinghub.worker.experimentpipeline
         fieldPolicy:
           $ref: "#/components/schemas/StageFieldPolicy"
         aliases:

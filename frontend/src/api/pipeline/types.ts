@@ -55,6 +55,7 @@ export interface OfficialPipelineStageMetadata {
   configurable: boolean;
   executionModule?: string | null;
   rootPackage?: string | null;
+  modulePackage?: string | null;
   fieldPolicy?: StageFieldPolicy;
   aliases: string[];
 }
@@ -75,6 +76,9 @@ export interface OfficialPipelineMetadata {
   name: string;
   official: boolean;
   aliases: string[];
+  implementationModules?: string[];
+  backendPackages?: string[];
+  modulePackages?: string[];
   stages: OfficialPipelineStageMetadata[];
 }
 

@@ -1092,3 +1092,17 @@ Arquivos alterados:
 Arquivos alterados:
 - `frontend/src/pages/mois/MoisSalesPagesPipelinePage.tsx`
 - `docs/registros/mois1.md`
+
+## 2026-06-07 — Critério canônico de captura correta por html_bytes
+
+- definido `html_bytes > 0` como critério operacional para considerar captura de página correta na Biblioteca de Páginas de Vendas MOIS.
+- ajustada a etapa 1 para selecionar páginas sem HTML útil (`COALESCE(html_bytes, 0) = 0`) e evitar recapturar páginas já úteis mesmo em execução forçada.
+- atualizado o resumo do pipeline para exibir páginas com HTML útil em vez de somar status operacionais.
+
+Arquivos alterados:
+- `docs/canonical/mois-worker-canon.v1.md`
+- `docs/swagger/mois-sales-library-swagger.yaml`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibraryService.java`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibrarySnapshotService.java`
+- `backend/ads-service/src/test/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibrarySnapshotServiceTest.java`
+- `frontend/src/pages/mois/MoisSalesPagesPipelinePage.tsx`

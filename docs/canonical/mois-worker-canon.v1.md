@@ -301,6 +301,7 @@ erDiagram
 - **Papel no fluxo**: fonte operacional principal do estado atual da página de venda.
 - **Função operacional**: deduplicar URLs, manter metadados de origem, status atual, captura atual, score e último erro.
 - **Campos de destaque**: `id`, `workspace_id`, `source`, `source_job_id`, `source_reference_id`, `collected_reference_id`, `url_original`, `url_canonical`, `url_final`, `current_stage`, `current_status`, `capture_status`, `analysis_status`, `html_sha256`, `html_bytes`, `score_total`, `last_job_execution_id`, `created_at`, `updated_at`.
+- **Critério canônico de captura correta**: uma página só deve ser considerada com HTML útil obtido quando `html_bytes > 0`; status como `CAPTURED`, `DUPLICATE`, `DONE` ou `ANALYZED` não substituem esse critério. A etapa 1 deve priorizar/processar páginas com `COALESCE(html_bytes, 0) = 0`, respeitando cooldown/limite de falhas quando não houver acionamento forçado.
 
 #### 13.3.2 `mois_sales_page_job_execution`
 - **Papel no fluxo**: histórico/auditoria de cada execução operacional sobre uma página.

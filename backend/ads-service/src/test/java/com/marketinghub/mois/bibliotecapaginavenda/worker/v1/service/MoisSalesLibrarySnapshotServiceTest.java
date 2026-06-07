@@ -230,6 +230,40 @@ public class MoisSalesLibrarySnapshotServiceTest {
         assertThat(storedUrls.get("redirect_root_url")).isEqualTo(baseUrl);
     }
 
+    /** Garante que páginas com html_bytes > 0 não sejam recapturadas nem em acionamento forçado da etapa 1. */
+    @Test
+    void shouldSkipPagesWithUsefulHtmlBytesEvenWhenForceIsEnabled() {
+        String url = "http://localhost:" + server.getAddress().getPort() + "/sales";
+        insertPageWithState(9L, url, "CAPTURE", "CAPTURED", 128L);
+
+        var response = service.captureSnapshots(
+                new MoisSalesLibraryDtos.SalesLibrarySnapshotCaptureRequest("workspace-001", 5, true));
+
+        assertThat(response.processed()).isZero();
+        Integer executions = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM mois_sales_page_job_execution WHERE sales_page_id = 9 AND stage = 'CAPTURE'",
+                Integer.class);
+        assertThat(executions).isZero();
+    }
+
+    /** Garante que a etapa 1 reprocesse páginas sem HTML útil mesmo quando o status anterior dizia CAPTURED. */
+    @Test
+    void shouldProcessCapturedStatusWhenHtmlBytesIsZero() {
+        String url = "http://localhost:" + server.getAddress().getPort() + "/sales";
+        insertPageWithState(10L, url, "CAPTURE", "CAPTURED", 0L);
+
+        var response = service.captureSnapshots(
+                new MoisSalesLibraryDtos.SalesLibrarySnapshotCaptureRequest("workspace-001", 5, false));
+
+        assertThat(response.processed()).isEqualTo(1);
+        assertThat(response.items().getFirst().pageId()).isEqualTo(10L);
+        assertThat(response.items().getFirst().rawHtmlBytes()).isPositive();
+        Long persistedHtmlBytes = jdbcTemplate.queryForObject(
+                "SELECT html_bytes FROM mois_sales_page WHERE id = 10",
+                Long.class);
+        assertThat(persistedHtmlBytes).isPositive();
+    }
+
     /** Fornece timestamp UTC compatível com a função usada no SQL MySQL dos testes. */
     public static Timestamp utcTimestamp() {
         return Timestamp.from(Instant.now());
@@ -237,11 +271,17 @@ public class MoisSalesLibrarySnapshotServiceTest {
 
     /** Insere uma página operacional para os testes de seleção e captura. */
     private void insertPage(long pageId, String url) {
+        insertPageWithState(pageId, url, "ANALYSIS", "PENDING", 0L);
+    }
+
+    /** Insere uma página operacional com estado e bytes de HTML controlados pelo cenário de teste. */
+    private void insertPageWithState(long pageId, String url, String currentStage, String currentStatus, long htmlBytes) {
         jdbcTemplate.update("""
                 INSERT INTO mois_sales_page
-                (id, workspace_id, source, url_original, url_canonical, title, current_stage, current_status, ingest_count, created_at, updated_at)
-                VALUES (?, 'workspace-001', 'TEST', ?, ?, 'Oferta Teste', 'ANALYSIS', 'PENDING', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-                """, pageId, url, url);
+                (id, workspace_id, source, url_original, url_canonical, title, current_stage, current_status, capture_status, html_bytes,
+                 ingest_count, created_at, updated_at)
+                VALUES (?, 'workspace-001', 'TEST', ?, ?, 'Oferta Teste', ?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                """, pageId, url, url, currentStage, currentStatus, currentStatus, htmlBytes);
     }
 
     /** Insere uma falha prévia para validar cooldown e limite de tentativas. */

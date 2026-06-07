@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -107,6 +107,87 @@ describe("OprmPipelinePage", () => {
     });
   });
 
+  it("libera o CNAE com ciclo falho para novo ciclo automático", async () => {
+    const fetchMock = vi.fn(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = input.toString();
+        if (
+          url.includes("routine-research-orchestrator/recent-processed") &&
+          init?.method === "POST"
+        ) {
+          return new Response(
+            JSON.stringify({
+              researchCycleId: 1,
+              sourceNicheId: 1,
+              cnaeCode: "9602501",
+              cnaeDescription: "Cabeleireiros, manicure e pedicure",
+              previousCycleStatus: "FAILED",
+              previousRoutineResearchStatus: "RESEARCH_RUNNING",
+              routineResearchStatus: "PENDING",
+              lastRoutineResearchCycleId: null,
+              message:
+                "Nicho CNAE liberado para novo ciclo automático de pesquisa de rotina.",
+            }),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+          );
+        }
+
+        if (url.includes("routine-research-orchestrator/recent-processed")) {
+          return new Response(
+            JSON.stringify([
+              {
+                researchCycleId: 1,
+                sourceNicheId: 1,
+                cnaeCode: "9602501",
+                cnaeDescription: "Cabeleireiros, manicure e pedicure",
+                nicheName:
+                  "IA para crescimento de Cabeleireiros, manicure e pedicure",
+                originalNicheName:
+                  "IA para crescimento de Cabeleireiros, manicure e pedicure",
+                neutralNicheName: "Cabeleireiros, manicure e pedicure",
+                researchMode: "ROUTINE_REALITY_RESEARCH",
+                solutionLanguageRiskScore: 65,
+                sourceScore: 90,
+                triggerSource: "AUTO_SCORE_QUEUE",
+                cycleStatus: "FAILED",
+                processedAt: "2026-06-03T06:59:59Z",
+                finishedAt: "2026-06-03T07:10:00Z",
+                errorMessage: "Falha ao gerar seed da etapa dois",
+              },
+            ]),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+          );
+        }
+
+        return new Response("[]", {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      },
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    renderPage();
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Reprocessar CNAE" }),
+    );
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining(
+          "routine-research-orchestrator/recent-processed/1/reprocess",
+        ),
+        { method: "POST" },
+      );
+    });
+    expect(
+      await screen.findByText(
+        "Nicho CNAE liberado para novo ciclo automático de pesquisa de rotina.",
+      ),
+    ).toBeTruthy();
+  });
+
   it("mostra seed e queries geradas pela IA no card da etapa 2", async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = input.toString();
@@ -202,7 +283,11 @@ describe("OprmPipelinePage", () => {
 
     renderPage();
 
-    expect(await screen.findByText("Dados gerados pela IA")).toBeTruthy();
+    await waitFor(() => {
+      expect(
+        screen.getAllByText("Dados gerados pela IA").length,
+      ).toBeGreaterThan(0);
+    });
     expect(await screen.findByText("Serviços pessoais de beleza")).toBeTruthy();
     expect(
       screen.getByText("Profissionais enfrentam desafios na gestão de agenda."),

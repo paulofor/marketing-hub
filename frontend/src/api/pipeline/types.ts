@@ -55,7 +55,18 @@ export interface OfficialPipelineStageMetadata {
   configurable: boolean;
   executionModule?: string | null;
   rootPackage?: string | null;
+  fieldPolicy?: StageFieldPolicy;
   aliases: string[];
+}
+
+export interface StageFieldPolicy {
+  codeStructural: boolean;
+  positionStructural: boolean;
+  nameStructural: boolean;
+  requiredStructural: boolean;
+  descriptionOperational: boolean;
+  activeOperational: boolean;
+  openAiModelOperational: boolean;
 }
 
 export interface OfficialPipelineMetadata {

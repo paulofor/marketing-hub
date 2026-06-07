@@ -3863,4 +3863,11 @@
   - `docs/facebook-ads-worker/endpoint-flow.md`
   - `docs/canonical/facebook-campaign-publication-canon.v1.md`
   - `docs/canonical/procedimento-experimento-canon.v1.md`
+## 2026-06-07 — Simplificação dos cards de etapas do pipeline
+
+- solicitação: remover ações manuais e rótulos operacionais redundantes dos cards de etapas, ocultar módulo executor ausente e permitir trocar modelo OpenAI diretamente no card apenas em etapas com acesso de IA.
+- correção aplicada: os cards não exibem mais botões de editar/excluir nem badges `Ativa`, `Obrigatória` e `Estrutural`; o módulo executor só aparece quando há valor cadastrado; e o modelo OpenAI virou uma seleção com confirmação explícita antes de persistir a alteração via contrato existente de atualização da etapa.
+- arquivos alterados:
+  - `frontend/src/pages/pipeline/PipelineCrudPage.tsx`
+  - `frontend/src/api/pipeline/types.ts`
   - `docs/registros/experimentos.md`

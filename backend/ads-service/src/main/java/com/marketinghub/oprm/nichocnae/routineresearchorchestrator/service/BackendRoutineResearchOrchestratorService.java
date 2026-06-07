@@ -6,6 +6,7 @@ import com.marketinghub.oprm.nichocnae.RoutineResearchNicheNameNormalizer;
 import com.marketinghub.oprm.nichocnae.RoutineResearchNicheNameNormalizer.NormalizedNicheName;
 import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.pending.RecordRoutineResearchOrchestratorPending;
 import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.recent.RecordRoutineResearchOrchestratorRecent;
+import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.reprocess.RecordRoutineResearchOrchestratorReprocessResult;
 import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.runNext.RecordRoutineResearchOrchestratorResult;
 import com.marketinghub.repository.jpa.oprm.cnae.OprmNicheCandidateRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmRoutineResearchCycleRepository;
@@ -14,8 +15,10 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 /** Responsável por selecionar o próximo nicho CNAE com score alto e abrir o ciclo de pesquisa de rotina. */
 @Service
@@ -24,6 +27,7 @@ public class BackendRoutineResearchOrchestratorService {
     private static final String ROUTINE_STATUS_PENDING = "PENDING";
     private static final String ROUTINE_STATUS_RUNNING = "RESEARCH_RUNNING";
     private static final String CYCLE_STATUS_RUNNING = "RUNNING";
+    private static final String CYCLE_STATUS_FAILED = "FAILED";
     private static final String TRIGGER_SOURCE_AUTO_SCORE_QUEUE = "AUTO_SCORE_QUEUE";
     private static final String RESEARCH_MODE_ROUTINE_REALITY = "ROUTINE_REALITY_RESEARCH";
 
@@ -64,6 +68,51 @@ public class BackendRoutineResearchOrchestratorService {
                 .toList();
         LOGGER.info("Ciclos recentes da etapa zero OPRM nichocnae retornados (count={})", recentCycles.size());
         return recentCycles;
+    }
+
+    /** Libera um nicho CNAE de ciclo falho para que o orquestrador automático crie um novo ciclo. */
+    @Transactional
+    public RecordRoutineResearchOrchestratorReprocessResult reprocessFailedCycle(Long researchCycleId) {
+        LOGGER.info(
+                "Liberando nicho CNAE para reprocessamento pela etapa zero OPRM nichocnae (researchCycleId={})",
+                researchCycleId);
+        OprmRoutineResearchCycle cycle = routineResearchCycleRepository
+                .findById(researchCycleId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Routine research cycle not found: " + researchCycleId));
+        if (!CYCLE_STATUS_FAILED.equals(cycle.getStatus())) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Only FAILED routine research cycles can be released for reprocessing: " + researchCycleId);
+        }
+        OprmNicheCandidate candidate = nicheCandidateRepository
+                .findById(cycle.getSourceNicheId())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Niche candidate not found: " + cycle.getSourceNicheId()));
+        String previousRoutineResearchStatus = candidate.getRoutineResearchStatus();
+        candidate.setRoutineResearchStatus(ROUTINE_STATUS_PENDING);
+        candidate.setLastRoutineResearchCycleId(null);
+        candidate.setUpdatedAt(Instant.now());
+        OprmNicheCandidate savedCandidate = nicheCandidateRepository.save(candidate);
+        LOGGER.info(
+                "Nicho CNAE liberado para novo ciclo automático OPRM nichocnae (researchCycleId={}, sourceNicheId={}, cnaeCode={}, previousCycleStatus={}, previousRoutineResearchStatus={}, routineResearchStatus={}, lastRoutineResearchCycleId={})",
+                cycle.getId(),
+                savedCandidate.getId(),
+                savedCandidate.getCnaeCode(),
+                cycle.getStatus(),
+                previousRoutineResearchStatus,
+                savedCandidate.getRoutineResearchStatus(),
+                savedCandidate.getLastRoutineResearchCycleId());
+        return new RecordRoutineResearchOrchestratorReprocessResult(
+                cycle.getId(),
+                savedCandidate.getId(),
+                savedCandidate.getCnaeCode(),
+                savedCandidate.getCnaeDescription(),
+                cycle.getStatus(),
+                previousRoutineResearchStatus,
+                savedCandidate.getRoutineResearchStatus(),
+                savedCandidate.getLastRoutineResearchCycleId(),
+                "Nicho CNAE liberado para novo ciclo automático de pesquisa de rotina.");
     }
 
     /** Executa a etapa zero, marcando o nicho selecionado como em pesquisa e criando o ciclo pai. */

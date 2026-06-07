@@ -41,6 +41,12 @@ O Marketing Hub é uma fábrica automatizada de produtos digitais: descobre dore
 - **Manual do usuário**: todos os links devem usar `target="_blank"`.
 - **Frontend**: sempre que alterar o frontend crie os métodos do backend para suportar. Tanto back quanto o front estão sendo executados no mesmo host.
 - **Frontend → Backend (validação de endpoint)**: sempre que criar no frontend uma chamada para o backend, verifique primeiro se o endpoint já existe. Se não existir, crie o endpoint no pacote/backend referente ao assunto da tela (ex.: MOIS, OPRM, etc.), respeitando o escopo do módulo.
+- **Novo pedido no frontend (procedimento obrigatório)**: quando o usuário solicitar algo novo no front-end, siga obrigatoriamente este fluxo:
+  1. Investigar qual módulo do backend se refere ao pedido.
+  2. Verificar se já existe endpoint que atenda ao pedido.
+  3. Se o endpoint existir, verificar se o módulo está dentro do padrão atual de arquitetura do backend.
+  4. Se estiver dentro do padrão atual, usar esse endpoint e alterar o frontend.
+  5. Se não estiver dentro do padrão atual, criar um novo endpoint dentro do padrão, documentar no Swagger, registrar o endpoint antigo em `/docs/backend/fora-padrao.md` e alterar o frontend para usar o endpoint novo.
 - **Qualidade**: sempre que alterar um módulo Java realizar os testes unitários antes de publicar o PR.
 - **Documentação em código Java (obrigatório)**: toda classe Java deve conter comentário descrevendo sua responsabilidade básica, e todo método deve conter um comentário breve explicando o que ele faz.
 - **Classes alteradas sem comentário (obrigatório)**: toda classe Java alterada que ainda não possui comentário de responsabilidade básica deve ser atualizada no mesmo PR para incluir esse comentário.

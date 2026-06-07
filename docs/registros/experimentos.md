@@ -3908,3 +3908,12 @@
   - `frontend/src/pages/experiment/ExperimentDetailPage.tsx`
   - `frontend/src/pages/experiment/ExperimentContentGenerationTab.tsx`
   - `docs/registros/experimentos.md`
+
+## 2026-06-07 00:04:00 UTC-3
+- solicitação: ajustar a tela de etapas de pipelines para usar a borda superior dos cards como indicação visual de etapas que usam IA e remover o bloco de objetivo dos cards.
+- raciocínio para a solução: a própria tela já calcula se a etapa opera com OpenAI/modelo de IA, então a diferenciação visual deve partir desse estado em vez de alternar cores por posição; remover o objetivo reduz excesso de informação no card.
+- registro do que foi feito: os cards de etapas passaram a receber classes distintas para etapas com IA e sem IA, o CSS passou a aplicar uma cor fixa para cada tipo e o bloco "Objetivo da etapa" deixou de ser renderizado.
+- documentos lidos para pesquisar e resolver o problema:
+  - AGENTS.md
+  - frontend/AGENTS.md
+  - docs/registros/experimentos.md

@@ -437,7 +437,9 @@ export default function PipelineCrudPage() {
 
                 return (
                   <div className="pipeline-stage-grid-item" key={stage.id}>
-                    <article className="pipeline-stage-card">
+                    <article
+                      className={`pipeline-stage-card ${showOpenAiModel ? "pipeline-stage-card-ai" : "pipeline-stage-card-manual"}`}
+                    >
                       <div className="pipeline-stage-card-body">
                         <div className="pipeline-stage-card-header">
                           <div className="pipeline-stage-title-block">
@@ -462,12 +464,6 @@ export default function PipelineCrudPage() {
                             {stage.code}
                           </span>
                         </div>
-                        {stage.description ? (
-                          <div className="pipeline-stage-purpose">
-                            <span>Objetivo da etapa</span>
-                            <p>{stage.description}</p>
-                          </div>
-                        ) : null}
                         <div className="pipeline-stage-meta">
                           {showExecutionModule ? (
                             <div>

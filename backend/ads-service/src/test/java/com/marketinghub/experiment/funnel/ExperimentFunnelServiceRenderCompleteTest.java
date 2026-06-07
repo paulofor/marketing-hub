@@ -1,7 +1,9 @@
 package com.marketinghub.experiment.funnel;
 
-import com.marketinghub.repository.jpa.experiment.funnel.ExperimentFunnelEventRepository;
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsDeviceDto;
+import com.marketinghub.repository.jpa.experiment.funnel.ExperimentFunnelEventRepository;
+import com.marketinghub.repository.jpa.experiment.funnel.ExperimentFunnelEventRepository.LandingAnalyticsEventProjection;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.core.LeadRepository;
 import com.marketinghub.leadportal.dto.RegisterLandingPageAnalyticsEventRequest;
@@ -23,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -108,7 +111,8 @@ class ExperimentFunnelServiceRenderCompleteTest {
                         null,
                         "https://oportunidadebrasil.shop/api/flows/exp-36-landing-geralanding/page",
                         Instant.parse("2026-06-04T21:00:00Z"),
-                        "JUnit"));
+                        "JUnit",
+                        "desktop"));
 
         ArgumentCaptor<ExperimentFunnelEvent> eventCaptor = ArgumentCaptor.forClass(ExperimentFunnelEvent.class);
         verify(eventRepository).save(eventCaptor.capture());
@@ -141,6 +145,44 @@ class ExperimentFunnelServiceRenderCompleteTest {
         assertEquals(0, summary.totalSessions());
         assertEquals(0, summary.pageViews());
         assertEquals(0, summary.sectionViewEvents());
+        assertEquals(3, summary.deviceBreakdown().size());
+        assertTrue(summary.deviceBreakdown().stream().allMatch(device -> device.percentage() == 0));
+    }
+
+    /**
+     * Valida que o resumo de analytics calcula percentuais de sessões por dispositivo.
+     */
+    @Test
+    void summarizeLandingAnalyticsCalculatesDevicePercentages() {
+        Experiment experiment = Experiment.builder().id(39L).build();
+        when(experimentRepository.findById(39L)).thenReturn(Optional.of(experiment));
+        when(eventRepository.findLandingAnalyticsEvents(
+                eq(39L),
+                eq(ExperimentFunnelEventRepository.LANDING_PAGE_ANALYTICS_SOURCE),
+                eq(null),
+                any(Pageable.class)))
+                .thenReturn(List.of(
+                        landingEvent(1L, "eventId=e1;eventType=page_view;sessionId=s1;deviceType=mobile;userAgent=Mobile",
+                                Instant.parse("2026-06-04T21:00:00Z")),
+                        landingEvent(2L, "eventId=e2;eventType=page_view;sessionId=s2;deviceType=desktop;userAgent=Desktop",
+                                Instant.parse("2026-06-04T21:01:00Z")),
+                        landingEvent(3L, "eventId=e3;eventType=page_view;sessionId=s3;deviceType=tablet;userAgent=iPad",
+                                Instant.parse("2026-06-04T21:02:00Z")),
+                        landingEvent(4L, "eventId=e4;eventType=section_view_time;sessionId=s1;elapsedMs=1500;deviceType=mobile",
+                                Instant.parse("2026-06-04T21:03:00Z"))));
+
+        var summary = service.summarizeLandingAnalytics(39L);
+
+        assertEquals(3, summary.totalSessions());
+        assertEquals(4, summary.totalEvents());
+        assertEquals(33.33, findDevicePercentage(summary.deviceBreakdown(), "mobile"));
+        assertEquals(33.33, findDevicePercentage(summary.deviceBreakdown(), "desktop"));
+        assertEquals(33.33, findDevicePercentage(summary.deviceBreakdown(), "tablet"));
+        assertEquals("Mobile", summary.sessions().stream()
+                .filter(session -> "s1".equals(session.sessionId()))
+                .findFirst()
+                .orElseThrow()
+                .deviceLabel());
     }
 
     /**
@@ -183,4 +225,40 @@ class ExperimentFunnelServiceRenderCompleteTest {
 
         assertEquals("Slug do fluxo é obrigatório", ex.getMessage());
     }
+
+    /**
+     * Cria uma projeção mínima de evento de analytics para testes de consolidação.
+     */
+    private LandingAnalyticsEventProjection landingEvent(Long id, String payload, Instant occurredAt) {
+        return new LandingAnalyticsEventProjection() {
+            @Override
+            public Long getId() {
+                return id;
+            }
+
+            @Override
+            public String getPayload() {
+                return payload;
+            }
+
+            @Override
+            public Instant getOccurredAt() {
+                return occurredAt;
+            }
+        };
+    }
+
+    /**
+     * Localiza o percentual de um dispositivo no resumo retornado pelo serviço.
+     */
+    private double findDevicePercentage(
+            List<ExperimentLandingAnalyticsDeviceDto> devices,
+            String deviceType) {
+        return devices.stream()
+                .filter(device -> deviceType.equals(device.deviceType()))
+                .findFirst()
+                .orElseThrow()
+                .percentage();
+    }
+
 }

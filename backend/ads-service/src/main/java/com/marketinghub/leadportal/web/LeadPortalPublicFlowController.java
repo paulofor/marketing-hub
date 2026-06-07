@@ -235,6 +235,14 @@ public class LeadPortalPublicFlowController {
                   const sessionKey = 'mh_lp_session_' + slugValue;
                   const sessionId = sessionStorage.getItem(sessionKey) || (Date.now().toString(36) + '-' + Math.random().toString(36).slice(2));
                   sessionStorage.setItem(sessionKey, sessionId);
+                  const resolveDeviceType = function(){
+                    const userAgent = navigator.userAgent || '';
+                    const isTablet = /ipad|tablet/i.test(userAgent) || (/android/i.test(userAgent) && !/mobile/i.test(userAgent));
+                    if (isTablet) return 'tablet';
+                    const isMobile = /mobi|iphone|ipod|android/i.test(userAgent);
+                    return isMobile ? 'mobile' : 'desktop';
+                  };
+                  const deviceType = resolveDeviceType();
                   const sendEvent = function(eventType, sectionId, elapsedMs){
                     const payload = {
                       eventId: crypto.randomUUID ? crypto.randomUUID() : (Date.now().toString(36) + '-' + Math.random().toString(36).slice(2)),
@@ -245,7 +253,8 @@ public class LeadPortalPublicFlowController {
                       visibleMs: typeof elapsedMs === 'number' ? Math.round(elapsedMs) : null,
                       pageUrl: window.location.href,
                       occurredAt: new Date().toISOString(),
-                      userAgent: navigator.userAgent
+                      userAgent: navigator.userAgent,
+                      deviceType: deviceType
                     };
                     if (navigator.sendBeacon) {
                       navigator.sendBeacon(endpoint, new Blob([JSON.stringify(payload)], {type: 'application/json'}));

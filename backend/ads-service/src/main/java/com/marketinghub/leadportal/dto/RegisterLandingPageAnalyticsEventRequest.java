@@ -4,6 +4,9 @@ import jakarta.validation.constraints.NotBlank;
 
 import java.time.Instant;
 
+/**
+ * Contrato público para registrar eventos de analytics emitidos pela landing publicada.
+ */
 public record RegisterLandingPageAnalyticsEventRequest(
         @NotBlank String eventId,
         @NotBlank String eventType,
@@ -13,5 +16,6 @@ public record RegisterLandingPageAnalyticsEventRequest(
         Long elapsedMs,
         String pageUrl,
         Instant occurredAt,
-        String userAgent) {
+        String userAgent,
+        String deviceType) {
 }

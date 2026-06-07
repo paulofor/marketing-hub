@@ -10,6 +10,7 @@ import java.time.Instant;
 public record RegisterLandingPageAnalyticsEventRequest(
         @NotBlank String eventId,
         @NotBlank String eventType,
+        String visitorId,
         String sessionId,
         String sectionId,
         Long visibleMs,

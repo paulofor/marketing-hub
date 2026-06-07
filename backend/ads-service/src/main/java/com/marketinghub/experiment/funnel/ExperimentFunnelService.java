@@ -14,6 +14,7 @@ import com.marketinghub.model.Lead;
 import com.marketinghub.repository.jpa.core.LeadRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.experiment.funnel.ExperimentFunnelEventRepository;
+import com.marketinghub.repository.jpa.experiment.funnel.ExperimentLandingAnalyticsEventRepository;
 import com.marketinghub.repository.jpa.experiment.funnel.ExperimentFunnelEventRepository.StageAggregation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -45,6 +46,7 @@ public class ExperimentFunnelService {
 
     private final ExperimentRepository experimentRepository;
     private final ExperimentFunnelEventRepository eventRepository;
+    private final ExperimentLandingAnalyticsEventRepository landingAnalyticsEventRepository;
     private final LeadRepository leadRepository;
     private final JdbcTemplate jdbcTemplate;
 
@@ -60,6 +62,7 @@ public class ExperimentFunnelService {
             )
             """;
     private static final int MAX_CAMPAIGN_CODE_LENGTH = 190;
+    private static final long PAGE_VIEW_DEDUPLICATION_WINDOW_SECONDS = 3;
 
     /**
      * Consolida as métricas automáticas e eventos registrados por etapa do funil.
@@ -164,6 +167,7 @@ public class ExperimentFunnelService {
     @Transactional
     public Instant resetFunnel(Long experimentId) {
         Experiment experiment = experimentRepository.findById(experimentId).orElseThrow();
+        int deletedNormalizedLandingAnalytics = landingAnalyticsEventRepository.deleteByExperimentId(experimentId);
         int deletedLandingAnalytics = eventRepository.deleteByExperimentIdAndSource(
                 experimentId,
                 ExperimentFunnelEventRepository.LANDING_PAGE_ANALYTICS_SOURCE);
@@ -172,8 +176,9 @@ public class ExperimentFunnelService {
         experiment.setFunnelResetAt(now);
         experimentRepository.save(experiment);
         log.info(
-                "experiment_funnel_reset experimentId={} deletedLandingAnalytics={} deletedRemainingEvents={} resetAt={}",
+                "experiment_funnel_reset experimentId={} deletedNormalizedLandingAnalytics={} deletedLandingAnalytics={} deletedRemainingEvents={} resetAt={}",
                 experimentId,
+                deletedNormalizedLandingAnalytics,
                 deletedLandingAnalytics,
                 deletedRemainingEvents,
                 now);
@@ -263,30 +268,27 @@ public class ExperimentFunnelService {
 
 
     /**
-     * Registra analytics da landing publicada e converte eventos compatíveis em visualização do formulário.
+     * Registra analytics da landing publicada, preserva o evento bruto e normaliza o contrato por visitante provável.
      */
     @Transactional
     public void registerLandingPageAnalyticsEvent(String flowSlug, RegisterLandingPageAnalyticsEventRequest request) {
         if (flowSlug == null || flowSlug.isBlank()) {
             throw new IllegalArgumentException("Slug do fluxo é obrigatório");
         }
-        if (request == null || request.eventId() == null || request.eventId().isBlank()) {
-            throw new IllegalArgumentException("eventId é obrigatório");
-        }
-        if (request.eventType() == null || request.eventType().isBlank()) {
-            throw new IllegalArgumentException("eventType é obrigatório");
-        }
+        log.info("landing_page_analytics_raw flowSlug={} payload={}", flowSlug.trim(), request);
+        validateLandingAnalyticsRequest(request);
         Experiment experiment = resolveExperimentByFlowSlug(flowSlug.trim());
 
-        Long elapsedMs = request.elapsedMs() != null ? request.elapsedMs() : request.visibleMs();
+        Long elapsedMs = resolveLandingAnalyticsElapsedMs(request);
         String eventType = request.eventType().trim();
         Instant occurredAt = Optional.ofNullable(request.occurredAt()).orElse(Instant.now());
         String payload = buildLandingAnalyticsPayload(request, elapsedMs);
 
-        log.info("landing_page_analytics experimentId={} flowSlug={} eventId={} eventType={} sectionId={} elapsedMs={} sessionId={} pageUrl={} occurredAt={} userAgent={} deviceType={}",
+        log.info("landing_page_analytics experimentId={} flowSlug={} eventId={} visitorId={} eventType={} sectionId={} elapsedMs={} sessionId={} pageUrl={} occurredAt={} userAgent={} deviceType={}",
                 experiment.getId(),
                 flowSlug.trim(),
                 request.eventId().trim(),
+                request.visitorId(),
                 eventType,
                 request.sectionId(),
                 elapsedMs,
@@ -306,8 +308,128 @@ public class ExperimentFunnelService {
                     .payload(payload)
                     .occurredAt(occurredAt)
                     .build();
-            eventRepository.save(event);
+            ExperimentFunnelEvent savedEvent = eventRepository.save(event);
+            saveNormalizedLandingAnalyticsEvent(experiment, savedEvent, request, occurredAt);
         }
+    }
+
+
+    /**
+     * Valida campos obrigatórios do contrato público de analytics conforme o tipo do evento recebido.
+     */
+    private void validateLandingAnalyticsRequest(RegisterLandingPageAnalyticsEventRequest request) {
+        if (request == null || request.eventId() == null || request.eventId().isBlank()) {
+            throw new IllegalArgumentException("eventId é obrigatório");
+        }
+        if (request.eventType() == null || request.eventType().isBlank()) {
+            throw new IllegalArgumentException("eventType é obrigatório");
+        }
+        String eventType = request.eventType().trim();
+        if ("page_view".equalsIgnoreCase(eventType)) {
+            validateRequiredLandingAnalyticsField(request.sessionId(), "sessionId é obrigatório para page_view");
+            validateRequiredLandingAnalyticsField(request.pageUrl(), "pageUrl é obrigatório para page_view");
+        }
+        if ("section_view_time".equalsIgnoreCase(eventType)) {
+            validateRequiredLandingAnalyticsField(request.sessionId(), "sessionId é obrigatório para section_view_time");
+            validateRequiredLandingAnalyticsField(request.sectionId(), "sectionId é obrigatório para section_view_time");
+            if (resolveLandingAnalyticsElapsedMs(request) == null) {
+                throw new IllegalArgumentException("elapsedMs é obrigatório para section_view_time");
+            }
+        }
+    }
+
+    /**
+     * Rejeita campos textuais obrigatórios quando estão ausentes ou em branco.
+     */
+    private void validateRequiredLandingAnalyticsField(String value, String message) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException(message);
+        }
+    }
+
+    /**
+     * Resolve a duração canônica do evento mantendo compatibilidade com o campo legado visibleMs.
+     */
+    private Long resolveLandingAnalyticsElapsedMs(RegisterLandingPageAnalyticsEventRequest request) {
+        return request.elapsedMs() != null ? request.elapsedMs() : request.visibleMs();
+    }
+
+    /**
+     * Salva ou atualiza o evento normalizado, ignorando page_view duplicado na janela canônica curta.
+     */
+    private void saveNormalizedLandingAnalyticsEvent(Experiment experiment,
+                                                    ExperimentFunnelEvent funnelEvent,
+                                                    RegisterLandingPageAnalyticsEventRequest request,
+                                                    Instant occurredAt) {
+        String visitorId = normalizeNullableText(request.visitorId(), 128);
+        String sessionId = normalizeNullableText(request.sessionId(), 128);
+        String eventType = normalizeNullableText(request.eventType(), 64);
+        String pageUrl = normalizeNullableText(request.pageUrl(), 2048);
+        if (isDuplicatedPageView(experiment.getId(), request, visitorId, sessionId, eventType, pageUrl, occurredAt)) {
+            log.info("landing_page_analytics_deduplicated experimentId={} eventId={} visitorId={} sessionId={} eventType={} pageUrl={} occurredAt={} windowSeconds={}",
+                    experiment.getId(),
+                    request.eventId().trim(),
+                    visitorId,
+                    sessionId,
+                    eventType,
+                    pageUrl,
+                    occurredAt,
+                    PAGE_VIEW_DEDUPLICATION_WINDOW_SECONDS);
+            return;
+        }
+        ExperimentLandingAnalyticsEvent normalizedEvent = landingAnalyticsEventRepository
+                .findFirstByExperimentIdAndEventId(experiment.getId(), request.eventId().trim())
+                .orElseGet(ExperimentLandingAnalyticsEvent::new);
+        normalizedEvent.setExperiment(experiment);
+        normalizedEvent.setFunnelEvent(funnelEvent);
+        normalizedEvent.setEventId(normalizeNullableText(request.eventId(), 128));
+        normalizedEvent.setVisitorId(visitorId);
+        normalizedEvent.setSessionId(sessionId);
+        normalizedEvent.setEventType(eventType);
+        normalizedEvent.setSectionId(normalizeNullableText(request.sectionId(), 190));
+        normalizedEvent.setPageUrl(pageUrl);
+        normalizedEvent.setUserAgent(normalizeNullableText(request.userAgent(), 512));
+        normalizedEvent.setOccurredAt(occurredAt);
+        landingAnalyticsEventRepository.save(normalizedEvent);
+    }
+
+    /**
+     * Verifica se o evento é um page_view duplicado por visitante, sessão e URL dentro da janela canônica.
+     */
+    private boolean isDuplicatedPageView(Long experimentId,
+                                         RegisterLandingPageAnalyticsEventRequest request,
+                                         String visitorId,
+                                         String sessionId,
+                                         String eventType,
+                                         String pageUrl,
+                                         Instant occurredAt) {
+        if (!"page_view".equalsIgnoreCase(eventType) || visitorId == null || sessionId == null || pageUrl == null) {
+            return false;
+        }
+        if (landingAnalyticsEventRepository.findFirstByExperimentIdAndEventId(
+                experimentId,
+                request.eventId().trim()).isPresent()) {
+            return false;
+        }
+        return landingAnalyticsEventRepository.existsPageViewInDeduplicationWindow(
+                experimentId,
+                visitorId,
+                sessionId,
+                eventType,
+                pageUrl,
+                occurredAt.minusSeconds(PAGE_VIEW_DEDUPLICATION_WINDOW_SECONDS),
+                occurredAt.plusSeconds(PAGE_VIEW_DEDUPLICATION_WINDOW_SECONDS));
+    }
+
+    /**
+     * Normaliza texto para colunas relacionais, retornando null quando o valor está vazio.
+     */
+    private String normalizeNullableText(String value, int maxLength) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        String normalized = value.trim().replace("\r", " ").replace("\n", " ");
+        return normalized.length() <= maxLength ? normalized : normalized.substring(0, maxLength);
     }
 
 
@@ -338,6 +460,7 @@ public class ExperimentFunnelService {
      */
     private String buildLandingAnalyticsPayload(RegisterLandingPageAnalyticsEventRequest request, Long elapsedMs) {
         String sectionId = sanitizePayloadValue(request.sectionId());
+        String visitorId = sanitizePayloadValue(request.visitorId());
         String sessionId = sanitizePayloadValue(request.sessionId());
         String url = sanitizePayloadValue(request.pageUrl());
         String userAgent = sanitizePayloadValue(request.userAgent());
@@ -346,6 +469,7 @@ public class ExperimentFunnelService {
         String duration = elapsedMs == null ? "" : elapsedMs.toString();
         return "eventId=" + sanitizePayloadValue(request.eventId())
                 + ";eventType=" + sanitizePayloadValue(request.eventType())
+                + ";visitorId=" + visitorId
                 + ";sessionId=" + sessionId
                 + ";sectionId=" + sectionId
                 + ";elapsedMs=" + duration
@@ -354,6 +478,9 @@ public class ExperimentFunnelService {
                 + ";deviceType=" + deviceType;
     }
 
+    /**
+     * Resolve o lead opcional associado ao evento manual quando o identificador foi informado.
+     */
     private Lead resolveLead(UUID leadId) {
         if (leadId == null) {
             return null;
@@ -361,6 +488,9 @@ public class ExperimentFunnelService {
         return leadRepository.findById(leadId).orElse(null);
     }
 
+    /**
+     * Inicializa todas as etapas do funil com contadores zerados para consolidação.
+     */
     private Map<ExperimentFunnelStage, ExperimentFunnelStageDto> bootstrapStages() {
         Map<ExperimentFunnelStage, ExperimentFunnelStageDto> result = new LinkedHashMap<>();
         Arrays.stream(ExperimentFunnelStage.values()).forEach(stage -> {
@@ -376,6 +506,9 @@ public class ExperimentFunnelService {
         return result;
     }
 
+    /**
+     * Aplica os eventos manuais registrados no repositório às etapas consolidadas.
+     */
     private void applyManualEvents(Long experimentId, Instant baseline, Map<ExperimentFunnelStage, ExperimentFunnelStageDto> stages) {
         for (StageAggregation agg : eventRepository.aggregateManualByExperiment(experimentId, baseline)) {
             ExperimentFunnelStageDto dto = stages.get(agg.getStage());
@@ -540,6 +673,9 @@ public class ExperimentFunnelService {
                 "Downloads/visualizações do material pago (flow_submission_image_package.images_viewed_at)");
     }
 
+    /**
+     * Mescla uma métrica automática na etapa do funil correspondente.
+     */
     private void mergeMetric(Map<ExperimentFunnelStage, ExperimentFunnelStageDto> stages,
                              ExperimentFunnelStage stage,
                              AggregatedMetric metric,
@@ -558,6 +694,9 @@ public class ExperimentFunnelService {
         dto.setSource(source);
     }
 
+    /**
+     * Executa consulta agregada única e converte o resultado para métrica interna.
+     */
     private AggregatedMetric fetchSingleMetric(String sql, Object... args) {
         return jdbcTemplate.query(sql, rs -> {
             if (!rs.next()) {
@@ -571,6 +710,9 @@ public class ExperimentFunnelService {
         }, args);
     }
 
+    /**
+     * Resolve o marco temporal usado para ignorar eventos anteriores a publicação ou reset do funil.
+     */
     private Instant resolveBaseline(Experiment experiment) {
         if (experiment == null) {
             return null;
@@ -578,6 +720,9 @@ public class ExperimentFunnelService {
         return max(experiment.getFacebookReleaseRequestedAt(), experiment.getFunnelResetAt());
     }
 
+    /**
+     * Normaliza o código de campanha para o tamanho aceito pelo banco.
+     */
     private String normalizeCampaignCode(String value) {
         if (value == null) {
             return null;
@@ -591,6 +736,9 @@ public class ExperimentFunnelService {
                 : trimmed;
     }
 
+    /**
+     * Preenche a origem padrão em etapas que possuem apenas eventos manuais.
+     */
     private void fillDefaultSourceWhenMissing(Map<ExperimentFunnelStage, ExperimentFunnelStageDto> stages) {
         stages.values().forEach(dto -> {
             if (dto.getSource() == null && dto.getManualCount() > 0) {
@@ -599,11 +747,17 @@ public class ExperimentFunnelService {
         });
     }
 
+    /**
+     * Soma contadores opcionais preservando null quando ambos estão ausentes.
+     */
     private Long sum(Long a, Long b) {
         if (a == null && b == null) return null;
         return Optional.ofNullable(a).orElse(0L) + Optional.ofNullable(b).orElse(0L);
     }
 
+    /**
+     * Retorna o instante mais recente entre dois valores opcionais.
+     */
     private Instant max(Instant a, Instant b) {
         if (a == null) return b;
         if (b == null) return a;
@@ -767,6 +921,9 @@ public class ExperimentFunnelService {
         private String deviceType = "desktop";
         private final Map<String, SectionAccumulator> sections = new LinkedHashMap<>();
 
+        /**
+         * Cria acumulador de sessão para o identificador normalizado recebido da landing.
+         */
         private LandingAnalyticsSessionAccumulator(String sessionId) {
             this.sessionId = sessionId;
         }
@@ -848,6 +1005,9 @@ public class ExperimentFunnelService {
         private long visibleMs;
         private long events;
 
+        /**
+         * Cria acumulador de seção para o identificador normalizado da landing.
+         */
         private SectionAccumulator(String sectionId) {
             this.sectionId = sectionId;
         }
@@ -875,6 +1035,9 @@ public class ExperimentFunnelService {
         }
     }
 
+    /**
+     * Métrica agregada usada para transportar total, contagem única e último evento das consultas SQL.
+     */
     private record AggregatedMetric(long total, Long uniqueCount, Instant lastEvent) {
     }
 }

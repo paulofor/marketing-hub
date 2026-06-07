@@ -4028,3 +4028,12 @@
   - adicionados campos normalizados para `experiment_id`, `funnel_event_id`, `event_id`, `visitor_id`, `session_id`, `event_type`, `section_id`, `page_url`, `user_agent`, `occurred_at` e `created_at`;
   - adicionados índices `(experiment_id, visitor_id, occurred_at)`, `(experiment_id, session_id, occurred_at)` e `(experiment_id, event_type, occurred_at)` para sustentar a etapa futura de API de recorrência.
 - impacto esperado: a etapa 3 poderá manter a gravação legada em `experiment_funnel_event` e gravar a estrutura normalizada sem quebrar analytics históricos sem `visitorId`.
+
+## 2026-06-07 — Etapa 3 da identificação de visitante recorrente na landing
+
+- solicitação: executar a etapa 3 do plano `docs/implementação/plano-identificacao-visitante-landing-experimento.md` para ingerir `visitorId` no backend e normalizar eventos públicos de analytics da landing.
+- foi feito: o contrato público de analytics passou a aceitar `visitorId`, mantendo compatibilidade com eventos legados sem esse identificador.
+- foi feito: o backend registra o payload bruto recebido, valida campos obrigatórios por `eventType`, persiste o evento legado em `experiment_funnel_event` e grava a tabela normalizada `experiment_landing_analytics_event`.
+- foi feito: `page_view` com `visitorId`, `sessionId`, `eventType` e `pageUrl` repetidos na janela canônica de 3 segundos é deduplicado na estrutura normalizada, preservando o evento bruto para auditoria.
+- foi feito: o reset do funil apaga primeiro os eventos normalizados para evitar violação de chave estrangeira antes de limpar os eventos brutos de analytics.
+- validação: testes unitários cobrem persistência normalizada com `visitorId`, compatibilidade com legado sem `visitorId`, deduplicação de `page_view`, reset do funil e fluxos existentes de submissão.

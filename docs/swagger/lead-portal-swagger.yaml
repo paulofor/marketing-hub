@@ -218,7 +218,7 @@ paths:
     post:
       tags: [Engagement]
       summary: Registra analytics da landing standalone
-      description: Recebe o payload cru de analytics público e encaminha ao Marketing Hub preservando os campos relevantes do evento.
+      description: Recebe o payload cru de analytics público, incluindo visitorId first-party quando disponível, e encaminha ao Marketing Hub preservando os campos relevantes do evento.
       operationId: registerLeadPortalPageAnalytics
       parameters:
         - $ref: '#/components/parameters/SlugPath'
@@ -630,6 +630,7 @@ components:
         visitorId:
           type: string
           nullable: true
+          description: Identificador first-party do visitante provável por navegador/dispositivo.
         campaignCode:
           type: string
           nullable: true
@@ -654,6 +655,7 @@ components:
         visitorId:
           type: string
           nullable: true
+          description: Identificador first-party do visitante provável por navegador/dispositivo; opcional apenas para eventos legados.
         campaignCode:
           type: string
           nullable: true

@@ -5,6 +5,7 @@ import com.marketinghub.leadportal.dto.RegisterLeadPortalSubmissionRequest;
 import com.marketinghub.repository.jpa.core.LeadRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.experiment.funnel.ExperimentFunnelEventRepository;
+import com.marketinghub.repository.jpa.experiment.funnel.ExperimentLandingAnalyticsEventRepository;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -35,6 +36,9 @@ class ExperimentFunnelServiceSubmissionTest {
 
     @Mock
     private ExperimentFunnelEventRepository eventRepository;
+
+    @Mock
+    private ExperimentLandingAnalyticsEventRepository landingAnalyticsEventRepository;
 
     @Mock
     private LeadRepository leadRepository;

@@ -9,6 +9,7 @@ import com.marketinghub.experiment.Experiment;
 import com.marketinghub.repository.jpa.core.LeadRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.experiment.funnel.ExperimentFunnelEventRepository;
+import com.marketinghub.repository.jpa.experiment.funnel.ExperimentLandingAnalyticsEventRepository;
 import java.time.Instant;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -32,6 +33,9 @@ class ExperimentFunnelServiceResetTest {
     private ExperimentFunnelEventRepository eventRepository;
 
     @Mock
+    private ExperimentLandingAnalyticsEventRepository landingAnalyticsEventRepository;
+
+    @Mock
     private LeadRepository leadRepository;
 
     @Mock
@@ -50,7 +54,8 @@ class ExperimentFunnelServiceResetTest {
 
         Instant resetAt = service.resetFunnel(9L);
 
-        InOrder inOrder = inOrder(eventRepository, experimentRepository);
+        InOrder inOrder = inOrder(landingAnalyticsEventRepository, eventRepository, experimentRepository);
+        inOrder.verify(landingAnalyticsEventRepository).deleteByExperimentId(9L);
         inOrder.verify(eventRepository).deleteByExperimentIdAndSource(
                 9L,
                 ExperimentFunnelEventRepository.LANDING_PAGE_ANALYTICS_SOURCE);

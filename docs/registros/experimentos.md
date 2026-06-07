@@ -4075,3 +4075,17 @@
 - causa-raiz: três cenários de teste ainda instanciavam o record com a assinatura antiga de 11 campos, enquanto o contrato público de analytics passou a exigir também `operatingSystem`, `screenWidth` e `screenHeight`.
 - foi feito: os testes foram atualizados para enviar o sistema operacional e dimensões ausentes como parte do contrato atual, preservando os cenários de evento normalizado, evento legado sem `visitorId` e deduplicação de `page_view`.
 - validação: executados o teste específico de analytics do funil e a suíte unitária do módulo `ads-service`.
+
+## 2026-06-07 — Etapa 5 da identificação de visitante da landing
+
+- solicitação: executar a etapa 5 do plano de identificação de visitante da landing de experimento, focada na API backend de recorrência por visitante provável.
+- raciocínio: o analytics precisava responder se o mesmo `visitorId` first-party voltou em sessões ou horários diferentes, sem afirmar identidade civil ou pessoa comprovada.
+- foi feito: o backend passou a expor a recorrência em `GET /api/experiments/{experimentId}/funnel/analytics/visitors` e também inclui a seção `visitors` no resumo atual de analytics da landing.
+- foi feito: a consulta usa agregação SQL sobre `experiment_landing_analytics_event`, filtra `visitorId` nulo/legado no banco, conta sessões, `page_view`s válidos, páginas distintas, primeiro/último acesso, intervalo e último `userAgent`, retornando `visitorId` mascarado.
+- foi feito: testes unitários cobrem visitante recorrente, visitante único e ausência de visitantes prováveis quando só há eventos legados sem `visitorId`.
+- documentos lidos para pesquisar e resolver o problema:
+  - AGENTS.md
+  - backend/AGENTS.md
+  - docs/implementação/plano-identificacao-visitante-landing-experimento.md
+  - docs/canonical/procedimento-experimento-canon.v1.md
+  - docs/registros/experimentos.md

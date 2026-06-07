@@ -7,6 +7,7 @@ import com.marketinghub.experiment.funnel.dto.ExperimentFunnelResetResponse;
 import com.marketinghub.experiment.funnel.dto.ExperimentFunnelStageDto;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsDto;
 import com.marketinghub.experiment.funnel.dto.RegisterExperimentFunnelEventRequest;
+import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsVisitorsDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -39,6 +40,13 @@ public class ExperimentFunnelController {
         return experimentFunnelService.summarizeLandingAnalytics(experimentId);
     }
 
+    /**
+     * Retorna os visitantes prováveis e a recorrência capturada pela landing publicada.
+     */
+    @GetMapping("/analytics/visitors")
+    public ExperimentLandingAnalyticsVisitorsDto landingAnalyticsVisitors(@PathVariable Long experimentId) {
+        return experimentFunnelService.summarizeLandingAnalyticsVisitors(experimentId);
+    }
 
     /**
      * Retorna os diagnósticos de qualidade e disponibilidade das métricas do funil.

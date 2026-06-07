@@ -5,6 +5,7 @@ import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAna
 import com.marketinghub.repository.jpa.experiment.funnel.ExperimentFunnelEventRepository;
 import com.marketinghub.repository.jpa.experiment.funnel.ExperimentLandingAnalyticsEventRepository;
 import com.marketinghub.repository.jpa.experiment.funnel.ExperimentFunnelEventRepository.LandingAnalyticsEventProjection;
+import com.marketinghub.repository.jpa.experiment.funnel.ExperimentLandingAnalyticsEventRepository.VisitorRecurrenceProjection;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.core.LeadRepository;
 import com.marketinghub.leadportal.dto.RegisterLandingPageAnalyticsEventRequest;
@@ -66,6 +67,8 @@ class ExperimentFunnelServiceRenderCompleteTest {
     void setUp() {
         lenient().when(landingAnalyticsEventRepository.findFirstByExperimentIdAndEventId(any(), any()))
                 .thenReturn(Optional.empty());
+        lenient().when(landingAnalyticsEventRepository.aggregateVisitorsByExperiment(any(), any()))
+                .thenReturn(List.of());
     }
 
     /**
@@ -344,6 +347,82 @@ class ExperimentFunnelServiceRenderCompleteTest {
         assertEquals(33.33, findScreenSizePercentage(summary.screenSizeBreakdown(), "390x844"));
     }
 
+
+    /**
+     * Valida que visitantes com sessões diferentes são marcados como recorrentes prováveis.
+     */
+    @Test
+    void summarizeLandingAnalyticsVisitorsMarksVisitorWithMultipleSessionsAsRecurrent() {
+        Experiment experiment = Experiment.builder().id(45L).build();
+        when(experimentRepository.findById(45L)).thenReturn(Optional.of(experiment));
+        when(landingAnalyticsEventRepository.aggregateVisitorsByExperiment(45L, null))
+                .thenReturn(List.of(visitorProjection(
+                        "visitor-recurrent-123",
+                        2,
+                        2,
+                        Instant.parse("2026-06-07T10:00:00Z"),
+                        Instant.parse("2026-06-07T11:00:00Z"),
+                        2,
+                        "Mozilla/5.0 (iPhone)")));
+
+        var summary = service.summarizeLandingAnalyticsVisitors(45L);
+
+        assertEquals(1, summary.probableVisitors());
+        assertEquals(1, summary.recurrentVisitors());
+        assertEquals(0, summary.singleVisitVisitors());
+        var visitor = summary.visitors().get(0);
+        assertEquals("visi…-123", visitor.visitorId());
+        assertEquals(2, visitor.totalSessions());
+        assertEquals(2, visitor.validPageViews());
+        assertEquals(3600, visitor.intervalSeconds());
+        assertEquals(2, visitor.distinctPages());
+        assertEquals("mobile", visitor.deviceType());
+        assertTrue(visitor.recurrent());
+    }
+
+    /**
+     * Valida que visitante com uma sessão e um page_view permanece classificado como único.
+     */
+    @Test
+    void summarizeLandingAnalyticsVisitorsKeepsSingleVisitorAsNotRecurrent() {
+        Experiment experiment = Experiment.builder().id(46L).build();
+        when(experimentRepository.findById(46L)).thenReturn(Optional.of(experiment));
+        when(landingAnalyticsEventRepository.aggregateVisitorsByExperiment(46L, null))
+                .thenReturn(List.of(visitorProjection(
+                        "visitor-single-456",
+                        1,
+                        1,
+                        Instant.parse("2026-06-07T10:00:00Z"),
+                        Instant.parse("2026-06-07T10:00:00Z"),
+                        1,
+                        "Mozilla/5.0 (X11; Linux x86_64)")));
+
+        var summary = service.summarizeLandingAnalyticsVisitors(46L);
+
+        assertEquals(1, summary.probableVisitors());
+        assertEquals(0, summary.recurrentVisitors());
+        assertEquals(1, summary.singleVisitVisitors());
+        assertEquals("visi…-456", summary.visitors().get(0).visitorId());
+        assertEquals(0, summary.visitors().get(0).intervalSeconds());
+        assertTrue(!summary.visitors().get(0).recurrent());
+    }
+
+    /**
+     * Valida que eventos legados sem visitorId não aparecem na lista de visitantes prováveis.
+     */
+    @Test
+    void summarizeLandingAnalyticsVisitorsIgnoresLegacyEventsWithoutVisitorId() {
+        Experiment experiment = Experiment.builder().id(47L).build();
+        when(experimentRepository.findById(47L)).thenReturn(Optional.of(experiment));
+        when(landingAnalyticsEventRepository.aggregateVisitorsByExperiment(47L, null)).thenReturn(List.of());
+
+        var summary = service.summarizeLandingAnalyticsVisitors(47L);
+
+        assertEquals(0, summary.probableVisitors());
+        assertEquals(0, summary.recurrentVisitors());
+        assertTrue(summary.visitors().isEmpty());
+    }
+
     /**
      * Valida que o resumo consolida page_view da landing junto com render-complete na visualização do formulário.
      */
@@ -412,6 +491,76 @@ class ExperimentFunnelServiceRenderCompleteTest {
             @Override
             public Instant getOccurredAt() {
                 return occurredAt;
+            }
+        };
+    }
+
+
+    /**
+     * Cria uma projeção agregada de visitante provável para testes de recorrência.
+     */
+    private VisitorRecurrenceProjection visitorProjection(String visitorId,
+                                                          long totalSessions,
+                                                          long validPageViews,
+                                                          Instant firstAccessAt,
+                                                          Instant lastAccessAt,
+                                                          long distinctPages,
+                                                          String lastUserAgent) {
+        return new VisitorRecurrenceProjection() {
+            /**
+             * Retorna o visitorId sintético do teste.
+             */
+            @Override
+            public String getVisitorId() {
+                return visitorId;
+            }
+
+            /**
+             * Retorna o total sintético de sessões do teste.
+             */
+            @Override
+            public long getTotalSessions() {
+                return totalSessions;
+            }
+
+            /**
+             * Retorna o total sintético de page_views válidos do teste.
+             */
+            @Override
+            public long getValidPageViews() {
+                return validPageViews;
+            }
+
+            /**
+             * Retorna o primeiro acesso sintético do teste.
+             */
+            @Override
+            public Instant getFirstAccessAt() {
+                return firstAccessAt;
+            }
+
+            /**
+             * Retorna o último acesso sintético do teste.
+             */
+            @Override
+            public Instant getLastAccessAt() {
+                return lastAccessAt;
+            }
+
+            /**
+             * Retorna a quantidade sintética de páginas distintas do teste.
+             */
+            @Override
+            public long getDistinctPages() {
+                return distinctPages;
+            }
+
+            /**
+             * Retorna o user-agent sintético do teste.
+             */
+            @Override
+            public String getLastUserAgent() {
+                return lastUserAgent;
             }
         };
     }

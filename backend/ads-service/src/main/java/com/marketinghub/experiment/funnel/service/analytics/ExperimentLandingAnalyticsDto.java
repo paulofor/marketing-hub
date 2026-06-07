@@ -17,5 +17,6 @@ public record ExperimentLandingAnalyticsDto(
         List<ExperimentLandingAnalyticsDeviceDto> deviceBreakdown,
         List<ExperimentLandingAnalyticsOperatingSystemDto> mobileOperatingSystemBreakdown,
         List<ExperimentLandingAnalyticsScreenSizeDto> screenSizeBreakdown,
+        ExperimentLandingAnalyticsVisitorsDto visitors,
         List<ExperimentLandingAnalyticsSessionDto> sessions) {
 }

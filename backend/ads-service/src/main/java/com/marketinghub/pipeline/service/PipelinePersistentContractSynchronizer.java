@@ -118,7 +118,7 @@ public class PipelinePersistentContractSynchronizer {
                 .implementedStageEnum(stageDefinition.canonicalCode())
                 .executionModule(stageDefinition.executionModule())
                 .rootPackage(stageDefinition.rootPackage())
-                .requiresOpenAiModel(true)
+                .requiresOpenAiModel(stageDefinition.requiresOpenAiModel())
                 .configurable(stageDefinition.configurable())
                 .build();
         return stageDefinitionRepository.save(entity);
@@ -140,6 +140,10 @@ public class PipelinePersistentContractSynchronizer {
         }
         if (stageDefinition.required() != entity.isRequired()) {
             entity.setRequired(stageDefinition.required());
+            changed = true;
+        }
+        if (stageDefinition.requiresOpenAiModel() != entity.isRequiresOpenAiModel()) {
+            entity.setRequiresOpenAiModel(stageDefinition.requiresOpenAiModel());
             changed = true;
         }
         if (!stageDefinition.canonicalCode().equals(entity.getImplementedStageEnum())) {

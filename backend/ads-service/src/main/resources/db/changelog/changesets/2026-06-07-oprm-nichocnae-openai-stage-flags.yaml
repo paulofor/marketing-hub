@@ -1,0 +1,39 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-07-oprm-nichocnae-openai-stage-flags
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: pipeline_definition
+        - tableExists:
+            tableName: pipeline_stage_definition
+        - columnExists:
+            tableName: pipeline_stage_definition
+            columnName: requires_openai_model
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE pipeline_stage_definition psd
+              INNER JOIN pipeline_definition pd ON pd.id = psd.pipeline_definition_id
+              SET psd.requires_openai_model = CASE
+                WHEN psd.canonical_code = 'NICHE_RESEARCH_SEED_BUILDER' THEN 1
+                ELSE 0
+              END
+              WHERE pd.code = 'oprm-nicho-cnae-pipeline'
+                AND pd.canonical_version = 'oprm-nichocnae-canon.v1'
+                AND psd.canonical_code IN (
+                  'ROUTINE_RESEARCH_ORCHESTRATOR',
+                  'ROUTINE_RESEARCH_CYCLE',
+                  'NICHE_RESEARCH_SEED_BUILDER',
+                  'SOURCE_SEARCHER',
+                  'SOURCE_FETCHER',
+                  'SIGNAL_EXTRACTOR',
+                  'ROUTINE_SYNTHESIZER',
+                  'ROUTINE_QUALITY_GATE',
+                  'ENRICHED_NICHE_MATERIALIZER'
+                );

@@ -97,6 +97,7 @@ Evitar fechamento prematuro de `import run` que destrói a totalização de mark
 - O pipeline oficial de pesquisa e materialização de NichoCNAE deve usar o código operacional `oprm-nicho-cnae-pipeline` e o módulo `OPRM`.
 - O contrato estrutural do pipeline deve refletir as etapas já implementadas no backend e no coletor OPRM: `routine-research-orchestrator`, `routine-research-cycle`, `niche-research-seed-builder`, `source-searcher`, `source-fetcher`, `signal-extractor`, `routine-synthesizer`, `routine-quality-gate` e `enriched-niche-materializer`.
 - Todas as etapas do pipeline oficial devem permanecer obrigatórias, ativas e executadas pelo módulo `oprm-coletor-mei`, consumindo exclusivamente endpoints OPRM do backend principal.
+- Somente a etapa `niche-research-seed-builder` deve ser marcada como consumidora direta de modelo OpenAI configurável. As demais etapas são orquestração, consulta, coleta pública, extração/síntese/gate determinísticos ou materialização baseada em dados já coletados, e não devem exibir seleção de modelo OpenAI na tela administrativa quando não houver modelo operacional legado configurado.
 - O pipeline oficial deve preservar a separação canônica: pesquisa de realidade operacional e materialização de nicho enriquecido não podem criar hipótese, experimento, oferta, campanha ou landing page.
 
 ## Critério de efetividade — pipeline oficial OPRM NichoCNAE

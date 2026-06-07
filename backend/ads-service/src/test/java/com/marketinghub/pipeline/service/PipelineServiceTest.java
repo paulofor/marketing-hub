@@ -27,10 +27,14 @@ import com.marketinghub.repository.jpa.pipeline.PipelineRepository;
 import com.marketinghub.repository.jpa.pipeline.PipelineStageConfigRepository;
 import com.marketinghub.repository.jpa.pipeline.PipelineStageDefinitionEntityRepository;
 import com.marketinghub.repository.jpa.pipeline.PipelineStageRepository;
-import java.util.ArrayList;
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -549,9 +553,31 @@ class PipelineServiceTest {
                         assertThat(definitionRegistry.findStage(pipeline, stage.canonicalCode())).contains(stage);
                         assertThat(definitionRegistry.findStage(pipeline, stage.operationalCode())).contains(stage);
                     });
+            assertThat(pipeline.stages())
+                    .filteredOn(stage -> stage.requiresOpenAiModel())
+                    .extracting(stage -> stage.operationalCode())
+                    .containsExactly("niche-research-seed-builder");
             assertThat(definitionRegistry.findStage(pipeline, "oprmEnrichedNicheMaterializer"))
                     .hasValueSatisfying(stage -> assertThat(stage.operationalCode()).isEqualTo("enriched-niche-materializer"));
         });
+    }
+
+    /**
+     * Garante que o flag OpenAI do pipeline NichoCNAE vem do código real do coletor OPRM.
+     */
+    @Test
+    void shouldMatchOprmNichoCnaeOpenAiFlagsWithCollectorCode() throws IOException {
+        PipelineDefinitionRegistry.PipelineDefinition pipeline = definitionRegistry
+                .findByPipelineCode("oprm-nicho-cnae-pipeline")
+                .orElseThrow();
+
+        for (PipelineDefinitionRegistry.PipelineStageDefinition stage : pipeline.stages()) {
+            boolean collectorCodeUsesOpenAi = collectorStageSourceUsesOpenAi(stage);
+
+            assertThat(stage.requiresOpenAiModel())
+                    .as("Etapa %s deve refletir o uso real de OpenAI no código do coletor", stage.operationalCode())
+                    .isEqualTo(collectorCodeUsesOpenAi);
+        }
     }
 
     /**
@@ -650,6 +676,55 @@ class PipelineServiceTest {
         assertThat(migratedConfig.getDescriptionOverride()).isEqualTo("Descrição operacional preservada");
         assertThat(migratedConfig.getOpenAiModel()).isEqualTo(model);
         assertThat(migratedConfig.isActive()).isTrue();
+    }
+
+
+    /**
+     * Lê os arquivos Java da etapa no coletor OPRM e identifica uso direto de OpenAI no código-fonte.
+     */
+    private boolean collectorStageSourceUsesOpenAi(PipelineDefinitionRegistry.PipelineStageDefinition stage)
+            throws IOException {
+        Path sourceDirectory = repositoryRoot()
+                .resolve("oprm-coletor-mei/src/main/java")
+                .resolve(stage.modulePackage().replace('.', '/'));
+        assertThat(sourceDirectory)
+                .as("Pacote da etapa %s deve existir no coletor OPRM", stage.operationalCode())
+                .isDirectory();
+
+        try (Stream<Path> javaFiles = Files.walk(sourceDirectory)) {
+            return javaFiles
+                    .filter(path -> path.getFileName().toString().endsWith(".java"))
+                    .map(this::readSourceFile)
+                    .anyMatch(source -> source.contains("OpenAi")
+                            || source.contains("openai")
+                            || source.contains("api.openai.com"));
+        }
+    }
+
+    /**
+     * Lê um arquivo de código-fonte Java e propaga falhas de leitura de forma compatível com streams.
+     */
+    private String readSourceFile(Path path) {
+        try {
+            return Files.readString(path);
+        } catch (IOException ex) {
+            throw new IllegalStateException("Falha ao ler código-fonte para validar uso de OpenAI: " + path, ex);
+        }
+    }
+
+    /**
+     * Localiza a raiz do repositório a partir do diretório de execução do Maven.
+     */
+    private Path repositoryRoot() {
+        Path current = Path.of("").toAbsolutePath();
+        while (current != null) {
+            if (Files.isDirectory(current.resolve("oprm-coletor-mei"))
+                    && Files.isDirectory(current.resolve("backend/ads-service"))) {
+                return current;
+            }
+            current = current.getParent();
+        }
+        throw new IllegalStateException("Raiz do repositório não encontrada para validar o código do coletor OPRM.");
     }
 
     /**

@@ -21,6 +21,9 @@ databaseChangeLog:
       file: changesets/2026-06-06-oprm-enriched-niche-materializer-routine-fields.yaml
       relativeToChangelogFile: true
   - include:
+      file: changesets/2026-06-07-oprm-nichocnae-openai-stage-flags.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-06-04-oprm-nichocnae-routine-quality-gate.yaml
       relativeToChangelogFile: true
   - include:

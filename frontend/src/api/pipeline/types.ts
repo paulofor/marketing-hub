@@ -52,6 +52,7 @@ export interface OfficialPipelineStageMetadata {
   name: string;
   position: number;
   required: boolean;
+  requiresOpenAiModel: boolean;
   configurable: boolean;
   executionModule?: string | null;
   rootPackage?: string | null;

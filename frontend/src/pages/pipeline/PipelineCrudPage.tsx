@@ -174,9 +174,9 @@ function PipelineImplementationDetails({
 }
 function stageUsesOpenAi(
   stage: PipelineStage,
-  stageDefinition?: { fieldPolicy?: { openAiModelOperational: boolean } },
+  stageDefinition?: { requiresOpenAiModel?: boolean | null },
 ) {
-  if (stageDefinition?.fieldPolicy?.openAiModelOperational) return true;
+  if (stageDefinition?.requiresOpenAiModel) return true;
   if (stage.openAiModelId || stage.openAiModelName || stage.openAiModelCode) {
     return true;
   }

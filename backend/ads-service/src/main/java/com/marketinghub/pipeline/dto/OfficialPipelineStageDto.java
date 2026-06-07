@@ -13,6 +13,7 @@ public record OfficialPipelineStageDto(
         String name,
         int position,
         boolean required,
+        boolean requiresOpenAiModel,
         boolean configurable,
         String executionModule,
         String rootPackage,

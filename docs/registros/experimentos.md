@@ -4044,6 +4044,16 @@
 - foi feito: as validações de existência/conflito foram reescritas para `LEFT JOIN ... IS NULL`, evitando subconsultas sobre a tabela-alvo durante `UPDATE` e mantendo a idempotência das inserções das etapas GeraLanding.
 - impacto esperado: o backend deve conseguir concluir a execução do Liquibase e subir sem interromper o contexto Spring por essa migração.
 
+## 2026-06-07 11:08:39 UTC-3
+- solicitação: executar a etapa 4 do plano de identificação de visitante da landing de experimento, focada na geração de `visitorId` no script público da landing.
+- raciocínio: a landing publicada precisava emitir o contrato canônico novo de analytics com `visitorId` persistente first-party e `sessionId` de sessão sem depender de storage sempre disponível, preservando a ausência de metadados técnicos no artefato final.
+- registro do que foi feito: atualizado o script público injetado em `/api/flows/{slug}/page` para gerar `visitorId` via `localStorage` com fallback para cookie first-party e memória, manter `sessionId` em `sessionStorage` com fallback seguro, enviar ambos em todos os eventos, usar fallback para geração de IDs quando `crypto.randomUUID` não existir e cobrir a ausência de contaminação técnica com teste de regressão.
+- documentos lidos para pesquisar e resolver o problema:
+  - AGENTS.md
+  - backend/AGENTS.md
+  - docs/implementação/plano-identificacao-visitante-landing-experimento.md
+  - docs/canonical/procedimento-experimento-canon.v1.md
+  - docs/registros/experimentos.md
 ## 2026-06-07 — Custos flex e defaults de modelo na tela Gera Landing
 
 - solicitação: na aba Gera landing do experimento, exibir ao lado do modelo os custos em modo flex, calcular e totalizar custos por execução, por etapa e no total do experimento, além de explicitar se a etapa gera texto, imagem, vídeo ou áudio.

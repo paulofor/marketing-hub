@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.leadportal.integration.LeadPortalFlowPublicationRequest;
 import com.marketinghub.leadportal.service.LeadPortalFlowService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
@@ -23,10 +25,12 @@ import java.util.Locale;
 @RequestMapping("/api/flows")
 public class LeadPortalPublicFlowController {
 
+    private static final Logger log = LoggerFactory.getLogger(LeadPortalPublicFlowController.class);
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private final LeadPortalFlowService flowService;
 
     /**
+     * Creates the controller with the service used to resolve approved public flows.
      * Inicializa o controller público com o serviço de fluxos aprovados.
      */
     public LeadPortalPublicFlowController(LeadPortalFlowService flowService) {
@@ -34,6 +38,7 @@ public class LeadPortalPublicFlowController {
     }
 
     /**
+     * Returns the approved public flow contract for the given slug.
      * Retorna o contrato público de publicação do fluxo aprovado pelo slug.
      */
     @GetMapping("/{slug}")
@@ -43,6 +48,7 @@ public class LeadPortalPublicFlowController {
     }
 
     /**
+     * Returns the approved landing page HTML with runtime analytics instrumentation.
      * Entrega a landing standalone aprovada já instrumentada com analytics público.
      */
     @GetMapping(value = "/{slug}/page", produces = MediaType.TEXT_HTML_VALUE)
@@ -55,6 +61,7 @@ public class LeadPortalPublicFlowController {
     }
 
     /**
+     * Resolves the publishable HTML document from raw, JSON or hybrid stored flow content.
      * Extrai o documento HTML final de fontes salvas como HTML direto, JSON ou híbrido.
      */
     private String extractHtmlDocument(String sourceHtml) {
@@ -80,6 +87,7 @@ public class LeadPortalPublicFlowController {
     }
 
     /**
+     * Extracts an inline HTML document that starts at a doctype or html tag.
      * Tenta localizar um documento HTML completo dentro de uma string textual.
      */
     private String tryExtractInlineHtmlDocument(String value) {
@@ -99,6 +107,7 @@ public class LeadPortalPublicFlowController {
     }
 
     /**
+     * Indicates whether the stored value appears to be a JSON object or array payload.
      * Verifica se o conteúdo tem formato provável de payload JSON.
      */
     private boolean looksLikeJsonPayload(String value) {
@@ -110,6 +119,7 @@ public class LeadPortalPublicFlowController {
     }
 
     /**
+     * Searches hybrid HTML/text content for an embedded landing JSON payload.
      * Tenta extrair HTML de um conteúdo híbrido que contém JSON serializado.
      */
     private String tryExtractFromHybridHtml(String html) {
@@ -131,6 +141,7 @@ public class LeadPortalPublicFlowController {
     }
 
     /**
+     * Checks whether a JSON candidate contains fields that may hold landing HTML.
      * Verifica se um candidato textual contém indícios de HTML de landing.
      */
     private boolean containsLandingPageSignature(String candidate) {
@@ -139,6 +150,7 @@ public class LeadPortalPublicFlowController {
     }
 
     /**
+     * Extracts a balanced JSON object candidate starting at the provided index.
      * Extrai um bloco JSON balanceado a partir do índice informado.
      */
     private String extractJsonCandidate(String source, int startIndex) {
@@ -175,6 +187,7 @@ public class LeadPortalPublicFlowController {
     }
 
     /**
+     * Attempts to extract the HTML document from a JSON payload stored in the flow.
      * Tenta extrair o HTML final de campos conhecidos dentro de um payload JSON.
      */
     private String tryExtractFromJsonPayload(String payload) {
@@ -187,13 +200,16 @@ public class LeadPortalPublicFlowController {
             if (StringUtils.hasText(extracted)) {
                 return extracted;
             }
-        } catch (Exception ignored) {
+        } catch (Exception ex) {
+            log.warn("module=lead-portal operation=extract-public-flow-html errorClass={} message={} payloadLength={}",
+                    ex.getClass().getName(), ex.getMessage(), payload.length(), ex);
             return null;
         }
         return null;
     }
 
     /**
+     * Recursively reads a JSON node tree to locate the first embedded HTML document.
      * Percorre um nó JSON em busca do primeiro documento HTML publicável.
      */
     private String extractHtmlDocumentFromNode(JsonNode node) throws java.io.IOException {
@@ -250,6 +266,7 @@ public class LeadPortalPublicFlowController {
     }
 
     /**
+     * Delegates landingPageHtml node extraction through the generic HTML node resolver.
      * Extrai o HTML a partir do nó específico de landingPageHtml.
      */
     private String extractFromLandingPageNode(JsonNode landingPageHtmlNode) throws java.io.IOException {
@@ -257,6 +274,7 @@ public class LeadPortalPublicFlowController {
     }
 
     /**
+     * Injects the public landing analytics script into the rendered HTML without altering the pure source artifact.
      * Injeta o script público que mede sessão, dispositivo, sistema operacional e tamanho de tela.
      */
     private String injectLandingAnalyticsScript(String slug, String htmlDocument) {
@@ -269,18 +287,71 @@ public class LeadPortalPublicFlowController {
         String analyticsScript = """
                 <script data-mh-landing-analytics="true">
                 (function(){
-                  const slugValue = %s;
-                  const endpoint = '/api/public/lead-portal/flows/' + encodeURIComponent(slugValue) + '/page-analytics';
-                  const sessionKey = 'mh_lp_session_' + slugValue;
-                  const sessionId = sessionStorage.getItem(sessionKey) || (Date.now().toString(36) + '-' + Math.random().toString(36).slice(2));
-                  sessionStorage.setItem(sessionKey, sessionId);
-                  const resolveDeviceType = function(){
-                    const userAgent = navigator.userAgent || '';
-                    const isTablet = /ipad|tablet/i.test(userAgent) || (/android/i.test(userAgent) && !/mobile/i.test(userAgent));
+                  var slugValue = %s;
+                  var endpoint = '/api/public/lead-portal/flows/' + encodeURIComponent(slugValue) + '/page-analytics';
+                  var memoryStore = {};
+                  var safeGet = function(storageName, key){
+                    try { return window[storageName] ? window[storageName].getItem(key) : null; } catch (e) { return null; }
+                  };
+                  var safeSet = function(storageName, key, value){
+                    try { if (window[storageName]) window[storageName].setItem(key, value); } catch (e) {}
+                  };
+                  var cookieName = function(key){ return key.replace(/[^a-zA-Z0-9_\\-]/g, '_'); };
+                  var readCookie = function(name){
+                    try {
+                      var parts = ('; ' + document.cookie).split('; ' + name + '=');
+                      if (parts.length === 2) return decodeURIComponent(parts.pop().split(';').shift());
+                    } catch (e) {}
+                    return null;
+                  };
+                  var writeCookie = function(name, value){
+                    try {
+                      document.cookie = name + '=' + encodeURIComponent(value) + '; Max-Age=31536000; Path=/; SameSite=Lax';
+                    } catch (e) {}
+                  };
+                  var randomId = function(prefix){
+                    try {
+                      if (window.crypto && typeof window.crypto.randomUUID === 'function') return prefix + '-' + window.crypto.randomUUID();
+                      if (window.crypto && typeof window.crypto.getRandomValues === 'function') {
+                        var bytes = new Uint8Array(16);
+                        window.crypto.getRandomValues(bytes);
+                        return prefix + '-' + Array.prototype.map.call(bytes, function(byte){ return byte.toString(16).padStart(2, '0'); }).join('');
+                      }
+                    } catch (e) {}
+                    return prefix + '-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2);
+                  };
+                  var resolvePersistentId = function(key){
+                    var cookieKey = cookieName(key);
+                    var existing = safeGet('localStorage', key) || readCookie(cookieKey) || memoryStore[key];
+                    if (existing) return existing;
+                    var created = randomId('visitor');
+                    memoryStore[key] = created;
+                    safeSet('localStorage', key, created);
+                    writeCookie(cookieKey, created);
+                    return created;
+                  };
+                  var resolveSessionId = function(key){
+                    var existing = safeGet('sessionStorage', key) || memoryStore[key];
+                    if (existing) return existing;
+                    var created = randomId('session');
+                    memoryStore[key] = created;
+                    safeSet('sessionStorage', key, created);
+                    return created;
+                  };
+                  var visitorId = resolvePersistentId('mh_lp_visitor_' + slugValue);
+                  var sessionId = resolveSessionId('mh_lp_session_' + slugValue);
+                  var resolveDeviceType = function(){
+                    var userAgent = navigator.userAgent || '';
+                    var isTablet = /ipad|tablet/i.test(userAgent) || (/android/i.test(userAgent) && !/mobile/i.test(userAgent));
                     if (isTablet) return 'tablet';
-                    const isMobile = /mobi|iphone|ipod|android/i.test(userAgent);
+                    var isMobile = /mobi|iphone|ipod|android/i.test(userAgent);
                     return isMobile ? 'mobile' : 'desktop';
                   };
+                  var nowMs = function(){ return window.performance && typeof window.performance.now === 'function' ? window.performance.now() : Date.now(); };
+                  var deviceType = resolveDeviceType();
+                  var sendEvent = function(eventType, sectionId, elapsedMs){
+                    var payload = {
+                      eventId: randomId('event'),
                   const resolveOperatingSystem = function(){
                     const userAgent = navigator.userAgent || '';
                     if (/iphone|ipad|ipod/i.test(userAgent)) return 'ios';
@@ -301,35 +372,41 @@ public class LeadPortalPublicFlowController {
                     const payload = {
                       eventId: crypto.randomUUID ? crypto.randomUUID() : (Date.now().toString(36) + '-' + Math.random().toString(36).slice(2)),
                       eventType: eventType,
+                      visitorId: visitorId,
                       sessionId: sessionId,
                       sectionId: sectionId || null,
                       elapsedMs: typeof elapsedMs === 'number' ? Math.round(elapsedMs) : null,
                       visibleMs: typeof elapsedMs === 'number' ? Math.round(elapsedMs) : null,
                       pageUrl: window.location.href,
                       occurredAt: new Date().toISOString(),
+                      userAgent: navigator.userAgent || '',
+                      deviceType: deviceType
                       userAgent: navigator.userAgent,
                       deviceType: deviceType,
                       operatingSystem: operatingSystem,
                       screenWidth: resolveScreenSize().width,
                       screenHeight: resolveScreenSize().height
                     };
-                    if (navigator.sendBeacon) {
-                      navigator.sendBeacon(endpoint, new Blob([JSON.stringify(payload)], {type: 'application/json'}));
-                      return;
+                    if (navigator.sendBeacon && window.Blob) {
+                      try {
+                        navigator.sendBeacon(endpoint, new Blob([JSON.stringify(payload)], {type: 'application/json'}));
+                        return;
+                      } catch (e) {}
                     }
-                    fetch(endpoint, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload), keepalive: true}).catch(function(){});
+                    if (window.fetch) fetch(endpoint, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload), keepalive: true}).catch(function(){});
                   };
                   sendEvent('page_view', null, null);
-                  const visibleSince = new Map();
-                  const observer = new IntersectionObserver(function(entries){
-                    const now = performance.now();
+                  if (!('IntersectionObserver' in window) || !window.Map) return;
+                  var visibleSince = new Map();
+                  var observer = new IntersectionObserver(function(entries){
+                    var now = nowMs();
                     entries.forEach(function(entry){
-                      const sectionId = entry.target.id || entry.target.getAttribute('data-section-id') || entry.target.getAttribute('data-track-section');
+                      var sectionId = entry.target.id || entry.target.getAttribute('data-section-id') || entry.target.getAttribute('data-track-section');
                       if (!sectionId) return;
                       if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
                         if (!visibleSince.has(sectionId)) visibleSince.set(sectionId, now);
                       } else if (visibleSince.has(sectionId)) {
-                        const startedAt = visibleSince.get(sectionId);
+                        var startedAt = visibleSince.get(sectionId);
                         visibleSince.delete(sectionId);
                         sendEvent('section_view_time', sectionId, now - startedAt);
                       }
@@ -337,7 +414,7 @@ public class LeadPortalPublicFlowController {
                   }, {threshold:[0.5]});
                   document.querySelectorAll('section[id], [data-section-id], [data-track-section]').forEach(function(el){ observer.observe(el); });
                   window.addEventListener('beforeunload', function(){
-                    const now = performance.now();
+                    var now = nowMs();
                     visibleSince.forEach(function(startedAt, sectionId){ sendEvent('section_view_time', sectionId, now - startedAt); });
                   });
                 })();
@@ -350,6 +427,7 @@ public class LeadPortalPublicFlowController {
     }
 
     /**
+     * Escapes a Java value for safe insertion as a JavaScript string literal.
      * Escapa um valor Java para uso seguro como literal de string JavaScript.
      */
     private String toJsStringLiteral(String rawValue) {
@@ -360,6 +438,7 @@ public class LeadPortalPublicFlowController {
     }
 
     /**
+     * Checks whether a source string contains a token without case sensitivity.
      * Verifica presença textual ignorando caixa e valores ausentes.
      */
     private boolean containsIgnoreCase(String source, String token) {

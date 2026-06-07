@@ -333,8 +333,10 @@ public class PipelineDefinitionSynchronizer {
                 "LANDING_PAGE_WIREFRAME", List.of("landing-wireframe"),
                 "LANDING_PAGE_COPY", List.of("landing-copy"),
                 "LANDING_PAGE_IMAGE_PLANNING", List.of("image-planning"),
+                "LANDING_PAGE_IMAGE_GENERATION", List.of("image-generation", "framework-image-generation"),
                 "LANDING_PAGE_DESIGN_PRESET", List.of("preset-design"),
-                "LANDING_PAGE_HTML", List.of("landing-html", "geralanding-html"));
+                "LANDING_PAGE_DELIVERABLES",
+                        List.of("landing-html", "geralanding-html", "landing-page-html", "LANDING_PAGE_HTML"));
         return aliases.getOrDefault(stageDefinition.canonicalCode(), List.of());
     }
 

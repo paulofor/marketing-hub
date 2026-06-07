@@ -635,10 +635,13 @@ databaseChangeLog:
   - include:
       file: changesets/2026-06-04-pipeline-persistent-contract.yaml
       relativeToChangelogFile: true
-
   - include:
       file: changesets/2026-06-04-openai-model-accepts-image-input.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-06-07-experiment-pipeline-quality-review-stage.yaml
+      relativeToChangelogFile: true
+
 
   - include:
       file: changesets/2026-06-04-openai-model-pricing-sync-metadata.yaml

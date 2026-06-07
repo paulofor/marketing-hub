@@ -3999,3 +3999,19 @@
   - `backend/ads-service/src/main/java/com/marketinghub/pipeline/service/PipelineService.java`
   - `frontend/src/pages/pipeline/PipelineCrudPage.tsx`
   - `frontend/src/pages/pipeline/PipelineCrudPage.css`
+
+## 2026-06-07 — Quality Review no contrato persistente do pipeline de experimento
+
+- solicitação: verificar se o `quality-review` não estava cadastrado no banco de dados como etapa do pipeline.
+- causa-raiz: a etapa `landing-page-quality-review` existia na execução do GeraLanding e na tela do experimento, mas não fazia parte do contrato oficial persistido do `experiment-pipeline`; o registry backend também derivava o contrato apenas do enum legado de geração, que termina em `landing-page-html`.
+- verificação: via MCP, o banco retornou o `experiment-pipeline` sem `LANDING_PAGE_QUALITY_REVIEW` em `pipeline_stage_definition` e sem `landing-page-quality-review` em `pipeline_stage`, enquanto o card da tela já consumia esse código.
+- foi feito: adicionada a etapa `landing-page-quality-review` ao contrato oficial do pipeline de experimento, criado changelog Liquibase idempotente para inserir a etapa nas tabelas operacionais/persistentes e garantir configuração inicial com o modelo `gpt-5.5` quando disponível.
+- impacto esperado: a tela passa a encontrar a etapa Quality Review como parte do pipeline configurável, preservando o fluxo comercial antes de gerar entregáveis.
+
+## 2026-06-07 — Correção do pacote canônico das etapas GeraLanding no pipeline de experimento
+
+- solicitação: corrigir a modelagem anterior porque o pipeline de experimento evoluiu e parte das etapas pertence ao domínio `com.marketinghub.geralanding`, conforme documentos canônicos.
+- causa-raiz: a correção anterior cadastrava `landing-page-quality-review` e `landing-page-deliverables`, mas ainda marcava as etapas de landing como se a implementação estrutural fosse `com.marketinghub.experiment.pipeline` e mantinha a etapa legada `landing-page-html` como etapa oficial separada.
+- foi feito: o contrato oficial do `experiment-pipeline` passou a separar as três etapas iniciais do experimento das sete etapas do núcleo GeraLanding: wireframe, copy, image planning, image generation, design preset, quality review e deliverables.
+- foi feito: o changelog Liquibase foi ajustado para inserir/reparar `landing-page-image-generation`, `landing-page-quality-review` e `landing-page-deliverables`, migrar `landing-page-html` legado para o papel de deliverables quando seguro e gravar `root_package` com os pacotes reais `com.marketinghub.geralanding.*`.
+- impacto esperado: a tela administrativa de pipeline passa a refletir a arquitetura canônica atual, mostrando que as etapas de landing do pipeline de experimento são implementadas no módulo GeraLanding e processadas pelos pacotes correspondentes do Worker AI.

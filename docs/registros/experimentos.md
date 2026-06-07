@@ -1,3 +1,23 @@
+## 2026-06-07 — Coluna de data de criação na lista de Testes de Nicho
+
+- solicitação: adicionar a coluna Data de criação na lista paginada de Testes de Nicho.
+- foi feito: a tabela passou a exibir a data de criação formatada em pt-BR entre o nome do experimento e o nicho.
+- validação: teste de frontend atualizado para garantir a presença da coluna e o valor formatado na linha paginada.
+- arquivos alterados:
+  - frontend/src/pages/experiment/ExperimentListPage.tsx
+  - frontend/src/pages/experiment/ExperimentListPage.test.tsx
+  - docs/registros/experimentos.md
+
+## 2026-06-07 — Lista de Testes de Nicho com paginação
+
+- solicitação: reorganizar a lista de Testes de Nicho para exibir os 25 experimentos mais recentes com paginação.
+- foi feito: a tela de experimentos agora ordena por data mais recente com desempate por ID, mostra 25 itens por página e substitui as colunas por ID do experimento, nome do experimento, nicho, hipótese, valor, status e botões/ações.
+- validação: teste de frontend adicionado para garantir colunas solicitadas, primeira página com 25 itens mais recentes e navegação para a próxima página.
+- arquivos alterados:
+  - frontend/src/pages/experiment/ExperimentListPage.tsx
+  - frontend/src/pages/experiment/ExperimentListPage.test.tsx
+  - docs/registros/experimentos.md
+
 ## 2026-06-04 — GeraLanding: disparo automático de Gera Prompt Imagem após Gera Copy
 
 - solicitação: no pipeline do GeraLanding, disparar automaticamente a etapa `Gera Prompt Imagem` ao final bem-sucedido da etapa `Gera Copy`, seguindo o padrão já existente de `Gera Prompt Imagem` para `Gera Imagem`.

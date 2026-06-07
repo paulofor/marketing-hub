@@ -3,10 +3,12 @@ package com.marketinghub.experiment.funnel;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsDeviceDto;
 import com.marketinghub.repository.jpa.experiment.funnel.ExperimentFunnelEventRepository;
+import com.marketinghub.repository.jpa.experiment.funnel.ExperimentLandingAnalyticsEventRepository;
 import com.marketinghub.repository.jpa.experiment.funnel.ExperimentFunnelEventRepository.LandingAnalyticsEventProjection;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.core.LeadRepository;
 import com.marketinghub.leadportal.dto.RegisterLandingPageAnalyticsEventRequest;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -28,6 +30,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -44,6 +48,9 @@ class ExperimentFunnelServiceRenderCompleteTest {
     private ExperimentFunnelEventRepository eventRepository;
 
     @Mock
+    private ExperimentLandingAnalyticsEventRepository landingAnalyticsEventRepository;
+
+    @Mock
     private LeadRepository leadRepository;
 
     @Mock
@@ -51,6 +58,15 @@ class ExperimentFunnelServiceRenderCompleteTest {
 
     @InjectMocks
     private ExperimentFunnelService service;
+
+    /**
+     * Configura stubs comuns para permitir criação de eventos normalizados novos.
+     */
+    @BeforeEach
+    void setUp() {
+        lenient().when(landingAnalyticsEventRepository.findFirstByExperimentIdAndEventId(any(), any()))
+                .thenReturn(Optional.empty());
+    }
 
     /**
      * Valida que o render-complete grava visualização do formulário com visitante e campanha.
@@ -101,10 +117,13 @@ class ExperimentFunnelServiceRenderCompleteTest {
         when(experimentRepository.findFirstByFollowUpActionUrlFlowSlug("exp-36-landing-geralanding"))
                 .thenReturn(Optional.of(experiment));
 
+        when(eventRepository.save(any(ExperimentFunnelEvent.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
         service.registerLandingPageAnalyticsEvent("exp-36-landing-geralanding",
                 new RegisterLandingPageAnalyticsEventRequest(
                         "event-1",
                         "page_view",
+                        "visitor-1",
                         "session-1",
                         null,
                         null,
@@ -122,6 +141,127 @@ class ExperimentFunnelServiceRenderCompleteTest {
         assertEquals(ExperimentFunnelStage.VISUALIZACAO_FORM, saved.getStage());
         assertEquals(ExperimentFunnelEventRepository.LANDING_PAGE_ANALYTICS_SOURCE, saved.getSource());
         assertEquals(Instant.parse("2026-06-04T21:00:00Z"), saved.getOccurredAt());
+    }
+
+
+
+    /**
+     * Valida que analytics com visitorId persiste o evento legado e a estrutura normalizada consultável.
+     */
+    @Test
+    void registerLandingPageAnalyticsPersistsNormalizedVisitorEvent() {
+        Experiment experiment = Experiment.builder().id(40L).build();
+        when(experimentRepository.findFirstByLeadPortalFlowSlug("flow-slug"))
+                .thenReturn(Optional.of(experiment));
+        when(eventRepository.save(any(ExperimentFunnelEvent.class))).thenAnswer(invocation -> {
+            ExperimentFunnelEvent event = invocation.getArgument(0);
+            event.setId(700L);
+            return event;
+        });
+
+        service.registerLandingPageAnalyticsEvent("flow-slug",
+                new RegisterLandingPageAnalyticsEventRequest(
+                        "event-normalized",
+                        "page_view",
+                        "visitor-123",
+                        "session-123",
+                        null,
+                        null,
+                        null,
+                        "https://oportunidadebrasil.shop/page",
+                        Instant.parse("2026-06-07T10:00:00Z"),
+                        "JUnit Browser",
+                        "desktop"));
+
+        ArgumentCaptor<ExperimentLandingAnalyticsEvent> normalizedCaptor =
+                ArgumentCaptor.forClass(ExperimentLandingAnalyticsEvent.class);
+        verify(landingAnalyticsEventRepository).save(normalizedCaptor.capture());
+
+        ExperimentLandingAnalyticsEvent normalized = normalizedCaptor.getValue();
+        assertEquals(experiment, normalized.getExperiment());
+        assertEquals("event-normalized", normalized.getEventId());
+        assertEquals("visitor-123", normalized.getVisitorId());
+        assertEquals("session-123", normalized.getSessionId());
+        assertEquals("page_view", normalized.getEventType());
+        assertEquals("https://oportunidadebrasil.shop/page", normalized.getPageUrl());
+        assertEquals(Instant.parse("2026-06-07T10:00:00Z"), normalized.getOccurredAt());
+        assertEquals(700L, normalized.getFunnelEvent().getId());
+    }
+
+    /**
+     * Valida que eventos legados sem visitorId continuam aceitos e normalizados sem afirmar recorrência provável.
+     */
+    @Test
+    void registerLandingPageAnalyticsAllowsLegacyEventWithoutVisitorId() {
+        Experiment experiment = Experiment.builder().id(41L).build();
+        when(experimentRepository.findFirstByLeadPortalFlowSlug("flow-slug"))
+                .thenReturn(Optional.of(experiment));
+        when(eventRepository.save(any(ExperimentFunnelEvent.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.registerLandingPageAnalyticsEvent("flow-slug",
+                new RegisterLandingPageAnalyticsEventRequest(
+                        "legacy-event",
+                        "page_view",
+                        null,
+                        "legacy-session",
+                        null,
+                        null,
+                        null,
+                        "https://oportunidadebrasil.shop/page",
+                        Instant.parse("2026-06-07T10:01:00Z"),
+                        "JUnit Browser",
+                        "desktop"));
+
+        ArgumentCaptor<ExperimentLandingAnalyticsEvent> normalizedCaptor =
+                ArgumentCaptor.forClass(ExperimentLandingAnalyticsEvent.class);
+        verify(landingAnalyticsEventRepository).save(normalizedCaptor.capture());
+        assertNull(normalizedCaptor.getValue().getVisitorId());
+        assertEquals("legacy-session", normalizedCaptor.getValue().getSessionId());
+    }
+
+    /**
+     * Valida que page_view duplicado na janela canônica preserva legado e não duplica evento normalizado.
+     */
+    @Test
+    void registerLandingPageAnalyticsDeduplicatesPageViewInCanonicalWindow() {
+        Experiment experiment = Experiment.builder().id(42L).build();
+        when(experimentRepository.findFirstByLeadPortalFlowSlug("flow-slug"))
+                .thenReturn(Optional.of(experiment));
+        when(eventRepository.save(any(ExperimentFunnelEvent.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(landingAnalyticsEventRepository.existsPageViewInDeduplicationWindow(
+                eq(42L),
+                eq("visitor-duplicate"),
+                eq("session-duplicate"),
+                eq("page_view"),
+                eq("https://oportunidadebrasil.shop/page"),
+                eq(Instant.parse("2026-06-07T10:01:57Z")),
+                eq(Instant.parse("2026-06-07T10:02:03Z"))))
+                .thenReturn(true);
+
+        service.registerLandingPageAnalyticsEvent("flow-slug",
+                new RegisterLandingPageAnalyticsEventRequest(
+                        "duplicate-event",
+                        "page_view",
+                        "visitor-duplicate",
+                        "session-duplicate",
+                        null,
+                        null,
+                        null,
+                        "https://oportunidadebrasil.shop/page",
+                        Instant.parse("2026-06-07T10:02:00Z"),
+                        "JUnit Browser",
+                        "desktop"));
+
+        verify(eventRepository).save(any(ExperimentFunnelEvent.class));
+        verify(landingAnalyticsEventRepository).existsPageViewInDeduplicationWindow(
+                eq(42L),
+                eq("visitor-duplicate"),
+                eq("session-duplicate"),
+                eq("page_view"),
+                eq("https://oportunidadebrasil.shop/page"),
+                eq(Instant.parse("2026-06-07T10:01:57Z")),
+                eq(Instant.parse("2026-06-07T10:02:03Z")));
+        verify(landingAnalyticsEventRepository, never()).save(any(ExperimentLandingAnalyticsEvent.class));
     }
 
     /**
@@ -231,16 +371,25 @@ class ExperimentFunnelServiceRenderCompleteTest {
      */
     private LandingAnalyticsEventProjection landingEvent(Long id, String payload, Instant occurredAt) {
         return new LandingAnalyticsEventProjection() {
+            /**
+             * Retorna o identificador sintético do evento de teste.
+             */
             @Override
             public Long getId() {
                 return id;
             }
 
+            /**
+             * Retorna o payload textual sintético do evento de teste.
+             */
             @Override
             public String getPayload() {
                 return payload;
             }
 
+            /**
+             * Retorna o instante sintético do evento de teste.
+             */
             @Override
             public Instant getOccurredAt() {
                 return occurredAt;

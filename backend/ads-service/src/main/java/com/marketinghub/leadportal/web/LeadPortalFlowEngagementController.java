@@ -99,9 +99,9 @@ public class LeadPortalFlowEngagementController {
             @RequestBody(required = false) String requestBody) {
         log.info("Lead Portal page-analytics raw recebido no backend. slug={}, rawPayload={}", slug, requestBody);
         RegisterLandingPageAnalyticsEventRequest request = parsePageAnalyticsRequest(slug, requestBody);
-        log.info("Lead Portal page-analytics parseado no backend. slug={}, eventId={}, eventType={}, sectionId={}, sessionId={}, pageUrl={}, deviceType={}",
-                slug, request.eventId(), request.eventType(), request.sectionId(), request.sessionId(), request.pageUrl(),
-                request.deviceType());
+        log.info("Lead Portal page-analytics parseado no backend. slug={}, eventId={}, visitorId={}, eventType={}, sectionId={}, sessionId={}, pageUrl={}, deviceType={}",
+                slug, request.eventId(), request.visitorId(), request.eventType(), request.sectionId(), request.sessionId(),
+                request.pageUrl(), request.deviceType());
         experimentFunnelService.registerLandingPageAnalyticsEvent(slug, request);
         return ResponseEntity.ok(new LeadPortalEngagementAckResponse(
                 LeadPortalSubmissionEngagementContractV1.VERSION,

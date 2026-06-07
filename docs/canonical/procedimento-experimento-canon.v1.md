@@ -93,8 +93,34 @@ Regras complementares:
 - a instrumentação deve ser idempotente (não pode ser injetada em duplicidade no mesmo HTML);
 - o payload publicado no artefato final deve manter apenas campos/eventos previstos em contrato canônico, sem metadado técnico fora do escopo funcional.
 
+### 5.3 Contrato canônico de analytics público da landing
 
-### 5.3 Quadro operacional — etapas, assembler de HTML e persistência de HTML provisório
+A landing publicada deve emitir eventos públicos de analytics suficientes para diagnosticar intenção comercial, recorrência provável e gargalos de conversão sem transformar a mensuração em identificação determinística de pessoa real. O contrato mínimo dos eventos emitidos pela landing é:
+
+| Campo | Obrigatoriedade | Semântica canônica |
+|---|---|---|
+| `eventId` | obrigatório em eventos novos | Identificador único do evento gerado no cliente para rastreabilidade e deduplicação operacional. |
+| `eventType` | obrigatório | Tipo do evento público. Valores canônicos iniciais: `page_view` e `section_view_time`; novos tipos devem ser documentados antes do uso. |
+| `visitorId` | obrigatório em eventos novos; opcional apenas para legado | Identificador first-party persistente do visitante provável no mesmo navegador/dispositivo. Não prova pessoa real, não deve ser tratado como identidade civil, login, e-mail ou usuário determinístico. |
+| `sessionId` | obrigatório em eventos novos | Identificador da sessão de navegação atual no navegador/aba. Deve mudar quando a sessão local expirar ou for recriada. |
+| `sectionId` | obrigatório para `section_view_time`; ausente ou nulo em eventos sem seção | Seção monitorada da landing, derivada de `data-section-id`, `id` ou contrato equivalente de seção rastreável. |
+| `elapsedMs` | obrigatório para `section_view_time` quando representar duração consolidada | Tempo total, em milissegundos, usado por eventos de permanência/visualização de seção. |
+| `visibleMs` | opcional, recomendado para eventos de visibilidade | Tempo efetivamente visível, em milissegundos, quando a implementação diferenciar tempo decorrido de tempo visível. |
+| `pageUrl` | obrigatório em eventos novos | URL da página onde o evento ocorreu, preservando parâmetros úteis de atribuição quando aplicável. |
+| `occurredAt` | obrigatório em eventos novos | Data/hora ISO-8601 gerada no momento da ocorrência observada no cliente; o backend deve manter data de recebimento separada quando necessário. |
+| `userAgent` | obrigatório em eventos novos quando disponível no navegador | User-Agent informado pelo navegador para apoio diagnóstico. Não substitui `visitorId` e não deve ser usado para fingerprinting agressivo. |
+
+Semântica operacional obrigatória:
+- `visitorId` representa apenas um visitante provável por navegador/dispositivo first-party. Ele pode ser apagado pelo usuário, bloqueado por restrição de storage, reiniciado por troca de navegador/dispositivo e compartilhado por pessoas diferentes no mesmo ambiente. Portanto, a UI e os relatórios devem comunicar “visitante provável”, nunca “mesma pessoa comprovada”.
+- `sessionId` representa uma sessão de navegação e serve para separar visitas do mesmo `visitorId` em momentos diferentes. Ele não é suficiente, isoladamente, para medir recorrência entre visitas futuras.
+- Evento é a observação pontual emitida pela landing (`page_view`, `section_view_time` e futuros eventos documentados). Evento não é sessão nem visitante.
+- Visitante recorrente provável existe quando o mesmo `visitorId` aparece em mais de uma sessão (`sessionId` distinto) do mesmo experimento ou quando existem ao menos dois `page_view`s válidos do mesmo `visitorId` separados por intervalo maior que a janela canônica de deduplicação.
+- A janela canônica inicial de deduplicação de `page_view` repetido em curto intervalo é de **3 segundos** por experimento, `visitorId`, `sessionId`, `eventType` e `pageUrl`. `page_view`s repetidos dentro dessa janela devem ser tratados como duplicidade operacional para contagem de recorrência e volume, preservando auditoria bruta quando o modelo de dados permitir.
+- Eventos legados sem `visitorId` continuam válidos para analytics histórico de sessão e funil, mas não podem ser usados para afirmar recorrência provável de visitante entre sessões. Quando exibidos junto a dados novos, devem ser identificados como legado/sem visitante provável.
+- O backend deve aceitar eventos legados sem `visitorId` enquanto houver landings antigas publicadas, mas toda nova publicação deve enviar `visitorId` e `sessionId` conforme este contrato.
+
+
+### 5.4 Quadro operacional — etapas, assembler de HTML e persistência de HTML provisório
 
 | Etapa | Classe que faz assembler do HTML da etapa | Campo(s) de tabela onde grava HTML provisório |
 |---|---|---|
@@ -103,7 +129,7 @@ Regras complementares:
 | `LANDING_PAGE_IMAGE_PLANNING` | `ImagePlanningProvisionalHtmlAssembler` (usa internamente `CopyProvisionalHtmlAssembler` + `LandingPageImageInjector` apenas para esta etapa). | `gera_landing_stage_execution.provisional_html` (não persiste em `experiment.landing_page_html` nesta etapa). |
 | `LANDING_PAGE_DESIGN_PRESET` | `DesignPresetProvisionalHtmlAssembler` + `LandingPageImageInjector.injectImages(...)` | `gera_landing_stage_execution.provisional_html`, `experiment.landing_page_design_preset` (JSON bruto da resposta do modelo) e `experiment.html_geralanding` (HTML consolidado da etapa). `experiment.landing_page_html` só é persistido na aprovação/publicação. |
 
-### 5.4 Regra de isolamento por conjunto (obrigatória)
+### 5.5 Regra de isolamento por conjunto (obrigatória)
 
 Cada conjunto de montagem de HTML deve atuar **exclusivamente** na sua etapa canônica, com pacote dedicado dentro de `com.marketinghub.geralanding`:
 
@@ -125,7 +151,7 @@ Regras:
 2. Enriquecimentos transversais (ex.: injeção de URLs finais de imagem) devem ocorrer em serviço auxiliar dedicado e orquestrados pelo serviço da etapa, sem transferir a responsabilidade de etapa entre processadores.
 3. A etapa de geração de imagens deve persistir o manifesto consolidado `experiment.landing_page_image_assets`; a etapa de preset design deve consumir esse manifesto para substituir placeholders/URLs provisórias por URLs finais antes de persistir o HTML.
 
-### 5.5 Quality Review visual — fonte canônica do prompt
+### 5.6 Quality Review visual — fonte canônica do prompt
 
 A etapa `landing-page-quality-review` deve avaliar o artefato final publicável com base somente em:
 
@@ -134,7 +160,7 @@ A etapa `landing-page-quality-review` deve avaliar o artefato final publicável 
 
 O prompt textual do Quality Review não deve receber `experiment.landing_page_html` como fallback legado, nem JSONs intermediários de wireframe, copy, image planning, image generation ou design preset. A causa-raiz apontada pelo Quality Review deve ser inferida apenas a partir do HTML final e da evidência visual renderizada, preservando o foco no artefato que será publicado e evitando falhas quando `landing_page_html` ainda estiver nulo antes da aprovação/publicação.
 
-### 5.6 Worker AI — divisão equivalente por etapa (obrigatória)
+### 5.7 Worker AI — divisão equivalente por etapa (obrigatória)
 
 No `ai-worker`, a mesma divisão por etapa deve ser mantida para evitar acoplamento entre execução,
 prompt e schema. A arquitetura canônica vigente para qualquer etapa de landing no Worker AI é o núcleo

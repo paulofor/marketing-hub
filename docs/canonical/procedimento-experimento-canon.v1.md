@@ -58,6 +58,17 @@ Local canônico vigente:
 - pipeline de experimento (núcleo inicial): `ai-worker/src/main/resources/prompts/experiment`;
 - pipeline de landing no Worker AI: prompts e schemas devem ser resolvidos por configuração tipada da etapa em `openai.core.<etapa>`; o caminho físico em `resources/prompts/<dominio>` é detalhe de recurso versionado e não define namespace Java do Worker AI.
 
+### 4.3 Regra de diferenciação de ângulo após experimento reprovado
+
+Ao gerar a etapa `CAMPAIGN_ANGLE`, o prompt deve receber o histórico dos experimentos reprovados por 100 acessos sem envio da mesma hipótese, quando existir. A reprovação de um experimento reprova aquela materialização de mercado (público, criativo, landing, isca e formulário), mas não reprova automaticamente a hipótese estratégica.
+
+Regras obrigatórias:
+- o backend deve acrescentar ao prompt somente experimentos da mesma hipótese reprovados pela regra estatística de 100 acessos sem envio de formulário (`FORM_ZERO_CONVERSION_RULE_OF_THREE`), excluindo o experimento atual; experimentos `FAILED`, `USER_STOPPED` ou apenas `INCONCLUSIVE` não entram nesse histórico;
+- o modelo deve preservar a hipótese estratégica, mas criar uma rota comercial radicalmente diferente dos experimentos reprovados por 100 acessos sem envio;
+- a diferença radical deve trocar ao menos uma alavanca principal: dor de entrada, resultado imediato prometido, isca digital/prova inicial, framing visual ou CTA;
+- o novo ângulo não deve reaproveitar headline, promessa central, CTA, mecanismo de entrada ou mensagem de landing semelhantes aos experimentos reprovados por 100 acessos sem envio;
+- a landing deve ser tratada como isca digital e validação de interesse no valor da hipótese, não como validação integral do produto final.
+
 ## 5. Pipeline Gera Landing (núcleo da landing)
 
 No fluxo atual, a geração da landing segue as etapas:

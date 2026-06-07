@@ -3961,3 +3961,18 @@
 - diagnóstico base: o rastreio atual por `sessionId` permite medir sessão, mas não prova recorrência de pessoa/dispositivo entre horários diferentes.
 - registro criado: `docs/implementação/plano-identificacao-visitante-landing-experimento.md`.
 - escopo planejado: cânone/contrato, banco, backend, script público da landing, API de recorrência, frontend, compatibilidade com legado e validação operacional por MCP.
+
+## 2026-06-07 — Contexto de experimentos reprovados no ângulo da campanha
+
+- solicitação: ajustar a geração do `campaign-angle` para distinguir hipótese de experimento e evitar repetir a mesma materialização quando um experimento anterior da mesma hipótese foi reprovado.
+- decisão operacional: experimento reprovado invalida a materialização de mercado testada (público/criativo/landing/isca/formulário), mas não reprova automaticamente a hipótese; o novo ângulo deve mudar radicalmente a rota comercial.
+- regra canônica atualizada: `docs/canonical/procedimento-experimento-canon.v1.md` agora exige que `CAMPAIGN_ANGLE` receba somente histórico de experimentos da mesma hipótese reprovados pela regra de 100 acessos sem envio de formulário e troque pelo menos uma alavanca central (dor de entrada, resultado imediato, isca/prova, framing visual ou CTA).
+- correção aplicada: o backend acrescenta ao prompt apenas experimentos `INVALIDATED` com campanha parada por `FORM_ZERO_CONVERSION_RULE_OF_THREE`; experimentos `FAILED`, `USER_STOPPED` ou apenas `INCONCLUSIVE` não entram, e o prompt do Worker AI passou a tratar esse histórico como restrição estratégica obrigatória de diferenciação radical.
+- validação: teste direcionado do backend confirma que o prompt de `campaign-angle` inclui o histórico de experimento reprovado por 100 acessos sem envio da mesma hipótese e a regra de diferenciação radical.
+- arquivos alterados:
+  - `backend/ads-service/src/main/java/com/marketinghub/experiment/pipeline/service/ExperimentPipelineGenerationService.java`
+  - `backend/ads-service/src/main/java/com/marketinghub/repository/jpa/experiment/ExperimentRepository.java`
+  - `backend/ads-service/src/test/java/com/marketinghub/experiment/pipeline/service/ExperimentPipelineGenerationServiceTest.java`
+  - `ai-worker/src/main/resources/prompts/experiment/campaign-angle.md`
+  - `docs/canonical/procedimento-experimento-canon.v1.md`
+  - `docs/registros/experimentos.md`

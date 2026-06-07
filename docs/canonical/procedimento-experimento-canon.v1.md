@@ -167,6 +167,15 @@ Enquanto bloqueado, o frontend deve manter disponíveis as visões de acompanham
 
 A regra existe para impedir divergência entre o que já foi publicado/executado no Meta/Lead Portal e os artefatos canônicos usados para mensuração comercial do experimento. Correções após publicação devem seguir fluxo operacional explícito (ex.: duplicar/republicar novo experimento ou rotina de parada/correção autorizada), não edição silenciosa dos ativos em execução.
 
+
+## 7.2 Ownership canônico dos criativos usados pelo Facebook
+
+A criação, geração por IA, edição, aprovação e exclusão de criativos pertencem exclusivamente ao módulo Experimentos. Essas ações devem continuar usando contratos do domínio Experimentos, pois o criativo é artefato do experimento e compõe a decisão comercial antes da liberação.
+
+O módulo Facebook pode apenas consumir criativos já aprovados para publicação. Para isso, o backend deve expor contratos de leitura exclusivos no módulo Facebook, começando por `GET /api/facebook-campaigns/experiments/{experimentId}/creatives-ready`, que retorna somente criativos `READY` do experimento no formato necessário ao `facebook-ads-worker`. É proibido usar endpoints do módulo Facebook para criar, editar, aprovar ou excluir criativos.
+
+Essa separação evita acoplamento indevido: Experimentos mantém a responsabilidade pelo artefato e Facebook mantém a responsabilidade pela publicação e consumo operacional.
+
 ## 8. Regras de integração com OpenAI
 
 ### 8.1 Worker AI como camada obrigatória

@@ -10,6 +10,7 @@
 > - adiciona fluxo canônico de deduplicação de upload de imagem com reuso de `meta_image_hash`
 > - formaliza que a publicação de campanhas é uma etapa plugável executada pelo `facebook-ads-worker` seguindo o padrão `Pipeline Stage Execution Engine`
 > - formaliza que o fallback de segmentação manual aprovado pelo backend pertence ao `facebook-ads-worker`, sem delegação ao `ai-worker`
+> - formaliza a separação de ownership dos criativos: criação/edição/aprovação é do módulo Experimentos; consumo operacional é por endpoint exclusivo do módulo Facebook
 
 Este documento complementa o `system-governance-canon.v2.md` e passa a ser a fonte de verdade para prontidão, liberação e telemetria de campanhas de experimento no Facebook Ads Worker.
 
@@ -32,6 +33,8 @@ Este documento complementa o `system-governance-canon.v2.md` e passa a ser a fon
 | Regra | Dono | Consumidores |
 | --- | --- | --- |
 | Invariantes de prontidão (`creative`, `experiment.follow_up_action_url`, `targeting_element`) | Backend `ads-service` + domínio de experimentos | Frontend (cartão checklist), `facebook-ads-worker` |
+| Criação, edição, aprovação e exclusão de registros `creative` | Módulo Experimentos | Frontend Experimentos, Worker AI |
+| Consumo de criativos aprovados para publicação Facebook | Módulo Facebook (`/api/facebook-campaigns/experiments/{experimentId}/creatives-ready`) | `facebook-ads-worker` |
 | Publicação de campanha, criação de campanha/ad set/criativos/anúncios e fallback de segmentação manual | `facebook-ads-worker` | Backend `ads-service`, Meta Marketing API |
 | Fluxo de liberação (`facebook_release_requested_at`, `status`, `market_niche.facebook_pixel_id`) | Backend `ads-service` | UI Experimentos, `facebook-ads-worker`, pixel worker |
 | Geração por IA de ativos prévios (ex.: texto/imagem criativa antes da aprovação) | `ai-worker` | Backend `ads-service`, Frontend |
@@ -55,6 +58,8 @@ Implementação: `ExperimentReadinessService` (backend) expõe os mesmos critér
    - `experiment.creative_approved = true` e pelo menos um registro em `creative` do experimento com `status = 'READY'`.
    - O botão **Gerar anúncios do pipeline** pode produzir até 3 anúncios (texto + prompt) via Worker AI (`gpt-image-1.5`). Eles entram como `DRAFT` e precisam ser aprovados antes da liberação.
    - Quando múltiplos criativos `READY` existem, o worker publica todos no mesmo ad set para preservar as variações aprovadas.
+   - A criação, edição, aprovação e exclusão do criativo pertencem exclusivamente ao módulo Experimentos. O módulo Facebook não pode criar ou alterar criativos; ele apenas expõe contrato de leitura para consumo operacional.
+   - O consumo pelo `facebook-ads-worker` deve ocorrer pelo endpoint exclusivo do módulo Facebook: `GET /api/facebook-campaigns/experiments/{experimentId}/creatives-ready`. O endpoint legado do domínio Experimentos (`GET /api/experiments/{id}/creatives`) permanece contrato de gestão do experimento e não deve ser consumido pelo worker de publicação Facebook.
 2. **Landing criada e aprovada na aba Landing**
    - A landing precisa estar criada no próprio experimento (artefato persistido em `experiment`) e aprovada na aba **Landing**.
    - O critério operacional de publicação é `experiment.follow_up_action_url` preenchido com a URL aprovada para destino da campanha.
@@ -159,6 +164,6 @@ Consequência arquitetural: a publicação de campanha passa a ser substituível
 
 - `system-governance-canon.v2.md` – precedência canônica e critérios de criação de novos cânones.
 - `ExperimentReadinessService` (backend) – cálculo dos bloqueios.
-- Endpoints: `/api/facebook-campaigns/experiments-ready`, `/api/facebook-adsets/experiments-ready`, `/api/facebook-pixels/niches-ready`, `/api/experiments/{experimentId}/funnel/diagnostics`.
+- Endpoints: `/api/facebook-campaigns/experiments-ready`, `/api/facebook-campaigns/experiments/{experimentId}/creatives-ready`, `/api/facebook-adsets/experiments-ready`, `/api/facebook-pixels/niches-ready`, `/api/experiments/{experimentId}/funnel/diagnostics`.
 - Metodologia de arquitetura por etapa: `docs/metodologia/gerado-5-5/arquitetura-pipeline-etapas-archunit.md`.
 - Tabelas do schema `marketinghubdb`: `experiment`, `creative`, `lead_portal_flow`, `targeting_element`, `experiment_campaign_metric`.

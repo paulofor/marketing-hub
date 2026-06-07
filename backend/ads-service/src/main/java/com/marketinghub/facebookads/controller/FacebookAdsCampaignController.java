@@ -8,6 +8,8 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.ads.FacebookAccount;
 import com.marketinghub.repository.jpa.ads.FacebookAccountRepository;
+import com.marketinghub.creative.Creative;
+import com.marketinghub.creative.CreativeStatus;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.ExperimentCampaignMetric;
@@ -29,6 +31,7 @@ import com.marketinghub.repository.jpa.facebookads.FacebookAdsAdSetRepository;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
 import com.marketinghub.facebookads.FacebookAdStatus;
 import com.marketinghub.repository.jpa.facebookads.FacebookAdsCampaignRepository;
+import com.marketinghub.repository.jpa.creative.CreativeRepository;
 import com.marketinghub.experiment.AdSet;
 import com.marketinghub.leadportal.dto.LeadPortalExperimentMetricsDto;
 import org.springframework.http.HttpStatus;
@@ -62,6 +65,7 @@ public class FacebookAdsCampaignController {
     private final FacebookAdsAdSetRepository adSetRepository;
     private final FacebookAdsAdCreativeRepository adCreativeRepository;
     private final FacebookAdsAdRepository adRepository;
+    private final CreativeRepository creativeRepository;
     private final com.marketinghub.repository.jpa.experiment.AdSetRepository experimentAdSetRepository;
     private final ObjectMapper objectMapper;
     private final ExperimentCampaignMetricService campaignMetricService;
@@ -70,12 +74,16 @@ public class FacebookAdsCampaignController {
 
     private final LeadPortalMetricsService leadPortalMetricsService;
 
+    /**
+     * Cria o controller com os repositórios e serviços usados pelos contratos de campanhas Facebook.
+     */
     public FacebookAdsCampaignController(ExperimentService experimentService,
                                          FacebookAdsCampaignRepository campaignRepository,
                                          FacebookAccountRepository accountRepository,
                                          FacebookAdsAdSetRepository adSetRepository,
                                          FacebookAdsAdCreativeRepository adCreativeRepository,
                                          FacebookAdsAdRepository adRepository,
+                                         CreativeRepository creativeRepository,
                                          com.marketinghub.repository.jpa.experiment.AdSetRepository experimentAdSetRepository,
                                          ObjectMapper objectMapper,
                                          ExperimentCampaignMetricService campaignMetricService,
@@ -88,6 +96,7 @@ public class FacebookAdsCampaignController {
         this.adSetRepository = adSetRepository;
         this.adCreativeRepository = adCreativeRepository;
         this.adRepository = adRepository;
+        this.creativeRepository = creativeRepository;
         this.experimentAdSetRepository = experimentAdSetRepository;
         this.objectMapper = objectMapper;
         this.campaignMetricService = campaignMetricService;
@@ -142,6 +151,17 @@ public class FacebookAdsCampaignController {
         return campaignRepository.findAllByExperimentStatus(com.marketinghub.experiment.ExperimentStatus.RUNNING)
                 .stream()
                 .map(c -> new CampaignMetricsSyncTarget(c.getId(), c.getExperiment().getId(), c.getMetricsLastSyncedAt()))
+                .toList();
+    }
+
+
+    @GetMapping("/experiments/{experimentId}/creatives-ready")
+    // Lista os criativos aprovados para consumo exclusivo do Facebook Ads Worker.
+    public List<FacebookCreativeConsumptionResponse> listReadyCreativesForFacebook(@PathVariable Long experimentId) {
+        return creativeRepository.findByExperimentId(experimentId).stream()
+                .filter(creative -> creative.getStatus() == CreativeStatus.READY)
+                .sorted(Comparator.comparing(Creative::getId, Comparator.nullsLast(Comparator.naturalOrder())))
+                .map(this::toFacebookCreativeConsumptionResponse)
                 .toList();
     }
 
@@ -271,6 +291,26 @@ public class FacebookAdsCampaignController {
                     "Experiment ad set does not belong to experiment " + experiment.getId());
         }
         return experimentAdSet;
+    }
+
+
+    // Converte o criativo do domínio Experimento no contrato de leitura do módulo Facebook.
+    private FacebookCreativeConsumptionResponse toFacebookCreativeConsumptionResponse(Creative creative) {
+        Long experimentId = creative.getExperiment() != null ? creative.getExperiment().getId() : null;
+        return new FacebookCreativeConsumptionResponse(
+                creative.getId(),
+                experimentId,
+                creative.getFormat(),
+                creative.getHeadline(),
+                creative.getPrimaryText(),
+                creative.getImageUrl(),
+                creative.getDescription(),
+                creative.getCta(),
+                creative.getDestinationUrl(),
+                creative.getLeadGenFormId(),
+                creative.getInstagramUserId(),
+                creative.getStatus() != null ? creative.getStatus().name() : null
+        );
     }
 
     private FacebookAdsAdSet mapAdSet(CreateCampaignRequest.AdSet adSetReq,
@@ -652,6 +692,24 @@ public class FacebookAdsCampaignController {
             BigDecimal spend) {}
 
     public record CampaignMetricsErrorRequest(String message) {}
+
+
+    /**
+     * Contrato de leitura dos criativos aprovados para publicação pelo módulo Facebook.
+     */
+    public record FacebookCreativeConsumptionResponse(
+            Long id,
+            Long experimentId,
+            String format,
+            String headline,
+            String primaryText,
+            String imageUrl,
+            String description,
+            String cta,
+            String destinationUrl,
+            String leadGenFormId,
+            String instagramUserId,
+            String status) {}
 
     public record CreateCampaignRequest(
             String id,

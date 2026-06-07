@@ -53,7 +53,7 @@ sequenceDiagram
     Worker->>Backend: GET /api/facebook-campaigns/experiments-ready
     Backend-->>Worker: Lista de experimentos elegíveis
     loop Por experimento
-        Worker->>Backend: GET /api/experiments/{id}/creatives
+        Worker->>Backend: GET /api/facebook-campaigns/experiments/{id}/creatives-ready
         Backend-->>Worker: Criativos aprovados
         Worker->>GraphAPI: POST /{v}/act_<adAccountId>/campaigns
         GraphAPI-->>Worker: campaignId
@@ -87,9 +87,9 @@ sequenceDiagram
    como “nenhum experimento disponível”, enquanto erros de rede apenas geram um
    aviso para manter o agendamento saudável.
 4. **Carregar criativos aprovados** – Para cada experimento elegível, o worker
-   consulta `/api/experiments/{id}/creatives` e escolhe o primeiro criativo com
-   status `READY` (ou o primeiro da lista quando não há aprovados). Falhas nessa
-   etapa impedem a criação da campanha específica, mas não interrompem o ciclo.
+   consulta `/api/facebook-campaigns/experiments/{id}/creatives-ready`, contrato exclusivo
+   do módulo Facebook para consumo de criativos, e recebe somente criativos `READY`.
+   Falhas nessa etapa impedem a criação da campanha específica, mas não interrompem o ciclo.
 5. **Resolver página, destino e mensagens** – Antes de falar com a Graph API o
    worker calcula página do Facebook, Instagram user ID, URL/lead form e CTA,
    combinando valores vindos do experimento com os defaults da conta.
@@ -119,7 +119,7 @@ sequenceDiagram
 | --- | --- | --- | --- | --- |
 | GET | `/api/accounts/facebook/worker-config` | `FacebookWorkerConfigurationClient` | Carregar token, conta e defaults | Loga `404` ou `PrematureClose` uma vez por indisponibilidade |
 | GET | `/api/facebook-campaigns/experiments-ready` | `FacebookCampaignService` | Recuperar experimentos elegíveis | `404` vira lista vazia; falhas de rede apenas emitem `WARN` |
-| GET | `/api/experiments/{id}/creatives` | `FacebookCampaignService` | Buscar criativos aprovados | Erros retornam `null`; o experimento é ignorado |
+| GET | `/api/facebook-campaigns/experiments/{id}/creatives-ready` | `FacebookCampaignService` | Buscar criativos aprovados pelo contrato exclusivo de consumo do módulo Facebook | Erros retornam lista vazia; o experimento é ignorado |
 | POST | `/api/facebook-campaigns` | `FacebookCampaignService` | Registrar campanha, conjunto, criativo e anúncio criados | Exceções interrompem apenas o experimento atual |
 | PATCH | `/api/experiments/{id}/status?status=FAILED` | `FacebookCampaignService` | Marcar experimento bloqueado por permissão | Falhas são apenas logadas |
 | GET | `/api/accounts/facebook/renewal/eligible` | `FacebookTokenRenewalService` | Listar contas com renovação necessária | Erros retornam lista vazia |

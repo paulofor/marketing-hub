@@ -25,6 +25,7 @@ import com.marketinghub.facebookads.FacebookAdsAdSet;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
 import com.marketinghub.facebookads.FacebookAdStatus;
 import com.marketinghub.repository.jpa.facebookads.FacebookAdsAdSetRepository;
+import com.marketinghub.creative.Creative;
 import com.marketinghub.creative.CreativeStatus;
 import com.marketinghub.repository.jpa.creative.CreativeRepository;
 import com.marketinghub.leadportal.LeadPortalFlow;
@@ -60,6 +61,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+/**
+ * Valida os contratos HTTP de campanhas Facebook Ads expostos ao worker e à UI.
+ */
 @SpringBootTest(classes = AdsServiceApplication.class)
 @AutoConfigureMockMvc
 @TestPropertySource(properties = {
@@ -96,6 +100,53 @@ class FacebookAdsCampaignControllerTest {
 
     @MockBean
     LeadPortalMetricsService leadPortalMetricsService;
+
+
+    @Test
+    // Verifica que o módulo Facebook expõe somente criativos aprovados para consumo do worker.
+    void listsReadyCreativesForFacebookConsumption() throws Exception {
+        var experiment = Experiment.builder()
+                .id(1L)
+                .name("Exp")
+                .build();
+        var readyCreative = Creative.builder()
+                .id(101L)
+                .experiment(experiment)
+                .format("IMAGE")
+                .headline("Headline")
+                .primaryText("Texto principal")
+                .imageUrl("https://cdn.example/creative.png")
+                .description("Descrição")
+                .cta("SIGN_UP")
+                .destinationUrl("https://example.com/landing")
+                .leadGenFormId("321")
+                .instagramUserId("987")
+                .status(CreativeStatus.READY)
+                .build();
+        var draftCreative = Creative.builder()
+                .id(102L)
+                .experiment(experiment)
+                .headline("Rascunho")
+                .status(CreativeStatus.DRAFT)
+                .build();
+        when(creativeRepository.findByExperimentId(1L)).thenReturn(List.of(draftCreative, readyCreative));
+
+        mockMvc.perform(get("/api/facebook-campaigns/experiments/1/creatives-ready"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(101))
+                .andExpect(jsonPath("$[0].experimentId").value(1))
+                .andExpect(jsonPath("$[0].format").value("IMAGE"))
+                .andExpect(jsonPath("$[0].headline").value("Headline"))
+                .andExpect(jsonPath("$[0].primaryText").value("Texto principal"))
+                .andExpect(jsonPath("$[0].imageUrl").value("https://cdn.example/creative.png"))
+                .andExpect(jsonPath("$[0].description").value("Descrição"))
+                .andExpect(jsonPath("$[0].cta").value("SIGN_UP"))
+                .andExpect(jsonPath("$[0].destinationUrl").value("https://example.com/landing"))
+                .andExpect(jsonPath("$[0].leadGenFormId").value("321"))
+                .andExpect(jsonPath("$[0].instagramUserId").value("987"))
+                .andExpect(jsonPath("$[0].status").value("READY"))
+                .andExpect(jsonPath("$[1]").doesNotExist());
+    }
 
     @Test
     void listExperimentsByStatus() throws Exception {

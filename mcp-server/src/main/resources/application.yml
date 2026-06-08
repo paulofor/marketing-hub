@@ -40,7 +40,6 @@ logging:
 mcp:
   server-name: ${MCP_SERVER_NAME:marketing-hub-mcp}
   server-version: ${MCP_SERVER_VERSION:1.0.0}
-  api-key: ${MCP_API_KEY:}
   logs:
     backend-path: ${MCP_LOG_BACKEND_PATH:http://191.252.120.96:4567/worker-observability/logfile}
     ai-worker-path: ${MCP_LOG_AI_WORKER_PATH:http://191.252.120.96:4567/worker-observability/logfile}

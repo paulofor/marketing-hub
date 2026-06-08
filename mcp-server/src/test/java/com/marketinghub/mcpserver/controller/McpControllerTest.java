@@ -20,6 +20,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+/**
+ * Valida o contrato HTTP/JSON-RPC público do controller MCP.
+ */
 @SpringBootTest
 @AutoConfigureMockMvc
 class McpControllerTest {
@@ -32,6 +35,9 @@ class McpControllerTest {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    /**
+     * Configura datasource e paths de logs isolados para os testes do controller MCP.
+     */
     @DynamicPropertySource
     static void setDatasource(DynamicPropertyRegistry registry) {
         registry.add("spring.datasource.url", () -> "jdbc:h2:mem:mcpdb;MODE=MySQL;DB_CLOSE_DELAY=-1");
@@ -62,6 +68,9 @@ class McpControllerTest {
         registry.add("mcp.github.repo", () -> "marketing-hub");
     }
 
+    /**
+     * Prepara dados e arquivos de log usados pelas tools testadas.
+     */
     @BeforeEach
     void setupDatabase() throws Exception {
         jdbcTemplate.execute("DROP TABLE IF EXISTS leads");
@@ -78,6 +87,9 @@ class McpControllerTest {
                 StandardCharsets.UTF_8);
     }
 
+    /**
+     * Garante que o método initialize responde sem autenticação.
+     */
     @Test
     void shouldInitializeMcpServer() throws Exception {
         mockMvc.perform(post("/mcp")
@@ -89,6 +101,9 @@ class McpControllerTest {
                 .andExpect(jsonPath("$.result.serverInfo.name").value("marketing-hub-mcp"));
     }
 
+    /**
+     * Garante que o GET de reachability expõe metadados básicos do MCP.
+     */
     @Test
     void shouldExposeGetEndpointForReachabilityChecks() throws Exception {
         mockMvc.perform(get("/mcp"))
@@ -97,6 +112,9 @@ class McpControllerTest {
                 .andExpect(jsonPath("$.protocol").value("json-rpc-2.0"));
     }
 
+    /**
+     * Garante que a tool db_health retorna status operacional do banco.
+     */
     @Test
     void shouldCallDbHealthTool() throws Exception {
         mockMvc.perform(post("/mcp")
@@ -108,6 +126,9 @@ class McpControllerTest {
                 .andExpect(jsonPath("$.result.structuredContent.status").value("ok"));
     }
 
+    /**
+     * Garante que a tool db_list_tables lista as tabelas do schema de teste.
+     */
     @Test
     void shouldListDatabaseTables() throws Exception {
         mockMvc.perform(post("/mcp")
@@ -120,6 +141,9 @@ class McpControllerTest {
                 .andExpect(jsonPath("$.result.structuredContent.tables[0]").value("LEADS"));
     }
 
+    /**
+     * Garante que a tool db_read_table retorna linhas paginadas da tabela solicitada.
+     */
     @Test
     void shouldReadTableRows() throws Exception {
         mockMvc.perform(post("/mcp")
@@ -134,6 +158,9 @@ class McpControllerTest {
                 .andExpect(jsonPath("$.result.structuredContent.rows[0].EMAIL").value("ana@example.com"));
     }
 
+    /**
+     * Garante que a tool db_read_table rejeita nomes de tabela inválidos.
+     */
     @Test
     void shouldRejectInvalidTableName() throws Exception {
         mockMvc.perform(post("/mcp")
@@ -145,6 +172,9 @@ class McpControllerTest {
                 .andExpect(jsonPath("$.error.code").value(-32602));
     }
 
+    /**
+     * Garante que a tool db_query executa apenas leitura e retorna dados.
+     */
     @Test
     void shouldExecuteReadOnlyQueryTool() throws Exception {
         mockMvc.perform(post("/mcp")
@@ -157,6 +187,9 @@ class McpControllerTest {
                 .andExpect(jsonPath("$.result.structuredContent.rows[0].NAME").value("Ana"));
     }
 
+    /**
+     * Garante que a tool db_query rejeita comandos que alteram dados.
+     */
     @Test
     void shouldRejectNonSelectQuery() throws Exception {
         mockMvc.perform(post("/mcp")
@@ -169,6 +202,9 @@ class McpControllerTest {
                 .andExpect(jsonPath("$.error.message").value("only SELECT queries are allowed"));
     }
 
+    /**
+     * Garante que a tool java_module_logs lê logs de módulo Java configurado.
+     */
     @Test
     void shouldReadJavaModuleLogs() throws Exception {
         mockMvc.perform(post("/mcp")
@@ -184,6 +220,9 @@ class McpControllerTest {
                 .andExpect(jsonPath("$.result.structuredContent.lines[1]").value("line-3"));
     }
 
+    /**
+     * Garante que o alias mois-sales-library-worker usa o path de log esperado.
+     */
     @Test
     void shouldReadMoisSalesLibraryWorkerLogs() throws Exception {
         mockMvc.perform(post("/mcp")
@@ -199,6 +238,9 @@ class McpControllerTest {
                         .value("mois-sales-library-worker-line-2"));
     }
 
+    /**
+     * Garante que a tool java_module_logs rejeita módulos fora da lista permitida.
+     */
     @Test
     void shouldRejectInvalidJavaModuleName() throws Exception {
         mockMvc.perform(post("/mcp")
@@ -214,6 +256,9 @@ class McpControllerTest {
 
 
 
+    /**
+     * Garante que a tool java_module_logs aplica filtro textual e paginação.
+     */
     @Test
     void shouldFilterAndPaginateJavaModuleLogs() throws Exception {
         mockMvc.perform(post("/mcp")
@@ -225,6 +270,9 @@ class McpControllerTest {
                 .andExpect(jsonPath("$.result.structuredContent.returnedLines").value(1))
                 .andExpect(jsonPath("$.result.structuredContent.lines[0]").value("line-2"));
     }
+    /**
+     * Garante que erros JSON-RPC preservam id nulo quando a requisição não informou id.
+     */
     @Test
     void shouldHandleErrorResponseWhenRequestIdIsNull() throws Exception {
         mockMvc.perform(post("/mcp")
@@ -238,6 +286,9 @@ class McpControllerTest {
                 .andExpect(jsonPath("$.error.code").value(-32601));
     }
 
+    /**
+     * Garante que tools Meta e GitHub continuam anunciadas em tools/list.
+     */
     @Test
     void shouldListMetaTools() throws Exception {
         mockMvc.perform(post("/mcp")
@@ -254,6 +305,25 @@ class McpControllerTest {
     }
 
 
+
+    /**
+     * Garante que headers Authorization enviados por clientes legados são ignorados.
+     */
+    @Test
+    void shouldIgnoreAuthorizationHeaderWhenClientStillSendsBearerToken() throws Exception {
+        mockMvc.perform(post("/mcp")
+                        .header("Authorization", "Bearer legacy-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"jsonrpc":"2.0","id":17,"method":"initialize","params":{}}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.result.serverInfo.name").value("marketing-hub-mcp"));
+    }
+
+    /**
+     * Garante que tools GitHub desabilitadas retornam erro explícito.
+     */
     @Test
     void shouldRejectGithubToolWhenDisabled() throws Exception {
         mockMvc.perform(post("/mcp")
@@ -266,6 +336,9 @@ class McpControllerTest {
                 .andExpect(jsonPath("$.error.message").value("github tools are disabled (set mcp.github.enabled=true)"));
     }
 
+    /**
+     * Garante que tools Meta desabilitadas retornam erro explícito.
+     */
     @Test
     void shouldRejectMetaToolWhenDisabled() throws Exception {
         mockMvc.perform(post("/mcp")
@@ -276,67 +349,5 @@ class McpControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.error.code").value(-32602))
                 .andExpect(jsonPath("$.error.message").value("meta tools are disabled (set mcp.meta.enabled=true)"));
-    }
-}
-
-@SpringBootTest(properties = "mcp.api-key=super-secret")
-@AutoConfigureMockMvc
-class McpControllerApiKeyEnabledTest {
-
-    private static final Path TEST_LOG_DIR = Path.of("target/test-logs-api-key");
-
-    @Autowired
-    private MockMvc mockMvc;
-
-    @DynamicPropertySource
-    static void setDatasource(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", () -> "jdbc:h2:mem:mcpdb2;MODE=MySQL;DB_CLOSE_DELAY=-1");
-        registry.add("spring.datasource.driver-class-name", () -> "org.h2.Driver");
-        registry.add("spring.datasource.username", () -> "sa");
-        registry.add("spring.datasource.password", () -> "");
-        registry.add("mcp.logs.backend-path", () -> TEST_LOG_DIR.resolve("backend.log").toString());
-        registry.add("mcp.logs.ai-worker-path", () -> TEST_LOG_DIR.resolve("ai-worker.log").toString());
-        registry.add("mcp.logs.lead-portal-path", () -> TEST_LOG_DIR.resolve("lead-portal.log").toString());
-        registry.add("mcp.logs.facebook-ads-path", () -> TEST_LOG_DIR.resolve("facebook-ads.log").toString());
-        registry.add("mcp.logs.email-service-path", () -> TEST_LOG_DIR.resolve("email-service.log").toString());
-        registry.add("mcp.logs.lead-portal-payment-path",
-                () -> TEST_LOG_DIR.resolve("lead-portal-payment.log").toString());
-        registry.add("mcp.logs.mds-path", () -> TEST_LOG_DIR.resolve("mds.log").toString());
-        registry.add("mcp.logs.mois-path", () -> TEST_LOG_DIR.resolve("mois.log").toString());
-        registry.add("mcp.logs.mois-sales-library-worker-path",
-                () -> TEST_LOG_DIR.resolve("mois-sales-library-worker.log").toString());
-        registry.add("mcp.logs.mois-hotmart-path", () -> TEST_LOG_DIR.resolve("mois-hotmart.log").toString());
-        registry.add("mcp.logs.oprm-coletor-receita-path", () -> TEST_LOG_DIR.resolve("oprm-coletor-receita.log").toString());
-        registry.add("mcp.logs.max-lines", () -> "500");
-        registry.add("mcp.meta.enabled", () -> "false");
-        registry.add("mcp.meta.graph-base-url", () -> "https://graph.facebook.com");
-        registry.add("mcp.meta.graph-version", () -> "v23.0");
-        registry.add("mcp.meta.docs-allowed-hosts", () -> "developers.facebook.com,business.facebook.com");
-        registry.add("mcp.github.enabled", () -> "false");
-        registry.add("mcp.github.api-base-url", () -> "https://api.github.com");
-        registry.add("mcp.github.owner", () -> "marketinghub");
-        registry.add("mcp.github.repo", () -> "marketing-hub");
-    }
-
-    @Test
-    void shouldRejectWhenAuthorizationHeaderIsMissing() throws Exception {
-        mockMvc.perform(post("/mcp")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"jsonrpc":"2.0","id":3,"method":"initialize","params":{}}
-                                """))
-                .andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    void shouldAuthorizeWhenBearerTokenMatches() throws Exception {
-        mockMvc.perform(post("/mcp")
-                        .header("Authorization", "Bearer super-secret")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"jsonrpc":"2.0","id":4,"method":"initialize","params":{}}
-                                """))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.result.serverInfo.name").value("marketing-hub-mcp"));
     }
 }

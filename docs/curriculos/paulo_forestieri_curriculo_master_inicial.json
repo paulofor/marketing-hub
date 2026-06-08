@@ -1,0 +1,455 @@
+{
+  "metadata": {
+    "arquivo": "paulo_forestieri_curriculo_master_inicial.json",
+    "versao": "0.1",
+    "status": "rascunho_inicial",
+    "objetivo": "Base estruturada para gerar versões melhores de currículo, LinkedIn e materiais para Canva.",
+    "observacoes": [
+      "Datas e nomes de empresas/consultorias devem ser validados antes da versão final.",
+      "A narrativa prioriza remoto, senioridade, engenharia de software, IA aplicada e dados.",
+      "Este arquivo foi montado a partir do LinkedIn, versões anteriores de currículo e oportunidades analisadas."
+    ]
+  },
+  "perfil": {
+    "nome": "Paulo Forestieri",
+    "titulo_principal": "Engenheiro de Software Sênior | Java | Python | IA Generativa | RAG/LLMOps",
+    "titulos_alternativos": [
+      "AI Engineer | GenAI | LLMOps | Automação Inteligente",
+      "Engenheiro de Software Java Sênior com IA Aplicada",
+      "Engenheiro de Dados | Spark | Hadoop | Databricks | ML em Produção"
+    ],
+    "localizacao": "Rio de Janeiro - RJ",
+    "email": "paulofore@gmail.com",
+    "telefone": "21-992902732",
+    "linkedin": "https://www.linkedin.com/in/paulo-forestieri/",
+    "modelo_trabalho": {
+      "preferencia": "100% remoto",
+      "motivo_interno": "Responsabilidade familiar com pai idoso",
+      "como_comunicar": "Busco posição 100% remota. Tenho estrutura, autonomia e experiência para atuar com times distribuídos e projetos corporativos."
+    },
+    "idiomas": {
+      "portugues": "nativo",
+      "ingles": "técnico para leitura de documentação, código, ferramentas e comunicação escrita básica; conversação em desenvolvimento"
+    }
+  },
+  "posicionamento": {
+    "mensagem_central": "Engenheiro de Software Sênior com 30+ anos de experiência em sistemas corporativos, Java, APIs, integrações e dados, atualmente focado em IA Generativa, RAG, LLMOps e automações empresariais. Busca atuação 100% remota em projetos de IA aplicada, backend, dados ou arquitetura de software.",
+    "diferencial": [
+      "Base longa e sólida em engenharia de software corporativa.",
+      "Experiência em ambientes críticos de bancos, seguros, governo e telecom.",
+      "Experiência recente com dados, Hadoop, Spark, Hive, Parquet, Python e SQL.",
+      "Transição consistente para IA aplicada, GenAI, automação, agentes, LLMOps e integração com pipelines.",
+      "Maturidade para atuar em contextos ambíguos, integrar áreas técnicas e negócio, e entregar soluções com governança."
+    ],
+    "evitar_posicionamento": [
+      "Não se apresentar como cientista de dados puro.",
+      "Não se vender como AI Engineer internacional fluente em inglês.",
+      "Não esconder a base Java; ela é parte central do valor.",
+      "Não usar idade ou situação familiar como argumento principal de candidatura."
+    ]
+  },
+  "resumos_profissionais": {
+    "principal_ats": "Engenheiro de Software Sênior com 30+ anos de experiência em sistemas corporativos, Java, APIs REST/SOAP, integrações e dados. Atuação recente em IA Generativa, LLMs, RAG, LLMOps e automações empresariais, com projeto prático envolvendo análise de falhas em pipelines GitHub, geração de ações assistidas por IA, rastreabilidade, governança e controle operacional. Experiência em bancos, seguros, telecom e governo, com histórico em sistemas críticos, engenharia de dados, Hadoop, Spark, Hive, Parquet, Python e SQL. Busca atuação 100% remota em IA aplicada, backend, dados ou arquitetura.",
+    "ia_aplicada": "AI Engineer / Engenheiro de IA com base sênior em engenharia de software, experiência em dados e foco em IA Generativa aplicada a processos corporativos. Experiência prática com LLMs, OpenAI API/Responses, tool calling, automação, integração com APIs, observabilidade, governança e rastreabilidade. Desenvolveu o AI Hub, plataforma full-stack para análise de falhas em pipelines GitHub e geração de ações assistidas por IA com controle operacional.",
+    "software_java": "Engenheiro de Software Java Sênior com atuação em bancos, seguros, governo e telecom. Forte experiência com Java, Spring Boot, Quarkus, Java EE, APIs REST/SOAP, Oracle, integrações, sistemas legados, modularização, padronização de código, CI/CD, Sonar e testes. Background em dados e IA aplicada, com experiência recente em automações com LLMs, análise de pipelines e integração de IA em processos de engenharia.",
+    "dados": "Engenheiro de Dados com experiência em Data Lake, pipelines e ambientes Hadoop, Spark, Hive, Parquet, Python e SQL, atendendo iniciativas de analytics e ML em produção. Base sólida em engenharia de software, APIs e sistemas críticos, com atuação em integração de resultados analíticos a aplicações corporativas e foco em qualidade, rastreabilidade e operacionalização de dados."
+  },
+  "competencias": {
+    "ia_generativa_llmops": [
+      "IA Generativa",
+      "LLMs",
+      "RAG",
+      "Prompt Engineering",
+      "OpenAI API/Responses",
+      "tool calling",
+      "agentes",
+      "orquestração",
+      "avaliação de respostas",
+      "observabilidade",
+      "governança",
+      "segurança",
+      "rastreabilidade",
+      "limites de autonomia",
+      "fallbacks",
+      "automação inteligente"
+    ],
+    "engenharia_software": [
+      "Java",
+      "Spring Boot",
+      "Quarkus",
+      "Java EE",
+      "APIs REST",
+      "SOAP",
+      "Oracle",
+      "SQL",
+      "Spring Data",
+      "Spring Security",
+      "Angular",
+      "HTML5",
+      "JavaScript",
+      "CSS",
+      "Mustache",
+      "WebSphere",
+      "JBoss",
+      "Struts",
+      "JSF",
+      "Hibernate",
+      "microserviços",
+      "integrações",
+      "sistemas legados",
+      "modularização",
+      "padronização de código",
+      "testes unitários",
+      "CI/CD",
+      "Sonar",
+      "Azure DevOps",
+      "Git",
+      "GitHub Actions"
+    ],
+    "dados_ml": [
+      "Python",
+      "Spark",
+      "Hadoop/HDFS",
+      "Hive",
+      "Parquet",
+      "Data Lake",
+      "ETL",
+      "ELT",
+      "modelagem de dados",
+      "pipelines de dados",
+      "qualidade de dados",
+      "observabilidade",
+      "performance SQL",
+      "Jupyter Notebook",
+      "Databricks",
+      "apoio a modelos preditivos",
+      "integração de resultados de ML em produção"
+    ],
+    "dominios": [
+      "bancos",
+      "seguros",
+      "telecom",
+      "governo",
+      "internet banking",
+      "renda fixa",
+      "personalização de produtos financeiros",
+      "e-commerce",
+      "chatbot",
+      "sistemas críticos",
+      "integrações corporativas"
+    ],
+    "comportamentais": [
+      "autonomia",
+      "senioridade técnica",
+      "comunicação com áreas técnicas e negócio",
+      "visão sistêmica",
+      "resolução de problemas",
+      "mentoria técnica",
+      "tomada de decisão técnica",
+      "trabalho em squads ágeis",
+      "aprendizado contínuo"
+    ]
+  },
+  "experiencias_recentes": [
+    {
+      "id": "ai_hub",
+      "cargo": "AI Engineer / Projeto Próprio",
+      "empresa": "AI Hub",
+      "periodo": "2024 - atual",
+      "tipo": "projeto próprio / portfólio",
+      "resumo": "Plataforma full-stack para análise de falhas em pipelines GitHub e geração de ações assistidas por IA, com foco em governança, rastreabilidade, segurança e controle operacional.",
+      "realizacoes": [
+        "Desenvolvimento de monorepo full-stack com Spring Boot e React/Vite, preparado para Docker e deploy em AWS Lightsail.",
+        "Criação de sandbox-orchestrator para análise controlada de código, execução assistida e geração de relatórios.",
+        "Integração com GitHub para workflows, logs e pull requests.",
+        "Integração com OpenAI Responses API para análise de falhas, sugestões de correção e geração de ações.",
+        "Uso de conceitos de governança, rastreabilidade, limites de autonomia, fallback e segurança para automações com IA.",
+        "Aplicação prática de LLMOps, tool calling, observabilidade e controle operacional."
+      ],
+      "tecnologias": [
+        "Java",
+        "Spring Boot",
+        "React",
+        "Vite",
+        "Docker",
+        "AWS Lightsail",
+        "GitHub Actions",
+        "OpenAI Responses API",
+        "LLMs",
+        "tool calling",
+        "REST APIs"
+      ],
+      "usar_em_curriculos": [
+        "principal_ats",
+        "ia_aplicada",
+        "software_java"
+      ]
+    },
+    {
+      "id": "caixa_stefanini_qintess",
+      "cargo": "Engenheiro de Software Java",
+      "empresa_cliente": "Caixa",
+      "consultorias": [
+        "Stefanini",
+        "Qintess"
+      ],
+      "periodo": "jan 2023 - atual",
+      "status_data": "validar datas exatas: algumas versões indicam jan 2023-mai 2024 e jun 2024-atual; outras mostram jan 2023-fev 2026.",
+      "resumo": "Atuação em sistemas financeiros críticos, internet banking web/mobile, renda fixa, integrações REST, Oracle e práticas de qualidade de software.",
+      "realizacoes": [
+        "Atuação em Internet Banking Web/Mobile com HTML5, JavaScript, CSS e Mustache, em ambiente de alta demanda e foco em UX/performance.",
+        "Desenvolvimento backend com Spring Boot, criação de endpoints e agregação de integrações REST.",
+        "Evolução e correções em sistema crítico de Renda Fixa.",
+        "Uso de Oracle, APIs REST, Azure Pipelines, Sonar e testes unitários.",
+        "Contribuição para padronização, modularização e qualidade de código sustentável."
+      ],
+      "tecnologias": [
+        "Java",
+        "Spring Boot",
+        "Quarkus",
+        "Angular",
+        "APIs REST",
+        "Oracle",
+        "HTML5",
+        "JavaScript",
+        "CSS",
+        "Mustache",
+        "Azure Pipelines",
+        "Sonar",
+        "testes unitários",
+        "Git"
+      ],
+      "usar_em_curriculos": [
+        "principal_ats",
+        "software_java",
+        "ia_aplicada"
+      ]
+    },
+    {
+      "id": "banco_brasil_stefanini",
+      "cargo": "Engenheiro de Dados / ML",
+      "empresa_cliente": "Banco do Brasil",
+      "consultoria": "Stefanini",
+      "periodo": "abr 2021 - nov 2022",
+      "status_data": "validar: LinkedIn indica abr 2021-abr 2024; versões de currículo indicam abr 2021-nov 2022.",
+      "resumo": "Construção de Data Lake e pipelines para modelos preditivos e personalização de produtos financeiros.",
+      "realizacoes": [
+        "Construção e expansão de Data Lake em Hadoop com processamento via Spark e consumo analítico via Hive.",
+        "Organização de datasets em Parquet para uso analítico e suporte a modelos de ML.",
+        "Apoio à ciência de dados em modelos preditivos para recomendação e personalização de produtos financeiros.",
+        "Integração de resultados em produção para exibição de recomendações no front utilizado por gerentes de conta.",
+        "Atuação com Python, Spark, Hadoop, Hive, Jupyter Notebook, Databricks e SQL."
+      ],
+      "tecnologias": [
+        "Python",
+        "Spark",
+        "Hadoop",
+        "HDFS",
+        "Hive",
+        "Parquet",
+        "Jupyter Notebook",
+        "Databricks",
+        "SQL",
+        "Data Lake",
+        "ETL",
+        "ML"
+      ],
+      "usar_em_curriculos": [
+        "principal_ats",
+        "dados",
+        "ia_aplicada"
+      ]
+    },
+    {
+      "id": "oi_stefanini",
+      "cargo": "Engenheiro de Dados",
+      "empresa_cliente": "Oi",
+      "consultoria": "Stefanini",
+      "periodo": "set 2017 - mar 2020",
+      "resumo": "Atuação em engenharia de dados para e-commerce e chatbot, com coleta, integração, curadoria e dashboards.",
+      "realizacoes": [
+        "Construção de Data Lake e pipelines de coleta/curadoria para e-commerce, cobrindo funil de ads, navegação, conversão e contato.",
+        "Coleta e análise de dados de interações com chatbot, apoiando evolução do produto e painéis de decisão.",
+        "Desenvolvimento de dashboards e análises para squads de Comércio Eletrônico e Chatbot.",
+        "Uso de Python, Hadoop, Hive, AWS, Tableau e SQL."
+      ],
+      "tecnologias": [
+        "Python",
+        "Hadoop",
+        "Hive",
+        "AWS",
+        "Tableau",
+        "SQL",
+        "Data Lake",
+        "dashboards"
+      ],
+      "usar_em_curriculos": [
+        "principal_ats",
+        "dados"
+      ]
+    },
+    {
+      "id": "bradesco_ebix",
+      "cargo": "Desenvolvedor Java / Engenheiro de Software",
+      "empresa_cliente": "Bradesco Seguros",
+      "consultoria": "Ebix",
+      "periodo": "mai 2020 - abr 2021",
+      "resumo": "Atuação em sistemas de seguros auto em ambiente Java EE / WebSphere, evolução e sustentação de aplicações corporativas.",
+      "realizacoes": [
+        "Desenvolvimento e sustentação de sistemas corporativos de seguros.",
+        "Atuação em ambiente Java EE com IBM WebSphere.",
+        "Correções, evolução de funcionalidades e suporte a aplicações críticas."
+      ],
+      "tecnologias": [
+        "Java",
+        "Java EE",
+        "IBM WebSphere",
+        "sistemas corporativos",
+        "seguros"
+      ],
+      "usar_em_curriculos": [
+        "software_java",
+        "principal_ats"
+      ]
+    }
+  ],
+  "carreira_anterior_resumida": [
+    {
+      "periodo": "1994 - 2020",
+      "resumo": "Carreira consolidada em engenharia de software, liderança técnica, arquitetura, sistemas corporativos e integrações em clientes como Probid/Governo do RJ, Ipiranga, DATASUS, Vivo, Petrobras, MJV, Instituto Infnet e Bull.",
+      "destaques": [
+        "Probid/GovRJ: Sistema de Identidade Funcional, liderança técnica, Java, Struts, SQL Server, biometria e integrações.",
+        "Ipiranga: arquitetura e desenvolvimento de sistemas Java, WebSphere, Hibernate, Spring, Struts e Oracle.",
+        "DATASUS: atuação na versão Java do SISREG, manutenção corretiva e novas funcionalidades.",
+        "Vivo: portal de atendimento, Java e C.",
+        "Instituto Infnet: instrutor de cursos sobre Internet para empresas."
+      ]
+    }
+  ],
+  "formacao": [
+    {
+      "instituicao": "UNINTER Centro Universitário Internacional",
+      "curso": "Pós-graduação em Inteligência Artificial",
+      "periodo": "jun 2024 - dez 2024",
+      "status": "concluída em 2024"
+    },
+    {
+      "instituicao": "Pontifícia Universidade Católica do Rio de Janeiro (PUC-Rio)",
+      "curso": "Tecnologia em Processamento de Dados",
+      "periodo": "1991 - 1994",
+      "status": "concluído em 1994"
+    }
+  ],
+  "certificacoes": [
+    "Machine Learning in the Enterprise",
+    "Academia de Formação de Líderes",
+    "Feature Engineering",
+    "TensorFlow on Google Cloud",
+    "Launching into Machine Learning"
+  ],
+  "versoes_curriculo": [
+    {
+      "id": "principal_ats",
+      "nome": "Engenheiro de Software Sênior | IA Generativa | Java | Python | RAG/LLMOps",
+      "uso": "Versão principal para vagas remotas de Java com IA, backend com IA, AI Engineer corporativo, arquitetura, automação e integração.",
+      "prioridade": 1,
+      "tom": "sênior, objetivo, ATS, uma ou duas páginas",
+      "incluir": [
+        "AI Hub",
+        "Caixa/Stefanini/Qintess",
+        "Banco do Brasil",
+        "Oi",
+        "Bradesco",
+        "carreira anterior resumida"
+      ]
+    },
+    {
+      "id": "ia_aplicada",
+      "nome": "AI Engineer | GenAI | LLMOps | Automação Inteligente",
+      "uso": "Versão visual/Canva e candidaturas para IA aplicada, agentes, GenAI, RAG, consultoria de IA e automação empresarial.",
+      "prioridade": 2,
+      "tom": "moderno, corporativo, orientado a impacto",
+      "incluir": [
+        "AI Hub em destaque",
+        "engenharia de software como base",
+        "dados como diferencial",
+        "governança e rastreabilidade",
+        "remoto e inglês técnico"
+      ]
+    },
+    {
+      "id": "software_java",
+      "nome": "Engenheiro de Software Java Sênior | Backend | Sistemas Críticos | IA Aplicada",
+      "uso": "Vagas Java Sênior, backend, Spring Boot, Quarkus, microserviços, APIs e sistemas críticos com diferencial de IA.",
+      "prioridade": 1,
+      "tom": "engenharia forte, arquitetura, qualidade, sistemas críticos",
+      "incluir": [
+        "Caixa/Stefanini/Qintess em primeiro lugar",
+        "Bradesco",
+        "carreira Java anterior",
+        "AI Hub como diferencial recente",
+        "Banco do Brasil/Oi como background de dados"
+      ]
+    },
+    {
+      "id": "dados",
+      "nome": "Engenheiro de Dados | Spark | Hadoop | Databricks | ML em Produção",
+      "uso": "Vagas específicas de dados, Spark, Hadoop, Databricks, lakehouse, pipelines e ML operacional.",
+      "prioridade": 3,
+      "tom": "dados, pipelines, produção, qualidade e integração",
+      "incluir": [
+        "Banco do Brasil",
+        "Oi",
+        "Caixa como engenharia complementar",
+        "AI Hub como IA aplicada",
+        "carreira anterior apenas resumida"
+      ]
+    }
+  ],
+  "criterios_de_vagas": {
+    "aplicar_agora": [
+      "100% remoto",
+      "Português como idioma principal",
+      "Inglês técnico ou intermediário desejável, não obrigatório",
+      "Java Sênior com IA aplicada",
+      "Backend Java/Python com APIs e automação",
+      "AI Engineer corporativo com foco em integração, agentes, RAG ou automação",
+      "Engenharia de dados com Spark/Hadoop/Databricks e ML em produção"
+    ],
+    "aplicar_com_cuidado": [
+      "Remoto LatAm com inglês intermediário",
+      "Consultor de IA com atuação técnica e de negócio",
+      "LLM Engineer assíncrono ou avaliação de código por projeto"
+    ],
+    "evitar_no_momento": [
+      "Inglês fluente diário obrigatório",
+      "Híbrido ou presencial",
+      "Data Scientist puro com forte exigência estatística/pesquisa",
+      "ML Research",
+      "DevOps/AWS puro sem relação com sua experiência principal",
+      "vagas muito fora do eixo Java/IA/dados"
+    ]
+  },
+  "pendencias_para_validacao": [
+    {
+      "item": "Datas Caixa/Stefanini/Qintess",
+      "pergunta": "Confirmar se a sequência correta é Stefanini/Caixa jan 2023-mai 2024 e Qintess/Caixa jun 2024-atual, ou outro período."
+    },
+    {
+      "item": "Banco do Brasil",
+      "pergunta": "Confirmar se o período correto no currículo deve ser abr 2021-nov 2022, abr 2021-abr 2024 ou outro."
+    },
+    {
+      "item": "AI Hub",
+      "pergunta": "Confirmar se existe GitHub público, demo, README ou prints que possam ser usados como portfólio."
+    },
+    {
+      "item": "Inglês",
+      "pergunta": "Definir frase exata: 'inglês técnico', 'inglês intermediário para leitura', ou 'inglês técnico para documentação e ferramentas'."
+    },
+    {
+      "item": "Formato final",
+      "pergunta": "Decidir se o currículo principal terá 1 página ou 2 páginas."
+    }
+  ]
+}

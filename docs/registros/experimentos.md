@@ -4108,3 +4108,11 @@
 - foi feito: o Worker AI recebeu o núcleo genérico `com.marketinghub.worker.pipeline` e a etapa concreta `pipeline.deliverables`, com scheduler, backend client, processor, validação JSON, artefatos auditáveis e chamada à OpenAI.
 - foi feito: o prompt de deliverables reforça que a saída deve ser JSON com `sampleDeliverables` para a amostra e `finalProductDeliverables` para a entrega do produto final.
 - impacto esperado: jobs de Gera Entregáveis deixam de ficar parados em `INICIADO` e passam a gerar o JSON comercial necessário para amostra gratuita e produto final completo.
+## 2026-06-08 — Criativos automáticos após Texto do Anúncio e Prompt de Imagem
+
+- solicitação: corrigir a abordagem anterior porque o pipeline do experimento já possui as etapas **Texto do Anúncio** (`AD_COPY`) e **Gera Prompt Imagens** (`AD_IMAGE_BRIEFING`); a etapa restante é apenas gerar a imagem e juntar tudo em criativos.
+- diagnóstico operacional: a conclusão de `AD_IMAGE_BRIEFING` encerrava a fila automática sem enfileirar a geração de imagens/criativos, deixando o operador dependente de nova ação manual mesmo com texto e briefing prontos.
+- foi feito: removida a refatoração genérica anterior no Worker AI e mantido o fluxo existente de geração de imagem e composição de criativos pelo `ExperimentCreativeService`.
+- foi feito: ao concluir `AD_IMAGE_BRIEFING`, o backend agora extrai os pares válidos de `adCopy` + `adImageBriefing`, define `creativesToGenerate` com até 3 variações e marca `creativeGenerationMode=PIPELINE_ADS`, permitindo que o Worker AI gere somente as imagens e persista os criativos `DRAFT`.
+- foi feito: mantida a regra de não iniciar automaticamente as etapas de Gera Landing após `AD_IMAGE_BRIEFING`; essas continuam manuais.
+- validação: adicionado teste unitário garantindo que a conclusão de `AD_IMAGE_BRIEFING` enfileira a geração dos criativos do pipeline sem criar job automático de landing.

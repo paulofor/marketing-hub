@@ -2,6 +2,7 @@ package com.marketinghub.experiment.pipeline.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.ai.generation.dto.AiWorkerGenerationRequest;
+import com.marketinghub.experiment.CreativeGenerationMode;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.dto.ExperimentDto;
@@ -1364,6 +1365,40 @@ class ExperimentPipelineGenerationServiceTest {
                         && saved.getSection() == ExperimentPipelineSection.LANDING_PAGE_WIREFRAME
                         && saved.getExperiment() == experiment
                         && saved.getStatus() == ExperimentPipelineGenerationJobStatus.PENDING));
+    }
+
+    @Test
+    void completeJobQueuesPipelineCreativeImageGenerationAfterAdImageBriefing() {
+        Experiment experiment = new Experiment();
+        experiment.setId(316L);
+        experiment.setAdCopy("""
+                {"adCopy":{"primaryTextVariants":[{"label":"dor","primaryText":"Texto","headline":"Headline","description":"Descrição","ctaText":"Saiba mais"}]}}
+                """);
+
+        UUID jobId = UUID.randomUUID();
+        ExperimentPipelineGenerationJob job = ExperimentPipelineGenerationJob.builder()
+                .id(jobId)
+                .experiment(experiment)
+                .section(ExperimentPipelineSection.AD_IMAGE_BRIEFING)
+                .status(ExperimentPipelineGenerationJobStatus.PROCESSING)
+                .stage(ExperimentPipelineGenerationJobStage.SENT_TO_OPENAI)
+                .model("gpt-5.2")
+                .prompt("prompt")
+                .build();
+        when(jobRepository.findById(jobId)).thenReturn(Optional.of(job));
+
+        service.completeJob(jobId, new ExperimentPipelineGenerationJobCompletionRequest(
+                """
+                {"adImageBriefing":{"briefings":[{"mustMatchAdVariant":"dor","visualBriefing":"Use contraste simples","hierarchy":"1) promessa 2) CTA","safeMargins":"10%","assetType":"estatico"}]}}
+                """,
+                "{\"id\":\"resp_briefing\"}",
+                "{\"model\":\"gpt-5.2\"}",
+                40,
+                20,
+                null));
+
+        assertEquals(1, experiment.getCreativesToGenerate());
+        assertEquals(CreativeGenerationMode.PIPELINE_ADS, experiment.getCreativeGenerationMode());
     }
 
     @Test

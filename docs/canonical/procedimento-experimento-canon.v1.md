@@ -69,6 +69,13 @@ Regras obrigatórias:
 - o novo ângulo não deve reaproveitar headline, promessa central, CTA, mecanismo de entrada ou mensagem de landing semelhantes aos experimentos reprovados por 100 acessos sem envio;
 - a landing deve ser tratada como isca digital e validação de interesse no valor da hipótese, não como validação integral do produto final.
 
+
+### 4.4 Contrato mínimo do artefato `campaignAngle`
+
+O retorno da etapa `CAMPAIGN_ANGLE` deve ser um JSON com o bloco `campaignAngle` preenchido por campos estratégicos detalhados e não vazios. O contrato vigente exige, no mínimo: `visualAngle`, `hook`, `mechanismSummary`, `primaryCTA`, `cta`, `landingMatchLine`, `audienceFilterLine`, `objections`, `messageMatch` e `differentiationRationale`.
+
+Os blocos de dor, resultado, prova e oferta já são tratados em outras etapas do pipeline e não pertencem mais ao contrato final do `campaignAngle`. O campo `funnelStage` também não pertence ao contrato final e não deve ser solicitado nem persistido. O schema deve descrever claramente o papel comercial de cada campo do ângulo, e respostas estruturalmente válidas, mas com strings vazias ou placeholders nesses campos, devem ser rejeitadas para impedir que o pipeline avance com ângulo sem utilidade comercial.
+
 ## 5. Pipeline Gera Landing (núcleo da landing)
 
 No fluxo atual, a geração da landing segue as etapas:

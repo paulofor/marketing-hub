@@ -1,6 +1,6 @@
 # Currículo Mestre — Paulo Forestieri
 
-Versão: 0.1  
+Versão: 0.2  
 Status: rascunho de trabalho  
 Objetivo: servir como base narrativa para gerar currículos direcionados, LinkedIn, carta de apresentação e versão visual no Canva.
 
@@ -8,7 +8,7 @@ Objetivo: servir como base narrativa para gerar currículos direcionados, Linked
 
 ## 1. Posicionamento principal
 
-Engenheiro de Software Sênior com mais de 30 anos de experiência em sistemas corporativos, Java, APIs, integrações, dados e ambientes críticos. Atuação em bancos, seguros, telecom e governo, com experiência recente em engenharia de dados, pipelines, Hadoop, Spark, Hive, Parquet, Python e SQL.
+Engenheiro de Software Sênior com mais de 30 anos de experiência em sistemas corporativos, Java, APIs, integrações, dados e ambientes críticos. Atuação em bancos, seguros, telecom, governo e óleo & gás, com experiência recente em engenharia de dados, pipelines, Hadoop, Spark, Hive, Parquet, Python e SQL.
 
 Nos últimos meses, venho aprofundando o uso prático de IA generativa e desenvolvimento assistido por IA, com foco em automação de workflows, integração com GitHub, análise de pipelines, arquitetura modular, documentação técnica, governança, rastreabilidade e validação de soluções.
 
@@ -18,11 +18,39 @@ Busco atuação 100% remota em projetos de engenharia de software, IA aplicada, 
 
 ## 2. Mensagem central para currículo
 
-Engenheiro de Software Sênior com 30+ anos de experiência em Java, APIs REST/SOAP, integrações corporativas, sistemas críticos e dados. Experiência em bancos, seguros, telecom e governo, com atuação recente em engenharia de dados, Hadoop, Spark, Hive, Parquet, Python e SQL. Em atualização prática em IA Generativa, LLMs, RAG, LLMOps e desenvolvimento assistido por IA, aplicando modelos generativos na prototipação de soluções, automação de workflows, integração com GitHub, análise de pipelines, documentação técnica, governança e rastreabilidade.
+Engenheiro de Software Sênior com 30+ anos de experiência em Java, APIs REST/SOAP, integrações corporativas, sistemas críticos e dados. Experiência em bancos, seguros, telecom, governo e óleo & gás, com atuação em sistemas financeiros, plataformas corporativas, engenharia de dados, Hadoop, Spark, Hive, Parquet, Python e SQL. Em atualização prática em IA Generativa, LLMs, RAG, LLMOps e desenvolvimento assistido por IA, aplicando modelos generativos na prototipação de soluções, automação de workflows, integração com GitHub, análise de pipelines, documentação técnica, governança e rastreabilidade.
 
 ---
 
-## 3. Forma correta de tratar os projetos próprios recentes
+## 3. Recomendação de estrutura para currículo final
+
+A versão principal do currículo deve ter preferencialmente **duas páginas**. Uma página tende a comprimir demais a trajetória e pode fazer a senioridade parecer menor do que realmente é.
+
+Estrutura recomendada:
+
+### Página 1
+
+- Resumo profissional forte e direcionado.
+- Competências principais alinhadas à vaga.
+- Modelo de trabalho: 100% remoto.
+- Experiências mais fortes para o alvo principal:
+  - Caixa / Stefanini / Qintess;
+  - Banco do Brasil / Stefanini.
+
+### Página 2
+
+- Bradesco Seguros / Ebix;
+- Oi / Stefanini;
+- Ipiranga / K2;
+- carreira anterior consolidada;
+- projetos independentes em IA aplicada, em seção separada;
+- formação e idiomas.
+
+Diretriz geral: detalhar as experiências recentes e relevantes, mas consolidar a carreira mais antiga. O currículo não deve virar uma lista cronológica completa desde 1994; deve contar uma história coerente de engenharia de software, sistemas críticos, dados e atualização prática em IA aplicada.
+
+---
+
+## 4. Forma correta de tratar os projetos próprios recentes
 
 Os projetos independentes recentes não devem aparecer como experiência profissional formal. Eles ainda não devem ser apresentados como produtos comerciais, cases de cliente ou resultados de negócio comprovados.
 
@@ -58,7 +86,7 @@ Frase melhor:
 
 ---
 
-## 4. Experiência profissional recente
+## 5. Experiência profissional recente e relevante
 
 ### Engenheiro de Software Java — Caixa Econômica Federal via Stefanini / Qintess
 
@@ -137,22 +165,41 @@ Tecnologias: Python, Hadoop, Hive, AWS, Tableau, SQL, Data Lake, dashboards.
 
 ---
 
-## 5. Carreira anterior resumida
+### Consultor / Desenvolvedor Java Sênior — Ipiranga Produtos de Petróleo via K2
 
-Carreira consolidada em engenharia de software, liderança técnica, arquitetura, sistemas corporativos e integrações em clientes como Governo do Estado do Rio de Janeiro, Ipiranga, DATASUS, Vivo, Petrobras, MJV, Instituto Infnet e Bull.
+Período: validar datas exatas
+
+Atuação como desenvolvedor sênior e referência técnica em sistemas Java corporativos, com foco em correção, evolução e melhoria de aplicações do cliente.
+
+Principais atividades e contribuições:
+
+- desenvolvimento e manutenção de sistemas Java em ambiente corporativo;
+- correção e aprimoramento de funcionalidades em sistemas do cliente;
+- liderança técnica de equipe de desenvolvimento;
+- atuação com integrações, banco de dados Oracle e sistemas legados;
+- contribuição para desenho técnico, estabilidade e evolução de aplicações críticas.
+
+Tecnologias: Java, WebSphere, Hibernate, Spring, Oracle SQL, sistemas corporativos, liderança técnica.
+
+---
+
+## 6. Carreira anterior consolidada
+
+Carreira consolidada em engenharia de software, liderança técnica, arquitetura, sistemas corporativos e integrações em clientes como Governo do Estado do Rio de Janeiro, DATASUS, Vivo, Petrobras, MJV, Instituto Infnet e Bull.
 
 Destaques:
 
 - liderança técnica e desenvolvimento Java em sistemas corporativos;
 - atuação em sistemas de identidade funcional, biometria e integrações;
-- arquitetura e desenvolvimento em Java, WebSphere, Hibernate, Spring, Struts e Oracle;
+- participação como arquiteto de sistemas em projeto de fidelização com uso de biometria;
+- atuação em Java, WebSphere, Hibernate, Spring, Struts, JSF, EJB, SOAP e bancos relacionais;
 - atuação na versão Java do SISREG no DATASUS;
 - participação em portais corporativos e aplicações web para telecom;
 - experiência como instrutor de cursos sobre Internet para empresas.
 
 ---
 
-## 6. Competências principais
+## 7. Competências principais
 
 ### Engenharia de Software
 
@@ -168,11 +215,11 @@ IA Generativa, LLMs, RAG, Prompt Engineering, OpenAI API/Responses, tool calling
 
 ### Domínios de negócio
 
-Bancos, seguros, telecom, governo, internet banking, renda fixa, personalização de produtos financeiros, e-commerce, chatbot, sistemas críticos e integrações corporativas.
+Bancos, seguros, telecom, governo, internet banking, renda fixa, personalização de produtos financeiros, e-commerce, chatbot, óleo & gás, sistemas críticos e integrações corporativas.
 
 ---
 
-## 7. Formação
+## 8. Formação
 
 ### Pós-graduação em Inteligência Artificial
 
@@ -188,7 +235,7 @@ Status: concluído em 1994
 
 ---
 
-## 8. Idiomas e modelo de trabalho
+## 9. Idiomas e modelo de trabalho
 
 Português: nativo  
 Inglês: técnico para leitura de documentação, código e ferramentas; conversação em desenvolvimento  
@@ -200,7 +247,7 @@ Forma recomendada de comunicar o remoto:
 
 ---
 
-## 9. Versões de currículo derivadas deste mestre
+## 10. Versões de currículo derivadas deste mestre
 
 ### Versão principal — Engenharia de Software + IA aplicada
 
@@ -228,12 +275,13 @@ Uso: vagas de Data Engineer, pipelines, Data Lake, Spark, Hadoop, Databricks e M
 
 ---
 
-## 10. Pendências de validação
+## 11. Pendências de validação
 
 - Confirmar datas exatas de Caixa / Stefanini / Qintess.
 - Confirmar datas exatas de Banco do Brasil / Stefanini.
 - Confirmar datas exatas de Bradesco Seguros / Ebix.
 - Confirmar datas exatas de Oi / Stefanini.
+- Confirmar datas exatas de Ipiranga / K2.
 - Definir se os repositórios independentes serão citados apenas em entrevista ou também como portfólio.
 - Revisar repositórios públicos para remover qualquer informação sensível antes de usá-los como portfólio.
 - Definir frase final sobre inglês.

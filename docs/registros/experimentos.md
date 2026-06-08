@@ -4139,3 +4139,12 @@
 - foi feito: a geração de imagem de criativos passou a usar a Responses API quando `openai.image-service-tier=flex`, enviando `service_tier=flex` e a ferramenta `image_generation` com o modelo de imagem configurado.
 - foi feito: o timeout de imagem passou a ser configurável por `OPENAI_IMAGE_TIMEOUT_SECONDS`, com padrão de 900 segundos, e o docker-compose expõe `OPENAI_RESPONSES_MODEL`, `OPENAI_IMAGE_SERVICE_TIER` e `OPENAI_IMAGE_TIMEOUT_SECONDS`.
 - validação: adicionado teste unitário garantindo que o modo Flex envia a requisição para `/responses`, preserva `gpt-image-1.5` como modelo da ferramenta de imagem, envia `service_tier=flex` e processa o resultado `image_generation_call`.
+
+## 2026-06-08 — Reforço do contrato de Ângulo de Campanha
+
+- solicitação: alterar o prompt e o schema da etapa **Ângulo de Campanha** para pedir mais detalhes e remover `funnelStage` do contrato final.
+- causa-raiz: o schema anterior exigia apenas campos `string` e aceitava strings vazias; assim uma resposta JSON estruturalmente válida, mas sem conteúdo comercial, podia ser persistida como `CAMPAIGN_ANGLE` concluído.
+- foi feito: o prompt `campaign-angle` passou para `v2`, exigindo campos detalhados como `visualAngle`, `hook`, `primaryPain`, `primaryPromise`, `promise`, `singleMindedPromise`, `mechanismSummary`, `proofSummary`, `primaryCTA`, `cta`, `landingMatchLine`, `audienceFilterLine`, `objections`, `messageMatch` e `differentiationRationale`.
+- foi feito: o schema backend passou a descrever o papel comercial de cada campo estratégico e removeu `funnelStage`; o backend também rejeita respostas de `campaignAngle` com campos vazios ou com `funnelStage` antes de persistir no experimento.
+- ajuste posterior: por decisão de produto, o prompt `campaign-angle` passou para `v3` e a etapa de ângulo deixou de solicitar detalhes de dor, resultado, prova e oferta no contrato final, pois esses blocos já são cobertos nos demais prompts do pipeline. O contrato do ângulo ficou focado em framing visual, hook, mecanismo narrativo, CTA, continuidade, filtro de público, objeções, message match e diferenciação.
+- impacto esperado: a etapa não deve mais avançar com ângulo vazio, preservando a qualidade comercial do pipeline antes de gerar anúncios, imagens e landing.

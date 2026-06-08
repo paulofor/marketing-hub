@@ -1397,7 +1397,10 @@ public class ExperimentPipelineGenerationService {
                                      String content) {
         String normalized = normalizeSectionContent(experiment, section, content);
         switch (section) {
-            case CAMPAIGN_ANGLE -> experiment.setCampaignAngle(normalized);
+            case CAMPAIGN_ANGLE -> {
+                validateCampaignAngleArtifacts(normalized);
+                experiment.setCampaignAngle(normalized);
+            }
             case AD_COPY -> experiment.setAdCopy(normalized);
             case AD_IMAGE_BRIEFING -> experiment.setAdImageBriefing(normalized);
             case LANDING_PAGE_COPY -> {
@@ -1426,6 +1429,40 @@ public class ExperimentPipelineGenerationService {
         }
     }
 
+    /** Valida se o ângulo de campanha contém campos estratégicos detalhados e sem valores vazios. */
+    private void validateCampaignAngleArtifacts(String campaignAngleContent) {
+        Map<String, Object> root = readObject(campaignAngleContent, "Ângulo de campanha inválido: JSON obrigatório");
+        Map<String, Object> payload = unwrapSectionPayload(root, "campaignAngle");
+        if (payload.containsKey("funnelStage")) {
+            throw new ResponseStatusException(
+                    HttpStatus.UNPROCESSABLE_ENTITY,
+                    "Ângulo de campanha inválido: campo funnelStage não deve ser retornado");
+        }
+        for (String field : requiredCampaignAngleFields()) {
+            if (!StringUtils.hasText(asTrimmedString(payload.get(field)))) {
+                throw new ResponseStatusException(
+                        HttpStatus.UNPROCESSABLE_ENTITY,
+                        "Ângulo de campanha incompleto: campo " + field + " é obrigatório e não pode ser vazio");
+            }
+        }
+    }
+
+    /** Lista os campos obrigatórios para um ângulo de campanha comercialmente utilizável. */
+    private List<String> requiredCampaignAngleFields() {
+        return List.of(
+                "visualAngle",
+                "hook",
+                "mechanismSummary",
+                "primaryCTA",
+                "cta",
+                "landingMatchLine",
+                "audienceFilterLine",
+                "objections",
+                "messageMatch",
+                "differentiationRationale");
+    }
+
+    /** Valida se a copy da landing contém estrutura mínima para continuidade comercial e slots válidos. */
     @SuppressWarnings("unchecked")
     private void validateLandingCopyArtifacts(Experiment experiment, String landingCopyContent) {
         if (!StringUtils.hasText(landingCopyContent)) {
@@ -2850,29 +2887,29 @@ public class ExperimentPipelineGenerationService {
         return Map.of(
                 "type", "object",
                 "additionalProperties", false,
-                "properties", Map.of(
-                        "primaryPain", Map.of("type", "string"),
-                        "primaryPromise", Map.of("type", "string"),
-                        "mechanismSummary", Map.of("type", "string"),
-                        "proofSummary", Map.of("type", "string"),
-                        "cta", Map.of("type", "string"),
-                        "singleMindedPromise", Map.of("type", "string"),
-                        "primaryCTA", Map.of("type", "string"),
-                        "landingMatchLine", Map.of("type", "string"),
-                        "tone", Map.of("type", "string"),
-                        "funnelStage", Map.of("type", "string")
+                "properties", Map.ofEntries(
+                        Map.entry("visualAngle", detailedStringSchema("Cena/framing visual central em 2 a 3 frases específicas.")),
+                        Map.entry("hook", detailedStringSchema("Abertura específica e comercial para Meta Ads.")),
+                        Map.entry("mechanismSummary", detailedStringSchema("Mecanismo narrativo do ângulo, sem detalhar dor, resultado, prova ou oferta.")),
+                        Map.entry("primaryCTA", detailedStringSchema("CTA principal alinhada com a ação esperada da landing, sem resumir a oferta.")),
+                        Map.entry("cta", detailedStringSchema("Variação curta da CTA para anúncio.")),
+                        Map.entry("landingMatchLine", detailedStringSchema("Continuidade anúncio → landing com framing, mecanismo, linguagem e CTA.")),
+                        Map.entry("audienceFilterLine", detailedStringSchema("Quem deve se reconhecer no anúncio e quem deve ser filtrado.")),
+                        Map.entry("objections", detailedStringSchema("3 a 5 objeções pré-clique e como o ângulo as reduz.")),
+                        Map.entry("messageMatch", detailedStringSchema("Como hook, framing visual, mecanismo, linguagem e CTA permanecem iguais entre criativo e landing.")),
+                        Map.entry("differentiationRationale", detailedStringSchema("O que mudou frente aos experimentos reprovados e qual alavanca comunicacional foi trocada."))
                 ),
                 "required", List.of(
-                        "primaryPain",
-                        "primaryPromise",
+                        "visualAngle",
+                        "hook",
                         "mechanismSummary",
-                        "proofSummary",
-                        "cta",
-                        "singleMindedPromise",
                         "primaryCTA",
+                        "cta",
                         "landingMatchLine",
-                        "tone",
-                        "funnelStage")
+                        "audienceFilterLine",
+                        "objections",
+                        "messageMatch",
+                        "differentiationRationale")
         );
     }
 
@@ -4275,6 +4312,11 @@ public class ExperimentPipelineGenerationService {
                 ),
                 "required", List.of("check", "status")
         );
+    }
+
+    /** Cria um schema de string com descrição comercial para orientar respostas detalhadas em modo estrito. */
+    private Map<String, Object> detailedStringSchema(String description) {
+        return Map.of("type", "string", "description", description);
     }
 
     private Map<String, Object> stringSchema() {

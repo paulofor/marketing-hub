@@ -68,10 +68,16 @@ class ExperimentPipelineOpenAiClientTest {
         assertThat(userPrompt).contains("[CASE_DATA_BEGIN]");
         assertThat(userPrompt).contains("OUTPUT_CONTRACT");
         assertThat(userPrompt).contains("- visualAngle");
-        assertThat(userPrompt).contains("- proofSummary");
-        assertThat(userPrompt).contains("- singleMindedPromise");
+        assertThat(userPrompt).doesNotContain("- primaryPain:");
+        assertThat(userPrompt).doesNotContain("- primaryPromise:");
+        assertThat(userPrompt).doesNotContain("- proofSummary:");
+        assertThat(userPrompt).doesNotContain("- singleMindedPromise:");
         assertThat(userPrompt).contains("- primaryCTA");
         assertThat(userPrompt).contains("- landingMatchLine");
+        assertThat(userPrompt).contains("- audienceFilterLine");
+        assertThat(userPrompt).contains("- differentiationRationale");
+        assertThat(userPrompt).contains("Campo proibido:");
+        assertThat(userPrompt).contains("funnelStage: não inclua este campo");
     }
 
     @Test

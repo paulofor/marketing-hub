@@ -4131,3 +4131,11 @@
 - foi feito: o extrator do backend agora coleta candidatos de objeto em JSON direto, JSON aninhado, texto com bloco Markdown e JSON serializado dentro de campos textuais antes de validar `primaryTextVariants`/`variants` e `briefings`.
 - foi feito: o extrator equivalente do Worker AI recebeu a mesma tolerância, mantendo a leitura por reflexão do modelo importado do backend.
 - validação: adicionados testes cobrindo artefatos de anúncio e briefing encapsulados em texto para impedir regressão do botão e da geração no Worker AI.
+
+## 2026-06-08 — Modo Flex para geração de imagens de criativos
+
+- solicitação: alterar a geração de imagens dos anúncios para usar modo Flex e um timeout suficiente para esse modo após timeout de 90 segundos no experimento 38.
+- causa-raiz: o `CreativeImageClient` usava diretamente `/images/generations` com timeout fixo de 90 segundos; a chamada ao modelo `gpt-image-1.5` excedeu esse limite e o worker limpou a solicitação sem persistir criativos.
+- foi feito: a geração de imagem de criativos passou a usar a Responses API quando `openai.image-service-tier=flex`, enviando `service_tier=flex` e a ferramenta `image_generation` com o modelo de imagem configurado.
+- foi feito: o timeout de imagem passou a ser configurável por `OPENAI_IMAGE_TIMEOUT_SECONDS`, com padrão de 900 segundos, e o docker-compose expõe `OPENAI_RESPONSES_MODEL`, `OPENAI_IMAGE_SERVICE_TIER` e `OPENAI_IMAGE_TIMEOUT_SECONDS`.
+- validação: adicionado teste unitário garantindo que o modo Flex envia a requisição para `/responses`, preserva `gpt-image-1.5` como modelo da ferramenta de imagem, envia `service_tier=flex` e processa o resultado `image_generation_call`.

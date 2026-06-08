@@ -66,7 +66,8 @@ class CreativeImageClientTest {
         String body = "{\"data\":[{\"b64_json\":\"" + imagePayload + "\"}]}";
         ExchangeFunction exchange = stubImageApi(lastRequestPayload, body, HttpStatus.OK);
         WebClient.Builder builder = WebClient.builder().exchangeFunction(exchange);
-        client = new CreativeImageClient(builder, backendAssetClient, optimizer, "key", "http://openai", "gpt-image-1");
+        client = new CreativeImageClient(builder, backendAssetClient, optimizer, "key", "http://openai", "gpt-image-1",
+                "gpt-5.5", "default", 900);
     }
 
     /**
@@ -101,7 +102,8 @@ class CreativeImageClientTest {
         AtomicReference<Map<String, Object>> requestPayload = new AtomicReference<>();
         ExchangeFunction exchange = stubImageApi(requestPayload, body, HttpStatus.OK);
         WebClient.Builder builder = WebClient.builder().exchangeFunction(exchange);
-        CreativeImageClient largeClient = new CreativeImageClient(builder, backendAssetClient, optimizer, "key", "http://openai", "gpt-image-1");
+        CreativeImageClient largeClient = new CreativeImageClient(builder, backendAssetClient, optimizer, "key", "http://openai",
+                "gpt-image-1", "gpt-5.5", "default", 900);
         when(backendAssetClient.uploadImage(any(), any(), any(), any(), any())).thenReturn("/uploads/large.jpg");
 
         String result = largeClient.generateImage("prompt");
@@ -120,7 +122,8 @@ class CreativeImageClientTest {
         AtomicReference<Map<String, Object>> requestPayload = new AtomicReference<>();
         ExchangeFunction exchange = stubImageApi(requestPayload, body, HttpStatus.BAD_REQUEST);
         WebClient.Builder builder = WebClient.builder().exchangeFunction(exchange);
-        CreativeImageClient errorClient = new CreativeImageClient(builder, backendAssetClient, optimizer, "key", "http://openai", "gpt-image-1");
+        CreativeImageClient errorClient = new CreativeImageClient(builder, backendAssetClient, optimizer, "key", "http://openai",
+                "gpt-image-1", "gpt-5.5", "default", 900);
 
         assertThatThrownBy(() -> errorClient.generateImage("prompt"))
                 .isInstanceOf(RuntimeException.class)
@@ -142,7 +145,8 @@ class CreativeImageClientTest {
         AtomicReference<Map<String, Object>> requestPayload = new AtomicReference<>();
         ExchangeFunction exchange = stubImageApi(requestPayload, body, HttpStatus.OK);
         WebClient.Builder builder = WebClient.builder().exchangeFunction(exchange);
-        CreativeImageClient dalleClient = new CreativeImageClient(builder, backendAssetClient, optimizer, "key", "http://openai", "dall-e-3");
+        CreativeImageClient dalleClient = new CreativeImageClient(builder, backendAssetClient, optimizer, "key", "http://openai",
+                "dall-e-3", "gpt-5.5", "default", 900);
         when(backendAssetClient.uploadImage(any(), any(), any(), any(), any())).thenReturn("/uploads/dalle.jpg");
 
         String result = dalleClient.generateImage("prompt");
@@ -150,6 +154,45 @@ class CreativeImageClientTest {
         assertThat(result).isEqualTo("/uploads/dalle.jpg");
         Map<String, Object> payload = requestPayload.get();
         assertThat(payload).containsEntry("response_format", "b64_json");
+    }
+
+    /**
+     * Ensures Flex service tier uses the Responses API image generation tool.
+     */
+    @Test
+    void usesResponsesApiImageToolForFlexTier() {
+        String imagePayload;
+        try {
+            imagePayload = Base64.getEncoder().encodeToString(createSolidPng(64, 64));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        String body = "{\"output\":[{\"type\":\"image_generation_call\",\"result\":\"" + imagePayload + "\"}]}";
+        AtomicReference<Map<String, Object>> requestPayload = new AtomicReference<>();
+        ExchangeFunction exchange = stubOpenAiApi(requestPayload, body, HttpStatus.OK, "/responses");
+        WebClient.Builder builder = WebClient.builder().exchangeFunction(exchange);
+        CreativeImageClient flexClient = new CreativeImageClient(builder, backendAssetClient, optimizer, "key", "http://openai",
+                "gpt-image-1.5", "gpt-5.5", "flex", 900);
+        when(backendAssetClient.uploadImage(any(), any(), any(), any(), any())).thenReturn("/uploads/flex.jpg");
+
+        String result = flexClient.generateImage("prompt");
+
+        assertThat(result).isEqualTo("/uploads/flex.jpg");
+        Map<String, Object> payload = requestPayload.get();
+        assertThat(payload).containsEntry("model", "gpt-5.5");
+        assertThat(payload).containsEntry("input", "prompt");
+        assertThat(payload).containsEntry("service_tier", "flex");
+        List<Map<String, Object>> tools = (List<Map<String, Object>>) payload.get("tools");
+        assertThat(tools).hasSize(1);
+        assertThat(tools.get(0))
+                .containsEntry("type", "image_generation")
+                .containsEntry("action", "generate")
+                .containsEntry("model", "gpt-image-1.5");
+        verify(backendAssetClient).uploadImage(any(byte[].class),
+                argThat(name -> name.endsWith(".jpg")),
+                argThat(model -> model.equals("gpt-image-1.5")),
+                argThat(prompt -> prompt.equals("prompt")),
+                isNull());
     }
 
 
@@ -164,7 +207,10 @@ class CreativeImageClientTest {
                 optimizer,
                 " ",
                 "http://openai",
-                "gpt-image-1");
+                "gpt-image-1",
+                "gpt-5.5",
+                "flex",
+                900);
 
         assertThatThrownBy(() -> disabledClient.generateImage("prompt"))
                 .isInstanceOf(IllegalStateException.class)
@@ -177,8 +223,18 @@ class CreativeImageClientTest {
     private ExchangeFunction stubImageApi(AtomicReference<Map<String, Object>> capturedPayload,
                                           String responseBody,
                                           HttpStatus status) {
+        return stubOpenAiApi(capturedPayload, responseBody, status, "/images/generations");
+    }
+
+    /**
+     * Builds an ExchangeFunction that captures OpenAI request payloads for a specific endpoint.
+     */
+    private ExchangeFunction stubOpenAiApi(AtomicReference<Map<String, Object>> capturedPayload,
+                                           String responseBody,
+                                           HttpStatus status,
+                                           String expectedPath) {
         return request -> {
-            assertThat(request.url().toString()).endsWith("/images/generations");
+            assertThat(request.url().toString()).endsWith(expectedPath);
             MockClientHttpRequest httpRequest = new MockClientHttpRequest(request.method(), request.url());
             request.body().insert(httpRequest, BODY_INSERTER_CONTEXT).block();
             String requestBody = httpRequest.getBodyAsString().block();

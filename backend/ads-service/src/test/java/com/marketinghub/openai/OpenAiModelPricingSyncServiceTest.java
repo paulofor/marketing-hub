@@ -48,8 +48,8 @@ class OpenAiModelPricingSyncServiceTest {
                 .priceInputCachedBatch(BigDecimal.ZERO)
                 .priceOutputBatch(BigDecimal.ZERO)
                 .build();
-        when(pricingPageClient.fetchTextModelPricing()).thenReturn(List.of(basePrice));
-        when(pricingPageClient.findBestTextModelPricing(List.of(basePrice), datedVariant.getCode()))
+        when(pricingPageClient.fetchAllModelPricing()).thenReturn(List.of(basePrice));
+        when(pricingPageClient.findBestModelPricing(List.of(basePrice), datedVariant.getCode()))
                 .thenReturn(Optional.of(basePrice));
         when(repository.findByCode("gpt-5.5")).thenReturn(Optional.empty());
         when(repository.findAll()).thenReturn(List.of(datedVariant));
@@ -83,7 +83,7 @@ class OpenAiModelPricingSyncServiceTest {
                 new BigDecimal("2.50"),
                 new BigDecimal("0.25"),
                 new BigDecimal("15.00"));
-        when(pricingPageClient.fetchTextModelPricing()).thenReturn(List.of(basePrice));
+        when(pricingPageClient.fetchAllModelPricing()).thenReturn(List.of(basePrice));
         when(repository.findByCode("gpt-5.5")).thenReturn(Optional.empty());
         when(repository.findAll()).thenReturn(List.of());
 

@@ -65,10 +65,10 @@ public class OpenAiModelCatalogV1Service {
         }
     }
 
-    /** Busca preços oficiais de texto e indexa por código do modelo para enriquecer a lista de seleção. */
+    /** Busca preços oficiais tokenizados e indexa por código do modelo para enriquecer a lista de seleção. */
     private Map<String, OpenAiModelCatalogPriceResponse> fetchPricingByModel() {
         try {
-            List<OpenAiModelPricing> pricingRows = pricingPageClient.fetchTextModelPricing();
+            List<OpenAiModelPricing> pricingRows = pricingPageClient.fetchAllModelPricing();
             Map<String, OpenAiModelCatalogPriceResponse> pricingByModel = new LinkedHashMap<>();
             for (OpenAiModelPricing pricing : pricingRows) {
                 pricingByModel.put(pricing.code(), toPriceResponse(pricing));
@@ -76,7 +76,7 @@ public class OpenAiModelCatalogV1Service {
             List<OpenAiCatalogModelV1> catalogModels = repository.findAll();
             for (OpenAiCatalogModelV1 catalogModel : catalogModels) {
                 pricingPageClient
-                        .findBestTextModelPricing(pricingRows, catalogModel.getCode())
+                        .findBestModelPricing(pricingRows, catalogModel.getCode())
                         .ifPresent(pricing -> pricingByModel.putIfAbsent(
                                 catalogModel.getCode(), toPriceResponse(pricing)));
             }

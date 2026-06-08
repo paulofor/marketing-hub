@@ -427,6 +427,10 @@ components:
           type: string
         title:
           type: string
+        rawHtml:
+          type: string
+          nullable: true
+          description: HTML bruto capturado na etapa 1 que deve ser usado como entrada principal da análise comercial.
     SalesLibraryClaimResponse:
       type: object
       properties:
@@ -747,6 +751,18 @@ components:
           type: integer
           format: int64
           description: Total por status de análise (`DONE` ou `ANALYZED`), mantido como métrica complementar.
+        analysisPending:
+          type: integer
+          format: int64
+          description: Total de páginas com HTML útil e status de análise pendente, representando a fila real da etapa 2.
+        analysisRunning:
+          type: integer
+          format: int64
+          description: Total de páginas com HTML útil e análise em execução pelo worker.
+        analysisFailed:
+          type: integer
+          format: int64
+          description: Total de páginas com HTML útil e última análise falhada, elegíveis para refileiramento automático limitado.
         failed:
           type: integer
           format: int64

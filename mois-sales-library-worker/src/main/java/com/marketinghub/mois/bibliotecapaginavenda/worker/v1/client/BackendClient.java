@@ -137,7 +137,7 @@ public class BackendClient {
      * Persiste no backend o resultado final de análise de um job.
      */
     public void complete(long jobId, CompleteRequest request) {
-        log.info("MOIS sales-library worker calling backend complete endpoint. jobId={}, scoreTotal={}", jobId, request.scoreTotal());
+        log.info("MOIS sales-library worker calling backend complete endpoint. jobId={}, payload={}", jobId, request);
         var entity = restClient.post()
                 .uri("/api/mois/sales-library/jobs/{jobId}:complete", jobId)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -151,8 +151,7 @@ public class BackendClient {
      * Registra no backend uma falha terminal de análise de job.
      */
     public void fail(long jobId, FailRequest request) {
-        log.warn("MOIS sales-library worker calling backend fail endpoint. jobId={}, errorCategory={}, errorMessage={}",
-                jobId, request.errorCategory(), request.errorMessage());
+        log.warn("MOIS sales-library worker calling backend fail endpoint. jobId={}, payload={}", jobId, request);
         var entity = restClient.post()
                 .uri("/api/mois/sales-library/jobs/{jobId}:fail", jobId)
                 .contentType(MediaType.APPLICATION_JSON)

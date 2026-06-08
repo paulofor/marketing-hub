@@ -23,7 +23,8 @@ public final class MoisSalesLibraryDtos {
             long jobId,
             long pageId,
             String urlCanonical,
-            String title
+            String title,
+            String rawHtml
     ) {
     }
 
@@ -234,6 +235,9 @@ public final class MoisSalesLibraryDtos {
             long capturing,
             long captured,
             long analyzed,
+            long analysisPending,
+            long analysisRunning,
+            long analysisFailed,
             long failed,
             long blockedCooldown,
             long hotmart,

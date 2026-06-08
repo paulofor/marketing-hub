@@ -83,6 +83,9 @@ export default function MoisSalesPagesPipelinePage() {
   const capturedPages = summary?.captured ?? 0;
   const analyzedPages = summary?.analyzed ?? 0;
   const analysisBacklog = Math.max(capturedPages - analyzedPages, 0);
+  const analysisPending = summary?.analysisPending ?? 0;
+  const analysisRunning = summary?.analysisRunning ?? 0;
+  const analysisFailed = summary?.analysisFailed ?? 0;
   const pendingPages = summary?.pending ?? 0;
 
   return (
@@ -302,7 +305,7 @@ export default function MoisSalesPagesPipelinePage() {
               <h2 className="h4 mb-2">Análise comercial da página</h2>
               <p className="text-secondary mb-0">
                 Etapa já implementada no backend: o worker reserva jobs de
-                análise pendentes, processa o HTML capturado e grava score,
+                análise pendentes, usa o HTML bruto capturado na etapa 1 e grava score,
                 promessa, mecanismo, prova, oferta e histórico auditável da
                 execução.
               </p>
@@ -390,6 +393,10 @@ export default function MoisSalesPagesPipelinePage() {
                   <h3 className="mb-0">
                     {summaryQuery.isLoading ? "..." : analysisBacklog}
                   </h3>
+                  <p className="text-secondary small mb-0 mt-2">
+                    Fila real: {analysisPending} pendentes · {analysisRunning}{" "}
+                    em execução · {analysisFailed} falhas registradas
+                  </p>
                 </div>
               </div>
             </div>

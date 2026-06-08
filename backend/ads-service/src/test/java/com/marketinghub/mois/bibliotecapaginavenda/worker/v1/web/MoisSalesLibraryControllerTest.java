@@ -123,6 +123,9 @@ class MoisSalesLibraryControllerTest {
                         0L,
                         20L,
                         105L,
+                        12L,
+                        2L,
+                        16L,
                         16L,
                         0L,
                         126L,
@@ -137,6 +140,9 @@ class MoisSalesLibraryControllerTest {
                 .andExpect(jsonPath("$.pending").value(4))
                 .andExpect(jsonPath("$.captured").value(20))
                 .andExpect(jsonPath("$.analyzed").value(105))
+                .andExpect(jsonPath("$.analysisPending").value(12))
+                .andExpect(jsonPath("$.analysisRunning").value(2))
+                .andExpect(jsonPath("$.analysisFailed").value(16))
                 .andExpect(jsonPath("$.failed").value(16))
                 .andExpect(jsonPath("$.blockedCooldown").value(0));
     }

@@ -4123,3 +4123,11 @@
 - causa-raiz: parte da suíte ainda validava regras antigas de superfície visual da landing como se fossem cânone vigente, gerando falhas e ruído contra a evolução atual do LHM.
 - foi feito: removidos testes do Worker AI e do backend que validavam diretamente sincronização/normalização/rejeição por `surfaceSpec` e atributos `data-surface-*`; os testes de binding canônico de imagem foram preservados sem depender desse contrato visual obsoleto.
 - impacto esperado: a suíte deixa de bloquear PR por uma regra documental obsoleta, preservando validações ainda úteis de imagem e planejamento.
+
+## 2026-06-08 — Correção do botão Gerar anúncios do pipeline
+
+- solicitação: investigar por que o botão **Gerar anúncios do pipeline** na tela do experimento 38 indicava 3 variações prontas, mas não gerava criativos.
+- diagnóstico de causa-raiz: a tela conseguia reconhecer variações e briefings quando o JSON vinha encapsulado dentro de campos textuais/respostas do modelo, porém os extratores Java do backend e do Worker AI aceitavam apenas JSON direto no topo do payload; assim o frontend liberava o botão enquanto o backend/worker podia não encontrar variações válidas para executar.
+- foi feito: o extrator do backend agora coleta candidatos de objeto em JSON direto, JSON aninhado, texto com bloco Markdown e JSON serializado dentro de campos textuais antes de validar `primaryTextVariants`/`variants` e `briefings`.
+- foi feito: o extrator equivalente do Worker AI recebeu a mesma tolerância, mantendo a leitura por reflexão do modelo importado do backend.
+- validação: adicionados testes cobrindo artefatos de anúncio e briefing encapsulados em texto para impedir regressão do botão e da geração no Worker AI.

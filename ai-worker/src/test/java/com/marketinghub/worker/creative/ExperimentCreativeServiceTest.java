@@ -168,6 +168,38 @@ class ExperimentCreativeServiceTest {
         assertThat(experiment.getCreativeGenerationMode()).isEqualTo(CreativeGenerationMode.DEFAULT);
     }
 
+
+    /**
+     * Ensures pipeline mode accepts artifacts wrapped inside model response text fields.
+     */
+    @Test
+    void pipelineModeGeneratesCreativesFromEmbeddedJsonArtifacts() {
+        experiment.setCreativeGenerationMode(CreativeGenerationMode.PIPELINE_ADS);
+        experiment.setCreativesToGenerate(1);
+        experiment.setAdCopy("""
+                Resposta do modelo:
+                ```json
+                {"adCopy":{"primaryTextVariants":[{"label":"dor","primaryText":"Texto","headline":"Headline","description":"Descrição","ctaText":"Saiba mais"}]}}
+                ```
+                """);
+        experiment.setAdImageBriefing("""
+                Texto antes {"adImageBriefing":{"briefings":[{"mustMatchAdVariant":"dor","visualBriefing":"Use contraste simples","hierarchy":"1) promessa 2) CTA","safeMargins":"10%","assetType":"story"}]}} texto depois
+                """);
+        when(experimentRepository.findAllToGenerateCreatives()).thenReturn(List.of(experiment));
+        when(imageClient.generateImage(anyString(), anyString(), anyString())).thenReturn("img");
+        Creative savedCreative = new Creative();
+        when(creativeService.create(eq(1L), any(CreateCreativeRequest.class))).thenReturn(savedCreative);
+
+        Map<Long, List<Creative>> result = service.generate();
+
+        ArgumentCaptor<CreateCreativeRequest> requestCaptor = ArgumentCaptor.forClass(CreateCreativeRequest.class);
+        verify(creativeService).create(eq(1L), requestCaptor.capture());
+        assertThat(requestCaptor.getValue().getFormat()).isEqualTo("STORY");
+        assertThat(result.get(1L)).containsExactly(savedCreative);
+        assertThat(experiment.getCreativesToGenerate()).isZero();
+        assertThat(experiment.getCreativeGenerationMode()).isEqualTo(CreativeGenerationMode.DEFAULT);
+    }
+
     /**
      * Ensures pipeline image prompts keep the mandatory hypothesis filter title visible.
      */

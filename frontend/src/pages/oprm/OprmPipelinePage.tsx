@@ -148,12 +148,85 @@ const statusLabels: Record<string, string> = {
   RUNNING: "Em execução",
   PENDING: "Pendente",
   COMPLETED: "Concluído",
+  ROUTINE_SYNTHESIZED: "Rotina sintetizada",
   ENRICHED_NICHE_CREATED: "Nicho enriquecido criado",
   ENRICHED_NICHE_FAILED: "Falha no nicho enriquecido",
 };
 
+const cycleStageByStatus: Record<
+  string,
+  { label: string; description: string; badgeClass: string }
+> = {
+  RUNNING: {
+    label: "Etapas 2 a 6 · Pesquisa em andamento",
+    description:
+      "O ciclo já foi criado e o coletor está montando seed, buscando fontes, coletando evidências, extraindo sinais ou sintetizando a rotina.",
+    badgeClass:
+      "badge text-bg-primary-subtle border border-primary-subtle text-primary",
+  },
+  ROUTINE_SYNTHESIZED: {
+    label: "Etapa 7 · Aguardando gate de qualidade",
+    description:
+      "A rotina já foi sintetizada; falta o gate validar se há evidência suficiente para aprovar ou pedir nova pesquisa.",
+    badgeClass: "badge text-bg-info-subtle border border-info-subtle text-info",
+  },
+  LIGHTLY_RESEARCHED: {
+    label: "Etapa 8 · Pronto para materializar",
+    description:
+      "O gate aprovou a pesquisa inicial; o próximo passo é criar o nicho enriquecido para uso nos fluxos de produto.",
+    badgeClass:
+      "badge text-bg-success-subtle border border-success-subtle text-success",
+  },
+  NEEDS_MORE_RESEARCH: {
+    label: "Etapa 7 · Gate pediu mais pesquisa",
+    description:
+      "A validação encontrou sinais insuficientes; o usuário pode pesquisar novamente para aprofundar o CNAE.",
+    badgeClass:
+      "badge text-bg-warning-subtle border border-warning-subtle text-warning",
+  },
+  GENERIC: {
+    label: "Etapa 7 · Gate marcou como genérico",
+    description:
+      "A pesquisa não ficou específica o bastante; o usuário pode pesquisar novamente para reduzir generalidade.",
+    badgeClass:
+      "badge text-bg-secondary-subtle border border-secondary-subtle text-secondary",
+  },
+  ENRICHED_NICHE_CREATED: {
+    label: "Finalizado · Nicho enriquecido criado",
+    description:
+      "A materialização final foi concluída e o nicho já pode alimentar os próximos fluxos de oportunidade e produto.",
+    badgeClass:
+      "badge text-bg-success-subtle border border-success-subtle text-success",
+  },
+  ENRICHED_NICHE_FAILED: {
+    label: "Etapa 8 · Falha na materialização",
+    description:
+      "A pesquisa foi aprovada, mas a criação do nicho enriquecido falhou e precisa de correção operacional.",
+    badgeClass:
+      "badge text-bg-danger-subtle border border-danger-subtle text-danger",
+  },
+  FAILED: {
+    label: "Falhou · Ver detalhe",
+    description:
+      "O ciclo interrompeu antes de concluir o fluxo; veja a mensagem de falha e reprocesse após tratar a causa.",
+    badgeClass:
+      "badge text-bg-danger-subtle border border-danger-subtle text-danger",
+  },
+};
+
 function formatStatusLabel(status: string) {
   return statusLabels[status] ?? status;
+}
+
+function getCycleStage(status: string) {
+  return (
+    cycleStageByStatus[status] ?? {
+      label: "Etapa em apuração",
+      description:
+        "O ciclo retornou um status sem etapa mapeada na tela; acompanhe os cards abaixo ou verifique o backend OPRM.",
+      badgeClass: "badge text-bg-light border text-secondary",
+    }
+  );
 }
 
 function formatQualityNotes(value: string) {
@@ -194,7 +267,7 @@ function buildStatusBadgeClass(status: string) {
   if (status === "FAILED") {
     return "badge text-bg-danger-subtle border border-danger-subtle text-danger";
   }
-  if (status === "RUNNING") {
+  if (status === "RUNNING" || status === "ROUTINE_SYNTHESIZED") {
     return "badge text-bg-primary-subtle border border-primary-subtle text-primary";
   }
   return "badge text-bg-light border text-secondary";
@@ -397,95 +470,109 @@ export default function OprmPipelinePage() {
                       Score
                     </th>
                     <th scope="col">Status</th>
+                    <th scope="col">Etapa atual</th>
                     <th scope="col" className="text-end">
                       Ação
                     </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {recentProcessed.map((item) => (
-                    <tr key={item.researchCycleId}>
-                      <td className="text-nowrap">
-                        {formatProcessedAt(item.processedAt)}
-                      </td>
-                      <td>
-                        <span className="fw-semibold d-block">
-                          {getOperationalName(item)}
-                        </span>
-                        <span className="text-secondary small d-block">
-                          Original: {getOriginalName(item)}
-                        </span>
-                        <span className="text-secondary small">
-                          Ciclo #{item.researchCycleId} ·{" "}
-                          {item.researchMode ?? "modo não informado"}
-                        </span>
-                      </td>
-                      <td>
-                        <span className="text-nowrap">{item.cnaeCode}</span>
-                        <span className="text-secondary small d-block">
-                          {item.cnaeDescription}
-                        </span>
-                      </td>
-                      <td className="text-end">
-                        {item.sourceScore.toLocaleString("pt-BR", {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}
-                      </td>
-                      <td>
-                        <span
-                          className={buildStatusBadgeClass(item.cycleStatus)}
-                        >
-                          {formatStatusLabel(item.cycleStatus)}
-                        </span>
-                        {item.cycleStatus === "FAILED" ? (
-                          <div className="text-danger small mt-1">
-                            <span className="fw-semibold">Detalhe:</span>{" "}
-                            {buildFailureMessage(item.errorMessage)}
-                          </div>
-                        ) : null}
-                        {item.finishedAt ? (
-                          <div className="text-secondary small mt-1">
-                            Finalizado em {formatProcessedAt(item.finishedAt)}
-                          </div>
-                        ) : null}
-                      </td>
-                      <td className="text-end">
-                        {canCreateNewResearchCycle(item.cycleStatus) ? (
-                          <button
-                            type="button"
-                            className={getNewResearchCycleButtonClass(item.cycleStatus)}
-                            disabled={
-                              reprocessCycleMutation.isPending &&
-                              reprocessCycleMutation.variables ===
-                                item.researchCycleId
-                            }
-                            onClick={() =>
-                              reprocessCycleMutation.mutate(
-                                item.researchCycleId,
-                              )
-                            }
+                  {recentProcessed.map((item) => {
+                    const cycleStage = getCycleStage(item.cycleStatus);
+                    return (
+                      <tr key={item.researchCycleId}>
+                        <td className="text-nowrap">
+                          {formatProcessedAt(item.processedAt)}
+                        </td>
+                        <td>
+                          <span className="fw-semibold d-block">
+                            {getOperationalName(item)}
+                          </span>
+                          <span className="text-secondary small d-block">
+                            Original: {getOriginalName(item)}
+                          </span>
+                          <span className="text-secondary small">
+                            Ciclo #{item.researchCycleId} ·{" "}
+                            {item.researchMode ?? "modo não informado"}
+                          </span>
+                        </td>
+                        <td>
+                          <span className="text-nowrap">{item.cnaeCode}</span>
+                          <span className="text-secondary small d-block">
+                            {item.cnaeDescription}
+                          </span>
+                        </td>
+                        <td className="text-end">
+                          {item.sourceScore.toLocaleString("pt-BR", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </td>
+                        <td>
+                          <span
+                            className={buildStatusBadgeClass(item.cycleStatus)}
                           >
-                            {reprocessCycleMutation.isPending &&
-                            reprocessCycleMutation.variables ===
-                              item.researchCycleId ? (
-                              <>
-                                <span
-                                  className="spinner-border spinner-border-sm me-1"
-                                  aria-hidden="true"
-                                />
-                                Criando ciclo...
-                              </>
-                            ) : (
-                              getNewResearchCycleButtonLabel(item.cycleStatus)
-                            )}
-                          </button>
-                        ) : (
-                          <span className="text-secondary small">—</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
+                            {formatStatusLabel(item.cycleStatus)}
+                          </span>
+                          {item.cycleStatus === "FAILED" ? (
+                            <div className="text-danger small mt-1">
+                              <span className="fw-semibold">Detalhe:</span>{" "}
+                              {buildFailureMessage(item.errorMessage)}
+                            </div>
+                          ) : null}
+                          {item.finishedAt ? (
+                            <div className="text-secondary small mt-1">
+                              Finalizado em {formatProcessedAt(item.finishedAt)}
+                            </div>
+                          ) : null}
+                        </td>
+                        <td>
+                          <span className={cycleStage.badgeClass}>
+                            {cycleStage.label}
+                          </span>
+                          <div className="text-secondary small mt-1">
+                            {cycleStage.description}
+                          </div>
+                        </td>
+                        <td className="text-end">
+                          {canCreateNewResearchCycle(item.cycleStatus) ? (
+                            <button
+                              type="button"
+                              className={getNewResearchCycleButtonClass(
+                                item.cycleStatus,
+                              )}
+                              disabled={
+                                reprocessCycleMutation.isPending &&
+                                reprocessCycleMutation.variables ===
+                                  item.researchCycleId
+                              }
+                              onClick={() =>
+                                reprocessCycleMutation.mutate(
+                                  item.researchCycleId,
+                                )
+                              }
+                            >
+                              {reprocessCycleMutation.isPending &&
+                              reprocessCycleMutation.variables ===
+                                item.researchCycleId ? (
+                                <>
+                                  <span
+                                    className="spinner-border spinner-border-sm me-1"
+                                    aria-hidden="true"
+                                  />
+                                  Criando ciclo...
+                                </>
+                              ) : (
+                                getNewResearchCycleButtonLabel(item.cycleStatus)
+                              )}
+                            </button>
+                          ) : (
+                            <span className="text-secondary small">—</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
               {reprocessCycleMutation.isError ? (

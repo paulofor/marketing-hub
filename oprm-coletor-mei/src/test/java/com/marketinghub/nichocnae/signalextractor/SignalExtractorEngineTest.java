@@ -9,17 +9,34 @@ import org.junit.jupiter.api.Test;
 class SignalExtractorEngineTest {
     private final SignalExtractorEngine engine = new SignalExtractorEngine();
 
-    /** Deve extrair sinais comerciais e de dor a partir de evidência curta permitida. */
+    /** Deve extrair sinais comerciais, de dor e contexto operacional sem antecipar mecanismo de solução. */
     @Test
-    void shouldExtractRoutinePainAndMechanismSignals() {
+    void shouldExtractRoutinePainAndOperationalContextSignals() {
         var signals = engine.extract(pending(
                 "Como organizar agenda com WhatsApp e IA",
                 "Use mensagens para confirmar clientes e evitar faltas.",
                 "A rotina do salão melhora quando há controle de agenda, lembretes e automação simples."));
 
         assertThat(signals).extracting(ExtractedSignal::signalType)
-                .contains("ROUTINE_TASK", "COMMERCIAL_TASK", "PAIN_POINT", "MECHANISM_OPPORTUNITY");
+                .contains("ROUTINE_TASK", "COMMERCIAL_TASK", "PAIN_POINT", "CONTEXT_MARKER")
+                .doesNotContain("MECHANISM_OPPORTUNITY");
+        assertThat(signals).extracting(ExtractedSignal::signalText)
+                .doesNotContain("Criar mecanismo simples de organização, automação ou apoio por IA");
         assertThat(signals).allSatisfy(signal -> assertThat(signal.evidenceExcerpt()).doesNotContain("<html"));
+    }
+
+    /** Deve evitar que termos de solução isolados criem sinal de mecanismo na etapa cinco. */
+    @Test
+    void shouldNotCreateMechanismSignalFromSolutionTerms() {
+        var signals = engine.extract(pending(
+                "Sistema com IA para salão",
+                "Ferramenta de automação para atendimento.",
+                "Software promete solução para agenda e vendas."));
+
+        assertThat(signals).extracting(ExtractedSignal::signalType)
+                .doesNotContain("MECHANISM_OPPORTUNITY");
+        assertThat(signals).extracting(ExtractedSignal::signalText)
+                .noneMatch(text -> text.toLowerCase().contains("apoio por ia"));
     }
 
     /** Deve criar fallback útil quando não há palavra-chave suficiente no trecho público. */

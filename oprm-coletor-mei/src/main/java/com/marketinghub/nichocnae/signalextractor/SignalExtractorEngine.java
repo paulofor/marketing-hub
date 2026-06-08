@@ -29,8 +29,8 @@ public class SignalExtractorEngine {
                 "RESULT_DESIRED", "Aumentar fidelização e retorno de clientes", 80);
         addIfPresent(signals, normalized, evidence, List.of("pergunta", "como", "dúvida", "orientação"),
                 "CUSTOMER_QUESTION", "Responder dúvidas práticas que bloqueiam decisão ou execução", 76);
-        addIfPresent(signals, normalized, evidence, List.of("organizar", "controle", "processo", "sistema", "automação", "ia"),
-                "MECHANISM_OPPORTUNITY", "Criar mecanismo simples de organização, automação ou apoio por IA", 88);
+        addIfPresent(signals, normalized, evidence, List.of("organizar", "controle", "processo"),
+                "CONTEXT_MARKER", "Sinal de organização e controle observado na rotina", 74);
         addIfPresent(signals, normalized, evidence, List.of("qualidade", "higiene", "segurança", "confiança"),
                 "PROOF_SIGNAL", "Usar qualidade, higiene ou confiança como prova operacional", 78);
         if (signals.isEmpty() && StringUtils.hasText(evidence)) {

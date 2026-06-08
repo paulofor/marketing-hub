@@ -4100,6 +4100,14 @@
 - validação: adicionados testes unitários para confirmar cálculo via catálogo backend, URL de catálogo configurada e falha explícita quando o modelo não existe na tabela de preços.
 - observação operacional: os jobs já concluídos com `costUsd=0` não são recalculados automaticamente por essa alteração; novas execuções passam a gravar o custo correto a partir dos tokens retornados pela OpenAI.
 
+## 2026-06-08 — Processamento da etapa Gera Entregáveis no Worker AI
+
+- solicitação: criar o processamento do job `landing-page-deliverables` no Worker AI seguindo o padrão de pipeline por etapa descrito em `docs/metodologia/gerado-5-5/arquitetura-pipeline-etapas-archunit.md`.
+- causa-raiz: a etapa de entregáveis registrava execuções como `INICIADO`, mas não tinha fila interna completa no backend nem scheduler efetivo no Worker AI para capturar, processar, concluir e persistir `landing_page_deliverables`.
+- foi feito: o backend passou a expor endpoints internos de pendências, marcação de processamento, recebimento de prompt/request e recebimento de resposta/falha para `landing-page-deliverables`.
+- foi feito: o Worker AI recebeu o núcleo genérico `com.marketinghub.worker.pipeline` e a etapa concreta `pipeline.deliverables`, com scheduler, backend client, processor, validação JSON, artefatos auditáveis e chamada à OpenAI.
+- foi feito: o prompt de deliverables reforça que a saída deve ser JSON com `sampleDeliverables` para a amostra e `finalProductDeliverables` para a entrega do produto final.
+- impacto esperado: jobs de Gera Entregáveis deixam de ficar parados em `INICIADO` e passam a gerar o JSON comercial necessário para amostra gratuita e produto final completo.
 ## 2026-06-08 — Criativos automáticos após Texto do Anúncio e Prompt de Imagem
 
 - solicitação: corrigir a abordagem anterior porque o pipeline do experimento já possui as etapas **Texto do Anúncio** (`AD_COPY`) e **Gera Prompt Imagens** (`AD_IMAGE_BRIEFING`); a etapa restante é apenas gerar a imagem e juntar tudo em criativos.

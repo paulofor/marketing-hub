@@ -596,6 +596,109 @@ paths:
         '404':
           description: Experimento ou execução não encontrada.
 
+  /api/internal/geralanding/deliverables/stage-executions/pending:
+    get:
+      tags: [landing-page-deliverables]
+      summary: Lista jobs pendentes da etapa landing-page-deliverables.
+      operationId: pendingGeraLandingDeliverablesExecutions
+      responses:
+        '200':
+          $ref: '#/components/responses/PendingStageExecutionList'
+  /api/internal/geralanding/deliverables/stage-executions/{idJob}/running:
+    post:
+      tags: [landing-page-deliverables]
+      summary: Marca uma execução de deliverables como em processamento.
+      operationId: runningGeraLandingDeliverablesExecution
+      parameters:
+        - $ref: '#/components/parameters/IdJob'
+      requestBody:
+        $ref: '#/components/requestBodies/OpenAiDispatchMarker'
+      responses:
+        '202':
+          description: Execução marcada como em processamento.
+        '404':
+          description: Execução não encontrada.
+  /api/internal/geralanding/deliverables/stage-executions/{idJob}/receive-prompt:
+    post:
+      tags: [landing-page-deliverables]
+      summary: Alias legado que recebe prompt da IA para a etapa deliverables.
+      operationId: receivePromptGeraLandingDeliverablesExecution
+      parameters:
+        - $ref: '#/components/parameters/IdJob'
+      requestBody:
+        $ref: '#/components/requestBodies/PromptReceiveDirect'
+      responses:
+        '202':
+          description: Prompt recebido.
+        '400':
+          description: Payload inválido.
+        '404':
+          description: Execução não encontrada.
+  /api/internal/geralanding/deliverables/stage-executions/{idJob}/recebe-prompt:
+    post:
+      tags: [landing-page-deliverables]
+      summary: Recebe prompt, schema e request bruto enviados para IA na etapa deliverables.
+      operationId: recebePromptGeraLandingDeliverablesExecution
+      parameters:
+        - $ref: '#/components/parameters/IdJob'
+      requestBody:
+        $ref: '#/components/requestBodies/OpenAiPromptDispatchWithExperiment'
+      responses:
+        '202':
+          description: Prompt recebido.
+        '400':
+          description: Payload inválido.
+        '404':
+          description: Execução não encontrada.
+  /api/internal/geralanding/deliverables/stage-executions/{idJob}/receive-dispatch:
+    post:
+      tags: [landing-page-deliverables]
+      summary: Alias legado que marca dispatch OpenAI para a etapa deliverables.
+      operationId: receiveDispatchGeraLandingDeliverablesExecution
+      parameters:
+        - $ref: '#/components/parameters/IdJob'
+      requestBody:
+        $ref: '#/components/requestBodies/OpenAiDispatchMarker'
+      responses:
+        '202':
+          description: Dispatch recebido.
+        '400':
+          description: Payload inválido.
+        '404':
+          description: Execução não encontrada.
+  /api/internal/geralanding/deliverables/stage-executions/{idJob}/receive-result:
+    post:
+      tags: [landing-page-deliverables]
+      summary: Alias legado que recebe resultado da IA para a etapa deliverables.
+      operationId: receiveResultGeraLandingDeliverablesExecution
+      parameters:
+        - $ref: '#/components/parameters/IdJob'
+      requestBody:
+        $ref: '#/components/requestBodies/OpenAiStageResult'
+      responses:
+        '202':
+          description: Resultado recebido.
+        '400':
+          description: Payload inválido.
+        '404':
+          description: Execução não encontrada.
+  /api/internal/geralanding/deliverables/stage-executions/{idJob}/recebe-resposta:
+    post:
+      tags: [landing-page-deliverables]
+      summary: Recebe resposta da IA para a etapa deliverables.
+      operationId: recebeRespostaGeraLandingDeliverablesExecution
+      parameters:
+        - $ref: '#/components/parameters/IdJob'
+      requestBody:
+        $ref: '#/components/requestBodies/OpenAiStageResult'
+      responses:
+        '202':
+          description: Resposta recebida e execução concluída ou marcada como falha.
+        '400':
+          description: Payload inválido.
+        '404':
+          description: Execução não encontrada.
+
   /api/experiments/{experimentId}/geralanding/landing/approve-end-publish:
     post:
       tags: [landing-page-publication]

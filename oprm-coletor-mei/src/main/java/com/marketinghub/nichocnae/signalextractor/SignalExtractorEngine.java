@@ -31,6 +31,7 @@ public class SignalExtractorEngine {
                 "CUSTOMER_QUESTION", "Responder dúvidas práticas que bloqueiam decisão ou execução", 76);
         addIfPresent(signals, normalized, evidence, List.of("organizar", "controle", "processo"),
                 "CONTEXT_MARKER", "Sinal de organização e controle observado na rotina", 74);
+        addSolutionRiskIfPresent(signals, normalized, evidence);
         addIfPresent(signals, normalized, evidence, List.of("qualidade", "higiene", "segurança", "confiança"),
                 "PROOF_SIGNAL", "Usar qualidade, higiene ou confiança como prova operacional", 78);
         if (signals.isEmpty() && StringUtils.hasText(evidence)) {
@@ -38,6 +39,34 @@ public class SignalExtractorEngine {
                     "LANGUAGE_MARKER", "Vocabulário público do nicho identificado para síntese", evidence, 60));
         }
         return signals.values().stream().limit(MAX_SIGNALS).toList();
+    }
+
+    /** Adiciona risco de solução quando a evidência contém termos explícitos de solução precoce. */
+    private void addSolutionRiskIfPresent(Map<String, ExtractedSignal> signals, String normalized, String evidence) {
+        boolean present = containsSolutionLanguage(normalized);
+        if (!present) {
+            return;
+        }
+        signals.putIfAbsent("SOLUTION_LANGUAGE_RISK|Termo de solução detectado antes da aprovação da rotina", new ExtractedSignal(
+                "SOLUTION_LANGUAGE_RISK", "Termo de solução detectado antes da aprovação da rotina", evidence, 70));
+    }
+
+    /** Detecta termos de solução com cuidado para não confundir sílabas comuns como "ia" em palavras maiores. */
+    private boolean containsSolutionLanguage(String normalized) {
+        return normalized.contains("inteligência artificial")
+                || normalized.contains("automação")
+                || normalized.contains("sistema")
+                || normalized.contains("software")
+                || normalized.contains("ferramenta")
+                || normalized.contains("curso")
+                || containsWholeToken(normalized, "ia")
+                || containsWholeToken(normalized, "app");
+    }
+
+    /** Verifica token inteiro após normalizar pontuação para evitar falso positivo por substring. */
+    private boolean containsWholeToken(String text, String token) {
+        String tokenized = " " + text.replaceAll("[^\\p{L}\\p{Nd}]+", " ").replaceAll("\\s+", " ").trim() + " ";
+        return tokenized.contains(" " + token + " ");
     }
 
     /** Adiciona um sinal quando o conteúdo contém algum indicador textual do grupo de palavras-chave. */

@@ -1,6 +1,6 @@
 # Currículo Mestre — Paulo Forestieri
 
-Versão: 0.2  
+Versão: 0.3  
 Status: rascunho de trabalho  
 Objetivo: servir como base narrativa para gerar currículos direcionados, LinkedIn, carta de apresentação e versão visual no Canva.
 
@@ -34,15 +34,15 @@ Estrutura recomendada:
 - Competências principais alinhadas à vaga.
 - Modelo de trabalho: 100% remoto.
 - Experiências mais fortes para o alvo principal:
-  - Caixa / Stefanini / Qintess;
+  - Caixa / Stefanini;
   - Banco do Brasil / Stefanini.
 
 ### Página 2
 
 - Bradesco Seguros / Ebix;
 - Oi / Stefanini;
-- Ipiranga / K2;
-- carreira anterior consolidada;
+- Ipiranga / Everis-K2;
+- carreira anterior consolidada, com destaque para Probid / Governo do Estado do RJ;
 - projetos independentes em IA aplicada, em seção separada;
 - formação e idiomas.
 
@@ -88,98 +88,112 @@ Frase melhor:
 
 ## 5. Experiência profissional recente e relevante
 
-### Engenheiro de Software Java — Caixa Econômica Federal via Stefanini / Qintess
+### Engenheiro de Software Java — Caixa Econômica Federal via Stefanini
 
-Período: validar datas exatas  
+Período: 03/2023 – 05/2024  
 Modelo: alocação em cliente / consultoria
 
-Atuação em sistemas financeiros críticos, internet banking web/mobile, renda fixa, integrações REST, Oracle e práticas de qualidade de software.
+Atuação em squad ágil responsável por novas implementações e evoluções no Internet Banking, com entregas organizadas em sprints a partir de demandas dos gestores do cliente. Trabalho em sistema financeiro de alta visibilidade, com integração a serviços corporativos e bases de dados.
 
 Principais atividades e contribuições:
 
-- desenvolvimento em Java, Spring Boot e Quarkus;
-- criação e manutenção de endpoints para integração com aplicações frontend;
-- atuação em integrações REST e sistemas corporativos;
-- evolução e correções em sistemas críticos de Renda Fixa;
-- uso de Oracle, Azure Pipelines, Sonar, testes unitários e Git;
-- contribuição para padronização, modularização e qualidade de código;
-- atuação em ambiente financeiro com exigência de confiabilidade, rastreabilidade e estabilidade.
+- desenvolvimento de funcionalidades em Java, JSP, HTML, CSS e JavaScript;
+- manutenção e evolução de aplicações baseadas em arquitetura MVC e camadas;
+- integração com serviços REST para consultas e alterações em bases corporativas;
+- uso de Ajax em funcionalidades de front-end;
+- versionamento de código com Git;
+- publicação e deploy com Jenkins;
+- atuação em ambiente JBoss;
+- colaboração em time de desenvolvimento com metodologia ágil, sprints e entregas contínuas.
 
-Tecnologias: Java, Spring Boot, Quarkus, Angular, APIs REST, Oracle, HTML5, JavaScript, CSS, Mustache, Azure Pipelines, Sonar, testes unitários, Git.
+Tecnologias: Java, JSP, HTML, CSS, JavaScript, Ajax, REST, MVC, Git, Jenkins, JBoss.
+
+Observação para validação: confirmar se a experiência posterior via Qintess/Caixa deve aparecer como continuidade separada ou se deve ser incorporada neste bloco.
 
 ---
 
 ### Engenheiro de Dados / ML — Banco do Brasil via Stefanini
 
-Período: validar datas exatas  
+Período: 04/2021 – 12/2022  
 Modelo: alocação em cliente / consultoria
 
-Atuação em engenharia de dados para modelos preditivos e personalização de produtos financeiros, com construção e evolução de pipelines em ambiente Hadoop/Spark.
+Atuação em squad voltada à criação de modelos de machine learning para recomendação de produtos financeiros, apoiando gerentes de agência na oferta de produtos mais adequados ao perfil de cada cliente.
 
 Principais atividades e contribuições:
 
-- construção e expansão de Data Lake em Hadoop;
-- processamento distribuído com Spark;
-- consumo analítico via Hive;
-- organização de datasets em Parquet;
-- apoio a modelos preditivos voltados à recomendação e personalização de produtos financeiros;
-- integração de resultados em produção para suporte a decisões comerciais;
-- atuação com Python, Spark, Hadoop, Hive, Jupyter Notebook, Databricks e SQL.
+- desenvolvimento de ETLs para montagem de bases de treinamento de modelos preditivos;
+- tratamento e preparação de dados em ambiente Hadoop on-premises;
+- desenvolvimento em Python com Spark;
+- uso de Jupyter Notebook e ferramentas internas do banco;
+- apoio à integração de dados para iniciativas de personalização de produtos financeiros;
+- participação em projetos pontuais com Databricks;
+- participação em palestras, capacitações online e iniciativas internas de atualização técnica;
+- atuação em ambiente colaborativo com squads, sprints e entregas contínuas.
 
-Tecnologias: Python, Spark, Hadoop, HDFS, Hive, Parquet, Jupyter Notebook, Databricks, SQL, Data Lake, ETL, ML.
+Tecnologias: Python, Spark, Hadoop, Hive, Jupyter Notebook, Databricks, SQL, ETL, ML.
 
 ---
 
 ### Engenheiro de Software Java — Bradesco Seguros via Ebix
 
-Período: validar datas exatas
+Período: 05/2020 – 04/2021  
+Modelo: alocação em cliente / consultoria
 
-Atuação em sistemas corporativos de seguros auto, com foco em manutenção, evolução e sustentação de aplicações Java EE em ambiente IBM WebSphere.
+Atuação em manutenção, evolução e correção de aplicações Java corporativas no ambiente do cliente, com foco em sistemas de seguros e sustentação de aplicações existentes.
 
 Principais atividades e contribuições:
 
-- desenvolvimento e sustentação de sistemas corporativos de seguros;
-- atuação em ambiente Java EE com IBM WebSphere;
-- correções, evolução de funcionalidades e suporte a aplicações críticas;
-- trabalho em sistemas legados com necessidade de estabilidade e continuidade operacional.
+- correção e evolução de aplicações Java;
+- atuação em sistemas desenvolvidos para IBM WebSphere;
+- uso de Spring Framework em aplicações corporativas;
+- versionamento de código com Git;
+- publicação e deploy com Jenkins;
+- sustentação de sistemas legados com necessidade de estabilidade operacional.
 
-Tecnologias: Java, Java EE, IBM WebSphere, sistemas corporativos, seguros.
+Tecnologias: Java, Spring Framework, IBM WebSphere, Git, Jenkins.
 
 ---
 
 ### Engenheiro de Dados — Oi via Stefanini
 
-Período: validar datas exatas
+Período: 09/2017 – 03/2020  
+Modelo: alocação em cliente / consultoria
 
-Atuação em engenharia de dados para squads de e-commerce e chatbot, com coleta, integração, curadoria e visualização de dados.
+Atuação em duas squads: comércio eletrônico e chatbot. Na frente de e-commerce, participação na construção de estrutura de big data para coleta, integração e análise de dados internos e externos, incluindo informações de parceiros comerciais. Na frente de chatbot, atuação na coleta e análise de interações com clientes para geração de painéis de apoio à tomada de decisão.
 
 Principais atividades e contribuições:
 
-- construção de Data Lake e pipelines de coleta e curadoria para e-commerce;
-- tratamento de dados do funil de ads, navegação, conversão e contato;
-- coleta e análise de dados de interações com chatbot;
-- desenvolvimento de dashboards e painéis de decisão;
-- apoio à evolução de produtos digitais com base em dados.
+- construção de Data Lake e pipelines de coleta e curadoria de dados;
+- integração de dados internos e externos relacionados a vendas, parceiros e jornada digital;
+- apoio à criação de indicadores de performance de negócio;
+- desenvolvimento de dashboards em Tableau para gestores;
+- atuação em dados de e-commerce, vendas digitais e chatbot;
+- uso de Python, Hadoop, Hive e SQL;
+- participação em pequenos projetos com AWS S3 e Lambda;
+- trabalho em squads ágeis com sprints e entregas contínuas.
 
-Tecnologias: Python, Hadoop, Hive, AWS, Tableau, SQL, Data Lake, dashboards.
+Tecnologias: Python, Hadoop, Hive, SQL, Tableau, AWS S3, AWS Lambda, Data Lake, dashboards.
 
 ---
 
-### Consultor / Desenvolvedor Java Sênior — Ipiranga Produtos de Petróleo via K2
+### Consultor / Desenvolvedor Java Sênior — Ipiranga Produtos de Petróleo via Everis / K2
 
-Período: validar datas exatas
+Período: 04/2016 – 06/2017  
+Modelo: alocação em cliente / consultoria
 
-Atuação como desenvolvedor sênior e referência técnica em sistemas Java corporativos, com foco em correção, evolução e melhoria de aplicações do cliente.
+Atuação em sistema Java corporativo que apresentava problemas de funcionamento e insatisfação do cliente. Trabalho combinando análise técnica, correção de problemas, escuta ativa do cliente e apoio consultivo para recuperar a confiança na solução.
 
 Principais atividades e contribuições:
 
-- desenvolvimento e manutenção de sistemas Java em ambiente corporativo;
-- correção e aprimoramento de funcionalidades em sistemas do cliente;
-- liderança técnica de equipe de desenvolvimento;
-- atuação com integrações, banco de dados Oracle e sistemas legados;
-- contribuição para desenho técnico, estabilidade e evolução de aplicações críticas.
+- análise e correção de problemas em sistema Java corporativo;
+- atuação em ambiente IBM WebSphere;
+- desenvolvimento com Hibernate e integração com banco de dados;
+- uso da IDE IBM WebSphere Studio;
+- relacionamento direto com o cliente para entender problemas e priorizar correções;
+- boa avaliação do cliente, resultando em continuidade da atuação em novos projetos;
+- participação posterior em projetos Java para time de BI que atendia a Ipiranga.
 
-Tecnologias: Java, WebSphere, Hibernate, Spring, Oracle SQL, sistemas corporativos, liderança técnica.
+Tecnologias: Java, IBM WebSphere, Hibernate, Oracle SQL, WebSphere Studio, sistemas corporativos, atendimento consultivo ao cliente.
 
 ---
 
@@ -187,10 +201,24 @@ Tecnologias: Java, WebSphere, Hibernate, Spring, Oracle SQL, sistemas corporativ
 
 Carreira consolidada em engenharia de software, liderança técnica, arquitetura, sistemas corporativos e integrações em clientes como Governo do Estado do Rio de Janeiro, DATASUS, Vivo, Petrobras, MJV, Instituto Infnet e Bull.
 
-Destaques:
+### Destaque — Probid / Governo do Estado do Rio de Janeiro
+
+Período: 08/2009 – 02/2016
+
+Atuação por longo período em pequena empresa prestadora de serviços para o Governo do Estado do Rio de Janeiro, participando da construção de um sistema Java praticamente desde o início. O sistema integrava módulos de biometria digital e software embarcado em roletas/catracas para controle de acesso a prédios públicos, além de gerar dados e indicadores relacionados ao funil de cadastramento de funcionários.
+
+Principais pontos:
+
+- construção de sistema Java do zero em ambiente corporativo;
+- integração com módulos de biometria digital;
+- integração com software embarcado em equipamentos de controle de acesso;
+- geração de dados e indicadores para acompanhamento do funil de cadastramento de funcionários;
+- uso de JBoss, Struts e banco de dados relacional;
+- atuação em contexto de governo, identificação funcional, controle de acesso e sistemas críticos.
+
+### Outros destaques da carreira anterior
 
 - liderança técnica e desenvolvimento Java em sistemas corporativos;
-- atuação em sistemas de identidade funcional, biometria e integrações;
 - participação como arquiteto de sistemas em projeto de fidelização com uso de biometria;
 - atuação em Java, WebSphere, Hibernate, Spring, Struts, JSF, EJB, SOAP e bancos relacionais;
 - atuação na versão Java do SISREG no DATASUS;
@@ -203,11 +231,11 @@ Destaques:
 
 ### Engenharia de Software
 
-Java, Spring Boot, Quarkus, Java EE, APIs REST, SOAP, Oracle, SQL, Spring Data, Spring Security, Angular, HTML5, JavaScript, CSS, Mustache, WebSphere, JBoss, Struts, JSF, Hibernate, microserviços, integrações, sistemas legados, modularização, padronização de código, testes unitários, CI/CD, Sonar, Azure DevOps, Git e GitHub Actions.
+Java, Spring Boot, Spring Framework, Quarkus, Java EE, JSP, APIs REST, SOAP, Oracle, SQL, Spring Data, Spring Security, Angular, HTML5, JavaScript, CSS, Ajax, Mustache, WebSphere, JBoss, Struts, JSF, Hibernate, WebSphere Studio, microserviços, integrações, sistemas legados, MVC, modularização, padronização de código, testes unitários, CI/CD, Jenkins, Sonar, Azure DevOps, Git e GitHub Actions.
 
 ### Dados e ML aplicado
 
-Python, Spark, Hadoop/HDFS, Hive, Parquet, Data Lake, ETL, ELT, modelagem de dados, pipelines de dados, qualidade de dados, observabilidade, performance SQL, Jupyter Notebook, Databricks, apoio a modelos preditivos e integração de resultados de ML em produção.
+Python, Spark, Hadoop/HDFS, Hive, Parquet, Data Lake, ETL, ELT, modelagem de dados, pipelines de dados, qualidade de dados, observabilidade, performance SQL, Jupyter Notebook, Databricks, Tableau, AWS S3, AWS Lambda, apoio a modelos preditivos e integração de resultados de ML em produção.
 
 ### IA aplicada e desenvolvimento assistido por IA
 
@@ -215,7 +243,7 @@ IA Generativa, LLMs, RAG, Prompt Engineering, OpenAI API/Responses, tool calling
 
 ### Domínios de negócio
 
-Bancos, seguros, telecom, governo, internet banking, renda fixa, personalização de produtos financeiros, e-commerce, chatbot, óleo & gás, sistemas críticos e integrações corporativas.
+Bancos, seguros, telecom, governo, internet banking, renda fixa, personalização de produtos financeiros, e-commerce, chatbot, óleo & gás, BI, controle de acesso, identificação funcional, sistemas críticos e integrações corporativas.
 
 ---
 
@@ -277,11 +305,11 @@ Uso: vagas de Data Engineer, pipelines, Data Lake, Spark, Hadoop, Databricks e M
 
 ## 11. Pendências de validação
 
-- Confirmar datas exatas de Caixa / Stefanini / Qintess.
-- Confirmar datas exatas de Banco do Brasil / Stefanini.
-- Confirmar datas exatas de Bradesco Seguros / Ebix.
-- Confirmar datas exatas de Oi / Stefanini.
-- Confirmar datas exatas de Ipiranga / K2.
+- Confirmar se houve continuidade Caixa / Qintess após o período Caixa / Stefanini.
+- Confirmar se Banco do Brasil deve aparecer como 04/2021 – 12/2022 ou outro período.
+- Confirmar se Bradesco Seguros / Ebix deve aparecer como 05/2020 – 04/2021.
+- Confirmar se Oi / Stefanini deve aparecer como 09/2017 – 03/2020.
+- Confirmar se Ipiranga deve aparecer como Everis / K2 ou apenas K2.
 - Definir se os repositórios independentes serão citados apenas em entrevista ou também como portfólio.
 - Revisar repositórios públicos para remover qualquer informação sensível antes de usá-los como portfólio.
 - Definir frase final sobre inglês.

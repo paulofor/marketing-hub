@@ -280,6 +280,46 @@ function buildFailureMessage(errorMessage?: string | null) {
   return errorMessage.trim();
 }
 
+function buildProblemPoint(status: string) {
+  if (status === "NEEDS_MORE_RESEARCH") {
+    return {
+      label: "Ponto do problema",
+      value: "Etapa 7 · Gate de Qualidade",
+      description:
+        "A pesquisa chegou ao gate, mas ainda não reuniu sinais/evidências suficientes para liberar o nicho.",
+      className: "text-warning",
+    };
+  }
+  if (status === "GENERIC") {
+    return {
+      label: "Ponto do problema",
+      value: "Etapa 7 · Gate de Qualidade",
+      description:
+        "A pesquisa chegou ao gate, mas ficou genérica demais para alimentar hipótese ou oferta com segurança.",
+      className: "text-secondary",
+    };
+  }
+  if (status === "ENRICHED_NICHE_FAILED") {
+    return {
+      label: "Ponto da falha",
+      value: "Etapa 8 · Nicho Enriquecido",
+      description:
+        "A pesquisa já tinha sido aprovada, mas a materialização do nicho enriquecido falhou.",
+      className: "text-danger",
+    };
+  }
+  if (status === "FAILED") {
+    return {
+      label: "Ponto da falha",
+      value: "Etapa interrompida no ciclo",
+      description:
+        "Veja o detalhe técnico abaixo para identificar a etapa exata que registrou a interrupção.",
+      className: "text-danger",
+    };
+  }
+  return null;
+}
+
 function getStageCardClass(stageNumber: string, hasContinuationError: boolean) {
   if (stageNumber === "1" && hasContinuationError) {
     return "card border border-warning-subtle shadow-sm h-100";
@@ -314,6 +354,9 @@ export default function OprmPipelinePage() {
   } = useOprmRoutineResearchOrchestratorRecent(10);
   const reprocessCycleMutation = useReprocessOprmRoutineResearchCycle(10);
   const latestCycle = recentProcessed[0];
+  const latestProblemPoint = latestCycle
+    ? buildProblemPoint(latestCycle.cycleStatus)
+    : null;
   const latestRunningCycle = recentProcessed.find(
     (item) => item.cycleStatus === "RUNNING",
   );
@@ -479,6 +522,7 @@ export default function OprmPipelinePage() {
                 <tbody>
                   {recentProcessed.map((item) => {
                     const cycleStage = getCycleStage(item.cycleStatus);
+                    const problemPoint = buildProblemPoint(item.cycleStatus);
                     return (
                       <tr key={item.researchCycleId}>
                         <td className="text-nowrap">
@@ -533,6 +577,19 @@ export default function OprmPipelinePage() {
                           <div className="text-secondary small mt-1">
                             {cycleStage.description}
                           </div>
+                          {problemPoint ? (
+                            <div
+                              className={`small mt-2 ${problemPoint.className}`}
+                            >
+                              <span className="fw-semibold">
+                                {problemPoint.label}:
+                              </span>{" "}
+                              {problemPoint.value}
+                              <span className="d-block text-secondary">
+                                {problemPoint.description}
+                              </span>
+                            </div>
+                          ) : null}
                         </td>
                         <td className="text-end">
                           {canCreateNewResearchCycle(item.cycleStatus) ? (
@@ -706,6 +763,19 @@ export default function OprmPipelinePage() {
                           ) : null}
                         </dd>
                       </dl>
+                      {latestProblemPoint ? (
+                        <div
+                          className={`small mt-2 ${latestProblemPoint.className}`}
+                        >
+                          <span className="fw-semibold">
+                            {latestProblemPoint.label}:
+                          </span>{" "}
+                          {latestProblemPoint.value}
+                          <span className="d-block text-secondary">
+                            {latestProblemPoint.description}
+                          </span>
+                        </div>
+                      ) : null}
                       {latestCycle.errorMessage ? (
                         <div className="text-danger small mt-2">
                           <span className="fw-semibold">Erro:</span>{" "}

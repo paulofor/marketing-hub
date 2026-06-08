@@ -10,7 +10,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -31,8 +30,6 @@ public class McpController {
 
     private static final Logger logger = LoggerFactory.getLogger(McpController.class);
 
-    private static final String AUTHORIZATION_HEADER = "Authorization";
-    private static final String BEARER_PREFIX = "Bearer ";
     private static final int DEFAULT_LIMIT = 50;
     private static final int MAX_LIMIT = 200;
     private static final int MAX_QUERY_LIMIT = 500;
@@ -85,10 +82,6 @@ public class McpController {
         String method = String.valueOf(request.getOrDefault("method", ""));
         logger.info("Nova requisição MCP recebida: requestId={} method={} remoteAddr={} userAgent={}",
                 id, method, httpServletRequest.getRemoteAddr(), httpServletRequest.getHeader("User-Agent"));
-        if (!isAuthorized(httpServletRequest)) {
-            return ResponseEntity.status(401).body(error(id, -32001, "Unauthorized"));
-        }
-
         return switch (method) {
             case "initialize" -> ResponseEntity.ok(success(id, Map.of(
                     "protocolVersion", "2024-11-05",
@@ -243,20 +236,6 @@ public class McpController {
             case "tools/call" -> ResponseEntity.ok(callTool(id, request));
             default -> ResponseEntity.ok(error(id, -32601, "Method not found: " + method));
         };
-    }
-
-    /**
-     * Valida o bearer token quando a chave MCP está configurada.
-     */
-    private boolean isAuthorized(HttpServletRequest request) {
-        if (!StringUtils.hasText(properties.apiKey())) {
-            return true;
-        }
-
-        String authHeader = request.getHeader(AUTHORIZATION_HEADER);
-        return StringUtils.hasText(authHeader)
-                && authHeader.startsWith(BEARER_PREFIX)
-                && properties.apiKey().equals(authHeader.substring(BEARER_PREFIX.length()));
     }
 
     /**

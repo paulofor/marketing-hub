@@ -18,7 +18,6 @@ import java.util.List;
 public record McpProperties(
         @NotBlank String serverName,
         @NotBlank String serverVersion,
-        String apiKey,
         @NotNull @Valid Logs logs,
         @NotNull @Valid Meta meta,
         @NotNull @Valid Github github

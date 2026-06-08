@@ -40,8 +40,8 @@ mvn -s settings.xml spring-boot:run
 
 ## Segurança
 
-- Se `MCP_API_KEY` estiver definido, o endpoint `/mcp` exige `Authorization: Bearer <MCP_API_KEY>`.
-- Se `MCP_API_KEY` estiver vazio, o endpoint permanece aberto (apenas para ambientes internos/controlados).
+- O endpoint `/mcp` não solicita nem valida autenticação de entrada (sem token, API key ou header `Authorization`).
+- Mantenha a exposição controlada por rede/proxy/firewall quando necessário, sem exigir credencial no contrato HTTP do MCP.
 
 ## Logs de Spring Boot dos módulos Java
 
@@ -117,7 +117,6 @@ docker run --rm -p 8096:8096 \
   -e SPRING_DATASOURCE_URL=jdbc:mysql://<host>:3306/<db> \
   -e SPRING_DATASOURCE_USERNAME=<user> \
   -e SPRING_DATASOURCE_PASSWORD=<pass> \
-  -e MCP_API_KEY=<token-forte> \
   marketinghub/mcp-server
 ```
 
@@ -144,7 +143,6 @@ Depois, valide:
 ```bash
 curl -i http://mcpserverdigi.shop/mcp \
   -H 'Content-Type: application/json' \
-  -H 'Authorization: Bearer <MCP_API_KEY>' \
   -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}'
 ```
 
@@ -261,16 +259,14 @@ Se nada for encontrado, reemita o certificado e valide novamente o caminho `live
 > Esta etapa corresponde ao item 3 (instalar/publicar o servidor MCP no Codex Cloud).
 
 1. Publique o `mcp-server` em uma URL HTTPS pública, por exemplo `https://mcp.seudominio.com/mcp`.
-2. Defina `MCP_API_KEY` no servidor para proteger o endpoint.
-3. No Codex Cloud, crie/instale um plugin MCP apontando para a URL publicada e passando o header de autenticação.
-4. Use o arquivo `codex-cloud/mcp-server-config.example.json` como base para preencher os dados do ambiente.
+2. No Codex Cloud, crie/instale um plugin MCP apontando para a URL publicada sem headers de autenticação.
+3. Use o arquivo `codex-cloud/mcp-server-config.example.json` como base para preencher os dados do ambiente.
 
 ### Teste rápido antes de conectar ao Codex
 
 ```bash
 curl -sS https://mcp.seudominio.com/mcp \
   -H 'Content-Type: application/json' \
-  -H 'Authorization: Bearer <MCP_API_KEY>' \
   -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}'
 ```
 

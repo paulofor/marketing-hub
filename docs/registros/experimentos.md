@@ -4099,3 +4099,12 @@
 - foi feito: o cliente Responses API agora calcula o custo com `priceInputBatch` e `priceOutputBatch` retornados do banco para o modelo efetivo, mantendo a auditoria de tokens (`inputTokens`/`outputTokens`) e enviando `costUsd` calculado ao backend.
 - validação: adicionados testes unitários para confirmar cálculo via catálogo backend, URL de catálogo configurada e falha explícita quando o modelo não existe na tabela de preços.
 - observação operacional: os jobs já concluídos com `costUsd=0` não são recalculados automaticamente por essa alteração; novas execuções passam a gravar o custo correto a partir dos tokens retornados pela OpenAI.
+
+## 2026-06-08 — Criativos automáticos após Texto do Anúncio e Prompt de Imagem
+
+- solicitação: corrigir a abordagem anterior porque o pipeline do experimento já possui as etapas **Texto do Anúncio** (`AD_COPY`) e **Gera Prompt Imagens** (`AD_IMAGE_BRIEFING`); a etapa restante é apenas gerar a imagem e juntar tudo em criativos.
+- diagnóstico operacional: a conclusão de `AD_IMAGE_BRIEFING` encerrava a fila automática sem enfileirar a geração de imagens/criativos, deixando o operador dependente de nova ação manual mesmo com texto e briefing prontos.
+- foi feito: removida a refatoração genérica anterior no Worker AI e mantido o fluxo existente de geração de imagem e composição de criativos pelo `ExperimentCreativeService`.
+- foi feito: ao concluir `AD_IMAGE_BRIEFING`, o backend agora extrai os pares válidos de `adCopy` + `adImageBriefing`, define `creativesToGenerate` com até 3 variações e marca `creativeGenerationMode=PIPELINE_ADS`, permitindo que o Worker AI gere somente as imagens e persista os criativos `DRAFT`.
+- foi feito: mantida a regra de não iniciar automaticamente as etapas de Gera Landing após `AD_IMAGE_BRIEFING`; essas continuam manuais.
+- validação: adicionado teste unitário garantindo que a conclusão de `AD_IMAGE_BRIEFING` enfileira a geração dos criativos do pipeline sem criar job automático de landing.

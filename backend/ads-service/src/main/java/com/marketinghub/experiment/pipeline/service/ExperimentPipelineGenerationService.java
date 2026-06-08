@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.ai.generation.dto.AiWorkerGenerationRequest;
 import com.marketinghub.ai.generation.service.AiWorkerGenerationService;
 import com.marketinghub.cost.CostAttributionService;
+import com.marketinghub.experiment.CreativeGenerationMode;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.dto.ExperimentDto;
@@ -14,6 +15,8 @@ import com.marketinghub.experiment.pipeline.ExperimentPipelineGenerationJob;
 import com.marketinghub.experiment.pipeline.ExperimentPipelineGenerationJobStage;
 import com.marketinghub.experiment.pipeline.ExperimentPipelineGenerationJobStatus;
 import com.marketinghub.experiment.pipeline.ExperimentPipelineSection;
+import com.marketinghub.experiment.pipeline.ads.ExperimentPipelineAdExtractor;
+import com.marketinghub.experiment.pipeline.ads.PipelineAdCreativePlan;
 import com.marketinghub.experiment.pipeline.dto.ExperimentPipelineGenerationJobDetailDto;
 import com.marketinghub.experiment.pipeline.dto.ExperimentPipelineGenerationJobSummaryDto;
 import com.marketinghub.experiment.pipeline.dto.ExperimentPipelineGenerationRequest;
@@ -931,8 +934,10 @@ public class ExperimentPipelineGenerationService {
             return;
         }
         if (section == ExperimentPipelineSection.AD_IMAGE_BRIEFING) {
+            enqueuePipelineAdCreativeImages(job.getExperiment());
             log.info("Fila automática finalizada após AD_IMAGE_BRIEFING para experimento {}. "
-                            + "As etapas de Gera Landing devem ser iniciadas manualmente.",
+                            + "Criativos de anúncio foram encaminhados para geração de imagem; "
+                            + "as etapas de Gera Landing devem ser iniciadas manualmente.",
                     experimentId);
             return;
         }
@@ -948,6 +953,32 @@ public class ExperimentPipelineGenerationService {
             return;
         }
         enqueueJob(job.getExperiment(), successor, deriveFollowUpRequest(request));
+    }
+
+
+    /** Encaminha a geração de imagens dos criativos usando texto e briefing já concluídos no pipeline. */
+    private void enqueuePipelineAdCreativeImages(Experiment experiment) {
+        if (experiment == null || experiment.getId() == null) {
+            return;
+        }
+        Integer pendingCreatives = experiment.getCreativesToGenerate();
+        if (pendingCreatives != null && pendingCreatives > 0) {
+            log.info("Geração de criativos já estava pendente para experimento {} (quantidade={}); não será duplicada",
+                    experiment.getId(), pendingCreatives);
+            return;
+        }
+        ExperimentPipelineAdExtractor extractor = new ExperimentPipelineAdExtractor(objectMapper);
+        List<PipelineAdCreativePlan> plans = extractor.extract(experiment);
+        if (plans.isEmpty()) {
+            log.warn("AD_IMAGE_BRIEFING concluído, mas nenhum par texto/briefing válido foi encontrado para gerar criativos do experimento {}",
+                    experiment.getId());
+            return;
+        }
+        int quantity = Math.min(3, plans.size());
+        experiment.setCreativesToGenerate(quantity);
+        experiment.setCreativeGenerationMode(CreativeGenerationMode.PIPELINE_ADS);
+        log.info("Geração de imagem dos criativos enfileirada para experimento {} a partir das etapas AD_COPY e AD_IMAGE_BRIEFING (quantidade={})",
+                experiment.getId(), quantity);
     }
 
     private ExperimentPipelineGenerationRequest deriveFollowUpRequest(ExperimentPipelineGenerationJobCompletionRequest request) {

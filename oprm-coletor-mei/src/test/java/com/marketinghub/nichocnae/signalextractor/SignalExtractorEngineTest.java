@@ -9,17 +9,51 @@ import org.junit.jupiter.api.Test;
 class SignalExtractorEngineTest {
     private final SignalExtractorEngine engine = new SignalExtractorEngine();
 
-    /** Deve extrair sinais comerciais e de dor a partir de evidência curta permitida. */
+    /** Deve extrair sinais comerciais, de dor e contexto operacional sem antecipar mecanismo de solução. */
     @Test
-    void shouldExtractRoutinePainAndMechanismSignals() {
+    void shouldExtractRoutinePainAndOperationalContextSignals() {
         var signals = engine.extract(pending(
                 "Como organizar agenda com WhatsApp e IA",
                 "Use mensagens para confirmar clientes e evitar faltas.",
                 "A rotina do salão melhora quando há controle de agenda, lembretes e automação simples."));
 
         assertThat(signals).extracting(ExtractedSignal::signalType)
-                .contains("ROUTINE_TASK", "COMMERCIAL_TASK", "PAIN_POINT", "MECHANISM_OPPORTUNITY");
+                .contains("ROUTINE_TASK", "COMMERCIAL_TASK", "PAIN_POINT", "CONTEXT_MARKER", "SOLUTION_LANGUAGE_RISK")
+                .doesNotContain("MECHANISM_OPPORTUNITY");
+        assertThat(signals).extracting(ExtractedSignal::signalText)
+                .contains("Termo de solução detectado antes da aprovação da rotina")
+                .doesNotContain("Criar mecanismo simples de organização, automação ou apoio por IA");
         assertThat(signals).allSatisfy(signal -> assertThat(signal.evidenceExcerpt()).doesNotContain("<html"));
+    }
+
+    /** Deve classificar termos de solução isolados como risco, e não como mecanismo positivo, na etapa cinco. */
+    @Test
+    void shouldCreateSolutionRiskInsteadOfMechanismSignalFromSolutionTerms() {
+        var signals = engine.extract(pending(
+                "Sistema com IA para salão",
+                "Ferramenta de automação para atendimento.",
+                "Software promete solução para agenda e vendas."));
+
+        assertThat(signals).extracting(ExtractedSignal::signalType)
+                .contains("SOLUTION_LANGUAGE_RISK")
+                .doesNotContain("MECHANISM_OPPORTUNITY");
+        assertThat(signals).extracting(ExtractedSignal::signalText)
+                .contains("Termo de solução detectado antes da aprovação da rotina")
+                .noneMatch(text -> text.toLowerCase().contains("apoio por ia"));
+    }
+
+
+    /** Deve evitar falso positivo de IA quando a sílaba aparece dentro de palavras comuns. */
+    @Test
+    void shouldNotCreateSolutionRiskFromIaSyllableInsideCommonWords() {
+        var signals = engine.extract(pending(
+                "Tarefas diárias de manicure",
+                "Rotina e atendimento com higiene e confiança.",
+                "Profissionais fazem controle de agenda e materiais para os atendimentos diários."));
+
+        assertThat(signals).extracting(ExtractedSignal::signalType)
+                .contains("ROUTINE_TASK", "CONTEXT_MARKER", "PROOF_SIGNAL")
+                .doesNotContain("SOLUTION_LANGUAGE_RISK", "MECHANISM_OPPORTUNITY");
     }
 
     /** Deve criar fallback útil quando não há palavra-chave suficiente no trecho público. */

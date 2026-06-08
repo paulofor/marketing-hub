@@ -24,6 +24,7 @@
 - Quando não houver `instagramAccount` no experimento, utilize o `defaultInstagramActorId` configurado ou o identificador vindo do criativo, seguindo sem `instagram_user_id` se nenhum valor estiver disponível.
 - Na criação de criativos (`POST /adcreatives`), se a Graph API retornar erro transitório de download da imagem (`error_subcode = 3858258`, ex.: “A imagem não foi baixada”), tente novamente até 3 vezes antes de falhar o experimento.
 - Na criação de criativos (`POST /adcreatives`), ao receber `error_subcode = 3858258`, tente fazer upload prévio da imagem em `/adimages` para obter `image_hash` e reenviar o criativo com `image_hash` (sem `picture`) antes de esgotar as tentativas.
+- Na publicação canônica de campanhas, imagens de criativos devem ser baixadas pelo worker e enviadas à Meta por bytes/multipart em `/adimages` para obter `image_hash`; não use fallback por `url` externa em `/adimages` nem `picture` no criativo quando houver imagem aprovada. Se o download/upload por bytes falhar, falhe a publicação e corrija a causa-raiz.
 - Identificadores de instant form no formato `ai_form_*` devem ser normalizados para `form_*` antes de chamar a Graph API.
 - Não mantenha segredos no repositório; use variáveis de ambiente ou GitHub Secrets.
 - Endpoints do backend devem ser acessados com o prefixo configurado em `backend.api-prefix` (default `/api`).

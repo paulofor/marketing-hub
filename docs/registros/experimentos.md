@@ -4139,3 +4139,11 @@
 - foi feito: a geração de imagem de criativos passou a usar a Responses API quando `openai.image-service-tier=flex`, enviando `service_tier=flex` e a ferramenta `image_generation` com o modelo de imagem configurado.
 - foi feito: o timeout de imagem passou a ser configurável por `OPENAI_IMAGE_TIMEOUT_SECONDS`, com padrão de 900 segundos, e o docker-compose expõe `OPENAI_RESPONSES_MODEL`, `OPENAI_IMAGE_SERVICE_TIER` e `OPENAI_IMAGE_TIMEOUT_SECONDS`.
 - validação: adicionado teste unitário garantindo que o modo Flex envia a requisição para `/responses`, preserva `gpt-image-1.5` como modelo da ferramenta de imagem, envia `service_tier=flex` e processa o resultado `image_generation_call`.
+
+## 2026-06-08 — Upload canônico de imagens Meta por bytes
+
+- solicitação: alterar a publicação de campanhas para enviar imagens de criativos em bytes, deixando a necessidade explícita no cânone.
+- causa-raiz: a Meta pode rejeitar o envio por URL externa em `/adimages` com erro de capacidade/permissão da aplicação, deixando o experimento em `FAILED` antes da criação da campanha.
+- foi feito: o Facebook Ads Worker passou a exigir download local da imagem, upload multipart/bytes para `/adimages`, uso de `image_hash` no criativo e falha explícita quando esse caminho não puder ser concluído.
+- foi feito: o cânone de publicação de campanhas e a documentação do worker foram atualizados para proibir fallback por URL externa ou `picture` quando houver imagem aprovada.
+- impacto esperado: publicações deixam de depender da Meta buscar a imagem em URLs públicas, reduzindo falhas operacionais e mantendo rastreabilidade por `image_hash` reutilizável.

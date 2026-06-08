@@ -4147,3 +4147,11 @@
 - foi feito: o Facebook Ads Worker passou a exigir download local da imagem, upload multipart/bytes para `/adimages`, uso de `image_hash` no criativo e falha explícita quando esse caminho não puder ser concluído.
 - foi feito: o cânone de publicação de campanhas e a documentação do worker foram atualizados para proibir fallback por URL externa ou `picture` quando houver imagem aprovada.
 - impacto esperado: publicações deixam de depender da Meta buscar a imagem em URLs públicas, reduzindo falhas operacionais e mantendo rastreabilidade por `image_hash` reutilizável.
+## 2026-06-08 — Reforço do contrato de Ângulo de Campanha
+
+- solicitação: alterar o prompt e o schema da etapa **Ângulo de Campanha** para pedir mais detalhes e remover `funnelStage` do contrato final.
+- causa-raiz: o schema anterior exigia apenas campos `string` e aceitava strings vazias; assim uma resposta JSON estruturalmente válida, mas sem conteúdo comercial, podia ser persistida como `CAMPAIGN_ANGLE` concluído.
+- foi feito: o prompt `campaign-angle` passou para `v2`, exigindo campos detalhados como `visualAngle`, `hook`, `primaryPain`, `primaryPromise`, `promise`, `singleMindedPromise`, `mechanismSummary`, `proofSummary`, `primaryCTA`, `cta`, `landingMatchLine`, `audienceFilterLine`, `objections`, `messageMatch` e `differentiationRationale`.
+- foi feito: o schema backend passou a descrever o papel comercial de cada campo estratégico e removeu `funnelStage`; o backend também rejeita respostas de `campaignAngle` com campos vazios ou com `funnelStage` antes de persistir no experimento.
+- ajuste posterior: por decisão de produto, o prompt `campaign-angle` passou para `v3` e a etapa de ângulo deixou de solicitar detalhes de dor, resultado, prova e oferta no contrato final, pois esses blocos já são cobertos nos demais prompts do pipeline. O contrato do ângulo ficou focado em framing visual, hook, mecanismo narrativo, CTA, continuidade, filtro de público, objeções, message match e diferenciação.
+- impacto esperado: a etapa não deve mais avançar com ângulo vazio, preservando a qualidade comercial do pipeline antes de gerar anúncios, imagens e landing.

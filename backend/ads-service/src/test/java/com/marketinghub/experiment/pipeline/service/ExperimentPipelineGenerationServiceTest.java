@@ -302,6 +302,91 @@ class ExperimentPipelineGenerationServiceTest {
         }));
     }
 
+
+    @Test
+    void generateCampaignAngleSchemaRequiresDetailedFieldsAndExcludesFunnelStage() throws Exception {
+        Experiment experiment = new Experiment();
+        experiment.setId(88L);
+        experiment.setName("Experimento 88");
+        experiment.setHypothesis("Hipótese com nova rota comercial");
+
+        when(experimentRepository.findById(88L)).thenReturn(Optional.of(experiment));
+        when(jobRepository.findByExperimentIdAndStatusInOrderByCreatedAtDesc(
+                88L,
+                Set.of(ExperimentPipelineGenerationJobStatus.PENDING, ExperimentPipelineGenerationJobStatus.PROCESSING)))
+                .thenReturn(List.of());
+        when(jobRepository.save(any(ExperimentPipelineGenerationJob.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(experimentMapper.toDto(experiment)).thenReturn(new ExperimentDto());
+
+        service.generate(88L, ExperimentPipelineSection.CAMPAIGN_ANGLE, new ExperimentPipelineGenerationRequest());
+
+        ArgumentCaptor<ExperimentPipelineGenerationJob> captor = ArgumentCaptor.forClass(ExperimentPipelineGenerationJob.class);
+        verify(jobRepository).save(captor.capture());
+        ObjectMapper mapper = new ObjectMapper();
+        @SuppressWarnings("unchecked")
+        Map<String, Object> request = mapper.readValue(captor.getValue().getRequestBodyJson(), Map.class);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> text = (Map<String, Object>) request.get("text");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> format = (Map<String, Object>) text.get("format");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> schema = (Map<String, Object>) format.get("schema");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> properties = (Map<String, Object>) schema.get("properties");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> campaignAngle = (Map<String, Object>) properties.get("campaignAngle");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> campaignProperties = (Map<String, Object>) campaignAngle.get("properties");
+        @SuppressWarnings("unchecked")
+        List<String> required = (List<String>) campaignAngle.get("required");
+
+        assertFalse(campaignProperties.containsKey("funnelStage"));
+        assertFalse(campaignProperties.containsKey("primaryPain"));
+        assertFalse(campaignProperties.containsKey("primaryPromise"));
+        assertFalse(campaignProperties.containsKey("proofSummary"));
+        assertTrue(required.contains("differentiationRationale"));
+        assertTrue(required.contains("audienceFilterLine"));
+        assertFalse(required.contains("primaryPain"));
+        assertTrue(((Map<?, ?>) campaignProperties.get("visualAngle")).get("description")
+                .toString()
+                .contains("framing visual"));
+    }
+
+    @Test
+    void completeJobRejectsEmptyCampaignAngleFields() {
+        Experiment experiment = new Experiment();
+        experiment.setId(89L);
+
+        UUID jobId = UUID.randomUUID();
+        ExperimentPipelineGenerationJob job = ExperimentPipelineGenerationJob.builder()
+                .id(jobId)
+                .experiment(experiment)
+                .section(ExperimentPipelineSection.CAMPAIGN_ANGLE)
+                .status(ExperimentPipelineGenerationJobStatus.PROCESSING)
+                .stage(ExperimentPipelineGenerationJobStage.SENT_TO_OPENAI)
+                .model("gpt-5.2")
+                .prompt("prompt")
+                .build();
+
+        when(jobRepository.findById(jobId)).thenReturn(Optional.of(job));
+        ExperimentPipelineGenerationJobCompletionRequest request = new ExperimentPipelineGenerationJobCompletionRequest(
+                """
+                        {"campaignAngle":{"visualAngle":"","hook":"","mechanismSummary":"","primaryCTA":"","cta":"","landingMatchLine":"","audienceFilterLine":"","objections":"","messageMatch":"","differentiationRationale":""}}
+                        """,
+                "{\"id\":\"resp_empty\"}",
+                "{\"model\":\"gpt-5.2\"}",
+                100,
+                10,
+                null);
+
+        ResponseStatusException error = assertThrows(ResponseStatusException.class,
+                () -> service.completeJob(jobId, request));
+
+        assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, error.getStatusCode());
+        assertTrue(error.getReason().contains("visualAngle"));
+        assertTrue(experiment.getCampaignAngle() == null || experiment.getCampaignAngle().isBlank());
+    }
+
     @Test
     void generateWireframeKeepsPromptScopedToPredecessorChain() {
         Experiment experiment = new Experiment();

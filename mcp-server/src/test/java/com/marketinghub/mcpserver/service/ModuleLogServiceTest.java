@@ -104,6 +104,6 @@ class ModuleLogServiceTest {
                 ""
         );
 
-        return new McpProperties("marketing-hub-mcp", "1.0.0", "", logs, meta, github);
+        return new McpProperties("marketing-hub-mcp", "1.0.0", logs, meta, github);
     }
 }

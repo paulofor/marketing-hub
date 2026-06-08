@@ -1143,38 +1143,16 @@ public class FacebookCampaignService {
     }
 
 
-    private String uploadAdImageWithFallback(String adAccountId, long experimentId, String imageUrl) {
-        try {
-            return facebookAdsService.uploadAdImage(adAccountId, imageUrl);
-        } catch (WebClientResponseException ex) {
-            if (!isCreativeImageDownloadError(ex)) {
-                throw ex;
-            }
-            LOGGER.warn(
-                "Facebook reported an image download error; downloading asset locally before retry: experimentId={}, status={}, message={}",
-                experimentId,
-                ex.getRawStatusCode(),
-                ex.getMessage()
-            );
-            try {
-                DownloadedImage downloaded = downloadCreativeImage(imageUrl);
-                String fileName = resolveImageFileName(imageUrl);
-                return facebookAdsService.uploadAdImageFromBytes(
-                    adAccountId,
-                    downloaded.bytes(),
-                    fileName,
-                    downloaded.contentType()
-                );
-            } catch (Exception downloadEx) {
-                LOGGER.error(
-                    "Failed to download creative image locally after Facebook download error: experimentId={}, message={}",
-                    experimentId,
-                    downloadEx.getMessage(),
-                    downloadEx
-                );
-                throw ex;
-            }
-        }
+    /**
+     * Uploads a previously downloaded creative image to Meta as multipart bytes and returns its image_hash.
+     */
+    private String uploadDownloadedAdImage(String adAccountId, String imageUrl, DownloadedImage downloaded) {
+        return facebookAdsService.uploadAdImageFromBytes(
+            adAccountId,
+            downloaded.bytes(),
+            resolveImageFileName(imageUrl),
+            downloaded.contentType()
+        );
     }
 
     private DownloadedImage downloadCreativeImage(String imageUrl) {
@@ -1352,6 +1330,9 @@ public class FacebookCampaignService {
         }
     }
 
+    /**
+     * Resolves every creative image to a Meta image_hash before campaign publication.
+     */
     private List<CreativePublicationPayload> preloadCreativeImagesForExperiment(
         long experimentId,
         String adAccountId,
@@ -1385,19 +1366,23 @@ public class FacebookCampaignService {
                 );
                 resolvedPayloads.add(payload.withImageHash(uploadedImageHash));
             } catch (Exception ex) {
-                LOGGER.warn(
-                    "Creative image preload failed, keeping picture URL fallback: experimentId={}, creativeId={}, imageUrl={}, message={}",
+                LOGGER.error(
+                    "Creative image preload failed; campaign publication requires byte upload and will not fall back to picture URL: experimentId={}, creativeId={}, imageUrl={}, message={}",
                     experimentId,
                     payload.creative().id(),
                     payload.imageUrl(),
-                    ex.getMessage()
+                    ex.getMessage(),
+                    ex
                 );
-                resolvedPayloads.add(payload.withImageHash(null));
+                throw ex;
             }
         }
         return resolvedPayloads;
     }
 
+    /**
+     * Reuses a cached canonical image_hash or uploads the downloaded image bytes to Meta.
+     */
     private String resolveOrUploadCanonicalImageHash(
         long experimentId,
         String adAccountId,
@@ -1416,17 +1401,13 @@ public class FacebookCampaignService {
             downloadedImage = downloadCreativeImage(imageUrl);
         } catch (Exception ex) {
             LOGGER.warn(
-                "Could not download creative image for canonical hash deduplication; falling back to legacy upload flow: experimentId={}, creativeId={}, imageUrl={}, message={}",
+                "Could not download creative image for canonical byte upload; campaign publication will fail without URL fallback: experimentId={}, creativeId={}, imageUrl={}, message={}",
                 experimentId,
                 creativeId,
                 imageUrl,
                 ex.getMessage()
             );
-            return executeFacebookCallWithLogging(
-                experimentId,
-                ExperimentFacebookApiLogContext.CAMPAIGN_AD_CREATIVE,
-                () -> uploadAdImageWithFallback(adAccountId, experimentId, imageUrl)
-            );
+            throw ex;
         }
         String localHash = computeSha256(downloadedImage.bytes());
         if (localHashCache.containsKey(localHash)) {
@@ -1458,12 +1439,7 @@ public class FacebookCampaignService {
         String uploadedImageHash = executeFacebookCallWithLogging(
             experimentId,
             ExperimentFacebookApiLogContext.CAMPAIGN_AD_CREATIVE,
-            () -> facebookAdsService.uploadAdImageFromBytes(
-                adAccountId,
-                downloadedImage.bytes(),
-                resolveImageFileName(imageUrl),
-                downloadedImage.contentType()
-            )
+            () -> uploadDownloadedAdImage(adAccountId, imageUrl, downloadedImage)
         );
         localHashCache.put(localHash, uploadedImageHash);
         LOGGER.info(
@@ -1561,6 +1537,9 @@ public class FacebookCampaignService {
         }
     }
 
+    /**
+     * Creates an ad creative and, for legacy URL requests, retries transient image download errors via byte upload.
+     */
     private String createAdCreativeWithImageDownloadRetry(
         String adAccountId,
         long experimentId,
@@ -1589,7 +1568,10 @@ public class FacebookCampaignService {
                         String uploadedImageHash = executeFacebookCallWithLogging(
                             experimentId,
                             ExperimentFacebookApiLogContext.CAMPAIGN_AD_CREATIVE,
-                            () -> uploadAdImageWithFallback(adAccountId, experimentId, imageUrlSnapshot)
+                            () -> {
+                                DownloadedImage downloadedImage = downloadCreativeImage(imageUrlSnapshot);
+                                return uploadDownloadedAdImage(adAccountId, imageUrlSnapshot, downloadedImage);
+                            }
                         );
                         requestInUse = withImageHashOnly(requestInUse, uploadedImageHash);
                         triedImageLibraryFallback = true;

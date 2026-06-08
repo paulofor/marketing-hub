@@ -11,6 +11,7 @@
 > - formaliza que a publicação de campanhas é uma etapa plugável executada pelo `facebook-ads-worker` seguindo o padrão `Pipeline Stage Execution Engine`
 > - formaliza que o fallback de segmentação manual aprovado pelo backend pertence ao `facebook-ads-worker`, sem delegação ao `ai-worker`
 > - formaliza a separação de ownership dos criativos: criação/edição/aprovação é do módulo Experimentos; consumo operacional é por endpoint exclusivo do módulo Facebook
+> - torna obrigatório o upload de imagens de criativo por bytes/multipart para a Meta, proibindo fallback por URL externa em campanhas
 
 Este documento complementa o `system-governance-canon.v2.md` e passa a ser a fonte de verdade para prontidão, liberação e telemetria de campanhas de experimento no Facebook Ads Worker.
 
@@ -110,12 +111,15 @@ O cartão também lista itens operacionais que não travam o worker, mas devem s
 7. **Pixel worker** – a mesma liberação coloca o nicho na fila de criação de pixel enquanto `market_niche.facebook_pixel_id` estiver vazio. O worker consulta `/api/facebook-pixels/niches-ready` e só considera nichos com experimentos liberados (`facebook_release_requested_at` definido, `creative_approved=true`, `status IN ('PLANNED','RUNNING','PAUSED')` e plataforma Facebook). Ao registrar o pixel do nicho, todos os experimentos herdam o mesmo ID/HTML.
 8. **Execução registrada** – cada anúncio publicado referencia o valor de rastreamento (`utm_campaign`) exibido na UI junto com as conversões atribuídas.
 9. **Parada manual do operador** – a UI de Experimentos pode registrar `status='USER_STOPPED'` quando a campanha for interrompida por decisão humana. Esse status encerra o ciclo operacional no Hub e **não** recoloca o experimento na fila `/api/facebook-campaigns/experiments-ready` até uma nova liberação explícita.
-10. **Upload de imagem com reuso canônico (Meta `image_hash`)** – para criativos de anúncio, o worker **não** deve fazer upload cego da mesma imagem em toda execução. O fluxo obrigatório é:
+10. **Upload de imagem por bytes com reuso canônico (Meta `image_hash`)** – para criativos de anúncio, o worker **não** deve fazer upload cego da mesma imagem em toda execução e **não pode depender de URL externa como caminho de publicação**. O fluxo obrigatório é:
+   - baixar a imagem aprovada no próprio `facebook-ads-worker` antes de chamar a Meta;
    - gerar hash determinístico local do arquivo (ex.: `sha256` dos bytes da imagem);
    - consultar repositório canônico no backend para verificar se já existe vínculo `hash_local -> meta_image_hash` para a mesma plataforma/conta de anúncio;
    - se existir vínculo válido, reutilizar diretamente o `meta_image_hash` no payload do anúncio;
-   - se não existir, realizar upload para a Meta, capturar o `image_hash` retornado e persistir o mapeamento para reuso futuro.
-   - **invariante operacional**: deduplicação por conteúdo de imagem é obrigatória para reduzir custo, latência e risco de variação acidental entre anúncios com o mesmo asset.
+   - se não existir, realizar upload para a Meta em `/adimages` por **multipart/bytes** (`source`/arquivo e `filename`), capturar o `image_hash` retornado e persistir o mapeamento para reuso futuro;
+   - criar o ad creative usando `image_hash`; o payload final do criativo não deve usar `picture`/URL quando houver imagem aprovada.
+   - **invariante operacional obrigatório**: é proibido usar fallback de publicação por `url` externa em `/adimages` ou por `picture` no criativo para contornar falhas de upload. Se o worker não conseguir baixar a imagem, enviar bytes ou obter `image_hash`, a publicação deve falhar de forma explícita para correção da causa-raiz.
+   - **invariante de eficiência**: deduplicação por conteúdo de imagem é obrigatória para reduzir custo, latência e risco de variação acidental entre anúncios com o mesmo asset.
 
 
 ## 7.1 Publicação como etapa plugável do pipeline

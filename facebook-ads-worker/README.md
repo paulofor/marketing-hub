@@ -159,11 +159,14 @@ O fluxo automatizado cria toda a hierarquia necessária para veiculação:
    mapeamento, o worker envia o binário em `POST /adimages`, recebe o
    `image_hash` e persiste o vínculo em
    `POST /api/internal/facebook-campaigns/image-hash-mappings` para reuso nas
-   próximas publicações. Se o upload da imagem não retornar hash válido, o
-   worker registra aviso e usa fallback com `link_data.picture` (URL pública).
-   Em caso de erro transitório de download da imagem (`error_subcode = 3858258`),
-   o fluxo mantém retentativas de criação até 3 tentativas totais antes de
-   marcar a publicação como falha definitiva.
+   próximas publicações. Se o download local, o upload por bytes ou a resposta
+   de `image_hash` falhar, a publicação deve falhar de forma explícita; o worker
+   não deve usar fallback com `link_data.picture` nem solicitar `/adimages` por
+   `url` externa quando houver imagem aprovada. Em caso de erro transitório de
+   download da imagem (`error_subcode = 3858258`) em fluxo legado, o worker só
+   pode recuperar a publicação baixando a imagem e enviando bytes para obter
+   `image_hash`, mantendo retentativas de criação até 3 tentativas totais antes
+   de marcar a publicação como falha definitiva.
 6. **Anúncio** (`POST /ads`) que referencia o conjunto e o criativo recém
    criados, mantido pausado até que o time operacional revise os detalhes no
    Gerenciador de Anúncios.
@@ -608,3 +611,5 @@ When an experiment has no ready ad set playbook spec, the campaign publication f
 ## Campaign publication as a pipeline stage
 
 Campaign publication is now routed through the generic stage pattern described in `docs/metodologia/gerado-5-5/arquitetura-pipeline-etapas-archunit.md`: `facebookadsworker.pipeline` contains the generic contracts and `facebookcampaign.publication` contains the concrete publication stage. This keeps Meta Ads publication as a plug-in stage inside the Facebook Ads Worker while preserving the existing backend/Graph API side effects.
+
+- Na publicação canônica de campanhas, imagens de criativos devem ser baixadas pelo worker e enviadas à Meta por bytes/multipart em `/adimages` para obter `image_hash`; não use fallback por `url` externa em `/adimages` nem `picture` no criativo quando houver imagem aprovada. Se o download/upload por bytes falhar, falhe a publicação e corrija a causa-raiz.

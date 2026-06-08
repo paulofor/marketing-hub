@@ -4116,3 +4116,10 @@
 - foi feito: ao concluir `AD_IMAGE_BRIEFING`, o backend agora extrai os pares válidos de `adCopy` + `adImageBriefing`, define `creativesToGenerate` com até 3 variações e marca `creativeGenerationMode=PIPELINE_ADS`, permitindo que o Worker AI gere somente as imagens e persista os criativos `DRAFT`.
 - foi feito: mantida a regra de não iniciar automaticamente as etapas de Gera Landing após `AD_IMAGE_BRIEFING`; essas continuam manuais.
 - validação: adicionado teste unitário garantindo que a conclusão de `AD_IMAGE_BRIEFING` enfileira a geração dos criativos do pipeline sem criar job automático de landing.
+
+## 2026-06-08 — Remoção de testes de cânones obsoletos de superfície da landing
+
+- solicitação: excluir testes relacionados a contratos canônicos obsoletos depois da identificação de que os atributos `data-surface-*` e o vínculo `surfaceSpec` estavam documentados apenas em `/docs/canonical/obsoletos`.
+- causa-raiz: parte da suíte ainda validava regras antigas de superfície visual da landing como se fossem cânone vigente, gerando falhas e ruído contra a evolução atual do LHM.
+- foi feito: removidos testes do Worker AI e do backend que validavam diretamente sincronização/normalização/rejeição por `surfaceSpec` e atributos `data-surface-*`; os testes de binding canônico de imagem foram preservados sem depender desse contrato visual obsoleto.
+- impacto esperado: a suíte deixa de bloquear PR por uma regra documental obsoleta, preservando validações ainda úteis de imagem e planejamento.

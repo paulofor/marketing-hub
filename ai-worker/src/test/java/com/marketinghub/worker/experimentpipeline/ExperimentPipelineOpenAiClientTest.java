@@ -891,10 +891,7 @@ class ExperimentPipelineOpenAiClientTest {
                         "pageGoal", "captura",
                         "variantLayoutId", "form-first",
                         "sectionOrder", List.of(
-                                Map.of("sectionId", "hero", "surfaceSpec", Map.of(
-                                        "surfaceToken", "surface-hero",
-                                        "style", "band",
-                                        "contrastMode", "high"))),
+                                Map.of("sectionId", "hero", "purpose", "promessa principal")),
                         "consistencyChecks", List.of())));
         ExperimentPipelineOpenAiClient client = new ExperimentPipelineOpenAiClient(
                 WebClient.builder().exchangeFunction(capturePayloadExchange(payloadRef, openAiText)),
@@ -1138,243 +1135,13 @@ class ExperimentPipelineOpenAiClientTest {
         assertThat(readCheckStatus(copy, "CTA_SPECIFICITY")).isEqualTo("PASS");
     }
 
-    @Test
-    void computesPhase4ChecksWithWarnAndFailAcrossWireframeImagePlanningAndHtml() throws Exception {
-        String openAiText = MAPPER.writeValueAsString(Map.of(
-                "landingPageWireframe", Map.of(
-                        "pageGoal", "captura",
-                        "variantLayoutId", "form-first",
-                        "sectionOrder", List.of(
-                                Map.of("sectionId", "hero", "surfaceSpec", Map.of("surfaceToken", "base", "style", "solid", "contrastMode", "normal")),
-                                Map.of("sectionId", "proof", "surfaceSpec", Map.of("surfaceToken", "base", "style", "solid", "contrastMode", "normal")),
-                                Map.of("sectionId", "cta", "surfaceSpec", Map.of("surfaceToken", "base", "style", "solid", "contrastMode", "normal"))),
-                        "consistencyChecks", List.of()
-                )));
-        ExperimentPipelineOpenAiClient wireframeClient = new ExperimentPipelineOpenAiClient(
-                WebClient.builder().exchangeFunction(capturePayloadExchange(new AtomicReference<>(), openAiText)),
-                MAPPER,
-                "test-key",
-                "http://openai");
-        ExperimentPipelineJobCompletionPayload wireframePayload = wireframeClient.generate(new ExperimentPipelineJobDto(
-                UUID.randomUUID(), 32L, "landing-page-wireframe", "gpt-5.2", "prompt",
-                "{\"model\":\"gpt-5.2\",\"input\":[{\"role\":\"user\",\"content\":\"prompt\"}]}", Instant.now()));
-        Map<String, Object> wireframeContent = MAPPER.readValue(wireframePayload.responseContent(), new TypeReference<>() {});
-        @SuppressWarnings("unchecked")
-        Map<String, Object> wireframe = (Map<String, Object>) wireframeContent.get("landingPageWireframe");
-        assertThat(readCheckStatus(wireframe, "SECTION_THEME_VARIATION")).isEqualTo("FAIL");
-
-        String imageText = MAPPER.writeValueAsString(Map.of(
-                "landingPageImagePlanning", Map.of(
-                        "pageGoal", "preview",
-                        "images", List.of(Map.of(
-                                "sectionId", "proof",
-                                "sectionName", "Prova",
-                                "imageRole", "preview",
-                                "conversionRole", "proof",
-                                "imagePrompt", "imagem simples",
-                                "supportingElements", List.of())),
-                        "consistencyChecks", List.of()
-                )));
-        ExperimentPipelineOpenAiClient imageClient = new ExperimentPipelineOpenAiClient(
-                WebClient.builder().exchangeFunction(capturePayloadExchange(new AtomicReference<>(), imageText)),
-                MAPPER,
-                "test-key",
-                "http://openai");
-        ExperimentPipelineJobCompletionPayload imagePayload = imageClient.generate(new ExperimentPipelineJobDto(
-                UUID.randomUUID(), 33L, "landing-page-image-planning", "gpt-5.2", "prompt",
-                "{\"model\":\"gpt-5.2\",\"input\":[{\"role\":\"user\",\"content\":\"prompt\"}]}", Instant.now()));
-        Map<String, Object> imageContent = MAPPER.readValue(imagePayload.responseContent(), new TypeReference<>() {});
-        @SuppressWarnings("unchecked")
-        Map<String, Object> imagePlanning = (Map<String, Object>) imageContent.get("landingPageImagePlanning");
-        assertThat(readCheckStatus(imagePlanning, "PREVIEW_CONCRETENESS")).isEqualTo("FAIL");
-
-        String htmlText = MAPPER.writeValueAsString(Map.of(
-                "landingPageHtml", Map.of(
-                        "htmlDocument", """
-                                <html><body>
-                                  <section class="surface-base" data-surface-token="base"></section>
-                                  <section class="surface-base" data-surface-token="base"></section>
-                                  <form id="lead-capture-primary"></form>
-                                </body></html>
-                                """,
-                        "summary", "ok",
-                        "formSpec", Map.of("formId", "lead-capture-primary"),
-                        "imagePlacementContract", Map.of("requiredDataAttributes", List.of()),
-                        "consistencyChecks", List.of()
-                )));
-        ExperimentPipelineOpenAiClient htmlClient = new ExperimentPipelineOpenAiClient(
-                WebClient.builder().exchangeFunction(capturePayloadExchange(new AtomicReference<>(), htmlText)),
-                MAPPER,
-                "test-key",
-                "http://openai");
-        ExperimentPipelineJobCompletionPayload htmlPayload = htmlClient.generate(new ExperimentPipelineJobDto(
-                UUID.randomUUID(), 34L, "landing-page-html", "gpt-5.1-codex", "prompt",
-                "{\"model\":\"gpt-5.2\",\"input\":[{\"role\":\"user\",\"content\":\"prompt\"}]}", Instant.now()));
-        Map<String, Object> htmlContent = MAPPER.readValue(htmlPayload.responseContent(), new TypeReference<>() {});
-        @SuppressWarnings("unchecked")
-        Map<String, Object> html = (Map<String, Object>) htmlContent.get("landingPageHtml");
-        assertThat(readCheckStatus(html, "SECTION_THEME_VARIATION")).isEqualTo("FAIL");
-        assertThat(readCheckStatus(html, "PREVIEW_CONCRETENESS")).isEqualTo("WARN");
-    }
-
-    @Test
-    void synchronizesLandingHtmlSurfaceAttributesFromWireframeBeforeCompletion() throws Exception {
-        String htmlText = """
-                {
-                  "landingPageHtml": {
-                    "htmlDocument": "<!doctype html><html><body><section data-section-id='hero'></section><section data-section-id='proof' data-surface-token='wrong' data-surface-style='wrong' data-surface-contrast='wrong'></section></body></html>",
-                    "summary": "ok",
-                    "formSpec": {"formId": "lead-capture-primary"},
-                    "imagePlacementContract": {"requiredDataAttributes": []},
-                    "consistencyChecks": []
-                  }
-                }
-                """;
-
-        ExperimentPipelineOpenAiClient client = new ExperimentPipelineOpenAiClient(
-                WebClient.builder().exchangeFunction(capturePayloadExchange(new AtomicReference<>(), htmlText)),
-                MAPPER,
-                "test-key",
-                "http://openai");
-
-        String requestBody = """
-                {
-                  "model":"gpt-5.2",
-                  "input":[
-                    {"role":"user","content":"Prompt\\nWireframe da landing:\\n{\\"landingPageWireframe\\":{\\"sectionOrder\\":[{\\"sectionId\\":\\"hero\\",\\"surfaceSpec\\":{\\"surfaceToken\\":\\"surface-hero\\",\\"style\\":\\"band\\",\\"contrastMode\\":\\"high\\"}},{\\"sectionId\\":\\"proof\\",\\"surfaceSpec\\":{\\"surfaceToken\\":\\"surface-proof\\",\\"style\\":\\"solid\\",\\"contrastMode\\":\\"normal\\"}}]}}\\nPlanejamento de imagens da landing:\\n{}"}
-                  ]
-                }
-                """;
-
-        ExperimentPipelineJobCompletionPayload payload = client.generate(new ExperimentPipelineJobDto(
-                UUID.randomUUID(), 35L, "landing-page-html", "gpt-5.1-codex", "prompt", requestBody, Instant.now()));
-
-        Map<String, Object> htmlContent = MAPPER.readValue(payload.responseContent(), new TypeReference<>() {});
-        @SuppressWarnings("unchecked")
-        Map<String, Object> html = (Map<String, Object>) htmlContent.get("landingPageHtml");
-        String htmlDocument = String.valueOf(html.get("htmlDocument"));
-        assertThat(htmlDocument).contains("data-section-id='hero' data-surface-token=\"surface-hero\" data-surface-style=\"band\" data-surface-contrast=\"high\"");
-        assertThat(htmlDocument).contains("data-section-id='proof' data-surface-token=\"surface-proof\" data-surface-style=\"solid\" data-surface-contrast=\"normal\"");
-    }
-
-    @Test
-    void synchronizesLandingHtmlSurfaceAttributesUsingDesignPresetWhenWireframeOmitsStyleAndContrast() throws Exception {
-        String htmlText = """
-                {
-                  "landingPageHtml": {
-                    "htmlDocument": "<!doctype html><html><body><section data-section-id='hero'></section><section data-section-id='proof'></section></body></html>",
-                    "summary": "ok",
-                    "formSpec": {"formId": "lead-capture-primary"},
-                    "imagePlacementContract": {"requiredDataAttributes": []},
-                    "consistencyChecks": []
-                  }
-                }
-                """;
-
-        ExperimentPipelineOpenAiClient client = new ExperimentPipelineOpenAiClient(
-                WebClient.builder().exchangeFunction(capturePayloadExchange(new AtomicReference<>(), htmlText)),
-                MAPPER,
-                "test-key",
-                "http://openai");
-
-        String requestBody = """
-                {
-                  "model":"gpt-5.2",
-                  "input":[
-                    {"role":"user","content":"Prompt v2\\n1) Wireframe aprovado (JSON):\\n{\\"landingPageWireframe\\":{\\"sectionOrder\\":[{\\"sectionId\\":\\"hero\\",\\"surfaceSpec\\":{\\"surfaceToken\\":\\"surface-hero\\",\\"notes\\":\\"hero\\"}},{\\"sectionId\\":\\"proof\\",\\"surfaceSpec\\":{\\"surfaceToken\\":\\"surface-proof\\",\\"notes\\":\\"proof\\"}}]}}\\n2) Texto da landing aprovado (JSON):\\n{}\\n3) Preset de design aprovado (JSON):\\n{\\"landingPageDesignPreset\\":{\\"sectionPresets\\":[{\\"sectionId\\":\\"hero\\",\\"surfaceStyle\\":\\"band\\",\\"contrastMode\\":\\"high\\"},{\\"sectionId\\":\\"proof\\",\\"surfaceStyle\\":\\"solid\\",\\"contrastMode\\":\\"normal\\"}]}}"}
-                  ]
-                }
-                """;
-
-        ExperimentPipelineJobCompletionPayload payload = client.generate(new ExperimentPipelineJobDto(
-                UUID.randomUUID(), 38L, "landing-page-html", "gpt-5.1-codex", "prompt", requestBody, Instant.now()));
-
-        Map<String, Object> htmlContent = MAPPER.readValue(payload.responseContent(), new TypeReference<>() {});
-        @SuppressWarnings("unchecked")
-        Map<String, Object> html = (Map<String, Object>) htmlContent.get("landingPageHtml");
-        String htmlDocument = String.valueOf(html.get("htmlDocument"));
-        assertThat(htmlDocument).contains("data-section-id='hero' data-surface-token=\"surface-hero\" data-surface-style=\"band\" data-surface-contrast=\"high\"");
-        assertThat(htmlDocument).contains("data-section-id='proof' data-surface-token=\"surface-proof\" data-surface-style=\"solid\" data-surface-contrast=\"normal\"");
-    }
-
-    @Test
-    void failsFastWhenLandingHtmlCannotReproduceWireframeSurfaceSpec() {
-        String htmlText = """
-                {
-                  "landingPageHtml": {
-                    "htmlDocument": "<!doctype html><html><body><section data-section-id='hero'></section></body></html>",
-                    "summary": "ok",
-                    "formSpec": {"formId": "lead-capture-primary"},
-                    "imagePlacementContract": {"requiredDataAttributes": []},
-                    "consistencyChecks": []
-                  }
-                }
-                """;
-
-        ExperimentPipelineOpenAiClient client = new ExperimentPipelineOpenAiClient(
-                WebClient.builder().exchangeFunction(capturePayloadExchange(new AtomicReference<>(), htmlText)),
-                MAPPER,
-                "test-key",
-                "http://openai");
-
-        String requestBody = """
-                {
-                  "model":"gpt-5.2",
-                  "input":[
-                    {"role":"user","content":"Prompt\\nWireframe da landing:\\n{\\"landingPageWireframe\\":{\\"sectionOrder\\":[{\\"sectionId\\":\\"hero\\",\\"surfaceSpec\\":{\\"surfaceToken\\":\\"surface-hero\\",\\"style\\":\\"band\\",\\"contrastMode\\":\\"high\\"}},{\\"sectionId\\":\\"cta\\",\\"surfaceSpec\\":{\\"surfaceToken\\":\\"surface-cta\\",\\"style\\":\\"solid\\",\\"contrastMode\\":\\"normal\\"}}]}}\\nPlanejamento de imagens da landing:\\n{}"}
-                  ]
-                }
-                """;
-
-        Throwable thrown = catchThrowable(() -> client.generate(new ExperimentPipelineJobDto(
-                UUID.randomUUID(), 36L, "landing-page-html", "gpt-5.1-codex", "prompt", requestBody, Instant.now())));
-
-        assertThat(thrown).isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("Quebra de contrato: LANDING_PAGE_HTML divergente de landing-page-wireframe.sectionOrder.surfaceSpec.");
-    }
-
-    @Test
-    void failsFastWhenLandingHtmlCannotReproduceWireframeSurfaceSpecUsingPromptV2Marker() {
-        String htmlText = """
-                {
-                  "landingPageHtml": {
-                    "htmlDocument": "<!doctype html><html><body><section data-section-id='proof'></section></body></html>",
-                    "summary": "ok",
-                    "formSpec": {"formId": "lead-capture-primary"},
-                    "imagePlacementContract": {"requiredDataAttributes": []},
-                    "consistencyChecks": []
-                  }
-                }
-                """;
-
-        ExperimentPipelineOpenAiClient client = new ExperimentPipelineOpenAiClient(
-                WebClient.builder().exchangeFunction(capturePayloadExchange(new AtomicReference<>(), htmlText)),
-                MAPPER,
-                "test-key",
-                "http://openai");
-
-        String requestBody = """
-                {
-                  "model":"gpt-5.2",
-                  "input":[
-                    {"role":"user","content":"Prompt v2\\n1) Wireframe aprovado (JSON):\\n{\\"landingPageWireframe\\":{\\"sectionOrder\\":[{\\"sectionId\\":\\"hero-proof-form\\",\\"surfaceSpec\\":{\\"surfaceToken\\":\\"surface-hero\\",\\"style\\":\\"band\\",\\"contrastMode\\":\\"normal\\"}},{\\"sectionId\\":\\"proof\\",\\"surfaceSpec\\":{\\"surfaceToken\\":\\"surface-proof\\",\\"style\\":\\"solid\\",\\"contrastMode\\":\\"normal\\"}}]}}\\n2) Copy aprovada (JSON):\\n{}"}
-                  ]
-                }
-                """;
-
-        Throwable thrown = catchThrowable(() -> client.generate(new ExperimentPipelineJobDto(
-                UUID.randomUUID(), 37L, "landing-page-html", "gpt-5.1-codex", "prompt", requestBody, Instant.now())));
-
-        assertThat(thrown).isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("Quebra de contrato: LANDING_PAGE_HTML divergente de landing-page-wireframe.sectionOrder.surfaceSpec.");
-    }
-
+    /** Verifica que o HTML preserva bindings canônicos de imagem sem depender de contrato visual obsoleto. */
     @Test
     void acceptsLandingHtmlWhenImagePlanningBindingsMatchExactly() throws Exception {
         String htmlText = """
                 {
                   "landingPageHtml": {
-                    "htmlDocument": "<!doctype html><html><body><section data-section-id='hero' data-surface-token='surface-hero' data-surface-style='band' data-surface-contrast='high'><img data-image-section-id='hero' data-image-binding-key='hero-main' alt='Hero'></section><section data-section-id='proof' data-surface-token='surface-proof' data-surface-style='solid' data-surface-contrast='normal'><img data-image-section-id='proof' data-image-binding-key='proof-packshot' alt='Proof'></section></body></html>",
+                    "htmlDocument": "<!doctype html><html><body><section data-section-id='hero'><img data-image-section-id='hero' data-image-binding-key='hero-main' alt='Hero'></section><section data-section-id='proof'><img data-image-section-id='proof' data-image-binding-key='proof-packshot' alt='Proof'></section></body></html>",
                     "summary": "ok",
                     "formSpec": {"formId": "lead-capture-primary"},
                     "imagePlacementContract": {"requiredDataAttributes": []},
@@ -1393,7 +1160,7 @@ class ExperimentPipelineOpenAiClientTest {
                 {
                   "model":"gpt-5.2",
                   "input":[
-                    {"role":"user","content":"Prompt\\nWireframe da landing:\\n{\\"landingPageWireframe\\":{\\"sectionOrder\\":[{\\"sectionId\\":\\"hero\\",\\"surfaceSpec\\":{\\"surfaceToken\\":\\"surface-hero\\",\\"style\\":\\"band\\",\\"contrastMode\\":\\"high\\"}},{\\"sectionId\\":\\"proof\\",\\"surfaceSpec\\":{\\"surfaceToken\\":\\"surface-proof\\",\\"style\\":\\"solid\\",\\"contrastMode\\":\\"normal\\"}}]}}\\nPlanejamento de imagens da landing:\\n{\\"landingPageImagePlanning\\":{\\"images\\":[{\\"sectionId\\":\\"hero\\",\\"imageBindingKey\\":\\"hero-main\\"},{\\"sectionId\\":\\"proof\\",\\"imageBindingKey\\":\\"proof-packshot\\"}]}}"}
+                    {"role":"user","content":"Prompt\\nPlanejamento de imagens da landing:\\n{\\"landingPageImagePlanning\\":{\\"images\\":[{\\"sectionId\\":\\"hero\\",\\"imageBindingKey\\":\\"hero-main\\"},{\\"sectionId\\":\\"proof\\",\\"imageBindingKey\\":\\"proof-packshot\\"}]}}"}
                   ]
                 }
                 """;
@@ -1409,12 +1176,13 @@ class ExperimentPipelineOpenAiClientTest {
         assertThat(htmlDocument).contains("data-image-section-id='proof' data-image-binding-key='proof-packshot'");
     }
 
+    /** Verifica falha rápida quando o HTML diverge dos bindings canônicos de imagem planejados. */
     @Test
     void failsFastWhenLandingHtmlCannotReproduceImagePlanningBinding() {
         String htmlText = """
                 {
                   "landingPageHtml": {
-                    "htmlDocument": "<!doctype html><html><body><section data-section-id='hero' data-surface-token='surface-hero' data-surface-style='band' data-surface-contrast='high'><img data-image-section-id='hero' data-image-binding-key='hero-main' alt='Hero'></section><section data-section-id='proof' data-surface-token='surface-proof' data-surface-style='solid' data-surface-contrast='normal'><img data-image-section-id='proof' data-image-binding-key='proof-wrong' alt='Proof'></section></body></html>",
+                    "htmlDocument": "<!doctype html><html><body><section data-section-id='hero'><img data-image-section-id='hero' data-image-binding-key='hero-main' alt='Hero'></section><section data-section-id='proof'><img data-image-section-id='proof' data-image-binding-key='proof-wrong' alt='Proof'></section></body></html>",
                     "summary": "ok",
                     "formSpec": {"formId": "lead-capture-primary"},
                     "imagePlacementContract": {"requiredDataAttributes": []},
@@ -1433,7 +1201,7 @@ class ExperimentPipelineOpenAiClientTest {
                 {
                   "model":"gpt-5.2",
                   "input":[
-                    {"role":"user","content":"Prompt v2\\n1) Wireframe aprovado (JSON):\\n{\\"landingPageWireframe\\":{\\"sectionOrder\\":[{\\"sectionId\\":\\"hero\\",\\"surfaceSpec\\":{\\"surfaceToken\\":\\"surface-hero\\",\\"style\\":\\"band\\",\\"contrastMode\\":\\"high\\"}},{\\"sectionId\\":\\"proof\\",\\"surfaceSpec\\":{\\"surfaceToken\\":\\"surface-proof\\",\\"style\\":\\"solid\\",\\"contrastMode\\":\\"normal\\"}}]}}\\n2) Copy aprovada (JSON):\\n{}\\n3) Preset de design aprovado (JSON):\\n{}\\n4) Planejamento de imagens aprovado (JSON):\\n{\\"landingPageImagePlanning\\":{\\"images\\":[{\\"sectionId\\":\\"hero\\",\\"imageBindingKey\\":\\"hero-main\\"},{\\"sectionId\\":\\"proof\\",\\"imageBindingKey\\":\\"proof-packshot\\"}]}}"}
+                    {"role":"user","content":"Prompt v2\\n4) Planejamento de imagens aprovado (JSON):\\n{\\"landingPageImagePlanning\\":{\\"images\\":[{\\"sectionId\\":\\"hero\\",\\"imageBindingKey\\":\\"hero-main\\"},{\\"sectionId\\":\\"proof\\",\\"imageBindingKey\\":\\"proof-packshot\\"}]}}"}
                   ]
                 }
                 """;

@@ -119,8 +119,8 @@ public class OpenAiModelService {
 
     /** Aplica na entidade persistida os dados oficiais resolvidos a partir da API e da página de preços da OpenAI. */
     private void applyOfficialData(OpenAiModel model, String requestedName, String code, boolean imageModel) {
-        List<OpenAiModelPricing> prices = pricingPageClient.fetchTextModelPricing();
-        Optional<OpenAiModelPricing> pricing = pricingPageClient.findBestTextModelPricing(prices, code);
+        List<OpenAiModelPricing> prices = pricingPageClient.fetchAllModelPricing();
+        Optional<OpenAiModelPricing> pricing = pricingPageClient.findBestModelPricing(prices, code);
         model.setName(toDisplayName(requestedName, code));
         model.setCode(code);
         if (pricing.isPresent()) {
@@ -133,7 +133,7 @@ public class OpenAiModelService {
         model.setLastPricingSyncAt(Instant.now());
     }
 
-    /** Aplica os preços oficiais de texto na entidade usada para cálculo financeiro. */
+    /** Aplica os preços oficiais tokenizados na entidade usada para cálculo financeiro. */
     private void applyPricing(OpenAiModel model, OpenAiModelPricing pricing) {
         model.setPriceInputStandard(pricing.priceInputStandard());
         model.setPriceInputCachedStandard(pricing.priceInputCachedStandard());

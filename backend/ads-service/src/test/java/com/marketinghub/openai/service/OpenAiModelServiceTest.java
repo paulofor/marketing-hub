@@ -47,8 +47,8 @@ class OpenAiModelServiceTest {
                 new BigDecimal("0.25"),
                 new BigDecimal("15.00"));
         List<OpenAiModelPricing> prices = List.of(pricing);
-        when(pricingPageClient.fetchTextModelPricing()).thenReturn(prices);
-        when(pricingPageClient.findBestTextModelPricing(prices, "gpt-5.5")).thenReturn(Optional.of(pricing));
+        when(pricingPageClient.fetchAllModelPricing()).thenReturn(prices);
+        when(pricingPageClient.findBestModelPricing(prices, "gpt-5.5")).thenReturn(Optional.of(pricing));
         when(repository.findByCode("gpt-5.5")).thenReturn(Optional.empty());
         when(repository.save(org.mockito.ArgumentMatchers.any(OpenAiModel.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -90,8 +90,8 @@ class OpenAiModelServiceTest {
                 BigDecimal.ZERO,
                 new BigDecimal("90.00"));
         List<OpenAiModelPricing> prices = List.of(pricing);
-        when(pricingPageClient.fetchTextModelPricing()).thenReturn(prices);
-        when(pricingPageClient.findBestTextModelPricing(prices, "gpt-5.4-pro-2026-03-05"))
+        when(pricingPageClient.fetchAllModelPricing()).thenReturn(prices);
+        when(pricingPageClient.findBestModelPricing(prices, "gpt-5.4-pro-2026-03-05"))
                 .thenReturn(Optional.of(pricing));
         when(repository.findByCode("gpt-5.4-pro-2026-03-05")).thenReturn(Optional.empty());
         when(repository.save(org.mockito.ArgumentMatchers.any(OpenAiModel.class)))

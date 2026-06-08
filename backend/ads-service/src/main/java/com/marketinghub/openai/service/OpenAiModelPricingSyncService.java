@@ -29,7 +29,7 @@ public class OpenAiModelPricingSyncService {
     /** Consulta a fonte oficial e persiste preços atuais, inclusive para variantes datadas já cadastradas. */
     @Transactional
     public int syncOfficialPricing() {
-        List<OpenAiModelPricing> prices = pricingPageClient.fetchTextModelPricing();
+        List<OpenAiModelPricing> prices = pricingPageClient.fetchAllModelPricing();
         Instant syncedAt = Instant.now();
         int updated = upsertOfficialBaseModels(prices, syncedAt);
         updated += refreshExistingModelVariants(prices, syncedAt);
@@ -59,7 +59,7 @@ public class OpenAiModelPricingSyncService {
             if (prices.stream().anyMatch(price -> price.code().equals(model.getCode()))) {
                 continue;
             }
-            var pricing = pricingPageClient.findBestTextModelPricing(prices, model.getCode());
+            var pricing = pricingPageClient.findBestModelPricing(prices, model.getCode());
             if (pricing.isPresent()) {
                 applyPrice(model, pricing.get(), syncedAt, false);
                 repository.save(model);

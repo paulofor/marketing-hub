@@ -438,7 +438,7 @@ public class MoisSalesLibraryService {
     }
 
     /**
-     * Lista páginas canônicas a partir do estado consolidado do modelo novo da Fase 4.
+     * Lista páginas canônicas consolidadas priorizando as análises mais recentes para a UI operacional.
      */
     public MoisSalesLibraryDtos.SalesLibraryPageListResponse listPages(String workspaceId, int page, int pageSize) {
         int normalizedPage = Math.max(1, page);
@@ -452,7 +452,7 @@ public class MoisSalesLibraryService {
                        last_error_category, last_error_message, last_job_execution_id, last_captured_at, last_analyzed_at, updated_at
                 FROM mois_sales_page
                 WHERE workspace_id = ?
-                ORDER BY updated_at DESC, id DESC LIMIT ? OFFSET ?
+                ORDER BY last_analyzed_at DESC, updated_at DESC, id DESC LIMIT ? OFFSET ?
                 """, this::mapSalesPageResponse, workspaceId, normalizedPageSize, offset);
         return new MoisSalesLibraryDtos.SalesLibraryPageListResponse(normalizedPage, normalizedPageSize, total == null ? 0 : total, items);
     }

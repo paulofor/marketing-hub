@@ -91,6 +91,37 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CollectedReferenceUrlSummaryResponse'
+  /pages:
+    get:
+      summary: Lista páginas operacionais consolidadas
+      description: Retorna páginas de `mois_sales_page` ordenadas por `last_analyzed_at` decrescente, com `updated_at` e `id` como desempate; a UI principal consome as 20 análises mais recentes usando `pageSize=20`.
+      tags: [MOIS Sales Library]
+      parameters:
+        - in: query
+          name: workspaceId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: Páginas consolidadas ordenadas da análise mais recente para a mais antiga
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SalesLibraryPageListResponse'
   /pages/summary:
     get:
       summary: Resume páginas operacionais consolidadas
@@ -604,6 +635,96 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/CollectedReferenceUrlTypeBreakdown'
+    SalesLibraryPageResponse:
+      type: object
+      properties:
+        pageId:
+          type: integer
+          format: int64
+        workspaceId:
+          type: string
+        source:
+          type: string
+        urlCanonical:
+          type: string
+        title:
+          type: string
+          nullable: true
+        currentStage:
+          type: string
+          nullable: true
+        currentStatus:
+          type: string
+          nullable: true
+        captureStatus:
+          type: string
+          nullable: true
+        analysisStatus:
+          type: string
+          nullable: true
+        urlFinal:
+          type: string
+          nullable: true
+        httpStatus:
+          type: integer
+          nullable: true
+        htmlSha256:
+          type: string
+          nullable: true
+        htmlBytes:
+          type: integer
+          format: int64
+        scoreTotal:
+          type: number
+          nullable: true
+        offerSummary:
+          type: string
+          nullable: true
+        mechanismSummary:
+          type: string
+          nullable: true
+        promiseSummary:
+          type: string
+          nullable: true
+        proofSummary:
+          type: string
+          nullable: true
+        lastErrorCategory:
+          type: string
+          nullable: true
+        lastErrorMessage:
+          type: string
+          nullable: true
+        lastJobExecutionId:
+          type: integer
+          format: int64
+          nullable: true
+        lastCapturedAt:
+          type: string
+          format: date-time
+          nullable: true
+        analyzedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Data da análise comercial mais recente, derivada de `mois_sales_page.last_analyzed_at`.
+        updatedAt:
+          type: string
+          format: date-time
+    SalesLibraryPageListResponse:
+      type: object
+      properties:
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        total:
+          type: integer
+          format: int64
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/SalesLibraryPageResponse'
     SalesLibraryPageSummaryResponse:
       type: object
       properties:

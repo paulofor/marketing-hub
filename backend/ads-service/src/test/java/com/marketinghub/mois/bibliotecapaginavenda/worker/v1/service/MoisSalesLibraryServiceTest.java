@@ -134,6 +134,28 @@ class MoisSalesLibraryServiceTest {
     }
 
     /**
+     * Garante que a listagem de páginas prioriza as análises mais recentes.
+     */
+    @Test
+    void shouldListPagesOrderedByMostRecentAnalysisDate() {
+        given(jdbcTemplate.queryForObject(
+                eq("SELECT COUNT(*) FROM mois_sales_page WHERE workspace_id = ?"),
+                eq(Long.class),
+                eq("workspace-001")))
+                .willReturn(42L);
+        given(jdbcTemplate.query(any(String.class), isA(RowMapper.class), eq("workspace-001"), eq(20), eq(0)))
+                .willReturn(List.of());
+
+        MoisSalesLibraryDtos.SalesLibraryPageListResponse response = service.listPages("workspace-001", 1, 20);
+
+        org.assertj.core.api.Assertions.assertThat(response.pageSize()).isEqualTo(20);
+        ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+        verify(jdbcTemplate).query(sqlCaptor.capture(), isA(RowMapper.class), eq("workspace-001"), eq(20), eq(0));
+        org.assertj.core.api.Assertions.assertThat(sqlCaptor.getValue())
+                .contains("ORDER BY last_analyzed_at DESC, updated_at DESC, id DESC LIMIT ? OFFSET ?");
+    }
+
+    /**
      * Garante que o claim de HTML bruto lê a tabela de referências coletadas e retorna a URL reservada.
      */
     @Test

@@ -7,7 +7,7 @@ import {
 } from "../../api/mois/useMoisSalesLibrary";
 
 const WORKSPACE_ID = "workspace-001";
-const PAGE_SIZE = 100;
+const PAGE_SIZE = 20;
 
 function getPipelinePhase(stage?: string | null, status?: string | null) {
   if (stage === "CAPTURE" && status === "FAILED") {
@@ -26,6 +26,16 @@ function getPipelinePhase(stage?: string | null, status?: string | null) {
     return "Bloqueada por cooldown";
   }
   return stage && status ? `${stage} — ${status}` : "Sem fase definida";
+}
+
+function formatAnalysisDate(value?: string | null) {
+  if (!value) {
+    return "—";
+  }
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(new Date(value));
 }
 
 export default function MoisSalesPagesLibraryPage() {
@@ -112,6 +122,7 @@ export default function MoisSalesPagesLibraryPage() {
                   <th>Produto</th>
                   <th>Origem</th>
                   <th>Status</th>
+                  <th>Data da análise</th>
                   <th>Fase no diagrama</th>
                   <th>Ações</th>
                 </tr>
@@ -119,7 +130,7 @@ export default function MoisSalesPagesLibraryPage() {
               <tbody>
                 {pagesQuery.data.items.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="text-secondary">
+                    <td colSpan={6} className="text-secondary">
                       Nenhum produto coletado encontrado.
                     </td>
                   </tr>
@@ -138,6 +149,9 @@ export default function MoisSalesPagesLibraryPage() {
                             item.analysisStatus ||
                             "SEM STATUS"}
                         </span>
+                      </td>
+                      <td className="text-nowrap">
+                        {formatAnalysisDate(item.analyzedAt)}
                       </td>
                       <td>
                         {getPipelinePhase(

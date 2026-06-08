@@ -267,6 +267,59 @@ describe("OprmPipelinePage", () => {
     ).toBeTruthy();
   });
 
+  it("mostra a etapa atual inferida para cada execução de CNAE", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = input.toString();
+      if (url.includes("routine-research-orchestrator/recent-processed")) {
+        return new Response(
+          JSON.stringify([
+            {
+              researchCycleId: 9,
+              sourceNicheId: 1,
+              cnaeCode: "9602501",
+              cnaeDescription: "Cabeleireiros, manicure e pedicure",
+              nicheName: "Cabeleireiros, manicure e pedicure",
+              originalNicheName:
+                "IA para crescimento de Cabeleireiros, manicure e pedicure",
+              neutralNicheName: "Cabeleireiros, manicure e pedicure",
+              researchMode: "ROUTINE_REALITY_RESEARCH",
+              solutionLanguageRiskScore: 100,
+              sourceScore: 90,
+              triggerSource: "MANUAL_REPROCESS",
+              cycleStatus: "ROUTINE_SYNTHESIZED",
+              processedAt: "2026-06-08T18:09:23Z",
+              finishedAt: null,
+              errorMessage: null,
+            },
+          ]),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }
+
+      return new Response("[]", {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getAllByText("Rotina sintetizada").length).toBeGreaterThan(
+        0,
+      );
+    });
+    expect(
+      screen.getByText("Etapa 7 · Aguardando gate de qualidade"),
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
+        "A rotina já foi sintetizada; falta o gate validar se há evidência suficiente para aprovar ou pedir nova pesquisa.",
+      ),
+    ).toBeTruthy();
+  });
+
   it("mostra seed e queries geradas pela IA no card da etapa 2", async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = input.toString();

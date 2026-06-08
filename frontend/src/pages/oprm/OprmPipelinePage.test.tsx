@@ -267,6 +267,56 @@ describe("OprmPipelinePage", () => {
     ).toBeTruthy();
   });
 
+  it("mostra o ponto do problema quando a pesquisa precisa aprofundar evidências", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = input.toString();
+      if (url.includes("routine-research-orchestrator/recent-processed")) {
+        return new Response(
+          JSON.stringify([
+            {
+              researchCycleId: 5,
+              sourceNicheId: 1,
+              cnaeCode: "9602501",
+              cnaeDescription: "Cabeleireiros, manicure e pedicure",
+              nicheName: "Cabeleireiros, manicure e pedicure",
+              originalNicheName: "Cabeleireiros, manicure e pedicure",
+              neutralNicheName: "Cabeleireiros, manicure e pedicure",
+              researchMode: "ROUTINE_REALITY_RESEARCH",
+              solutionLanguageRiskScore: 0,
+              sourceScore: 90,
+              triggerSource: "AUTO_SCORE_QUEUE",
+              cycleStatus: "NEEDS_MORE_RESEARCH",
+              processedAt: "2026-06-07T14:11:00Z",
+              finishedAt: null,
+              errorMessage: null,
+            },
+          ]),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }
+
+      return new Response("[]", {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    renderPage();
+
+    expect(
+      (await screen.findAllByText("Ponto do problema:")).length,
+    ).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText("Etapa 7 · Gate de Qualidade").length,
+    ).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText(
+        "A pesquisa chegou ao gate, mas ainda não reuniu sinais/evidências suficientes para liberar o nicho.",
+      ).length,
+    ).toBeGreaterThan(0);
+  });
+
   it("mostra a etapa atual inferida para cada execução de CNAE", async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = input.toString();

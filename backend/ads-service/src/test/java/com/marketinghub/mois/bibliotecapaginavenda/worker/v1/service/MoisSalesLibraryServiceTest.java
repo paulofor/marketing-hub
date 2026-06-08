@@ -121,6 +121,9 @@ class MoisSalesLibraryServiceTest {
                         0L,
                         327L,
                         106L,
+                        190L,
+                        4L,
+                        27L,
                         91L,
                         0L,
                         402L,
@@ -131,6 +134,7 @@ class MoisSalesLibraryServiceTest {
         MoisSalesLibraryDtos.SalesLibraryPageSummaryResponse response = service.summarizePages("workspace-001");
 
         org.assertj.core.api.Assertions.assertThat(response.captured()).isEqualTo(327L);
+        org.assertj.core.api.Assertions.assertThat(response.analysisPending()).isEqualTo(190L);
     }
 
     /**
@@ -153,6 +157,58 @@ class MoisSalesLibraryServiceTest {
         verify(jdbcTemplate).query(sqlCaptor.capture(), isA(RowMapper.class), eq("workspace-001"), eq(20), eq(0));
         org.assertj.core.api.Assertions.assertThat(sqlCaptor.getValue())
                 .contains("ORDER BY last_analyzed_at DESC, updated_at DESC, id DESC LIMIT ? OFFSET ?");
+    }
+
+    /**
+     * Garante que a etapa 2 entrega ao worker o HTML bruto capturado na etapa 1.
+     */
+    @Test
+    void shouldClaimAnalysisJobWithCapturedRawHtml() throws Exception {
+        MoisSalesLibraryDtos.SalesLibraryClaimRequest request =
+                new MoisSalesLibraryDtos.SalesLibraryClaimRequest("workspace-001", "hotmart");
+        given(jdbcTemplate.query(contains("SELECT e.id AS job_id"), isA(RowMapper.class), eq("workspace-001"), eq("HOTMART")))
+                .willAnswer(invocation -> {
+                    RowMapper<?> mapper = invocation.getArgument(1);
+                    return List.of(mapper.mapRow(analysisClaimRow(77L, 99L, "<html><body>Oferta capturada</body></html>"), 0));
+                });
+        given(jdbcTemplate.update(contains("SET status = 'FETCHING'"), any(), eq(77L))).willReturn(1);
+        given(jdbcTemplate.update(contains("SET current_stage = 'ANALYSIS'"), eq(77L), eq(99L))).willReturn(1);
+
+        MoisSalesLibraryDtos.SalesLibraryClaimResponse response = service.claimJob(request);
+
+        org.assertj.core.api.Assertions.assertThat(response.claimed()).isTrue();
+        org.assertj.core.api.Assertions.assertThat(response.job().rawHtml()).contains("Oferta capturada");
+    }
+
+    /**
+     * Garante que a etapa 2 cria fila real para páginas capturadas que ainda não possuem análise ativa.
+     */
+    @Test
+    void shouldCreatePendingAnalysisForCapturedPageWhenClaimQueueIsEmpty() throws Exception {
+        MoisSalesLibraryDtos.SalesLibraryClaimRequest request =
+                new MoisSalesLibraryDtos.SalesLibraryClaimRequest("workspace-001", "hotmart");
+        given(jdbcTemplate.query(contains("SELECT e.id AS job_id"), isA(RowMapper.class), eq("workspace-001"), eq("HOTMART")))
+                .willReturn(List.of())
+                .willAnswer(invocation -> {
+                    RowMapper<?> mapper = invocation.getArgument(1);
+                    return List.of(mapper.mapRow(analysisClaimRow(88L, 100L, "<html><body>Oferta refileirada</body></html>"), 0));
+                });
+        given(jdbcTemplate.query(contains("COALESCE(MAX(all_analysis.attempt), 0) + 1"), isA(RowMapper.class), eq("workspace-001"), eq("HOTMART")))
+                .willAnswer(invocation -> {
+                    RowMapper<?> mapper = invocation.getArgument(1);
+                    return List.of(mapper.mapRow(capturedAnalysisCandidateRow(), 0));
+                });
+        given(jdbcTemplate.update(contains("INSERT INTO mois_sales_page_job_execution"), eq(100L), eq("workspace-001"), eq(2), eq("https://example.com/oferta"), eq("AUTO_STAGE_2_CAPTURED_HTML")))
+                .willReturn(1);
+        given(jdbcTemplate.queryForObject(contains("SELECT LAST_INSERT_ID()"), eq(Long.class))).willReturn(88L);
+        given(jdbcTemplate.update(contains("SET current_stage = 'ANALYSIS'"), eq(88L), eq(100L))).willReturn(1);
+        given(jdbcTemplate.update(contains("SET status = 'FETCHING'"), any(), eq(88L))).willReturn(1);
+
+        MoisSalesLibraryDtos.SalesLibraryClaimResponse response = service.claimJob(request);
+
+        org.assertj.core.api.Assertions.assertThat(response.claimed()).isTrue();
+        org.assertj.core.api.Assertions.assertThat(response.job().jobId()).isEqualTo(88L);
+        org.assertj.core.api.Assertions.assertThat(response.job().rawHtml()).contains("Oferta refileirada");
     }
 
     /**
@@ -383,6 +439,30 @@ class MoisSalesLibraryServiceTest {
         ResultSet resultSet = org.mockito.Mockito.mock(ResultSet.class);
         given(resultSet.getLong("id")).willReturn(10L);
         given(resultSet.getLong("sales_page_id")).willReturn(99L);
+        return resultSet;
+    }
+
+    /**
+     * Monta uma linha simulada de job de análise reservado com HTML bruto capturado.
+     */
+    private ResultSet analysisClaimRow(long jobId, long pageId, String rawHtml) throws Exception {
+        ResultSet resultSet = org.mockito.Mockito.mock(ResultSet.class);
+        given(resultSet.getLong("job_id")).willReturn(jobId);
+        given(resultSet.getLong("page_id")).willReturn(pageId);
+        given(resultSet.getString("url_canonical")).willReturn("https://example.com/oferta");
+        given(resultSet.getString("title")).willReturn("Oferta");
+        given(resultSet.getString("raw_html")).willReturn(rawHtml);
+        return resultSet;
+    }
+
+    /**
+     * Monta uma linha simulada de página capturada elegível para criação automática de análise.
+     */
+    private ResultSet capturedAnalysisCandidateRow() throws Exception {
+        ResultSet resultSet = org.mockito.Mockito.mock(ResultSet.class);
+        given(resultSet.getLong("page_id")).willReturn(100L);
+        given(resultSet.getString("url_canonical")).willReturn("https://example.com/oferta");
+        given(resultSet.getInt("next_attempt")).willReturn(2);
         return resultSet;
     }
 

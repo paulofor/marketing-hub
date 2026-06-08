@@ -1,5 +1,6 @@
 package com.marketinghub.mois.bibliotecapaginavenda.worker.v1.openai;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -8,7 +9,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -17,6 +17,9 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
 
+/**
+ * Executa a análise comercial de páginas de venda via OpenAI Batch e normaliza o JSON retornado.
+ */
 @Component
 @Slf4j
 public class OpenAiSalesPageAnalyzer {
@@ -27,6 +30,9 @@ public class OpenAiSalesPageAnalyzer {
     private final OpenAiProperties properties;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    /**
+     * Configura o cliente OpenAI usando as propriedades operacionais do worker.
+     */
     public OpenAiSalesPageAnalyzer(RestClient.Builder builder, OpenAiProperties properties) {
         this.properties = properties;
         this.restClient = builder.baseUrl(properties.normalizedBaseUrl())
@@ -35,11 +41,15 @@ public class OpenAiSalesPageAnalyzer {
                 .build();
     }
 
-    public SalesPageAnalysisResult analyze(long pageId, String canonicalUrl, String htmlBodyText) {
+    /**
+     * Envia o texto capturado da página para análise comercial e retorna o diagnóstico estruturado.
+     */
+    public SalesPageAnalysisResult analyze(long jobId, long pageId, String canonicalUrl, String htmlBodyText) {
         if (!StringUtils.hasText(properties.resolvedApiKey())) {
             throw new IllegalStateException("OpenAI api key não configurada para análise de sales page");
         }
         String payloadLine = buildBatchLine(pageId, canonicalUrl, htmlBodyText);
+        log.info("MOIS sales-library enviando request cru para OpenAI. jobId={}, requestPayload={}", jobId, payloadLine);
         String inputFileId = uploadInputFile(payloadLine);
         BatchInfo batch = createBatch(inputFileId);
         BatchInfo completed = awaitBatch(batch);
@@ -50,9 +60,13 @@ public class OpenAiSalesPageAnalyzer {
             throw new IllegalStateException(buildBatchMissingOutputMessage(completed));
         }
         String output = downloadOutput(completed.outputFileId());
+        log.info("MOIS sales-library recebeu resposta crua da OpenAI. jobId={}, rawResponse={}", jobId, output);
         return parseBatchOutput(output, payloadLine);
     }
 
+    /**
+     * Monta a linha JSONL enviada ao endpoint Batch da OpenAI.
+     */
     private String buildBatchLine(long pageId, String canonicalUrl, String htmlBodyText) {
         String prompt = "Analise a página de vendas e devolva JSON válido com os campos: score_total (0-100), sections_json (objeto), copy_json (objeto), visual_json (objeto), image_json (objeto), analysis_notes (texto curto). URL: "
                 + canonicalUrl + "\nConteúdo: " + htmlBodyText;
@@ -77,27 +91,46 @@ public class OpenAiSalesPageAnalyzer {
         }
     }
 
+    /**
+     * Faz upload do arquivo JSONL de entrada da análise para a OpenAI.
+     */
     private String uploadInputFile(String line) {
         MultiValueMap<String, Object> multipart = new LinkedMultiValueMap<>();
         multipart.add("purpose", "batch");
         multipart.add("file", new org.springframework.core.io.ByteArrayResource((line + "\n").getBytes(StandardCharsets.UTF_8)) {
-            @Override public String getFilename() { return "sales-page-analysis.jsonl"; }
+            /**
+             * Retorna o nome do arquivo enviado no multipart.
+             */
+            @Override
+            public String getFilename() {
+                return "sales-page-analysis.jsonl";
+            }
         });
         FileUploadResponse response = restClient.post().uri("/files").contentType(MediaType.MULTIPART_FORM_DATA)
                 .body(multipart).retrieve().body(FileUploadResponse.class);
-        if (response == null || !StringUtils.hasText(response.id())) throw new IllegalStateException("Upload do arquivo batch falhou");
+        if (response == null || !StringUtils.hasText(response.id())) {
+            throw new IllegalStateException("Upload do arquivo batch falhou");
+        }
         return response.id();
     }
 
+    /**
+     * Cria o batch OpenAI para processar a linha JSONL enviada.
+     */
     private BatchInfo createBatch(String inputFileId) {
         BatchInfo response = restClient.post().uri("/batches")
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(Map.of("input_file_id", inputFileId, "endpoint", "/v1/responses", "completion_window", "24h"))
                 .retrieve().body(BatchInfo.class);
-        if (response == null || !StringUtils.hasText(response.id())) throw new IllegalStateException("Criação do batch falhou");
+        if (response == null || !StringUtils.hasText(response.id())) {
+            throw new IllegalStateException("Criação do batch falhou");
+        }
         return response;
     }
 
+    /**
+     * Aguarda o batch alcançar um status terminal dentro do timeout configurado.
+     */
     private BatchInfo awaitBatch(BatchInfo batch) {
         Instant start = Instant.now();
         BatchInfo current = batch;
@@ -105,17 +138,30 @@ public class OpenAiSalesPageAnalyzer {
             if (Instant.now().toEpochMilli() - start.toEpochMilli() > properties.normalizedBatchTimeoutMs()) {
                 throw new IllegalStateException("Timeout aguardando batch " + current.id());
             }
-            try { Thread.sleep(properties.normalizedBatchPollIntervalMs()); } catch (InterruptedException e) { Thread.currentThread().interrupt(); throw new IllegalStateException(e); }
+            try {
+                Thread.sleep(properties.normalizedBatchPollIntervalMs());
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException(e);
+            }
             current = restClient.get().uri("/batches/{id}", current.id()).retrieve().body(BatchInfo.class);
-            if (current == null || !StringUtils.hasText(current.status())) throw new IllegalStateException("Batch status inválido");
+            if (current == null || !StringUtils.hasText(current.status())) {
+                throw new IllegalStateException("Batch status inválido");
+            }
         }
         return current;
     }
 
+    /**
+     * Baixa o arquivo de saída do batch concluído.
+     */
     private String downloadOutput(String outputFileId) {
         return restClient.get().uri("/files/{id}/content", outputFileId).retrieve().body(String.class);
     }
 
+    /**
+     * Baixa o arquivo de erros do batch quando a OpenAI informa um error_file_id.
+     */
     private String downloadErrorJsonl(BatchInfo batch) {
         if (batch == null || !StringUtils.hasText(batch.errorFileId())) {
             return "";
@@ -167,6 +213,9 @@ public class OpenAiSalesPageAnalyzer {
         }
     }
 
+    /**
+     * Constrói mensagem legível para erro retornado em uma linha do batch.
+     */
     private String buildBatchErrorMessage(JsonNode root) {
         int status = root.path("response").path("status_code").asInt(0);
         String requestId = root.path("response").path("request_id").asText("");
@@ -179,6 +228,9 @@ public class OpenAiSalesPageAnalyzer {
                 + upstreamMessage;
     }
 
+    /**
+     * Constrói mensagem de falha quando o batch termina sem status de sucesso.
+     */
     private String buildBatchTerminalErrorMessage(BatchInfo completed) {
         String errorJsonl = downloadErrorJsonl(completed);
         String trimmedJsonl = errorJsonl.isBlank() ? "" : "\nerror_jsonl=" + errorJsonl.trim();
@@ -191,6 +243,9 @@ public class OpenAiSalesPageAnalyzer {
                 + trimmedJsonl;
     }
 
+    /**
+     * Constrói mensagem de falha quando o batch completa sem arquivo de saída.
+     */
     private String buildBatchMissingOutputMessage(BatchInfo completed) {
         String errorJsonl = downloadErrorJsonl(completed);
         String trimmedJsonl = errorJsonl.isBlank() ? "" : "\nerror_jsonl=" + errorJsonl.trim();

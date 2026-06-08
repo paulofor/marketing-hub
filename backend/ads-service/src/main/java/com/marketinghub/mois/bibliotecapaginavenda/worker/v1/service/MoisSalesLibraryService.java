@@ -46,21 +46,49 @@ public class MoisSalesLibraryService {
     @Transactional
     public MoisSalesLibraryDtos.SalesLibraryClaimResponse claimJob(MoisSalesLibraryDtos.SalesLibraryClaimRequest request) {
         String normalizedSource = request.source().trim().toUpperCase(Locale.ROOT);
+        MoisSalesLibraryDtos.SalesLibraryClaimResponse existingClaim = claimPendingAnalysisJob(request.workspaceId(), normalizedSource);
+        if (existingClaim.claimed()) {
+            return existingClaim;
+        }
+        Long createdExecutionId = createNextCapturedPageAnalysisExecution(request.workspaceId(), normalizedSource);
+        if (createdExecutionId == null) {
+            return new MoisSalesLibraryDtos.SalesLibraryClaimResponse(false, null);
+        }
+        log.info("MOIS sales-library etapa 2 criou análise pendente para página capturada. modulo=MOIS, operacao=claimJob, workspaceId={}, source={}, executionId={}",
+                request.workspaceId(), normalizedSource, createdExecutionId);
+        return claimPendingAnalysisJob(request.workspaceId(), normalizedSource);
+    }
+
+    /**
+     * Reserva um job de análise pendente que já possui HTML útil capturado para servir como entrada da etapa 2.
+     */
+    private MoisSalesLibraryDtos.SalesLibraryClaimResponse claimPendingAnalysisJob(String workspaceId, String normalizedSource) {
         String claimedBy = UUID.randomUUID().toString();
         List<MoisSalesLibraryDtos.SalesLibraryClaimedJob> rows = jdbcTemplate.query("""
-                SELECT e.id AS job_id, sp.id AS page_id, sp.url_canonical, sp.title
+                SELECT e.id AS job_id, sp.id AS page_id, sp.url_canonical, sp.title, cap.raw_html AS raw_html
                 FROM mois_sales_page_job_execution e
                 JOIN mois_sales_page sp ON sp.id = e.sales_page_id
+                LEFT JOIN mois_sales_page_job_execution cap ON cap.id = (
+                    SELECT cap2.id
+                    FROM mois_sales_page_job_execution cap2
+                    WHERE cap2.sales_page_id = sp.id
+                      AND cap2.stage = 'CAPTURE'
+                      AND cap2.status IN ('CAPTURED', 'DUPLICATE')
+                      AND COALESCE(cap2.raw_html_bytes, 0) > 0
+                    ORDER BY cap2.finished_at DESC, cap2.id DESC
+                    LIMIT 1
+                )
                 WHERE e.status = 'PENDING'
                   AND e.stage = 'ANALYSIS'
                   AND e.job_type IN ('PAGE_ANALYSIS', 'PROCESSING_JOB')
+                  AND COALESCE(sp.html_bytes, 0) > 0
                   AND sp.workspace_id = ?
                   AND sp.source = ?
                 ORDER BY e.created_at ASC, e.id ASC
                 LIMIT 1
                 """, (rs, rn) -> new MoisSalesLibraryDtos.SalesLibraryClaimedJob(
-                rs.getLong("job_id"), rs.getLong("page_id"), rs.getString("url_canonical"), rs.getString("title")),
-                request.workspaceId(), normalizedSource);
+                rs.getLong("job_id"), rs.getLong("page_id"), rs.getString("url_canonical"), rs.getString("title"), rs.getString("raw_html")),
+                workspaceId, normalizedSource);
         if (rows.isEmpty()) {
             return new MoisSalesLibraryDtos.SalesLibraryClaimResponse(false, null);
         }
@@ -80,7 +108,7 @@ public class MoisSalesLibraryService {
                 WHERE id = ?
                 """, job.jobId(), job.pageId());
         log.info("MOIS sales-library claim usando modelo operacional novo. modulo=MOIS, operacao=claimJob, workspaceId={}, source={}, pageId={}, executionId={}",
-                request.workspaceId(), normalizedSource, job.pageId(), job.jobId());
+                workspaceId, normalizedSource, job.pageId(), job.jobId());
         return new MoisSalesLibraryDtos.SalesLibraryClaimResponse(true, job);
     }
 
@@ -467,6 +495,9 @@ public class MoisSalesLibraryService {
                        SUM(current_status IN ('FETCHING', 'CAPTURING')) AS capturing,
                        SUM(COALESCE(html_bytes, 0) > 0) AS captured,
                        SUM(current_status IN ('DONE', 'ANALYZED')) AS analyzed,
+                       SUM(COALESCE(html_bytes, 0) > 0 AND COALESCE(analysis_status, current_status) = 'PENDING') AS analysis_pending,
+                       SUM(COALESCE(html_bytes, 0) > 0 AND COALESCE(analysis_status, current_status) = 'FETCHING') AS analysis_running,
+                       SUM(COALESCE(html_bytes, 0) > 0 AND COALESCE(analysis_status, current_status) = 'FAILED') AS analysis_failed,
                        SUM(current_status = 'FAILED') AS failed,
                        SUM(current_status = 'BLOCKED_COOLDOWN') AS blocked_cooldown,
                        SUM(source = 'HOTMART') AS hotmart,
@@ -476,7 +507,8 @@ public class MoisSalesLibraryService {
                 WHERE workspace_id = ?
                 """, (rs, rn) -> new MoisSalesLibraryDtos.SalesLibraryPageSummaryResponse(
                 workspaceId, rs.getLong("total"), rs.getLong("pending"), rs.getLong("capturing"),
-                rs.getLong("captured"), rs.getLong("analyzed"), rs.getLong("failed"),
+                rs.getLong("captured"), rs.getLong("analyzed"), rs.getLong("analysis_pending"),
+                rs.getLong("analysis_running"), rs.getLong("analysis_failed"), rs.getLong("failed"),
                 rs.getLong("blocked_cooldown"), rs.getLong("hotmart"), rs.getLong("clickbank"),
                 toInstant(rs.getTimestamp("updated_at"))), workspaceId);
     }
@@ -550,6 +582,60 @@ public class MoisSalesLibraryService {
                 WHERE id = ? AND stage = 'ANALYSIS' AND status IN ('PENDING', 'FETCHING')
                 LIMIT 1
                 """, (rs, rowNum) -> rs.getLong("sales_page_id"), executionId).stream().findFirst().orElse(null);
+    }
+
+    /**
+     * Cria uma execução pendente para a próxima página com HTML capturado e sem análise ativa ou concluída.
+     */
+    private Long createNextCapturedPageAnalysisExecution(String workspaceId, String normalizedSource) {
+        List<CapturedPageAnalysisCandidate> candidates = jdbcTemplate.query("""
+                SELECT sp.id AS page_id,
+                       sp.url_canonical,
+                       COALESCE(MAX(all_analysis.attempt), 0) + 1 AS next_attempt,
+                       SUM(CASE WHEN active_analysis.id IS NULL THEN 0 ELSE 1 END) AS active_count,
+                       SUM(CASE WHEN all_analysis.status IN ('DONE', 'ANALYZED') THEN 1 ELSE 0 END) AS done_count,
+                       SUM(CASE WHEN all_analysis.status = 'FAILED' THEN 1 ELSE 0 END) AS failed_count
+                FROM mois_sales_page sp
+                LEFT JOIN mois_sales_page_job_execution active_analysis
+                  ON active_analysis.sales_page_id = sp.id
+                 AND active_analysis.stage = 'ANALYSIS'
+                 AND active_analysis.status IN ('PENDING', 'FETCHING')
+                LEFT JOIN mois_sales_page_job_execution all_analysis
+                  ON all_analysis.sales_page_id = sp.id
+                 AND all_analysis.stage = 'ANALYSIS'
+                WHERE sp.workspace_id = ?
+                  AND sp.source = ?
+                  AND COALESCE(sp.html_bytes, 0) > 0
+                  AND COALESCE(sp.analysis_status, sp.current_status) NOT IN ('DONE', 'ANALYZED', 'ANULADO', 'FETCHING')
+                GROUP BY sp.id, sp.url_canonical
+                HAVING active_count = 0
+                   AND done_count = 0
+                   AND failed_count < 3
+                ORDER BY sp.last_captured_at ASC, sp.updated_at ASC, sp.id ASC
+                LIMIT 1
+                """, (rs, rowNum) -> new CapturedPageAnalysisCandidate(
+                rs.getLong("page_id"),
+                rs.getString("url_canonical"),
+                rs.getInt("next_attempt")
+        ), workspaceId, normalizedSource);
+        if (candidates.isEmpty()) {
+            return null;
+        }
+        CapturedPageAnalysisCandidate candidate = candidates.get(0);
+        jdbcTemplate.update("""
+                INSERT INTO mois_sales_page_job_execution
+                (sales_page_id, workspace_id, job_type, stage, status, attempt, input_url, request_payload_json, created_at, updated_at)
+                VALUES (?, ?, 'PAGE_ANALYSIS', 'ANALYSIS', 'PENDING', ?, ?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())
+                """, candidate.pageId(), workspaceId, candidate.nextAttempt(), candidate.urlCanonical(), "AUTO_STAGE_2_CAPTURED_HTML");
+        Long executionId = jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
+        long safeExecutionId = executionId == null ? 0L : executionId;
+        jdbcTemplate.update("""
+                UPDATE mois_sales_page
+                SET current_stage = 'ANALYSIS', current_status = 'PENDING', analysis_status = 'PENDING',
+                    last_error_category = NULL, last_error_message = NULL, last_job_execution_id = ?, updated_at = UTC_TIMESTAMP()
+                WHERE id = ?
+                """, safeExecutionId, candidate.pageId());
+        return safeExecutionId;
     }
 
     /**
@@ -1082,6 +1168,9 @@ public class MoisSalesLibraryService {
     }
 
     private record CaptureExecution(long executionId, long salesPageId) {
+    }
+
+    private record CapturedPageAnalysisCandidate(long pageId, String urlCanonical, int nextAttempt) {
     }
 
     private record CollectedReferenceUrlCandidate(String source, String urlSource, String canonicalUrl) {

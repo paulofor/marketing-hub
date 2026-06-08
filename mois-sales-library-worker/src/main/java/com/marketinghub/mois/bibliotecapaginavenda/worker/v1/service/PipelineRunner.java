@@ -109,10 +109,9 @@ public class PipelineRunner {
         try {
             log.info("MOIS sales-library worker claimed job. jobId={}, pageId={}, urlCanonical={}",
                     jobId, claim.job().pageId(), claim.job().urlCanonical());
-            var doc = Jsoup.connect(claim.job().urlCanonical()).timeout(properties.requestTimeoutMs()).get();
-            String text = doc.body() != null ? doc.body().text() : "";
+            String text = extractAnalysisText(claim.job());
             SalesPageAnalysisResult analysis =
-                    openAiSalesPageAnalyzer.analyze(claim.job().pageId(), claim.job().urlCanonical(), text);
+                    openAiSalesPageAnalyzer.analyze(jobId, claim.job().pageId(), claim.job().urlCanonical(), text);
             backendClient.complete(jobId, new CompleteRequest(
                     analysis.scoreTotal(),
                     analysis.sectionsJson(),
@@ -130,6 +129,20 @@ public class PipelineRunner {
             backendClient.fail(jobId, new FailRequest("PIPELINE_ERROR", ex.getMessage()));
             log.warn("MOIS library job {} failed: {}", jobId, ex.getMessage(), ex);
         }
+    }
+
+    /**
+     * Extrai texto para análise usando primeiro o HTML capturado na etapa 1 e apenas cai para a URL ao vivo quando o payload antigo não trouxe HTML.
+     */
+    private String extractAnalysisText(ClaimedJob job) throws java.io.IOException {
+        if (job.rawHtml() != null && !job.rawHtml().isBlank()) {
+            var doc = Jsoup.parse(job.rawHtml(), job.urlCanonical());
+            return doc.body() != null ? doc.body().text() : doc.text();
+        }
+        log.warn("MOIS sales-library worker recebeu job sem rawHtml capturado; usando fallback ao vivo. jobId={}, pageId={}, urlCanonical={}",
+                job.jobId(), job.pageId(), job.urlCanonical());
+        var doc = Jsoup.connect(job.urlCanonical()).timeout(properties.requestTimeoutMs()).get();
+        return doc.body() != null ? doc.body().text() : "";
     }
 
 

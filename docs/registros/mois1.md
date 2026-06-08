@@ -1138,3 +1138,26 @@ Arquivos alterados:
 - `backend/ads-service/src/test/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibraryServiceTest.java`
 - `docs/swagger/mois-sales-library-swagger.yaml`
 - `docs/registros/mois1.md`
+
+## 2026-06-08 — Etapa 2 de análise baseada no HTML capturado
+
+- alterada a etapa 2 da Biblioteca de Páginas de Vendas para criar fila real de análise a partir de páginas com HTML útil já capturado (`html_bytes > 0`) e sem análise ativa/concluída.
+- o claim `POST /api/mois/sales-library/jobs:claim` passa a devolver o HTML bruto capturado mais recente ao worker, evitando depender novamente de acesso ao site externo durante a análise.
+- o worker passa a extrair texto do HTML capturado na etapa 1, usando acesso ao vivo da URL apenas como fallback de compatibilidade para payload antigo sem `rawHtml`.
+- o resumo da tela do pipeline passa a exibir pendentes, em execução e falhas da etapa 2, além do backlog estimado.
+- adicionados logs de request/resposta brutos da OpenAI e payload enviado ao backend com `jobId` para rastreabilidade operacional.
+
+Arquivos alterados:
+- `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/dto/MoisSalesLibraryDtos.java`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibraryService.java`
+- `backend/ads-service/src/test/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibraryServiceTest.java`
+- `backend/ads-service/src/test/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/web/MoisSalesLibraryControllerTest.java`
+- `mois-sales-library-worker/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/client/BackendClient.java`
+- `mois-sales-library-worker/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/model/WorkerDtos.java`
+- `mois-sales-library-worker/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/openai/OpenAiSalesPageAnalyzer.java`
+- `mois-sales-library-worker/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/PipelineRunner.java`
+- `frontend/src/api/mois/types.ts`
+- `frontend/src/pages/mois/MoisSalesPagesPipelinePage.tsx`
+- `docs/canonical/mois-worker-canon.v1.md`
+- `docs/swagger/mois-sales-library-swagger.yaml`
+- `docs/registros/mois1.md`

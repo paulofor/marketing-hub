@@ -130,7 +130,8 @@ Esta seção consolida o fluxo ponta a ponta de **alimentação da biblioteca** 
 2. **URL fica disponível na biblioteca**
    - O backend normaliza/canonicaliza URL, faz upsert em `mois_sales_page` e, para páginas novas, cria execução `PENDING` em `mois_sales_page_job_execution`.
 3. **Rotina que obtém conteúdo da página e envia para análise**
-   - O worker faz `claim` (`jobs:claim`), muda job para `FETCHING`, baixa HTML da `urlCanonical`, extrai texto (`body.text()`) e inicia análise OpenAI.
+   - O backend só entrega no `claim` (`jobs:claim`) páginas com HTML útil já capturado (`html_bytes > 0`) e refileira automaticamente páginas capturadas sem análise ativa/concluída, respeitando limite operacional de tentativas para falhas.
+   - O worker muda job para `FETCHING`, usa prioritariamente o HTML bruto capturado na etapa 1, extrai texto (`body.text()`) e inicia análise OpenAI. O acesso ao vivo da `urlCanonical` é apenas fallback para compatibilidade com payload antigo sem HTML capturado.
 4. **Prompt + schema de saída usados no worker**
    - O worker monta o prompt com `urlCanonical` + texto extraído (`body.text()`) e versão de parser/prompt para rastreabilidade da análise.
    - O worker envia instrução para análise comercial e exige resposta em JSON via `/v1/responses` com `text.format.type=json_object`.
@@ -301,6 +302,7 @@ erDiagram
 - **Papel no fluxo**: fonte operacional principal do estado atual da página de venda.
 - **Função operacional**: deduplicar URLs, manter metadados de origem, status atual, captura atual, score e último erro.
 - **Campos de destaque**: `id`, `workspace_id`, `source`, `source_job_id`, `source_reference_id`, `collected_reference_id`, `url_original`, `url_canonical`, `url_final`, `current_stage`, `current_status`, `capture_status`, `analysis_status`, `html_sha256`, `html_bytes`, `score_total`, `last_job_execution_id`, `created_at`, `updated_at`.
+- **Etapa 2 / análise comercial**: o claim de análise deve considerar somente páginas com `html_bytes > 0`, criar execução `PAGE_ANALYSIS/PENDING` quando existir página capturada sem análise ativa/concluída, e enviar ao worker o HTML bruto capturado mais recente para impedir que a análise dependa novamente de acesso externo à página.
 - **Critério canônico de captura correta**: uma página só deve ser considerada com HTML útil obtido quando `html_bytes > 0`; status como `CAPTURED`, `DUPLICATE`, `DONE` ou `ANALYZED` não substituem esse critério. A etapa 1 deve priorizar/processar páginas com `COALESCE(html_bytes, 0) = 0`, respeitando cooldown/limite de falhas quando não houver acionamento forçado.
 
 #### 13.3.2 `mois_sales_page_job_execution`

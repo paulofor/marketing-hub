@@ -288,6 +288,9 @@ export interface MoisSalesLibraryPageSummary {
   capturing: number;
   captured: number;
   analyzed: number;
+  analysisPending: number;
+  analysisRunning: number;
+  analysisFailed: number;
   failed: number;
   blockedCooldown: number;
   hotmart: number;

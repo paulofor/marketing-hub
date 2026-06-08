@@ -29,6 +29,23 @@ O Marketing Hub é uma fábrica automatizada de produtos digitais: descobre dore
 - 5. Verificar se existe logs desse endpoint que faz gravações
 - 6. Verificar a origem do dados antes da gravação.
 - 7. Se não tiver informações suficientes para chegar em uma conclusão segura coloque logs e solicite nova execução.
+- **Investigação de comando do front-end que não funciona (procedimento obrigatório)**: quando o usuário solicitar a investigação do motivo de um comando no front-end não estar funcionando, siga obrigatoriamente este fluxo ponta a ponta, buscando a causa-raiz e comprovando cada etapa antes de concluir:
+  1. Identificar qual endpoint é chamado pelo comando no front-end.
+  2. Identificar qual controller do backend está sendo chamado por esse endpoint.
+  3. Identificar qual service é chamado pelo controller.
+  4. Identificar qual mudança no banco de dados é feita pelo service.
+  5. Usando o MCP Server, verificar se a alteração foi feita no banco de dados.
+  6. Se essa mudança for para disponibilizar esse registro, descobrir isso analisando os outros métodos do service e o fluxo de disponibilização do dado.
+  7. Identificar qual endpoint expõe esse dado para consumo.
+  8. Identificar qual módulo chama esse endpoint.
+  9. Verificar no log desse módulo se esse endpoint está sendo chamado.
+  10. Verificar no log do módulo se os parâmetros enviados estão corretos.
+  11. Verificar no módulo o que é feito ao chegar essa informação.
+  12. Verificar se a ação esperada está sendo feita.
+  13. Verificar se a resposta da ação aconteceu.
+  14. Verificar se o tratamento da resposta foi feito corretamente.
+  15. Verificar se o backend foi novamente chamado pelo módulo para registrar o resultado da ação.
+  16. Verificar se o backend registrou corretamente o resultado da ação.
 - **Servidor MCP** : Chame o endpoint MCP https://mcpserverdigi.shop/mcp via JSON-RPC. Quando precisar analisar casos específicos acesse o banco de dados usando esse servidor.
 - **Tecnologias padrão**: Java 21 + Spring Boot 3, React 18 + Vite + TypeScript, Zustand para state, TanStack Query para dados. Formatação: Spotless (backend) e Prettier (frontend).
 - **Banco**: MySQL 5.7. Somente o backend acessa o banco; demais módulos conversam via APIs do backend. Prefira filtros no SQL ao invés de pós-processar em memória.

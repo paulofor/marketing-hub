@@ -1125,3 +1125,16 @@ Arquivos alterados:
 Arquivos alterados:
 - `frontend/src/pages/mois/MoisSalesPagesPipelinePage.tsx`
 - `docs/registros/mois1.md`
+
+## 2026-06-08 — Listagem das 20 análises mais recentes na biblioteca MOIS
+
+- ajustada a tela `/mois/sales-pages-library` para exibir somente 20 páginas por requisição, com coluna explícita de data da análise.
+- ajustada a ordenação do endpoint de páginas operacionais para priorizar `last_analyzed_at` em ordem decrescente, preservando `updated_at` e `id` como desempate.
+- adicionada cobertura unitária e documentação Swagger para proteger a ordenação por data de análise mais recente.
+
+Arquivos alterados:
+- `frontend/src/pages/mois/MoisSalesPagesLibraryPage.tsx`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibraryService.java`
+- `backend/ads-service/src/test/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibraryServiceTest.java`
+- `docs/swagger/mois-sales-library-swagger.yaml`
+- `docs/registros/mois1.md`

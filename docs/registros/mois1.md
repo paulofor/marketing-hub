@@ -1219,3 +1219,13 @@ Arquivos alterados:
 - `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/dto/MoisSalesLibraryDtos.java`
 - `docs/swagger/mois-sales-library-swagger.yaml`
 - `docs/registros/mois1.md`
+
+## 2026-06-09 — Card da Etapa 3 no pipeline de páginas de vendas
+
+- Adicionado na tela `/mois/sales-pages-library/pipeline` o card visual da **Etapa 3 — Pesquisa de aquecimento e ecossistema**, deixando claro o objetivo comercial da etapa antes da execução operacional completa.
+- O card apresenta entrada, saída esperada, critério de qualidade, volume elegível a partir das páginas já analisadas e checklist dos sinais que a etapa deve acompanhar.
+- A mudança mantém a tela alinhada ao contrato canônico `MARKET_WARMUP_RESEARCH` e evita sugerir execução ativa enquanto o worker dedicado ainda está em ativação operacional.
+
+Arquivos alterados:
+- `frontend/src/pages/mois/MoisSalesPagesPipelinePage.tsx`
+- `docs/registros/mois1.md`

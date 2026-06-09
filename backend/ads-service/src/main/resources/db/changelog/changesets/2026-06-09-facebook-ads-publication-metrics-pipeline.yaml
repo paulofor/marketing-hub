@@ -1,0 +1,193 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-09-facebook-ads-publication-metrics-pipeline-operational
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: MARK_RAN
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: pipeline
+        - tableExists:
+            tableName: pipeline_stage
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO pipeline (name, code, module, description, active, created_at, updated_at)
+              SELECT 'Pipeline Facebook Ads: Publicação e Métricas', 'facebook-ads-publication-metrics-pipeline', 'FACEBOOK_ADS', 'Fluxo operacional do Facebook Ads Worker para publicar campanhas, registrar IDs da Meta, sincronizar métricas e expor falhas de medição para decisão de escala ou correção.', 1, NOW(), NOW()
+              FROM dual
+              WHERE NOT EXISTS (SELECT 1 FROM pipeline WHERE code = 'facebook-ads-publication-metrics-pipeline');
+
+              INSERT INTO pipeline_stage (pipeline_id, position, name, code, description, required, active, created_at, updated_at)
+              SELECT p.id, 1, 'Configuração da conta Facebook', 'worker-configuration', 'Carrega token, conta de anúncios, defaults de orçamento, CTA e credenciais necessárias para operar a campanha com segurança.', 1, 1, NOW(), NOW()
+              FROM pipeline p
+              WHERE p.code = 'facebook-ads-publication-metrics-pipeline'
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage ps WHERE ps.pipeline_id = p.id AND ps.code = 'worker-configuration');
+
+              INSERT INTO pipeline_stage (pipeline_id, position, name, code, description, required, active, created_at, updated_at)
+              SELECT p.id, 2, 'Prontidão do experimento', 'experiment-readiness', 'Busca experimentos liberados e prontos para Facebook, impedindo duplicidade de campanha e bloqueando publicação sem requisitos mínimos.', 1, 1, NOW(), NOW()
+              FROM pipeline p
+              WHERE p.code = 'facebook-ads-publication-metrics-pipeline'
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage ps WHERE ps.pipeline_id = p.id AND ps.code = 'experiment-readiness');
+
+              INSERT INTO pipeline_stage (pipeline_id, position, name, code, description, required, active, created_at, updated_at)
+              SELECT p.id, 3, 'Criativos aprovados', 'creative-consumption', 'Consome somente criativos aprovados pelo contrato exclusivo do módulo Facebook antes de montar a campanha na Meta.', 1, 1, NOW(), NOW()
+              FROM pipeline p
+              WHERE p.code = 'facebook-ads-publication-metrics-pipeline'
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage ps WHERE ps.pipeline_id = p.id AND ps.code = 'creative-consumption');
+
+              INSERT INTO pipeline_stage (pipeline_id, position, name, code, description, required, active, created_at, updated_at)
+              SELECT p.id, 4, 'Publicação da hierarquia de campanha', 'campaign-hierarchy-publication', 'Cria campanha, conjunto, imagem, criativo e anúncio na Graph API, mantendo status seguro para revisão operacional.', 1, 1, NOW(), NOW()
+              FROM pipeline p
+              WHERE p.code = 'facebook-ads-publication-metrics-pipeline'
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage ps WHERE ps.pipeline_id = p.id AND ps.code = 'campaign-hierarchy-publication');
+
+              INSERT INTO pipeline_stage (pipeline_id, position, name, code, description, required, active, created_at, updated_at)
+              SELECT p.id, 5, 'Registro da publicação no backend', 'publication-registration', 'Persiste campanha, ad set, criativo, anúncio e IDs externos para rastrear o experimento e impedir publicação duplicada.', 1, 1, NOW(), NOW()
+              FROM pipeline p
+              WHERE p.code = 'facebook-ads-publication-metrics-pipeline'
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage ps WHERE ps.pipeline_id = p.id AND ps.code = 'publication-registration');
+
+              INSERT INTO pipeline_stage (pipeline_id, position, name, code, description, required, active, created_at, updated_at)
+              SELECT p.id, 6, 'Seleção de campanhas para métricas', 'metrics-sync-target-selection', 'Lista campanhas em execução que precisam de sincronização de métricas para transformar tráfego pago em decisão mensurável.', 1, 1, NOW(), NOW()
+              FROM pipeline p
+              WHERE p.code = 'facebook-ads-publication-metrics-pipeline'
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage ps WHERE ps.pipeline_id = p.id AND ps.code = 'metrics-sync-target-selection');
+
+              INSERT INTO pipeline_stage (pipeline_id, position, name, code, description, required, active, created_at, updated_at)
+              SELECT p.id, 7, 'Coleta de insights na Meta', 'meta-insights-collection', 'Consulta insights da campanha na Graph API e transforma impressões, cliques, leads e gasto em payload operacional.', 1, 1, NOW(), NOW()
+              FROM pipeline p
+              WHERE p.code = 'facebook-ads-publication-metrics-pipeline'
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage ps WHERE ps.pipeline_id = p.id AND ps.code = 'meta-insights-collection');
+
+              INSERT INTO pipeline_stage (pipeline_id, position, name, code, description, required, active, created_at, updated_at)
+              SELECT p.id, 8, 'Persistência das métricas', 'metrics-persistence', 'Atualiza experiment_campaign_metric e limpa erro anterior para que o funil mostre custo, clique, lead, CPC e CPL atualizados.', 1, 1, NOW(), NOW()
+              FROM pipeline p
+              WHERE p.code = 'facebook-ads-publication-metrics-pipeline'
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage ps WHERE ps.pipeline_id = p.id AND ps.code = 'metrics-persistence');
+
+              INSERT INTO pipeline_stage (pipeline_id, position, name, code, description, required, active, created_at, updated_at)
+              SELECT p.id, 9, 'Tratamento de falhas de métricas', 'metrics-error-handling', 'Registra falhas de permissão, payload ou integração para reduzir incerteza operacional e orientar correção de causa-raiz.', 1, 1, NOW(), NOW()
+              FROM pipeline p
+              WHERE p.code = 'facebook-ads-publication-metrics-pipeline'
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage ps WHERE ps.pipeline_id = p.id AND ps.code = 'metrics-error-handling');
+  - changeSet:
+      id: 2026-06-09-facebook-ads-publication-metrics-pipeline-location
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: MARK_RAN
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: pipeline_stage
+        - columnExists:
+            tableName: pipeline_stage
+            columnName: execution_module
+        - columnExists:
+            tableName: pipeline_stage
+            columnName: root_package
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE pipeline_stage ps
+              INNER JOIN pipeline p ON p.id = ps.pipeline_id
+              SET ps.execution_module = 'facebook-ads-worker',
+                  ps.root_package = 'com.marketinghub.facebookadsworker.facebookcampaign'
+              WHERE p.code = 'facebook-ads-publication-metrics-pipeline';
+  - changeSet:
+      id: 2026-06-09-facebook-ads-publication-metrics-pipeline-persistent-contract
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: MARK_RAN
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: pipeline_definition
+        - tableExists:
+            tableName: pipeline_stage_definition
+        - tableExists:
+            tableName: pipeline_stage_config
+        - columnExists:
+            tableName: pipeline_stage_definition
+            columnName: execution_module
+        - columnExists:
+            tableName: pipeline_stage_definition
+            columnName: root_package
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO pipeline_definition (module, code, name, canonical_version, active, created_at, updated_at)
+              SELECT 'FACEBOOK_ADS', 'facebook-ads-publication-metrics-pipeline', 'Pipeline Facebook Ads: Publicação e Métricas', 'facebook-campaign-publication-canon.v1', 1, NOW(), NOW()
+              FROM dual
+              WHERE NOT EXISTS (SELECT 1 FROM pipeline_definition WHERE code = 'facebook-ads-publication-metrics-pipeline' AND canonical_version = 'facebook-campaign-publication-canon.v1');
+
+              INSERT INTO pipeline_stage_definition (pipeline_definition_id, canonical_code, display_name, position, required, implemented_stage_enum, requires_openai_model, configurable, execution_module, root_package, created_at, updated_at)
+              SELECT pd.id, 'WORKER_CONFIGURATION', 'Configuração da conta Facebook', 1, 1, 'WORKER_CONFIGURATION', 0, 1, 'facebook-ads-worker', 'com.marketinghub.facebookadsworker.facebookcampaign', NOW(), NOW()
+              FROM pipeline_definition pd
+              WHERE pd.code = 'facebook-ads-publication-metrics-pipeline' AND pd.canonical_version = 'facebook-campaign-publication-canon.v1'
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage_definition psd WHERE psd.pipeline_definition_id = pd.id AND psd.canonical_code = 'WORKER_CONFIGURATION');
+
+              INSERT INTO pipeline_stage_definition (pipeline_definition_id, canonical_code, display_name, position, required, implemented_stage_enum, requires_openai_model, configurable, execution_module, root_package, created_at, updated_at)
+              SELECT pd.id, 'EXPERIMENT_READINESS', 'Prontidão do experimento', 2, 1, 'EXPERIMENT_READINESS', 0, 1, 'facebook-ads-worker', 'com.marketinghub.facebookadsworker.facebookcampaign', NOW(), NOW()
+              FROM pipeline_definition pd
+              WHERE pd.code = 'facebook-ads-publication-metrics-pipeline' AND pd.canonical_version = 'facebook-campaign-publication-canon.v1'
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage_definition psd WHERE psd.pipeline_definition_id = pd.id AND psd.canonical_code = 'EXPERIMENT_READINESS');
+
+              INSERT INTO pipeline_stage_definition (pipeline_definition_id, canonical_code, display_name, position, required, implemented_stage_enum, requires_openai_model, configurable, execution_module, root_package, created_at, updated_at)
+              SELECT pd.id, 'CREATIVE_CONSUMPTION', 'Criativos aprovados', 3, 1, 'CREATIVE_CONSUMPTION', 0, 1, 'facebook-ads-worker', 'com.marketinghub.facebookadsworker.facebookcampaign', NOW(), NOW()
+              FROM pipeline_definition pd
+              WHERE pd.code = 'facebook-ads-publication-metrics-pipeline' AND pd.canonical_version = 'facebook-campaign-publication-canon.v1'
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage_definition psd WHERE psd.pipeline_definition_id = pd.id AND psd.canonical_code = 'CREATIVE_CONSUMPTION');
+
+              INSERT INTO pipeline_stage_definition (pipeline_definition_id, canonical_code, display_name, position, required, implemented_stage_enum, requires_openai_model, configurable, execution_module, root_package, created_at, updated_at)
+              SELECT pd.id, 'CAMPAIGN_HIERARCHY_PUBLICATION', 'Publicação da hierarquia de campanha', 4, 1, 'CAMPAIGN_HIERARCHY_PUBLICATION', 0, 1, 'facebook-ads-worker', 'com.marketinghub.facebookadsworker.facebookcampaign', NOW(), NOW()
+              FROM pipeline_definition pd
+              WHERE pd.code = 'facebook-ads-publication-metrics-pipeline' AND pd.canonical_version = 'facebook-campaign-publication-canon.v1'
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage_definition psd WHERE psd.pipeline_definition_id = pd.id AND psd.canonical_code = 'CAMPAIGN_HIERARCHY_PUBLICATION');
+
+              INSERT INTO pipeline_stage_definition (pipeline_definition_id, canonical_code, display_name, position, required, implemented_stage_enum, requires_openai_model, configurable, execution_module, root_package, created_at, updated_at)
+              SELECT pd.id, 'PUBLICATION_REGISTRATION', 'Registro da publicação no backend', 5, 1, 'PUBLICATION_REGISTRATION', 0, 1, 'facebook-ads-worker', 'com.marketinghub.facebookadsworker.facebookcampaign', NOW(), NOW()
+              FROM pipeline_definition pd
+              WHERE pd.code = 'facebook-ads-publication-metrics-pipeline' AND pd.canonical_version = 'facebook-campaign-publication-canon.v1'
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage_definition psd WHERE psd.pipeline_definition_id = pd.id AND psd.canonical_code = 'PUBLICATION_REGISTRATION');
+
+              INSERT INTO pipeline_stage_definition (pipeline_definition_id, canonical_code, display_name, position, required, implemented_stage_enum, requires_openai_model, configurable, execution_module, root_package, created_at, updated_at)
+              SELECT pd.id, 'METRICS_SYNC_TARGET_SELECTION', 'Seleção de campanhas para métricas', 6, 1, 'METRICS_SYNC_TARGET_SELECTION', 0, 1, 'facebook-ads-worker', 'com.marketinghub.facebookadsworker.facebookcampaign', NOW(), NOW()
+              FROM pipeline_definition pd
+              WHERE pd.code = 'facebook-ads-publication-metrics-pipeline' AND pd.canonical_version = 'facebook-campaign-publication-canon.v1'
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage_definition psd WHERE psd.pipeline_definition_id = pd.id AND psd.canonical_code = 'METRICS_SYNC_TARGET_SELECTION');
+
+              INSERT INTO pipeline_stage_definition (pipeline_definition_id, canonical_code, display_name, position, required, implemented_stage_enum, requires_openai_model, configurable, execution_module, root_package, created_at, updated_at)
+              SELECT pd.id, 'META_INSIGHTS_COLLECTION', 'Coleta de insights na Meta', 7, 1, 'META_INSIGHTS_COLLECTION', 0, 1, 'facebook-ads-worker', 'com.marketinghub.facebookadsworker.facebookcampaign', NOW(), NOW()
+              FROM pipeline_definition pd
+              WHERE pd.code = 'facebook-ads-publication-metrics-pipeline' AND pd.canonical_version = 'facebook-campaign-publication-canon.v1'
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage_definition psd WHERE psd.pipeline_definition_id = pd.id AND psd.canonical_code = 'META_INSIGHTS_COLLECTION');
+
+              INSERT INTO pipeline_stage_definition (pipeline_definition_id, canonical_code, display_name, position, required, implemented_stage_enum, requires_openai_model, configurable, execution_module, root_package, created_at, updated_at)
+              SELECT pd.id, 'METRICS_PERSISTENCE', 'Persistência das métricas', 8, 1, 'METRICS_PERSISTENCE', 0, 1, 'facebook-ads-worker', 'com.marketinghub.facebookadsworker.facebookcampaign', NOW(), NOW()
+              FROM pipeline_definition pd
+              WHERE pd.code = 'facebook-ads-publication-metrics-pipeline' AND pd.canonical_version = 'facebook-campaign-publication-canon.v1'
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage_definition psd WHERE psd.pipeline_definition_id = pd.id AND psd.canonical_code = 'METRICS_PERSISTENCE');
+
+              INSERT INTO pipeline_stage_definition (pipeline_definition_id, canonical_code, display_name, position, required, implemented_stage_enum, requires_openai_model, configurable, execution_module, root_package, created_at, updated_at)
+              SELECT pd.id, 'METRICS_ERROR_HANDLING', 'Tratamento de falhas de métricas', 9, 1, 'METRICS_ERROR_HANDLING', 0, 1, 'facebook-ads-worker', 'com.marketinghub.facebookadsworker.facebookcampaign', NOW(), NOW()
+              FROM pipeline_definition pd
+              WHERE pd.code = 'facebook-ads-publication-metrics-pipeline' AND pd.canonical_version = 'facebook-campaign-publication-canon.v1'
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage_definition psd WHERE psd.pipeline_definition_id = pd.id AND psd.canonical_code = 'METRICS_ERROR_HANDLING');
+
+              INSERT INTO pipeline_stage_config (pipeline_stage_definition_id, active, openai_model_id, description_override, updated_by, created_at, updated_at)
+              SELECT psd.id, 1, NULL, NULL, 'liquibase-facebook-ads-publication-metrics-pipeline', NOW(), NOW()
+              FROM pipeline_stage_definition psd
+              INNER JOIN pipeline_definition pd ON pd.id = psd.pipeline_definition_id
+              WHERE pd.code = 'facebook-ads-publication-metrics-pipeline'
+                AND pd.canonical_version = 'facebook-campaign-publication-canon.v1'
+                AND NOT EXISTS (SELECT 1 FROM pipeline_stage_config psc WHERE psc.pipeline_stage_definition_id = psd.id);

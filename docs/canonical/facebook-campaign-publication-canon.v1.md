@@ -29,6 +29,24 @@ Este documento complementa o `system-governance-canon.v2.md` e passa a ser a fon
 | Fontes de verdade das flags usadas pela UI (cartão Campanha de Facebook Ads) e pelos serviços (`ExperimentReadinessService`, `/api/facebook-campaigns/experiments-ready`, `/api/facebook-pixels`). | Contratos de outros canais pagos ou fluxos do Lead Portal que já possuem cânone próprio. |
 | Padrão arquitetural da publicação de campanhas como etapa plugável dentro do `facebook-ads-worker`. | Migração genérica de todos os workers para pipeline; este cânone cobre somente publicação de campanha Facebook. |
 
+## 2.1 Pipeline oficial na tela de Pipelines
+
+O fluxo do Facebook Ads Worker deve aparecer na tela administrativa `/pipelines` como o pipeline oficial `facebook-ads-publication-metrics-pipeline`, com módulo `FACEBOOK_ADS` e nome operacional **Pipeline Facebook Ads: Publicação e Métricas**.
+
+As etapas oficiais expostas para operação são:
+
+1. `worker-configuration` — carregar configuração, token, conta de anúncios e defaults.
+2. `experiment-readiness` — selecionar experimentos liberados, prontos e sem campanha duplicada.
+3. `creative-consumption` — consumir somente criativos aprovados pelo contrato do módulo Facebook.
+4. `campaign-hierarchy-publication` — criar campanha, conjunto, imagem, criativo e anúncio na Meta.
+5. `publication-registration` — persistir IDs externos no backend e marcar rastreabilidade da publicação.
+6. `metrics-sync-target-selection` — selecionar campanhas em execução para sincronização de métricas.
+7. `meta-insights-collection` — coletar insights da Graph API.
+8. `metrics-persistence` — atualizar `experiment_campaign_metric` e dados de última sincronização.
+9. `metrics-error-handling` — registrar falhas de coleta para correção de causa-raiz.
+
+Esse pipeline é administrativo e operacional: ele torna visível o fluxo do worker, mas não transfere ownership de banco para o worker. O backend continua sendo o único responsável por persistência, e o Facebook Ads Worker continua consumindo contratos HTTP do módulo Facebook.
+
 ## 3. Ownership e módulos
 
 | Regra | Dono | Consumidores |

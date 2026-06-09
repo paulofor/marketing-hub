@@ -31,4 +31,29 @@ class EnrichedNicheMaterializerEngineTest {
         assertThat(draft.commercialTriggers()).isNull();
         assertThat(draft.objections()).isNull();
     }
+
+    /** Deve ignorar frases contaminadas por linguagem de solução sem quebrar a materialização aprovada. */
+    @Test
+    void shouldIgnoreSolutionLanguageWithoutNullPointer() {
+        EnrichedNicheMaterializerEngine engine = new EnrichedNicheMaterializerEngine();
+
+        EnrichedNicheProfileDraft draft = engine.buildDraft(new EnrichedNicheMaterializerPending(
+                11L, 8L, 1L, null, "9602501", "Cabeleireiros, manicure e pedicure",
+                "IA para crescimento de Cabeleireiros, manicure e pedicure", "Cabeleireiros, manicure e pedicure",
+                "ROUTINE_REALITY_RESEARCH", new BigDecimal("90.00"), "LIGHTLY_RESEARCHED", 90, 83, 0,
+                100, 100, 80, 18,
+                "Rotina com sistema de agendamento e automação de retornos.",
+                "Dores com aplicativo de agenda e ferramenta de cobrança.",
+                "Perguntas sobre encaixes, atrasos e retorno de clientes.",
+                "Contexto operacional e linguagem do nicho: controle de horários, encaixes e atendimento.",
+                "Evidência em fontes públicas.",
+                "exemplo.com",
+                Instant.parse("2026-06-08T20:50:04Z")));
+
+        assertThat(draft.personaSummary()).contains("Cabeleireiros");
+        assertThat(draft.languagePatterns()).contains("Perguntas sobre encaixes");
+        assertThat(draft.languagePatterns()).contains("Contexto operacional");
+        assertThat(draft.languagePatterns()).doesNotContain("sistema de agendamento");
+        assertThat(draft.languagePatterns()).doesNotContain("aplicativo de agenda");
+    }
 }

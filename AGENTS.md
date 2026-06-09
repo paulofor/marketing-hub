@@ -19,6 +19,7 @@ O Marketing Hub é uma fábrica automatizada de produtos digitais: descobre dore
 
 - **Regra Número 1** : O objetivo principal do sistema é gerar VENDAS de produtos que ofereçam valor através do uso da Inteligencia Artificial.
 - **Regra Número 2** : Sempre que tiver algum problema não tentar resolver consequencias. Buscar SEMPRE resolver a causa-raiz.
+- **Prevenção obrigatória de recorrência**: sempre que estiver resolvendo um problema, antes de propor a solução, faça internamente para o próprio raciocínio do modelo as perguntas: por que o problema aconteceu e como evitar que ele volte a acontecer.
 - **Regra Número 3** : Seja SIMPLES, OBJETIVO e EFICAZ.
 - **Respostas ao usuário nesta interação**: ao responder o usuário, priorize um nível mais alto, conceitual, objetivo e orientado ao negócio; baseie as respostas principalmente na análise do código, do banco de dados e dos logs, e só depois complemente com a documentação quando necessário; reduza detalhes técnicos, comandos e implementação interna ao mínimo necessário para sustentar a decisão ou o próximo passo.
 - invesgtigação da causa raiz

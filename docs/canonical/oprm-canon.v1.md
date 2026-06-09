@@ -2,7 +2,7 @@
 
 ## Propósito
 
-Este documento define regras canônicas específicas do módulo OPRM para a ingestão CNPJ/CNAE, consolidação de market size por CNAE e pesquisa inicial NichoCNAE de realidade operacional.
+Este documento define regras canônicas específicas do módulo OPRM para a ingestão CNPJ/CNAE, consolidação de market size por CNAE, pesquisa inicial NichoCNAE de realidade operacional e construção de público-alvo MEI/autônomo quando a origem for levantamento MEI.
 
 ## Objetivo
 
@@ -65,6 +65,24 @@ Evitar fechamento prematuro de `import run` que destrói a totalização de mark
 - Quando a pesquisa cair em `NEEDS_MORE_RESEARCH` ou `GENERIC`, a UI deve oferecer saída operacional simples para o usuário abrir nova pesquisa manual do mesmo CNAE, criando um novo ciclo rastreável sem avançar material fraco para hipótese/oferta.
 - A etapa `oprmNicheResearchSeedBuilder` deve rejeitar objetivos e termos que direcionem busca por produto, oferta, campanha ou solução quando não fizerem parte literal da descrição CNAE.
 - A etapa `oprmSourceFetcher` deve propagar para o snapshot curto a classificação da fonte definida na busca: `sourceIntent`, `routineEvidenceScore`, `commercialPageRisk` e `solutionLanguageRisk`, sem armazenar HTML completo.
+
+## Regra obrigatória — público-alvo MEI/autônomo no NichoCNAE
+
+- Quando o pipeline NichoCNAE for originado do levantamento MEI, o CNAE deve ser tratado como ponto de partida de segmentação e auditoria, não como definição final do público-alvo.
+- O alvo prioritário da pesquisa é o profissional brasileiro que executa pessoalmente o trabalho: MEI, autônomo, trabalhador por conta própria ou dono-operador que depende da própria rotina, agenda, atendimento, cobrança, reputação e aquisição de clientes para faturar.
+- A pesquisa inicial deve construir entendimento do comportamento, rotina diária/semanal, tarefas recorrentes, dores práticas, dores emocionais, sonhos, medos, inseguranças, linguagem real e canais usados pelo MEI/autônomo para trabalhar, vender, atender e cobrar.
+- A pesquisa deve diferenciar explicitamente `CNAE` de `público-alvo MEI/autônomo`: o CNAE descreve a atividade econômica oficial; o público-alvo descreve a pessoa real, seu modo de trabalho e seu contexto operacional no Brasil.
+- É proibido avançar para produto, oferta, campanha, promessa comercial, preço, mecanismo de venda, headline, landing page ou hipótese de experimento durante esta fase de construção de público-alvo.
+- Fontes brasileiras e recentes devem ser priorizadas sempre que possível: português do Brasil, contexto brasileiro, dados dos últimos 24 meses, domínios ou instituições brasileiras, comunidades brasileiras e sinais atuais do mercado local.
+- Fontes antigas só podem ser usadas quando forem estruturais, oficiais ou ainda claramente válidas; nesse caso, o risco de desatualização deve permanecer explícito na análise ou nos artefatos posteriores.
+- Evidências sobre empresas estruturadas, franquias, grandes negócios ou fornecedores B2B só podem apoiar contexto secundário; elas não podem substituir a compreensão do profissional que executa o trabalho.
+
+## Critério de efetividade — público-alvo MEI/autônomo
+
+- Cada ciclo NichoCNAE originado do levantamento MEI deve deixar claro quem é o MEI/autônomo pesquisado, quais ocupações ou autodenominações aparecem dentro do CNAE e por que esse público representa a pessoa que executa o trabalho.
+- A síntese deve destacar comportamento, rotina, dores, sonhos, linguagem e canais reais antes de qualquer discussão posterior sobre solução.
+- Qualquer material com produto, oferta, campanha ou promessa comercial deve ser bloqueado ou tratado como contaminação de fase, não como resultado válido da pesquisa inicial.
+- A avaliação de qualidade deve considerar aderência a MEI/autônomo brasileiro, evidência comportamental, atualidade das fontes e risco de desvio para empresa estruturada ou linguagem comercial.
 
 ## Critério de efetividade — pesquisa inicial NichoCNAE sem viés de solução
 

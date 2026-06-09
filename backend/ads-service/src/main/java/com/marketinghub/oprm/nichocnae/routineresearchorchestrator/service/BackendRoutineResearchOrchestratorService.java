@@ -86,7 +86,8 @@ public class BackendRoutineResearchOrchestratorService {
         if (!isReprocessableStatus(cycle.getStatus())) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
-                    "Only FAILED, NEEDS_MORE_RESEARCH or GENERIC routine research cycles can be reprocessed: " + researchCycleId);
+                    "Only FAILED, NEEDS_MORE_RESEARCH, GENERIC or ENRICHED_NICHE_FAILED routine research cycles can be reprocessed: "
+                            + researchCycleId);
         }
         OprmNicheCandidate candidate = nicheCandidateRepository
                 .findById(cycle.getSourceNicheId())
@@ -124,11 +125,12 @@ public class BackendRoutineResearchOrchestratorService {
                 buildReprocessMessage(cycle.getStatus()));
     }
 
-    /** Informa se o ciclo terminal permite nova pesquisa manual para sair de falha ou material fraco/genérico. */
+    /** Informa se o ciclo terminal permite nova pesquisa manual para sair de falha, material fraco ou falha de materialização. */
     private boolean isReprocessableStatus(String status) {
         return CYCLE_STATUS_FAILED.equals(status)
                 || CYCLE_STATUS_NEEDS_MORE_RESEARCH.equals(status)
-                || CYCLE_STATUS_GENERIC.equals(status);
+                || CYCLE_STATUS_GENERIC.equals(status)
+                || "ENRICHED_NICHE_FAILED".equals(status);
     }
 
     /** Monta mensagem operacional para explicar ao usuário por que o novo ciclo foi criado. */
@@ -138,6 +140,9 @@ public class BackendRoutineResearchOrchestratorService {
         }
         if (CYCLE_STATUS_NEEDS_MORE_RESEARCH.equals(previousStatus)) {
             return "Novo ciclo de pesquisa de rotina criado imediatamente para aprofundar um CNAE que precisava de mais pesquisa.";
+        }
+        if ("ENRICHED_NICHE_FAILED".equals(previousStatus)) {
+            return "Novo ciclo de pesquisa de rotina criado imediatamente para refazer pelo front-end um CNAE aprovado cuja materialização falhou.";
         }
         return "Novo ciclo de pesquisa de rotina criado imediatamente para refazer um CNAE genérico ou sem material suficiente.";
     }

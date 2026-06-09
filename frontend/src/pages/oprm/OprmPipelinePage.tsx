@@ -237,18 +237,26 @@ function formatQualityNotes(value: string) {
 }
 
 function canCreateNewResearchCycle(status: string) {
-  return ["FAILED", "NEEDS_MORE_RESEARCH", "GENERIC"].includes(status);
+  return [
+    "FAILED",
+    "NEEDS_MORE_RESEARCH",
+    "GENERIC",
+    "ENRICHED_NICHE_FAILED",
+  ].includes(status);
 }
 
 function getNewResearchCycleButtonLabel(status: string) {
   if (status === "FAILED") {
     return "Reprocessar CNAE";
   }
+  if (status === "ENRICHED_NICHE_FAILED") {
+    return "Refazer pelo front-end";
+  }
   return "Pesquisar novamente";
 }
 
 function getNewResearchCycleButtonClass(status: string) {
-  if (status === "FAILED") {
+  if (status === "FAILED" || status === "ENRICHED_NICHE_FAILED") {
     return "btn btn-outline-danger btn-sm text-nowrap";
   }
   return "btn btn-outline-warning btn-sm text-nowrap";
@@ -558,7 +566,8 @@ export default function OprmPipelinePage() {
                           >
                             {formatStatusLabel(item.cycleStatus)}
                           </span>
-                          {item.cycleStatus === "FAILED" ? (
+                          {item.cycleStatus === "FAILED" ||
+                          item.cycleStatus === "ENRICHED_NICHE_FAILED" ? (
                             <div className="text-danger small mt-1">
                               <span className="fw-semibold">Detalhe:</span>{" "}
                               {buildFailureMessage(item.errorMessage)}
@@ -1433,6 +1442,22 @@ export default function OprmPipelinePage() {
                             enrichedNicheMaterializerDetailError,
                           )}
                         </div>
+                      ) : enrichedNicheMaterializerDetail?.cycleStatus ===
+                        "ENRICHED_NICHE_FAILED" ? (
+                        <div
+                          className="alert alert-danger py-2 px-3 mb-0 small"
+                          role="alert"
+                        >
+                          <span className="fw-semibold d-block">
+                            A materialização falhou antes de criar o nicho
+                            enriquecido.
+                          </span>
+                          <span className="d-block">
+                            Use o botão “Refazer pelo front-end” na lista de
+                            nichos processados para abrir um novo ciclo sem
+                            acessar diretamente o banco de dados.
+                          </span>
+                        </div>
                       ) : enrichedNicheMaterializerDetail?.enrichedNicheProfileId ? (
                         <div className="small">
                           <dl className="row g-2 mb-2">
@@ -1494,13 +1519,17 @@ export default function OprmPipelinePage() {
                               enrichedNicheMaterializerDetail.solutionLanguageRiskScore,
                             )}
                           </p>
-                          <p className="text-secondary mb-2 text-truncate">
-                            {enrichedNicheMaterializerDetail.painsSummary}
-                          </p>
-                          <p className="text-secondary mb-0">
-                            Evidências:{" "}
-                            {enrichedNicheMaterializerDetail.evidenceSummary}
-                          </p>
+                          {enrichedNicheMaterializerDetail.painsSummary ? (
+                            <p className="text-secondary mb-2 text-truncate">
+                              {enrichedNicheMaterializerDetail.painsSummary}
+                            </p>
+                          ) : null}
+                          {enrichedNicheMaterializerDetail.evidenceSummary ? (
+                            <p className="text-secondary mb-0">
+                              Evidências:{" "}
+                              {enrichedNicheMaterializerDetail.evidenceSummary}
+                            </p>
+                          ) : null}
                         </div>
                       ) : routineQualityGateDetail?.readyForHypothesis ? (
                         <p className="text-primary mb-0 small">

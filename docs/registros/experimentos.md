@@ -4244,3 +4244,10 @@
 - tarefa: retirar instruções de prompt de AdCopy hardcoded em Java/React, reforçar que a copy fala diretamente com o cliente ideal e verificar a mesma diretriz no prompt de imagem do anúncio.
 - foi feito: removido o template hardcoded de AdCopy do frontend, removido o marcador textual hardcoded de AdCopy no Java, reforçado o prompt `ad-copy.md` com filtragem explícita de público e criado o prompt versionado `ad-image-briefing.md` com a mesma comunicação direta/filtragem visual.
 - impacto esperado: a etapa `AD_COPY` passa a depender apenas do prompt versionado no `ai-worker`, e a etapa de briefing de imagem de anúncio passa a orientar visualmente a separação entre cliente ideal e público geral.
+
+## 2026-06-09 — Relatório completo em Markdown para experimento concluído
+
+- solicitação: permitir que o usuário obtenha um relatório geral bem detalhado para experimentos com pipeline concluído, tanto validados quanto invalidados.
+- causa-raiz: a tela já expunha partes do material do experimento, mas não havia uma ação única que consolidasse nicho, framework da hipótese, JSONs de campanha/anúncio/imagem, JSONs do GeraLanding e detalhamento de Facebook Ads em um artefato auditável.
+- foi feito: criado endpoint de relatório completo em Markdown e botão na tela do experimento, exibido somente para status `VALIDATED` ou `INVALIDATED`, com download direto do arquivo `.md`.
+- impacto esperado: o usuário consegue revisar e reaproveitar todo o aprendizado comercial do experimento encerrado sem buscar dados em múltiplas abas, acelerando análise de vencedores e perdedores.

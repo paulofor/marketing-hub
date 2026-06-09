@@ -4163,3 +4163,8 @@
 - foi feito: o endpoint de pacotes prontos para ad sets passou a aceitar filtro opcional `experimentId` e o service passou a priorizar os elementos de segmentação selecionados no experimento, enviando apenas itens aprovados e com `metaId` oficial.
 - foi feito: quando não houver seleção manual salva, o comportamento antigo de fallback por elementos aprovados do nicho continua disponível, também filtrando itens sem `metaId` para evitar público amplo ou inválido.
 - impacto esperado: ao reenfileirar a publicação, o worker deve montar o targeting a partir do público escolhido no Marketing Hub e avançar até as chamadas de criação de campanha/ad set/criativo/anúncio, cujas respostas da Meta já são registradas em `experiment_facebook_api_log`.
+
+## 2026-06-09 — Pipeline oficial de publicação e métricas Facebook Ads
+
+- Registrado o pipeline `facebook-ads-publication-metrics-pipeline` para tornar visíveis, na tela `/pipelines`, as tarefas do Facebook Ads Worker ligadas à publicação de campanhas e sincronização de métricas.
+- Etapas cobrem configuração, prontidão do experimento, consumo de criativos, publicação na Meta, registro no backend, seleção de alvos de métricas, coleta de insights, persistência de métricas e tratamento de falhas.

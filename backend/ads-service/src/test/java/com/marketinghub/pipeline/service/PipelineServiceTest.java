@@ -311,7 +311,7 @@ class PipelineServiceTest {
      */
     @Test
     void shouldExposeOfficialStageAliasesAndCanonicalCodes() {
-        assertThat(definitionRegistry.officialPipelines()).hasSize(3);
+        assertThat(definitionRegistry.officialPipelines()).hasSize(4);
         assertThat(definitionRegistry.findByPipelineCode("experiment-pipeline")).hasValueSatisfying(pipeline -> {
             assertThat(pipeline.code()).isEqualTo("experiment-pipeline");
             assertThat(pipeline.stages()).hasSize(10);
@@ -596,6 +596,45 @@ class PipelineServiceTest {
             assertThat(definitionRegistry.findStage(pipeline, "page-analysis"))
                     .hasValueSatisfying(stage -> assertThat(stage.operationalCode()).isEqualTo("commercial-page-analysis"));
         });
+    }
+
+
+    /**
+     * Garante que o pipeline oficial Facebook Ads reflete publicação e métricas operadas pelo worker.
+     */
+    @Test
+    void shouldExposeOfficialFacebookAdsPublicationMetricsPipeline() {
+        assertThat(definitionRegistry.findByPipelineCode("facebook-ads-publication-metrics-pipeline"))
+                .hasValueSatisfying(pipeline -> {
+                    assertThat(pipeline.module()).isEqualTo("FACEBOOK_ADS");
+                    assertThat(pipeline.name()).isEqualTo("Pipeline Facebook Ads: Publicação e Métricas");
+                    assertThat(pipeline.canonicalVersion()).isEqualTo("facebook-campaign-publication-canon.v1");
+                    assertThat(pipeline.stages()).hasSize(9);
+                    assertThat(pipeline.stages()).extracting(stage -> stage.operationalCode())
+                            .containsExactly(
+                                    "worker-configuration",
+                                    "experiment-readiness",
+                                    "creative-consumption",
+                                    "campaign-hierarchy-publication",
+                                    "publication-registration",
+                                    "metrics-sync-target-selection",
+                                    "meta-insights-collection",
+                                    "metrics-persistence",
+                                    "metrics-error-handling");
+                    assertThat(pipeline.stages())
+                            .allSatisfy(stage -> {
+                                assertThat(stage.executionModule()).isEqualTo("facebook-ads-worker");
+                                assertThat(stage.rootPackage()).isEqualTo("com.marketinghub.facebookadsworker.facebookcampaign");
+                                assertThat(stage.modulePackage())
+                                        .startsWith("com.marketinghub.facebookadsworker.facebookcampaign.");
+                                assertThat(stage.requiresOpenAiModel()).isFalse();
+                                assertThat(definitionRegistry.findStage(pipeline, stage.canonicalCode())).contains(stage);
+                                assertThat(definitionRegistry.findStage(pipeline, stage.operationalCode())).contains(stage);
+                            });
+                    assertThat(definitionRegistry.findStage(pipeline, "meta-insights"))
+                            .hasValueSatisfying(stage -> assertThat(stage.operationalCode())
+                                    .isEqualTo("meta-insights-collection"));
+                });
     }
 
     /**

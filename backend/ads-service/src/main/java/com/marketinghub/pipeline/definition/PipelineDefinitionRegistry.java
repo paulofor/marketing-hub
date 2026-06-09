@@ -36,6 +36,12 @@ public class PipelineDefinitionRegistry {
     private static final String MOIS_SALES_PAGE_LIBRARY_WORKER_ROOT_PACKAGE =
             "com.marketinghub.mois.bibliotecapaginavenda.worker.v1";
     private static final String MOIS_SALES_PAGE_LIBRARY_WORKER_MODULE = "mois-sales-library-worker";
+    private static final String FACEBOOK_ADS_PUBLICATION_METRICS_PIPELINE_CODE =
+            "facebook-ads-publication-metrics-pipeline";
+    private static final String FACEBOOK_ADS_MODULE = "FACEBOOK_ADS";
+    private static final String FACEBOOK_ADS_CANONICAL_VERSION = "facebook-campaign-publication-canon.v1";
+    private static final String FACEBOOK_ADS_WORKER_ROOT_PACKAGE = "com.marketinghub.facebookadsworker.facebookcampaign";
+    private static final String FACEBOOK_ADS_WORKER_MODULE = "facebook-ads-worker";
 
     private final List<PipelineDefinition> officialPipelines;
     private final Set<String> validModules;
@@ -47,8 +53,10 @@ public class PipelineDefinitionRegistry {
         this.officialPipelines = List.of(
                 buildExperimentPipeline(),
                 buildOprmNichoCnaePipeline(),
-                buildMoisSalesPageLibraryPipeline());
-        this.validModules = Set.of(EXPERIMENT_MODULE, "GERALANDING", "MDS", MOIS_MODULE, OPRM_MODULE);
+                buildMoisSalesPageLibraryPipeline(),
+                buildFacebookAdsPublicationMetricsPipeline());
+        this.validModules = Set.of(
+                EXPERIMENT_MODULE, "GERALANDING", "MDS", MOIS_MODULE, OPRM_MODULE, FACEBOOK_ADS_MODULE);
     }
 
     /**
@@ -314,6 +322,110 @@ public class PipelineDefinitionRegistry {
                 MOIS_SALES_PAGE_LIBRARY_WORKER_MODULE,
                 MOIS_SALES_PAGE_LIBRARY_BACKEND_ROOT_PACKAGE + "." + backendPackage,
                 MOIS_SALES_PAGE_LIBRARY_WORKER_ROOT_PACKAGE + "." + workerPackage,
+                aliases);
+    }
+
+
+    /**
+     * Monta a definição oficial do pipeline de publicação e medição de campanhas Facebook Ads.
+     */
+    private PipelineDefinition buildFacebookAdsPublicationMetricsPipeline() {
+        List<PipelineStageDefinition> stages = List.of(
+                facebookAdsStage(
+                        "WORKER_CONFIGURATION",
+                        "worker-configuration",
+                        "Configuração da conta Facebook",
+                        1,
+                        "configuration",
+                        Set.of("facebook-worker-config", "accounts-facebook-worker-config", "configuracao-facebook")),
+                facebookAdsStage(
+                        "EXPERIMENT_READINESS",
+                        "experiment-readiness",
+                        "Prontidão do experimento",
+                        2,
+                        "readiness",
+                        Set.of("experiments-ready", "facebook-readiness", "prontidao-experimento")),
+                facebookAdsStage(
+                        "CREATIVE_CONSUMPTION",
+                        "creative-consumption",
+                        "Criativos aprovados",
+                        3,
+                        "creative",
+                        Set.of("creatives-ready", "approved-creatives", "criativos-aprovados")),
+                facebookAdsStage(
+                        "CAMPAIGN_HIERARCHY_PUBLICATION",
+                        "campaign-hierarchy-publication",
+                        "Publicação da hierarquia de campanha",
+                        4,
+                        "publication",
+                        Set.of("campaign-publication", "meta-campaign-creation", "publicacao-campanha")),
+                facebookAdsStage(
+                        "PUBLICATION_REGISTRATION",
+                        "publication-registration",
+                        "Registro da publicação no backend",
+                        5,
+                        "publication",
+                        Set.of("campaign-registration", "facebook-campaigns-post", "registro-publicacao")),
+                facebookAdsStage(
+                        "METRICS_SYNC_TARGET_SELECTION",
+                        "metrics-sync-target-selection",
+                        "Seleção de campanhas para métricas",
+                        6,
+                        "metrics",
+                        Set.of("metrics-sync-targets", "campaign-metrics-targets", "alvos-metricas")),
+                facebookAdsStage(
+                        "META_INSIGHTS_COLLECTION",
+                        "meta-insights-collection",
+                        "Coleta de insights na Meta",
+                        7,
+                        "metrics",
+                        Set.of("campaign-insights", "meta-insights", "coleta-insights")),
+                facebookAdsStage(
+                        "METRICS_PERSISTENCE",
+                        "metrics-persistence",
+                        "Persistência das métricas",
+                        8,
+                        "metrics",
+                        Set.of("experiment-campaign-metric", "campaign-metrics-post", "persistencia-metricas")),
+                facebookAdsStage(
+                        "METRICS_ERROR_HANDLING",
+                        "metrics-error-handling",
+                        "Tratamento de falhas de métricas",
+                        9,
+                        "metrics",
+                        Set.of("metrics-error", "campaign-metrics-error", "falhas-metricas")));
+        return new PipelineDefinition(
+                FACEBOOK_ADS_MODULE,
+                FACEBOOK_ADS_PUBLICATION_METRICS_PIPELINE_CODE,
+                "Pipeline Facebook Ads: Publicação e Métricas",
+                FACEBOOK_ADS_CANONICAL_VERSION,
+                true,
+                Set.of(
+                        FACEBOOK_ADS_PUBLICATION_METRICS_PIPELINE_CODE,
+                        "facebook_ads_publication_metrics_pipeline",
+                        "facebook-ads-pipeline",
+                        "facebook-campaign-publication-pipeline"),
+                PipelineFieldPolicy.officialDefault(),
+                StageFieldPolicy.officialDefault(),
+                stages);
+    }
+
+    /**
+     * Converte uma tarefa do Facebook Ads Worker para definição canônica exibida na tela de pipelines.
+     */
+    private PipelineStageDefinition facebookAdsStage(
+            String canonicalCode, String operationalCode, String name, int position, String workerPackage, Set<String> aliases) {
+        return new PipelineStageDefinition(
+                canonicalCode,
+                operationalCode,
+                name,
+                position,
+                true,
+                false,
+                true,
+                FACEBOOK_ADS_WORKER_MODULE,
+                FACEBOOK_ADS_WORKER_ROOT_PACKAGE,
+                FACEBOOK_ADS_WORKER_ROOT_PACKAGE + "." + workerPackage,
                 aliases);
     }
 

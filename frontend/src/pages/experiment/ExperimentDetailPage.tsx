@@ -42,6 +42,7 @@ import {
   useGeraLandingStageModels,
   type GeraLandingStageModel,
 } from "../../api/pipeline/useGeraLandingStageModels";
+import { useExperimentCompleteMarkdownReport } from "../../api/experiment/useExperimentCompleteMarkdownReport";
 
 function formatPipelineStageModel(stageModel?: GeraLandingStageModel) {
   const name = stageModel?.openAiModelName?.trim();
@@ -440,6 +441,7 @@ export default function ExperimentDetailPage() {
   } = useExperimentCampaignResetPreview(expId);
   const resetCampaigns = useExperimentCampaignReset(expId);
   const releaseExperiment = useExperimentFacebookRelease(expId);
+  const completeMarkdownReport = useExperimentCompleteMarkdownReport(expId);
   const frameworkImagePendingCount = useMemo(
     () =>
       (frameworkImageStatuses ?? []).filter((item) => {
@@ -448,6 +450,15 @@ export default function ExperimentDetailPage() {
       }).length,
     [frameworkImageStatuses],
   );
+  const canDownloadCompleteReport =
+    data?.status === "VALIDATED" || data?.status === "INVALIDATED";
+
+  const handleDownloadCompleteReport = () => {
+    if (!completeMarkdownReport.isPending) {
+      completeMarkdownReport.mutate();
+    }
+  };
+
   const pipelineContentCards = useMemo<PipelineContentCard[]>(
     () => [
       {
@@ -2093,6 +2104,27 @@ export default function ExperimentDetailPage() {
           <Link to="pipeline-jobs" className="btn btn-outline-dark me-2">
             Jobs do pipeline
           </Link>
+          {canDownloadCompleteReport ? (
+            <button
+              type="button"
+              className="btn btn-success me-2"
+              onClick={handleDownloadCompleteReport}
+              disabled={completeMarkdownReport.isPending}
+            >
+              {completeMarkdownReport.isPending ? (
+                <>
+                  <span
+                    className="spinner-border spinner-border-sm me-2"
+                    role="status"
+                    aria-hidden="true"
+                  />
+                  Gerando...
+                </>
+              ) : (
+                "Relatório completo (.md)"
+              )}
+            </button>
+          ) : null}
           <button
             type="button"
             className="btn btn-outline-danger me-2"

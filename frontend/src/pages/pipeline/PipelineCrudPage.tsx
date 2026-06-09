@@ -15,6 +15,7 @@ import type {
 } from "../../api/pipeline/types";
 import {
   useRebuildOfficialPipelineStages,
+  useSyncOfficialPipeline,
   useUpdatePipeline,
   useUpdatePipelineStage,
 } from "../../api/pipeline/usePipelineMutations";
@@ -193,6 +194,7 @@ export default function PipelineCrudPage() {
   const updatePipeline = useUpdatePipeline();
   const updateStage = useUpdatePipelineStage();
   const rebuildOfficialStages = useRebuildOfficialPipelineStages();
+  const syncOfficialPipeline = useSyncOfficialPipeline();
 
   const pipelines = useMemo(() => data ?? [], [data]);
   const diagnosticsQueries = usePipelineDiagnostics(pipelines);
@@ -200,6 +202,16 @@ export default function PipelineCrudPage() {
   const officialPipelines = useMemo(
     () => metadata?.officialPipelines ?? [],
     [metadata],
+  );
+  const missingOfficialPipelines = useMemo(
+    () =>
+      officialPipelines.filter(
+        (official) =>
+          !pipelines.some((pipeline) =>
+            findOfficialPipeline(pipeline, [official]),
+          ),
+      ),
+    [officialPipelines, pipelines],
   );
   const validModules = useMemo(
     () => metadata?.validModules ?? ["EXPERIMENT"],
@@ -226,6 +238,9 @@ export default function PipelineCrudPage() {
     Record<number, PipelineStagePayload>
   >({});
   const [editingStageId, setEditingStageId] = useState<number | null>(null);
+  const [syncingOfficialCode, setSyncingOfficialCode] = useState<string | null>(
+    null,
+  );
 
   const selectedPipeline = pipelines.find(
     (pipeline) => pipeline.id === selectedPipelineId,
@@ -293,6 +308,18 @@ export default function PipelineCrudPage() {
   const resetStageForm = (pipelineId: number) => {
     setStageForms((current) => ({ ...current, [pipelineId]: emptyStage }));
     setEditingStageId(null);
+  };
+
+  const syncMissingOfficialPipeline = (official: OfficialPipelineMetadata) => {
+    setSyncingOfficialCode(official.code);
+    syncOfficialPipeline.mutate(official.code, {
+      onSuccess: (result) => {
+        if (result.pipelineId) {
+          setSelectedPipelineId(result.pipelineId);
+        }
+      },
+      onSettled: () => setSyncingOfficialCode(null),
+    });
   };
 
   const confirmOfficialStageRebuild = (pipeline: Pipeline) => {
@@ -1052,6 +1079,72 @@ export default function PipelineCrudPage() {
                 Cancelar edição
               </button>
             </div>
+          </div>
+        </section>
+      ) : null}
+
+      {missingOfficialPipelines.length > 0 ? (
+        <section className="card mb-4 border-primary-subtle">
+          <div className="card-header bg-white">
+            <h2 className="h5 mb-1">Pipelines oficiais disponíveis</h2>
+            <p className="text-body-secondary small mb-0">
+              Ative aqui os fluxos canônicos que já existem no backend, mas
+              ainda não foram gravados no banco para operação.
+            </p>
+          </div>
+          <div className="list-group list-group-flush">
+            {missingOfficialPipelines.map((official) => {
+              const isSyncing =
+                syncOfficialPipeline.isPending &&
+                syncingOfficialCode === official.code;
+
+              return (
+                <article className="list-group-item" key={official.code}>
+                  <div className="pipeline-list-row">
+                    <div className="pipeline-list-content">
+                      <div className="d-flex flex-wrap align-items-center gap-2 mb-1">
+                        <h3 className="h5 mb-0">{official.name}</h3>
+                        <span className="badge text-bg-light border">
+                          {official.module}
+                        </span>
+                      </div>
+                      <div className="d-flex flex-wrap gap-2 small text-body-secondary">
+                        <code>{official.code}</code>
+                        <span>•</span>
+                        <span>
+                          {official.stages.length} etapa
+                          {official.stages.length === 1 ? "" : "s"}
+                        </span>
+                      </div>
+                      <PipelineImplementationDetails
+                        summary={{
+                          implementationModules:
+                            official.implementationModules ?? [],
+                          backendPackages: official.backendPackages ?? [],
+                          modulePackages: official.modulePackages ?? [],
+                        }}
+                      />
+                    </div>
+                    <div className="pipeline-list-action">
+                      <button
+                        type="button"
+                        className="btn btn-outline-primary btn-sm pipeline-list-stage-button"
+                        disabled={syncOfficialPipeline.isPending}
+                        onClick={() => syncMissingOfficialPipeline(official)}
+                      >
+                        {isSyncing ? (
+                          <span
+                            className="spinner-border spinner-border-sm me-2"
+                            aria-hidden="true"
+                          />
+                        ) : null}
+                        Ativar pipeline
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         </section>
       ) : null}

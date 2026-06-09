@@ -1161,3 +1161,16 @@ Arquivos alterados:
 - `docs/canonical/mois-worker-canon.v1.md`
 - `docs/swagger/mois-sales-library-swagger.yaml`
 - `docs/registros/mois1.md`
+
+## 2026-06-09 — Pipeline oficial da Biblioteca de Páginas de Vendas no CRUD de pipelines
+
+- cadastrado no backend o contrato oficial `mois-sales-page-library-pipeline` para o fluxo MOIS de páginas de vendas, com as etapas canônicas de obtenção de HTML e análise comercial da página.
+- adicionada na tela `/pipelines` a ativação de pipelines oficiais ausentes, permitindo gravar o pipeline canônico no banco pelo endpoint já existente de sincronização oficial.
+- adicionados testes para proteger os metadados, a versão canônica e a sincronização do pipeline oficial da Biblioteca de Páginas de Vendas.
+
+Arquivos alterados:
+- `backend/ads-service/src/main/java/com/marketinghub/pipeline/definition/PipelineDefinitionRegistry.java`
+- `backend/ads-service/src/test/java/com/marketinghub/pipeline/service/PipelineServiceTest.java`
+- `frontend/src/api/pipeline/usePipelineMutations.ts`
+- `frontend/src/pages/pipeline/PipelineCrudPage.tsx`
+- `docs/registros/mois1.md`

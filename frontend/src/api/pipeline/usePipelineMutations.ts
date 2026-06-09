@@ -119,3 +119,16 @@ export function useRebuildOfficialPipelineStages() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["pipelines"] }),
   });
 }
+
+export function useSyncOfficialPipeline() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (code: string) => {
+      const { data } = await axios.post<PipelineSyncResult>(
+        `/api/pipelines/official/${encodeURIComponent(code)}/sync`,
+      );
+      return data;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["pipelines"] }),
+  });
+}

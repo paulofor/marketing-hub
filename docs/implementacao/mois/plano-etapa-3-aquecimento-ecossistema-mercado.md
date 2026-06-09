@@ -381,7 +381,7 @@ A etapa só deve ser considerada concluída quando:
 
 Cada item abaixo foi dimensionado para caber em um prompt de desenvolvimento independente.
 
-### Prompt 1 — Canonizar a Etapa 3
+### Fase 1 — Canonizar a Etapa 3
 
 **Objetivo:** registrar a decisão nos documentos canônicos e no contrato de pipeline.
 
@@ -398,7 +398,7 @@ Critério de aceite:
 - Etapa 3 tem nome, código, posição, responsabilidade e aliases.
 - Testes de pipeline passam.
 
-### Prompt 2 — Criar schema Liquibase da Etapa 3
+### Fase 2 — Criar schema Liquibase da Etapa 3
 
 **Objetivo:** criar tabelas operacionais de job, fontes, sinais e resumo.
 
@@ -420,7 +420,7 @@ Critério de aceite:
 - Sem `UPDATE/DELETE` com subconsulta na mesma tabela-alvo.
 - Aplicação sobe com schema novo.
 
-### Prompt 3 — Backend: contratos DTO e Swagger
+### Fase 3 — Backend: contratos DTO e Swagger
 
 **Objetivo:** definir o contrato HTTP antes da implementação do fluxo.
 
@@ -437,7 +437,7 @@ Critério de aceite:
 - DTOs têm comentários em português.
 - Sem endpoint consumido pelo frontend antes de existir no backend.
 
-### Prompt 4 — Backend: service/repository via JdbcTemplate/JPA no padrão atual
+### Fase 4 — Backend: service/repository via JdbcTemplate/JPA no padrão atual
 
 **Objetivo:** implementar persistência e leitura da Etapa 3.
 
@@ -461,7 +461,7 @@ Critério de aceite:
 - Classes Java e métodos têm comentários em português.
 - Catch de exceções críticas registra log com contexto e stack trace.
 
-### Prompt 5 — Backend: controller da Etapa 3
+### Fase 5 — Backend: controller da Etapa 3
 
 **Objetivo:** expor endpoints públicos e internos da Etapa 3.
 
@@ -478,7 +478,7 @@ Critério de aceite:
 - Contratos internos do worker não expõem dados sensíveis.
 - Testes unitários passam.
 
-### Prompt 6 — Worker V1 com pesquisa assistida por busca web pública
+### Fase 6 — Worker V1 com pesquisa assistida por busca web pública
 
 **Objetivo:** criar worker mínimo que processa jobs pendentes e monta dossiê inicial.
 
@@ -497,7 +497,7 @@ Critério de aceite:
 - Worker usa apenas backend principal.
 - Falhas são persistidas com categoria e mensagem operacional.
 
-### Prompt 7 — Motor de score e recomendação
+### Fase 7 — Motor de score e recomendação
 
 **Objetivo:** transformar fontes e sinais em score comercial explicável.
 
@@ -513,7 +513,7 @@ Critério de aceite:
 - Score reproduzível por testes.
 - UI consegue explicar o score pelos sinais salvos.
 
-### Prompt 8 — Frontend: detalhe da página
+### Fase 8 — Frontend: detalhe da página
 
 **Objetivo:** permitir ao usuário consultar e solicitar pesquisa de aquecimento.
 
@@ -530,7 +530,7 @@ Critério de aceite:
 - Links externos abrem com `target="_blank"`.
 - Estados de loading, erro e vazio são explícitos.
 
-### Prompt 9 — Frontend: biblioteca e pipeline
+### Fase 9 — Frontend: biblioteca e pipeline
 
 **Objetivo:** inserir a Etapa 3 na operação diária da biblioteca.
 
@@ -545,7 +545,7 @@ Critério de aceite:
 - Usuário consegue saber quantas páginas já têm pesquisa de aquecimento.
 - Usuário consegue priorizar páginas por score de aquecimento.
 
-### Prompt 10 — Observabilidade e saneamento operacional
+### Fase 10 — Observabilidade e saneamento operacional
 
 **Objetivo:** evitar que a Etapa 3 pare silenciosamente.
 
@@ -562,7 +562,7 @@ Critério de aceite:
 - Operador consegue reexecutar sem mexer no banco.
 - Falhas indicam causa-raiz provável.
 
-### Prompt 11 — Integração com priorização de oportunidades
+### Fase 11 — Integração com priorização de oportunidades
 
 **Objetivo:** usar a Etapa 3 para gerar decisão comercial.
 
@@ -583,17 +583,17 @@ Critério de aceite:
 
 ## 15. Ordem recomendada de execução
 
-1. Prompt 1 — Canonizar a Etapa 3.
-2. Prompt 2 — Criar schema.
-3. Prompt 3 — Definir contratos e Swagger.
-4. Prompt 4 — Implementar service.
-5. Prompt 5 — Implementar controller.
-6. Prompt 8 — Criar UI de consulta manual.
-7. Prompt 6 — Criar worker V1.
-8. Prompt 7 — Refinar score.
-9. Prompt 9 — Integrar pipeline/listagem.
-10. Prompt 10 — Observabilidade.
-11. Prompt 11 — Ranking e priorização.
+1. Fase 1 — Canonizar a Etapa 3.
+2. Fase 2 — Criar schema.
+3. Fase 3 — Definir contratos e Swagger.
+4. Fase 4 — Implementar service.
+5. Fase 5 — Implementar controller.
+6. Fase 8 — Criar UI de consulta manual.
+7. Fase 6 — Criar worker V1.
+8. Fase 7 — Refinar score.
+9. Fase 9 — Integrar pipeline/listagem.
+10. Fase 10 — Observabilidade.
+11. Fase 11 — Ranking e priorização.
 
 Essa ordem permite entregar valor incremental: primeiro registro e consulta manual, depois automação, depois priorização.
 

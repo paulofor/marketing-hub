@@ -5,6 +5,7 @@ package com.marketinghub.facebookadsworker.facebookapi;
  */
 public enum ExperimentFacebookApiLogContext {
     PLAYBOOK,
+    CAMPAIGN_REACH_VALIDATION,
     CAMPAIGN_CREATION,
     CAMPAIGN_AD_SET,
     CAMPAIGN_AD_CREATIVE,

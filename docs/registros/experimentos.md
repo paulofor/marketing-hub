@@ -4215,3 +4215,4 @@
 - causa-raiz: a tela usava apenas o bloqueio operacional do experimento para desabilitar o comando, sem transformar o gasto real de mídia na regra principal de segurança para resetar métricas de teste.
 - foi feito: o botão passa a aparecer somente quando o total gasto normalizado da campanha é exatamente zero; nesse cenário ele permanece acionável mesmo com o experimento bloqueado para outras alterações manuais.
 - prevenção: o cânone de publicação e métricas Facebook Ads foi atualizado e testes do frontend cobrem o botão visível com gasto zero e oculto após gasto real.
+- 2026-06-09 00:00:00 (UTC): adicionada etapa obrigatória `reach-validation` ao pipeline oficial Facebook Ads: antes de criar campanha/ad set/imagem/criativo/anúncio na Meta, o worker consulta `reachestimate` com o targeting final e bloqueia públicos fora da faixa canônica de 200.000 a 20.000.000 usuários estimados, evitando campanhas ativas com entrega inviável.

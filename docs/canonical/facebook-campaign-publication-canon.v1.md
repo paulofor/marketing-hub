@@ -12,6 +12,7 @@
 > - formaliza que o fallback de segmentação manual aprovado pelo backend pertence ao `facebook-ads-worker`, sem delegação ao `ai-worker`
 > - formaliza a separação de ownership dos criativos: criação/edição/aprovação é do módulo Experimentos; consumo operacional é por endpoint exclusivo do módulo Facebook
 > - torna obrigatório o upload de imagens de criativo por bytes/multipart para a Meta, proibindo fallback por URL externa em campanhas
+> - adiciona validação obrigatória de alcance por `reachestimate` antes de criar a hierarquia da campanha na Meta
 
 Este documento complementa o `system-governance-canon.v2.md` e passa a ser a fonte de verdade para prontidão, liberação e telemetria de campanhas de experimento no Facebook Ads Worker.
 
@@ -38,14 +39,24 @@ As etapas oficiais expostas para operação são:
 1. `worker-configuration` — carregar configuração, token, conta de anúncios e defaults.
 2. `experiment-readiness` — selecionar experimentos liberados, prontos e sem campanha duplicada.
 3. `creative-consumption` — consumir somente criativos aprovados pelo contrato do módulo Facebook.
-4. `campaign-hierarchy-publication` — criar campanha, conjunto, imagem, criativo e anúncio na Meta.
-5. `publication-registration` — persistir IDs externos no backend e marcar rastreabilidade da publicação.
-6. `metrics-sync-target-selection` — selecionar campanhas em execução para sincronização de métricas.
-7. `meta-insights-collection` — coletar insights da Graph API.
-8. `metrics-persistence` — atualizar `experiment_campaign_metric` e dados de última sincronização.
-9. `metrics-error-handling` — registrar falhas de coleta para correção de causa-raiz.
+4. `reach-validation` — consultar `reachestimate` da Meta com o targeting final e bloquear publicação quando o público estimado estiver fora da faixa operacional.
+5. `campaign-hierarchy-publication` — criar campanha, conjunto, imagem, criativo e anúncio na Meta.
+6. `publication-registration` — persistir IDs externos no backend e marcar rastreabilidade da publicação.
+7. `metrics-sync-target-selection` — selecionar campanhas em execução para sincronização de métricas.
+8. `meta-insights-collection` — coletar insights da Graph API.
+9. `metrics-persistence` — atualizar `experiment_campaign_metric` e dados de última sincronização.
+10. `metrics-error-handling` — registrar falhas de coleta para correção de causa-raiz.
 
 Esse pipeline é administrativo e operacional: ele torna visível o fluxo do worker, mas não transfere ownership de banco para o worker. O backend continua sendo o único responsável por persistência, e o Facebook Ads Worker continua consumindo contratos HTTP do módulo Facebook.
+
+### 2.2 Gate obrigatório de alcance
+
+Antes de qualquer criação de campanha, conjunto, imagem, criativo ou anúncio na Meta, o `facebook-ads-worker` deve validar o targeting final no endpoint `reachestimate` da Graph API. A publicação só pode avançar quando a resposta trouxer `users_lower_bound` e `users_upper_bound` e ambos estiverem dentro da faixa operacional canônica:
+
+- mínimo: `users_lower_bound >= 200000`;
+- máximo: `users_upper_bound <= 20000000`.
+
+Quando a Meta não retornar os limites ou o público ficar fora dessa faixa, o experimento deve ser bloqueado antes da criação da campanha e registrado como falha operacional para correção de causa-raiz do público.
 
 ## 3. Ownership e módulos
 

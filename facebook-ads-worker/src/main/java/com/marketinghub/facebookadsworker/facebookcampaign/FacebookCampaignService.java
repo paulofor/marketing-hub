@@ -70,6 +70,8 @@ public class FacebookCampaignService {
     private static final int AD_CREATIVE_IMAGE_DOWNLOAD_RETRY_MAX_ATTEMPTS = 3;
     private static final int AD_CREATIVE_IMAGE_DOWNLOAD_ERROR_SUBCODE = 3858258;
     private static final String IMAGE_HASH_PLATFORM = "FACEBOOK";
+    private static final long MIN_REACH_LOWER_BOUND = 200_000L;
+    private static final long MAX_REACH_UPPER_BOUND = 20_000_000L;
 
     private static final Duration CREATIVE_IMAGE_DOWNLOAD_TIMEOUT = Duration.ofSeconds(20);
     private static final long CREATIVE_IMAGE_MAX_BYTES = 10 * 1024 * 1024L;
@@ -363,7 +365,6 @@ public class FacebookCampaignService {
                     exp.id()
                 );
             }
-            creativePayloads = preloadCreativeImagesForExperiment(exp.id(), config.adAccountId(), creativePayloads);
             String resolvedDestinationType = hasLeadFormDestination ? "ON_AD" : config.adSetDestinationType();
             String resolvedOptimizationGoal = hasLeadFormDestination
                 ? "LEAD_GENERATION"
@@ -390,6 +391,8 @@ public class FacebookCampaignService {
             } else {
                 resolvedTargeting = resolveApprovedManualTargeting(exp.id());
             }
+            validateReachBeforeCampaignCreation(exp.id(), config.adAccountId(), resolvedTargeting.targetingJson());
+            creativePayloads = preloadCreativeImagesForExperiment(exp.id(), config.adAccountId(), creativePayloads);
             try {
                 campaignId = executeFacebookCallWithLogging(
                     exp.id(),
@@ -861,7 +864,91 @@ public class FacebookCampaignService {
         return config.adSetDailyBudget();
     }
 
+    /**
+     * Valida o alcance do público na Meta antes de criar qualquer campanha do experimento.
+     */
+    private void validateReachBeforeCampaignCreation(long experimentId, String adAccountId, String targetingJson) {
+        JsonNode targetingSpec = parseTargetingSpecForReachValidation(experimentId, targetingJson);
+        JsonNode response = executeFacebookCallWithLogging(
+            experimentId,
+            ExperimentFacebookApiLogContext.CAMPAIGN_REACH_VALIDATION,
+            () -> facebookAdsService.estimateReach(new FacebookAdsService.ReachEstimateRequest(adAccountId, targetingSpec))
+        );
+        ReachEstimateBounds bounds = extractReachEstimateBounds(response);
+        if (!bounds.complete()) {
+            throw new IllegalStateException(
+                "Validação de alcance sem limites retornados pela Meta para o experimento " + experimentId
+            );
+        }
+        if (bounds.lowerBound() < MIN_REACH_LOWER_BOUND || bounds.upperBound() > MAX_REACH_UPPER_BOUND) {
+            throw new IllegalStateException(
+                "Público fora da faixa de alcance para publicação: experimento=%d, lower=%d, upper=%d, mínimo=%d, máximo=%d"
+                    .formatted(
+                        experimentId,
+                        bounds.lowerBound(),
+                        bounds.upperBound(),
+                        MIN_REACH_LOWER_BOUND,
+                        MAX_REACH_UPPER_BOUND
+                    )
+            );
+        }
+        LOGGER.info(
+            "Reach validation approved before campaign creation: experimentId={}, lowerBound={}, upperBound={}",
+            experimentId,
+            bounds.lowerBound(),
+            bounds.upperBound()
+        );
+    }
+
+    /**
+     * Converte o targeting JSON aprovado em objeto validável pela Graph API.
+     */
+    private JsonNode parseTargetingSpecForReachValidation(long experimentId, String targetingJson) {
+        if (!StringUtils.hasText(targetingJson)) {
+            throw new IllegalStateException("Targeting vazio para validação de alcance do experimento " + experimentId);
+        }
+        try {
+            return objectMapper.readTree(targetingJson);
+        } catch (Exception ex) {
+            throw new IllegalStateException(
+                "Targeting inválido para validação de alcance do experimento " + experimentId + ": " + ex.getMessage(),
+                ex
+            );
+        }
+    }
+
+    /**
+     * Extrai os limites de usuários retornados pelo endpoint reachestimate.
+     */
+    private ReachEstimateBounds extractReachEstimateBounds(JsonNode response) {
+        JsonNode dataNode = response != null && response.path("data").isArray() && response.path("data").size() > 0
+            ? response.path("data").get(0)
+            : response;
+        Long lowerBound = readLong(dataNode, "users_lower_bound");
+        Long upperBound = readLong(dataNode, "users_upper_bound");
+        return new ReachEstimateBounds(lowerBound, upperBound);
+    }
+
+    /**
+     * Lê um campo numérico opcional de uma resposta JSON.
+     */
+    private Long readLong(JsonNode node, String fieldName) {
+        if (node == null || !node.has(fieldName) || node.get(fieldName).isNull()) {
+            return null;
+        }
+        return node.get(fieldName).asLong();
+    }
+
     public record ResolvedTargeting(String targetingJson, List<FacebookAdsService.TargetingOption> options) {}
+
+    private record ReachEstimateBounds(Long lowerBound, Long upperBound) {
+        /**
+         * Indica se a Meta retornou os dois limites necessários para decidir a publicação.
+         */
+        boolean complete() {
+            return lowerBound != null && upperBound != null;
+        }
+    }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     private record AdSetPlaybookWorkflowResponse(

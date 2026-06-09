@@ -645,6 +645,9 @@ databaseChangeLog:
       file: changesets/2026-06-09-facebook-ads-publication-metrics-pipeline.yaml
       relativeToChangelogFile: true
   - include:
+      file: changesets/2026-06-09-facebook-ads-reach-validation-stage.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-06-04-openai-model-accepts-image-input.yaml
       relativeToChangelogFile: true
   - include:

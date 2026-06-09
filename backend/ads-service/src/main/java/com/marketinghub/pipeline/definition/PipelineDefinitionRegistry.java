@@ -28,6 +28,14 @@ public class PipelineDefinitionRegistry {
     private static final String OPRM_NICHO_CNAE_PIPELINE_CODE = "oprm-nicho-cnae-pipeline";
     private static final String OPRM_MODULE = "OPRM";
     private static final String OPRM_NICHO_CNAE_CANONICAL_VERSION = "oprm-nichocnae-canon.v1";
+    private static final String MOIS_SALES_PAGE_LIBRARY_PIPELINE_CODE = "mois-sales-page-library-pipeline";
+    private static final String MOIS_MODULE = "MOIS";
+    private static final String MOIS_SALES_PAGE_LIBRARY_CANONICAL_VERSION = "mois-sales-page-library-canon.v1";
+    private static final String MOIS_SALES_PAGE_LIBRARY_BACKEND_ROOT_PACKAGE =
+            "com.marketinghub.mois.bibliotecapaginavenda.worker.v1";
+    private static final String MOIS_SALES_PAGE_LIBRARY_WORKER_ROOT_PACKAGE =
+            "com.marketinghub.mois.bibliotecapaginavenda.worker.v1";
+    private static final String MOIS_SALES_PAGE_LIBRARY_WORKER_MODULE = "mois-sales-library-worker";
 
     private final List<PipelineDefinition> officialPipelines;
     private final Set<String> validModules;
@@ -36,8 +44,11 @@ public class PipelineDefinitionRegistry {
      * Inicializa o registro oficial a partir das etapas canônicas implementadas no código.
      */
     public PipelineDefinitionRegistry() {
-        this.officialPipelines = List.of(buildExperimentPipeline(), buildOprmNichoCnaePipeline());
-        this.validModules = Set.of(EXPERIMENT_MODULE, "GERALANDING", "MDS", "MOIS", OPRM_MODULE);
+        this.officialPipelines = List.of(
+                buildExperimentPipeline(),
+                buildOprmNichoCnaePipeline(),
+                buildMoisSalesPageLibraryPipeline());
+        this.validModules = Set.of(EXPERIMENT_MODULE, "GERALANDING", "MDS", MOIS_MODULE, OPRM_MODULE);
     }
 
     /**
@@ -239,6 +250,71 @@ public class PipelineDefinitionRegistry {
                 PipelineFieldPolicy.officialDefault(),
                 StageFieldPolicy.officialDefault(),
                 stages);
+    }
+
+    /**
+     * Monta a definição oficial do pipeline da Biblioteca de Páginas de Vendas do MOIS.
+     */
+    private PipelineDefinition buildMoisSalesPageLibraryPipeline() {
+        List<PipelineStageDefinition> stages = List.of(
+                moisSalesPageLibraryStage(
+                        "HTML_ACQUISITION",
+                        "html-acquisition",
+                        "Obtenção de HTML",
+                        1,
+                        false,
+                        "service",
+                        "pipeline.htmlcapture",
+                        Set.of("html-capture", "page-snapshot", "capture", "obtencao-html")),
+                moisSalesPageLibraryStage(
+                        "COMMERCIAL_PAGE_ANALYSIS",
+                        "commercial-page-analysis",
+                        "Análise Comercial da Página",
+                        2,
+                        true,
+                        "service",
+                        "openai",
+                        Set.of("page-analysis", "analysis", "commercial-analysis", "analise-comercial")));
+        return new PipelineDefinition(
+                MOIS_MODULE,
+                MOIS_SALES_PAGE_LIBRARY_PIPELINE_CODE,
+                "Pipeline Biblioteca de Páginas de Vendas",
+                MOIS_SALES_PAGE_LIBRARY_CANONICAL_VERSION,
+                true,
+                Set.of(
+                        MOIS_SALES_PAGE_LIBRARY_PIPELINE_CODE,
+                        "mois_sales_page_library_pipeline",
+                        "sales-pages-library-pipeline",
+                        "biblioteca-paginas-vendas-pipeline"),
+                PipelineFieldPolicy.officialDefault(),
+                StageFieldPolicy.officialDefault(),
+                stages);
+    }
+
+    /**
+     * Converte uma etapa da biblioteca de páginas de vendas MOIS para definição canônica.
+     */
+    private PipelineStageDefinition moisSalesPageLibraryStage(
+            String canonicalCode,
+            String operationalCode,
+            String name,
+            int position,
+            boolean requiresOpenAiModel,
+            String backendPackage,
+            String workerPackage,
+            Set<String> aliases) {
+        return new PipelineStageDefinition(
+                canonicalCode,
+                operationalCode,
+                name,
+                position,
+                true,
+                requiresOpenAiModel,
+                true,
+                MOIS_SALES_PAGE_LIBRARY_WORKER_MODULE,
+                MOIS_SALES_PAGE_LIBRARY_BACKEND_ROOT_PACKAGE + "." + backendPackage,
+                MOIS_SALES_PAGE_LIBRARY_WORKER_ROOT_PACKAGE + "." + workerPackage,
+                aliases);
     }
 
     /**

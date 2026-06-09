@@ -311,7 +311,7 @@ class PipelineServiceTest {
      */
     @Test
     void shouldExposeOfficialStageAliasesAndCanonicalCodes() {
-        assertThat(definitionRegistry.officialPipelines()).hasSize(2);
+        assertThat(definitionRegistry.officialPipelines()).hasSize(3);
         assertThat(definitionRegistry.findByPipelineCode("experiment-pipeline")).hasValueSatisfying(pipeline -> {
             assertThat(pipeline.code()).isEqualTo("experiment-pipeline");
             assertThat(pipeline.stages()).hasSize(10);
@@ -523,6 +523,11 @@ class PipelineServiceTest {
             assertThat(pipeline.pipelineFieldPolicy().codeStructural()).isTrue();
             assertThat(pipeline.stageFieldPolicy().openAiModelOperational()).isTrue();
         });
+        assertThat(definitionRegistry.findByPipelineCode("mois-sales-page-library-pipeline")).hasValueSatisfying(pipeline -> {
+            assertThat(pipeline.canonicalVersion()).isEqualTo("mois-sales-page-library-canon.v1");
+            assertThat(pipeline.pipelineFieldPolicy().codeStructural()).isTrue();
+            assertThat(pipeline.stageFieldPolicy().openAiModelOperational()).isTrue();
+        });
     }
 
 
@@ -560,6 +565,68 @@ class PipelineServiceTest {
             assertThat(definitionRegistry.findStage(pipeline, "oprmEnrichedNicheMaterializer"))
                     .hasValueSatisfying(stage -> assertThat(stage.operationalCode()).isEqualTo("enriched-niche-materializer"));
         });
+    }
+
+
+    /**
+     * Garante que o pipeline oficial da Biblioteca de Páginas de Vendas MOIS reflete o fluxo operacional atual.
+     */
+    @Test
+    void shouldExposeOfficialMoisSalesPageLibraryPipelineFromImplementedStages() {
+        assertThat(definitionRegistry.findByPipelineCode("mois-sales-page-library-pipeline")).hasValueSatisfying(pipeline -> {
+            assertThat(pipeline.module()).isEqualTo("MOIS");
+            assertThat(pipeline.name()).isEqualTo("Pipeline Biblioteca de Páginas de Vendas");
+            assertThat(pipeline.stages()).hasSize(2);
+            assertThat(pipeline.stages()).extracting(stage -> stage.operationalCode())
+                    .containsExactly("html-acquisition", "commercial-page-analysis");
+            assertThat(pipeline.stages())
+                    .allSatisfy(stage -> {
+                        assertThat(stage.executionModule()).isEqualTo("mois-sales-library-worker");
+                        assertThat(stage.rootPackage())
+                                .startsWith("com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service");
+                        assertThat(stage.modulePackage())
+                                .startsWith("com.marketinghub.mois.bibliotecapaginavenda.worker.v1.");
+                        assertThat(definitionRegistry.findStage(pipeline, stage.canonicalCode())).contains(stage);
+                        assertThat(definitionRegistry.findStage(pipeline, stage.operationalCode())).contains(stage);
+                    });
+            assertThat(pipeline.stages())
+                    .filteredOn(stage -> stage.requiresOpenAiModel())
+                    .extracting(stage -> stage.operationalCode())
+                    .containsExactly("commercial-page-analysis");
+            assertThat(definitionRegistry.findStage(pipeline, "page-analysis"))
+                    .hasValueSatisfying(stage -> assertThat(stage.operationalCode()).isEqualTo("commercial-page-analysis"));
+        });
+    }
+
+    /**
+     * Garante que a sincronização oficial cria o pipeline MOIS de páginas de vendas ausente pelo código canônico.
+     */
+    @Test
+    void shouldCreateMissingOfficialMoisSalesPageLibraryPipelineByCode() {
+        when(pipelineRepository.findByCode("mois-sales-page-library-pipeline")).thenReturn(Optional.empty());
+        when(pipelineRepository.save(any(Pipeline.class))).thenAnswer(invocation -> {
+            Pipeline saved = invocation.getArgument(0);
+            if (saved.getId() == null) {
+                saved.setId(30L);
+            }
+            return saved;
+        });
+        when(pipelineRepository.findById(30L)).thenAnswer(invocation -> {
+            Pipeline pipeline = Pipeline.builder()
+                    .id(30L)
+                    .name("Pipeline Biblioteca de Páginas de Vendas")
+                    .code("mois-sales-page-library-pipeline")
+                    .module("MOIS")
+                    .stages(new ArrayList<>())
+                    .build();
+            return Optional.of(pipeline);
+        });
+        when(stageRepository.save(any(PipelineStage.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        PipelineSyncResultDto result = synchronizer.syncOfficialByCode("mois-sales-page-library-pipeline");
+
+        assertThat(result.appliedActions()).hasSize(2);
+        assertThat(result.canonicalPipelineCode()).isEqualTo("mois-sales-page-library-pipeline");
     }
 
     /**

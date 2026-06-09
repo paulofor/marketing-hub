@@ -1207,3 +1207,15 @@ Arquivos alterados:
 - `backend/ads-service/src/main/resources/db/changelog/changesets/2026-06-09-mois-sales-page-market-warmup.yaml`
 - `backend/ads-service/src/main/resources/db/changelog/db.changelog-master.yaml`
 - `docs/registros/mois1.md`
+
+## 2026-06-09 — Contratos da Etapa 3 de aquecimento de mercado
+
+- Definidos os DTOs e enums HTTP da **Etapa 3 — Pesquisa de Aquecimento e Ecossistema de Mercado** na biblioteca MOIS, cobrindo status de job, temperatura, ecossistema, recomendação, plataforma, tipo de fonte e tipo de sinal.
+- Documentados no Swagger os contratos públicos de solicitação/consulta da pesquisa e os contratos internos do worker para claim, conclusão e falha.
+- O contrato de conclusão usa listas estruturadas de fontes, sinais e resumo, evitando JSON serializado dentro de campos textuais funcionais.
+
+Arquivos alterados:
+
+- `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/dto/MoisSalesLibraryDtos.java`
+- `docs/swagger/mois-sales-library-swagger.yaml`
+- `docs/registros/mois1.md`

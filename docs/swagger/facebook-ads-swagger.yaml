@@ -384,6 +384,29 @@ paths:
           description: Filtra o pacote de público pelo experimento selecionado.
       responses:
         '200': { description: Experimentos retornados com o público definido no Marketing Hub. }
+  /api/facebook-adsets/experiments/{experimentId}/targeting-package:
+    get:
+      tags: [Facebook Ad Sets]
+      summary: Retorna pacote de segmentação enxuto para publicação da campanha.
+      description: Contrato operacional do facebook-ads-worker; retorna somente experimentId e targeting, sem payload completo do experimento.
+      parameters:
+        - $ref: '#/components/parameters/ExperimentId'
+      responses:
+        '200':
+          description: Pacote de segmentação aprovado retornado.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  experimentId: { type: integer, format: int64 }
+                  targeting:
+                    type: object
+                    properties:
+                      interests: { type: array, items: { type: object } }
+                      jobTitles: { type: array, items: { type: object } }
+                      behaviors: { type: array, items: { type: object } }
+        '404': { description: Pacote publicável não encontrado para o experimento. }
   /api/adsets:
     get:
       tags: [Facebook Ad Sets]

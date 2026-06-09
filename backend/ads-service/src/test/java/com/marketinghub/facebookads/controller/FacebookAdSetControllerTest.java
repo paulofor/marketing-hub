@@ -12,6 +12,7 @@ import com.marketinghub.targeting.TargetingElementType;
 import com.marketinghub.targeting.dto.TargetingElementDto;
 import com.marketinghub.experiment.dto.ExperimentDto;
 import com.marketinghub.facebookads.dto.ExperimentReadyForAdSetDto;
+import com.marketinghub.facebookads.service.targetingPackage.FacebookAdSetTargetingPackageDto;
 import com.marketinghub.facebookads.service.FacebookAdSetExperimentService;
 import com.marketinghub.hypothesis.dto.HypothesisDto;
 import com.marketinghub.niche.dto.MarketNicheDto;
@@ -150,6 +151,38 @@ class FacebookAdSetControllerTest {
         mockMvc.perform(get("/api/facebook-adsets/experiments-ready").param("experimentId", "38"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].experiment.id").value(38));
+    }
+
+    @Test
+    void targetingPackageReturnsLeanPayloadForCampaignPublication() throws Exception {
+        TargetingElementDto jobTitle = TargetingElementDto.builder()
+                .id(2L)
+                .type(TargetingElementType.JOB_TITLE)
+                .term("CMO")
+                .metaId("123")
+                .metaKey("Chief Marketing Officer")
+                .build();
+        FacebookAdSetTargetingPackageDto dto = new FacebookAdSetTargetingPackageDto(
+                38L,
+                new TargetingPackageDto(List.of(), List.of(jobTitle), List.of()));
+
+        when(experimentService.getTargetingPackageForCampaign(38L)).thenReturn(java.util.Optional.of(dto));
+
+        mockMvc.perform(get("/api/facebook-adsets/experiments/38/targeting-package"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.experimentId").value(38))
+                .andExpect(jsonPath("$.targeting.jobTitles[0].metaId").value("123"))
+                .andExpect(jsonPath("$.experiment").doesNotExist())
+                .andExpect(jsonPath("$.niche").doesNotExist())
+                .andExpect(jsonPath("$.hypothesis").doesNotExist());
+    }
+
+    @Test
+    void targetingPackageReturnsNotFoundWhenNoPublishableTargetingExists() throws Exception {
+        when(experimentService.getTargetingPackageForCampaign(38L)).thenReturn(java.util.Optional.empty());
+
+        mockMvc.perform(get("/api/facebook-adsets/experiments/38/targeting-package"))
+                .andExpect(status().isNotFound());
     }
 
 }

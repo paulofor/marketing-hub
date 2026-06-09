@@ -8,6 +8,7 @@ import com.marketinghub.experiment.mapper.ExperimentMapper;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentTargetingSelectionRepository;
 import com.marketinghub.facebookads.dto.ExperimentReadyForAdSetDto;
+import com.marketinghub.facebookads.service.targetingPackage.FacebookAdSetTargetingPackageDto;
 import com.marketinghub.facebookads.dto.TargetingPackageDto;
 import com.marketinghub.hypothesis.mapper.HypothesisMapper;
 import com.marketinghub.niche.mapper.MarketNicheMapper;
@@ -21,6 +22,7 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -90,6 +92,20 @@ public class FacebookAdSetExperimentService {
             }
         }
         return result;
+    }
+
+    /**
+     * Retorna somente o pacote de segmentação necessário para o worker publicar a campanha do experimento.
+     */
+    public Optional<FacebookAdSetTargetingPackageDto> getTargetingPackageForCampaign(Long experimentId) {
+        return experimentRepository.findForAdSetTargetingById(experimentId, ExperimentPlatform.FACEBOOK)
+                .flatMap(experiment -> {
+                    TargetingPackageDto targeting = buildTargetingPackage(experiment);
+                    if (targeting == null) {
+                        return Optional.empty();
+                    }
+                    return Optional.of(new FacebookAdSetTargetingPackageDto(experiment.getId(), targeting));
+                });
     }
 
     /**

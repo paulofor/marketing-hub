@@ -173,7 +173,11 @@ O fluxo automatizado cria toda a hierarquia necessária para veiculação:
 
 As chamadas ao backend utilizam o prefixo `/api`. O worker consome
 `/api/facebook-campaigns/experiments-ready`, tratando respostas `404` como
-"nenhum experimento disponível" para evitar falhas no agendamento. Falhas de
+"nenhum experimento disponível" para evitar falhas no agendamento. Quando não
+houver playbook de público pronto, o fallback manual busca somente o contrato
+enxuto `GET /api/facebook-adsets/experiments/{experimentId}/targeting-package`,
+que retorna `experimentId` e `targeting` sem carregar HTML, copy ou artefatos
+completos do experimento. Falhas de
 conexão ao recuperar os experimentos são registradas em log e ignoradas para
 que o agendamento continue saudável. Após criar campanha, conjunto, criativo e
 anúncio com sucesso na Meta, o worker envia um `CreateCampaignRequest` para o backend via

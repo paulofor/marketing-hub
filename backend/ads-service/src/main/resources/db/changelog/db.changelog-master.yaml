@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-06-09-oprm-mei-audience-profile.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-06-05-oprm-source-fetcher-classification-indicators.yaml
       relativeToChangelogFile: true
   - include:
@@ -645,6 +648,9 @@ databaseChangeLog:
       file: changesets/2026-06-09-facebook-ads-publication-metrics-pipeline.yaml
       relativeToChangelogFile: true
   - include:
+      file: changesets/2026-06-09-facebook-ads-reach-validation-stage.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-06-04-openai-model-accepts-image-input.yaml
       relativeToChangelogFile: true
   - include:
@@ -913,4 +919,8 @@ databaseChangeLog:
       relativeToChangelogFile: true
   - include:
       file: changesets/2026-06-05-oprm-routine-quality-scores.yaml
+      relativeToChangelogFile: true
+
+  - include:
+      file: changesets/2026-06-09-mois-sales-page-market-warmup.yaml
       relativeToChangelogFile: true

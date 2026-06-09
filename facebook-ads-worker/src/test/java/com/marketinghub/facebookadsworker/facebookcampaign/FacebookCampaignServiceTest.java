@@ -55,6 +55,7 @@ class FacebookCampaignServiceTest {
     private WebClient.Builder webClientBuilder;
     private ExperimentFacebookApiLogClient apiLogClient;
     private String imageUrl;
+    private String reachEstimateResponseBody;
 
     /**
      * Creates isolated backend and Facebook API stubs for each campaign publication scenario.
@@ -70,6 +71,7 @@ class FacebookCampaignServiceTest {
         imageUrl = facebook.url("/creative-image.jpg").toString();
 
         objectMapper = new ObjectMapper();
+        reachEstimateResponseBody = defaultReachEstimateResponse();
         configurationClient = new StubFacebookWorkerConfigurationClient();
         configurationClient.setConfiguration(configurationWithAccessToken("token"));
         HttpClient httpClient = HttpClient.create()
@@ -187,6 +189,15 @@ class FacebookCampaignServiceTest {
                 .setBody("{\"images\":{\"uploaded\":{\"hash\":\"hash-preloaded\"}}}")
                 .addHeader("Content-Type", "application/json")
         );
+        facebook.enqueuePriorityConditionalResponse(
+            request -> request.getPath() != null
+                && request.getPath().startsWith("/v23.0/act_")
+                && request.getPath().contains("/reachestimate?")
+                && "GET".equals(request.getMethod()),
+            () -> new MockResponse()
+                .setBody(reachEstimateResponseBody)
+                .addHeader("Content-Type", "application/json")
+        );
     }
 
     @AfterEach
@@ -225,6 +236,13 @@ class FacebookCampaignServiceTest {
             .addHeader("Content-Type", "application/json");
     }
 
+    /**
+     * Monta uma resposta de alcance dentro da faixa operacional aceita para publicação.
+     */
+    private String defaultReachEstimateResponse() {
+        return "{\"data\":[{\"users_lower_bound\":250000,\"users_upper_bound\":5000000}]}";
+    }
+
     private RecordedRequest takeBackendRequest(String description) throws InterruptedException {
         RecordedRequest request = backend.takeRequest(5, TimeUnit.SECONDS);
         assertNotNull(request, "Expected backend request (" + description + ") within timeout.");
@@ -241,10 +259,14 @@ class FacebookCampaignServiceTest {
             String path = request.getPath();
             boolean isAdImageRequest = path != null && path.contains("/adimages");
             boolean isImageAssetRequest = "/creative-image.jpg".equals(path) && "GET".equals(request.getMethod());
+            boolean isReachEstimateRequest = path != null && path.contains("/reachestimate?");
             String normalizedDescription = description.toLowerCase();
             boolean expectsAdImage = normalizedDescription.contains("ad image");
             boolean expectsImageAsset = normalizedDescription.contains("image asset");
-            if ((isAdImageRequest && !expectsAdImage) || (isImageAssetRequest && !expectsImageAsset)) {
+            boolean expectsReachEstimate = normalizedDescription.contains("reach");
+            if ((isAdImageRequest && !expectsAdImage)
+                || (isImageAssetRequest && !expectsImageAsset)
+                || (isReachEstimateRequest && !expectsReachEstimate)) {
                 continue;
             }
             return request;
@@ -254,13 +276,13 @@ class FacebookCampaignServiceTest {
 
     private RecordedRequest takeBackendRequestMatching(String description, Predicate<RecordedRequest> predicate)
         throws InterruptedException {
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 20; i++) {
             RecordedRequest request = takeBackendRequest(description);
             if (predicate.test(request)) {
                 return request;
             }
         }
-        throw new AssertionError("Expected backend request (" + description + ") matching predicate within 10 attempts.");
+        throw new AssertionError("Expected backend request (" + description + ") matching predicate within 20 attempts.");
     }
 
     @Test
@@ -368,6 +390,44 @@ class FacebookCampaignServiceTest {
         JsonNode backendPayload = objectMapper.readTree(postBackend.getBody().inputStream());
         assertEquals("ACTIVE", backendPayload.get("status").asText());
         assertTrue(backend.getRequestCount() >= 4);
+    }
+
+    @Test
+    // Garante que a campanha não é criada quando o público fica abaixo do alcance mínimo.
+    void skipsCampaignCreationWhenReachValidationIsBelowMinimum() throws Exception {
+        reachEstimateResponseBody = "{\"data\":[{\"users_lower_bound\":1000,\"users_upper_bound\":50000}]}";
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"dailyBudget\":25.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"" + imageUrl + "\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("[]")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(defaultManualTargetingPackageResponse());
+
+        service.createCampaignsFromExperiments();
+
+        takeBackendRequest("experiments ready");
+        takeBackendRequest("creatives ready");
+        takeBackendRequestMatching(
+            "playbook request",
+            request -> "/api/experiments/1/adset-playbook".equals(request.getPath())
+                && "GET".equals(request.getMethod())
+        );
+        takeBackendRequestMatching(
+            "manual targeting package request",
+            request -> "/api/facebook-adsets/experiments/1/targeting-package".equals(request.getPath())
+                && "GET".equals(request.getMethod())
+        );
+        RecordedRequest reachRequest = takeFacebookRequest("reach validation");
+        assertTrue(reachRequest.getPath().contains("/reachestimate?"));
+        RecordedRequest failedStatusRequest = takeBackendRequestMatching(
+            "failed status update",
+            request -> request.getPath() != null
+                && request.getPath().contains("/api/experiments/1/status?status=FAILED")
+                && "PATCH".equals(request.getMethod())
+        );
+        assertNotNull(failedStatusRequest);
+        assertEquals(1, facebook.getRequestCount());
     }
 
     @Test
@@ -892,7 +952,7 @@ class FacebookCampaignServiceTest {
         RecordedRequest postCampaign = takeFacebookRequest("facebook request");
         assertEquals("POST", postCampaign.getMethod());
         assertEquals("/v23.0/act_1/campaigns", postCampaign.getPath());
-        assertEquals(3, facebook.getRequestCount());
+        assertEquals(4, facebook.getRequestCount());
 
         RecordedRequest patch = takeBackendRequestMatching(
             "experiment failed status update",
@@ -951,7 +1011,7 @@ class FacebookCampaignServiceTest {
         assertEquals("GET", secondGet.getMethod());
         assertEquals("/api/facebook-campaigns/experiments-ready", secondGet.getPath());
 
-        assertEquals(3, facebook.getRequestCount());
+        assertEquals(4, facebook.getRequestCount());
         assertTrue(backend.getRequestCount() >= 8);
     }
 

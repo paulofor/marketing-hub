@@ -1,10 +1,11 @@
 package com.marketinghub.facebookads.playbook;
 
 /**
- * Categorizes Graph API calls for experiments so the UI can distinguish contexts.
+ * Categoriza chamadas da Graph API por experimento para a UI distinguir os contextos.
  */
 public enum ExperimentFacebookApiLogContext {
     PLAYBOOK,
+    CAMPAIGN_REACH_VALIDATION,
     CAMPAIGN_CREATION,
     CAMPAIGN_AD_SET,
     CAMPAIGN_AD_CREATIVE,

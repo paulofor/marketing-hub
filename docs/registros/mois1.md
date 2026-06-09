@@ -1196,3 +1196,14 @@ Arquivos alterados:
 - `backend/ads-service/src/main/java/com/marketinghub/pipeline/definition/PipelineDefinitionRegistry.java`
 - `backend/ads-service/src/test/java/com/marketinghub/pipeline/service/PipelineServiceTest.java`
 - `docs/registros/mois1.md`
+
+## 2026-06-09 — Schema da Etapa 3 de aquecimento de mercado
+
+- Criado changelog Liquibase MySQL 5.7 para a **Etapa 3 — Pesquisa de Aquecimento e Ecossistema de Mercado** da Biblioteca de Páginas de Vendas do MOIS.
+- Adicionadas as tabelas operacionais de jobs, fontes públicas, sinais comerciais e resumo final do dossiê de aquecimento, com chaves estrangeiras para `mois_sales_page` e relacionamentos internos da etapa.
+- Adicionados índices para operação por workspace, página, status, score e plataforma, preservando o backend como único ponto de acesso ao banco.
+
+Arquivos alterados:
+- `backend/ads-service/src/main/resources/db/changelog/changesets/2026-06-09-mois-sales-page-market-warmup.yaml`
+- `backend/ads-service/src/main/resources/db/changelog/db.changelog-master.yaml`
+- `docs/registros/mois1.md`

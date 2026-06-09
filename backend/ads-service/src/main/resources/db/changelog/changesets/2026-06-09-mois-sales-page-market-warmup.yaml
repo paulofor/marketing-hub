@@ -1,0 +1,196 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-09-mois-sales-page-market-warmup-job-01
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: mois_sales_page
+        - not:
+            tableExists:
+              tableName: mois_sales_page_market_warmup_job
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE mois_sales_page_market_warmup_job (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                sales_page_id BIGINT NOT NULL,
+                workspace_id VARCHAR(120) NOT NULL,
+                status VARCHAR(40) NOT NULL,
+                attempt INT NOT NULL DEFAULT 1,
+                claimed_by VARCHAR(120) NULL,
+                score_total DECIMAL(6,2) NULL,
+                market_temperature VARCHAR(40) NULL,
+                ecosystem_type VARCHAR(60) NULL,
+                recommendation VARCHAR(60) NULL,
+                error_category VARCHAR(120) NULL,
+                error_message VARCHAR(1000) NULL,
+                started_at DATETIME NULL,
+                finished_at DATETIME NULL,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                KEY idx_mois_market_warmup_job_workspace_status (workspace_id, status, updated_at),
+                KEY idx_mois_market_warmup_job_page_status (sales_page_id, status, updated_at),
+                KEY idx_mois_market_warmup_job_score (workspace_id, score_total),
+                CONSTRAINT fk_mois_market_warmup_job_sales_page
+                  FOREIGN KEY (sales_page_id) REFERENCES mois_sales_page(id)
+                  ON DELETE CASCADE
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+  - changeSet:
+      id: 2026-06-09-mois-sales-page-market-warmup-source-01
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: mois_sales_page_market_warmup_job
+        - tableExists:
+            tableName: mois_sales_page
+        - not:
+            tableExists:
+              tableName: mois_sales_page_market_warmup_source
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE mois_sales_page_market_warmup_source (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                job_id BIGINT NOT NULL,
+                sales_page_id BIGINT NOT NULL,
+                workspace_id VARCHAR(120) NOT NULL,
+                platform VARCHAR(40) NOT NULL,
+                source_type VARCHAR(60) NOT NULL,
+                source_url VARCHAR(1024) NOT NULL,
+                source_title VARCHAR(512) NULL,
+                author_name VARCHAR(255) NULL,
+                published_at DATETIME NULL,
+                last_activity_at DATETIME NULL,
+                followers_or_subscribers BIGINT NULL,
+                views_count BIGINT NULL,
+                likes_count BIGINT NULL,
+                comments_count BIGINT NULL,
+                recency_score DECIMAL(6,2) NULL,
+                engagement_score DECIMAL(6,2) NULL,
+                evidence_summary VARCHAR(2000) NULL,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                KEY idx_mois_market_warmup_source_job (job_id),
+                KEY idx_mois_market_warmup_source_page (sales_page_id, created_at),
+                KEY idx_mois_market_warmup_source_platform (workspace_id, platform, last_activity_at),
+                KEY idx_mois_market_warmup_source_url (source_url(191)),
+                CONSTRAINT fk_mois_market_warmup_source_job
+                  FOREIGN KEY (job_id) REFERENCES mois_sales_page_market_warmup_job(id)
+                  ON DELETE CASCADE,
+                CONSTRAINT fk_mois_market_warmup_source_page
+                  FOREIGN KEY (sales_page_id) REFERENCES mois_sales_page(id)
+                  ON DELETE CASCADE
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+  - changeSet:
+      id: 2026-06-09-mois-sales-page-market-warmup-signal-01
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: mois_sales_page_market_warmup_job
+        - tableExists:
+            tableName: mois_sales_page_market_warmup_source
+        - tableExists:
+            tableName: mois_sales_page
+        - not:
+            tableExists:
+              tableName: mois_sales_page_market_warmup_signal
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE mois_sales_page_market_warmup_signal (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                job_id BIGINT NOT NULL,
+                source_id BIGINT NOT NULL,
+                sales_page_id BIGINT NOT NULL,
+                workspace_id VARCHAR(120) NOT NULL,
+                signal_type VARCHAR(60) NOT NULL,
+                signal_strength DECIMAL(6,2) NOT NULL DEFAULT 0,
+                signal_text VARCHAR(2000) NOT NULL,
+                business_interpretation VARCHAR(2000) NULL,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                KEY idx_mois_market_warmup_signal_job (job_id),
+                KEY idx_mois_market_warmup_signal_source (source_id),
+                KEY idx_mois_market_warmup_signal_page (sales_page_id, created_at),
+                KEY idx_mois_market_warmup_signal_type (workspace_id, signal_type, signal_strength),
+                CONSTRAINT fk_mois_market_warmup_signal_job
+                  FOREIGN KEY (job_id) REFERENCES mois_sales_page_market_warmup_job(id)
+                  ON DELETE CASCADE,
+                CONSTRAINT fk_mois_market_warmup_signal_source
+                  FOREIGN KEY (source_id) REFERENCES mois_sales_page_market_warmup_source(id)
+                  ON DELETE CASCADE,
+                CONSTRAINT fk_mois_market_warmup_signal_page
+                  FOREIGN KEY (sales_page_id) REFERENCES mois_sales_page(id)
+                  ON DELETE CASCADE
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+  - changeSet:
+      id: 2026-06-09-mois-sales-page-market-warmup-summary-01
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: mois_sales_page_market_warmup_job
+        - tableExists:
+            tableName: mois_sales_page
+        - not:
+            tableExists:
+              tableName: mois_sales_page_market_warmup_summary
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE mois_sales_page_market_warmup_summary (
+                job_id BIGINT NOT NULL,
+                sales_page_id BIGINT NOT NULL,
+                workspace_id VARCHAR(120) NOT NULL,
+                score_total DECIMAL(6,2) NOT NULL DEFAULT 0,
+                market_temperature VARCHAR(40) NOT NULL,
+                ecosystem_type VARCHAR(60) NOT NULL,
+                main_pains VARCHAR(2000) NULL,
+                main_objections VARCHAR(2000) NULL,
+                main_promises VARCHAR(2000) NULL,
+                main_channels VARCHAR(1000) NULL,
+                main_competitors VARCHAR(2000) NULL,
+                saturation_risk VARCHAR(1000) NULL,
+                opportunity_recommendation VARCHAR(2000) NULL,
+                next_experiment_suggestion VARCHAR(2000) NULL,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (job_id),
+                KEY idx_mois_market_warmup_summary_page (sales_page_id, updated_at),
+                KEY idx_mois_market_warmup_summary_score (workspace_id, score_total),
+                KEY idx_mois_market_warmup_summary_temperature (workspace_id, market_temperature, updated_at),
+                CONSTRAINT fk_mois_market_warmup_summary_job
+                  FOREIGN KEY (job_id) REFERENCES mois_sales_page_market_warmup_job(id)
+                  ON DELETE CASCADE,
+                CONSTRAINT fk_mois_market_warmup_summary_page
+                  FOREIGN KEY (sales_page_id) REFERENCES mois_sales_page(id)
+                  ON DELETE CASCADE
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -4168,3 +4168,10 @@
 
 - Registrado o pipeline `facebook-ads-publication-metrics-pipeline` para tornar visíveis, na tela `/pipelines`, as tarefas do Facebook Ads Worker ligadas à publicação de campanhas e sincronização de métricas.
 - Etapas cobrem configuração, prontidão do experimento, consumo de criativos, publicação na Meta, registro no backend, seleção de alvos de métricas, coleta de insights, persistência de métricas e tratamento de falhas.
+
+## 2026-06-09 — Diagnóstico sem erro antigo após retry Facebook Ads
+
+- solicitação: corrigir a tela do experimento para não continuar exibindo como atual uma falha antiga da Meta depois de novas tentativas de retry.
+- causa-raiz: o diagnóstico do experimento buscava a primeira falha nos logs recentes de Facebook API sempre que o status estava `FAILED`, mesmo quando chamadas posteriores já haviam retornado `200`, fazendo um erro histórico parecer o erro atual.
+- foi feito: o diagnóstico agora só mostra detalhes de falha quando a chamada mais recente da Meta também falhou; se a chamada mais recente foi sucesso, a tela mantém o alerta de status `FAILED`, mas deixa de acusar uma mensagem antiga como “último erro”.
+- validação: adicionados testes unitários para cobrir o cenário do experimento 38 com falha antiga seguida por sucesso e o cenário inverso com falha realmente mais recente.

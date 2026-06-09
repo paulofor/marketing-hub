@@ -617,12 +617,13 @@ class PipelineServiceTest {
                     assertThat(pipeline.module()).isEqualTo("FACEBOOK_ADS");
                     assertThat(pipeline.name()).isEqualTo("Pipeline Facebook Ads: Publicação e Métricas");
                     assertThat(pipeline.canonicalVersion()).isEqualTo("facebook-campaign-publication-canon.v1");
-                    assertThat(pipeline.stages()).hasSize(9);
+                    assertThat(pipeline.stages()).hasSize(10);
                     assertThat(pipeline.stages()).extracting(stage -> stage.operationalCode())
                             .containsExactly(
                                     "worker-configuration",
                                     "experiment-readiness",
                                     "creative-consumption",
+                                    "reach-validation",
                                     "campaign-hierarchy-publication",
                                     "publication-registration",
                                     "metrics-sync-target-selection",

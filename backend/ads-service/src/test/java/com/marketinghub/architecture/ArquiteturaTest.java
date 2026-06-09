@@ -153,6 +153,32 @@ class ArquiteturaTest {
                     + "de controllers de outros módulos");
 
     @ArchTest
+    static final ArchRule facebookAdsMustNotDependOnUnapprovedMarketingHubPackages = classes()
+            .that()
+            .resideInAPackage("com.marketinghub.facebookads..")
+            .should(onlyDependOnAllowedFacebookAdsMarketingHubClasses())
+            .because("[ARQUITETURA] [BACKEND][FacebookAds] o pacote Facebook Ads só deve depender "
+                    + "dos contratos internos aprovados para publicação, mensuração e segmentação de campanhas");
+
+    @ArchTest
+    static final ArchRule facebookAdsServicesMustNotDependOnControllers = noClasses()
+            .that()
+            .resideInAPackage("com.marketinghub.facebookads..service..")
+            .should()
+            .dependOnClassesThat()
+            .resideInAPackage("com.marketinghub..controller..")
+            .because("[ARQUITETURA] [BACKEND][FacebookAds] services de Facebook Ads não devem depender "
+                    + "de controllers; regra de negócio deve ficar abaixo da borda HTTP");
+
+    @ArchTest
+    static final ArchRule onlyApprovedPackagesMustDependOnFacebookAdsImplementation = classes()
+            .that()
+            .resideInAPackage("com.marketinghub..")
+            .should(onlyApprovedPackagesDependOnFacebookAdsClasses())
+            .because("[ARQUITETURA] [BACKEND][FacebookAds] somente o próprio pacote, experimento e "
+                    + "repositories canônicos de experimento/Facebook Ads podem depender das classes de Facebook Ads");
+
+    @ArchTest
     static final ArchRule moisSalesLibraryPackageMustNotDependOnOtherMarketingHubPackages = noClasses()
             .that()
             .resideInAPackage(MOIS_SALES_LIBRARY_PACKAGE + "..")
@@ -761,6 +787,97 @@ class ArquiteturaTest {
                 });
             }
         };
+    }
+
+    /**
+     * Garante que Facebook Ads consuma apenas contratos internos aprovados do backend.
+     */
+    private static ArchCondition<JavaClass> onlyDependOnAllowedFacebookAdsMarketingHubClasses() {
+        return new ArchCondition<>(
+                "[ARQUITETURA] [BACKEND][FacebookAds] depende apenas de pacotes aprovados") {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                if (item.getSimpleName().endsWith("Test")) {
+                    return;
+                }
+                item.getDirectDependenciesFromSelf().forEach(dependency -> {
+                    JavaClass targetClass = dependency.getTargetClass();
+                    String targetName = targetClass.getName();
+                    if (!targetName.startsWith("com.marketinghub.")) {
+                        return;
+                    }
+                    if (isAllowedFacebookAdsDependency(targetClass)) {
+                        return;
+                    }
+                    String message = "[ARQUITETURA] [BACKEND][FacebookAds] classe-origem=" + item.getName()
+                            + " possui import/dependência violadora: " + dependency.getDescription()
+                            + " (alvo: " + targetName + ")"
+                            + " | regra: facebookads só pode acessar o próprio pacote, ads, experiment, "
+                            + "creative, journey, leadportal, niche, settings, targeting e repositories canônicos "
+                            + "necessários para campanhas.";
+                    events.add(SimpleConditionEvent.violated(item, message));
+                });
+            }
+        };
+    }
+
+    /**
+     * Garante que apenas pacotes aprovados consumam classes internas de Facebook Ads.
+     */
+    private static ArchCondition<JavaClass> onlyApprovedPackagesDependOnFacebookAdsClasses() {
+        return new ArchCondition<>(
+                "[ARQUITETURA] [BACKEND][FacebookAds] somente pacotes aprovados dependem de Facebook Ads") {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                if (item.getSimpleName().endsWith("Test")) {
+                    return;
+                }
+                item.getDirectDependenciesFromSelf().forEach(dependency -> {
+                    JavaClass targetClass = dependency.getTargetClass();
+                    String targetName = targetClass.getName();
+                    if (!targetName.startsWith("com.marketinghub.facebookads.")) {
+                        return;
+                    }
+                    String sourcePackage = item.getPackageName();
+                    boolean valid = sourcePackage.startsWith("com.marketinghub.facebookads")
+                            || sourcePackage.startsWith("com.marketinghub.experiment")
+                            || sourcePackage.startsWith("com.marketinghub.repository.jpa.experiment")
+                            || sourcePackage.startsWith("com.marketinghub.repository.jpa.facebookads");
+                    if (valid) {
+                        return;
+                    }
+                    String message = "[ARQUITETURA] [BACKEND][FacebookAds] classe-origem=" + item.getName()
+                            + " possui dependência não aprovada para Facebook Ads: " + dependency.getDescription()
+                            + " (alvo: " + targetName + ")"
+                            + " | regra: somente facebookads, experiment, repository.jpa.experiment e "
+                            + "repository.jpa.facebookads podem depender diretamente das classes de Facebook Ads.";
+                    events.add(SimpleConditionEvent.violated(item, message));
+                });
+            }
+        };
+    }
+
+    /**
+     * Verifica se a dependência de Facebook Ads aponta para pacote interno aprovado.
+     */
+    private static boolean isAllowedFacebookAdsDependency(JavaClass targetClass) {
+        String targetPackage = targetClass.getPackageName();
+        return targetPackage.startsWith("com.marketinghub.facebookads")
+                || targetPackage.startsWith("com.marketinghub.ads")
+                || targetPackage.startsWith("com.marketinghub.creative")
+                || targetPackage.startsWith("com.marketinghub.experiment")
+                || targetPackage.startsWith("com.marketinghub.hypothesis")
+                || targetPackage.startsWith("com.marketinghub.journey")
+                || targetPackage.startsWith("com.marketinghub.leadportal")
+                || targetPackage.startsWith("com.marketinghub.niche")
+                || targetPackage.startsWith("com.marketinghub.settings")
+                || targetPackage.startsWith("com.marketinghub.targeting")
+                || targetPackage.startsWith("com.marketinghub.repository.jpa.ads")
+                || targetPackage.startsWith("com.marketinghub.repository.jpa.creative")
+                || targetPackage.startsWith("com.marketinghub.repository.jpa.experiment")
+                || targetPackage.startsWith("com.marketinghub.repository.jpa.facebookads")
+                || targetPackage.startsWith("com.marketinghub.repository.jpa.hypothesis")
+                || targetPackage.startsWith("com.marketinghub.repository.jpa.targeting");
     }
 
     /**

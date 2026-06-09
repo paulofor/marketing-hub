@@ -1,8 +1,8 @@
 openapi: 3.0.3
 info:
   title: Marketing Hub - MOIS Sales Library
-  version: 0.6.0
-  description: Contratos operacionais da Biblioteca de Páginas de Vendas do MOIS. Na Fase 6, ingestão, captura HTML e análise usam `mois_sales_page` e `mois_sales_page_job_execution` como fonte de verdade operacional atual; tabelas legadas ficam congeladas em somente leitura para auditoria/backfill histórico e não alimentam a UI principal.
+  version: 0.7.0
+  description: Contratos operacionais da Biblioteca de Páginas de Vendas do MOIS. Na Fase 6, ingestão, captura HTML e análise usam `mois_sales_page` e `mois_sales_page_job_execution` como fonte de verdade operacional atual; tabelas legadas ficam congeladas em somente leitura para auditoria/backfill histórico e não alimentam a UI principal. A Etapa 3 (`MARKET_WARMUP_RESEARCH`) possui contrato HTTP completo para solicitação, consulta, auditoria de fontes/sinais e integração interna do worker, incluindo respostas de erro padronizadas.
 servers:
   - url: /api/mois/sales-library
 paths:
@@ -390,8 +390,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MarketWarmupRequestResponse'
+        '400':
+          $ref: '#/components/responses/MarketWarmupBadRequest'
         '404':
-          description: Página não encontrada
+          $ref: '#/components/responses/MarketWarmupNotFound'
+        '409':
+          $ref: '#/components/responses/MarketWarmupConflict'
   /pages/{pageId}/market-warmup:
     get:
       summary: Consulta o resumo da pesquisa de aquecimento da página
@@ -407,7 +411,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/MarketWarmupSummaryResponse'
         '404':
-          description: Pesquisa ainda inexistente para a página
+          $ref: '#/components/responses/MarketWarmupNotFound'
   /pages/{pageId}/market-warmup/sources:
     get:
       summary: Lista fontes públicas da pesquisa de aquecimento
@@ -422,6 +426,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MarketWarmupSourceListResponse'
+        '404':
+          $ref: '#/components/responses/MarketWarmupNotFound'
   /pages/{pageId}/market-warmup/signals:
     get:
       summary: Lista sinais comerciais da pesquisa de aquecimento
@@ -436,6 +442,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MarketWarmupSignalListResponse'
+        '404':
+          $ref: '#/components/responses/MarketWarmupNotFound'
   /market-warmup/jobs:claim:
     post:
       summary: Reserva internamente uma pesquisa pendente de aquecimento
@@ -454,6 +462,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MarketWarmupClaimResponse'
+        '400':
+          $ref: '#/components/responses/MarketWarmupBadRequest'
+        '403':
+          $ref: '#/components/responses/MarketWarmupForbidden'
   /market-warmup/jobs/{jobId}:complete:
     post:
       summary: Conclui internamente uma pesquisa de aquecimento
@@ -471,9 +483,13 @@ paths:
         '204':
           description: Pesquisa concluída
         '400':
-          description: Payload inválido para o contrato da Etapa 3
+          $ref: '#/components/responses/MarketWarmupBadRequest'
+        '403':
+          $ref: '#/components/responses/MarketWarmupForbidden'
         '404':
-          description: Job não encontrado
+          $ref: '#/components/responses/MarketWarmupNotFound'
+        '409':
+          $ref: '#/components/responses/MarketWarmupConflict'
   /market-warmup/jobs/{jobId}:fail:
     post:
       summary: Registra falha interna da pesquisa de aquecimento
@@ -490,9 +506,40 @@ paths:
       responses:
         '204':
           description: Falha registrada
+        '400':
+          $ref: '#/components/responses/MarketWarmupBadRequest'
+        '403':
+          $ref: '#/components/responses/MarketWarmupForbidden'
         '404':
-          description: Job não encontrado
+          $ref: '#/components/responses/MarketWarmupNotFound'
+        '409':
+          $ref: '#/components/responses/MarketWarmupConflict'
 components:
+  responses:
+    MarketWarmupBadRequest:
+      description: Requisição inválida para o contrato da Etapa 3. Use quando houver campo obrigatório ausente, tipo inválido, score fora de 0 a 100, `sourceIndex` inexistente ou tentativa de enviar JSON serializado em campo textual funcional.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MarketWarmupErrorResponse'
+    MarketWarmupForbidden:
+      description: Worker ou módulo sem permissão para executar contrato interno da Etapa 3.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MarketWarmupErrorResponse'
+    MarketWarmupNotFound:
+      description: Página, job, resumo, fontes ou sinais da Etapa 3 não encontrados.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MarketWarmupErrorResponse'
+    MarketWarmupConflict:
+      description: Estado operacional incompatível com a ação solicitada, como solicitar pesquisa sem análise comercial concluída, concluir job não reservado ou falhar job já finalizado.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MarketWarmupErrorResponse'
   parameters:
     PageId:
       in: path
@@ -534,6 +581,38 @@ components:
         type: integer
         format: int64
   schemas:
+    MarketWarmupErrorResponse:
+      type: object
+      required: [errorCode, message, timestamp]
+      description: Erro padronizado dos contratos da Etapa 3, sem payload bruto, segredo ou JSON serializado em campo textual funcional.
+      properties:
+        errorCode:
+          type: string
+          description: Código estável para tratamento operacional.
+          example: MARKET_WARMUP_INVALID_STATE
+        message:
+          type: string
+          description: Mensagem objetiva para operador ou worker entender a causa provável.
+          example: A página ainda não possui análise comercial concluída para iniciar a Etapa 3.
+        field:
+          type: string
+          nullable: true
+          description: Campo inválido quando o erro for de validação de contrato.
+          example: summary.scoreTotal
+        jobId:
+          type: integer
+          format: int64
+          nullable: true
+          description: Job relacionado ao erro, quando disponível.
+        pageId:
+          type: integer
+          format: int64
+          nullable: true
+          description: Página relacionada ao erro, quando disponível.
+        timestamp:
+          type: string
+          format: date-time
+          description: Momento em que o backend gerou a resposta de erro.
     MarketWarmupJobStatus:
       type: string
       enum: [PENDING, FETCHING, DONE, FAILED]

@@ -3,8 +3,13 @@ package com.marketinghub.oprm.nichocnae.enrichednichematerializer.service;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.MarketNicheEnrichmentProfile;
 import com.marketinghub.oprm.cnae.OprmNicheCandidate;
+import com.marketinghub.oprm.nichocnae.OprmExtractedSignal;
+import com.marketinghub.oprm.nichocnae.OprmNicheResearchSeed;
 import com.marketinghub.oprm.nichocnae.OprmNicheRoutineCard;
+import com.marketinghub.oprm.nichocnae.OprmResearchQuery;
 import com.marketinghub.oprm.nichocnae.OprmRoutineResearchCycle;
+import com.marketinghub.oprm.nichocnae.OprmSourceCandidate;
+import com.marketinghub.oprm.nichocnae.OprmSourceSnapshot;
 import com.marketinghub.oprm.nichocnae.enrichednichematerializer.service.completeStageExecution.CompleteEnrichedNicheMaterializerRequest;
 import com.marketinghub.oprm.nichocnae.enrichednichematerializer.service.completeStageExecution.CompleteEnrichedNicheMaterializerResponse;
 import com.marketinghub.oprm.nichocnae.enrichednichematerializer.service.detailStageExecution.EnrichedNicheMaterializerDetailResponse;
@@ -15,14 +20,22 @@ import com.marketinghub.oprm.nichocnae.enrichednichematerializer.service.pending
 import com.marketinghub.repository.jpa.niche.MarketNicheEnrichmentProfileRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import com.marketinghub.repository.jpa.oprm.cnae.OprmNicheCandidateRepository;
+import com.marketinghub.repository.jpa.oprm.nichocnae.OprmExtractedSignalRepository;
+import com.marketinghub.repository.jpa.oprm.nichocnae.OprmNicheResearchSeedRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmNicheRoutineCardRepository;
+import com.marketinghub.repository.jpa.oprm.nichocnae.OprmResearchQueryRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmRoutineResearchCycleRepository;
+import com.marketinghub.repository.jpa.oprm.nichocnae.OprmSourceCandidateRepository;
+import com.marketinghub.repository.jpa.oprm.nichocnae.OprmSourceSnapshotRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,6 +55,11 @@ public class BackendEnrichedNicheMaterializerService {
   private final OprmRoutineResearchCycleRepository cycleRepository;
   private final OprmNicheRoutineCardRepository routineCardRepository;
   private final OprmNicheCandidateRepository nicheCandidateRepository;
+  private final OprmNicheResearchSeedRepository seedRepository;
+  private final OprmResearchQueryRepository researchQueryRepository;
+  private final OprmSourceCandidateRepository sourceCandidateRepository;
+  private final OprmSourceSnapshotRepository sourceSnapshotRepository;
+  private final OprmExtractedSignalRepository extractedSignalRepository;
   private final MarketNicheRepository marketNicheRepository;
   private final MarketNicheEnrichmentProfileRepository enrichmentProfileRepository;
 
@@ -50,11 +68,21 @@ public class BackendEnrichedNicheMaterializerService {
       OprmRoutineResearchCycleRepository cycleRepository,
       OprmNicheRoutineCardRepository routineCardRepository,
       OprmNicheCandidateRepository nicheCandidateRepository,
+      OprmNicheResearchSeedRepository seedRepository,
+      OprmResearchQueryRepository researchQueryRepository,
+      OprmSourceCandidateRepository sourceCandidateRepository,
+      OprmSourceSnapshotRepository sourceSnapshotRepository,
+      OprmExtractedSignalRepository extractedSignalRepository,
       MarketNicheRepository marketNicheRepository,
       MarketNicheEnrichmentProfileRepository enrichmentProfileRepository) {
     this.cycleRepository = cycleRepository;
     this.routineCardRepository = routineCardRepository;
     this.nicheCandidateRepository = nicheCandidateRepository;
+    this.seedRepository = seedRepository;
+    this.researchQueryRepository = researchQueryRepository;
+    this.sourceCandidateRepository = sourceCandidateRepository;
+    this.sourceSnapshotRepository = sourceSnapshotRepository;
+    this.extractedSignalRepository = extractedSignalRepository;
     this.marketNicheRepository = marketNicheRepository;
     this.enrichmentProfileRepository = enrichmentProfileRepository;
   }
@@ -124,6 +152,22 @@ public class BackendEnrichedNicheMaterializerService {
     OprmRoutineResearchCycle cycle = findCycle(profile.getResearchCycleId());
     OprmNicheRoutineCard card = routineCardRepository.findFirstByResearchCycleIdOrderByIdDesc(profile.getResearchCycleId()).orElse(null);
     return buildDetailResponse(cycle, card, profile);
+  }
+
+  /** Gera o documento Markdown de auditoria do pipeline completo a partir do perfil enriquecido final. */
+  @Transactional(readOnly = true)
+  public String buildPipelineMarkdownByProfileId(Long profileId) {
+    MarketNicheEnrichmentProfile profile = enrichmentProfileRepository.findById(profileId)
+        .orElseThrow(() -> new EntityNotFoundException("Enriched niche profile not found: " + profileId));
+    OprmRoutineResearchCycle cycle = findCycle(profile.getResearchCycleId());
+    OprmNicheRoutineCard card = routineCardRepository.findFirstByResearchCycleIdOrderByIdDesc(profile.getResearchCycleId()).orElse(null);
+    OprmNicheResearchSeed seed = seedRepository.findByResearchCycleId(profile.getResearchCycleId()).orElse(null);
+    List<OprmResearchQuery> queries = researchQueryRepository.findByResearchCycleIdOrderByPriorityAscIdAsc(profile.getResearchCycleId());
+    List<OprmSourceCandidate> candidates = sourceCandidateRepository.findByResearchCycleIdOrderByResearchQueryIdAscSearchPositionAscIdAsc(
+        profile.getResearchCycleId());
+    List<OprmSourceSnapshot> snapshots = sourceSnapshotRepository.findByResearchCycleIdOrderByIdAsc(profile.getResearchCycleId());
+    List<OprmExtractedSignal> signals = extractedSignalRepository.findByResearchCycleIdOrderByIdAsc(profile.getResearchCycleId());
+    return buildPipelineMarkdown(profile, cycle, card, seed, queries, candidates, snapshots, signals);
   }
 
   /** Localiza ciclos e perfis históricos com termos de solução para orientar reprocessamento neutro. */
@@ -235,6 +279,230 @@ public class BackendEnrichedNicheMaterializerService {
         "Perguntas observadas:\n" + card.getResultsSummary(),
         "Contexto operacional e linguagem pública:\n" + materializableOperationalContext(card),
         "Evidências e fontes públicas:\n" + card.getEvidenceSummary());
+  }
+
+  /** Monta o Markdown final combinando dados de todas as etapas persistidas do pipeline. */
+  private String buildPipelineMarkdown(
+      MarketNicheEnrichmentProfile profile,
+      OprmRoutineResearchCycle cycle,
+      OprmNicheRoutineCard card,
+      OprmNicheResearchSeed seed,
+      List<OprmResearchQuery> queries,
+      List<OprmSourceCandidate> candidates,
+      List<OprmSourceSnapshot> snapshots,
+      List<OprmExtractedSignal> signals) {
+    StringBuilder markdown = new StringBuilder();
+    markdown.append("# Pesquisa OPRM NichoCNAE — ").append(markdownText(profile.getNeutralNicheName())).append("\n\n");
+    appendKeyValue(markdown, "Perfil enriquecido", profile.getId());
+    appendKeyValue(markdown, "Nicho", profile.getMarketNiche().getId());
+    appendKeyValue(markdown, "Ciclo de pesquisa", cycle.getId());
+    appendKeyValue(markdown, "Status final", cycle.getStatus());
+    appendKeyValue(markdown, "CNAE", profile.getCnaeCode() + " - " + profile.getCnaeDescription());
+    appendKeyValue(markdown, "Materializado em", profile.getCreatedAt());
+    markdown.append("\n");
+
+    appendSection(markdown, "1. Abertura do ciclo", "O ciclo iniciou a pesquisa de rotina real do nicho, preservando o nome original apenas para auditoria e usando nome neutro para evitar contaminação por solução.");
+    appendKeyValue(markdown, "Nome original", cycle.getOriginalNicheName());
+    appendKeyValue(markdown, "Nome neutro", cycle.getNeutralNicheName());
+    appendKeyValue(markdown, "Modo de pesquisa", cycle.getResearchMode());
+    appendKeyValue(markdown, "Score OPRM", cycle.getSourceScore());
+    appendKeyValue(markdown, "Risco inicial de linguagem de solução", cycle.getSolutionLanguageRiskScore());
+    appendKeyValue(markdown, "Início", cycle.getStartedAt());
+    appendKeyValue(markdown, "Fim", cycle.getFinishedAt());
+
+    appendSeedSection(markdown, seed);
+    appendQueriesSection(markdown, queries);
+    appendCandidatesSection(markdown, candidates);
+    appendSnapshotsSection(markdown, snapshots);
+    appendSignalsSection(markdown, signals);
+    appendRoutineCardSection(markdown, card);
+    appendFinalConclusionSection(markdown, profile, cycle, card, queries, candidates, snapshots, signals);
+    return markdown.toString();
+  }
+
+  /** Adiciona a seção de seed operacional quando a etapa inicial foi persistida. */
+  private void appendSeedSection(StringBuilder markdown, OprmNicheResearchSeed seed) {
+    appendSection(markdown, "2. Seed de pesquisa", "Perfil operacional usado para orientar as buscas sem criar oferta ou hipótese comercial.");
+    if (seed == null) {
+      markdown.append("Seed não encontrado para este ciclo.\n");
+      return;
+    }
+    appendKeyValue(markdown, "Tipo de negócio", seed.getBusinessType());
+    appendKeyValue(markdown, "Tipo de operação", seed.getOperationType());
+    appendKeyValue(markdown, "Tipo de cliente", seed.getCustomerType());
+    appendKeyValue(markdown, "Objetos comerciais observáveis", seed.getCommercialObjects());
+    appendKeyValue(markdown, "Suposições iniciais de rotina", seed.getInitialAssumptions());
+    appendKeyValue(markdown, "Nível de confiança", seed.getConfidenceLevel());
+  }
+
+  /** Adiciona a seção de queries processadas pela busca de fontes. */
+  private void appendQueriesSection(StringBuilder markdown, List<OprmResearchQuery> queries) {
+    appendSection(markdown, "3. Frases de pesquisa processadas", "Consultas executáveis usadas para procurar rotina, dificuldades, perguntas, linguagem e contexto operacional.");
+    appendKeyValue(markdown, "Total de queries", queries.size());
+    queries.forEach(query -> markdown
+        .append("- #").append(query.getId())
+        .append(" · ").append(markdownText(query.getQueryGoal()))
+        .append(" · prioridade ").append(valueText(query.getPriority()))
+        .append(" · status ").append(markdownText(query.getStatus()))
+        .append(" · resultados ").append(valueText(query.getResultCount()))
+        .append("\n  - Query: ").append(markdownText(query.getQueryText()))
+        .append("\n"));
+  }
+
+  /** Adiciona a seção de fontes candidatas encontradas na pesquisa. */
+  private void appendCandidatesSection(StringBuilder markdown, List<OprmSourceCandidate> candidates) {
+    appendSection(markdown, "4. Fontes candidatas encontradas", "Fontes localizadas pela busca antes da coleta curta de evidências.");
+    appendKeyValue(markdown, "Total de fontes candidatas", candidates.size());
+    appendCounts(markdown, "Por status", candidates.stream().map(OprmSourceCandidate::getStatus).toList());
+    candidates.forEach(candidate -> markdown
+        .append("- #").append(candidate.getId())
+        .append(" · ").append(markdownText(candidate.getSourceDomain()))
+        .append(" · status ").append(markdownText(candidate.getStatus()))
+        .append(" · intenção ").append(markdownText(candidate.getSourceIntent()))
+        .append(" · score rotina ").append(valueText(candidate.getRoutineEvidenceScore()))
+        .append("\n  - Título: ").append(markdownText(candidate.getSourceTitle()))
+        .append("\n  - URL: ").append(markdownText(candidate.getSourceUrl()))
+        .append("\n  - Snippet: ").append(markdownText(candidate.getSourceSnippet()))
+        .append("\n"));
+  }
+
+  /** Adiciona a seção de snapshots curtos coletados das fontes selecionadas. */
+  private void appendSnapshotsSection(StringBuilder markdown, List<OprmSourceSnapshot> snapshots) {
+    appendSection(markdown, "5. Evidências curtas coletadas", "Trechos curtos e metadados coletados das fontes selecionadas para extração de sinais.");
+    appendKeyValue(markdown, "Total de snapshots", snapshots.size());
+    appendCounts(markdown, "Por intenção da fonte", snapshots.stream().map(OprmSourceSnapshot::getSourceIntent).toList());
+    snapshots.forEach(snapshot -> markdown
+        .append("- #").append(snapshot.getId())
+        .append(" · ").append(markdownText(snapshot.getSourceDomain()))
+        .append(" · fetch ").append(markdownText(snapshot.getFetchStatus()))
+        .append(" · extração ").append(markdownText(snapshot.getSignalExtractionStatus()))
+        .append(" · score rotina ").append(valueText(snapshot.getRoutineEvidenceScore()))
+        .append("\n  - Título: ").append(markdownText(snapshot.getSourceTitle()))
+        .append("\n  - Trecho: ").append(markdownText(snapshot.getShortExcerpt()))
+        .append("\n"));
+  }
+
+  /** Adiciona a seção de sinais estruturados extraídos das evidências. */
+  private void appendSignalsSection(StringBuilder markdown, List<OprmExtractedSignal> signals) {
+    appendSection(markdown, "6. Sinais extraídos", "Sinais classificados que sustentaram a síntese da rotina, dificuldades, perguntas e linguagem pública.");
+    appendKeyValue(markdown, "Total de sinais", signals.size());
+    appendCounts(markdown, "Por tipo de sinal", signals.stream().map(OprmExtractedSignal::getSignalType).toList());
+    signals.forEach(signal -> markdown
+        .append("- #").append(signal.getId())
+        .append(" · ").append(markdownText(signal.getSignalType()))
+        .append(" · ").append(markdownText(signal.getSourceDomain()))
+        .append(" · confiança ").append(valueText(signal.getConfidenceScore()))
+        .append("%\n  - Sinal: ").append(markdownText(signal.getSignalText()))
+        .append("\n  - Evidência: ").append(markdownText(signal.getEvidenceExcerpt()))
+        .append("\n"));
+  }
+
+  /** Adiciona a seção do cartão sintetizado e da decisão do gate de qualidade. */
+  private void appendRoutineCardSection(StringBuilder markdown, OprmNicheRoutineCard card) {
+    appendSection(markdown, "7. Síntese da rotina e gate de qualidade", "Card consolidado com a decisão de qualidade antes da materialização do nicho enriquecido.");
+    if (card == null) {
+      markdown.append("Cartão de rotina não encontrado para este ciclo.\n");
+      return;
+    }
+    appendKeyValue(markdown, "Card", card.getId());
+    appendKeyValue(markdown, "Status de qualidade", card.getQualityStatus());
+    appendKeyValue(markdown, "Aprovado para materialização", card.getReadyForHypothesis());
+    appendKeyValue(markdown, "Score de evidência de rotina", card.getRoutineEvidenceScore());
+    appendKeyValue(markdown, "Score de evidência de dificuldade", card.getDifficultyEvidenceScore());
+    appendKeyValue(markdown, "Diversidade de fontes", card.getSourceDiversityScore());
+    appendKeyValue(markdown, "Risco de linguagem de solução", card.getSolutionLanguageRiskScore());
+    appendTextBlock(markdown, "Rotina observada", card.getRoutineSummary());
+    appendTextBlock(markdown, "Dores observadas", card.getPainsSummary());
+    appendTextBlock(markdown, "Perguntas/resultados observados", card.getResultsSummary());
+    appendTextBlock(markdown, "Contexto operacional e linguagem", card.getMechanismOpportunitiesSummary());
+    appendTextBlock(markdown, "Evidências consolidadas", card.getEvidenceSummary());
+  }
+
+  /** Adiciona a conclusão final do nicho enriquecido materializado. */
+  private void appendFinalConclusionSection(
+      StringBuilder markdown,
+      MarketNicheEnrichmentProfile profile,
+      OprmRoutineResearchCycle cycle,
+      OprmNicheRoutineCard card,
+      List<OprmResearchQuery> queries,
+      List<OprmSourceCandidate> candidates,
+      List<OprmSourceSnapshot> snapshots,
+      List<OprmExtractedSignal> signals) {
+    appendSection(markdown, "8. Conclusão final do nicho enriquecido", "Resultado final materializado para uso nas próximas etapas, ainda sem criar hipótese, oferta ou campanha.");
+    appendKeyValue(markdown, "Status final", cycle.getStatus());
+    appendKeyValue(markdown, "Perfil enriquecido", profile.getId());
+    appendKeyValue(markdown, "Nicho operacional", profile.getMarketNiche().getId());
+    appendKeyValue(markdown, "Fontes", profile.getSourceDomains());
+    appendKeyValue(markdown, "Queries processadas", queries.size());
+    appendKeyValue(markdown, "Fontes candidatas processadas", candidates.size());
+    appendKeyValue(markdown, "Evidências curtas processadas", snapshots.size());
+    appendKeyValue(markdown, "Sinais processados", signals.size());
+    appendTextBlock(markdown, "Rotina final", profile.getRoutineSummary());
+    appendTextBlock(markdown, "Dores finais", profile.getPainsSummary());
+    appendTextBlock(markdown, "Perguntas/resultados finais", profile.getResultsSummary());
+    appendTextBlock(markdown, "Contexto operacional final", profile.getMechanismOpportunitiesSummary());
+    appendTextBlock(markdown, "Evidências finais", profile.getEvidenceSummary());
+    String quality = card == null ? "sem card de qualidade localizado" : card.getQualityStatus();
+    markdown.append("\n**Decisão operacional:** o nicho foi materializado como `")
+        .append(markdownText(cycle.getStatus()))
+        .append("` com qualidade `")
+        .append(markdownText(quality))
+        .append("`. Use este documento como auditoria da pesquisa de rotina real antes de avançar para hipótese, mecanismo, prova e oferta.\n");
+  }
+
+  /** Adiciona cabeçalho de seção com explicação curta de negócio. */
+  private void appendSection(StringBuilder markdown, String title, String description) {
+    markdown.append("\n## ").append(markdownText(title)).append("\n\n");
+    markdown.append(markdownText(description)).append("\n\n");
+  }
+
+  /** Adiciona campo simples ao documento Markdown. */
+  private void appendKeyValue(StringBuilder markdown, String label, Object value) {
+    markdown.append("- **").append(markdownText(label)).append(":** ").append(markdownText(valueText(value))).append("\n");
+  }
+
+  /** Adiciona bloco textual preservando quebras de linha úteis para auditoria. */
+  private void appendTextBlock(StringBuilder markdown, String label, String value) {
+    markdown.append("\n### ").append(markdownText(label)).append("\n\n");
+    markdown.append(markdownText(defaultText(value, "Não informado"))).append("\n");
+  }
+
+  /** Adiciona contagens agrupadas de valores processados. */
+  private void appendCounts(StringBuilder markdown, String label, List<String> values) {
+    Map<String, Long> counts = values.stream()
+        .filter(Objects::nonNull)
+        .map(this::defaultGroupText)
+        .collect(Collectors.groupingBy(Function.identity(), LinkedHashMap::new, Collectors.counting()));
+    if (counts.isEmpty()) {
+      return;
+    }
+    markdown.append("- **").append(markdownText(label)).append(":** ");
+    markdown.append(counts.entrySet().stream()
+        .map(entry -> markdownText(entry.getKey()) + " (" + entry.getValue() + ")")
+        .collect(Collectors.joining(", ")));
+    markdown.append("\n");
+  }
+
+  /** Normaliza textos nulos usados em agrupamentos do relatório. */
+  private String defaultGroupText(String value) {
+    return StringUtils.hasText(value) ? value.trim() : "Não informado";
+  }
+
+  /** Converte valores simples para texto seguro de exibição. */
+  private String valueText(Object value) {
+    if (value == null) {
+      return "Não informado";
+    }
+    String text = String.valueOf(value);
+    return StringUtils.hasText(text) ? text : "Não informado";
+  }
+
+  /** Remove caracteres de controle que poderiam quebrar o arquivo Markdown baixado pelo usuário. */
+  private String markdownText(String text) {
+    if (text == null) {
+      return "Não informado";
+    }
+    return text.replace("\r\n", "\n").replace('\r', '\n').replace("\u0000", "").trim();
   }
 
   /** Monta dicas operacionais de uso do nicho para próximas etapas sem acionar hipótese. */

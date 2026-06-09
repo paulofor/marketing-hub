@@ -577,6 +577,33 @@ paths:
         '404':
           description: Perfil de nicho enriquecido ou ciclo de pesquisa não encontrado.
 
+
+  /api/oprm/nichocnae/enriched-niche-materializer/profiles/{profileId}/pipeline-markdown:
+    get:
+      summary: Baixa documento Markdown com auditoria completa do pipeline e conclusão final do nicho enriquecido.
+      tags: [OPRM Nicho CNAE]
+      parameters:
+        - name: profileId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Documento Markdown baixável com todo o pipeline processado.
+          headers:
+            Content-Disposition:
+              description: Nome do arquivo Markdown para download.
+              schema:
+                type: string
+          content:
+            text/markdown:
+              schema:
+                type: string
+        '404':
+          description: Perfil de nicho enriquecido ou ciclo de pesquisa não encontrado.
+
 components:
   parameters:
     ResearchCycleId:

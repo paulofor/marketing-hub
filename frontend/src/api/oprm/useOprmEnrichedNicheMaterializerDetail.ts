@@ -76,3 +76,11 @@ export function useOprmEnrichedNicheMaterializerProfileDetail(
     enabled: Boolean(profileId),
   });
 }
+
+export function buildOprmEnrichedNichePipelineMarkdownUrl(
+  profileId?: number | null,
+) {
+  return buildApiUrl(
+    `/api/oprm/nichocnae/enriched-niche-materializer/profiles/${profileId}/pipeline-markdown`,
+  );
+}

@@ -8,6 +8,8 @@ import com.marketinghub.oprm.nichocnae.enrichednichematerializer.service.diagnos
 import com.marketinghub.oprm.nichocnae.enrichednichematerializer.service.failStageExecution.FailEnrichedNicheMaterializerRequest;
 import com.marketinghub.oprm.nichocnae.enrichednichematerializer.service.pending.RecordEnrichedNicheMaterializerPending;
 import java.util.List;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -58,6 +60,18 @@ public class BackendEnrichedNicheMaterializerController {
   @GetMapping("/api/oprm/nichocnae/enriched-niche-materializer/profiles/{profileId}")
   public ResponseEntity<EnrichedNicheMaterializerDetailResponse> detailByProfileId(@PathVariable Long profileId) {
     return ResponseEntity.ok(executionService.detailByProfileId(profileId));
+  }
+
+  /** Entrega um documento Markdown baixável com auditoria de todo o pipeline processado para o perfil. */
+  @GetMapping(
+      value = "/api/oprm/nichocnae/enriched-niche-materializer/profiles/{profileId}/pipeline-markdown",
+      produces = "text/markdown;charset=UTF-8")
+  public ResponseEntity<String> downloadPipelineMarkdownByProfileId(@PathVariable Long profileId) {
+    String filename = "oprm-nicho-enriquecido-" + profileId + ".md";
+    return ResponseEntity.ok()
+        .contentType(MediaType.parseMediaType("text/markdown;charset=UTF-8"))
+        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+        .body(executionService.buildPipelineMarkdownByProfileId(profileId));
   }
 
   /** Diagnostica ciclos e perfis históricos com linguagem de solução para reprocessamento neutro. */

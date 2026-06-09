@@ -1,5 +1,8 @@
 import { Link, useParams } from "react-router-dom";
-import { useOprmEnrichedNicheMaterializerProfileDetail } from "../../api/oprm/useOprmEnrichedNicheMaterializerDetail";
+import {
+  buildOprmEnrichedNichePipelineMarkdownUrl,
+  useOprmEnrichedNicheMaterializerProfileDetail,
+} from "../../api/oprm/useOprmEnrichedNicheMaterializerDetail";
 import PageTitle from "../../components/PageTitle";
 import { useBreadcrumbs } from "../../app/breadcrumbs";
 
@@ -64,9 +67,20 @@ export default function OprmEnrichedNicheDetailPage() {
     <div>
       <div className="d-flex align-items-center justify-content-between gap-3 mb-3">
         <PageTitle>Nicho enriquecido</PageTitle>
-        <Link className="btn btn-outline-secondary" to="/niches">
-          Voltar para nichos
-        </Link>
+        <div className="d-flex gap-2">
+          <a
+            className="btn btn-primary"
+            href={buildOprmEnrichedNichePipelineMarkdownUrl(
+              data.enrichedNicheProfileId,
+            )}
+            download={`oprm-nicho-enriquecido-${data.enrichedNicheProfileId}.md`}
+          >
+            Baixar pesquisa Markdown
+          </a>
+          <Link className="btn btn-outline-secondary" to="/niches">
+            Voltar para nichos
+          </Link>
+        </div>
       </div>
 
       <section className="card mb-3">

@@ -154,6 +154,27 @@ public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
     List<Experiment> findAllReadyForAdSets(@Param("platform") ExperimentPlatform platform,
                                            @Param("statuses") List<ExperimentStatus> statuses);
 
+    /**
+     * Busca um experimento específico para resolver targeting de ad set sem depender do status operacional atual.
+     */
+    @Query("""
+            select distinct e from Experiment e
+            join fetch e.niche n
+            join fetch e.hypothesisRef h
+            where e.id = :experimentId
+              and e.platform = :platform
+              and e.creativeApproved = true
+              and exists (
+                    select 1 from TargetingElement te
+                    where te.niche = e.niche
+                      and te.type = com.marketinghub.targeting.TargetingElementType.JOB_TITLE
+                      and te.status = com.marketinghub.targeting.TargetingElementStatus.APPROVED
+                      and (te.hypothesis is null or te.hypothesis = e.hypothesisRef)
+              )
+            """)
+    Optional<Experiment> findForAdSetTargetingById(@Param("experimentId") Long experimentId,
+                                                   @Param("platform") ExperimentPlatform platform);
+
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("update Experiment e set e.facebookPage = null where e.facebookPage.id = :facebookPageId")
     int clearFacebookPageById(@Param("facebookPageId") Long facebookPageId);

@@ -596,3 +596,10 @@ Cada entrada descreve:
 - Riscos abertos: campos de status divergentes entre providers reais e parser atual; timeout insuficiente para renders longos.
 - Dependências externas: credenciais e documentação final do provider real por ambiente.
 - Onde continuar: `video-management-service/src/main/java/com/marketinghub/videomanagement/service/provider/RealVideoProvider.java`.
+
+## 2026-06-09 — Padronização do pacote backend `com.marketinghub.salesvideo`
+
+- O módulo foi reorganizado para concentrar todos os contratos REST em `backend/ads-service/src/main/java/com/marketinghub/salesvideo/controller/SalesVideoController.java`.
+- Foi criada a fachada `backend/ads-service/src/main/java/com/marketinghub/salesvideo/service/SalesVideoService.java` para ser o único `@Service` e ponto de orquestração do módulo no backend.
+- Os controllers antigos em `com.marketinghub.salesvideo.web` foram removidos para evitar múltiplas entradas HTTP no mesmo módulo.
+- Os contratos HTTP existentes foram preservados para não quebrar frontend, `ai-worker` e integrações internas de renderização.

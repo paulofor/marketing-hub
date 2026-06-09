@@ -1,11 +1,11 @@
-package com.marketinghub.salesvideo.web;
+package com.marketinghub.salesvideo.controller;
 
 import com.marketinghub.media.Asset;
 import com.marketinghub.media.AssetStatus;
 import com.marketinghub.media.AssetType;
 import com.marketinghub.media.MediaProvider;
 import com.marketinghub.media.mapper.AssetMapperImpl;
-import com.marketinghub.salesvideo.service.SalesVideoAssetService;
+import com.marketinghub.salesvideo.service.SalesVideoService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -21,7 +21,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(SalesVideoAssetController.class)
+@WebMvcTest(SalesVideoController.class)
 @Import(AssetMapperImpl.class)
 class SalesVideoAssetControllerTest {
 
@@ -29,7 +29,7 @@ class SalesVideoAssetControllerTest {
     private MockMvc mockMvc;
 
     @MockBean
-    private SalesVideoAssetService assetService;
+    private SalesVideoService salesVideoService;
 
     @Test
     void shouldUploadFileAndReturnAssetDto() throws Exception {
@@ -40,7 +40,7 @@ class SalesVideoAssetControllerTest {
                 .status(AssetStatus.READY)
                 .url("https://cdn.local/video.mp4")
                 .build();
-        when(assetService.store(any(), any(), any(), any())).thenReturn(asset);
+        when(salesVideoService.storeAsset(any(), any(), any(), any())).thenReturn(asset);
 
         MockMultipartFile file = new MockMultipartFile(
                 "file",

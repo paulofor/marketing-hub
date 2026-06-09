@@ -16,7 +16,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
@@ -28,7 +28,7 @@ import java.util.Optional;
 /**
  * Contém as regras de negócio relativas aos jobs do módulo de vídeo.
  */
-@Service
+@Component
 public class SalesVideoJobService {
     private static final int MAX_PAGE_SIZE = 200;
 

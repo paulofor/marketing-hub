@@ -10,7 +10,7 @@ import com.marketinghub.salesvideo.dto.*;
 import com.marketinghub.salesvideo.exception.VideoModuleErrorCode;
 import com.marketinghub.salesvideo.exception.VideoModuleException;
 import com.marketinghub.salesvideo.tenant.TenantContextHolder;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
@@ -18,7 +18,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.*;
 
-@Service
+@Component
 public class SalesVideoCommercialInsightsService {
     private final SalesVideoProfileRepository profileRepository;
     private final SalesVideoJobRepository jobRepository;

@@ -16,7 +16,7 @@ import com.marketinghub.repository.jpa.salesvideo.LandingVideoSlotHistoryReposit
 import com.marketinghub.repository.jpa.salesvideo.LandingVideoSlotRepository;
 import com.marketinghub.repository.jpa.salesvideo.SalesVideoProfileRepository;
 import com.marketinghub.salesvideo.tenant.TenantContextHolder;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
@@ -26,7 +26,7 @@ import java.util.List;
 /**
  * Gerencia os slots de publicação de vídeo nas landing pages.
  */
-@Service
+@Component
 public class LandingVideoSlotService {
     private final LandingVideoSlotRepository slotRepository;
     private final LandingPageRepository landingPageRepository;

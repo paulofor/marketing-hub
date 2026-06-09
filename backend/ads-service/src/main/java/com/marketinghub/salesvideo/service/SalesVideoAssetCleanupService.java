@@ -11,7 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
 import java.time.Duration;
@@ -23,7 +23,7 @@ import java.util.Optional;
 /**
  * Executa a limpeza de assets órfãos gerados pelo módulo de vídeo.
  */
-@Service
+@Component
 public class SalesVideoAssetCleanupService {
     private static final Logger LOGGER = LoggerFactory.getLogger(SalesVideoAssetCleanupService.class);
     private static final String SELECT_ORPHANS = """

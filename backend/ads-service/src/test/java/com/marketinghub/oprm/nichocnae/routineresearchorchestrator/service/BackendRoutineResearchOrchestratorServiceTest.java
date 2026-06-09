@@ -162,6 +162,44 @@ class BackendRoutineResearchOrchestratorServiceTest {
         assertThat(candidateCaptor.getValue().getLastRoutineResearchCycleId()).isEqualTo(322L);
     }
 
+    /** Deve criar novo ciclo via front-end quando o card aprovado falhou na materialização final. */
+    @Test
+    void reprocessEnrichedNicheFailedCycleCreatesNewCycleImmediately() {
+        OprmRoutineResearchCycle failedMaterializationCycle = cycle(
+                321L, 55L, "Cabeleireiros e manicures", "2026-06-03T01:00:00Z");
+        failedMaterializationCycle.setStatus("ENRICHED_NICHE_FAILED");
+        failedMaterializationCycle.setErrorMessage("NullPointerException");
+        OprmNicheCandidate candidate = candidate();
+        candidate.setRoutineResearchStatus("RESEARCH_RUNNING");
+        candidate.setLastRoutineResearchCycleId(321L);
+        when(routineResearchCycleRepository.findById(321L)).thenReturn(Optional.of(failedMaterializationCycle));
+        when(nicheCandidateRepository.findById(55L)).thenReturn(Optional.of(candidate));
+        when(routineResearchCycleRepository.save(any(OprmRoutineResearchCycle.class)))
+                .thenAnswer(invocation -> {
+                    OprmRoutineResearchCycle newCycle = invocation.getArgument(0);
+                    newCycle.setId(322L);
+                    return newCycle;
+                });
+        when(nicheCandidateRepository.save(any(OprmNicheCandidate.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        var result = service.reprocessCycle(321L);
+
+        assertThat(result.researchCycleId()).isEqualTo(322L);
+        assertThat(result.previousCycleStatus()).isEqualTo("ENRICHED_NICHE_FAILED");
+        assertThat(result.message()).contains("refazer pelo front-end");
+
+        ArgumentCaptor<OprmRoutineResearchCycle> cycleCaptor = ArgumentCaptor.forClass(OprmRoutineResearchCycle.class);
+        verify(routineResearchCycleRepository).save(cycleCaptor.capture());
+        assertThat(cycleCaptor.getValue().getStatus()).isEqualTo("RUNNING");
+        assertThat(cycleCaptor.getValue().getTriggerSource()).isEqualTo("MANUAL_REPROCESS");
+
+        ArgumentCaptor<OprmNicheCandidate> candidateCaptor = ArgumentCaptor.forClass(OprmNicheCandidate.class);
+        verify(nicheCandidateRepository).save(candidateCaptor.capture());
+        assertThat(candidateCaptor.getValue().getRoutineResearchStatus()).isEqualTo("RESEARCH_RUNNING");
+        assertThat(candidateCaptor.getValue().getLastRoutineResearchCycleId()).isEqualTo(322L);
+    }
+
     /** Deve criar ciclo e marcar o candidato como em pesquisa quando existir nicho pendente. */
     @Test
     void runNextCreatesCycleAndMarksCandidateRunning() {

@@ -267,6 +267,127 @@ describe("OprmPipelinePage", () => {
     ).toBeTruthy();
   });
 
+  it("permite refazer pelo front-end quando a materialização do nicho enriquecido falha", async () => {
+    const fetchMock = vi.fn(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = input.toString();
+        if (
+          url.includes("routine-research-orchestrator/recent-processed") &&
+          init?.method === "POST"
+        ) {
+          return new Response(
+            JSON.stringify({
+              researchCycleId: 12,
+              sourceNicheId: 1,
+              cnaeCode: "9602501",
+              cnaeDescription: "Cabeleireiros, manicure e pedicure",
+              previousCycleStatus: "ENRICHED_NICHE_FAILED",
+              previousRoutineResearchStatus: "RESEARCH_RUNNING",
+              routineResearchStatus: "RESEARCH_RUNNING",
+              lastRoutineResearchCycleId: 12,
+              message:
+                "Novo ciclo de pesquisa de rotina criado imediatamente para refazer pelo front-end um CNAE aprovado cuja materialização falhou.",
+            }),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+          );
+        }
+
+        if (url.includes("routine-research-orchestrator/recent-processed")) {
+          return new Response(
+            JSON.stringify([
+              {
+                researchCycleId: 11,
+                sourceNicheId: 1,
+                cnaeCode: "9602501",
+                cnaeDescription: "Cabeleireiros, manicure e pedicure",
+                nicheName: "Cabeleireiros, manicure e pedicure",
+                originalNicheName:
+                  "IA para crescimento de Cabeleireiros, manicure e pedicure",
+                neutralNicheName: "Cabeleireiros, manicure e pedicure",
+                researchMode: "ROUTINE_REALITY_RESEARCH",
+                solutionLanguageRiskScore: 100,
+                sourceScore: 90,
+                triggerSource: "AUTO_SCORE_QUEUE",
+                cycleStatus: "ENRICHED_NICHE_FAILED",
+                processedAt: "2026-06-08T20:33:56Z",
+                finishedAt: "2026-06-09T01:50:04Z",
+                errorMessage: "NullPointerException",
+              },
+            ]),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+          );
+        }
+
+        if (url.includes("enriched-niche-materializer/stage-executions/11")) {
+          return new Response(
+            JSON.stringify({
+              researchCycleId: 11,
+              cycleStatus: "ENRICHED_NICHE_FAILED",
+              routineCardId: 8,
+              marketNicheId: null,
+              enrichedNicheProfileId: null,
+              originalNicheName:
+                "IA para crescimento de Cabeleireiros, manicure e pedicure",
+              neutralNicheName: "Cabeleireiros, manicure e pedicure",
+              researchMode: "ROUTINE_REALITY_RESEARCH",
+              solutionLanguageRiskScore: 100,
+              nicheName: "Cabeleireiros, manicure e pedicure",
+              cnaeCode: "9602501",
+              qualityStatus: "LIGHTLY_RESEARCHED",
+              routineSummary: null,
+              painsSummary: null,
+              resultsSummary: null,
+              mechanismOpportunitiesSummary: null,
+              evidenceSummary: null,
+              sourceDomains: null,
+              routineEvidenceScore: 82,
+              difficultyEvidenceScore: 84,
+              sourceDiversityScore: 100,
+              materializedSolutionLanguageRiskScore: 18,
+              materializedAt: null,
+            }),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+          );
+        }
+
+        return new Response("[]", {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      },
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    renderPage();
+
+    expect(
+      (await screen.findAllByText("NullPointerException")).length,
+    ).toBeGreaterThan(0);
+    expect(
+      await screen.findByText(
+        "A materialização falhou antes de criar o nicho enriquecido.",
+      ),
+    ).toBeTruthy();
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Refazer pelo front-end" }),
+    );
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining(
+          "routine-research-orchestrator/recent-processed/11/reprocess",
+        ),
+        { method: "POST" },
+      );
+    });
+    expect(
+      await screen.findByText(
+        "Novo ciclo de pesquisa de rotina criado imediatamente para refazer pelo front-end um CNAE aprovado cuja materialização falhou.",
+      ),
+    ).toBeTruthy();
+  });
+
   it("mostra o ponto do problema quando a pesquisa precisa aprofundar evidências", async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = input.toString();

@@ -4155,3 +4155,11 @@
 - foi feito: o schema backend passou a descrever o papel comercial de cada campo estratégico e removeu `funnelStage`; o backend também rejeita respostas de `campaignAngle` com campos vazios ou com `funnelStage` antes de persistir no experimento.
 - ajuste posterior: por decisão de produto, o prompt `campaign-angle` passou para `v3` e a etapa de ângulo deixou de solicitar detalhes de dor, resultado, prova e oferta no contrato final, pois esses blocos já são cobertos nos demais prompts do pipeline. O contrato do ângulo ficou focado em framing visual, hook, mecanismo narrativo, CTA, continuidade, filtro de público, objeções, message match e diferenciação.
 - impacto esperado: a etapa não deve mais avançar com ângulo vazio, preservando a qualidade comercial do pipeline antes de gerar anúncios, imagens e landing.
+
+## 2026-06-09 — Publicação de campanha com público selecionado no Marketing Hub
+
+- solicitação: garantir que a criação da campanha do experimento use o público definido no Marketing Hub e mantenha logs das respostas da Meta/Facebook.
+- causa-raiz: o fallback manual do Facebook Ads Worker buscava o pacote aprovado por nicho via `/api/facebook-adsets/experiments-ready`, mas o backend montava esse pacote a partir dos elementos aprovados do nicho, não priorizando as seleções salvas em `experiment_targeting_selection` para o experimento específico.
+- foi feito: o endpoint de pacotes prontos para ad sets passou a aceitar filtro opcional `experimentId` e o service passou a priorizar os elementos de segmentação selecionados no experimento, enviando apenas itens aprovados e com `metaId` oficial.
+- foi feito: quando não houver seleção manual salva, o comportamento antigo de fallback por elementos aprovados do nicho continua disponível, também filtrando itens sem `metaId` para evitar público amplo ou inválido.
+- impacto esperado: ao reenfileirar a publicação, o worker deve montar o targeting a partir do público escolhido no Marketing Hub e avançar até as chamadas de criação de campanha/ad set/criativo/anúncio, cujas respostas da Meta já são registradas em `experiment_facebook_api_log`.

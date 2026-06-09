@@ -1,5 +1,6 @@
 package com.marketinghub.facebookads.controller;
 
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -84,7 +85,7 @@ class FacebookAdSetControllerTest {
                 hypothesis,
                 new TargetingPackageDto(List.of(interest), List.of(jobTitle), List.of(behavior)));
 
-        when(experimentService.listExperimentsReadyForAdSets()).thenReturn(List.of(dto));
+        when(experimentService.listExperimentsReadyForAdSets(null)).thenReturn(List.of(dto));
 
         mockMvc.perform(get("/api/facebook-adsets/experiments-ready"))
                 .andExpect(status().isOk())
@@ -123,7 +124,7 @@ class FacebookAdSetControllerTest {
                 hypothesis,
                 new TargetingPackageDto(List.of(), List.of(jobTitle), List.of()));
 
-        when(experimentService.listExperimentsReadyForAdSets()).thenReturn(List.of(dto));
+        when(experimentService.listExperimentsReadyForAdSets(null)).thenReturn(List.of(dto));
 
         mockMvc.perform(get("/api/facebook-adsets/experiments-ready"))
                 .andExpect(status().isOk())
@@ -132,4 +133,23 @@ class FacebookAdSetControllerTest {
                 .andExpect(jsonPath("$[0].targeting.jobTitles[0].term").value("CMO"))
                 .andExpect(jsonPath("$[0].targeting.behaviors").isEmpty());
     }
+    @Test
+    void experimentsReadyAcceptsExperimentFilter() throws Exception {
+        ExperimentDto experiment = new ExperimentDto();
+        experiment.setId(38L);
+        experiment.setName("Filtered experiment");
+
+        ExperimentReadyForAdSetDto dto = new ExperimentReadyForAdSetDto(
+                experiment,
+                new MarketNicheDto(),
+                null,
+                new TargetingPackageDto(List.of(), List.of(), List.of()));
+
+        when(experimentService.listExperimentsReadyForAdSets(eq(38L))).thenReturn(List.of(dto));
+
+        mockMvc.perform(get("/api/facebook-adsets/experiments-ready").param("experimentId", "38"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].experiment.id").value(38));
+    }
+
 }

@@ -1174,3 +1174,13 @@ Arquivos alterados:
 - `frontend/src/api/pipeline/usePipelineMutations.ts`
 - `frontend/src/pages/pipeline/PipelineCrudPage.tsx`
 - `docs/registros/mois1.md`
+
+## 2026-06-09 — Plano da Etapa 3 de aquecimento e ecossistema de mercado
+
+- Criado plano de implementação da **Etapa 3 — Pesquisa de Aquecimento e Ecossistema de Mercado** para a Biblioteca de Páginas de Vendas do MOIS.
+- O plano separa a entrega em prompts executáveis, cobrindo canonização, schema, contratos, backend, worker, frontend, score, observabilidade e priorização comercial.
+- A proposta foca em transformar análises de páginas em dossiês de mercado com fontes, sinais, score de aquecimento, risco de saturação e recomendação de próximo experimento.
+
+Arquivos alterados:
+- `docs/implementacao/mois/plano-etapa-3-aquecimento-ecossistema-mercado.md`
+- `docs/registros/mois1.md`

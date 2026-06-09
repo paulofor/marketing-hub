@@ -22,16 +22,29 @@ databaseChangeLog:
               LEFT JOIN pipeline_stage existing_stage
                 ON existing_stage.pipeline_id = p.id
                AND existing_stage.code = 'reach-validation'
-              SET ps.position = ps.position + 1
+              SET ps.position = ps.position + 1000
               WHERE p.code = 'facebook-ads-publication-metrics-pipeline'
                 AND existing_stage.id IS NULL
-                AND ps.position >= 4;
+                AND ps.position >= 4
+                AND ps.position < 1000;
+
+              UPDATE pipeline_stage ps
+              INNER JOIN pipeline p ON p.id = ps.pipeline_id
+              LEFT JOIN pipeline_stage existing_stage
+                ON existing_stage.pipeline_id = p.id
+               AND existing_stage.code = 'reach-validation'
+              SET ps.position = ps.position - 999
+              WHERE p.code = 'facebook-ads-publication-metrics-pipeline'
+                AND existing_stage.id IS NULL
+                AND ps.position >= 1004
+                AND ps.position < 2000;
 
               INSERT INTO pipeline_stage (pipeline_id, position, name, code, description, required, active, created_at, updated_at)
               SELECT p.id, 4, 'Validação de alcance', 'reach-validation', 'Consulta reachestimate na Graph API antes da criação da campanha e bloqueia públicos fora da faixa operacional de 200.000 a 20.000.000 pessoas estimadas.', 1, 1, NOW(), NOW()
               FROM pipeline p
+              LEFT JOIN pipeline_stage ps ON ps.pipeline_id = p.id AND ps.code = 'reach-validation'
               WHERE p.code = 'facebook-ads-publication-metrics-pipeline'
-                AND NOT EXISTS (SELECT 1 FROM pipeline_stage ps WHERE ps.pipeline_id = p.id AND ps.code = 'reach-validation');
+                AND ps.id IS NULL;
 
 
   - changeSet:
@@ -94,24 +107,39 @@ databaseChangeLog:
               LEFT JOIN pipeline_stage_definition existing_stage
                 ON existing_stage.pipeline_definition_id = pd.id
                AND existing_stage.canonical_code = 'REACH_VALIDATION'
-              SET psd.position = psd.position + 1
+              SET psd.position = psd.position + 1000
               WHERE pd.code = 'facebook-ads-publication-metrics-pipeline'
                 AND pd.canonical_version = 'facebook-campaign-publication-canon.v1'
                 AND existing_stage.id IS NULL
-                AND psd.position >= 4;
+                AND psd.position >= 4
+                AND psd.position < 1000;
+
+              UPDATE pipeline_stage_definition psd
+              INNER JOIN pipeline_definition pd ON pd.id = psd.pipeline_definition_id
+              LEFT JOIN pipeline_stage_definition existing_stage
+                ON existing_stage.pipeline_definition_id = pd.id
+               AND existing_stage.canonical_code = 'REACH_VALIDATION'
+              SET psd.position = psd.position - 999
+              WHERE pd.code = 'facebook-ads-publication-metrics-pipeline'
+                AND pd.canonical_version = 'facebook-campaign-publication-canon.v1'
+                AND existing_stage.id IS NULL
+                AND psd.position >= 1004
+                AND psd.position < 2000;
 
               INSERT INTO pipeline_stage_definition (pipeline_definition_id, canonical_code, display_name, position, required, implemented_stage_enum, requires_openai_model, configurable, execution_module, root_package, created_at, updated_at)
               SELECT pd.id, 'REACH_VALIDATION', 'Validação de alcance', 4, 1, 'REACH_VALIDATION', 0, 1, 'facebook-ads-worker', 'com.marketinghub.facebookadsworker.facebookcampaign', NOW(), NOW()
               FROM pipeline_definition pd
+              LEFT JOIN pipeline_stage_definition psd ON psd.pipeline_definition_id = pd.id AND psd.canonical_code = 'REACH_VALIDATION'
               WHERE pd.code = 'facebook-ads-publication-metrics-pipeline'
                 AND pd.canonical_version = 'facebook-campaign-publication-canon.v1'
-                AND NOT EXISTS (SELECT 1 FROM pipeline_stage_definition psd WHERE psd.pipeline_definition_id = pd.id AND psd.canonical_code = 'REACH_VALIDATION');
+                AND psd.id IS NULL;
 
               INSERT INTO pipeline_stage_config (pipeline_stage_definition_id, active, openai_model_id, description_override, updated_by, created_at, updated_at)
               SELECT psd.id, 1, NULL, NULL, 'liquibase-facebook-ads-reach-validation-stage', NOW(), NOW()
               FROM pipeline_stage_definition psd
               INNER JOIN pipeline_definition pd ON pd.id = psd.pipeline_definition_id
+              LEFT JOIN pipeline_stage_config psc ON psc.pipeline_stage_definition_id = psd.id
               WHERE pd.code = 'facebook-ads-publication-metrics-pipeline'
                 AND pd.canonical_version = 'facebook-campaign-publication-canon.v1'
                 AND psd.canonical_code = 'REACH_VALIDATION'
-                AND NOT EXISTS (SELECT 1 FROM pipeline_stage_config psc WHERE psc.pipeline_stage_definition_id = psd.id);
+                AND psc.id IS NULL;

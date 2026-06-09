@@ -4225,3 +4225,10 @@
 - impacto esperado: o módulo passa a ter entrada HTTP única e service de orquestração único, reduzindo risco de contratos duplicados e facilitando a próxima etapa de migração dos DTOs para subpacotes por operação.
 - 2026-06-09 00:00:00 (UTC): adicionada etapa obrigatória `reach-validation` ao pipeline oficial Facebook Ads: antes de criar campanha/ad set/imagem/criativo/anúncio na Meta, o worker consulta `reachestimate` com o targeting final e bloqueia públicos fora da faixa canônica de 200.000 a 20.000.000 usuários estimados, evitando campanhas ativas com entrega inviável.
 - 2026-06-09 17:31:00 (UTC): ajustado o teste `PipelineServiceTest.shouldExposeOfficialFacebookAdsPublicationMetricsPipeline` para refletir as 10 etapas oficiais do pipeline Facebook Ads, incluindo `reach-validation`, mantendo a validação automatizada alinhada ao cânone de publicação e métricas.
+
+## 2026-06-09 — Correção da migração da etapa de validação de alcance
+
+- solicitação: corrigir a falha de Liquibase `Duplicate entry '3-5' for key 'uk_pipeline_stage_position'` ao inserir a etapa `reach-validation` no pipeline oficial de publicação e métricas Facebook Ads.
+- causa-raiz: a migração deslocava posições do pipeline com `position = position + 1` em uma única atualização, fazendo o MySQL validar temporariamente uma posição já ocupada dentro da mesma chave única `(pipeline_id, position)`.
+- foi feito: o deslocamento passou a usar uma faixa temporária alta antes de normalizar as posições finais, preservando a chave única durante toda a migração e mantendo a etapa `reach-validation` na posição 4.
+- prevenção: os inserts idempotentes do mesmo changelog passaram a usar `LEFT JOIN ... IS NULL`, mantendo o padrão seguro para MySQL 5.7 e reduzindo risco de recorrência em reexecuções.

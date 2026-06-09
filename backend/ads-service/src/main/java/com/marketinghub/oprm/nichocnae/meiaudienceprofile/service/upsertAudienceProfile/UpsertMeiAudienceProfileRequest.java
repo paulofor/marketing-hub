@@ -1,0 +1,30 @@
+package com.marketinghub.oprm.nichocnae.meiaudienceprofile.service.upsertAudienceProfile;
+
+/** DTO responsável por receber a gravação do perfil de público-alvo MEI/autônomo pesquisado pelo OPRM. */
+public record UpsertMeiAudienceProfileRequest(
+    Long researchCycleId,
+    Long routineCardId,
+    Long sourceNicheCandidateId,
+    Long marketNicheId,
+    String cnaeCode,
+    String cnaeDescription,
+    String neutralNicheName,
+    String audienceName,
+    String occupationTerms,
+    String workMode,
+    String customerAcquisitionBehavior,
+    String dailyRoutineSummary,
+    String recurringTasksSummary,
+    String operationalPainsSummary,
+    String emotionalPainsSummary,
+    String dreamsSummary,
+    String fearsSummary,
+    String languagePatterns,
+    String channelsUsed,
+    String recentSourceSummary,
+    Integer autonomousProfessionalFitScore,
+    Integer behavioralEvidenceScore,
+    Integer sourceFreshnessScore,
+    Integer outdatedSourceRiskScore,
+    Integer structuredBusinessDriftRiskScore,
+    Integer solutionLanguageRiskScore) {}

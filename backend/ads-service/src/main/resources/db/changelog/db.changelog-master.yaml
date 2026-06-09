@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-06-09-oprm-mei-audience-profile.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-06-05-oprm-source-fetcher-classification-indicators.yaml
       relativeToChangelogFile: true
   - include:

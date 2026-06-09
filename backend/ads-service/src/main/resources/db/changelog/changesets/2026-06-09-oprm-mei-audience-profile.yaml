@@ -1,0 +1,54 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-09-01-oprm-mei-audience-profile
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: oprm_mei_audience_profile
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE oprm_mei_audience_profile (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                research_cycle_id BIGINT NOT NULL,
+                routine_card_id BIGINT NULL,
+                source_niche_candidate_id BIGINT NULL,
+                market_niche_id BIGINT NULL,
+                cnae_code VARCHAR(7) NOT NULL,
+                cnae_description VARCHAR(255) NOT NULL,
+                neutral_niche_name VARCHAR(255) NOT NULL,
+                audience_name VARCHAR(255) NOT NULL,
+                occupation_terms LONGTEXT NULL,
+                work_mode LONGTEXT NULL,
+                customer_acquisition_behavior LONGTEXT NULL,
+                daily_routine_summary LONGTEXT NULL,
+                recurring_tasks_summary LONGTEXT NULL,
+                operational_pains_summary LONGTEXT NULL,
+                emotional_pains_summary LONGTEXT NULL,
+                dreams_summary LONGTEXT NULL,
+                fears_summary LONGTEXT NULL,
+                language_patterns LONGTEXT NULL,
+                channels_used LONGTEXT NULL,
+                recent_source_summary LONGTEXT NULL,
+                autonomous_professional_fit_score INT NOT NULL DEFAULT 0,
+                behavioral_evidence_score INT NOT NULL DEFAULT 0,
+                source_freshness_score INT NOT NULL DEFAULT 0,
+                outdated_source_risk_score INT NOT NULL DEFAULT 0,
+                structured_business_drift_risk_score INT NOT NULL DEFAULT 0,
+                solution_language_risk_score INT NOT NULL DEFAULT 0,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL,
+                CONSTRAINT pk_oprm_mei_audience_profile PRIMARY KEY (id)
+              );
+              CREATE UNIQUE INDEX uk_oprm_mei_audience_profile_cycle ON oprm_mei_audience_profile (research_cycle_id);
+              CREATE INDEX idx_oprm_mei_audience_profile_card ON oprm_mei_audience_profile (routine_card_id);
+              CREATE INDEX idx_oprm_mei_audience_profile_candidate ON oprm_mei_audience_profile (source_niche_candidate_id);
+              CREATE INDEX idx_oprm_mei_audience_profile_niche ON oprm_mei_audience_profile (market_niche_id, created_at);
+              CREATE INDEX idx_oprm_mei_audience_profile_cnae ON oprm_mei_audience_profile (cnae_code, autonomous_professional_fit_score);

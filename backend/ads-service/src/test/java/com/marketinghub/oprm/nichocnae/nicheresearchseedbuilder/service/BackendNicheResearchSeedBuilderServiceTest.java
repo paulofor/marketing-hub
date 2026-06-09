@@ -83,13 +83,13 @@ class BackendNicheResearchSeedBuilderServiceTest {
     CompleteNicheResearchSeedBuilderResponse response = service.complete(1001L, validRequest());
 
     assertThat(response.nicheResearchSeedId()).isEqualTo(44L);
-    assertThat(response.totalQueries()).isEqualTo(2);
+    assertThat(response.totalQueries()).isEqualTo(12);
     assertThat(response.queries()).extracting("status").containsOnly("PENDING");
     assertThat(response.queries()).extracting("resultCount").containsOnly(0);
 
     ArgumentCaptor<OprmRoutineResearchCycle> cycleCaptor = ArgumentCaptor.forClass(OprmRoutineResearchCycle.class);
     verify(routineResearchCycleRepository).save(cycleCaptor.capture());
-    assertThat(cycleCaptor.getValue().getTotalQueries()).isEqualTo(2);
+    assertThat(cycleCaptor.getValue().getTotalQueries()).isEqualTo(12);
   }
 
   /** Deve reabrir automaticamente ciclo falho retryável quando a conclusão da etapa dois passa a funcionar. */
@@ -114,7 +114,7 @@ class BackendNicheResearchSeedBuilderServiceTest {
     assertThat(cycleCaptor.getValue().getStatus()).isEqualTo("RUNNING");
     assertThat(cycleCaptor.getValue().getFinishedAt()).isNull();
     assertThat(cycleCaptor.getValue().getErrorMessage()).isNull();
-    assertThat(cycleCaptor.getValue().getTotalQueries()).isEqualTo(2);
+    assertThat(cycleCaptor.getValue().getTotalQueries()).isEqualTo(12);
   }
 
   /** Deve rejeitar objetivos comerciais para impedir pesquisa inicial procurando produto, oferta ou solução. */
@@ -131,8 +131,7 @@ class BackendNicheResearchSeedBuilderServiceTest {
         "depende de agenda cheia",
         "INFERRED_FROM_CNAE",
         "AI",
-        List.of(new NicheResearchQueryRequest(
-            "manicure serviços mais procurados", "PRODUCT_SERVICE_DISCOVERY", "web", 1)));
+        validQueryRequestsWithFirst("manicure MEI serviços mais procurados Brasil", "PRODUCT_SERVICE_DISCOVERY"));
 
     assertThatThrownBy(() -> service.complete(1001L, request))
         .isInstanceOf(IllegalArgumentException.class)
@@ -154,7 +153,7 @@ class BackendNicheResearchSeedBuilderServiceTest {
         "depende de agenda cheia",
         "INFERRED_FROM_CNAE",
         "AI",
-        List.of(new NicheResearchQueryRequest("IA para crescimento de manicure", "ROUTINE_DISCOVERY", "web", 1)));
+        validQueryRequestsWithFirst("IA para crescimento de manicure MEI Brasil", "MEI_ROUTINE_DISCOVERY"));
 
     assertThatThrownBy(() -> service.complete(1001L, request))
         .isInstanceOf(IllegalArgumentException.class)
@@ -184,12 +183,12 @@ class BackendNicheResearchSeedBuilderServiceTest {
         "depende de agenda cheia",
         "INFERRED_FROM_CNAE",
         "AI",
-        List.of(new NicheResearchQueryRequest(
-            "rotina de manicure e atendimento e organização diária", "ROUTINE_DISCOVERY", "web", 1)));
+        validQueryRequestsWithFirst(
+            "rotina de manicure MEI e atendimento e organização diária Brasil", "MEI_ROUTINE_DISCOVERY"));
 
     CompleteNicheResearchSeedBuilderResponse response = service.complete(1001L, request);
 
-    assertThat(response.totalQueries()).isEqualTo(1);
+    assertThat(response.totalQueries()).isEqualTo(12);
     verify(nicheResearchSeedRepository).save(any());
   }
 
@@ -200,7 +199,7 @@ class BackendNicheResearchSeedBuilderServiceTest {
     when(routineResearchCycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
     List<NicheResearchQueryRequest> manyQueries = java.util.stream.IntStream.rangeClosed(1, 16)
         .mapToObj(index -> new NicheResearchQueryRequest(
-            "manicure rotina " + index, "ROUTINE_DISCOVERY", "web", index))
+            "manicure MEI rotina Brasil " + index, "MEI_ROUTINE_DISCOVERY", "web", index))
         .toList();
     CompleteNicheResearchSeedBuilderRequest request = new CompleteNicheResearchSeedBuilderRequest(
         "Cabeleireiros, manicures e pedicures",
@@ -215,7 +214,7 @@ class BackendNicheResearchSeedBuilderServiceTest {
 
     assertThatThrownBy(() -> service.complete(1001L, request))
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("between 1 and 15");
+        .hasMessageContaining("between 12 and 15");
     verify(nicheResearchSeedRepository, never()).save(any());
   }
 
@@ -253,7 +252,7 @@ class BackendNicheResearchSeedBuilderServiceTest {
         .contains("OpenAI retornou corpo vazio");
   }
 
-  /** Monta um payload válido de etapa dois com dois objetivos de pesquisa distintos. */
+  /** Monta um payload válido de etapa dois com doze objetivos de pesquisa orientados a MEI/autônomo. */
   private CompleteNicheResearchSeedBuilderRequest validRequest() {
     return new CompleteNicheResearchSeedBuilderRequest(
         "Cabeleireiros, manicures e pedicures",
@@ -264,9 +263,44 @@ class BackendNicheResearchSeedBuilderServiceTest {
         "depende de agenda cheia",
         "INFERRED_FROM_CNAE",
         null,
-        List.of(
-            new NicheResearchQueryRequest("manicure responsabilidades rotina", "ROUTINE_DISCOVERY", "web", 1),
-            new NicheResearchQueryRequest("agenda manicure horários vazios", "OPERATIONAL_DIFFICULTY_DISCOVERY", "web", 2)));
+        validQueryRequests());
+  }
+
+
+  /** Cria a lista mínima válida de queries da etapa dois com marcadores de público e Brasil. */
+  private List<NicheResearchQueryRequest> validQueryRequests() {
+    return List.of(
+        new NicheResearchQueryRequest("manicure MEI responsabilidades rotina Brasil", "MEI_ROUTINE_DISCOVERY", "web", 1),
+        new NicheResearchQueryRequest(
+            "profissional autônomo agenda manicure horários vazios Brasil", "DAILY_OPERATION_PAIN_DISCOVERY", "web", 2),
+        new NicheResearchQueryRequest(
+            "trabalhador por conta própria manicure consegue clientes Brasil",
+            "CUSTOMER_ACQUISITION_BEHAVIOR_DISCOVERY",
+            "web",
+            3),
+        new NicheResearchQueryRequest(
+            "dono-operador salão beleza modo de trabalho Brasil", "AUTONOMOUS_WORK_MODE_DISCOVERY", "web", 4),
+        new NicheResearchQueryRequest(
+            "MEI manicure dor emocional agenda vazia Brasil", "EMOTIONAL_PAIN_DISCOVERY", "web", 5),
+        new NicheResearchQueryRequest(
+            "profissional autônomo manicure sonhos objetivos Brasil", "DREAM_DISCOVERY", "web", 6),
+        new NicheResearchQueryRequest("MEI manicure medos inseguranças Brasil", "FEAR_DISCOVERY", "web", 7),
+        new NicheResearchQueryRequest(
+            "profissional autônomo manicure canais WhatsApp clientes Brasil", "CHANNEL_BEHAVIOR_DISCOVERY", "web", 8),
+        new NicheResearchQueryRequest("MEI manicure linguagem real clientes pt-BR", "LANGUAGE_DISCOVERY", "web", 9),
+        new NicheResearchQueryRequest(
+            "MEI manicure fontes recentes rotina Brasil", "SOURCE_FRESHNESS_DISCOVERY", "web", 10),
+        new NicheResearchQueryRequest(
+            "profissional autônomo pedicure compra materiais Brasil", "DAILY_OPERATION_PAIN_DISCOVERY", "web", 11),
+        new NicheResearchQueryRequest(
+            "trabalhador por conta própria cabeleireiro retrabalho Brasil", "MEI_ROUTINE_DISCOVERY", "web", 12));
+  }
+
+  /** Substitui a primeira query válida para testar validações específicas sem quebrar o contrato mínimo. */
+  private List<NicheResearchQueryRequest> validQueryRequestsWithFirst(String queryText, String queryGoal) {
+    List<NicheResearchQueryRequest> queries = new java.util.ArrayList<>(validQueryRequests());
+    queries.set(0, new NicheResearchQueryRequest(queryText, queryGoal, "web", 1));
+    return queries;
   }
 
   /** Monta um ciclo falho pelo contrato legado para validar recuperação automática da etapa dois. */

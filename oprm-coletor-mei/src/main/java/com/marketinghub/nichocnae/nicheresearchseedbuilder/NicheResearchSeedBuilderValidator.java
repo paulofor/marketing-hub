@@ -13,13 +13,16 @@ public class NicheResearchSeedBuilderValidator {
     private static final int MIN_QUERIES = 12;
     private static final int MAX_QUERIES = 15;
     private static final Set<String> ALLOWED_GOALS = Set.of(
-            "ROUTINE_DISCOVERY",
-            "ROUTINE_TASK_DISCOVERY",
-            "OPERATIONAL_DIFFICULTY_DISCOVERY",
-            "NICHE_OWNER_QUESTION_DISCOVERY",
-            "FINAL_CUSTOMER_QUESTION_DISCOVERY",
+            "MEI_ROUTINE_DISCOVERY",
+            "AUTONOMOUS_WORK_MODE_DISCOVERY",
+            "CUSTOMER_ACQUISITION_BEHAVIOR_DISCOVERY",
+            "DAILY_OPERATION_PAIN_DISCOVERY",
+            "EMOTIONAL_PAIN_DISCOVERY",
+            "DREAM_DISCOVERY",
+            "FEAR_DISCOVERY",
+            "CHANNEL_BEHAVIOR_DISCOVERY",
             "LANGUAGE_DISCOVERY",
-            "OPERATIONAL_CONTEXT_DISCOVERY");
+            "SOURCE_FRESHNESS_DISCOVERY");
     private static final Set<String> SOLUTION_TERMS = Set.of(
             "ia",
             "inteligencia artificial",
@@ -30,8 +33,20 @@ public class NicheResearchSeedBuilderValidator {
             "ferramenta",
             "curso",
             "template",
+            "produto",
             "oferta",
+            "campanha",
             "landing page");
+    private static final Set<String> GENERIC_QUERIES = Set.of("como vender mais", "aumentar vendas", "vender mais");
+    private static final Set<String> AUDIENCE_MARKERS = Set.of(
+            "mei",
+            "autonomo",
+            "profissional autonomo",
+            "trabalhador por conta propria",
+            "dono operador",
+            "dono-operador");
+    private static final Set<String> BRAZIL_MARKERS = Set.of(
+            "brasil", "brasileiro", "brasileira", "brasileiros", "pt-br");
 
     /** Garante que o modelo produziu seed completo e queries específicas, pendentes e sem contaminação de solução. */
     public void validate(NicheResearchSeedBuilderPending input, NicheResearchSeedBuilderOutput output) {
@@ -96,13 +111,12 @@ public class NicheResearchSeedBuilderValidator {
         if (!uniqueTexts.add(normalized)) {
             throw new IllegalArgumentException("Query duplicada na etapa dois: " + query.queryText());
         }
-        if ("como vender mais".equals(normalized)) {
-            throw new IllegalArgumentException("Query genérica proibida: " + query.queryText());
-        }
+        rejectGenericQuery(query.queryText(), normalized);
         if (anchors.stream().noneMatch(normalized::contains)) {
             throw new IllegalArgumentException("Query sem nicho ou contexto operacional específico: " + query.queryText());
         }
         rejectSolutionTerms(query.queryText(), allowedCnaeText);
+        validateAudienceAndBrazilMarkers(query.queryText());
         if (!ALLOWED_GOALS.contains(query.queryGoal())) {
             throw new IllegalArgumentException("queryGoal inválido na etapa dois: " + query.queryGoal());
         }
@@ -111,6 +125,29 @@ public class NicheResearchSeedBuilderValidator {
         }
         if (!"AI".equals(query.createdBy())) {
             throw new IllegalArgumentException("Query da etapa dois deve iniciar com createdBy AI.");
+        }
+    }
+
+    /** Rejeita consultas genéricas que não revelam rotina, comportamento ou dor concreta do MEI/autônomo. */
+    private void rejectGenericQuery(String queryText, String normalizedQuery) {
+        if (GENERIC_QUERIES.contains(normalizedQuery)) {
+            throw new IllegalArgumentException("Query genérica proibida: " + queryText);
+        }
+    }
+
+    /** Exige marcadores explícitos de público MEI/autônomo e de contexto brasileiro na frase de busca. */
+    private void validateAudienceAndBrazilMarkers(String queryText) {
+        String normalizedQuery = normalizeForTerms(queryText);
+        Set<String> queryTokens = tokenizeNormalizedText(normalizedQuery);
+        boolean hasAudienceMarker = AUDIENCE_MARKERS.stream()
+                .anyMatch(marker -> containsTerm(normalizedQuery, queryTokens, marker));
+        if (!hasAudienceMarker) {
+            throw new IllegalArgumentException("Query sem marcador de MEI/autônomo brasileiro: " + queryText);
+        }
+        boolean hasBrazilMarker = BRAZIL_MARKERS.stream()
+                .anyMatch(marker -> containsTerm(normalizedQuery, queryTokens, marker));
+        if (!hasBrazilMarker) {
+            throw new IllegalArgumentException("Query sem marcador de Brasil/pt-BR: " + queryText);
         }
     }
 
@@ -144,7 +181,7 @@ public class NicheResearchSeedBuilderValidator {
 
     /** Detecta termos simples por token e expressões compostas por ocorrência textual normalizada. */
     private boolean containsTerm(String text, Set<String> tokens, String term) {
-        return term.contains(" ") ? text.contains(term) : tokens.contains(term);
+        return term.matches(".*[^a-z0-9].*") ? text.contains(term) : tokens.contains(term);
     }
 
     /** Extrai termos âncora do nicho, descrição CNAE e objetos operacionais para bloquear queries genéricas. */

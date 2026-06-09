@@ -38,16 +38,19 @@ public class BackendNicheResearchSeedBuilderService {
   private static final String RETRYABLE_LEGACY_CONTRACT_ERROR = "nicheName is required";
   private static final String COMPLETE_STAGE_PATH_FRAGMENT = "niche-research-seed-builder/stage-executions";
   private static final String DEFAULT_CREATED_BY = "AI";
-  private static final int MIN_QUERY_COUNT = 1;
+  private static final int MIN_QUERY_COUNT = 12;
   private static final int MAX_QUERY_COUNT = 15;
   private static final Set<String> ALLOWED_QUERY_GOALS = Set.of(
-      "ROUTINE_DISCOVERY",
-      "ROUTINE_TASK_DISCOVERY",
-      "OPERATIONAL_DIFFICULTY_DISCOVERY",
-      "NICHE_OWNER_QUESTION_DISCOVERY",
-      "FINAL_CUSTOMER_QUESTION_DISCOVERY",
+      "MEI_ROUTINE_DISCOVERY",
+      "AUTONOMOUS_WORK_MODE_DISCOVERY",
+      "CUSTOMER_ACQUISITION_BEHAVIOR_DISCOVERY",
+      "DAILY_OPERATION_PAIN_DISCOVERY",
+      "EMOTIONAL_PAIN_DISCOVERY",
+      "DREAM_DISCOVERY",
+      "FEAR_DISCOVERY",
+      "CHANNEL_BEHAVIOR_DISCOVERY",
       "LANGUAGE_DISCOVERY",
-      "OPERATIONAL_CONTEXT_DISCOVERY");
+      "SOURCE_FRESHNESS_DISCOVERY");
   private static final Set<String> SOLUTION_TERMS = Set.of(
       "ia",
       "inteligencia artificial",
@@ -58,8 +61,20 @@ public class BackendNicheResearchSeedBuilderService {
       "ferramenta",
       "curso",
       "template",
+      "produto",
       "oferta",
+      "campanha",
       "landing page");
+  private static final Set<String> GENERIC_QUERIES = Set.of("como vender mais", "aumentar vendas", "vender mais");
+  private static final Set<String> AUDIENCE_MARKERS = Set.of(
+      "mei",
+      "autonomo",
+      "profissional autonomo",
+      "trabalhador por conta propria",
+      "dono operador",
+      "dono-operador");
+  private static final Set<String> BRAZIL_MARKERS = Set.of(
+      "brasil", "brasileiro", "brasileira", "brasileiros", "pt-br");
 
   private final OprmRoutineResearchCycleRepository routineResearchCycleRepository;
   private final OprmNicheResearchSeedRepository nicheResearchSeedRepository;
@@ -195,7 +210,7 @@ public class BackendNicheResearchSeedBuilderService {
   /** Valida quantidade, objetivos, duplicidade, texto mínimo e ausência de solução nas queries geradas. */
   private void validateQueries(OprmRoutineResearchCycle cycle, List<NicheResearchQueryRequest> queries) {
     if (queries == null || queries.size() < MIN_QUERY_COUNT || queries.size() > MAX_QUERY_COUNT) {
-      throw new IllegalArgumentException("queries must contain between 1 and 15 items");
+      throw new IllegalArgumentException("queries must contain between 12 and 15 items");
     }
     Set<String> uniqueQueryTexts = new HashSet<>();
     String allowedCnaeText = normalizeForTerms(cycle.getCnaeDescription());
@@ -205,11 +220,36 @@ public class BackendNicheResearchSeedBuilderService {
       if (!uniqueQueryTexts.add(queryText)) {
         throw new IllegalArgumentException("Duplicate queryText is not allowed: " + query.queryText());
       }
+      rejectGenericQuery(rawQueryText, queryText);
       rejectSolutionTerms(rawQueryText, allowedCnaeText);
+      validateAudienceAndBrazilMarkers(rawQueryText);
       String queryGoal = requiredText(query.queryGoal(), "queryGoal");
       if (!ALLOWED_QUERY_GOALS.contains(queryGoal)) {
         throw new IllegalArgumentException("Unsupported queryGoal: " + queryGoal);
       }
+    }
+  }
+
+  /** Rejeita queries genéricas que não ajudam a pesquisar a rotina real do MEI/autônomo. */
+  private void rejectGenericQuery(String rawQueryText, String normalizedQueryText) {
+    if (GENERIC_QUERIES.contains(normalizedQueryText)) {
+      throw new IllegalArgumentException("Generic query is not allowed: " + rawQueryText);
+    }
+  }
+
+  /** Exige marcadores claros de público MEI/autônomo e de contexto brasileiro antes da persistência. */
+  private void validateAudienceAndBrazilMarkers(String queryText) {
+    String normalizedQuery = normalizeForTerms(queryText);
+    Set<String> queryTokens = tokenizeNormalizedText(normalizedQuery);
+    boolean hasAudienceMarker = AUDIENCE_MARKERS.stream()
+        .anyMatch(marker -> containsTerm(normalizedQuery, queryTokens, marker));
+    if (!hasAudienceMarker) {
+      throw new IllegalArgumentException("Query must mention MEI/autonomous professional audience: " + queryText);
+    }
+    boolean hasBrazilMarker = BRAZIL_MARKERS.stream()
+        .anyMatch(marker -> containsTerm(normalizedQuery, queryTokens, marker));
+    if (!hasBrazilMarker) {
+      throw new IllegalArgumentException("Query must mention Brazilian or pt-BR context: " + queryText);
     }
   }
 
@@ -243,7 +283,7 @@ public class BackendNicheResearchSeedBuilderService {
 
   /** Detecta termos simples por token e expressões compostas por ocorrência textual normalizada. */
   private boolean containsTerm(String text, Set<String> tokens, String term) {
-    return term.contains(" ") ? text.contains(term) : tokens.contains(term);
+    return term.matches(".*[^a-z0-9].*") ? text.contains(term) : tokens.contains(term);
   }
 
   /** Cria a entidade de seed do nicho usando o ciclo canônico como fonte dos dados CNAE. */

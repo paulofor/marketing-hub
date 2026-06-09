@@ -36,6 +36,9 @@ public class PipelineDefinitionRegistry {
     private static final String MOIS_SALES_PAGE_LIBRARY_WORKER_ROOT_PACKAGE =
             "com.marketinghub.mois.bibliotecapaginavenda.worker.v1";
     private static final String MOIS_SALES_PAGE_LIBRARY_WORKER_MODULE = "mois-sales-library-worker";
+    private static final String MOIS_MARKET_WARMUP_WORKER_MODULE = "mois-market-warmup-worker";
+    private static final String MOIS_MARKET_WARMUP_WORKER_ROOT_PACKAGE =
+            "com.marketinghub.mois.marketwarmup.worker.v1";
     private static final String FACEBOOK_ADS_PUBLICATION_METRICS_PIPELINE_CODE =
             "facebook-ads-publication-metrics-pipeline";
     private static final String FACEBOOK_ADS_MODULE = "FACEBOOK_ADS";
@@ -271,8 +274,9 @@ public class PipelineDefinitionRegistry {
                         "Obtenção de HTML",
                         1,
                         false,
+                        MOIS_SALES_PAGE_LIBRARY_WORKER_MODULE,
                         "service",
-                        "pipeline.htmlcapture",
+                        MOIS_SALES_PAGE_LIBRARY_WORKER_ROOT_PACKAGE + ".pipeline.htmlcapture",
                         Set.of("html-capture", "page-snapshot", "capture", "obtencao-html")),
                 moisSalesPageLibraryStage(
                         "COMMERCIAL_PAGE_ANALYSIS",
@@ -280,9 +284,25 @@ public class PipelineDefinitionRegistry {
                         "Análise Comercial da Página",
                         2,
                         true,
+                        MOIS_SALES_PAGE_LIBRARY_WORKER_MODULE,
                         "service",
-                        "openai",
-                        Set.of("page-analysis", "analysis", "commercial-analysis", "analise-comercial")));
+                        MOIS_SALES_PAGE_LIBRARY_WORKER_ROOT_PACKAGE + ".openai",
+                        Set.of("page-analysis", "analysis", "commercial-analysis", "analise-comercial")),
+                moisSalesPageLibraryStage(
+                        "MARKET_WARMUP_RESEARCH",
+                        "market-warmup-research",
+                        "Pesquisa de Aquecimento e Ecossistema de Mercado",
+                        3,
+                        true,
+                        MOIS_MARKET_WARMUP_WORKER_MODULE,
+                        "service.marketwarmup",
+                        MOIS_MARKET_WARMUP_WORKER_ROOT_PACKAGE,
+                        Set.of(
+                                "market-warmup",
+                                "warmup-research",
+                                "ecosystem-research",
+                                "aquecimento-mercado",
+                                "pesquisa-aquecimento")));
         return new PipelineDefinition(
                 MOIS_MODULE,
                 MOIS_SALES_PAGE_LIBRARY_PIPELINE_CODE,
@@ -308,8 +328,9 @@ public class PipelineDefinitionRegistry {
             String name,
             int position,
             boolean requiresOpenAiModel,
+            String executionModule,
             String backendPackage,
-            String workerPackage,
+            String modulePackage,
             Set<String> aliases) {
         return new PipelineStageDefinition(
                 canonicalCode,
@@ -319,12 +340,11 @@ public class PipelineDefinitionRegistry {
                 true,
                 requiresOpenAiModel,
                 true,
-                MOIS_SALES_PAGE_LIBRARY_WORKER_MODULE,
+                executionModule,
                 MOIS_SALES_PAGE_LIBRARY_BACKEND_ROOT_PACKAGE + "." + backendPackage,
-                MOIS_SALES_PAGE_LIBRARY_WORKER_ROOT_PACKAGE + "." + workerPackage,
+                modulePackage,
                 aliases);
     }
-
 
     /**
      * Monta a definição oficial do pipeline de publicação e medição de campanhas Facebook Ads.
@@ -515,7 +535,7 @@ public class PipelineDefinitionRegistry {
     }
 
     /**
-     * Definição oficial de uma etapa implementada no código para um pipeline protegido.
+     * Definição oficial de uma etapa canônica para um pipeline protegido.
      */
     public record PipelineStageDefinition(
             String canonicalCode,

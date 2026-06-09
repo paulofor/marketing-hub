@@ -578,3 +578,22 @@ Contratos operacionais do backend:
 - `POST /api/mois/sales-library/collected-reference-html:claim` reserva uma referência coletada para captura e retorna `captureId` como identificador de execução em `mois_sales_page_job_execution`.
 - `POST /api/mois/sales-library/collected-reference-html/{captureId}:complete` persiste HTML bruto, URL final, status HTTP, content type, hash e tamanho em `mois_sales_page_job_execution` e consolida `mois_sales_page`.
 - `POST /api/mois/sales-library/collected-reference-html/{captureId}:fail` registra falha de captura em `mois_sales_page_job_execution` e atualiza o último erro consolidado da página.
+
+### 13.9 Pipeline oficial da Biblioteca de Páginas de Vendas — Etapa 3
+
+A definição oficial do pipeline `mois-sales-page-library-pipeline` passa a ter três etapas canônicas, nesta ordem obrigatória:
+
+| Posição | Código canônico | Código operacional | Nome | Responsabilidade | Módulo executor | Requer OpenAI | Aliases |
+|---:|---|---|---|---|---|---|---|
+| 1 | `HTML_ACQUISITION` | `html-acquisition` | Obtenção de HTML | Capturar HTML bruto útil da página de venda e preservar evidência operacional para análise posterior. | `mois-sales-library-worker` | Não | `html-capture`, `page-snapshot`, `capture`, `obtencao-html` |
+| 2 | `COMMERCIAL_PAGE_ANALYSIS` | `commercial-page-analysis` | Análise Comercial da Página | Usar o HTML capturado para extrair diagnóstico comercial da página, incluindo dor, promessa, mecanismo, prova, público, categoria e score. | `mois-sales-library-worker` | Sim | `page-analysis`, `analysis`, `commercial-analysis`, `analise-comercial` |
+| 3 | `MARKET_WARMUP_RESEARCH` | `market-warmup-research` | Pesquisa de Aquecimento e Ecossistema de Mercado | Pesquisar fontes públicas rastreáveis para medir se existe ecossistema ativo preparando o mercado para comprar solução parecida, separando presença do produto específico de sinais do mercado/dor. | `mois-market-warmup-worker` | Sim | `market-warmup`, `warmup-research`, `ecosystem-research`, `aquecimento-mercado`, `pesquisa-aquecimento` |
+
+Regras canônicas da Etapa 3:
+
+1. A Etapa 3 só pode iniciar para página com a Etapa 2 concluída, pois deve usar dor, promessa, mecanismo, prova, público e categoria já identificados na análise comercial.
+2. O backend principal continua sendo o único módulo com acesso ao banco; o worker de aquecimento deve conversar somente com endpoints do backend MOIS.
+3. Toda conclusão da Etapa 3 deve ser explicável por fontes públicas rastreáveis e sinais persistidos, evitando opinião sem evidência.
+4. O score da Etapa 3 é o `Market Warm-up Score` de 0 a 100, classificado inicialmente como `Quente`, `Promissor`, `Morno`, `Frio` ou `Saturado` quando houver risco alto de saturação.
+5. A etapa deve preservar o eixo comercial `Dor → Resultado → Mecanismo → Prova → Oferta` e apoiar a decisão de priorizar, pesquisar mais, observar, descartar ou avançar apenas com ângulo diferenciado.
+6. O artefato final exibido ao usuário não pode conter marcador técnico, campo de debug ou JSON serializado dentro de texto funcional.

@@ -6,24 +6,27 @@ import com.marketinghub.experiment.dto.ExperimentDiagnosticsDto;
 import com.marketinghub.experiment.dto.ExperimentDiagnosticsSeverity;
 import com.marketinghub.experiment.dto.ExperimentFailureDetailsDto;
 import com.marketinghub.experiment.dto.ExperimentPublishingArtifactDto;
+import com.marketinghub.facebookads.FacebookAdsAd;
+import com.marketinghub.facebookads.FacebookAdsAdSet;
+import com.marketinghub.facebookads.FacebookAdsCampaign;
 import com.marketinghub.facebookads.playbook.dto.ExperimentFacebookApiLogDto;
 import com.marketinghub.facebookads.playbook.service.ExperimentFacebookApiLogService;
-import com.marketinghub.facebookads.FacebookAdsAd;
 import com.marketinghub.repository.jpa.facebookads.FacebookAdsAdRepository;
-import com.marketinghub.facebookads.FacebookAdsAdSet;
 import com.marketinghub.repository.jpa.facebookads.FacebookAdsAdSetRepository;
-import com.marketinghub.facebookads.FacebookAdsCampaign;
 import com.marketinghub.repository.jpa.facebookads.FacebookAdsCampaignRepository;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.stream.Collectors;
-
+/**
+ * Consolida o diagnóstico operacional de publicação de um experimento no Facebook Ads.
+ */
 @Service
 public class ExperimentDiagnosticsService {
     private final ExperimentService experimentService;
@@ -32,6 +35,9 @@ public class ExperimentDiagnosticsService {
     private final FacebookAdsAdRepository adRepository;
     private final ExperimentFacebookApiLogService facebookApiLogService;
 
+    /**
+     * Inicializa o serviço com consultas de experimento, artefatos locais e logs da integração Meta.
+     */
     public ExperimentDiagnosticsService(ExperimentService experimentService,
                                         FacebookAdsCampaignRepository campaignRepository,
                                         FacebookAdsAdSetRepository adSetRepository,
@@ -44,6 +50,9 @@ public class ExperimentDiagnosticsService {
         this.facebookApiLogService = facebookApiLogService;
     }
 
+    /**
+     * Monta o alerta exibido na tela do experimento a partir do status atual e dos artefatos pendentes.
+     */
     @Transactional(readOnly = true)
     public ExperimentDiagnosticsDto diagnose(Long experimentId) {
         Experiment experiment = experimentService.get(experimentId);
@@ -98,13 +107,16 @@ public class ExperimentDiagnosticsService {
         return new ExperimentDiagnosticsDto(severity, headline, description, resolution, artifacts, failureDetails);
     }
 
+    /**
+     * Retorna detalhes de falha somente quando a chamada mais recente da Meta também falhou.
+     */
     private ExperimentFailureDetailsDto resolveFailureDetails(Long experimentId, boolean statusFailed) {
         if (!statusFailed) {
             return null;
         }
         return facebookApiLogService.findLogs(experimentId, 200).stream()
+                .max(Comparator.comparing(this::resolveOccurrence, Comparator.nullsLast(Comparator.naturalOrder())))
                 .filter(this::isFailureLog)
-                .findFirst()
                 .map(log -> new ExperimentFailureDetailsDto(
                         log.errorMessage(),
                         log.endpoint(),
@@ -115,6 +127,9 @@ public class ExperimentDiagnosticsService {
                 .orElse(null);
     }
 
+    /**
+     * Identifica se um log representa falha HTTP ou erro textual na integração Meta.
+     */
     private boolean isFailureLog(ExperimentFacebookApiLogDto log) {
         if (log == null) {
             return false;
@@ -125,7 +140,13 @@ public class ExperimentDiagnosticsService {
         return log.statusCode() != null && log.statusCode() >= 400;
     }
 
+    /**
+     * Define o horário operacional mais confiável para ordenar e exibir uma chamada da Meta.
+     */
     private Instant resolveOccurrence(ExperimentFacebookApiLogDto log) {
+        if (log == null) {
+            return null;
+        }
         if (log.respondedAt() != null) {
             return log.respondedAt();
         }
@@ -135,6 +156,9 @@ public class ExperimentDiagnosticsService {
         return log.createdAt();
     }
 
+    /**
+     * Resolve a origem legível da falha exibida no diagnóstico do experimento.
+     */
     private String resolveFailureSource(ExperimentFacebookApiLogDto log) {
         if (log.jobWorker() != null) {
             return log.jobWorker().name();
@@ -145,10 +169,16 @@ public class ExperimentDiagnosticsService {
         return "FACEBOOK_API_LOG";
     }
 
+    /**
+     * Verifica se o artefato possui identificador válido da Meta em campos legados ou canônicos.
+     */
     private static boolean hasMetaId(String externalId, String internalId) {
         return StringUtils.hasText(resolveMetaId(externalId, internalId));
     }
 
+    /**
+     * Resolve o ID da Meta aceitando o campo externo e o legado armazenado no próprio ID.
+     */
     private static String resolveMetaId(String externalId, String internalId) {
         if (StringUtils.hasText(externalId)) {
             return externalId;
@@ -159,6 +189,9 @@ public class ExperimentDiagnosticsService {
         return null;
     }
 
+    /**
+     * Confirma se um identificador segue o formato UUID interno do banco local.
+     */
     private static boolean isUuid(String value) {
         try {
             java.util.UUID.fromString(value.trim());
@@ -168,6 +201,9 @@ public class ExperimentDiagnosticsService {
         }
     }
 
+    /**
+     * Resume a quantidade de artefatos locais que ainda não receberam ID da Meta.
+     */
     private static String buildPendingDescription(long campaigns, long adSets, long ads) {
         return String.format(
                 "%d campanha(s), %d conjunto(s) e %d anúncio(s) foram persistidos apenas no banco local e não receberam um ID do Meta.",
@@ -177,11 +213,17 @@ public class ExperimentDiagnosticsService {
         );
     }
 
+    /**
+     * Monta a descrição de falha quando há artefatos locais ainda pendentes de publicação.
+     */
     private static String buildFailedWithPendingDescription(long campaigns, long adSets, long ads) {
         return "%s O fluxo foi interrompido antes de concluir a publicação completa no Meta Ads; confira os detalhes em Chamadas Meta e no Playbook de Ad Sets para localizar o ponto de falha."
                 .formatted(buildPendingDescription(campaigns, adSets, ads));
     }
 
+    /**
+     * Monta a descrição saudável para experimentos sem inconsistência de publicação detectada.
+     */
     private static String buildHealthyDescription(Experiment experiment, List<FacebookAdsCampaign> campaigns) {
         String campaignSummary = campaigns.isEmpty()
                 ? "Nenhuma campanha foi gerada ainda para este experimento."
@@ -194,6 +236,9 @@ public class ExperimentDiagnosticsService {
         return "Status atual: %s. %s".formatted(experiment.getStatus(), campaignSummary);
     }
 
+    /**
+     * Define a orientação operacional para destravar uma nova tentativa de publicação.
+     */
     private static String buildFailedResolution(Collection<FacebookAdsCampaign> campaigns, boolean suggestAccountReview) {
         String accountInfo = campaigns.stream()
                 .findFirst()
@@ -211,6 +256,9 @@ public class ExperimentDiagnosticsService {
         return "Volte o status para Planejado quando as pendências estiverem resolvidas para que o worker possa reenfileirar a publicação.";
     }
 
+    /**
+     * Lista campanhas, ad sets e anúncios que ainda não possuem identificador externo da Meta.
+     */
     private static List<ExperimentPublishingArtifactDto> collectArtifacts(List<FacebookAdsCampaign> campaigns,
                                                                           List<FacebookAdsAdSet> adSets,
                                                                           List<FacebookAdsAd> ads) {

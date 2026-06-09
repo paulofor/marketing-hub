@@ -1,5 +1,6 @@
 package com.marketinghub.nichocnae.enrichednichematerializer;
 
+import java.util.ArrayList;
 import java.util.List;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -29,11 +30,12 @@ public class EnrichedNicheMaterializerEngine {
 
     /** Preserva linguagem pública a partir dos blocos de rotina, dificuldades, perguntas e contexto operacional. */
     private String buildLanguagePatterns(EnrichedNicheMaterializerPending pending) {
-        return joinUseful(List.of(
-                firstUsefulSentenceWithoutSolutionFrame(pending.painsSummary()),
-                firstUsefulSentenceWithoutSolutionFrame(pending.routineSummary()),
-                firstUsefulSentenceWithoutSolutionFrame(pending.resultsSummary()),
-                firstUsefulSentenceWithoutSolutionFrame(pending.mechanismOpportunitiesSummary())));
+        List<String> usefulSentences = new ArrayList<>();
+        usefulSentences.add(firstUsefulSentenceWithoutSolutionFrame(pending.painsSummary()));
+        usefulSentences.add(firstUsefulSentenceWithoutSolutionFrame(pending.routineSummary()));
+        usefulSentences.add(firstUsefulSentenceWithoutSolutionFrame(pending.resultsSummary()));
+        usefulSentences.add(firstUsefulSentenceWithoutSolutionFrame(pending.mechanismOpportunitiesSummary()));
+        return joinUseful(usefulSentences);
     }
 
     /** Junta apenas frases com conteúdo útil. */

@@ -1229,3 +1229,14 @@ Arquivos alterados:
 Arquivos alterados:
 - `frontend/src/pages/mois/MoisSalesPagesPipelinePage.tsx`
 - `docs/registros/mois1.md`
+
+## 2026-06-09 — Conclusão contratual da Fase 3 da Etapa 3 MOIS
+
+- Concluída a Fase 3 da **Etapa 3 — Pesquisa de Aquecimento e Ecossistema de Mercado** no nível de contrato HTTP.
+- Atualizado o Swagger da Biblioteca de Páginas de Vendas para declarar respostas de erro padronizadas nos endpoints públicos e internos de aquecimento de mercado.
+- O contrato passa a explicitar erros de validação, ausência de página/job/dossiê, falta de permissão operacional do worker e conflito de estado, mantendo a regra de não transportar JSON serializado em campos textuais funcionais.
+
+Arquivos alterados:
+
+- `docs/swagger/mois-sales-library-swagger.yaml`
+- `docs/registros/mois1.md`

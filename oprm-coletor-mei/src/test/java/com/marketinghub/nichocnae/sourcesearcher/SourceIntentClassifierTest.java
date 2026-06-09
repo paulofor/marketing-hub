@@ -49,4 +49,30 @@ class SourceIntentClassifierTest {
         assertThat(result.solutionLanguageRisk()).isTrue();
         assertThat(result.routineEvidenceScore()).isLessThanOrEqualTo(20);
     }
+
+    /** Deve promover fonte brasileira recente e aderente a MEI/autônomo acima de conteúdo sem data. */
+    @Test
+    void shouldClassifyFreshBrazilianAutonomousSourceIndicators() {
+        SourceIntentClassifier classifier = new SourceIntentClassifier();
+
+        SourceSearchResult result = classifier.classify(new SourceSearchResult(
+                "https://sebrae.com.br/mei-manicure-2026",
+                "MEI manicure: rotina do profissional autônomo em 2026",
+                "Microempreendedor individual explica atendimento, cobrança e dúvidas de clientes no Brasil.",
+                "sebrae.com.br",
+                1,
+                null,
+                null,
+                false,
+                false));
+
+        assertThat(result.sourceClassificationType()).isEqualTo("BRAZILIAN_OFFICIAL_SOURCE");
+        assertThat(result.sourceFreshnessScore()).isEqualTo(100);
+        assertThat(result.outdatedSourceRisk()).isFalse();
+        assertThat(result.brazilRelevanceScore()).isGreaterThanOrEqualTo(80);
+        assertThat(result.autonomousProfessionalEvidenceScore()).isGreaterThanOrEqualTo(60);
+        assertThat(result.structuredBusinessDriftRisk()).isFalse();
+        assertThat(result.publishedAt()).isNotNull();
+    }
+
 }

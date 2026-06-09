@@ -38,6 +38,7 @@ public class BackendSourceSearcherService {
   private static final String CANDIDATE_STATUS_CONTAMINATION_RISK = "CONTAMINATION_RISK";
   private static final String SOURCE_INTENT_COMMERCIAL_PAGE_RISK = "COMMERCIAL_PAGE_RISK";
   private static final String DEFAULT_SOURCE_GROUP = "GENERIC_PUBLIC_CONTENT";
+  private static final String DEFAULT_SOURCE_CLASSIFICATION_TYPE = "OLD_OR_UNDATED_CONTENT";
   private static final int MAX_RESULTS_PER_QUERY = 20;
 
   private final OprmResearchQueryRepository researchQueryRepository;
@@ -217,16 +218,25 @@ public class BackendSourceSearcherService {
         || SOURCE_INTENT_COMMERCIAL_PAGE_RISK.equals(sourceIntent);
     boolean solutionRisk = Boolean.TRUE.equals(result.solutionLanguageRisk());
     int routineEvidenceScore = normalizeScore(result.routineEvidenceScore(), commercialRisk);
+    boolean outdatedRisk = Boolean.TRUE.equals(result.outdatedSourceRisk());
+    boolean structuredBusinessDriftRisk = Boolean.TRUE.equals(result.structuredBusinessDriftRisk());
     candidate.setSourceGroup(sourceIntent);
     candidate.setSourceIntent(sourceIntent);
     candidate.setRoutineEvidenceScore(routineEvidenceScore);
     candidate.setCommercialPageRisk(commercialRisk);
     candidate.setSolutionLanguageRisk(solutionRisk);
+    candidate.setSourceClassificationType(defaultText(result.sourceClassificationType(), DEFAULT_SOURCE_CLASSIFICATION_TYPE));
+    candidate.setSourceFreshnessScore(normalizeOptionalScore(result.sourceFreshnessScore()));
+    candidate.setOutdatedSourceRisk(outdatedRisk);
+    candidate.setBrazilRelevanceScore(normalizeOptionalScore(result.brazilRelevanceScore()));
+    candidate.setAutonomousProfessionalEvidenceScore(normalizeOptionalScore(result.autonomousProfessionalEvidenceScore()));
+    candidate.setStructuredBusinessDriftRisk(structuredBusinessDriftRisk);
+    candidate.setPublishedAt(result.publishedAt());
     candidate.setSearchProvider(requiredText(searchProvider, "searchProvider"));
     candidate.setSearchPosition(result.searchPosition());
     candidate.setRelevanceScore(routineEvidenceScore);
     candidate.setSelectedForFetch(false);
-    candidate.setRejectionReason(rejectionReason(commercialRisk, solutionRisk));
+    candidate.setRejectionReason(rejectionReason(commercialRisk, solutionRisk, outdatedRisk, structuredBusinessDriftRisk));
     candidate.setStatus(commercialRisk ? CANDIDATE_STATUS_CONTAMINATION_RISK : CANDIDATE_STATUS_FOUND);
     candidate.setCreatedAt(now);
     candidate.setUpdatedAt(now);
@@ -276,6 +286,13 @@ public class BackendSourceSearcherService {
         defaultInteger(candidate.getRoutineEvidenceScore(), candidate.getRelevanceScore()),
         Boolean.TRUE.equals(candidate.getCommercialPageRisk()),
         Boolean.TRUE.equals(candidate.getSolutionLanguageRisk()),
+        candidate.getSourceClassificationType(),
+        candidate.getSourceFreshnessScore(),
+        Boolean.TRUE.equals(candidate.getOutdatedSourceRisk()),
+        candidate.getBrazilRelevanceScore(),
+        candidate.getAutonomousProfessionalEvidenceScore(),
+        Boolean.TRUE.equals(candidate.getStructuredBusinessDriftRisk()),
+        candidate.getPublishedAt(),
         candidate.getCreatedAt(),
         candidate.getUpdatedAt());
   }
@@ -308,17 +325,29 @@ public class BackendSourceSearcherService {
   }
 
   /** Registra o motivo de risco para fontes que não devem alimentar a coleta principal. */
-  private String rejectionReason(boolean commercialRisk, boolean solutionRisk) {
+  private String rejectionReason(
+      boolean commercialRisk, boolean solutionRisk, boolean outdatedRisk, boolean structuredBusinessDriftRisk) {
     if (commercialRisk && solutionRisk) {
       return "Fonte comercial com linguagem de solução; registrada apenas como risco de contaminação.";
     }
     if (commercialRisk) {
       return "Fonte comercial; registrada apenas como risco de contaminação.";
     }
+    if (structuredBusinessDriftRisk) {
+      return "Fonte de empresa estruturada; não deve dominar a leitura do MEI/autônomo.";
+    }
+    if (outdatedRisk) {
+      return "Fonte antiga ou sem data; usar apenas como apoio quando não houver alternativa recente.";
+    }
     if (solutionRisk) {
       return "Fonte pública com linguagem de solução; revisar antes de usar como evidência principal.";
     }
     return null;
+  }
+
+  /** Normaliza escore opcional mantendo nulo quando a etapa anterior não informou indicador. */
+  private Integer normalizeOptionalScore(Integer score) {
+    return score == null ? null : Math.max(0, Math.min(100, score));
   }
 
   /** Retorna texto normalizado ou valor padrão quando o campo opcional veio vazio. */

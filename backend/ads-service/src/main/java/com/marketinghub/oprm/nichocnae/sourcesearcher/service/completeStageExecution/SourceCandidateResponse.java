@@ -21,5 +21,12 @@ public record SourceCandidateResponse(
     Integer routineEvidenceScore,
     Boolean commercialPageRisk,
     Boolean solutionLanguageRisk,
+    String sourceClassificationType,
+    Integer sourceFreshnessScore,
+    Boolean outdatedSourceRisk,
+    Integer brazilRelevanceScore,
+    Integer autonomousProfessionalEvidenceScore,
+    Boolean structuredBusinessDriftRisk,
+    Instant publishedAt,
     Instant createdAt,
     Instant updatedAt) {}

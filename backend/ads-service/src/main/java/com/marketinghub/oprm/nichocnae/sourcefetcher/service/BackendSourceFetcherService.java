@@ -31,6 +31,7 @@ public class BackendSourceFetcherService {
   private static final String CANDIDATE_STATUS_REJECTED = "REJECTED";
   private static final String DEFAULT_FETCH_STATUS = "COMPLETED";
   private static final String DEFAULT_SOURCE_TYPE = "PUBLIC_CONTENT";
+  private static final String DEFAULT_SOURCE_CLASSIFICATION_TYPE = "OLD_OR_UNDATED_CONTENT";
   private static final String DEFAULT_STORAGE_POLICY = "SHORT_EXCERPT_ALLOWED";
   private static final String SIGNAL_STATUS_PENDING = "PENDING";
   private static final int MAX_PENDING = 30;
@@ -193,6 +194,13 @@ public class BackendSourceFetcherService {
     snapshot.setRoutineEvidenceScore(requiredScore(request.routineEvidenceScore(), "routineEvidenceScore"));
     snapshot.setCommercialPageRisk(requiredBoolean(request.commercialPageRisk(), "commercialPageRisk"));
     snapshot.setSolutionLanguageRisk(requiredBoolean(request.solutionLanguageRisk(), "solutionLanguageRisk"));
+    snapshot.setSourceClassificationType(defaultText(request.sourceClassificationType(), DEFAULT_SOURCE_CLASSIFICATION_TYPE));
+    snapshot.setSourceFreshnessScore(normalizeOptionalScore(request.sourceFreshnessScore()));
+    snapshot.setOutdatedSourceRisk(requiredBoolean(request.outdatedSourceRisk(), "outdatedSourceRisk"));
+    snapshot.setBrazilRelevanceScore(normalizeOptionalScore(request.brazilRelevanceScore()));
+    snapshot.setAutonomousProfessionalEvidenceScore(normalizeOptionalScore(request.autonomousProfessionalEvidenceScore()));
+    snapshot.setStructuredBusinessDriftRisk(requiredBoolean(request.structuredBusinessDriftRisk(), "structuredBusinessDriftRisk"));
+    snapshot.setPublishedAt(request.publishedAt());
     snapshot.setSnippet(trimToNull(request.snippet()));
     snapshot.setShortExcerpt(requiredText(request.shortExcerpt(), "shortExcerpt"));
     snapshot.setFetchedAt(now);
@@ -229,6 +237,13 @@ public class BackendSourceFetcherService {
         defaultInteger(candidate.getRoutineEvidenceScore(), candidate.getRelevanceScore()),
         Boolean.TRUE.equals(candidate.getCommercialPageRisk()),
         Boolean.TRUE.equals(candidate.getSolutionLanguageRisk()),
+        candidate.getSourceClassificationType(),
+        candidate.getSourceFreshnessScore(),
+        Boolean.TRUE.equals(candidate.getOutdatedSourceRisk()),
+        candidate.getBrazilRelevanceScore(),
+        candidate.getAutonomousProfessionalEvidenceScore(),
+        Boolean.TRUE.equals(candidate.getStructuredBusinessDriftRisk()),
+        candidate.getPublishedAt(),
         candidate.getSearchProvider(),
         candidate.getSearchPosition(),
         candidate.getStatus(),
@@ -250,6 +265,13 @@ public class BackendSourceFetcherService {
         snapshot.getRoutineEvidenceScore(),
         Boolean.TRUE.equals(snapshot.getCommercialPageRisk()),
         Boolean.TRUE.equals(snapshot.getSolutionLanguageRisk()),
+        snapshot.getSourceClassificationType(),
+        snapshot.getSourceFreshnessScore(),
+        Boolean.TRUE.equals(snapshot.getOutdatedSourceRisk()),
+        snapshot.getBrazilRelevanceScore(),
+        snapshot.getAutonomousProfessionalEvidenceScore(),
+        Boolean.TRUE.equals(snapshot.getStructuredBusinessDriftRisk()),
+        snapshot.getPublishedAt(),
         snapshot.getSnippet(),
         snapshot.getShortExcerpt(),
         snapshot.getFetchedAt(),
@@ -267,6 +289,11 @@ public class BackendSourceFetcherService {
       throw new IllegalArgumentException(fieldName + " is required");
     }
     return value.trim();
+  }
+
+  /** Normaliza escore opcional mantendo nulo quando a etapa anterior não informou indicador. */
+  private Integer normalizeOptionalScore(Integer score) {
+    return score == null ? null : Math.max(0, Math.min(100, score));
   }
 
   /** Retorna texto normalizado ou valor padrão quando o campo opcional veio vazio. */

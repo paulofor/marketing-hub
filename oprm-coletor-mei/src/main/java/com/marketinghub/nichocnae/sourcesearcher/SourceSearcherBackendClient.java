@@ -106,7 +106,14 @@ public class SourceSearcherBackendClient {
                                 result.sourceIntent(),
                                 result.routineEvidenceScore(),
                                 result.commercialPageRisk(),
-                                result.solutionLanguageRisk()))
+                                result.solutionLanguageRisk(),
+                                result.sourceClassificationType(),
+                                result.sourceFreshnessScore(),
+                                result.outdatedSourceRisk(),
+                                result.brazilRelevanceScore(),
+                                result.autonomousProfessionalEvidenceScore(),
+                                result.structuredBusinessDriftRisk(),
+                                result.publishedAt()))
                         .toList();
         return new SourceSearcherCompletionRequest(searchProvider, candidates);
     }

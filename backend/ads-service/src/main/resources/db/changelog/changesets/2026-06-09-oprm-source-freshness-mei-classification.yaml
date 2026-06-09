@@ -1,0 +1,80 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-09-01-oprm-source-candidate-freshness-mei-classification
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            columnExists:
+              tableName: oprm_source_candidate
+              columnName: source_freshness_score
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE oprm_source_candidate
+                ADD COLUMN source_classification_type VARCHAR(64) NULL,
+                ADD COLUMN source_freshness_score INT NULL,
+                ADD COLUMN outdated_source_risk TINYINT(1) NOT NULL DEFAULT 1,
+                ADD COLUMN brazil_relevance_score INT NULL,
+                ADD COLUMN autonomous_professional_evidence_score INT NULL,
+                ADD COLUMN structured_business_drift_risk TINYINT(1) NOT NULL DEFAULT 0,
+                ADD COLUMN published_at DATETIME NULL;
+              UPDATE oprm_source_candidate
+                 SET source_classification_type = CASE
+                       WHEN commercial_page_risk = 1 THEN 'COMMERCIAL_PAGE'
+                       ELSE 'OLD_OR_UNDATED_CONTENT'
+                     END,
+                     source_freshness_score = 35,
+                     outdated_source_risk = 1,
+                     brazil_relevance_score = CASE
+                       WHEN source_domain LIKE '%.br' OR source_domain LIKE '%gov.br%' THEN 80
+                       ELSE 0
+                     END,
+                     autonomous_professional_evidence_score = 0,
+                     structured_business_drift_risk = 0
+               WHERE source_freshness_score IS NULL;
+              CREATE INDEX idx_oprm_source_candidate_mei_freshness
+                ON oprm_source_candidate (outdated_source_risk, structured_business_drift_risk, source_freshness_score, brazil_relevance_score);
+
+  - changeSet:
+      id: 2026-06-09-02-oprm-source-snapshot-freshness-mei-classification
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            columnExists:
+              tableName: oprm_source_snapshot
+              columnName: source_freshness_score
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE oprm_source_snapshot
+                ADD COLUMN source_classification_type VARCHAR(64) NULL,
+                ADD COLUMN source_freshness_score INT NULL,
+                ADD COLUMN outdated_source_risk TINYINT(1) NOT NULL DEFAULT 1,
+                ADD COLUMN brazil_relevance_score INT NULL,
+                ADD COLUMN autonomous_professional_evidence_score INT NULL,
+                ADD COLUMN structured_business_drift_risk TINYINT(1) NOT NULL DEFAULT 0,
+                ADD COLUMN published_at DATETIME NULL;
+              UPDATE oprm_source_snapshot snapshot
+              INNER JOIN oprm_source_candidate candidate ON candidate.id = snapshot.source_candidate_id
+                 SET snapshot.source_classification_type = COALESCE(candidate.source_classification_type, 'OLD_OR_UNDATED_CONTENT'),
+                     snapshot.source_freshness_score = COALESCE(candidate.source_freshness_score, 35),
+                     snapshot.outdated_source_risk = candidate.outdated_source_risk,
+                     snapshot.brazil_relevance_score = candidate.brazil_relevance_score,
+                     snapshot.autonomous_professional_evidence_score = candidate.autonomous_professional_evidence_score,
+                     snapshot.structured_business_drift_risk = candidate.structured_business_drift_risk,
+                     snapshot.published_at = candidate.published_at
+               WHERE snapshot.source_freshness_score IS NULL;
+              CREATE INDEX idx_oprm_source_snapshot_mei_freshness
+                ON oprm_source_snapshot (outdated_source_risk, structured_business_drift_risk, source_freshness_score, brazil_relevance_score);

@@ -1015,6 +1015,42 @@ components:
         solutionLanguageRisk:
           type: boolean
           default: false
+        sourceClassificationType:
+          type: string
+          nullable: true
+          enum: [BRAZILIAN_OFFICIAL_SOURCE, RECENT_SECTOR_CONTENT, REAL_PROFESSIONAL_REPORT_OR_QUESTION, SOCIAL_OR_COMMUNITY_CONTENT, RECENT_NEWS, COMMERCIAL_PAGE, OLD_OR_UNDATED_CONTENT, STRUCTURED_COMPANY_CONTENT]
+          description: Tipo operacional da fonte para priorizar Brasil, atualidade e aderência a MEI/autônomo.
+        sourceFreshnessScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+          nullable: true
+          description: Escore de atualidade; fontes recentes dos últimos 24 meses recebem maior prioridade.
+        outdatedSourceRisk:
+          type: boolean
+          default: false
+          description: Indica fonte antiga ou sem data que não deve virar verdade principal sem alternativa recente.
+        brazilRelevanceScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+          nullable: true
+          description: Escore de aderência Brasil-first por domínio e marcadores brasileiros.
+        autonomousProfessionalEvidenceScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+          nullable: true
+          description: Escore de evidência de MEI, autônomo ou trabalhador por conta própria.
+        structuredBusinessDriftRisk:
+          type: boolean
+          default: false
+          description: Risco de fonte focada em empresa estruturada em vez do profissional executor.
+        publishedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Data de publicação extraída quando o provedor ou a página permitem inferência segura.
     CompleteSourceSearcherResponse:
       type: object
       properties:
@@ -1098,6 +1134,42 @@ components:
         solutionLanguageRisk:
           type: boolean
           default: false
+        sourceClassificationType:
+          type: string
+          nullable: true
+          enum: [BRAZILIAN_OFFICIAL_SOURCE, RECENT_SECTOR_CONTENT, REAL_PROFESSIONAL_REPORT_OR_QUESTION, SOCIAL_OR_COMMUNITY_CONTENT, RECENT_NEWS, COMMERCIAL_PAGE, OLD_OR_UNDATED_CONTENT, STRUCTURED_COMPANY_CONTENT]
+          description: Tipo operacional da fonte para priorizar Brasil, atualidade e aderência a MEI/autônomo.
+        sourceFreshnessScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+          nullable: true
+          description: Escore de atualidade; fontes recentes dos últimos 24 meses recebem maior prioridade.
+        outdatedSourceRisk:
+          type: boolean
+          default: false
+          description: Indica fonte antiga ou sem data que não deve virar verdade principal sem alternativa recente.
+        brazilRelevanceScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+          nullable: true
+          description: Escore de aderência Brasil-first por domínio e marcadores brasileiros.
+        autonomousProfessionalEvidenceScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+          nullable: true
+          description: Escore de evidência de MEI, autônomo ou trabalhador por conta própria.
+        structuredBusinessDriftRisk:
+          type: boolean
+          default: false
+          description: Risco de fonte focada em empresa estruturada em vez do profissional executor.
+        publishedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Data de publicação extraída quando o provedor ou a página permitem inferência segura.
         searchProvider:
           type: string
         searchPosition:
@@ -1203,6 +1275,42 @@ components:
         solutionLanguageRisk:
           type: boolean
           default: false
+        sourceClassificationType:
+          type: string
+          nullable: true
+          enum: [BRAZILIAN_OFFICIAL_SOURCE, RECENT_SECTOR_CONTENT, REAL_PROFESSIONAL_REPORT_OR_QUESTION, SOCIAL_OR_COMMUNITY_CONTENT, RECENT_NEWS, COMMERCIAL_PAGE, OLD_OR_UNDATED_CONTENT, STRUCTURED_COMPANY_CONTENT]
+          description: Tipo operacional da fonte para priorizar Brasil, atualidade e aderência a MEI/autônomo.
+        sourceFreshnessScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+          nullable: true
+          description: Escore de atualidade; fontes recentes dos últimos 24 meses recebem maior prioridade.
+        outdatedSourceRisk:
+          type: boolean
+          default: false
+          description: Indica fonte antiga ou sem data que não deve virar verdade principal sem alternativa recente.
+        brazilRelevanceScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+          nullable: true
+          description: Escore de aderência Brasil-first por domínio e marcadores brasileiros.
+        autonomousProfessionalEvidenceScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+          nullable: true
+          description: Escore de evidência de MEI, autônomo ou trabalhador por conta própria.
+        structuredBusinessDriftRisk:
+          type: boolean
+          default: false
+          description: Risco de fonte focada em empresa estruturada em vez do profissional executor.
+        publishedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Data de publicação extraída quando o provedor ou a página permitem inferência segura.
         searchProvider:
           type: string
         searchPosition:
@@ -1218,7 +1326,7 @@ components:
           format: date-time
     CompleteSourceFetcherRequest:
       type: object
-      required: [sourceUrl, sourceDomain, sourceTitle, sourceType, sourceIntent, routineEvidenceScore, commercialPageRisk, solutionLanguageRisk, shortExcerpt, fetchStatus, storagePolicy]
+      required: [sourceUrl, sourceDomain, sourceTitle, sourceType, sourceIntent, routineEvidenceScore, commercialPageRisk, solutionLanguageRisk, outdatedSourceRisk, structuredBusinessDriftRisk, shortExcerpt, fetchStatus, storagePolicy]
       properties:
         sourceUrl:
           type: string
@@ -1248,6 +1356,42 @@ components:
         solutionLanguageRisk:
           type: boolean
           default: false
+        sourceClassificationType:
+          type: string
+          nullable: true
+          enum: [BRAZILIAN_OFFICIAL_SOURCE, RECENT_SECTOR_CONTENT, REAL_PROFESSIONAL_REPORT_OR_QUESTION, SOCIAL_OR_COMMUNITY_CONTENT, RECENT_NEWS, COMMERCIAL_PAGE, OLD_OR_UNDATED_CONTENT, STRUCTURED_COMPANY_CONTENT]
+          description: Tipo operacional da fonte para priorizar Brasil, atualidade e aderência a MEI/autônomo.
+        sourceFreshnessScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+          nullable: true
+          description: Escore de atualidade; fontes recentes dos últimos 24 meses recebem maior prioridade.
+        outdatedSourceRisk:
+          type: boolean
+          default: false
+          description: Indica fonte antiga ou sem data que não deve virar verdade principal sem alternativa recente.
+        brazilRelevanceScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+          nullable: true
+          description: Escore de aderência Brasil-first por domínio e marcadores brasileiros.
+        autonomousProfessionalEvidenceScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+          nullable: true
+          description: Escore de evidência de MEI, autônomo ou trabalhador por conta própria.
+        structuredBusinessDriftRisk:
+          type: boolean
+          default: false
+          description: Risco de fonte focada em empresa estruturada em vez do profissional executor.
+        publishedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Data de publicação extraída quando o provedor ou a página permitem inferência segura.
         snippet:
           type: string
           nullable: true
@@ -1324,6 +1468,42 @@ components:
           type: boolean
         solutionLanguageRisk:
           type: boolean
+        sourceClassificationType:
+          type: string
+          nullable: true
+          enum: [BRAZILIAN_OFFICIAL_SOURCE, RECENT_SECTOR_CONTENT, REAL_PROFESSIONAL_REPORT_OR_QUESTION, SOCIAL_OR_COMMUNITY_CONTENT, RECENT_NEWS, COMMERCIAL_PAGE, OLD_OR_UNDATED_CONTENT, STRUCTURED_COMPANY_CONTENT]
+          description: Tipo operacional da fonte para priorizar Brasil, atualidade e aderência a MEI/autônomo.
+        sourceFreshnessScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+          nullable: true
+          description: Escore de atualidade; fontes recentes dos últimos 24 meses recebem maior prioridade.
+        outdatedSourceRisk:
+          type: boolean
+          default: false
+          description: Indica fonte antiga ou sem data que não deve virar verdade principal sem alternativa recente.
+        brazilRelevanceScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+          nullable: true
+          description: Escore de aderência Brasil-first por domínio e marcadores brasileiros.
+        autonomousProfessionalEvidenceScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+          nullable: true
+          description: Escore de evidência de MEI, autônomo ou trabalhador por conta própria.
+        structuredBusinessDriftRisk:
+          type: boolean
+          default: false
+          description: Risco de fonte focada em empresa estruturada em vez do profissional executor.
+        publishedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Data de publicação extraída quando o provedor ou a página permitem inferência segura.
         snippet:
           type: string
           nullable: true

@@ -34,6 +34,11 @@ public class SourceSearcherProcessor implements StageProcessor<SourceSearcherPen
         List<SourceSearchResult> searchResults = searchProvider.search(input.queryText(), MAX_RESULTS_PER_QUERY).stream()
                 .map(sourceIntentClassifier::classify)
                 .sorted(Comparator.comparing(SourceSearchResult::commercialPageRisk)
+                        .thenComparing(SourceSearchResult::structuredBusinessDriftRisk)
+                        .thenComparing(SourceSearchResult::outdatedSourceRisk)
+                        .thenComparing(Comparator.comparing(SourceSearchResult::brazilRelevanceScore).reversed())
+                        .thenComparing(Comparator.comparing(SourceSearchResult::autonomousProfessionalEvidenceScore).reversed())
+                        .thenComparing(Comparator.comparing(SourceSearchResult::sourceFreshnessScore).reversed())
                         .thenComparing(Comparator.comparing(SourceSearchResult::routineEvidenceScore).reversed())
                         .thenComparing(SourceSearchResult::searchPosition))
                 .toList();
@@ -44,7 +49,9 @@ public class SourceSearcherProcessor implements StageProcessor<SourceSearcherPen
                 "researchCycleId", output.researchCycleId(),
                 "resultCount", output.resultCount() == null ? 0 : output.resultCount(),
                 "searchProvider", searchProvider.providerCode(),
-                "commercialRiskCount", searchResults.stream().filter(SourceSearchResult::commercialPageRisk).count());
+                "commercialRiskCount", searchResults.stream().filter(SourceSearchResult::commercialPageRisk).count(),
+                "outdatedRiskCount", searchResults.stream().filter(SourceSearchResult::outdatedSourceRisk).count(),
+                "structuredBusinessDriftRiskCount", searchResults.stream().filter(SourceSearchResult::structuredBusinessDriftRisk).count());
         return new StageResult<>(output, List.of(), metrics);
     }
 }

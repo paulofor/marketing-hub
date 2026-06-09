@@ -84,6 +84,18 @@ class BackendSourceSearcherServiceTest {
     assertThat(response.candidates()).extracting("commercialPageRisk").containsExactly(false, true);
     assertThat(response.candidates()).extracting("solutionLanguageRisk").containsExactly(false, true);
 
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<List<OprmSourceCandidate>> candidateCaptor = ArgumentCaptor.forClass(List.class);
+    verify(sourceCandidateRepository).saveAll(candidateCaptor.capture());
+    OprmSourceCandidate firstSavedCandidate = candidateCaptor.getValue().getFirst();
+    assertThat(firstSavedCandidate.getSourceClassificationType()).isEqualTo("BRAZILIAN_OFFICIAL_SOURCE");
+    assertThat(firstSavedCandidate.getSourceFreshnessScore()).isEqualTo(100);
+    assertThat(firstSavedCandidate.getOutdatedSourceRisk()).isFalse();
+    assertThat(firstSavedCandidate.getBrazilRelevanceScore()).isEqualTo(95);
+    assertThat(firstSavedCandidate.getAutonomousProfessionalEvidenceScore()).isEqualTo(90);
+    assertThat(firstSavedCandidate.getStructuredBusinessDriftRisk()).isFalse();
+    assertThat(firstSavedCandidate.getPublishedAt()).isEqualTo(Instant.parse("2026-01-01T00:00:00Z"));
+
     ArgumentCaptor<OprmResearchQuery> queryCaptor = ArgumentCaptor.forClass(OprmResearchQuery.class);
     verify(researchQueryRepository).save(queryCaptor.capture());
     assertThat(queryCaptor.getValue().getStatus()).isEqualTo("COMPLETED");
@@ -205,7 +217,14 @@ class BackendSourceSearcherServiceTest {
                 "ROUTINE_REPORT",
                 90,
                 false,
-                false),
+                false,
+                "BRAZILIAN_OFFICIAL_SOURCE",
+                100,
+                false,
+                95,
+                90,
+                false,
+                Instant.parse("2026-01-01T00:00:00Z")),
             new SourceCandidateRequest(
                 "https://exemplo.com/agenda-manicure",
                 "Como lotar agenda de manicure",

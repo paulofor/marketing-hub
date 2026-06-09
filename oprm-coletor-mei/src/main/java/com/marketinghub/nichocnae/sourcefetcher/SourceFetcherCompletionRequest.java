@@ -1,5 +1,7 @@
 package com.marketinghub.nichocnae.sourcefetcher;
 
+import java.time.Instant;
+
 /** Representa o payload enviado ao backend para concluir a coleta curta de uma fonte candidata. */
 public record SourceFetcherCompletionRequest(
         String sourceUrl,
@@ -10,6 +12,13 @@ public record SourceFetcherCompletionRequest(
         Integer routineEvidenceScore,
         Boolean commercialPageRisk,
         Boolean solutionLanguageRisk,
+        String sourceClassificationType,
+        Integer sourceFreshnessScore,
+        Boolean outdatedSourceRisk,
+        Integer brazilRelevanceScore,
+        Integer autonomousProfessionalEvidenceScore,
+        Boolean structuredBusinessDriftRisk,
+        Instant publishedAt,
         String snippet,
         String shortExcerpt,
         String fetchStatus,

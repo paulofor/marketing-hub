@@ -48,6 +48,27 @@ public class OprmSourceSnapshot {
   @Column(name = "solution_language_risk", nullable = false)
   private Boolean solutionLanguageRisk;
 
+  @Column(name = "source_classification_type", length = 64)
+  private String sourceClassificationType;
+
+  @Column(name = "source_freshness_score")
+  private Integer sourceFreshnessScore;
+
+  @Column(name = "outdated_source_risk", nullable = false)
+  private Boolean outdatedSourceRisk;
+
+  @Column(name = "brazil_relevance_score")
+  private Integer brazilRelevanceScore;
+
+  @Column(name = "autonomous_professional_evidence_score")
+  private Integer autonomousProfessionalEvidenceScore;
+
+  @Column(name = "structured_business_drift_risk", nullable = false)
+  private Boolean structuredBusinessDriftRisk;
+
+  @Column(name = "published_at")
+  private Instant publishedAt;
+
   @Column(name = "snippet", columnDefinition = "LONGTEXT")
   private String snippet;
 

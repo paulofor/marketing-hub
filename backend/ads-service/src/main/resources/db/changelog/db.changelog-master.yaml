@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-06-09-oprm-source-freshness-mei-classification.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-06-09-oprm-mei-audience-profile.yaml
       relativeToChangelogFile: true
   - include:

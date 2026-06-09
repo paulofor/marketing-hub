@@ -254,63 +254,6 @@ Regras globais:
 9. O anúncio deve ser rápido de entender.
 10. A landing deve aprofundar a promessa e reduzir ceticismo.`;
 
-const AD_COPY_PROMPT_TEMPLATE = `${COMMON_PIPELINE_PROMPT}
-
-Contexto do nicho: {nicho}
-
-Ângulo da campanha: {campaignAngle}
-Dor principal: {primaryPain}
-Promessa principal: {primaryPromise}
-Mecanismo resumido: {mechanismSummary}
-Prova resumida: {proofSummary}
-
-Objetivo do anúncio:
-Gerar clique qualificado para a landing page.
-
-Regras:
-1. O texto do anúncio deve ser entendido em poucos segundos.
-2. A primeira linha deve abrir com dor, consequência, resultado ou prova.
-3. O mecanismo deve aparecer só depois do benefício principal.
-4. O anúncio não pode parecer consultoria.
-5. A promessa precisa ser compatível com ativos digitais gerados por IA.
-6. Não usar jargão de tráfego pago.
-7. Criar 3 variações:
-   - V1 focada na dor
-   - V2 focada no resultado
-   - V3 focada na prova
-8. Para cada variação, entregar 3 comprimentos de texto principal: curta, média e longa.
-9. Definir openingHookType por variação com: dor, consequência, resultado ou prova.
-10. Definir placementHint por variação com: feed ou stories/reels.
-11. Aplicar trava de compliance em todas as variações:
-   - sem garantia absoluta
-   - sem promessa individual
-   - sem linguagem de consultoria
-12. O CTA deve combinar exatamente com a landing.
-13. Entregar texto pensado para Meta Ads e testável por placement/comprimento.
-
-Formato esperado:
-JSON com:
-primaryTextVariants [
-  {
-    "label": "dor|resultado|prova",
-    "openingHookType": "dor|consequência|resultado|prova",
-    "placementHint": "feed|stories/reels",
-    "lengthVariants": {
-      "curta": "",
-      "media": "",
-      "longa": ""
-    },
-    "headline": "",
-    "description": "",
-    "ctaText": "",
-    "compliance": {
-      "semGarantiaAbsoluta": true,
-      "semPromessaIndividual": true,
-      "semLinguagemDeConsultoria": true
-    }
-  }
-]`;
-
 const LANDING_COPY_PROMPT_TEMPLATE = `${COMMON_PIPELINE_PROMPT}
 
 Contexto do nicho: {nicho}
@@ -605,7 +548,6 @@ artifact {
 const SECTION_PROMPT_DEFAULTS: Partial<
   Record<ContentGenerationSectionKey, string>
 > = {
-  "ad-copy": AD_COPY_PROMPT_TEMPLATE,
   "landing-copy": LANDING_COPY_PROMPT_TEMPLATE,
   "landing-layout": LANDING_LAYOUT_PROMPT_TEMPLATE,
   "landing-image-planning": LANDING_IMAGE_PLANNING_PROMPT_TEMPLATE,

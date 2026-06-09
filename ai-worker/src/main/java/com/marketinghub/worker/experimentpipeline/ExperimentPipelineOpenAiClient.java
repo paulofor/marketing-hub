@@ -30,10 +30,10 @@ import org.springframework.util.StreamUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
-@Component
 /**
  * Cliente responsável por enviar jobs do pipeline de experimento para a OpenAI e validar o contrato de retorno.
  */
+@Component
 public class ExperimentPipelineOpenAiClient {
     private static final Logger log = LoggerFactory.getLogger(ExperimentPipelineOpenAiClient.class);
     private static final String REQUIRED_TEXT_MODEL = "gpt-5.2";
@@ -62,6 +62,8 @@ public class ExperimentPipelineOpenAiClient {
 
             """;
     private static final String CAMPAIGN_ANGLE_TEMPLATE_PATH = "prompts/experiment/campaign-angle.md";
+    private static final String AD_COPY_TEMPLATE_PATH = "prompts/experiment/ad-copy.md";
+    private static final String AD_IMAGE_BRIEFING_TEMPLATE_PATH = "prompts/experiment/ad-image-briefing.md";
     private static final String LANDING_COPY_TEMPLATE_PATH = "prompts/geralanding/landing-page-copy.md";
     private static final String LANDING_WIREFRAME_TEMPLATE_PATH = "prompts/geralanding/landing-page-wireframe.md";
     private static final String LANDING_IMAGE_PLANNING_TEMPLATE_PATH = "prompts/geralanding/landing-page-image-planning.md";
@@ -1532,12 +1534,19 @@ public class ExperimentPipelineOpenAiClient {
         }
     }
 
+    /** Adiciona as regras globais e o template versionado específico da seção ao prompt enviado para a OpenAI. */
     private String withPipelinePrompt(String prompt, ExperimentPipelineJobDto job) {
         String base = prompt != null && prompt.startsWith(PIPELINE_PROMPT_PREFIX)
                 ? prompt
                 : PIPELINE_PROMPT_PREFIX + (prompt != null ? prompt : "");
         if (isCampaignAngleSection(job) && !base.contains(CAMPAIGN_ANGLE_MARKER)) {
             return appendSectionTemplate(base, CAMPAIGN_ANGLE_TEMPLATE_PATH, job);
+        }
+        if (isAdCopySection(job) && !containsTemplateBody(base, AD_COPY_TEMPLATE_PATH)) {
+            return appendSectionTemplate(base, AD_COPY_TEMPLATE_PATH, job);
+        }
+        if (isAdImageBriefingSection(job) && !containsTemplateBody(base, AD_IMAGE_BRIEFING_TEMPLATE_PATH)) {
+            return appendSectionTemplate(base, AD_IMAGE_BRIEFING_TEMPLATE_PATH, job);
         }
         if (isLandingCopySection(job) && !base.contains(LANDING_COPY_MARKER)) {
             return appendSectionTemplate(base, LANDING_COPY_TEMPLATE_PATH, job);
@@ -1563,6 +1572,15 @@ public class ExperimentPipelineOpenAiClient {
             return basePrompt;
         }
         return basePrompt + "\n\n" + applyTemplateVariables(template.body(), templateVariables(job));
+    }
+
+    /** Verifica se o corpo do template versionado já foi anexado ao prompt atual. */
+    private boolean containsTemplateBody(String basePrompt, String templatePath) {
+        PromptTemplate template = promptTemplates.get(templatePath);
+        return template != null
+                && StringUtils.hasText(template.body())
+                && StringUtils.hasText(basePrompt)
+                && basePrompt.contains(template.body());
     }
 
     private Map<String, String> templateVariables(ExperimentPipelineJobDto job) {
@@ -1621,10 +1639,13 @@ public class ExperimentPipelineOpenAiClient {
         return resolved;
     }
 
+    /** Carrega os templates versionados usados para complementar cada seção do pipeline. */
     private Map<String, PromptTemplate> loadPromptTemplates() {
         Map<String, PromptTemplate> templates = new LinkedHashMap<>();
         List<String> paths = List.of(
                 CAMPAIGN_ANGLE_TEMPLATE_PATH,
+                AD_COPY_TEMPLATE_PATH,
+                AD_IMAGE_BRIEFING_TEMPLATE_PATH,
                 LANDING_COPY_TEMPLATE_PATH,
                 LANDING_WIREFRAME_TEMPLATE_PATH,
                 LANDING_IMAGE_PLANNING_TEMPLATE_PATH,
@@ -1712,9 +1733,16 @@ public class ExperimentPipelineOpenAiClient {
         return objectMapper.writeValueAsString(tracked);
     }
 
+    /** Resolve o caminho do template versionado conforme a seção canônica do job. */
     private String resolveTemplatePath(ExperimentPipelineJobDto job) {
         if (isCampaignAngleSection(job)) {
             return CAMPAIGN_ANGLE_TEMPLATE_PATH;
+        }
+        if (isAdCopySection(job)) {
+            return AD_COPY_TEMPLATE_PATH;
+        }
+        if (isAdImageBriefingSection(job)) {
+            return AD_IMAGE_BRIEFING_TEMPLATE_PATH;
         }
         if (isLandingCopySection(job)) {
             return LANDING_COPY_TEMPLATE_PATH;
@@ -1744,9 +1772,12 @@ public class ExperimentPipelineOpenAiClient {
         return dot > 0 ? fileName.substring(0, dot) : fileName;
     }
 
+    /** Infere o artefato de destino usado no rastreio quando o cabeçalho do template não informa esse valor. */
     private String inferArtifactTarget(String path) {
         return switch (path) {
             case CAMPAIGN_ANGLE_TEMPLATE_PATH -> "campaignAngle";
+            case AD_COPY_TEMPLATE_PATH -> "adCopy";
+            case AD_IMAGE_BRIEFING_TEMPLATE_PATH -> "adImageBriefing";
             case LANDING_COPY_TEMPLATE_PATH -> "landingPageCopy";
             case LANDING_WIREFRAME_TEMPLATE_PATH -> "landingPageWireframe";
             case LANDING_IMAGE_PLANNING_TEMPLATE_PATH -> "landingPageImagePlanning";
@@ -1908,6 +1939,16 @@ public class ExperimentPipelineOpenAiClient {
 
     private boolean isCampaignAngleSection(ExperimentPipelineJobDto job) {
         return isSection(job, "campaign-angle", "campaign_angle");
+    }
+
+    /** Identifica jobs da etapa de texto de anúncio para aplicar o template de prompt do ai-worker. */
+    private boolean isAdCopySection(ExperimentPipelineJobDto job) {
+        return isSection(job, "ad-copy", "ad_copy");
+    }
+
+    /** Identifica jobs da etapa de briefing de imagem do anúncio para aplicar o template do ai-worker. */
+    private boolean isAdImageBriefingSection(ExperimentPipelineJobDto job) {
+        return isSection(job, "ad-image-briefing", "ad_image_briefing");
     }
 
     private boolean isLandingCopySection(ExperimentPipelineJobDto job) {

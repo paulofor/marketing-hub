@@ -4232,3 +4232,15 @@
 - causa-raiz: a migração deslocava posições do pipeline com `position = position + 1` em uma única atualização, fazendo o MySQL validar temporariamente uma posição já ocupada dentro da mesma chave única `(pipeline_id, position)`.
 - foi feito: o deslocamento passou a usar uma faixa temporária alta antes de normalizar as posições finais, preservando a chave única durante toda a migração e mantendo a etapa `reach-validation` na posição 4.
 - prevenção: os inserts idempotentes do mesmo changelog passaram a usar `LEFT JOIN ... IS NULL`, mantendo o padrão seguro para MySQL 5.7 e reduzindo risco de recorrência em reexecuções.
+
+## 2026-06-09 — Prompt AD_COPY no ai-worker
+
+- tarefa: alterar o local versionado do prompt da etapa `AD_COPY` do pipeline de experimento para `ai-worker/src/main/resources/prompts/experiment`.
+- foi feito: criado o template `prompts/experiment/ad-copy.md` no `ai-worker` e ligado o `ExperimentPipelineOpenAiClient` para anexar esse template aos jobs `ad-copy`, com rastreio de `templateTrace` como `artifact_target=adCopy`.
+- impacto esperado: a etapa de texto de anúncio deixa de depender de instruções implícitas do backend e passa a ter prompt versionado junto dos prompts de experimento executados pelo Worker AI.
+
+## 2026-06-09 — Remoção de prompt AD_COPY hardcoded e filtro de público
+
+- tarefa: retirar instruções de prompt de AdCopy hardcoded em Java/React, reforçar que a copy fala diretamente com o cliente ideal e verificar a mesma diretriz no prompt de imagem do anúncio.
+- foi feito: removido o template hardcoded de AdCopy do frontend, removido o marcador textual hardcoded de AdCopy no Java, reforçado o prompt `ad-copy.md` com filtragem explícita de público e criado o prompt versionado `ad-image-briefing.md` com a mesma comunicação direta/filtragem visual.
+- impacto esperado: a etapa `AD_COPY` passa a depender apenas do prompt versionado no `ai-worker`, e a etapa de briefing de imagem de anúncio passa a orientar visualmente a separação entre cliente ideal e público geral.

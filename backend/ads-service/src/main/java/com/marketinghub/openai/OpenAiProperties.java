@@ -12,7 +12,6 @@ public class OpenAiProperties {
 
     private String apiKey;
     private String apiKeyFile = "/root/infra/openai-token/openai_api_key";
-    private String pricingUrl = "https://developers.openai.com/api/docs/pricing";
     private String baseUrl = "https://api.openai.com/v1";
     private Duration connectTimeout = Duration.ofSeconds(10);
     private Duration requestTimeout = Duration.ofSeconds(90);
@@ -38,16 +37,6 @@ public class OpenAiProperties {
     /** Define o caminho do arquivo seguro usado como fallback para carregar o token OpenAI. */
     public void setApiKeyFile(String apiKeyFile) {
         this.apiKeyFile = apiKeyFile;
-    }
-
-    /** Retorna a URL oficial consultada para sincronizar preços dos modelos OpenAI. */
-    public String getPricingUrl() {
-        return pricingUrl;
-    }
-
-    /** Define a URL oficial consultada para sincronizar preços dos modelos OpenAI. */
-    public void setPricingUrl(String pricingUrl) {
-        this.pricingUrl = pricingUrl;
     }
 
     /** Retorna a URL base da API OpenAI usada nas chamadas autenticadas. */

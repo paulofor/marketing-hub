@@ -57,7 +57,7 @@ public class OpenAiModelCatalogV1Service {
                     new ArrayList<>(text),
                     new ArrayList<>(image),
                     fetchPricingByModel(),
-                    "openai:/models + openai:pricing",
+                    "openai:/models",
                     now.toString());
         } catch (RuntimeException ex) {
             log.error("Falha ao consultar catálogo oficial OpenAI; operation=openai-model-catalog-fetch endpoint=/models", ex);
@@ -83,9 +83,9 @@ public class OpenAiModelCatalogV1Service {
             return pricingByModel;
         } catch (RuntimeException ex) {
             log.error(
-                    "Falha ao consultar preços oficiais OpenAI para catálogo; operation=openai-model-catalog-pricing source=pricing-page",
+                    "Falha ao consultar preços oficiais OpenAI para catálogo; operation=openai-model-catalog-pricing source=openai-models-api",
                     ex);
-            return Map.of();
+            throw ex;
         }
     }
 

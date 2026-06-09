@@ -15,7 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class OpenAiModelPricingSyncService {
     private static final Logger log = LoggerFactory.getLogger(OpenAiModelPricingSyncService.class);
-    private static final String PRICING_SOURCE = "https://developers.openai.com/api/docs/pricing";
+    private static final String PRICING_SOURCE = "openai:/models";
 
     private final OpenAiPricingPageClient pricingPageClient;
     private final OpenAiModelRepository repository;

@@ -71,6 +71,12 @@ public class FacebookAdSetExperimentService {
      * Lista experimentos prontos para conjuntos de anúncios, priorizando o público selecionado no experimento.
      */
     public List<ExperimentReadyForAdSetDto> listExperimentsReadyForAdSets(Long experimentId) {
+        if (experimentId != null) {
+            return experimentRepository.findForAdSetTargetingById(experimentId, ExperimentPlatform.FACEBOOK)
+                    .map(this::toReadyForAdSetDto)
+                    .map(List::of)
+                    .orElseGet(List::of);
+        }
         List<Experiment> experiments = experimentRepository.findAllReadyForAdSets(
                 ExperimentPlatform.FACEBOOK, STATUSES);
         if (experiments.isEmpty()) {
@@ -78,21 +84,27 @@ public class FacebookAdSetExperimentService {
         }
         List<ExperimentReadyForAdSetDto> result = new ArrayList<>();
         for (Experiment experiment : experiments) {
-            if (experimentId != null && !experimentId.equals(experiment.getId())) {
-                continue;
+            ExperimentReadyForAdSetDto dto = toReadyForAdSetDto(experiment);
+            if (dto != null) {
+                result.add(dto);
             }
-            TargetingPackageDto targeting = buildTargetingPackage(experiment);
-            if (targeting == null) {
-                continue;
-            }
-            ExperimentReadyForAdSetDto dto = new ExperimentReadyForAdSetDto(
-                    experimentMapper.toDto(experiment),
-                    marketNicheMapper.toDto(experiment.getNiche()),
-                    experiment.getHypothesisRef() != null ? hypothesisMapper.toDto(experiment.getHypothesisRef()) : null,
-                    targeting);
-            result.add(dto);
         }
         return result;
+    }
+
+    /**
+     * Converte um experimento em contrato de ad set quando existe pacote de segmentação publicável.
+     */
+    private ExperimentReadyForAdSetDto toReadyForAdSetDto(Experiment experiment) {
+        TargetingPackageDto targeting = buildTargetingPackage(experiment);
+        if (targeting == null) {
+            return null;
+        }
+        return new ExperimentReadyForAdSetDto(
+                experimentMapper.toDto(experiment),
+                marketNicheMapper.toDto(experiment.getNiche()),
+                experiment.getHypothesisRef() != null ? hypothesisMapper.toDto(experiment.getHypothesisRef()) : null,
+                targeting);
     }
 
     /**

@@ -4184,3 +4184,12 @@
 - causa-raiz: o diagnóstico do experimento buscava a primeira falha nos logs recentes de Facebook API sempre que o status estava `FAILED`, mesmo quando chamadas posteriores já haviam retornado `200`, fazendo um erro histórico parecer o erro atual.
 - foi feito: o diagnóstico agora só mostra detalhes de falha quando a chamada mais recente da Meta também falhou; se a chamada mais recente foi sucesso, a tela mantém o alerta de status `FAILED`, mas deixa de acusar uma mensagem antiga como “último erro”.
 - validação: adicionados testes unitários para cobrir o cenário do experimento 38 com falha antiga seguida por sucesso e o cenário inverso com falha realmente mais recente.
+
+## 2026-06-09 — Correção da resolução de público do experimento 38 após falha operacional
+
+- solicitação: acompanhar nova tentativa de publicação do experimento 38 como campanha.
+- diagnóstico: a tentativa chegou a reenviar as imagens aprovadas para a Meta com sucesso, mas o worker bloqueou a campanha antes de criar campanha/ad set porque a consulta filtrada de pacote de segmentação retornou vazia; o experimento já estava em `FAILED`, e o endpoint de ad sets filtrava apenas status operacionais prontos.
+- causa-raiz: o mesmo endpoint era usado para duas finalidades diferentes: listar experimentos prontos e resolver o pacote de targeting de um experimento específico já selecionado pelo fluxo de publicação. Ao aplicar o filtro de status também no segundo caso, uma falha operacional anterior escondia o público aprovado e impedia o retry.
+- correção: quando `experimentId` é informado, o backend agora busca diretamente o experimento para resolução de targeting, sem depender do status operacional atual, mantendo os bloqueios de segurança de plataforma Facebook, criativo aprovado e cargo aprovado com `metaId` oficial.
+- validação: teste unitário cobre o caso do experimento em `FAILED` ainda retornando o pacote manual aprovado para permitir novo retry sem cair em público amplo.
+- próximo passo: reenfileirar a publicação do experimento 38 após deploy desta correção e confirmar criação de campanha, ad set, criativo e anúncio na Meta.

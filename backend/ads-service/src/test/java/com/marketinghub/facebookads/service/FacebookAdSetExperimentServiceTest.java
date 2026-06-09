@@ -28,6 +28,7 @@ import com.marketinghub.targeting.dto.TargetingElementDto;
 import com.marketinghub.targeting.mapper.TargetingElementMapper;
 import com.marketinghub.repository.jpa.targeting.TargetingElementRepository;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,6 +37,9 @@ import org.mapstruct.factory.Mappers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+/**
+ * Valida a montagem dos pacotes de targeting expostos ao Facebook Ads Worker.
+ */
 @ExtendWith(MockitoExtension.class)
 class FacebookAdSetExperimentServiceTest {
     @Mock
@@ -47,6 +51,9 @@ class FacebookAdSetExperimentServiceTest {
 
     private FacebookAdSetExperimentService service;
 
+    /**
+     * Configura o serviço com mocks e mapeadores reais usados nas respostas do contrato.
+     */
     @BeforeEach
     void setUp() {
         ExperimentMapper experimentMapper = Mappers.getMapper(ExperimentMapper.class);
@@ -65,6 +72,9 @@ class FacebookAdSetExperimentServiceTest {
                 targetingElementMapper);
     }
 
+    /**
+     * Injeta o suporte de framework no mapper de hipótese gerado pelo MapStruct.
+     */
     private void injectFrameworkMapper(HypothesisMapper hypothesisMapper) {
         HypothesisFrameworkMapperSupport support = new HypothesisFrameworkMapperSupport(new ObjectMapper());
         try {
@@ -87,6 +97,9 @@ class FacebookAdSetExperimentServiceTest {
         }
     }
 
+    /**
+     * Injeta o mapper de formulário instantâneo no mapper de experimento gerado pelo MapStruct.
+     */
     private void injectFacebookInstantFormMapper(ExperimentMapper experimentMapper) {
         FacebookInstantFormMapper formMapper = Mappers.getMapper(FacebookInstantFormMapper.class);
         try {
@@ -109,6 +122,9 @@ class FacebookAdSetExperimentServiceTest {
         }
     }
 
+    /**
+     * Garante que experimentos prontos recebem pacote completo de interesses, cargos e comportamentos.
+     */
     @Test
     void listExperimentsReadyIncludesTargetingPackage() {
         MarketNiche niche = new MarketNiche();
@@ -183,6 +199,9 @@ class FacebookAdSetExperimentServiceTest {
                 .containsExactly("Engaged Shoppers");
     }
 
+    /**
+     * Garante que um cargo aprovado e identificável pela Meta basta para expor o pacote publicável.
+     */
     @Test
     void listExperimentsReadyAcceptsOnlyApprovedJobTitle() {
         MarketNiche niche = new MarketNiche();
@@ -232,6 +251,9 @@ class FacebookAdSetExperimentServiceTest {
         assertThat(dto.getTargeting().getBehaviors()).isEmpty();
     }
 
+    /**
+     * Garante que o filtro por experimento prioriza a seleção manual e ignora itens sem metaId.
+     */
     @Test
     void listExperimentsReadyPrioritizesSelectedExperimentTargeting() {
         MarketNiche niche = new MarketNiche();
@@ -267,8 +289,8 @@ class FacebookAdSetExperimentServiceTest {
                 .status(TargetingElementStatus.APPROVED)
                 .build();
 
-        when(experimentRepository.findAllReadyForAdSets(eq(ExperimentPlatform.FACEBOOK), any()))
-                .thenReturn(List.of(experiment));
+        when(experimentRepository.findForAdSetTargetingById(13L, ExperimentPlatform.FACEBOOK))
+                .thenReturn(Optional.of(experiment));
         when(targetingSelectionRepository.findByExperimentIdWithTargetingElement(13L))
                 .thenReturn(List.of(
                         ExperimentTargetingSelection.builder()
@@ -295,6 +317,60 @@ class FacebookAdSetExperimentServiceTest {
                 .containsExactly("Personal Trainer");
     }
 
+    /**
+     * Garante que o filtro direto por experimento ainda resolve targeting após falha operacional anterior.
+     */
+    @Test
+    void listExperimentsReadyByExperimentIdIgnoresOperationalStatus() {
+        MarketNiche niche = new MarketNiche();
+        niche.setId(16L);
+
+        Hypothesis hypothesis = new Hypothesis();
+        hypothesis.setId(UUID.randomUUID());
+        hypothesis.setMarketNiche(niche);
+
+        Experiment experiment = new Experiment();
+        experiment.setId(38L);
+        experiment.setName("Experimento 38");
+        experiment.setNiche(niche);
+        experiment.setHypothesisRef(hypothesis);
+        experiment.setStatus(ExperimentStatus.FAILED);
+        experiment.setPlatform(ExperimentPlatform.FACEBOOK);
+        experiment.setCreativeApproved(true);
+
+        TargetingElement selectedJobTitle = TargetingElement.builder()
+                .id(10L)
+                .niche(niche)
+                .type(TargetingElementType.JOB_TITLE)
+                .term("Personal Trainer")
+                .status(TargetingElementStatus.APPROVED)
+                .metaId("1419795191647433")
+                .metaKey("Certified Personal Trainer")
+                .build();
+
+        when(experimentRepository.findForAdSetTargetingById(38L, ExperimentPlatform.FACEBOOK))
+                .thenReturn(Optional.of(experiment));
+        when(targetingSelectionRepository.findByExperimentIdWithTargetingElement(38L))
+                .thenReturn(List.of(
+                        ExperimentTargetingSelection.builder()
+                                .experiment(experiment)
+                                .candidateType(TargetingCandidateType.WORK_POSITION)
+                                .term("Personal Trainer")
+                                .targetingElement(selectedJobTitle)
+                                .build()));
+
+        List<ExperimentReadyForAdSetDto> result = service.listExperimentsReadyForAdSets(38L);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst().getExperiment().getId()).isEqualTo(38L);
+        assertThat(result.getFirst().getTargeting().getJobTitles())
+                .extracting(TargetingElementDto::getMetaId)
+                .containsExactly("1419795191647433");
+    }
+
+    /**
+     * Garante que o pacote não é exposto quando não há cargo aprovado para evitar público amplo.
+     */
     @Test
     void listExperimentsReadySkipsWhenApprovedJobTitleIsMissing() {
         MarketNiche niche = new MarketNiche();

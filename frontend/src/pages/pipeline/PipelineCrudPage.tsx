@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Sparkles } from "lucide-react";
 import PageTitle from "../../components/PageTitle";
 import "./PipelineCrudPage.css";
 import { useOpenAiModels } from "../../api/openAiModel/useOpenAiModels";
@@ -558,6 +559,16 @@ export default function PipelineCrudPage() {
                               </h4>
                             </div>
                           </div>
+                          {showOpenAiModel ? (
+                            <span
+                              className="pipeline-stage-ai-indicator"
+                              title="Esta etapa usa IA"
+                              aria-label="Esta etapa usa IA"
+                            >
+                              <Sparkles size={16} aria-hidden="true" />
+                              <span>IA</span>
+                            </span>
+                          ) : null}
                         </div>
                         <div className="pipeline-stage-badges">
                           <span className="badge text-bg-light border">

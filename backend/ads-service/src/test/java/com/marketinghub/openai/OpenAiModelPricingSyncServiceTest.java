@@ -66,7 +66,7 @@ class OpenAiModelPricingSyncServiceTest {
         assertThat(datedVariant.getPriceInputBatch()).isEqualByComparingTo(new BigDecimal("2.50"));
         assertThat(datedVariant.getPriceInputCachedBatch()).isEqualByComparingTo(new BigDecimal("0.25"));
         assertThat(datedVariant.getPriceOutputBatch()).isEqualByComparingTo(new BigDecimal("15.00"));
-        assertThat(datedVariant.getPricingSource()).isEqualTo("https://developers.openai.com/api/docs/pricing");
+        assertThat(datedVariant.getPricingSource()).isEqualTo("openai:/models");
         assertThat(datedVariant.getLastPricingSyncAt()).isNotNull();
         verify(repository).save(datedVariant);
     }

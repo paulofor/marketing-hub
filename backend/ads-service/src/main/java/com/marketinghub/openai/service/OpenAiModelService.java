@@ -26,7 +26,7 @@ import org.springframework.util.StringUtils;
 @Service
 public class OpenAiModelService {
     private static final Logger log = LoggerFactory.getLogger(OpenAiModelService.class);
-    private static final String PRICING_SOURCE = "https://developers.openai.com/api/docs/pricing";
+    private static final String PRICING_SOURCE = "openai:/models";
     private static final BigDecimal ZERO_PRICE = BigDecimal.ZERO.setScale(5);
 
     private final OpenAiModelRepository repository;

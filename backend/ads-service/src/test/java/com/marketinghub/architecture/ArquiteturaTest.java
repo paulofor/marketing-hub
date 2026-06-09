@@ -73,6 +73,11 @@ class ArquiteturaTest {
     private static final Pattern EPM_SERVICE_PACKAGE_PATTERN = Pattern.compile("^com\\.marketinghub\\.epm\\.service$");
     private static final String PIPELINE_WEB_PACKAGE = "com.marketinghub.pipeline.web";
     private static final String PIPELINE_SERVICE_PACKAGE = "com.marketinghub.pipeline.service";
+    private static final String SALES_VIDEO_PACKAGE = "com.marketinghub.salesvideo";
+    private static final String SALES_VIDEO_CONTROLLER_PACKAGE = SALES_VIDEO_PACKAGE + ".controller";
+    private static final String SALES_VIDEO_SERVICE_PACKAGE = SALES_VIDEO_PACKAGE + ".service";
+    private static final String SALES_VIDEO_DTO_PACKAGE = SALES_VIDEO_PACKAGE + ".dto";
+    private static final String SALES_VIDEO_REPOSITORY_PACKAGE = "com.marketinghub.repository.jpa.salesvideo";
     private static final List<String> REQUIRED_BACKEND_SERVICE_SUBPACKAGES = List.of(
             "detailStageExecution", "listStageExecutions", "pending", "recebePrompt", "recebeResposta");
     private static final List<String> REQUIRED_EPM_SERVICE_SUBPACKAGES = List.of(
@@ -248,6 +253,38 @@ class ArquiteturaTest {
                     .because("[ARQUITETURA] [BACKEND][Pipeline] service em pipeline.service só pode acessar pipeline, repositories canônicos de pipeline e exceção explícita do modelo OpenAI");
 
     @ArchTest
+    static final ArchRule salesVideoControllersShouldOnlyAccessModuleContractsAndFacade =
+            classes().that().resideInAPackage("com.marketinghub.salesvideo.controller..")
+                    .should(onlyDependOnAllowedSalesVideoControllerMarketingHubClasses())
+                    .because("[ARQUITETURA] [BACKEND][SalesVideo] controller deve acessar somente contratos do módulo, fachada de service e contratos de mídia necessários");
+
+    @ArchTest
+    static final ArchRule salesVideoServicesShouldOnlyAccessAllowedMarketingHubClasses =
+            classes().that().resideInAPackage("com.marketinghub.salesvideo.service..")
+                    .should(onlyDependOnAllowedSalesVideoServiceMarketingHubClasses())
+                    .because("[ARQUITETURA] [BACKEND][SalesVideo] services devem acessar somente domínio do módulo, DTOs, serviços internos e repositories canônicos externos");
+
+    @ArchTest
+    static final ArchRule salesVideoDtosShouldOnlyDependOnSalesVideoContracts =
+            classes().that().resideInAPackage("com.marketinghub.salesvideo.dto..")
+                    .should(onlyDependOnSalesVideoDtoContracts())
+                    .because("[ARQUITETURA] [BACKEND][SalesVideo] DTOs devem permanecer contratos simples, dependentes apenas de DTOs e tipos de domínio do próprio SalesVideo");
+
+    @ArchTest
+    static final ArchRule salesVideoFunctionalPackageMustNotContainRepositories = noClasses()
+            .that()
+            .resideInAPackage("com.marketinghub.salesvideo..")
+            .should()
+            .beAssignableTo(JpaRepository.class)
+            .because("[ARQUITETURA] [BACKEND][SalesVideo] repositories devem ficar fora do pacote funcional, em com.marketinghub.repository.jpa.salesvideo");
+
+    @ArchTest
+    static final ArchRule salesVideoRepositoriesShouldOnlyAccessSalesVideoDomain =
+            classes().that().resideInAPackage("com.marketinghub.repository.jpa.salesvideo..")
+                    .should(onlyDependOnSalesVideoRepositoryContracts())
+                    .because("[ARQUITETURA] [BACKEND][SalesVideo] repositories externos de SalesVideo devem acessar apenas domínio SalesVideo e contratos do próprio pacote repository");
+
+    @ArchTest
     static final ArchRule backendStageControllersMustExposePendingMethod =
             classes().that().resideInAPackage("com.marketinghub.geralanding.*.web..")
                     .and().haveNameMatching(".*\\.Backend[A-Za-z0-9]+Controller")
@@ -268,6 +305,76 @@ class ArquiteturaTest {
                     .should(haveOnlyCanonicalControllerMethodsCallingService())
                     .because("[ARQUITETURA] [BACKEND][GeraLanding] Backend<Etapa>Controller deve expor exatamente start, listStageExecutions, pending, recebePrompt, recebeResposta e detailStageExecution, sempre delegando ao Backend<Etapa>Service");
 
+
+    /**
+     * Garante que o módulo SalesVideo tenha uma única borda HTTP no pacote controller.
+     */
+    @ArchTest
+    static void salesVideoControllerPackageMustHaveSingleAnnotatedController(JavaClasses importedClasses) {
+        List<String> violations = new ArrayList<>();
+        List<JavaClass> controllerPackageClasses = directPackageClasses(importedClasses, SALES_VIDEO_CONTROLLER_PACKAGE);
+        List<JavaClass> controllers = controllerPackageClasses.stream()
+                .filter(javaClass -> javaClass.getSimpleName().equals("SalesVideoController"))
+                .toList();
+        if (controllerPackageClasses.size() != 1) {
+            violations.add("[ARQUITETURA] [BACKEND][SalesVideo] pacote=" + SALES_VIDEO_CONTROLLER_PACKAGE
+                    + " deve conter apenas SalesVideoController; classes=" + simpleNames(controllerPackageClasses));
+        }
+        if (controllers.size() != 1) {
+            violations.add("[ARQUITETURA] [BACKEND][SalesVideo] pacote=" + SALES_VIDEO_CONTROLLER_PACKAGE
+                    + " deve conter exatamente uma classe SalesVideoController; controllers=" + simpleNames(controllers));
+        } else if (!controllers.get(0).isAnnotatedWith(RestController.class)) {
+            violations.add("[ARQUITETURA] [BACKEND][SalesVideo] classe=" + controllers.get(0).getName()
+                    + " deve possuir @RestController");
+        }
+        failWithArchitectureViolations(violations);
+    }
+
+    /**
+     * Garante que o módulo SalesVideo tenha somente a fachada principal anotada como @Service.
+     */
+    @ArchTest
+    static void salesVideoServicePackageMustHaveSingleServiceFacade(JavaClasses importedClasses) {
+        List<String> violations = new ArrayList<>();
+        List<JavaClass> servicePackageClasses = directPackageClasses(importedClasses, SALES_VIDEO_SERVICE_PACKAGE);
+        List<JavaClass> facades = servicePackageClasses.stream()
+                .filter(javaClass -> javaClass.getSimpleName().equals("SalesVideoService"))
+                .toList();
+        long annotatedServices = servicePackageClasses.stream()
+                .filter(javaClass -> javaClass.isAnnotatedWith(Service.class))
+                .count();
+        if (facades.size() != 1) {
+            violations.add("[ARQUITETURA] [BACKEND][SalesVideo] pacote=" + SALES_VIDEO_SERVICE_PACKAGE
+                    + " deve conter exatamente uma fachada SalesVideoService; facades=" + simpleNames(facades));
+        } else if (!facades.get(0).isAnnotatedWith(Service.class)) {
+            violations.add("[ARQUITETURA] [BACKEND][SalesVideo] classe=" + facades.get(0).getName()
+                    + " deve possuir @Service para marcar a fachada única do módulo");
+        }
+        if (annotatedServices != 1) {
+            violations.add("[ARQUITETURA] [BACKEND][SalesVideo] pacote=" + SALES_VIDEO_SERVICE_PACKAGE
+                    + " deve possuir exatamente um @Service principal; quantidade=" + annotatedServices);
+        }
+        failWithArchitectureViolations(violations);
+    }
+
+    /**
+     * Garante que os repositories externos de SalesVideo estejam no pacote canônico e sejam interfaces JPA.
+     */
+    @ArchTest
+    static void salesVideoRepositoriesMustStayInExternalRepositoryPackage(JavaClasses importedClasses) {
+        List<String> violations = new ArrayList<>();
+        List<JavaClass> repositoryClasses = directPackageClasses(importedClasses, SALES_VIDEO_REPOSITORY_PACKAGE);
+        if (repositoryClasses.isEmpty()) {
+            violations.add("[ARQUITETURA] [BACKEND][SalesVideo] pacote=" + SALES_VIDEO_REPOSITORY_PACKAGE
+                    + " deve conter os repositories externos do módulo");
+        }
+        repositoryClasses.stream()
+                .filter(javaClass -> !javaClass.isAssignableTo(JpaRepository.class))
+                .forEach(javaClass -> violations.add("[ARQUITETURA] [BACKEND][SalesVideo] classe="
+                        + javaClass.getName() + " deve estender JpaRepository no pacote externo "
+                        + SALES_VIDEO_REPOSITORY_PACKAGE));
+        failWithArchitectureViolations(violations);
+    }
 
     /**
      * Garante que cada pacote web backend de etapa tenha somente o controller canônico anotado.
@@ -645,14 +752,21 @@ class ArquiteturaTest {
     }
 
     /**
-     * Lista classes diretas de produção em um pacote do módulo pipeline.
+     * Lista classes diretas de produção em um pacote específico.
      */
-    private static List<JavaClass> pipelineDirectPackageClasses(JavaClasses importedClasses, String packageName) {
+    private static List<JavaClass> directPackageClasses(JavaClasses importedClasses, String packageName) {
         return importedClasses.stream()
                 .filter(ArquiteturaTest::isProductionTopLevelClass)
                 .filter(javaClass -> javaClass.getPackageName().equals(packageName))
                 .sorted(Comparator.comparing(JavaClass::getName))
                 .toList();
+    }
+
+    /**
+     * Lista classes diretas de produção em um pacote do módulo pipeline.
+     */
+    private static List<JavaClass> pipelineDirectPackageClasses(JavaClasses importedClasses, String packageName) {
+        return directPackageClasses(importedClasses, packageName);
     }
 
     /**
@@ -1268,6 +1382,144 @@ class ArquiteturaTest {
                                 + " | regra: epm.service só pode acessar domínio com.marketinghub.epm, "
                                 + "subpacotes com.marketinghub.epm.service.* e repositories "
                                 + "com.marketinghub.repository.jpa.epm";
+                        events.add(SimpleConditionEvent.violated(item, message));
+                    }
+                });
+            }
+        };
+    }
+
+    /**
+     * Garante que controllers SalesVideo dependam apenas da fachada, DTOs, domínio e contratos de mídia liberados.
+     */
+    private static ArchCondition<JavaClass> onlyDependOnAllowedSalesVideoControllerMarketingHubClasses() {
+        return new ArchCondition<>(
+                "[ARQUITETURA] [BACKEND][SalesVideo] controller only depends on SalesVideo facade/contracts") {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                item.getDirectDependenciesFromSelf().forEach(dependency -> {
+                    JavaClass targetClass = dependency.getTargetClass();
+                    String targetName = targetClass.getName();
+                    if (!targetName.startsWith("com.marketinghub.")) {
+                        return;
+                    }
+                    String targetPackage = targetClass.getPackageName();
+                    boolean valid = targetPackage.equals(SALES_VIDEO_PACKAGE)
+                            || targetPackage.startsWith(SALES_VIDEO_CONTROLLER_PACKAGE)
+                            || targetPackage.startsWith(SALES_VIDEO_DTO_PACKAGE)
+                            || targetName.equals("com.marketinghub.salesvideo.service.SalesVideoService")
+                            || targetPackage.equals("com.marketinghub.media")
+                            || targetPackage.startsWith("com.marketinghub.media.dto")
+                            || targetPackage.startsWith("com.marketinghub.media.mapper");
+                    if (!valid) {
+                        String message = "[ARQUITETURA] [BACKEND][SalesVideo] classe-origem=" + item.getName()
+                                + " possui import/dependência violadora: " + dependency.getDescription()
+                                + " (alvo: " + targetName + ")"
+                                + " | regra: salesvideo.controller só pode acessar domínio/DTOs do SalesVideo, "
+                                + "a fachada SalesVideoService e contratos de mídia necessários à borda HTTP.";
+                        events.add(SimpleConditionEvent.violated(item, message));
+                    }
+                });
+            }
+        };
+    }
+
+    /**
+     * Garante que services SalesVideo usem somente domínio próprio e repositories centralizados permitidos.
+     */
+    private static ArchCondition<JavaClass> onlyDependOnAllowedSalesVideoServiceMarketingHubClasses() {
+        return new ArchCondition<>(
+                "[ARQUITETURA] [BACKEND][SalesVideo] service only depends on SalesVideo and approved repositories") {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                item.getDirectDependenciesFromSelf().forEach(dependency -> {
+                    JavaClass targetClass = dependency.getTargetClass();
+                    String targetName = targetClass.getName();
+                    if (!targetName.startsWith("com.marketinghub.")) {
+                        return;
+                    }
+                    String targetPackage = targetClass.getPackageName();
+                    boolean valid = targetPackage.equals(SALES_VIDEO_PACKAGE)
+                            || targetPackage.startsWith(SALES_VIDEO_SERVICE_PACKAGE)
+                            || targetPackage.startsWith(SALES_VIDEO_DTO_PACKAGE)
+                            || targetPackage.startsWith("com.marketinghub.salesvideo.mapper")
+                            || targetPackage.startsWith("com.marketinghub.salesvideo.tenant")
+                            || targetPackage.startsWith("com.marketinghub.salesvideo.exception")
+                            || targetPackage.startsWith(SALES_VIDEO_REPOSITORY_PACKAGE)
+                            || targetPackage.equals("com.marketinghub.media")
+                            || targetPackage.startsWith("com.marketinghub.repository.jpa.media")
+                            || targetPackage.equals("com.marketinghub.storage")
+                            || targetPackage.equals("com.marketinghub.experiment")
+                            || targetPackage.startsWith("com.marketinghub.repository.jpa.experiment")
+                            || targetPackage.equals("com.marketinghub.product")
+                            || targetPackage.startsWith("com.marketinghub.repository.jpa.product");
+                    if (!valid) {
+                        String message = "[ARQUITETURA] [BACKEND][SalesVideo] classe-origem=" + item.getName()
+                                + " possui import/dependência violadora: " + dependency.getDescription()
+                                + " (alvo: " + targetName + ")"
+                                + " | regra: salesvideo.service só pode acessar domínio/DTOs/services internos, "
+                                + "repositories externos canônicos de SalesVideo e contratos auxiliares aprovados "
+                                + "de mídia, storage, experiment e product.";
+                        events.add(SimpleConditionEvent.violated(item, message));
+                    }
+                });
+            }
+        };
+    }
+
+    /**
+     * Garante que DTOs SalesVideo não acessem camadas executáveis ou persistência.
+     */
+    private static ArchCondition<JavaClass> onlyDependOnSalesVideoDtoContracts() {
+        return new ArchCondition<>(
+                "[ARQUITETURA] [BACKEND][SalesVideo] dto only depends on SalesVideo contracts") {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                item.getDirectDependenciesFromSelf().forEach(dependency -> {
+                    JavaClass targetClass = dependency.getTargetClass();
+                    String targetName = targetClass.getName();
+                    if (!targetName.startsWith("com.marketinghub.")) {
+                        return;
+                    }
+                    String targetPackage = targetClass.getPackageName();
+                    boolean valid = targetPackage.equals(SALES_VIDEO_PACKAGE)
+                            || targetPackage.startsWith(SALES_VIDEO_DTO_PACKAGE);
+                    if (!valid) {
+                        String message = "[ARQUITETURA] [BACKEND][SalesVideo] classe-origem=" + item.getName()
+                                + " possui import/dependência violadora: " + dependency.getDescription()
+                                + " (alvo: " + targetName + ")"
+                                + " | regra: salesvideo.dto só pode depender de DTOs e tipos de domínio/enums "
+                                + "do próprio SalesVideo.";
+                        events.add(SimpleConditionEvent.violated(item, message));
+                    }
+                });
+            }
+        };
+    }
+
+    /**
+     * Garante que repositories externos SalesVideo dependam apenas do domínio do módulo.
+     */
+    private static ArchCondition<JavaClass> onlyDependOnSalesVideoRepositoryContracts() {
+        return new ArchCondition<>(
+                "[ARQUITETURA] [BACKEND][SalesVideo] repository only depends on SalesVideo domain") {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                item.getDirectDependenciesFromSelf().forEach(dependency -> {
+                    JavaClass targetClass = dependency.getTargetClass();
+                    String targetName = targetClass.getName();
+                    if (!targetName.startsWith("com.marketinghub.")) {
+                        return;
+                    }
+                    String targetPackage = targetClass.getPackageName();
+                    boolean valid = targetPackage.equals(SALES_VIDEO_PACKAGE)
+                            || targetPackage.startsWith(SALES_VIDEO_REPOSITORY_PACKAGE);
+                    if (!valid) {
+                        String message = "[ARQUITETURA] [BACKEND][SalesVideo] classe-origem=" + item.getName()
+                                + " possui import/dependência violadora: " + dependency.getDescription()
+                                + " (alvo: " + targetName + ")"
+                                + " | regra: repository.jpa.salesvideo é externo ao pacote funcional e deve depender "
+                                + "apenas do domínio SalesVideo e de contratos do próprio pacote repository.";
                         events.add(SimpleConditionEvent.violated(item, message));
                     }
                 });

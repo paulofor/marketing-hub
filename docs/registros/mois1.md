@@ -1184,3 +1184,15 @@ Arquivos alterados:
 Arquivos alterados:
 - `docs/implementacao/mois/plano-etapa-3-aquecimento-ecossistema-mercado.md`
 - `docs/registros/mois1.md`
+
+## 2026-06-09 — Canonização da Etapa 3 de aquecimento no pipeline MOIS
+
+- Canonizada a **Etapa 3 — Pesquisa de Aquecimento e Ecossistema de Mercado** no documento oficial do MOIS, com código `MARKET_WARMUP_RESEARCH`, slug `market-warmup-research`, posição 3, responsabilidade, módulo executor e aliases operacionais.
+- Atualizado o registry oficial do backend para expor o pipeline `mois-sales-page-library-pipeline` com três etapas: obtenção de HTML, análise comercial e pesquisa de aquecimento de mercado.
+- Atualizados os testes de contrato do pipeline oficial para proteger a nova etapa e a sincronização segura do pipeline ausente.
+
+Arquivos alterados:
+- `docs/canonical/mois-worker-canon.v1.md`
+- `backend/ads-service/src/main/java/com/marketinghub/pipeline/definition/PipelineDefinitionRegistry.java`
+- `backend/ads-service/src/test/java/com/marketinghub/pipeline/service/PipelineServiceTest.java`
+- `docs/registros/mois1.md`

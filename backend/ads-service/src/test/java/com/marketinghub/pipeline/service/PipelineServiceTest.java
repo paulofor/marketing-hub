@@ -569,32 +569,40 @@ class PipelineServiceTest {
 
 
     /**
-     * Garante que o pipeline oficial da Biblioteca de Páginas de Vendas MOIS reflete o fluxo operacional atual.
+     * Garante que o pipeline oficial da Biblioteca de Páginas de Vendas MOIS reflete o contrato canonizado.
      */
     @Test
-    void shouldExposeOfficialMoisSalesPageLibraryPipelineFromImplementedStages() {
+    void shouldExposeOfficialMoisSalesPageLibraryPipelineFromCanonicalContract() {
         assertThat(definitionRegistry.findByPipelineCode("mois-sales-page-library-pipeline")).hasValueSatisfying(pipeline -> {
             assertThat(pipeline.module()).isEqualTo("MOIS");
             assertThat(pipeline.name()).isEqualTo("Pipeline Biblioteca de Páginas de Vendas");
-            assertThat(pipeline.stages()).hasSize(2);
+            assertThat(pipeline.stages()).hasSize(3);
             assertThat(pipeline.stages()).extracting(stage -> stage.operationalCode())
-                    .containsExactly("html-acquisition", "commercial-page-analysis");
+                    .containsExactly("html-acquisition", "commercial-page-analysis", "market-warmup-research");
             assertThat(pipeline.stages())
                     .allSatisfy(stage -> {
-                        assertThat(stage.executionModule()).isEqualTo("mois-sales-library-worker");
                         assertThat(stage.rootPackage())
                                 .startsWith("com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service");
-                        assertThat(stage.modulePackage())
-                                .startsWith("com.marketinghub.mois.bibliotecapaginavenda.worker.v1.");
                         assertThat(definitionRegistry.findStage(pipeline, stage.canonicalCode())).contains(stage);
                         assertThat(definitionRegistry.findStage(pipeline, stage.operationalCode())).contains(stage);
                     });
+            assertThat(pipeline.stages().get(0).executionModule()).isEqualTo("mois-sales-library-worker");
+            assertThat(pipeline.stages().get(1).executionModule()).isEqualTo("mois-sales-library-worker");
+            assertThat(pipeline.stages().get(2).executionModule()).isEqualTo("mois-market-warmup-worker");
+            assertThat(pipeline.stages().get(0).modulePackage())
+                    .isEqualTo("com.marketinghub.mois.bibliotecapaginavenda.worker.v1.pipeline.htmlcapture");
+            assertThat(pipeline.stages().get(1).modulePackage())
+                    .isEqualTo("com.marketinghub.mois.bibliotecapaginavenda.worker.v1.openai");
+            assertThat(pipeline.stages().get(2).modulePackage())
+                    .isEqualTo("com.marketinghub.mois.marketwarmup.worker.v1");
             assertThat(pipeline.stages())
                     .filteredOn(stage -> stage.requiresOpenAiModel())
                     .extracting(stage -> stage.operationalCode())
-                    .containsExactly("commercial-page-analysis");
+                    .containsExactly("commercial-page-analysis", "market-warmup-research");
             assertThat(definitionRegistry.findStage(pipeline, "page-analysis"))
                     .hasValueSatisfying(stage -> assertThat(stage.operationalCode()).isEqualTo("commercial-page-analysis"));
+            assertThat(definitionRegistry.findStage(pipeline, "aquecimento-mercado"))
+                    .hasValueSatisfying(stage -> assertThat(stage.operationalCode()).isEqualTo("market-warmup-research"));
         });
     }
 
@@ -664,7 +672,7 @@ class PipelineServiceTest {
 
         PipelineSyncResultDto result = synchronizer.syncOfficialByCode("mois-sales-page-library-pipeline");
 
-        assertThat(result.appliedActions()).hasSize(2);
+        assertThat(result.appliedActions()).hasSize(3);
         assertThat(result.canonicalPipelineCode()).isEqualTo("mois-sales-page-library-pipeline");
     }
 

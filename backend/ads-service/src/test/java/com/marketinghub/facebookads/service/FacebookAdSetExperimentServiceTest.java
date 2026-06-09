@@ -9,8 +9,10 @@ import com.marketinghub.ads.mapper.FacebookInstantFormMapper;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentPlatform;
 import com.marketinghub.experiment.ExperimentStatus;
+import com.marketinghub.experiment.ExperimentTargetingSelection;
 import com.marketinghub.experiment.mapper.ExperimentMapper;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
+import com.marketinghub.repository.jpa.experiment.ExperimentTargetingSelectionRepository;
 import com.marketinghub.facebookads.dto.ExperimentReadyForAdSetDto;
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.hypothesis.mapper.HypothesisMapper;
@@ -18,7 +20,9 @@ import com.marketinghub.hypothesis.framework.HypothesisFrameworkMapperSupport;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.mapper.MarketNicheMapper;
+import com.marketinghub.targeting.TargetingCandidateType;
 import com.marketinghub.targeting.TargetingElement;
+import com.marketinghub.targeting.TargetingElementStatus;
 import com.marketinghub.targeting.TargetingElementType;
 import com.marketinghub.targeting.dto.TargetingElementDto;
 import com.marketinghub.targeting.mapper.TargetingElementMapper;
@@ -37,6 +41,8 @@ class FacebookAdSetExperimentServiceTest {
     @Mock
     private ExperimentRepository experimentRepository;
     @Mock
+    private ExperimentTargetingSelectionRepository targetingSelectionRepository;
+    @Mock
     private TargetingElementRepository targetingElementRepository;
 
     private FacebookAdSetExperimentService service;
@@ -51,6 +57,7 @@ class FacebookAdSetExperimentServiceTest {
         TargetingElementMapper targetingElementMapper = Mappers.getMapper(TargetingElementMapper.class);
         service = new FacebookAdSetExperimentService(
                 experimentRepository,
+                targetingSelectionRepository,
                 targetingElementRepository,
                 experimentMapper,
                 marketNicheMapper,
@@ -132,6 +139,8 @@ class FacebookAdSetExperimentServiceTest {
                 .hypothesis(hypothesis)
                 .type(TargetingElementType.INTEREST)
                 .term("Remarketing")
+                .status(TargetingElementStatus.APPROVED)
+                .metaId("interest-1")
                 .build();
         TargetingElement jobTitle = TargetingElement.builder()
                 .id(2L)
@@ -139,6 +148,8 @@ class FacebookAdSetExperimentServiceTest {
                 .hypothesis(hypothesis)
                 .type(TargetingElementType.JOB_TITLE)
                 .term("CMO")
+                .status(TargetingElementStatus.APPROVED)
+                .metaId("job-2")
                 .build();
         TargetingElement behavior = TargetingElement.builder()
                 .id(3L)
@@ -146,6 +157,8 @@ class FacebookAdSetExperimentServiceTest {
                 .hypothesis(hypothesis)
                 .type(TargetingElementType.BEHAVIOR)
                 .term("Engaged Shoppers")
+                .status(TargetingElementStatus.APPROVED)
+                .metaId("behavior-3")
                 .build();
 
         when(targetingElementRepository.findApprovedForExperiment(5L, TargetingElementType.INTEREST, hypothesisId))
@@ -200,6 +213,8 @@ class FacebookAdSetExperimentServiceTest {
                 .hypothesis(hypothesis)
                 .type(TargetingElementType.JOB_TITLE)
                 .term("CMO")
+                .status(TargetingElementStatus.APPROVED)
+                .metaId("job-2")
                 .build();
         when(targetingElementRepository.findApprovedForExperiment(5L, TargetingElementType.JOB_TITLE, hypothesisId))
                 .thenReturn(List.of(jobTitle));
@@ -215,6 +230,69 @@ class FacebookAdSetExperimentServiceTest {
         assertThat(dto.getTargeting().getJobTitles()).extracting(TargetingElementDto::getTerm)
                 .containsExactly("CMO");
         assertThat(dto.getTargeting().getBehaviors()).isEmpty();
+    }
+
+    @Test
+    void listExperimentsReadyPrioritizesSelectedExperimentTargeting() {
+        MarketNiche niche = new MarketNiche();
+        niche.setId(5L);
+
+        Hypothesis hypothesis = new Hypothesis();
+        hypothesis.setId(UUID.randomUUID());
+        hypothesis.setMarketNiche(niche);
+
+        Experiment experiment = new Experiment();
+        experiment.setId(13L);
+        experiment.setName("Selected targeting");
+        experiment.setNiche(niche);
+        experiment.setHypothesisRef(hypothesis);
+        experiment.setStatus(ExperimentStatus.PLANNED);
+        experiment.setPlatform(ExperimentPlatform.FACEBOOK);
+        experiment.setCreativeApproved(true);
+
+        TargetingElement selectedJobTitle = TargetingElement.builder()
+                .id(21L)
+                .niche(niche)
+                .type(TargetingElementType.JOB_TITLE)
+                .term("Personal Trainer")
+                .status(TargetingElementStatus.APPROVED)
+                .metaId("1419795191647433")
+                .metaKey("Certified Personal Trainer")
+                .build();
+        TargetingElement ignoredMissingMetaId = TargetingElement.builder()
+                .id(22L)
+                .niche(niche)
+                .type(TargetingElementType.JOB_TITLE)
+                .term("Profissionais de Educação Física")
+                .status(TargetingElementStatus.APPROVED)
+                .build();
+
+        when(experimentRepository.findAllReadyForAdSets(eq(ExperimentPlatform.FACEBOOK), any()))
+                .thenReturn(List.of(experiment));
+        when(targetingSelectionRepository.findByExperimentIdWithTargetingElement(13L))
+                .thenReturn(List.of(
+                        ExperimentTargetingSelection.builder()
+                                .experiment(experiment)
+                                .candidateType(TargetingCandidateType.WORK_POSITION)
+                                .term("Personal Trainer")
+                                .targetingElement(selectedJobTitle)
+                                .build(),
+                        ExperimentTargetingSelection.builder()
+                                .experiment(experiment)
+                                .candidateType(TargetingCandidateType.WORK_POSITION)
+                                .term("Profissionais de Educação Física")
+                                .targetingElement(ignoredMissingMetaId)
+                                .build()));
+
+        List<ExperimentReadyForAdSetDto> result = service.listExperimentsReadyForAdSets(13L);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst().getTargeting().getJobTitles())
+                .extracting(TargetingElementDto::getMetaId)
+                .containsExactly("1419795191647433");
+        assertThat(result.getFirst().getTargeting().getJobTitles())
+                .extracting(TargetingElementDto::getTerm)
+                .containsExactly("Personal Trainer");
     }
 
     @Test

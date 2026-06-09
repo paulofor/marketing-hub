@@ -376,8 +376,14 @@ paths:
     get:
       tags: [Facebook Ad Sets]
       summary: Lista experimentos prontos para criação de conjuntos de anúncios.
+      parameters:
+        - name: experimentId
+          in: query
+          required: false
+          schema: { type: integer, format: int64 }
+          description: Filtra o pacote de público pelo experimento selecionado.
       responses:
-        '200': { description: Experimentos retornados. }
+        '200': { description: Experimentos retornados com o público definido no Marketing Hub. }
   /api/adsets:
     get:
       tags: [Facebook Ad Sets]

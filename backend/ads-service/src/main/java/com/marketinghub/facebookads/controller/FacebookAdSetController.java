@@ -5,6 +5,7 @@ import com.marketinghub.facebookads.service.FacebookAdSetExperimentService;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -23,10 +24,13 @@ public class FacebookAdSetController {
         this.experimentService = experimentService;
     }
 
+    /**
+     * Lista os experimentos prontos para materializar conjuntos de anúncios, com filtro opcional por experimento.
+     */
     @GetMapping("/experiments-ready")
-    // Executa a operação experimentsReady da integração Facebook Ads.
-    public List<ExperimentReadyForAdSetDto> experimentsReady() {
-        return experimentService.listExperimentsReadyForAdSets();
+    public List<ExperimentReadyForAdSetDto> experimentsReady(
+            @RequestParam(name = "experimentId", required = false) Long experimentId) {
+        return experimentService.listExperimentsReadyForAdSets(experimentId);
     }
 }
 

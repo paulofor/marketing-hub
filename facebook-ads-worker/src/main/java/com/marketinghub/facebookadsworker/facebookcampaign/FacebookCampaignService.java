@@ -741,20 +741,13 @@ public class FacebookCampaignService {
      * Fetches only the approved targeting package for the experiment to avoid loading the full readiness payload.
      */
     private JsonNode fetchApprovedTargetingPackage(long experimentId) {
-        String baseUrl = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/facebook-adsets/experiments-ready");
-        String filteredUrl = UriComponentsBuilder.fromUriString(baseUrl)
-            .queryParam("experimentId", experimentId)
-            .build()
-            .toUriString();
-        return fetchApprovedTargetingPackageFromUrl(filteredUrl, experimentId);
-    }
-
-    /**
-     * Fetches and selects the targeting package for one experiment from a backend URL.
-     */
-    private JsonNode fetchApprovedTargetingPackageFromUrl(String url, long experimentId) {
+        String url = UrlUtils.joinPath(
+            backendBaseUrl,
+            apiPrefix,
+            "/facebook-adsets/experiments/" + experimentId + "/targeting-package"
+        );
         LOGGER.info(
-            "Requesting approved targeting packages from backend: url==>{}, params={}",
+            "Requesting approved targeting package from backend: url==>{}, params={}",
             url,
             JsonLogFormatter.wrap(objectMapper, Map.of("experimentId", experimentId))
         );
@@ -765,19 +758,15 @@ public class FacebookCampaignService {
                 .bodyToMono(JsonNode.class)
                 .block();
             LOGGER.info(
-                "Received approved targeting packages from backend: url<=={}, response={}",
+                "Received approved targeting package from backend: url<=={}, response={}",
                 url,
                 JsonLogFormatter.wrap(objectMapper, response)
             );
-            if (response == null || !response.isArray()) {
+            if (response == null || !response.isObject()) {
                 return null;
             }
-            for (JsonNode item : response) {
-                if (item.path("experiment").path("id").asLong(-1L) == experimentId) {
-                    return item.path("targeting");
-                }
-            }
-            return null;
+            JsonNode targeting = response.path("targeting");
+            return targeting.isMissingNode() || targeting.isNull() ? null : targeting;
         } catch (Exception ex) {
             LOGGER.warn(
                 "Failed to fetch approved targeting package for experiment {} from backend: url==>{}, message={}",

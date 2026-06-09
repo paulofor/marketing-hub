@@ -4193,3 +4193,18 @@
 - correção: quando `experimentId` é informado, o backend agora busca diretamente o experimento para resolução de targeting, sem depender do status operacional atual, mantendo os bloqueios de segurança de plataforma Facebook, criativo aprovado e cargo aprovado com `metaId` oficial.
 - validação: teste unitário cobre o caso do experimento em `FAILED` ainda retornando o pacote manual aprovado para permitir novo retry sem cair em público amplo.
 - próximo passo: reenfileirar a publicação do experimento 38 após deploy desta correção e confirmar criação de campanha, ad set, criativo e anúncio na Meta.
+
+## 2026-06-09 — Endpoint enxuto de targeting para publicação Facebook Ads
+
+- solicitação: criar um novo endpoint que responda somente o necessário para criação da campanha e alterar o Facebook Ads Worker para consumir esse contrato.
+- causa-raiz: o endpoint `/api/facebook-adsets/experiments-ready?experimentId=<id>` devolvia `ExperimentDto` completo junto do targeting; no experimento 38, campos de landing/HTML/design/copy aumentaram a resposta acima do limite de buffer do worker, fazendo um pacote existente parecer ausente.
+- foi feito: criado o endpoint operacional `GET /api/facebook-adsets/experiments/{experimentId}/targeting-package`, retornando apenas `experimentId` e `targeting` por meio de um DTO enxuto.
+- foi feito: o Facebook Ads Worker passou a usar o endpoint enxuto no fallback manual de segmentação, mantendo o playbook de ad sets como primeira opção.
+- documentação: Swagger, cânone de publicação Facebook Ads e documentação do worker foram atualizados para registrar o novo contrato.
+- impacto esperado: retries de publicação não carregam HTML, copy ou artefatos de landing para resolver público, reduzindo payload e removendo a causa-raiz do falso erro “sem pacote de segmentação aprovado”.
+
+## 2026-06-09 — Ajuste do pacote do DTO enxuto de targeting
+
+- Solicitação: adequar o DTO do endpoint enxuto de criação de campanha ao padrão backend de subpacote por método/operação.
+- Implementação: movido `FacebookAdSetTargetingPackageDto` para `com.marketinghub.facebookads.service.targetingPackage`, mantendo o contrato HTTP sem alteração.
+- Impacto: o Facebook Ads Worker continua consumindo o mesmo endpoint enxuto, e o backend passa a seguir o padrão de organização exigido para DTOs operacionais.

@@ -86,6 +86,7 @@ Implementação: `ExperimentReadinessService` (backend) expõe os mesmos critér
 3. **Público completo**
    - Para seleção manual de público, o mínimo de liberação é ter pelo menos **1 cargo (`JOB_TITLE`) aprovado** em `targeting_element`.
    - Como alternativa, o playbook de ad sets finalizado também atende o requisito de público.
+   - O `facebook-ads-worker` deve consumir o pacote manual por `GET /api/facebook-adsets/experiments/{experimentId}/targeting-package`, contrato enxuto contendo somente `experimentId` e `targeting`, sem `ExperimentDto`, HTML, copy, landing ou artefatos de geração.
 
 Se qualquer bloqueio falhar o worker interrompe a publicação e retorna a lista de pendências no alerta cinza da UI.
 

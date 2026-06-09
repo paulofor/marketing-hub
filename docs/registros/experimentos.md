@@ -4208,3 +4208,10 @@
 - Solicitação: adequar o DTO do endpoint enxuto de criação de campanha ao padrão backend de subpacote por método/operação.
 - Implementação: movido `FacebookAdSetTargetingPackageDto` para `com.marketinghub.facebookads.service.targetingPackage`, mantendo o contrato HTTP sem alteração.
 - Impacto: o Facebook Ads Worker continua consumindo o mesmo endpoint enxuto, e o backend passa a seguir o padrão de organização exigido para DTOs operacionais.
+
+## 2026-06-09 — Exibição segura do botão de zerar contagens pelo gasto da campanha
+
+- solicitação: manter o botão **Zerar contagens** disponível enquanto o custo/gasto da campanha estiver em zero.
+- causa-raiz: a tela usava apenas o bloqueio operacional do experimento para desabilitar o comando, sem transformar o gasto real de mídia na regra principal de segurança para resetar métricas de teste.
+- foi feito: o botão passa a aparecer somente quando o total gasto normalizado da campanha é exatamente zero; nesse cenário ele permanece acionável mesmo com o experimento bloqueado para outras alterações manuais.
+- prevenção: o cânone de publicação e métricas Facebook Ads foi atualizado e testes do frontend cobrem o botão visível com gasto zero e oculto após gasto real.

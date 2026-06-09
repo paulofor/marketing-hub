@@ -51,6 +51,7 @@ export default function ExperimentFunnelTab({
   const diagnosticsQuery = useExperimentFunnelDiagnostics(experimentId);
   const stages = (data ?? []).slice().sort((a, b) => a.order - b.order);
   const normalizedTotalSpend = normalizeSpend(totalSpend);
+  const canResetFunnelMetrics = normalizedTotalSpend === 0;
   const fallbackStages: ExperimentFunnelStageSummary[] = [
     {
       stage: "VISUALIZACAO_ANUNCIO",
@@ -228,22 +229,24 @@ export default function ExperimentFunnelTab({
               experimento.
             </p>
           </div>
-          <button
-            type="button"
-            className="btn btn-outline-danger btn-sm"
-            onClick={handleReset}
-            disabled={resetFunnel.isPending || alterationLocked}
-          >
-            {resetFunnel.isPending ? (
-              <span
-                className="spinner-border spinner-border-sm"
-                role="status"
-                aria-hidden="true"
-              />
-            ) : (
-              "Zerar contagens"
-            )}
-          </button>
+          {canResetFunnelMetrics ? (
+            <button
+              type="button"
+              className="btn btn-outline-danger btn-sm"
+              onClick={handleReset}
+              disabled={resetFunnel.isPending}
+            >
+              {resetFunnel.isPending ? (
+                <span
+                  className="spinner-border spinner-border-sm"
+                  role="status"
+                  aria-hidden="true"
+                />
+              ) : (
+                "Zerar contagens"
+              )}
+            </button>
+          ) : null}
         </div>
 
         <div className="rounded-3 border p-3 bg-light mb-4">

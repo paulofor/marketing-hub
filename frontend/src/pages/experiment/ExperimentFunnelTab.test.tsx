@@ -1,7 +1,15 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from "vitest";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+  type Mock,
+} from "vitest";
 import ExperimentFunnelTab from "./ExperimentFunnelTab";
 import { useExperimentFunnel } from "../../api/experiment/useExperimentFunnel";
 import { useRegisterExperimentFunnelEvent } from "../../api/experiment/useRegisterExperimentFunnelEvent";
@@ -16,9 +24,10 @@ vi.mock("../../api/experiment/useExperimentFunnelDiagnostics");
 
 const renderWithClient = (ui: ReactElement) => {
   const client = new QueryClient();
-  return render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>);
+  return render(
+    <QueryClientProvider client={client}>{ui}</QueryClientProvider>,
+  );
 };
-
 
 describe("ExperimentFunnelTab", () => {
   afterEach(() => cleanup());
@@ -120,13 +129,51 @@ describe("ExperimentFunnelTab", () => {
   });
 
   it("renders the diagnostic block with backend messages", () => {
-    renderWithClient(<ExperimentFunnelTab experimentId="42" totalSpend={100} />);
+    renderWithClient(
+      <ExperimentFunnelTab experimentId="42" totalSpend={100} />,
+    );
 
-    expect(screen.getByText("Diagnóstico estatístico do funil")).toBeInTheDocument();
-    expect(screen.getByText(/Etapa reprovada estatisticamente/)).toBeInTheDocument();
+    expect(
+      screen.getByText("Diagnóstico estatístico do funil"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Etapa reprovada estatisticamente/),
+    ).toBeInTheDocument();
     expect(screen.getByText(/Alerta contextual/)).toBeInTheDocument();
-    expect(screen.getByText(/Limite 10,0% · Tentativas mín\. .*: 30/)).toBeInTheDocument();
-    expect(screen.getByText(/Limite 5,0% · Tentativas mín\. .*: 60/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Limite 10,0% · Tentativas mín\. .*: 30/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Limite 5,0% · Tentativas mín\. .*: 60/),
+    ).toBeInTheDocument();
+  });
+
+  it("keeps the reset button available while campaign spend is zero even when manual changes are locked", () => {
+    renderWithClient(
+      <ExperimentFunnelTab
+        experimentId="42"
+        totalSpend={0}
+        alterationLocked={true}
+      />,
+    );
+
+    expect(
+      screen.getByRole("button", { name: "Zerar contagens" }),
+    ).toBeEnabled();
+  });
+
+  it("hides the reset button after the campaign has spend", () => {
+    renderWithClient(
+      <ExperimentFunnelTab
+        experimentId="42"
+        totalSpend={100}
+        alterationLocked={false}
+      />,
+    );
+
+    expect(
+      screen.queryByRole("button", { name: "Zerar contagens" }),
+    ).not.toBeInTheDocument();
   });
 
   it("shows the cost per conversion for each stage", () => {

@@ -17,7 +17,7 @@ class NicheResearchSeedBuilderBackendClientTest {
                 1L,
                 "9602501",
                 "Cabeleireiros, manicure e pedicure",
-                "IA para crescimento de cabeleireiros",
+                "Cabeleireiros MEI e profissionais autônomos",
                 "Serviços de beleza",
                 "Atendimento presencial com agenda recorrente",
                 "Consumidores finais",
@@ -27,8 +27,8 @@ class NicheResearchSeedBuilderBackendClientTest {
                 "AI");
         ResearchQuery query = new ResearchQuery(
                 1L,
-                "rotina salão beleza agenda clientes",
-                "ROUTINE_DISCOVERY",
+                "MEI salão beleza rotina agenda clientes Brasil",
+                "MEI_ROUTINE_DISCOVERY",
                 "WEB",
                 1,
                 "PENDING",
@@ -37,7 +37,7 @@ class NicheResearchSeedBuilderBackendClientTest {
         NicheResearchSeedBuilderBackendCompletionRequest request = client.toBackendCompletionRequest(
                 new NicheResearchSeedBuilderOutput(1L, seed, List.of(query)));
 
-        assertThat(request.nicheName()).isEqualTo("IA para crescimento de cabeleireiros");
+        assertThat(request.nicheName()).isEqualTo("Cabeleireiros MEI e profissionais autônomos");
         assertThat(request.businessType()).isEqualTo("Serviços de beleza");
         assertThat(request.operationType()).isEqualTo("Atendimento presencial com agenda recorrente");
         assertThat(request.customerType()).isEqualTo("Consumidores finais");
@@ -56,8 +56,8 @@ class NicheResearchSeedBuilderBackendClientTest {
                 10L,
                 1L,
                 20L,
-                "rotina salão beleza agenda clientes",
-                "ROUTINE_DISCOVERY",
+                "MEI salão beleza rotina agenda clientes Brasil",
+                "MEI_ROUTINE_DISCOVERY",
                 "WEB",
                 1,
                 "PENDING",
@@ -70,7 +70,7 @@ class NicheResearchSeedBuilderBackendClientTest {
                 20L,
                 "9602501",
                 "Cabeleireiros, manicure e pedicure",
-                "IA para crescimento de cabeleireiros",
+                "Cabeleireiros MEI e profissionais autônomos",
                 "Serviços de beleza",
                 "Atendimento presencial com agenda recorrente",
                 "Consumidores finais",
@@ -85,10 +85,10 @@ class NicheResearchSeedBuilderBackendClientTest {
         NicheResearchSeedBuilderOutput output = client.toOutput(response);
 
         assertThat(output.researchCycleId()).isEqualTo(1L);
-        assertThat(output.seed().nicheName()).isEqualTo("IA para crescimento de cabeleireiros");
+        assertThat(output.seed().nicheName()).isEqualTo("Cabeleireiros MEI e profissionais autônomos");
         assertThat(output.seed().cnaeCode()).isEqualTo("9602501");
         assertThat(output.queries()).hasSize(1);
-        assertThat(output.queries().getFirst().queryText()).isEqualTo("rotina salão beleza agenda clientes");
+        assertThat(output.queries().getFirst().queryText()).isEqualTo("MEI salão beleza rotina agenda clientes Brasil");
         assertThat(output.queries().getFirst().status()).isEqualTo("PENDING");
     }
 

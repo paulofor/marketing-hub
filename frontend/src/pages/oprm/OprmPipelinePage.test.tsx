@@ -561,7 +561,7 @@ describe("OprmPipelinePage", () => {
                   nicheResearchSeedId: 1,
                   queryText:
                     "Quais são as etapas diárias na rotina de trabalho?",
-                  queryGoal: "ROUTINE_DISCOVERY",
+                  queryGoal: "MEI_ROUTINE_DISCOVERY",
                   sourceGroup: "rotina",
                   priority: 1,
                   status: "PENDING",
@@ -595,7 +595,7 @@ describe("OprmPipelinePage", () => {
     expect(
       screen.getByText("Profissionais enfrentam desafios na gestão de agenda."),
     ).toBeTruthy();
-    expect(screen.getByText("ROUTINE_DISCOVERY: 1")).toBeTruthy();
+    expect(screen.getByText("MEI_ROUTINE_DISCOVERY: 1")).toBeTruthy();
     expect(
       screen.getByText(
         "1 queries geradas para as próximas etapas. Abra o detalhe para ver a requisição enviada à IA e o JSON completo gerado.",

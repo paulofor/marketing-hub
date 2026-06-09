@@ -17,19 +17,7 @@ class NicheResearchSeedBuilderValidatorTest {
     @Test
     void shouldAcceptSpecificPendingQueries() {
         NicheResearchSeedBuilderPending pending = pending();
-        NicheResearchSeedBuilderOutput output = outputWithQueries(List.of(
-                "manicure rotina de atendimento",
-                "manicure responsabilidades agenda",
-                "cliente unha em gel dúvidas",
-                "unha em gel quanto tempo dura",
-                "manicure tarefas atendimento semanal",
-                "agenda manicure horários vazios",
-                "salão beleza comunicação clientes whatsapp",
-                "hidratação cabelo cliente pergunta",
-                "cabeleireiro rotina salão pequeno",
-                "pedicure biossegurança atendimento",
-                "manicure preço unha decorada",
-                "salão beleza recorrência clientes"));
+        NicheResearchSeedBuilderOutput output = outputWithQueries(validQueryTexts());
 
         assertThatNoException().isThrownBy(() -> validator.validate(pending, output));
     }
@@ -38,19 +26,7 @@ class NicheResearchSeedBuilderValidatorTest {
     @Test
     void shouldRejectGenericQuery() {
         NicheResearchSeedBuilderPending pending = pending();
-        List<String> texts = new ArrayList<>(List.of(
-                "manicure rotina de atendimento",
-                "manicure responsabilidades agenda",
-                "cliente unha em gel dúvidas",
-                "unha em gel quanto tempo dura",
-                "manicure tarefas atendimento semanal",
-                "agenda manicure horários vazios",
-                "salão beleza comunicação clientes whatsapp",
-                "hidratação cabelo cliente pergunta",
-                "cabeleireiro rotina salão pequeno",
-                "pedicure biossegurança atendimento",
-                "manicure preço unha decorada",
-                "salão beleza recorrência clientes"));
+        List<String> texts = new ArrayList<>(validQueryTexts());
         texts.set(0, "como vender mais");
         NicheResearchSeedBuilderOutput output = outputWithQueries(texts);
 
@@ -64,20 +40,8 @@ class NicheResearchSeedBuilderValidatorTest {
     @Test
     void shouldRejectSolutionLanguageQuery() {
         NicheResearchSeedBuilderPending pending = pending();
-        List<String> texts = new ArrayList<>(List.of(
-                "manicure rotina de atendimento",
-                "manicure responsabilidades agenda",
-                "cliente unha em gel dúvidas",
-                "unha em gel quanto tempo dura",
-                "manicure tarefas atendimento semanal",
-                "agenda manicure horários vazios",
-                "salão beleza comunicação clientes whatsapp",
-                "hidratação cabelo cliente pergunta",
-                "cabeleireiro rotina salão pequeno",
-                "pedicure biossegurança atendimento",
-                "manicure preço unha decorada",
-                "salão beleza recorrência clientes"));
-        texts.set(0, "IA para crescimento de manicure");
+        List<String> texts = new ArrayList<>(validQueryTexts());
+        texts.set(0, "IA para crescimento de manicure MEI no Brasil");
         NicheResearchSeedBuilderOutput output = outputWithQueries(texts);
 
         assertThatThrownBy(() -> validator.validate(pending, output))
@@ -90,19 +54,7 @@ class NicheResearchSeedBuilderValidatorTest {
     @Test
     void shouldAcceptRepeatedCommonWordsInQueryText() {
         NicheResearchSeedBuilderPending pending = pending();
-        List<String> texts = new ArrayList<>(List.of(
-                "manicure rotina de atendimento e agenda e cliente",
-                "manicure responsabilidades agenda",
-                "cliente unha em gel dúvidas",
-                "unha em gel quanto tempo dura",
-                "manicure tarefas atendimento semanal",
-                "agenda manicure horários vazios",
-                "salão beleza comunicação clientes whatsapp",
-                "hidratação cabelo cliente pergunta",
-                "cabeleireiro rotina salão pequeno",
-                "pedicure biossegurança atendimento",
-                "manicure preço unha decorada",
-                "salão beleza recorrência clientes"));
+        List<String> texts = new ArrayList<>(validQueryTexts());
         NicheResearchSeedBuilderOutput output = outputWithQueries(texts);
 
         assertThatNoException().isThrownBy(() -> validator.validate(pending, output));
@@ -117,6 +69,24 @@ class NicheResearchSeedBuilderValidatorTest {
         assertThatThrownBy(() -> validator.validate(pending, output))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("entre 12 e 15 queries");
+    }
+
+
+    /** Cria queries válidas com marcadores de MEI/autônomo e contexto brasileiro. */
+    private List<String> validQueryTexts() {
+        return List.of(
+                "manicure MEI rotina de atendimento no Brasil",
+                "profissional autônomo manicure responsabilidades agenda Brasil",
+                "trabalhador por conta própria unha em gel dúvidas pt-BR",
+                "MEI unha em gel quanto tempo dura Brasil",
+                "profissional autônomo manicure tarefas atendimento semanal brasileiro",
+                "MEI agenda manicure horários vazios Brasil",
+                "dono-operador salão beleza comunicação clientes whatsapp Brasil",
+                "profissional autônomo hidratação cabelo cliente pergunta brasileira",
+                "MEI cabeleireiro rotina salão pequeno Brasil",
+                "profissional autônomo pedicure biossegurança atendimento pt-BR",
+                "MEI manicure preço unha decorada Brasil",
+                "trabalhador por conta própria salão beleza recorrência clientes brasileiros");
     }
 
     /** Cria uma pendência padrão equivalente ao ciclo RUNNING retornado pelo backend. */
@@ -154,8 +124,8 @@ class NicheResearchSeedBuilderValidatorTest {
                     1001L,
                     queryTexts.get(index),
                     index % 3 == 0
-                            ? "ROUTINE_DISCOVERY"
-                            : index % 3 == 1 ? "ROUTINE_TASK_DISCOVERY" : "OPERATIONAL_DIFFICULTY_DISCOVERY",
+                            ? "MEI_ROUTINE_DISCOVERY"
+                            : index % 3 == 1 ? "CUSTOMER_ACQUISITION_BEHAVIOR_DISCOVERY" : "DAILY_OPERATION_PAIN_DISCOVERY",
                     "GENERAL_WEB",
                     index + 1,
                     "PENDING",

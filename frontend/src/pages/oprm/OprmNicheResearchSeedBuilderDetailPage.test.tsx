@@ -67,7 +67,7 @@ describe("OprmNicheResearchSeedBuilderDetailPage", () => {
                   nicheResearchSeedId: 1,
                   queryText:
                     "Quais são as etapas diárias na rotina de trabalho?",
-                  queryGoal: "ROUTINE_DISCOVERY",
+                  queryGoal: "MEI_ROUTINE_DISCOVERY",
                   sourceGroup: "rotina",
                   priority: 1,
                   status: "PENDING",

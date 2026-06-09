@@ -791,7 +791,7 @@ components:
           default: AI
         queries:
           type: array
-          minItems: 1
+          minItems: 12
           maxItems: 15
           items:
             $ref: '#/components/schemas/NicheResearchQueryRequest'
@@ -801,17 +801,20 @@ components:
       properties:
         queryText:
           type: string
-          example: agenda manicure horários vazios
+          example: manicure MEI rotina de atendimento no Brasil
         queryGoal:
           type: string
           enum:
-            - ROUTINE_DISCOVERY
-            - ROUTINE_TASK_DISCOVERY
-            - OPERATIONAL_DIFFICULTY_DISCOVERY
-            - NICHE_OWNER_QUESTION_DISCOVERY
-            - FINAL_CUSTOMER_QUESTION_DISCOVERY
+            - MEI_ROUTINE_DISCOVERY
+            - AUTONOMOUS_WORK_MODE_DISCOVERY
+            - CUSTOMER_ACQUISITION_BEHAVIOR_DISCOVERY
+            - DAILY_OPERATION_PAIN_DISCOVERY
+            - EMOTIONAL_PAIN_DISCOVERY
+            - DREAM_DISCOVERY
+            - FEAR_DISCOVERY
+            - CHANNEL_BEHAVIOR_DISCOVERY
             - LANGUAGE_DISCOVERY
-            - OPERATIONAL_CONTEXT_DISCOVERY
+            - SOURCE_FRESHNESS_DISCOVERY
         sourceGroup:
           type: string
           nullable: true
@@ -936,10 +939,10 @@ components:
           format: int64
         queryText:
           type: string
-          example: agenda manicure horários vazios
+          example: manicure MEI rotina de atendimento no Brasil
         queryGoal:
           type: string
-          example: OPERATIONAL_DIFFICULTY_DISCOVERY
+          example: DAILY_OPERATION_PAIN_DISCOVERY
         sourceGroup:
           type: string
           nullable: true

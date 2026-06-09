@@ -71,6 +71,6 @@ class NicheResearchSeedBuilderProcessorTest {
         return new NicheResearchSeedBuilderOutput(
                 1001L,
                 seed,
-                List.of(new ResearchQuery(1001L, "manicure rotina", "ROUTINE_DISCOVERY", "GENERAL_WEB", 1, "PENDING", "AI")));
+                List.of(new ResearchQuery(1001L, "manicure MEI rotina Brasil", "MEI_ROUTINE_DISCOVERY", "GENERAL_WEB", 1, "PENDING", "AI")));
     }
 }

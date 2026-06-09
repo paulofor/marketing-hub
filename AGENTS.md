@@ -68,6 +68,7 @@ O Marketing Hub é uma fábrica automatizada de produtos digitais: descobre dore
   5. Se não estiver dentro do padrão atual, criar um novo endpoint dentro do padrão, documentar no Swagger, registrar o endpoint antigo em `/docs/backend/fora-padrao.md` e alterar o frontend para usar o endpoint novo.
 - **Qualidade**: sempre que alterar um módulo Java realizar os testes unitários antes de publicar o PR.
 - **Documentação em código Java (obrigatório)**: toda classe Java deve conter comentário descrevendo sua responsabilidade básica, e todo método deve conter um comentário breve explicando o que ele faz.
+- **Idioma dos comentários em classes Java (obrigatório)**: todos os comentários dentro de classes Java devem ser escritos em português, incluindo comentários de responsabilidade da classe, comentários de métodos e comentários internos.
 - **Classes alteradas sem comentário (obrigatório)**: toda classe Java alterada que ainda não possui comentário de responsabilidade básica deve ser atualizada no mesmo PR para incluir esse comentário.
 - **Responsabilidade única da classe (obrigatório)**: cada classe Java deve ter apenas uma única responsabilidade básica; se houver acúmulo de responsabilidades, refatore antes de ampliar o comportamento.
 - **Leitura prévia obrigatória (classe e método)**: antes de alterar qualquer classe/método Java, ler primeiro os comentários de responsabilidade básica da classe e a descrição do que cada método faz, para manter aderência ao design pretendido.

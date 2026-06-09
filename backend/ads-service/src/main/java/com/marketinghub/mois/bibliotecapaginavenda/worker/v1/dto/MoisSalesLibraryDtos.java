@@ -3,6 +3,7 @@ package com.marketinghub.mois.bibliotecapaginavenda.worker.v1.dto;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -457,6 +458,306 @@ public final class MoisSalesLibraryDtos {
     public record HtmlCapturePersistResponse(
             long snapshotId,
             String status
+    ) {
+    }
+
+
+    /**
+     * Define os estados operacionais possíveis de uma pesquisa de aquecimento de mercado.
+     */
+    public enum MarketWarmupJobStatus {
+        PENDING,
+        FETCHING,
+        DONE,
+        FAILED
+    }
+
+    /**
+     * Define a temperatura comercial calculada para o mercado analisado.
+     */
+    public enum MarketWarmupTemperature {
+        HOT,
+        PROMISING,
+        WARM,
+        COLD,
+        SATURATED
+    }
+
+    /**
+     * Define o tipo principal de ecossistema encontrado na pesquisa pública.
+     */
+    public enum MarketWarmupEcosystemType {
+        SPECIALISTS_HEATED,
+        CREATORS_HEATED,
+        RECURRING_PAIN_HEATED,
+        COMPETITORS_HEATED,
+        COLD_OR_UNEDUCATED,
+        SATURATED
+    }
+
+    /**
+     * Define a recomendação comercial objetiva derivada do score e dos sinais.
+     */
+    public enum MarketWarmupRecommendation {
+        PRIORITIZE,
+        OBSERVE,
+        RESEARCH_MORE,
+        DISCARD,
+        SATURATED_REQUIRES_ANGLE
+    }
+
+    /**
+     * Define as plataformas públicas aceitas como origem rastreável de evidência.
+     */
+    public enum MarketWarmupPlatform {
+        WEB,
+        GOOGLE,
+        YOUTUBE,
+        INSTAGRAM,
+        TIKTOK,
+        BLOG,
+        FORUM,
+        COMMUNITY,
+        MARKETPLACE,
+        REVIEW_SITE,
+        OTHER
+    }
+
+    /**
+     * Define o tipo funcional da fonte pública encontrada.
+     */
+    public enum MarketWarmupSourceType {
+        PRODUCT_PRESENCE,
+        CREATOR_CONTENT,
+        SPECIALIST_CONTENT,
+        COMMUNITY_DISCUSSION,
+        REVIEW,
+        COMPLAINT,
+        COMPETITOR_OFFER,
+        AFFILIATE_PROMOTION,
+        SOCIAL_POST,
+        SEARCH_RESULT,
+        OTHER
+    }
+
+    /**
+     * Define os sinais comerciais extraídos das fontes públicas.
+     */
+    public enum MarketWarmupSignalType {
+        PAIN_EXPLICIT,
+        BUYING_INTENT,
+        OBJECTION,
+        SOCIAL_PROOF,
+        CREATOR_AUTHORITY,
+        COMPETITOR_OFFER,
+        COMMUNITY_ACTIVITY,
+        CONTENT_RECENCY,
+        SATURATION_RISK,
+        CHANNEL_FIT
+    }
+
+    /**
+     * Representa a solicitação aceita para criar ou reutilizar uma pesquisa de aquecimento da página.
+     */
+    public record MarketWarmupRequestResponse(
+            long pageId,
+            long jobId,
+            MarketWarmupJobStatus status,
+            Instant createdAt
+    ) {
+    }
+
+    /**
+     * Representa o resumo final rastreável da pesquisa de aquecimento de mercado.
+     */
+    public record MarketWarmupSummaryResponse(
+            long jobId,
+            long pageId,
+            BigDecimal scoreTotal,
+            MarketWarmupTemperature marketTemperature,
+            MarketWarmupEcosystemType ecosystemType,
+            MarketWarmupRecommendation recommendation,
+            List<String> mainPains,
+            List<String> mainObjections,
+            List<String> mainPromises,
+            List<String> mainChannels,
+            List<String> mainCompetitors,
+            String saturationRisk,
+            String opportunityRecommendation,
+            String nextExperimentSuggestion,
+            MarketWarmupJobStatus status,
+            String errorCategory,
+            String errorMessage,
+            Instant createdAt,
+            Instant updatedAt
+    ) {
+    }
+
+    /**
+     * Representa uma fonte pública usada para justificar o aquecimento do mercado.
+     */
+    public record MarketWarmupSourceResponse(
+            long sourceId,
+            long jobId,
+            long pageId,
+            MarketWarmupPlatform platform,
+            MarketWarmupSourceType sourceType,
+            String sourceUrl,
+            String sourceTitle,
+            String authorName,
+            Instant publishedAt,
+            Instant lastActivityAt,
+            Long followersOrSubscribers,
+            Long viewsCount,
+            Long likesCount,
+            Long commentsCount,
+            BigDecimal recencyScore,
+            BigDecimal engagementScore,
+            String evidenceSummary,
+            Instant createdAt,
+            Instant updatedAt
+    ) {
+    }
+
+    /**
+     * Representa a página de fontes públicas retornada para revisão humana.
+     */
+    public record MarketWarmupSourceListResponse(
+            long pageId,
+            long jobId,
+            List<MarketWarmupSourceResponse> items
+    ) {
+    }
+
+    /**
+     * Representa um sinal comercial extraído de uma fonte pública.
+     */
+    public record MarketWarmupSignalResponse(
+            long signalId,
+            long jobId,
+            long sourceId,
+            long pageId,
+            MarketWarmupSignalType signalType,
+            BigDecimal signalStrength,
+            String signalText,
+            String businessInterpretation,
+            Instant createdAt
+    ) {
+    }
+
+    /**
+     * Representa a lista de sinais que explicam a pontuação da pesquisa.
+     */
+    public record MarketWarmupSignalListResponse(
+            long pageId,
+            long jobId,
+            List<MarketWarmupSignalResponse> items
+    ) {
+    }
+
+    /**
+     * Representa o pedido interno do worker para reservar uma pesquisa pendente.
+     */
+    public record MarketWarmupClaimRequest(
+            @NotBlank String workspaceId,
+            @NotBlank String workerId
+    ) {
+    }
+
+    /**
+     * Representa uma pesquisa reservada com os dados comerciais necessários para coleta pública.
+     */
+    public record MarketWarmupClaimedJob(
+            long jobId,
+            long pageId,
+            String workspaceId,
+            String urlCanonical,
+            String title,
+            String offerSummary,
+            String mechanismSummary,
+            String promiseSummary,
+            String proofSummary
+    ) {
+    }
+
+    /**
+     * Representa a resposta da reserva interna de pesquisa de aquecimento.
+     */
+    public record MarketWarmupClaimResponse(
+            boolean claimed,
+            MarketWarmupClaimedJob job
+    ) {
+    }
+
+    /**
+     * Representa uma fonte pública enviada pelo worker ao concluir a pesquisa.
+     */
+    public record MarketWarmupSourceCompleteItem(
+            @NotNull MarketWarmupPlatform platform,
+            @NotNull MarketWarmupSourceType sourceType,
+            @NotBlank String sourceUrl,
+            String sourceTitle,
+            String authorName,
+            Instant publishedAt,
+            Instant lastActivityAt,
+            Long followersOrSubscribers,
+            Long viewsCount,
+            Long likesCount,
+            Long commentsCount,
+            BigDecimal recencyScore,
+            BigDecimal engagementScore,
+            String evidenceSummary
+    ) {
+    }
+
+    /**
+     * Representa um sinal extraído pelo worker e vinculado a uma fonte pelo índice enviado.
+     */
+    public record MarketWarmupSignalCompleteItem(
+            int sourceIndex,
+            @NotNull MarketWarmupSignalType signalType,
+            @NotNull BigDecimal signalStrength,
+            @NotBlank String signalText,
+            String businessInterpretation
+    ) {
+    }
+
+    /**
+     * Representa o resumo calculado pelo worker para persistência final da pesquisa.
+     */
+    public record MarketWarmupSummaryCompleteItem(
+            @NotNull BigDecimal scoreTotal,
+            @NotNull MarketWarmupTemperature marketTemperature,
+            @NotNull MarketWarmupEcosystemType ecosystemType,
+            @NotNull MarketWarmupRecommendation recommendation,
+            List<String> mainPains,
+            List<String> mainObjections,
+            List<String> mainPromises,
+            List<String> mainChannels,
+            List<String> mainCompetitors,
+            String saturationRisk,
+            String opportunityRecommendation,
+            String nextExperimentSuggestion
+    ) {
+    }
+
+    /**
+     * Representa o payload final do worker sem JSON serializado em campos textuais funcionais.
+     */
+    public record MarketWarmupCompleteRequest(
+            @NotEmpty List<@Valid MarketWarmupSourceCompleteItem> sources,
+            @NotEmpty List<@Valid MarketWarmupSignalCompleteItem> signals,
+            @NotNull @Valid MarketWarmupSummaryCompleteItem summary,
+            Instant finishedAt
+    ) {
+    }
+
+    /**
+     * Representa a falha operacional de uma pesquisa de aquecimento pelo worker.
+     */
+    public record MarketWarmupFailRequest(
+            @NotBlank String errorCategory,
+            @NotBlank String errorMessage
     ) {
     }
 

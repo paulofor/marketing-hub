@@ -1,143 +1,634 @@
-# Diagnóstico — Etapa 2 do redirecionamento OPRM NichoCNAE para MEI/autônomo
+# Plano de redirecionamento do OPRM NichoCNAE para público-alvo MEI autônomo
 
-Data: 2026-06-09
+## 1. Objetivo do plano
 
-## Objetivo
+Redirecionar o pipeline OPRM NichoCNAE para construir um entendimento profundo e atualizado do **público-alvo de profissionais MEI/autônomos no Brasil**, sem avançar para produto, oferta, campanha, promessa comercial ou mecanismo de venda nesta fase.
 
-Mapear onde o pipeline OPRM NichoCNAE gera, transporta, valida, sintetiza e materializa informações para preparar o redirecionamento ao público-alvo de profissionais MEI/autônomos brasileiros, sem executar alteração funcional nesta etapa.
+O foco desta mudança é transformar o pipeline de uma pesquisa ampla por CNAE em uma pesquisa de **pessoa real que executa o trabalho**:
 
-## Resumo executivo
+- profissional autônomo;
+- MEI prestador de serviço;
+- dono-operador que executa pessoalmente a atividade;
+- trabalhador por conta própria que depende da própria rotina, agenda, atendimento, cobrança, reputação e aquisição de clientes para faturar.
 
-O pipeline atual já possui separação clara por etapa entre backend, coletor OPRM, banco e frontend. A mudança para MEI/autônomo deve concentrar-se em quatro pontos: contrato persistente/DTOs, prompts e motores do coletor, regras de qualidade/materialização e apresentação da tela `/oprm/pipeline`.
+O resultado esperado é que o OPRM entregue uma base mais útil para as etapas posteriores do Marketing Hub, descrevendo **comportamentos, rotinas, dores, sonhos, medos, linguagem e contexto real de trabalho** do MEI/autônomo brasileiro.
 
-O principal acoplamento semântico atual é que várias estruturas ainda representam `nicho/CNAE` como unidade principal e a etapa final materializa em `market_niche_enrichment_profile`. Para suportar público-alvo MEI/autônomo sem misturar produto/oferta, a próxima etapa deve definir contrato explícito para perfil de público-alvo, mantendo vínculo com ciclo, cartão de rotina, CNAE e candidato original.
+## 2. Princípios obrigatórios
 
-## Mapa do backend por etapa
+Toda implementação deste plano deve obedecer aos seguintes princípios:
 
-Todos os contratos operacionais do backend ficam no pacote `com.marketinghub.oprm.nichocnae`, com controllers OPRM e endpoints internos para o coletor.
+1. **Respeitar a arquitetura atual do sistema**
+   - O backend continua sendo a única camada que acessa o banco de dados.
+   - O coletor OPRM deve consumir exclusivamente endpoints do módulo OPRM no backend principal.
+   - Controllers, services, DTOs, entidades, repositórios, Liquibase, frontend e testes devem seguir os padrões já existentes do projeto.
+   - Novos endpoints só devem ser criados após verificar se já existe contrato aderente.
 
-| Etapa | Responsabilidade atual | Arquivos/classes principais |
-| --- | --- | --- |
-| `routine-research-orchestrator` | Seleciona/reprocessa candidatos e abre novos ciclos. | `backend/ads-service/src/main/java/com/marketinghub/oprm/nichocnae/routineresearchorchestrator/service/BackendRoutineResearchOrchestratorService.java`; DTOs em `service/pending`, `service/recent`, `service/reprocess`, `service/runNext`; controller `web/BackendRoutineResearchOrchestratorController.java`. |
-| `routine-research-cycle` | Expõe ciclos e detalhes do ciclo pai de pesquisa. | `backend/ads-service/src/main/java/com/marketinghub/oprm/nichocnae/routineresearchcycle/service/BackendRoutineResearchCycleService.java`; DTOs `RecordRoutineResearchCyclePending`, `RoutineResearchCycleExecutionSummaryResponse`, `RecordBackendRoutineResearchCycleDetalheDto`; controller `web/BackendRoutineResearchCycleController.java`. |
-| `niche-research-seed-builder` | Persiste seed e queries planejadas pela IA. | `backend/ads-service/src/main/java/com/marketinghub/oprm/nichocnae/nicheresearchseedbuilder/service/BackendNicheResearchSeedBuilderService.java`; DTOs de conclusão, detalhe, falha e pendência; controller `web/BackendNicheResearchSeedBuilderController.java`. |
-| `source-searcher` | Entrega queries pendentes ao coletor e grava fontes candidatas. | `backend/ads-service/src/main/java/com/marketinghub/oprm/nichocnae/sourcesearcher/service/BackendSourceSearcherService.java`; DTOs `SourceCandidateRequest/Response`, detalhe, pendência e falha; controller `web/BackendSourceSearcherController.java`. |
-| `source-fetcher` | Entrega fontes candidatas ao coletor e grava snapshots leves. | `backend/ads-service/src/main/java/com/marketinghub/oprm/nichocnae/sourcefetcher/service/BackendSourceFetcherService.java`; DTOs `SourceSnapshotResponse`, detalhe, pendência e falha; controller `web/BackendSourceFetcherController.java`. |
-| `signal-extractor` | Grava sinais estruturados extraídos dos snapshots. | `backend/ads-service/src/main/java/com/marketinghub/oprm/nichocnae/signalextractor/service/BackendSignalExtractorService.java`; DTOs `SignalExtractionItemRequest`, `ExtractedSignalResponse`, detalhe, pendência e falha; controller `web/BackendSignalExtractorController.java`. |
-| `routine-synthesizer` | Consolida sinais em cartão de rotina. | `backend/ads-service/src/main/java/com/marketinghub/oprm/nichocnae/routinesynthesizer/service/BackendRoutineSynthesizerService.java`; DTOs `RoutineCardResponse`, `SignalForRoutineSynthesis`, detalhe, pendência e falha; controller `web/BackendRoutineSynthesizerController.java`. |
-| `routine-quality-gate` | Decide se o cartão pode avançar ou se exige nova pesquisa. | `backend/ads-service/src/main/java/com/marketinghub/oprm/nichocnae/routinequalitygate/service/BackendRoutineQualityGateService.java`; DTOs de decisão, detalhe, pendência e falha; controller `web/BackendRoutineQualityGateController.java`. |
-| `enriched-niche-materializer` | Materializa cartão aprovado em `market_niche` e `market_niche_enrichment_profile`. | `backend/ads-service/src/main/java/com/marketinghub/oprm/nichocnae/enrichednichematerializer/service/BackendEnrichedNicheMaterializerService.java`; DTOs de detalhe, diagnóstico, pendência, conclusão e falha; controller `web/BackendEnrichedNicheMaterializerController.java`. |
+2. **Foco exclusivo em público-alvo, não em produto**
+   - Não construir oferta.
+   - Não sugerir produto digital.
+   - Não criar hipótese de mecanismo.
+   - Não criar promessa, headline, campanha ou landing page.
+   - Não perguntar “o que vender para esse público” nesta fase.
 
-### Entidades e repositories do backend
+3. **Foco em MEI/autônomo brasileiro**
+   - A pesquisa deve ser Brasil-first.
+   - Usar português do Brasil.
+   - Priorizar fontes brasileiras, dados recentes e comportamento atual do mercado brasileiro.
+   - Evitar material antigo, genérico ou ultrapassado quando houver fonte mais recente.
 
-- Entidades do pipeline: `OprmRoutineResearchCycle`, `OprmNicheResearchSeed`, `OprmResearchQuery`, `OprmSourceCandidate`, `OprmSourceSnapshot`, `OprmExtractedSignal` e `OprmNicheRoutineCard`.
-- Normalização semântica de nome: `RoutineResearchNicheNameNormalizer`.
-- Repositories OPRM: `backend/ads-service/src/main/java/com/marketinghub/repository/jpa/oprm/nichocnae/OprmRoutineResearchCycleRepository.java`, `OprmNicheResearchSeedRepository.java`, `OprmResearchQueryRepository.java`, `OprmSourceCandidateRepository.java`, `OprmSourceSnapshotRepository.java`, `OprmExtractedSignalRepository.java` e `OprmNicheRoutineCardRepository.java`.
-- Repositories acoplados à materialização final: `backend/ads-service/src/main/java/com/marketinghub/repository/jpa/oprm/cnae/OprmNicheCandidateRepository.java`, `backend/ads-service/src/main/java/com/marketinghub/repository/jpa/niche/MarketNicheRepository.java` e `backend/ads-service/src/main/java/com/marketinghub/repository/jpa/niche/MarketNicheEnrichmentProfileRepository.java`.
+4. **Foco em comportamento humano e operacional**
+   - Rotina real.
+   - Atividades repetidas.
+   - Dores sentidas.
+   - Sonhos e aspirações.
+   - Medos, frustrações e limitações.
+   - Linguagem usada pelo próprio público.
+   - Canais usados para trabalhar, vender, atender e cobrar.
 
-## Mapa do coletor OPRM por etapa
+5. **Fontes novas e rastreáveis**
+   - Priorizar dados dos últimos 24 meses quando possível.
+   - Aceitar fontes mais antigas apenas quando forem estruturais, oficiais ou ainda claramente válidas.
+   - Registrar data de coleta, data de publicação quando disponível, domínio/fonte e motivo de uso.
+   - Classificar risco de fonte antiga ou desatualizada.
 
-O coletor usa o pacote `com.marketinghub.nichocnae` e mantém uma estrutura repetida por etapa: `Scheduler`, `Service`, `Processor`, `BackendClient`, contratos de entrada/saída e, quando necessário, `Engine`, `PromptBuilder`, `Validator` ou provedor externo.
+6. **Uso de IA como apoio, não como fonte de verdade**
+   - Modelos de texto podem gerar queries, classificar fontes, sintetizar sinais e separar personas.
+   - A evidência deve vir de dados públicos, fontes recentes, banco de dados e registros rastreáveis.
+   - Toda síntese deve preservar vínculo com evidências.
 
-| Etapa | Processors/clients | Prompts, validators e engines |
-| --- | --- | --- |
-| `routine-research-orchestrator` | `RoutineResearchOrchestratorProcessor`, `RoutineResearchOrchestratorService`, `RoutineResearchOrchestratorBackendClient`, `RoutineResearchOrchestratorInitialScheduler`. | Etapa determinística, sem prompt OpenAI. |
-| `routine-research-cycle` | `RoutineResearchCycleProcessor`, `RoutineResearchCycleService`, `RoutineResearchCycleBackendClient`. | Etapa determinística de leitura/detalhe do ciclo, sem prompt OpenAI. |
-| `niche-research-seed-builder` | `NicheResearchSeedBuilderProcessor`, `NicheResearchSeedBuilderService`, `NicheResearchSeedBuilderBackendClient`, `NicheResearchSeedBuilderScheduler`. | `NicheResearchSeedBuilderPromptBuilder`, `OpenAiNicheResearchSeedBuilderClient`, `NicheResearchSeedBuilderSchema`, `NicheResearchSeedBuilderValidator`, `NicheResearchSeedBuilderOpenAiProperties`. Este é o primeiro ponto crítico para redirecionar queries a MEI/autônomo. |
-| `source-searcher` | `SourceSearcherProcessor`, `SourceSearcherService`, `SourceSearcherBackendClient`, `SourceSearcherScheduler`. | `DuckDuckGoHtmlSourceSearchProvider`, `PublicSourceSearchProvider`, `SourceIntentClassifier`. Deve reforçar Brasil-first, intenção de fonte e risco de páginas comerciais/solução. |
-| `source-fetcher` | `SourceFetcherProcessor`, `SourceFetcherService`, `SourceFetcherBackendClient`, `SourceFetcherScheduler`. | `JsoupPublicSourceFetcher`, `PublicSourceFetcher`. Coleta snapshots leves e precisa preservar metadados de fonte recente quando disponíveis. |
-| `signal-extractor` | `SignalExtractorProcessor`, `SignalExtractorService`, `SignalExtractorBackendClient`, `SignalExtractorScheduler`. | `SignalExtractorEngine`. Deve ganhar categorias/heurísticas voltadas a rotina real, aquisição de clientes, dores emocionais, sonhos, medos, linguagem e canais usados por MEI/autônomo. |
-| `routine-synthesizer` | `RoutineSynthesizerProcessor`, `RoutineSynthesizerService`, `RoutineSynthesizerBackendClient`, `RoutineSynthesizerScheduler`. | `RoutineSynthesizerEngine`. Deve sintetizar perfil de público-alvo, não hipótese de produto/oferta. |
-| `routine-quality-gate` | `RoutineQualityGateProcessor`, `RoutineQualityGateService`, `RoutineQualityGateBackendClient`, `RoutineQualityGateScheduler`. | `RoutineQualityGateEngine`. Deve avaliar aderência a MEI/autônomo, evidência comportamental, atualidade e risco de desvio para empresa estruturada ou solução. |
-| `enriched-niche-materializer` | `EnrichedNicheMaterializerProcessor`, `EnrichedNicheMaterializerService`, `EnrichedNicheMaterializerBackendClient`, `EnrichedNicheMaterializerScheduler`. | `EnrichedNicheMaterializerEngine`, `EnrichedNicheProfileDraft`. É o ponto de maior acoplamento com o contrato final atual de nicho enriquecido. |
+## 3. Resultado final esperado
 
-## Mapa do banco via MCP
+Ao final do redirecionamento, cada ciclo NichoCNAE aprovado deve produzir um **perfil de público-alvo MEI/autônomo**, contendo no mínimo:
 
-Consulta realizada pelo MCP Server em `https://mcpserverdigi.shop/mcp`, usando `db_query` sobre `INFORMATION_SCHEMA` do schema `marketinghubdb`.
+- CNAE base;
+- nome neutro do nicho;
+- ocupações/autodenominações prováveis dentro do CNAE;
+- tipo de atuação predominante: autônomo solo, atendimento em domicílio, ponto fixo, parceria/salão, oficina, online, rua, evento, recorrente ou sob demanda;
+- comportamento de aquisição de clientes;
+- rotina diária/semanal;
+- tarefas repetidas;
+- gargalos operacionais;
+- dores emocionais e práticas;
+- sonhos e aspirações;
+- medos e inseguranças;
+- linguagem real usada pelo público;
+- canais usados: WhatsApp, Instagram, Facebook, Google, marketplaces, indicação, grupos locais ou outros;
+- sinais de atualidade das fontes;
+- score de aderência a MEI/autônomo;
+- score de evidência comportamental;
+- score de risco de informação antiga;
+- score de risco de desvio para empresa estruturada ou produto/oferta.
 
-### Tabelas identificadas
+## 4. Etapas de implantação
 
-- Tabelas OPRM relacionadas ao pipeline: `oprm_routine_research_cycle`, `oprm_niche_research_seed`, `oprm_research_query`, `oprm_source_candidate`, `oprm_source_snapshot`, `oprm_extracted_signal`, `oprm_niche_routine_card` e `oprm_niche_candidate`.
-- Tabelas de materialização final e legado de nicho: `market_niche` e `market_niche_enrichment_profile`.
-- Outras tabelas OPRM do domínio que aparecem no schema e podem ser fonte/contexto indireto: `oprm_cnae_opportunity_score`, `oprm_cnae_processing_cycle`, `oprm_cnae_enrichment_artifact`, `oprm_market_size_by_cnae`, `oprm_cnpj_cnae_dim`, `oprm_niche_catalog`, `oprm_niche_snapshot`, `oprm_occupation`, `oprm_artifact`, `oprm_job`, `oprm_job_event`, `oprm_job_input`, `oprm_feedback_history` e `oprm_feedback_snapshot`.
+As etapas abaixo foram desenhadas para serem executadas por um modelo de IA desenvolvedor, uma etapa por vez, com escopo claro, validação objetiva e baixo risco de conflito.
 
-### Campos de maior acoplamento semântico
+---
 
-- `oprm_routine_research_cycle`: mantém `source_niche_id`, `cnae_code`, `cnae_description`, `niche_name`, `original_niche_name`, `neutral_niche_name`, `research_mode`, status, contadores e `solution_language_risk_score`.
-- `oprm_niche_research_seed`: mantém `business_type`, `operation_type`, `customer_type`, `commercial_objects`, `initial_assumptions`, `confidence_level` e queries associadas.
-- `oprm_research_query`: transporta texto, objetivo, grupo de fonte, prioridade, status e contagem de resultados.
-- `oprm_source_candidate`: transporta URL, título, snippet, domínio, grupo, provedor, posição, intenção da fonte, evidência de rotina e riscos comerciais/solução.
-- `oprm_source_snapshot`: preserva metadados e trecho curto da fonte para extração.
-- `oprm_extracted_signal`: armazena sinais classificados, texto, evidência e score.
-- `oprm_niche_routine_card`: consolida rotina, tarefas, dores, resultados desejados, oportunidades de mecanismo, evidências, decisão do gate e scores.
-- `market_niche_enrichment_profile`: recebe a materialização final atual; precisa ser avaliada na etapa 3 para decidir se comporta o novo perfil MEI/autônomo sem perda semântica.
+## Etapa 1 — Atualizar regra canônica OPRM para foco MEI/autônomo
 
-## Mapa do frontend
+### Objetivo
 
-### Rotas e telas
+Registrar oficialmente que o pipeline NichoCNAE, quando originado do levantamento MEI, deve priorizar a construção de público-alvo de profissionais autônomos brasileiros.
 
-- Tela principal do pipeline: `frontend/src/pages/oprm/OprmPipelinePage.tsx`, rota `/oprm/pipeline` registrada em `frontend/src/App.tsx`.
-- Detalhe do seed: `frontend/src/pages/oprm/OprmNicheResearchSeedBuilderDetailPage.tsx`, rota `/oprm/pipeline/niche-research-seed-builder/:researchCycleId`.
-- Detalhe do nicho enriquecido: `frontend/src/pages/oprm/OprmEnrichedNicheDetailPage.tsx`, rota `/oprm/enriched-niches/profile/:profileId`.
-- Navegação OPRM: `frontend/src/pages/oprm/OprmModuleNavigation.tsx`.
+### Escopo de implementação
 
-### Hooks/endpoints consumidos pela tela de pipeline e detalhes
+1. Atualizar `docs/canonical/oprm-canon.v1.md` adicionando uma seção de regra obrigatória para **público-alvo MEI/autônomo**.
+2. A regra deve deixar explícito que a pesquisa inicial deve construir entendimento de comportamento, rotina, dores, sonhos e linguagem do MEI/autônomo.
+3. A regra deve proibir avanço para produto/oferta nesta fase.
+4. A regra deve exigir fontes brasileiras recentes sempre que possível.
+5. Atualizar testes relacionados se houver validação automatizada de regra canônica.
+6. Registrar a tarefa em `docs/registros/oprm1.md`.
 
-- `useOprmRoutineResearchOrchestratorRecent`: `/api/oprm/nichocnae/routine-research-orchestrator/recent-processed` e reprocessamento em `/api/oprm/nichocnae/routine-research-orchestrator/recent-processed/{researchCycleId}/reprocess`.
-- `useOprmNicheResearchSeedBuilderDetail`: `/api/oprm/nichocnae/niche-research-seed-builder/stage-executions/{researchCycleId}`.
-- `useOprmSourceSearcherDetail`: `/api/oprm/nichocnae/source-searcher/stage-executions/{researchCycleId}`.
-- `useOprmSourceFetcherDetail`: `/api/oprm/nichocnae/source-fetcher/stage-executions/{researchCycleId}`.
-- `useOprmSignalExtractorDetail`: `/api/oprm/nichocnae/signal-extractor/stage-executions/{researchCycleId}`.
-- `useOprmRoutineSynthesizerDetail`: `/api/oprm/nichocnae/routine-synthesizer/stage-executions/{researchCycleId}`.
-- `useOprmRoutineQualityGateDetail`: `/api/oprm/nichocnae/routine-quality-gate/stage-executions/{researchCycleId}`.
-- `useOprmEnrichedNicheMaterializerDetail`: `/api/oprm/nichocnae/enriched-niche-materializer/stage-executions/{researchCycleId}` e `/api/oprm/nichocnae/enriched-niche-materializer/profiles/{profileId}`.
+### Critérios de aceite
 
-### Pontos de tela a alterar nas próximas etapas
+- O cânone diferencia claramente `CNAE` de `público-alvo MEI/autônomo`.
+- O documento deixa claro que o alvo prioritário é o profissional que executa o trabalho, não apenas a empresa/CNAE.
+- O documento proíbe produto, oferta, campanha e promessa comercial nesta fase.
+- O documento exige atualidade e Brasil-first.
 
-- Textos da tela `/oprm/pipeline` ainda falam majoritariamente em `nicho`, `CNAE`, `rotina`, `dificuldades` e `nicho enriquecido`; devem passar a explicar que o produto intermediário é o perfil de público-alvo MEI/autônomo.
-- Cards de seed, extração, síntese, gate e materialização devem mostrar scores e alertas ligados a aderência MEI/autônomo, atualidade, comportamento real, risco de empresa estruturada e risco de linguagem de solução.
-- Detalhes devem permitir auditar fontes e evidências por público-alvo, não apenas por CNAE/nicho.
+---
 
-## Diagnóstico de mudanças necessárias
+## Etapa 2 — Mapear o estado atual do pipeline e pontos de acoplamento
 
-### Backend
+### Objetivo
 
-1. Criar ou adaptar contrato persistente para perfil de público-alvo MEI/autônomo, com rastreabilidade para ciclo, cartão, CNAE e candidato.
-2. Atualizar DTOs públicos e internos apenas no pacote OPRM/NichoCNAE, sem permitir consumo direto entre módulos.
-3. Ajustar services de seed, sinais, síntese, gate e materialização para transportar campos de comportamento, rotina, dores emocionais, sonhos, medos, linguagem, canais e scores de aderência.
-4. Preservar bloqueio de produto/oferta/campanha na fase de pesquisa, principalmente no materializador e no download consolidado.
-5. Revisar Swagger e testes unitários dos services alterados.
+Identificar exatamente onde o pipeline hoje gera, transporta, valida, sintetiza e materializa informações do NichoCNAE, para fazer a mudança sem quebrar a arquitetura.
 
-### Coletor OPRM
+### Escopo de implementação
 
-1. Alterar o prompt/schema/validator do `niche-research-seed-builder` para gerar queries de MEI/autônomo brasileiro.
-2. Reforçar `source-searcher` e `source-fetcher` para favorecer fonte brasileira recente e evidência comportamental.
-3. Expandir `SignalExtractorEngine` para sinais específicos de MEI/autônomo: aquisição de clientes, modo de trabalho, rotina diária, retrabalho, cobrança, agenda, compra de materiais, entrega, linguagem, sonhos, medos e canais.
-4. Expandir `RoutineSynthesizerEngine` para sintetizar perfil de público-alvo sem criar oferta.
-5. Expandir `RoutineQualityGateEngine` com scores de aderência a autônomo, evidência comportamental, atualidade, risco de fonte antiga, risco de empresa estruturada e risco de solução.
-6. Ajustar `EnrichedNicheMaterializerEngine` para materializar o contrato correto sem contaminar o artefato final com metadados técnicos ou solução.
+1. Mapear no backend as classes das etapas:
+   - `routine-research-orchestrator`;
+   - `routine-research-cycle`;
+   - `niche-research-seed-builder`;
+   - `source-searcher`;
+   - `source-fetcher`;
+   - `signal-extractor`;
+   - `routine-synthesizer`;
+   - `routine-quality-gate`;
+   - `enriched-niche-materializer`.
+2. Mapear no coletor OPRM os processors, clients, prompts, validators e engines dessas etapas.
+3. Mapear tabelas envolvidas no banco via MCP, sem acesso direto fora do backend.
+4. Mapear a tela `/oprm/pipeline` e telas de detalhe relacionadas.
+5. Produzir um diagnóstico curto indicando quais pontos precisam de alteração para suportar público-alvo MEI/autônomo.
 
-### Banco
+### Critérios de aceite
 
-1. Na etapa 3, decidir se `market_niche_enrichment_profile` é suficiente ou se será criada tabela nova, como `oprm_mei_audience_profile`.
-2. Se houver tabela nova, usar Liquibase YAML compatível com MySQL 5.7, com `databaseChangeLog`, `preConditions` para MySQL, `splitStatements: true` e `stripComments: true`.
-3. Declarar `@Column(name = "...")` em campos JPA com risco de divergência de nomenclatura.
-4. Evitar `UPDATE`/`DELETE` com subconsulta lendo a mesma tabela-alvo para não cair no erro MySQL 5.7 1093.
+- O diagnóstico lista arquivos/classes por etapa.
+- O diagnóstico separa mudanças necessárias em backend, coletor, banco, frontend e testes.
+- Nenhuma alteração funcional deve ser feita nesta etapa, exceto documentação do diagnóstico se necessário.
 
-### Frontend
+---
 
-1. Atualizar `/oprm/pipeline` para mostrar que o foco operacional é público-alvo MEI/autônomo, não apenas CNAE/nicho.
-2. Ajustar nomes de cards, descrições, saídas e alertas para comportamento real, rotina, dores, sonhos, medos, linguagem e canais.
-3. Atualizar telas de detalhe para expor scores e evidências do perfil de público-alvo.
-4. Manter comandos essenciais: auditar, reprocessar pelo front-end quando permitido e abrir detalhe/download quando houver perfil materializado.
+## Etapa 3 — Criar contrato de dados para perfil de público-alvo MEI/autônomo
 
-### Testes
+### Objetivo
 
-1. Backend: testes dos services de seed, busca, coleta, extração, síntese, gate, materialização e normalizador quando os contratos mudarem.
-2. Coletor: testes de prompt/schema/validator, engines, clients, processors, schedulers e arquitetura do pacote `com.marketinghub.nichocnae`.
-3. Frontend: testes de `/oprm/pipeline`, detalhe do seed e detalhe do perfil enriquecido.
-4. Se a etapa 3 criar entidade/tabela nova, adicionar teste de repository/integração conforme padrão do backend.
+Definir uma estrutura persistente e rastreável para representar público-alvo MEI/autônomo sem misturar produto ou oferta.
 
-## Conclusão
+### Escopo de implementação
 
-A arquitetura atual permite a mudança de direção sem refatoração estrutural ampla. O risco principal é semântico: continuar materializando `nicho enriquecido` como se fosse perfil de público-alvo pode misturar CNAE, empresa, produto e oferta. A causa-raiz desse risco deve ser tratada na etapa 3 com contrato de dados explícito para MEI/autônomo antes de mudar prompts, engines e tela.
+1. Avaliar se a estrutura atual `market_niche_enrichment_profile` comporta os novos campos sem perda semântica.
+2. Se necessário, criar nova tabela, por exemplo `oprm_mei_audience_profile`, via Liquibase YAML compatível com MySQL 5.7.
+3. Campos recomendados:
+   - `id`;
+   - `research_cycle_id`;
+   - `routine_card_id`;
+   - `source_niche_candidate_id`;
+   - `market_niche_id` quando existir;
+   - `cnae_code`;
+   - `cnae_description`;
+   - `neutral_niche_name`;
+   - `audience_name`;
+   - `occupation_terms`;
+   - `work_mode`;
+   - `customer_acquisition_behavior`;
+   - `daily_routine_summary`;
+   - `recurring_tasks_summary`;
+   - `operational_pains_summary`;
+   - `emotional_pains_summary`;
+   - `dreams_summary`;
+   - `fears_summary`;
+   - `language_patterns`;
+   - `channels_used`;
+   - `recent_source_summary`;
+   - `autonomous_professional_fit_score`;
+   - `behavioral_evidence_score`;
+   - `source_freshness_score`;
+   - `outdated_source_risk_score`;
+   - `structured_business_drift_risk_score`;
+   - `solution_language_risk_score`;
+   - `created_at`;
+   - `updated_at`.
+4. Criar entidade JPA com `@Column(name = "...")` em todos os campos com risco de divergência.
+5. Criar repository dentro do pacote repository adequado.
+6. Criar DTOs apenas no módulo OPRM.
+7. Adicionar testes unitários/repositório conforme padrão do backend.
+
+### Critérios de aceite
+
+- O contrato persiste público-alvo sem produto, oferta ou campanha.
+- O vínculo com ciclo/cartão/CNAE fica rastreável.
+- Liquibase segue as regras MySQL 5.7 do projeto.
+- Classes Java novas/alteradas possuem comentários de responsabilidade e comentários de métodos em português.
+
+---
+
+## Etapa 4 — Reorientar a etapa de seed para queries de MEI/autônomo
+
+### Objetivo
+
+Fazer a etapa `niche-research-seed-builder` gerar pesquisas explicitamente voltadas a MEI/autônomos brasileiros, com foco em comportamento, rotina, sonhos e dores.
+
+### Escopo de implementação
+
+1. Alterar o prompt da etapa de seed no coletor OPRM.
+2. Incluir instruções obrigatórias:
+   - pesquisar profissional autônomo/MEI;
+   - pesquisar trabalhador por conta própria;
+   - pesquisar dono-operador;
+   - pesquisar como a pessoa consegue clientes;
+   - pesquisar como atende, cobra, agenda, compra materiais, entrega serviço e lida com retrabalho;
+   - pesquisar sonhos e objetivos pessoais/profissionais;
+   - pesquisar medos e inseguranças;
+   - pesquisar linguagem real em pt-BR.
+3. Proibir termos de produto/oferta/IA como direção de pesquisa.
+4. Adicionar novos objetivos de query, se necessário:
+   - `MEI_ROUTINE_DISCOVERY`;
+   - `AUTONOMOUS_WORK_MODE_DISCOVERY`;
+   - `CUSTOMER_ACQUISITION_BEHAVIOR_DISCOVERY`;
+   - `DAILY_OPERATION_PAIN_DISCOVERY`;
+   - `EMOTIONAL_PAIN_DISCOVERY`;
+   - `DREAM_DISCOVERY`;
+   - `FEAR_DISCOVERY`;
+   - `CHANNEL_BEHAVIOR_DISCOVERY`;
+   - `LANGUAGE_DISCOVERY`;
+   - `SOURCE_FRESHNESS_DISCOVERY`.
+5. Atualizar schema, validator, DTOs e backend para aceitar somente objetivos compatíveis.
+6. Garantir que queries tenham marcadores Brasil/MEI/autônomo/profissional quando fizer sentido.
+
+### Critérios de aceite
+
+- As queries geradas deixam claro quem é a pessoa pesquisada.
+- O pipeline para de depender apenas do nome do CNAE como segmento.
+- O validador bloqueia queries genéricas ou direcionadas para solução.
+- O schema continua evitando JSON dentro de JSON em campos textuais.
+
+---
+
+## Etapa 5 — Adicionar classificação de fonte por atualidade e aderência a MEI/autônomo
+
+### Objetivo
+
+Garantir que a coleta priorize fontes recentes, brasileiras e aderentes ao comportamento de MEI/autônomos.
+
+### Escopo de implementação
+
+1. Evoluir a classificação da etapa `source-searcher` para incluir:
+   - `sourceFreshnessScore`;
+   - `outdatedSourceRisk`;
+   - `brazilRelevanceScore`;
+   - `autonomousProfessionalEvidenceScore`;
+   - `structuredBusinessDriftRisk`.
+2. Classificar fontes por tipo:
+   - fonte oficial brasileira;
+   - conteúdo setorial recente;
+   - relato/pergunta real de profissional;
+   - conteúdo de rede social/comunidade;
+   - notícia recente;
+   - página comercial;
+   - conteúdo antigo ou sem data;
+   - conteúdo de empresa estruturada que não representa autônomo.
+3. Penalizar fonte antiga quando houver alternativa recente.
+4. Priorizar fontes dos últimos 24 meses quando disponíveis.
+5. Persistir data de publicação quando for possível extrair do resultado ou da página.
+6. Não armazenar HTML completo; manter política de snapshot curto.
+
+### Critérios de aceite
+
+- Fontes antigas ficam marcadas com risco, não tratadas como verdade principal.
+- Fontes brasileiras recentes sobem no ranking.
+- Fontes de empresa estruturada não dominam a leitura do autônomo.
+- O snapshot curto preserva os novos indicadores.
+
+---
+
+## Etapa 6 — Avaliar uso de redes sociais e comunidades públicas
+
+### Objetivo
+
+Investigar se redes sociais e comunidades públicas podem melhorar a leitura de linguagem, dores, sonhos e comportamento atual do MEI/autônomo brasileiro.
+
+### Escopo de implementação
+
+1. Fazer uma avaliação técnica e jurídica das fontes permitidas.
+2. Priorizar apenas dados públicos, respeitando termos de uso e privacidade.
+3. Fontes candidatas:
+   - YouTube comentários/títulos/descrições públicas quando permitido;
+   - Reddit público quando houver comunidades brasileiras relevantes;
+   - TikTok/Instagram apenas se houver mecanismo permitido e estável de acesso público, sem scraping proibido;
+   - Facebook/Grupos apenas se houver fonte pública e permitida;
+   - Reclame Aqui, fóruns, comentários em portais e comunidades públicas quando aderentes;
+   - Google Trends ou fontes abertas de tendência quando aplicável.
+4. Criar uma etapa opcional, se aprovada, por exemplo `social-behavior-searcher`.
+5. Essa etapa deve coletar somente sinais comportamentais e linguagem, nunca dados pessoais sensíveis.
+6. Adicionar logs de ingestão do payload bruto quando houver fluxo de ingestão.
+
+### Critérios de aceite
+
+- Nenhuma fonte social é integrada sem avaliação de permissão e estabilidade.
+- Dados pessoais não são persistidos.
+- A saída é comportamento agregado, linguagem e sinais de dor/sonho.
+- A etapa é opcional e rastreável, sem quebrar o pipeline principal.
+
+---
+
+## Etapa 7 — Criar etapa de IA para segmentação comportamental de MEI/autônomo
+
+### Objetivo
+
+Usar modelo de texto para transformar evidências coletadas em segmentos comportamentais claros, sem criar produtos.
+
+### Escopo de implementação
+
+1. Criar uma etapa após `signal-extractor` ou após `routine-synthesizer`, por exemplo `mei-audience-segmenter`.
+2. Entrada da etapa:
+   - CNAE;
+   - nome neutro;
+   - fontes recentes;
+   - snapshots;
+   - sinais extraídos;
+   - indicadores de fonte;
+   - rotina e dificuldades.
+3. Saída da etapa:
+   - segmentos de MEI/autônomo dentro do CNAE;
+   - descrição comportamental de cada segmento;
+   - rotina dominante;
+   - dores práticas;
+   - dores emocionais;
+   - sonhos;
+   - medos;
+   - canais usados;
+   - frases/linguagem observada;
+   - evidências vinculadas;
+   - score de aderência a autônomo;
+   - score de atualidade.
+4. Proibir explicitamente produto, oferta, preço, promessa, campanha e solução.
+5. Validar a saída com schema estruturado e validator determinístico.
+6. Persistir a saída em tabela própria ou perfil enriquecido.
+
+### Critérios de aceite
+
+- A IA separa públicos diferentes dentro do CNAE.
+- A saída descreve pessoas e comportamentos, não produtos.
+- Cada afirmação relevante possui evidência ou resumo de fonte rastreável.
+- O validator bloqueia linguagem de oferta ou solução.
+
+---
+
+## Etapa 8 — Evoluir extração de sinais para dores, sonhos, medos e canais
+
+### Objetivo
+
+Ampliar a extração determinística/IA dos sinais para além de tarefas operacionais, capturando dimensões essenciais de marketing.
+
+### Escopo de implementação
+
+1. Adicionar ou ajustar tipos de sinal:
+   - `AUTONOMOUS_WORK_MODE`;
+   - `CUSTOMER_ACQUISITION_BEHAVIOR`;
+   - `CHANNEL_USAGE`;
+   - `OPERATIONAL_PAIN`;
+   - `EMOTIONAL_PAIN`;
+   - `DREAM_SIGNAL`;
+   - `FEAR_SIGNAL`;
+   - `STATUS_DESIRE`;
+   - `TIME_PRESSURE`;
+   - `INCOME_INSTABILITY`;
+   - `TRUST_REPUTATION_CONCERN`;
+   - `PRICE_INSECURITY`;
+   - `CLIENT_NO_SHOW_OR_CANCELLATION`.
+2. Atualizar sintetizador para criar blocos separados:
+   - rotina;
+   - comportamento de clientes;
+   - canais;
+   - dores práticas;
+   - dores emocionais;
+   - sonhos;
+   - medos;
+   - linguagem.
+3. Manter evidência curta por sinal.
+4. Evitar termos de solução.
+
+### Critérios de aceite
+
+- O cartão deixa de ser apenas operacional e passa a ser comportamental.
+- O usuário consegue entender claramente quem é o MEI/autônomo pesquisado.
+- Os sinais continuam rastreáveis e auditáveis.
+
+---
+
+## Etapa 9 — Criar gate de qualidade específico para público MEI/autônomo
+
+### Objetivo
+
+Impedir que pesquisas genéricas, antigas, corporativas ou orientadas a solução avancem como público-alvo válido.
+
+### Escopo de implementação
+
+1. Criar ou evoluir o `routine-quality-gate` para avaliar também:
+   - aderência a MEI/autônomo;
+   - evidência comportamental;
+   - atualidade das fontes;
+   - diversidade de fontes brasileiras;
+   - risco de fonte antiga;
+   - risco de desvio para empresa estruturada;
+   - risco de linguagem de solução/produto.
+2. Sugerir critérios mínimos:
+   - pelo menos 3 fontes brasileiras relevantes;
+   - pelo menos 2 fontes recentes quando disponíveis;
+   - pelo menos 1 evidência de rotina;
+   - pelo menos 1 evidência de aquisição/atendimento/canal;
+   - pelo menos 1 dor prática;
+   - pelo menos 1 dor emocional, sonho ou medo;
+   - baixo risco de produto/oferta.
+3. Status recomendados:
+   - `MEI_AUDIENCE_READY`;
+   - `NEEDS_MORE_MEI_RESEARCH`;
+   - `OUTDATED_SOURCES`;
+   - `TOO_CORPORATE`;
+   - `SOLUTION_CONTAMINATED`;
+   - `GENERIC`.
+
+### Critérios de aceite
+
+- O gate bloqueia conteúdo antigo ou corporativo demais.
+- O gate exige sinais humanos/comportamentais, não apenas rotina técnica.
+- O gate não aprova material contaminado por produto/oferta.
+
+---
+
+## Etapa 10 — Materializar perfil de público-alvo MEI/autônomo
+
+### Objetivo
+
+Persistir e expor o perfil aprovado para consumo posterior por MDS, MOIS e módulos de estratégia, mantendo a separação entre pesquisa de público e criação de produto.
+
+### Escopo de implementação
+
+1. Criar materializador específico ou evoluir `enriched-niche-materializer`.
+2. Gerar um perfil final com:
+   - resumo do público;
+   - rotina;
+   - comportamentos;
+   - canais;
+   - dores práticas;
+   - dores emocionais;
+   - sonhos;
+   - medos;
+   - linguagem;
+   - fontes recentes;
+   - scores.
+3. Expor endpoint OPRM para detalhe do perfil.
+4. Garantir que o perfil não contenha produto, oferta ou promessa comercial.
+5. Adicionar teste de regressão contra contaminação por solução.
+
+### Critérios de aceite
+
+- O perfil final é útil para marketing, mas ainda não cria produto.
+- O perfil é rastreável por ciclo, CNAE, fontes e scores.
+- O payload final contém somente campos contratuais.
+
+---
+
+## Etapa 11 — Atualizar tela `/oprm/pipeline` e telas de detalhe
+
+### Objetivo
+
+Permitir que o usuário enxergue se o pipeline está realmente pesquisando MEI/autônomo e se as fontes são recentes.
+
+### Escopo de implementação
+
+1. Atualizar `/oprm/pipeline` para mostrar:
+   - foco da pesquisa: `MEI_AUTONOMOUS_AUDIENCE_RESEARCH` ou equivalente;
+   - nome neutro do CNAE;
+   - público MEI/autônomo identificado;
+   - score de aderência a autônomo;
+   - score de atualidade;
+   - risco de fonte antiga;
+   - risco de desvio para empresa estruturada;
+   - status do gate.
+2. Atualizar telas de detalhe para mostrar:
+   - queries geradas;
+   - fontes recentes usadas;
+   - fontes antigas penalizadas;
+   - sinais de rotina, dores, sonhos, medos e canais;
+   - justificativa do gate.
+3. Manter interface simples, objetiva e orientada à decisão.
+
+### Critérios de aceite
+
+- O usuário entende rapidamente se o ciclo gerou público-alvo MEI/autônomo válido.
+- A tela não fica excessivamente técnica.
+- As ações disponíveis devem ser apenas as necessárias: reprocessar, pesquisar mais ou abrir detalhe.
+
+---
+
+## Etapa 12 — Testes, documentação e prevenção de recorrência
+
+### Objetivo
+
+Garantir que o redirecionamento permaneça estável e não volte a pesquisar produto/oferta ou empresa genérica.
+
+### Escopo de implementação
+
+1. Criar/atualizar testes de backend para:
+   - validação de objetivos de query;
+   - bloqueio de termos de solução;
+   - persistência dos novos campos;
+   - gate de qualidade MEI/autônomo;
+   - materialização sem produto/oferta.
+2. Criar/atualizar testes do coletor para:
+   - prompt com foco MEI/autônomo;
+   - schema de segmentação;
+   - classificação de fonte recente/antiga;
+   - risco de desvio corporativo.
+3. Criar/atualizar testes de frontend quando houver alteração visual.
+4. Atualizar Swagger dos endpoints OPRM afetados.
+5. Registrar em `docs/registros/oprm1.md`.
+
+### Critérios de aceite
+
+- Testes unitários Java passam no módulo alterado.
+- Testes frontend passam quando houver alteração na UI.
+- Swagger documenta contratos novos/alterados.
+- Documentação e testes ficam alinhados com o cânone.
+
+## 5. Ordem recomendada de execução
+
+A ordem mais segura é:
+
+1. Etapa 1 — regra canônica.
+2. Etapa 2 — diagnóstico de acoplamento.
+3. Etapa 3 — contrato de dados.
+4. Etapa 4 — seed MEI/autônomo.
+5. Etapa 5 — classificação de fontes por atualidade e aderência.
+6. Etapa 8 — novos sinais comportamentais.
+7. Etapa 7 — segmentador IA de público MEI/autônomo.
+8. Etapa 9 — gate de qualidade.
+9. Etapa 10 — materialização.
+10. Etapa 11 — frontend.
+11. Etapa 12 — testes/documentação final.
+12. Etapa 6 — redes sociais, somente após avaliação de permissão e estabilidade.
+
+A etapa de redes sociais deve ser tratada como opcional e posterior, pois pode gerar risco técnico, jurídico e operacional se implementada antes de estabilizar o pipeline principal.
+
+## 6. Prompts de referência para modelos de IA
+
+### 6.1 Prompt para geração de queries
+
+```text
+Você está trabalhando no pipeline OPRM NichoCNAE do Marketing Hub.
+Sua tarefa é gerar queries de pesquisa para entender o público-alvo de profissionais MEI/autônomos brasileiros dentro de um CNAE.
+
+Não crie produto, oferta, promessa, campanha, mecanismo, headline ou hipótese comercial.
+Pesquise apenas comportamento, rotina, dores, sonhos, medos, linguagem, canais e contexto real de trabalho.
+
+Priorize Brasil, português do Brasil e fontes recentes.
+Evite fontes antigas quando houver alternativas mais novas.
+Inclua termos como MEI, autônomo, profissional por conta própria, prestador de serviço, dono-operador, WhatsApp, Instagram, agenda, cliente, cobrança, orçamento, indicação, atendimento ou materiais somente quando fizerem sentido para o CNAE.
+
+Retorne JSON válido no schema solicitado.
+```
+
+### 6.2 Prompt para segmentação comportamental
+
+```text
+Você é especialista em marketing e segmentação de mercado no Brasil.
+Analise as evidências coletadas para um CNAE e separe possíveis públicos de profissionais MEI/autônomos.
+
+Para cada público, descreva:
+- quem é a pessoa;
+- como trabalha;
+- como consegue clientes;
+- como atende e cobra;
+- quais dores práticas aparecem;
+- quais dores emocionais aparecem;
+- quais sonhos e aspirações aparecem;
+- quais medos aparecem;
+- quais canais usa;
+- qual linguagem usa;
+- quais evidências sustentam a leitura.
+
+Não proponha produto, oferta, solução, campanha, promessa ou preço.
+Se as evidências forem fracas, diga que precisa de mais pesquisa.
+```
+
+### 6.3 Prompt para avaliação de fonte
+
+```text
+Classifique esta fonte para pesquisa de público-alvo MEI/autônomo brasileiro.
+Avalie:
+- relevância Brasil;
+- atualidade;
+- aderência a profissional autônomo/MEI;
+- risco de representar empresa estruturada em vez de autônomo;
+- risco comercial ou linguagem de produto/oferta;
+- utilidade para entender rotina, dores, sonhos, medos, canais e linguagem.
+
+Não invente dados ausentes.
+Se a data da fonte não estiver clara, marque risco de atualidade.
+```
+
+## 7. Riscos principais
+
+1. **Voltar a pesquisar produto cedo demais**
+   - Mitigação: validators determinísticos, gate de risco de solução e testes de regressão.
+
+2. **Confundir MEI/autônomo com empresa pequena estruturada**
+   - Mitigação: score de aderência a autônomo e risco de desvio corporativo.
+
+3. **Usar fonte antiga e tirar conclusão ultrapassada**
+   - Mitigação: score de atualidade, data de publicação e penalidade para fonte antiga.
+
+4. **Coletar rede social de forma instável ou inadequada**
+   - Mitigação: etapa opcional, avaliação de permissão, coleta apenas pública e agregada.
+
+5. **Criar perfil bonito, mas sem evidência**
+   - Mitigação: vínculo obrigatório com fontes, snapshots, sinais e scores.
+
+## 8. Definição de pronto do redirecionamento
+
+O redirecionamento estará pronto quando um ciclo NichoCNAE conseguir responder, com evidências recentes e brasileiras:
+
+- Quem é o MEI/autônomo dentro desse CNAE?
+- Como essa pessoa trabalha no dia a dia?
+- Como ela consegue clientes?
+- Onde ela atende, negocia e cobra?
+- O que mais toma tempo, energia e dinheiro?
+- O que ela quer conquistar?
+- Do que ela tem medo?
+- Que linguagem ela usa para descrever seus problemas?
+- As fontes são atuais?
+- O perfil é realmente de autônomo ou caiu em empresa estruturada?
+- O material está livre de produto, oferta e solução precoce?

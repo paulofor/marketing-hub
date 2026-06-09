@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.catchThrowable;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -12,6 +13,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -80,8 +82,9 @@ class ExperimentPipelineOpenAiClientTest {
         assertThat(userPrompt).contains("funnelStage: não inclua este campo");
     }
 
+    /** Garante que a etapa AD_COPY usa o template versionado em prompts/experiment do ai-worker. */
     @Test
-    void prependsGlobalRulesOnlyForNonCampaignSections() {
+    void prependsAdCopyGuidanceFromExperimentPromptDirectory() throws Exception {
         AtomicReference<Map<String, Object>> payloadRef = new AtomicReference<>();
         ExperimentPipelineOpenAiClient client = new ExperimentPipelineOpenAiClient(
                 WebClient.builder().exchangeFunction(capturePayloadExchange(payloadRef)),
@@ -113,7 +116,47 @@ class ExperimentPipelineOpenAiClientTest {
         String userPrompt = String.valueOf(input.get(0).get("content"));
         assertThat(userPrompt).startsWith("Você cria ativos de campanha para o Marketing Hub.");
         assertThat(userPrompt).contains("Prompt de anuncio");
+        assertThat(userPrompt).contains(readPromptTemplateBody("prompts/experiment/ad-copy.md"));
+        assertThat(userPrompt).doesNotContain("template_id:");
         assertThat(userPrompt).doesNotContain("proofSummary,");
+    }
+
+
+    /** Garante que a etapa AD_IMAGE_BRIEFING usa o template versionado em prompts/experiment do ai-worker. */
+    @Test
+    void prependsAdImageBriefingGuidanceFromExperimentPromptDirectory() throws Exception {
+        AtomicReference<Map<String, Object>> payloadRef = new AtomicReference<>();
+        ExperimentPipelineOpenAiClient client = new ExperimentPipelineOpenAiClient(
+                WebClient.builder().exchangeFunction(capturePayloadExchange(payloadRef)),
+                MAPPER,
+                "test-key",
+                "http://openai");
+
+        ExperimentPipelineJobDto job = new ExperimentPipelineJobDto(
+                UUID.randomUUID(),
+                11L,
+                "ad-image-briefing",
+                "gpt-5.2",
+                "prompt",
+                """
+                        {
+                          "model": "gpt-5.2",
+                          "input": [
+                            {"role": "user", "content": "Prompt de briefing visual"}
+                          ]
+                        }
+                        """,
+                Instant.now());
+
+        client.generate(job);
+
+        Map<String, Object> payload = payloadRef.get();
+        @SuppressWarnings("unchecked")
+        var input = (java.util.List<Map<String, Object>>) payload.get("input");
+        String userPrompt = String.valueOf(input.get(0).get("content"));
+        assertThat(userPrompt).contains("Prompt de briefing visual");
+        assertThat(userPrompt).contains(readPromptTemplateBody("prompts/experiment/ad-image-briefing.md"));
+        assertThat(userPrompt).doesNotContain("template_id:");
     }
 
     @Test
@@ -1221,6 +1264,20 @@ class ExperimentPipelineOpenAiClientTest {
 
     private ExchangeFunction capturePayloadExchange(AtomicReference<Map<String, Object>> payloadRef) {
         return capturePayloadExchange(payloadRef, "{\"content\":\"ok\"}");
+    }
+
+    /** Lê o corpo do template sem cabeçalho para validar o prompt enviado sem hardcode no teste. */
+    private String readPromptTemplateBody(String path) throws Exception {
+        String raw = new ClassPathResource(path).getContentAsString(StandardCharsets.UTF_8).replace("\r\n", "\n");
+        String[] lines = raw.split("\n", -1);
+        int start = 0;
+        for (int index = 0; index < lines.length; index++) {
+            if (lines[index] == null || lines[index].isBlank()) {
+                start = index + 1;
+                break;
+            }
+        }
+        return String.join("\n", java.util.Arrays.copyOfRange(lines, start, lines.length)).trim();
     }
 
     @SuppressWarnings("unchecked")

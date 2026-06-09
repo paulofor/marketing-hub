@@ -301,6 +301,12 @@ Investigar se redes sociais e comunidades públicas podem melhorar a leitura de 
 - A saída é comportamento agregado, linguagem e sinais de dor/sonho.
 - A etapa é opcional e rastreável, sem quebrar o pipeline principal.
 
+### Execução em 2026-06-09
+
+- Avaliação registrada em `docs/implementacao/oprm/avaliacao-redes-sociais-comunidades-publicas-mei-autonomo.md`.
+- Decisão: não integrar scraping social amplo; permitir apenas fontes públicas com mecanismo oficial/permitido, estável e aprovado fonte a fonte.
+- A etapa opcional `social-behavior-searcher` ficou definida como contrato futuro desativado por padrão, com saída agregada e sem persistência de dados pessoais.
+
 ---
 
 ## Etapa 7 — Criar etapa de IA para segmentação comportamental de MEI/autônomo

@@ -77,6 +77,16 @@ Evitar fechamento prematuro de `import run` que destrói a totalização de mark
 - Fontes antigas só podem ser usadas quando forem estruturais, oficiais ou ainda claramente válidas; nesse caso, o risco de desatualização deve permanecer explícito na análise ou nos artefatos posteriores.
 - Evidências sobre empresas estruturadas, franquias, grandes negócios ou fornecedores B2B só podem apoiar contexto secundário; elas não podem substituir a compreensão do profissional que executa o trabalho.
 
+## Regra obrigatória — fontes sociais e comunidades públicas no NichoCNAE
+
+- Redes sociais, comunidades públicas, comentários e fóruns só podem complementar a pesquisa de público-alvo MEI/autônomo quando houver fonte pública, mecanismo permitido, estabilidade operacional e aderência aos termos de uso da plataforma.
+- É proibido integrar scraping social amplo, burlar login, captcha, paywall, bloqueio técnico, grupos privados, mensagens privadas ou qualquer fonte sem autorização clara.
+- A coleta social/comunitária deve ser opcional, rastreável e desacoplada do pipeline principal; sua ausência não pode bloquear as etapas canônicas de pesquisa, síntese e gate.
+- A saída permitida deve ser apenas agregada e comportamental: padrões de linguagem, sinais de dor, sonhos, medos, canais e comportamento de aquisição/atendimento do MEI/autônomo.
+- Dados pessoais, identificadores de perfil, comentários integrais desnecessários, contatos, documentos, localização precisa ou qualquer dado sensível não podem ser persistidos.
+- Qualquer etapa futura, como `social-behavior-searcher`, deve permanecer desativada por padrão até aprovação fonte a fonte, possuir contrato backend próprio, registrar logs de ingestão do payload bruto e gravar somente sinais agregados/curtos.
+- Conteúdo social com linguagem de produto, oferta, campanha, promessa, ferramenta, curso, automação ou IA deve ser tratado como risco de contaminação da fase inicial, não como oportunidade comercial.
+
 ## Critério de efetividade — público-alvo MEI/autônomo
 
 - Cada ciclo NichoCNAE originado do levantamento MEI deve deixar claro quem é o MEI/autônomo pesquisado, quais ocupações ou autodenominações aparecem dentro do CNAE e por que esse público representa a pessoa que executa o trabalho.

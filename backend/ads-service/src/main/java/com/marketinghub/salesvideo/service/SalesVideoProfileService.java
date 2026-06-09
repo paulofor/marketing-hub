@@ -16,7 +16,7 @@ import com.marketinghub.repository.jpa.salesvideo.SalesVideoScriptRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
@@ -29,7 +29,7 @@ import java.util.Optional;
 /**
  * Orquestra as operações administrativas sobre perfis de vídeo.
  */
-@Service
+@Component
 public class SalesVideoProfileService {
     private static final ObjectMapper OBJECT_MAPPER = JsonMapper.builder()
             .findAndAddModules()

@@ -13,7 +13,7 @@ import com.marketinghub.storage.AssetUploadCategory;
 import com.marketinghub.storage.AssetUploadContext;
 import com.marketinghub.salesvideo.exception.VideoModuleErrorCode;
 import com.marketinghub.salesvideo.exception.VideoModuleException;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -24,7 +24,7 @@ import java.util.Map;
 /**
  * Serviço responsável por armazenar arquivos do módulo de vídeo e registrá-los como {@link Asset}.
  */
-@Service
+@Component
 public class SalesVideoAssetService {
     private static final TypeReference<Map<String, Object>> MAP_TYPE = new TypeReference<>() {};
 

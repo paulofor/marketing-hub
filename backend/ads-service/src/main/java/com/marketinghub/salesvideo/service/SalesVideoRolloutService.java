@@ -7,7 +7,7 @@ import com.marketinghub.salesvideo.exception.VideoModuleErrorCode;
 import com.marketinghub.salesvideo.exception.VideoModuleException;
 import com.marketinghub.salesvideo.tenant.TenantContextHolder;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import java.util.Arrays;
@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 /**
  * Política de rollout controlado do módulo de vídeo por tenant/perfil.
  */
-@Service
+@Component
 public class SalesVideoRolloutService {
 
     private final boolean rolloutEnabled;

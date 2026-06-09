@@ -307,6 +307,13 @@ class FacebookCampaignServiceTest {
         );
         assertEquals("/api/experiments/1/adset-playbook", playbookGet.getPath());
 
+        RecordedRequest targetingGet = takeBackendRequestMatching(
+            "filtered manual targeting request",
+            request -> "/api/facebook-adsets/experiments-ready?experimentId=1".equals(request.getPath())
+                && "GET".equals(request.getMethod())
+        );
+        assertEquals("/api/facebook-adsets/experiments-ready?experimentId=1", targetingGet.getPath());
+
         RecordedRequest postAdImage = takeFacebookRequest("facebook ad image upload");
         assertEquals("/v23.0/act_1/adimages", postAdImage.getPath());
         String adImagePayload = postAdImage.getBody().readUtf8();
@@ -353,9 +360,6 @@ class FacebookCampaignServiceTest {
         assertEquals("Exp - Ad", adPayload.get("name").asText());
         assertEquals("20", adPayload.get("adset_id").asText());
         assertEquals("30", adPayload.get("creative").get("creative_id").asText());
-
-        RecordedRequest manualTargetingRequest = takeBackendRequest("backend request");
-        assertEquals("/api/facebook-adsets/experiments-ready", manualTargetingRequest.getPath());
 
         RecordedRequest postBackend = takeBackendRequestMatching(
             "campaign report",
@@ -1036,9 +1040,9 @@ class FacebookCampaignServiceTest {
 
         RecordedRequest firstManualTargetingRequest = takeBackendRequestMatching(
             "first manual targeting package request",
-            request -> "/api/facebook-adsets/experiments-ready".equals(request.getPath()) && "GET".equals(request.getMethod())
+            request -> "/api/facebook-adsets/experiments-ready?experimentId=1".equals(request.getPath()) && "GET".equals(request.getMethod())
         );
-        assertEquals("/api/facebook-adsets/experiments-ready", firstManualTargetingRequest.getPath());
+        assertEquals("/api/facebook-adsets/experiments-ready?experimentId=1", firstManualTargetingRequest.getPath());
 
         RecordedRequest secondExperimentRequest = takeBackendRequestMatching(
             "second experiments-ready request",
@@ -1133,9 +1137,9 @@ class FacebookCampaignServiceTest {
 
         RecordedRequest firstManualTargetingRequest = takeBackendRequestMatching(
             "first manual targeting package request",
-            request -> "/api/facebook-adsets/experiments-ready".equals(request.getPath()) && "GET".equals(request.getMethod())
+            request -> "/api/facebook-adsets/experiments-ready?experimentId=1".equals(request.getPath()) && "GET".equals(request.getMethod())
         );
-        assertEquals("/api/facebook-adsets/experiments-ready", firstManualTargetingRequest.getPath());
+        assertEquals("/api/facebook-adsets/experiments-ready?experimentId=1", firstManualTargetingRequest.getPath());
 
         RecordedRequest secondExperiment = takeBackendRequestMatching(
             "second experiments-ready request",
@@ -1334,7 +1338,7 @@ class FacebookCampaignServiceTest {
         );
         takeBackendRequestMatching(
             "manual targeting package request",
-            request -> "/api/facebook-adsets/experiments-ready".equals(request.getPath())
+            request -> "/api/facebook-adsets/experiments-ready?experimentId=1".equals(request.getPath())
                 && "GET".equals(request.getMethod())
         );
 

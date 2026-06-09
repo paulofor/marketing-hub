@@ -4168,3 +4168,13 @@
 
 - Registrado o pipeline `facebook-ads-publication-metrics-pipeline` para tornar visíveis, na tela `/pipelines`, as tarefas do Facebook Ads Worker ligadas à publicação de campanhas e sincronização de métricas.
 - Etapas cobrem configuração, prontidão do experimento, consumo de criativos, publicação na Meta, registro no backend, seleção de alvos de métricas, coleta de insights, persistência de métricas e tratamento de falhas.
+
+## 2026-06-09 — Correção do reenvio do experimento 38 para campanha
+
+- solicitação: recolocar o experimento 38 para publicação como campanha e confirmar se desta vez a campanha foi criada.
+- diagnóstico: o experimento voltou para `PLANNED` e entrou na fila, mas o worker marcou novamente como `FAILED` antes de criar a campanha; o log mostrou que a busca do pacote de segmentação carregava o endpoint amplo de experimentos prontos e estourava o limite de buffer antes de resolver o pacote filtrado do experimento.
+- correção: o Facebook Ads Worker agora consulta diretamente `/api/facebook-adsets/experiments-ready?experimentId=<id>` com URI absoluta preservando a query string, evitando carregar o payload completo e desbloqueando a publicação do experimento específico.
+- validação: teste direcionado garante que a publicação usa a consulta filtrada por `experimentId` antes de enviar a campanha para a Meta.
+- arquivos:
+  - `facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java`
+  - `facebook-ads-worker/src/test/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignServiceTest.java`

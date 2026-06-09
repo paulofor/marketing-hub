@@ -738,14 +738,10 @@ public class FacebookCampaignService {
     }
 
     /**
-     * Fetches the approved targeting package for the experiment from the backend readiness endpoint.
+     * Fetches only the approved targeting package for the experiment to avoid loading the full readiness payload.
      */
     private JsonNode fetchApprovedTargetingPackage(long experimentId) {
         String baseUrl = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/facebook-adsets/experiments-ready");
-        JsonNode targeting = fetchApprovedTargetingPackageFromUrl(baseUrl, experimentId);
-        if (targeting != null && !targeting.isMissingNode() && !targeting.isNull()) {
-            return targeting;
-        }
         String filteredUrl = UriComponentsBuilder.fromUriString(baseUrl)
             .queryParam("experimentId", experimentId)
             .build()
@@ -764,7 +760,7 @@ public class FacebookCampaignService {
         );
         try {
             JsonNode response = backendClient.get()
-                .uri(url)
+                .uri(URI.create(url))
                 .retrieve()
                 .bodyToMono(JsonNode.class)
                 .block();

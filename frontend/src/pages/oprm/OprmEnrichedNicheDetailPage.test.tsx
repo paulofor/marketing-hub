@@ -33,27 +33,28 @@ describe("OprmEnrichedNicheDetailPage", () => {
   });
 
   it("busca o perfil enriquecido na URL absoluta do backend", async () => {
-    const fetchMock = vi.fn(async () =>
-      new Response(
-        JSON.stringify({
-          researchCycleId: 1,
-          cycleStatus: "ENRICHED_NICHE_CREATED",
-          routineCardId: 1,
-          marketNicheId: 18,
-          enrichedNicheProfileId: 1,
-          nicheName: "IA para crescimento de Cabeleireiros",
-          cnaeCode: "9602501",
-          qualityStatus: "LIGHTLY_RESEARCHED",
-          routineSummary: "Rotina operacional observada.",
-          painsSummary: "Dores observadas.",
-          resultsSummary: "Resultados desejados.",
-          mechanismOpportunitiesSummary: "Mecanismos plausíveis.",
-          evidenceSummary: "Evidências coletadas.",
-          sourceDomains: "exemplo.com.br",
-          materializedAt: "2026-06-05T02:00:12Z",
-        }),
-        { status: 200, headers: { "Content-Type": "application/json" } },
-      ),
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            researchCycleId: 1,
+            cycleStatus: "ENRICHED_NICHE_CREATED",
+            routineCardId: 1,
+            marketNicheId: 18,
+            enrichedNicheProfileId: 1,
+            nicheName: "IA para crescimento de Cabeleireiros",
+            cnaeCode: "9602501",
+            qualityStatus: "LIGHTLY_RESEARCHED",
+            routineSummary: "Rotina operacional observada.",
+            painsSummary: "Dores observadas.",
+            resultsSummary: "Resultados desejados.",
+            mechanismOpportunitiesSummary: "Mecanismos plausíveis.",
+            evidenceSummary: "Evidências coletadas.",
+            sourceDomains: "exemplo.com.br",
+            materializedAt: "2026-06-05T02:00:12Z",
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        ),
     );
     vi.stubGlobal("fetch", fetchMock);
 
@@ -62,6 +63,12 @@ describe("OprmEnrichedNicheDetailPage", () => {
     expect(
       await screen.findByText("IA para crescimento de Cabeleireiros"),
     ).toBeTruthy();
+    expect(
+      screen.getByRole("link", { name: "Baixar pesquisa Markdown" }),
+    ).toHaveAttribute(
+      "href",
+      "http://localhost:8000/api/oprm/nichocnae/enriched-niche-materializer/profiles/1/pipeline-markdown",
+    );
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
         "http://localhost:8000/api/oprm/nichocnae/enriched-niche-materializer/profiles/1",

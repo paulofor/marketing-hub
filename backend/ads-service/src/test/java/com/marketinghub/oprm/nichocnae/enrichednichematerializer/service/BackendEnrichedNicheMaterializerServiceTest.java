@@ -9,16 +9,26 @@ import static org.mockito.Mockito.when;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.MarketNicheEnrichmentProfile;
 import com.marketinghub.oprm.cnae.OprmNicheCandidate;
+import com.marketinghub.oprm.nichocnae.OprmExtractedSignal;
+import com.marketinghub.oprm.nichocnae.OprmNicheResearchSeed;
 import com.marketinghub.oprm.nichocnae.OprmNicheRoutineCard;
+import com.marketinghub.oprm.nichocnae.OprmResearchQuery;
 import com.marketinghub.oprm.nichocnae.OprmRoutineResearchCycle;
+import com.marketinghub.oprm.nichocnae.OprmSourceCandidate;
+import com.marketinghub.oprm.nichocnae.OprmSourceSnapshot;
 import com.marketinghub.oprm.nichocnae.enrichednichematerializer.service.completeStageExecution.CompleteEnrichedNicheMaterializerRequest;
 import com.marketinghub.oprm.nichocnae.enrichednichematerializer.service.completeStageExecution.CompleteEnrichedNicheMaterializerResponse;
 import com.marketinghub.oprm.nichocnae.enrichednichematerializer.service.pending.RecordEnrichedNicheMaterializerPending;
 import com.marketinghub.repository.jpa.niche.MarketNicheEnrichmentProfileRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import com.marketinghub.repository.jpa.oprm.cnae.OprmNicheCandidateRepository;
+import com.marketinghub.repository.jpa.oprm.nichocnae.OprmExtractedSignalRepository;
+import com.marketinghub.repository.jpa.oprm.nichocnae.OprmNicheResearchSeedRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmNicheRoutineCardRepository;
+import com.marketinghub.repository.jpa.oprm.nichocnae.OprmResearchQueryRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmRoutineResearchCycleRepository;
+import com.marketinghub.repository.jpa.oprm.nichocnae.OprmSourceCandidateRepository;
+import com.marketinghub.repository.jpa.oprm.nichocnae.OprmSourceSnapshotRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -31,10 +41,16 @@ class BackendEnrichedNicheMaterializerServiceTest {
   private final OprmRoutineResearchCycleRepository cycleRepository = mock(OprmRoutineResearchCycleRepository.class);
   private final OprmNicheRoutineCardRepository cardRepository = mock(OprmNicheRoutineCardRepository.class);
   private final OprmNicheCandidateRepository candidateRepository = mock(OprmNicheCandidateRepository.class);
+  private final OprmNicheResearchSeedRepository seedRepository = mock(OprmNicheResearchSeedRepository.class);
+  private final OprmResearchQueryRepository researchQueryRepository = mock(OprmResearchQueryRepository.class);
+  private final OprmSourceCandidateRepository sourceCandidateRepository = mock(OprmSourceCandidateRepository.class);
+  private final OprmSourceSnapshotRepository sourceSnapshotRepository = mock(OprmSourceSnapshotRepository.class);
+  private final OprmExtractedSignalRepository extractedSignalRepository = mock(OprmExtractedSignalRepository.class);
   private final MarketNicheRepository marketNicheRepository = mock(MarketNicheRepository.class);
   private final MarketNicheEnrichmentProfileRepository profileRepository = mock(MarketNicheEnrichmentProfileRepository.class);
   private final BackendEnrichedNicheMaterializerService service = new BackendEnrichedNicheMaterializerService(
-      cycleRepository, cardRepository, candidateRepository, marketNicheRepository, profileRepository);
+      cycleRepository, cardRepository, candidateRepository, seedRepository, researchQueryRepository, sourceCandidateRepository,
+      sourceSnapshotRepository, extractedSignalRepository, marketNicheRepository, profileRepository);
 
   /** Deve publicar uma unidade de trabalho completa para o coletor materializar o nicho enriquecido. */
   @Test
@@ -125,6 +141,36 @@ class BackendEnrichedNicheMaterializerServiceTest {
     assertThat(diagnostic.items().getFirst().recommendation()).contains("novo ciclo neutro");
   }
 
+
+  /** Deve gerar um documento Markdown com todo o pipeline processado e a conclusão final. */
+  @Test
+  void shouldBuildPipelineMarkdownByProfileId() {
+    OprmRoutineResearchCycle cycle = cycle();
+    cycle.setStatus("ENRICHED_NICHE_CREATED");
+    OprmNicheRoutineCard card = card();
+    MarketNiche niche = new MarketNiche();
+    niche.setId(200L);
+    MarketNicheEnrichmentProfile profile = profile(niche);
+    when(profileRepository.findById(300L)).thenReturn(Optional.of(profile));
+    when(cycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
+    when(cardRepository.findFirstByResearchCycleIdOrderByIdDesc(1001L)).thenReturn(Optional.of(card));
+    when(seedRepository.findByResearchCycleId(1001L)).thenReturn(Optional.of(seed()));
+    when(researchQueryRepository.findByResearchCycleIdOrderByPriorityAscIdAsc(1001L)).thenReturn(List.of(researchQuery()));
+    when(sourceCandidateRepository.findByResearchCycleIdOrderByResearchQueryIdAscSearchPositionAscIdAsc(1001L)).thenReturn(List.of(sourceCandidate()));
+    when(sourceSnapshotRepository.findByResearchCycleIdOrderByIdAsc(1001L)).thenReturn(List.of(sourceSnapshot()));
+    when(extractedSignalRepository.findByResearchCycleIdOrderByIdAsc(1001L)).thenReturn(List.of(extractedSignal()));
+
+    String markdown = service.buildPipelineMarkdownByProfileId(300L);
+
+    assertThat(markdown).contains("# Pesquisa OPRM NichoCNAE — Salões pequenos");
+    assertThat(markdown).contains("## 3. Frases de pesquisa processadas");
+    assertThat(markdown).contains("## 6. Sinais extraídos");
+    assertThat(markdown).contains("## 8. Conclusão final do nicho enriquecido");
+    assertThat(markdown).contains("Rotina final");
+    assertThat(markdown).contains("Dores finais");
+    assertThat(markdown).contains("ENRICHED_NICHE_CREATED");
+  }
+
   /** Cria um cartão aprovado mínimo para testes da etapa final. */
   private OprmNicheRoutineCard card() {
     OprmNicheRoutineCard card = new OprmNicheRoutineCard();
@@ -180,4 +226,90 @@ class BackendEnrichedNicheMaterializerServiceTest {
     candidate.setRoutineResearchStatus("LIGHTLY_RESEARCHED");
     return candidate;
   }
+
+  /** Cria o perfil enriquecido final usado pelo download Markdown. */
+  private MarketNicheEnrichmentProfile profile(MarketNiche niche) {
+    MarketNicheEnrichmentProfile profile = new MarketNicheEnrichmentProfile();
+    profile.setId(300L);
+    profile.setMarketNiche(niche);
+    profile.setResearchCycleId(1001L);
+    profile.setNeutralNicheName("Salões pequenos");
+    profile.setOriginalNicheName("IA para salões pequenos");
+    profile.setCnaeCode("9602501");
+    profile.setCnaeDescription("Cabeleireiros, manicure e pedicure");
+    profile.setRoutineSummary("Rotina com agenda, atendimento e retorno de clientes.");
+    profile.setPainsSummary("Dores de falta de tempo e organização.");
+    profile.setResultsSummary("Perguntas do profissional sobre encaixes.");
+    profile.setMechanismOpportunitiesSummary("Contexto operacional e linguagem do nicho.");
+    profile.setEvidenceSummary("Evidência consolidada.");
+    profile.setSourceDomains("exemplo.com");
+    profile.setCreatedAt(Instant.parse("2026-06-05T00:00:00Z"));
+    return profile;
+  }
+
+  /** Cria o seed de pesquisa operacional usado pelo documento Markdown. */
+  private OprmNicheResearchSeed seed() {
+    OprmNicheResearchSeed seed = new OprmNicheResearchSeed();
+    seed.setId(1L);
+    seed.setBusinessType("Salão de beleza");
+    seed.setOperationType("Atendimento por agenda");
+    seed.setCustomerType("Clientes recorrentes");
+    seed.setCommercialObjects("Serviços de beleza");
+    seed.setInitialAssumptions("Rotina depende de horários e retornos.");
+    seed.setConfidenceLevel("Médio");
+    return seed;
+  }
+
+  /** Cria uma frase de pesquisa processada usada pelo documento Markdown. */
+  private OprmResearchQuery researchQuery() {
+    OprmResearchQuery query = new OprmResearchQuery();
+    query.setId(2L);
+    query.setQueryGoal("ROUTINE_DISCOVERY");
+    query.setPriority(1);
+    query.setStatus("SEARCHED");
+    query.setResultCount(10);
+    query.setQueryText("rotina salão beleza agenda atendimento");
+    return query;
+  }
+
+  /** Cria uma fonte candidata encontrada usada pelo documento Markdown. */
+  private OprmSourceCandidate sourceCandidate() {
+    OprmSourceCandidate candidate = new OprmSourceCandidate();
+    candidate.setId(3L);
+    candidate.setSourceDomain("exemplo.com");
+    candidate.setStatus("SELECTED");
+    candidate.setSourceIntent("ROUTINE_REPORT");
+    candidate.setRoutineEvidenceScore(80);
+    candidate.setSourceTitle("Rotina de salão");
+    candidate.setSourceUrl("https://exemplo.com/rotina");
+    candidate.setSourceSnippet("Agenda e atendimento estruturam a rotina.");
+    return candidate;
+  }
+
+  /** Cria uma evidência curta coletada usada pelo documento Markdown. */
+  private OprmSourceSnapshot sourceSnapshot() {
+    OprmSourceSnapshot snapshot = new OprmSourceSnapshot();
+    snapshot.setId(4L);
+    snapshot.setSourceDomain("exemplo.com");
+    snapshot.setFetchStatus("FETCHED");
+    snapshot.setSignalExtractionStatus("EXTRACTED");
+    snapshot.setSourceIntent("ROUTINE_REPORT");
+    snapshot.setRoutineEvidenceScore(80);
+    snapshot.setSourceTitle("Rotina de salão");
+    snapshot.setShortExcerpt("Organiza agenda de atendimentos e retornos.");
+    return snapshot;
+  }
+
+  /** Cria um sinal estruturado extraído usado pelo documento Markdown. */
+  private OprmExtractedSignal extractedSignal() {
+    OprmExtractedSignal signal = new OprmExtractedSignal();
+    signal.setId(5L);
+    signal.setSignalType("ROUTINE_TASK");
+    signal.setSourceDomain("exemplo.com");
+    signal.setConfidenceScore(82);
+    signal.setSignalText("Organizar agenda de atendimentos.");
+    signal.setEvidenceExcerpt("Organiza agenda de atendimentos e retornos.");
+    return signal;
+  }
+
 }

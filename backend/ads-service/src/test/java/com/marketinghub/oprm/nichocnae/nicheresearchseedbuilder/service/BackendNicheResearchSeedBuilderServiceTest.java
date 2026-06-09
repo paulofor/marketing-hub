@@ -161,6 +161,50 @@ class BackendNicheResearchSeedBuilderServiceTest {
     verify(nicheResearchSeedRepository, never()).save(any());
   }
 
+  /** Deve rejeitar query sem marcador de MEI/autônomo para impedir retorno ao segmento genérico por CNAE. */
+  @Test
+  void completeRejectsQueryWithoutAudienceMarker() {
+    OprmRoutineResearchCycle cycle = cycle();
+    when(routineResearchCycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
+    CompleteNicheResearchSeedBuilderRequest request = new CompleteNicheResearchSeedBuilderRequest(
+        "Cabeleireiros, manicures e pedicures",
+        "serviço local de beleza",
+        "agenda e atendimento recorrente",
+        "consumidor final recorrente",
+        "manicure, pedicure, escova",
+        "depende de agenda cheia",
+        "INFERRED_FROM_CNAE",
+        "AI",
+        validQueryRequestsWithFirst("manicure responsabilidades rotina Brasil", "MEI_ROUTINE_DISCOVERY"));
+
+    assertThatThrownBy(() -> service.complete(1001L, request))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("MEI/autonomous professional audience");
+    verify(nicheResearchSeedRepository, never()).save(any());
+  }
+
+  /** Deve rejeitar query sem marcador brasileiro para manter fontes e linguagem do mercado nacional. */
+  @Test
+  void completeRejectsQueryWithoutBrazilMarker() {
+    OprmRoutineResearchCycle cycle = cycle();
+    when(routineResearchCycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
+    CompleteNicheResearchSeedBuilderRequest request = new CompleteNicheResearchSeedBuilderRequest(
+        "Cabeleireiros, manicures e pedicures",
+        "serviço local de beleza",
+        "agenda e atendimento recorrente",
+        "consumidor final recorrente",
+        "manicure, pedicure, escova",
+        "depende de agenda cheia",
+        "INFERRED_FROM_CNAE",
+        "AI",
+        validQueryRequestsWithFirst("manicure MEI responsabilidades rotina", "MEI_ROUTINE_DISCOVERY"));
+
+    assertThatThrownBy(() -> service.complete(1001L, request))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Brazilian or pt-BR context");
+    verify(nicheResearchSeedRepository, never()).save(any());
+  }
+
   /** Deve aceitar queries com palavras comuns repetidas sem gerar duplicate element na tokenização. */
   @Test
   void completeAcceptsRepeatedCommonWordsInQueryText() {
@@ -265,7 +309,6 @@ class BackendNicheResearchSeedBuilderServiceTest {
         null,
         validQueryRequests());
   }
-
 
   /** Cria a lista mínima válida de queries da etapa dois com marcadores de público e Brasil. */
   private List<NicheResearchQueryRequest> validQueryRequests() {

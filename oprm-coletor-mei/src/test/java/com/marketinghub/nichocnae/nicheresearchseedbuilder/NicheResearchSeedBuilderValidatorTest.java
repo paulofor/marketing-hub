@@ -35,7 +35,6 @@ class NicheResearchSeedBuilderValidatorTest {
                 .hasMessageContaining("Query genérica proibida");
     }
 
-
     /** Deve rejeitar query contaminada por solução quando o termo não faz parte literal do CNAE. */
     @Test
     void shouldRejectSolutionLanguageQuery() {
@@ -49,6 +48,31 @@ class NicheResearchSeedBuilderValidatorTest {
                 .hasMessageContaining("linguagem de solução proibida");
     }
 
+    /** Deve rejeitar query sem marcador explícito de MEI/autônomo para não voltar a pesquisar apenas o CNAE. */
+    @Test
+    void shouldRejectQueryWithoutAudienceMarker() {
+        NicheResearchSeedBuilderPending pending = pending();
+        List<String> texts = new ArrayList<>(validQueryTexts());
+        texts.set(0, "manicure rotina de atendimento no Brasil");
+        NicheResearchSeedBuilderOutput output = outputWithQueries(texts);
+
+        assertThatThrownBy(() -> validator.validate(pending, output))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("marcador de MEI/autônomo");
+    }
+
+    /** Deve rejeitar query sem marcador Brasil/pt-BR para manter a pesquisa aderente ao mercado brasileiro. */
+    @Test
+    void shouldRejectQueryWithoutBrazilMarker() {
+        NicheResearchSeedBuilderPending pending = pending();
+        List<String> texts = new ArrayList<>(validQueryTexts());
+        texts.set(0, "manicure MEI rotina de atendimento agenda clientes");
+        NicheResearchSeedBuilderOutput output = outputWithQueries(texts);
+
+        assertThatThrownBy(() -> validator.validate(pending, output))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("marcador de Brasil/pt-BR");
+    }
 
     /** Deve aceitar palavras repetidas nas queries porque repetição de conectivos não é duplicidade operacional. */
     @Test
@@ -70,7 +94,6 @@ class NicheResearchSeedBuilderValidatorTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("entre 12 e 15 queries");
     }
-
 
     /** Cria queries válidas com marcadores de MEI/autônomo e contexto brasileiro. */
     private List<String> validQueryTexts() {

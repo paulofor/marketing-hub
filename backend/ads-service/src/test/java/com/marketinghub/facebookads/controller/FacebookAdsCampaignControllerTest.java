@@ -13,6 +13,7 @@ import com.marketinghub.experiment.AdSet;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentPlatform;
 import com.marketinghub.experiment.ExperimentStatus;
+import com.marketinghub.experiment.funnel.ExperimentFunnelAutoStopService;
 import com.marketinghub.journey.model.JourneyTemplate;
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.niche.MarketNiche;
@@ -100,6 +101,8 @@ class FacebookAdsCampaignControllerTest {
 
     @MockBean
     LeadPortalMetricsService leadPortalMetricsService;
+    @MockBean
+    ExperimentFunnelAutoStopService funnelAutoStopService;
 
 
     @Test

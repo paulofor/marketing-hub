@@ -4251,3 +4251,10 @@
 - causa-raiz: a tela já expunha partes do material do experimento, mas não havia uma ação única que consolidasse nicho, framework da hipótese, JSONs de campanha/anúncio/imagem, JSONs do GeraLanding e detalhamento de Facebook Ads em um artefato auditável.
 - foi feito: criado endpoint de relatório completo em Markdown e botão na tela do experimento, exibido somente para status `VALIDATED` ou `INVALIDATED`, com download direto do arquivo `.md`.
 - impacto esperado: o usuário consegue revisar e reaproveitar todo o aprendizado comercial do experimento encerrado sem buscar dados em múltiplas abas, acelerando análise de vencedores e perdedores.
+
+## 2026-06-10 — Conclusão estratégica do experimento 37
+
+- solicitação: gerar um documento de conclusão do experimento 37 com observações e plano de melhoria.
+- diagnóstico: o experimento foi invalidado por zero envios após volume suficiente de acessos ao formulário, mas os cliques baratos indicam que a hipótese estratégica ainda pode ter valor; a maior fragilidade está na materialização da captura, com landing/formulário abaixo do padrão, público amplo, persona genérica e criativos pouco diferenciados.
+- foi feito: criado o documento `docs/relatorios/experimentos/conclusao-do-experimento-37.md` com resumo executivo, evidências, causa-raiz provável, decisão recomendada e plano de melhoria para um experimento derivado 37B.
+- próximo passo: antes de nova mídia, validar formulário ponta a ponta e reconstruir a oferta de entrada como roteiro anti-preço de WhatsApp para personal trainer.

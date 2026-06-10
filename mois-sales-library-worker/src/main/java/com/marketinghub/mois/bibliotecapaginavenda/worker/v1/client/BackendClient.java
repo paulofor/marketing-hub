@@ -160,4 +160,50 @@ public class BackendClient {
                 .toBodilessEntity();
         log.info("MOIS sales-library worker fail response received. jobId={}, status={}", jobId, entity.getStatusCode());
     }
+    /**
+     * Reserva no backend uma pesquisa pendente de aquecimento de mercado.
+     */
+    public MarketWarmupClaimResponse claimMarketWarmup(MarketWarmupClaimRequest request) {
+        log.info("MOIS market-warmup worker calling backend claim endpoint. workspaceId={}, workerId={}", request.workspaceId(), request.workerId());
+        MarketWarmupClaimResponse response = restClient.post()
+                .uri("/api/mois/sales-library/market-warmup/jobs:claim")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(request)
+                .retrieve()
+                .body(MarketWarmupClaimResponse.class);
+        log.info("MOIS market-warmup worker claim response received. claimed={}, hasJob={}",
+                response != null && response.claimed(),
+                response != null && response.job() != null);
+        return response;
+    }
+
+    /**
+     * Envia ao backend o dossiê final de aquecimento de mercado.
+     */
+    public void completeMarketWarmup(long jobId, MarketWarmupCompleteRequest request) {
+        log.info("MOIS market-warmup worker calling backend complete endpoint. jobId={}, sources={}, signals={}, summary={}",
+                jobId, request.sources() == null ? 0 : request.sources().size(), request.signals() == null ? 0 : request.signals().size(), request.summary());
+        var entity = restClient.post()
+                .uri("/api/mois/sales-library/market-warmup/jobs/{jobId}:complete", jobId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(request)
+                .retrieve()
+                .toBodilessEntity();
+        log.info("MOIS market-warmup worker complete response received. jobId={}, status={}", jobId, entity.getStatusCode());
+    }
+
+    /**
+     * Registra no backend a falha operacional de uma pesquisa de aquecimento.
+     */
+    public void failMarketWarmup(long jobId, MarketWarmupFailRequest request) {
+        log.warn("MOIS market-warmup worker calling backend fail endpoint. jobId={}, errorCategory={}, errorMessage={}",
+                jobId, request.errorCategory(), request.errorMessage());
+        var entity = restClient.post()
+                .uri("/api/mois/sales-library/market-warmup/jobs/{jobId}:fail", jobId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(request)
+                .retrieve()
+                .toBodilessEntity();
+        log.info("MOIS market-warmup worker fail response received. jobId={}, status={}", jobId, entity.getStatusCode());
+    }
 }

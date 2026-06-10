@@ -47,6 +47,7 @@ public class ExperimentReportMaterialService {
     private final ExperimentFunnelService experimentFunnelService;
     private final ObjectMapper objectMapper;
 
+    /** Inicializa o serviço com repositórios e consolidadores do relatório do experimento. */
     public ExperimentReportMaterialService(ExperimentRepository experimentRepository,
                                            CreativeRepository creativeRepository,
                                            CreativeVariantRepository creativeVariantRepository,
@@ -65,6 +66,7 @@ public class ExperimentReportMaterialService {
         this.objectMapper = objectMapper;
     }
 
+    /** Consolida o material completo do relatório, incluindo funil e analytics da landing. */
     @Transactional(readOnly = true)
     public ExperimentReportMaterialDto build(Long experimentId) {
         Experiment experiment = experimentRepository.findById(experimentId)
@@ -82,6 +84,7 @@ public class ExperimentReportMaterialService {
                 .hypothesis(toHypothesisSnapshot(experiment.getHypothesisRef()))
                 .instantForm(toInstantFormSnapshot(experiment.getFacebookInstantForm()))
                 .campaignMetric(toCampaignMetricDto(experiment.getCampaignMetric()))
+                .landingAnalytics(experimentFunnelService.summarizeLandingAnalytics(experimentId))
                 .build();
 
         dto.setCreatives(mapCreatives(creatives));

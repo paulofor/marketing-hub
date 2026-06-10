@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import type { ExperimentCampaignMetric } from "./useExperiments";
 import type { ExperimentFunnelStageSummary } from "./useExperimentFunnel";
+import type { ExperimentLandingAnalytics } from "./useExperimentLandingAnalytics";
 
 export interface ExperimentReportMaterial {
   experiment?: ExperimentReportExperimentSnapshot | null;
@@ -13,6 +14,7 @@ export interface ExperimentReportMaterial {
   leadPortalFlows: ExperimentReportLeadPortalFlowSnapshot[];
   instantForm?: ExperimentReportInstantFormSnapshot | null;
   campaignMetric?: ExperimentCampaignMetric | null;
+  landingAnalytics?: ExperimentLandingAnalytics | null;
   funnelStages: ExperimentFunnelStageSummary[];
 }
 

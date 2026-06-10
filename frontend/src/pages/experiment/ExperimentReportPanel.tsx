@@ -33,8 +33,11 @@ export default function ExperimentReportPanel({
   const { data: requests, isLoading: isLoadingRequests } =
     useExperimentReportRequests(experimentId);
   const createRequest = useCreateExperimentReportRequest(experimentId);
-  const { data: material, isLoading: isLoadingMaterial, isFetching } =
-    useExperimentReportMaterial(experimentId);
+  const {
+    data: material,
+    isLoading: isLoadingMaterial,
+    isFetching,
+  } = useExperimentReportMaterial(experimentId);
 
   const hasActiveRequest = useMemo(
     () =>
@@ -55,7 +58,9 @@ export default function ExperimentReportPanel({
       <div className="card-body d-flex flex-column gap-3">
         <div className="d-flex flex-column flex-md-row justify-content-between gap-2">
           <div>
-            <h5 className="card-title mb-1">Relatório objetivo do experimento</h5>
+            <h5 className="card-title mb-1">
+              Relatório objetivo do experimento
+            </h5>
             <p className="text-muted mb-0">
               Consolida nicho, hipótese, artefatos e métricas (campanha e funil)
               em um único material pronto para revisão.
@@ -115,7 +120,8 @@ export default function ExperimentReportPanel({
                             por {request.requestedBy}
                           </span>
                         ) : null}
-                        {request.status === "FAILED" && request.failureReason ? (
+                        {request.status === "FAILED" &&
+                        request.failureReason ? (
                           <div className="text-danger small mt-1">
                             {request.failureReason}
                           </div>
@@ -219,7 +225,7 @@ function ReportMaterialPreview({
               ) : null}
               {material.experiment?.dailyBudget ? (
                 <li>
-                  <strong>Orçamento diário:</strong> {" "}
+                  <strong>Orçamento diário:</strong>{" "}
                   {formatCurrency(material.experiment.dailyBudget)}
                 </li>
               ) : null}
@@ -237,15 +243,16 @@ function ReportMaterialPreview({
             <h6 className="fw-semibold">Artefatos mapeados</h6>
             <ul className="list-unstyled mb-2 text-muted small">
               <li>
-                {(material.creatives ?? []).length} criativo(s) aprovados com headline e
-                imagem.
+                {(material.creatives ?? []).length} criativo(s) aprovados com
+                headline e imagem.
               </li>
               <li>
-                {(material.landingPages ?? []).length} landing page(s) monitoradas.
+                {(material.landingPages ?? []).length} landing page(s)
+                monitoradas.
               </li>
               <li>
-                {(material.leadPortalFlows ?? []).length} fluxo(s) do portal do lead com
-                perguntas e estilo visual.
+                {(material.leadPortalFlows ?? []).length} fluxo(s) do portal do
+                lead com perguntas e estilo visual.
               </li>
             </ul>
             {material.instantForm ? (
@@ -284,14 +291,59 @@ function ReportMaterialPreview({
         <div className="border rounded p-3">
           <h6 className="fw-semibold mb-2">Métricas da campanha</h6>
           <div className="row row-cols-2 row-cols-md-4 g-3 text-center">
-            <MetricItem label="Impressões" value={material.campaignMetric.impressions} />
-            <MetricItem label="Cliques" value={material.campaignMetric.clicks} />
+            <MetricItem
+              label="Impressões"
+              value={material.campaignMetric.impressions}
+            />
+            <MetricItem
+              label="Cliques"
+              value={material.campaignMetric.clicks}
+            />
             <MetricItem label="Leads" value={material.campaignMetric.leads} />
             <MetricItem
               label="CPL"
               value={formatCurrency(material.campaignMetric.cpl ?? null)}
             />
           </div>
+        </div>
+      ) : null}
+      {material.landingAnalytics ? (
+        <div className="border rounded p-3">
+          <h6 className="fw-semibold mb-2">Analytics da landing</h6>
+          <div className="row row-cols-2 row-cols-md-4 g-3 text-center mb-3">
+            <MetricItem
+              label="Sessões"
+              value={material.landingAnalytics.totalSessions}
+            />
+            <MetricItem
+              label="Page views"
+              value={material.landingAnalytics.pageViews}
+            />
+            <MetricItem
+              label="Tempo médio"
+              value={formatDuration(
+                material.landingAnalytics.averageVisibleMsPerSession,
+              )}
+            />
+            <MetricItem
+              label="Tempo total"
+              value={formatDuration(material.landingAnalytics.totalVisibleMs)}
+            />
+          </div>
+          {material.landingAnalytics.sessions?.length ? (
+            <div className="text-muted small">
+              Trechos com maior atenção por sessão:{" "}
+              {material.landingAnalytics.sessions
+                .flatMap((session) => session.topSections ?? [])
+                .sort((left, right) => right.visibleMs - left.visibleMs)
+                .slice(0, 3)
+                .map(
+                  (section) =>
+                    `${section.sectionId} (${formatDuration(section.visibleMs)})`,
+                )
+                .join(", ") || "sem trechos registrados"}
+            </div>
+          ) : null}
         </div>
       ) : null}
       {material.funnelStages?.length ? (
@@ -341,6 +393,20 @@ function formatValue(value?: number | string | null) {
     return value.toLocaleString("pt-BR");
   }
   return value;
+}
+
+function formatDuration(ms?: number | null) {
+  const safeMs = Math.max(0, ms ?? 0);
+  if (safeMs < 1000) {
+    return `${safeMs} ms`;
+  }
+  const seconds = Math.round(safeMs / 1000);
+  if (seconds < 60) {
+    return `${seconds}s`;
+  }
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return `${minutes}min ${remainingSeconds}s`;
 }
 
 function formatCurrency(value?: number | null) {

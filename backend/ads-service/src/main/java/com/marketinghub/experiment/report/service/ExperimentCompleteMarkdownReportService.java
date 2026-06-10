@@ -5,6 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentCampaignMetric;
 import com.marketinghub.experiment.ExperimentStatus;
+import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsDto;
+import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsSectionDto;
+import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsSessionDto;
 import com.marketinghub.facebookads.FacebookAdsAd;
 import com.marketinghub.facebookads.FacebookAdsAdCreative;
 import com.marketinghub.facebookads.FacebookAdsAdSet;
@@ -78,6 +81,7 @@ public class ExperimentCompleteMarkdownReportService {
         appendCampaignMetrics(markdown, experiment.getCampaignMetric());
         appendGeraLandingExecutions(markdown, geraLandingExecutions);
         appendFacebookCampaigns(markdown, facebookCampaigns);
+        appendLandingAnalytics(markdown, material.getLandingAnalytics());
         appendMaterialSnapshot(markdown, material);
         return markdown.toString();
     }
@@ -367,11 +371,65 @@ public class ExperimentCompleteMarkdownReportService {
         }
     }
 
+
+    /**
+     * Adiciona os dados de analytics da landing com tempos de página, sessões e trechos mais vistos.
+     */
+    private void appendLandingAnalytics(StringBuilder markdown, ExperimentLandingAnalyticsDto analytics) {
+        markdown.append("## 7. Analytics da landing — tempos em página e trechos\n\n");
+        if (analytics == null || analytics.totalEvents() == 0) {
+            markdown.append("Nenhum evento de analytics da landing encontrado para este experimento.\n\n");
+            return;
+        }
+        appendJsonBlock(markdown, "landing_analytics_summary", mapOf(
+                "totalEvents", analytics.totalEvents(),
+                "totalSessions", analytics.totalSessions(),
+                "pageViews", analytics.pageViews(),
+                "sectionViewEvents", analytics.sectionViewEvents(),
+                "totalVisibleMs", analytics.totalVisibleMs(),
+                "averageVisibleMsPerSession", analytics.averageVisibleMsPerSession(),
+                "lastEventAt", analytics.lastEventAt(),
+                "deviceBreakdown", analytics.deviceBreakdown(),
+                "mobileOperatingSystemBreakdown", analytics.mobileOperatingSystemBreakdown(),
+                "screenSizeBreakdown", analytics.screenSizeBreakdown(),
+                "visitors", analytics.visitors()
+        ));
+        appendJsonBlock(markdown, "landing_analytics_top_sections", aggregateLandingAnalyticsSections(analytics.sessions()));
+        appendJsonBlock(markdown, "landing_analytics_sessions", analytics.sessions());
+    }
+
+    /**
+     * Consolida os trechos da landing por tempo visível acumulado em todas as sessões do relatório.
+     */
+    private List<Map<String, Object>> aggregateLandingAnalyticsSections(List<ExperimentLandingAnalyticsSessionDto> sessions) {
+        Map<String, LandingAnalyticsSectionAccumulator> sections = new LinkedHashMap<>();
+        if (sessions == null) {
+            return List.of();
+        }
+        for (ExperimentLandingAnalyticsSessionDto session : sessions) {
+            if (session.topSections() == null) {
+                continue;
+            }
+            for (ExperimentLandingAnalyticsSectionDto section : session.topSections()) {
+                sections.computeIfAbsent(section.sectionId(), LandingAnalyticsSectionAccumulator::new)
+                        .record(section.visibleMs(), section.events());
+            }
+        }
+        return sections.values().stream()
+                .sorted((left, right) -> Long.compare(right.visibleMs(), left.visibleMs()))
+                .map(section -> mapOf(
+                        "sectionId", section.sectionId(),
+                        "visibleMs", section.visibleMs(),
+                        "events", section.events()
+                ))
+                .toList();
+    }
+
     /**
      * Adiciona um snapshot JSON consolidado usado para auditoria completa do relatório.
      */
     private void appendMaterialSnapshot(StringBuilder markdown, Object material) {
-        markdown.append("## 7. Snapshot consolidado do backend\n\n");
+        markdown.append("## 8. Snapshot consolidado do backend\n\n");
         appendJsonBlock(markdown, "experiment_report_material", material);
     }
 
@@ -486,4 +544,40 @@ public class ExperimentCompleteMarkdownReportService {
     private String value(Object value) {
         return Objects.toString(value, "—");
     }
+
+    /**
+     * Acumula o tempo visível e eventos de um trecho da landing para o relatório completo.
+     */
+    private static final class LandingAnalyticsSectionAccumulator {
+        private final String sectionId;
+        private long visibleMs;
+        private long events;
+
+        /** Cria o acumulador para um trecho identificado da landing. */
+        private LandingAnalyticsSectionAccumulator(String sectionId) {
+            this.sectionId = sectionId;
+        }
+
+        /** Soma tempo visível e eventos ao trecho agregado. */
+        private void record(long visibleMs, long events) {
+            this.visibleMs += visibleMs;
+            this.events += events;
+        }
+
+        /** Retorna o identificador do trecho da landing. */
+        private String sectionId() {
+            return sectionId;
+        }
+
+        /** Retorna o tempo visível acumulado do trecho. */
+        private long visibleMs() {
+            return visibleMs;
+        }
+
+        /** Retorna a quantidade de eventos registrados no trecho. */
+        private long events() {
+            return events;
+        }
+    }
+
 }

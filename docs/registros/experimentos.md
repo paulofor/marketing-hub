@@ -4251,3 +4251,7 @@
 - causa-raiz: a tela já expunha partes do material do experimento, mas não havia uma ação única que consolidasse nicho, framework da hipótese, JSONs de campanha/anúncio/imagem, JSONs do GeraLanding e detalhamento de Facebook Ads em um artefato auditável.
 - foi feito: criado endpoint de relatório completo em Markdown e botão na tela do experimento, exibido somente para status `VALIDATED` ou `INVALIDATED`, com download direto do arquivo `.md`.
 - impacto esperado: o usuário consegue revisar e reaproveitar todo o aprendizado comercial do experimento encerrado sem buscar dados em múltiplas abas, acelerando análise de vencedores e perdedores.
+
+## 2026-06-10 — Relatório de experimento com analytics da landing
+- foi feito: incluídos no material e no relatório completo do experimento os dados de analytics da landing, com sessões, page views, tempo visível total/médio e trechos/seções com maior tempo de visualização.
+- impacto: o relatório passa a apoiar decisão comercial com evidências de atenção real na página, não apenas métricas de campanha e funil.

@@ -50,6 +50,27 @@ export interface ExperimentLandingAnalyticsSession {
   topSections: ExperimentLandingAnalyticsSection[];
 }
 
+export interface ExperimentLandingAnalyticsVisitor {
+  visitorId: string;
+  totalSessions: number;
+  validPageViews: number;
+  firstAccessAt?: string | null;
+  lastAccessAt?: string | null;
+  intervalSeconds: number;
+  distinctPages: number;
+  lastUserAgent?: string | null;
+  deviceType?: string | null;
+  deviceLabel?: string | null;
+  recurrent: boolean;
+}
+
+export interface ExperimentLandingAnalyticsVisitors {
+  probableVisitors: number;
+  recurrentVisitors: number;
+  singleVisitVisitors: number;
+  visitors: ExperimentLandingAnalyticsVisitor[];
+}
+
 export interface ExperimentLandingAnalytics {
   totalEvents: number;
   totalSessions: number;
@@ -61,6 +82,7 @@ export interface ExperimentLandingAnalytics {
   deviceBreakdown: ExperimentLandingAnalyticsDevice[];
   mobileOperatingSystemBreakdown: ExperimentLandingAnalyticsOperatingSystem[];
   screenSizeBreakdown: ExperimentLandingAnalyticsScreenSize[];
+  visitors?: ExperimentLandingAnalyticsVisitors | null;
   sessions: ExperimentLandingAnalyticsSession[];
 }
 

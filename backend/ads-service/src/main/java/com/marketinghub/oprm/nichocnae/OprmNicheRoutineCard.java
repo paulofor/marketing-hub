@@ -30,6 +30,27 @@ public class OprmNicheRoutineCard {
   @Column(name = "pains_summary", nullable = false, columnDefinition = "LONGTEXT")
   private String painsSummary;
 
+  @Column(name = "customer_behavior_summary", columnDefinition = "LONGTEXT")
+  private String customerBehaviorSummary;
+
+  @Column(name = "channels_summary", columnDefinition = "LONGTEXT")
+  private String channelsSummary;
+
+  @Column(name = "operational_pains_summary", columnDefinition = "LONGTEXT")
+  private String operationalPainsSummary;
+
+  @Column(name = "emotional_pains_summary", columnDefinition = "LONGTEXT")
+  private String emotionalPainsSummary;
+
+  @Column(name = "dreams_summary", columnDefinition = "LONGTEXT")
+  private String dreamsSummary;
+
+  @Column(name = "fears_summary", columnDefinition = "LONGTEXT")
+  private String fearsSummary;
+
+  @Column(name = "language_summary", columnDefinition = "LONGTEXT")
+  private String languageSummary;
+
   @Column(name = "results_summary", nullable = false, columnDefinition = "LONGTEXT")
   private String resultsSummary;
 

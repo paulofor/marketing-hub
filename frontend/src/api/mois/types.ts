@@ -404,6 +404,29 @@ export type MoisMarketWarmupSignalType =
   | "SATURATION_RISK"
   | "CHANNEL_FIT";
 
+export interface MoisMarketWarmupOpportunityRankingItem {
+  pageId: number;
+  title?: string;
+  urlCanonical: string;
+  source?: string;
+  pageScoreTotal?: number;
+  warmupScoreTotal?: number;
+  combinedCommercialScore?: number;
+  marketTemperature: MoisMarketWarmupTemperature;
+  ecosystemType: MoisMarketWarmupEcosystemType;
+  recommendation: MoisMarketWarmupRecommendation;
+  saturationRisk?: string;
+  evidenceUpdatedAt?: string;
+  suggestedNextAction: string;
+  evidenceSummary: string;
+}
+
+export interface MoisMarketWarmupOpportunityRankingResponse {
+  workspaceId: string;
+  limit: number;
+  items: MoisMarketWarmupOpportunityRankingItem[];
+}
+
 export interface MoisMarketWarmupRequestResponse {
   pageId: number;
   jobId: number;

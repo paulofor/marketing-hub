@@ -6,9 +6,11 @@ import com.marketinghub.oprm.generalaudience.service.createHypothesis.CreateGene
 import com.marketinghub.oprm.generalaudience.service.createHypothesis.GeneralAudienceHypothesisResponse;
 import com.marketinghub.oprm.generalaudience.service.createLeadExperiment.CreateGeneralAudienceLeadExperimentRequest;
 import com.marketinghub.oprm.generalaudience.service.createLeadExperiment.GeneralAudienceLeadExperimentResponse;
+import com.marketinghub.oprm.generalaudience.service.createQualityReading.CreateGeneralAudienceQualityReadingRequest;
 import com.marketinghub.oprm.generalaudience.service.createPainAngle.CreateGeneralAudiencePainAngleRequest;
 import com.marketinghub.oprm.generalaudience.service.createSourceEvidence.CreateGeneralAudienceSourceEvidenceRequest;
 import com.marketinghub.oprm.generalaudience.service.listPainAngles.GeneralAudiencePainAngleResponse;
+import com.marketinghub.oprm.generalaudience.service.listQualityReadings.GeneralAudienceQualityReadingResponse;
 import com.marketinghub.oprm.generalaudience.service.listSourceEvidences.GeneralAudienceSourceEvidenceResponse;
 import com.marketinghub.oprm.generalaudience.service.landingConfirmation.CreateGeneralAudienceLandingConfirmationRequest;
 import com.marketinghub.oprm.generalaudience.service.landingConfirmation.GeneralAudienceLandingConfirmationResponse;
@@ -132,6 +134,24 @@ public class OprmGeneralAudienceDiscoveryController {
         GeneralAudienceSourceEvidenceResponse response = service.createSourceEvidence(seedId, request);
         return ResponseEntity
                 .created(URI.create("/api/oprm/general-audiences/source-evidences/" + response.id()))
+                .body(response);
+    }
+
+    /** Lista leituras de qualidade real para decidir se o público merece escala. */
+    @GetMapping("/subniches/{subnicheId}/quality-readings")
+    public ResponseEntity<List<GeneralAudienceQualityReadingResponse>> listQualityReadings(
+            @PathVariable Long subnicheId) {
+        return ResponseEntity.ok(service.listQualityReadings(subnicheId));
+    }
+
+    /** Registra leitura de qualidade real com sinais bons e ruins além de CTR e CPL. */
+    @PostMapping("/subniches/{subnicheId}/quality-readings")
+    public ResponseEntity<GeneralAudienceQualityReadingResponse> createQualityReading(
+            @PathVariable Long subnicheId,
+            @Valid @RequestBody CreateGeneralAudienceQualityReadingRequest request) {
+        GeneralAudienceQualityReadingResponse response = service.createQualityReading(subnicheId, request);
+        return ResponseEntity
+                .created(URI.create("/api/oprm/general-audiences/quality-readings/" + response.id()))
                 .body(response);
     }
 

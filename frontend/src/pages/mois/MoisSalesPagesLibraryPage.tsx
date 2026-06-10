@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import PageTitle from "../../components/PageTitle";
 import {
   getSalesLibraryJobBadgeClass,
+  useMoisSalesLibraryOpportunityRanking,
   useMoisSalesLibraryPages,
   useMoisSalesLibraryPageSummary,
 } from "../../api/mois/useMoisSalesLibrary";
@@ -113,6 +114,10 @@ export default function MoisSalesPagesLibraryPage() {
     sort,
   );
   const summaryQuery = useMoisSalesLibraryPageSummary(WORKSPACE_ID);
+  const opportunityRankingQuery = useMoisSalesLibraryOpportunityRanking(
+    WORKSPACE_ID,
+    5,
+  );
   const summary = summaryQuery.data;
   const visiblePages = useMemo(() => {
     return (pagesQuery.data?.items ?? []).filter((item) =>
@@ -183,6 +188,82 @@ export default function MoisSalesPagesLibraryPage() {
           </div>
         </section>
       ) : null}
+
+      <section>
+        <div className="card border-0 shadow-sm">
+          <div className="card-body">
+            <div className="d-flex flex-wrap justify-content-between gap-3 mb-3">
+              <div>
+                <h2 className="h5 mb-1">Ranking de oportunidades comerciais</h2>
+                <p className="text-secondary mb-0">
+                  Prioriza mercados combinando score da página, aquecimento,
+                  risco de saturação e recência das evidências.
+                </p>
+              </div>
+            </div>
+            {opportunityRankingQuery.isLoading ? (
+              <p className="text-secondary mb-0">Carregando ranking...</p>
+            ) : null}
+            {opportunityRankingQuery.isError ? (
+              <div className="alert alert-danger mb-0">
+                Falha ao carregar ranking de oportunidades.
+              </div>
+            ) : null}
+            {opportunityRankingQuery.data ? (
+              <div className="table-responsive">
+                <table className="table table-sm align-middle mb-0">
+                  <thead>
+                    <tr>
+                      <th>Prioridade</th>
+                      <th>Mercado/produto</th>
+                      <th>Score combinado</th>
+                      <th>Aquecimento</th>
+                      <th>Próxima ação</th>
+                      <th>Evidência</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {opportunityRankingQuery.data.items.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="text-secondary">
+                          Nenhum dossiê concluído para priorização ainda.
+                        </td>
+                      </tr>
+                    ) : (
+                      opportunityRankingQuery.data.items.map((item, index) => (
+                        <tr key={item.pageId}>
+                          <td className="fw-semibold">#{index + 1}</td>
+                          <td className="text-break">
+                            <Link
+                              to={`/mois/sales-pages-library/${item.pageId}`}
+                            >
+                              {item.title || item.urlCanonical}
+                            </Link>
+                          </td>
+                          <td className="fw-semibold text-nowrap">
+                            {formatWarmupScore(item.combinedCommercialScore)}
+                          </td>
+                          <td>
+                            <span
+                              className={`badge ${getWarmupBadgeClass(item.marketTemperature)}`}
+                            >
+                              {warmupTemperatureLabels[item.marketTemperature]}
+                            </span>
+                          </td>
+                          <td>{item.suggestedNextAction}</td>
+                          <td className="small text-secondary">
+                            {item.evidenceSummary}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </section>
 
       <section className="card border-0 shadow-sm">
         <div className="card-body d-flex flex-column gap-3">

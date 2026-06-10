@@ -1365,3 +1365,19 @@ Arquivos principais:
 - `backend/ads-service/src/main/java/com/marketinghub/repository/jpa/mois/bibliotecapaginavenda/worker/v1/MoisSalesPageMarketWarmupRepository.java`
 - `frontend/src/pages/mois/MoisSalesPagesPipelinePage.tsx`
 - `docs/swagger/mois-sales-library-swagger.yaml`
+
+## 2026-06-10 — Fase 11 da Etapa 3: ranking de oportunidades MOIS
+
+- implementado endpoint backend `GET /api/mois/sales-library/market-warmup/opportunity-ranking` para priorizar páginas por score comercial combinado, usando score da página, score de aquecimento, risco de saturação e recência das evidências.
+- adicionados contratos de resposta para ranking de oportunidades da Etapa 3, com próxima ação objetiva para experimento ou pesquisa OPRM/MDS.
+- adicionada visualização na Biblioteca de Páginas de Vendas com ranking de oportunidades comerciais e evidências resumidas.
+- adicionados tipos e hook frontend para consumir o ranking pelo backend principal, mantendo o frontend sem acesso direto ao banco.
+
+Arquivos principais:
+- backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/dto/MoisSalesLibraryDtos.java
+- backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibraryService.java
+- backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/web/MoisSalesLibraryController.java
+- backend/ads-service/src/test/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibraryServiceTest.java
+- frontend/src/api/mois/types.ts
+- frontend/src/api/mois/useMoisSalesLibrary.ts
+- frontend/src/pages/mois/MoisSalesPagesLibraryPage.tsx

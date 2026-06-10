@@ -1,0 +1,55 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-10-oprm-general-audience-quality-reading
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: oprm_general_audience_quality_reading
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE oprm_general_audience_quality_reading (
+                id BIGINT AUTO_INCREMENT NOT NULL,
+                subniche_id BIGINT NOT NULL,
+                pain_angle_id BIGINT NULL,
+                experiment_id BIGINT NULL,
+                total_leads INT NOT NULL DEFAULT 0,
+                correct_profession_leads INT NOT NULL DEFAULT 0,
+                real_pain_responses INT NOT NULL DEFAULT 0,
+                material_requests INT NOT NULL DEFAULT 0,
+                whatsapp_replies INT NOT NULL DEFAULT 0,
+                price_or_next_step_questions INT NOT NULL DEFAULT 0,
+                out_of_profile_leads INT NOT NULL DEFAULT 0,
+                curious_without_profession INT NOT NULL DEFAULT 0,
+                low_completion_events INT NOT NULL DEFAULT 0,
+                confusing_promise_reports INT NOT NULL DEFAULT 0,
+                lead_magnet_no_response INT NOT NULL DEFAULT 0,
+                quality_score DECIMAL(5,2) NOT NULL DEFAULT 0.00,
+                approved TINYINT(1) NOT NULL DEFAULT 0,
+                blockers LONGTEXT NULL,
+                recommendations LONGTEXT NULL,
+                notes LONGTEXT NULL,
+                captured_at DATETIME NOT NULL,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL,
+                CONSTRAINT pk_oprm_general_audience_quality_reading PRIMARY KEY (id),
+                CONSTRAINT fk_oprm_general_audience_quality_subniche FOREIGN KEY (subniche_id) REFERENCES oprm_general_audience_subniche(id),
+                CONSTRAINT fk_oprm_general_audience_quality_angle FOREIGN KEY (pain_angle_id) REFERENCES oprm_general_audience_pain_angle(id),
+                CONSTRAINT fk_oprm_general_audience_quality_experiment FOREIGN KEY (experiment_id) REFERENCES experiment(id)
+              );
+
+              CREATE INDEX idx_oprm_general_audience_quality_subniche_captured
+                ON oprm_general_audience_quality_reading (subniche_id, captured_at);
+
+              CREATE INDEX idx_oprm_general_audience_quality_angle_captured
+                ON oprm_general_audience_quality_reading (pain_angle_id, captured_at);
+
+              CREATE INDEX idx_oprm_general_audience_quality_experiment
+                ON oprm_general_audience_quality_reading (experiment_id);

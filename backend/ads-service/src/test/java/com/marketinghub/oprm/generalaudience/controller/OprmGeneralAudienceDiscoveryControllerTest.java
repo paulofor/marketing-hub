@@ -2,6 +2,7 @@ package com.marketinghub.oprm.generalaudience.controller;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -14,6 +15,8 @@ import com.marketinghub.oprm.generalaudience.service.createHypothesis.CreateGene
 import com.marketinghub.oprm.generalaudience.service.createHypothesis.GeneralAudienceHypothesisResponse;
 import com.marketinghub.oprm.generalaudience.service.createLeadExperiment.CreateGeneralAudienceLeadExperimentRequest;
 import com.marketinghub.oprm.generalaudience.service.createLeadExperiment.GeneralAudienceLeadExperimentResponse;
+import com.marketinghub.oprm.generalaudience.service.createQualityReading.CreateGeneralAudienceQualityReadingRequest;
+import com.marketinghub.oprm.generalaudience.service.listQualityReadings.GeneralAudienceQualityReadingResponse;
 import com.marketinghub.oprm.generalaudience.service.landingConfirmation.CreateGeneralAudienceLandingConfirmationRequest;
 import com.marketinghub.oprm.generalaudience.service.landingConfirmation.GeneralAudienceLandingConfirmationQuestionResponse;
 import com.marketinghub.oprm.generalaudience.service.landingConfirmation.GeneralAudienceLandingConfirmationResponse;
@@ -148,5 +151,60 @@ class OprmGeneralAudienceDiscoveryControllerTest {
                 .andExpect(jsonPath("$.leadPortalFlowId").value(88))
                 .andExpect(jsonPath("$.questions[0].dataKey").value("audience_confirmation"));
     }
+
+    /** Verifica se a API registra uma leitura de qualidade real de público geral. */
+    @Test
+    void shouldCreateQualityReadingThroughApi() throws Exception {
+        when(service.createQualityReading(any(), any())).thenReturn(new GeneralAudienceQualityReadingResponse(
+                40L,
+                5L,
+                20L,
+                77L,
+                10,
+                7,
+                6,
+                5,
+                3,
+                2,
+                1,
+                0,
+                0,
+                0,
+                1,
+                new BigDecimal("92.00"),
+                true,
+                List.of(),
+                List.of("Revisar follow-up"),
+                "Primeira leitura",
+                Instant.parse("2026-06-10T13:30:00Z"),
+                Instant.parse("2026-06-10T14:00:00Z"),
+                Instant.parse("2026-06-10T14:00:00Z")));
+        CreateGeneralAudienceQualityReadingRequest request = new CreateGeneralAudienceQualityReadingRequest(
+                20L, 77L, 10, 7, 6, 5, 3, 2, 1, 0, 0, 0, 1, "Primeira leitura", null);
+
+        mockMvc.perform(post("/api/oprm/general-audiences/subniches/5/quality-readings")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(header().string(HttpHeaders.LOCATION, "/api/oprm/general-audiences/quality-readings/40"))
+                .andExpect(jsonPath("$.qualityScore").value(92.00))
+                .andExpect(jsonPath("$.approved").value(true));
+    }
+
+    /** Verifica se a API lista leituras de qualidade real do subnicho. */
+    @Test
+    void shouldListQualityReadingsThroughApi() throws Exception {
+        when(service.listQualityReadings(any())).thenReturn(List.of(new GeneralAudienceQualityReadingResponse(
+                40L, 5L, null, null, 3, 1, 0, 1, 0, 0, 2, 1, 1, 0, 2,
+                new BigDecimal("25.00"), false, List.of("Nenhuma resposta trouxe dor real."), List.of(), null,
+                Instant.parse("2026-06-10T13:30:00Z"), null, null)));
+
+        mockMvc.perform(get("/api/oprm/general-audiences/subniches/5/quality-readings"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(40))
+                .andExpect(jsonPath("$[0].approved").value(false))
+                .andExpect(jsonPath("$[0].blockers[0]").value("Nenhuma resposta trouxe dor real."));
+    }
+
 
 }

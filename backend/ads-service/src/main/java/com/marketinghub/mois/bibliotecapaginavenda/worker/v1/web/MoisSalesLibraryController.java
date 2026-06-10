@@ -161,6 +161,17 @@ public class MoisSalesLibraryController {
     }
 
     /**
+     * Lista oportunidades priorizadas pela combinação de análise comercial e aquecimento de mercado.
+     */
+    @GetMapping("/market-warmup/opportunity-ranking")
+    public MoisSalesLibraryDtos.MarketWarmupOpportunityRankingResponse rankMarketWarmupOpportunities(
+            @RequestParam String workspaceId,
+            @RequestParam(defaultValue = "10") int limit
+    ) {
+        return service.rankMarketWarmupOpportunities(workspaceId, limit);
+    }
+
+    /**
      * Solicita a pesquisa de aquecimento de mercado da Etapa 3 para uma página de vendas.
      */
     @PostMapping("/pages/{pageId}/market-warmup:request")

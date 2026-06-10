@@ -1240,3 +1240,16 @@ Arquivos alterados:
 
 - `docs/swagger/mois-sales-library-swagger.yaml`
 - `docs/registros/mois1.md`
+
+## 2026-06-10 — Fase 4 da Etapa 3 de aquecimento de mercado
+
+- Implementado o service de responsabilidade única para orquestrar a pesquisa de aquecimento da Biblioteca de Páginas de Vendas MOIS, cobrindo solicitação, consulta de resumo, fontes, sinais, claim interno, conclusão e falha de jobs.
+- Centralizada a persistência JDBC da etapa no pacote permitido `com.marketinghub.repository`, mantendo o backend como único ponto de acesso ao banco.
+- Adicionados testes unitários do service para proteger reutilização de job ativo, claim do worker, persistência de fontes/sinais/resumo, validação de índice de fonte e leitura de listas funcionais sem JSON serializado em texto.
+
+Arquivos alterados:
+- `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesPageMarketWarmupService.java`
+- `backend/ads-service/src/main/java/com/marketinghub/repository/jdbc/mois/bibliotecapaginavenda/worker/v1/MoisSalesPageMarketWarmupGateway.java`
+- `backend/ads-service/src/main/java/com/marketinghub/repository/jdbc/mois/bibliotecapaginavenda/worker/v1/MoisSalesPageMarketWarmupRepository.java`
+- `backend/ads-service/src/test/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesPageMarketWarmupServiceTest.java`
+- `docs/registros/mois1.md`

@@ -1305,3 +1305,32 @@ Arquivos principais:
 - `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesPageMarketWarmupScoreEngine.java`
 - `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesPageMarketWarmupService.java`
 - `backend/ads-service/src/test/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesPageMarketWarmupServiceTest.java`
+
+## 2026-06-10 — MOIS Etapa 3 — Fase 8: UI de aquecimento no detalhe da página
+
+- Executada a Fase 8 do plano `docs/implementacao/mois/plano-etapa-3-aquecimento-ecossistema-mercado.md`.
+- Criados hooks frontend para consultar resumo, fontes e sinais da pesquisa de aquecimento e para solicitar uma nova pesquisa via backend MOIS.
+- Adicionado bloco **Aquecimento do Mercado** na tela de detalhe da página da biblioteca de páginas de venda, com score, temperatura, ecossistema, recomendação, fontes rastreáveis, sinais comerciais, estados de carregamento, erro e vazio.
+- Mantido o padrão arquitetural: o frontend consome somente endpoints do backend MOIS já existentes e os links externos das fontes abrem em nova aba.
+
+Arquivos principais:
+
+- `frontend/src/api/mois/types.ts`
+- `frontend/src/api/mois/useMoisSalesLibrary.ts`
+- `frontend/src/pages/mois/MoisSalesPageLibraryDetailPage.tsx`
+
+## 2026-06-10 — MOIS Etapa 3 — Fase 9: biblioteca e pipeline de aquecimento
+
+- Executada a Fase 9 do plano `docs/implementacao/mois/plano-etapa-3-aquecimento-ecossistema-mercado.md`.
+- O backend passou a expor contadores globais da Etapa 3 no resumo da biblioteca e os campos de aquecimento mais recentes na listagem de páginas.
+- A tela de pipeline passou a mostrar cobertura real da Etapa 3: elegíveis, concluídos, fila, falhas e temperaturas de mercado.
+- A biblioteca passou a permitir priorização por score de aquecimento, com filtro simples por dossiê, temperatura quente/promissora, fila, falha ou ausência de dossiê.
+
+Arquivos principais:
+
+- `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/dto/MoisSalesLibraryDtos.java`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibraryService.java`
+- `frontend/src/api/mois/types.ts`
+- `frontend/src/pages/mois/MoisSalesPagesLibraryPage.tsx`
+- `frontend/src/pages/mois/MoisSalesPagesPipelinePage.tsx`
+- `docs/swagger/mois-sales-library-swagger.yaml`

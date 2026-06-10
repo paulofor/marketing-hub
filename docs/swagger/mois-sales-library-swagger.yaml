@@ -1314,6 +1314,30 @@ components:
         updatedAt:
           type: string
           format: date-time
+        marketWarmupScoreTotal:
+          type: number
+          nullable: true
+          description: Score do dossiê mais recente de aquecimento da Etapa 3.
+        marketWarmupTemperature:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/MarketWarmupTemperature'
+        marketWarmupEcosystemType:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/MarketWarmupEcosystemType'
+        marketWarmupRecommendation:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/MarketWarmupRecommendation'
+        marketWarmupStatus:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/MarketWarmupJobStatus'
+        marketWarmupUpdatedAt:
+          type: string
+          format: date-time
+          nullable: true
     SalesLibraryPageListResponse:
       type: object
       properties:
@@ -1372,6 +1396,38 @@ components:
           type: integer
           format: int64
         clickbank:
+          type: integer
+          format: int64
+        marketWarmupEligible:
+          type: integer
+          format: int64
+          description: Páginas analisadas elegíveis para pesquisa de aquecimento da Etapa 3.
+        marketWarmupPending:
+          type: integer
+          format: int64
+        marketWarmupRunning:
+          type: integer
+          format: int64
+        marketWarmupCompleted:
+          type: integer
+          format: int64
+          description: Páginas com dossiê de aquecimento concluído e resumo salvo.
+        marketWarmupFailed:
+          type: integer
+          format: int64
+        marketWarmupHot:
+          type: integer
+          format: int64
+        marketWarmupPromising:
+          type: integer
+          format: int64
+        marketWarmupWarm:
+          type: integer
+          format: int64
+        marketWarmupCold:
+          type: integer
+          format: int64
+        marketWarmupSaturated:
           type: integer
           format: int64
         updatedAt:

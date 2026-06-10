@@ -279,6 +279,12 @@ export interface MoisSalesLibraryPage {
   lastCapturedAt?: string;
   analyzedAt?: string;
   updatedAt: string;
+  marketWarmupScoreTotal?: number;
+  marketWarmupTemperature?: MoisMarketWarmupTemperature;
+  marketWarmupEcosystemType?: MoisMarketWarmupEcosystemType;
+  marketWarmupRecommendation?: MoisMarketWarmupRecommendation;
+  marketWarmupStatus?: MoisMarketWarmupJobStatus;
+  marketWarmupUpdatedAt?: string;
 }
 
 export interface MoisSalesLibraryPageSummary {
@@ -295,9 +301,18 @@ export interface MoisSalesLibraryPageSummary {
   blockedCooldown: number;
   hotmart: number;
   clickbank: number;
+  marketWarmupEligible: number;
+  marketWarmupPending: number;
+  marketWarmupRunning: number;
+  marketWarmupCompleted: number;
+  marketWarmupFailed: number;
+  marketWarmupHot: number;
+  marketWarmupPromising: number;
+  marketWarmupWarm: number;
+  marketWarmupCold: number;
+  marketWarmupSaturated: number;
   updatedAt?: string;
 }
-
 
 export interface MoisCollectedReferenceUrlSourceBreakdown {
   source: string;
@@ -320,6 +335,147 @@ export interface MoisCollectedReferenceUrlSummary {
   missingFromOperationalLibrary: number;
   bySource: MoisCollectedReferenceUrlSourceBreakdown[];
   byUrlType: MoisCollectedReferenceUrlTypeBreakdown[];
+}
+
+export type MoisMarketWarmupJobStatus =
+  | "PENDING"
+  | "FETCHING"
+  | "DONE"
+  | "FAILED";
+
+export type MoisMarketWarmupTemperature =
+  | "HOT"
+  | "PROMISING"
+  | "WARM"
+  | "COLD"
+  | "SATURATED";
+
+export type MoisMarketWarmupEcosystemType =
+  | "SPECIALISTS_HEATED"
+  | "CREATORS_HEATED"
+  | "RECURRING_PAIN_HEATED"
+  | "COMPETITORS_HEATED"
+  | "COLD_OR_UNEDUCATED"
+  | "SATURATED";
+
+export type MoisMarketWarmupRecommendation =
+  | "PRIORITIZE"
+  | "OBSERVE"
+  | "RESEARCH_MORE"
+  | "DISCARD"
+  | "SATURATED_REQUIRES_ANGLE";
+
+export type MoisMarketWarmupPlatform =
+  | "WEB"
+  | "GOOGLE"
+  | "YOUTUBE"
+  | "INSTAGRAM"
+  | "TIKTOK"
+  | "BLOG"
+  | "FORUM"
+  | "COMMUNITY"
+  | "MARKETPLACE"
+  | "REVIEW_SITE"
+  | "OTHER";
+
+export type MoisMarketWarmupSourceType =
+  | "PRODUCT_PRESENCE"
+  | "CREATOR_CONTENT"
+  | "SPECIALIST_CONTENT"
+  | "COMMUNITY_DISCUSSION"
+  | "REVIEW"
+  | "COMPLAINT"
+  | "COMPETITOR_OFFER"
+  | "AFFILIATE_PROMOTION"
+  | "SOCIAL_POST"
+  | "SEARCH_RESULT"
+  | "OTHER";
+
+export type MoisMarketWarmupSignalType =
+  | "PAIN_EXPLICIT"
+  | "BUYING_INTENT"
+  | "OBJECTION"
+  | "SOCIAL_PROOF"
+  | "CREATOR_AUTHORITY"
+  | "COMPETITOR_OFFER"
+  | "COMMUNITY_ACTIVITY"
+  | "CONTENT_RECENCY"
+  | "SATURATION_RISK"
+  | "CHANNEL_FIT";
+
+export interface MoisMarketWarmupRequestResponse {
+  pageId: number;
+  jobId: number;
+  status: MoisMarketWarmupJobStatus;
+  createdAt: string;
+}
+
+export interface MoisMarketWarmupSummary {
+  jobId: number;
+  pageId: number;
+  scoreTotal?: number;
+  marketTemperature: MoisMarketWarmupTemperature;
+  ecosystemType: MoisMarketWarmupEcosystemType;
+  recommendation: MoisMarketWarmupRecommendation;
+  mainPains: string[];
+  mainObjections: string[];
+  mainPromises: string[];
+  mainChannels: string[];
+  mainCompetitors: string[];
+  saturationRisk?: string;
+  opportunityRecommendation?: string;
+  nextExperimentSuggestion?: string;
+  status: MoisMarketWarmupJobStatus;
+  errorCategory?: string;
+  errorMessage?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MoisMarketWarmupSource {
+  sourceId: number;
+  jobId: number;
+  pageId: number;
+  platform: MoisMarketWarmupPlatform;
+  sourceType: MoisMarketWarmupSourceType;
+  sourceUrl: string;
+  sourceTitle?: string;
+  authorName?: string;
+  publishedAt?: string;
+  lastActivityAt?: string;
+  followersOrSubscribers?: number;
+  viewsCount?: number;
+  likesCount?: number;
+  commentsCount?: number;
+  recencyScore?: number;
+  engagementScore?: number;
+  evidenceSummary?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MoisMarketWarmupSourceListResponse {
+  pageId: number;
+  jobId: number;
+  items: MoisMarketWarmupSource[];
+}
+
+export interface MoisMarketWarmupSignal {
+  signalId: number;
+  jobId: number;
+  sourceId: number;
+  pageId: number;
+  signalType: MoisMarketWarmupSignalType;
+  signalStrength?: number;
+  signalText: string;
+  businessInterpretation?: string;
+  createdAt: string;
+}
+
+export interface MoisMarketWarmupSignalListResponse {
+  pageId: number;
+  jobId: number;
+  items: MoisMarketWarmupSignal[];
 }
 
 export interface MoisSalesLibraryPageExecution {

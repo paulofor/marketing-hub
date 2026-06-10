@@ -1,15 +1,125 @@
 import { Link, useParams } from "react-router-dom";
 import PageTitle from "../../components/PageTitle";
 import {
+  useMoisSalesLibraryMarketWarmup,
+  useMoisSalesLibraryMarketWarmupSignals,
+  useMoisSalesLibraryMarketWarmupSources,
   useMoisSalesLibraryPage,
   useMoisSalesLibraryPageAnalysis,
   useMoisSalesLibraryPageExecutions,
   useMoisSalesLibraryPages,
+  useRequestMoisSalesLibraryMarketWarmup,
   useUpdateMoisSalesLibraryPageStatus,
 } from "../../api/mois/useMoisSalesLibrary";
+import type {
+  MoisMarketWarmupEcosystemType,
+  MoisMarketWarmupJobStatus,
+  MoisMarketWarmupRecommendation,
+  MoisMarketWarmupSignalType,
+  MoisMarketWarmupSourceType,
+  MoisMarketWarmupTemperature,
+} from "../../api/mois/types";
 
 const WORKSPACE_ID = "workspace-001";
 const PAGE_SIZE = 100;
+
+const temperatureLabels: Record<MoisMarketWarmupTemperature, string> = {
+  HOT: "Quente",
+  PROMISING: "Promissor",
+  WARM: "Morno",
+  COLD: "Frio",
+  SATURATED: "Saturado",
+};
+
+const ecosystemLabels: Record<MoisMarketWarmupEcosystemType, string> = {
+  SPECIALISTS_HEATED: "Aquecido por especialistas",
+  CREATORS_HEATED: "Aquecido por creators",
+  RECURRING_PAIN_HEATED: "Aquecido por dor recorrente",
+  COMPETITORS_HEATED: "Aquecido por concorrentes",
+  COLD_OR_UNEDUCATED: "Frio ou pouco educado",
+  SATURATED: "Saturado",
+};
+
+const recommendationLabels: Record<MoisMarketWarmupRecommendation, string> = {
+  PRIORITIZE: "Priorizar experimento",
+  OBSERVE: "Observar com refinamento",
+  RESEARCH_MORE: "Pesquisar mais",
+  DISCARD: "Descartar por baixa prioridade",
+  SATURATED_REQUIRES_ANGLE: "Avançar só com ângulo diferenciado",
+};
+
+const statusLabels: Record<MoisMarketWarmupJobStatus, string> = {
+  PENDING: "Pendente",
+  FETCHING: "Em pesquisa",
+  DONE: "Concluído",
+  FAILED: "Falhou",
+};
+
+const sourceTypeLabels: Record<MoisMarketWarmupSourceType, string> = {
+  PRODUCT_PRESENCE: "Presença do produto",
+  CREATOR_CONTENT: "Conteúdo de creator",
+  SPECIALIST_CONTENT: "Conteúdo de especialista",
+  COMMUNITY_DISCUSSION: "Comunidade/fórum",
+  REVIEW: "Review",
+  COMPLAINT: "Reclamação",
+  COMPETITOR_OFFER: "Oferta concorrente",
+  AFFILIATE_PROMOTION: "Promoção de afiliado",
+  SOCIAL_POST: "Post social",
+  SEARCH_RESULT: "Resultado de busca",
+  OTHER: "Outra fonte",
+};
+
+const signalTypeLabels: Record<MoisMarketWarmupSignalType, string> = {
+  PAIN_EXPLICIT: "Dor explícita",
+  BUYING_INTENT: "Intenção de compra",
+  OBJECTION: "Objeção",
+  SOCIAL_PROOF: "Prova social",
+  CREATOR_AUTHORITY: "Autoridade",
+  COMPETITOR_OFFER: "Oferta concorrente",
+  COMMUNITY_ACTIVITY: "Atividade da comunidade",
+  CONTENT_RECENCY: "Conteúdo recente",
+  SATURATION_RISK: "Risco de saturação",
+  CHANNEL_FIT: "Canal promissor",
+};
+
+function getTemperatureBadgeClass(value?: MoisMarketWarmupTemperature) {
+  switch (value) {
+    case "HOT":
+      return "bg-success-subtle text-success-emphasis";
+    case "PROMISING":
+      return "bg-primary-subtle text-primary-emphasis";
+    case "WARM":
+      return "bg-warning-subtle text-warning-emphasis";
+    case "SATURATED":
+      return "bg-danger-subtle text-danger-emphasis";
+    case "COLD":
+    default:
+      return "bg-secondary-subtle text-secondary-emphasis";
+  }
+}
+
+function formatNumber(value?: number) {
+  return value == null ? "—" : value.toLocaleString("pt-BR");
+}
+
+function formatScore(value?: number) {
+  return value == null ? "—" : `${Math.round(value)}/100`;
+}
+
+function TextList({ items }: { items?: string[] }) {
+  const visibleItems = (items ?? []).filter(Boolean);
+  if (visibleItems.length === 0) {
+    return <span className="text-secondary">—</span>;
+  }
+
+  return (
+    <ul className="mb-0 ps-3">
+      {visibleItems.slice(0, 5).map((item) => (
+        <li key={item}>{item}</li>
+      ))}
+    </ul>
+  );
+}
 
 function formatDate(value?: string) {
   if (!value) return "—";
@@ -146,6 +256,18 @@ export default function MoisSalesPageLibraryDetailPage() {
   const pagesQuery = useMoisSalesLibraryPages(WORKSPACE_ID, 1, PAGE_SIZE);
   const updateStatusMutation =
     useUpdateMoisSalesLibraryPageStatus(WORKSPACE_ID);
+  const warmupQuery = useMoisSalesLibraryMarketWarmup(validPageId);
+  const hasWarmupSummary = Boolean(warmupQuery.data);
+  const warmupSourcesQuery = useMoisSalesLibraryMarketWarmupSources(
+    validPageId,
+    hasWarmupSummary,
+  );
+  const warmupSignalsQuery = useMoisSalesLibraryMarketWarmupSignals(
+    validPageId,
+    hasWarmupSummary,
+  );
+  const requestWarmupMutation =
+    useRequestMoisSalesLibraryMarketWarmup(WORKSPACE_ID);
 
   const currentIndex =
     pagesQuery.data?.items.findIndex((item) => item.pageId === validPageId) ??
@@ -153,6 +275,8 @@ export default function MoisSalesPageLibraryDetailPage() {
   const nextItem =
     currentIndex >= 0 ? pagesQuery.data?.items[currentIndex + 1] : undefined;
   const isMutating = updateStatusMutation.isPending;
+  const isRequestingWarmup = requestWarmupMutation.isPending;
+  const requestedWarmupJob = requestWarmupMutation.data;
 
   const history: HistoryItem[] = (executionsQuery.data ?? []).map((item) => ({
     key: String(item.executionId),
@@ -265,6 +389,259 @@ export default function MoisSalesPageLibraryDetailPage() {
           Falha ao atualizar status da página.
         </div>
       ) : null}
+
+      <section className="card border-0 shadow-sm">
+        <div className="card-body d-flex flex-column gap-3">
+          <div className="d-flex flex-wrap justify-content-between align-items-start gap-3">
+            <div>
+              <h2 className="h5 mb-1">Aquecimento do Mercado</h2>
+              <p className="text-secondary mb-0">
+                Dossiê da Etapa 3 para decidir se existe conversa ativa, dor
+                clara e evidência suficiente para priorizar este mercado.
+              </p>
+            </div>
+            {!warmupQuery.data && !requestedWarmupJob ? (
+              <button
+                type="button"
+                className="btn btn-primary"
+                disabled={
+                  !validPageId || isRequestingWarmup || warmupQuery.isLoading
+                }
+                onClick={() =>
+                  validPageId && requestWarmupMutation.mutate(validPageId)
+                }
+              >
+                {isRequestingWarmup ? (
+                  <span
+                    className="spinner-border spinner-border-sm me-2"
+                    role="status"
+                    aria-hidden="true"
+                  />
+                ) : null}
+                Executar pesquisa de aquecimento
+              </button>
+            ) : null}
+          </div>
+
+          {warmupQuery.isLoading ? (
+            <p className="text-secondary mb-0">
+              Carregando aquecimento do mercado...
+            </p>
+          ) : null}
+          {warmupQuery.isError ? (
+            <div className="alert alert-danger mb-0">
+              Falha ao carregar o dossiê de aquecimento.
+            </div>
+          ) : null}
+          {requestWarmupMutation.isError ? (
+            <div className="alert alert-danger mb-0">
+              Falha ao solicitar nova pesquisa de aquecimento.
+            </div>
+          ) : null}
+          {requestedWarmupJob ? (
+            <div className="alert alert-success mb-0">
+              Pesquisa solicitada com sucesso. Job {requestedWarmupJob.jobId}
+              está {statusLabels[requestedWarmupJob.status].toLowerCase()}.
+            </div>
+          ) : null}
+          {!warmupQuery.isLoading &&
+          !warmupQuery.isError &&
+          !warmupQuery.data &&
+          !requestedWarmupJob ? (
+            <div className="alert alert-info mb-0">
+              Ainda não existe dossiê de aquecimento para esta página. Solicite
+              a pesquisa para medir temperatura, canais, dores e sinais de
+              compra do mercado.
+            </div>
+          ) : null}
+
+          {warmupQuery.data ? (
+            <>
+              <div className="row g-3">
+                <div className="col-md-3">
+                  <div className="border rounded p-3 h-100 bg-light-subtle">
+                    <div className="text-secondary small">Score</div>
+                    <strong className="fs-4">
+                      {formatScore(warmupQuery.data.scoreTotal)}
+                    </strong>
+                  </div>
+                </div>
+                <div className="col-md-3">
+                  <div className="border rounded p-3 h-100 bg-light-subtle">
+                    <div className="text-secondary small">Temperatura</div>
+                    <span
+                      className={`badge ${getTemperatureBadgeClass(warmupQuery.data.marketTemperature)}`}
+                    >
+                      {temperatureLabels[warmupQuery.data.marketTemperature]}
+                    </span>
+                  </div>
+                </div>
+                <div className="col-md-3">
+                  <div className="border rounded p-3 h-100 bg-light-subtle">
+                    <div className="text-secondary small">Ecossistema</div>
+                    <strong>
+                      {ecosystemLabels[warmupQuery.data.ecosystemType]}
+                    </strong>
+                  </div>
+                </div>
+                <div className="col-md-3">
+                  <div className="border rounded p-3 h-100 bg-light-subtle">
+                    <div className="text-secondary small">Status</div>
+                    <strong>{statusLabels[warmupQuery.data.status]}</strong>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border rounded p-3">
+                <div className="text-secondary small">
+                  Recomendação comercial
+                </div>
+                <p className="mb-1 fw-semibold">
+                  {recommendationLabels[warmupQuery.data.recommendation]}
+                </p>
+                <p className="mb-0">
+                  {warmupQuery.data.opportunityRecommendation ||
+                    "Sem recomendação operacional registrada."}
+                </p>
+                {warmupQuery.data.nextExperimentSuggestion ? (
+                  <p className="mb-0 mt-2 small text-secondary">
+                    Próximo experimento sugerido:{" "}
+                    {warmupQuery.data.nextExperimentSuggestion}
+                  </p>
+                ) : null}
+              </div>
+
+              {warmupQuery.data.status === "FAILED" ? (
+                <div className="alert alert-danger mb-0">
+                  A pesquisa falhou
+                  {warmupQuery.data.errorCategory
+                    ? ` (${warmupQuery.data.errorCategory})`
+                    : ""}
+                  : {warmupQuery.data.errorMessage || "erro não informado"}.
+                </div>
+              ) : null}
+
+              <div className="row g-3 small">
+                <div className="col-md-6">
+                  <strong>Dores principais</strong>
+                  <TextList items={warmupQuery.data.mainPains} />
+                </div>
+                <div className="col-md-6">
+                  <strong>Objeções principais</strong>
+                  <TextList items={warmupQuery.data.mainObjections} />
+                </div>
+                <div className="col-md-6">
+                  <strong>Canais principais</strong>
+                  <TextList items={warmupQuery.data.mainChannels} />
+                </div>
+                <div className="col-md-6">
+                  <strong>Concorrentes principais</strong>
+                  <TextList items={warmupQuery.data.mainCompetitors} />
+                </div>
+              </div>
+
+              {warmupQuery.data.saturationRisk ? (
+                <div className="alert alert-warning mb-0">
+                  <strong>Risco de saturação:</strong>{" "}
+                  {warmupQuery.data.saturationRisk}
+                </div>
+              ) : null}
+
+              <div>
+                <h3 className="h6 mb-2">Fontes públicas rastreáveis</h3>
+                {warmupSourcesQuery.isLoading ? (
+                  <p className="text-secondary mb-0">Carregando fontes...</p>
+                ) : null}
+                {warmupSourcesQuery.isError ? (
+                  <div className="alert alert-danger mb-0">
+                    Falha ao carregar fontes.
+                  </div>
+                ) : null}
+                {!warmupSourcesQuery.isLoading &&
+                (warmupSourcesQuery.data?.items.length ?? 0) === 0 ? (
+                  <p className="text-secondary mb-0">
+                    Nenhuma fonte pública registrada para este dossiê.
+                  </p>
+                ) : null}
+                <div className="d-flex flex-column gap-2">
+                  {(warmupSourcesQuery.data?.items ?? [])
+                    .slice(0, 8)
+                    .map((source) => (
+                      <div
+                        key={source.sourceId}
+                        className="border rounded p-3 bg-light-subtle"
+                      >
+                        <div className="d-flex flex-wrap justify-content-between gap-2">
+                          <a
+                            href={source.sourceUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="fw-semibold"
+                          >
+                            {source.sourceTitle || source.sourceUrl}
+                          </a>
+                          <span className="badge bg-secondary-subtle text-secondary-emphasis">
+                            {source.platform} •{" "}
+                            {sourceTypeLabels[source.sourceType]}
+                          </span>
+                        </div>
+                        <p className="mb-1 small text-secondary">
+                          {source.authorName || "Autor não identificado"} •
+                          comentários: {formatNumber(source.commentsCount)} •
+                          visualizações: {formatNumber(source.viewsCount)}
+                        </p>
+                        <p className="mb-0 small">
+                          {source.evidenceSummary || "Sem resumo de evidência."}
+                        </p>
+                      </div>
+                    ))}
+                </div>
+              </div>
+
+              <div>
+                <h3 className="h6 mb-2">Sinais que justificam a pontuação</h3>
+                {warmupSignalsQuery.isLoading ? (
+                  <p className="text-secondary mb-0">Carregando sinais...</p>
+                ) : null}
+                {warmupSignalsQuery.isError ? (
+                  <div className="alert alert-danger mb-0">
+                    Falha ao carregar sinais.
+                  </div>
+                ) : null}
+                {!warmupSignalsQuery.isLoading &&
+                (warmupSignalsQuery.data?.items.length ?? 0) === 0 ? (
+                  <p className="text-secondary mb-0">
+                    Nenhum sinal comercial registrado para este dossiê.
+                  </p>
+                ) : null}
+                <div className="row g-2">
+                  {(warmupSignalsQuery.data?.items ?? [])
+                    .slice(0, 10)
+                    .map((signal) => (
+                      <div className="col-md-6" key={signal.signalId}>
+                        <div className="border rounded p-3 h-100">
+                          <div className="d-flex flex-wrap justify-content-between gap-2">
+                            <strong>
+                              {signalTypeLabels[signal.signalType]}
+                            </strong>
+                            <span className="text-secondary small">
+                              força {formatNumber(signal.signalStrength)}
+                            </span>
+                          </div>
+                          <p className="mb-1 small">{signal.signalText}</p>
+                          <p className="mb-0 small text-secondary">
+                            {signal.businessInterpretation ||
+                              "Sem interpretação adicional."}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            </>
+          ) : null}
+        </div>
+      </section>
 
       {analysisQuery.isLoading ? (
         <p className="text-secondary mb-0">Carregando detalhe...</p>

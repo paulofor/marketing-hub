@@ -222,7 +222,13 @@ public final class MoisSalesLibraryDtos {
             Long lastJobExecutionId,
             Instant lastCapturedAt,
             Instant analyzedAt,
-            Instant updatedAt
+            Instant updatedAt,
+            BigDecimal marketWarmupScoreTotal,
+            MarketWarmupTemperature marketWarmupTemperature,
+            MarketWarmupEcosystemType marketWarmupEcosystemType,
+            MarketWarmupRecommendation marketWarmupRecommendation,
+            MarketWarmupJobStatus marketWarmupStatus,
+            Instant marketWarmupUpdatedAt
     ) {
     }
 
@@ -243,6 +249,16 @@ public final class MoisSalesLibraryDtos {
             long blockedCooldown,
             long hotmart,
             long clickbank,
+            long marketWarmupEligible,
+            long marketWarmupPending,
+            long marketWarmupRunning,
+            long marketWarmupCompleted,
+            long marketWarmupFailed,
+            long marketWarmupHot,
+            long marketWarmupPromising,
+            long marketWarmupWarm,
+            long marketWarmupCold,
+            long marketWarmupSaturated,
             Instant updatedAt
     ) {
     }

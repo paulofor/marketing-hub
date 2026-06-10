@@ -382,3 +382,4 @@
 
 - Corrigida a causa-raiz de ações do fluxo de Públicos Gerais parecerem travadas quando o frontend era acessado em `:5173`: a URL padrão do backend no frontend apontava para `:8000`, porta que pode recusar conexão nesse ambiente, enquanto o backend público responde pelo mesmo host na porta 80.
 - Mantido suporte a `VITE_API_URL` para ambientes que precisem sobrescrever a URL do backend.
+- 2026-06-10 22:30:00 (UTC): corrigida a experiência operacional da tela `/oprm/general-audiences/subniches/:id` após aprovação de subnicho: a aprovação já registrada agora fica clara para o usuário, e a próxima ação real disponível passa a ser a conversão controlada do subnicho aprovado em MarketNiche, evitando a percepção de botão travado quando o backend já gravou `APPROVED_FOR_EXPERIMENT`.

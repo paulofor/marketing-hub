@@ -75,6 +75,16 @@ export interface CreateGeneralAudienceSeedPayload {
   riskNotes?: string;
 }
 
+export interface ConvertGeneralAudienceSubnicheResponse {
+  subnicheId: number;
+  seedId: number;
+  marketNicheId: number;
+  marketNicheName: string;
+  subnicheStatus: OprmGeneralAudienceSubnicheStatus;
+  reusedExistingMarketNiche: boolean;
+  convertedAt: string;
+}
+
 export interface CreateGeneralAudienceSubnichePayload {
   name: string;
   personaSummary?: string;
@@ -353,6 +363,29 @@ export function useRejectOprmGeneralAudienceSubniche(subnicheId: number) {
         generalAudienceKeys.subniche(subniche.id),
         subniche,
       );
+    },
+  });
+}
+
+export function useConvertOprmGeneralAudienceSubnicheToMarketNiche(
+  subnicheId: number,
+) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      sendJson<ConvertGeneralAudienceSubnicheResponse>(
+        `/api/oprm/general-audiences/subniches/${subnicheId}/convert-to-market-niche`,
+        "POST",
+        undefined,
+        "Não foi possível converter o subnicho em nicho",
+      ),
+    onSuccess: (conversion) => {
+      queryClient.invalidateQueries({
+        queryKey: generalAudienceKeys.subniches(conversion.seedId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: generalAudienceKeys.subniche(conversion.subnicheId),
+      });
     },
   });
 }

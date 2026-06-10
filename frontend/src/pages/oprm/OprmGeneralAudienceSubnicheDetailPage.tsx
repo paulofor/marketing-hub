@@ -5,6 +5,7 @@ import {
   OprmGeneralAudienceSubnicheStatus,
   subnicheStatusLabels,
   useApproveOprmGeneralAudienceSubniche,
+  useConvertOprmGeneralAudienceSubnicheToMarketNiche,
   useOprmGeneralAudienceSubniche,
   useRejectOprmGeneralAudienceSubniche,
   useUpdateOprmGeneralAudienceSubniche,
@@ -37,6 +38,9 @@ export default function OprmGeneralAudienceSubnicheDetailPage() {
     subnicheId ?? 0,
   );
   const rejectSubniche = useRejectOprmGeneralAudienceSubniche(subnicheId ?? 0);
+  const convertSubniche = useConvertOprmGeneralAudienceSubnicheToMarketNiche(
+    subnicheId ?? 0,
+  );
   const [form, setForm] = useState({
     personaSummary: "",
     painSummary: "",
@@ -96,9 +100,13 @@ export default function OprmGeneralAudienceSubnicheDetailPage() {
   const isActionPending =
     approveSubniche.isPending ||
     rejectSubniche.isPending ||
-    updateSubniche.isPending;
+    updateSubniche.isPending ||
+    convertSubniche.isPending;
   const isApproved = subniche?.status === "APPROVED_FOR_EXPERIMENT";
+  const isConverted = subniche?.status === "CONVERTED_TO_NICHE";
   const isRejected = subniche?.status === "REJECTED";
+  const canConvertToMarketNiche =
+    isApproved && !subniche?.marketNicheId && !isActionPending;
   const status = subniche?.status as
     | OprmGeneralAudienceSubnicheStatus
     | undefined;
@@ -353,7 +361,9 @@ export default function OprmGeneralAudienceSubnicheDetailPage() {
                   type="button"
                   className="btn btn-success"
                   onClick={() => handleStatusAction("approve")}
-                  disabled={isActionPending || isApproved}
+                  disabled={
+                    isApproved || isConverted || isRejected || isActionPending
+                  }
                 >
                   {approveSubniche.isPending ? (
                     <span
@@ -361,7 +371,9 @@ export default function OprmGeneralAudienceSubnicheDetailPage() {
                       aria-hidden="true"
                     />
                   ) : null}
-                  Aprovar para experimento
+                  {isApproved || isConverted
+                    ? "Subnicho já aprovado"
+                    : "Aprovar para experimento"}
                 </button>
                 <button
                   type="button"
@@ -379,11 +391,21 @@ export default function OprmGeneralAudienceSubnicheDetailPage() {
                 </button>
                 <button
                   type="button"
-                  className="btn btn-outline-secondary"
-                  disabled
-                  title="Conversão para MarketNiche pertence à fase 5 do plano para manter controle arquitetural."
+                  className="btn btn-outline-primary"
+                  onClick={() => convertSubniche.mutateAsync()}
+                  disabled={!canConvertToMarketNiche}
+                  title={
+                    canConvertToMarketNiche
+                      ? "Converter o subnicho aprovado em MarketNiche para liberar as próximas etapas."
+                      : "A conversão fica disponível depois da aprovação e antes de existir um MarketNiche vinculado."
+                  }
                 >
-                  Converter em nicho — fase 5
+                  {convertSubniche.isPending ? (
+                    <span className="spinner-border spinner-border-sm me-2" />
+                  ) : null}
+                  {subniche.marketNicheId
+                    ? `Nicho #${subniche.marketNicheId} criado`
+                    : "Converter em nicho"}
                 </button>
                 <button
                   type="button"
@@ -394,9 +416,30 @@ export default function OprmGeneralAudienceSubnicheDetailPage() {
                   Criar experimento de lead — fase 5
                 </button>
               </div>
+              {isApproved && !subniche.marketNicheId ? (
+                <div className="alert alert-info mt-3 mb-0">
+                  Aprovação registrada. O próximo passo é converter este
+                  subnicho em nicho para destravar a construção de ângulos e
+                  experimentos.
+                </div>
+              ) : null}
+              {isConverted && subniche.marketNicheId ? (
+                <div className="alert alert-success mt-3 mb-0">
+                  Subnicho convertido no nicho #{subniche.marketNicheId}. Agora
+                  a próxima etapa é criar e aprovar ângulos de dor antes de
+                  gerar experimento de lead.
+                </div>
+              ) : null}
               {approveSubniche.isError || rejectSubniche.isError ? (
                 <div className="alert alert-danger mt-3 mb-0">
                   Não foi possível registrar a decisão do subnicho.
+                </div>
+              ) : null}
+              {convertSubniche.isError ? (
+                <div className="alert alert-danger mt-3 mb-0">
+                  Não foi possível converter o subnicho em nicho. Confira se os
+                  campos de persona, dor, resultado, canais e pergunta estão
+                  preenchidos.
                 </div>
               ) : null}
             </div>

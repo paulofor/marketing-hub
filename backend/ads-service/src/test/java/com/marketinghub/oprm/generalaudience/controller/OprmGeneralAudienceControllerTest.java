@@ -14,6 +14,8 @@ import com.marketinghub.oprm.generalaudience.OprmGeneralAudienceSeedStatus;
 import com.marketinghub.oprm.generalaudience.OprmGeneralAudienceSeedType;
 import com.marketinghub.oprm.generalaudience.OprmGeneralAudienceSubnicheStatus;
 import com.marketinghub.oprm.generalaudience.service.OprmGeneralAudienceService;
+import com.marketinghub.oprm.generalaudience.service.convertToMarketNiche.ConvertGeneralAudienceSubnicheToMarketNicheRequest;
+import com.marketinghub.oprm.generalaudience.service.convertToMarketNiche.GeneralAudienceMarketNicheConversionResponse;
 import com.marketinghub.oprm.generalaudience.service.createSeed.CreateGeneralAudienceSeedRequest;
 import com.marketinghub.oprm.generalaudience.service.createSubniche.CreateGeneralAudienceSubnicheRequest;
 import com.marketinghub.oprm.generalaudience.service.getSeed.GeneralAudienceSeedResponse;
@@ -172,6 +174,30 @@ class OprmGeneralAudienceControllerTest {
         mockMvc.perform(post("/api/oprm/general-audiences/subniches/5/reject"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("REJECTED"));
+    }
+
+    /** Verifica se a API converte subnicho aprovado em MarketNiche sem exigir CNAE. */
+    @Test
+    void shouldConvertSubnicheToMarketNicheThroughApi() throws Exception {
+        when(service.convertSubnicheToMarketNiche(any(), any())).thenReturn(
+                new GeneralAudienceMarketNicheConversionResponse(
+                        5L,
+                        2L,
+                        99L,
+                        "Manicure autônoma",
+                        OprmGeneralAudienceSubnicheStatus.CONVERTED_TO_NICHE,
+                        false,
+                        Instant.parse("2026-06-10T12:00:00Z")));
+        ConvertGeneralAudienceSubnicheToMarketNicheRequest request =
+                new ConvertGeneralAudienceSubnicheToMarketNicheRequest(null, null, null, null, null);
+
+        mockMvc.perform(post("/api/oprm/general-audiences/subniches/5/convert-to-market-niche")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.subnicheId").value(5))
+                .andExpect(jsonPath("$.marketNicheId").value(99))
+                .andExpect(jsonPath("$.subnicheStatus").value("CONVERTED_TO_NICHE"));
     }
 
     /** Monta resposta detalhada de subnicho para os testes HTTP. */

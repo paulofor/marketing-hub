@@ -11,15 +11,25 @@ import com.marketinghub.oprm.generalaudience.OprmGeneralAudiencePainAngleStatus;
 import com.marketinghub.oprm.generalaudience.OprmGeneralAudienceSeed;
 import com.marketinghub.oprm.generalaudience.OprmGeneralAudienceSourceEvidence;
 import com.marketinghub.oprm.generalaudience.OprmGeneralAudienceSubniche;
+import com.marketinghub.oprm.generalaudience.OprmGeneralAudienceSubnicheStatus;
+import com.marketinghub.oprm.generalaudience.service.createHypothesis.CreateGeneralAudienceHypothesisRequest;
+import com.marketinghub.oprm.generalaudience.service.createLeadExperiment.CreateGeneralAudienceLeadExperimentRequest;
 import com.marketinghub.oprm.generalaudience.service.createPainAngle.CreateGeneralAudiencePainAngleRequest;
 import com.marketinghub.oprm.generalaudience.service.createSourceEvidence.CreateGeneralAudienceSourceEvidenceRequest;
+import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudienceHypothesisMaterializationRepository;
+import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudienceLeadExperimentMaterializationRepository;
+import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudienceMaterializedLeadExperiment;
+import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudienceMaterializedHypothesis;
 import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudiencePainAngleRepository;
 import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudienceSeedRepository;
 import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudienceSourceEvidenceRepository;
 import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudienceSubnicheRepository;
+import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -78,7 +88,9 @@ class OprmGeneralAudienceDiscoveryServiceTest {
                 mock(OprmGeneralAudienceSeedRepository.class),
                 subnicheRepository,
                 angleRepository,
-                evidenceRepository);
+                evidenceRepository,
+                mock(OprmGeneralAudienceHypothesisMaterializationRepository.class),
+                mock(OprmGeneralAudienceLeadExperimentMaterializationRepository.class));
 
         var response = service.evaluateQualityGate(5L);
 
@@ -99,7 +111,9 @@ class OprmGeneralAudienceDiscoveryServiceTest {
                 seedRepository,
                 subnicheRepository,
                 mock(OprmGeneralAudiencePainAngleRepository.class),
-                mock(OprmGeneralAudienceSourceEvidenceRepository.class));
+                mock(OprmGeneralAudienceSourceEvidenceRepository.class),
+                mock(OprmGeneralAudienceHypothesisMaterializationRepository.class),
+                mock(OprmGeneralAudienceLeadExperimentMaterializationRepository.class));
 
         assertThatThrownBy(() -> service.createSourceEvidence(1L, new CreateGeneralAudienceSourceEvidenceRequest(
                         5L,
@@ -110,6 +124,139 @@ class OprmGeneralAudienceDiscoveryServiceTest {
                         Instant.parse("2026-06-10T12:00:00Z"))))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("não pertence à semente");
+    }
+
+
+    /** Verifica se a criação de hipótese usa a dor principal e bloqueia dependência de CNAE. */
+    @Test
+    void shouldCreateHypothesisFromApprovedPainAngle() {
+        OprmGeneralAudienceSubniche subniche = subniche();
+        subniche.setStatus(OprmGeneralAudienceSubnicheStatus.CONVERTED_TO_NICHE);
+        subniche.setMarketNicheId(99L);
+        OprmGeneralAudiencePainAngle angle = approvedAngle(subniche);
+        OprmGeneralAudiencePainAngleRepository angleRepository = mock(OprmGeneralAudiencePainAngleRepository.class);
+        OprmGeneralAudienceHypothesisMaterializationRepository hypothesisRepository =
+                mock(OprmGeneralAudienceHypothesisMaterializationRepository.class);
+        when(angleRepository.findById(20L)).thenReturn(Optional.of(angle));
+        when(hypothesisRepository.createHypothesis(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(new OprmGeneralAudienceMaterializedHypothesis(
+                        UUID.fromString("11111111-1111-1111-1111-111111111111"),
+                        "Hipótese Público Geral - Manicure autônoma",
+                        "BACKLOG",
+                        Instant.parse("2026-06-10T13:00:00Z")));
+        OprmGeneralAudienceDiscoveryService service = new OprmGeneralAudienceDiscoveryService(
+                mock(OprmGeneralAudienceSeedRepository.class),
+                subnicheRepositoryReturning(subniche),
+                angleRepository,
+                mock(OprmGeneralAudienceSourceEvidenceRepository.class),
+                hypothesisRepository,
+                mock(OprmGeneralAudienceLeadExperimentMaterializationRepository.class));
+
+        var response = service.createHypothesis(20L, new CreateGeneralAudienceHypothesisRequest(null, null, null));
+
+        assertThat(response.hypothesisId()).isEqualTo(UUID.fromString("11111111-1111-1111-1111-111111111111"));
+        assertThat(response.marketNicheId()).isEqualTo(99L);
+        assertThat(response.statement()).contains("Manicure autônoma com Agenda vazia durante a semana");
+        assertThat(response.statement()).contains("do que a uma mensagem genérica");
+    }
+
+    /** Verifica se hipótese é bloqueada antes da conversão controlada para MarketNiche. */
+    @Test
+    void shouldBlockHypothesisBeforeMarketNicheConversion() {
+        OprmGeneralAudienceSubniche subniche = subniche();
+        OprmGeneralAudiencePainAngle angle = approvedAngle(subniche);
+        OprmGeneralAudiencePainAngleRepository angleRepository = mock(OprmGeneralAudiencePainAngleRepository.class);
+        when(angleRepository.findById(20L)).thenReturn(Optional.of(angle));
+        OprmGeneralAudienceDiscoveryService service = new OprmGeneralAudienceDiscoveryService(
+                mock(OprmGeneralAudienceSeedRepository.class),
+                subnicheRepositoryReturning(subniche),
+                angleRepository,
+                mock(OprmGeneralAudienceSourceEvidenceRepository.class),
+                mock(OprmGeneralAudienceHypothesisMaterializationRepository.class),
+                mock(OprmGeneralAudienceLeadExperimentMaterializationRepository.class));
+
+        assertThatThrownBy(() -> service.createHypothesis(
+                20L,
+                new CreateGeneralAudienceHypothesisRequest(null, null, null)))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("convertido em MarketNiche");
+    }
+
+
+    /** Verifica se a criação do experimento de lead exige pacote curto e sem venda direta. */
+    @Test
+    void shouldCreateLeadExperimentFromApprovedPainAngle() {
+        OprmGeneralAudienceSubniche subniche = subniche();
+        subniche.setStatus(OprmGeneralAudienceSubnicheStatus.CONVERTED_TO_NICHE);
+        subniche.setMarketNicheId(99L);
+        OprmGeneralAudiencePainAngle angle = approvedAngle(subniche);
+        angle.setLandingConfirmationQuestion("Você trabalha como manicure hoje?");
+        OprmGeneralAudiencePainAngleRepository angleRepository = mock(OprmGeneralAudiencePainAngleRepository.class);
+        OprmGeneralAudienceLeadExperimentMaterializationRepository experimentRepository =
+                mock(OprmGeneralAudienceLeadExperimentMaterializationRepository.class);
+        when(angleRepository.findById(20L)).thenReturn(Optional.of(angle));
+        when(experimentRepository.createLeadExperiment(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(new OprmGeneralAudienceMaterializedLeadExperiment(
+                        77L,
+                        "Lead Público Geral - Manicure autônoma",
+                        "PLANNED",
+                        "CPL de lead qualificado",
+                        new BigDecimal("12.00"),
+                        new BigDecimal("30.00"),
+                        LocalDate.parse("2026-06-10"),
+                        LocalDate.parse("2026-06-12")));
+        OprmGeneralAudienceDiscoveryService service = new OprmGeneralAudienceDiscoveryService(
+                mock(OprmGeneralAudienceSeedRepository.class),
+                subnicheRepositoryReturning(subniche),
+                angleRepository,
+                mock(OprmGeneralAudienceSourceEvidenceRepository.class),
+                mock(OprmGeneralAudienceHypothesisMaterializationRepository.class),
+                experimentRepository);
+
+        var response = service.createLeadExperiment(20L, new CreateGeneralAudienceLeadExperimentRequest(
+                UUID.fromString("11111111-1111-1111-1111-111111111111"),
+                null,
+                "CPL de lead qualificado",
+                new BigDecimal("12.00"),
+                new BigDecimal("30.00"),
+                3,
+                new BigDecimal("8.00"),
+                30));
+
+        assertThat(response.experimentId()).isEqualTo(77L);
+        assertThat(response.status()).isEqualTo("PLANNED");
+        assertThat(response.stopLossCpl()).isEqualByComparingTo("12.00");
+        assertThat(response.dailyBudget()).isEqualByComparingTo("30.00");
+    }
+
+    /** Verifica se orçamento grande é bloqueado para manter o teste inicial pequeno. */
+    @Test
+    void shouldBlockLeadExperimentWithLargeBudget() {
+        OprmGeneralAudienceSubniche subniche = subniche();
+        subniche.setStatus(OprmGeneralAudienceSubnicheStatus.CONVERTED_TO_NICHE);
+        subniche.setMarketNicheId(99L);
+        OprmGeneralAudiencePainAngle angle = approvedAngle(subniche);
+        OprmGeneralAudiencePainAngleRepository angleRepository = mock(OprmGeneralAudiencePainAngleRepository.class);
+        when(angleRepository.findById(20L)).thenReturn(Optional.of(angle));
+        OprmGeneralAudienceDiscoveryService service = new OprmGeneralAudienceDiscoveryService(
+                mock(OprmGeneralAudienceSeedRepository.class),
+                subnicheRepositoryReturning(subniche),
+                angleRepository,
+                mock(OprmGeneralAudienceSourceEvidenceRepository.class),
+                mock(OprmGeneralAudienceHypothesisMaterializationRepository.class),
+                mock(OprmGeneralAudienceLeadExperimentMaterializationRepository.class));
+
+        assertThatThrownBy(() -> service.createLeadExperiment(20L, new CreateGeneralAudienceLeadExperimentRequest(
+                UUID.fromString("11111111-1111-1111-1111-111111111111"),
+                null,
+                "CPL de lead qualificado",
+                new BigDecimal("12.00"),
+                new BigDecimal("150.00"),
+                3,
+                null,
+                null)))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("orçamento pequeno");
     }
 
     /** Monta serviço com repositório de subnicho e repositórios auxiliares mockados. */
@@ -132,7 +279,9 @@ class OprmGeneralAudienceDiscoveryServiceTest {
                 mock(OprmGeneralAudienceSeedRepository.class),
                 subnicheRepository,
                 angleRepository,
-                evidenceRepository);
+                evidenceRepository,
+                mock(OprmGeneralAudienceHypothesisMaterializationRepository.class),
+                mock(OprmGeneralAudienceLeadExperimentMaterializationRepository.class));
     }
 
     /** Monta repositório que retorna um subnicho específico. */
@@ -140,6 +289,21 @@ class OprmGeneralAudienceDiscoveryServiceTest {
         OprmGeneralAudienceSubnicheRepository repository = mock(OprmGeneralAudienceSubnicheRepository.class);
         when(repository.findById(5L)).thenReturn(Optional.of(subniche));
         return repository;
+    }
+
+
+    /** Monta um ângulo aprovado com dor, isca e mecanismo para criação de hipótese. */
+    private OprmGeneralAudiencePainAngle approvedAngle(OprmGeneralAudienceSubniche subniche) {
+        OprmGeneralAudiencePainAngle angle = new OprmGeneralAudiencePainAngle();
+        angle.setId(20L);
+        angle.setSubniche(subniche);
+        angle.setPain("Agenda vazia durante a semana");
+        angle.setDesiredResult("Reativar clientes antigas");
+        angle.setMechanismDirection("a dor percebida é horário vazio e dinheiro perdido");
+        angle.setProofOrLeadMagnet("kit com 12 mensagens de WhatsApp");
+        angle.setSafePromise("reativar clientes antigas pelo WhatsApp");
+        angle.setStatus(OprmGeneralAudiencePainAngleStatus.APPROVED);
+        return angle;
     }
 
     /** Monta uma semente mínima para testes. */

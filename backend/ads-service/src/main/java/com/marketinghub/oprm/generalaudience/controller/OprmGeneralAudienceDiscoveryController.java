@@ -1,6 +1,10 @@
 package com.marketinghub.oprm.generalaudience.controller;
 
 import com.marketinghub.oprm.generalaudience.service.OprmGeneralAudienceDiscoveryService;
+import com.marketinghub.oprm.generalaudience.service.createHypothesis.CreateGeneralAudienceHypothesisRequest;
+import com.marketinghub.oprm.generalaudience.service.createHypothesis.GeneralAudienceHypothesisResponse;
+import com.marketinghub.oprm.generalaudience.service.createLeadExperiment.CreateGeneralAudienceLeadExperimentRequest;
+import com.marketinghub.oprm.generalaudience.service.createLeadExperiment.GeneralAudienceLeadExperimentResponse;
 import com.marketinghub.oprm.generalaudience.service.createPainAngle.CreateGeneralAudiencePainAngleRequest;
 import com.marketinghub.oprm.generalaudience.service.createSourceEvidence.CreateGeneralAudienceSourceEvidenceRequest;
 import com.marketinghub.oprm.generalaudience.service.listPainAngles.GeneralAudiencePainAngleResponse;
@@ -60,6 +64,28 @@ public class OprmGeneralAudienceDiscoveryController {
     @PostMapping("/pain-angles/{angleId}/approve")
     public ResponseEntity<GeneralAudiencePainAngleResponse> approvePainAngle(@PathVariable Long angleId) {
         return ResponseEntity.ok(service.approvePainAngle(angleId));
+    }
+
+    /** Cria uma hipótese específica a partir de um ângulo aprovado de público geral. */
+    @PostMapping("/pain-angles/{angleId}/create-hypothesis")
+    public ResponseEntity<GeneralAudienceHypothesisResponse> createHypothesis(
+            @PathVariable Long angleId,
+            @Valid @RequestBody(required = false) CreateGeneralAudienceHypothesisRequest request) {
+        GeneralAudienceHypothesisResponse response = service.createHypothesis(angleId, request);
+        return ResponseEntity
+                .created(URI.create("/api/hypotheses/" + response.hypothesisId()))
+                .body(response);
+    }
+
+    /** Cria experimento planejado de lead/isca a partir de um ângulo aprovado de público geral. */
+    @PostMapping("/pain-angles/{angleId}/create-lead-experiment")
+    public ResponseEntity<GeneralAudienceLeadExperimentResponse> createLeadExperiment(
+            @PathVariable Long angleId,
+            @Valid @RequestBody CreateGeneralAudienceLeadExperimentRequest request) {
+        GeneralAudienceLeadExperimentResponse response = service.createLeadExperiment(angleId, request);
+        return ResponseEntity
+                .created(URI.create("/api/experiments/" + response.experimentId()))
+                .body(response);
     }
 
     /** Lista evidências agregadas associadas à semente de público geral. */

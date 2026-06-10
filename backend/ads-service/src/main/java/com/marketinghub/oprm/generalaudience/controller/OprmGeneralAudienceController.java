@@ -1,6 +1,8 @@
 package com.marketinghub.oprm.generalaudience.controller;
 
 import com.marketinghub.oprm.generalaudience.service.OprmGeneralAudienceService;
+import com.marketinghub.oprm.generalaudience.service.convertToMarketNiche.ConvertGeneralAudienceSubnicheToMarketNicheRequest;
+import com.marketinghub.oprm.generalaudience.service.convertToMarketNiche.GeneralAudienceMarketNicheConversionResponse;
 import com.marketinghub.oprm.generalaudience.service.createSeed.CreateGeneralAudienceSeedRequest;
 import com.marketinghub.oprm.generalaudience.service.createSubniche.CreateGeneralAudienceSubnicheRequest;
 import com.marketinghub.oprm.generalaudience.service.getSeed.GeneralAudienceSeedResponse;
@@ -110,5 +112,13 @@ public class OprmGeneralAudienceController {
     @PostMapping("/subniches/{subnicheId}/reject")
     public ResponseEntity<GeneralAudienceSubnicheResponse> rejectSubniche(@PathVariable Long subnicheId) {
         return ResponseEntity.ok(service.rejectSubniche(subnicheId));
+    }
+
+    /** Converte um subnicho aprovado em MarketNiche sem usar tabelas CNAE. */
+    @PostMapping("/subniches/{subnicheId}/convert-to-market-niche")
+    public ResponseEntity<GeneralAudienceMarketNicheConversionResponse> convertSubnicheToMarketNiche(
+            @PathVariable Long subnicheId,
+            @Valid @RequestBody(required = false) ConvertGeneralAudienceSubnicheToMarketNicheRequest request) {
+        return ResponseEntity.ok(service.convertSubnicheToMarketNiche(subnicheId, request));
     }
 }

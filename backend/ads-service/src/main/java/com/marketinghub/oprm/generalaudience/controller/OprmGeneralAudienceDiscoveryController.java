@@ -1,6 +1,7 @@
 package com.marketinghub.oprm.generalaudience.controller;
 
 import com.marketinghub.oprm.generalaudience.service.OprmGeneralAudienceDiscoveryService;
+import com.marketinghub.oprm.generalaudience.service.OprmGeneralAudienceLandingConfirmationService;
 import com.marketinghub.oprm.generalaudience.service.createHypothesis.CreateGeneralAudienceHypothesisRequest;
 import com.marketinghub.oprm.generalaudience.service.createHypothesis.GeneralAudienceHypothesisResponse;
 import com.marketinghub.oprm.generalaudience.service.createLeadExperiment.CreateGeneralAudienceLeadExperimentRequest;
@@ -9,6 +10,10 @@ import com.marketinghub.oprm.generalaudience.service.createPainAngle.CreateGener
 import com.marketinghub.oprm.generalaudience.service.createSourceEvidence.CreateGeneralAudienceSourceEvidenceRequest;
 import com.marketinghub.oprm.generalaudience.service.listPainAngles.GeneralAudiencePainAngleResponse;
 import com.marketinghub.oprm.generalaudience.service.listSourceEvidences.GeneralAudienceSourceEvidenceResponse;
+import com.marketinghub.oprm.generalaudience.service.landingConfirmation.CreateGeneralAudienceLandingConfirmationRequest;
+import com.marketinghub.oprm.generalaudience.service.landingConfirmation.GeneralAudienceLandingConfirmationResponse;
+import com.marketinghub.oprm.generalaudience.service.prepareTargeting.GeneralAudienceTargetingPreparationRequest;
+import com.marketinghub.oprm.generalaudience.service.prepareTargeting.GeneralAudienceTargetingPreparationResponse;
 import com.marketinghub.oprm.generalaudience.service.qualityGate.GeneralAudienceQualityGateResponse;
 import com.marketinghub.oprm.generalaudience.service.updatePainAngle.UpdateGeneralAudiencePainAngleRequest;
 import jakarta.validation.Valid;
@@ -29,10 +34,14 @@ import org.springframework.web.bind.annotation.RestController;
 public class OprmGeneralAudienceDiscoveryController {
 
     private final OprmGeneralAudienceDiscoveryService service;
+    private final OprmGeneralAudienceLandingConfirmationService landingConfirmationService;
 
-    /** Inicializa o controller com o serviço de descoberta de públicos gerais. */
-    public OprmGeneralAudienceDiscoveryController(OprmGeneralAudienceDiscoveryService service) {
+    /** Inicializa o controller com os serviços de descoberta e confirmação de públicos gerais. */
+    public OprmGeneralAudienceDiscoveryController(
+            OprmGeneralAudienceDiscoveryService service,
+            OprmGeneralAudienceLandingConfirmationService landingConfirmationService) {
         this.service = service;
+        this.landingConfirmationService = landingConfirmationService;
     }
 
     /** Lista dores e ângulos testáveis de um subnicho de público geral. */
@@ -85,6 +94,27 @@ public class OprmGeneralAudienceDiscoveryController {
         GeneralAudienceLeadExperimentResponse response = service.createLeadExperiment(angleId, request);
         return ResponseEntity
                 .created(URI.create("/api/experiments/" + response.experimentId()))
+                .body(response);
+    }
+
+    /** Prepara targeting inicial conservador sem publicar ad set amplo puro. */
+    @PostMapping("/pain-angles/{angleId}/prepare-targeting")
+    public ResponseEntity<GeneralAudienceTargetingPreparationResponse> prepareInitialTargeting(
+            @PathVariable Long angleId,
+            @Valid @RequestBody GeneralAudienceTargetingPreparationRequest request) {
+        return ResponseEntity.ok(service.prepareInitialTargeting(angleId, request));
+    }
+
+    /** Cria landing/formulário para confirmar público, dor, entrega e próximo passo. */
+    @PostMapping("/pain-angles/{angleId}/create-confirmation-flow")
+    public ResponseEntity<GeneralAudienceLandingConfirmationResponse> createConfirmationFlow(
+            @PathVariable Long angleId,
+            @Valid @RequestBody CreateGeneralAudienceLandingConfirmationRequest request) {
+        GeneralAudienceLandingConfirmationResponse response = landingConfirmationService.createConfirmationFlow(
+                angleId,
+                request);
+        return ResponseEntity
+                .created(URI.create("/api/lead-portal/flows/" + response.leadPortalFlowId()))
                 .body(response);
     }
 

@@ -15,6 +15,7 @@ import com.marketinghub.oprm.generalaudience.OprmGeneralAudienceSubnicheStatus;
 import com.marketinghub.oprm.generalaudience.service.createHypothesis.CreateGeneralAudienceHypothesisRequest;
 import com.marketinghub.oprm.generalaudience.service.createLeadExperiment.CreateGeneralAudienceLeadExperimentRequest;
 import com.marketinghub.oprm.generalaudience.service.createPainAngle.CreateGeneralAudiencePainAngleRequest;
+import com.marketinghub.oprm.generalaudience.service.prepareTargeting.GeneralAudienceTargetingPreparationRequest;
 import com.marketinghub.oprm.generalaudience.service.createSourceEvidence.CreateGeneralAudienceSourceEvidenceRequest;
 import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudienceHypothesisMaterializationRepository;
 import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudienceLeadExperimentMaterializationRepository;
@@ -24,9 +25,15 @@ import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudienceP
 import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudienceSeedRepository;
 import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudienceSourceEvidenceRepository;
 import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudienceSubnicheRepository;
+import com.marketinghub.targeting.TargetingElement;
+import com.marketinghub.targeting.TargetingElementStatus;
+import com.marketinghub.targeting.TargetingElementType;
+import com.marketinghub.targeting.dto.CreateTargetingElementRequest;
+import com.marketinghub.targeting.service.TargetingElementService;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -90,7 +97,8 @@ class OprmGeneralAudienceDiscoveryServiceTest {
                 angleRepository,
                 evidenceRepository,
                 mock(OprmGeneralAudienceHypothesisMaterializationRepository.class),
-                mock(OprmGeneralAudienceLeadExperimentMaterializationRepository.class));
+                mock(OprmGeneralAudienceLeadExperimentMaterializationRepository.class),
+                mock(TargetingElementService.class));
 
         var response = service.evaluateQualityGate(5L);
 
@@ -113,7 +121,8 @@ class OprmGeneralAudienceDiscoveryServiceTest {
                 mock(OprmGeneralAudiencePainAngleRepository.class),
                 mock(OprmGeneralAudienceSourceEvidenceRepository.class),
                 mock(OprmGeneralAudienceHypothesisMaterializationRepository.class),
-                mock(OprmGeneralAudienceLeadExperimentMaterializationRepository.class));
+                mock(OprmGeneralAudienceLeadExperimentMaterializationRepository.class),
+                mock(TargetingElementService.class));
 
         assertThatThrownBy(() -> service.createSourceEvidence(1L, new CreateGeneralAudienceSourceEvidenceRequest(
                         5L,
@@ -125,7 +134,6 @@ class OprmGeneralAudienceDiscoveryServiceTest {
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("não pertence à semente");
     }
-
 
     /** Verifica se a criação de hipótese usa a dor principal e bloqueia dependência de CNAE. */
     @Test
@@ -150,7 +158,8 @@ class OprmGeneralAudienceDiscoveryServiceTest {
                 angleRepository,
                 mock(OprmGeneralAudienceSourceEvidenceRepository.class),
                 hypothesisRepository,
-                mock(OprmGeneralAudienceLeadExperimentMaterializationRepository.class));
+                mock(OprmGeneralAudienceLeadExperimentMaterializationRepository.class),
+                mock(TargetingElementService.class));
 
         var response = service.createHypothesis(20L, new CreateGeneralAudienceHypothesisRequest(null, null, null));
 
@@ -173,7 +182,8 @@ class OprmGeneralAudienceDiscoveryServiceTest {
                 angleRepository,
                 mock(OprmGeneralAudienceSourceEvidenceRepository.class),
                 mock(OprmGeneralAudienceHypothesisMaterializationRepository.class),
-                mock(OprmGeneralAudienceLeadExperimentMaterializationRepository.class));
+                mock(OprmGeneralAudienceLeadExperimentMaterializationRepository.class),
+                mock(TargetingElementService.class));
 
         assertThatThrownBy(() -> service.createHypothesis(
                 20L,
@@ -181,7 +191,6 @@ class OprmGeneralAudienceDiscoveryServiceTest {
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("convertido em MarketNiche");
     }
-
 
     /** Verifica se a criação do experimento de lead exige pacote curto e sem venda direta. */
     @Test
@@ -211,7 +220,8 @@ class OprmGeneralAudienceDiscoveryServiceTest {
                 angleRepository,
                 mock(OprmGeneralAudienceSourceEvidenceRepository.class),
                 mock(OprmGeneralAudienceHypothesisMaterializationRepository.class),
-                experimentRepository);
+                experimentRepository,
+                mock(TargetingElementService.class));
 
         var response = service.createLeadExperiment(20L, new CreateGeneralAudienceLeadExperimentRequest(
                 UUID.fromString("11111111-1111-1111-1111-111111111111"),
@@ -244,7 +254,8 @@ class OprmGeneralAudienceDiscoveryServiceTest {
                 angleRepository,
                 mock(OprmGeneralAudienceSourceEvidenceRepository.class),
                 mock(OprmGeneralAudienceHypothesisMaterializationRepository.class),
-                mock(OprmGeneralAudienceLeadExperimentMaterializationRepository.class));
+                mock(OprmGeneralAudienceLeadExperimentMaterializationRepository.class),
+                mock(TargetingElementService.class));
 
         assertThatThrownBy(() -> service.createLeadExperiment(20L, new CreateGeneralAudienceLeadExperimentRequest(
                 UUID.fromString("11111111-1111-1111-1111-111111111111"),
@@ -257,6 +268,80 @@ class OprmGeneralAudienceDiscoveryServiceTest {
                 null)))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("orçamento pequeno");
+    }
+
+    /** Verifica se o targeting inicial exige JOB_TITLE aprovado/resolvido para evitar público amplo puro. */
+    @Test
+    void shouldPrepareConservativeTargetingAndBlockPureBroadAudience() {
+        OprmGeneralAudienceSubniche subniche = subniche();
+        subniche.setStatus(OprmGeneralAudienceSubnicheStatus.CONVERTED_TO_NICHE);
+        subniche.setMarketNicheId(99L);
+        OprmGeneralAudiencePainAngle angle = approvedAngle(subniche);
+        OprmGeneralAudiencePainAngleRepository angleRepository = mock(OprmGeneralAudiencePainAngleRepository.class);
+        TargetingElementService targetingElementService = targetingElementServiceAssigningIds(false);
+        when(angleRepository.findById(20L)).thenReturn(Optional.of(angle));
+        OprmGeneralAudienceDiscoveryService service = new OprmGeneralAudienceDiscoveryService(
+                mock(OprmGeneralAudienceSeedRepository.class),
+                subnicheRepositoryReturning(subniche),
+                angleRepository,
+                mock(OprmGeneralAudienceSourceEvidenceRepository.class),
+                mock(OprmGeneralAudienceHypothesisMaterializationRepository.class),
+                mock(OprmGeneralAudienceLeadExperimentMaterializationRepository.class),
+                targetingElementService);
+
+        var response = service.prepareInitialTargeting(20L, new GeneralAudienceTargetingPreparationRequest(
+                UUID.fromString("11111111-1111-1111-1111-111111111111"),
+                List.of("Manicure"),
+                List.of(),
+                List.of("Esmaltação"),
+                List.of("Atendimento por WhatsApp"),
+                "Você trabalha como manicure hoje?",
+                "Mulheres adultas quando fizer sentido para o subnicho",
+                "Confirmar profissão no formulário",
+                false,
+                "operador"));
+
+        assertThat(response.publishableForCurrentPublisher()).isFalse();
+        assertThat(response.elements()).hasSize(3);
+        assertThat(response.elements()).extracting("status").contains(TargetingElementStatus.NEEDS_REVIEW);
+        assertThat(response.blockers()).anyMatch(blocker -> blocker.contains("Nenhum JOB_TITLE aprovado"));
+    }
+
+    /** Verifica se um JOB_TITLE já aprovado e resolvido libera o targeting conservador para o publicador atual. */
+    @Test
+    void shouldMarkTargetingPublishableWhenResolvedApprovedJobTitleExists() {
+        OprmGeneralAudienceSubniche subniche = subniche();
+        subniche.setStatus(OprmGeneralAudienceSubnicheStatus.CONVERTED_TO_NICHE);
+        subniche.setMarketNicheId(99L);
+        OprmGeneralAudiencePainAngle angle = approvedAngle(subniche);
+        OprmGeneralAudiencePainAngleRepository angleRepository = mock(OprmGeneralAudiencePainAngleRepository.class);
+        TargetingElementService targetingElementService = targetingElementServiceAssigningIds(true);
+        when(angleRepository.findById(20L)).thenReturn(Optional.of(angle));
+        OprmGeneralAudienceDiscoveryService service = new OprmGeneralAudienceDiscoveryService(
+                mock(OprmGeneralAudienceSeedRepository.class),
+                subnicheRepositoryReturning(subniche),
+                angleRepository,
+                mock(OprmGeneralAudienceSourceEvidenceRepository.class),
+                mock(OprmGeneralAudienceHypothesisMaterializationRepository.class),
+                mock(OprmGeneralAudienceLeadExperimentMaterializationRepository.class),
+                targetingElementService);
+
+        var response = service.prepareInitialTargeting(20L, new GeneralAudienceTargetingPreparationRequest(
+                UUID.fromString("11111111-1111-1111-1111-111111111111"),
+                List.of("Manicure"),
+                List.of("6000000000001"),
+                List.of("Esmaltação"),
+                List.of(),
+                "Você trabalha como manicure hoje?",
+                null,
+                "Confirmar profissão no formulário",
+                true,
+                "operador"));
+
+        assertThat(response.publishableForCurrentPublisher()).isTrue();
+        assertThat(response.blockers()).isEmpty();
+        assertThat(response.elements()).anyMatch(element -> element.type() == TargetingElementType.JOB_TITLE
+                && element.publishableForCurrentPublisher());
     }
 
     /** Monta serviço com repositório de subnicho e repositórios auxiliares mockados. */
@@ -281,7 +366,8 @@ class OprmGeneralAudienceDiscoveryServiceTest {
                 angleRepository,
                 evidenceRepository,
                 mock(OprmGeneralAudienceHypothesisMaterializationRepository.class),
-                mock(OprmGeneralAudienceLeadExperimentMaterializationRepository.class));
+                mock(OprmGeneralAudienceLeadExperimentMaterializationRepository.class),
+                mock(TargetingElementService.class));
     }
 
     /** Monta repositório que retorna um subnicho específico. */
@@ -291,6 +377,25 @@ class OprmGeneralAudienceDiscoveryServiceTest {
         return repository;
     }
 
+    /** Monta serviço de targeting que devolve elementos como se fossem persistidos. */
+    private TargetingElementService targetingElementServiceAssigningIds(boolean resolveMetaForApprovedJobs) {
+        TargetingElementService service = mock(TargetingElementService.class);
+        when(service.create(any(CreateTargetingElementRequest.class))).thenAnswer(invocation -> {
+            CreateTargetingElementRequest request = invocation.getArgument(0);
+            TargetingElement element = new TargetingElement();
+            element.setId((long) (request.getType().ordinal() + 1));
+            element.setType(request.getType());
+            element.setTerm(request.getTerm());
+            element.setStatus(request.getStatus());
+            if (resolveMetaForApprovedJobs
+                    && request.getType() == TargetingElementType.JOB_TITLE
+                    && request.getStatus() == TargetingElementStatus.APPROVED) {
+                element.setMetaId(request.getMetaId());
+            }
+            return element;
+        });
+        return service;
+    }
 
     /** Monta um ângulo aprovado com dor, isca e mecanismo para criação de hipótese. */
     private OprmGeneralAudiencePainAngle approvedAngle(OprmGeneralAudienceSubniche subniche) {

@@ -331,3 +331,14 @@
 - Implementada a etapa 1 do plano de públicos gerais sem sobreposição CNAE: cadastro, listagem, detalhe, atualização e arquivamento manual de sementes de público geral no backend.
 - O fluxo permanece separado do NichoCNAE e não cria nicho, hipótese, experimento ou campanha automaticamente.
 - 2026-06-10 00:00:00 (UTC): executada a etapa 2 do plano de públicos gerais sem sobreposição com CNAE: o backend passou a persistir e expor subnichos derivados de sementes gerais em tabela própria `oprm_general_audience_subniche`, com endpoints OPRM para listar, cadastrar, detalhar, revisar, aprovar e rejeitar subnichos sem gravar esses públicos nas tabelas OPRM CNAE nem tratá-los como campanha pronta.
+
+## 2026-06-10 — Frontend operacional de públicos gerais OPRM
+
+- Implementada a fase 3 do plano de públicos gerais sem sobreposição CNAE: navegação interna OPRM com item **Públicos Gerais**, tela de listagem/cadastro de sementes, detalhe da semente com subnichos derivados e detalhe do subnicho com mapa de dores, linguagem, aprovação e rejeição.
+- Mantida a separação arquitetural entre Público Geral e NichoCNAE: a tela explicita a origem `Público Geral`, não grava dados como CNAE e deixa conversão para `MarketNiche`/experimento bloqueada para a fase futura prevista no plano.
+
+## 2026-06-10 — Pipeline de descoberta de públicos gerais OPRM
+
+- Implementada a fase 4 do plano de públicos gerais sem sobreposição CNAE: criado o pipeline oficial `OPRM_GENERAL_AUDIENCE_DISCOVERY`, com etapas de revisão de semente, descoberta de subnichos, mapeamento de dores, construção de ângulos seguros, quality gate e brief de experimento.
+- Criadas as tabelas próprias de dores/ângulos e evidências agregadas, mantendo públicos gerais fora das tabelas CNAE e persistindo apenas evidência resumida e rastreável.
+- Adicionados endpoints OPRM para cadastrar/listar/revisar/aprovar ângulos, registrar evidências agregadas e executar quality gate bloqueando saída genérica ou promessa arriscada antes de avanço comercial.

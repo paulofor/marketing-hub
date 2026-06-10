@@ -118,6 +118,11 @@ const NAV_SECTIONS: NavSection[] = [
             icon: Workflow,
             end: true,
           },
+          {
+            to: "/oprm/general-audiences",
+            label: "Públicos Gerais",
+            icon: Users,
+          },
         ],
       },
       { to: "/mds", label: "MDS", icon: Microscope },

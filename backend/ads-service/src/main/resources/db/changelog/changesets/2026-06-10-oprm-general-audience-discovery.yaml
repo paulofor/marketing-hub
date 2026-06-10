@@ -1,0 +1,69 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-10-03-oprm-general-audience-pain-angle
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: oprm_general_audience_pain_angle
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE oprm_general_audience_pain_angle (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                subniche_id BIGINT NOT NULL,
+                pain LONGTEXT NOT NULL,
+                desired_result LONGTEXT NOT NULL,
+                mechanism_direction LONGTEXT NULL,
+                proof_or_lead_magnet LONGTEXT NULL,
+                safe_promise LONGTEXT NULL,
+                first_ad_hook LONGTEXT NULL,
+                landing_confirmation_question LONGTEXT NULL,
+                compliance_notes LONGTEXT NULL,
+                status VARCHAR(32) NOT NULL,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL,
+                CONSTRAINT pk_oprm_general_audience_pain_angle PRIMARY KEY (id),
+                CONSTRAINT fk_oprm_general_audience_pain_angle_subniche
+                  FOREIGN KEY (subniche_id) REFERENCES oprm_general_audience_subniche (id)
+              );
+              CREATE INDEX idx_oprm_general_audience_pain_angle_subniche_status ON oprm_general_audience_pain_angle (subniche_id, status, updated_at);
+  - changeSet:
+      id: 2026-06-10-04-oprm-general-audience-source-evidence
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: oprm_general_audience_source_evidence
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE oprm_general_audience_source_evidence (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                seed_id BIGINT NOT NULL,
+                subniche_id BIGINT NULL,
+                source_url VARCHAR(1024) NULL,
+                source_domain VARCHAR(191) NULL,
+                source_type VARCHAR(64) NULL,
+                evidence_summary LONGTEXT NOT NULL,
+                captured_at DATETIME NOT NULL,
+                CONSTRAINT pk_oprm_general_audience_source_evidence PRIMARY KEY (id),
+                CONSTRAINT fk_oprm_general_audience_source_evidence_seed
+                  FOREIGN KEY (seed_id) REFERENCES oprm_general_audience_seed (id),
+                CONSTRAINT fk_oprm_general_audience_source_evidence_subniche
+                  FOREIGN KEY (subniche_id) REFERENCES oprm_general_audience_subniche (id)
+              );
+              CREATE INDEX idx_oprm_general_audience_source_evidence_seed ON oprm_general_audience_source_evidence (seed_id, captured_at);
+              CREATE INDEX idx_oprm_general_audience_source_evidence_subniche ON oprm_general_audience_source_evidence (subniche_id, captured_at);

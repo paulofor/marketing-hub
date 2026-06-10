@@ -6,6 +6,9 @@ databaseChangeLog:
       file: changesets/2026-06-10-oprm-general-audience-subniche.yaml
       relativeToChangelogFile: true
   - include:
+      file: changesets/2026-06-10-oprm-general-audience-discovery.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-06-09-oprm-source-freshness-mei-classification.yaml
       relativeToChangelogFile: true
   - include:

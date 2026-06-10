@@ -1,6 +1,7 @@
 package com.marketinghub.pipeline.definition;
 
 import com.marketinghub.experiment.pipeline.ExperimentPipelineSection;
+import com.marketinghub.oprm.generalaudience.pipeline.OprmGeneralAudienceDiscoveryPipelineSection;
 import com.marketinghub.oprm.nichocnae.pipeline.OprmNichoCnaePipelineSection;
 import java.util.Arrays;
 import java.util.List;
@@ -28,6 +29,10 @@ public class PipelineDefinitionRegistry {
     private static final String OPRM_NICHO_CNAE_PIPELINE_CODE = "oprm-nicho-cnae-pipeline";
     private static final String OPRM_MODULE = "OPRM";
     private static final String OPRM_NICHO_CNAE_CANONICAL_VERSION = "oprm-nichocnae-canon.v1";
+    private static final String OPRM_GENERAL_AUDIENCE_DISCOVERY_PIPELINE_CODE =
+            "oprm-general-audience-discovery-pipeline";
+    private static final String OPRM_GENERAL_AUDIENCE_DISCOVERY_CANONICAL_VERSION =
+            "oprm-general-audience-discovery-canon.v1";
     private static final String MOIS_SALES_PAGE_LIBRARY_PIPELINE_CODE = "mois-sales-page-library-pipeline";
     private static final String MOIS_MODULE = "MOIS";
     private static final String MOIS_SALES_PAGE_LIBRARY_CANONICAL_VERSION = "mois-sales-page-library-canon.v1";
@@ -56,6 +61,7 @@ public class PipelineDefinitionRegistry {
         this.officialPipelines = List.of(
                 buildExperimentPipeline(),
                 buildOprmNichoCnaePipeline(),
+                buildOprmGeneralAudienceDiscoveryPipeline(),
                 buildMoisSalesPageLibraryPipeline(),
                 buildFacebookAdsPublicationMetricsPipeline());
         this.validModules = Set.of(
@@ -258,6 +264,41 @@ public class PipelineDefinitionRegistry {
                 OPRM_NICHO_CNAE_CANONICAL_VERSION,
                 true,
                 Set.of(OPRM_NICHO_CNAE_PIPELINE_CODE, "nicho-cnae-pipeline", "oprm_nicho_cnae_pipeline"),
+                PipelineFieldPolicy.officialDefault(),
+                StageFieldPolicy.officialDefault(),
+                stages);
+    }
+
+
+    /**
+     * Monta a definição oficial do pipeline OPRM de descoberta de públicos gerais sem dependência de CNAE.
+     */
+    private PipelineDefinition buildOprmGeneralAudienceDiscoveryPipeline() {
+        List<PipelineStageDefinition> stages = Arrays.stream(OprmGeneralAudienceDiscoveryPipelineSection.values())
+                .map(section -> new PipelineStageDefinition(
+                        section.name(),
+                        section.path(),
+                        section.displayName(),
+                        section.position(),
+                        true,
+                        section.requiresOpenAiModel(),
+                        true,
+                        section.executionModule(),
+                        section.rootPackage(),
+                        section.modulePackage(),
+                        section.aliases()))
+                .toList();
+        return new PipelineDefinition(
+                OPRM_MODULE,
+                OPRM_GENERAL_AUDIENCE_DISCOVERY_PIPELINE_CODE,
+                "Pipeline de Descoberta de Públicos Gerais",
+                OPRM_GENERAL_AUDIENCE_DISCOVERY_CANONICAL_VERSION,
+                true,
+                Set.of(
+                        OPRM_GENERAL_AUDIENCE_DISCOVERY_PIPELINE_CODE,
+                        "OPRM_GENERAL_AUDIENCE_DISCOVERY",
+                        "general-audience-discovery",
+                        "publicos-gerais-pipeline"),
                 PipelineFieldPolicy.officialDefault(),
                 StageFieldPolicy.officialDefault(),
                 stages);

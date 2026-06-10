@@ -344,3 +344,5 @@
 - Implementada a fase 4 do plano de públicos gerais sem sobreposição CNAE: criado o pipeline oficial `OPRM_GENERAL_AUDIENCE_DISCOVERY`, com etapas de revisão de semente, descoberta de subnichos, mapeamento de dores, construção de ângulos seguros, quality gate e brief de experimento.
 - Criadas as tabelas próprias de dores/ângulos e evidências agregadas, mantendo públicos gerais fora das tabelas CNAE e persistindo apenas evidência resumida e rastreável.
 - Adicionados endpoints OPRM para cadastrar/listar/revisar/aprovar ângulos, registrar evidências agregadas e executar quality gate bloqueando saída genérica ou promessa arriscada antes de avanço comercial.
+
+- 2026-06-10 14:03:12 (UTC): corrigida a causa-raiz do erro de teste em `BackendRoutineResearchOrchestratorServiceTest`: o serviço passou a depender dos repositórios de perfil MEI e card de rotina para montar o histórico recente, mas o teste ainda não injetava mocks dessas dependências, gerando `NullPointerException` antes da validação do contrato.

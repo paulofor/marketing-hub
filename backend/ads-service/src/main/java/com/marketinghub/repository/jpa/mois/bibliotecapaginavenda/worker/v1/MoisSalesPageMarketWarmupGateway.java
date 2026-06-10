@@ -76,6 +76,11 @@ public interface MoisSalesPageMarketWarmupGateway {
     boolean markJobFailed(long jobId, String errorCategory, String errorMessage);
 
     /**
+     * Recoloca jobs presos em FETCHING antigo na fila pendente para reprocessamento operacional.
+     */
+    long requeueStaleFetchingJobs(String workspaceId, int staleMinutes);
+
+    /**
      * Busca o resumo mais recente da página com os dados do job associado.
      */
     Optional<MarketWarmupSummaryData> findLatestSummaryByPage(long pageId);

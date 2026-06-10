@@ -311,6 +311,7 @@ export interface MoisSalesLibraryPageSummary {
   marketWarmupWarm: number;
   marketWarmupCold: number;
   marketWarmupSaturated: number;
+  marketWarmupStuck: number;
   updatedAt?: string;
 }
 
@@ -408,6 +409,13 @@ export interface MoisMarketWarmupRequestResponse {
   jobId: number;
   status: MoisMarketWarmupJobStatus;
   createdAt: string;
+}
+
+export interface MoisMarketWarmupReprocessStaleResponse {
+  workspaceId: string;
+  staleMinutes: number;
+  requeuedJobs: number;
+  updatedAt: string;
 }
 
 export interface MoisMarketWarmupSummary {

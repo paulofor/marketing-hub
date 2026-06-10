@@ -1334,3 +1334,34 @@ Arquivos principais:
 - `frontend/src/pages/mois/MoisSalesPagesLibraryPage.tsx`
 - `frontend/src/pages/mois/MoisSalesPagesPipelinePage.tsx`
 - `docs/swagger/mois-sales-library-swagger.yaml`
+
+## 2026-06-10 — MOIS Etapa 3 fase 9: priorização na biblioteca e pipeline
+
+- Executada a fase 9 do plano de aquecimento do ecossistema de mercado, conectando a biblioteca e o pipeline aos campos consolidados da Etapa 3.
+- A listagem da Biblioteca de Páginas de Vendas agora aceita filtro operacional de aquecimento e ordenação backend por maior score, permitindo priorização global das páginas quentes/promissoras sem depender apenas da ordenação local da primeira página.
+- O card de pipeline da Etapa 3 direciona o operador diretamente para a biblioteca filtrada por mercados quentes/promissores e ordenada pelo score de aquecimento.
+
+Arquivos principais:
+
+- `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibraryService.java`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/web/MoisSalesLibraryController.java`
+- `frontend/src/api/mois/useMoisSalesLibrary.ts`
+- `frontend/src/pages/mois/MoisSalesPagesLibraryPage.tsx`
+- `frontend/src/pages/mois/MoisSalesPagesPipelinePage.tsx`
+- `docs/swagger/mois-sales-library-swagger.yaml`
+
+## 2026-06-10 — MOIS Etapa 3 fase 10: observabilidade e saneamento operacional
+
+- Executada a fase 10 do plano de aquecimento do ecossistema de mercado para impedir que jobs da Etapa 3 fiquem parados silenciosamente.
+- Adicionados logs operacionais mais explícitos para claim sem fila, concorrência de claim, início de complete, fontes públicas persistidas e fail com categoria/mensagem.
+- Criada ação backend para refileirar jobs `FETCHING` antigos, permitindo reprocessamento sem intervenção direta no banco.
+- Adicionada métrica de jobs presos ao resumo da biblioteca e ao card de pipeline da Etapa 3, com botão operacional para reprocessar presos.
+
+Arquivos principais:
+
+- `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/dto/MoisSalesLibraryDtos.java`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesPageMarketWarmupService.java`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/web/MoisSalesLibraryController.java`
+- `backend/ads-service/src/main/java/com/marketinghub/repository/jpa/mois/bibliotecapaginavenda/worker/v1/MoisSalesPageMarketWarmupRepository.java`
+- `frontend/src/pages/mois/MoisSalesPagesPipelinePage.tsx`
+- `docs/swagger/mois-sales-library-swagger.yaml`

@@ -105,15 +105,17 @@ public class MoisSalesLibraryController {
     }
 
     /**
-     * Lista páginas canônicas registradas no modelo consolidado da biblioteca.
+     * Lista páginas canônicas registradas no modelo consolidado da biblioteca com filtros opcionais de aquecimento.
      */
     @GetMapping("/pages")
     public MoisSalesLibraryDtos.SalesLibraryPageListResponse listPages(
             @RequestParam String workspaceId,
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int pageSize
+            @RequestParam(defaultValue = "20") int pageSize,
+            @RequestParam(required = false) String marketWarmupFilter,
+            @RequestParam(defaultValue = "RECENT_ANALYSIS") String sort
     ) {
-        return service.listPages(workspaceId, page, pageSize);
+        return service.listPages(workspaceId, page, pageSize, marketWarmupFilter, sort);
     }
 
     /**
@@ -243,6 +245,16 @@ public class MoisSalesLibraryController {
                     jobId, ex.getMessage(), ex);
             throw new ResponseStatusException(HttpStatus.CONFLICT, ex.getMessage(), ex);
         }
+    }
+
+    /**
+     * Refileira jobs antigos presos em execução para saneamento operacional sem acesso direto ao banco.
+     */
+    @PostMapping("/market-warmup/jobs:reprocess-stale")
+    public MoisSalesLibraryDtos.MarketWarmupReprocessStaleResponse reprocessStaleMarketWarmupJobs(
+            @Valid @RequestBody MoisSalesLibraryDtos.MarketWarmupReprocessStaleRequest request
+    ) {
+        return marketWarmupService.reprocessStaleJobs(request);
     }
 
     /**

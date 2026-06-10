@@ -21,6 +21,20 @@ vez de persistir anchor genérico.
 
 
 
+
+## Sugestões oficiais da Meta
+
+O worker executa uma rotina agendada a cada trinta minutos para consultar o campo
+`recommendations` das campanhas Facebook ativas retornadas pelo backend em
+`GET /api/facebook-campaigns/recommendations/sync-targets`. Cada retrato coletado
+é enviado de volta para `POST /api/facebook-campaigns/{campaignId}/recommendations`,
+permitindo que o backend mantenha no banco as recomendações atuais da Meta sem
+dar acesso direto do worker ao modelo JPA do sistema.
+
+Quando a Graph API ou o backend falham, o worker registra o erro em
+`POST /api/facebook-campaigns/{campaignId}/recommendations-error` e preserva o
+último retrato válido de sugestões para apoiar decisões de otimização e vendas.
+
 ## Enriquecimento de segmentações de nicho
 
 Além da fila de candidatos de targeting, o worker também processa os termos

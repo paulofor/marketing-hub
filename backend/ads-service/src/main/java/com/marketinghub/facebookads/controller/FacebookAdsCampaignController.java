@@ -31,6 +31,10 @@ import com.marketinghub.facebookads.FacebookAdsAdSet;
 import com.marketinghub.repository.jpa.facebookads.FacebookAdsAdSetRepository;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
 import com.marketinghub.facebookads.FacebookAdStatus;
+import com.marketinghub.facebookads.service.recommendation.FacebookCampaignRecommendationDto;
+import com.marketinghub.facebookads.service.recommendation.FacebookCampaignRecommendationIngestionRequest;
+import com.marketinghub.facebookads.service.recommendation.FacebookCampaignRecommendationService;
+import com.marketinghub.facebookads.service.recommendation.FacebookCampaignRecommendationSyncTarget;
 import com.marketinghub.repository.jpa.facebookads.FacebookAdsCampaignRepository;
 import com.marketinghub.repository.jpa.creative.CreativeRepository;
 import com.marketinghub.experiment.AdSet;
@@ -75,6 +79,7 @@ public class FacebookAdsCampaignController {
     private final LeadPortalPublicUrlResolver leadPortalPublicUrlResolver;
 
     private final LeadPortalMetricsService leadPortalMetricsService;
+    private final FacebookCampaignRecommendationService recommendationService;
 
     /**
      * Cria o controller com os repositórios e serviços usados pelos contratos de campanhas Facebook.
@@ -92,7 +97,8 @@ public class FacebookAdsCampaignController {
                                          ExperimentFunnelAutoStopService funnelAutoStopService,
                                          com.marketinghub.experiment.service.ExperimentReadinessService experimentReadinessService,
                                          LeadPortalPublicUrlResolver leadPortalPublicUrlResolver,
-                                         LeadPortalMetricsService leadPortalMetricsService) {
+                                         LeadPortalMetricsService leadPortalMetricsService,
+                                         FacebookCampaignRecommendationService recommendationService) {
         this.experimentService = experimentService;
         this.campaignRepository = campaignRepository;
         this.accountRepository = accountRepository;
@@ -107,6 +113,7 @@ public class FacebookAdsCampaignController {
         this.experimentReadinessService = experimentReadinessService;
         this.leadPortalPublicUrlResolver = leadPortalPublicUrlResolver;
         this.leadPortalMetricsService = leadPortalMetricsService;
+        this.recommendationService = recommendationService;
     }
 
     @GetMapping("/experiments-ready")
@@ -147,6 +154,35 @@ public class FacebookAdsCampaignController {
                         dto -> dto,
                         (first, second) -> first,
                         LinkedHashMap::new));
+    }
+
+
+    @GetMapping("/recommendations/sync-targets")
+    // Lista campanhas ativas que precisam de coleta de sugestões oficiais da Meta.
+    public List<FacebookCampaignRecommendationSyncTarget> recommendationSyncTargets() {
+        return recommendationService.listSyncTargets();
+    }
+
+    @PostMapping("/{campaignId}/recommendations")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    // Recebe do worker o retrato mais recente de sugestões oficiais da Meta para a campanha.
+    public void ingestRecommendations(@PathVariable String campaignId,
+                                      @RequestBody FacebookCampaignRecommendationIngestionRequest request) {
+        recommendationService.ingest(campaignId, request);
+    }
+
+    @PostMapping("/{campaignId}/recommendations-error")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    // Registra falha de coleta de sugestões da Meta sem apagar o último retrato válido.
+    public void recommendationSyncError(@PathVariable String campaignId,
+                                        @RequestBody CampaignMetricsErrorRequest request) {
+        recommendationService.registerError(campaignId, request != null ? request.message() : null);
+    }
+
+    @GetMapping("/{campaignId}/recommendations")
+    // Lista as sugestões oficiais da Meta salvas para uma campanha.
+    public List<FacebookCampaignRecommendationDto> listRecommendations(@PathVariable String campaignId) {
+        return recommendationService.listByCampaign(campaignId);
     }
 
     @GetMapping("/metrics/sync-targets")

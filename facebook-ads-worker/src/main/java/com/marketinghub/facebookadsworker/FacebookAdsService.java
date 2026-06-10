@@ -56,6 +56,9 @@ import java.util.UUID;
 
 import static org.springframework.util.StringUtils.hasText;
 
+/**
+ * Centraliza as chamadas do worker para a Graph API da Meta.
+ */
 @Service
 public class FacebookAdsService {
     private static final Logger LOGGER = LoggerFactory.getLogger(FacebookAdsService.class);
@@ -2157,6 +2160,19 @@ private FacebookInterest searchInterest(String interestName, String locale) {
                 objectLabel, objectId, ex.getMessage()
             );
         }
+    }
+
+
+    /**
+     * Busca as sugestões oficiais da Meta para uma campanha publicada.
+     */
+    public JsonNode getCampaignRecommendations(String campaignId) {
+        UriComponentsBuilder builder = UriComponentsBuilder.fromPath("/" + campaignId)
+            .queryParam("fields", "recommendations")
+            .queryParam("access_token", requireAccessToken());
+        String path = buildVersionedPath(builder.toUriString());
+        FacebookApiResponse response = executeGet(path);
+        return response.body() != null ? response.body().path("recommendations") : objectMapper.createArrayNode();
     }
 
     public JsonNode getCampaignInsights(String campaignId, Map<String, String> queryParams) {

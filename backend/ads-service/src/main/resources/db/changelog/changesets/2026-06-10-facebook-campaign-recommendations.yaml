@@ -1,0 +1,110 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-10-facebook-campaign-recommendations-columns
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: MARK_RAN
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: facebook_ads_campaign
+        - not:
+            - columnExists:
+                tableName: facebook_ads_campaign
+                columnName: recommendations_last_synced_at
+      changes:
+        - addColumn:
+            tableName: facebook_ads_campaign
+            columns:
+              - column:
+                  name: recommendations_last_synced_at
+                  type: datetime
+              - column:
+                  name: recommendations_last_error
+                  type: text
+  - changeSet:
+      id: 2026-06-10-facebook-campaign-recommendations-table
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            - tableExists:
+                tableName: facebook_ads_recommendation
+      changes:
+        - createTable:
+            tableName: facebook_ads_recommendation
+            columns:
+              - column:
+                  name: id
+                  type: bigint
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: campaign_id
+                  type: char(36)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: recommendation_code
+                  type: varchar(255)
+              - column:
+                  name: title
+                  type: text
+              - column:
+                  name: message
+                  type: text
+              - column:
+                  name: importance
+                  type: varchar(50)
+              - column:
+                  name: confidence
+                  type: varchar(50)
+              - column:
+                  name: blame_field
+                  type: varchar(255)
+              - column:
+                  name: recommendation_data_json
+                  type: longtext
+              - column:
+                  name: raw_json
+                  type: longtext
+                  constraints:
+                    nullable: false
+              - column:
+                  name: collected_at
+                  type: datetime
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: datetime
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: datetime
+        - addForeignKeyConstraint:
+            baseTableName: facebook_ads_recommendation
+            baseColumnNames: campaign_id
+            constraintName: fk_fb_ads_recommendation_campaign
+            referencedTableName: facebook_ads_campaign
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - createIndex:
+            tableName: facebook_ads_recommendation
+            indexName: idx_fb_ads_recommendation_campaign
+            columns:
+              - column:
+                  name: campaign_id
+        - createIndex:
+            tableName: facebook_ads_recommendation
+            indexName: idx_fb_ads_recommendation_collected
+            columns:
+              - column:
+                  name: collected_at

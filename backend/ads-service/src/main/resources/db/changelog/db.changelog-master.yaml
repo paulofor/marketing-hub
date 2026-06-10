@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-06-10-facebook-campaign-recommendations.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-06-10-oprm-general-audience-quality-reading.yaml
       relativeToChangelogFile: true
   - include:

@@ -13,6 +13,7 @@
 > - formaliza a separação de ownership dos criativos: criação/edição/aprovação é do módulo Experimentos; consumo operacional é por endpoint exclusivo do módulo Facebook
 > - torna obrigatório o upload de imagens de criativo por bytes/multipart para a Meta, proibindo fallback por URL externa em campanhas
 > - adiciona validação obrigatória de alcance por `reachestimate` antes de criar a hierarquia da campanha na Meta
+> - formaliza a coleta periódica de sugestões oficiais da Meta para campanhas ativas, com persistência exclusiva via backend
 
 Este documento complementa o `system-governance-canon.v2.md` e passa a ser a fonte de verdade para prontidão, liberação e telemetria de campanhas de experimento no Facebook Ads Worker.
 
@@ -151,6 +152,19 @@ O cartão também lista itens operacionais que não travam o worker, mas devem s
    - **invariante operacional obrigatório**: é proibido usar fallback de publicação por `url` externa em `/adimages` ou por `picture` no criativo para contornar falhas de upload. Se o worker não conseguir baixar a imagem, enviar bytes ou obter `image_hash`, a publicação deve falhar de forma explícita para correção da causa-raiz.
    - **invariante de eficiência**: deduplicação por conteúdo de imagem é obrigatória para reduzir custo, latência e risco de variação acidental entre anúncios com o mesmo asset.
 
+
+## 7.2 Coleta de sugestões oficiais da Meta
+
+Após a publicação completa, campanhas com `facebook_ads_campaign.status='ACTIVE'` e experimento `RUNNING` devem entrar na rotina operacional de coleta de sugestões oficiais da Meta. O objetivo dessa rotina é transformar sinais da plataforma em decisões de otimização orientadas a vendas, sem aplicar mudanças automaticamente.
+
+Regras obrigatórias:
+
+1. O backend é a fonte de verdade dos alvos de coleta e expõe somente campanhas elegíveis em `GET /api/facebook-campaigns/recommendations/sync-targets`.
+2. O `facebook-ads-worker` consulta a Graph API usando o identificador externo da campanha e lê o campo `recommendations`.
+3. O worker não acessa diretamente o banco para persistir sugestões; ele reporta o retrato coletado ao backend em `POST /api/facebook-campaigns/{campaignId}/recommendations`.
+4. Cada nova coleta substitui o retrato anterior da mesma campanha e atualiza `recommendations_last_synced_at`.
+5. Quando a coleta falhar, o worker deve registrar `POST /api/facebook-campaigns/{campaignId}/recommendations-error` e preservar o último retrato válido para não perder contexto operacional.
+6. Sugestões da Meta são diagnóstico de plataforma, não decisão automática de negócio; aplicação de orçamento, público ou criativo deve continuar condicionada à análise de CPA, CPL, ROAS, lucro estimado e estágio do experimento.
 
 ## 7.1 Publicação como etapa plugável do pipeline
 

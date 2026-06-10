@@ -4291,3 +4291,9 @@
   - docs/canonical/facebook-campaign-publication-canon.v1.md
   - docs/canonical/geralanding-arquitetura-canon.v1.md
   - docs/registros/experimentos.md
+
+## 2026-06-10 — Coleta de sugestões Meta para campanhas ativas
+
+- Criada rotina no `facebook-ads-worker` para buscar sugestões oficiais da Meta em campanhas ativas e reportar o retrato ao backend.
+- Criada persistência no backend para armazenar recomendações por campanha, preservando o último retrato válido quando houver falha de coleta.
+- Atualizado contrato Swagger de Facebook Ads com endpoints de alvos, ingestão, erro e leitura das sugestões.

@@ -142,7 +142,12 @@ function formatProcessedAt(value: string) {
 
 const statusLabels: Record<string, string> = {
   LIGHTLY_RESEARCHED: "Pesquisa inicial concluída",
+  MEI_AUDIENCE_READY: "Público MEI/autônomo pronto",
   NEEDS_MORE_RESEARCH: "Precisa de mais pesquisa",
+  NEEDS_MORE_MEI_RESEARCH: "Precisa de mais pesquisa MEI/autônomo",
+  OUTDATED_SOURCES: "Fontes antigas",
+  TOO_CORPORATE: "Corporativo demais",
+  SOLUTION_CONTAMINATED: "Contaminado por solução",
   GENERIC: "Genérico",
   FAILED: "Falhou",
   RUNNING: "Em execução",
@@ -177,12 +182,47 @@ const cycleStageByStatus: Record<
     badgeClass:
       "badge text-bg-success-subtle border border-success-subtle text-success",
   },
+  MEI_AUDIENCE_READY: {
+    label: "Etapa 9 · Público MEI/autônomo validado",
+    description:
+      "O gate aprovou fontes brasileiras recentes e sinais humanos/comportamentais suficientes para materializar o nicho.",
+    badgeClass:
+      "badge text-bg-success-subtle border border-success-subtle text-success",
+  },
   NEEDS_MORE_RESEARCH: {
     label: "Etapa 7 · Gate pediu mais pesquisa",
     description:
       "A validação encontrou sinais insuficientes; o usuário pode pesquisar novamente para aprofundar o CNAE.",
     badgeClass:
       "badge text-bg-warning-subtle border border-warning-subtle text-warning",
+  },
+  NEEDS_MORE_MEI_RESEARCH: {
+    label: "Etapa 9 · Falta pesquisa MEI/autônomo",
+    description:
+      "O gate encontrou algum material útil, mas ainda faltam sinais humanos de rotina, aquisição/canal, dor prática e dor emocional/sonho/medo.",
+    badgeClass:
+      "badge text-bg-warning-subtle border border-warning-subtle text-warning",
+  },
+  OUTDATED_SOURCES: {
+    label: "Etapa 9 · Fontes antigas",
+    description:
+      "O gate bloqueou a pesquisa porque não há fontes brasileiras recentes suficientes para aprovar o público.",
+    badgeClass:
+      "badge text-bg-warning-subtle border border-warning-subtle text-warning",
+  },
+  TOO_CORPORATE: {
+    label: "Etapa 9 · Corporativo demais",
+    description:
+      "O gate bloqueou a pesquisa porque as evidências apontam mais para empresa estruturada do que para dono-operador MEI/autônomo.",
+    badgeClass:
+      "badge text-bg-secondary-subtle border border-secondary-subtle text-secondary",
+  },
+  SOLUTION_CONTAMINATED: {
+    label: "Etapa 9 · Contaminado por solução",
+    description:
+      "O gate bloqueou a pesquisa porque a síntese trouxe linguagem de produto, oferta, software, IA ou mecanismo antes da hora.",
+    badgeClass:
+      "badge text-bg-danger-subtle border border-danger-subtle text-danger",
   },
   GENERIC: {
     label: "Etapa 7 · Gate marcou como genérico",
@@ -240,13 +280,17 @@ function canCreateNewResearchCycle(status: string) {
   return [
     "FAILED",
     "NEEDS_MORE_RESEARCH",
+    "NEEDS_MORE_MEI_RESEARCH",
+    "OUTDATED_SOURCES",
+    "TOO_CORPORATE",
+    "SOLUTION_CONTAMINATED",
     "GENERIC",
     "ENRICHED_NICHE_FAILED",
   ].includes(status);
 }
 
 function getNewResearchCycleButtonLabel(status: string) {
-  if (status === "FAILED") {
+  if (status === "FAILED" || status === "SOLUTION_CONTAMINATED") {
     return "Reprocessar CNAE";
   }
   if (status === "ENRICHED_NICHE_FAILED") {
@@ -263,13 +307,17 @@ function getNewResearchCycleButtonClass(status: string) {
 }
 
 function buildStatusBadgeClass(status: string) {
-  if (status === "LIGHTLY_RESEARCHED") {
+  if (status === "LIGHTLY_RESEARCHED" || status === "MEI_AUDIENCE_READY") {
     return "badge text-bg-success-subtle border border-success-subtle text-success";
   }
-  if (status === "NEEDS_MORE_RESEARCH") {
+  if (
+    status === "NEEDS_MORE_RESEARCH" ||
+    status === "NEEDS_MORE_MEI_RESEARCH" ||
+    status === "OUTDATED_SOURCES"
+  ) {
     return "badge text-bg-warning-subtle border border-warning-subtle text-warning";
   }
-  if (status === "GENERIC") {
+  if (status === "GENERIC" || status === "TOO_CORPORATE") {
     return "badge text-bg-secondary-subtle border border-secondary-subtle text-secondary";
   }
   if (status === "FAILED") {
@@ -289,13 +337,43 @@ function buildFailureMessage(errorMessage?: string | null) {
 }
 
 function buildProblemPoint(status: string) {
-  if (status === "NEEDS_MORE_RESEARCH") {
+  if (
+    status === "NEEDS_MORE_RESEARCH" ||
+    status === "NEEDS_MORE_MEI_RESEARCH"
+  ) {
     return {
       label: "Ponto do problema",
-      value: "Etapa 7 · Gate de Qualidade",
+      value: "Etapa 9 · Gate MEI/autônomo",
       description:
-        "A pesquisa chegou ao gate, mas ainda não reuniu sinais/evidências suficientes para liberar o nicho.",
+        "A pesquisa chegou ao gate, mas ainda não reuniu sinais humanos/comportamentais suficientes para liberar o público.",
       className: "text-warning",
+    };
+  }
+  if (status === "OUTDATED_SOURCES") {
+    return {
+      label: "Ponto do problema",
+      value: "Etapa 9 · Gate MEI/autônomo",
+      description:
+        "A pesquisa chegou ao gate, mas foi bloqueada por fontes antigas ou sem atualidade suficiente.",
+      className: "text-warning",
+    };
+  }
+  if (status === "TOO_CORPORATE") {
+    return {
+      label: "Ponto do problema",
+      value: "Etapa 9 · Gate MEI/autônomo",
+      description:
+        "A pesquisa chegou ao gate, mas as evidências apontam para empresa estruturada, não para MEI/autônomo dono-operador.",
+      className: "text-secondary",
+    };
+  }
+  if (status === "SOLUTION_CONTAMINATED") {
+    return {
+      label: "Ponto do problema",
+      value: "Etapa 9 · Gate MEI/autônomo",
+      description:
+        "A pesquisa chegou ao gate, mas foi bloqueada por linguagem de produto, oferta, IA, software ou mecanismo antes da etapa correta.",
+      className: "text-danger",
     };
   }
   if (status === "GENERIC") {

@@ -32,7 +32,7 @@ class RoutineQualityGateEngineTest {
                 72,
                 0));
 
-        assertThat(decision.qualityStatus()).isEqualTo("LIGHTLY_RESEARCHED");
+        assertThat(decision.qualityStatus()).isEqualTo("MEI_AUDIENCE_READY");
         assertThat(decision.readyForHypothesis()).isTrue();
         assertThat(decision.specificityScore()).isGreaterThanOrEqualTo(60);
         assertThat(decision.confidenceScore()).isGreaterThanOrEqualTo(50);
@@ -61,7 +61,7 @@ class RoutineQualityGateEngineTest {
                 24,
                 0));
 
-        assertThat(decision.qualityStatus()).isEqualTo("NEEDS_MORE_RESEARCH");
+        assertThat(decision.qualityStatus()).isEqualTo("NEEDS_MORE_MEI_RESEARCH");
         assertThat(decision.readyForHypothesis()).isFalse();
     }
 
@@ -115,7 +115,7 @@ class RoutineQualityGateEngineTest {
                 72,
                 70));
 
-        assertThat(decision.qualityStatus()).isEqualTo("NEEDS_MORE_RESEARCH");
+        assertThat(decision.qualityStatus()).isEqualTo("SOLUTION_CONTAMINATED");
         assertThat(decision.readyForHypothesis()).isFalse();
         assertThat(decision.qualityNotes()).contains("dominadoPorSolucao=true");
     }
@@ -144,7 +144,7 @@ class RoutineQualityGateEngineTest {
                 72,
                 0));
 
-        assertThat(decision.qualityStatus()).isEqualTo("NEEDS_MORE_RESEARCH");
+        assertThat(decision.qualityStatus()).isEqualTo("SOLUTION_CONTAMINATED");
         assertThat(decision.readyForHypothesis()).isFalse();
         assertThat(decision.qualityNotes()).contains("riscoTextualSolucao=").contains("dominadoPorSolucao=true");
     }
@@ -177,13 +177,25 @@ class RoutineQualityGateEngineTest {
                 84,
                 72,
                 0,
+                3,
+                2,
+                0,
+                0,
+                1,
+                1,
+                82,
+                80,
+                76,
+                0,
+                0,
+                0,
                 Instant.parse("2026-06-04T00:00:00Z"));
 
         RoutineQualityDecision decision = engine.evaluate(pending);
 
         assertThat(decision.qualityStatus()).isEqualTo("GENERIC");
         assertThat(decision.readyForHypothesis()).isFalse();
-        assertThat(decision.qualityNotes()).contains("evidenciaAuditavel=false");
+        assertThat(decision.qualityNotes()).contains("evidenciaAuditavelBrasil=false");
     }
 
     /** Deve reprovar texto duplicado ou genérico ainda que existam contadores positivos. */
@@ -212,6 +224,103 @@ class RoutineQualityGateEngineTest {
                 0));
 
         assertThat(decision.qualityStatus()).isEqualTo("GENERIC");
+        assertThat(decision.readyForHypothesis()).isFalse();
+    }
+
+
+    /** Deve bloquear como fonte antiga quando não há quantidade mínima de fontes recentes. */
+    @Test
+    void shouldRejectOutdatedSources() {
+        RoutineQualityGatePending stale = new RoutineQualityGatePending(
+                10L,
+                1001L,
+                "Cabeleireiros",
+                text("Rotina concreta com agenda WhatsApp atendimento cliente e horários", 8),
+                text("Dores concretas com falta atraso remarcação retrabalho e cobrança", 8),
+                text("Perguntas do profissional sobre preço retorno pacote e cancelamento", 8),
+                text("Contexto operacional público do nicho", 8),
+                "Evidências em fontes públicas brasileiras",
+                "a.com.br,b.com.br,c.com.br",
+                80,
+                4,
+                12,
+                2,
+                2,
+                2,
+                0,
+                3,
+                0,
+                2,
+                0,
+                86,
+                84,
+                72,
+                0,
+                3,
+                0,
+                3,
+                0,
+                1,
+                1,
+                82,
+                80,
+                30,
+                75,
+                0,
+                0,
+                Instant.parse("2026-06-04T00:00:00Z"));
+
+        RoutineQualityDecision decision = engine.evaluate(stale);
+
+        assertThat(decision.qualityStatus()).isEqualTo("OUTDATED_SOURCES");
+        assertThat(decision.readyForHypothesis()).isFalse();
+    }
+
+    /** Deve bloquear como corporativo quando o perfil não representa dono-operador MEI/autônomo. */
+    @Test
+    void shouldRejectStructuredBusinessDrift() {
+        RoutineQualityGatePending corporate = new RoutineQualityGatePending(
+                10L,
+                1001L,
+                "Cabeleireiros",
+                text("Rotina concreta com agenda WhatsApp atendimento cliente e horários", 8),
+                text("Dores concretas com falta atraso remarcação retrabalho e cobrança", 8),
+                text("Perguntas do profissional sobre preço retorno pacote e cancelamento", 8),
+                text("Contexto operacional público do nicho", 8),
+                "Evidências em fontes públicas brasileiras",
+                "a.com.br,b.com.br,c.com.br",
+                80,
+                4,
+                12,
+                2,
+                2,
+                2,
+                0,
+                3,
+                0,
+                2,
+                0,
+                86,
+                84,
+                72,
+                0,
+                3,
+                2,
+                0,
+                3,
+                1,
+                1,
+                35,
+                80,
+                76,
+                0,
+                80,
+                0,
+                Instant.parse("2026-06-04T00:00:00Z"));
+
+        RoutineQualityDecision decision = engine.evaluate(corporate);
+
+        assertThat(decision.qualityStatus()).isEqualTo("TOO_CORPORATE");
         assertThat(decision.readyForHypothesis()).isFalse();
     }
 
@@ -260,6 +369,18 @@ class RoutineQualityGateEngineTest {
                 difficultyEvidenceScore,
                 sourceDiversityScore,
                 solutionLanguageRiskScore,
+                Math.max(3, sourceCount == null ? 3 : sourceCount),
+                2,
+                0,
+                0,
+                1,
+                1,
+                82,
+                80,
+                76,
+                0,
+                0,
+                0,
                 Instant.parse("2026-06-04T00:00:00Z"));
     }
 

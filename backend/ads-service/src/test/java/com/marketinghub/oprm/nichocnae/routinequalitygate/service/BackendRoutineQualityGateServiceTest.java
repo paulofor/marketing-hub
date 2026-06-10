@@ -10,6 +10,7 @@ import com.marketinghub.oprm.nichocnae.OprmExtractedSignal;
 import com.marketinghub.oprm.nichocnae.OprmNicheRoutineCard;
 import com.marketinghub.oprm.nichocnae.OprmRoutineResearchCycle;
 import com.marketinghub.oprm.nichocnae.OprmSourceSnapshot;
+import com.marketinghub.oprm.nichocnae.meiaudienceprofile.OprmMeiAudienceProfile;
 import com.marketinghub.oprm.nichocnae.routinequalitygate.service.completeStageExecution.CompleteRoutineQualityGateRequest;
 import com.marketinghub.oprm.nichocnae.routinequalitygate.service.completeStageExecution.CompleteRoutineQualityGateResponse;
 import com.marketinghub.oprm.nichocnae.routinequalitygate.service.pending.RecordRoutineQualityGatePending;
@@ -41,14 +42,15 @@ class BackendRoutineQualityGateServiceTest {
     when(cardRepository.findByQualityCheckedAtIsNullOrderByCreatedAtAscIdAsc(any(Pageable.class))).thenReturn(List.of(card));
     when(meiAudienceProfileRepository.existsByResearchCycleId(1001L)).thenReturn(true);
     when(snapshotRepository.findByResearchCycleIdOrderByIdAsc(1001L)).thenReturn(List.of(new OprmSourceSnapshot(), new OprmSourceSnapshot()));
-    OprmSourceSnapshot riskSnapshot = new OprmSourceSnapshot();
-    riskSnapshot.setSolutionLanguageRisk(true);
-    OprmSourceSnapshot routineSnapshot = new OprmSourceSnapshot();
-    routineSnapshot.setSolutionLanguageRisk(false);
+    OprmSourceSnapshot riskSnapshot = snapshot(true, 80, 70, false, false, "a.com.br");
+    OprmSourceSnapshot routineSnapshot = snapshot(false, 75, 65, false, false, "b.com.br");
     when(snapshotRepository.findByResearchCycleIdOrderByIdAsc(1001L)).thenReturn(List.of(riskSnapshot, routineSnapshot));
+    OprmMeiAudienceProfile profile = profile();
+    when(meiAudienceProfileRepository.findFirstByResearchCycleIdOrderByIdDesc(1001L)).thenReturn(Optional.of(profile));
     when(signalRepository.findByResearchCycleIdOrderByIdAsc(1001L)).thenReturn(List.of(
         signal("CUSTOMER_QUESTION"), signal("PAIN_POINT"), signal("OPERATIONAL_FRICTION"), signal("LANGUAGE_MARKER"),
-        signal("SOLUTION_LANGUAGE_RISK"), signal("MECHANISM_OPPORTUNITY"), signal("ROUTINE_TASK"), signal("COMMERCIAL_TASK")));
+        signal("SOLUTION_LANGUAGE_RISK"), signal("MECHANISM_OPPORTUNITY"), signal("ROUTINE_TASK"), signal("COMMERCIAL_TASK"),
+        signal("CUSTOMER_ACQUISITION_BEHAVIOR"), signal("EMOTIONAL_PAIN")));
 
     List<RecordRoutineQualityGatePending> pending = service.listPending();
 
@@ -61,6 +63,11 @@ class BackendRoutineQualityGateServiceTest {
     assertThat(pending.getFirst().languageMarkerCount()).isEqualTo(1);
     assertThat(pending.getFirst().solutionLanguageRiskCount()).isEqualTo(3);
     assertThat(pending.getFirst().routineEvidenceScore()).isEqualTo(86);
+    assertThat(pending.getFirst().brazilianSourceCount()).isEqualTo(2);
+    assertThat(pending.getFirst().recentSourceCount()).isEqualTo(2);
+    assertThat(pending.getFirst().customerAcquisitionEvidenceCount()).isEqualTo(3);
+    assertThat(pending.getFirst().emotionalOutcomeEvidenceCount()).isEqualTo(4);
+    assertThat(pending.getFirst().autonomousProfessionalFitScore()).isEqualTo(82);
   }
 
   /** Deve persistir a decisão final no cartão e refletir o status de qualidade no ciclo. */
@@ -76,11 +83,11 @@ class BackendRoutineQualityGateServiceTest {
     when(cycleRepository.save(any(OprmRoutineResearchCycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
     CompleteRoutineQualityGateResponse response = service.complete(1001L, new CompleteRoutineQualityGateRequest(
-        1001L, 10L, "LIGHTLY_RESEARCHED", true, 75, 80, 10, "Aprovado", "test"));
+        1001L, 10L, "MEI_AUDIENCE_READY", true, 75, 80, 10, "Aprovado", "test"));
 
-    assertThat(response.qualityStatus()).isEqualTo("LIGHTLY_RESEARCHED");
+    assertThat(response.qualityStatus()).isEqualTo("MEI_AUDIENCE_READY");
     assertThat(response.readyForHypothesis()).isTrue();
-    assertThat(cycle.getStatus()).isEqualTo("LIGHTLY_RESEARCHED");
+    assertThat(cycle.getStatus()).isEqualTo("MEI_AUDIENCE_READY");
     assertThat(card.getQualityCheckedAt()).isNotNull();
     verify(cardRepository).save(card);
     verify(cycleRepository).save(cycle);
@@ -106,6 +113,37 @@ class BackendRoutineQualityGateServiceTest {
     card.setSynthesizedBy("test");
     card.setCreatedAt(Instant.parse("2026-06-04T00:00:00Z"));
     return card;
+  }
+
+
+  /** Cria um snapshot mínimo com classificações de atualidade e aderência brasileira. */
+  private OprmSourceSnapshot snapshot(
+      boolean solutionRisk, Integer brazilScore, Integer freshnessScore, boolean outdatedRisk, boolean corporateRisk, String domain) {
+    OprmSourceSnapshot snapshot = new OprmSourceSnapshot();
+    snapshot.setSolutionLanguageRisk(solutionRisk);
+    snapshot.setBrazilRelevanceScore(brazilScore);
+    snapshot.setSourceFreshnessScore(freshnessScore);
+    snapshot.setOutdatedSourceRisk(outdatedRisk);
+    snapshot.setStructuredBusinessDriftRisk(corporateRisk);
+    snapshot.setSourceDomain(domain);
+    return snapshot;
+  }
+
+  /** Cria um perfil MEI/autônomo mínimo para testar os contadores comportamentais do gate. */
+  private OprmMeiAudienceProfile profile() {
+    OprmMeiAudienceProfile profile = new OprmMeiAudienceProfile();
+    profile.setCustomerAcquisitionBehavior("Clientes vêm por WhatsApp e Instagram.");
+    profile.setChannelsUsed("WhatsApp, Instagram e indicação.");
+    profile.setEmotionalPainsSummary("Medo de agenda vazia.");
+    profile.setDreamsSummary("Agenda previsível.");
+    profile.setFearsSummary("Perder clientes para concorrentes.");
+    profile.setAutonomousProfessionalFitScore(82);
+    profile.setBehavioralEvidenceScore(80);
+    profile.setSourceFreshnessScore(76);
+    profile.setOutdatedSourceRiskScore(0);
+    profile.setStructuredBusinessDriftRiskScore(0);
+    profile.setSolutionLanguageRiskScore(0);
+    return profile;
   }
 
   /** Cria um sinal mínimo com o tipo informado para contagem de aliases. */

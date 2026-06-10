@@ -11,7 +11,7 @@ import org.springframework.util.StringUtils;
 /** Extrai sinais estruturados de snapshots curtos sem publicar metadados técnicos no artefato final. */
 @Component
 public class SignalExtractorEngine {
-    private static final int MAX_SIGNALS = 8;
+    private static final int MAX_SIGNALS = 16;
     private static final int MAX_EVIDENCE_LENGTH = 280;
 
     /** Analisa título, snippet e trecho curto para produzir sinais classificados da etapa cinco. */
@@ -19,21 +19,39 @@ public class SignalExtractorEngine {
         String evidence = normalizeEvidence(pending);
         String normalized = evidence.toLowerCase(Locale.ROOT);
         Map<String, ExtractedSignal> signals = new LinkedHashMap<>();
-        addIfPresent(signals, normalized, evidence, List.of("agenda", "atendimento", "cliente", "serviço", "rotina"),
-                "ROUTINE_TASK", "Gerenciar rotina de atendimento e agenda do nicho", 82);
-        addIfPresent(signals, normalized, evidence, List.of("whatsapp", "mensagem", "confirmar", "lembrete"),
-                "COMMERCIAL_TASK", "Usar mensagens para confirmar, orientar ou recuperar clientes", 86);
-        addIfPresent(signals, normalized, evidence, List.of("falta", "cancelamento", "atraso", "caos", "falha", "problema", "dificuldade"),
-                "PAIN_POINT", "Reduzir falhas operacionais que geram perda de agenda ou retrabalho", 84);
-        addIfPresent(signals, normalized, evidence, List.of("fidel", "recorr", "retorno", "relacionamento"),
-                "RESULT_DESIRED", "Aumentar fidelização e retorno de clientes", 80);
+        addIfPresent(signals, normalized, evidence, List.of("mei", "autônom", "por conta própria", "dono-operador", "profissional independente"),
+                "AUTONOMOUS_WORK_MODE", "Trabalho executado diretamente pelo MEI ou profissional autônomo", 86);
+        addIfPresent(signals, normalized, evidence, List.of("agenda", "atendimento", "cliente", "serviço", "rotina", "material", "entrega"),
+                "ROUTINE_TASK", "Executar rotina diária de atendimento, agenda, materiais e entrega do serviço", 82);
+        addIfPresent(signals, normalized, evidence, List.of("whatsapp", "instagram", "facebook", "google", "indicação", "rede social", "mensagem"),
+                "CHANNEL_USAGE", "Usar canais digitais, mensagens ou indicações para contato com clientes", 86);
+        addIfPresent(signals, normalized, evidence, List.of("cliente", "conseguir clientes", "captar", "divulgar", "orçamento", "venda", "fidel", "recorr", "retorno", "relacionamento"),
+                "CUSTOMER_ACQUISITION_BEHAVIOR", "Conseguir, atender, fidelizar ou recuperar clientes na rotina autônoma", 84);
+        addIfPresent(signals, normalized, evidence, List.of("falta", "cancelamento", "atraso", "caos", "falha", "problema", "dificuldade", "retrabalho"),
+                "OPERATIONAL_PAIN", "Dificuldade prática que gera perda de agenda, retrabalho ou falha no atendimento", 84);
+        addIfPresent(signals, normalized, evidence, List.of("cansaço", "ansiedade", "estresse", "sobrecarga", "insegurança", "medo", "vergonha", "frustração"),
+                "EMOTIONAL_PAIN", "Dor emocional ligada à pressão, insegurança ou sobrecarga do trabalho autônomo", 82);
+        addIfPresent(signals, normalized, evidence, List.of("sonho", "objetivo", "meta", "crescer", "agenda cheia", "independência", "realização"),
+                "DREAM_SIGNAL", "Sonho ou objetivo pessoal/profissional observado no público MEI/autônomo", 80);
+        addIfPresent(signals, normalized, evidence, List.of("medo", "receio", "risco", "preocupação", "insegurança", "perder cliente", "não conseguir"),
+                "FEAR_SIGNAL", "Medo ou insegurança que influencia decisões do profissional autônomo", 80);
+        addIfPresent(signals, normalized, evidence, List.of("reconhecimento", "respeito", "profissionalismo", "confiança", "reputação", "indicação"),
+                "STATUS_DESIRE", "Desejo de reconhecimento, confiança e reputação profissional", 78);
+        addIfPresent(signals, normalized, evidence, List.of("correria", "pressa", "prazo", "urgente", "sem tempo", "horário", "atrasado"),
+                "TIME_PRESSURE", "Pressão de tempo ou conflito de horários na execução do serviço", 78);
+        addIfPresent(signals, normalized, evidence, List.of("renda", "faturamento", "ganho", "dinheiro", "instável", "mês fraco", "previsibilidade"),
+                "INCOME_INSTABILITY", "Instabilidade de renda ou baixa previsibilidade financeira do autônomo", 80);
+        addIfPresent(signals, normalized, evidence, List.of("qualidade", "higiene", "segurança", "confiança", "avaliação", "reclamação", "reputação"),
+                "TRUST_REPUTATION_CONCERN", "Preocupação com confiança, qualidade percebida e reputação perante clientes", 78);
+        addIfPresent(signals, normalized, evidence, List.of("preço", "cobrar", "barato", "caro", "orçamento", "desconto", "valor"),
+                "PRICE_INSECURITY", "Insegurança para precificar, cobrar ou defender o valor do serviço", 80);
+        addIfPresent(signals, normalized, evidence, List.of("falta", "não apareceu", "desmarcou", "cancelou", "remarcação", "no-show"),
+                "CLIENT_NO_SHOW_OR_CANCELLATION", "Cliente que falta, cancela ou remarca prejudicando agenda e renda", 82);
         addIfPresent(signals, normalized, evidence, List.of("pergunta", "como", "dúvida", "orientação"),
-                "CUSTOMER_QUESTION", "Responder dúvidas práticas que bloqueiam decisão ou execução", 76);
+                "CUSTOMER_QUESTION", "Pergunta prática que bloqueia decisão ou execução", 76);
         addIfPresent(signals, normalized, evidence, List.of("organizar", "controle", "processo"),
                 "CONTEXT_MARKER", "Sinal de organização e controle observado na rotina", 74);
         addSolutionRiskIfPresent(signals, normalized, evidence);
-        addIfPresent(signals, normalized, evidence, List.of("qualidade", "higiene", "segurança", "confiança"),
-                "PROOF_SIGNAL", "Usar qualidade, higiene ou confiança como prova operacional", 78);
         if (signals.isEmpty() && StringUtils.hasText(evidence)) {
             signals.put("LANGUAGE_MARKER|fallback", new ExtractedSignal(
                     "LANGUAGE_MARKER", "Vocabulário público do nicho identificado para síntese", evidence, 60));

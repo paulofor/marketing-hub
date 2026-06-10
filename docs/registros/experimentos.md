@@ -4276,3 +4276,5 @@
 - solicitação: alterar a regra de invalidação por baixa distribuição de 24 horas para 48 horas.
 - foi feito: a janela mínima da campanha passou a ser 48 horas antes de invalidar experimento com menos de 100 impressões, mantendo o motivo `LOW_IMPRESSIONS_AFTER_RUNNING_TIME` e a solicitação de pausa no Facebook Ads Worker.
 - impacto esperado: o sistema dá mais tempo para a Meta estabilizar a entrega antes de concluir que o experimento não teve distribuição mínima útil.
+- foi feito: definida a regra canônica de 24 horas com menos de 100 impressões, registrando `LOW_IMPRESSIONS_AFTER_RUNNING_TIME` em `facebook_ads_campaign.stop_reason`, invalidando o experimento e solicitando pausa ao Facebook Ads Worker.
+- impacto esperado: experimentos com distribuição inviável deixam de ficar rodando indefinidamente e o time ganha motivo claro no banco para decidir ajuste de público, criativo ou nova liberação.

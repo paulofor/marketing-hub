@@ -28,10 +28,28 @@ public class MeiAudienceSegmenterPromptBuilder {
                 Nome neutro: %s
                 Nicho operacional: %s
 
-                Cartão de rotina:
+                Rotina:
                 %s
 
-                Dores sintetizadas:
+                Comportamento de clientes:
+                %s
+
+                Canais:
+                %s
+
+                Dores práticas:
+                %s
+
+                Dores emocionais:
+                %s
+
+                Sonhos:
+                %s
+
+                Medos:
+                %s
+
+                Linguagem:
                 %s
 
                 Evidências sintetizadas:
@@ -48,7 +66,13 @@ public class MeiAudienceSegmenterPromptBuilder {
                 clean(input.neutralNicheName()),
                 clean(input.nicheName()),
                 clean(input.routineSummary()),
-                clean(input.painsSummary()),
+                clean(input.customerBehaviorSummary()),
+                clean(input.channelsSummary()),
+                clean(input.operationalPainsSummary()),
+                clean(input.emotionalPainsSummary()),
+                clean(input.dreamsSummary()),
+                clean(input.fearsSummary()),
+                clean(input.languageSummary()),
                 clean(input.evidenceSummary()),
                 sourceLines(input),
                 signalLines(input));

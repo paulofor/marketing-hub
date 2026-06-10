@@ -33,7 +33,7 @@ public class BackendRoutineSynthesizerService {
   private static final String SYNTHESIZED_STATUS = "ROUTINE_SYNTHESIZED";
   private static final String DEFAULT_SYNTHESIZED_BY = "oprmRoutineSynthesizer";
   private static final int MAX_PENDING = 10;
-  private static final int MAX_SIGNALS_PER_CYCLE = 80;
+  private static final int MAX_SIGNALS_PER_CYCLE = 120;
   private static final int MAX_SUMMARY_LENGTH = 4000;
 
   private final OprmRoutineResearchCycleRepository routineResearchCycleRepository;
@@ -78,6 +78,13 @@ public class BackendRoutineSynthesizerService {
       card.setResearchCycleId(researchCycleId);
       card.setNicheName(requiredText(request.nicheName(), "nicheName"));
       card.setRoutineSummary(requiredText(request.routineSummary(), "routineSummary"));
+      card.setCustomerBehaviorSummary(requiredText(request.customerBehaviorSummary(), "customerBehaviorSummary"));
+      card.setChannelsSummary(requiredText(request.channelsSummary(), "channelsSummary"));
+      card.setOperationalPainsSummary(requiredText(request.operationalPainsSummary(), "operationalPainsSummary"));
+      card.setEmotionalPainsSummary(requiredText(request.emotionalPainsSummary(), "emotionalPainsSummary"));
+      card.setDreamsSummary(requiredText(request.dreamsSummary(), "dreamsSummary"));
+      card.setFearsSummary(requiredText(request.fearsSummary(), "fearsSummary"));
+      card.setLanguageSummary(requiredText(request.languageSummary(), "languageSummary"));
       card.setPainsSummary(requiredText(request.painsSummary(), "painsSummary"));
       card.setResultsSummary(requiredText(request.resultsSummary(), "resultsSummary"));
       card.setMechanismOpportunitiesSummary(requiredText(request.mechanismOpportunitiesSummary(), "mechanismOpportunitiesSummary"));
@@ -151,6 +158,13 @@ public class BackendRoutineSynthesizerService {
     }
     requiredText(request.nicheName(), "nicheName");
     validateSummary(request.routineSummary(), "routineSummary");
+    validateSummary(request.customerBehaviorSummary(), "customerBehaviorSummary");
+    validateSummary(request.channelsSummary(), "channelsSummary");
+    validateSummary(request.operationalPainsSummary(), "operationalPainsSummary");
+    validateSummary(request.emotionalPainsSummary(), "emotionalPainsSummary");
+    validateSummary(request.dreamsSummary(), "dreamsSummary");
+    validateSummary(request.fearsSummary(), "fearsSummary");
+    validateSummary(request.languageSummary(), "languageSummary");
     validateSummary(request.painsSummary(), "painsSummary");
     validateSummary(request.resultsSummary(), "resultsSummary");
     validateSummary(request.mechanismOpportunitiesSummary(), "mechanismOpportunitiesSummary");
@@ -218,6 +232,13 @@ public class BackendRoutineSynthesizerService {
         card.getResearchCycleId(),
         card.getNicheName(),
         card.getRoutineSummary(),
+        card.getCustomerBehaviorSummary(),
+        card.getChannelsSummary(),
+        card.getOperationalPainsSummary(),
+        card.getEmotionalPainsSummary(),
+        card.getDreamsSummary(),
+        card.getFearsSummary(),
+        card.getLanguageSummary(),
         card.getPainsSummary(),
         card.getResultsSummary(),
         card.getMechanismOpportunitiesSummary(),

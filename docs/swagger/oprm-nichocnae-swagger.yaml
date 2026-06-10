@@ -1826,7 +1826,7 @@ components:
             $ref: '#/components/schemas/SignalForRoutineSynthesis'
     CompleteRoutineSynthesizerRequest:
       type: object
-      required: [researchCycleId, nicheName, routineSummary, painsSummary, resultsSummary, mechanismOpportunitiesSummary, evidenceSummary, sourceDomains, confidenceScore, routineEvidenceScore, difficultyEvidenceScore, sourceDiversityScore, solutionLanguageRiskScore]
+      required: [researchCycleId, nicheName, routineSummary, customerBehaviorSummary, channelsSummary, operationalPainsSummary, emotionalPainsSummary, dreamsSummary, fearsSummary, languageSummary, painsSummary, resultsSummary, mechanismOpportunitiesSummary, evidenceSummary, sourceDomains, confidenceScore, routineEvidenceScore, difficultyEvidenceScore, sourceDiversityScore, solutionLanguageRiskScore]
       properties:
         researchCycleId:
           type: integer
@@ -1834,6 +1834,20 @@ components:
         nicheName:
           type: string
         routineSummary:
+          type: string
+        customerBehaviorSummary:
+          type: string
+        channelsSummary:
+          type: string
+        operationalPainsSummary:
+          type: string
+        emotionalPainsSummary:
+          type: string
+        dreamsSummary:
+          type: string
+        fearsSummary:
+          type: string
+        languageSummary:
           type: string
         painsSummary:
           type: string
@@ -1965,6 +1979,20 @@ components:
         nicheName:
           type: string
         routineSummary:
+          type: string
+        customerBehaviorSummary:
+          type: string
+        channelsSummary:
+          type: string
+        operationalPainsSummary:
+          type: string
+        emotionalPainsSummary:
+          type: string
+        dreamsSummary:
+          type: string
+        fearsSummary:
+          type: string
+        languageSummary:
           type: string
         painsSummary:
           type: string

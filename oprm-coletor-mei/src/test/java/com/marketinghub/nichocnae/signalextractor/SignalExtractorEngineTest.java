@@ -18,7 +18,7 @@ class SignalExtractorEngineTest {
                 "A rotina do salão melhora quando há controle de agenda, lembretes e automação simples."));
 
         assertThat(signals).extracting(ExtractedSignal::signalType)
-                .contains("ROUTINE_TASK", "COMMERCIAL_TASK", "PAIN_POINT", "CONTEXT_MARKER", "SOLUTION_LANGUAGE_RISK")
+                .contains("ROUTINE_TASK", "CHANNEL_USAGE", "CUSTOMER_ACQUISITION_BEHAVIOR", "OPERATIONAL_PAIN", "CONTEXT_MARKER", "SOLUTION_LANGUAGE_RISK")
                 .doesNotContain("MECHANISM_OPPORTUNITY");
         assertThat(signals).extracting(ExtractedSignal::signalText)
                 .contains("Termo de solução detectado antes da aprovação da rotina")
@@ -52,7 +52,7 @@ class SignalExtractorEngineTest {
                 "Profissionais fazem controle de agenda e materiais para os atendimentos diários."));
 
         assertThat(signals).extracting(ExtractedSignal::signalType)
-                .contains("ROUTINE_TASK", "CONTEXT_MARKER", "PROOF_SIGNAL")
+                .contains("ROUTINE_TASK", "TRUST_REPUTATION_CONCERN", "CONTEXT_MARKER")
                 .doesNotContain("SOLUTION_LANGUAGE_RISK", "MECHANISM_OPPORTUNITY");
     }
 
@@ -63,6 +63,29 @@ class SignalExtractorEngineTest {
 
         assertThat(signals).hasSize(1);
         assertThat(signals.getFirst().signalType()).isEqualTo("LANGUAGE_MARKER");
+    }
+
+    /** Deve extrair dimensões comportamentais de MEI/autônomo com evidência curta e auditável. */
+    @Test
+    void shouldExtractBehavioralSignalsForAutonomousAudience() {
+        var signals = engine.extract(pending(
+                "MEI autônomo usa WhatsApp, Instagram e indicação para conseguir clientes",
+                "Medo de cancelamento, renda instável, preço e reputação no atendimento.",
+                "Sonho de agenda cheia, sem tempo, insegurança para cobrar e cliente que desmarcou."));
+
+        assertThat(signals).extracting(ExtractedSignal::signalType)
+                .contains(
+                        "AUTONOMOUS_WORK_MODE",
+                        "CHANNEL_USAGE",
+                        "CUSTOMER_ACQUISITION_BEHAVIOR",
+                        "FEAR_SIGNAL",
+                        "DREAM_SIGNAL",
+                        "TIME_PRESSURE",
+                        "INCOME_INSTABILITY",
+                        "TRUST_REPUTATION_CONCERN",
+                        "PRICE_INSECURITY",
+                        "CLIENT_NO_SHOW_OR_CANCELLATION");
+        assertThat(signals).allSatisfy(signal -> assertThat(signal.evidenceExcerpt()).doesNotContain("<html"));
     }
 
     /** Cria uma pendência mínima para validar o extrator local. */

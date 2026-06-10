@@ -1,5 +1,7 @@
 package com.marketinghub.worker.pipeline.hypothesispain;
 
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /** Responsabilidade: transportar o payload de entrada da etapa Dor do pipeline de hipótese. */
@@ -11,6 +13,8 @@ public record HypothesisPainInput(
 ) {
     /** Normaliza os dados de prompt para evitar mapas nulos durante o processamento da etapa. */
     public HypothesisPainInput {
-        promptData = promptData == null ? Map.of() : Map.copyOf(promptData);
+        promptData = promptData == null
+                ? Map.of()
+                : Collections.unmodifiableMap(new LinkedHashMap<>(promptData));
     }
 }

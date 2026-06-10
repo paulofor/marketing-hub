@@ -4299,3 +4299,10 @@
 - Atualizado contrato Swagger de Facebook Ads com endpoints de alvos, ingestão, erro e leitura das sugestões.
 
 - 2026-06-10 UTC — Criada a etapa 1 Dor do pipeline de hipótese no padrão GeraLanding: execução auditável por `jobid`, endpoints backend públicos/internos, prompt e JSON Schema no AI Worker, worker plugável pelo pipeline genérico e card de acompanhamento na tela de nova hipótese por nicho.
+
+## 2026-06-10 — Correção do job da etapa Dor da hipótese preso em INICIADO
+
+- diagnóstico: o job `hypothesis-pain` do nicho 18 ficou em `INICIADO` porque o AI Worker quebrava ao montar o payload de prompt quando algum campo opcional do nicho vinha `null`.
+- causa-raiz: `HypothesisPainInput` usava `Map.copyOf(promptData)`, que não aceita valores nulos; como o backend envia campos opcionais do nicho no payload pendente, o scheduler falhava antes de marcar o job como `PROCESSANDO`.
+- foi feito: a normalização do payload agora preserva valores nulos em cópia imutável, evitando a quebra do scheduler e permitindo que o worker capture o job pendente no próximo ciclo após deploy.
+- prevenção: adicionado teste unitário cobrindo payload com valor nulo e imutabilidade do mapa normalizado.

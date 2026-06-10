@@ -29,6 +29,10 @@ public class BackendRoutineResearchOrchestratorService {
     private static final String CYCLE_STATUS_RUNNING = "RUNNING";
     private static final String CYCLE_STATUS_FAILED = "FAILED";
     private static final String CYCLE_STATUS_NEEDS_MORE_RESEARCH = "NEEDS_MORE_RESEARCH";
+    private static final String CYCLE_STATUS_NEEDS_MORE_MEI_RESEARCH = "NEEDS_MORE_MEI_RESEARCH";
+    private static final String CYCLE_STATUS_OUTDATED_SOURCES = "OUTDATED_SOURCES";
+    private static final String CYCLE_STATUS_TOO_CORPORATE = "TOO_CORPORATE";
+    private static final String CYCLE_STATUS_SOLUTION_CONTAMINATED = "SOLUTION_CONTAMINATED";
     private static final String CYCLE_STATUS_GENERIC = "GENERIC";
     private static final String TRIGGER_SOURCE_AUTO_SCORE_QUEUE = "AUTO_SCORE_QUEUE";
     private static final String TRIGGER_SOURCE_MANUAL_REPROCESS = "MANUAL_REPROCESS";
@@ -86,7 +90,7 @@ public class BackendRoutineResearchOrchestratorService {
         if (!isReprocessableStatus(cycle.getStatus())) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
-                    "Only FAILED, NEEDS_MORE_RESEARCH, GENERIC or ENRICHED_NICHE_FAILED routine research cycles can be reprocessed: "
+                    "Only failed, weak MEI audience, outdated, corporate, contaminated, generic or materialization-failed routine research cycles can be reprocessed: "
                             + researchCycleId);
         }
         OprmNicheCandidate candidate = nicheCandidateRepository
@@ -129,6 +133,10 @@ public class BackendRoutineResearchOrchestratorService {
     private boolean isReprocessableStatus(String status) {
         return CYCLE_STATUS_FAILED.equals(status)
                 || CYCLE_STATUS_NEEDS_MORE_RESEARCH.equals(status)
+                || CYCLE_STATUS_NEEDS_MORE_MEI_RESEARCH.equals(status)
+                || CYCLE_STATUS_OUTDATED_SOURCES.equals(status)
+                || CYCLE_STATUS_TOO_CORPORATE.equals(status)
+                || CYCLE_STATUS_SOLUTION_CONTAMINATED.equals(status)
                 || CYCLE_STATUS_GENERIC.equals(status)
                 || "ENRICHED_NICHE_FAILED".equals(status);
     }
@@ -138,8 +146,17 @@ public class BackendRoutineResearchOrchestratorService {
         if (CYCLE_STATUS_FAILED.equals(previousStatus)) {
             return "Novo ciclo de pesquisa de rotina criado imediatamente para reprocessar o CNAE com falha.";
         }
-        if (CYCLE_STATUS_NEEDS_MORE_RESEARCH.equals(previousStatus)) {
-            return "Novo ciclo de pesquisa de rotina criado imediatamente para aprofundar um CNAE que precisava de mais pesquisa.";
+        if (CYCLE_STATUS_NEEDS_MORE_RESEARCH.equals(previousStatus) || CYCLE_STATUS_NEEDS_MORE_MEI_RESEARCH.equals(previousStatus)) {
+            return "Novo ciclo de pesquisa de rotina criado imediatamente para aprofundar um público MEI/autônomo que precisava de mais pesquisa.";
+        }
+        if (CYCLE_STATUS_OUTDATED_SOURCES.equals(previousStatus)) {
+            return "Novo ciclo de pesquisa de rotina criado imediatamente para buscar fontes brasileiras mais recentes.";
+        }
+        if (CYCLE_STATUS_TOO_CORPORATE.equals(previousStatus)) {
+            return "Novo ciclo de pesquisa de rotina criado imediatamente para focar no dono-operador MEI/autônomo, não em empresa estruturada.";
+        }
+        if (CYCLE_STATUS_SOLUTION_CONTAMINATED.equals(previousStatus)) {
+            return "Novo ciclo de pesquisa de rotina criado imediatamente para remover contaminação por produto, oferta ou solução.";
         }
         if ("ENRICHED_NICHE_FAILED".equals(previousStatus)) {
             return "Novo ciclo de pesquisa de rotina criado imediatamente para refazer pelo front-end um CNAE aprovado cuja materialização falhou.";

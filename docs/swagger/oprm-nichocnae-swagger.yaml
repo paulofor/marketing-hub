@@ -757,6 +757,10 @@ components:
           enum:
             - FAILED
             - NEEDS_MORE_RESEARCH
+            - NEEDS_MORE_MEI_RESEARCH
+            - OUTDATED_SOURCES
+            - TOO_CORPORATE
+            - SOLUTION_CONTAMINATED
             - GENERIC
           example: FAILED
         previousRoutineResearchStatus:
@@ -2202,6 +2206,42 @@ components:
           type: integer
           minimum: 0
           maximum: 100
+        brazilianSourceCount:
+          type: integer
+        recentSourceCount:
+          type: integer
+        outdatedSourceRiskCount:
+          type: integer
+        structuredBusinessDriftRiskCount:
+          type: integer
+        customerAcquisitionEvidenceCount:
+          type: integer
+        emotionalOutcomeEvidenceCount:
+          type: integer
+        autonomousProfessionalFitScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+        behavioralEvidenceScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+        sourceFreshnessScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+        outdatedSourceRiskScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+        structuredBusinessDriftRiskScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+        profileSolutionLanguageRiskScore:
+          type: integer
+          minimum: 0
+          maximum: 100
         createdAt:
           type: string
           format: date-time
@@ -2217,7 +2257,7 @@ components:
           format: int64
         qualityStatus:
           type: string
-          enum: [LIGHTLY_RESEARCHED, NEEDS_MORE_RESEARCH, GENERIC]
+          enum: [MEI_AUDIENCE_READY, NEEDS_MORE_MEI_RESEARCH, OUTDATED_SOURCES, TOO_CORPORATE, SOLUTION_CONTAMINATED, GENERIC]
         readyForHypothesis:
           type: boolean
         specificityScore:

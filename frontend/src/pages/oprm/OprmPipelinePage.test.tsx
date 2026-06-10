@@ -429,11 +429,11 @@ describe("OprmPipelinePage", () => {
       (await screen.findAllByText("Ponto do problema:")).length,
     ).toBeGreaterThan(0);
     expect(
-      screen.getAllByText("Etapa 7 · Gate de Qualidade").length,
+      screen.getAllByText("Etapa 9 · Gate MEI/autônomo").length,
     ).toBeGreaterThan(0);
     expect(
       screen.getAllByText(
-        "A pesquisa chegou ao gate, mas ainda não reuniu sinais/evidências suficientes para liberar o nicho.",
+        "A pesquisa chegou ao gate, mas ainda não reuniu sinais humanos/comportamentais suficientes para liberar o público.",
       ).length,
     ).toBeGreaterThan(0);
   });

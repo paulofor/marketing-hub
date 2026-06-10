@@ -5,32 +5,44 @@ import java.util.List;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
-/** Avalia deterministicamente se um cartão representa bem a rotina real e suas dificuldades observáveis. */
+/** Avalia deterministicamente se um cartão representa público MEI/autônomo real, atual e sem contaminação de solução. */
 @Component
 public class RoutineQualityGateEngine {
-    private static final String LIGHTLY_RESEARCHED = "LIGHTLY_RESEARCHED";
-    private static final String NEEDS_MORE_RESEARCH = "NEEDS_MORE_RESEARCH";
+    private static final String MEI_AUDIENCE_READY = "MEI_AUDIENCE_READY";
+    private static final String NEEDS_MORE_MEI_RESEARCH = "NEEDS_MORE_MEI_RESEARCH";
+    private static final String OUTDATED_SOURCES = "OUTDATED_SOURCES";
+    private static final String TOO_CORPORATE = "TOO_CORPORATE";
+    private static final String SOLUTION_CONTAMINATED = "SOLUTION_CONTAMINATED";
     private static final String GENERIC = "GENERIC";
     private static final int MAX_ACCEPTABLE_SOLUTION_RISK = 35;
+    private static final int MAX_ACCEPTABLE_OUTDATED_RISK = 45;
+    private static final int MAX_ACCEPTABLE_CORPORATE_RISK = 45;
 
-    /** Calcula a decisão da etapa sete sem exigir sinal de solução, hipótese, mecanismo ou oportunidade comercial. */
+    /** Calcula a decisão da etapa sete exigindo sinais humanos/comportamentais de MEI/autônomo antes da materialização. */
     public RoutineQualityDecision evaluate(RoutineQualityGatePending pending) {
         int sourceCount = value(pending.sourceCount());
         int signalCount = value(pending.signalCount());
         int solutionRiskScore = calculateSolutionLanguageRiskScore(pending);
         int textualSolutionRiskScore = calculateTextualSolutionLanguageRiskScore(pending);
-        int effectiveSolutionRiskScore = Math.max(solutionRiskScore, textualSolutionRiskScore);
+        int effectiveSolutionRiskScore = Math.max(Math.max(solutionRiskScore, textualSolutionRiskScore), value(pending.profileSolutionLanguageRiskScore()));
+        int outdatedRiskScore = calculateOutdatedSourceRiskScore(pending, sourceCount);
+        int corporateRiskScore = calculateCorporateDriftRiskScore(pending, sourceCount);
         int specificityScore = calculateSpecificityScore(pending);
-        int confidenceScore = calculateConfidenceScore(pending, sourceCount, signalCount, effectiveSolutionRiskScore);
+        int confidenceScore = calculateConfidenceScore(pending, sourceCount, signalCount, effectiveSolutionRiskScore, outdatedRiskScore, corporateRiskScore);
         int duplicationScore = calculateDuplicationScore(pending);
         boolean hasRequiredSummaries = hasText(pending.routineSummary()) && hasText(pending.painsSummary());
-        boolean hasAuditableEvidence = hasText(pending.evidenceSummary()) && distinctDomainCount(pending.sourceDomains()) >= 2;
+        boolean hasBrazilianSources = value(pending.brazilianSourceCount()) >= 3;
+        boolean hasRecentSources = value(pending.recentSourceCount()) >= 2 || value(pending.sourceFreshnessScore()) >= 70;
+        boolean hasAuditableEvidence = hasText(pending.evidenceSummary()) && distinctDomainCount(pending.sourceDomains()) >= 2 && hasBrazilianSources;
         boolean hasRoutineTask = value(pending.routineTaskCount()) > 0;
-        boolean hasDifficulty = value(pending.operationalDifficultyCount()) > 0 || value(pending.painSignalCount()) > 0;
-        boolean hasQuestionOrLanguage = value(pending.questionSignalCount()) > 0 || value(pending.languageMarkerCount()) > 0;
-        boolean hasMinimumSignalMix = hasRoutineTask && hasDifficulty && hasQuestionOrLanguage;
+        boolean hasAcquisitionOrChannel = value(pending.customerAcquisitionEvidenceCount()) > 0;
+        boolean hasPracticalPain = value(pending.operationalDifficultyCount()) > 0 || value(pending.painSignalCount()) > 0;
+        boolean hasHumanOutcome = value(pending.emotionalOutcomeEvidenceCount()) > 0;
+        boolean hasMinimumSignalMix = hasRoutineTask && hasAcquisitionOrChannel && hasPracticalPain && hasHumanOutcome;
         boolean dominatedBySolution = effectiveSolutionRiskScore > MAX_ACCEPTABLE_SOLUTION_RISK
                 || value(pending.solutionLanguageRiskCount()) > signalCount / 2;
+        boolean outdated = outdatedRiskScore > MAX_ACCEPTABLE_OUTDATED_RISK || !hasRecentSources;
+        boolean tooCorporate = corporateRiskScore > MAX_ACCEPTABLE_CORPORATE_RISK || value(pending.autonomousProfessionalFitScore()) < 50;
         boolean generic = specificityScore < 40 || duplicationScore >= 70 || !hasRequiredSummaries || !hasAuditableEvidence;
         boolean approved = sourceCount >= 3
                 && signalCount >= 6
@@ -38,10 +50,14 @@ public class RoutineQualityGateEngine {
                 && confidenceScore >= 50
                 && hasRequiredSummaries
                 && hasAuditableEvidence
+                && hasRecentSources
                 && hasMinimumSignalMix
+                && value(pending.behavioralEvidenceScore()) >= 55
                 && !dominatedBySolution
+                && !outdated
+                && !tooCorporate
                 && !generic;
-        String status = generic ? GENERIC : approved ? LIGHTLY_RESEARCHED : NEEDS_MORE_RESEARCH;
+        String status = chooseStatus(generic, dominatedBySolution, outdated, tooCorporate, approved, hasMinimumSignalMix);
         return new RoutineQualityDecision(
                 status,
                 approved,
@@ -53,36 +69,70 @@ public class RoutineQualityGateEngine {
                         status,
                         hasMinimumSignalMix,
                         hasAuditableEvidence,
+                        hasRecentSources,
                         dominatedBySolution,
+                        outdatedRiskScore,
+                        corporateRiskScore,
                         effectiveSolutionRiskScore,
                         textualSolutionRiskScore));
     }
 
-    /** Calcula especificidade combinando rotina, dificuldade, perguntas/linguagem e variedade de fontes. */
+    /** Escolhe o status mais útil para orientar nova pesquisa ou bloqueio operacional. */
+    private String chooseStatus(
+            boolean generic,
+            boolean dominatedBySolution,
+            boolean outdated,
+            boolean tooCorporate,
+            boolean approved,
+            boolean hasMinimumSignalMix) {
+        if (dominatedBySolution) {
+            return SOLUTION_CONTAMINATED;
+        }
+        if (tooCorporate) {
+            return TOO_CORPORATE;
+        }
+        if (outdated) {
+            return OUTDATED_SOURCES;
+        }
+        if (generic) {
+            return GENERIC;
+        }
+        if (approved) {
+            return MEI_AUDIENCE_READY;
+        }
+        return hasMinimumSignalMix ? NEEDS_MORE_MEI_RESEARCH : GENERIC;
+    }
+
+    /** Calcula especificidade combinando rotina, dores, comportamento MEI/autônomo e variedade de fontes brasileiras. */
     private int calculateSpecificityScore(RoutineQualityGatePending pending) {
         int score = 0;
-        score += cappedLengthScore(pending.routineSummary(), 18);
-        score += cappedLengthScore(pending.painsSummary(), 18);
-        score += cappedLengthScore(pending.resultsSummary(), 12);
-        score += Math.min(18, value(pending.sourceDiversityScore()) / 4 + distinctDomainCount(pending.sourceDomains()) * 3);
-        score += Math.min(24, value(pending.routineTaskCount()) * 5
-                + (value(pending.operationalDifficultyCount()) + value(pending.painSignalCount())) * 4
-                + (value(pending.questionSignalCount()) + value(pending.languageMarkerCount())) * 2);
+        score += cappedLengthScore(pending.routineSummary(), 16);
+        score += cappedLengthScore(pending.painsSummary(), 16);
+        score += cappedLengthScore(pending.resultsSummary(), 10);
+        score += Math.min(16, value(pending.sourceDiversityScore()) / 5 + distinctDomainCount(pending.sourceDomains()) * 2);
+        score += Math.min(14, value(pending.brazilianSourceCount()) * 3 + value(pending.recentSourceCount()) * 2);
+        score += Math.min(28, value(pending.routineTaskCount()) * 4
+                + (value(pending.operationalDifficultyCount()) + value(pending.painSignalCount())) * 3
+                + value(pending.customerAcquisitionEvidenceCount()) * 5
+                + value(pending.emotionalOutcomeEvidenceCount()) * 4
+                + (value(pending.questionSignalCount()) + value(pending.languageMarkerCount())));
         if (containsConcreteMarker(pending.routineSummary() + " " + pending.painsSummary() + " " + pending.resultsSummary())) {
             score += 8;
         }
         return clamp(score);
     }
 
-    /** Calcula confiança efetiva com bônus para evidência de rotina/dificuldade e penalidade por solução precoce. */
+    /** Calcula confiança efetiva com bônus para aderência MEI/autônomo, comportamento e atualidade, penalizando riscos. */
     private int calculateConfidenceScore(
-            RoutineQualityGatePending pending, int sourceCount, int signalCount, int solutionRiskScore) {
+            RoutineQualityGatePending pending, int sourceCount, int signalCount, int solutionRiskScore, int outdatedRiskScore, int corporateRiskScore) {
         int base = value(pending.cardConfidenceScore());
-        int sourceScore = Math.min(22, sourceCount * 5);
-        int signalScore = Math.min(20, signalCount * 2);
-        int evidenceScore = Math.min(28, (value(pending.routineEvidenceScore()) + value(pending.difficultyEvidenceScore())) / 7);
-        int riskPenalty = Math.min(35, solutionRiskScore / 2);
-        return clamp(Math.round((base * 0.35f) + sourceScore + signalScore + evidenceScore - riskPenalty));
+        int sourceScore = Math.min(18, sourceCount * 4 + value(pending.brazilianSourceCount()) * 2 + value(pending.recentSourceCount()) * 2);
+        int signalScore = Math.min(18, signalCount * 2);
+        int evidenceScore = Math.min(32,
+                (value(pending.routineEvidenceScore()) + value(pending.difficultyEvidenceScore())
+                        + value(pending.autonomousProfessionalFitScore()) + value(pending.behavioralEvidenceScore())) / 12);
+        int riskPenalty = Math.min(45, solutionRiskScore / 3 + outdatedRiskScore / 4 + corporateRiskScore / 4);
+        return clamp(Math.round((base * 0.30f) + sourceScore + signalScore + evidenceScore - riskPenalty));
     }
 
     /** Calcula risco de duplicação/genérico por repetição simples entre os blocos principais. */
@@ -113,6 +163,18 @@ public class RoutineQualityGateEngine {
         int signalCount = Math.max(1, value(pending.signalCount()));
         int counterScore = clamp((int) Math.round((value(pending.solutionLanguageRiskCount()) * 100.0) / signalCount));
         return Math.max(requestScore, counterScore);
+    }
+
+    /** Calcula risco por fontes antigas usando contadores de snapshots e score do perfil MEI/autônomo. */
+    private int calculateOutdatedSourceRiskScore(RoutineQualityGatePending pending, int sourceCount) {
+        int counterScore = sourceCount <= 0 ? 0 : clamp((int) Math.round((value(pending.outdatedSourceRiskCount()) * 100.0) / sourceCount));
+        return Math.max(value(pending.outdatedSourceRiskScore()), counterScore);
+    }
+
+    /** Calcula risco de desvio para empresa estruturada usando snapshots e score do perfil MEI/autônomo. */
+    private int calculateCorporateDriftRiskScore(RoutineQualityGatePending pending, int sourceCount) {
+        int counterScore = sourceCount <= 0 ? 0 : clamp((int) Math.round((value(pending.structuredBusinessDriftRiskCount()) * 100.0) / sourceCount));
+        return Math.max(value(pending.structuredBusinessDriftRiskScore()), counterScore);
     }
 
     /** Calcula risco textual quando o card usa termos de solução mesmo sem contador de risco persistido. */
@@ -149,21 +211,32 @@ public class RoutineQualityGateEngine {
             String status,
             boolean hasMinimumSignalMix,
             boolean hasAuditableEvidence,
+            boolean hasRecentSources,
             boolean dominatedBySolution,
+            int outdatedRiskScore,
+            int corporateRiskScore,
             int solutionRiskScore,
             int textualSolutionRiskScore) {
         List<String> notes = new ArrayList<>();
         notes.add("status=" + status);
         notes.add("fontes=" + value(pending.sourceCount()));
+        notes.add("fontesBrasileiras=" + value(pending.brazilianSourceCount()));
+        notes.add("fontesRecentes=" + value(pending.recentSourceCount()));
         notes.add("sinais=" + value(pending.signalCount()));
         notes.add("tarefasRotina=" + value(pending.routineTaskCount()));
-        notes.add("dificuldades=" + (value(pending.operationalDifficultyCount()) + value(pending.painSignalCount())));
-        notes.add("perguntasOuLinguagem=" + (value(pending.questionSignalCount()) + value(pending.languageMarkerCount())));
-        notes.add("mixMinimoRotina=" + hasMinimumSignalMix);
-        notes.add("evidenciaAuditavel=" + hasAuditableEvidence);
+        notes.add("aquisicaoOuCanal=" + value(pending.customerAcquisitionEvidenceCount()));
+        notes.add("dorPratica=" + (value(pending.operationalDifficultyCount()) + value(pending.painSignalCount())));
+        notes.add("dorEmocionalSonhoOuMedo=" + value(pending.emotionalOutcomeEvidenceCount()));
+        notes.add("mixMinimoMeiAutonomo=" + hasMinimumSignalMix);
+        notes.add("evidenciaAuditavelBrasil=" + hasAuditableEvidence);
+        notes.add("fontesRecentesSuficientes=" + hasRecentSources);
+        notes.add("riscoFonteAntiga=" + outdatedRiskScore);
+        notes.add("riscoEmpresaEstruturada=" + corporateRiskScore);
         notes.add("riscoLinguagemSolucao=" + solutionRiskScore);
         notes.add("riscoTextualSolucao=" + textualSolutionRiskScore);
         notes.add("dominadoPorSolucao=" + dominatedBySolution);
+        notes.add("fitMeiAutonomo=" + value(pending.autonomousProfessionalFitScore()));
+        notes.add("evidenciaComportamental=" + value(pending.behavioralEvidenceScore()));
         notes.add("fontesDistintas=" + distinctDomainCount(pending.sourceDomains()));
         return String.join("; ", notes);
     }
@@ -184,7 +257,7 @@ public class RoutineQualityGateEngine {
         return (int) List.of(sourceDomains.split(",")).stream().map(String::trim).filter(StringUtils::hasText).distinct().count();
     }
 
-    /** Detecta marcadores concretos que normalmente indicam texto menos genérico. */
+    /** Detecta marcadores concretos que normalmente indicam texto menos genérico e mais comportamental. */
     private boolean containsConcreteMarker(String value) {
         return hasText(value) && value.matches(".*(\\d|WhatsApp|Instagram|agenda|cliente|preço|pacote|retorno|horário|cancelamento|atraso|falta).*");
     }

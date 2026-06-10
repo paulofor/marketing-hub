@@ -4,6 +4,7 @@ import com.marketinghub.oprm.nichocnae.OprmExtractedSignal;
 import com.marketinghub.oprm.nichocnae.OprmNicheRoutineCard;
 import com.marketinghub.oprm.nichocnae.OprmRoutineResearchCycle;
 import com.marketinghub.oprm.nichocnae.OprmSourceSnapshot;
+import com.marketinghub.oprm.nichocnae.meiaudienceprofile.OprmMeiAudienceProfile;
 import com.marketinghub.oprm.nichocnae.routinequalitygate.service.completeStageExecution.CompleteRoutineQualityGateRequest;
 import com.marketinghub.oprm.nichocnae.routinequalitygate.service.completeStageExecution.CompleteRoutineQualityGateResponse;
 import com.marketinghub.oprm.nichocnae.routinequalitygate.service.detailStageExecution.RoutineQualityGateDetailResponse;
@@ -31,7 +32,12 @@ public class BackendRoutineQualityGateService {
   private static final Logger LOGGER = LoggerFactory.getLogger(BackendRoutineQualityGateService.class);
   private static final String FAILED_STATUS = "FAILED";
   private static final String LIGHTLY_RESEARCHED_STATUS = "LIGHTLY_RESEARCHED";
+  private static final String MEI_AUDIENCE_READY_STATUS = "MEI_AUDIENCE_READY";
   private static final String NEEDS_MORE_RESEARCH_STATUS = "NEEDS_MORE_RESEARCH";
+  private static final String NEEDS_MORE_MEI_RESEARCH_STATUS = "NEEDS_MORE_MEI_RESEARCH";
+  private static final String OUTDATED_SOURCES_STATUS = "OUTDATED_SOURCES";
+  private static final String TOO_CORPORATE_STATUS = "TOO_CORPORATE";
+  private static final String SOLUTION_CONTAMINATED_STATUS = "SOLUTION_CONTAMINATED";
   private static final String GENERIC_STATUS = "GENERIC";
   private static final int MAX_PENDING = 10;
   private static final int MAX_NOTES_LENGTH = 4000;
@@ -89,7 +95,7 @@ public class BackendRoutineQualityGateService {
       routineCardRepository.save(card);
       cycle.setStatus(qualityStatus);
       cycle.setUpdatedAt(now);
-      if (LIGHTLY_RESEARCHED_STATUS.equals(qualityStatus)) {
+      if (isApprovedQualityStatus(qualityStatus)) {
         cycle.setFinishedAt(now);
         cycle.setErrorMessage(null);
       }
@@ -152,6 +158,7 @@ public class BackendRoutineQualityGateService {
   private RecordRoutineQualityGatePending toPending(OprmNicheRoutineCard card) {
     List<OprmSourceSnapshot> snapshots = sourceSnapshotRepository.findByResearchCycleIdOrderByIdAsc(card.getResearchCycleId());
     List<OprmExtractedSignal> signals = extractedSignalRepository.findByResearchCycleIdOrderByIdAsc(card.getResearchCycleId());
+    OprmMeiAudienceProfile profile = meiAudienceProfileRepository.findFirstByResearchCycleIdOrderByIdDesc(card.getResearchCycleId()).orElse(null);
     return new RecordRoutineQualityGatePending(
         card.getId(),
         card.getResearchCycleId(),
@@ -177,7 +184,75 @@ public class BackendRoutineQualityGateService {
         card.getDifficultyEvidenceScore(),
         card.getSourceDiversityScore(),
         card.getSolutionLanguageRiskScore(),
+        countBrazilianSources(snapshots),
+        countRecentSources(snapshots),
+        countOutdatedSourceRiskSnapshots(snapshots),
+        countStructuredBusinessDriftSnapshots(snapshots),
+        countCustomerAcquisitionEvidence(signals, profile),
+        countEmotionalOutcomeEvidence(signals, profile),
+        scoreFromProfile(profile == null ? null : profile.getAutonomousProfessionalFitScore()),
+        scoreFromProfile(profile == null ? null : profile.getBehavioralEvidenceScore()),
+        scoreFromProfile(profile == null ? null : profile.getSourceFreshnessScore()),
+        scoreFromProfile(profile == null ? null : profile.getOutdatedSourceRiskScore()),
+        scoreFromProfile(profile == null ? null : profile.getStructuredBusinessDriftRiskScore()),
+        scoreFromProfile(profile == null ? null : profile.getSolutionLanguageRiskScore()),
         card.getCreatedAt());
+  }
+
+  /** Conta fontes brasileiras com relevância suficiente para evitar aprovação de material global ou genérico. */
+  private int countBrazilianSources(List<OprmSourceSnapshot> snapshots) {
+    return (int) snapshots.stream()
+        .filter(snapshot -> scoreFromProfile(snapshot.getBrazilRelevanceScore()) >= 60 || endsWithBrazilianDomain(snapshot.getSourceDomain()))
+        .count();
+  }
+
+  /** Conta fontes recentes e não marcadas como antigas para sustentar atualidade da pesquisa. */
+  private int countRecentSources(List<OprmSourceSnapshot> snapshots) {
+    return (int) snapshots.stream()
+        .filter(snapshot -> scoreFromProfile(snapshot.getSourceFreshnessScore()) >= 60 && !Boolean.TRUE.equals(snapshot.getOutdatedSourceRisk()))
+        .count();
+  }
+
+  /** Conta snapshots explicitamente marcados com risco de fonte antiga. */
+  private int countOutdatedSourceRiskSnapshots(List<OprmSourceSnapshot> snapshots) {
+    return (int) snapshots.stream()
+        .filter(snapshot -> Boolean.TRUE.equals(snapshot.getOutdatedSourceRisk()))
+        .count();
+  }
+
+  /** Conta snapshots com risco de representar empresa estruturada em vez do dono-operador MEI/autônomo. */
+  private int countStructuredBusinessDriftSnapshots(List<OprmSourceSnapshot> snapshots) {
+    return (int) snapshots.stream()
+        .filter(snapshot -> Boolean.TRUE.equals(snapshot.getStructuredBusinessDriftRisk()))
+        .count();
+  }
+
+  /** Conta evidências de aquisição, atendimento ou canal combinando sinais e o perfil segmentado. */
+  private int countCustomerAcquisitionEvidence(List<OprmExtractedSignal> signals, OprmMeiAudienceProfile profile) {
+    int signalCount = countSignals(signals, "CUSTOMER_ACQUISITION_BEHAVIOR", "CHANNEL_USAGE", "CHANNEL_BEHAVIOR", "CUSTOMER_SERVICE_CHANNEL");
+    int profileEvidence = hasText(profile == null ? null : profile.getCustomerAcquisitionBehavior()) ? 1 : 0;
+    int channelEvidence = hasText(profile == null ? null : profile.getChannelsUsed()) ? 1 : 0;
+    return signalCount + profileEvidence + channelEvidence;
+  }
+
+  /** Conta evidências humanas de dor emocional, sonho ou medo do público MEI/autônomo. */
+  private int countEmotionalOutcomeEvidence(List<OprmExtractedSignal> signals, OprmMeiAudienceProfile profile) {
+    int signalCount = countSignals(signals, "EMOTIONAL_PAIN", "DREAM_SIGNAL", "FEAR_SIGNAL");
+    int profileEvidence = 0;
+    profileEvidence += hasText(profile == null ? null : profile.getEmotionalPainsSummary()) ? 1 : 0;
+    profileEvidence += hasText(profile == null ? null : profile.getDreamsSummary()) ? 1 : 0;
+    profileEvidence += hasText(profile == null ? null : profile.getFearsSummary()) ? 1 : 0;
+    return signalCount + profileEvidence;
+  }
+
+  /** Verifica domínio brasileiro de forma simples quando a classificação de fonte ainda não trouxe score. */
+  private boolean endsWithBrazilianDomain(String sourceDomain) {
+    return StringUtils.hasText(sourceDomain) && sourceDomain.toLowerCase(Locale.ROOT).endsWith(".br");
+  }
+
+  /** Normaliza score nulo para zero ao montar o contrato entregue ao coletor. */
+  private int scoreFromProfile(Integer score) {
+    return score == null ? 0 : score;
   }
 
   /** Conta snapshots com risco explícito de linguagem de solução para reforçar a avaliação de contaminação. */
@@ -197,7 +272,7 @@ public class BackendRoutineQualityGateService {
   /** Verifica se o sinal pertence a qualquer tipo canônico ou legado informado. */
   private boolean matchesAnySignalType(OprmExtractedSignal signal, String... signalTypes) {
     for (String signalType : signalTypes) {
-      if (signalType.equalsIgnoreCase(signal.getSignalType())) {
+      if (signal.getSignalType() != null && signalType.equalsIgnoreCase(signal.getSignalType())) {
         return true;
       }
     }
@@ -248,10 +323,28 @@ public class BackendRoutineQualityGateService {
   /** Normaliza e valida os únicos status finais permitidos pelo gate de qualidade. */
   private String normalizeQualityStatus(String value) {
     String normalized = requiredText(value, "qualityStatus").toUpperCase(Locale.ROOT);
-    if (!LIGHTLY_RESEARCHED_STATUS.equals(normalized) && !NEEDS_MORE_RESEARCH_STATUS.equals(normalized) && !GENERIC_STATUS.equals(normalized)) {
-      throw new IllegalArgumentException("qualityStatus must be LIGHTLY_RESEARCHED, NEEDS_MORE_RESEARCH or GENERIC");
+    if (!isSupportedQualityStatus(normalized)) {
+      throw new IllegalArgumentException(
+          "qualityStatus must be MEI_AUDIENCE_READY, NEEDS_MORE_MEI_RESEARCH, OUTDATED_SOURCES, TOO_CORPORATE, SOLUTION_CONTAMINATED or GENERIC");
     }
     return normalized;
+  }
+
+  /** Indica se o status recebido aprova o ciclo para a próxima etapa, mantendo compatibilidade com status legado. */
+  private boolean isApprovedQualityStatus(String qualityStatus) {
+    return MEI_AUDIENCE_READY_STATUS.equals(qualityStatus) || LIGHTLY_RESEARCHED_STATUS.equals(qualityStatus);
+  }
+
+  /** Indica se o status pertence ao contrato atual ou ao legado ainda aceito para migração segura. */
+  private boolean isSupportedQualityStatus(String normalized) {
+    return MEI_AUDIENCE_READY_STATUS.equals(normalized)
+        || NEEDS_MORE_MEI_RESEARCH_STATUS.equals(normalized)
+        || OUTDATED_SOURCES_STATUS.equals(normalized)
+        || TOO_CORPORATE_STATUS.equals(normalized)
+        || SOLUTION_CONTAMINATED_STATUS.equals(normalized)
+        || GENERIC_STATUS.equals(normalized)
+        || LIGHTLY_RESEARCHED_STATUS.equals(normalized)
+        || NEEDS_MORE_RESEARCH_STATUS.equals(normalized);
   }
 
   /** Exige texto útil para campos obrigatórios do contrato da etapa sete. */
@@ -260,6 +353,11 @@ public class BackendRoutineQualityGateService {
       throw new IllegalArgumentException(fieldName + " is required");
     }
     return value.trim();
+  }
+
+  /** Verifica se existe texto útil em campo opcional de perfil ou fonte. */
+  private boolean hasText(String value) {
+    return StringUtils.hasText(value);
   }
 
   /** Retorna texto normalizado ou valor padrão quando o campo opcional veio vazio. */

@@ -3,6 +3,7 @@ package com.marketinghub.oprm.generalaudience.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -12,10 +13,13 @@ import com.marketinghub.oprm.generalaudience.OprmGeneralAudienceSeedStatus;
 import com.marketinghub.oprm.generalaudience.OprmGeneralAudienceSeedType;
 import com.marketinghub.oprm.generalaudience.OprmGeneralAudienceSubniche;
 import com.marketinghub.oprm.generalaudience.OprmGeneralAudienceSubnicheStatus;
+import com.marketinghub.oprm.generalaudience.service.convertToMarketNiche.ConvertGeneralAudienceSubnicheToMarketNicheRequest;
 import com.marketinghub.oprm.generalaudience.service.createSeed.CreateGeneralAudienceSeedRequest;
 import com.marketinghub.oprm.generalaudience.service.createSubniche.CreateGeneralAudienceSubnicheRequest;
 import com.marketinghub.oprm.generalaudience.service.updateSeed.UpdateGeneralAudienceSeedRequest;
 import com.marketinghub.oprm.generalaudience.service.updateSubniche.UpdateGeneralAudienceSubnicheRequest;
+import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudienceMarketNicheMaterializationRepository;
+import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudienceMaterializedMarketNiche;
 import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudienceSeedRepository;
 import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudienceSubnicheRepository;
 import java.math.BigDecimal;
@@ -33,7 +37,9 @@ class OprmGeneralAudienceServiceTest {
     void shouldCreateSeedWithDefaults() {
         OprmGeneralAudienceSeedRepository repository = mock(OprmGeneralAudienceSeedRepository.class);
         OprmGeneralAudienceService service = new OprmGeneralAudienceService(
-                repository, mock(OprmGeneralAudienceSubnicheRepository.class));
+                repository,
+                mock(OprmGeneralAudienceSubnicheRepository.class),
+                mock(OprmGeneralAudienceMarketNicheMaterializationRepository.class));
         when(repository.save(any())).thenAnswer(invocation -> {
             OprmGeneralAudienceSeed seed = invocation.getArgument(0);
             seed.setId(10L);
@@ -66,7 +72,9 @@ class OprmGeneralAudienceServiceTest {
     void shouldListSeedSummaries() {
         OprmGeneralAudienceSeedRepository repository = mock(OprmGeneralAudienceSeedRepository.class);
         OprmGeneralAudienceService service = new OprmGeneralAudienceService(
-                repository, mock(OprmGeneralAudienceSubnicheRepository.class));
+                repository,
+                mock(OprmGeneralAudienceSubnicheRepository.class),
+                mock(OprmGeneralAudienceMarketNicheMaterializationRepository.class));
         OprmGeneralAudienceSeed seed = seed(7L, OprmGeneralAudienceSeedStatus.READY_FOR_RESEARCH);
         when(repository.findAllByOrderByUpdatedAtDesc()).thenReturn(List.of(seed));
 
@@ -83,7 +91,9 @@ class OprmGeneralAudienceServiceTest {
     void shouldUpdateOnlyProvidedFields() {
         OprmGeneralAudienceSeedRepository repository = mock(OprmGeneralAudienceSeedRepository.class);
         OprmGeneralAudienceService service = new OprmGeneralAudienceService(
-                repository, mock(OprmGeneralAudienceSubnicheRepository.class));
+                repository,
+                mock(OprmGeneralAudienceSubnicheRepository.class),
+                mock(OprmGeneralAudienceMarketNicheMaterializationRepository.class));
         OprmGeneralAudienceSeed seed = seed(8L, OprmGeneralAudienceSeedStatus.DRAFT);
         when(repository.findById(8L)).thenReturn(Optional.of(seed));
         when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
@@ -110,7 +120,9 @@ class OprmGeneralAudienceServiceTest {
     void shouldArchiveSeed() {
         OprmGeneralAudienceSeedRepository repository = mock(OprmGeneralAudienceSeedRepository.class);
         OprmGeneralAudienceService service = new OprmGeneralAudienceService(
-                repository, mock(OprmGeneralAudienceSubnicheRepository.class));
+                repository,
+                mock(OprmGeneralAudienceSubnicheRepository.class),
+                mock(OprmGeneralAudienceMarketNicheMaterializationRepository.class));
         OprmGeneralAudienceSeed seed = seed(9L, OprmGeneralAudienceSeedStatus.PAUSED);
         when(repository.findById(9L)).thenReturn(Optional.of(seed));
         when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
@@ -126,7 +138,9 @@ class OprmGeneralAudienceServiceTest {
     void shouldRejectMissingSeed() {
         OprmGeneralAudienceSeedRepository repository = mock(OprmGeneralAudienceSeedRepository.class);
         OprmGeneralAudienceService service = new OprmGeneralAudienceService(
-                repository, mock(OprmGeneralAudienceSubnicheRepository.class));
+                repository,
+                mock(OprmGeneralAudienceSubnicheRepository.class),
+                mock(OprmGeneralAudienceMarketNicheMaterializationRepository.class));
         when(repository.findById(404L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.getSeed(404L))
@@ -140,7 +154,7 @@ class OprmGeneralAudienceServiceTest {
     void shouldCreateSubnicheWithSeedLink() {
         OprmGeneralAudienceSeedRepository seedRepository = mock(OprmGeneralAudienceSeedRepository.class);
         OprmGeneralAudienceSubnicheRepository subnicheRepository = mock(OprmGeneralAudienceSubnicheRepository.class);
-        OprmGeneralAudienceService service = new OprmGeneralAudienceService(seedRepository, subnicheRepository);
+        OprmGeneralAudienceService service = new OprmGeneralAudienceService(seedRepository, subnicheRepository, mock(OprmGeneralAudienceMarketNicheMaterializationRepository.class));
         OprmGeneralAudienceSeed seed = seed(10L, OprmGeneralAudienceSeedStatus.READY_FOR_RESEARCH);
         when(seedRepository.findById(10L)).thenReturn(Optional.of(seed));
         when(subnicheRepository.save(any())).thenAnswer(invocation -> {
@@ -176,7 +190,7 @@ class OprmGeneralAudienceServiceTest {
     void shouldUpdateSubnicheOnlyProvidedFields() {
         OprmGeneralAudienceSeedRepository seedRepository = mock(OprmGeneralAudienceSeedRepository.class);
         OprmGeneralAudienceSubnicheRepository subnicheRepository = mock(OprmGeneralAudienceSubnicheRepository.class);
-        OprmGeneralAudienceService service = new OprmGeneralAudienceService(seedRepository, subnicheRepository);
+        OprmGeneralAudienceService service = new OprmGeneralAudienceService(seedRepository, subnicheRepository, mock(OprmGeneralAudienceMarketNicheMaterializationRepository.class));
         OprmGeneralAudienceSubniche subniche = subniche(21L, seed(10L, OprmGeneralAudienceSeedStatus.READY_FOR_RESEARCH));
         when(subnicheRepository.findById(21L)).thenReturn(Optional.of(subniche));
         when(subnicheRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
@@ -206,7 +220,7 @@ class OprmGeneralAudienceServiceTest {
     void shouldApproveSubnicheForExperiment() {
         OprmGeneralAudienceSeedRepository seedRepository = mock(OprmGeneralAudienceSeedRepository.class);
         OprmGeneralAudienceSubnicheRepository subnicheRepository = mock(OprmGeneralAudienceSubnicheRepository.class);
-        OprmGeneralAudienceService service = new OprmGeneralAudienceService(seedRepository, subnicheRepository);
+        OprmGeneralAudienceService service = new OprmGeneralAudienceService(seedRepository, subnicheRepository, mock(OprmGeneralAudienceMarketNicheMaterializationRepository.class));
         OprmGeneralAudienceSubniche subniche = subniche(22L, seed(10L, OprmGeneralAudienceSeedStatus.READY_FOR_RESEARCH));
         when(subnicheRepository.findById(22L)).thenReturn(Optional.of(subniche));
         when(subnicheRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
@@ -222,7 +236,7 @@ class OprmGeneralAudienceServiceTest {
     void shouldRejectSubniche() {
         OprmGeneralAudienceSeedRepository seedRepository = mock(OprmGeneralAudienceSeedRepository.class);
         OprmGeneralAudienceSubnicheRepository subnicheRepository = mock(OprmGeneralAudienceSubnicheRepository.class);
-        OprmGeneralAudienceService service = new OprmGeneralAudienceService(seedRepository, subnicheRepository);
+        OprmGeneralAudienceService service = new OprmGeneralAudienceService(seedRepository, subnicheRepository, mock(OprmGeneralAudienceMarketNicheMaterializationRepository.class));
         OprmGeneralAudienceSubniche subniche = subniche(23L, seed(10L, OprmGeneralAudienceSeedStatus.READY_FOR_RESEARCH));
         when(subnicheRepository.findById(23L)).thenReturn(Optional.of(subniche));
         when(subnicheRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
@@ -230,6 +244,64 @@ class OprmGeneralAudienceServiceTest {
         var response = service.rejectSubniche(23L);
 
         assertThat(response.status()).isEqualTo(OprmGeneralAudienceSubnicheStatus.REJECTED);
+    }
+
+
+    /** Verifica se a conversão controlada cria MarketNiche somente após aprovação humana. */
+    @Test
+    void shouldConvertApprovedSubnicheToMarketNicheWithoutCnae() {
+        OprmGeneralAudienceSeedRepository seedRepository = mock(OprmGeneralAudienceSeedRepository.class);
+        OprmGeneralAudienceSubnicheRepository subnicheRepository = mock(OprmGeneralAudienceSubnicheRepository.class);
+        OprmGeneralAudienceMarketNicheMaterializationRepository materializationRepository =
+                mock(OprmGeneralAudienceMarketNicheMaterializationRepository.class);
+        OprmGeneralAudienceService service = new OprmGeneralAudienceService(
+                seedRepository, subnicheRepository, materializationRepository);
+        OprmGeneralAudienceSubniche subniche = subniche(24L, seed(10L, OprmGeneralAudienceSeedStatus.READY_FOR_RESEARCH));
+        subniche.setStatus(OprmGeneralAudienceSubnicheStatus.APPROVED_FOR_EXPERIMENT);
+        when(subnicheRepository.findById(24L)).thenReturn(Optional.of(subniche));
+        when(materializationRepository.saveMarketNiche(
+                any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(new OprmGeneralAudienceMaterializedMarketNiche(99L, "Manicure autônoma", false));
+        when(subnicheRepository.save(any())).thenAnswer(invocation -> {
+            OprmGeneralAudienceSubniche saved = invocation.getArgument(0);
+            saved.setUpdatedAt(Instant.parse("2026-06-10T12:00:00Z"));
+            return saved;
+        });
+
+        var response = service.convertSubnicheToMarketNiche(24L, new ConvertGeneralAudienceSubnicheToMarketNicheRequest(
+                null, null, null, null, null));
+
+        assertThat(response.marketNicheId()).isEqualTo(99L);
+        assertThat(response.reusedExistingMarketNiche()).isFalse();
+        assertThat(response.subnicheStatus()).isEqualTo(OprmGeneralAudienceSubnicheStatus.CONVERTED_TO_NICHE);
+        assertThat(subniche.getMarketNicheId()).isEqualTo(99L);
+        verify(materializationRepository).saveMarketNiche(
+                any(),
+                argThat(name -> name.equals("Manicure autônoma")),
+                argThat(description -> description.contains("Público Geral") && !description.contains("CNAE")),
+                argThat(segmentation -> segmentation.contains("Triagem obrigatória")),
+                any(),
+                any(),
+                argThat(extraTips -> extraTips.contains("Não foi criado a partir de CNAE.")));
+    }
+
+    /** Verifica se subnicho não aprovado é bloqueado antes de criar MarketNiche. */
+    @Test
+    void shouldBlockMarketNicheConversionBeforeApproval() {
+        OprmGeneralAudienceSeedRepository seedRepository = mock(OprmGeneralAudienceSeedRepository.class);
+        OprmGeneralAudienceSubnicheRepository subnicheRepository = mock(OprmGeneralAudienceSubnicheRepository.class);
+        OprmGeneralAudienceMarketNicheMaterializationRepository materializationRepository =
+                mock(OprmGeneralAudienceMarketNicheMaterializationRepository.class);
+        OprmGeneralAudienceService service = new OprmGeneralAudienceService(
+                seedRepository, subnicheRepository, materializationRepository);
+        OprmGeneralAudienceSubniche subniche = subniche(25L, seed(10L, OprmGeneralAudienceSeedStatus.READY_FOR_RESEARCH));
+        when(subnicheRepository.findById(25L)).thenReturn(Optional.of(subniche));
+
+        assertThatThrownBy(() -> service.convertSubnicheToMarketNiche(
+                25L,
+                new ConvertGeneralAudienceSubnicheToMarketNicheRequest(null, null, null, null, null)))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Subnicho precisa estar aprovado");
     }
 
     /** Monta um subnicho completo para os cenários de revisão manual. */

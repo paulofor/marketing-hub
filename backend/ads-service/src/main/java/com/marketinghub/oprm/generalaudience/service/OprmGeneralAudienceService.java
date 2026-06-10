@@ -4,6 +4,8 @@ import com.marketinghub.oprm.generalaudience.OprmGeneralAudienceSeed;
 import com.marketinghub.oprm.generalaudience.OprmGeneralAudienceSeedStatus;
 import com.marketinghub.oprm.generalaudience.OprmGeneralAudienceSubniche;
 import com.marketinghub.oprm.generalaudience.OprmGeneralAudienceSubnicheStatus;
+import com.marketinghub.oprm.generalaudience.service.convertToMarketNiche.ConvertGeneralAudienceSubnicheToMarketNicheRequest;
+import com.marketinghub.oprm.generalaudience.service.convertToMarketNiche.GeneralAudienceMarketNicheConversionResponse;
 import com.marketinghub.oprm.generalaudience.service.createSeed.CreateGeneralAudienceSeedRequest;
 import com.marketinghub.oprm.generalaudience.service.createSubniche.CreateGeneralAudienceSubnicheRequest;
 import com.marketinghub.oprm.generalaudience.service.getSeed.GeneralAudienceSeedResponse;
@@ -12,6 +14,7 @@ import com.marketinghub.oprm.generalaudience.service.listSeeds.GeneralAudienceSe
 import com.marketinghub.oprm.generalaudience.service.listSubniches.GeneralAudienceSubnicheSummaryResponse;
 import com.marketinghub.oprm.generalaudience.service.updateSeed.UpdateGeneralAudienceSeedRequest;
 import com.marketinghub.oprm.generalaudience.service.updateSubniche.UpdateGeneralAudienceSubnicheRequest;
+import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudienceMarketNicheMaterializationRepository;
 import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudienceSeedRepository;
 import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudienceSubnicheRepository;
 import java.util.List;
@@ -29,13 +32,16 @@ public class OprmGeneralAudienceService {
     private static final String DEFAULT_LANGUAGE = "pt-BR";
     private final OprmGeneralAudienceSeedRepository seedRepository;
     private final OprmGeneralAudienceSubnicheRepository subnicheRepository;
+    private final OprmGeneralAudienceMarketNicheMaterializationRepository marketNicheMaterializationRepository;
 
     /** Inicializa o serviço com a persistência centralizada de públicos gerais. */
     public OprmGeneralAudienceService(
             OprmGeneralAudienceSeedRepository seedRepository,
-            OprmGeneralAudienceSubnicheRepository subnicheRepository) {
+            OprmGeneralAudienceSubnicheRepository subnicheRepository,
+            OprmGeneralAudienceMarketNicheMaterializationRepository marketNicheMaterializationRepository) {
         this.seedRepository = seedRepository;
         this.subnicheRepository = subnicheRepository;
+        this.marketNicheMaterializationRepository = marketNicheMaterializationRepository;
     }
 
     /** Lista sementes cadastradas para seleção e revisão manual pelo usuário. */
@@ -207,6 +213,37 @@ public class OprmGeneralAudienceService {
         return toSubnicheResponse(subnicheRepository.save(subniche));
     }
 
+    /** Converte um subnicho aprovado em MarketNiche sem consultar ou alterar tabelas CNAE. */
+    @Transactional
+    public GeneralAudienceMarketNicheConversionResponse convertSubnicheToMarketNiche(
+            Long subnicheId,
+            ConvertGeneralAudienceSubnicheToMarketNicheRequest request) {
+        ConvertGeneralAudienceSubnicheToMarketNicheRequest safeRequest = request == null
+                ? new ConvertGeneralAudienceSubnicheToMarketNicheRequest(null, null, null, null, null)
+                : request;
+        OprmGeneralAudienceSubniche subniche = findSubniche(subnicheId);
+        validateSubnicheCanBecomeMarketNiche(subniche);
+        var marketNiche = marketNicheMaterializationRepository.saveMarketNiche(
+                subniche.getMarketNicheId(),
+                resolveDefaultText(safeRequest.name(), subniche.getName()),
+                materializedDescription(subniche, safeRequest.description()),
+                materializedBaseSegmentation(subniche, safeRequest.baseSegmentation()),
+                materializedInterests(subniche, safeRequest.interests()),
+                materializedDemographicFilters(subniche, safeRequest.demographicFilters()),
+                materializedExtraTips(subniche));
+        subniche.setMarketNicheId(marketNiche.id());
+        subniche.setStatus(OprmGeneralAudienceSubnicheStatus.CONVERTED_TO_NICHE);
+        OprmGeneralAudienceSubniche savedSubniche = subnicheRepository.save(subniche);
+        return new GeneralAudienceMarketNicheConversionResponse(
+                savedSubniche.getId(),
+                savedSubniche.getSeed().getId(),
+                marketNiche.id(),
+                marketNiche.name(),
+                savedSubniche.getStatus(),
+                marketNiche.reusedExisting(),
+                savedSubniche.getUpdatedAt());
+    }
+
     /** Busca a semente ou devolve erro HTTP de recurso inexistente. */
     private OprmGeneralAudienceSeed findSeed(Long seedId) {
         return seedRepository.findById(seedId)
@@ -288,6 +325,93 @@ public class OprmGeneralAudienceService {
                 subniche.getRiskScore(),
                 subniche.getMarketNicheId(),
                 subniche.getUpdatedAt());
+    }
+
+
+    /** Valida se o subnicho tem aprovação humana e campos mínimos antes de virar nicho. */
+    private void validateSubnicheCanBecomeMarketNiche(OprmGeneralAudienceSubniche subniche) {
+        if (subniche.getStatus() != OprmGeneralAudienceSubnicheStatus.APPROVED_FOR_EXPERIMENT
+                && subniche.getStatus() != OprmGeneralAudienceSubnicheStatus.CONVERTED_TO_NICHE) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Subnicho precisa estar aprovado para experimento antes de virar MarketNiche");
+        }
+        requiredText(subniche.getName(), "name");
+        requiredText(subniche.getPersonaSummary(), "personaSummary");
+        requiredText(subniche.getPainSummary(), "painSummary");
+        requiredText(subniche.getQualificationQuestion(), "qualificationQuestion");
+    }
+
+    /** Monta descrição do nicho com origem rastreável de público geral e sem referência a CNAE. */
+    private String materializedDescription(
+            OprmGeneralAudienceSubniche subniche,
+            String overrideDescription) {
+        if (StringUtils.hasText(overrideDescription)) {
+            return overrideDescription.trim();
+        }
+        return String.join("\n\n",
+                "Nicho convertido a partir de Público Geral OPRM.",
+                "Origem: Público Geral > " + subniche.getSeed().getName() + " > " + subniche.getName(),
+                "Persona/contexto:\n" + requiredText(subniche.getPersonaSummary(), "personaSummary"),
+                "Dor principal:\n" + requiredText(subniche.getPainSummary(), "painSummary"),
+                "Resultado desejado:\n" + optionalText(subniche.getDesiredOutcomeSummary()),
+                "Pergunta qualificadora:\n" + requiredText(subniche.getQualificationQuestion(), "qualificationQuestion"));
+    }
+
+    /** Monta segmentação base do nicho a partir da semente e do subnicho aprovados. */
+    private String materializedBaseSegmentation(
+            OprmGeneralAudienceSubniche subniche,
+            String overrideBaseSegmentation) {
+        if (StringUtils.hasText(overrideBaseSegmentation)) {
+            return overrideBaseSegmentation.trim();
+        }
+        return "Público Geral OPRM: " + subniche.getSeed().getName()
+                + " > " + subniche.getName()
+                + ". País: " + subniche.getSeed().getCountry()
+                + ". Idioma: " + subniche.getSeed().getLanguage()
+                + ". Triagem obrigatória: " + requiredText(subniche.getQualificationQuestion(), "qualificationQuestion");
+    }
+
+    /** Monta interesses sugeridos sem transformar público geral em CNAE. */
+    private String materializedInterests(
+            OprmGeneralAudienceSubniche subniche,
+            String overrideInterests) {
+        if (StringUtils.hasText(overrideInterests)) {
+            return overrideInterests.trim();
+        }
+        return String.join("\n\n",
+                "Canais e contexto de aquisição:\n" + optionalText(subniche.getChannelsSummary()),
+                "Padrões de linguagem observados:\n" + optionalText(subniche.getLanguagePatterns()));
+    }
+
+    /** Monta filtros demográficos e de triagem para evitar público amplo sem confirmação. */
+    private String materializedDemographicFilters(
+            OprmGeneralAudienceSubniche subniche,
+            String overrideDemographicFilters) {
+        if (StringUtils.hasText(overrideDemographicFilters)) {
+            return overrideDemographicFilters.trim();
+        }
+        return "Usar demografia apenas quando fizer sentido para " + subniche.getName()
+                + ". Confirmar pertencimento pela pergunta: "
+                + requiredText(subniche.getQualificationQuestion(), "qualificationQuestion");
+    }
+
+    /** Monta dicas operacionais de origem para preservar rastreabilidade sem acionar hipótese. */
+    private String materializedExtraTips(OprmGeneralAudienceSubniche subniche) {
+        return String.join("\n",
+                "Origem operacional: OPRM_PUBLICO_GERAL",
+                "seedId=" + subniche.getSeed().getId(),
+                "subnicheId=" + subniche.getId(),
+                "Não foi criado a partir de CNAE.",
+                "Próximo passo recomendado: criar hipótese específica para uma dor principal antes de qualquer campanha.");
+    }
+
+    /** Retorna texto opcional ou aviso claro de ausência para materialização auditável. */
+    private String optionalText(String value) {
+        if (!StringUtils.hasText(value)) {
+            return "Não informado na revisão do subnicho.";
+        }
+        return value.trim();
     }
 
     /** Normaliza texto obrigatório e rejeita valor vazio para evitar semente sem decisão comercial. */

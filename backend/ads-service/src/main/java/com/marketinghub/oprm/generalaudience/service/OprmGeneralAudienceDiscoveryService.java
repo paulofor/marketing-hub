@@ -5,12 +5,16 @@ import com.marketinghub.oprm.generalaudience.OprmGeneralAudiencePainAngleStatus;
 import com.marketinghub.oprm.generalaudience.OprmGeneralAudienceSeed;
 import com.marketinghub.oprm.generalaudience.OprmGeneralAudienceSourceEvidence;
 import com.marketinghub.oprm.generalaudience.OprmGeneralAudienceSubniche;
+import com.marketinghub.oprm.generalaudience.OprmGeneralAudienceSubnicheStatus;
+import com.marketinghub.oprm.generalaudience.service.createHypothesis.CreateGeneralAudienceHypothesisRequest;
+import com.marketinghub.oprm.generalaudience.service.createHypothesis.GeneralAudienceHypothesisResponse;
 import com.marketinghub.oprm.generalaudience.service.createPainAngle.CreateGeneralAudiencePainAngleRequest;
 import com.marketinghub.oprm.generalaudience.service.createSourceEvidence.CreateGeneralAudienceSourceEvidenceRequest;
 import com.marketinghub.oprm.generalaudience.service.listPainAngles.GeneralAudiencePainAngleResponse;
 import com.marketinghub.oprm.generalaudience.service.listSourceEvidences.GeneralAudienceSourceEvidenceResponse;
 import com.marketinghub.oprm.generalaudience.service.qualityGate.GeneralAudienceQualityGateResponse;
 import com.marketinghub.oprm.generalaudience.service.updatePainAngle.UpdateGeneralAudiencePainAngleRequest;
+import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudienceHypothesisMaterializationRepository;
 import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudiencePainAngleRepository;
 import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudienceSeedRepository;
 import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudienceSourceEvidenceRepository;
@@ -36,17 +40,20 @@ public class OprmGeneralAudienceDiscoveryService {
     private final OprmGeneralAudienceSubnicheRepository subnicheRepository;
     private final OprmGeneralAudiencePainAngleRepository painAngleRepository;
     private final OprmGeneralAudienceSourceEvidenceRepository sourceEvidenceRepository;
+    private final OprmGeneralAudienceHypothesisMaterializationRepository hypothesisMaterializationRepository;
 
     /** Inicializa o serviço com repositórios centralizados do módulo OPRM. */
     public OprmGeneralAudienceDiscoveryService(
             OprmGeneralAudienceSeedRepository seedRepository,
             OprmGeneralAudienceSubnicheRepository subnicheRepository,
             OprmGeneralAudiencePainAngleRepository painAngleRepository,
-            OprmGeneralAudienceSourceEvidenceRepository sourceEvidenceRepository) {
+            OprmGeneralAudienceSourceEvidenceRepository sourceEvidenceRepository,
+            OprmGeneralAudienceHypothesisMaterializationRepository hypothesisMaterializationRepository) {
         this.seedRepository = seedRepository;
         this.subnicheRepository = subnicheRepository;
         this.painAngleRepository = painAngleRepository;
         this.sourceEvidenceRepository = sourceEvidenceRepository;
+        this.hypothesisMaterializationRepository = hypothesisMaterializationRepository;
     }
 
     /** Lista ângulos de dor de um subnicho para revisão antes de construir oferta. */
@@ -188,6 +195,45 @@ public class OprmGeneralAudienceDiscoveryService {
         return new GeneralAudienceQualityGateResponse(subnicheId, blockers.isEmpty(), blockers, recommendations);
     }
 
+    /** Cria uma hipótese específica para a dor principal de um ângulo aprovado de público geral. */
+    @Transactional
+    public GeneralAudienceHypothesisResponse createHypothesis(
+            Long angleId,
+            CreateGeneralAudienceHypothesisRequest request) {
+        CreateGeneralAudienceHypothesisRequest safeRequest = request == null
+                ? new CreateGeneralAudienceHypothesisRequest(null, null, null)
+                : request;
+        OprmGeneralAudiencePainAngle angle = findPainAngle(angleId);
+        validateAngleCanCreateHypothesis(angle);
+        OprmGeneralAudienceSubniche subniche = angle.getSubniche();
+        String leadMagnetOrPromise = resolveLeadMagnetOrPromise(angle);
+        String statement = buildHypothesisStatement(subniche, angle, leadMagnetOrPromise);
+        String title = resolveDefaultText(safeRequest.title(), "Hipótese Público Geral - " + subniche.getName());
+        String successRule = resolveDefaultText(
+                safeRequest.successRule(),
+                "Validar se o público qualificado responde melhor à isca/promessa segura do que a uma mensagem genérica.");
+        var hypothesis = hypothesisMaterializationRepository.createHypothesis(
+                subniche.getMarketNicheId(),
+                title,
+                statement,
+                angle.getPain(),
+                subniche.getName(),
+                angle.getMechanismDirection(),
+                leadMagnetOrPromise,
+                successRule,
+                safeRequest.kpiTargetCpl(),
+                buildHypothesisAuditPrompt(subniche, angle));
+        return new GeneralAudienceHypothesisResponse(
+                angle.getId(),
+                subniche.getId(),
+                subniche.getMarketNicheId(),
+                hypothesis.id(),
+                hypothesis.title(),
+                hypothesis.status(),
+                statement,
+                hypothesis.createdAt());
+    }
+
     /** Busca uma semente ou devolve erro HTTP de recurso inexistente. */
     private OprmGeneralAudienceSeed findSeed(Long seedId) {
         return seedRepository.findById(seedId)
@@ -210,6 +256,70 @@ public class OprmGeneralAudienceDiscoveryService {
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "Ângulo de público geral não encontrado: " + angleId));
+    }
+
+    /** Valida que o ângulo e o subnicho estão prontos para criar uma hipótese específica. */
+    private void validateAngleCanCreateHypothesis(OprmGeneralAudiencePainAngle angle) {
+        if (angle.getStatus() != OprmGeneralAudiencePainAngleStatus.APPROVED) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ângulo precisa estar aprovado antes de criar hipótese");
+        }
+        OprmGeneralAudienceSubniche subniche = angle.getSubniche();
+        if (subniche.getStatus() != OprmGeneralAudienceSubnicheStatus.CONVERTED_TO_NICHE
+                || subniche.getMarketNicheId() == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Subnicho precisa estar convertido em MarketNiche antes de criar hipótese");
+        }
+        requiredText(subniche.getName(), "subniche.name");
+        requiredText(subniche.getPersonaSummary(), "subniche.personaSummary");
+        requiredText(angle.getPain(), "pain");
+        requiredText(angle.getDesiredResult(), "desiredResult");
+        requiredText(angle.getMechanismDirection(), "mechanismDirection");
+        requiredText(resolveLeadMagnetOrPromise(angle), "proofOrLeadMagnet ou safePromise");
+    }
+
+    /** Escolhe a isca concreta como primeira opção e a promessa segura como fallback explícito. */
+    private String resolveLeadMagnetOrPromise(OprmGeneralAudiencePainAngle angle) {
+        if (StringUtils.hasText(angle.getProofOrLeadMagnet())) {
+            return angle.getProofOrLeadMagnet().trim();
+        }
+        if (StringUtils.hasText(angle.getSafePromise())) {
+            return angle.getSafePromise().trim();
+        }
+        return null;
+    }
+
+    /** Monta a frase canônica da hipótese de público geral. */
+    private String buildHypothesisStatement(
+            OprmGeneralAudienceSubniche subniche,
+            OprmGeneralAudiencePainAngle angle,
+            String leadMagnetOrPromise) {
+        return "Acreditamos que " + requiredText(subniche.getName(), "subniche.name")
+                + " com " + requiredText(angle.getPain(), "pain")
+                + " responderá melhor a " + leadMagnetOrPromise
+                + " do que a uma mensagem genérica, porque "
+                + requiredText(angle.getMechanismDirection(), "mechanismDirection") + ".";
+    }
+
+    /** Monta trilha de auditoria interna da hipótese sem publicar campanha ou experimento. */
+    private String buildHypothesisAuditPrompt(
+            OprmGeneralAudienceSubniche subniche,
+            OprmGeneralAudiencePainAngle angle) {
+        return String.join("\n",
+                "Origem operacional: OPRM_PUBLICO_GERAL_HYPOTHESIS",
+                "seedId=" + subniche.getSeed().getId(),
+                "subnicheId=" + subniche.getId(),
+                "painAngleId=" + angle.getId(),
+                "marketNicheId=" + subniche.getMarketNicheId(),
+                "Hipótese criada sem experimento, campanha ou venda direta.");
+    }
+
+    /** Aplica texto padrão quando a entrada opcional não tem conteúdo útil. */
+    private String resolveDefaultText(String value, String defaultValue) {
+        if (!StringUtils.hasText(value)) {
+            return defaultValue;
+        }
+        return value.trim();
     }
 
     /** Valida se o ângulo não contém saída genérica ou promessa arriscada. */

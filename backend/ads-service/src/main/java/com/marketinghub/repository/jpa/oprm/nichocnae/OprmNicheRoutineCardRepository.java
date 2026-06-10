@@ -1,6 +1,7 @@
 package com.marketinghub.repository.jpa.oprm.nichocnae;
 
 import com.marketinghub.oprm.nichocnae.OprmNicheRoutineCard;
+import com.marketinghub.oprm.nichocnae.meiaudienceprofile.OprmMeiAudienceProfile;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Pageable;
@@ -17,6 +18,17 @@ public interface OprmNicheRoutineCardRepository extends JpaRepository<OprmNicheR
 
   /** Lista cartões sintetizados ainda não avaliados pelo gate de qualidade. */
   List<OprmNicheRoutineCard> findByQualityCheckedAtIsNullOrderByCreatedAtAscIdAsc(Pageable pageable);
+
+  /** Lista cartões sintetizados que ainda não possuem segmentação comportamental MEI/autônomo persistida. */
+  @Query("""
+      select c from OprmNicheRoutineCard c
+      where not exists (
+        select 1 from OprmMeiAudienceProfile p
+        where p.researchCycleId = c.researchCycleId
+      )
+      order by c.createdAt asc, c.id asc
+      """)
+  List<OprmNicheRoutineCard> findPendingMeiAudienceSegmentation(Pageable pageable);
   /** Lista cartões aprovados no gate de qualidade que ainda não alimentaram nicho e nicho enriquecido. */
   @Query("""
       select c from OprmNicheRoutineCard c

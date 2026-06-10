@@ -426,6 +426,56 @@ paths:
         '404':
           description: Ciclo de pesquisa não encontrado.
 
+  /api/internal/oprm/nichocnae/mei-audience-segmenter/stage-executions/pending:
+    get:
+      summary: Lista cartões de rotina pendentes para segmentação comportamental MEI/autônomo por IA.
+      tags: [OPRM Nicho CNAE]
+      responses:
+        '200':
+          description: Cartões pendentes com fontes, indicadores e sinais para segmentação.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MeiAudienceSegmenterPending'
+  /api/internal/oprm/nichocnae/mei-audience-segmenter/stage-executions/{researchCycleId}/complete:
+    post:
+      summary: Persiste o perfil comportamental MEI/autônomo segmentado por IA.
+      tags: [OPRM Nicho CNAE]
+      parameters:
+        - $ref: '#/components/parameters/ResearchCycleId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompleteMeiAudienceSegmenterRequest'
+      responses:
+        '200':
+          description: Perfil MEI/autônomo persistido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompleteMeiAudienceSegmenterResponse'
+        '400':
+          description: Payload inválido ou contaminado por linguagem de solução.
+  /api/internal/oprm/nichocnae/mei-audience-segmenter/stage-executions/{researchCycleId}/fail:
+    post:
+      summary: Registra falha operacional da segmentação MEI/autônomo.
+      tags: [OPRM Nicho CNAE]
+      parameters:
+        - $ref: '#/components/parameters/ResearchCycleId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FailMeiAudienceSegmenterRequest'
+      responses:
+        '204':
+          description: Falha registrada.
+
   /api/internal/oprm/nichocnae/routine-quality-gate/stage-executions/pending:
     get:
       summary: Lista cartões de rotina pendentes para a etapa sete de gate de qualidade.
@@ -1836,6 +1886,203 @@ components:
         createdAt:
           type: string
           format: date-time
+    SegmenterSourceSnapshot:
+      type: object
+      properties:
+        sourceSnapshotId:
+          type: integer
+          format: int64
+        sourceCandidateId:
+          type: integer
+          format: int64
+        sourceUrl:
+          type: string
+        sourceDomain:
+          type: string
+        sourceTitle:
+          type: string
+        sourceClassificationType:
+          type: string
+          nullable: true
+        sourceFreshnessScore:
+          type: integer
+          nullable: true
+        outdatedSourceRisk:
+          type: boolean
+        brazilRelevanceScore:
+          type: integer
+          nullable: true
+        autonomousProfessionalEvidenceScore:
+          type: integer
+          nullable: true
+        structuredBusinessDriftRisk:
+          type: boolean
+        solutionLanguageRisk:
+          type: boolean
+        shortExcerpt:
+          type: string
+          nullable: true
+    SegmenterSignal:
+      type: object
+      properties:
+        extractedSignalId:
+          type: integer
+          format: int64
+        sourceSnapshotId:
+          type: integer
+          format: int64
+        sourceCandidateId:
+          type: integer
+          format: int64
+        signalType:
+          type: string
+        signalText:
+          type: string
+        evidenceExcerpt:
+          type: string
+        sourceDomain:
+          type: string
+        confidenceScore:
+          type: integer
+    MeiAudienceSegmenterPending:
+      type: object
+      properties:
+        researchCycleId:
+          type: integer
+          format: int64
+        routineCardId:
+          type: integer
+          format: int64
+        sourceNicheId:
+          type: integer
+          format: int64
+        cnaeCode:
+          type: string
+        cnaeDescription:
+          type: string
+        neutralNicheName:
+          type: string
+        nicheName:
+          type: string
+        routineSummary:
+          type: string
+        painsSummary:
+          type: string
+        evidenceSummary:
+          type: string
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/SegmenterSourceSnapshot'
+        signals:
+          type: array
+          items:
+            $ref: '#/components/schemas/SegmenterSignal'
+    CompleteMeiAudienceSegmenterRequest:
+      type: object
+      required: [researchCycleId, routineCardId, sourceNicheCandidateId, cnaeCode, cnaeDescription, neutralNicheName, audienceName, workMode, dailyRoutineSummary, operationalPainsSummary, recentSourceSummary, autonomousProfessionalFitScore, behavioralEvidenceScore, sourceFreshnessScore, outdatedSourceRiskScore, structuredBusinessDriftRiskScore, solutionLanguageRiskScore]
+      properties:
+        researchCycleId:
+          type: integer
+          format: int64
+        routineCardId:
+          type: integer
+          format: int64
+        sourceNicheCandidateId:
+          type: integer
+          format: int64
+        cnaeCode:
+          type: string
+        cnaeDescription:
+          type: string
+        neutralNicheName:
+          type: string
+        audienceName:
+          type: string
+        occupationTerms:
+          type: string
+        workMode:
+          type: string
+        customerAcquisitionBehavior:
+          type: string
+        dailyRoutineSummary:
+          type: string
+        recurringTasksSummary:
+          type: string
+        operationalPainsSummary:
+          type: string
+        emotionalPainsSummary:
+          type: string
+        dreamsSummary:
+          type: string
+        fearsSummary:
+          type: string
+        languagePatterns:
+          type: string
+        channelsUsed:
+          type: string
+        recentSourceSummary:
+          type: string
+        autonomousProfessionalFitScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+        behavioralEvidenceScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+        sourceFreshnessScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+        outdatedSourceRiskScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+        structuredBusinessDriftRiskScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+        solutionLanguageRiskScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+        segmentedBy:
+          type: string
+          example: oprmMeiAudienceSegmenter
+    CompleteMeiAudienceSegmenterResponse:
+      type: object
+      properties:
+        profileId:
+          type: integer
+          format: int64
+        researchCycleId:
+          type: integer
+          format: int64
+        routineCardId:
+          type: integer
+          format: int64
+        cycleStatus:
+          type: string
+          example: MEI_AUDIENCE_SEGMENTED
+        audienceName:
+          type: string
+        autonomousProfessionalFitScore:
+          type: integer
+        behavioralEvidenceScore:
+          type: integer
+        sourceFreshnessScore:
+          type: integer
+        updatedAt:
+          type: string
+          format: date-time
+    FailMeiAudienceSegmenterRequest:
+      type: object
+      required: [errorMessage]
+      properties:
+        errorMessage:
+          type: string
+
     FailRoutineSynthesizerRequest:
       type: object
       required: [errorMessage]

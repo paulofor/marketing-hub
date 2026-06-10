@@ -1,0 +1,30 @@
+package com.marketinghub.oprm.nichocnae.meiaudiencesegmenter.service.completeStageExecution;
+
+/** DTO responsável por receber a saída validada da segmentação comportamental MEI/autônomo. */
+public record CompleteMeiAudienceSegmenterRequest(
+    Long researchCycleId,
+    Long routineCardId,
+    Long sourceNicheCandidateId,
+    String cnaeCode,
+    String cnaeDescription,
+    String neutralNicheName,
+    String audienceName,
+    String occupationTerms,
+    String workMode,
+    String customerAcquisitionBehavior,
+    String dailyRoutineSummary,
+    String recurringTasksSummary,
+    String operationalPainsSummary,
+    String emotionalPainsSummary,
+    String dreamsSummary,
+    String fearsSummary,
+    String languagePatterns,
+    String channelsUsed,
+    String recentSourceSummary,
+    Integer autonomousProfessionalFitScore,
+    Integer behavioralEvidenceScore,
+    Integer sourceFreshnessScore,
+    Integer outdatedSourceRiskScore,
+    Integer structuredBusinessDriftRiskScore,
+    Integer solutionLanguageRiskScore,
+    String segmentedBy) {}

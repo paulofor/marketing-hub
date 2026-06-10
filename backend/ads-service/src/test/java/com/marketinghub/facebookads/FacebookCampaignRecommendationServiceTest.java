@@ -92,7 +92,7 @@ class FacebookCampaignRecommendationServiceTest {
         campaign.setName("Campanha");
         campaign.setObjective("OUTCOME_TRAFFIC");
         campaign.setStatus(FacebookAdStatus.ACTIVE);
-        campaign.setBudgetMode(BudgetMode.DAILY);
+        campaign.setBudgetMode(BudgetMode.CAMPAIGN);
         campaign.setExperiment(experiment);
         campaign.setFacebookAccount(account);
         return campaign;

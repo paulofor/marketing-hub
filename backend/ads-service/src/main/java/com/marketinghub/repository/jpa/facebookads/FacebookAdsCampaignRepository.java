@@ -2,6 +2,7 @@ package com.marketinghub.repository.jpa.facebookads;
 
 import com.marketinghub.facebookads.FacebookAdsCampaign;
 import com.marketinghub.experiment.ExperimentStatus;
+import com.marketinghub.facebookads.FacebookAdStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -14,7 +15,7 @@ import java.util.List;
 public interface FacebookAdsCampaignRepository extends JpaRepository<FacebookAdsCampaign, String> {
 
     /**
-     * Lists campaigns whose owning experiment currently has the requested status.
+     * Lista campanhas cujo experimento proprietário está no status informado.
      */
     @Query("""
             select c from FacebookAdsCampaign c
@@ -24,7 +25,20 @@ public interface FacebookAdsCampaignRepository extends JpaRepository<FacebookAds
     List<FacebookAdsCampaign> findAllByExperimentStatus(@Param("status") ExperimentStatus status);
 
     /**
-     * Lists campaigns with their ad sets for one experiment in creation order.
+     * Lista campanhas ativas cujo experimento proprietário está no status informado.
+     */
+    @Query("""
+            select c from FacebookAdsCampaign c
+            join fetch c.experiment e
+            where e.status = :experimentStatus
+              and c.status = :campaignStatus
+            """)
+    List<FacebookAdsCampaign> findAllByExperimentStatusAndStatus(
+            @Param("experimentStatus") ExperimentStatus experimentStatus,
+            @Param("campaignStatus") FacebookAdStatus campaignStatus);
+
+    /**
+     * Lista campanhas com seus conjuntos de anúncios para um experimento em ordem de criação.
      */
     @Query("""
             select distinct c from FacebookAdsCampaign c
@@ -36,17 +50,17 @@ public interface FacebookAdsCampaignRepository extends JpaRepository<FacebookAds
     List<FacebookAdsCampaign> findDetailedByExperimentId(@Param("experimentId") Long experimentId);
 
     /**
-     * Checks whether an experiment already has a campaign persisted in the backend.
+     * Verifica se um experimento já possui campanha persistida no backend.
      */
     boolean existsByExperimentId(Long experimentId);
 
     /**
-     * Lists campaigns persisted for one experiment without forcing fetch joins.
+     * Lista campanhas persistidas para um experimento sem forçar joins de leitura.
      */
     List<FacebookAdsCampaign> findByExperimentId(Long experimentId);
 
     /**
-     * Lists campaigns with pending stop requests for the Facebook worker.
+     * Lista campanhas com solicitações de parada pendentes para o worker Facebook.
      */
     @Query("""
             select distinct c from FacebookAdsCampaign c

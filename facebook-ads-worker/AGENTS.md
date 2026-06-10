@@ -74,6 +74,7 @@
   em vez de tratar como erro para evitar itens presos como pendentes.
 - Chamadas de Insights (`/{campaignId}/insights`) devem evitar logs de sucesso em `INFO`
   para reduzir poluição; mantenha logs de erro/aviso para troubleshooting.
+- A coleta de sugestões oficiais da Meta para campanhas ativas deve consultar `GET /api/facebook-campaigns/recommendations/sync-targets`, ler o campo `recommendations` da campanha na Graph API e persistir exclusivamente via backend em `POST /api/facebook-campaigns/{campaignId}/recommendations`; em falhas, registrar `/recommendations-error` sem apagar o último retrato válido.
 
 - Perguntas personalizadas geradas pelo ChatGPT agora são persistidas no backend
   e devolvidas em JSON para o worker; mantenha compatível qualquer mudança que

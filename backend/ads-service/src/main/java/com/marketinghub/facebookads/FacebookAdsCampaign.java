@@ -15,6 +15,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Representa a campanha publicada na Meta para um experimento do Marketing Hub.
+ */
 @Entity
 @Table(name = "facebook_ads_campaign")
 @Getter
@@ -100,6 +103,12 @@ public class FacebookAdsCampaign {
 
     @Column(name = "metrics_last_error", columnDefinition = "TEXT")
     private String metricsLastError;
+
+    @Column(name = "recommendations_last_synced_at")
+    private Instant recommendationsLastSyncedAt;
+
+    @Column(name = "recommendations_last_error", columnDefinition = "TEXT")
+    private String recommendationsLastError;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

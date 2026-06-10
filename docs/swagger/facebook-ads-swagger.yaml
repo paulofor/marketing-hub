@@ -274,6 +274,57 @@ paths:
       summary: Lista campanhas que precisam sincronizar métricas da Meta.
       responses:
         '200': { description: Alvos de sincronização retornados. }
+  /api/facebook-campaigns/recommendations/sync-targets:
+    get:
+      tags: [Facebook Campaigns]
+      summary: Lista campanhas ativas que precisam sincronizar sugestões oficiais da Meta.
+      responses:
+        '200':
+          description: Alvos de sincronização retornados.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/FacebookCampaignRecommendationSyncTarget' }
+  /api/facebook-campaigns/{campaignId}/recommendations:
+    get:
+      tags: [Facebook Campaigns]
+      summary: Lista sugestões oficiais da Meta salvas para a campanha.
+      parameters:
+        - $ref: '#/components/parameters/CampaignId'
+      responses:
+        '200':
+          description: Sugestões retornadas.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/FacebookCampaignRecommendation' }
+    post:
+      tags: [Facebook Campaigns]
+      summary: Substitui o retrato de sugestões oficiais da Meta para a campanha.
+      parameters:
+        - $ref: '#/components/parameters/CampaignId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/FacebookCampaignRecommendationIngestionRequest' }
+      responses:
+        '204': { description: Sugestões persistidas. }
+  /api/facebook-campaigns/{campaignId}/recommendations-error:
+    post:
+      tags: [Facebook Campaigns]
+      summary: Registra falha de sincronização de sugestões oficiais da Meta.
+      parameters:
+        - $ref: '#/components/parameters/CampaignId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CampaignMetricsErrorRequest' }
+      responses:
+        '204': { description: Erro registrado. }
   /api/facebook-campaigns/experiments/{experimentId}/creatives-ready:
     get:
       tags: [Facebook Creatives]
@@ -683,6 +734,42 @@ components:
           enum: [READY]
           description: O endpoint filtra e retorna apenas criativos aprovados para publicação.
       required: [id, experimentId, status]
+    FacebookCampaignRecommendationSyncTarget:
+      type: object
+      properties:
+        campaignId: { type: string }
+        externalCampaignId: { type: string, nullable: true }
+        experimentId: { type: integer, format: int64 }
+        adAccountId: { type: string }
+        lastSyncedAt: { type: string, format: date-time, nullable: true }
+      required: [campaignId, experimentId, adAccountId]
+    FacebookCampaignRecommendationIngestionRequest:
+      type: object
+      additionalProperties: true
+      properties:
+        collectedAt: { type: string, format: date-time, nullable: true }
+        recommendations:
+          description: Payload estruturado retornado pelo campo recommendations da Graph API.
+          oneOf:
+            - type: array
+              items: { type: object, additionalProperties: true }
+            - type: object
+              additionalProperties: true
+    FacebookCampaignRecommendation:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        campaignId: { type: string }
+        recommendationCode: { type: string, nullable: true }
+        title: { type: string, nullable: true }
+        message: { type: string, nullable: true }
+        importance: { type: string, nullable: true }
+        confidence: { type: string, nullable: true }
+        blameField: { type: string, nullable: true }
+        recommendationDataJson: { type: string, nullable: true }
+        rawJson: { type: string }
+        collectedAt: { type: string, format: date-time }
+      required: [id, campaignId, rawJson, collectedAt]
     CreateCampaignRequest:
       type: object
       additionalProperties: true

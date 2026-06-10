@@ -331,6 +331,29 @@ paths:
           description: Pacote experimental incompleto, orçamento grande ou duração longa.
         "404":
           description: Ângulo não encontrado.
+  /api/oprm/general-audiences/pain-angles/{angleId}/prepare-targeting:
+    post:
+      summary: Registra no backend dados de público para coleta posterior pelo Facebook Ads.
+      tags: [OPRM Públicos Gerais]
+      parameters:
+        - $ref: "#/components/parameters/AngleId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GeneralAudienceFacebookAdsDataRequest"
+      responses:
+        "200":
+          description: Dados registrados no backend; o OPRM não cria targeting nem campanha.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeneralAudienceFacebookAdsDataPreparation"
+        "400":
+          description: Payload incompleto ou ângulo ainda sem prontidão mínima.
+        "404":
+          description: Ângulo não encontrado.
   /api/oprm/general-audiences/seeds/{seedId}/source-evidences:
     get:
       summary: Lista evidências agregadas de uma semente.
@@ -766,6 +789,97 @@ components:
         createdAt:
           type: string
           format: date-time
+
+
+    GeneralAudienceFacebookAdsDataRequest:
+      type: object
+      properties:
+        hypothesisId:
+          type: string
+          format: uuid
+        jobTitles:
+          type: array
+          items:
+            type: string
+        jobTitleMetaIds:
+          type: array
+          items:
+            type: string
+        interests:
+          type: array
+          items:
+            type: string
+        behaviors:
+          type: array
+          items:
+            type: string
+        creativeScreeningPhrase:
+          type: string
+          nullable: true
+        demographicGuidance:
+          type: string
+          nullable: true
+        landingConfirmationInstruction:
+          type: string
+          nullable: true
+        approvedJobTitlesAlreadyResolved:
+          type: boolean
+          nullable: true
+        reviewedBy:
+          type: string
+          nullable: true
+    GeneralAudienceFacebookAdsDataPreparation:
+      type: object
+      required: [painAngleId, subnicheId, publishableForCurrentPublisher, blockers, recommendations, elements]
+      properties:
+        painAngleId:
+          type: integer
+          format: int64
+        subnicheId:
+          type: integer
+          format: int64
+        marketNicheId:
+          type: integer
+          format: int64
+          nullable: true
+        hypothesisId:
+          type: string
+          format: uuid
+          nullable: true
+        publishableForCurrentPublisher:
+          type: boolean
+        blockers:
+          type: array
+          items:
+            type: string
+        recommendations:
+          type: array
+          items:
+            type: string
+        elements:
+          type: array
+          items:
+            $ref: "#/components/schemas/GeneralAudienceFacebookAdsDataElement"
+    GeneralAudienceFacebookAdsDataElement:
+      type: object
+      required: [id, type, term, status, publishableForCurrentPublisher]
+      properties:
+        id:
+          type: integer
+          format: int64
+        type:
+          type: string
+          enum: [JOB_TITLE, INTEREST, BEHAVIOR]
+        term:
+          type: string
+        status:
+          type: string
+          enum: [RECEIVED, READY_FOR_FACEBOOK_ADS]
+        metaId:
+          type: string
+          nullable: true
+        publishableForCurrentPublisher:
+          type: boolean
 
     CreateGeneralAudienceLeadExperimentRequest:
       type: object

@@ -361,6 +361,7 @@
 - Executada a etapa 9 do plano de públicos gerais sem sobreposição CNAE: criado endpoint OPRM para materializar fluxo de Lead Portal como landing/formulário de confirmação a partir de ângulo aprovado, exigindo subnicho convertido, experimento, pergunta qualificadora e opções de triagem.
 - A landing/formulário passa a explicitar para quem é, qual dor resolve, o que a pessoa recebe, por que faz sentido, próximo passo e duas perguntas obrigatórias: pertencimento ao público e confirmação textual da dor, sem publicar campanha ou oferta final automaticamente.
 - 2026-06-10 15:05:00 (UTC): implementada a etapa de sinais iniciais Meta Ads para nichos enriquecidos OPRM NichoCNAE. Ao concluir a materialização final, o backend agora gera interesses, cargos e comportamentos por CNAE, grava esses sinais nas listas do `market_niche` e publica `targeting_element` aprovado com origem `OPRM_NICHE`; o Facebook Ads Worker passa a consumir esses elementos pendentes e devolver ID oficial e faixa de alcance da Meta (`audience_size_lower_bound`/`audience_size_upper_bound`) para decisão de campanha.
+- 2026-06-10 17:30:00 (UTC): registrada e aplicada a regra de separação OPRM x Facebook Ads: o OPRM deixa de materializar/acessar targeting diretamente e passa a registrar no backend dados de público para coleta posterior pelo Facebook Ads; também foi criado o armazenamento `oprm_general_audience_facebook_ads_data` para sinais de público geral sem acoplamento ao módulo de targeting.
 
 ## 2026-06-10 — OPRM Públicos Gerais: leitura de qualidade do público
 

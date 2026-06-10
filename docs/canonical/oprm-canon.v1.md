@@ -218,3 +218,16 @@ Evitar fechamento prematuro de `import run` que destrói a totalização de mark
 - O workflow de deploy do `oprm-coletor-mei` deve usar `DEPLOY_HOST=191.252.120.96` enquanto a chave OpenAI operacional estiver provisionada no host do `ai-worker`.
 - O compose do `oprm-coletor-mei` deve montar o mesmo arquivo de chave OpenAI em modo `ro` e configurar a etapa `oprmNicheResearchSeedBuilder` para ler esse arquivo.
 - É proibido commitar a chave OpenAI ou materializar o segredo em `.env` versionado; apenas o caminho do arquivo/volume pode ser versionado.
+
+## Regra obrigatória — dados para Facebook Ads
+
+- O OPRM não deve acessar, materializar ou depender diretamente de entidades, services, repositories ou controllers de targeting/Facebook Ads.
+- O papel do OPRM é produzir e registrar no backend dados de público, rotina, linguagem, dores, sinais e evidências com rastreabilidade.
+- O Facebook Ads deve buscar esses dados no backend por contrato próprio e decidir, no contexto dele, como transformar os dados em segmentação, resolução Meta, campanha, ad set ou publicação.
+- Quando o OPRM gerar sinais úteis para anúncio, esses sinais devem permanecer como dados de origem OPRM ou campos do backend, nunca como escrita direta em tabelas de targeting ou chamada direta a serviços de targeting.
+
+## Critério de efetividade — separação OPRM x Facebook Ads
+
+- Classes em `com.marketinghub.oprm..` não devem importar `com.marketinghub.targeting..` nem `com.marketinghub.repository.jpa.targeting..`.
+- O OPRM pode validar se há dados mínimos para coleta futura pelo Facebook Ads, mas não deve criar elemento de targeting nem liberar publicação.
+- Se o Facebook Ads precisar de novo formato, o contrato deve nascer no backend e ser consumido pelo módulo Facebook Ads, mantendo o OPRM como produtor de dados e não como publicador.

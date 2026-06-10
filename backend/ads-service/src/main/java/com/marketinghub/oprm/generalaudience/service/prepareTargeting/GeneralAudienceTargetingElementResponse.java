@@ -1,14 +1,14 @@
 package com.marketinghub.oprm.generalaudience.service.prepareTargeting;
 
-import com.marketinghub.targeting.TargetingElementStatus;
-import com.marketinghub.targeting.TargetingElementType;
+import com.marketinghub.oprm.generalaudience.OprmGeneralAudienceAdSignalStatus;
+import com.marketinghub.oprm.generalaudience.OprmGeneralAudienceAdSignalType;
 
-/** Resposta de um elemento de targeting criado para público geral. */
+/** Resposta de um dado de público registrado no OPRM para coleta posterior pelo Facebook Ads. */
 public record GeneralAudienceTargetingElementResponse(
         Long id,
-        TargetingElementType type,
+        OprmGeneralAudienceAdSignalType type,
         String term,
-        TargetingElementStatus status,
+        OprmGeneralAudienceAdSignalStatus status,
         String metaId,
         boolean publishableForCurrentPublisher) {
 }

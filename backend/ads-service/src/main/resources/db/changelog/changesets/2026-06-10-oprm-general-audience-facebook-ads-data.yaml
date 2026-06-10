@@ -1,0 +1,44 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-10-05-oprm-general-audience-facebook-ads-data
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: oprm_general_audience_facebook_ads_data
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE oprm_general_audience_facebook_ads_data (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                pain_angle_id BIGINT NOT NULL,
+                subniche_id BIGINT NOT NULL,
+                market_niche_id BIGINT NULL,
+                hypothesis_id CHAR(36) NULL,
+                signal_type VARCHAR(32) NOT NULL,
+                term VARCHAR(255) NOT NULL,
+                meta_id VARCHAR(191) NULL,
+                required_for_publication TINYINT(1) NOT NULL DEFAULT 0,
+                ready_for_facebook_ads TINYINT(1) NOT NULL DEFAULT 0,
+                status VARCHAR(32) NOT NULL,
+                creative_screening_phrase LONGTEXT NULL,
+                demographic_guidance LONGTEXT NULL,
+                landing_confirmation_instruction LONGTEXT NULL,
+                reviewed_by VARCHAR(191) NULL,
+                notes LONGTEXT NULL,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL,
+                CONSTRAINT pk_oprm_general_audience_facebook_ads_data PRIMARY KEY (id),
+                CONSTRAINT fk_oprm_general_audience_fbads_data_angle
+                  FOREIGN KEY (pain_angle_id) REFERENCES oprm_general_audience_pain_angle (id),
+                CONSTRAINT fk_oprm_general_audience_fbads_data_subniche
+                  FOREIGN KEY (subniche_id) REFERENCES oprm_general_audience_subniche (id)
+              );
+              CREATE INDEX idx_oprm_general_audience_fbads_data_angle ON oprm_general_audience_facebook_ads_data (pain_angle_id, signal_type, created_at);
+              CREATE INDEX idx_oprm_general_audience_fbads_data_ready ON oprm_general_audience_facebook_ads_data (ready_for_facebook_ads, signal_type, updated_at);

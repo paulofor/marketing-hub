@@ -3,7 +3,7 @@ package com.marketinghub.oprm.generalaudience.service.prepareTargeting;
 import java.util.List;
 import java.util.UUID;
 
-/** Resposta do preparo de targeting inicial indicando se o publicador atual pode avançar com segurança. */
+/** Resposta do registro de dados de público no backend para coleta posterior pelo Facebook Ads. */
 public record GeneralAudienceTargetingPreparationResponse(
         Long painAngleId,
         Long subnicheId,

@@ -1,6 +1,7 @@
 package com.marketinghub.oprm.nichocnae.routinequalitygate.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -91,6 +92,24 @@ class BackendRoutineQualityGateServiceTest {
     assertThat(card.getQualityCheckedAt()).isNotNull();
     verify(cardRepository).save(card);
     verify(cycleRepository).save(cycle);
+  }
+
+  /** Deve bloquear liberação para hipótese quando o status final ainda exige mais pesquisa MEI/autônomo. */
+  @Test
+  void shouldRejectReadyForHypothesisWhenQualityStatusDoesNotApproveMeiAudience() {
+    assertThatThrownBy(() -> service.complete(1001L, new CompleteRoutineQualityGateRequest(
+            1001L, 10L, "NEEDS_MORE_MEI_RESEARCH", true, 75, 80, 10, "Ainda falta evidência MEI", "test")))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("readyForHypothesis can only be true");
+  }
+
+  /** Deve bloquear status MEI aprovado sem a liberação explícita para evitar contrato contraditório. */
+  @Test
+  void shouldRejectMeiAudienceReadyWithoutHypothesisReadiness() {
+    assertThatThrownBy(() -> service.complete(1001L, new CompleteRoutineQualityGateRequest(
+            1001L, 10L, "MEI_AUDIENCE_READY", false, 75, 80, 10, "Aprovado", "test")))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("MEI_AUDIENCE_READY requires readyForHypothesis true");
   }
 
   /** Cria um cartão de rotina mínimo para os testes do serviço da etapa sete. */

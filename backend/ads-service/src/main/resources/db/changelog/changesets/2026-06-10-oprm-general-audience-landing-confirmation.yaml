@@ -1,0 +1,42 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-10-06-oprm-general-audience-landing-confirmation
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: oprm_general_audience_landing_confirmation
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE oprm_general_audience_landing_confirmation (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                pain_angle_id BIGINT NOT NULL,
+                experiment_id BIGINT NULL,
+                market_niche_id BIGINT NOT NULL,
+                name VARCHAR(255) NOT NULL,
+                slug VARCHAR(255) NOT NULL,
+                audience_summary LONGTEXT NOT NULL,
+                pain_summary LONGTEXT NOT NULL,
+                audience_confirmation_question LONGTEXT NOT NULL,
+                qualification_options LONGTEXT NOT NULL,
+                pain_confirmation_question LONGTEXT NOT NULL,
+                delivery_description LONGTEXT NOT NULL,
+                why_it_makes_sense LONGTEXT NOT NULL,
+                next_step LONGTEXT NOT NULL,
+                status VARCHAR(32) NOT NULL,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL,
+                CONSTRAINT pk_oprm_general_audience_landing_confirmation PRIMARY KEY (id),
+                CONSTRAINT fk_oprm_general_audience_confirmation_angle
+                  FOREIGN KEY (pain_angle_id) REFERENCES oprm_general_audience_pain_angle (id)
+              );
+              CREATE INDEX idx_oprm_general_audience_confirmation_angle ON oprm_general_audience_landing_confirmation (pain_angle_id, updated_at);
+              CREATE INDEX idx_oprm_general_audience_confirmation_experiment ON oprm_general_audience_landing_confirmation (experiment_id, updated_at);
+              CREATE INDEX idx_oprm_general_audience_confirmation_market ON oprm_general_audience_landing_confirmation (market_niche_id, updated_at);

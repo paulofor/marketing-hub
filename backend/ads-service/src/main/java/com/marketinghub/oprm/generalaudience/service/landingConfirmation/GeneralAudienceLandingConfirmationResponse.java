@@ -2,13 +2,13 @@ package com.marketinghub.oprm.generalaudience.service.landingConfirmation;
 
 import java.util.List;
 
-/** Resposta da criação de landing/formulário de confirmação para público geral. */
+/** Resposta do registro OPRM da situação de confirmação para público geral. */
 public record GeneralAudienceLandingConfirmationResponse(
+        Long confirmationRecordId,
         Long painAngleId,
         Long subnicheId,
         Long marketNicheId,
         Long experimentId,
-        Long leadPortalFlowId,
         String slug,
         String name,
         String audienceSummary,
@@ -16,5 +16,6 @@ public record GeneralAudienceLandingConfirmationResponse(
         String deliveryDescription,
         String whyItMakesSense,
         String nextStep,
+        String status,
         List<GeneralAudienceLandingConfirmationQuestionResponse> questions) {
 }

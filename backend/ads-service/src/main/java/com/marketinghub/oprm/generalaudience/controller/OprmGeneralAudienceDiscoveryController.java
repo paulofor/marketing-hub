@@ -107,7 +107,7 @@ public class OprmGeneralAudienceDiscoveryController {
         return ResponseEntity.ok(service.prepareInitialTargeting(angleId, request));
     }
 
-    /** Cria landing/formulário para confirmar público, dor, entrega e próximo passo. */
+    /** Registra no banco a situação para confirmar público, dor, entrega e próximo passo. */
     @PostMapping("/pain-angles/{angleId}/create-confirmation-flow")
     public ResponseEntity<GeneralAudienceLandingConfirmationResponse> createConfirmationFlow(
             @PathVariable Long angleId,
@@ -116,7 +116,7 @@ public class OprmGeneralAudienceDiscoveryController {
                 angleId,
                 request);
         return ResponseEntity
-                .created(URI.create("/api/lead-portal/flows/" + response.leadPortalFlowId()))
+                .created(URI.create("/api/oprm/general-audiences/landing-confirmations/" + response.confirmationRecordId()))
                 .body(response);
     }
 

@@ -115,11 +115,11 @@ class OprmGeneralAudienceDiscoveryControllerTest {
     void shouldCreateConfirmationFlowThroughApi() throws Exception {
         when(landingConfirmationService.createConfirmationFlow(any(), any()))
                 .thenReturn(new GeneralAudienceLandingConfirmationResponse(
+                        88L,
                         20L,
                         5L,
                         99L,
                         77L,
-                        88L,
                         "oprm-publico-geral-5-20-77",
                         "Confirmação Público Geral - Manicure autônoma",
                         "Manicure autônoma",
@@ -127,6 +127,7 @@ class OprmGeneralAudienceDiscoveryControllerTest {
                         "kit com 12 mensagens de WhatsApp",
                         "a dor percebida é horário vazio e dinheiro perdido",
                         "Responder o formulário e receber a isca",
+                        "REGISTERED",
                         List.of(new GeneralAudienceLandingConfirmationQuestionResponse(
                                 "Você trabalha como manicure hoje?",
                                 "audience_confirmation",
@@ -147,8 +148,8 @@ class OprmGeneralAudienceDiscoveryControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
-                .andExpect(header().string(HttpHeaders.LOCATION, "/api/lead-portal/flows/88"))
-                .andExpect(jsonPath("$.leadPortalFlowId").value(88))
+                .andExpect(header().string(HttpHeaders.LOCATION, "/api/oprm/general-audiences/landing-confirmations/88"))
+                .andExpect(jsonPath("$.confirmationRecordId").value(88))
                 .andExpect(jsonPath("$.questions[0].dataKey").value("audience_confirmation"));
     }
 

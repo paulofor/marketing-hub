@@ -371,3 +371,9 @@
 - O quality gate de públicos gerais agora considera a leitura mais recente, preservando a causa-raiz comercial: público amplo só avança quando os leads demonstram aderência e intenção real, não apenas clique barato.
 - 2026-06-10 17:35:00 (UTC): corrigida a falha de compilação do serviço de sinais Meta Ads do nicho enriquecido OPRM, adicionando o import explícito de `java.util.Locale` usado na normalização pt-BR segura do texto operacional.
 - 2026-06-10 17:46:10 (UTC): corrigida a falha de compilação do teste `OprmGeneralAudienceDiscoveryServiceTest`, alinhando os mocks ao construtor atual do serviço de Públicos Gerais (`OprmGeneralAudienceFacebookAdsDataRepository`) e atualizando a asserção do bloqueio de targeting conservador para a mensagem operacional vigente.
+
+## 2026-06-10 — Correção de limite arquitetural do OPRM em confirmação de landing
+
+- Decisão registrada: o OPRM deve apenas tratar a situação de confirmação e gravar os dados em banco próprio, sem criar fluxo no Lead Portal nem alterar Experimento diretamente.
+- Ajuste técnico: a confirmação de público geral passou a persistir um registro OPRM próprio em `oprm_general_audience_landing_confirmation`.
+- Prevenção de recorrência: o cânone OPRM agora explicita que `com.marketinghub.oprm..` não deve importar services, DTOs, entidades ou repositories de módulos externos para materializar etapas posteriores.

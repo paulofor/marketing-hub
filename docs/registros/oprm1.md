@@ -377,3 +377,8 @@
 - Decisão registrada: o OPRM deve apenas tratar a situação de confirmação e gravar os dados em banco próprio, sem criar fluxo no Lead Portal nem alterar Experimento diretamente.
 - Ajuste técnico: a confirmação de público geral passou a persistir um registro OPRM próprio em `oprm_general_audience_landing_confirmation`.
 - Prevenção de recorrência: o cânone OPRM agora explicita que `com.marketinghub.oprm..` não deve importar services, DTOs, entidades ou repositories de módulos externos para materializar etapas posteriores.
+
+## 2026-06-10 — OPRM Públicos Gerais: correção da URL padrão do backend no frontend
+
+- Corrigida a causa-raiz de ações do fluxo de Públicos Gerais parecerem travadas quando o frontend era acessado em `:5173`: a URL padrão do backend no frontend apontava para `:8000`, porta que pode recusar conexão nesse ambiente, enquanto o backend público responde pelo mesmo host na porta 80.
+- Mantido suporte a `VITE_API_URL` para ambientes que precisem sobrescrever a URL do backend.

@@ -70,11 +70,11 @@ describe("OprmEnrichedNicheDetailPage", () => {
       screen.getByRole("link", { name: "Baixar pesquisa Markdown" }),
     ).toHaveAttribute(
       "href",
-      "http://localhost:8000/api/oprm/nichocnae/enriched-niche-materializer/profiles/1/pipeline-markdown",
+      "http://localhost/api/oprm/nichocnae/enriched-niche-materializer/profiles/1/pipeline-markdown",
     );
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
-        "http://localhost:8000/api/oprm/nichocnae/enriched-niche-materializer/profiles/1",
+        "http://localhost/api/oprm/nichocnae/enriched-niche-materializer/profiles/1",
       );
     });
   });

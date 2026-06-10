@@ -13,6 +13,7 @@ import com.marketinghub.creative.CreativeStatus;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.ExperimentCampaignMetric;
+import com.marketinghub.experiment.funnel.ExperimentFunnelAutoStopService;
 import com.marketinghub.experiment.service.ExperimentCampaignMetricService;
 import com.marketinghub.experiment.service.ExperimentService;
 import com.marketinghub.journey.model.JourneyStep;
@@ -69,6 +70,7 @@ public class FacebookAdsCampaignController {
     private final com.marketinghub.repository.jpa.experiment.AdSetRepository experimentAdSetRepository;
     private final ObjectMapper objectMapper;
     private final ExperimentCampaignMetricService campaignMetricService;
+    private final ExperimentFunnelAutoStopService funnelAutoStopService;
     private final com.marketinghub.experiment.service.ExperimentReadinessService experimentReadinessService;
     private final LeadPortalPublicUrlResolver leadPortalPublicUrlResolver;
 
@@ -87,6 +89,7 @@ public class FacebookAdsCampaignController {
                                          com.marketinghub.repository.jpa.experiment.AdSetRepository experimentAdSetRepository,
                                          ObjectMapper objectMapper,
                                          ExperimentCampaignMetricService campaignMetricService,
+                                         ExperimentFunnelAutoStopService funnelAutoStopService,
                                          com.marketinghub.experiment.service.ExperimentReadinessService experimentReadinessService,
                                          LeadPortalPublicUrlResolver leadPortalPublicUrlResolver,
                                          LeadPortalMetricsService leadPortalMetricsService) {
@@ -100,6 +103,7 @@ public class FacebookAdsCampaignController {
         this.experimentAdSetRepository = experimentAdSetRepository;
         this.objectMapper = objectMapper;
         this.campaignMetricService = campaignMetricService;
+        this.funnelAutoStopService = funnelAutoStopService;
         this.experimentReadinessService = experimentReadinessService;
         this.leadPortalPublicUrlResolver = leadPortalPublicUrlResolver;
         this.leadPortalMetricsService = leadPortalMetricsService;
@@ -248,6 +252,7 @@ public class FacebookAdsCampaignController {
 
     @PostMapping("/{campaignId}/metrics")
     @Transactional
+    // Atualiza métricas da campanha e avalia parada automática por baixa distribuição.
     public CampaignMetricSummary updateMetrics(
             @PathVariable String campaignId,
             @RequestBody CampaignMetricsUpdateRequest request) {
@@ -262,6 +267,10 @@ public class FacebookAdsCampaignController {
         FacebookAdsCampaign campaign = metric.getCampaign();
         campaign.setMetricsLastSyncedAt(Instant.now());
         campaign.setMetricsLastError(null);
+        funnelAutoStopService.stopIfLowImpressionsAfterRunningTime(
+                campaign.getExperiment(),
+                metric.getImpressions(),
+                campaign.getCreatedAt());
         return toMetricSummary(metric);
     }
 

@@ -33,7 +33,7 @@ public class BackendSignalExtractorService {
   private static final String SIGNAL_STATUS_FAILED = "FAILED";
   private static final String DEFAULT_CREATED_BY = "oprmSignalExtractor";
   private static final int MAX_PENDING = 30;
-  private static final int MAX_SIGNALS_PER_SNAPSHOT = 12;
+  private static final int MAX_SIGNALS_PER_SNAPSHOT = 16;
   private static final int MAX_SIGNAL_TEXT_LENGTH = 500;
   private static final int MAX_EVIDENCE_LENGTH = 1000;
 

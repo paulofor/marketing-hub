@@ -23,12 +23,20 @@ public class RoutineSynthesizerEngine {
                 .filter(Objects::nonNull)
                 .sorted(Comparator.comparing(this::confidenceOrZero).reversed())
                 .toList();
-        String routine = buildBlock("Rotina observada", pending, filterByType(signals, "ROUTINE_TASK", "ROUTINE", "TASK", "COMMERCIAL_TASK"));
-        String pains = buildBlock("Dificuldades concretas", pending, filterByType(signals, "OPERATIONAL_FRICTION", "PAIN_POINT", "PAIN_SIGNAL"));
-        String questions = buildBlock("Perguntas do profissional e do cliente final", pending,
-                filterByType(signals, "NICHE_OWNER_QUESTION", "FINAL_CUSTOMER_QUESTION", "QUESTION_SIGNAL", "CUSTOMER_QUESTION"));
-        String context = buildBlock("Contexto operacional e linguagem do nicho", pending,
-                filterByType(signals, "CONTEXT_MARKER", "LANGUAGE_MARKER", "SEASONALITY_MARKER", "COMMERCIAL_OBJECT", "PROOF_SIGNAL"));
+        String routine = buildBlock("Rotina", pending,
+                filterByType(signals, "ROUTINE_TASK", "ROUTINE", "TASK", "AUTONOMOUS_WORK_MODE"));
+        String customerBehavior = buildBlock("Comportamento de clientes", pending,
+                filterByType(signals, "CUSTOMER_ACQUISITION_BEHAVIOR", "CUSTOMER_QUESTION", "NICHE_OWNER_QUESTION", "FINAL_CUSTOMER_QUESTION", "QUESTION_SIGNAL"));
+        String channels = buildBlock("Canais", pending,
+                filterByType(signals, "CHANNEL_USAGE", "COMMERCIAL_TASK", "COMMERCIAL_OBJECT"));
+        String operationalPains = buildBlock("Dores práticas", pending,
+                filterByType(signals, "OPERATIONAL_PAIN", "OPERATIONAL_FRICTION", "PAIN_POINT", "PAIN_SIGNAL", "TIME_PRESSURE", "INCOME_INSTABILITY", "PRICE_INSECURITY", "CLIENT_NO_SHOW_OR_CANCELLATION"));
+        String emotionalPains = buildBlock("Dores emocionais", pending,
+                filterByType(signals, "EMOTIONAL_PAIN", "TRUST_REPUTATION_CONCERN", "STATUS_DESIRE"));
+        String dreams = buildBlock("Sonhos", pending, filterByType(signals, "DREAM_SIGNAL", "RESULT_DESIRED"));
+        String fears = buildBlock("Medos", pending, filterByType(signals, "FEAR_SIGNAL"));
+        String language = buildBlock("Linguagem", pending,
+                filterByType(signals, "LANGUAGE_MARKER", "CONTEXT_MARKER", "SEASONALITY_MARKER", "TRUST_REPUTATION_CONCERN"));
         String evidence = buildEvidenceBlock(signals);
         String domains = signals.stream()
                 .map(SignalForRoutineSynthesis::sourceDomain)
@@ -37,15 +45,22 @@ public class RoutineSynthesizerEngine {
                 .limit(12)
                 .collect(Collectors.joining(", "));
         int confidence = clamp((int) Math.round(signals.stream().mapToInt(this::confidenceOrZero).average().orElse(0)));
-        int routineEvidenceScore = calculateTypeScore(signals, "ROUTINE_TASK", "ROUTINE", "TASK", "COMMERCIAL_TASK");
-        int difficultyEvidenceScore = calculateTypeScore(signals, "OPERATIONAL_FRICTION", "PAIN_POINT", "PAIN_SIGNAL");
+        int routineEvidenceScore = calculateTypeScore(signals, "ROUTINE_TASK", "ROUTINE", "TASK", "AUTONOMOUS_WORK_MODE", "CUSTOMER_ACQUISITION_BEHAVIOR", "CHANNEL_USAGE");
+        int difficultyEvidenceScore = calculateTypeScore(signals, "OPERATIONAL_PAIN", "OPERATIONAL_FRICTION", "PAIN_POINT", "PAIN_SIGNAL", "EMOTIONAL_PAIN", "FEAR_SIGNAL", "TIME_PRESSURE", "INCOME_INSTABILITY", "PRICE_INSECURITY", "CLIENT_NO_SHOW_OR_CANCELLATION");
         int sourceDiversityScore = clamp(distinctDomainCount(domains) * 12);
         int solutionLanguageRiskScore = calculateSolutionLanguageRiskScore(signals);
         return new RoutineCardDraft(
                 routine,
-                pains,
-                questions,
-                context,
+                customerBehavior,
+                channels,
+                operationalPains,
+                emotionalPains,
+                dreams,
+                fears,
+                language,
+                operationalPains,
+                customerBehavior + "\n" + channels,
+                emotionalPains + "\n" + dreams + "\n" + fears + "\n" + language,
                 evidence,
                 domains.isBlank() ? "fontes não informadas" : domains,
                 confidence,

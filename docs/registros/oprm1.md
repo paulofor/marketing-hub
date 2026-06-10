@@ -350,3 +350,13 @@
 - 2026-06-10 00:00:00 (UTC): executada a etapa 6 do plano de públicos gerais sem sobreposição CNAE: o backend passou a criar hipótese específica a partir de ângulo de dor aprovado, exigindo subnicho já convertido em `MarketNiche`, usando o modelo “Acreditamos que...” com dor, isca/promessa segura e mecanismo percebido, sem criar experimento, campanha ou venda direta automaticamente.
 - 2026-06-10 00:00:00 (UTC): executada a etapa 7 do plano de públicos gerais sem sobreposição CNAE: o backend passou a criar experimento planejado de lead/isca a partir de ângulo aprovado, exigindo hipótese, público/subnicho, dor principal, isca, promessa segura, pergunta qualificadora, métrica principal, stop-loss de CPL, duração curta e orçamento pequeno, sem publicar campanha ou iniciar venda direta automaticamente.
 - 2026-06-10 14:18:00 (UTC): executada a etapa 12 do plano de redirecionamento OPRM NichoCNAE para MEI/autônomo: reforçados testes de prevenção de recorrência no backend e no coletor para objetivos de query, bloqueio de solução, persistência completa do perfil comportamental, gate MEI/autônomo coerente, schema estrito da segmentação, fontes antigas e desvio corporativo; o Swagger do perfil aprovado foi documentado explicitamente para deixar claro que o contrato final não expõe produto, oferta ou campanha.
+
+## 2026-06-10 — OPRM Públicos Gerais: targeting inicial conservador
+
+- Executada a etapa 8 do plano de públicos gerais sem sobreposição CNAE: criado preparo de targeting inicial próprio para Público Geral a partir de ângulo aprovado, combinando cargos/termos, interesses, comportamentos, frase de triagem do criativo e confirmação na landing sem consultar nem alterar tabelas CNAE.
+- Mantido o modo conservador do publicador atual: o backend só marca o pacote como publicável quando existe `JOB_TITLE` aprovado e resolvido com identificador da Meta; interesses e comportamentos entram apenas como enriquecimento e o endpoint retorna bloqueios explícitos para impedir ad set amplo puro.
+
+## 2026-06-10 — OPRM Públicos Gerais: landing/formulário de confirmação
+
+- Executada a etapa 9 do plano de públicos gerais sem sobreposição CNAE: criado endpoint OPRM para materializar fluxo de Lead Portal como landing/formulário de confirmação a partir de ângulo aprovado, exigindo subnicho convertido, experimento, pergunta qualificadora e opções de triagem.
+- A landing/formulário passa a explicitar para quem é, qual dor resolve, o que a pessoa recebe, por que faz sentido, próximo passo e duas perguntas obrigatórias: pertencimento ao público e confirmação textual da dor, sem publicar campanha ou oferta final automaticamente.

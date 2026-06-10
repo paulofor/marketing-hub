@@ -3,6 +3,7 @@ package com.marketinghub.mois.bibliotecapaginavenda.worker.v1.web;
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.dto.MoisSalesLibraryDtos;
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service.MoisSalesLibraryService;
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service.MoisSalesLibrarySnapshotService;
+import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service.MoisSalesPageMarketWarmupService;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -31,7 +32,7 @@ public class MoisSalesLibraryController {
 
     private final MoisSalesLibraryService service;
     private final MoisSalesLibrarySnapshotService snapshotService;
-
+    private final MoisSalesPageMarketWarmupService marketWarmupService;
 
     /**
      * Reserva a próxima URL de referência coletada para captura de HTML bruto pelo worker MOIS.
@@ -158,6 +159,113 @@ public class MoisSalesLibraryController {
     }
 
     /**
+     * Solicita a pesquisa de aquecimento de mercado da Etapa 3 para uma página de vendas.
+     */
+    @PostMapping("/pages/{pageId}/market-warmup:request")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public MoisSalesLibraryDtos.MarketWarmupRequestResponse requestMarketWarmup(@PathVariable long pageId) {
+        try {
+            return marketWarmupService.requestResearch(pageId);
+        } catch (IllegalArgumentException ex) {
+            log.warn("Biblioteca de páginas de vendas não encontrou página para aquecimento. operacao=requestMarketWarmup, pageId={}, erro={}", pageId, ex.getMessage(), ex);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage(), ex);
+        }
+    }
+
+    /**
+     * Consulta o resumo mais recente da pesquisa de aquecimento de mercado de uma página.
+     */
+    @GetMapping("/pages/{pageId}/market-warmup")
+    public MoisSalesLibraryDtos.MarketWarmupSummaryResponse getMarketWarmup(@PathVariable long pageId) {
+        try {
+            return marketWarmupService.getSummary(pageId);
+        } catch (IllegalArgumentException ex) {
+            log.warn("Biblioteca de páginas de vendas não encontrou resumo de aquecimento. operacao=getMarketWarmup, pageId={}, erro={}", pageId, ex.getMessage(), ex);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage(), ex);
+        }
+    }
+
+    /**
+     * Lista as fontes públicas usadas para justificar a pesquisa de aquecimento da página.
+     */
+    @GetMapping("/pages/{pageId}/market-warmup/sources")
+    public MoisSalesLibraryDtos.MarketWarmupSourceListResponse listMarketWarmupSources(@PathVariable long pageId) {
+        try {
+            return marketWarmupService.listSources(pageId);
+        } catch (IllegalArgumentException ex) {
+            log.warn("Biblioteca de páginas de vendas não encontrou fontes de aquecimento. operacao=listMarketWarmupSources, pageId={}, erro={}", pageId, ex.getMessage(), ex);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage(), ex);
+        }
+    }
+
+    /**
+     * Lista os sinais comerciais que explicam a pontuação de aquecimento da página.
+     */
+    @GetMapping("/pages/{pageId}/market-warmup/signals")
+    public MoisSalesLibraryDtos.MarketWarmupSignalListResponse listMarketWarmupSignals(@PathVariable long pageId) {
+        try {
+            return marketWarmupService.listSignals(pageId);
+        } catch (IllegalArgumentException ex) {
+            log.warn("Biblioteca de páginas de vendas não encontrou sinais de aquecimento. operacao=listMarketWarmupSignals, pageId={}, erro={}", pageId, ex.getMessage(), ex);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage(), ex);
+        }
+    }
+
+    /**
+     * Reserva internamente o próximo job pendente de aquecimento para o worker MOIS.
+     */
+    @PostMapping("/market-warmup/jobs:claim")
+    public MoisSalesLibraryDtos.MarketWarmupClaimResponse claimMarketWarmupJob(
+            @Valid @RequestBody MoisSalesLibraryDtos.MarketWarmupClaimRequest request
+    ) {
+        return marketWarmupService.claimJob(request);
+    }
+
+    /**
+     * Recebe do worker o dossiê final da pesquisa de aquecimento de mercado.
+     */
+    @PostMapping("/market-warmup/jobs/{jobId}:complete")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void completeMarketWarmupJob(
+            @PathVariable long jobId,
+            @Valid @RequestBody MoisSalesLibraryDtos.MarketWarmupCompleteRequest request
+    ) {
+        try {
+            marketWarmupService.completeJob(jobId, request);
+        } catch (IllegalArgumentException ex) {
+            HttpStatus status = ex.getMessage() != null && ex.getMessage().contains("não encontrado")
+                    ? HttpStatus.NOT_FOUND : HttpStatus.BAD_REQUEST;
+            log.warn("Biblioteca de páginas de vendas rejeitou conclusão de aquecimento. operacao=completeMarketWarmupJob, jobId={}, statusHttp={}, erro={}",
+                    jobId, status.value(), ex.getMessage(), ex);
+            throw new ResponseStatusException(status, ex.getMessage(), ex);
+        } catch (IllegalStateException ex) {
+            log.warn("Biblioteca de páginas de vendas encontrou conflito na conclusão de aquecimento. operacao=completeMarketWarmupJob, jobId={}, erro={}",
+                    jobId, ex.getMessage(), ex);
+            throw new ResponseStatusException(HttpStatus.CONFLICT, ex.getMessage(), ex);
+        }
+    }
+
+    /**
+     * Registra a falha operacional reportada pelo worker de aquecimento de mercado.
+     */
+    @PostMapping("/market-warmup/jobs/{jobId}:fail")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void failMarketWarmupJob(
+            @PathVariable long jobId,
+            @Valid @RequestBody MoisSalesLibraryDtos.MarketWarmupFailRequest request
+    ) {
+        try {
+            marketWarmupService.failJob(jobId, request);
+        } catch (IllegalStateException ex) {
+            HttpStatus status = ex.getMessage() != null && ex.getMessage().contains("não encontrado")
+                    ? HttpStatus.NOT_FOUND : HttpStatus.CONFLICT;
+            log.warn("Biblioteca de páginas de vendas encontrou falha de estado ao registrar erro de aquecimento. operacao=failMarketWarmupJob, jobId={}, statusHttp={}, erro={}",
+                    jobId, status.value(), ex.getMessage(), ex);
+            throw new ResponseStatusException(status, ex.getMessage(), ex);
+        }
+    }
+
+    /**
      * Solicita reanálise de uma página existente.
      */
     @PostMapping("/pages/{pageId}:reanalyze")
@@ -170,7 +278,6 @@ public class MoisSalesLibraryController {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage(), ex);
         }
     }
-
 
     /**
      * Permite atualizar manualmente o status da análise para pendente ou anulado.
@@ -188,7 +295,6 @@ public class MoisSalesLibraryController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage(), ex);
         }
     }
-
 
     /**
      * Reserva a próxima URL normalizada da biblioteca para obtenção de HTML bruto pelo worker.

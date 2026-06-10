@@ -4,6 +4,7 @@ import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.config.WorkerProper
 import java.io.IOException;
 import java.net.URI;
 import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,19 +13,22 @@ import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.jsoup.parser.Parser;
 import org.springframework.stereotype.Component;
 
 /**
- * Coleta resultados na página pública HTML do DuckDuckGo ou endpoint compatível configurado.
+ * Coleta resultados públicos rastreáveis para aquecimento usando buscador primário e fallback RSS.
  */
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class DuckDuckGoPublicWebSearchClient implements PublicWebSearchClient {
+    private static final String BING_RSS_ENDPOINT = "https://www.bing.com/search";
+
     private final WorkerProperties properties;
 
     /**
-     * Busca resultados públicos e registra o HTML bruto recebido antes de qualquer normalização.
+     * Busca resultados públicos, registra o payload bruto e usa fallback rastreável quando o DuckDuckGo bloqueia robôs.
      */
     @Override
     public List<PublicSearchResult> search(String query, int limit) throws IOException {
@@ -37,6 +41,39 @@ public class DuckDuckGoPublicWebSearchClient implements PublicWebSearchClient {
         String rawPayload = document.outerHtml();
         log.info("MOIS market-warmup raw public search payload received. query={}, endpoint={}, payload={}",
                 query, properties.marketWarmupSearchEndpoint(), rawPayload);
+        List<PublicSearchResult> results = parseDuckDuckGoResults(document, limit);
+        if (results.isEmpty()) {
+            log.warn("MOIS market-warmup primary public search returned no traceable results. query={}, endpoint={}, blockedByChallenge={}",
+                    query, properties.marketWarmupSearchEndpoint(), isDuckDuckGoChallenge(rawPayload));
+            results = searchBingRss(query, limit);
+        }
+        log.info("MOIS market-warmup public search normalized. query={}, resultCount={}", query, results.size());
+        return results;
+    }
+
+    /**
+     * Coleta resultados RSS do Bing como fallback público quando o HTML primário não oferece fontes rastreáveis.
+     */
+    private List<PublicSearchResult> searchBingRss(String query, int limit) throws IOException {
+        String endpoint = BING_RSS_ENDPOINT + "?format=rss&q=" + URLEncoder.encode(query, StandardCharsets.UTF_8);
+        String rawPayload = Jsoup.connect(endpoint)
+                .userAgent(properties.marketWarmupSearchUserAgent())
+                .timeout(properties.requestTimeoutMs())
+                .ignoreContentType(true)
+                .execute()
+                .body();
+        log.info("MOIS market-warmup raw public search payload received. query={}, endpoint={}, payload={}",
+                query, BING_RSS_ENDPOINT, rawPayload);
+        List<PublicSearchResult> results = parseBingRssResults(rawPayload, limit);
+        log.info("MOIS market-warmup fallback public search normalized. query={}, endpoint={}, resultCount={}",
+                query, BING_RSS_ENDPOINT, results.size());
+        return results;
+    }
+
+    /**
+     * Normaliza o HTML do DuckDuckGo em resultados rastreáveis para o dossiê.
+     */
+    List<PublicSearchResult> parseDuckDuckGoResults(Document document, int limit) {
         List<PublicSearchResult> results = new ArrayList<>();
         for (Element result : document.select(".result")) {
             if (results.size() >= limit) {
@@ -53,8 +90,35 @@ public class DuckDuckGoPublicWebSearchClient implements PublicWebSearchClient {
                 results.add(new PublicSearchResult(title, url, snippet, result.outerHtml()));
             }
         }
-        log.info("MOIS market-warmup public search normalized. query={}, resultCount={}", query, results.size());
         return results;
+    }
+
+    /**
+     * Normaliza o RSS público do fallback em resultados rastreáveis para o dossiê.
+     */
+    List<PublicSearchResult> parseBingRssResults(String rawPayload, int limit) {
+        Document document = Jsoup.parse(rawPayload, "", Parser.xmlParser());
+        List<PublicSearchResult> results = new ArrayList<>();
+        for (Element item : document.select("item")) {
+            if (results.size() >= limit) {
+                break;
+            }
+            String title = item.selectFirst("title") == null ? "" : item.selectFirst("title").text();
+            String url = item.selectFirst("link") == null ? "" : item.selectFirst("link").text();
+            String snippet = item.selectFirst("description") == null ? "" : item.selectFirst("description").text();
+            if (!url.isBlank()) {
+                results.add(new PublicSearchResult(title, url, snippet, item.outerHtml()));
+            }
+        }
+        return results;
+    }
+
+    /**
+     * Detecta bloqueio antirobô do DuckDuckGo para explicar fallback operacional nos logs.
+     */
+    private boolean isDuckDuckGoChallenge(String rawPayload) {
+        String normalized = rawPayload == null ? "" : rawPayload.toLowerCase();
+        return normalized.contains("anomaly-modal") || normalized.contains("unfortunately, bots use duckduckgo too");
     }
 
     /**

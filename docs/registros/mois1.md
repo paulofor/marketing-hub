@@ -1390,3 +1390,13 @@ Arquivos principais:
 
 Arquivos principais:
 - `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibraryService.java`
+
+## 2026-06-10 — Correção da pesquisa pública do Aquecimento MOIS
+
+- Corrigida a causa-raiz do erro `PUBLIC_SEARCH_ERROR` no dossiê de Aquecimento do Mercado da Biblioteca de Páginas de Vendas.
+- A coleta primária no DuckDuckGo pode retornar uma página de desafio antirobô sem resultados rastreáveis; o worker agora registra essa condição e usa fallback RSS público para não transformar bloqueio operacional em falha comercial do mercado.
+- Adicionados testes de regressão para garantir que página de bloqueio não vire fonte falsa e que o fallback entregue fontes rastreáveis ao dossiê.
+
+Arquivos principais:
+- `mois-sales-library-worker/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/marketwarmup/DuckDuckGoPublicWebSearchClient.java`
+- `mois-sales-library-worker/src/test/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/marketwarmup/DuckDuckGoPublicWebSearchClientTest.java`

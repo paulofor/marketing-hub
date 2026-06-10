@@ -364,6 +364,39 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/GeneralAudienceSourceEvidence"
+  /api/oprm/general-audiences/subniches/{subnicheId}/quality-readings:
+    get:
+      summary: Lista leituras de qualidade real do público geral além de CTR e CPL.
+      tags: [OPRM Públicos Gerais]
+      parameters:
+        - $ref: "#/components/parameters/SubnicheId"
+      responses:
+        "200":
+          description: Leituras de qualidade do público.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GeneralAudienceQualityReading"
+    post:
+      summary: Registra sinais bons e ruins para medir qualidade do público.
+      tags: [OPRM Públicos Gerais]
+      parameters:
+        - $ref: "#/components/parameters/SubnicheId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateGeneralAudienceQualityReadingRequest"
+      responses:
+        "201":
+          description: Leitura de qualidade registrada.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeneralAudienceQualityReading"
   /api/oprm/general-audiences/subniches/{subnicheId}/quality-gate:
     get:
       summary: Avalia se o subnicho pode avançar sem saída genérica ou promessa arriscada.
@@ -910,6 +943,89 @@ components:
             seedId:
               type: integer
               format: int64
+    CreateGeneralAudienceQualityReadingRequest:
+      type: object
+      properties:
+        painAngleId:
+          type: integer
+          format: int64
+          nullable: true
+        experimentId:
+          type: integer
+          format: int64
+          nullable: true
+        totalLeads:
+          type: integer
+          minimum: 0
+        correctProfessionLeads:
+          type: integer
+          minimum: 0
+        realPainResponses:
+          type: integer
+          minimum: 0
+        materialRequests:
+          type: integer
+          minimum: 0
+        whatsappReplies:
+          type: integer
+          minimum: 0
+        priceOrNextStepQuestions:
+          type: integer
+          minimum: 0
+        outOfProfileLeads:
+          type: integer
+          minimum: 0
+        curiousWithoutProfession:
+          type: integer
+          minimum: 0
+        lowCompletionEvents:
+          type: integer
+          minimum: 0
+        confusingPromiseReports:
+          type: integer
+          minimum: 0
+        leadMagnetNoResponse:
+          type: integer
+          minimum: 0
+        notes:
+          type: string
+          nullable: true
+        capturedAt:
+          type: string
+          format: date-time
+          nullable: true
+    GeneralAudienceQualityReading:
+      allOf:
+        - $ref: "#/components/schemas/CreateGeneralAudienceQualityReadingRequest"
+        - type: object
+          required:
+            [id, subnicheId, totalLeads, qualityScore, approved, blockers, recommendations, capturedAt, createdAt, updatedAt]
+          properties:
+            id:
+              type: integer
+              format: int64
+            subnicheId:
+              type: integer
+              format: int64
+            qualityScore:
+              type: number
+              format: decimal
+            approved:
+              type: boolean
+            blockers:
+              type: array
+              items:
+                type: string
+            recommendations:
+              type: array
+              items:
+                type: string
+            createdAt:
+              type: string
+              format: date-time
+            updatedAt:
+              type: string
+              format: date-time
     GeneralAudienceQualityGate:
       type: object
       required: [subnicheId, approved, blockers, recommendations]

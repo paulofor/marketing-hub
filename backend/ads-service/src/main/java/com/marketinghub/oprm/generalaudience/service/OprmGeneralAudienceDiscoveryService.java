@@ -2,26 +2,30 @@ package com.marketinghub.oprm.generalaudience.service;
 
 import com.marketinghub.oprm.generalaudience.OprmGeneralAudiencePainAngle;
 import com.marketinghub.oprm.generalaudience.OprmGeneralAudiencePainAngleStatus;
+import com.marketinghub.oprm.generalaudience.OprmGeneralAudienceQualityReading;
 import com.marketinghub.oprm.generalaudience.OprmGeneralAudienceSeed;
 import com.marketinghub.oprm.generalaudience.OprmGeneralAudienceSourceEvidence;
 import com.marketinghub.oprm.generalaudience.OprmGeneralAudienceSubniche;
 import com.marketinghub.oprm.generalaudience.OprmGeneralAudienceSubnicheStatus;
 import com.marketinghub.oprm.generalaudience.service.createHypothesis.CreateGeneralAudienceHypothesisRequest;
+import com.marketinghub.oprm.generalaudience.service.createHypothesis.GeneralAudienceHypothesisResponse;
 import com.marketinghub.oprm.generalaudience.service.createLeadExperiment.CreateGeneralAudienceLeadExperimentRequest;
 import com.marketinghub.oprm.generalaudience.service.createLeadExperiment.GeneralAudienceLeadExperimentResponse;
-import com.marketinghub.oprm.generalaudience.service.createHypothesis.GeneralAudienceHypothesisResponse;
+import com.marketinghub.oprm.generalaudience.service.createQualityReading.CreateGeneralAudienceQualityReadingRequest;
+import com.marketinghub.oprm.generalaudience.service.createPainAngle.CreateGeneralAudiencePainAngleRequest;
+import com.marketinghub.oprm.generalaudience.service.createSourceEvidence.CreateGeneralAudienceSourceEvidenceRequest;
 import com.marketinghub.oprm.generalaudience.service.prepareTargeting.GeneralAudienceTargetingElementResponse;
 import com.marketinghub.oprm.generalaudience.service.prepareTargeting.GeneralAudienceTargetingPreparationRequest;
 import com.marketinghub.oprm.generalaudience.service.prepareTargeting.GeneralAudienceTargetingPreparationResponse;
-import com.marketinghub.oprm.generalaudience.service.createPainAngle.CreateGeneralAudiencePainAngleRequest;
-import com.marketinghub.oprm.generalaudience.service.createSourceEvidence.CreateGeneralAudienceSourceEvidenceRequest;
 import com.marketinghub.oprm.generalaudience.service.listPainAngles.GeneralAudiencePainAngleResponse;
+import com.marketinghub.oprm.generalaudience.service.listQualityReadings.GeneralAudienceQualityReadingResponse;
 import com.marketinghub.oprm.generalaudience.service.listSourceEvidences.GeneralAudienceSourceEvidenceResponse;
 import com.marketinghub.oprm.generalaudience.service.qualityGate.GeneralAudienceQualityGateResponse;
 import com.marketinghub.oprm.generalaudience.service.updatePainAngle.UpdateGeneralAudiencePainAngleRequest;
 import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudienceHypothesisMaterializationRepository;
 import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudienceLeadExperimentMaterializationRepository;
 import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudiencePainAngleRepository;
+import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudienceQualityReadingRepository;
 import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudienceSeedRepository;
 import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudienceSourceEvidenceRepository;
 import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudienceSubnicheRepository;
@@ -32,6 +36,8 @@ import com.marketinghub.targeting.TargetingElementType;
 import com.marketinghub.targeting.dto.CreateTargetingElementRequest;
 import com.marketinghub.targeting.service.TargetingElementService;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -53,6 +59,7 @@ public class OprmGeneralAudienceDiscoveryService {
     private final OprmGeneralAudienceSubnicheRepository subnicheRepository;
     private final OprmGeneralAudiencePainAngleRepository painAngleRepository;
     private final OprmGeneralAudienceSourceEvidenceRepository sourceEvidenceRepository;
+    private final OprmGeneralAudienceQualityReadingRepository qualityReadingRepository;
     private static final BigDecimal MAX_GENERAL_AUDIENCE_DAILY_BUDGET = new BigDecimal("100.00");
     private final OprmGeneralAudienceHypothesisMaterializationRepository hypothesisMaterializationRepository;
     private final OprmGeneralAudienceLeadExperimentMaterializationRepository leadExperimentMaterializationRepository;
@@ -64,6 +71,7 @@ public class OprmGeneralAudienceDiscoveryService {
             OprmGeneralAudienceSubnicheRepository subnicheRepository,
             OprmGeneralAudiencePainAngleRepository painAngleRepository,
             OprmGeneralAudienceSourceEvidenceRepository sourceEvidenceRepository,
+            OprmGeneralAudienceQualityReadingRepository qualityReadingRepository,
             OprmGeneralAudienceHypothesisMaterializationRepository hypothesisMaterializationRepository,
             OprmGeneralAudienceLeadExperimentMaterializationRepository leadExperimentMaterializationRepository,
             TargetingElementService targetingElementService) {
@@ -71,6 +79,7 @@ public class OprmGeneralAudienceDiscoveryService {
         this.subnicheRepository = subnicheRepository;
         this.painAngleRepository = painAngleRepository;
         this.sourceEvidenceRepository = sourceEvidenceRepository;
+        this.qualityReadingRepository = qualityReadingRepository;
         this.hypothesisMaterializationRepository = hypothesisMaterializationRepository;
         this.leadExperimentMaterializationRepository = leadExperimentMaterializationRepository;
         this.targetingElementService = targetingElementService;
@@ -185,6 +194,61 @@ public class OprmGeneralAudienceDiscoveryService {
         return toSourceEvidenceResponse(sourceEvidenceRepository.save(evidence));
     }
 
+    /** Lista leituras de qualidade real de leads de um subnicho. */
+    @Transactional(readOnly = true)
+    public List<GeneralAudienceQualityReadingResponse> listQualityReadings(Long subnicheId) {
+        findSubniche(subnicheId);
+        return qualityReadingRepository.findAllBySubnicheIdOrderByCapturedAtDesc(subnicheId).stream()
+                .map(this::toQualityReadingResponse)
+                .toList();
+    }
+
+    /** Registra sinais bons e ruins para medir qualidade real além de CTR e CPL. */
+    @Transactional
+    public GeneralAudienceQualityReadingResponse createQualityReading(
+            Long subnicheId,
+            CreateGeneralAudienceQualityReadingRequest request) {
+        if (request == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Payload de leitura de qualidade é obrigatório");
+        }
+        OprmGeneralAudienceSubniche subniche = findSubniche(subnicheId);
+        OprmGeneralAudiencePainAngle painAngle = null;
+        if (request.painAngleId() != null) {
+            painAngle = findPainAngle(request.painAngleId());
+            if (!subnicheId.equals(painAngle.getSubniche().getId())) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST, "painAngleId não pertence ao subnicho informado");
+            }
+        }
+        OprmGeneralAudienceQualityReading reading = new OprmGeneralAudienceQualityReading();
+        reading.setSubniche(subniche);
+        reading.setPainAngle(painAngle);
+        reading.setExperimentId(request.experimentId());
+        reading.setTotalLeads(nonNegativeOrZero(request.totalLeads(), "totalLeads"));
+        reading.setCorrectProfessionLeads(nonNegativeOrZero(request.correctProfessionLeads(), "correctProfessionLeads"));
+        reading.setRealPainResponses(nonNegativeOrZero(request.realPainResponses(), "realPainResponses"));
+        reading.setMaterialRequests(nonNegativeOrZero(request.materialRequests(), "materialRequests"));
+        reading.setWhatsappReplies(nonNegativeOrZero(request.whatsappReplies(), "whatsappReplies"));
+        reading.setPriceOrNextStepQuestions(
+                nonNegativeOrZero(request.priceOrNextStepQuestions(), "priceOrNextStepQuestions"));
+        reading.setOutOfProfileLeads(nonNegativeOrZero(request.outOfProfileLeads(), "outOfProfileLeads"));
+        reading.setCuriousWithoutProfession(
+                nonNegativeOrZero(request.curiousWithoutProfession(), "curiousWithoutProfession"));
+        reading.setLowCompletionEvents(nonNegativeOrZero(request.lowCompletionEvents(), "lowCompletionEvents"));
+        reading.setConfusingPromiseReports(
+                nonNegativeOrZero(request.confusingPromiseReports(), "confusingPromiseReports"));
+        reading.setLeadMagnetNoResponse(nonNegativeOrZero(request.leadMagnetNoResponse(), "leadMagnetNoResponse"));
+        reading.setNotes(normalizeOptionalText(request.notes()));
+        reading.setCapturedAt(request.capturedAt() == null ? Instant.now() : request.capturedAt());
+        List<String> blockers = qualityReadingBlockers(reading);
+        List<String> recommendations = qualityReadingRecommendations(reading);
+        reading.setQualityScore(calculateQualityScore(reading));
+        reading.setApproved(blockers.isEmpty() && reading.getQualityScore().compareTo(new BigDecimal("60.00")) >= 0);
+        reading.setBlockers(joinLines(blockers));
+        reading.setRecommendations(joinLines(recommendations));
+        return toQualityReadingResponse(qualityReadingRepository.save(reading));
+    }
+
     /** Executa o quality gate de um subnicho para bloquear saída genérica antes de experimento. */
     @Transactional(readOnly = true)
     public GeneralAudienceQualityGateResponse evaluateQualityGate(Long subnicheId) {
@@ -212,6 +276,18 @@ public class OprmGeneralAudienceDiscoveryService {
         if (!StringUtils.hasText(subniche.getDesiredOutcomeSummary())) {
             recommendations.add("Informar resultado desejado antes de criar isca ou promessa.");
         }
+        qualityReadingRepository.findTopBySubnicheIdOrderByCapturedAtDesc(subnicheId).ifPresentOrElse(reading -> {
+            if (!reading.isApproved()) {
+                blockers.add("Leitura de qualidade mais recente não aprovou o público.");
+            }
+            if (reading.getWhatsappReplies() == 0) {
+                recommendations.add("Medir resposta no WhatsApp antes de escalar o público.");
+            }
+            if (reading.getPriceOrNextStepQuestions() == 0) {
+                recommendations.add(
+                        "Validar pergunta de preço ou próximo passo antes de tratar como público comprador.");
+            }
+        }, () -> recommendations.add("Registrar leitura de qualidade real após a primeira captação de leads."));
         return new GeneralAudienceQualityGateResponse(subnicheId, blockers.isEmpty(), blockers, recommendations);
     }
 
@@ -614,6 +690,112 @@ public class OprmGeneralAudienceDiscoveryService {
         return text.substring(0, maxLength).trim();
     }
 
+    /** Calcula bloqueios objetivos da leitura de qualidade de público. */
+    private List<String> qualityReadingBlockers(OprmGeneralAudienceQualityReading reading) {
+        List<String> blockers = new ArrayList<>();
+        if (reading.getTotalLeads() == 0) {
+            blockers.add("Sem leads observados para medir qualidade do público.");
+        }
+        if (reading.getTotalLeads() > 0 && reading.getCorrectProfessionLeads() * 2 < reading.getTotalLeads()) {
+            blockers.add("Menos da metade dos leads informou profissão correta.");
+        }
+        if (reading.getRealPainResponses() == 0) {
+            blockers.add("Nenhuma resposta trouxe dor real do público.");
+        }
+        if (badSignalCount(reading) > goodSignalCount(reading)) {
+            blockers.add("Sinais ruins superam sinais bons na leitura do público.");
+        }
+        if (reading.getOutOfProfileLeads() > reading.getCorrectProfessionLeads()) {
+            blockers.add("Há mais leads fora do perfil do que leads com profissão correta.");
+        }
+        if (reading.getConfusingPromiseReports() > 0) {
+            blockers.add("Existem relatos de promessa confusa que precisam ajustar criativo ou landing.");
+        }
+        return blockers;
+    }
+
+    /** Calcula recomendações para melhorar a qualidade antes de escalar o público. */
+    private List<String> qualityReadingRecommendations(OprmGeneralAudienceQualityReading reading) {
+        List<String> recommendations = new ArrayList<>();
+        if (reading.getMaterialRequests() == 0) {
+            recommendations.add("Revisar isca: ninguém pediu claramente o material.");
+        }
+        if (reading.getWhatsappReplies() == 0) {
+            recommendations.add("Acompanhar ou reforçar convite de WhatsApp antes de escalar.");
+        }
+        if (reading.getPriceOrNextStepQuestions() == 0) {
+            recommendations.add("Validar próximo passo comercial, pois ainda não houve pergunta de preço ou avanço.");
+        }
+        if (reading.getLowCompletionEvents() > 0) {
+            recommendations.add("Simplificar formulário ou pergunta qualificadora para reduzir baixo preenchimento.");
+        }
+        if (reading.getLeadMagnetNoResponse() > 0) {
+            recommendations.add("Revisar entrega e follow-up: há lead que baixa a isca, mas não responde.");
+        }
+        return recommendations;
+    }
+
+    /** Calcula score percentual ponderando sinais bons contra sinais ruins. */
+    private BigDecimal calculateQualityScore(OprmGeneralAudienceQualityReading reading) {
+        int goodSignals = goodSignalCount(reading);
+        int badSignals = badSignalCount(reading);
+        int totalSignals = goodSignals + badSignals;
+        if (totalSignals == 0) {
+            return BigDecimal.ZERO.setScale(2);
+        }
+        return BigDecimal.valueOf(goodSignals)
+                .multiply(new BigDecimal("100.00"))
+                .divide(BigDecimal.valueOf(totalSignals), 2, RoundingMode.HALF_UP);
+    }
+
+    /** Soma sinais bons definidos na etapa dez do plano de públicos gerais. */
+    private int goodSignalCount(OprmGeneralAudienceQualityReading reading) {
+        return reading.getCorrectProfessionLeads()
+                + reading.getRealPainResponses()
+                + reading.getMaterialRequests()
+                + reading.getWhatsappReplies()
+                + reading.getPriceOrNextStepQuestions();
+    }
+
+    /** Soma sinais ruins definidos na etapa dez do plano de públicos gerais. */
+    private int badSignalCount(OprmGeneralAudienceQualityReading reading) {
+        return reading.getOutOfProfileLeads()
+                + reading.getCuriousWithoutProfession()
+                + reading.getLowCompletionEvents()
+                + reading.getConfusingPromiseReports()
+                + reading.getLeadMagnetNoResponse();
+    }
+
+    /** Normaliza número opcional para zero e rejeita valores negativos. */
+    private int nonNegativeOrZero(Integer value, String fieldName) {
+        if (value == null) {
+            return 0;
+        }
+        if (value < 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, fieldName + " não pode ser negativo");
+        }
+        return value;
+    }
+
+    /** Junta mensagens em linhas para persistir sem serializar JSON dentro de texto. */
+    private String joinLines(List<String> lines) {
+        if (lines == null || lines.isEmpty()) {
+            return null;
+        }
+        return String.join("\n", lines);
+    }
+
+    /** Separa mensagens persistidas em linhas simples. */
+    private List<String> splitLines(String value) {
+        if (!StringUtils.hasText(value)) {
+            return List.of();
+        }
+        return value.lines()
+                .map(String::trim)
+                .filter(StringUtils::hasText)
+                .toList();
+    }
+
     /** Valida que o ângulo e o subnicho estão prontos para criar uma hipótese específica. */
     private void validateAngleCanCreateHypothesis(OprmGeneralAudiencePainAngle angle) {
         if (angle.getStatus() != OprmGeneralAudiencePainAngleStatus.APPROVED) {
@@ -735,6 +917,34 @@ public class OprmGeneralAudienceDiscoveryService {
             return null;
         }
         return value.trim();
+    }
+
+    /** Converte entidade de leitura de qualidade para contrato HTTP. */
+    private GeneralAudienceQualityReadingResponse toQualityReadingResponse(OprmGeneralAudienceQualityReading reading) {
+        return new GeneralAudienceQualityReadingResponse(
+                reading.getId(),
+                reading.getSubniche().getId(),
+                reading.getPainAngle() == null ? null : reading.getPainAngle().getId(),
+                reading.getExperimentId(),
+                reading.getTotalLeads(),
+                reading.getCorrectProfessionLeads(),
+                reading.getRealPainResponses(),
+                reading.getMaterialRequests(),
+                reading.getWhatsappReplies(),
+                reading.getPriceOrNextStepQuestions(),
+                reading.getOutOfProfileLeads(),
+                reading.getCuriousWithoutProfession(),
+                reading.getLowCompletionEvents(),
+                reading.getConfusingPromiseReports(),
+                reading.getLeadMagnetNoResponse(),
+                reading.getQualityScore(),
+                reading.isApproved(),
+                splitLines(reading.getBlockers()),
+                splitLines(reading.getRecommendations()),
+                reading.getNotes(),
+                reading.getCapturedAt(),
+                reading.getCreatedAt(),
+                reading.getUpdatedAt());
     }
 
     /** Converte entidade de ângulo para contrato HTTP. */

@@ -505,7 +505,7 @@ public class MoisSalesLibraryService {
                        p.html_bytes, p.score_total, p.offer_summary, p.mechanism_summary, p.promise_summary, p.proof_summary,
                        p.last_error_category, p.last_error_message, p.last_job_execution_id, p.last_captured_at, p.last_analyzed_at, p.updated_at,
                        mws.score_total AS market_warmup_score_total, mws.market_temperature AS market_warmup_temperature,
-                       mws.ecosystem_type AS market_warmup_ecosystem_type, mws.recommendation AS market_warmup_recommendation,
+                       mws.ecosystem_type AS market_warmup_ecosystem_type, mwj.recommendation AS market_warmup_recommendation,
                        mwj.status AS market_warmup_status, COALESCE(mws.updated_at, mwj.updated_at) AS market_warmup_updated_at
                 """ + joins + " ORDER BY " + orderBy + " LIMIT ? OFFSET ?",
                 this::mapSalesPageResponse, workspaceId, normalizedPageSize, offset);
@@ -553,7 +553,7 @@ public class MoisSalesLibraryService {
                     SELECT p.id AS page_id, p.title, p.url_canonical, p.source,
                            COALESCE(p.score_total, 0) AS page_score_total,
                            COALESCE(mws.score_total, 0) AS warmup_score_total,
-                           mws.market_temperature, mws.ecosystem_type, mws.recommendation, mws.saturation_risk,
+                           mws.market_temperature, mws.ecosystem_type, mwj.recommendation, mws.saturation_risk,
                            COALESCE(src.evidence_updated_at, mws.updated_at, mwj.updated_at) AS evidence_updated_at,
                            mws.opportunity_recommendation, mws.next_experiment_suggestion,
                            ROUND(
@@ -561,7 +561,7 @@ public class MoisSalesLibraryService {
                                (COALESCE(mws.score_total, 0) * 0.35) +
                                (GREATEST(0, 100 - LEAST(100, TIMESTAMPDIFF(DAY, COALESCE(src.evidence_updated_at, mws.updated_at, mwj.updated_at), UTC_TIMESTAMP()) * 5)) * 0.20) -
                                (CASE
-                                   WHEN mws.market_temperature = 'SATURATED' OR mws.recommendation = 'SATURATED_REQUIRES_ANGLE'
+                                   WHEN mws.market_temperature = 'SATURATED' OR mwj.recommendation = 'SATURATED_REQUIRES_ANGLE'
                                         OR COALESCE(mws.saturation_risk, '') <> '' THEN 20
                                    ELSE 0
                                 END)
@@ -650,7 +650,7 @@ public class MoisSalesLibraryService {
                        p.html_bytes, p.score_total, p.offer_summary, p.mechanism_summary, p.promise_summary, p.proof_summary,
                        p.last_error_category, p.last_error_message, p.last_job_execution_id, p.last_captured_at, p.last_analyzed_at, p.updated_at,
                        mws.score_total AS market_warmup_score_total, mws.market_temperature AS market_warmup_temperature,
-                       mws.ecosystem_type AS market_warmup_ecosystem_type, mws.recommendation AS market_warmup_recommendation,
+                       mws.ecosystem_type AS market_warmup_ecosystem_type, mwj.recommendation AS market_warmup_recommendation,
                        mwj.status AS market_warmup_status, COALESCE(mws.updated_at, mwj.updated_at) AS market_warmup_updated_at
                 FROM mois_sales_page p
                 LEFT JOIN (

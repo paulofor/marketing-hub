@@ -1381,3 +1381,12 @@ Arquivos principais:
 - frontend/src/api/mois/types.ts
 - frontend/src/api/mois/useMoisSalesLibrary.ts
 - frontend/src/pages/mois/MoisSalesPagesLibraryPage.tsx
+
+## 2026-06-10 — Correção da listagem da Etapa 3 MOIS
+
+- Corrigida a causa-raiz da falha ao carregar a Biblioteca de Páginas de Vendas com filtros de aquecimento e o ranking de oportunidades comerciais.
+- A consulta de leitura usava `mws.recommendation`, mas o schema real persiste a recomendação comercial em `mois_sales_page_market_warmup_job.recommendation`; a tabela de resumo não possui essa coluna.
+- A listagem, o detalhe da página e o ranking passam a ler `mwj.recommendation`, mantendo a tela apta a listar páginas sem dossiê para iniciar a Etapa 3.
+
+Arquivos principais:
+- `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibraryService.java`

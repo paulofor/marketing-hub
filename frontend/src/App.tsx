@@ -112,6 +112,9 @@ import OprmCnaeVolumePage from "./pages/oprm/OprmCnaeVolumePage";
 import OprmPipelinePage from "./pages/oprm/OprmPipelinePage";
 import OprmNicheResearchSeedBuilderDetailPage from "./pages/oprm/OprmNicheResearchSeedBuilderDetailPage";
 import OprmEnrichedNicheDetailPage from "./pages/oprm/OprmEnrichedNicheDetailPage";
+import OprmGeneralAudiencesPage from "./pages/oprm/OprmGeneralAudiencesPage";
+import OprmGeneralAudienceSeedDetailPage from "./pages/oprm/OprmGeneralAudienceSeedDetailPage";
+import OprmGeneralAudienceSubnicheDetailPage from "./pages/oprm/OprmGeneralAudienceSubnicheDetailPage";
 import MoisWorkspacePage from "./pages/mois/MoisWorkspacePage";
 import MoisReferenceIntakePage from "./pages/mois/MoisReferenceIntakePage";
 import MoisExtractionPage from "./pages/mois/MoisExtractionPage";
@@ -320,6 +323,9 @@ export default function App() {
                 element={<OprmOperationsPage />}
               />
               <Route path="/oprm/pipeline" element={<OprmPipelinePage />} />
+              <Route path="/oprm/general-audiences" element={<OprmGeneralAudiencesPage />} />
+              <Route path="/oprm/general-audiences/seeds/:seedId" element={<OprmGeneralAudienceSeedDetailPage />} />
+              <Route path="/oprm/general-audiences/subniches/:subnicheId" element={<OprmGeneralAudienceSubnicheDetailPage />} />
               <Route path="/oprm/enriched-niches/profile/:profileId" element={<OprmEnrichedNicheDetailPage />} />
               <Route path="/oprm/pipeline/niche-research-seed-builder/:researchCycleId" element={<OprmNicheResearchSeedBuilderDetailPage />} />
               <Route

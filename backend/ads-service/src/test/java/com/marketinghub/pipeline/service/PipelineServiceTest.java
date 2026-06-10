@@ -311,7 +311,7 @@ class PipelineServiceTest {
      */
     @Test
     void shouldExposeOfficialStageAliasesAndCanonicalCodes() {
-        assertThat(definitionRegistry.officialPipelines()).hasSize(4);
+        assertThat(definitionRegistry.officialPipelines()).hasSize(5);
         assertThat(definitionRegistry.findByPipelineCode("experiment-pipeline")).hasValueSatisfying(pipeline -> {
             assertThat(pipeline.code()).isEqualTo("experiment-pipeline");
             assertThat(pipeline.stages()).hasSize(10);
@@ -528,6 +528,42 @@ class PipelineServiceTest {
             assertThat(pipeline.pipelineFieldPolicy().codeStructural()).isTrue();
             assertThat(pipeline.stageFieldPolicy().openAiModelOperational()).isTrue();
         });
+    }
+
+
+
+
+    /**
+     * Garante que o pipeline oficial de públicos gerais fica separado do pipeline NichoCNAE.
+     */
+    @Test
+    void shouldExposeOfficialOprmGeneralAudienceDiscoveryPipeline() {
+        assertThat(definitionRegistry.findByPipelineCode("OPRM_GENERAL_AUDIENCE_DISCOVERY"))
+                .hasValueSatisfying(pipeline -> {
+                    assertThat(pipeline.module()).isEqualTo("OPRM");
+                    assertThat(pipeline.name()).isEqualTo("Pipeline de Descoberta de Públicos Gerais");
+                    assertThat(pipeline.stages()).extracting(stage -> stage.operationalCode())
+                            .containsExactly(
+                                    "general-audience-seed-review",
+                                    "general-audience-subniche-discovery",
+                                    "general-audience-pain-mapping",
+                                    "general-audience-angle-builder",
+                                    "general-audience-quality-gate",
+                                    "general-audience-experiment-brief");
+                    assertThat(pipeline.stages())
+                            .allSatisfy(stage -> {
+                                assertThat(stage.rootPackage()).startsWith("com.marketinghub.oprm.generalaudience");
+                                assertThat(definitionRegistry.findStage(pipeline, stage.canonicalCode())).contains(stage);
+                                assertThat(definitionRegistry.findStage(pipeline, stage.operationalCode())).contains(stage);
+                            });
+                    assertThat(pipeline.stages())
+                            .filteredOn(stage -> stage.requiresOpenAiModel())
+                            .extracting(stage -> stage.operationalCode())
+                            .containsExactly(
+                                    "general-audience-subniche-discovery",
+                                    "general-audience-pain-mapping",
+                                    "general-audience-angle-builder");
+                });
     }
 
 

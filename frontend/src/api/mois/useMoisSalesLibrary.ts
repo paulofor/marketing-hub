@@ -2,6 +2,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import type {
   MoisCollectedReferenceUrlSummary,
+  MoisMarketWarmupRequestResponse,
+  MoisMarketWarmupSignalListResponse,
+  MoisMarketWarmupSourceListResponse,
+  MoisMarketWarmupSummary,
   MoisSalesLibraryEntryPageResponse,
   MoisSalesLibraryJobPageResponse,
   MoisSalesLibraryPage,
@@ -14,6 +18,10 @@ import type {
   MoisSalesLibrarySnapshotCaptureResponse,
   MoisSalesLibraryStatusUpdateResponse,
 } from "./types";
+
+function isHttpNotFound(error: unknown) {
+  return axios.isAxiosError(error) && error.response?.status === 404;
+}
 
 export function useMoisSalesLibraryEntries(
   workspaceId: string,
@@ -96,7 +104,12 @@ export function useMoisSalesLibraryPageSummary(workspaceId: string) {
 
 export function useMoisCollectedReferenceUrlSummary(workspaceId: string) {
   return useQuery({
-    queryKey: ["mois", "sales-library", "collected-reference-url-summary", workspaceId],
+    queryKey: [
+      "mois",
+      "sales-library",
+      "collected-reference-url-summary",
+      workspaceId,
+    ],
     queryFn: async () => {
       const { data } = await axios.get<MoisCollectedReferenceUrlSummary>(
         "/api/mois/sales-library/collected-references/url-summary",
@@ -260,6 +273,87 @@ export function useMoisSalesLibraryPageExecutions(pageId?: number) {
         `/api/mois/sales-library/pages/${pageId}/executions`,
       );
       return data;
+    },
+  });
+}
+
+export function useMoisSalesLibraryMarketWarmup(pageId?: number) {
+  return useQuery({
+    queryKey: ["mois", "sales-library", "market-warmup", pageId],
+    enabled: Boolean(pageId),
+    queryFn: async () => {
+      try {
+        const { data } = await axios.get<MoisMarketWarmupSummary>(
+          `/api/mois/sales-library/pages/${pageId}/market-warmup`,
+        );
+        return data;
+      } catch (error) {
+        if (isHttpNotFound(error)) {
+          return null;
+        }
+        throw error;
+      }
+    },
+  });
+}
+
+export function useMoisSalesLibraryMarketWarmupSources(
+  pageId?: number,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: ["mois", "sales-library", "market-warmup", pageId, "sources"],
+    enabled: Boolean(pageId) && enabled,
+    queryFn: async () => {
+      const { data } = await axios.get<MoisMarketWarmupSourceListResponse>(
+        `/api/mois/sales-library/pages/${pageId}/market-warmup/sources`,
+      );
+      return data;
+    },
+  });
+}
+
+export function useMoisSalesLibraryMarketWarmupSignals(
+  pageId?: number,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: ["mois", "sales-library", "market-warmup", pageId, "signals"],
+    enabled: Boolean(pageId) && enabled,
+    queryFn: async () => {
+      const { data } = await axios.get<MoisMarketWarmupSignalListResponse>(
+        `/api/mois/sales-library/pages/${pageId}/market-warmup/signals`,
+      );
+      return data;
+    },
+  });
+}
+
+export function useRequestMoisSalesLibraryMarketWarmup(workspaceId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (pageId: number) => {
+      const { data } = await axios.post<MoisMarketWarmupRequestResponse>(
+        `/api/mois/sales-library/pages/${pageId}/market-warmup:request`,
+      );
+      return data;
+    },
+    onSuccess: (_, pageId) => {
+      void queryClient.invalidateQueries({
+        queryKey: ["mois", "sales-library", "market-warmup", pageId],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ["mois", "sales-library", "market-warmup", pageId, "sources"],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ["mois", "sales-library", "market-warmup", pageId, "signals"],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ["mois", "sales-library", "pages", workspaceId],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ["mois", "sales-library", "pages-summary", workspaceId],
+      });
     },
   });
 }

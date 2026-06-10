@@ -94,7 +94,15 @@ export default function MoisSalesPagesPipelinePage() {
   const analysisRunning = summary?.analysisRunning ?? 0;
   const analysisFailed = summary?.analysisFailed ?? 0;
   const pendingPages = summary?.pending ?? 0;
-  const marketWarmupEligiblePages = analyzedPages;
+  const marketWarmupEligiblePages = summary?.marketWarmupEligible ?? 0;
+  const marketWarmupPending = summary?.marketWarmupPending ?? 0;
+  const marketWarmupRunning = summary?.marketWarmupRunning ?? 0;
+  const marketWarmupCompleted = summary?.marketWarmupCompleted ?? 0;
+  const marketWarmupFailed = summary?.marketWarmupFailed ?? 0;
+  const marketWarmupHot = summary?.marketWarmupHot ?? 0;
+  const marketWarmupPromising = summary?.marketWarmupPromising ?? 0;
+  const marketWarmupCold = summary?.marketWarmupCold ?? 0;
+  const marketWarmupSaturated = summary?.marketWarmupSaturated ?? 0;
 
   return (
     <div className="d-flex flex-column gap-4">
@@ -501,8 +509,8 @@ export default function MoisSalesPagesPipelinePage() {
               <div>
                 <h3 className="h6 mb-1">Resumo da etapa 3</h3>
                 <p className="text-secondary small mb-0">
-                  Indica o volume já pronto para pesquisa de aquecimento assim
-                  que o worker dedicado for ativado.
+                  Mostra cobertura real da Etapa 3 para priorizar mercados com
+                  dossiê concluído, fila visível e temperatura comercial.
                 </p>
               </div>
               {summaryQuery.isLoading ? (
@@ -523,23 +531,34 @@ export default function MoisSalesPagesPipelinePage() {
               </div>
               <div className="col-sm-6 col-lg-4">
                 <div className="bg-light rounded-3 p-3 h-100">
-                  <p className="text-secondary mb-1">Contrato oficial</p>
-                  <h3 className="h6 mb-0">MARKET_WARMUP_RESEARCH</h3>
+                  <p className="text-secondary mb-1">Dossiês concluídos</p>
+                  <h3 className="mb-0">
+                    {summaryQuery.isLoading ? "..." : marketWarmupCompleted}
+                  </h3>
                   <p className="text-secondary small mb-0 mt-2">
-                    Etapa canônica na posição 3 do pipeline MOIS.
+                    Pesquisa pronta para decisão comercial e revisão humana.
                   </p>
                 </div>
               </div>
               <div className="col-sm-6 col-lg-4">
                 <div className="bg-light rounded-3 p-3 h-100">
-                  <p className="text-secondary mb-1">Decisão apoiada</p>
-                  <h3 className="h6 mb-0">Priorizar ou diferenciar</h3>
+                  <p className="text-secondary mb-1">Quentes/promissores</p>
+                  <h3 className="mb-0">
+                    {summaryQuery.isLoading
+                      ? "..."
+                      : marketWarmupHot + marketWarmupPromising}
+                  </h3>
                   <p className="text-secondary small mb-0 mt-2">
-                    Foco em escolher mercados com sinais reais de compra.
+                    Mercados com maior prioridade inicial para experimentos.
                   </p>
                 </div>
               </div>
             </div>
+            <p className="text-secondary small mb-0 mt-3">
+              Fila real: {marketWarmupPending} pendentes · {marketWarmupRunning}{" "}
+              em pesquisa · {marketWarmupFailed} falhas · {marketWarmupCold}{" "}
+              frios · {marketWarmupSaturated} saturados.
+            </p>
           </div>
 
           <div className="d-flex flex-wrap align-items-start justify-content-between gap-3">
@@ -555,7 +574,7 @@ export default function MoisSalesPagesPipelinePage() {
               className="btn btn-outline-primary align-self-start"
               to="/mois/sales-pages-library"
             >
-              Ver páginas elegíveis
+              Priorizar na biblioteca
             </Link>
           </div>
         </div>

@@ -111,7 +111,7 @@ class MoisSalesLibraryServiceTest {
     @Test
     void shouldSummarizeCapturedPagesByUsefulHtmlBytes() {
         given(jdbcTemplate.queryForObject(
-                contains("SUM(COALESCE(html_bytes, 0) > 0) AS captured"),
+                contains("SUM(COALESCE(p.html_bytes, 0) > 0) AS captured"),
                 isA(RowMapper.class),
                 eq("workspace-001")))
                 .willReturn(new MoisSalesLibraryDtos.SalesLibraryPageSummaryResponse(
@@ -128,6 +128,16 @@ class MoisSalesLibraryServiceTest {
                         0L,
                         402L,
                         19L,
+                        106L,
+                        8L,
+                        3L,
+                        70L,
+                        2L,
+                        18L,
+                        28L,
+                        12L,
+                        5L,
+                        7L,
                         Instant.parse("2026-06-07T05:38:13Z")
                 ));
 
@@ -135,6 +145,9 @@ class MoisSalesLibraryServiceTest {
 
         org.assertj.core.api.Assertions.assertThat(response.captured()).isEqualTo(327L);
         org.assertj.core.api.Assertions.assertThat(response.analysisPending()).isEqualTo(190L);
+        org.assertj.core.api.Assertions.assertThat(response.marketWarmupEligible()).isEqualTo(106L);
+        org.assertj.core.api.Assertions.assertThat(response.marketWarmupCompleted()).isEqualTo(70L);
+        org.assertj.core.api.Assertions.assertThat(response.marketWarmupPromising()).isEqualTo(28L);
     }
 
     /**
@@ -156,7 +169,8 @@ class MoisSalesLibraryServiceTest {
         ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
         verify(jdbcTemplate).query(sqlCaptor.capture(), isA(RowMapper.class), eq("workspace-001"), eq(20), eq(0));
         org.assertj.core.api.Assertions.assertThat(sqlCaptor.getValue())
-                .contains("ORDER BY last_analyzed_at DESC, updated_at DESC, id DESC LIMIT ? OFFSET ?");
+                .contains("LEFT JOIN mois_sales_page_market_warmup_summary mws")
+                .contains("ORDER BY p.last_analyzed_at DESC, p.updated_at DESC, p.id DESC LIMIT ? OFFSET ?");
     }
 
     /**
@@ -386,9 +400,9 @@ class MoisSalesLibraryServiceTest {
                 .thenReturn(upsertResults.length == 0 ? 1 : upsertResults[0], java.util.Arrays.stream(upsertResults).skip(1).boxed().toArray(Integer[]::new));
         lenient().when(jdbcTemplate.query(contains("WHERE workspace_id = ? AND url_canonical = ?"), isA(RowMapper.class), any(), any()))
                 .thenReturn(List.of(99L));
-        lenient().when(jdbcTemplate.query(contains("SELECT id, workspace_id, source"), isA(RowMapper.class), any()))
+        lenient().when(jdbcTemplate.query(contains("SELECT p.id, p.workspace_id, p.source"), isA(RowMapper.class), any()))
                 .thenReturn(List.of(new MoisSalesLibraryDtos.SalesLibraryPageResponse(99L, "10", "HOTMART", "https://example.com/pagina", "Title",
-                        "ANALYSIS", "PENDING", null, "PENDING", null, null, null, 0L, BigDecimal.ZERO, null, null, null, null, null, null, null, null, null, Instant.now())));
+                        "ANALYSIS", "PENDING", null, "PENDING", null, null, null, 0L, BigDecimal.ZERO, null, null, null, null, null, null, null, null, null, Instant.now(), null, null, null, null, null, null)));
         lenient().when(jdbcTemplate.update(contains("INSERT INTO mois_sales_page_job_execution"), any(), any(), any())).thenReturn(1);
         lenient().when(jdbcTemplate.queryForObject(contains("SELECT LAST_INSERT_ID()"), eq(Long.class))).thenReturn(123L);
         lenient().when(jdbcTemplate.update(contains("UPDATE mois_sales_page"), any(), any())).thenReturn(1);

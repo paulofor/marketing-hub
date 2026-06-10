@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -108,8 +109,22 @@ class MoisSalesPageMarketWarmupServiceTest {
 
         verify(gateway).deleteJobDetails(99L);
         verify(gateway).insertSignal(99L, 10L, "workspace-001", 501L, signalData(signal));
-        verify(gateway).insertSummary(99L, 10L, "workspace-001", summaryData(summary));
-        verify(gateway).markJobDone(99L, summaryData(summary), Instant.parse("2026-06-10T10:00:00Z"));
+        ArgumentCaptor<MarketWarmupSummaryWriteData> summaryCaptor = ArgumentCaptor.forClass(MarketWarmupSummaryWriteData.class);
+        verify(gateway).insertSummary(
+                org.mockito.ArgumentMatchers.eq(99L),
+                org.mockito.ArgumentMatchers.eq(10L),
+                org.mockito.ArgumentMatchers.eq("workspace-001"),
+                summaryCaptor.capture());
+        verify(gateway).markJobDone(
+                org.mockito.ArgumentMatchers.eq(99L),
+                summaryCaptor.capture(),
+                org.mockito.ArgumentMatchers.eq(Instant.parse("2026-06-10T10:00:00Z")));
+        assertThat(summaryCaptor.getAllValues()).allSatisfy(calculatedSummary -> {
+            assertThat(calculatedSummary.scoreTotal()).isEqualByComparingTo(BigDecimal.valueOf(50));
+            assertThat(calculatedSummary.marketTemperature()).isEqualTo("WARM");
+            assertThat(calculatedSummary.ecosystemType()).isEqualTo("RECURRING_PAIN_HEATED");
+            assertThat(calculatedSummary.recommendation()).isEqualTo("RESEARCH_MORE");
+        });
     }
 
     /**
@@ -166,6 +181,104 @@ class MoisSalesPageMarketWarmupServiceTest {
     }
 
     /**
+     * Garante que o motor classifica mercado quente quando todas as dimensões comerciais estão fortes.
+     */
+    @Test
+    void scoreEngineClassifiesHotMarket() {
+        MoisSalesPageMarketWarmupScoreEngine engine = new MoisSalesPageMarketWarmupScoreEngine();
+
+        MoisSalesLibraryDtos.MarketWarmupSummaryCompleteItem summary = engine.calculate(new MoisSalesLibraryDtos.MarketWarmupCompleteRequest(
+                List.of(
+                        warmupSource(MoisSalesLibraryDtos.MarketWarmupSourceType.CREATOR_CONTENT, BigDecimal.TEN, BigDecimal.TEN),
+                        warmupSource(MoisSalesLibraryDtos.MarketWarmupSourceType.SPECIALIST_CONTENT, BigDecimal.valueOf(9), BigDecimal.valueOf(9)),
+                        warmupSource(MoisSalesLibraryDtos.MarketWarmupSourceType.COMPETITOR_OFFER, BigDecimal.valueOf(8), BigDecimal.valueOf(8)),
+                        warmupSource(MoisSalesLibraryDtos.MarketWarmupSourceType.REVIEW, BigDecimal.valueOf(8), BigDecimal.valueOf(8)),
+                        warmupSource(MoisSalesLibraryDtos.MarketWarmupSourceType.SOCIAL_POST, BigDecimal.valueOf(9), BigDecimal.valueOf(9))),
+                List.of(
+                        warmupSignal(MoisSalesLibraryDtos.MarketWarmupSignalType.PAIN_EXPLICIT, BigDecimal.TEN),
+                        warmupSignal(MoisSalesLibraryDtos.MarketWarmupSignalType.BUYING_INTENT, BigDecimal.TEN),
+                        warmupSignal(MoisSalesLibraryDtos.MarketWarmupSignalType.SOCIAL_PROOF, BigDecimal.valueOf(9)),
+                        warmupSignal(MoisSalesLibraryDtos.MarketWarmupSignalType.CREATOR_AUTHORITY, BigDecimal.valueOf(9)),
+                        warmupSignal(MoisSalesLibraryDtos.MarketWarmupSignalType.COMPETITOR_OFFER, BigDecimal.valueOf(8))),
+                sampleSummary(),
+                Instant.parse("2026-06-10T10:00:00Z")));
+
+        assertThat(summary.scoreTotal()).isEqualByComparingTo(BigDecimal.valueOf(84));
+        assertThat(summary.marketTemperature()).isEqualTo(MoisSalesLibraryDtos.MarketWarmupTemperature.HOT);
+        assertThat(summary.recommendation()).isEqualTo(MoisSalesLibraryDtos.MarketWarmupRecommendation.PRIORITIZE);
+    }
+
+    /**
+     * Garante que o motor classifica mercado promissor quando há bons sinais sem força máxima.
+     */
+    @Test
+    void scoreEngineClassifiesPromisingMarket() {
+        MoisSalesPageMarketWarmupScoreEngine engine = new MoisSalesPageMarketWarmupScoreEngine();
+
+        MoisSalesLibraryDtos.MarketWarmupSummaryCompleteItem summary = engine.calculate(new MoisSalesLibraryDtos.MarketWarmupCompleteRequest(
+                List.of(
+                        warmupSource(MoisSalesLibraryDtos.MarketWarmupSourceType.CREATOR_CONTENT, BigDecimal.valueOf(8), BigDecimal.valueOf(7)),
+                        warmupSource(MoisSalesLibraryDtos.MarketWarmupSourceType.SPECIALIST_CONTENT, BigDecimal.valueOf(8), BigDecimal.valueOf(7)),
+                        warmupSource(MoisSalesLibraryDtos.MarketWarmupSourceType.COMMUNITY_DISCUSSION, BigDecimal.valueOf(7), BigDecimal.valueOf(7)),
+                        warmupSource(MoisSalesLibraryDtos.MarketWarmupSourceType.REVIEW, BigDecimal.valueOf(7), BigDecimal.valueOf(6))),
+                List.of(
+                        warmupSignal(MoisSalesLibraryDtos.MarketWarmupSignalType.PAIN_EXPLICIT, BigDecimal.valueOf(7)),
+                        warmupSignal(MoisSalesLibraryDtos.MarketWarmupSignalType.BUYING_INTENT, BigDecimal.valueOf(7)),
+                        warmupSignal(MoisSalesLibraryDtos.MarketWarmupSignalType.SOCIAL_PROOF, BigDecimal.valueOf(6)),
+                        warmupSignal(MoisSalesLibraryDtos.MarketWarmupSignalType.CREATOR_AUTHORITY, BigDecimal.valueOf(7)),
+                        warmupSignal(MoisSalesLibraryDtos.MarketWarmupSignalType.CHANNEL_FIT, BigDecimal.valueOf(7))),
+                sampleSummary(),
+                Instant.parse("2026-06-10T10:00:00Z")));
+
+        assertThat(summary.scoreTotal()).isEqualByComparingTo(BigDecimal.valueOf(61));
+        assertThat(summary.marketTemperature()).isEqualTo(MoisSalesLibraryDtos.MarketWarmupTemperature.PROMISING);
+        assertThat(summary.recommendation()).isEqualTo(MoisSalesLibraryDtos.MarketWarmupRecommendation.OBSERVE);
+    }
+
+    /**
+     * Garante que o motor descarta mercado frio quando faltam fontes e sinais de intenção.
+     */
+    @Test
+    void scoreEngineClassifiesColdMarket() {
+        MoisSalesPageMarketWarmupScoreEngine engine = new MoisSalesPageMarketWarmupScoreEngine();
+
+        MoisSalesLibraryDtos.MarketWarmupSummaryCompleteItem summary = engine.calculate(new MoisSalesLibraryDtos.MarketWarmupCompleteRequest(
+                List.of(warmupSource(MoisSalesLibraryDtos.MarketWarmupSourceType.SEARCH_RESULT, BigDecimal.valueOf(2), BigDecimal.valueOf(1))),
+                List.of(warmupSignal(MoisSalesLibraryDtos.MarketWarmupSignalType.CONTENT_RECENCY, BigDecimal.valueOf(2))),
+                sampleSummary(),
+                Instant.parse("2026-06-10T10:00:00Z")));
+
+        assertThat(summary.scoreTotal()).isEqualByComparingTo(BigDecimal.valueOf(6));
+        assertThat(summary.marketTemperature()).isEqualTo(MoisSalesLibraryDtos.MarketWarmupTemperature.COLD);
+        assertThat(summary.recommendation()).isEqualTo(MoisSalesLibraryDtos.MarketWarmupRecommendation.DISCARD);
+        assertThat(summary.ecosystemType()).isEqualTo(MoisSalesLibraryDtos.MarketWarmupEcosystemType.COLD_OR_UNEDUCATED);
+    }
+
+    /**
+     * Garante que saturação alta prevalece sobre score comercial positivo.
+     */
+    @Test
+    void scoreEngineClassifiesSaturatedMarket() {
+        MoisSalesPageMarketWarmupScoreEngine engine = new MoisSalesPageMarketWarmupScoreEngine();
+
+        MoisSalesLibraryDtos.MarketWarmupSummaryCompleteItem summary = engine.calculate(new MoisSalesLibraryDtos.MarketWarmupCompleteRequest(
+                List.of(
+                        warmupSource(MoisSalesLibraryDtos.MarketWarmupSourceType.COMPETITOR_OFFER, BigDecimal.TEN, BigDecimal.TEN),
+                        warmupSource(MoisSalesLibraryDtos.MarketWarmupSourceType.AFFILIATE_PROMOTION, BigDecimal.TEN, BigDecimal.TEN),
+                        warmupSource(MoisSalesLibraryDtos.MarketWarmupSourceType.COMPETITOR_OFFER, BigDecimal.TEN, BigDecimal.TEN)),
+                List.of(
+                        warmupSignal(MoisSalesLibraryDtos.MarketWarmupSignalType.PAIN_EXPLICIT, BigDecimal.TEN),
+                        warmupSignal(MoisSalesLibraryDtos.MarketWarmupSignalType.BUYING_INTENT, BigDecimal.TEN),
+                        warmupSignal(MoisSalesLibraryDtos.MarketWarmupSignalType.SATURATION_RISK, BigDecimal.valueOf(9))),
+                sampleSummary(),
+                Instant.parse("2026-06-10T10:00:00Z")));
+
+        assertThat(summary.marketTemperature()).isEqualTo(MoisSalesLibraryDtos.MarketWarmupTemperature.SATURATED);
+        assertThat(summary.ecosystemType()).isEqualTo(MoisSalesLibraryDtos.MarketWarmupEcosystemType.SATURATED);
+        assertThat(summary.recommendation()).isEqualTo(MoisSalesLibraryDtos.MarketWarmupRecommendation.SATURATED_REQUIRES_ANGLE);
+    }
+
+    /**
      * Monta uma página consolidada com os campos comerciais necessários ao aquecimento.
      */
     private SalesPageWarmupData samplePage() {
@@ -210,6 +323,40 @@ class MoisSalesPageMarketWarmupServiceTest {
         return new MarketWarmupSummaryWriteData(summary.scoreTotal(), summary.marketTemperature().name(), summary.ecosystemType().name(), summary.recommendation().name(),
                 summary.mainPains(), summary.mainObjections(), summary.mainPromises(), summary.mainChannels(), summary.mainCompetitors(), summary.saturationRisk(),
                 summary.opportunityRecommendation(), summary.nextExperimentSuggestion());
+    }
+
+    /**
+     * Monta uma fonte com notas controladas para cenários do motor de score.
+     */
+    private MoisSalesLibraryDtos.MarketWarmupSourceCompleteItem warmupSource(
+            MoisSalesLibraryDtos.MarketWarmupSourceType sourceType,
+            BigDecimal recencyScore,
+            BigDecimal engagementScore) {
+        return new MoisSalesLibraryDtos.MarketWarmupSourceCompleteItem(
+                MoisSalesLibraryDtos.MarketWarmupPlatform.WEB,
+                sourceType,
+                "https://example.test/" + sourceType.name().toLowerCase(),
+                sourceType.name(),
+                "Autor",
+                Instant.parse("2026-06-01T00:00:00Z"),
+                Instant.parse("2026-06-09T00:00:00Z"),
+                null,
+                null,
+                null,
+                null,
+                recencyScore,
+                engagementScore,
+                "evidência rastreável");
+    }
+
+    /**
+     * Monta um sinal com força controlada para cenários do motor de score.
+     */
+    private MoisSalesLibraryDtos.MarketWarmupSignalCompleteItem warmupSignal(
+            MoisSalesLibraryDtos.MarketWarmupSignalType signalType,
+            BigDecimal signalStrength) {
+        return new MoisSalesLibraryDtos.MarketWarmupSignalCompleteItem(
+                0, signalType, signalStrength, signalType.name(), "interpretação comercial");
     }
 
     /**

@@ -10,23 +10,30 @@ import static org.mockito.Mockito.when;
 import com.marketinghub.oprm.generalaudience.OprmGeneralAudienceSeed;
 import com.marketinghub.oprm.generalaudience.OprmGeneralAudienceSeedStatus;
 import com.marketinghub.oprm.generalaudience.OprmGeneralAudienceSeedType;
+import com.marketinghub.oprm.generalaudience.OprmGeneralAudienceSubniche;
+import com.marketinghub.oprm.generalaudience.OprmGeneralAudienceSubnicheStatus;
 import com.marketinghub.oprm.generalaudience.service.createSeed.CreateGeneralAudienceSeedRequest;
+import com.marketinghub.oprm.generalaudience.service.createSubniche.CreateGeneralAudienceSubnicheRequest;
 import com.marketinghub.oprm.generalaudience.service.updateSeed.UpdateGeneralAudienceSeedRequest;
+import com.marketinghub.oprm.generalaudience.service.updateSubniche.UpdateGeneralAudienceSubnicheRequest;
 import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudienceSeedRepository;
+import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudienceSubnicheRepository;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.server.ResponseStatusException;
 
-/** Valida o cadastro manual de sementes amplas de público geral sem acionar o fluxo NichoCNAE. */
+/** Valida o cadastro manual de sementes e subnichos de público geral sem acionar o fluxo NichoCNAE. */
 class OprmGeneralAudienceServiceTest {
 
     /** Verifica se a criação normaliza campos e aplica padrões comerciais seguros. */
     @Test
     void shouldCreateSeedWithDefaults() {
         OprmGeneralAudienceSeedRepository repository = mock(OprmGeneralAudienceSeedRepository.class);
-        OprmGeneralAudienceService service = new OprmGeneralAudienceService(repository);
+        OprmGeneralAudienceService service = new OprmGeneralAudienceService(
+                repository, mock(OprmGeneralAudienceSubnicheRepository.class));
         when(repository.save(any())).thenAnswer(invocation -> {
             OprmGeneralAudienceSeed seed = invocation.getArgument(0);
             seed.setId(10L);
@@ -58,7 +65,8 @@ class OprmGeneralAudienceServiceTest {
     @Test
     void shouldListSeedSummaries() {
         OprmGeneralAudienceSeedRepository repository = mock(OprmGeneralAudienceSeedRepository.class);
-        OprmGeneralAudienceService service = new OprmGeneralAudienceService(repository);
+        OprmGeneralAudienceService service = new OprmGeneralAudienceService(
+                repository, mock(OprmGeneralAudienceSubnicheRepository.class));
         OprmGeneralAudienceSeed seed = seed(7L, OprmGeneralAudienceSeedStatus.READY_FOR_RESEARCH);
         when(repository.findAllByOrderByUpdatedAtDesc()).thenReturn(List.of(seed));
 
@@ -74,7 +82,8 @@ class OprmGeneralAudienceServiceTest {
     @Test
     void shouldUpdateOnlyProvidedFields() {
         OprmGeneralAudienceSeedRepository repository = mock(OprmGeneralAudienceSeedRepository.class);
-        OprmGeneralAudienceService service = new OprmGeneralAudienceService(repository);
+        OprmGeneralAudienceService service = new OprmGeneralAudienceService(
+                repository, mock(OprmGeneralAudienceSubnicheRepository.class));
         OprmGeneralAudienceSeed seed = seed(8L, OprmGeneralAudienceSeedStatus.DRAFT);
         when(repository.findById(8L)).thenReturn(Optional.of(seed));
         when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
@@ -100,7 +109,8 @@ class OprmGeneralAudienceServiceTest {
     @Test
     void shouldArchiveSeed() {
         OprmGeneralAudienceSeedRepository repository = mock(OprmGeneralAudienceSeedRepository.class);
-        OprmGeneralAudienceService service = new OprmGeneralAudienceService(repository);
+        OprmGeneralAudienceService service = new OprmGeneralAudienceService(
+                repository, mock(OprmGeneralAudienceSubnicheRepository.class));
         OprmGeneralAudienceSeed seed = seed(9L, OprmGeneralAudienceSeedStatus.PAUSED);
         when(repository.findById(9L)).thenReturn(Optional.of(seed));
         when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
@@ -115,12 +125,131 @@ class OprmGeneralAudienceServiceTest {
     @Test
     void shouldRejectMissingSeed() {
         OprmGeneralAudienceSeedRepository repository = mock(OprmGeneralAudienceSeedRepository.class);
-        OprmGeneralAudienceService service = new OprmGeneralAudienceService(repository);
+        OprmGeneralAudienceService service = new OprmGeneralAudienceService(
+                repository, mock(OprmGeneralAudienceSubnicheRepository.class));
         when(repository.findById(404L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.getSeed(404L))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("Semente de público geral não encontrada");
+    }
+
+
+    /** Verifica se a criação de subnicho preserva vínculo com a semente e aplica status inicial seguro. */
+    @Test
+    void shouldCreateSubnicheWithSeedLink() {
+        OprmGeneralAudienceSeedRepository seedRepository = mock(OprmGeneralAudienceSeedRepository.class);
+        OprmGeneralAudienceSubnicheRepository subnicheRepository = mock(OprmGeneralAudienceSubnicheRepository.class);
+        OprmGeneralAudienceService service = new OprmGeneralAudienceService(seedRepository, subnicheRepository);
+        OprmGeneralAudienceSeed seed = seed(10L, OprmGeneralAudienceSeedStatus.READY_FOR_RESEARCH);
+        when(seedRepository.findById(10L)).thenReturn(Optional.of(seed));
+        when(subnicheRepository.save(any())).thenAnswer(invocation -> {
+            OprmGeneralAudienceSubniche subniche = invocation.getArgument(0);
+            subniche.setId(20L);
+            subniche.setCreatedAt(Instant.parse("2026-06-10T11:00:00Z"));
+            subniche.setUpdatedAt(Instant.parse("2026-06-10T11:00:00Z"));
+            return subniche;
+        });
+
+        var response = service.createSubniche(10L, new CreateGeneralAudienceSubnicheRequest(
+                " Manicure autônoma ",
+                "Profissional que atende com agenda própria",
+                "Agenda vazia durante a semana",
+                "Preencher horários ociosos",
+                "Fala em clientes que somem",
+                "WhatsApp e Instagram",
+                "Você trabalha como manicure hoje?",
+                null,
+                new BigDecimal("82.50"),
+                new BigDecimal("18.00"),
+                null));
+
+        assertThat(response.id()).isEqualTo(20L);
+        assertThat(response.seedId()).isEqualTo(10L);
+        assertThat(response.name()).isEqualTo("Manicure autônoma");
+        assertThat(response.status()).isEqualTo(OprmGeneralAudienceSubnicheStatus.DISCOVERED);
+        assertThat(response.qualificationQuestion()).isEqualTo("Você trabalha como manicure hoje?");
+    }
+
+    /** Verifica se a atualização de subnicho altera somente campos enviados pela revisão manual. */
+    @Test
+    void shouldUpdateSubnicheOnlyProvidedFields() {
+        OprmGeneralAudienceSeedRepository seedRepository = mock(OprmGeneralAudienceSeedRepository.class);
+        OprmGeneralAudienceSubnicheRepository subnicheRepository = mock(OprmGeneralAudienceSubnicheRepository.class);
+        OprmGeneralAudienceService service = new OprmGeneralAudienceService(seedRepository, subnicheRepository);
+        OprmGeneralAudienceSubniche subniche = subniche(21L, seed(10L, OprmGeneralAudienceSeedStatus.READY_FOR_RESEARCH));
+        when(subnicheRepository.findById(21L)).thenReturn(Optional.of(subniche));
+        when(subnicheRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var response = service.updateSubniche(21L, new UpdateGeneralAudienceSubnicheRequest(
+                null,
+                null,
+                "Clientes somem depois do primeiro atendimento",
+                null,
+                null,
+                null,
+                "Você atende clientes de manicure hoje?",
+                OprmGeneralAudienceSubnicheStatus.NEEDS_REVIEW,
+                null,
+                new BigDecimal("22.00"),
+                null));
+
+        assertThat(response.name()).isEqualTo("Manicure autônoma");
+        assertThat(response.painSummary()).isEqualTo("Clientes somem depois do primeiro atendimento");
+        assertThat(response.qualificationQuestion()).isEqualTo("Você atende clientes de manicure hoje?");
+        assertThat(response.status()).isEqualTo(OprmGeneralAudienceSubnicheStatus.NEEDS_REVIEW);
+        assertThat(response.riskScore()).isEqualByComparingTo("22.00");
+    }
+
+    /** Verifica se a aprovação de subnicho marca a preparação para experimento sem criar campanha. */
+    @Test
+    void shouldApproveSubnicheForExperiment() {
+        OprmGeneralAudienceSeedRepository seedRepository = mock(OprmGeneralAudienceSeedRepository.class);
+        OprmGeneralAudienceSubnicheRepository subnicheRepository = mock(OprmGeneralAudienceSubnicheRepository.class);
+        OprmGeneralAudienceService service = new OprmGeneralAudienceService(seedRepository, subnicheRepository);
+        OprmGeneralAudienceSubniche subniche = subniche(22L, seed(10L, OprmGeneralAudienceSeedStatus.READY_FOR_RESEARCH));
+        when(subnicheRepository.findById(22L)).thenReturn(Optional.of(subniche));
+        when(subnicheRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var response = service.approveSubniche(22L);
+
+        assertThat(response.status()).isEqualTo(OprmGeneralAudienceSubnicheStatus.APPROVED_FOR_EXPERIMENT);
+        verify(subnicheRepository).save(subniche);
+    }
+
+    /** Verifica se a rejeição de subnicho bloqueia avanço de público amplo demais. */
+    @Test
+    void shouldRejectSubniche() {
+        OprmGeneralAudienceSeedRepository seedRepository = mock(OprmGeneralAudienceSeedRepository.class);
+        OprmGeneralAudienceSubnicheRepository subnicheRepository = mock(OprmGeneralAudienceSubnicheRepository.class);
+        OprmGeneralAudienceService service = new OprmGeneralAudienceService(seedRepository, subnicheRepository);
+        OprmGeneralAudienceSubniche subniche = subniche(23L, seed(10L, OprmGeneralAudienceSeedStatus.READY_FOR_RESEARCH));
+        when(subnicheRepository.findById(23L)).thenReturn(Optional.of(subniche));
+        when(subnicheRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var response = service.rejectSubniche(23L);
+
+        assertThat(response.status()).isEqualTo(OprmGeneralAudienceSubnicheStatus.REJECTED);
+    }
+
+    /** Monta um subnicho completo para os cenários de revisão manual. */
+    private OprmGeneralAudienceSubniche subniche(Long id, OprmGeneralAudienceSeed seed) {
+        OprmGeneralAudienceSubniche subniche = new OprmGeneralAudienceSubniche();
+        subniche.setId(id);
+        subniche.setSeed(seed);
+        subniche.setName("Manicure autônoma");
+        subniche.setPersonaSummary("Profissional que atende com agenda própria");
+        subniche.setPainSummary("Agenda vazia durante a semana");
+        subniche.setDesiredOutcomeSummary("Preencher horários ociosos");
+        subniche.setLanguagePatterns("Clientes que somem");
+        subniche.setChannelsSummary("WhatsApp e Instagram");
+        subniche.setQualificationQuestion("Você trabalha como manicure hoje?");
+        subniche.setStatus(OprmGeneralAudienceSubnicheStatus.DISCOVERED);
+        subniche.setOpportunityScore(new BigDecimal("82.50"));
+        subniche.setRiskScore(new BigDecimal("18.00"));
+        subniche.setCreatedAt(Instant.parse("2026-06-10T11:00:00Z"));
+        subniche.setUpdatedAt(Instant.parse("2026-06-10T11:00:00Z"));
+        return subniche;
     }
 
     /** Monta uma semente completa para os cenários de revisão manual. */

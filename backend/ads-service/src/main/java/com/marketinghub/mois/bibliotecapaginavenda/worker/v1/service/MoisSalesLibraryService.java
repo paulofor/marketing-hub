@@ -474,13 +474,23 @@ public class MoisSalesLibraryService {
         int offset = (normalizedPage - 1) * normalizedPageSize;
         Long total = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM mois_sales_page WHERE workspace_id = ?", Long.class, workspaceId);
         List<MoisSalesLibraryDtos.SalesLibraryPageResponse> items = jdbcTemplate.query("""
-                SELECT id, workspace_id, source, url_canonical, title, current_stage, current_status, capture_status,
-                       COALESCE(analysis_status, current_status) AS analysis_status, url_final, http_status, html_sha256,
-                       html_bytes, score_total, offer_summary, mechanism_summary, promise_summary, proof_summary,
-                       last_error_category, last_error_message, last_job_execution_id, last_captured_at, last_analyzed_at, updated_at
-                FROM mois_sales_page
-                WHERE workspace_id = ?
-                ORDER BY last_analyzed_at DESC, updated_at DESC, id DESC LIMIT ? OFFSET ?
+                SELECT p.id, p.workspace_id, p.source, p.url_canonical, p.title, p.current_stage, p.current_status, p.capture_status,
+                       COALESCE(p.analysis_status, p.current_status) AS analysis_status, p.url_final, p.http_status, p.html_sha256,
+                       p.html_bytes, p.score_total, p.offer_summary, p.mechanism_summary, p.promise_summary, p.proof_summary,
+                       p.last_error_category, p.last_error_message, p.last_job_execution_id, p.last_captured_at, p.last_analyzed_at, p.updated_at,
+                       mws.score_total AS market_warmup_score_total, mws.market_temperature AS market_warmup_temperature,
+                       mws.ecosystem_type AS market_warmup_ecosystem_type, mws.recommendation AS market_warmup_recommendation,
+                       mwj.status AS market_warmup_status, COALESCE(mws.updated_at, mwj.updated_at) AS market_warmup_updated_at
+                FROM mois_sales_page p
+                LEFT JOIN (
+                    SELECT sales_page_id, MAX(id) AS latest_warmup_job_id
+                    FROM mois_sales_page_market_warmup_job
+                    GROUP BY sales_page_id
+                ) mwj_latest ON mwj_latest.sales_page_id = p.id
+                LEFT JOIN mois_sales_page_market_warmup_job mwj ON mwj.id = mwj_latest.latest_warmup_job_id
+                LEFT JOIN mois_sales_page_market_warmup_summary mws ON mws.job_id = mwj.id
+                WHERE p.workspace_id = ?
+                ORDER BY p.last_analyzed_at DESC, p.updated_at DESC, p.id DESC LIMIT ? OFFSET ?
                 """, this::mapSalesPageResponse, workspaceId, normalizedPageSize, offset);
         return new MoisSalesLibraryDtos.SalesLibraryPageListResponse(normalizedPage, normalizedPageSize, total == null ? 0 : total, items);
     }
@@ -491,25 +501,47 @@ public class MoisSalesLibraryService {
     public MoisSalesLibraryDtos.SalesLibraryPageSummaryResponse summarizePages(String workspaceId) {
         return jdbcTemplate.queryForObject("""
                 SELECT COUNT(*) AS total,
-                       SUM(current_status = 'PENDING') AS pending,
-                       SUM(current_status IN ('FETCHING', 'CAPTURING')) AS capturing,
-                       SUM(COALESCE(html_bytes, 0) > 0) AS captured,
-                       SUM(current_status IN ('DONE', 'ANALYZED')) AS analyzed,
-                       SUM(COALESCE(html_bytes, 0) > 0 AND COALESCE(analysis_status, current_status) = 'PENDING') AS analysis_pending,
-                       SUM(COALESCE(html_bytes, 0) > 0 AND COALESCE(analysis_status, current_status) = 'FETCHING') AS analysis_running,
-                       SUM(COALESCE(html_bytes, 0) > 0 AND COALESCE(analysis_status, current_status) = 'FAILED') AS analysis_failed,
-                       SUM(current_status = 'FAILED') AS failed,
-                       SUM(current_status = 'BLOCKED_COOLDOWN') AS blocked_cooldown,
-                       SUM(source = 'HOTMART') AS hotmart,
-                       SUM(source = 'CLICKBANK') AS clickbank,
-                       MAX(updated_at) AS updated_at
-                FROM mois_sales_page
-                WHERE workspace_id = ?
+                       SUM(p.current_status = 'PENDING') AS pending,
+                       SUM(p.current_status IN ('FETCHING', 'CAPTURING')) AS capturing,
+                       SUM(COALESCE(p.html_bytes, 0) > 0) AS captured,
+                       SUM(p.current_status IN ('DONE', 'ANALYZED')) AS analyzed,
+                       SUM(COALESCE(p.html_bytes, 0) > 0 AND COALESCE(p.analysis_status, p.current_status) = 'PENDING') AS analysis_pending,
+                       SUM(COALESCE(p.html_bytes, 0) > 0 AND COALESCE(p.analysis_status, p.current_status) = 'FETCHING') AS analysis_running,
+                       SUM(COALESCE(p.html_bytes, 0) > 0 AND COALESCE(p.analysis_status, p.current_status) = 'FAILED') AS analysis_failed,
+                       SUM(p.current_status = 'FAILED') AS failed,
+                       SUM(p.current_status = 'BLOCKED_COOLDOWN') AS blocked_cooldown,
+                       SUM(p.source = 'HOTMART') AS hotmart,
+                       SUM(p.source = 'CLICKBANK') AS clickbank,
+                       SUM(p.current_status IN ('DONE', 'ANALYZED')) AS market_warmup_eligible,
+                       SUM(mwj.status = 'PENDING') AS market_warmup_pending,
+                       SUM(mwj.status = 'FETCHING') AS market_warmup_running,
+                       SUM(mwj.status = 'DONE' AND mws.job_id IS NOT NULL) AS market_warmup_completed,
+                       SUM(mwj.status = 'FAILED') AS market_warmup_failed,
+                       SUM(mws.market_temperature = 'HOT') AS market_warmup_hot,
+                       SUM(mws.market_temperature = 'PROMISING') AS market_warmup_promising,
+                       SUM(mws.market_temperature = 'WARM') AS market_warmup_warm,
+                       SUM(mws.market_temperature = 'COLD') AS market_warmup_cold,
+                       SUM(mws.market_temperature = 'SATURATED') AS market_warmup_saturated,
+                       MAX(p.updated_at) AS updated_at
+                FROM mois_sales_page p
+                LEFT JOIN (
+                    SELECT sales_page_id, MAX(id) AS latest_warmup_job_id
+                    FROM mois_sales_page_market_warmup_job
+                    GROUP BY sales_page_id
+                ) mwj_latest ON mwj_latest.sales_page_id = p.id
+                LEFT JOIN mois_sales_page_market_warmup_job mwj ON mwj.id = mwj_latest.latest_warmup_job_id
+                LEFT JOIN mois_sales_page_market_warmup_summary mws ON mws.job_id = mwj.id
+                WHERE p.workspace_id = ?
                 """, (rs, rn) -> new MoisSalesLibraryDtos.SalesLibraryPageSummaryResponse(
                 workspaceId, rs.getLong("total"), rs.getLong("pending"), rs.getLong("capturing"),
                 rs.getLong("captured"), rs.getLong("analyzed"), rs.getLong("analysis_pending"),
                 rs.getLong("analysis_running"), rs.getLong("analysis_failed"), rs.getLong("failed"),
                 rs.getLong("blocked_cooldown"), rs.getLong("hotmart"), rs.getLong("clickbank"),
+                rs.getLong("market_warmup_eligible"), rs.getLong("market_warmup_pending"),
+                rs.getLong("market_warmup_running"), rs.getLong("market_warmup_completed"),
+                rs.getLong("market_warmup_failed"), rs.getLong("market_warmup_hot"),
+                rs.getLong("market_warmup_promising"), rs.getLong("market_warmup_warm"),
+                rs.getLong("market_warmup_cold"), rs.getLong("market_warmup_saturated"),
                 toInstant(rs.getTimestamp("updated_at"))), workspaceId);
     }
 
@@ -518,12 +550,22 @@ public class MoisSalesLibraryService {
      */
     public MoisSalesLibraryDtos.SalesLibraryPageResponse getPage(long pageId) {
         List<MoisSalesLibraryDtos.SalesLibraryPageResponse> rows = jdbcTemplate.query("""
-                SELECT id, workspace_id, source, url_canonical, title, current_stage, current_status, capture_status,
-                       COALESCE(analysis_status, current_status) AS analysis_status, url_final, http_status, html_sha256,
-                       html_bytes, score_total, offer_summary, mechanism_summary, promise_summary, proof_summary,
-                       last_error_category, last_error_message, last_job_execution_id, last_captured_at, last_analyzed_at, updated_at
-                FROM mois_sales_page
-                WHERE id = ? LIMIT 1
+                SELECT p.id, p.workspace_id, p.source, p.url_canonical, p.title, p.current_stage, p.current_status, p.capture_status,
+                       COALESCE(p.analysis_status, p.current_status) AS analysis_status, p.url_final, p.http_status, p.html_sha256,
+                       p.html_bytes, p.score_total, p.offer_summary, p.mechanism_summary, p.promise_summary, p.proof_summary,
+                       p.last_error_category, p.last_error_message, p.last_job_execution_id, p.last_captured_at, p.last_analyzed_at, p.updated_at,
+                       mws.score_total AS market_warmup_score_total, mws.market_temperature AS market_warmup_temperature,
+                       mws.ecosystem_type AS market_warmup_ecosystem_type, mws.recommendation AS market_warmup_recommendation,
+                       mwj.status AS market_warmup_status, COALESCE(mws.updated_at, mwj.updated_at) AS market_warmup_updated_at
+                FROM mois_sales_page p
+                LEFT JOIN (
+                    SELECT sales_page_id, MAX(id) AS latest_warmup_job_id
+                    FROM mois_sales_page_market_warmup_job
+                    GROUP BY sales_page_id
+                ) mwj_latest ON mwj_latest.sales_page_id = p.id
+                LEFT JOIN mois_sales_page_market_warmup_job mwj ON mwj.id = mwj_latest.latest_warmup_job_id
+                LEFT JOIN mois_sales_page_market_warmup_summary mws ON mws.job_id = mwj.id
+                WHERE p.id = ? LIMIT 1
                 """, this::mapSalesPageResponse, pageId);
         if (rows.isEmpty()) throw new IllegalArgumentException("Page not found: " + pageId);
         return rows.get(0);
@@ -1124,8 +1166,25 @@ public class MoisSalesLibraryService {
                 rs.getObject("last_job_execution_id", Long.class),
                 toInstant(rs.getTimestamp("last_captured_at")),
                 toInstant(rs.getTimestamp("last_analyzed_at")),
-                toInstant(rs.getTimestamp("updated_at"))
+                toInstant(rs.getTimestamp("updated_at")),
+                rs.getBigDecimal("market_warmup_score_total"),
+                mapEnum(MoisSalesLibraryDtos.MarketWarmupTemperature.class, rs.getString("market_warmup_temperature")),
+                mapEnum(MoisSalesLibraryDtos.MarketWarmupEcosystemType.class, rs.getString("market_warmup_ecosystem_type")),
+                mapEnum(MoisSalesLibraryDtos.MarketWarmupRecommendation.class, rs.getString("market_warmup_recommendation")),
+                mapEnum(MoisSalesLibraryDtos.MarketWarmupJobStatus.class, rs.getString("market_warmup_status")),
+                toInstant(rs.getTimestamp("market_warmup_updated_at"))
         );
+    }
+
+
+    /**
+     * Converte texto persistido em enum sem quebrar a UI quando o campo ainda não existe.
+     */
+    private <E extends Enum<E>> E mapEnum(Class<E> enumType, String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return Enum.valueOf(enumType, value);
     }
 
     /**

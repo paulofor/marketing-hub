@@ -138,6 +138,16 @@ class MoisSalesLibraryControllerTest {
                         0L,
                         126L,
                         19L,
+                        105L,
+                        6L,
+                        2L,
+                        70L,
+                        4L,
+                        16L,
+                        22L,
+                        9L,
+                        5L,
+                        18L,
                         Instant.parse("2026-06-04T16:00:09Z")
                 ));
 
@@ -152,7 +162,15 @@ class MoisSalesLibraryControllerTest {
                 .andExpect(jsonPath("$.analysisRunning").value(2))
                 .andExpect(jsonPath("$.analysisFailed").value(16))
                 .andExpect(jsonPath("$.failed").value(16))
-                .andExpect(jsonPath("$.blockedCooldown").value(0));
+                .andExpect(jsonPath("$.blockedCooldown").value(0))
+                .andExpect(jsonPath("$.marketWarmupEligible").value(105))
+                .andExpect(jsonPath("$.marketWarmupPending").value(6))
+                .andExpect(jsonPath("$.marketWarmupRunning").value(2))
+                .andExpect(jsonPath("$.marketWarmupCompleted").value(70))
+                .andExpect(jsonPath("$.marketWarmupFailed").value(4))
+                .andExpect(jsonPath("$.marketWarmupHot").value(16))
+                .andExpect(jsonPath("$.marketWarmupPromising").value(22))
+                .andExpect(jsonPath("$.marketWarmupSaturated").value(18));
     }
 
     /**

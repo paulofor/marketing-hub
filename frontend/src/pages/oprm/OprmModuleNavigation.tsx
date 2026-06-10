@@ -5,8 +5,9 @@ interface OprmModuleNavigationProps {
 }
 
 const navigationItems = [
-  { label: "CNAEs", to: "/oprm" },
+  { label: "CNAEs", to: "/oprm", end: true },
   { label: "Pipeline", to: "/oprm/pipeline" },
+  { label: "Públicos Gerais", to: "/oprm/general-audiences" },
 ];
 
 export default function OprmModuleNavigation({
@@ -19,6 +20,7 @@ export default function OprmModuleNavigation({
           <li className="nav-item" key={item.to}>
             <NavLink
               to={item.to}
+              end={item.end}
               className={({ isActive }) =>
                 isActive ? "nav-link active" : "nav-link"
               }

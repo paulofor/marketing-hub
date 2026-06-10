@@ -1,8 +1,8 @@
 openapi: 3.0.3
 info:
   title: OPRM Públicos Gerais API
-  version: 0.1.0
-  description: Endpoints do backend para cadastro e revisão manual de sementes de públicos gerais antes de virar subnicho, nicho ou campanha.
+  version: 0.3.0
+  description: Endpoints do backend para cadastro e revisão manual de sementes e subnichos de públicos gerais antes de virar nicho ou campanha.
 tags:
   - name: OPRM Públicos Gerais
 paths:
@@ -89,10 +89,243 @@ paths:
                 $ref: '#/components/schemas/GeneralAudienceSeed'
         '404':
           description: Semente não encontrada.
+  /api/oprm/general-audiences/seeds/{seedId}/subniches:
+    get:
+      summary: Lista subnichos derivados de uma semente de público geral.
+      tags: [OPRM Públicos Gerais]
+      parameters:
+        - $ref: '#/components/parameters/SeedId'
+      responses:
+        '200':
+          description: Subnichos da semente ordenados pela atualização mais recente.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GeneralAudienceSubnicheSummary'
+        '404':
+          description: Semente não encontrada.
+    post:
+      summary: Cadastra manualmente um subnicho derivado da semente.
+      tags: [OPRM Públicos Gerais]
+      parameters:
+        - $ref: '#/components/parameters/SeedId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGeneralAudienceSubnicheRequest'
+      responses:
+        '201':
+          description: Subnicho cadastrado para descoberta/revisão, sem ser tratado como CNAE.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAudienceSubniche'
+        '400':
+          description: Payload inválido.
+        '404':
+          description: Semente não encontrada.
+  /api/oprm/general-audiences/subniches/{subnicheId}:
+    get:
+      summary: Detalha um subnicho de público geral.
+      tags: [OPRM Públicos Gerais]
+      parameters:
+        - $ref: '#/components/parameters/SubnicheId'
+      responses:
+        '200':
+          description: Detalhe do subnicho para revisão de persona, dor, canais e triagem.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAudienceSubniche'
+        '404':
+          description: Subnicho não encontrado.
+    patch:
+      summary: Atualiza campos manuais de um subnicho de público geral.
+      tags: [OPRM Públicos Gerais]
+      parameters:
+        - $ref: '#/components/parameters/SubnicheId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateGeneralAudienceSubnicheRequest'
+      responses:
+        '200':
+          description: Subnicho atualizado sem conversão automática para nicho ou campanha.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAudienceSubniche'
+        '400':
+          description: Payload inválido.
+        '404':
+          description: Subnicho não encontrado.
+  /api/oprm/general-audiences/subniches/{subnicheId}/approve:
+    post:
+      summary: Aprova um subnicho para experimento futuro.
+      tags: [OPRM Públicos Gerais]
+      parameters:
+        - $ref: '#/components/parameters/SubnicheId'
+      responses:
+        '200':
+          description: Subnicho marcado como aprovado para experimento.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAudienceSubniche'
+        '404':
+          description: Subnicho não encontrado.
+  /api/oprm/general-audiences/subniches/{subnicheId}/reject:
+    post:
+      summary: Rejeita um subnicho amplo ou inseguro.
+      tags: [OPRM Públicos Gerais]
+      parameters:
+        - $ref: '#/components/parameters/SubnicheId'
+      responses:
+        '200':
+          description: Subnicho rejeitado sem apagar o histórico de descoberta.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAudienceSubniche'
+        '404':
+          description: Subnicho não encontrado.
+  /api/oprm/general-audiences/subniches/{subnicheId}/pain-angles:
+    get:
+      summary: Lista dores e ângulos testáveis de um subnicho.
+      tags: [OPRM Públicos Gerais]
+      parameters:
+        - $ref: '#/components/parameters/SubnicheId'
+      responses:
+        '200':
+          description: Ângulos ordenados pela atualização mais recente.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GeneralAudiencePainAngle'
+    post:
+      summary: Cadastra dor e ângulo seguro sem criar oferta final.
+      tags: [OPRM Públicos Gerais]
+      parameters:
+        - $ref: '#/components/parameters/SubnicheId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGeneralAudiencePainAngleRequest'
+      responses:
+        '201':
+          description: Dor/ângulo cadastrado para revisão.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAudiencePainAngle'
+        '400':
+          description: Dor genérica ou promessa arriscada.
+  /api/oprm/general-audiences/pain-angles/{angleId}:
+    patch:
+      summary: Atualiza uma dor e seu ângulo testável.
+      tags: [OPRM Públicos Gerais]
+      parameters:
+        - $ref: '#/components/parameters/AngleId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateGeneralAudiencePainAngleRequest'
+      responses:
+        '200':
+          description: Ângulo atualizado com validação de qualidade.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAudiencePainAngle'
+  /api/oprm/general-audiences/pain-angles/{angleId}/approve:
+    post:
+      summary: Aprova um ângulo após validação de promessa segura.
+      tags: [OPRM Públicos Gerais]
+      parameters:
+        - $ref: '#/components/parameters/AngleId'
+      responses:
+        '200':
+          description: Ângulo aprovado para etapa futura de hipótese/experimento.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAudiencePainAngle'
+  /api/oprm/general-audiences/seeds/{seedId}/source-evidences:
+    get:
+      summary: Lista evidências agregadas de uma semente.
+      tags: [OPRM Públicos Gerais]
+      parameters:
+        - $ref: '#/components/parameters/SeedId'
+      responses:
+        '200':
+          description: Evidências agregadas rastreáveis, sem dados pessoais.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GeneralAudienceSourceEvidence'
+    post:
+      summary: Registra evidência agregada para semente ou subnicho.
+      tags: [OPRM Públicos Gerais]
+      parameters:
+        - $ref: '#/components/parameters/SeedId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGeneralAudienceSourceEvidenceRequest'
+      responses:
+        '201':
+          description: Evidência agregada registrada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAudienceSourceEvidence'
+  /api/oprm/general-audiences/subniches/{subnicheId}/quality-gate:
+    get:
+      summary: Avalia se o subnicho pode avançar sem saída genérica ou promessa arriscada.
+      tags: [OPRM Públicos Gerais]
+      parameters:
+        - $ref: '#/components/parameters/SubnicheId'
+      responses:
+        '200':
+          description: Resultado do quality gate.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAudienceQualityGate'
 components:
   parameters:
     SeedId:
       name: seedId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    SubnicheId:
+      name: subnicheId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    AngleId:
+      name: angleId
       in: path
       required: true
       schema:
@@ -105,6 +338,15 @@ components:
     SeedStatus:
       type: string
       enum: [DRAFT, READY_FOR_RESEARCH, RESEARCHING, MAPPED, PAUSED, ARCHIVED]
+    SubnicheStatus:
+      type: string
+      enum: [DISCOVERED, NEEDS_REVIEW, APPROVED_FOR_EXPERIMENT, REJECTED, CONVERTED_TO_NICHE]
+    Score:
+      type: number
+      format: decimal
+      minimum: 0
+      maximum: 100
+      nullable: true
     CreateGeneralAudienceSeedRequest:
       type: object
       required: [name, seedType]
@@ -166,6 +408,50 @@ components:
         riskNotes:
           type: string
           nullable: true
+    CreateGeneralAudienceSubnicheRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          maxLength: 191
+          example: Manicure autônoma
+        personaSummary:
+          type: string
+          nullable: true
+          example: Profissional autônoma que atende clientes com agenda própria.
+        painSummary:
+          type: string
+          nullable: true
+          example: Agenda vazia durante a semana e clientes que somem.
+        desiredOutcomeSummary:
+          type: string
+          nullable: true
+          example: Preencher horários ociosos com clientes antigas e recorrentes.
+        languagePatterns:
+          type: string
+          nullable: true
+        channelsSummary:
+          type: string
+          nullable: true
+          example: WhatsApp e Instagram.
+        qualificationQuestion:
+          type: string
+          nullable: true
+          example: Você trabalha como manicure hoje?
+        status:
+          $ref: '#/components/schemas/SubnicheStatus'
+        opportunityScore:
+          $ref: '#/components/schemas/Score'
+        riskScore:
+          $ref: '#/components/schemas/Score'
+        marketNicheId:
+          type: integer
+          format: int64
+          nullable: true
+    UpdateGeneralAudienceSubnicheRequest:
+      allOf:
+        - $ref: '#/components/schemas/CreateGeneralAudienceSubnicheRequest'
     GeneralAudienceSeed:
       allOf:
         - $ref: '#/components/schemas/CreateGeneralAudienceSeedRequest'
@@ -204,3 +490,166 @@ components:
         updatedAt:
           type: string
           format: date-time
+    GeneralAudienceSubniche:
+      allOf:
+        - $ref: '#/components/schemas/CreateGeneralAudienceSubnicheRequest'
+        - type: object
+          required: [id, seedId, name, status, createdAt, updatedAt]
+          properties:
+            id:
+              type: integer
+              format: int64
+            seedId:
+              type: integer
+              format: int64
+            createdAt:
+              type: string
+              format: date-time
+            updatedAt:
+              type: string
+              format: date-time
+    GeneralAudienceSubnicheSummary:
+      type: object
+      required: [id, seedId, name, status, updatedAt]
+      properties:
+        id:
+          type: integer
+          format: int64
+        seedId:
+          type: integer
+          format: int64
+        name:
+          type: string
+        personaSummary:
+          type: string
+          nullable: true
+        painSummary:
+          type: string
+          nullable: true
+        channelsSummary:
+          type: string
+          nullable: true
+        qualificationQuestion:
+          type: string
+          nullable: true
+        status:
+          $ref: '#/components/schemas/SubnicheStatus'
+        opportunityScore:
+          $ref: '#/components/schemas/Score'
+        riskScore:
+          $ref: '#/components/schemas/Score'
+        marketNicheId:
+          type: integer
+          format: int64
+          nullable: true
+        updatedAt:
+          type: string
+          format: date-time
+
+    PainAngleStatus:
+      type: string
+      enum: [DISCOVERED, NEEDS_REVIEW, APPROVED, REJECTED]
+    CreateGeneralAudiencePainAngleRequest:
+      type: object
+      required: [pain, desiredResult]
+      properties:
+        pain:
+          type: string
+        desiredResult:
+          type: string
+        mechanismDirection:
+          type: string
+          nullable: true
+        proofOrLeadMagnet:
+          type: string
+          nullable: true
+        safePromise:
+          type: string
+          nullable: true
+        firstAdHook:
+          type: string
+          nullable: true
+        landingConfirmationQuestion:
+          type: string
+          nullable: true
+        complianceNotes:
+          type: string
+          nullable: true
+        status:
+          $ref: '#/components/schemas/PainAngleStatus'
+    UpdateGeneralAudiencePainAngleRequest:
+      allOf:
+        - $ref: '#/components/schemas/CreateGeneralAudiencePainAngleRequest'
+    GeneralAudiencePainAngle:
+      allOf:
+        - $ref: '#/components/schemas/CreateGeneralAudiencePainAngleRequest'
+        - type: object
+          required: [id, subnicheId, pain, desiredResult, status, createdAt, updatedAt]
+          properties:
+            id:
+              type: integer
+              format: int64
+            subnicheId:
+              type: integer
+              format: int64
+            createdAt:
+              type: string
+              format: date-time
+            updatedAt:
+              type: string
+              format: date-time
+    CreateGeneralAudienceSourceEvidenceRequest:
+      type: object
+      required: [evidenceSummary]
+      properties:
+        subnicheId:
+          type: integer
+          format: int64
+          nullable: true
+        sourceUrl:
+          type: string
+          maxLength: 1024
+          nullable: true
+        sourceDomain:
+          type: string
+          maxLength: 191
+          nullable: true
+        sourceType:
+          type: string
+          maxLength: 64
+          nullable: true
+        evidenceSummary:
+          type: string
+        capturedAt:
+          type: string
+          format: date-time
+          nullable: true
+    GeneralAudienceSourceEvidence:
+      allOf:
+        - $ref: '#/components/schemas/CreateGeneralAudienceSourceEvidenceRequest'
+        - type: object
+          required: [id, seedId, evidenceSummary, capturedAt]
+          properties:
+            id:
+              type: integer
+              format: int64
+            seedId:
+              type: integer
+              format: int64
+    GeneralAudienceQualityGate:
+      type: object
+      required: [subnicheId, approved, blockers, recommendations]
+      properties:
+        subnicheId:
+          type: integer
+          format: int64
+        approved:
+          type: boolean
+        blockers:
+          type: array
+          items:
+            type: string
+        recommendations:
+          type: array
+          items:
+            type: string

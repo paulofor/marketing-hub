@@ -12,18 +12,27 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * Serviço responsável por invalidar experimentos automaticamente quando há evidência operacional ruim.
+ */
 @Service
 public class ExperimentFunnelAutoStopService {
     private static final Logger LOGGER = LoggerFactory.getLogger(ExperimentFunnelAutoStopService.class);
     private static final double THREE_PERCENT = 0.03d;
+    private static final Duration LOW_IMPRESSIONS_MIN_CAMPAIGN_AGE = Duration.ofHours(24);
+    private static final long LOW_IMPRESSIONS_MINIMUM = 100L;
 
     private final ExperimentFunnelDiagnosticService diagnosticService;
     private final FacebookAdsCampaignRepository campaignRepository;
 
+    /**
+     * Cria o serviço com diagnóstico de funil e repositório de campanhas para registrar pausas automáticas.
+     */
     public ExperimentFunnelAutoStopService(ExperimentFunnelDiagnosticService diagnosticService,
                                            FacebookAdsCampaignRepository campaignRepository) {
         this.diagnosticService = diagnosticService;
@@ -31,10 +40,9 @@ public class ExperimentFunnelAutoStopService {
     }
 
     /**
-     * Evaluates the form submission step and, when the rule-of-three threshold at 3% fails,
-     * invalidates the experiment and requests an automatic stop for all linked Facebook campaigns.
+     * Avalia a etapa de envio de formulário e invalida o experimento quando a regra dos 3% falha.
      *
-     * @return {@code true} when the experiment was stopped automatically, {@code false} otherwise.
+     * @return {@code true} quando o experimento foi parado automaticamente, {@code false} caso contrário.
      */
     public boolean stopIfFormSubmissionZeroConversions(Experiment experiment) {
         if (experiment == null || experiment.getStatus() != ExperimentStatus.RUNNING) {
@@ -58,11 +66,47 @@ public class ExperimentFunnelAutoStopService {
                 "Automatic stop triggered for experiment {} due to zero conversions after reaching the 3%% rule-of-three threshold.",
                 experiment.getId()
         );
-        experiment.setStatus(ExperimentStatus.INVALIDATED);
-        requestFacebookCampaignStops(experiment.getId());
+        invalidateExperimentAndRequestStops(
+                experiment,
+                FacebookCampaignStopReason.FORM_ZERO_CONVERSION_RULE_OF_THREE,
+                "100 acessos sem envio de formulário pela regra estatística dos 3%"
+        );
         return true;
     }
 
+    /**
+     * Avalia se a campanha rodou tempo suficiente com impressões muito baixas e invalida o experimento.
+     */
+    public boolean stopIfLowImpressionsAfterRunningTime(Experiment experiment, Long impressions, Instant campaignCreatedAt) {
+        if (experiment == null || experiment.getStatus() != ExperimentStatus.RUNNING || campaignCreatedAt == null) {
+            return false;
+        }
+        Instant minimumAgeInstant = Instant.now().minus(LOW_IMPRESSIONS_MIN_CAMPAIGN_AGE);
+        if (campaignCreatedAt.isAfter(minimumAgeInstant)) {
+            return false;
+        }
+        long normalizedImpressions = impressions == null ? 0L : impressions;
+        if (normalizedImpressions >= LOW_IMPRESSIONS_MINIMUM) {
+            return false;
+        }
+        LOGGER.warn(
+                "Automatic stop triggered for experiment {} due to low impressions after {} hours: impressions={}, minimum={}",
+                experiment.getId(),
+                LOW_IMPRESSIONS_MIN_CAMPAIGN_AGE.toHours(),
+                normalizedImpressions,
+                LOW_IMPRESSIONS_MINIMUM
+        );
+        invalidateExperimentAndRequestStops(
+                experiment,
+                FacebookCampaignStopReason.LOW_IMPRESSIONS_AFTER_RUNNING_TIME,
+                "menos de 100 impressões após 24 horas de campanha"
+        );
+        return true;
+    }
+
+    /**
+     * Confirma se a checagem estatística representa falha na regra dos 3%.
+     */
     private boolean isThreePercentFailure(FunnelThresholdCheckDto check) {
         if (check == null || check.minAcceptableRate() == null) {
             return false;
@@ -70,7 +114,22 @@ public class ExperimentFunnelAutoStopService {
         return Math.abs(check.minAcceptableRate() - THREE_PERCENT) < 1e-9 && check.statisticallyFailed();
     }
 
-    private void requestFacebookCampaignStops(Long experimentId) {
+    /**
+     * Atualiza o status do experimento e registra o motivo de parada nas campanhas vinculadas.
+     */
+    private void invalidateExperimentAndRequestStops(Experiment experiment,
+                                                     FacebookCampaignStopReason stopReason,
+                                                     String businessReason) {
+        experiment.setStatus(ExperimentStatus.INVALIDATED);
+        requestFacebookCampaignStops(experiment.getId(), stopReason, businessReason);
+    }
+
+    /**
+     * Registra a solicitação de pausa para as campanhas Facebook ainda não finalizadas.
+     */
+    private void requestFacebookCampaignStops(Long experimentId,
+                                              FacebookCampaignStopReason stopReason,
+                                              String businessReason) {
         List<FacebookAdsCampaign> campaigns = campaignRepository.findByExperimentId(experimentId);
         if (campaigns == null || campaigns.isEmpty()) {
             LOGGER.info(
@@ -86,8 +145,15 @@ public class ExperimentFunnelAutoStopService {
                     if (campaign.getStopRequestedAt() == null) {
                         campaign.setStopRequestedAt(now);
                     }
-                    campaign.setStopReason(FacebookCampaignStopReason.FORM_ZERO_CONVERSION_RULE_OF_THREE);
+                    campaign.setStopReason(stopReason);
                     campaign.setStopLastError(null);
+                    LOGGER.info(
+                            "Stop request registered for campaign {} from experiment {}: reason={}, businessReason={}",
+                            campaign.getId(),
+                            experimentId,
+                            stopReason,
+                            businessReason
+                    );
                 });
     }
 }

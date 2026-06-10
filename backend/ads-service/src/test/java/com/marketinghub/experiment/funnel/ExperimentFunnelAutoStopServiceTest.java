@@ -18,6 +18,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -98,4 +99,42 @@ class ExperimentFunnelAutoStopServiceTest {
         assertThat(stopped).isFalse();
         assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.RUNNING);
     }
+    @Test
+    void stopsExperimentWhenCampaignHasLowImpressionsAfterOneDay() {
+        FacebookAdsCampaign campaign = new FacebookAdsCampaign();
+        campaign.setId("camp-low-impressions");
+        campaign.setCreatedAt(Instant.now().minus(25, ChronoUnit.HOURS));
+        when(campaignRepository.findByExperimentId(99L)).thenReturn(List.of(campaign));
+
+        boolean stopped = service.stopIfLowImpressionsAfterRunningTime(experiment, 42L, campaign.getCreatedAt());
+
+        assertThat(stopped).isTrue();
+        assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.INVALIDATED);
+        assertThat(campaign.getStopReason()).isEqualTo(FacebookCampaignStopReason.LOW_IMPRESSIONS_AFTER_RUNNING_TIME);
+        assertThat(campaign.getStopRequestedAt()).isNotNull();
+        assertThat(campaign.getStopLastError()).isNull();
+    }
+
+    @Test
+    void keepsExperimentRunningWhenLowImpressionsCampaignIsStillRecent() {
+        boolean stopped = service.stopIfLowImpressionsAfterRunningTime(
+                experiment,
+                42L,
+                Instant.now().minus(2, ChronoUnit.HOURS));
+
+        assertThat(stopped).isFalse();
+        assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.RUNNING);
+    }
+
+    @Test
+    void keepsExperimentRunningWhenImpressionsReachMinimumAfterOneDay() {
+        boolean stopped = service.stopIfLowImpressionsAfterRunningTime(
+                experiment,
+                100L,
+                Instant.now().minus(25, ChronoUnit.HOURS));
+
+        assertThat(stopped).isFalse();
+        assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.RUNNING);
+    }
+
 }

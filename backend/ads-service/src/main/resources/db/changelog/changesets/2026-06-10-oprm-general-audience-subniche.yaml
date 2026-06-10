@@ -1,0 +1,40 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-10-02-oprm-general-audience-subniche
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: oprm_general_audience_subniche
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE oprm_general_audience_subniche (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                seed_id BIGINT NOT NULL,
+                name VARCHAR(191) NOT NULL,
+                persona_summary LONGTEXT NULL,
+                pain_summary LONGTEXT NULL,
+                desired_outcome_summary LONGTEXT NULL,
+                language_patterns LONGTEXT NULL,
+                channels_summary LONGTEXT NULL,
+                qualification_question LONGTEXT NULL,
+                status VARCHAR(32) NOT NULL,
+                opportunity_score DECIMAL(5,2) NULL,
+                risk_score DECIMAL(5,2) NULL,
+                market_niche_id BIGINT NULL,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL,
+                CONSTRAINT pk_oprm_general_audience_subniche PRIMARY KEY (id),
+                CONSTRAINT fk_oprm_general_audience_subniche_seed
+                  FOREIGN KEY (seed_id) REFERENCES oprm_general_audience_seed (id)
+              );
+              CREATE INDEX idx_oprm_general_audience_subniche_seed_status ON oprm_general_audience_subniche (seed_id, status, updated_at);
+              CREATE INDEX idx_oprm_general_audience_subniche_status ON oprm_general_audience_subniche (status, updated_at);
+              CREATE INDEX idx_oprm_general_audience_subniche_market_niche ON oprm_general_audience_subniche (market_niche_id);

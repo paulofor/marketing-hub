@@ -279,6 +279,12 @@ export interface MoisSalesLibraryPage {
   lastCapturedAt?: string;
   analyzedAt?: string;
   updatedAt: string;
+  marketWarmupScoreTotal?: number;
+  marketWarmupTemperature?: MoisMarketWarmupTemperature;
+  marketWarmupEcosystemType?: MoisMarketWarmupEcosystemType;
+  marketWarmupRecommendation?: MoisMarketWarmupRecommendation;
+  marketWarmupStatus?: MoisMarketWarmupJobStatus;
+  marketWarmupUpdatedAt?: string;
 }
 
 export interface MoisSalesLibraryPageSummary {
@@ -295,6 +301,16 @@ export interface MoisSalesLibraryPageSummary {
   blockedCooldown: number;
   hotmart: number;
   clickbank: number;
+  marketWarmupEligible: number;
+  marketWarmupPending: number;
+  marketWarmupRunning: number;
+  marketWarmupCompleted: number;
+  marketWarmupFailed: number;
+  marketWarmupHot: number;
+  marketWarmupPromising: number;
+  marketWarmupWarm: number;
+  marketWarmupCold: number;
+  marketWarmupSaturated: number;
   updatedAt?: string;
 }
 

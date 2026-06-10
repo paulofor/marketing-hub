@@ -13,6 +13,7 @@ import com.marketinghub.repository.jpa.oprm.nichocnae.OprmExtractedSignalReposit
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmNicheRoutineCardRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmRoutineResearchCycleRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmSourceSnapshotRepository;
+import com.marketinghub.repository.jpa.oprm.nichocnae.meiaudienceprofile.OprmMeiAudienceProfileRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
 import java.util.List;
@@ -39,23 +40,27 @@ public class BackendRoutineQualityGateService {
   private final OprmNicheRoutineCardRepository routineCardRepository;
   private final OprmExtractedSignalRepository extractedSignalRepository;
   private final OprmSourceSnapshotRepository sourceSnapshotRepository;
+  private final OprmMeiAudienceProfileRepository meiAudienceProfileRepository;
 
   /** Inicializa o serviço com os repositórios canônicos necessários para calcular o contexto da qualidade. */
   public BackendRoutineQualityGateService(
       OprmRoutineResearchCycleRepository routineResearchCycleRepository,
       OprmNicheRoutineCardRepository routineCardRepository,
       OprmExtractedSignalRepository extractedSignalRepository,
-      OprmSourceSnapshotRepository sourceSnapshotRepository) {
+      OprmSourceSnapshotRepository sourceSnapshotRepository,
+      OprmMeiAudienceProfileRepository meiAudienceProfileRepository) {
     this.routineResearchCycleRepository = routineResearchCycleRepository;
     this.routineCardRepository = routineCardRepository;
     this.extractedSignalRepository = extractedSignalRepository;
     this.sourceSnapshotRepository = sourceSnapshotRepository;
+    this.meiAudienceProfileRepository = meiAudienceProfileRepository;
   }
 
   /** Lista cartões sintetizados ainda não avaliados com contadores concretos de fontes e sinais. */
   @Transactional(readOnly = true)
   public List<RecordRoutineQualityGatePending> listPending() {
     return routineCardRepository.findByQualityCheckedAtIsNullOrderByCreatedAtAscIdAsc(PageRequest.of(0, MAX_PENDING)).stream()
+        .filter(card -> meiAudienceProfileRepository.existsByResearchCycleId(card.getResearchCycleId()))
         .map(this::toPending)
         .toList();
   }

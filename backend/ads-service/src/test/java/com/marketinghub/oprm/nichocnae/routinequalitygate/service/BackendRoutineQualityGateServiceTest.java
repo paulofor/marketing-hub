@@ -17,6 +17,7 @@ import com.marketinghub.repository.jpa.oprm.nichocnae.OprmExtractedSignalReposit
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmNicheRoutineCardRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmRoutineResearchCycleRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmSourceSnapshotRepository;
+import com.marketinghub.repository.jpa.oprm.nichocnae.meiaudienceprofile.OprmMeiAudienceProfileRepository;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -29,14 +30,16 @@ class BackendRoutineQualityGateServiceTest {
   private final OprmNicheRoutineCardRepository cardRepository = mock(OprmNicheRoutineCardRepository.class);
   private final OprmExtractedSignalRepository signalRepository = mock(OprmExtractedSignalRepository.class);
   private final OprmSourceSnapshotRepository snapshotRepository = mock(OprmSourceSnapshotRepository.class);
+  private final OprmMeiAudienceProfileRepository meiAudienceProfileRepository = mock(OprmMeiAudienceProfileRepository.class);
   private final BackendRoutineQualityGateService service =
-      new BackendRoutineQualityGateService(cycleRepository, cardRepository, signalRepository, snapshotRepository);
+      new BackendRoutineQualityGateService(cycleRepository, cardRepository, signalRepository, snapshotRepository, meiAudienceProfileRepository);
 
   /** Deve montar pendência com aliases de tipos de sinais já gerados pela etapa cinco. */
   @Test
   void shouldListPendingWithSignalTypeAliases() {
     OprmNicheRoutineCard card = card();
     when(cardRepository.findByQualityCheckedAtIsNullOrderByCreatedAtAscIdAsc(any(Pageable.class))).thenReturn(List.of(card));
+    when(meiAudienceProfileRepository.existsByResearchCycleId(1001L)).thenReturn(true);
     when(snapshotRepository.findByResearchCycleIdOrderByIdAsc(1001L)).thenReturn(List.of(new OprmSourceSnapshot(), new OprmSourceSnapshot()));
     OprmSourceSnapshot riskSnapshot = new OprmSourceSnapshot();
     riskSnapshot.setSolutionLanguageRisk(true);

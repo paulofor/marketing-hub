@@ -45,8 +45,6 @@ public class NicheResearchSeedBuilderValidator {
             "trabalhador por conta propria",
             "dono operador",
             "dono-operador");
-    private static final Set<String> BRAZIL_MARKERS = Set.of(
-            "brasil", "brasileiro", "brasileira", "brasileiros", "pt-br");
 
     /** Garante que o modelo produziu seed completo e queries específicas, pendentes e sem contaminação de solução. */
     public void validate(NicheResearchSeedBuilderPending input, NicheResearchSeedBuilderOutput output) {
@@ -116,7 +114,7 @@ public class NicheResearchSeedBuilderValidator {
             throw new IllegalArgumentException("Query sem nicho ou contexto operacional específico: " + query.queryText());
         }
         rejectSolutionTerms(query.queryText(), allowedCnaeText);
-        validateAudienceAndBrazilMarkers(query.queryText());
+        validateAudienceMarker(query.queryText());
         if (!ALLOWED_GOALS.contains(query.queryGoal())) {
             throw new IllegalArgumentException("queryGoal inválido na etapa dois: " + query.queryGoal());
         }
@@ -135,19 +133,14 @@ public class NicheResearchSeedBuilderValidator {
         }
     }
 
-    /** Exige marcadores explícitos de público MEI/autônomo e de contexto brasileiro na frase de busca. */
-    private void validateAudienceAndBrazilMarkers(String queryText) {
+    /** Exige marcador explícito de público MEI/autônomo na frase de busca. */
+    private void validateAudienceMarker(String queryText) {
         String normalizedQuery = normalizeForTerms(queryText);
         Set<String> queryTokens = tokenizeNormalizedText(normalizedQuery);
         boolean hasAudienceMarker = AUDIENCE_MARKERS.stream()
                 .anyMatch(marker -> containsTerm(normalizedQuery, queryTokens, marker));
         if (!hasAudienceMarker) {
             throw new IllegalArgumentException("Query sem marcador de MEI/autônomo brasileiro: " + queryText);
-        }
-        boolean hasBrazilMarker = BRAZIL_MARKERS.stream()
-                .anyMatch(marker -> containsTerm(normalizedQuery, queryTokens, marker));
-        if (!hasBrazilMarker) {
-            throw new IllegalArgumentException("Query sem marcador de Brasil/pt-BR: " + queryText);
         }
     }
 

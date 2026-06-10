@@ -61,17 +61,15 @@ class NicheResearchSeedBuilderValidatorTest {
                 .hasMessageContaining("marcador de MEI/autônomo");
     }
 
-    /** Deve rejeitar query sem marcador Brasil/pt-BR para manter a pesquisa aderente ao mercado brasileiro. */
+    /** Deve aceitar query sem marcador literal Brasil/pt-BR quando ela mantém nicho e público MEI/autônomo. */
     @Test
-    void shouldRejectQueryWithoutBrazilMarker() {
+    void shouldAcceptQueryWithoutLiteralBrazilMarker() {
         NicheResearchSeedBuilderPending pending = pending();
         List<String> texts = new ArrayList<>(validQueryTexts());
         texts.set(0, "manicure MEI rotina de atendimento agenda clientes");
         NicheResearchSeedBuilderOutput output = outputWithQueries(texts);
 
-        assertThatThrownBy(() -> validator.validate(pending, output))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("marcador de Brasil/pt-BR");
+        assertThatNoException().isThrownBy(() -> validator.validate(pending, output));
     }
 
     /** Deve aceitar palavras repetidas nas queries porque repetição de conectivos não é duplicidade operacional. */
@@ -95,7 +93,7 @@ class NicheResearchSeedBuilderValidatorTest {
                 .hasMessageContaining("entre 12 e 15 queries");
     }
 
-    /** Cria queries válidas com marcadores de MEI/autônomo e contexto brasileiro. */
+    /** Cria queries válidas com marcadores de MEI/autônomo e prioridade de contexto brasileiro. */
     private List<String> validQueryTexts() {
         return List.of(
                 "manicure MEI rotina de atendimento no Brasil",

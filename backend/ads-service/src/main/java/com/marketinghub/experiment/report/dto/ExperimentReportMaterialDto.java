@@ -2,6 +2,7 @@ package com.marketinghub.experiment.report.dto;
 
 import com.marketinghub.experiment.dto.ExperimentCampaignMetricDto;
 import com.marketinghub.experiment.funnel.dto.ExperimentFunnelStageDto;
+import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsDto;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -35,6 +36,7 @@ public class ExperimentReportMaterialDto {
     private List<LeadPortalFlowSnapshot> leadPortalFlows = Collections.emptyList();
     private InstantFormSnapshot instantForm;
     private ExperimentCampaignMetricDto campaignMetric;
+    private ExperimentLandingAnalyticsDto landingAnalytics;
     @Builder.Default
     private List<ExperimentFunnelStageDto> funnelStages = Collections.emptyList();
 

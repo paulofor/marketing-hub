@@ -1,11 +1,15 @@
 package com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service;
 
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.dto.MoisSalesLibraryDtos;
-import com.marketinghub.repository.jdbc.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageMarketWarmupGateway;
-import com.marketinghub.repository.jdbc.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageMarketWarmupGateway.MarketWarmupClaimData;
-import com.marketinghub.repository.jdbc.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageMarketWarmupGateway.MarketWarmupJobData;
-import com.marketinghub.repository.jdbc.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageMarketWarmupGateway.MarketWarmupSummaryData;
-import com.marketinghub.repository.jdbc.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageMarketWarmupGateway.SalesPageWarmupData;
+import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageMarketWarmupGateway;
+import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageMarketWarmupGateway.MarketWarmupClaimData;
+import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageMarketWarmupGateway.MarketWarmupJobData;
+import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageMarketWarmupGateway.MarketWarmupSignalData;
+import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageMarketWarmupGateway.MarketWarmupSignalReadData;
+import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageMarketWarmupGateway.MarketWarmupSourceData;
+import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageMarketWarmupGateway.MarketWarmupSummaryData;
+import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageMarketWarmupGateway.MarketWarmupSummaryWriteData;
+import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageMarketWarmupGateway.SalesPageWarmupData;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -34,8 +38,8 @@ public class MoisSalesPageMarketWarmupService {
                     .orElseThrow(() -> new IllegalArgumentException("Página MOIS não encontrada para aquecimento: " + pageId));
             MarketWarmupJobData job = gateway.findActiveJobByPage(pageId).orElseGet(() -> gateway.createPendingJob(page));
             log.info("Pesquisa de aquecimento MOIS solicitada. modulo=MOIS, operacao=requestMarketWarmup, pageId={}, jobId={}, status={}",
-                    pageId, job.jobId(), job.status());
-            return new MoisSalesLibraryDtos.MarketWarmupRequestResponse(pageId, job.jobId(), job.status(), job.createdAt());
+                    pageId, job.jobId(), mapJobStatus(job.status()));
+            return new MoisSalesLibraryDtos.MarketWarmupRequestResponse(pageId, job.jobId(), mapJobStatus(job.status()), job.createdAt());
         } catch (RuntimeException ex) {
             log.error("Falha ao solicitar pesquisa de aquecimento MOIS. modulo=MOIS, operacao=requestMarketWarmup, pageId={}, erroClasse={}, erro={}",
                     pageId, ex.getClass().getName(), ex.getMessage(), ex);
@@ -65,7 +69,7 @@ public class MoisSalesPageMarketWarmupService {
         try {
             MarketWarmupJobData job = gateway.findLatestJobByPage(pageId)
                     .orElseThrow(() -> new IllegalArgumentException("Pesquisa de aquecimento não encontrada para página: " + pageId));
-            return new MoisSalesLibraryDtos.MarketWarmupSourceListResponse(pageId, job.jobId(), gateway.listSources(job.jobId()));
+            return new MoisSalesLibraryDtos.MarketWarmupSourceListResponse(pageId, job.jobId(), gateway.listSources(job.jobId()).stream().map(this::mapSource).toList());
         } catch (RuntimeException ex) {
             log.error("Falha ao listar fontes de aquecimento MOIS. modulo=MOIS, operacao=listMarketWarmupSources, pageId={}, erroClasse={}, erro={}",
                     pageId, ex.getClass().getName(), ex.getMessage(), ex);
@@ -80,7 +84,7 @@ public class MoisSalesPageMarketWarmupService {
         try {
             MarketWarmupJobData job = gateway.findLatestJobByPage(pageId)
                     .orElseThrow(() -> new IllegalArgumentException("Pesquisa de aquecimento não encontrada para página: " + pageId));
-            return new MoisSalesLibraryDtos.MarketWarmupSignalListResponse(pageId, job.jobId(), gateway.listSignals(job.jobId()));
+            return new MoisSalesLibraryDtos.MarketWarmupSignalListResponse(pageId, job.jobId(), gateway.listSignals(job.jobId()).stream().map(this::mapSignal).toList());
         } catch (RuntimeException ex) {
             log.error("Falha ao listar sinais de aquecimento MOIS. modulo=MOIS, operacao=listMarketWarmupSignals, pageId={}, erroClasse={}, erro={}",
                     pageId, ex.getClass().getName(), ex.getMessage(), ex);
@@ -124,14 +128,15 @@ public class MoisSalesPageMarketWarmupService {
         try {
             MarketWarmupJobData job = gateway.findJob(jobId)
                     .orElseThrow(() -> new IllegalArgumentException("Job de aquecimento não encontrado: " + jobId));
-            if (job.status() == MoisSalesLibraryDtos.MarketWarmupJobStatus.DONE) {
+            if (mapJobStatus(job.status()) == MoisSalesLibraryDtos.MarketWarmupJobStatus.DONE) {
                 throw new IllegalStateException("Job de aquecimento já concluído: " + jobId);
             }
             gateway.deleteJobDetails(jobId);
             List<Long> sourceIds = persistSources(job, request.sources());
             persistSignals(job, sourceIds, request.signals());
-            gateway.insertSummary(jobId, job.pageId(), job.workspaceId(), request.summary());
-            gateway.markJobDone(jobId, request.summary(), request.finishedAt());
+            MarketWarmupSummaryWriteData summary = mapSummaryWrite(request.summary());
+            gateway.insertSummary(jobId, job.pageId(), job.workspaceId(), summary);
+            gateway.markJobDone(jobId, summary, request.finishedAt());
             log.info("Job de aquecimento MOIS concluído. modulo=MOIS, operacao=completeMarketWarmupJob, workspaceId={}, pageId={}, jobId={}, fontes={}, sinais={}, score={}",
                     job.workspaceId(), job.pageId(), jobId, request.sources().size(), request.signals().size(), request.summary().scoreTotal());
         } catch (RuntimeException ex) {
@@ -166,7 +171,7 @@ public class MoisSalesPageMarketWarmupService {
     private List<Long> persistSources(MarketWarmupJobData job, List<MoisSalesLibraryDtos.MarketWarmupSourceCompleteItem> sources) {
         List<Long> sourceIds = new ArrayList<>();
         for (MoisSalesLibraryDtos.MarketWarmupSourceCompleteItem source : sources) {
-            sourceIds.add(gateway.insertSource(job.jobId(), job.pageId(), job.workspaceId(), source));
+            sourceIds.add(gateway.insertSource(job.jobId(), job.pageId(), job.workspaceId(), mapSourceWrite(source)));
         }
         return sourceIds;
     }
@@ -179,7 +184,7 @@ public class MoisSalesPageMarketWarmupService {
             if (signal.sourceIndex() < 0 || signal.sourceIndex() >= sourceIds.size()) {
                 throw new IllegalArgumentException("Índice de fonte inválido para sinal de aquecimento: " + signal.sourceIndex());
             }
-            gateway.insertSignal(job.jobId(), job.pageId(), job.workspaceId(), sourceIds.get(signal.sourceIndex()), signal);
+            gateway.insertSignal(job.jobId(), job.pageId(), job.workspaceId(), sourceIds.get(signal.sourceIndex()), mapSignalWrite(signal));
         }
     }
 
@@ -188,10 +193,103 @@ public class MoisSalesPageMarketWarmupService {
      */
     private MoisSalesLibraryDtos.MarketWarmupSummaryResponse mapSummary(MarketWarmupSummaryData summary) {
         return new MoisSalesLibraryDtos.MarketWarmupSummaryResponse(
-                summary.jobId(), summary.pageId(), summary.scoreTotal(), summary.marketTemperature(), summary.ecosystemType(), summary.recommendation(),
-                splitLines(summary.mainPains()), splitLines(summary.mainObjections()), splitLines(summary.mainPromises()), splitLines(summary.mainChannels()),
-                splitLines(summary.mainCompetitors()), summary.saturationRisk(), summary.opportunityRecommendation(), summary.nextExperimentSuggestion(),
-                summary.status(), summary.errorCategory(), summary.errorMessage(), summary.createdAt(), summary.updatedAt());
+                summary.jobId(), summary.pageId(), summary.scoreTotal(), mapTemperature(summary.marketTemperature()), mapEcosystem(summary.ecosystemType()),
+                mapRecommendation(summary.recommendation()), splitLines(summary.mainPains()), splitLines(summary.mainObjections()), splitLines(summary.mainPromises()),
+                splitLines(summary.mainChannels()), splitLines(summary.mainCompetitors()), summary.saturationRisk(), summary.opportunityRecommendation(), summary.nextExperimentSuggestion(),
+                mapJobStatus(summary.status()), summary.errorCategory(), summary.errorMessage(), summary.createdAt(), summary.updatedAt());
+    }
+
+    /**
+     * Converte uma fonte persistida em contrato de leitura da API.
+     */
+    private MoisSalesLibraryDtos.MarketWarmupSourceResponse mapSource(MarketWarmupSourceData source) {
+        return new MoisSalesLibraryDtos.MarketWarmupSourceResponse(
+                source.sourceId(), source.jobId(), source.pageId(), mapPlatform(source.platform()), mapSourceType(source.sourceType()), source.sourceUrl(),
+                source.sourceTitle(), source.authorName(), source.publishedAt(), source.lastActivityAt(), source.followersOrSubscribers(), source.viewsCount(),
+                source.likesCount(), source.commentsCount(), source.recencyScore(), source.engagementScore(), source.evidenceSummary(), source.createdAt(), source.updatedAt());
+    }
+
+    /**
+     * Converte um sinal persistido em contrato de leitura da API.
+     */
+    private MoisSalesLibraryDtos.MarketWarmupSignalResponse mapSignal(MarketWarmupSignalReadData signal) {
+        return new MoisSalesLibraryDtos.MarketWarmupSignalResponse(
+                signal.signalId(), signal.jobId(), signal.sourceId(), signal.pageId(), mapSignalType(signal.signalType()), signal.signalStrength(),
+                signal.signalText(), signal.businessInterpretation(), signal.createdAt());
+    }
+
+    /**
+     * Converte uma fonte recebida da API em dados desacoplados de persistência.
+     */
+    private MarketWarmupSourceData mapSourceWrite(MoisSalesLibraryDtos.MarketWarmupSourceCompleteItem source) {
+        return new MarketWarmupSourceData(null, null, null, source.platform().name(), source.sourceType().name(), source.sourceUrl(), source.sourceTitle(),
+                source.authorName(), source.publishedAt(), source.lastActivityAt(), source.followersOrSubscribers(), source.viewsCount(), source.likesCount(),
+                source.commentsCount(), source.recencyScore(), source.engagementScore(), source.evidenceSummary(), null, null);
+    }
+
+    /**
+     * Converte um sinal recebido da API em dados desacoplados de persistência.
+     */
+    private MarketWarmupSignalData mapSignalWrite(MoisSalesLibraryDtos.MarketWarmupSignalCompleteItem signal) {
+        return new MarketWarmupSignalData(signal.signalType().name(), signal.signalStrength(), signal.signalText(), signal.businessInterpretation());
+    }
+
+    /**
+     * Converte o resumo recebido da API em dados desacoplados de persistência.
+     */
+    private MarketWarmupSummaryWriteData mapSummaryWrite(MoisSalesLibraryDtos.MarketWarmupSummaryCompleteItem summary) {
+        return new MarketWarmupSummaryWriteData(summary.scoreTotal(), summary.marketTemperature().name(), summary.ecosystemType().name(), summary.recommendation().name(),
+                summary.mainPains(), summary.mainObjections(), summary.mainPromises(), summary.mainChannels(), summary.mainCompetitors(), summary.saturationRisk(),
+                summary.opportunityRecommendation(), summary.nextExperimentSuggestion());
+    }
+
+    /**
+     * Converte status textual da persistência para o enum público do módulo.
+     */
+    private MoisSalesLibraryDtos.MarketWarmupJobStatus mapJobStatus(String status) {
+        return status == null ? null : MoisSalesLibraryDtos.MarketWarmupJobStatus.valueOf(status);
+    }
+
+    /**
+     * Converte temperatura textual da persistência para o enum público do módulo.
+     */
+    private MoisSalesLibraryDtos.MarketWarmupTemperature mapTemperature(String temperature) {
+        return temperature == null ? null : MoisSalesLibraryDtos.MarketWarmupTemperature.valueOf(temperature);
+    }
+
+    /**
+     * Converte ecossistema textual da persistência para o enum público do módulo.
+     */
+    private MoisSalesLibraryDtos.MarketWarmupEcosystemType mapEcosystem(String ecosystem) {
+        return ecosystem == null ? null : MoisSalesLibraryDtos.MarketWarmupEcosystemType.valueOf(ecosystem);
+    }
+
+    /**
+     * Converte recomendação textual da persistência para o enum público do módulo.
+     */
+    private MoisSalesLibraryDtos.MarketWarmupRecommendation mapRecommendation(String recommendation) {
+        return recommendation == null ? null : MoisSalesLibraryDtos.MarketWarmupRecommendation.valueOf(recommendation);
+    }
+
+    /**
+     * Converte plataforma textual da persistência para o enum público do módulo.
+     */
+    private MoisSalesLibraryDtos.MarketWarmupPlatform mapPlatform(String platform) {
+        return platform == null ? null : MoisSalesLibraryDtos.MarketWarmupPlatform.valueOf(platform);
+    }
+
+    /**
+     * Converte tipo de fonte textual da persistência para o enum público do módulo.
+     */
+    private MoisSalesLibraryDtos.MarketWarmupSourceType mapSourceType(String sourceType) {
+        return sourceType == null ? null : MoisSalesLibraryDtos.MarketWarmupSourceType.valueOf(sourceType);
+    }
+
+    /**
+     * Converte tipo de sinal textual da persistência para o enum público do módulo.
+     */
+    private MoisSalesLibraryDtos.MarketWarmupSignalType mapSignalType(String signalType) {
+        return signalType == null ? null : MoisSalesLibraryDtos.MarketWarmupSignalType.valueOf(signalType);
     }
 
     /**

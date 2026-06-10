@@ -7,11 +7,14 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.dto.MoisSalesLibraryDtos;
-import com.marketinghub.repository.jdbc.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageMarketWarmupGateway;
-import com.marketinghub.repository.jdbc.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageMarketWarmupGateway.MarketWarmupClaimData;
-import com.marketinghub.repository.jdbc.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageMarketWarmupGateway.MarketWarmupJobData;
-import com.marketinghub.repository.jdbc.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageMarketWarmupGateway.MarketWarmupSummaryData;
-import com.marketinghub.repository.jdbc.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageMarketWarmupGateway.SalesPageWarmupData;
+import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageMarketWarmupGateway;
+import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageMarketWarmupGateway.MarketWarmupClaimData;
+import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageMarketWarmupGateway.MarketWarmupJobData;
+import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageMarketWarmupGateway.MarketWarmupSignalData;
+import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageMarketWarmupGateway.MarketWarmupSourceData;
+import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageMarketWarmupGateway.MarketWarmupSummaryWriteData;
+import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageMarketWarmupGateway.MarketWarmupSummaryData;
+import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageMarketWarmupGateway.SalesPageWarmupData;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -98,15 +101,15 @@ class MoisSalesPageMarketWarmupServiceTest {
                 0, MoisSalesLibraryDtos.MarketWarmupSignalType.PAIN_EXPLICIT, BigDecimal.valueOf(8.5), "dor explícita", "alta urgência");
         MoisSalesLibraryDtos.MarketWarmupSummaryCompleteItem summary = sampleSummary();
         given(gateway.findJob(99L)).willReturn(Optional.of(job));
-        given(gateway.insertSource(99L, 10L, "workspace-001", source)).willReturn(501L);
+        given(gateway.insertSource(99L, 10L, "workspace-001", sourceData(source))).willReturn(501L);
 
         service.completeJob(99L, new MoisSalesLibraryDtos.MarketWarmupCompleteRequest(
                 List.of(source), List.of(signal), summary, Instant.parse("2026-06-10T10:00:00Z")));
 
         verify(gateway).deleteJobDetails(99L);
-        verify(gateway).insertSignal(99L, 10L, "workspace-001", 501L, signal);
-        verify(gateway).insertSummary(99L, 10L, "workspace-001", summary);
-        verify(gateway).markJobDone(99L, summary, Instant.parse("2026-06-10T10:00:00Z"));
+        verify(gateway).insertSignal(99L, 10L, "workspace-001", 501L, signalData(signal));
+        verify(gateway).insertSummary(99L, 10L, "workspace-001", summaryData(summary));
+        verify(gateway).markJobDone(99L, summaryData(summary), Instant.parse("2026-06-10T10:00:00Z"));
     }
 
     /**
@@ -119,7 +122,7 @@ class MoisSalesPageMarketWarmupServiceTest {
         MoisSalesLibraryDtos.MarketWarmupSignalCompleteItem signal = new MoisSalesLibraryDtos.MarketWarmupSignalCompleteItem(
                 2, MoisSalesLibraryDtos.MarketWarmupSignalType.OBJECTION, BigDecimal.ONE, "objeção", null);
         given(gateway.findJob(99L)).willReturn(Optional.of(job));
-        given(gateway.insertSource(99L, 10L, "workspace-001", source)).willReturn(501L);
+        given(gateway.insertSource(99L, 10L, "workspace-001", sourceData(source))).willReturn(501L);
 
         assertThatThrownBy(() -> service.completeJob(99L, new MoisSalesLibraryDtos.MarketWarmupCompleteRequest(
                 List.of(source), List.of(signal), sampleSummary(), Instant.parse("2026-06-10T10:00:00Z"))))
@@ -138,9 +141,9 @@ class MoisSalesPageMarketWarmupServiceTest {
                 99L,
                 10L,
                 BigDecimal.valueOf(82),
-                MoisSalesLibraryDtos.MarketWarmupTemperature.HOT,
-                MoisSalesLibraryDtos.MarketWarmupEcosystemType.CREATORS_HEATED,
-                MoisSalesLibraryDtos.MarketWarmupRecommendation.PRIORITIZE,
+                "HOT",
+                "CREATORS_HEATED",
+                "PRIORITIZE",
                 "dor 1\ndor 2",
                 "objeção 1",
                 "promessa 1\npromessa 2",
@@ -149,7 +152,7 @@ class MoisSalesPageMarketWarmupServiceTest {
                 "baixo",
                 "priorizar experimento",
                 "ângulo inicial",
-                MoisSalesLibraryDtos.MarketWarmupJobStatus.DONE,
+                "DONE",
                 null,
                 null,
                 Instant.parse("2026-06-10T09:00:00Z"),
@@ -181,7 +184,32 @@ class MoisSalesPageMarketWarmupServiceTest {
      * Monta um job de aquecimento com status controlado pelo cenário de teste.
      */
     private MarketWarmupJobData sampleJob(MoisSalesLibraryDtos.MarketWarmupJobStatus status) {
-        return new MarketWarmupJobData(99L, 10L, "workspace-001", status, Instant.parse("2026-06-10T09:00:00Z"), null, null);
+        return new MarketWarmupJobData(99L, 10L, "workspace-001", status.name(), Instant.parse("2026-06-10T09:00:00Z"), null, null);
+    }
+
+    /**
+     * Monta os dados desacoplados de persistência esperados para uma fonte pública.
+     */
+    private MarketWarmupSourceData sourceData(MoisSalesLibraryDtos.MarketWarmupSourceCompleteItem source) {
+        return new MarketWarmupSourceData(null, null, null, source.platform().name(), source.sourceType().name(), source.sourceUrl(), source.sourceTitle(),
+                source.authorName(), source.publishedAt(), source.lastActivityAt(), source.followersOrSubscribers(), source.viewsCount(), source.likesCount(),
+                source.commentsCount(), source.recencyScore(), source.engagementScore(), source.evidenceSummary(), null, null);
+    }
+
+    /**
+     * Monta os dados desacoplados de persistência esperados para um sinal comercial.
+     */
+    private MarketWarmupSignalData signalData(MoisSalesLibraryDtos.MarketWarmupSignalCompleteItem signal) {
+        return new MarketWarmupSignalData(signal.signalType().name(), signal.signalStrength(), signal.signalText(), signal.businessInterpretation());
+    }
+
+    /**
+     * Monta os dados desacoplados de persistência esperados para o resumo calculado.
+     */
+    private MarketWarmupSummaryWriteData summaryData(MoisSalesLibraryDtos.MarketWarmupSummaryCompleteItem summary) {
+        return new MarketWarmupSummaryWriteData(summary.scoreTotal(), summary.marketTemperature().name(), summary.ecosystemType().name(), summary.recommendation().name(),
+                summary.mainPains(), summary.mainObjections(), summary.mainPromises(), summary.mainChannels(), summary.mainCompetitors(), summary.saturationRisk(),
+                summary.opportunityRecommendation(), summary.nextExperimentSuggestion());
     }
 
     /**

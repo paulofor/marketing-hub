@@ -4255,3 +4255,9 @@
 ## 2026-06-10 — Relatório de experimento com analytics da landing
 - foi feito: incluídos no material e no relatório completo do experimento os dados de analytics da landing, com sessões, page views, tempo visível total/médio e trechos/seções com maior tempo de visualização.
 - impacto: o relatório passa a apoiar decisão comercial com evidências de atenção real na página, não apenas métricas de campanha e funil.
+## 2026-06-10 — Conclusão estratégica do experimento 37
+
+- solicitação: gerar um documento de conclusão do experimento 37 com observações e plano de melhoria.
+- diagnóstico: o experimento foi invalidado por zero envios após volume suficiente de acessos ao formulário, mas os cliques baratos indicam que a hipótese estratégica ainda pode ter valor; a maior fragilidade está na materialização da captura, com landing/formulário abaixo do padrão, público amplo, persona genérica e criativos pouco diferenciados.
+- foi feito: criado o documento `docs/relatorios/experimentos/conclusao-do-experimento-37.md` com resumo executivo, evidências, causa-raiz provável, decisão recomendada e plano de melhoria para um experimento derivado 37B.
+- próximo passo: antes de nova mídia, validar formulário ponta a ponta e reconstruir a oferta de entrada como roteiro anti-preço de WhatsApp para personal trainer.

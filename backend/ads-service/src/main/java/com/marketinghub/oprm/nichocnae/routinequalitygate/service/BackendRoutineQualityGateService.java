@@ -304,12 +304,25 @@ public class BackendRoutineQualityGateService {
     if (request.readyForHypothesis() == null) {
       throw new IllegalArgumentException("readyForHypothesis is required");
     }
+    validateReadyForHypothesisCompatibility(request.qualityStatus(), request.readyForHypothesis());
     validateScore(request.specificityScore(), "specificityScore");
     validateScore(request.confidenceScore(), "confidenceScore");
     validateScore(request.duplicationScore(), "duplicationScore");
     String notes = trimOptional(request.qualityNotes());
     if (notes != null && notes.length() > MAX_NOTES_LENGTH) {
       throw new IllegalArgumentException("qualityNotes must contain at most " + MAX_NOTES_LENGTH + " characters");
+    }
+  }
+
+  /** Garante coerência entre status do gate e liberação para hipótese, evitando materialização indevida. */
+  private void validateReadyForHypothesisCompatibility(String qualityStatus, Boolean readyForHypothesis) {
+    String normalizedStatus = normalizeQualityStatus(qualityStatus);
+    boolean approvedStatus = isApprovedQualityStatus(normalizedStatus);
+    if (Boolean.TRUE.equals(readyForHypothesis) && !approvedStatus) {
+      throw new IllegalArgumentException("readyForHypothesis can only be true when qualityStatus approves the MEI audience");
+    }
+    if (MEI_AUDIENCE_READY_STATUS.equals(normalizedStatus) && !Boolean.TRUE.equals(readyForHypothesis)) {
+      throw new IllegalArgumentException("MEI_AUDIENCE_READY requires readyForHypothesis true");
     }
   }
 

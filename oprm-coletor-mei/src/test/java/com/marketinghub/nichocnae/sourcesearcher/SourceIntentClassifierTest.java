@@ -75,4 +75,47 @@ class SourceIntentClassifierTest {
         assertThat(result.publishedAt()).isNotNull();
     }
 
+
+    /** Deve marcar fonte antiga mesmo quando o conteúdo tem indícios de rotina operacional. */
+    @Test
+    void shouldClassifyOldSourceAsOutdatedRisk() {
+        SourceIntentClassifier classifier = new SourceIntentClassifier();
+
+        SourceSearchResult result = classifier.classify(new SourceSearchResult(
+                "https://blog.example.com.br/mei-manicure-2020",
+                "Rotina da manicure MEI em 2020",
+                "Profissional autônomo relata agenda, atendimento e cobrança no Brasil.",
+                "blog.example.com.br",
+                3,
+                null,
+                null,
+                false,
+                false));
+
+        assertThat(result.sourceClassificationType()).isEqualTo("OLD_OR_UNDATED_CONTENT");
+        assertThat(result.outdatedSourceRisk()).isTrue();
+        assertThat(result.sourceFreshnessScore()).isLessThan(70);
+    }
+
+    /** Deve sinalizar desvio corporativo quando a fonte fala de empresa estruturada em vez do dono-operador. */
+    @Test
+    void shouldClassifyStructuredCompanyContentAsCorporateDriftRisk() {
+        SourceIntentClassifier classifier = new SourceIntentClassifier();
+
+        SourceSearchResult result = classifier.classify(new SourceSearchResult(
+                "https://pesquisa.example.com.br/franquia-beleza-2026",
+                "Estudo sobre franquia de beleza em 2026",
+                "Grande empresa com departamento, equipe comercial e rede de lojas no Brasil.",
+                "pesquisa.example.com.br",
+                4,
+                null,
+                null,
+                false,
+                false));
+
+        assertThat(result.sourceClassificationType()).isEqualTo("STRUCTURED_COMPANY_CONTENT");
+        assertThat(result.structuredBusinessDriftRisk()).isTrue();
+        assertThat(result.autonomousProfessionalEvidenceScore()).isLessThan(40);
+    }
+
 }

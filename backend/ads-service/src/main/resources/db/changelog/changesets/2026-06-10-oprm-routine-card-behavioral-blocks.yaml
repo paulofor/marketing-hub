@@ -1,0 +1,28 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-10-01-oprm-routine-card-behavioral-blocks
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: oprm_niche_routine_card
+        - not:
+            columnExists:
+              tableName: oprm_niche_routine_card
+              columnName: customer_behavior_summary
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE oprm_niche_routine_card
+                ADD COLUMN customer_behavior_summary LONGTEXT NULL AFTER routine_summary,
+                ADD COLUMN channels_summary LONGTEXT NULL AFTER customer_behavior_summary,
+                ADD COLUMN operational_pains_summary LONGTEXT NULL AFTER channels_summary,
+                ADD COLUMN emotional_pains_summary LONGTEXT NULL AFTER operational_pains_summary,
+                ADD COLUMN dreams_summary LONGTEXT NULL AFTER emotional_pains_summary,
+                ADD COLUMN fears_summary LONGTEXT NULL AFTER dreams_summary,
+                ADD COLUMN language_summary LONGTEXT NULL AFTER fears_summary;

@@ -1266,3 +1266,14 @@ Arquivos alterados:
 - `backend/ads-service/src/main/java/com/marketinghub/repository/jpa/mois/bibliotecapaginavenda/worker/v1/MoisSalesPageMarketWarmupRepository.java`
 - `backend/ads-service/src/test/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesPageMarketWarmupServiceTest.java`
 - `docs/registros/mois1.md`
+
+## 2026-06-10 — Fase 5 da Etapa 3 de aquecimento de mercado
+
+- Implementados no controller da Biblioteca de Páginas de Vendas MOIS os endpoints públicos da **Etapa 3 — Pesquisa de Aquecimento e Ecossistema de Mercado** para solicitar pesquisa, consultar resumo, listar fontes e listar sinais.
+- Implementados no mesmo escopo MOIS os contratos internos do worker para reservar, concluir e falhar jobs de aquecimento, com validação de payload e mapeamento objetivo de erros HTTP.
+- Adicionados testes de controller para proteger os contratos públicos, o claim interno, a conclusão/falha do worker e os cenários de validação/conflito.
+
+Arquivos alterados:
+- `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/web/MoisSalesLibraryController.java`
+- `backend/ads-service/src/test/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/web/MoisSalesLibraryControllerTest.java`
+- `docs/registros/mois1.md`

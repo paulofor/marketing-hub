@@ -1,6 +1,9 @@
 package com.marketinghub.mois.bibliotecapaginavenda.worker.v1.web;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -10,6 +13,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.dto.MoisSalesLibraryDtos;
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service.MoisSalesLibraryService;
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service.MoisSalesLibrarySnapshotService;
+import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service.MoisSalesPageMarketWarmupService;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -38,6 +43,9 @@ class MoisSalesLibraryControllerTest {
 
     @MockBean
     private MoisSalesLibrarySnapshotService snapshotService;
+
+    @MockBean
+    private MoisSalesPageMarketWarmupService marketWarmupService;
 
     @Test
     void shouldExposeSnapshotCaptureEndpoint() throws Exception {
@@ -183,6 +191,282 @@ class MoisSalesLibraryControllerTest {
                 .andExpect(jsonPath("$[0].stage").value("ANALYSIS"))
                 .andExpect(jsonPath("$[0].status").value("DONE"))
                 .andExpect(jsonPath("$[0].rawHtmlBytes").value(512));
+    }
+
+    /**
+     * Garante que o controller expõe a solicitação pública da Etapa 3 para uma página.
+     */
+    @Test
+    void shouldExposeMarketWarmupRequestEndpoint() throws Exception {
+        when(marketWarmupService.requestResearch(10L))
+                .thenReturn(new MoisSalesLibraryDtos.MarketWarmupRequestResponse(
+                        10L,
+                        99L,
+                        MoisSalesLibraryDtos.MarketWarmupJobStatus.PENDING,
+                        Instant.parse("2026-06-10T09:00:00Z")
+                ));
+
+        mockMvc.perform(post("/api/mois/sales-library/pages/10/market-warmup:request"))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.pageId").value(10))
+                .andExpect(jsonPath("$.jobId").value(99))
+                .andExpect(jsonPath("$.status").value("PENDING"));
+    }
+
+    /**
+     * Garante que a consulta pública retorna o resumo comercial rastreável da Etapa 3.
+     */
+    @Test
+    void shouldExposeMarketWarmupSummaryEndpoint() throws Exception {
+        when(marketWarmupService.getSummary(10L))
+                .thenReturn(new MoisSalesLibraryDtos.MarketWarmupSummaryResponse(
+                        99L,
+                        10L,
+                        BigDecimal.valueOf(82),
+                        MoisSalesLibraryDtos.MarketWarmupTemperature.HOT,
+                        MoisSalesLibraryDtos.MarketWarmupEcosystemType.CREATORS_HEATED,
+                        MoisSalesLibraryDtos.MarketWarmupRecommendation.PRIORITIZE,
+                        List.of("dor explícita"),
+                        List.of("preço"),
+                        List.of("resultado rápido"),
+                        List.of("YouTube"),
+                        List.of("Concorrente A"),
+                        "baixo",
+                        "priorizar experimento",
+                        "testar criativo com dor explícita",
+                        MoisSalesLibraryDtos.MarketWarmupJobStatus.DONE,
+                        null,
+                        null,
+                        Instant.parse("2026-06-10T09:00:00Z"),
+                        Instant.parse("2026-06-10T10:00:00Z")
+                ));
+
+        mockMvc.perform(get("/api/mois/sales-library/pages/10/market-warmup"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.scoreTotal").value(82))
+                .andExpect(jsonPath("$.marketTemperature").value("HOT"))
+                .andExpect(jsonPath("$.ecosystemType").value("CREATORS_HEATED"))
+                .andExpect(jsonPath("$.recommendation").value("PRIORITIZE"))
+                .andExpect(jsonPath("$.mainPains[0]").value("dor explícita"))
+                .andExpect(jsonPath("$.mainChannels[0]").value("YouTube"));
+    }
+
+    /**
+     * Garante que a API lista fontes públicas sem expor dados internos sensíveis do worker.
+     */
+    @Test
+    void shouldExposeMarketWarmupSourcesEndpoint() throws Exception {
+        when(marketWarmupService.listSources(10L))
+                .thenReturn(new MoisSalesLibraryDtos.MarketWarmupSourceListResponse(
+                        10L,
+                        99L,
+                        List.of(new MoisSalesLibraryDtos.MarketWarmupSourceResponse(
+                                501L,
+                                99L,
+                                10L,
+                                MoisSalesLibraryDtos.MarketWarmupPlatform.YOUTUBE,
+                                MoisSalesLibraryDtos.MarketWarmupSourceType.CREATOR_CONTENT,
+                                "https://youtube.com/watch?v=abc",
+                                "Vídeo sobre a dor",
+                                "Creator",
+                                Instant.parse("2026-06-01T00:00:00Z"),
+                                Instant.parse("2026-06-09T00:00:00Z"),
+                                10000L,
+                                5000L,
+                                300L,
+                                80L,
+                                BigDecimal.valueOf(9),
+                                BigDecimal.valueOf(8),
+                                "Comentários recentes mostram dor explícita",
+                                Instant.parse("2026-06-10T09:00:00Z"),
+                                Instant.parse("2026-06-10T10:00:00Z")
+                        ))
+                ));
+
+        mockMvc.perform(get("/api/mois/sales-library/pages/10/market-warmup/sources"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.pageId").value(10))
+                .andExpect(jsonPath("$.items[0].sourceId").value(501))
+                .andExpect(jsonPath("$.items[0].platform").value("YOUTUBE"))
+                .andExpect(jsonPath("$.items[0].sourceUrl").value("https://youtube.com/watch?v=abc"));
+    }
+
+    /**
+     * Garante que a API lista sinais que explicam o score da pesquisa.
+     */
+    @Test
+    void shouldExposeMarketWarmupSignalsEndpoint() throws Exception {
+        when(marketWarmupService.listSignals(10L))
+                .thenReturn(new MoisSalesLibraryDtos.MarketWarmupSignalListResponse(
+                        10L,
+                        99L,
+                        List.of(new MoisSalesLibraryDtos.MarketWarmupSignalResponse(
+                                701L,
+                                99L,
+                                501L,
+                                10L,
+                                MoisSalesLibraryDtos.MarketWarmupSignalType.PAIN_EXPLICIT,
+                                BigDecimal.valueOf(9),
+                                "comentários pedem solução rápida",
+                                "dor explícita e recente",
+                                Instant.parse("2026-06-10T10:00:00Z")
+                        ))
+                ));
+
+        mockMvc.perform(get("/api/mois/sales-library/pages/10/market-warmup/signals"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].signalId").value(701))
+                .andExpect(jsonPath("$.items[0].signalType").value("PAIN_EXPLICIT"))
+                .andExpect(jsonPath("$.items[0].businessInterpretation").value("dor explícita e recente"));
+    }
+
+    /**
+     * Garante que o contrato interno de claim valida o payload obrigatório do worker.
+     */
+    @Test
+    void shouldValidateMarketWarmupClaimPayload() throws Exception {
+        mockMvc.perform(post("/api/mois/sales-library/market-warmup/jobs:claim")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "workspaceId": "",
+                                  "workerId": "worker-1"
+                                }
+                                """))
+                .andExpect(status().isBadRequest());
+    }
+
+    /**
+     * Garante que o worker reserva job de aquecimento apenas pelo contrato interno do módulo MOIS.
+     */
+    @Test
+    void shouldExposeMarketWarmupClaimEndpoint() throws Exception {
+        when(marketWarmupService.claimJob(any(MoisSalesLibraryDtos.MarketWarmupClaimRequest.class)))
+                .thenReturn(new MoisSalesLibraryDtos.MarketWarmupClaimResponse(
+                        true,
+                        new MoisSalesLibraryDtos.MarketWarmupClaimedJob(
+                                99L,
+                                10L,
+                                "workspace-001",
+                                "https://example.test/oferta",
+                                "Oferta principal",
+                                "Oferta transforma dor em resultado",
+                                "Mecanismo plausível",
+                                "Promessa clara",
+                                "Prova social"
+                        )
+                ));
+
+        mockMvc.perform(post("/api/mois/sales-library/market-warmup/jobs:claim")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "workspaceId": "workspace-001",
+                                  "workerId": "worker-1"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.claimed").value(true))
+                .andExpect(jsonPath("$.job.jobId").value(99))
+                .andExpect(jsonPath("$.job.workspaceId").value("workspace-001"))
+                .andExpect(jsonPath("$.job.offerSummary").value("Oferta transforma dor em resultado"));
+    }
+
+    /**
+     * Garante que o controller recebe o dossiê final do worker e responde sem conteúdo.
+     */
+    @Test
+    void shouldExposeMarketWarmupCompleteEndpoint() throws Exception {
+        mockMvc.perform(post("/api/mois/sales-library/market-warmup/jobs/99:complete")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(marketWarmupCompletePayload()))
+                .andExpect(status().isNoContent());
+
+        verify(marketWarmupService).completeJob(anyLong(), any(MoisSalesLibraryDtos.MarketWarmupCompleteRequest.class));
+    }
+
+    /**
+     * Garante que conflito operacional do worker vira resposta HTTP 409.
+     */
+    @Test
+    void shouldMapMarketWarmupCompleteConflictToHttp409() throws Exception {
+        doThrow(new IllegalStateException("Job de aquecimento já concluído: 99"))
+                .when(marketWarmupService).completeJob(anyLong(), any(MoisSalesLibraryDtos.MarketWarmupCompleteRequest.class));
+
+        mockMvc.perform(post("/api/mois/sales-library/market-warmup/jobs/99:complete")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(marketWarmupCompletePayload()))
+                .andExpect(status().isConflict());
+    }
+
+    /**
+     * Garante que o controller recebe falha operacional do worker e responde sem conteúdo.
+     */
+    @Test
+    void shouldExposeMarketWarmupFailEndpoint() throws Exception {
+        mockMvc.perform(post("/api/mois/sales-library/market-warmup/jobs/99:fail")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "errorCategory": "WEB_SEARCH",
+                                  "errorMessage": "Busca pública indisponível"
+                                }
+                                """))
+                .andExpect(status().isNoContent());
+
+        verify(marketWarmupService).failJob(anyLong(), any(MoisSalesLibraryDtos.MarketWarmupFailRequest.class));
+    }
+
+    /**
+     * Monta o payload final mínimo válido enviado pelo worker de aquecimento.
+     */
+    private String marketWarmupCompletePayload() {
+        return """
+                {
+                  "sources": [
+                    {
+                      "platform": "YOUTUBE",
+                      "sourceType": "CREATOR_CONTENT",
+                      "sourceUrl": "https://youtube.com/watch?v=abc",
+                      "sourceTitle": "Vídeo sobre a dor",
+                      "authorName": "Creator",
+                      "publishedAt": "2026-06-01T00:00:00Z",
+                      "lastActivityAt": "2026-06-09T00:00:00Z",
+                      "followersOrSubscribers": 10000,
+                      "viewsCount": 5000,
+                      "likesCount": 300,
+                      "commentsCount": 80,
+                      "recencyScore": 9,
+                      "engagementScore": 8,
+                      "evidenceSummary": "Comentários recentes mostram dor explícita"
+                    }
+                  ],
+                  "signals": [
+                    {
+                      "sourceIndex": 0,
+                      "signalType": "PAIN_EXPLICIT",
+                      "signalStrength": 9,
+                      "signalText": "comentários pedem solução rápida",
+                      "businessInterpretation": "dor explícita e recente"
+                    }
+                  ],
+                  "summary": {
+                    "scoreTotal": 82,
+                    "marketTemperature": "HOT",
+                    "ecosystemType": "CREATORS_HEATED",
+                    "recommendation": "PRIORITIZE",
+                    "mainPains": ["dor explícita"],
+                    "mainObjections": ["preço"],
+                    "mainPromises": ["resultado rápido"],
+                    "mainChannels": ["YouTube"],
+                    "mainCompetitors": ["Concorrente A"],
+                    "saturationRisk": "baixo",
+                    "opportunityRecommendation": "priorizar experimento",
+                    "nextExperimentSuggestion": "testar criativo com dor explícita"
+                  },
+                  "finishedAt": "2026-06-10T10:00:00Z"
+                }
+                """;
     }
 
 }

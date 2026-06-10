@@ -1,6 +1,5 @@
 package com.marketinghub.repository.jpa.targeting;
 
-import com.marketinghub.targeting.TargetingElementSource;
 import com.marketinghub.targeting.TargetingElement;
 import com.marketinghub.targeting.TargetingElementStatus;
 import com.marketinghub.targeting.TargetingElementType;
@@ -16,8 +15,14 @@ import java.util.UUID;
  */
 public interface TargetingElementRepository extends JpaRepository<TargetingElement, Long> {
 
+    /**
+     * Lista todos os elementos vinculados a um nicho para sincronização e revisão.
+     */
     List<TargetingElement> findByNicheId(Long nicheId);
 
+    /**
+     * Lista elementos filtrados para telas administrativas de segmentação.
+     */
     @Query("""
             select e from TargetingElement e
             where (:nicheId is null or e.niche.id = :nicheId)
@@ -29,6 +34,9 @@ public interface TargetingElementRepository extends JpaRepository<TargetingEleme
                                          @Param("type") TargetingElementType type,
                                          @Param("status") TargetingElementStatus status);
 
+    /**
+     * Lista elementos aprovados para montar segmentação de um experimento.
+     */
     @Query("""
             select e from TargetingElement e
             where e.niche.id = :nicheId
@@ -40,6 +48,9 @@ public interface TargetingElementRepository extends JpaRepository<TargetingEleme
                                                      @Param("type") TargetingElementType type,
                                                      @Param("hypothesisId") UUID hypothesisId);
 
+    /**
+     * Verifica existência de elementos aprovados para bloquear publicação incompleta.
+     */
     @Query("""
             select case when count(e) > 0 then true else false end
             from TargetingElement e
@@ -52,9 +63,17 @@ public interface TargetingElementRepository extends JpaRepository<TargetingEleme
                                         @Param("type") TargetingElementType type,
                                         @Param("hypothesisId") UUID hypothesisId);
 
+    /**
+     * Lista elementos aprovados que ainda precisam de ID e alcance oficial da Meta Ads.
+     */
     @Query("""
             select e from TargetingElement e
-            where e.source = com.marketinghub.targeting.TargetingElementSource.MANUAL
+            where e.status = com.marketinghub.targeting.TargetingElementStatus.APPROVED
+              and e.source in (
+                com.marketinghub.targeting.TargetingElementSource.MANUAL,
+                com.marketinghub.targeting.TargetingElementSource.AI,
+                com.marketinghub.targeting.TargetingElementSource.OPRM_NICHE
+              )
               and e.hypothesis is null
               and e.type in (
                 com.marketinghub.targeting.TargetingElementType.INTEREST,

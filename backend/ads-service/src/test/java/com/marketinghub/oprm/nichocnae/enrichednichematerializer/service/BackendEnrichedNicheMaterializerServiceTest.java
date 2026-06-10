@@ -48,9 +48,12 @@ class BackendEnrichedNicheMaterializerServiceTest {
   private final OprmExtractedSignalRepository extractedSignalRepository = mock(OprmExtractedSignalRepository.class);
   private final MarketNicheRepository marketNicheRepository = mock(MarketNicheRepository.class);
   private final MarketNicheEnrichmentProfileRepository profileRepository = mock(MarketNicheEnrichmentProfileRepository.class);
+  private final OprmEnrichedNicheMetaSignalService metaSignalService = mock(OprmEnrichedNicheMetaSignalService.class);
+  private final OprmEnrichedNicheMetaSignalService.MetaSignalPackage metaSignalPackage = new OprmEnrichedNicheMetaSignalService.MetaSignalPackage(
+      List.of("Salão de beleza"), List.of("Cabeleireiro"), List.of("Small business owners"));
   private final BackendEnrichedNicheMaterializerService service = new BackendEnrichedNicheMaterializerService(
       cycleRepository, cardRepository, candidateRepository, seedRepository, researchQueryRepository, sourceCandidateRepository,
-      sourceSnapshotRepository, extractedSignalRepository, marketNicheRepository, profileRepository);
+      sourceSnapshotRepository, extractedSignalRepository, marketNicheRepository, profileRepository, metaSignalService);
 
   /** Deve publicar uma unidade de trabalho completa para o coletor materializar o nicho enriquecido. */
   @Test
@@ -86,6 +89,7 @@ class BackendEnrichedNicheMaterializerServiceTest {
     when(cardRepository.findById(10L)).thenReturn(Optional.of(card));
     when(candidateRepository.findById(77L)).thenReturn(Optional.of(candidate));
     when(profileRepository.existsBySourceRoutineCardId(10L)).thenReturn(false);
+    when(metaSignalService.buildSignalPackage(cycle, card)).thenReturn(metaSignalPackage);
     when(marketNicheRepository.save(any(MarketNiche.class))).thenAnswer(invocation -> {
       MarketNiche niche = invocation.getArgument(0);
       niche.setId(200L);
@@ -112,6 +116,11 @@ class BackendEnrichedNicheMaterializerServiceTest {
             && niche.getDescription().contains("Nome neutro pesquisado: Salões pequenos")
             && niche.getDescription().contains("Contexto operacional e linguagem pública:")
             && !niche.getDescription().contains("Oportunidades de mecanismo:")));
+    verify(metaSignalService).applySignalsToNiche(org.mockito.ArgumentMatchers.any(MarketNiche.class), org.mockito.ArgumentMatchers.eq(metaSignalPackage));
+    verify(metaSignalService).publishTargetingElements(
+        org.mockito.ArgumentMatchers.argThat(niche -> Long.valueOf(200L).equals(niche.getId())),
+        org.mockito.ArgumentMatchers.argThat(profile -> Long.valueOf(300L).equals(profile.getId())),
+        org.mockito.ArgumentMatchers.eq(metaSignalPackage));
     verify(profileRepository).save(org.mockito.ArgumentMatchers.argThat(profile ->
         "Salões pequenos".equals(profile.getNeutralNicheName())
             && "IA para salões pequenos".equals(profile.getOriginalNicheName())

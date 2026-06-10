@@ -313,7 +313,7 @@ class OprmGeneralAudienceDiscoveryServiceTest {
         assertThat(response.publishableForCurrentPublisher()).isFalse();
         assertThat(response.elements()).hasSize(3);
         assertThat(response.elements()).extracting("status").contains(OprmGeneralAudienceAdSignalStatus.RECEIVED);
-        assertThat(response.blockers()).anyMatch(blocker -> blocker.contains("Nenhum JOB_TITLE aprovado"));
+        assertThat(response.blockers()).anyMatch(blocker -> blocker.contains("Nenhum JOB_TITLE pronto"));
     }
 
     /** Verifica se um JOB_TITLE já aprovado e resolvido libera o targeting conservador para o publicador atual. */
@@ -378,7 +378,7 @@ class OprmGeneralAudienceDiscoveryServiceTest {
                 qualityRepository,
                 mock(OprmGeneralAudienceHypothesisMaterializationRepository.class),
                 mock(OprmGeneralAudienceLeadExperimentMaterializationRepository.class),
-                mock(TargetingElementService.class));
+                mock(OprmGeneralAudienceFacebookAdsDataRepository.class));
 
         var response = service.createQualityReading(5L, new CreateGeneralAudienceQualityReadingRequest(
                 20L,
@@ -422,7 +422,7 @@ class OprmGeneralAudienceDiscoveryServiceTest {
                 qualityRepository,
                 mock(OprmGeneralAudienceHypothesisMaterializationRepository.class),
                 mock(OprmGeneralAudienceLeadExperimentMaterializationRepository.class),
-                mock(TargetingElementService.class));
+                mock(OprmGeneralAudienceFacebookAdsDataRepository.class));
 
         var response = service.createQualityReading(5L, new CreateGeneralAudienceQualityReadingRequest(
                 null, null, 10, 2, 0, 1, 0, 0, 6, 2, 1, 1, 3, null, null));

@@ -329,3 +329,4 @@
 
 - Implementada a etapa 1 do plano de públicos gerais sem sobreposição CNAE: cadastro, listagem, detalhe, atualização e arquivamento manual de sementes de público geral no backend.
 - O fluxo permanece separado do NichoCNAE e não cria nicho, hipótese, experimento ou campanha automaticamente.
+- 2026-06-10 00:00:00 (UTC): executada a etapa 2 do plano de públicos gerais sem sobreposição com CNAE: o backend passou a persistir e expor subnichos derivados de sementes gerais em tabela própria `oprm_general_audience_subniche`, com endpoints OPRM para listar, cadastrar, detalhar, revisar, aprovar e rejeitar subnichos sem gravar esses públicos nas tabelas OPRM CNAE nem tratá-los como campanha pronta.

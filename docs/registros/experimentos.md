@@ -4267,5 +4267,14 @@
 
 - solicitação: criar uma nova situação de invalidação automática quando, após um tempo de campanha, o volume de impressões continuar muito baixo.
 - causa-raiz/objetivo: campanhas sem entrega mínima consomem janela operacional sem gerar leitura comercial útil; o sistema precisava encerrar esse caso com motivo rastreável e pausa automática na Meta.
+- foi feito: definida a regra canônica de 48 horas com menos de 100 impressões, registrando `LOW_IMPRESSIONS_AFTER_RUNNING_TIME` em `facebook_ads_campaign.stop_reason`, invalidando o experimento e solicitando pausa ao Facebook Ads Worker.
+- impacto esperado: experimentos com distribuição inviável deixam de ficar rodando indefinidamente e o time ganha motivo claro no banco para decidir ajuste de público, criativo ou nova liberação.
+
+
+## 2026-06-10 — Ajuste da janela de baixa distribuição para 48 horas
+
+- solicitação: alterar a regra de invalidação por baixa distribuição de 24 horas para 48 horas.
+- foi feito: a janela mínima da campanha passou a ser 48 horas antes de invalidar experimento com menos de 100 impressões, mantendo o motivo `LOW_IMPRESSIONS_AFTER_RUNNING_TIME` e a solicitação de pausa no Facebook Ads Worker.
+- impacto esperado: o sistema dá mais tempo para a Meta estabilizar a entrega antes de concluir que o experimento não teve distribuição mínima útil.
 - foi feito: definida a regra canônica de 24 horas com menos de 100 impressões, registrando `LOW_IMPRESSIONS_AFTER_RUNNING_TIME` em `facebook_ads_campaign.stop_reason`, invalidando o experimento e solicitando pausa ao Facebook Ads Worker.
 - impacto esperado: experimentos com distribuição inviável deixam de ficar rodando indefinidamente e o time ganha motivo claro no banco para decidir ajuste de público, criativo ou nova liberação.

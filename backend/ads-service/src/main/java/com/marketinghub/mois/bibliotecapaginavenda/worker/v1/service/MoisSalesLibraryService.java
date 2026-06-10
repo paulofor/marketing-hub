@@ -469,18 +469,25 @@ public class MoisSalesLibraryService {
      * Lista páginas canônicas consolidadas priorizando as análises mais recentes para a UI operacional.
      */
     public MoisSalesLibraryDtos.SalesLibraryPageListResponse listPages(String workspaceId, int page, int pageSize) {
+        return listPages(workspaceId, page, pageSize, null, "RECENT_ANALYSIS");
+    }
+
+    /**
+     * Lista páginas canônicas com filtro e ordenação de aquecimento para priorização comercial da Etapa 3.
+     */
+    public MoisSalesLibraryDtos.SalesLibraryPageListResponse listPages(
+            String workspaceId,
+            int page,
+            int pageSize,
+            String marketWarmupFilter,
+            String sort
+    ) {
         int normalizedPage = Math.max(1, page);
         int normalizedPageSize = Math.max(1, Math.min(pageSize, 100));
         int offset = (normalizedPage - 1) * normalizedPageSize;
-        Long total = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM mois_sales_page WHERE workspace_id = ?", Long.class, workspaceId);
-        List<MoisSalesLibraryDtos.SalesLibraryPageResponse> items = jdbcTemplate.query("""
-                SELECT p.id, p.workspace_id, p.source, p.url_canonical, p.title, p.current_stage, p.current_status, p.capture_status,
-                       COALESCE(p.analysis_status, p.current_status) AS analysis_status, p.url_final, p.http_status, p.html_sha256,
-                       p.html_bytes, p.score_total, p.offer_summary, p.mechanism_summary, p.promise_summary, p.proof_summary,
-                       p.last_error_category, p.last_error_message, p.last_job_execution_id, p.last_captured_at, p.last_analyzed_at, p.updated_at,
-                       mws.score_total AS market_warmup_score_total, mws.market_temperature AS market_warmup_temperature,
-                       mws.ecosystem_type AS market_warmup_ecosystem_type, mws.recommendation AS market_warmup_recommendation,
-                       mwj.status AS market_warmup_status, COALESCE(mws.updated_at, mwj.updated_at) AS market_warmup_updated_at
+        String warmupCondition = resolveMarketWarmupFilterCondition(marketWarmupFilter);
+        String orderBy = resolveSalesPageOrderBy(sort);
+        String joins = """
                 FROM mois_sales_page p
                 LEFT JOIN (
                     SELECT sales_page_id, MAX(id) AS latest_warmup_job_id
@@ -490,9 +497,46 @@ public class MoisSalesLibraryService {
                 LEFT JOIN mois_sales_page_market_warmup_job mwj ON mwj.id = mwj_latest.latest_warmup_job_id
                 LEFT JOIN mois_sales_page_market_warmup_summary mws ON mws.job_id = mwj.id
                 WHERE p.workspace_id = ?
-                ORDER BY p.last_analyzed_at DESC, p.updated_at DESC, p.id DESC LIMIT ? OFFSET ?
-                """, this::mapSalesPageResponse, workspaceId, normalizedPageSize, offset);
+                """ + warmupCondition;
+        Long total = jdbcTemplate.queryForObject("SELECT COUNT(*) " + joins, Long.class, workspaceId);
+        List<MoisSalesLibraryDtos.SalesLibraryPageResponse> items = jdbcTemplate.query("""
+                SELECT p.id, p.workspace_id, p.source, p.url_canonical, p.title, p.current_stage, p.current_status, p.capture_status,
+                       COALESCE(p.analysis_status, p.current_status) AS analysis_status, p.url_final, p.http_status, p.html_sha256,
+                       p.html_bytes, p.score_total, p.offer_summary, p.mechanism_summary, p.promise_summary, p.proof_summary,
+                       p.last_error_category, p.last_error_message, p.last_job_execution_id, p.last_captured_at, p.last_analyzed_at, p.updated_at,
+                       mws.score_total AS market_warmup_score_total, mws.market_temperature AS market_warmup_temperature,
+                       mws.ecosystem_type AS market_warmup_ecosystem_type, mws.recommendation AS market_warmup_recommendation,
+                       mwj.status AS market_warmup_status, COALESCE(mws.updated_at, mwj.updated_at) AS market_warmup_updated_at
+                """ + joins + " ORDER BY " + orderBy + " LIMIT ? OFFSET ?",
+                this::mapSalesPageResponse, workspaceId, normalizedPageSize, offset);
         return new MoisSalesLibraryDtos.SalesLibraryPageListResponse(normalizedPage, normalizedPageSize, total == null ? 0 : total, items);
+    }
+
+    /**
+     * Converte o filtro público de aquecimento em condição SQL fixa para evitar concatenação de entrada do usuário.
+     */
+    private String resolveMarketWarmupFilterCondition(String marketWarmupFilter) {
+        if (marketWarmupFilter == null || marketWarmupFilter.isBlank()) {
+            return "";
+        }
+        return switch (marketWarmupFilter) {
+            case "WITH_DOSSIER" -> " AND mwj.status = 'DONE' AND mws.job_id IS NOT NULL\n";
+            case "PENDING_OR_RUNNING" -> " AND mwj.status IN ('PENDING', 'FETCHING')\n";
+            case "FAILED" -> " AND mwj.status = 'FAILED'\n";
+            case "HOT_OR_PROMISING" -> " AND mws.market_temperature IN ('HOT', 'PROMISING')\n";
+            case "WITHOUT_DOSSIER" -> " AND mwj.id IS NULL\n";
+            default -> "";
+        };
+    }
+
+    /**
+     * Converte a ordenação pública em cláusula SQL fixa para a listagem operacional da biblioteca.
+     */
+    private String resolveSalesPageOrderBy(String sort) {
+        if ("MARKET_WARMUP_SCORE".equals(sort)) {
+            return "mws.score_total IS NULL ASC, mws.score_total DESC, COALESCE(mws.updated_at, mwj.updated_at) DESC, p.last_analyzed_at DESC, p.id DESC";
+        }
+        return "p.last_analyzed_at DESC, p.updated_at DESC, p.id DESC";
     }
 
     /**
@@ -522,6 +566,8 @@ public class MoisSalesLibraryService {
                        SUM(mws.market_temperature = 'WARM') AS market_warmup_warm,
                        SUM(mws.market_temperature = 'COLD') AS market_warmup_cold,
                        SUM(mws.market_temperature = 'SATURATED') AS market_warmup_saturated,
+                       SUM(mwj.status = 'FETCHING'
+                           AND COALESCE(mwj.started_at, mwj.updated_at, mwj.created_at) < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 120 MINUTE)) AS market_warmup_stuck,
                        MAX(p.updated_at) AS updated_at
                 FROM mois_sales_page p
                 LEFT JOIN (
@@ -542,7 +588,7 @@ public class MoisSalesLibraryService {
                 rs.getLong("market_warmup_failed"), rs.getLong("market_warmup_hot"),
                 rs.getLong("market_warmup_promising"), rs.getLong("market_warmup_warm"),
                 rs.getLong("market_warmup_cold"), rs.getLong("market_warmup_saturated"),
-                toInstant(rs.getTimestamp("updated_at"))), workspaceId);
+                rs.getLong("market_warmup_stuck"), toInstant(rs.getTimestamp("updated_at"))), workspaceId);
     }
 
     /**

@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -259,6 +260,7 @@ public final class MoisSalesLibraryDtos {
             long marketWarmupWarm,
             long marketWarmupCold,
             long marketWarmupSaturated,
+            long marketWarmupStuck,
             Instant updatedAt
     ) {
     }
@@ -702,6 +704,26 @@ public final class MoisSalesLibraryDtos {
     public record MarketWarmupClaimResponse(
             boolean claimed,
             MarketWarmupClaimedJob job
+    ) {
+    }
+
+    /**
+     * Representa a solicitação operacional para reprocessar jobs de aquecimento presos em execução antiga.
+     */
+    public record MarketWarmupReprocessStaleRequest(
+            @NotBlank String workspaceId,
+            @Positive Integer staleMinutes
+    ) {
+    }
+
+    /**
+     * Representa o resultado da ação de saneamento que refileira jobs presos sem acesso direto ao banco.
+     */
+    public record MarketWarmupReprocessStaleResponse(
+            String workspaceId,
+            int staleMinutes,
+            long requeuedJobs,
+            Instant updatedAt
     ) {
     }
 

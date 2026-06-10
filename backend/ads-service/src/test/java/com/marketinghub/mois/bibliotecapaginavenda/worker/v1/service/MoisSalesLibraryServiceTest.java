@@ -138,6 +138,7 @@ class MoisSalesLibraryServiceTest {
                         12L,
                         5L,
                         7L,
+                        2L,
                         Instant.parse("2026-06-07T05:38:13Z")
                 ));
 
@@ -148,6 +149,7 @@ class MoisSalesLibraryServiceTest {
         org.assertj.core.api.Assertions.assertThat(response.marketWarmupEligible()).isEqualTo(106L);
         org.assertj.core.api.Assertions.assertThat(response.marketWarmupCompleted()).isEqualTo(70L);
         org.assertj.core.api.Assertions.assertThat(response.marketWarmupPromising()).isEqualTo(28L);
+        org.assertj.core.api.Assertions.assertThat(response.marketWarmupStuck()).isEqualTo(2L);
     }
 
     /**
@@ -156,7 +158,7 @@ class MoisSalesLibraryServiceTest {
     @Test
     void shouldListPagesOrderedByMostRecentAnalysisDate() {
         given(jdbcTemplate.queryForObject(
-                eq("SELECT COUNT(*) FROM mois_sales_page WHERE workspace_id = ?"),
+                contains("SELECT COUNT(*)"),
                 eq(Long.class),
                 eq("workspace-001")))
                 .willReturn(42L);
@@ -171,6 +173,30 @@ class MoisSalesLibraryServiceTest {
         org.assertj.core.api.Assertions.assertThat(sqlCaptor.getValue())
                 .contains("LEFT JOIN mois_sales_page_market_warmup_summary mws")
                 .contains("ORDER BY p.last_analyzed_at DESC, p.updated_at DESC, p.id DESC LIMIT ? OFFSET ?");
+    }
+
+    /**
+     * Garante que a listagem de páginas permite priorização global pelo score de aquecimento.
+     */
+    @Test
+    void shouldListPagesOrderedByMarketWarmupScoreWhenRequested() {
+        given(jdbcTemplate.queryForObject(
+                contains("mws.market_temperature IN ('HOT', 'PROMISING')"),
+                eq(Long.class),
+                eq("workspace-001")))
+                .willReturn(8L);
+        given(jdbcTemplate.query(any(String.class), isA(RowMapper.class), eq("workspace-001"), eq(20), eq(0)))
+                .willReturn(List.of());
+
+        MoisSalesLibraryDtos.SalesLibraryPageListResponse response =
+                service.listPages("workspace-001", 1, 20, "HOT_OR_PROMISING", "MARKET_WARMUP_SCORE");
+
+        org.assertj.core.api.Assertions.assertThat(response.total()).isEqualTo(8L);
+        ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+        verify(jdbcTemplate).query(sqlCaptor.capture(), isA(RowMapper.class), eq("workspace-001"), eq(20), eq(0));
+        org.assertj.core.api.Assertions.assertThat(sqlCaptor.getValue())
+                .contains("mws.market_temperature IN ('HOT', 'PROMISING')")
+                .contains("ORDER BY mws.score_total IS NULL ASC, mws.score_total DESC");
     }
 
     /**

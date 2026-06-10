@@ -118,6 +118,23 @@ class MoisSalesLibraryControllerTest {
                 .andExpect(jsonPath("$[0].screenshotBytes").value(1024));
     }
 
+
+    /**
+     * Garante que a listagem encaminha filtro e ordenação de aquecimento para priorização comercial.
+     */
+    @Test
+    void shouldExposeMarketWarmupPrioritizationParamsOnPagesEndpoint() throws Exception {
+        when(service.listPages("workspace-001", 1, 20, "HOT_OR_PROMISING", "MARKET_WARMUP_SCORE"))
+                .thenReturn(new MoisSalesLibraryDtos.SalesLibraryPageListResponse(1, 20, 0L, List.of()));
+
+        mockMvc.perform(get("/api/mois/sales-library/pages")
+                        .param("workspaceId", "workspace-001")
+                        .param("marketWarmupFilter", "HOT_OR_PROMISING")
+                        .param("sort", "MARKET_WARMUP_SCORE"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").value(0));
+    }
+
     /**
      * Garante que o resumo global consolidado da Fase 4 seja exposto ao frontend.
      */
@@ -148,6 +165,7 @@ class MoisSalesLibraryControllerTest {
                         9L,
                         5L,
                         18L,
+                        3L,
                         Instant.parse("2026-06-04T16:00:09Z")
                 ));
 
@@ -170,7 +188,8 @@ class MoisSalesLibraryControllerTest {
                 .andExpect(jsonPath("$.marketWarmupFailed").value(4))
                 .andExpect(jsonPath("$.marketWarmupHot").value(16))
                 .andExpect(jsonPath("$.marketWarmupPromising").value(22))
-                .andExpect(jsonPath("$.marketWarmupSaturated").value(18));
+                .andExpect(jsonPath("$.marketWarmupSaturated").value(18))
+                .andExpect(jsonPath("$.marketWarmupStuck").value(3));
     }
 
     /**
@@ -415,6 +434,34 @@ class MoisSalesLibraryControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(marketWarmupCompletePayload()))
                 .andExpect(status().isConflict());
+    }
+
+
+    /**
+     * Garante que o operador consegue refileirar jobs presos sem acessar o banco.
+     */
+    @Test
+    void shouldExposeMarketWarmupReprocessStaleEndpoint() throws Exception {
+        when(marketWarmupService.reprocessStaleJobs(any(MoisSalesLibraryDtos.MarketWarmupReprocessStaleRequest.class)))
+                .thenReturn(new MoisSalesLibraryDtos.MarketWarmupReprocessStaleResponse(
+                        "workspace-001",
+                        120,
+                        2L,
+                        Instant.parse("2026-06-10T14:00:00Z")
+                ));
+
+        mockMvc.perform(post("/api/mois/sales-library/market-warmup/jobs:reprocess-stale")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "workspaceId": "workspace-001",
+                                  "staleMinutes": 120
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.workspaceId").value("workspace-001"))
+                .andExpect(jsonPath("$.staleMinutes").value(120))
+                .andExpect(jsonPath("$.requeuedJobs").value(2));
     }
 
     /**

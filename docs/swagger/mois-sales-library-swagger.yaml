@@ -94,7 +94,7 @@ paths:
   /pages:
     get:
       summary: Lista páginas operacionais consolidadas
-      description: Retorna páginas de `mois_sales_page` ordenadas por `last_analyzed_at` decrescente, com `updated_at` e `id` como desempate; a UI principal consome as 20 análises mais recentes usando `pageSize=20`.
+      description: Retorna páginas de `mois_sales_page`; aceita filtro e ordenação de aquecimento para a biblioteca priorizar globalmente páginas com maior score da Etapa 3.
       tags: [MOIS Sales Library]
       parameters:
         - in: query
@@ -115,9 +115,23 @@ paths:
             default: 20
             minimum: 1
             maximum: 100
+        - in: query
+          name: marketWarmupFilter
+          description: Filtro operacional da Etapa 3 usado pela biblioteca para priorização comercial.
+          schema:
+            type: string
+            enum: [ALL, WITH_DOSSIER, HOT_OR_PROMISING, PENDING_OR_RUNNING, FAILED, WITHOUT_DOSSIER]
+            default: ALL
+        - in: query
+          name: sort
+          description: Ordenação da listagem consolidada; `MARKET_WARMUP_SCORE` prioriza os maiores scores salvos da Etapa 3.
+          schema:
+            type: string
+            enum: [RECENT_ANALYSIS, MARKET_WARMUP_SCORE]
+            default: RECENT_ANALYSIS
       responses:
         '200':
-          description: Páginas consolidadas ordenadas da análise mais recente para a mais antiga
+          description: Páginas consolidadas conforme filtro e ordenação solicitados
           content:
             application/json:
               schema:
@@ -462,6 +476,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MarketWarmupClaimResponse'
+        '400':
+          $ref: '#/components/responses/MarketWarmupBadRequest'
+        '403':
+          $ref: '#/components/responses/MarketWarmupForbidden'
+  /market-warmup/jobs:reprocess-stale:
+    post:
+      summary: Reprocessa jobs antigos presos em execução
+      description: Ação operacional da Fase 10 para refileirar jobs `FETCHING` antigos sem acesso direto ao banco.
+      tags: [MOIS Sales Library]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MarketWarmupReprocessStaleRequest'
+      responses:
+        '200':
+          description: Quantidade de jobs refileirados
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MarketWarmupReprocessStaleResponse'
         '400':
           $ref: '#/components/responses/MarketWarmupBadRequest'
         '403':
@@ -870,6 +906,30 @@ components:
           type: boolean
         job:
           $ref: '#/components/schemas/MarketWarmupClaimedJob'
+    MarketWarmupReprocessStaleRequest:
+      type: object
+      required: [workspaceId]
+      properties:
+        workspaceId:
+          type: string
+        staleMinutes:
+          type: integer
+          minimum: 1
+          default: 120
+          description: Idade mínima em minutos para considerar um job `FETCHING` preso.
+    MarketWarmupReprocessStaleResponse:
+      type: object
+      properties:
+        workspaceId:
+          type: string
+        staleMinutes:
+          type: integer
+        requeuedJobs:
+          type: integer
+          format: int64
+        updatedAt:
+          type: string
+          format: date-time
     MarketWarmupSourceCompleteItem:
       type: object
       required: [platform, sourceType, sourceUrl]
@@ -1430,6 +1490,10 @@ components:
         marketWarmupSaturated:
           type: integer
           format: int64
+        marketWarmupStuck:
+          type: integer
+          format: int64
+          description: Jobs da Etapa 3 em `FETCHING` há mais de 120 minutos, considerados presos para saneamento operacional.
         updatedAt:
           type: string
           format: date-time

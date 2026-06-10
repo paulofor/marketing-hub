@@ -155,3 +155,4 @@ Fico pensando como fazer isso no âmbito de venda de produtos, tenho que mandar 
 3- Executei, etapa 1, etapa2, etapa3, ....
 
 4- Acessando as telas, dando print perguntando o que colocou, como fazer.
+. a experiencia de um leigo com essas telas vai deixando elas mais intuitivas.

@@ -31,4 +31,19 @@ public final class WorkerDtos {
     public record HtmlCaptureCompleteRequest(String rawHtml, String finalUrl, String redirectDestinationUrl, String redirectRootUrl, Integer httpStatus, String contentType, String sha256, Long sizeBytes, Instant capturedAt) {}
     public record HtmlCaptureFailRequest(String errorCategory, String errorMessage, String redirectDestinationUrl, String redirectRootUrl, Integer httpStatus) {}
     public record HtmlCapturePersistResponse(Long snapshotId, String status) {}
+    public enum MarketWarmupPlatform { WEB, GOOGLE, YOUTUBE, INSTAGRAM, TIKTOK, BLOG, FORUM, COMMUNITY, MARKETPLACE, REVIEW_SITE, OTHER }
+    public enum MarketWarmupSourceType { PRODUCT_PRESENCE, CREATOR_CONTENT, SPECIALIST_CONTENT, COMMUNITY_DISCUSSION, REVIEW, COMPLAINT, COMPETITOR_OFFER, AFFILIATE_PROMOTION, SOCIAL_POST, SEARCH_RESULT, OTHER }
+    public enum MarketWarmupSignalType { PAIN_EXPLICIT, BUYING_INTENT, OBJECTION, SOCIAL_PROOF, CREATOR_AUTHORITY, COMPETITOR_OFFER, COMMUNITY_ACTIVITY, CONTENT_RECENCY, SATURATION_RISK, CHANNEL_FIT }
+    public enum MarketWarmupTemperature { HOT, PROMISING, WARM, COLD, SATURATED }
+    public enum MarketWarmupEcosystemType { SPECIALISTS_HEATED, CREATORS_HEATED, RECURRING_PAIN_HEATED, COMPETITORS_HEATED, COLD_OR_UNEDUCATED, SATURATED }
+    public enum MarketWarmupRecommendation { PRIORITIZE, OBSERVE, RESEARCH_MORE, DISCARD, SATURATED_REQUIRES_ANGLE }
+
+    public record MarketWarmupClaimRequest(String workspaceId, String workerId) {}
+    public record MarketWarmupClaimedJob(Long jobId, Long pageId, String workspaceId, String urlCanonical, String title, String offerSummary, String mechanismSummary, String promiseSummary, String proofSummary) {}
+    public record MarketWarmupClaimResponse(boolean claimed, MarketWarmupClaimedJob job) {}
+    public record MarketWarmupSourceCompleteItem(MarketWarmupPlatform platform, MarketWarmupSourceType sourceType, String sourceUrl, String sourceTitle, String authorName, Instant publishedAt, Instant lastActivityAt, Long followersOrSubscribers, Long viewsCount, Long likesCount, Long commentsCount, BigDecimal recencyScore, BigDecimal engagementScore, String evidenceSummary) {}
+    public record MarketWarmupSignalCompleteItem(int sourceIndex, MarketWarmupSignalType signalType, BigDecimal signalStrength, String signalText, String businessInterpretation) {}
+    public record MarketWarmupSummaryCompleteItem(BigDecimal scoreTotal, MarketWarmupTemperature marketTemperature, MarketWarmupEcosystemType ecosystemType, MarketWarmupRecommendation recommendation, java.util.List<String> mainPains, java.util.List<String> mainObjections, java.util.List<String> mainPromises, java.util.List<String> mainChannels, java.util.List<String> mainCompetitors, String saturationRisk, String opportunityRecommendation, String nextExperimentSuggestion) {}
+    public record MarketWarmupCompleteRequest(java.util.List<MarketWarmupSourceCompleteItem> sources, java.util.List<MarketWarmupSignalCompleteItem> signals, MarketWarmupSummaryCompleteItem summary, Instant finishedAt) {}
+    public record MarketWarmupFailRequest(String errorCategory, String errorMessage) {}
 }

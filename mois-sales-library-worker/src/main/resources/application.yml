@@ -32,6 +32,12 @@ worker:
   html-capture-poll-interval-ms: ${MOIS_HTML_CAPTURE_POLL_INTERVAL_MS:20000}
   html-capture-limit: ${MOIS_HTML_CAPTURE_LIMIT:1}
   html-capture-force: ${MOIS_HTML_CAPTURE_FORCE:false}
+  market-warmup-enabled: ${MOIS_MARKET_WARMUP_ENABLED:true}
+  market-warmup-poll-interval-ms: ${MOIS_MARKET_WARMUP_POLL_INTERVAL_MS:60000}
+  market-warmup-worker-id: ${MOIS_MARKET_WARMUP_WORKER_ID:mois-sales-library-worker-v1}
+  market-warmup-search-endpoint: ${MOIS_MARKET_WARMUP_SEARCH_ENDPOINT:https://duckduckgo.com/html/}
+  market-warmup-search-limit: ${MOIS_MARKET_WARMUP_SEARCH_LIMIT:6}
+  market-warmup-search-user-agent: ${MOIS_MARKET_WARMUP_SEARCH_USER_AGENT:Mozilla/5.0 MarketingHubBot/1.0}
   request-timeout-ms: ${MOIS_REQUEST_TIMEOUT_MS:300000}
 
 openai:

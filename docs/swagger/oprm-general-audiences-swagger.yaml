@@ -1,0 +1,206 @@
+openapi: 3.0.3
+info:
+  title: OPRM Públicos Gerais API
+  version: 0.1.0
+  description: Endpoints do backend para cadastro e revisão manual de sementes de públicos gerais antes de virar subnicho, nicho ou campanha.
+tags:
+  - name: OPRM Públicos Gerais
+paths:
+  /api/oprm/general-audiences/seeds:
+    get:
+      summary: Lista sementes de público geral cadastradas.
+      tags: [OPRM Públicos Gerais]
+      responses:
+        '200':
+          description: Sementes ordenadas pela atualização mais recente.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GeneralAudienceSeedSummary'
+    post:
+      summary: Cadastra uma semente de público geral.
+      tags: [OPRM Públicos Gerais]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGeneralAudienceSeedRequest'
+      responses:
+        '201':
+          description: Semente cadastrada para revisão manual, ainda sem status de nicho ou campanha.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAudienceSeed'
+        '400':
+          description: Payload inválido.
+  /api/oprm/general-audiences/seeds/{seedId}:
+    get:
+      summary: Detalha uma semente de público geral.
+      tags: [OPRM Públicos Gerais]
+      parameters:
+        - $ref: '#/components/parameters/SeedId'
+      responses:
+        '200':
+          description: Detalhe da semente para revisão operacional.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAudienceSeed'
+        '404':
+          description: Semente não encontrada.
+    patch:
+      summary: Atualiza campos manuais de uma semente de público geral.
+      tags: [OPRM Públicos Gerais]
+      parameters:
+        - $ref: '#/components/parameters/SeedId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateGeneralAudienceSeedRequest'
+      responses:
+        '200':
+          description: Semente atualizada sem acionar descoberta automática ou publicação.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAudienceSeed'
+        '400':
+          description: Payload inválido.
+        '404':
+          description: Semente não encontrada.
+  /api/oprm/general-audiences/seeds/{seedId}/archive:
+    post:
+      summary: Arquiva uma semente de público geral.
+      tags: [OPRM Públicos Gerais]
+      parameters:
+        - $ref: '#/components/parameters/SeedId'
+      responses:
+        '200':
+          description: Semente arquivada sem perda de histórico.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeneralAudienceSeed'
+        '404':
+          description: Semente não encontrada.
+components:
+  parameters:
+    SeedId:
+      name: seedId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+  schemas:
+    SeedType:
+      type: string
+      enum: [CATEGORY, DESIRE, LIFE_CONTEXT, BEHAVIOR, CHANNEL, PAIN_CLUSTER]
+    SeedStatus:
+      type: string
+      enum: [DRAFT, READY_FOR_RESEARCH, RESEARCHING, MAPPED, PAUSED, ARCHIVED]
+    CreateGeneralAudienceSeedRequest:
+      type: object
+      required: [name, seedType]
+      properties:
+        name:
+          type: string
+          maxLength: 191
+          example: Beleza
+        description:
+          type: string
+          nullable: true
+          example: Profissionais autônomas que dependem de agenda, WhatsApp e Instagram para vender serviços.
+        marketContext:
+          type: string
+          nullable: true
+        country:
+          type: string
+          maxLength: 64
+          default: BR
+        language:
+          type: string
+          maxLength: 32
+          default: pt-BR
+        seedType:
+          $ref: '#/components/schemas/SeedType'
+        status:
+          $ref: '#/components/schemas/SeedStatus'
+        businessGoal:
+          type: string
+          nullable: true
+        riskNotes:
+          type: string
+          nullable: true
+    UpdateGeneralAudienceSeedRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 191
+        description:
+          type: string
+          nullable: true
+        marketContext:
+          type: string
+          nullable: true
+        country:
+          type: string
+          maxLength: 64
+        language:
+          type: string
+          maxLength: 32
+        seedType:
+          $ref: '#/components/schemas/SeedType'
+        status:
+          $ref: '#/components/schemas/SeedStatus'
+        businessGoal:
+          type: string
+          nullable: true
+        riskNotes:
+          type: string
+          nullable: true
+    GeneralAudienceSeed:
+      allOf:
+        - $ref: '#/components/schemas/CreateGeneralAudienceSeedRequest'
+        - type: object
+          required: [id, name, country, language, seedType, status, createdAt, updatedAt]
+          properties:
+            id:
+              type: integer
+              format: int64
+            createdAt:
+              type: string
+              format: date-time
+            updatedAt:
+              type: string
+              format: date-time
+    GeneralAudienceSeedSummary:
+      type: object
+      required: [id, name, country, language, seedType, status, updatedAt]
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        marketContext:
+          type: string
+          nullable: true
+        country:
+          type: string
+        language:
+          type: string
+        seedType:
+          $ref: '#/components/schemas/SeedType'
+        status:
+          $ref: '#/components/schemas/SeedStatus'
+        updatedAt:
+          type: string
+          format: date-time

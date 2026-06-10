@@ -1,0 +1,18 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["surface", "root", "emotional", "social", "cost", "summary", "evidenceSignals"],
+  "properties": {
+    "surface": { "type": "string", "minLength": 10 },
+    "root": { "type": "string", "minLength": 10 },
+    "emotional": { "type": "string", "minLength": 10 },
+    "social": { "type": "string", "minLength": 10 },
+    "cost": { "type": "string", "minLength": 10 },
+    "summary": { "type": "string", "minLength": 10, "maxLength": 500 },
+    "evidenceSignals": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 5 }
+    }
+  }
+}

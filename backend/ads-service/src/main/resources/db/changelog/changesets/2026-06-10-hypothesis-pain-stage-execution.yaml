@@ -1,0 +1,66 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-10-hypothesis-pain-stage-execution-create
+      author: marketinghub
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: hypothesis_pain_stage_execution
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE hypothesis_pain_stage_execution (
+                  market_niche_id BIGINT NOT NULL,
+                  hypothesis_id BINARY(16) NULL,
+                  stage_code VARCHAR(100) NOT NULL,
+                  execution_requested_at DATETIME(6) NOT NULL,
+                  created_at DATETIME(6) NOT NULL,
+                  processing_started_at DATETIME(6) NULL,
+                  completed_at DATETIME(6) NULL,
+                  prompt_template_id VARCHAR(191) NULL,
+                  prompt_content LONGTEXT NOT NULL,
+                  prompt LONGTEXT NULL,
+                  openai_request_body LONGTEXT NULL,
+                  openai_model VARCHAR(120) NULL,
+                  schema_json LONGTEXT NULL,
+                  prompt_markdown_content LONGTEXT NULL,
+                  status VARCHAR(50) NOT NULL,
+                  openai_job_id VARCHAR(120) NULL,
+                  model_response LONGTEXT NULL,
+                  provisional_html LONGTEXT NULL,
+                  error_message LONGTEXT NULL,
+                  error_detail LONGTEXT NULL,
+                  quality_review_audit LONGTEXT NULL,
+                  input_tokens INT NULL,
+                  output_tokens INT NULL,
+                  cost_usd DECIMAL(12,6) NULL,
+                  id_job VARBINARY(36) NOT NULL,
+                  PRIMARY KEY (id_job),
+                  CONSTRAINT fk_hypothesis_pain_stage_market_niche FOREIGN KEY (market_niche_id) REFERENCES market_niche(id),
+                  CONSTRAINT fk_hypothesis_pain_stage_hypothesis FOREIGN KEY (hypothesis_id) REFERENCES hypothesis(id)
+              );
+  - changeSet:
+      id: 2026-06-10-hypothesis-pain-stage-execution-indexes
+      author: marketinghub
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: hypothesis_pain_stage_execution
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE INDEX idx_hypothesis_pain_stage_niche_stage_requested
+                  ON hypothesis_pain_stage_execution(market_niche_id, stage_code, execution_requested_at);
+              CREATE INDEX idx_hypothesis_pain_stage_stage_status_requested
+                  ON hypothesis_pain_stage_execution(stage_code, status, execution_requested_at);

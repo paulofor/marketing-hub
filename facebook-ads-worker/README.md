@@ -21,10 +21,11 @@ vez de persistir anchor genérico.
 
 
 
-## Enriquecimento de segmentações manuais de nicho
+## Enriquecimento de segmentações de nicho
 
 Além da fila de candidatos de targeting, o worker também processa os termos
-cadastrados manualmente na tela de nicho (interesses, cargos e comportamentos).
+cadastrados manualmente na tela de nicho e os sinais iniciais gerados pelo OPRM
+NichoCNAE para nichos enriquecidos (interesses, cargos e comportamentos).
 O scheduler `MetaAdsTargetingEnrichmentScheduler` busca itens pendentes no backend
 (`GET /api/internal/targeting/elements/metaads-pending`) e consulta a Graph API
 no endpoint global `/search` com o `type` correspondente (`adinterest`,
@@ -34,7 +35,8 @@ no endpoint global `/search` com o `type` correspondente (`adinterest`,
 - limite mínimo estimado (`audience_size_lower_bound`),
 - limite máximo estimado (`audience_size_upper_bound`).
 
-Após encontrar o melhor match, o worker envia os dados para o backend via
+Esses limites são usados pelo Marketing Hub como alcance inicial do sinal antes
+de montar ou escalar campanha. Após encontrar o melhor match, o worker envia os dados para o backend via
 `PATCH /api/internal/targeting/elements/{id}/metaads`, mantendo a base local
 alinhada com os identificadores e faixas de audiência retornados pela Meta.
 

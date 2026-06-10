@@ -574,6 +574,38 @@ public final class MoisSalesLibraryDtos {
         CHANNEL_FIT
     }
 
+
+    /**
+     * Representa uma página priorizada por score comercial combinado da Etapa 3.
+     */
+    public record MarketWarmupOpportunityRankingItem(
+            long pageId,
+            String title,
+            String urlCanonical,
+            String source,
+            BigDecimal pageScoreTotal,
+            BigDecimal warmupScoreTotal,
+            BigDecimal combinedCommercialScore,
+            MarketWarmupTemperature marketTemperature,
+            MarketWarmupEcosystemType ecosystemType,
+            MarketWarmupRecommendation recommendation,
+            String saturationRisk,
+            Instant evidenceUpdatedAt,
+            String suggestedNextAction,
+            String evidenceSummary
+    ) {
+    }
+
+    /**
+     * Representa o ranking comercial de oportunidades para escolher próximo experimento ou pesquisa.
+     */
+    public record MarketWarmupOpportunityRankingResponse(
+            String workspaceId,
+            int limit,
+            List<MarketWarmupOpportunityRankingItem> items
+    ) {
+    }
+
     /**
      * Representa a solicitação aceita para criar ou reutilizar uma pesquisa de aquecimento da página.
      */

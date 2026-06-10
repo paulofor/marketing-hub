@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import type {
   MoisCollectedReferenceUrlSummary,
+  MoisMarketWarmupOpportunityRankingResponse,
   MoisMarketWarmupReprocessStaleResponse,
   MoisMarketWarmupRequestResponse,
   MoisMarketWarmupSignalListResponse,
@@ -105,6 +106,30 @@ export function useMoisSalesLibraryPages(
           },
         },
       );
+      return data;
+    },
+  });
+}
+
+export function useMoisSalesLibraryOpportunityRanking(
+  workspaceId: string,
+  limit = 5,
+) {
+  return useQuery({
+    queryKey: [
+      "mois",
+      "sales-library",
+      "market-warmup",
+      "opportunity-ranking",
+      workspaceId,
+      limit,
+    ],
+    queryFn: async () => {
+      const { data } =
+        await axios.get<MoisMarketWarmupOpportunityRankingResponse>(
+          "/api/mois/sales-library/market-warmup/opportunity-ranking",
+          { params: { workspaceId, limit } },
+        );
       return data;
     },
   });

@@ -540,6 +540,55 @@ public class MoisSalesLibraryService {
     }
 
     /**
+     * Lista oportunidades com decisão comercial combinando score da página, aquecimento, saturação e recência da evidência.
+     */
+    public MoisSalesLibraryDtos.MarketWarmupOpportunityRankingResponse rankMarketWarmupOpportunities(String workspaceId, int limit) {
+        int normalizedLimit = Math.max(1, Math.min(limit, 50));
+        List<MoisSalesLibraryDtos.MarketWarmupOpportunityRankingItem> items = jdbcTemplate.query("""
+                SELECT ranked.page_id, ranked.title, ranked.url_canonical, ranked.source, ranked.page_score_total,
+                       ranked.warmup_score_total, ranked.combined_commercial_score, ranked.market_temperature,
+                       ranked.ecosystem_type, ranked.recommendation, ranked.saturation_risk, ranked.evidence_updated_at,
+                       ranked.opportunity_recommendation, ranked.next_experiment_suggestion
+                FROM (
+                    SELECT p.id AS page_id, p.title, p.url_canonical, p.source,
+                           COALESCE(p.score_total, 0) AS page_score_total,
+                           COALESCE(mws.score_total, 0) AS warmup_score_total,
+                           mws.market_temperature, mws.ecosystem_type, mws.recommendation, mws.saturation_risk,
+                           COALESCE(src.evidence_updated_at, mws.updated_at, mwj.updated_at) AS evidence_updated_at,
+                           mws.opportunity_recommendation, mws.next_experiment_suggestion,
+                           ROUND(
+                               (COALESCE(p.score_total, 0) * 0.45) +
+                               (COALESCE(mws.score_total, 0) * 0.35) +
+                               (GREATEST(0, 100 - LEAST(100, TIMESTAMPDIFF(DAY, COALESCE(src.evidence_updated_at, mws.updated_at, mwj.updated_at), UTC_TIMESTAMP()) * 5)) * 0.20) -
+                               (CASE
+                                   WHEN mws.market_temperature = 'SATURATED' OR mws.recommendation = 'SATURATED_REQUIRES_ANGLE'
+                                        OR COALESCE(mws.saturation_risk, '') <> '' THEN 20
+                                   ELSE 0
+                                END)
+                           , 2) AS combined_commercial_score
+                    FROM mois_sales_page p
+                    JOIN (
+                        SELECT sales_page_id, MAX(id) AS latest_warmup_job_id
+                        FROM mois_sales_page_market_warmup_job
+                        WHERE status = 'DONE'
+                        GROUP BY sales_page_id
+                    ) mwj_latest ON mwj_latest.sales_page_id = p.id
+                    JOIN mois_sales_page_market_warmup_job mwj ON mwj.id = mwj_latest.latest_warmup_job_id
+                    JOIN mois_sales_page_market_warmup_summary mws ON mws.job_id = mwj.id
+                    LEFT JOIN (
+                        SELECT job_id, MAX(COALESCE(last_activity_at, published_at, updated_at, created_at)) AS evidence_updated_at
+                        FROM mois_sales_page_market_warmup_source
+                        GROUP BY job_id
+                    ) src ON src.job_id = mwj.id
+                    WHERE p.workspace_id = ?
+                ) ranked
+                ORDER BY ranked.combined_commercial_score DESC, ranked.warmup_score_total DESC, ranked.evidence_updated_at DESC, ranked.page_id DESC
+                LIMIT ?
+                """, this::mapMarketWarmupOpportunityRankingItem, workspaceId, normalizedLimit);
+        return new MoisSalesLibraryDtos.MarketWarmupOpportunityRankingResponse(workspaceId, normalizedLimit, items);
+    }
+
+    /**
      * Calcula os contadores globais da biblioteca usando html_bytes > 0 como critério canônico de página capturada.
      */
     public MoisSalesLibraryDtos.SalesLibraryPageSummaryResponse summarizePages(String workspaceId) {
@@ -1182,6 +1231,64 @@ public class MoisSalesLibraryService {
             }
         }
         return null;
+    }
+
+    /**
+     * Converte uma linha ranqueada em oportunidade comercial objetiva para a biblioteca MOIS.
+     */
+    private MoisSalesLibraryDtos.MarketWarmupOpportunityRankingItem mapMarketWarmupOpportunityRankingItem(ResultSet rs, int rowNum) throws SQLException {
+        MoisSalesLibraryDtos.MarketWarmupTemperature temperature = mapEnum(MoisSalesLibraryDtos.MarketWarmupTemperature.class, rs.getString("market_temperature"));
+        MoisSalesLibraryDtos.MarketWarmupRecommendation recommendation = mapEnum(MoisSalesLibraryDtos.MarketWarmupRecommendation.class, rs.getString("recommendation"));
+        String nextSuggestion = coalesceNotBlank(rs.getString("next_experiment_suggestion"), rs.getString("opportunity_recommendation"));
+        return new MoisSalesLibraryDtos.MarketWarmupOpportunityRankingItem(
+                rs.getLong("page_id"),
+                rs.getString("title"),
+                rs.getString("url_canonical"),
+                rs.getString("source"),
+                rs.getBigDecimal("page_score_total"),
+                rs.getBigDecimal("warmup_score_total"),
+                rs.getBigDecimal("combined_commercial_score"),
+                temperature,
+                mapEnum(MoisSalesLibraryDtos.MarketWarmupEcosystemType.class, rs.getString("ecosystem_type")),
+                recommendation,
+                rs.getString("saturation_risk"),
+                toInstant(rs.getTimestamp("evidence_updated_at")),
+                resolveSuggestedNextAction(temperature, recommendation, nextSuggestion),
+                buildRankingEvidenceSummary(rs.getBigDecimal("page_score_total"), rs.getBigDecimal("warmup_score_total"), rs.getString("saturation_risk"), toInstant(rs.getTimestamp("evidence_updated_at")))
+        );
+    }
+
+    /**
+     * Define a próxima ação comercial a partir da recomendação de aquecimento e da sugestão persistida.
+     */
+    private String resolveSuggestedNextAction(
+            MoisSalesLibraryDtos.MarketWarmupTemperature temperature,
+            MoisSalesLibraryDtos.MarketWarmupRecommendation recommendation,
+            String persistedSuggestion
+    ) {
+        if (recommendation == MoisSalesLibraryDtos.MarketWarmupRecommendation.SATURATED_REQUIRES_ANGLE
+                || temperature == MoisSalesLibraryDtos.MarketWarmupTemperature.SATURATED) {
+            return "Pesquisar ângulo diferenciado com OPRM/MDS antes de criar experimento.";
+        }
+        if (recommendation == MoisSalesLibraryDtos.MarketWarmupRecommendation.PRIORITIZE) {
+            return persistedSuggestion == null ? "Criar próximo experimento comercial para este mercado." : persistedSuggestion;
+        }
+        if (recommendation == MoisSalesLibraryDtos.MarketWarmupRecommendation.OBSERVE) {
+            return persistedSuggestion == null ? "Refinar promessa e validar mais evidências antes do experimento." : persistedSuggestion;
+        }
+        if (recommendation == MoisSalesLibraryDtos.MarketWarmupRecommendation.RESEARCH_MORE) {
+            return "Solicitar próxima pesquisa OPRM/MDS para aprofundar dor, rotina e mecanismo.";
+        }
+        return "Não priorizar agora; manter apenas como referência de mercado.";
+    }
+
+    /**
+     * Monta explicação curta e rastreável do score combinado exibido no ranking.
+     */
+    private String buildRankingEvidenceSummary(BigDecimal pageScore, BigDecimal warmupScore, String saturationRisk, Instant evidenceUpdatedAt) {
+        String saturation = saturationRisk == null || saturationRisk.isBlank() ? "sem penalidade explícita de saturação" : "com risco de saturação descontado";
+        String evidenceDate = evidenceUpdatedAt == null ? "sem data de evidência" : "evidência até " + evidenceUpdatedAt;
+        return "Combina score da página " + pageScore + ", aquecimento " + warmupScore + ", " + saturation + " e " + evidenceDate + ".";
     }
 
     /**

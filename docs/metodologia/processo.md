@@ -136,8 +136,22 @@ Fico pensando como fazer isso no âmbito de venda de produtos, tenho que mandar 
 #### Forma de trabalho:
 * Quando estive trabalhando no geralanding eu entrava no chat gpt dialogo e pedia para ele gerar um diagrama de algum modulo  eu analisava o diagrama e conversando pelo chat ia evoluindo em termos de arqquitetura, dessa forma fizemos os padrões de arquitetura da conexão com IA
 
+
+
 * Hoje quando termianmos a coleta do cnae eu pedi uma ajuda direto no codex ele criou varias tarefas. Mas pedi para antes gerar um diagrama de sequencia colocando as entidades: usuario, front, backend, modulo, mysql, externos. Com isso eu consegui validar melhor o fluxo entender melhor e orientar para depois implementar.
 
 > Nas duas forma diagramas sendo gerados ajudaram muito
 
 
+(10-06-2026)
+
+1- Tive ideias baseado no uso
+   . nicho cnea -> vamos usar somente MEI
+   . biblioteca pagina de vendas -> vamos ver como esses produtos de sucesso aquecem o lead
+   . mercados amplos ( beleza, renda extra, relacionamento ) -> como colocar isso no radar do mkt hub -
+
+2- Pedi para o codex gerar planos de implementaçaõ em etapas colocando no docs/implementacao
+
+3- Executei, etapa 1, etapa2, etapa3, ....
+
+4- Acessando as telas, dando print perguntando o que colocou, como fazer.

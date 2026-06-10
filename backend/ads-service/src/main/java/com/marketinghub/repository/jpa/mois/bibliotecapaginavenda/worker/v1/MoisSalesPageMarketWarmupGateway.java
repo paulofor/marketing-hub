@@ -1,6 +1,6 @@
-package com.marketinghub.repository.jdbc.mois.bibliotecapaginavenda.worker.v1;
+package com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1;
 
-import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.dto.MoisSalesLibraryDtos;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -53,22 +53,22 @@ public interface MoisSalesPageMarketWarmupGateway {
     /**
      * Insere uma fonte pública rastreável coletada pelo worker.
      */
-    long insertSource(long jobId, long pageId, String workspaceId, MoisSalesLibraryDtos.MarketWarmupSourceCompleteItem source);
+    long insertSource(long jobId, long pageId, String workspaceId, MarketWarmupSourceData source);
 
     /**
      * Insere um sinal comercial vinculado à fonte pública correspondente.
      */
-    void insertSignal(long jobId, long pageId, String workspaceId, long sourceId, MoisSalesLibraryDtos.MarketWarmupSignalCompleteItem signal);
+    void insertSignal(long jobId, long pageId, String workspaceId, long sourceId, MarketWarmupSignalData signal);
 
     /**
      * Insere o resumo final calculado para o job de aquecimento.
      */
-    void insertSummary(long jobId, long pageId, String workspaceId, MoisSalesLibraryDtos.MarketWarmupSummaryCompleteItem summary);
+    void insertSummary(long jobId, long pageId, String workspaceId, MarketWarmupSummaryWriteData summary);
 
     /**
      * Marca o job como concluído e replica os principais classificadores comerciais para busca rápida.
      */
-    void markJobDone(long jobId, MoisSalesLibraryDtos.MarketWarmupSummaryCompleteItem summary, Instant finishedAt);
+    void markJobDone(long jobId, MarketWarmupSummaryWriteData summary, Instant finishedAt);
 
     /**
      * Marca o job como falho com categoria e mensagem operacional.
@@ -83,12 +83,12 @@ public interface MoisSalesPageMarketWarmupGateway {
     /**
      * Lista fontes públicas de um job de aquecimento.
      */
-    List<MoisSalesLibraryDtos.MarketWarmupSourceResponse> listSources(long jobId);
+    List<MarketWarmupSourceData> listSources(long jobId);
 
     /**
      * Lista sinais comerciais extraídos de um job de aquecimento.
      */
-    List<MoisSalesLibraryDtos.MarketWarmupSignalResponse> listSignals(long jobId);
+    List<MarketWarmupSignalReadData> listSignals(long jobId);
 
     /**
      * Representa os dados comerciais da página necessários para iniciar a etapa de aquecimento.
@@ -112,7 +112,7 @@ public interface MoisSalesPageMarketWarmupGateway {
             long jobId,
             long pageId,
             String workspaceId,
-            MoisSalesLibraryDtos.MarketWarmupJobStatus status,
+            String status,
             Instant createdAt,
             String errorCategory,
             String errorMessage
@@ -129,15 +129,87 @@ public interface MoisSalesPageMarketWarmupGateway {
     }
 
     /**
+     * Representa uma fonte pública gravada ou lida pela camada de persistência.
+     */
+    record MarketWarmupSourceData(
+            Long sourceId,
+            Long jobId,
+            Long pageId,
+            String platform,
+            String sourceType,
+            String sourceUrl,
+            String sourceTitle,
+            String authorName,
+            Instant publishedAt,
+            Instant lastActivityAt,
+            Long followersOrSubscribers,
+            Long viewsCount,
+            Long likesCount,
+            Long commentsCount,
+            BigDecimal recencyScore,
+            BigDecimal engagementScore,
+            String evidenceSummary,
+            Instant createdAt,
+            Instant updatedAt
+    ) {
+    }
+
+    /**
+     * Representa um sinal comercial enviado para persistência final.
+     */
+    record MarketWarmupSignalData(
+            String signalType,
+            BigDecimal signalStrength,
+            String signalText,
+            String businessInterpretation
+    ) {
+    }
+
+    /**
+     * Representa um sinal comercial lido da persistência para resposta funcional.
+     */
+    record MarketWarmupSignalReadData(
+            long signalId,
+            long jobId,
+            long sourceId,
+            long pageId,
+            String signalType,
+            BigDecimal signalStrength,
+            String signalText,
+            String businessInterpretation,
+            Instant createdAt
+    ) {
+    }
+
+    /**
+     * Representa o resumo calculado enviado para persistência final.
+     */
+    record MarketWarmupSummaryWriteData(
+            BigDecimal scoreTotal,
+            String marketTemperature,
+            String ecosystemType,
+            String recommendation,
+            List<String> mainPains,
+            List<String> mainObjections,
+            List<String> mainPromises,
+            List<String> mainChannels,
+            List<String> mainCompetitors,
+            String saturationRisk,
+            String opportunityRecommendation,
+            String nextExperimentSuggestion
+    ) {
+    }
+
+    /**
      * Representa o resumo final da pesquisa junto com o estado do job que o produziu.
      */
     record MarketWarmupSummaryData(
             long jobId,
             long pageId,
-            java.math.BigDecimal scoreTotal,
-            MoisSalesLibraryDtos.MarketWarmupTemperature marketTemperature,
-            MoisSalesLibraryDtos.MarketWarmupEcosystemType ecosystemType,
-            MoisSalesLibraryDtos.MarketWarmupRecommendation recommendation,
+            BigDecimal scoreTotal,
+            String marketTemperature,
+            String ecosystemType,
+            String recommendation,
             String mainPains,
             String mainObjections,
             String mainPromises,
@@ -146,7 +218,7 @@ public interface MoisSalesPageMarketWarmupGateway {
             String saturationRisk,
             String opportunityRecommendation,
             String nextExperimentSuggestion,
-            MoisSalesLibraryDtos.MarketWarmupJobStatus status,
+            String status,
             String errorCategory,
             String errorMessage,
             Instant createdAt,

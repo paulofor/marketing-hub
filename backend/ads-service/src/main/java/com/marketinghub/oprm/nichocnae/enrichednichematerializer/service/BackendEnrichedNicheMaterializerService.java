@@ -62,6 +62,7 @@ public class BackendEnrichedNicheMaterializerService {
   private final OprmExtractedSignalRepository extractedSignalRepository;
   private final MarketNicheRepository marketNicheRepository;
   private final MarketNicheEnrichmentProfileRepository enrichmentProfileRepository;
+  private final OprmEnrichedNicheMetaSignalService metaSignalService;
 
   /** Inicializa o serviço com os repositórios oficiais do backend usados pela etapa final. */
   public BackendEnrichedNicheMaterializerService(
@@ -74,7 +75,8 @@ public class BackendEnrichedNicheMaterializerService {
       OprmSourceSnapshotRepository sourceSnapshotRepository,
       OprmExtractedSignalRepository extractedSignalRepository,
       MarketNicheRepository marketNicheRepository,
-      MarketNicheEnrichmentProfileRepository enrichmentProfileRepository) {
+      MarketNicheEnrichmentProfileRepository enrichmentProfileRepository,
+      OprmEnrichedNicheMetaSignalService metaSignalService) {
     this.cycleRepository = cycleRepository;
     this.routineCardRepository = routineCardRepository;
     this.nicheCandidateRepository = nicheCandidateRepository;
@@ -85,6 +87,7 @@ public class BackendEnrichedNicheMaterializerService {
     this.extractedSignalRepository = extractedSignalRepository;
     this.marketNicheRepository = marketNicheRepository;
     this.enrichmentProfileRepository = enrichmentProfileRepository;
+    this.metaSignalService = metaSignalService;
   }
 
   /** Lista cartões aprovados pelo gate que ainda precisam materializar nicho e nicho enriquecido. */
@@ -111,14 +114,17 @@ public class BackendEnrichedNicheMaterializerService {
     if (enrichmentProfileRepository.existsBySourceRoutineCardId(card.getId())) {
       MarketNicheEnrichmentProfile existing = enrichmentProfileRepository.findFirstByResearchCycleIdOrderByIdDesc(researchCycleId)
           .orElseThrow(() -> new IllegalStateException("routine card already materialized without retrievable profile"));
+      publishMetaSignalsForExistingProfile(cycle, card, existing);
       return new CompleteEnrichedNicheMaterializerResponse(
           researchCycleId, card.getId(), existing.getMarketNiche().getId(), existing.getId(), cycle.getStatus(), existing.getCreatedAt());
     }
 
     OprmNicheCandidate candidate = nicheCandidateRepository.findById(cycle.getSourceNicheId()).orElse(null);
-    MarketNiche marketNiche = resolveMarketNiche(card, cycle, candidate);
+    OprmEnrichedNicheMetaSignalService.MetaSignalPackage metaSignalPackage = metaSignalService.buildSignalPackage(cycle, card);
+    MarketNiche marketNiche = resolveMarketNiche(card, cycle, candidate, metaSignalPackage);
     MarketNicheEnrichmentProfile profile = buildProfile(card, cycle, candidate, marketNiche, request);
     MarketNicheEnrichmentProfile savedProfile = enrichmentProfileRepository.save(profile);
+    metaSignalService.publishTargetingElements(marketNiche, savedProfile, metaSignalPackage);
     updateCycleAndCandidate(cycle, candidate, marketNiche.getId());
     return new CompleteEnrichedNicheMaterializerResponse(
         researchCycleId, card.getId(), marketNiche.getId(), savedProfile.getId(), cycle.getStatus(), savedProfile.getCreatedAt());
@@ -218,6 +224,18 @@ public class BackendEnrichedNicheMaterializerService {
         profile == null ? null : profile.getCreatedAt());
   }
 
+  /** Atualiza sinais Meta Ads quando uma materialização idempotente já possui perfil final. */
+  private void publishMetaSignalsForExistingProfile(
+      OprmRoutineResearchCycle cycle,
+      OprmNicheRoutineCard card,
+      MarketNicheEnrichmentProfile existing) {
+    OprmEnrichedNicheMetaSignalService.MetaSignalPackage metaSignalPackage = metaSignalService.buildSignalPackage(cycle, card);
+    MarketNiche marketNiche = existing.getMarketNiche();
+    metaSignalService.applySignalsToNiche(marketNiche, metaSignalPackage);
+    marketNicheRepository.save(marketNiche);
+    metaSignalService.publishTargetingElements(marketNiche, existing, metaSignalPackage);
+  }
+
   /** Converte cartão aprovado em unidade de trabalho completa para o coletor OPRM. */
   private RecordEnrichedNicheMaterializerPending toPending(OprmNicheRoutineCard card) {
     OprmRoutineResearchCycle cycle = findCycle(card.getResearchCycleId());
@@ -251,7 +269,11 @@ public class BackendEnrichedNicheMaterializerService {
   }
 
   /** Reaproveita nicho existente do candidato ou cria um nicho base com dados enriquecidos do card. */
-  private MarketNiche resolveMarketNiche(OprmNicheRoutineCard card, OprmRoutineResearchCycle cycle, OprmNicheCandidate candidate) {
+  private MarketNiche resolveMarketNiche(
+      OprmNicheRoutineCard card,
+      OprmRoutineResearchCycle cycle,
+      OprmNicheCandidate candidate,
+      OprmEnrichedNicheMetaSignalService.MetaSignalPackage metaSignalPackage) {
     MarketNiche marketNiche = candidate != null && candidate.getMarketNicheId() != null
         ? marketNicheRepository.findById(candidate.getMarketNicheId()).orElseGet(MarketNiche::new)
         : new MarketNiche();
@@ -262,7 +284,7 @@ public class BackendEnrichedNicheMaterializerService {
     marketNiche.setOffers(null);
     marketNiche.setBaseSegmentation("Nicho operacional CNAE " + cycle.getCnaeCode() + " - " + cycle.getCnaeDescription());
     marketNiche.setDemographicFilters("Público profissional/empreendedor ligado a " + cycle.getCnaeDescription());
-    marketNiche.setInterests(card.getSourceDomains());
+    metaSignalService.applySignalsToNiche(marketNiche, metaSignalPackage);
     marketNiche.setExtraTips(buildExtraTips(card));
     return marketNicheRepository.save(marketNiche);
   }

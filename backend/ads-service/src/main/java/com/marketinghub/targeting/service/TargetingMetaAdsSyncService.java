@@ -11,14 +11,23 @@ import org.springframework.util.StringUtils;
 
 import java.util.List;
 
+/**
+ * Serviço responsável por expor e atualizar dados oficiais da Meta Ads em elementos de segmentação.
+ */
 @Service
 public class TargetingMetaAdsSyncService {
     private final TargetingElementRepository repository;
 
+    /**
+     * Inicializa o serviço com o repositório de elementos de segmentação.
+     */
     public TargetingMetaAdsSyncService(TargetingElementRepository repository) {
         this.repository = repository;
     }
 
+    /**
+     * Lista elementos aprovados que ainda precisam de ID oficial e alcance da Meta Ads.
+     */
     public List<TargetingMetaAdsPendingElementDto> listPending(int limit) {
         int safeLimit = Math.max(1, Math.min(limit, 200));
         return repository.findMetaAdsPending(PageRequest.of(0, safeLimit)).stream()
@@ -26,6 +35,9 @@ public class TargetingMetaAdsSyncService {
                 .toList();
     }
 
+    /**
+     * Atualiza o elemento com ID oficial, chave exibível e faixa de audiência retornados pela Meta.
+     */
     @Transactional
     public void updateMetaAdsData(Long id, UpdateTargetingMetaAdsDataRequest request) {
         if (id == null || request == null) {
@@ -46,6 +58,9 @@ public class TargetingMetaAdsSyncService {
         }
     }
 
+    /**
+     * Converte uma entidade pendente no DTO consumido pelo facebook-ads-worker.
+     */
     private TargetingMetaAdsPendingElementDto toPendingDto(TargetingElement element) {
         return new TargetingMetaAdsPendingElementDto(
                 element.getId(),

@@ -1,0 +1,137 @@
+openapi: 3.0.3
+info:
+  title: Hypothesis Pain Stage API
+  version: 1.0.0
+  description: Contratos da etapa Dor do pipeline de hipótese.
+paths:
+  /api/niches/{nicheId}/hypothesis-pipeline/pain/start:
+    post:
+      summary: Inicia a construção auditável da dor do nicho.
+      parameters:
+        - in: path
+          name: nicheId
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        '202':
+          description: Execução iniciada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HypothesisPainStartResponse'
+  /api/niches/{nicheId}/hypothesis-pipeline/pain/stage-executions:
+    get:
+      summary: Lista execuções da etapa Dor para acompanhamento na tela de nova hipótese.
+      parameters:
+        - in: path
+          name: nicheId
+          required: true
+          schema: { type: integer, format: int64 }
+        - in: query
+          name: includeCompleted
+          schema: { type: boolean, default: true }
+      responses:
+        '200':
+          description: Execuções retornadas.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/HypothesisPainExecutionSummaryResponse'
+  /api/internal/hypothesis-pipeline/pain/stage-executions/pending:
+    get:
+      summary: Lista jobs pendentes da etapa Dor para o Worker AI.
+      responses:
+        '200':
+          description: Jobs pendentes.
+  /api/internal/hypothesis-pipeline/pain/stage-executions/{idJob}/running:
+    post:
+      summary: Marca uma execução como em processamento.
+      parameters:
+        - in: path
+          name: idJob
+          required: true
+          schema: { type: string }
+      responses:
+        '202': { description: Execução marcada. }
+  /api/internal/hypothesis-pipeline/pain/stage-executions/{idJob}/recebe-prompt:
+    post:
+      summary: Recebe prompt, schema e request cru enviados para a OpenAI.
+      parameters:
+        - in: path
+          name: idJob
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecebePromptRequest'
+      responses:
+        '202': { description: Prompt registrado. }
+  /api/internal/hypothesis-pipeline/pain/stage-executions/{idJob}/recebe-resposta:
+    post:
+      summary: Recebe resposta ou erro da OpenAI para concluir a etapa Dor.
+      parameters:
+        - in: path
+          name: idJob
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecebeRespostaRequest'
+      responses:
+        '202': { description: Resposta registrada. }
+components:
+  schemas:
+    HypothesisPainStartResponse:
+      type: object
+      required: [jobid, status]
+      properties:
+        jobid: { type: string }
+        status: { type: string }
+    HypothesisPainExecutionSummaryResponse:
+      type: object
+      properties:
+        jobid: { type: string }
+        marketNicheId: { type: integer, format: int64 }
+        hypothesisId: { type: string, nullable: true }
+        stageCode: { type: string }
+        status: { type: string }
+        executionRequestedAt: { type: string, format: date-time }
+        processingStartedAt: { type: string, format: date-time, nullable: true }
+        completedAt: { type: string, format: date-time, nullable: true }
+        openAiModel: { type: string, nullable: true }
+        openAiJobId: { type: string, nullable: true }
+        inputTokens: { type: integer, nullable: true }
+        outputTokens: { type: integer, nullable: true }
+        costUsd: { type: number, nullable: true }
+        errorMessage: { type: string, nullable: true }
+        modelResponse: { type: string, nullable: true }
+    RecebePromptRequest:
+      type: object
+      required: [prompt, schemaJson, requestBodyJson]
+      properties:
+        prompt: { type: string }
+        promptMarkdownContent: { type: string, nullable: true }
+        schemaJson: { type: string }
+        requestBodyJson: { type: string }
+        openAiModel: { type: string, nullable: true }
+        jobidopenai: { type: string, nullable: true }
+    RecebeRespostaRequest:
+      type: object
+      properties:
+        marketNicheId: { type: integer, format: int64 }
+        stageCode: { type: string }
+        modelResponse: { type: string, nullable: true }
+        inputTokens: { type: integer, nullable: true }
+        outputTokens: { type: integer, nullable: true }
+        costUsd: { type: number, nullable: true }
+        openAiJobId: { type: string, nullable: true }
+        errorMessage: { type: string, nullable: true }
+        errorDetail: { type: string, nullable: true }

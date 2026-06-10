@@ -4297,3 +4297,5 @@
 - Criada rotina no `facebook-ads-worker` para buscar sugestões oficiais da Meta em campanhas ativas e reportar o retrato ao backend.
 - Criada persistência no backend para armazenar recomendações por campanha, preservando o último retrato válido quando houver falha de coleta.
 - Atualizado contrato Swagger de Facebook Ads com endpoints de alvos, ingestão, erro e leitura das sugestões.
+
+- 2026-06-10 UTC — Criada a etapa 1 Dor do pipeline de hipótese no padrão GeraLanding: execução auditável por `jobid`, endpoints backend públicos/internos, prompt e JSON Schema no AI Worker, worker plugável pelo pipeline genérico e card de acompanhamento na tela de nova hipótese por nicho.

@@ -476,6 +476,24 @@ paths:
         '204':
           description: Falha registrada.
 
+  /api/oprm/nichocnae/mei-audience-profiles/research-cycles/{researchCycleId}:
+    get:
+      summary: Detalha o perfil final aprovado de público-alvo MEI/autônomo sem criar produto ou oferta.
+      tags: [OPRM Nicho CNAE]
+      parameters:
+        - $ref: '#/components/parameters/ResearchCycleId'
+      responses:
+        '200':
+          description: Perfil MEI/autônomo aprovado pelo gate e seguro para consumo posterior por MDS, MOIS e estratégia.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeiAudienceProfileDetailResponse'
+        '404':
+          description: Perfil MEI/autônomo não encontrado para o ciclo informado.
+        '409':
+          description: Perfil ainda não aprovado ou bloqueado por contaminação de solução.
+
   /api/internal/oprm/nichocnae/routine-quality-gate/stage-executions/pending:
     get:
       summary: Lista cartões de rotina pendentes para a etapa sete de gate de qualidade.
@@ -715,6 +733,34 @@ components:
           type: number
           format: double
           example: 90.0
+        audienceName:
+          type: string
+          nullable: true
+          example: Manicures MEI que atendem por agenda própria
+        autonomousProfessionalFitScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+          nullable: true
+        sourceFreshnessScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+          nullable: true
+        outdatedSourceRiskScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+          nullable: true
+        structuredBusinessDriftRiskScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+          nullable: true
+        gateStatus:
+          type: string
+          nullable: true
+          example: MEI_AUDIENCE_READY
         triggerSource:
           type: string
           description: Origem do ciclo; `AUTO_SCORE_QUEUE` para fila automática e `MANUAL_REPROCESS` para ciclos criados pelo botão Reprocessar CNAE.
@@ -2114,6 +2160,96 @@ components:
       properties:
         errorMessage:
           type: string
+
+    MeiAudienceProfileDetailResponse:
+      type: object
+      description: Perfil comportamental MEI/autônomo aprovado, sem campos de produto, oferta, promessa ou campanha.
+      properties:
+        id:
+          type: integer
+          format: int64
+        researchCycleId:
+          type: integer
+          format: int64
+        routineCardId:
+          type: integer
+          format: int64
+        sourceNicheCandidateId:
+          type: integer
+          format: int64
+        marketNicheId:
+          type: integer
+          format: int64
+        cnaeCode:
+          type: string
+        cnaeDescription:
+          type: string
+        neutralNicheName:
+          type: string
+        audienceName:
+          type: string
+        occupationTerms:
+          type: string
+        workMode:
+          type: string
+        customerAcquisitionBehavior:
+          type: string
+        dailyRoutineSummary:
+          type: string
+        recurringTasksSummary:
+          type: string
+        operationalPainsSummary:
+          type: string
+        emotionalPainsSummary:
+          type: string
+        dreamsSummary:
+          type: string
+        fearsSummary:
+          type: string
+        languagePatterns:
+          type: string
+        channelsUsed:
+          type: string
+        recentSourceSummary:
+          type: string
+        qualityStatus:
+          type: string
+          example: MEI_AUDIENCE_READY
+        approvedForConsumption:
+          type: boolean
+        qualityCheckedAt:
+          type: string
+          format: date-time
+        autonomousProfessionalFitScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+        behavioralEvidenceScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+        sourceFreshnessScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+        outdatedSourceRiskScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+        structuredBusinessDriftRiskScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+        solutionLanguageRiskScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
 
     FailRoutineSynthesizerRequest:
       type: object

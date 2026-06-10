@@ -1,7 +1,9 @@
 package com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service;
 
 import com.marketinghub.oprm.cnae.OprmNicheCandidate;
+import com.marketinghub.oprm.nichocnae.OprmNicheRoutineCard;
 import com.marketinghub.oprm.nichocnae.OprmRoutineResearchCycle;
+import com.marketinghub.oprm.nichocnae.meiaudienceprofile.OprmMeiAudienceProfile;
 import com.marketinghub.oprm.nichocnae.RoutineResearchNicheNameNormalizer;
 import com.marketinghub.oprm.nichocnae.RoutineResearchNicheNameNormalizer.NormalizedNicheName;
 import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.pending.RecordRoutineResearchOrchestratorPending;
@@ -9,7 +11,9 @@ import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.recen
 import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.reprocess.RecordRoutineResearchOrchestratorReprocessResult;
 import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.runNext.RecordRoutineResearchOrchestratorResult;
 import com.marketinghub.repository.jpa.oprm.cnae.OprmNicheCandidateRepository;
+import com.marketinghub.repository.jpa.oprm.nichocnae.OprmNicheRoutineCardRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmRoutineResearchCycleRepository;
+import com.marketinghub.repository.jpa.oprm.nichocnae.meiaudienceprofile.OprmMeiAudienceProfileRepository;
 import java.time.Instant;
 import java.util.List;
 import org.slf4j.Logger;
@@ -40,14 +44,20 @@ public class BackendRoutineResearchOrchestratorService {
 
     private final OprmNicheCandidateRepository nicheCandidateRepository;
     private final OprmRoutineResearchCycleRepository routineResearchCycleRepository;
+    private final OprmMeiAudienceProfileRepository meiAudienceProfileRepository;
+    private final OprmNicheRoutineCardRepository routineCardRepository;
     private final RoutineResearchNicheNameNormalizer nicheNameNormalizer = new RoutineResearchNicheNameNormalizer();
 
     /** Inicializa o serviço com os repositórios canônicos usados pela etapa zero do pipeline. */
     public BackendRoutineResearchOrchestratorService(
             OprmNicheCandidateRepository nicheCandidateRepository,
-            OprmRoutineResearchCycleRepository routineResearchCycleRepository) {
+            OprmRoutineResearchCycleRepository routineResearchCycleRepository,
+            OprmMeiAudienceProfileRepository meiAudienceProfileRepository,
+            OprmNicheRoutineCardRepository routineCardRepository) {
         this.nicheCandidateRepository = nicheCandidateRepository;
         this.routineResearchCycleRepository = routineResearchCycleRepository;
+        this.meiAudienceProfileRepository = meiAudienceProfileRepository;
+        this.routineCardRepository = routineCardRepository;
     }
 
     /** Lista o próximo nicho CNAE pendente que seria selecionado pela etapa zero. */
@@ -265,6 +275,12 @@ public class BackendRoutineResearchOrchestratorService {
 
     /** Converte o ciclo criado pela etapa zero para o contrato de histórico recente. */
     private RecordRoutineResearchOrchestratorRecent toRecentProcessed(OprmRoutineResearchCycle cycle) {
+        OprmMeiAudienceProfile audienceProfile = meiAudienceProfileRepository
+                .findFirstByResearchCycleIdOrderByIdDesc(cycle.getId())
+                .orElse(null);
+        OprmNicheRoutineCard routineCard = routineCardRepository
+                .findFirstByResearchCycleIdOrderByIdDesc(cycle.getId())
+                .orElse(null);
         return new RecordRoutineResearchOrchestratorRecent(
                 cycle.getId(),
                 cycle.getSourceNicheId(),
@@ -276,6 +292,12 @@ public class BackendRoutineResearchOrchestratorService {
                 cycle.getResearchMode(),
                 cycle.getSolutionLanguageRiskScore(),
                 cycle.getSourceScore(),
+                audienceProfile == null ? null : audienceProfile.getAudienceName(),
+                audienceProfile == null ? null : audienceProfile.getAutonomousProfessionalFitScore(),
+                audienceProfile == null ? null : audienceProfile.getSourceFreshnessScore(),
+                audienceProfile == null ? null : audienceProfile.getOutdatedSourceRiskScore(),
+                audienceProfile == null ? null : audienceProfile.getStructuredBusinessDriftRiskScore(),
+                routineCard == null ? null : routineCard.getQualityStatus(),
                 cycle.getTriggerSource(),
                 cycle.getStatus(),
                 cycle.getStartedAt(),

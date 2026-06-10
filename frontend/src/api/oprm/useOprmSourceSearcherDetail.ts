@@ -17,6 +17,13 @@ export interface OprmSourceCandidateDetail {
   routineEvidenceScore?: number | null;
   commercialPageRisk?: boolean | null;
   solutionLanguageRisk?: boolean | null;
+  sourceClassificationType?: string | null;
+  sourceFreshnessScore?: number | null;
+  outdatedSourceRisk?: boolean | null;
+  brazilRelevanceScore?: number | null;
+  autonomousProfessionalEvidenceScore?: number | null;
+  structuredBusinessDriftRisk?: boolean | null;
+  publishedAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }

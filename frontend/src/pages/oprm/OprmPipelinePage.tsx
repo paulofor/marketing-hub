@@ -67,19 +67,28 @@ const pipelineStages = [
   },
   {
     number: "7",
-    title: "Gate de Qualidade",
-    technicalName: "oprmRoutineQualityGate",
+    title: "Perfil MEI/autônomo",
+    technicalName: "oprmMeiAudienceSegmenter",
     description:
-      "Avalia se o card representa a rotina e as dificuldades com fontes suficientes, baixa duplicação e baixo risco de solução.",
+      "Materializa o público dono-operador MEI/autônomo, com rotina, canais, dores, sonhos, medos, linguagem e scores.",
     output:
-      "Decisão operacional: rotina pesquisada, precisa de mais pesquisa ou ficou genérica/contaminada.",
+      "oprm_mei_audience_profile com público-alvo rastreável e sem produto, oferta ou promessa.",
   },
   {
     number: "8",
+    title: "Gate de Qualidade",
+    technicalName: "oprmRoutineQualityGate",
+    description:
+      "Avalia se o público MEI/autônomo tem fontes recentes, sinais humanos e baixo risco corporativo/solução.",
+    output:
+      "Decisão operacional: público pronto, precisa de mais pesquisa, fontes antigas, corporativo, contaminado ou genérico.",
+  },
+  {
+    number: "9",
     title: "Nicho Enriquecido",
     technicalName: "oprmEnrichedNicheMaterializer",
     description:
-      "Etapa final que alimenta a tabela de nicho e a tabela de nicho enriquecido a partir do card aprovado.",
+      "Etapa final que alimenta a tabela de nicho e a tabela de nicho enriquecido a partir do perfil aprovado.",
     output:
       "market_niche + market_niche_enrichment_profile com nome neutro, rotina, dificuldades, linguagem e evidências auditáveis.",
   },
@@ -128,6 +137,47 @@ function formatRiskScore(value?: number | null) {
   }
   return `${Number(value).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`;
 }
+function formatPercent(value?: number | null) {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) {
+    return "Sem dado";
+  }
+  return `${Number(value).toLocaleString("pt-BR", { maximumFractionDigits: 0 })}%`;
+}
+
+function formatResearchMode(value?: string | null) {
+  if (value === "MEI_AUTONOMOUS_AUDIENCE_RESEARCH") {
+    return "Pesquisa MEI/autônomo";
+  }
+  if (value === "ROUTINE_REALITY_RESEARCH") {
+    return "Pesquisa de rotina real";
+  }
+  return value ?? "Modo não informado";
+}
+
+function isRecentSource(source: { sourceFreshnessScore?: number | null; outdatedSourceRisk?: boolean | null }) {
+  return Boolean(source.sourceFreshnessScore && source.sourceFreshnessScore >= 60 && !source.outdatedSourceRisk);
+}
+
+function isOutdatedSource(source: { sourceFreshnessScore?: number | null; outdatedSourceRisk?: boolean | null }) {
+  return Boolean(source.outdatedSourceRisk || (source.sourceFreshnessScore !== null && source.sourceFreshnessScore !== undefined && source.sourceFreshnessScore < 40));
+}
+
+function filterSignalsByIntent(
+  signals: Array<{ extractedSignalId: number; signalType: string; signalText: string; evidenceExcerpt: string }>,
+  intents: string[],
+) {
+  const normalizedIntents = intents.map((intent) => intent.toLowerCase());
+  return signals
+    .filter((signal) =>
+      normalizedIntents.some((intent) =>
+        `${signal.signalType} ${signal.signalText} ${signal.evidenceExcerpt}`
+          .toLowerCase()
+          .includes(intent),
+      ),
+    )
+    .slice(0, 3);
+}
+
 
 function formatProcessedAt(value: string) {
   const date = new Date(value);
@@ -154,6 +204,7 @@ const statusLabels: Record<string, string> = {
   PENDING: "Pendente",
   COMPLETED: "Concluído",
   ROUTINE_SYNTHESIZED: "Rotina sintetizada",
+  MEI_AUDIENCE_SEGMENTED: "Perfil MEI/autônomo criado",
   ENRICHED_NICHE_CREATED: "Nicho enriquecido criado",
   ENRICHED_NICHE_FAILED: "Falha no nicho enriquecido",
 };
@@ -170,9 +221,15 @@ const cycleStageByStatus: Record<
       "badge text-bg-primary-subtle border border-primary-subtle text-primary",
   },
   ROUTINE_SYNTHESIZED: {
-    label: "Etapa 7 · Aguardando gate de qualidade",
+    label: "Etapa 7 · Aguardando perfil MEI/autônomo",
     description:
-      "A rotina já foi sintetizada; falta o gate validar se há evidência suficiente para aprovar ou pedir nova pesquisa.",
+      "A rotina já foi sintetizada; falta materializar o público dono-operador MEI/autônomo antes do gate.",
+    badgeClass: "badge text-bg-info-subtle border border-info-subtle text-info",
+  },
+  MEI_AUDIENCE_SEGMENTED: {
+    label: "Etapa 8 · Aguardando gate MEI/autônomo",
+    description:
+      "O perfil de público foi criado; falta o gate validar atualidade, aderência e riscos antes de liberar consumo.",
     badgeClass: "badge text-bg-info-subtle border border-info-subtle text-info",
   },
   LIGHTLY_RESEARCHED: {
@@ -183,7 +240,7 @@ const cycleStageByStatus: Record<
       "badge text-bg-success-subtle border border-success-subtle text-success",
   },
   MEI_AUDIENCE_READY: {
-    label: "Etapa 9 · Público MEI/autônomo validado",
+    label: "Etapa 8 · Público MEI/autônomo validado",
     description:
       "O gate aprovou fontes brasileiras recentes e sinais humanos/comportamentais suficientes para materializar o nicho.",
     badgeClass:
@@ -197,28 +254,28 @@ const cycleStageByStatus: Record<
       "badge text-bg-warning-subtle border border-warning-subtle text-warning",
   },
   NEEDS_MORE_MEI_RESEARCH: {
-    label: "Etapa 9 · Falta pesquisa MEI/autônomo",
+    label: "Etapa 8 · Falta pesquisa MEI/autônomo",
     description:
       "O gate encontrou algum material útil, mas ainda faltam sinais humanos de rotina, aquisição/canal, dor prática e dor emocional/sonho/medo.",
     badgeClass:
       "badge text-bg-warning-subtle border border-warning-subtle text-warning",
   },
   OUTDATED_SOURCES: {
-    label: "Etapa 9 · Fontes antigas",
+    label: "Etapa 8 · Fontes antigas",
     description:
       "O gate bloqueou a pesquisa porque não há fontes brasileiras recentes suficientes para aprovar o público.",
     badgeClass:
       "badge text-bg-warning-subtle border border-warning-subtle text-warning",
   },
   TOO_CORPORATE: {
-    label: "Etapa 9 · Corporativo demais",
+    label: "Etapa 8 · Corporativo demais",
     description:
       "O gate bloqueou a pesquisa porque as evidências apontam mais para empresa estruturada do que para dono-operador MEI/autônomo.",
     badgeClass:
       "badge text-bg-secondary-subtle border border-secondary-subtle text-secondary",
   },
   SOLUTION_CONTAMINATED: {
-    label: "Etapa 9 · Contaminado por solução",
+    label: "Etapa 8 · Contaminado por solução",
     description:
       "O gate bloqueou a pesquisa porque a síntese trouxe linguagem de produto, oferta, software, IA ou mecanismo antes da hora.",
     badgeClass:
@@ -526,17 +583,40 @@ export default function OprmPipelinePage() {
   const snapshotSolutionRiskCount = sourceSnapshots.filter(
     (snapshot) => snapshot.solutionLanguageRisk,
   ).length;
+  const recentSources = sourceSnapshots.filter(isRecentSource).slice(0, 3);
+  const outdatedSources = sourceSnapshots.filter(isOutdatedSource).slice(0, 3);
+  const routineSignals = filterSignalsByIntent(signalExtractorDetail?.signals ?? [], [
+    "routine",
+    "rotina",
+    "task",
+    "tarefa",
+  ]);
+  const painSignals = filterSignalsByIntent(signalExtractorDetail?.signals ?? [], [
+    "pain",
+    "dor",
+    "friction",
+    "dificuldade",
+  ]);
+  const dreamFearChannelSignals = filterSignalsByIntent(signalExtractorDetail?.signals ?? [], [
+    "dream",
+    "sonho",
+    "fear",
+    "medo",
+    "channel",
+    "canal",
+    "whatsapp",
+    "instagram",
+  ]);
 
   return (
     <div className="d-flex flex-column gap-4">
       <header className="d-flex flex-column gap-2">
         <PageTitle>Pipeline NichoCNAE</PageTitle>
         <p className="text-secondary mb-0">
-          Esta tela mostra o pipeline OPRM que transforma um nicho CNAE já
-          priorizado em um cartão de rotina pesquisado. Ingestão de mercado,
-          cálculo de score e enriquecimento CNAE ficam na aba CNAEs; aqui o foco
-          é conhecer como o nicho funciona no dia a dia antes de qualquer
-          solução, produto ou oferta.
+          Esta tela mostra se o OPRM está pesquisando o profissional MEI/autônomo
+          por trás do CNAE: rotina, canais, dores, sonhos, medos, linguagem e
+          atualidade das fontes. O objetivo aqui é validar público-alvo antes de
+          qualquer solução, produto ou oferta.
         </p>
       </header>
 
@@ -547,9 +627,9 @@ export default function OprmPipelinePage() {
           <h2 className="h5 mb-2">Fluxo do pipeline de pesquisa da rotina</h2>
           <p className="text-secondary mb-0">
             Entrada: nicho CNAE com score alto. Saída esperada:
-            <strong> oprm_niche_routine_card</strong>, usado para entender
-            rotina, dificuldades, perguntas e evidências antes de qualquer fluxo
-            posterior de hipótese ou oferta.
+            <strong> oprm_mei_audience_profile</strong> aprovado pelo gate,
+            mostrando se existe público MEI/autônomo válido e recente para os
+            próximos fluxos de estratégia.
           </p>
         </div>
       </section>
@@ -598,6 +678,7 @@ export default function OprmPipelinePage() {
                     <th scope="col" className="text-end">
                       Score
                     </th>
+                    <th scope="col">Público MEI/autônomo</th>
                     <th scope="col">Status</th>
                     <th scope="col">Etapa atual</th>
                     <th scope="col" className="text-end">
@@ -623,7 +704,7 @@ export default function OprmPipelinePage() {
                           </span>
                           <span className="text-secondary small">
                             Ciclo #{item.researchCycleId} ·{" "}
-                            {item.researchMode ?? "modo não informado"}
+                            {formatResearchMode(item.researchMode)}
                           </span>
                         </td>
                         <td>
@@ -637,6 +718,28 @@ export default function OprmPipelinePage() {
                             minimumFractionDigits: 2,
                             maximumFractionDigits: 2,
                           })}
+                          <span className="text-secondary small d-block">
+                            Aderência: {formatPercent(item.autonomousProfessionalFitScore)}
+                          </span>
+                          <span className="text-secondary small d-block">
+                            Atualidade: {formatPercent(item.sourceFreshnessScore)}
+                          </span>
+                        </td>
+                        <td>
+                          <span className="fw-semibold d-block">
+                            {item.audienceName ?? "Aguardando perfil"}
+                          </span>
+                          <span className="text-secondary small d-block">
+                            Foco: {formatResearchMode(item.researchMode)}
+                          </span>
+                          <span className="text-secondary small d-block">
+                            Fonte antiga: {formatPercent(item.outdatedSourceRiskScore)} · Empresa estruturada: {formatPercent(item.structuredBusinessDriftRiskScore)}
+                          </span>
+                          {item.gateStatus ? (
+                            <span className={buildStatusBadgeClass(item.gateStatus)}>
+                              Gate: {formatStatusLabel(item.gateStatus)}
+                            </span>
+                          ) : null}
                         </td>
                         <td>
                           <span
@@ -711,7 +814,12 @@ export default function OprmPipelinePage() {
                               )}
                             </button>
                           ) : (
-                            <span className="text-secondary small">—</span>
+                            <Link
+                              className="btn btn-outline-primary btn-sm text-nowrap"
+                              to={`/oprm/pipeline/niche-research-seed-builder/${item.researchCycleId}`}
+                            >
+                              Abrir detalhe
+                            </Link>
                           )}
                         </td>
                       </tr>
@@ -810,9 +918,39 @@ export default function OprmPipelinePage() {
                         <dd className="col-7 mb-0">
                           {getOriginalName(latestCycle)}
                         </dd>
-                        <dt className="col-5 text-secondary fw-normal">Modo</dt>
+                        <dt className="col-5 text-secondary fw-normal">Foco</dt>
                         <dd className="col-7 mb-0">
-                          {latestCycle.researchMode ?? "Não informado"}
+                          {formatResearchMode(latestCycle.researchMode)}
+                        </dd>
+                        <dt className="col-5 text-secondary fw-normal">
+                          Público
+                        </dt>
+                        <dd className="col-7 mb-0 fw-semibold">
+                          {latestCycle.audienceName ?? "Aguardando segmentação MEI/autônomo"}
+                        </dd>
+                        <dt className="col-5 text-secondary fw-normal">
+                          Aderência autônomo
+                        </dt>
+                        <dd className="col-7 mb-0">
+                          {formatPercent(latestCycle.autonomousProfessionalFitScore)}
+                        </dd>
+                        <dt className="col-5 text-secondary fw-normal">
+                          Atualidade fontes
+                        </dt>
+                        <dd className="col-7 mb-0">
+                          {formatPercent(latestCycle.sourceFreshnessScore)}
+                        </dd>
+                        <dt className="col-5 text-secondary fw-normal">
+                          Risco fonte antiga
+                        </dt>
+                        <dd className="col-7 mb-0">
+                          {formatPercent(latestCycle.outdatedSourceRiskScore)}
+                        </dd>
+                        <dt className="col-5 text-secondary fw-normal">
+                          Risco empresa estruturada
+                        </dt>
+                        <dd className="col-7 mb-0">
+                          {formatPercent(latestCycle.structuredBusinessDriftRiskScore)}
                         </dd>
                         <dt className="col-5 text-secondary fw-normal">
                           Risco solução
@@ -934,9 +1072,21 @@ export default function OprmPipelinePage() {
                           </p>
                           <p className="text-secondary mb-2">
                             {generatedSeed.queries.length} queries geradas para
-                            as próximas etapas. Abra o detalhe para ver a
-                            requisição enviada à IA e o JSON completo gerado.
+                            as próximas etapas. As primeiras consultas mostram se
+                            a pesquisa está olhando para a pessoa MEI/autônoma.
                           </p>
+                          <ul className="list-unstyled d-flex flex-column gap-2 mb-3">
+                            {generatedSeed.queries.slice(0, 4).map((query) => (
+                              <li key={query.queryId}>
+                                <span className="fw-semibold d-block">
+                                  {formatQueryGoal(query.queryGoal)}
+                                </span>
+                                <span className="text-secondary">
+                                  {query.queryText}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
                           <Link
                             className="btn btn-outline-primary btn-sm"
                             to={`/oprm/pipeline/niche-research-seed-builder/${latestCycle.researchCycleId}`}
@@ -1121,6 +1271,18 @@ export default function OprmPipelinePage() {
                               {snapshotSolutionRiskCount}
                             </dd>
                             <dt className="col-6 text-secondary fw-normal">
+                              Fontes recentes
+                            </dt>
+                            <dd className="col-6 mb-0 fw-semibold">
+                              {recentSources.length}
+                            </dd>
+                            <dt className="col-6 text-secondary fw-normal">
+                              Antigas penalizadas
+                            </dt>
+                            <dd className="col-6 mb-0 fw-semibold">
+                              {outdatedSources.length}
+                            </dd>
+                            <dt className="col-6 text-secondary fw-normal">
                               Status do ciclo
                             </dt>
                             <dd className="col-6 mb-0">
@@ -1165,6 +1327,32 @@ export default function OprmPipelinePage() {
                               <span className="d-block text-truncate">
                                 {latestSourceSnapshot.shortExcerpt}
                               </span>
+                              <div className="mt-2">
+                                <span className="fw-semibold d-block text-success">
+                                  Recentes usadas
+                                </span>
+                                {recentSources.length > 0 ? (
+                                  recentSources.map((source) => (
+                                    <span className="d-block" key={`recent-${source.sourceSnapshotId}`}>
+                                      {source.sourceDomain} · {formatPercent(source.sourceFreshnessScore)}
+                                    </span>
+                                  ))
+                                ) : (
+                                  <span className="d-block">Ainda sem fonte recente suficiente.</span>
+                                )}
+                                <span className="fw-semibold d-block text-warning mt-2">
+                                  Antigas penalizadas
+                                </span>
+                                {outdatedSources.length > 0 ? (
+                                  outdatedSources.map((source) => (
+                                    <span className="d-block" key={`old-${source.sourceSnapshotId}`}>
+                                      {source.sourceDomain} · {formatPercent(source.sourceFreshnessScore)}
+                                    </span>
+                                  ))
+                                ) : (
+                                  <span className="d-block">Nenhuma fonte antiga crítica neste resumo.</span>
+                                )}
+                              </div>
                             </div>
                           ) : sourceFetcherDetail.cycleTotalSourceCandidates >
                             0 ? (
@@ -1242,27 +1430,37 @@ export default function OprmPipelinePage() {
                             </dd>
                           </dl>
                           {latestSignals.length > 0 ? (
-                            <div className="d-flex flex-column gap-2">
-                              {latestSignals.map((signal) => (
-                                <div
-                                  className="border rounded-2 p-2 bg-light"
-                                  key={signal.extractedSignalId}
-                                >
-                                  <span className="badge text-bg-light border text-secondary mb-1">
-                                    {signal.signalType}
-                                  </span>
-                                  <p className="mb-1 fw-semibold">
+                            <div className="d-flex flex-column gap-3">
+                              <div>
+                                <span className="fw-semibold d-block mb-1">
+                                  Rotina e tarefas
+                                </span>
+                                {(routineSignals.length > 0 ? routineSignals : latestSignals.slice(0, 1)).map((signal) => (
+                                  <p className="mb-1 text-secondary" key={`routine-${signal.extractedSignalId}`}>
                                     {signal.signalText}
                                   </p>
-                                  <p className="mb-1 text-secondary text-truncate">
-                                    {signal.evidenceExcerpt}
+                                ))}
+                              </div>
+                              <div>
+                                <span className="fw-semibold d-block mb-1">
+                                  Dores práticas/emocionais
+                                </span>
+                                {(painSignals.length > 0 ? painSignals : latestSignals.slice(0, 1)).map((signal) => (
+                                  <p className="mb-1 text-secondary" key={`pain-${signal.extractedSignalId}`}>
+                                    {signal.signalText}
                                   </p>
-                                  <span className="text-secondary">
-                                    Fonte: {signal.sourceDomain} · Confiança:{" "}
-                                    {signal.confidenceScore}%
-                                  </span>
-                                </div>
-                              ))}
+                                ))}
+                              </div>
+                              <div>
+                                <span className="fw-semibold d-block mb-1">
+                                  Sonhos, medos e canais
+                                </span>
+                                {(dreamFearChannelSignals.length > 0 ? dreamFearChannelSignals : latestSignals.slice(0, 1)).map((signal) => (
+                                  <p className="mb-1 text-secondary" key={`outcome-${signal.extractedSignalId}`}>
+                                    {signal.signalText}
+                                  </p>
+                                ))}
+                              </div>
                             </div>
                           ) : signalExtractorDetail.cycleTotalSourceSnapshots >
                             0 ? (
@@ -1377,6 +1575,51 @@ export default function OprmPipelinePage() {
                   {stage.number === "7" && latestCycle ? (
                     <div className="border-top pt-3">
                       <span className="d-block small fw-semibold text-secondary text-uppercase mb-1">
+                        Público identificado
+                      </span>
+                      <div className="small">
+                        <dl className="row g-2 mb-2">
+                          <dt className="col-6 text-secondary fw-normal">
+                            Público
+                          </dt>
+                          <dd className="col-6 mb-0 fw-semibold">
+                            {latestCycle.audienceName ?? "Aguardando segmentação"}
+                          </dd>
+                          <dt className="col-6 text-secondary fw-normal">
+                            Aderência autônomo
+                          </dt>
+                          <dd className="col-6 mb-0 fw-semibold">
+                            {formatPercent(latestCycle.autonomousProfessionalFitScore)}
+                          </dd>
+                          <dt className="col-6 text-secondary fw-normal">
+                            Atualidade
+                          </dt>
+                          <dd className="col-6 mb-0 fw-semibold">
+                            {formatPercent(latestCycle.sourceFreshnessScore)}
+                          </dd>
+                          <dt className="col-6 text-secondary fw-normal">
+                            Risco fonte antiga
+                          </dt>
+                          <dd className="col-6 mb-0 fw-semibold">
+                            {formatPercent(latestCycle.outdatedSourceRiskScore)}
+                          </dd>
+                          <dt className="col-6 text-secondary fw-normal">
+                            Risco empresa estruturada
+                          </dt>
+                          <dd className="col-6 mb-0 fw-semibold">
+                            {formatPercent(latestCycle.structuredBusinessDriftRiskScore)}
+                          </dd>
+                        </dl>
+                        <p className="text-secondary mb-0">
+                          Este perfil deve explicar a pessoa que executa o trabalho, não a empresa/CNAE abstrato.
+                        </p>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {stage.number === "8" && latestCycle ? (
+                    <div className="border-top pt-3">
+                      <span className="d-block small fw-semibold text-secondary text-uppercase mb-1">
                         Resumo da última execução
                       </span>
                       {isRoutineQualityGateDetailFetching ? (
@@ -1480,11 +1723,16 @@ export default function OprmPipelinePage() {
                             ) : null}
                           </dl>
                           {routineQualityGateDetail.qualityNotes ? (
-                            <p className="text-secondary mb-0">
-                              {formatQualityNotes(
-                                routineQualityGateDetail.qualityNotes,
-                              )}
-                            </p>
+                            <div className="text-secondary mb-0">
+                              <span className="fw-semibold d-block">
+                                Justificativa do gate
+                              </span>
+                              <span>
+                                {formatQualityNotes(
+                                  routineQualityGateDetail.qualityNotes,
+                                )}
+                              </span>
+                            </div>
                           ) : null}
                         </div>
                       ) : routineCard ? (
@@ -1501,7 +1749,7 @@ export default function OprmPipelinePage() {
                     </div>
                   ) : null}
 
-                  {stage.number === "8" && latestCycle ? (
+                  {stage.number === "9" && latestCycle ? (
                     <div className="border-top pt-3">
                       <span className="d-block small fw-semibold text-secondary text-uppercase mb-1">
                         Resumo da última execução

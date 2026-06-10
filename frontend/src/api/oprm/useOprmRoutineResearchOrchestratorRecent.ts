@@ -15,6 +15,12 @@ export interface OprmRoutineResearchOrchestratorRecent {
   researchMode?: string | null;
   solutionLanguageRiskScore?: number | null;
   sourceScore: number;
+  audienceName?: string | null;
+  autonomousProfessionalFitScore?: number | null;
+  sourceFreshnessScore?: number | null;
+  outdatedSourceRiskScore?: number | null;
+  structuredBusinessDriftRiskScore?: number | null;
+  gateStatus?: string | null;
   triggerSource: string;
   cycleStatus: string;
   processedAt: string;

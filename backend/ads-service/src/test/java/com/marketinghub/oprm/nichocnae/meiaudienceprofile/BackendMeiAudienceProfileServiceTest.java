@@ -1,13 +1,16 @@
 package com.marketinghub.oprm.nichocnae.meiaudienceprofile;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.marketinghub.oprm.nichocnae.OprmNicheRoutineCard;
 import com.marketinghub.oprm.nichocnae.meiaudienceprofile.service.BackendMeiAudienceProfileService;
 import com.marketinghub.oprm.nichocnae.meiaudienceprofile.service.upsertAudienceProfile.UpsertMeiAudienceProfileRequest;
+import com.marketinghub.repository.jpa.oprm.nichocnae.OprmNicheRoutineCardRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.meiaudienceprofile.OprmMeiAudienceProfileRepository;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -16,7 +19,8 @@ import org.mockito.ArgumentCaptor;
 /** Testes responsáveis por validar a orquestração do serviço de perfil MEI/autônomo. */
 class BackendMeiAudienceProfileServiceTest {
   private final OprmMeiAudienceProfileRepository repository = mock(OprmMeiAudienceProfileRepository.class);
-  private final BackendMeiAudienceProfileService service = new BackendMeiAudienceProfileService(repository);
+  private final OprmNicheRoutineCardRepository routineCardRepository = mock(OprmNicheRoutineCardRepository.class);
+  private final BackendMeiAudienceProfileService service = new BackendMeiAudienceProfileService(repository, routineCardRepository);
 
   /** Valida que o serviço grava somente campos de público-alvo e normaliza scores ausentes para zero. */
   @Test
@@ -60,7 +64,10 @@ class BackendMeiAudienceProfileServiceTest {
     profile.setOutdatedSourceRiskScore(12);
     profile.setStructuredBusinessDriftRiskScore(9);
     profile.setSolutionLanguageRiskScore(0);
+    OprmNicheRoutineCard card = approvedCard();
     when(repository.findFirstByResearchCycleIdOrderByIdDesc(1001L)).thenReturn(Optional.of(profile));
+    when(routineCardRepository.findById(2002L)).thenReturn(Optional.of(card));
+    profile.setRoutineCardId(2002L);
 
     var detail = service.detailByResearchCycleId(1001L);
 
@@ -68,7 +75,81 @@ class BackendMeiAudienceProfileServiceTest {
       assertThat(response.id()).isEqualTo(55L);
       assertThat(response.audienceName()).isEqualTo("manicures MEI que atendem por agenda própria");
       assertThat(response.cnaeCode()).isEqualTo("9602501");
+      assertThat(response.qualityStatus()).isEqualTo("MEI_AUDIENCE_READY");
+      assertThat(response.approvedForConsumption()).isTrue();
     });
+  }
+
+  /** Valida que o detalhe aprovado só libera perfil após aprovação do gate de qualidade. */
+  @Test
+  void approvedDetailByResearchCycleIdRequiresQualityGateApproval() {
+    OprmMeiAudienceProfile profile = profile();
+    OprmNicheRoutineCard card = approvedCard();
+    when(repository.findFirstByResearchCycleIdOrderByIdDesc(1001L)).thenReturn(Optional.of(profile));
+    when(routineCardRepository.findById(2002L)).thenReturn(Optional.of(card));
+
+    var detail = service.approvedDetailByResearchCycleId(1001L);
+
+    assertThat(detail).get().satisfies(response -> {
+      assertThat(response.approvedForConsumption()).isTrue();
+      assertThat(response.qualityStatus()).isEqualTo("MEI_AUDIENCE_READY");
+      assertThat(response.recentSourceSummary()).contains("Fontes brasileiras recentes");
+    });
+  }
+
+  /** Valida que o perfil final aprovado não é exposto quando contém linguagem de solução. */
+  @Test
+  void approvedDetailByResearchCycleIdRejectsSolutionContamination() {
+    OprmMeiAudienceProfile profile = profile();
+    profile.setAudienceName("manicures buscando software para vender mais");
+    when(repository.findFirstByResearchCycleIdOrderByIdDesc(1001L)).thenReturn(Optional.of(profile));
+    when(routineCardRepository.findById(2002L)).thenReturn(Optional.of(approvedCard()));
+
+    assertThatThrownBy(() -> service.approvedDetailByResearchCycleId(1001L))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("linguagem de solução proibida");
+  }
+
+
+  /** Monta um perfil persistido de público MEI/autônomo aprovado e sem linguagem comercial. */
+  private OprmMeiAudienceProfile profile() {
+    OprmMeiAudienceProfile profile = new OprmMeiAudienceProfile();
+    profile.setId(55L);
+    profile.setResearchCycleId(1001L);
+    profile.setRoutineCardId(2002L);
+    profile.setSourceNicheCandidateId(3003L);
+    profile.setCnaeCode("9602501");
+    profile.setCnaeDescription("Cabeleireiros, manicure e pedicure");
+    profile.setNeutralNicheName("serviços pessoais de beleza");
+    profile.setAudienceName("manicures MEI que atendem por agenda própria");
+    profile.setOccupationTerms("manicure autônoma; nail designer MEI");
+    profile.setWorkMode("Atendimento em domicílio, salão parceiro ou espaço próprio pequeno.");
+    profile.setCustomerAcquisitionBehavior("Captação por indicação, WhatsApp, Instagram e clientes recorrentes.");
+    profile.setDailyRoutineSummary("Agenda clientes, compra materiais, atende, cobra e reorganiza horários.");
+    profile.setOperationalPainsSummary("Cancelamentos, atrasos, retrabalho e compra de material sem previsibilidade.");
+    profile.setEmotionalPainsSummary("Medo de renda instável e insegurança para cobrar preço justo.");
+    profile.setDreamsSummary("Ter agenda cheia, renda previsível e reconhecimento profissional.");
+    profile.setFearsSummary("Perder clientes, receber avaliações ruins e ficar sem caixa.");
+    profile.setLanguagePatterns("agenda cheia; cliente fixa; meu próprio horário; cobrar certo");
+    profile.setChannelsUsed("WhatsApp; Instagram; Google Perfil da Empresa");
+    profile.setRecentSourceSummary("Fontes brasileiras recentes sobre rotina de manicures autônomas e MEI.");
+    profile.setAutonomousProfessionalFitScore(92);
+    profile.setBehavioralEvidenceScore(88);
+    profile.setSourceFreshnessScore(81);
+    profile.setOutdatedSourceRiskScore(12);
+    profile.setStructuredBusinessDriftRiskScore(9);
+    profile.setSolutionLanguageRiskScore(0);
+    return profile;
+  }
+
+  /** Monta um cartão aprovado pelo gate específico de público MEI/autônomo. */
+  private OprmNicheRoutineCard approvedCard() {
+    OprmNicheRoutineCard card = new OprmNicheRoutineCard();
+    card.setId(2002L);
+    card.setResearchCycleId(1001L);
+    card.setQualityStatus("MEI_AUDIENCE_READY");
+    card.setReadyForHypothesis(true);
+    return card;
   }
 
   /** Monta uma requisição válida de perfil MEI/autônomo sem qualquer campo comercial. */

@@ -325,3 +325,8 @@
 - 2026-06-10 00:00:00 (UTC): criado plano de implementação para inserir públicos gerais no Marketing Hub como fluxo OPRM separado do NichoCNAE, usando sementes, subnichos, ângulos, quality gate e conversão controlada para nicho/hipótese/experimento sem criar CNAEs artificiais nem sobrepor o pipeline atual.
 - 2026-06-10 00:00:00 (UTC): executada a etapa 8 do plano de redirecionamento NichoCNAE para público MEI/autônomo. A extração de sinais do coletor OPRM passou a classificar modo de trabalho autônomo, aquisição de clientes, canais, dores práticas/emocionais, sonhos, medos, status, pressão de tempo, instabilidade de renda, reputação, preço e cancelamentos com evidência curta; a síntese de rotina passou a persistir e expor blocos comportamentais separados no backend, mantendo compatibilidade com os campos legados e bloqueando promoção de linguagem de solução/oferta.
 - 2026-06-10 03:41:06 (UTC): executada a etapa 9 do plano de redirecionamento NichoCNAE para MEI/autônomo. O gate `routine-quality-gate` passou a exigir fontes brasileiras recentes, aderência ao dono-operador MEI/autônomo, sinais de comportamento humano, aquisição/canal, dor prática e dor emocional/sonho/medo, além de bloquear fontes antigas, conteúdo corporativo demais e contaminação por solução/produto/oferta antes da materialização.
+
+## 2026-06-10 — OPRM Públicos Gerais: cadastro de sementes
+
+- Implementada a etapa 1 do plano de públicos gerais sem sobreposição CNAE: cadastro, listagem, detalhe, atualização e arquivamento manual de sementes de público geral no backend.
+- O fluxo permanece separado do NichoCNAE e não cria nicho, hipótese, experimento ou campanha automaticamente.

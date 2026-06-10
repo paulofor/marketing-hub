@@ -24,7 +24,7 @@ import java.util.Objects;
 public class ExperimentFunnelAutoStopService {
     private static final Logger LOGGER = LoggerFactory.getLogger(ExperimentFunnelAutoStopService.class);
     private static final double THREE_PERCENT = 0.03d;
-    private static final Duration LOW_IMPRESSIONS_MIN_CAMPAIGN_AGE = Duration.ofHours(24);
+    private static final Duration LOW_IMPRESSIONS_MIN_CAMPAIGN_AGE = Duration.ofHours(48);
     private static final long LOW_IMPRESSIONS_MINIMUM = 100L;
 
     private final ExperimentFunnelDiagnosticService diagnosticService;
@@ -99,7 +99,7 @@ public class ExperimentFunnelAutoStopService {
         invalidateExperimentAndRequestStops(
                 experiment,
                 FacebookCampaignStopReason.LOW_IMPRESSIONS_AFTER_RUNNING_TIME,
-                "menos de 100 impressões após 24 horas de campanha"
+                "menos de 100 impressões após 48 horas de campanha"
         );
         return true;
     }

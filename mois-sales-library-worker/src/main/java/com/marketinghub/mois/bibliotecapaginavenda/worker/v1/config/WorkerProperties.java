@@ -18,4 +18,10 @@ public record WorkerProperties(
         long htmlCapturePollIntervalMs,
         Integer htmlCaptureLimit,
         Boolean htmlCaptureForce,
+        boolean marketWarmupEnabled,
+        long marketWarmupPollIntervalMs,
+        String marketWarmupWorkerId,
+        String marketWarmupSearchEndpoint,
+        Integer marketWarmupSearchLimit,
+        String marketWarmupSearchUserAgent,
         int requestTimeoutMs) {}

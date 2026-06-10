@@ -1,0 +1,35 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-10-01-oprm-general-audience-seed
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: oprm_general_audience_seed
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE oprm_general_audience_seed (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                name VARCHAR(191) NOT NULL,
+                description LONGTEXT NULL,
+                market_context LONGTEXT NULL,
+                country VARCHAR(64) NOT NULL DEFAULT 'BR',
+                language VARCHAR(32) NOT NULL DEFAULT 'pt-BR',
+                seed_type VARCHAR(32) NOT NULL,
+                status VARCHAR(32) NOT NULL,
+                business_goal LONGTEXT NULL,
+                risk_notes LONGTEXT NULL,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL,
+                CONSTRAINT pk_oprm_general_audience_seed PRIMARY KEY (id)
+              );
+              CREATE INDEX idx_oprm_general_audience_seed_status ON oprm_general_audience_seed (status, updated_at);
+              CREATE INDEX idx_oprm_general_audience_seed_type ON oprm_general_audience_seed (seed_type, updated_at);
+              CREATE INDEX idx_oprm_general_audience_seed_locale ON oprm_general_audience_seed (country, language, updated_at);

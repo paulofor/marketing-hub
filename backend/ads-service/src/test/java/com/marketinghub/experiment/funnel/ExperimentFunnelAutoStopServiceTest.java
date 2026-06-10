@@ -99,11 +99,12 @@ class ExperimentFunnelAutoStopServiceTest {
         assertThat(stopped).isFalse();
         assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.RUNNING);
     }
+
     @Test
-    void stopsExperimentWhenCampaignHasLowImpressionsAfterOneDay() {
+    void stopsExperimentWhenCampaignHasLowImpressionsAfterTwoDays() {
         FacebookAdsCampaign campaign = new FacebookAdsCampaign();
         campaign.setId("camp-low-impressions");
-        campaign.setCreatedAt(Instant.now().minus(25, ChronoUnit.HOURS));
+        campaign.setCreatedAt(Instant.now().minus(49, ChronoUnit.HOURS));
         when(campaignRepository.findByExperimentId(99L)).thenReturn(List.of(campaign));
 
         boolean stopped = service.stopIfLowImpressionsAfterRunningTime(experiment, 42L, campaign.getCreatedAt());
@@ -127,11 +128,11 @@ class ExperimentFunnelAutoStopServiceTest {
     }
 
     @Test
-    void keepsExperimentRunningWhenImpressionsReachMinimumAfterOneDay() {
+    void keepsExperimentRunningWhenImpressionsReachMinimumAfterTwoDays() {
         boolean stopped = service.stopIfLowImpressionsAfterRunningTime(
                 experiment,
                 100L,
-                Instant.now().minus(25, ChronoUnit.HOURS));
+                Instant.now().minus(49, ChronoUnit.HOURS));
 
         assertThat(stopped).isFalse();
         assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.RUNNING);

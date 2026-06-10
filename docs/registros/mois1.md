@@ -1277,3 +1277,20 @@ Arquivos alterados:
 - `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/web/MoisSalesLibraryController.java`
 - `backend/ads-service/src/test/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/web/MoisSalesLibraryControllerTest.java`
 - `docs/registros/mois1.md`
+
+## 2026-06-10 — Fase 6 da Etapa 3 de aquecimento de mercado
+
+- Implementado no worker MOIS o ciclo V1 da **Etapa 3 — Pesquisa de Aquecimento e Ecossistema de Mercado**, com claim, processamento, conclusão e falha sempre via backend principal.
+- Adicionada coleta pública configurável por busca web, com geração de queries a partir da análise comercial concluída da página e registro do payload bruto recebido antes da normalização.
+- Criado dossiê inicial estruturado com fontes, sinais básicos e resumo comercial sem acesso direto ao banco e sem JSON serializado dentro de campos textuais funcionais.
+- Adicionados testes unitários para geração de queries e montagem do dossiê V1.
+
+Arquivos alterados:
+- `mois-sales-library-worker/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/client/BackendClient.java`
+- `mois-sales-library-worker/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/config/WorkerProperties.java`
+- `mois-sales-library-worker/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/marketwarmup/`
+- `mois-sales-library-worker/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/model/WorkerDtos.java`
+- `mois-sales-library-worker/src/main/resources/application.yml`
+- `mois-sales-library-worker/src/test/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/marketwarmup/`
+- `mois-sales-library-worker/pom.xml`
+- `docs/registros/mois1.md`

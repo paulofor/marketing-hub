@@ -147,6 +147,23 @@ class MoisSalesPageMarketWarmupServiceTest {
         verify(gateway, never()).markJobDone(org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
     }
 
+
+    /**
+     * Garante que jobs presos em FETCHING antigo podem ser refileirados sem mexer diretamente no banco.
+     */
+    @Test
+    void reprocessStaleJobsReturnsOperationalCount() {
+        given(gateway.requeueStaleFetchingJobs("workspace-001", 120)).willReturn(3L);
+
+        MoisSalesLibraryDtos.MarketWarmupReprocessStaleResponse response = service.reprocessStaleJobs(
+                new MoisSalesLibraryDtos.MarketWarmupReprocessStaleRequest("workspace-001", null));
+
+        assertThat(response.workspaceId()).isEqualTo("workspace-001");
+        assertThat(response.staleMinutes()).isEqualTo(120);
+        assertThat(response.requeuedJobs()).isEqualTo(3L);
+        verify(gateway).requeueStaleFetchingJobs("workspace-001", 120);
+    }
+
     /**
      * Garante que o resumo lido converte listas em linhas funcionais sem depender de JSON em texto.
      */

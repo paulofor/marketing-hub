@@ -10,6 +10,7 @@ import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.Mois
 import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageMarketWarmupGateway.MarketWarmupSummaryData;
 import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageMarketWarmupGateway.MarketWarmupSummaryWriteData;
 import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageMarketWarmupGateway.SalesPageWarmupData;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -25,6 +26,8 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Slf4j
 public class MoisSalesPageMarketWarmupService {
+
+    private static final int DEFAULT_STALE_MINUTES = 120;
 
     private final MoisSalesPageMarketWarmupGateway gateway;
     private final MoisSalesPageMarketWarmupScoreEngine scoreEngine = new MoisSalesPageMarketWarmupScoreEngine();
@@ -102,10 +105,14 @@ public class MoisSalesPageMarketWarmupService {
             MarketWarmupClaimData pending = gateway.findNextPendingJob(request.workspaceId())
                     .orElse(null);
             if (pending == null) {
+                log.info("Nenhum job de aquecimento MOIS pendente para reserva. modulo=MOIS, operacao=claimMarketWarmupJob, workspaceId={}, workerId={}",
+                        request.workspaceId(), request.workerId());
                 return new MoisSalesLibraryDtos.MarketWarmupClaimResponse(false, null);
             }
             boolean claimed = gateway.claimPendingJob(pending.job().jobId(), request.workerId());
             if (!claimed) {
+                log.warn("Job de aquecimento MOIS não foi reservado por concorrência operacional. modulo=MOIS, operacao=claimMarketWarmupJob, workspaceId={}, workerId={}, jobId={}",
+                        request.workspaceId(), request.workerId(), pending.job().jobId());
                 return new MoisSalesLibraryDtos.MarketWarmupClaimResponse(false, null);
             }
             SalesPageWarmupData page = pending.page();
@@ -132,6 +139,8 @@ public class MoisSalesPageMarketWarmupService {
             if (mapJobStatus(job.status()) == MoisSalesLibraryDtos.MarketWarmupJobStatus.DONE) {
                 throw new IllegalStateException("Job de aquecimento já concluído: " + jobId);
             }
+            log.info("Iniciando conclusão do job de aquecimento MOIS. modulo=MOIS, operacao=completeMarketWarmupJob, workspaceId={}, pageId={}, jobId={}, fontesRecebidas={}, sinaisRecebidos={}",
+                    job.workspaceId(), job.pageId(), jobId, request.sources().size(), request.signals().size());
             gateway.deleteJobDetails(jobId);
             List<Long> sourceIds = persistSources(job, request.sources());
             persistSignals(job, sourceIds, request.signals());
@@ -157,11 +166,31 @@ public class MoisSalesPageMarketWarmupService {
             if (!failed) {
                 throw new IllegalStateException("Job de aquecimento não encontrado ou não pode falhar: " + jobId);
             }
-            log.info("Job de aquecimento MOIS marcado como falho. modulo=MOIS, operacao=failMarketWarmupJob, jobId={}, errorCategory={}",
-                    jobId, request.errorCategory());
+            log.info("Job de aquecimento MOIS marcado como falho. modulo=MOIS, operacao=failMarketWarmupJob, jobId={}, errorCategory={}, errorMessage={}",
+                    jobId, request.errorCategory(), request.errorMessage());
         } catch (RuntimeException ex) {
             log.error("Falha ao registrar erro de job de aquecimento MOIS. modulo=MOIS, operacao=failMarketWarmupJob, jobId={}, erroClasse={}, erro={}",
                     jobId, ex.getClass().getName(), ex.getMessage(), ex);
+            throw ex;
+        }
+    }
+
+    /**
+     * Refileira jobs antigos presos em FETCHING para permitir nova execução sem intervenção direta no banco.
+     */
+    @Transactional
+    public MoisSalesLibraryDtos.MarketWarmupReprocessStaleResponse reprocessStaleJobs(
+            MoisSalesLibraryDtos.MarketWarmupReprocessStaleRequest request
+    ) {
+        int staleMinutes = request.staleMinutes() == null ? DEFAULT_STALE_MINUTES : request.staleMinutes();
+        try {
+            long requeued = gateway.requeueStaleFetchingJobs(request.workspaceId(), staleMinutes);
+            log.info("Jobs de aquecimento MOIS presos refileirados. modulo=MOIS, operacao=reprocessStaleMarketWarmupJobs, workspaceId={}, staleMinutes={}, requeuedJobs={}",
+                    request.workspaceId(), staleMinutes, requeued);
+            return new MoisSalesLibraryDtos.MarketWarmupReprocessStaleResponse(request.workspaceId(), staleMinutes, requeued, Instant.now());
+        } catch (RuntimeException ex) {
+            log.error("Falha ao reprocessar jobs de aquecimento MOIS presos. modulo=MOIS, operacao=reprocessStaleMarketWarmupJobs, workspaceId={}, staleMinutes={}, erroClasse={}, erro={}",
+                    request.workspaceId(), staleMinutes, ex.getClass().getName(), ex.getMessage(), ex);
             throw ex;
         }
     }
@@ -171,8 +200,12 @@ public class MoisSalesPageMarketWarmupService {
      */
     private List<Long> persistSources(MarketWarmupJobData job, List<MoisSalesLibraryDtos.MarketWarmupSourceCompleteItem> sources) {
         List<Long> sourceIds = new ArrayList<>();
-        for (MoisSalesLibraryDtos.MarketWarmupSourceCompleteItem source : sources) {
-            sourceIds.add(gateway.insertSource(job.jobId(), job.pageId(), job.workspaceId(), mapSourceWrite(source)));
+        for (int index = 0; index < sources.size(); index++) {
+            MoisSalesLibraryDtos.MarketWarmupSourceCompleteItem source = sources.get(index);
+            long sourceId = gateway.insertSource(job.jobId(), job.pageId(), job.workspaceId(), mapSourceWrite(source));
+            sourceIds.add(sourceId);
+            log.info("Fonte pública de aquecimento MOIS persistida. modulo=MOIS, operacao=completeMarketWarmupJob, workspaceId={}, pageId={}, jobId={}, sourceIndex={}, sourceId={}, platform={}, sourceType={}, sourceUrl={}",
+                    job.workspaceId(), job.pageId(), job.jobId(), index, sourceId, source.platform(), source.sourceType(), source.sourceUrl());
         }
         return sourceIds;
     }

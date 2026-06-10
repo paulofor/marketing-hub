@@ -236,6 +236,24 @@ public class MoisSalesPageMarketWarmupRepository implements MoisSalesPageMarketW
     }
 
     /**
+     * Recoloca jobs presos em FETCHING antigo na fila pendente para reprocessamento operacional.
+     */
+    @Override
+    public long requeueStaleFetchingJobs(String workspaceId, int staleMinutes) {
+        int updated = jdbcTemplate.update("""
+                UPDATE mois_sales_page_market_warmup_job
+                SET status = 'PENDING', attempt = attempt + 1, claimed_by = NULL, started_at = NULL, finished_at = NULL,
+                    error_category = 'STALE_FETCHING_REQUEUED',
+                    error_message = 'Job FETCHING antigo recolocado na fila pela ação operacional da Fase 10',
+                    updated_at = UTC_TIMESTAMP()
+                WHERE workspace_id = ?
+                  AND status = 'FETCHING'
+                  AND COALESCE(started_at, updated_at, created_at) < DATE_SUB(UTC_TIMESTAMP(), INTERVAL ? MINUTE)
+                """, workspaceId, staleMinutes);
+        return updated;
+    }
+
+    /**
      * Busca o resumo mais recente da página com os dados do job associado.
      */
     @Override

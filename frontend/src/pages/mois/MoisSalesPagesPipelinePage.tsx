@@ -5,6 +5,7 @@ import {
   useCaptureMoisSalesLibrarySnapshots,
   useMoisCollectedReferenceUrlSummary,
   useMoisSalesLibraryPageSummary,
+  useReprocessStaleMoisSalesLibraryMarketWarmup,
 } from "../../api/mois/useMoisSalesLibrary";
 import type { MoisSalesLibrarySnapshotCaptureItem } from "../../api/mois/types";
 
@@ -82,6 +83,8 @@ export default function MoisSalesPagesPipelinePage() {
   const collectedUrlSummaryQuery =
     useMoisCollectedReferenceUrlSummary(WORKSPACE_ID);
   const captureMutation = useCaptureMoisSalesLibrarySnapshots(WORKSPACE_ID);
+  const reprocessStaleWarmupMutation =
+    useReprocessStaleMoisSalesLibraryMarketWarmup(WORKSPACE_ID);
   const summary = summaryQuery.data;
   const collectedUrlSummary = collectedUrlSummaryQuery.data;
 
@@ -103,6 +106,9 @@ export default function MoisSalesPagesPipelinePage() {
   const marketWarmupPromising = summary?.marketWarmupPromising ?? 0;
   const marketWarmupCold = summary?.marketWarmupCold ?? 0;
   const marketWarmupSaturated = summary?.marketWarmupSaturated ?? 0;
+  const marketWarmupStuck = summary?.marketWarmupStuck ?? 0;
+  const requeuedWarmupJobs = reprocessStaleWarmupMutation.data?.requeuedJobs;
+  const isReprocessingWarmup = reprocessStaleWarmupMutation.isPending;
 
   return (
     <div className="d-flex flex-column gap-4">
@@ -556,8 +562,9 @@ export default function MoisSalesPagesPipelinePage() {
             </div>
             <p className="text-secondary small mb-0 mt-3">
               Fila real: {marketWarmupPending} pendentes · {marketWarmupRunning}{" "}
-              em pesquisa · {marketWarmupFailed} falhas · {marketWarmupCold}{" "}
-              frios · {marketWarmupSaturated} saturados.
+              em pesquisa · {marketWarmupStuck} presos há mais de 120 min ·{" "}
+              {marketWarmupFailed} falhas · {marketWarmupCold} frios ·{" "}
+              {marketWarmupSaturated} saturados.
             </p>
           </div>
 
@@ -569,13 +576,40 @@ export default function MoisSalesPagesPipelinePage() {
                   <li key={item}>{item}</li>
                 ))}
               </ul>
+              {requeuedWarmupJobs != null ? (
+                <p className="text-success small mb-0 mt-2">
+                  {requeuedWarmupJobs} job(s) preso(s) refileirado(s) para nova
+                  execução.
+                </p>
+              ) : null}
+              {reprocessStaleWarmupMutation.isError ? (
+                <p className="text-danger small mb-0 mt-2">
+                  Não foi possível refileirar os jobs presos agora.
+                </p>
+              ) : null}
             </div>
-            <Link
-              className="btn btn-outline-primary align-self-start"
-              to="/mois/sales-pages-library"
-            >
-              Priorizar na biblioteca
-            </Link>
+            <div className="d-flex flex-wrap gap-2 align-self-start">
+              <button
+                className="btn btn-outline-warning"
+                type="button"
+                disabled={isReprocessingWarmup || marketWarmupStuck === 0}
+                onClick={() => reprocessStaleWarmupMutation.mutate(120)}
+              >
+                {isReprocessingWarmup ? (
+                  <span
+                    className="spinner-border spinner-border-sm me-2"
+                    aria-hidden="true"
+                  />
+                ) : null}
+                Reprocessar presos
+              </button>
+              <Link
+                className="btn btn-outline-primary"
+                to="/mois/sales-pages-library?warmupFilter=HOT_OR_PROMISING&sort=MARKET_WARMUP_SCORE"
+              >
+                Priorizar quentes/promissores
+              </Link>
+            </div>
           </div>
         </div>
       </section>

@@ -9,13 +9,18 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.oprm.generalaudience.service.OprmGeneralAudienceDiscoveryService;
+import com.marketinghub.oprm.generalaudience.service.OprmGeneralAudienceLandingConfirmationService;
 import com.marketinghub.oprm.generalaudience.service.createHypothesis.CreateGeneralAudienceHypothesisRequest;
 import com.marketinghub.oprm.generalaudience.service.createHypothesis.GeneralAudienceHypothesisResponse;
 import com.marketinghub.oprm.generalaudience.service.createLeadExperiment.CreateGeneralAudienceLeadExperimentRequest;
 import com.marketinghub.oprm.generalaudience.service.createLeadExperiment.GeneralAudienceLeadExperimentResponse;
+import com.marketinghub.oprm.generalaudience.service.landingConfirmation.CreateGeneralAudienceLandingConfirmationRequest;
+import com.marketinghub.oprm.generalaudience.service.landingConfirmation.GeneralAudienceLandingConfirmationQuestionResponse;
+import com.marketinghub.oprm.generalaudience.service.landingConfirmation.GeneralAudienceLandingConfirmationResponse;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +42,9 @@ class OprmGeneralAudienceDiscoveryControllerTest {
 
     @MockBean
     OprmGeneralAudienceDiscoveryService service;
+
+    @MockBean
+    OprmGeneralAudienceLandingConfirmationService landingConfirmationService;
 
     /** Verifica se a API cria hipótese específica a partir de ângulo aprovado. */
     @Test
@@ -97,6 +105,48 @@ class OprmGeneralAudienceDiscoveryControllerTest {
                 .andExpect(jsonPath("$.experimentId").value(77))
                 .andExpect(jsonPath("$.marketNicheId").value(99))
                 .andExpect(jsonPath("$.status").value("PLANNED"));
+    }
+
+    /** Verifica se a API cria formulário de confirmação para público geral. */
+    @Test
+    void shouldCreateConfirmationFlowThroughApi() throws Exception {
+        when(landingConfirmationService.createConfirmationFlow(any(), any()))
+                .thenReturn(new GeneralAudienceLandingConfirmationResponse(
+                        20L,
+                        5L,
+                        99L,
+                        77L,
+                        88L,
+                        "oprm-publico-geral-5-20-77",
+                        "Confirmação Público Geral - Manicure autônoma",
+                        "Manicure autônoma",
+                        "Agenda vazia durante a semana",
+                        "kit com 12 mensagens de WhatsApp",
+                        "a dor percebida é horário vazio e dinheiro perdido",
+                        "Responder o formulário e receber a isca",
+                        List.of(new GeneralAudienceLandingConfirmationQuestionResponse(
+                                "Você trabalha como manicure hoje?",
+                                "audience_confirmation",
+                                "SINGLE_CHOICE",
+                                true,
+                                List.of("sim", "não")))));
+        CreateGeneralAudienceLandingConfirmationRequest request = new CreateGeneralAudienceLandingConfirmationRequest(
+                77L,
+                null,
+                "Você trabalha como manicure hoje?",
+                List.of("sim", "não"),
+                null,
+                null,
+                null,
+                null);
+
+        mockMvc.perform(post("/api/oprm/general-audiences/pain-angles/20/create-confirmation-flow")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(header().string(HttpHeaders.LOCATION, "/api/lead-portal/flows/88"))
+                .andExpect(jsonPath("$.leadPortalFlowId").value(88))
+                .andExpect(jsonPath("$.questions[0].dataKey").value("audience_confirmation"));
     }
 
 }

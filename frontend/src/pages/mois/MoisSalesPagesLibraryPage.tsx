@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import PageTitle from "../../components/PageTitle";
 import {
   getSalesLibraryJobBadgeClass,
@@ -100,18 +100,24 @@ function formatAnalysisDate(value?: string | null) {
 }
 
 export default function MoisSalesPagesLibraryPage() {
-  const [warmupFilter, setWarmupFilter] = useState("ALL");
-  const pagesQuery = useMoisSalesLibraryPages(WORKSPACE_ID, 1, PAGE_SIZE);
+  const [searchParams] = useSearchParams();
+  const initialWarmupFilter = searchParams.get("warmupFilter") || "ALL";
+  const initialSort = searchParams.get("sort") || "MARKET_WARMUP_SCORE";
+  const [warmupFilter, setWarmupFilter] = useState(initialWarmupFilter);
+  const [sort, setSort] = useState(initialSort);
+  const pagesQuery = useMoisSalesLibraryPages(
+    WORKSPACE_ID,
+    1,
+    PAGE_SIZE,
+    warmupFilter,
+    sort,
+  );
   const summaryQuery = useMoisSalesLibraryPageSummary(WORKSPACE_ID);
   const summary = summaryQuery.data;
   const visiblePages = useMemo(() => {
-    return [...(pagesQuery.data?.items ?? [])]
-      .filter((item) => matchesWarmupFilter(item, warmupFilter))
-      .sort(
-        (first, second) =>
-          (second.marketWarmupScoreTotal ?? -1) -
-          (first.marketWarmupScoreTotal ?? -1),
-      );
+    return (pagesQuery.data?.items ?? []).filter((item) =>
+      matchesWarmupFilter(item, warmupFilter),
+    );
   }, [pagesQuery.data?.items, warmupFilter]);
 
   return (
@@ -184,29 +190,47 @@ export default function MoisSalesPagesLibraryPage() {
             <div>
               <h2 className="h5 mb-1">Priorização por aquecimento</h2>
               <p className="text-secondary mb-0">
-                Ordene a página atual pelo score de aquecimento para decidir
-                quais mercados merecem ação primeiro.
+                Ordene a listagem diretamente no backend pelo score de
+                aquecimento para decidir quais mercados merecem ação primeiro.
               </p>
             </div>
-            <div>
-              <label className="form-label small" htmlFor="warmupFilter">
-                Filtro de aquecimento
-              </label>
-              <select
-                id="warmupFilter"
-                className="form-select form-select-sm"
-                value={warmupFilter}
-                onChange={(event) => setWarmupFilter(event.target.value)}
-              >
-                <option value="ALL">Todos</option>
-                <option value="WITH_DOSSIER">Com dossiê</option>
-                <option value="HOT_OR_PROMISING">Quentes/promissores</option>
-                <option value="PENDING_OR_RUNNING">
-                  Pendentes/em pesquisa
-                </option>
-                <option value="FAILED">Falharam</option>
-                <option value="WITHOUT_DOSSIER">Sem dossiê</option>
-              </select>
+            <div className="d-flex flex-wrap gap-3">
+              <div>
+                <label className="form-label small" htmlFor="warmupFilter">
+                  Filtro de aquecimento
+                </label>
+                <select
+                  id="warmupFilter"
+                  className="form-select form-select-sm"
+                  value={warmupFilter}
+                  onChange={(event) => setWarmupFilter(event.target.value)}
+                >
+                  <option value="ALL">Todos</option>
+                  <option value="WITH_DOSSIER">Com dossiê</option>
+                  <option value="HOT_OR_PROMISING">Quentes/promissores</option>
+                  <option value="PENDING_OR_RUNNING">
+                    Pendentes/em pesquisa
+                  </option>
+                  <option value="FAILED">Falharam</option>
+                  <option value="WITHOUT_DOSSIER">Sem dossiê</option>
+                </select>
+              </div>
+              <div>
+                <label className="form-label small" htmlFor="warmupSort">
+                  Ordenação
+                </label>
+                <select
+                  id="warmupSort"
+                  className="form-select form-select-sm"
+                  value={sort}
+                  onChange={(event) => setSort(event.target.value)}
+                >
+                  <option value="MARKET_WARMUP_SCORE">
+                    Maior score de aquecimento
+                  </option>
+                  <option value="RECENT_ANALYSIS">Análise mais recente</option>
+                </select>
+              </div>
             </div>
           </div>
           <div className="table-responsive">

@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import type {
   MoisCollectedReferenceUrlSummary,
+  MoisMarketWarmupReprocessStaleResponse,
   MoisMarketWarmupRequestResponse,
   MoisMarketWarmupSignalListResponse,
   MoisMarketWarmupSourceListResponse,
@@ -74,14 +75,34 @@ export function useMoisSalesLibraryPages(
   workspaceId: string,
   page: number,
   pageSize: number,
+  marketWarmupFilter?: string,
+  sort?: string,
 ) {
   return useQuery({
-    queryKey: ["mois", "sales-library", "pages", workspaceId, page, pageSize],
+    queryKey: [
+      "mois",
+      "sales-library",
+      "pages",
+      workspaceId,
+      page,
+      pageSize,
+      marketWarmupFilter || "ALL",
+      sort || "RECENT_ANALYSIS",
+    ],
     queryFn: async () => {
       const { data } = await axios.get<MoisSalesLibraryPageListResponse>(
         "/api/mois/sales-library/pages",
         {
-          params: { workspaceId, page, pageSize },
+          params: {
+            workspaceId,
+            page,
+            pageSize,
+            marketWarmupFilter:
+              marketWarmupFilter && marketWarmupFilter !== "ALL"
+                ? marketWarmupFilter
+                : undefined,
+            sort,
+          },
         },
       );
       return data;
@@ -325,6 +346,29 @@ export function useMoisSalesLibraryMarketWarmupSignals(
         `/api/mois/sales-library/pages/${pageId}/market-warmup/signals`,
       );
       return data;
+    },
+  });
+}
+
+export function useReprocessStaleMoisSalesLibraryMarketWarmup(
+  workspaceId: string,
+) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (staleMinutes?: number) => {
+      const { data } = await axios.post<MoisMarketWarmupReprocessStaleResponse>(
+        "/api/mois/sales-library/market-warmup/jobs:reprocess-stale",
+        { workspaceId, staleMinutes: staleMinutes ?? 120 },
+      );
+      return data;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: ["mois", "sales-library", "pages", workspaceId],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ["mois", "sales-library", "pages-summary", workspaceId],
+      });
     },
   });
 }

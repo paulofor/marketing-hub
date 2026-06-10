@@ -124,7 +124,6 @@ public class BackendEnrichedNicheMaterializerService {
     MarketNiche marketNiche = resolveMarketNiche(card, cycle, candidate, metaSignalPackage);
     MarketNicheEnrichmentProfile profile = buildProfile(card, cycle, candidate, marketNiche, request);
     MarketNicheEnrichmentProfile savedProfile = enrichmentProfileRepository.save(profile);
-    metaSignalService.publishTargetingElements(marketNiche, savedProfile, metaSignalPackage);
     updateCycleAndCandidate(cycle, candidate, marketNiche.getId());
     return new CompleteEnrichedNicheMaterializerResponse(
         researchCycleId, card.getId(), marketNiche.getId(), savedProfile.getId(), cycle.getStatus(), savedProfile.getCreatedAt());
@@ -231,9 +230,8 @@ public class BackendEnrichedNicheMaterializerService {
       MarketNicheEnrichmentProfile existing) {
     OprmEnrichedNicheMetaSignalService.MetaSignalPackage metaSignalPackage = metaSignalService.buildSignalPackage(cycle, card);
     MarketNiche marketNiche = existing.getMarketNiche();
-    metaSignalService.applySignalsToNiche(marketNiche, metaSignalPackage);
+    applyMetaSignalsToNiche(marketNiche, metaSignalPackage);
     marketNicheRepository.save(marketNiche);
-    metaSignalService.publishTargetingElements(marketNiche, existing, metaSignalPackage);
   }
 
   /** Converte cartão aprovado em unidade de trabalho completa para o coletor OPRM. */
@@ -284,9 +282,22 @@ public class BackendEnrichedNicheMaterializerService {
     marketNiche.setOffers(null);
     marketNiche.setBaseSegmentation("Nicho operacional CNAE " + cycle.getCnaeCode() + " - " + cycle.getCnaeDescription());
     marketNiche.setDemographicFilters("Público profissional/empreendedor ligado a " + cycle.getCnaeDescription());
-    metaSignalService.applySignalsToNiche(marketNiche, metaSignalPackage);
+    applyMetaSignalsToNiche(marketNiche, metaSignalPackage);
     marketNiche.setExtraTips(buildExtraTips(card));
     return marketNicheRepository.save(marketNiche);
+  }
+
+  /** Aplica sinais Meta Ads apenas nos campos do backend que serão consultados pelo Facebook Ads. */
+  private void applyMetaSignalsToNiche(
+      MarketNiche marketNiche,
+      OprmEnrichedNicheMetaSignalService.MetaSignalPackage metaSignalPackage) {
+    if (marketNiche == null || metaSignalPackage == null) {
+      return;
+    }
+    marketNiche.setInterestList(metaSignalPackage.interests());
+    marketNiche.setRoleList(metaSignalPackage.roles());
+    marketNiche.setBehaviorList(metaSignalPackage.behaviors());
+    marketNiche.setInterests(metaSignalService.buildReadableSignalSummary(metaSignalPackage));
   }
 
   /** Monta descrição legível do nicho sem criar hipótese ou oferta. */

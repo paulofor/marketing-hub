@@ -1,5 +1,8 @@
 package com.marketinghub.oprm.generalaudience.service;
 
+import com.marketinghub.oprm.generalaudience.OprmGeneralAudienceAdSignalStatus;
+import com.marketinghub.oprm.generalaudience.OprmGeneralAudienceAdSignalType;
+import com.marketinghub.oprm.generalaudience.OprmGeneralAudienceFacebookAdsData;
 import com.marketinghub.oprm.generalaudience.OprmGeneralAudiencePainAngle;
 import com.marketinghub.oprm.generalaudience.OprmGeneralAudiencePainAngleStatus;
 import com.marketinghub.oprm.generalaudience.OprmGeneralAudienceSeed;
@@ -21,16 +24,11 @@ import com.marketinghub.oprm.generalaudience.service.qualityGate.GeneralAudience
 import com.marketinghub.oprm.generalaudience.service.updatePainAngle.UpdateGeneralAudiencePainAngleRequest;
 import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudienceHypothesisMaterializationRepository;
 import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudienceLeadExperimentMaterializationRepository;
+import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudienceFacebookAdsDataRepository;
 import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudiencePainAngleRepository;
 import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudienceSeedRepository;
 import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudienceSourceEvidenceRepository;
 import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudienceSubnicheRepository;
-import com.marketinghub.targeting.TargetingElement;
-import com.marketinghub.targeting.TargetingElementSource;
-import com.marketinghub.targeting.TargetingElementStatus;
-import com.marketinghub.targeting.TargetingElementType;
-import com.marketinghub.targeting.dto.CreateTargetingElementRequest;
-import com.marketinghub.targeting.service.TargetingElementService;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -56,7 +54,7 @@ public class OprmGeneralAudienceDiscoveryService {
     private static final BigDecimal MAX_GENERAL_AUDIENCE_DAILY_BUDGET = new BigDecimal("100.00");
     private final OprmGeneralAudienceHypothesisMaterializationRepository hypothesisMaterializationRepository;
     private final OprmGeneralAudienceLeadExperimentMaterializationRepository leadExperimentMaterializationRepository;
-    private final TargetingElementService targetingElementService;
+    private final OprmGeneralAudienceFacebookAdsDataRepository facebookAdsDataRepository;
 
     /** Inicializa o serviço com repositórios centralizados do módulo OPRM. */
     public OprmGeneralAudienceDiscoveryService(
@@ -66,14 +64,14 @@ public class OprmGeneralAudienceDiscoveryService {
             OprmGeneralAudienceSourceEvidenceRepository sourceEvidenceRepository,
             OprmGeneralAudienceHypothesisMaterializationRepository hypothesisMaterializationRepository,
             OprmGeneralAudienceLeadExperimentMaterializationRepository leadExperimentMaterializationRepository,
-            TargetingElementService targetingElementService) {
+            OprmGeneralAudienceFacebookAdsDataRepository facebookAdsDataRepository) {
         this.seedRepository = seedRepository;
         this.subnicheRepository = subnicheRepository;
         this.painAngleRepository = painAngleRepository;
         this.sourceEvidenceRepository = sourceEvidenceRepository;
         this.hypothesisMaterializationRepository = hypothesisMaterializationRepository;
         this.leadExperimentMaterializationRepository = leadExperimentMaterializationRepository;
-        this.targetingElementService = targetingElementService;
+        this.facebookAdsDataRepository = facebookAdsDataRepository;
     }
 
     /** Lista ângulos de dor de um subnicho para revisão antes de construir oferta. */
@@ -298,37 +296,41 @@ public class OprmGeneralAudienceDiscoveryService {
                 experiment.endDate());
     }
 
-    /** Prepara targeting inicial conservador para público geral sem depender de tabelas CNAE. */
+    /** Registra dados de público para o Facebook Ads buscar depois pelo backend, sem acessar o módulo de targeting. */
     @Transactional
     public GeneralAudienceTargetingPreparationResponse prepareInitialTargeting(
             Long angleId,
             GeneralAudienceTargetingPreparationRequest request) {
         if (request == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Payload de targeting inicial é obrigatório");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Payload de dados para Facebook Ads é obrigatório");
         }
         OprmGeneralAudiencePainAngle angle = findPainAngle(angleId);
         validateAngleCanCreateHypothesis(angle);
         OprmGeneralAudienceSubniche subniche = angle.getSubniche();
         String qualificationQuestion = requiredText(resolveQualificationQuestion(subniche, angle), "qualificationQuestion");
-        List<GeneralAudienceTargetingElementResponse> created = new ArrayList<>();
-        created.addAll(createTargetingElements(subniche, angle, request, TargetingElementType.JOB_TITLE, request.jobTitles(), true));
-        created.addAll(createTargetingElements(subniche, angle, request, TargetingElementType.INTEREST, request.interests(), false));
-        created.addAll(createTargetingElements(subniche, angle, request, TargetingElementType.BEHAVIOR, request.behaviors(), false));
-        long approvedJobTitles = created.stream()
-                .filter(element -> element.type() == TargetingElementType.JOB_TITLE)
-                .filter(GeneralAudienceTargetingElementResponse::publishableForCurrentPublisher)
+        facebookAdsDataRepository.deleteByPainAngle_Id(angle.getId());
+        List<OprmGeneralAudienceFacebookAdsData> saved = new ArrayList<>();
+        saved.addAll(saveFacebookAdsData(subniche, angle, request, OprmGeneralAudienceAdSignalType.JOB_TITLE, request.jobTitles(), true));
+        saved.addAll(saveFacebookAdsData(subniche, angle, request, OprmGeneralAudienceAdSignalType.INTEREST, request.interests(), false));
+        saved.addAll(saveFacebookAdsData(subniche, angle, request, OprmGeneralAudienceAdSignalType.BEHAVIOR, request.behaviors(), false));
+        long readyJobTitles = saved.stream()
+                .filter(element -> element.getSignalType() == OprmGeneralAudienceAdSignalType.JOB_TITLE)
+                .filter(OprmGeneralAudienceFacebookAdsData::isReadyForFacebookAds)
                 .count();
-        List<String> blockers = conservativeTargetingBlockers(created, request, approvedJobTitles);
+        List<GeneralAudienceTargetingElementResponse> elements = saved.stream()
+                .map(this::toFacebookAdsDataResponse)
+                .toList();
+        List<String> blockers = conservativeTargetingBlockers(saved, request, readyJobTitles);
         List<String> recommendations = conservativeTargetingRecommendations(request, qualificationQuestion);
         return new GeneralAudienceTargetingPreparationResponse(
                 angle.getId(),
                 subniche.getId(),
                 subniche.getMarketNicheId(),
                 request.hypothesisId(),
-                approvedJobTitles > 0 && blockers.isEmpty(),
+                readyJobTitles > 0 && blockers.isEmpty(),
                 blockers,
                 recommendations,
-                created);
+                elements);
     }
 
     /** Busca uma semente ou devolve erro HTTP de recurso inexistente. */
@@ -355,24 +357,24 @@ public class OprmGeneralAudienceDiscoveryService {
                         "Ângulo de público geral não encontrado: " + angleId));
     }
 
-    /** Cria elementos de targeting com aprovação conservadora baseada em identificador oficial da Meta. */
-    private List<GeneralAudienceTargetingElementResponse> createTargetingElements(
+    /** Salva sinais de público no domínio OPRM para consumo posterior pelo Facebook Ads via backend. */
+    private List<OprmGeneralAudienceFacebookAdsData> saveFacebookAdsData(
             OprmGeneralAudienceSubniche subniche,
             OprmGeneralAudiencePainAngle angle,
             GeneralAudienceTargetingPreparationRequest request,
-            TargetingElementType type,
+            OprmGeneralAudienceAdSignalType type,
             List<String> terms,
             boolean requiredForPublication) {
         if (terms == null || terms.isEmpty()) {
             return List.of();
         }
-        List<GeneralAudienceTargetingElementResponse> created = new ArrayList<>();
+        List<OprmGeneralAudienceFacebookAdsData> items = new ArrayList<>();
         for (int index = 0; index < terms.size(); index++) {
             String term = normalizeOptionalText(terms.get(index));
-            if (!StringUtils.hasText(term) || created.stream().anyMatch(element -> element.term().equals(term))) {
+            if (!StringUtils.hasText(term) || items.stream().anyMatch(element -> element.getTerm().equals(term))) {
                 continue;
             }
-            created.add(createTargetingElement(
+            items.add(buildFacebookAdsData(
                     subniche,
                     angle,
                     request,
@@ -381,53 +383,61 @@ public class OprmGeneralAudienceDiscoveryService {
                     resolveMetaId(request, type, index),
                     requiredForPublication));
         }
-        return created;
+        return facebookAdsDataRepository.saveAll(items);
     }
 
-    /** Persiste um elemento individual mantendo público geral como origem operacional auditável. */
-    private GeneralAudienceTargetingElementResponse createTargetingElement(
+    /** Monta um dado de público sem chamar serviços de targeting ou publicação de anúncios. */
+    private OprmGeneralAudienceFacebookAdsData buildFacebookAdsData(
             OprmGeneralAudienceSubniche subniche,
             OprmGeneralAudiencePainAngle angle,
             GeneralAudienceTargetingPreparationRequest request,
-            TargetingElementType type,
+            OprmGeneralAudienceAdSignalType type,
             String term,
             String metaId,
             boolean requiredForPublication) {
-        CreateTargetingElementRequest elementRequest = new CreateTargetingElementRequest();
-        elementRequest.setMarketNicheId(subniche.getMarketNicheId());
-        elementRequest.setHypothesisId(request.hypothesisId());
-        elementRequest.setType(type);
-        elementRequest.setTerm(term);
-        elementRequest.setDescription(buildTargetingDescription(subniche, angle, type, requiredForPublication));
-        elementRequest.setPrompt(buildTargetingAuditPrompt(subniche, angle, request));
-        elementRequest.setSource(TargetingElementSource.MANUAL);
-        elementRequest.setMetaId(metaId);
-        elementRequest.setStatus(resolveInitialTargetingStatus(request, type, metaId));
-        elementRequest.setNotes(buildTargetingNotes(request, requiredForPublication));
-        elementRequest.setLastReviewedBy(normalizeOptionalText(request.reviewedBy()));
-        TargetingElement element = targetingElementService.create(elementRequest);
-        return toTargetingElementResponse(element);
+        OprmGeneralAudienceFacebookAdsData data = new OprmGeneralAudienceFacebookAdsData();
+        data.setPainAngle(angle);
+        data.setSubniche(subniche);
+        data.setMarketNicheId(subniche.getMarketNicheId());
+        data.setHypothesisId(request.hypothesisId() == null ? null : request.hypothesisId().toString());
+        data.setSignalType(type);
+        data.setTerm(term);
+        data.setMetaId(metaId);
+        data.setRequiredForPublication(requiredForPublication);
+        data.setReadyForFacebookAds(isReadyForFacebookAds(request, type, metaId));
+        data.setStatus(resolveFacebookAdsDataStatus(data));
+        data.setCreativeScreeningPhrase(normalizeOptionalText(request.creativeScreeningPhrase()));
+        data.setDemographicGuidance(normalizeOptionalText(request.demographicGuidance()));
+        data.setLandingConfirmationInstruction(normalizeOptionalText(request.landingConfirmationInstruction()));
+        data.setReviewedBy(normalizeOptionalText(request.reviewedBy()));
+        data.setNotes(buildFacebookAdsDataNotes(request, requiredForPublication));
+        return data;
     }
 
-    /** Define status inicial sem liberar publicação quando falta validação manual/Meta. */
-    private TargetingElementStatus resolveInitialTargetingStatus(
+    /** Define se o dado está pronto para coleta do Facebook Ads sem materializar targeting no OPRM. */
+    private boolean isReadyForFacebookAds(
             GeneralAudienceTargetingPreparationRequest request,
-            TargetingElementType type,
+            OprmGeneralAudienceAdSignalType type,
             String metaId) {
-        if (type == TargetingElementType.JOB_TITLE
+        return type == OprmGeneralAudienceAdSignalType.JOB_TITLE
                 && Boolean.TRUE.equals(request.approvedJobTitlesAlreadyResolved())
-                && StringUtils.hasText(metaId)) {
-            return TargetingElementStatus.APPROVED;
+                && StringUtils.hasText(metaId);
+    }
+
+    /** Define o status canônico do dado armazenado para coleta posterior pelo Facebook Ads. */
+    private OprmGeneralAudienceAdSignalStatus resolveFacebookAdsDataStatus(OprmGeneralAudienceFacebookAdsData data) {
+        if (data.isReadyForFacebookAds()) {
+            return OprmGeneralAudienceAdSignalStatus.READY_FOR_FACEBOOK_ADS;
         }
-        return TargetingElementStatus.NEEDS_REVIEW;
+        return OprmGeneralAudienceAdSignalStatus.RECEIVED;
     }
 
     /** Resolve o identificador oficial da Meta informado para o termo de cargo. */
     private String resolveMetaId(
             GeneralAudienceTargetingPreparationRequest request,
-            TargetingElementType type,
+            OprmGeneralAudienceAdSignalType type,
             int index) {
-        if (type != TargetingElementType.JOB_TITLE
+        if (type != OprmGeneralAudienceAdSignalType.JOB_TITLE
                 || request.jobTitleMetaIds() == null
                 || request.jobTitleMetaIds().size() <= index) {
             return null;
@@ -435,72 +445,43 @@ public class OprmGeneralAudienceDiscoveryService {
         return normalizeOptionalText(request.jobTitleMetaIds().get(index));
     }
 
-    /** Monta descrição funcional do targeting inicial sem criar exceção escondida ao fluxo CNAE. */
-    private String buildTargetingDescription(
-            OprmGeneralAudienceSubniche subniche,
-            OprmGeneralAudiencePainAngle angle,
-            TargetingElementType type,
-            boolean requiredForPublication) {
-        return String.join("\n",
-                "Origem: Público Geral OPRM > " + subniche.getSeed().getName() + " > " + subniche.getName(),
-                "Tipo: " + type.name(),
-                "Dor validada: " + angle.getPain(),
-                requiredForPublication
-                        ? "Função: cargo/termo conservador exigido pelo publicador atual."
-                        : "Função: enriquecimento por interesse/comportamento; não substitui cargo aprovado.");
-    }
-
-    /** Monta trilha de auditoria do targeting para evitar publicação ampla pura. */
-    private String buildTargetingAuditPrompt(
-            OprmGeneralAudienceSubniche subniche,
-            OprmGeneralAudiencePainAngle angle,
-            GeneralAudienceTargetingPreparationRequest request) {
-        return String.join("\n",
-                "Origem operacional: OPRM_PUBLICO_GERAL_TARGETING_INICIAL",
-                "seedId=" + subniche.getSeed().getId(),
-                "subnicheId=" + subniche.getId(),
-                "painAngleId=" + angle.getId(),
-                "marketNicheId=" + subniche.getMarketNicheId(),
-                "hypothesisId=" + request.hypothesisId(),
-                "Targeting inicial não depende de CNAE e não libera público amplo puro.");
-    }
-
-    /** Monta observações de uso do criativo, landing e demografia como suporte à triagem. */
-    private String buildTargetingNotes(
+    /** Monta observações de coleta pelo Facebook Ads sem criar contrato de targeting dentro do OPRM. */
+    private String buildFacebookAdsDataNotes(
             GeneralAudienceTargetingPreparationRequest request,
             boolean requiredForPublication) {
         return String.join("\n",
                 requiredForPublication
-                        ? "Exigência conservadora: revisar e resolver cargo/termo antes de publicação."
-                        : "Enriquecimento: usar junto com cargo aprovado, criativo de triagem e landing de confirmação.",
+                        ? "Dado obrigatório para o Facebook Ads validar cargo antes de publicar."
+                        : "Dado complementar para o Facebook Ads avaliar junto com cargo validado.",
                 "Frase de triagem no criativo: " + optionalText(request.creativeScreeningPhrase()),
                 "Orientação demográfica: " + optionalText(request.demographicGuidance()),
                 "Confirmação na landing: " + optionalText(request.landingConfirmationInstruction()));
     }
 
-    /** Converte elemento salvo para resposta operacional de targeting inicial. */
-    private GeneralAudienceTargetingElementResponse toTargetingElementResponse(TargetingElement element) {
+    /** Converte dado salvo no OPRM para resposta operacional ao backend/UI. */
+    private GeneralAudienceTargetingElementResponse toFacebookAdsDataResponse(OprmGeneralAudienceFacebookAdsData data) {
         return new GeneralAudienceTargetingElementResponse(
-                element.getId(),
-                element.getType(),
-                element.getTerm(),
-                element.getStatus(),
-                element.getMetaId(),
-                element.getStatus() == TargetingElementStatus.APPROVED && StringUtils.hasText(element.getMetaId()));
+                data.getId(),
+                data.getSignalType(),
+                data.getTerm(),
+                data.getStatus(),
+                data.getMetaId(),
+                data.isReadyForFacebookAds());
     }
 
-    /** Gera bloqueios explícitos para impedir ad set amplo puro no publicador atual. */
+    /** Gera bloqueios explícitos para impedir que o Facebook Ads colete público amplo puro. */
     private List<String> conservativeTargetingBlockers(
-            List<GeneralAudienceTargetingElementResponse> created,
+            List<OprmGeneralAudienceFacebookAdsData> saved,
             GeneralAudienceTargetingPreparationRequest request,
-            long approvedJobTitles) {
+            long readyJobTitles) {
         List<String> blockers = new ArrayList<>();
-        boolean hasJobTitle = created.stream().anyMatch(element -> element.type() == TargetingElementType.JOB_TITLE);
+        boolean hasJobTitle = saved.stream()
+                .anyMatch(element -> element.getSignalType() == OprmGeneralAudienceAdSignalType.JOB_TITLE);
         if (!hasJobTitle) {
             blockers.add("Informe ao menos um cargo/termo de trabalho para revisão antes de publicação.");
         }
-        if (approvedJobTitles == 0) {
-            blockers.add("Nenhum JOB_TITLE aprovado e resolvido na Meta; o publicador atual não deve criar ad set amplo puro.");
+        if (readyJobTitles == 0) {
+            blockers.add("Nenhum JOB_TITLE pronto para Facebook Ads; o publicador atual não deve criar ad set amplo puro.");
         }
         if (!StringUtils.hasText(request.creativeScreeningPhrase())) {
             blockers.add("Frase de triagem do criativo é obrigatória para afastar público errado.");
@@ -508,7 +489,7 @@ public class OprmGeneralAudienceDiscoveryService {
         return blockers;
     }
 
-    /** Gera recomendações para enriquecer público geral sem trocar cargo aprovado por interesse amplo. */
+    /** Gera recomendações para enriquecer público geral sem trocar cargo validado por interesse amplo. */
     private List<String> conservativeTargetingRecommendations(
             GeneralAudienceTargetingPreparationRequest request,
             String qualificationQuestion) {

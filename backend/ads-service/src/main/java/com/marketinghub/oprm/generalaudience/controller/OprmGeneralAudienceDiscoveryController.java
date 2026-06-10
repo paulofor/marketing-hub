@@ -97,7 +97,7 @@ public class OprmGeneralAudienceDiscoveryController {
                 .body(response);
     }
 
-    /** Prepara targeting inicial conservador sem publicar ad set amplo puro. */
+    /** Registra no backend os dados de público que o Facebook Ads buscará depois. */
     @PostMapping("/pain-angles/{angleId}/prepare-targeting")
     public ResponseEntity<GeneralAudienceTargetingPreparationResponse> prepareInitialTargeting(
             @PathVariable Long angleId,

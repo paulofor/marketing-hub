@@ -116,11 +116,7 @@ class BackendEnrichedNicheMaterializerServiceTest {
             && niche.getDescription().contains("Nome neutro pesquisado: Salões pequenos")
             && niche.getDescription().contains("Contexto operacional e linguagem pública:")
             && !niche.getDescription().contains("Oportunidades de mecanismo:")));
-    verify(metaSignalService).applySignalsToNiche(org.mockito.ArgumentMatchers.any(MarketNiche.class), org.mockito.ArgumentMatchers.eq(metaSignalPackage));
-    verify(metaSignalService).publishTargetingElements(
-        org.mockito.ArgumentMatchers.argThat(niche -> Long.valueOf(200L).equals(niche.getId())),
-        org.mockito.ArgumentMatchers.argThat(profile -> Long.valueOf(300L).equals(profile.getId())),
-        org.mockito.ArgumentMatchers.eq(metaSignalPackage));
+    verify(metaSignalService).buildReadableSignalSummary(metaSignalPackage);
     verify(profileRepository).save(org.mockito.ArgumentMatchers.argThat(profile ->
         "Salões pequenos".equals(profile.getNeutralNicheName())
             && "IA para salões pequenos".equals(profile.getOriginalNicheName())

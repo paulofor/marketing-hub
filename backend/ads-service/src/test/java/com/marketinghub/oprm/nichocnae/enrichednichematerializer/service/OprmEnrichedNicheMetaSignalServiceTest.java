@@ -1,28 +1,16 @@
 package com.marketinghub.oprm.nichocnae.enrichednichematerializer.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
-import com.marketinghub.niche.MarketNiche;
-import com.marketinghub.niche.MarketNicheEnrichmentProfile;
 import com.marketinghub.oprm.nichocnae.OprmNicheRoutineCard;
 import com.marketinghub.oprm.nichocnae.OprmRoutineResearchCycle;
-import com.marketinghub.repository.jpa.targeting.TargetingElementRepository;
-import com.marketinghub.targeting.TargetingElement;
-import com.marketinghub.targeting.TargetingElementSource;
-import com.marketinghub.targeting.TargetingElementStatus;
-import com.marketinghub.targeting.TargetingElementType;
 import java.math.BigDecimal;
 import java.util.List;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 
 /** Responsabilidade: validar a geração de sinais Meta Ads a partir de nichos enriquecidos do OPRM. */
 class OprmEnrichedNicheMetaSignalServiceTest {
-  private final TargetingElementRepository repository = mock(TargetingElementRepository.class);
-  private final OprmEnrichedNicheMetaSignalService service = new OprmEnrichedNicheMetaSignalService(repository);
+  private final OprmEnrichedNicheMetaSignalService service = new OprmEnrichedNicheMetaSignalService();
 
   /** Deve converter o CNAE campeão de beleza em interesses, cargos e comportamentos úteis para a Meta. */
   @Test
@@ -34,47 +22,18 @@ class OprmEnrichedNicheMetaSignalServiceTest {
     assertThat(signalPackage.behaviors()).contains("Small business owners", "Facebook Page admins");
   }
 
-  /** Deve persistir elementos OPRM aprovados para que o worker busque ID e alcance oficiais na Meta. */
+  /** Deve montar resumo dos sinais para armazenamento no backend sem criar elementos de targeting no OPRM. */
   @Test
-  void shouldPublishApprovedTargetingElementsForWorker() {
-    MarketNiche niche = new MarketNiche();
-    niche.setId(18L);
-    MarketNicheEnrichmentProfile profile = new MarketNicheEnrichmentProfile();
-    profile.setCnaeCode("9602501");
-    profile.setNeutralNicheName("Cabeleireiros, manicure e pedicure");
-    OprmEnrichedNicheMetaSignalService.MetaSignalPackage signalPackage = new OprmEnrichedNicheMetaSignalService.MetaSignalPackage(
-        List.of("Salão de beleza"), List.of("Cabeleireiro"), List.of("Small business owners"));
-    when(repository.findByNicheId(18L)).thenReturn(List.of());
-
-    service.publishTargetingElements(niche, profile, signalPackage);
-
-    ArgumentCaptor<List<TargetingElement>> captor = ArgumentCaptor.forClass(List.class);
-    verify(repository).saveAll(captor.capture());
-    assertThat(captor.getValue()).hasSize(3);
-    assertThat(captor.getValue())
-        .allSatisfy(element -> {
-          assertThat(element.getNiche()).isSameAs(niche);
-          assertThat(element.getSource()).isEqualTo(TargetingElementSource.OPRM_NICHE);
-          assertThat(element.getStatus()).isEqualTo(TargetingElementStatus.APPROVED);
-          assertThat(element.getDescription()).contains("9602501");
-        });
-    assertThat(captor.getValue()).extracting(TargetingElement::getType)
-        .contains(TargetingElementType.INTEREST, TargetingElementType.JOB_TITLE, TargetingElementType.BEHAVIOR);
-  }
-
-  /** Deve aplicar os sinais gerados nas listas legadas do nicho para auditoria e compatibilidade. */
-  @Test
-  void shouldApplySignalListsToMarketNiche() {
-    MarketNiche niche = new MarketNiche();
+  void shouldBuildReadableSummaryForBackendStorage() {
     OprmEnrichedNicheMetaSignalService.MetaSignalPackage signalPackage = new OprmEnrichedNicheMetaSignalService.MetaSignalPackage(
         List.of("Loja de roupas"), List.of("Lojista"), List.of("Small business owners"));
 
-    service.applySignalsToNiche(niche, signalPackage);
+    String summary = service.buildReadableSignalSummary(signalPackage);
 
-    assertThat(niche.getInterestList()).containsExactly("Loja de roupas");
-    assertThat(niche.getRoleList()).containsExactly("Lojista");
-    assertThat(niche.getBehaviorList()).containsExactly("Small business owners");
-    assertThat(niche.getInterests()).contains("Sinais iniciais Meta Ads gerados pelo OPRM NichoCNAE");
+    assertThat(summary).contains("Sinais iniciais Meta Ads gerados pelo OPRM NichoCNAE");
+    assertThat(summary).contains("Interesses: Loja de roupas");
+    assertThat(summary).contains("Cargos: Lojista");
+    assertThat(summary).contains("Comportamentos: Small business owners");
   }
 
   /** Cria ciclo do CNAE de beleza usado nos testes de sinais. */

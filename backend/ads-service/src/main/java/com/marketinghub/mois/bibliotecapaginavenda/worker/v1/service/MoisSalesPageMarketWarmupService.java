@@ -27,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class MoisSalesPageMarketWarmupService {
 
     private final MoisSalesPageMarketWarmupGateway gateway;
+    private final MoisSalesPageMarketWarmupScoreEngine scoreEngine = new MoisSalesPageMarketWarmupScoreEngine();
 
     /**
      * Solicita uma pesquisa de aquecimento para a página, reutilizando jobs pendentes ou em execução.
@@ -134,11 +135,11 @@ public class MoisSalesPageMarketWarmupService {
             gateway.deleteJobDetails(jobId);
             List<Long> sourceIds = persistSources(job, request.sources());
             persistSignals(job, sourceIds, request.signals());
-            MarketWarmupSummaryWriteData summary = mapSummaryWrite(request.summary());
+            MarketWarmupSummaryWriteData summary = mapSummaryWrite(scoreEngine.calculate(request));
             gateway.insertSummary(jobId, job.pageId(), job.workspaceId(), summary);
             gateway.markJobDone(jobId, summary, request.finishedAt());
             log.info("Job de aquecimento MOIS concluído. modulo=MOIS, operacao=completeMarketWarmupJob, workspaceId={}, pageId={}, jobId={}, fontes={}, sinais={}, score={}",
-                    job.workspaceId(), job.pageId(), jobId, request.sources().size(), request.signals().size(), request.summary().scoreTotal());
+                    job.workspaceId(), job.pageId(), jobId, request.sources().size(), request.signals().size(), summary.scoreTotal());
         } catch (RuntimeException ex) {
             log.error("Falha ao concluir job de aquecimento MOIS. modulo=MOIS, operacao=completeMarketWarmupJob, jobId={}, erroClasse={}, erro={}",
                     jobId, ex.getClass().getName(), ex.getMessage(), ex);

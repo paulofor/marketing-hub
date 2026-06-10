@@ -1294,3 +1294,14 @@ Arquivos alterados:
 - `mois-sales-library-worker/src/test/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/marketwarmup/`
 - `mois-sales-library-worker/pom.xml`
 - `docs/registros/mois1.md`
+
+## 2026-06-10 — Etapa 3 MOIS / Fase 7 — Motor de score e recomendação
+
+- Implementado motor backend do Market Warm-up Score para calcular score, temperatura, tipo de ecossistema e recomendação objetiva a partir das fontes e sinais rastreáveis salvos na pesquisa de aquecimento.
+- A conclusão do job passa a persistir o resumo calculado pelo backend, reduzindo dependência de classificação enviada pelo worker e mantendo a explicação do score vinculada aos sinais.
+- Adicionados testes unitários para cenários quente, promissor, frio e saturado.
+
+Arquivos principais:
+- `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesPageMarketWarmupScoreEngine.java`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesPageMarketWarmupService.java`
+- `backend/ads-service/src/test/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesPageMarketWarmupServiceTest.java`

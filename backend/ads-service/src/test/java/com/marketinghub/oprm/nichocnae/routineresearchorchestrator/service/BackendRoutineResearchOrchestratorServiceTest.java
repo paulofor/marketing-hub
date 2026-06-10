@@ -12,7 +12,9 @@ import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.pendi
 import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.recent.RecordRoutineResearchOrchestratorRecent;
 import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.runNext.RecordRoutineResearchOrchestratorResult;
 import com.marketinghub.repository.jpa.oprm.cnae.OprmNicheCandidateRepository;
+import com.marketinghub.repository.jpa.oprm.nichocnae.OprmNicheRoutineCardRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmRoutineResearchCycleRepository;
+import com.marketinghub.repository.jpa.oprm.nichocnae.meiaudienceprofile.OprmMeiAudienceProfileRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -31,6 +33,10 @@ class BackendRoutineResearchOrchestratorServiceTest {
     @Mock private OprmNicheCandidateRepository nicheCandidateRepository;
 
     @Mock private OprmRoutineResearchCycleRepository routineResearchCycleRepository;
+
+    @Mock private OprmMeiAudienceProfileRepository meiAudienceProfileRepository;
+
+    @Mock private OprmNicheRoutineCardRepository routineCardRepository;
 
     @InjectMocks private BackendRoutineResearchOrchestratorService service;
 

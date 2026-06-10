@@ -4278,3 +4278,16 @@
 - impacto esperado: o sistema dá mais tempo para a Meta estabilizar a entrega antes de concluir que o experimento não teve distribuição mínima útil.
 - foi feito: definida a regra canônica de 24 horas com menos de 100 impressões, registrando `LOW_IMPRESSIONS_AFTER_RUNNING_TIME` em `facebook_ads_campaign.stop_reason`, invalidando o experimento e solicitando pausa ao Facebook Ads Worker.
 - impacto esperado: experimentos com distribuição inviável deixam de ficar rodando indefinidamente e o time ganha motivo claro no banco para decidir ajuste de público, criativo ou nova liberação.
+
+## 2026-06-10 00:42:23 UTC-3
+- solicitação para analisar a conclusão do experimento 37 e extrair melhorias aplicáveis ao sistema como um todo, não apenas ao experimento citado.
+- raciocínio aplicado: preservar a hipótese comercial quando houver sinal de atenção no topo do funil, mas transformar a falha de captura em melhoria sistêmica para evitar desperdício de mídia e invalidação indevida de hipóteses.
+- foi feito: adição de uma seção de melhorias sistêmicas no relatório de conclusão do experimento 37, cobrindo gates de publicação, distinção entre falha técnica e falha comercial, persona mínima, isca ligada ao momento de dor, criativos por rotas comerciais, segmentação, reaproveitamento do relatório no próximo ciclo e painel geral de gargalos.
+- documentos/arquivos lidos para tratar a situação:
+  - AGENTS.md
+  - docs/relatorios/experimentos/conclusao-do-experimento-37.md
+  - docs/relatorios/experimentos/experimento-37-relatorio-completo.md
+  - docs/canonical/procedimento-experimento-canon.v1.md
+  - docs/canonical/facebook-campaign-publication-canon.v1.md
+  - docs/canonical/geralanding-arquitetura-canon.v1.md
+  - docs/registros/experimentos.md

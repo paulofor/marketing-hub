@@ -1,23 +1,11 @@
 package com.marketinghub.oprm.nichocnae.enrichednichematerializer.service;
 
-import com.marketinghub.niche.MarketNiche;
-import com.marketinghub.niche.MarketNicheEnrichmentProfile;
 import com.marketinghub.oprm.nichocnae.OprmNicheRoutineCard;
 import com.marketinghub.oprm.nichocnae.OprmRoutineResearchCycle;
-import com.marketinghub.repository.jpa.targeting.TargetingElementRepository;
-import com.marketinghub.targeting.TargetingElement;
-import com.marketinghub.targeting.TargetingElementSource;
-import com.marketinghub.targeting.TargetingElementStatus;
-import com.marketinghub.targeting.TargetingElementType;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 import java.util.Set;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 /** Serviço responsável por transformar nicho enriquecido OPRM em sinais iniciais pesquisáveis pela Meta Ads. */
@@ -26,13 +14,6 @@ public class OprmEnrichedNicheMetaSignalService {
   private static final int MAX_INTERESTS = 12;
   private static final int MAX_ROLES = 8;
   private static final int MAX_BEHAVIORS = 6;
-
-  private final TargetingElementRepository targetingElementRepository;
-
-  /** Inicializa o serviço com o repositório oficial de elementos de segmentação. */
-  public OprmEnrichedNicheMetaSignalService(TargetingElementRepository targetingElementRepository) {
-    this.targetingElementRepository = targetingElementRepository;
-  }
 
   /** Monta o pacote de sinais Meta Ads a partir do CNAE, nome neutro e evidências do cartão de rotina. */
   public MetaSignalPackage buildSignalPackage(OprmRoutineResearchCycle cycle, OprmNicheRoutineCard card) {
@@ -51,43 +32,6 @@ public class OprmEnrichedNicheMetaSignalService {
         limit(interests, MAX_INTERESTS),
         limit(roles, MAX_ROLES),
         limit(behaviors, MAX_BEHAVIORS));
-  }
-
-  /** Aplica o pacote de sinais nos campos legados/listas do nicho para consulta e auditoria humana. */
-  public void applySignalsToNiche(MarketNiche niche, MetaSignalPackage signalPackage) {
-    if (niche == null || signalPackage == null) {
-      return;
-    }
-    niche.setInterestList(signalPackage.interests());
-    niche.setRoleList(signalPackage.roles());
-    niche.setBehaviorList(signalPackage.behaviors());
-    niche.setInterests(buildReadableSignalSummary(signalPackage));
-  }
-
-  /** Publica elementos de segmentação aprovados para que o facebook-ads-worker resolva IDs e alcance na Graph API. */
-  @Transactional
-  public void publishTargetingElements(
-      MarketNiche niche,
-      MarketNicheEnrichmentProfile profile,
-      MetaSignalPackage signalPackage) {
-    if (niche == null || niche.getId() == null || signalPackage == null) {
-      return;
-    }
-    List<TargetingElement> existing = targetingElementRepository.findByNicheId(niche.getId());
-    Map<String, TargetingElement> existingByKey = new HashMap<>();
-    for (TargetingElement element : existing) {
-      if (element.getHypothesis() == null && StringUtils.hasText(element.getTerm())) {
-        existingByKey.put(key(element.getType(), element.getTerm()), element);
-      }
-    }
-
-    List<TargetingElement> toPersist = new ArrayList<>();
-    addElements(niche, profile, TargetingElementType.INTEREST, signalPackage.interests(), existingByKey, toPersist);
-    addElements(niche, profile, TargetingElementType.JOB_TITLE, signalPackage.roles(), existingByKey, toPersist);
-    addElements(niche, profile, TargetingElementType.BEHAVIOR, signalPackage.behaviors(), existingByKey, toPersist);
-    if (!toPersist.isEmpty()) {
-      targetingElementRepository.saveAll(toPersist);
-    }
   }
 
   /** Adiciona sinais de dicionários por CNAE para os melhores nichos já ranqueados pelo OPRM. */
@@ -205,60 +149,13 @@ public class OprmEnrichedNicheMetaSignalService {
     addAll(behaviors, "Small business owners", "Facebook Page admins");
   }
 
-  /** Cria ou atualiza elementos de targeting do pacote OPRM sem apagar curadoria manual existente. */
-  private void addElements(
-      MarketNiche niche,
-      MarketNicheEnrichmentProfile profile,
-      TargetingElementType type,
-      List<String> terms,
-      Map<String, TargetingElement> existingByKey,
-      List<TargetingElement> toPersist) {
-    for (String term : terms) {
-      String key = key(type, term);
-      TargetingElement existing = existingByKey.get(key);
-      if (existing != null) {
-        if (existing.getSource() == TargetingElementSource.OPRM_NICHE) {
-          existing.setDescription(buildDescription(profile));
-          existing.setStatus(TargetingElementStatus.APPROVED);
-          toPersist.add(existing);
-        }
-        continue;
-      }
-      toPersist.add(TargetingElement.builder()
-          .niche(niche)
-          .type(type)
-          .term(term)
-          .description(buildDescription(profile))
-          .source(TargetingElementSource.OPRM_NICHE)
-          .status(TargetingElementStatus.APPROVED)
-          .build());
-    }
-  }
-
-  /** Monta uma descrição auditável para o sinal gerado pelo nicho enriquecido. */
-  private String buildDescription(MarketNicheEnrichmentProfile profile) {
-    if (profile == null) {
-      return "Sinal inicial Meta Ads gerado a partir de nicho enriquecido OPRM.";
-    }
-    return "Sinal inicial Meta Ads gerado a partir do nicho enriquecido OPRM "
-        + profile.getCnaeCode()
-        + " - "
-        + profile.getNeutralNicheName()
-        + ".";
-  }
-
-  /** Monta resumo textual dos sinais para exibição nos campos legados do nicho. */
-  private String buildReadableSignalSummary(MetaSignalPackage signalPackage) {
+  /** Monta resumo textual dos sinais para exibição em campos do backend consumidos pelo Facebook Ads. */
+  public String buildReadableSignalSummary(MetaSignalPackage signalPackage) {
     return String.join("\n",
         "Sinais iniciais Meta Ads gerados pelo OPRM NichoCNAE.",
         "Interesses: " + String.join(", ", signalPackage.interests()),
         "Cargos: " + String.join(", ", signalPackage.roles()),
         "Comportamentos: " + String.join(", ", signalPackage.behaviors()));
-  }
-
-  /** Gera chave estável por tipo e termo para evitar duplicidade dentro do nicho. */
-  private String key(TargetingElementType type, String term) {
-    return type.name() + "::" + term.trim().toLowerCase(Locale.ROOT);
   }
 
   /** Adiciona valores textuais válidos preservando a primeira ocorrência. */

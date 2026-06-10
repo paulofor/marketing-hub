@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-06-10-oprm-general-audience-quality-reading.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-06-10-oprm-general-audience-seed.yaml
       relativeToChangelogFile: true
   - include:
@@ -7,6 +10,9 @@ databaseChangeLog:
       relativeToChangelogFile: true
   - include:
       file: changesets/2026-06-10-oprm-general-audience-discovery.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-06-10-oprm-general-audience-facebook-ads-data.yaml
       relativeToChangelogFile: true
   - include:
       file: changesets/2026-06-09-oprm-source-freshness-mei-classification.yaml

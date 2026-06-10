@@ -6,8 +6,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.marketinghub.oprm.generalaudience.OprmGeneralAudienceAdSignalStatus;
+import com.marketinghub.oprm.generalaudience.OprmGeneralAudienceAdSignalType;
+import com.marketinghub.oprm.generalaudience.OprmGeneralAudienceFacebookAdsData;
 import com.marketinghub.oprm.generalaudience.OprmGeneralAudiencePainAngle;
 import com.marketinghub.oprm.generalaudience.OprmGeneralAudiencePainAngleStatus;
+import com.marketinghub.oprm.generalaudience.OprmGeneralAudienceQualityReading;
 import com.marketinghub.oprm.generalaudience.OprmGeneralAudienceSeed;
 import com.marketinghub.oprm.generalaudience.OprmGeneralAudienceSourceEvidence;
 import com.marketinghub.oprm.generalaudience.OprmGeneralAudienceSubniche;
@@ -15,21 +19,19 @@ import com.marketinghub.oprm.generalaudience.OprmGeneralAudienceSubnicheStatus;
 import com.marketinghub.oprm.generalaudience.service.createHypothesis.CreateGeneralAudienceHypothesisRequest;
 import com.marketinghub.oprm.generalaudience.service.createLeadExperiment.CreateGeneralAudienceLeadExperimentRequest;
 import com.marketinghub.oprm.generalaudience.service.createPainAngle.CreateGeneralAudiencePainAngleRequest;
+import com.marketinghub.oprm.generalaudience.service.createQualityReading.CreateGeneralAudienceQualityReadingRequest;
 import com.marketinghub.oprm.generalaudience.service.prepareTargeting.GeneralAudienceTargetingPreparationRequest;
 import com.marketinghub.oprm.generalaudience.service.createSourceEvidence.CreateGeneralAudienceSourceEvidenceRequest;
+import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudienceFacebookAdsDataRepository;
 import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudienceHypothesisMaterializationRepository;
 import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudienceLeadExperimentMaterializationRepository;
 import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudienceMaterializedLeadExperiment;
 import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudienceMaterializedHypothesis;
 import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudiencePainAngleRepository;
+import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudienceQualityReadingRepository;
 import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudienceSeedRepository;
 import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudienceSourceEvidenceRepository;
 import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudienceSubnicheRepository;
-import com.marketinghub.targeting.TargetingElement;
-import com.marketinghub.targeting.TargetingElementStatus;
-import com.marketinghub.targeting.TargetingElementType;
-import com.marketinghub.targeting.dto.CreateTargetingElementRequest;
-import com.marketinghub.targeting.service.TargetingElementService;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -96,9 +98,10 @@ class OprmGeneralAudienceDiscoveryServiceTest {
                 subnicheRepository,
                 angleRepository,
                 evidenceRepository,
+                mock(OprmGeneralAudienceQualityReadingRepository.class),
                 mock(OprmGeneralAudienceHypothesisMaterializationRepository.class),
                 mock(OprmGeneralAudienceLeadExperimentMaterializationRepository.class),
-                mock(TargetingElementService.class));
+                mock(OprmGeneralAudienceFacebookAdsDataRepository.class));
 
         var response = service.evaluateQualityGate(5L);
 
@@ -120,9 +123,10 @@ class OprmGeneralAudienceDiscoveryServiceTest {
                 subnicheRepository,
                 mock(OprmGeneralAudiencePainAngleRepository.class),
                 mock(OprmGeneralAudienceSourceEvidenceRepository.class),
+                mock(OprmGeneralAudienceQualityReadingRepository.class),
                 mock(OprmGeneralAudienceHypothesisMaterializationRepository.class),
                 mock(OprmGeneralAudienceLeadExperimentMaterializationRepository.class),
-                mock(TargetingElementService.class));
+                mock(OprmGeneralAudienceFacebookAdsDataRepository.class));
 
         assertThatThrownBy(() -> service.createSourceEvidence(1L, new CreateGeneralAudienceSourceEvidenceRequest(
                         5L,
@@ -157,9 +161,10 @@ class OprmGeneralAudienceDiscoveryServiceTest {
                 subnicheRepositoryReturning(subniche),
                 angleRepository,
                 mock(OprmGeneralAudienceSourceEvidenceRepository.class),
+                mock(OprmGeneralAudienceQualityReadingRepository.class),
                 hypothesisRepository,
                 mock(OprmGeneralAudienceLeadExperimentMaterializationRepository.class),
-                mock(TargetingElementService.class));
+                mock(OprmGeneralAudienceFacebookAdsDataRepository.class));
 
         var response = service.createHypothesis(20L, new CreateGeneralAudienceHypothesisRequest(null, null, null));
 
@@ -181,9 +186,10 @@ class OprmGeneralAudienceDiscoveryServiceTest {
                 subnicheRepositoryReturning(subniche),
                 angleRepository,
                 mock(OprmGeneralAudienceSourceEvidenceRepository.class),
+                mock(OprmGeneralAudienceQualityReadingRepository.class),
                 mock(OprmGeneralAudienceHypothesisMaterializationRepository.class),
                 mock(OprmGeneralAudienceLeadExperimentMaterializationRepository.class),
-                mock(TargetingElementService.class));
+                mock(OprmGeneralAudienceFacebookAdsDataRepository.class));
 
         assertThatThrownBy(() -> service.createHypothesis(
                 20L,
@@ -219,9 +225,10 @@ class OprmGeneralAudienceDiscoveryServiceTest {
                 subnicheRepositoryReturning(subniche),
                 angleRepository,
                 mock(OprmGeneralAudienceSourceEvidenceRepository.class),
+                mock(OprmGeneralAudienceQualityReadingRepository.class),
                 mock(OprmGeneralAudienceHypothesisMaterializationRepository.class),
                 experimentRepository,
-                mock(TargetingElementService.class));
+                mock(OprmGeneralAudienceFacebookAdsDataRepository.class));
 
         var response = service.createLeadExperiment(20L, new CreateGeneralAudienceLeadExperimentRequest(
                 UUID.fromString("11111111-1111-1111-1111-111111111111"),
@@ -253,9 +260,10 @@ class OprmGeneralAudienceDiscoveryServiceTest {
                 subnicheRepositoryReturning(subniche),
                 angleRepository,
                 mock(OprmGeneralAudienceSourceEvidenceRepository.class),
+                mock(OprmGeneralAudienceQualityReadingRepository.class),
                 mock(OprmGeneralAudienceHypothesisMaterializationRepository.class),
                 mock(OprmGeneralAudienceLeadExperimentMaterializationRepository.class),
-                mock(TargetingElementService.class));
+                mock(OprmGeneralAudienceFacebookAdsDataRepository.class));
 
         assertThatThrownBy(() -> service.createLeadExperiment(20L, new CreateGeneralAudienceLeadExperimentRequest(
                 UUID.fromString("11111111-1111-1111-1111-111111111111"),
@@ -278,16 +286,17 @@ class OprmGeneralAudienceDiscoveryServiceTest {
         subniche.setMarketNicheId(99L);
         OprmGeneralAudiencePainAngle angle = approvedAngle(subniche);
         OprmGeneralAudiencePainAngleRepository angleRepository = mock(OprmGeneralAudiencePainAngleRepository.class);
-        TargetingElementService targetingElementService = targetingElementServiceAssigningIds(false);
+        OprmGeneralAudienceFacebookAdsDataRepository facebookAdsDataRepository = facebookAdsDataRepositoryAssigningIds(false);
         when(angleRepository.findById(20L)).thenReturn(Optional.of(angle));
         OprmGeneralAudienceDiscoveryService service = new OprmGeneralAudienceDiscoveryService(
                 mock(OprmGeneralAudienceSeedRepository.class),
                 subnicheRepositoryReturning(subniche),
                 angleRepository,
                 mock(OprmGeneralAudienceSourceEvidenceRepository.class),
+                mock(OprmGeneralAudienceQualityReadingRepository.class),
                 mock(OprmGeneralAudienceHypothesisMaterializationRepository.class),
                 mock(OprmGeneralAudienceLeadExperimentMaterializationRepository.class),
-                targetingElementService);
+                facebookAdsDataRepository);
 
         var response = service.prepareInitialTargeting(20L, new GeneralAudienceTargetingPreparationRequest(
                 UUID.fromString("11111111-1111-1111-1111-111111111111"),
@@ -303,7 +312,7 @@ class OprmGeneralAudienceDiscoveryServiceTest {
 
         assertThat(response.publishableForCurrentPublisher()).isFalse();
         assertThat(response.elements()).hasSize(3);
-        assertThat(response.elements()).extracting("status").contains(TargetingElementStatus.NEEDS_REVIEW);
+        assertThat(response.elements()).extracting("status").contains(OprmGeneralAudienceAdSignalStatus.RECEIVED);
         assertThat(response.blockers()).anyMatch(blocker -> blocker.contains("Nenhum JOB_TITLE aprovado"));
     }
 
@@ -315,16 +324,17 @@ class OprmGeneralAudienceDiscoveryServiceTest {
         subniche.setMarketNicheId(99L);
         OprmGeneralAudiencePainAngle angle = approvedAngle(subniche);
         OprmGeneralAudiencePainAngleRepository angleRepository = mock(OprmGeneralAudiencePainAngleRepository.class);
-        TargetingElementService targetingElementService = targetingElementServiceAssigningIds(true);
+        OprmGeneralAudienceFacebookAdsDataRepository facebookAdsDataRepository = facebookAdsDataRepositoryAssigningIds(true);
         when(angleRepository.findById(20L)).thenReturn(Optional.of(angle));
         OprmGeneralAudienceDiscoveryService service = new OprmGeneralAudienceDiscoveryService(
                 mock(OprmGeneralAudienceSeedRepository.class),
                 subnicheRepositoryReturning(subniche),
                 angleRepository,
                 mock(OprmGeneralAudienceSourceEvidenceRepository.class),
+                mock(OprmGeneralAudienceQualityReadingRepository.class),
                 mock(OprmGeneralAudienceHypothesisMaterializationRepository.class),
                 mock(OprmGeneralAudienceLeadExperimentMaterializationRepository.class),
-                targetingElementService);
+                facebookAdsDataRepository);
 
         var response = service.prepareInitialTargeting(20L, new GeneralAudienceTargetingPreparationRequest(
                 UUID.fromString("11111111-1111-1111-1111-111111111111"),
@@ -340,8 +350,86 @@ class OprmGeneralAudienceDiscoveryServiceTest {
 
         assertThat(response.publishableForCurrentPublisher()).isTrue();
         assertThat(response.blockers()).isEmpty();
-        assertThat(response.elements()).anyMatch(element -> element.type() == TargetingElementType.JOB_TITLE
+        assertThat(response.elements()).anyMatch(element -> element.type() == OprmGeneralAudienceAdSignalType.JOB_TITLE
                 && element.publishableForCurrentPublisher());
+    }
+
+
+    /** Verifica se a leitura de qualidade aprova público com profissão correta, dor real e resposta comercial. */
+    @Test
+    void shouldRegisterApprovedQualityReading() {
+        OprmGeneralAudienceSubniche subniche = subniche();
+        OprmGeneralAudiencePainAngle angle = approvedAngle(subniche);
+        OprmGeneralAudiencePainAngleRepository angleRepository = mock(OprmGeneralAudiencePainAngleRepository.class);
+        OprmGeneralAudienceQualityReadingRepository qualityRepository = mock(OprmGeneralAudienceQualityReadingRepository.class);
+        when(angleRepository.findById(20L)).thenReturn(Optional.of(angle));
+        when(qualityRepository.save(any())).thenAnswer(invocation -> {
+            OprmGeneralAudienceQualityReading reading = invocation.getArgument(0);
+            reading.setId(40L);
+            reading.setCreatedAt(Instant.parse("2026-06-10T14:00:00Z"));
+            reading.setUpdatedAt(Instant.parse("2026-06-10T14:00:00Z"));
+            return reading;
+        });
+        OprmGeneralAudienceDiscoveryService service = new OprmGeneralAudienceDiscoveryService(
+                mock(OprmGeneralAudienceSeedRepository.class),
+                subnicheRepositoryReturning(subniche),
+                angleRepository,
+                mock(OprmGeneralAudienceSourceEvidenceRepository.class),
+                qualityRepository,
+                mock(OprmGeneralAudienceHypothesisMaterializationRepository.class),
+                mock(OprmGeneralAudienceLeadExperimentMaterializationRepository.class),
+                mock(TargetingElementService.class));
+
+        var response = service.createQualityReading(5L, new CreateGeneralAudienceQualityReadingRequest(
+                20L,
+                77L,
+                10,
+                7,
+                6,
+                5,
+                3,
+                2,
+                1,
+                0,
+                0,
+                0,
+                1,
+                "Primeira leitura pós-formulário",
+                Instant.parse("2026-06-10T13:30:00Z")));
+
+        assertThat(response.id()).isEqualTo(40L);
+        assertThat(response.approved()).isTrue();
+        assertThat(response.qualityScore()).isEqualByComparingTo("92.00");
+        assertThat(response.blockers()).isEmpty();
+        assertThat(response.recommendations()).anyMatch(item -> item.contains("follow-up"));
+    }
+
+    /** Verifica se a leitura de qualidade bloqueia público fora do perfil e sem dor real. */
+    @Test
+    void shouldBlockLowQualityAudienceReading() {
+        OprmGeneralAudienceSubniche subniche = subniche();
+        OprmGeneralAudienceQualityReadingRepository qualityRepository = mock(OprmGeneralAudienceQualityReadingRepository.class);
+        when(qualityRepository.save(any())).thenAnswer(invocation -> {
+            OprmGeneralAudienceQualityReading reading = invocation.getArgument(0);
+            reading.setId(41L);
+            return reading;
+        });
+        OprmGeneralAudienceDiscoveryService service = new OprmGeneralAudienceDiscoveryService(
+                mock(OprmGeneralAudienceSeedRepository.class),
+                subnicheRepositoryReturning(subniche),
+                mock(OprmGeneralAudiencePainAngleRepository.class),
+                mock(OprmGeneralAudienceSourceEvidenceRepository.class),
+                qualityRepository,
+                mock(OprmGeneralAudienceHypothesisMaterializationRepository.class),
+                mock(OprmGeneralAudienceLeadExperimentMaterializationRepository.class),
+                mock(TargetingElementService.class));
+
+        var response = service.createQualityReading(5L, new CreateGeneralAudienceQualityReadingRequest(
+                null, null, 10, 2, 0, 1, 0, 0, 6, 2, 1, 1, 3, null, null));
+
+        assertThat(response.approved()).isFalse();
+        assertThat(response.blockers()).anyMatch(item -> item.contains("profissão correta"));
+        assertThat(response.blockers()).anyMatch(item -> item.contains("dor real"));
     }
 
     /** Monta serviço com repositório de subnicho e repositórios auxiliares mockados. */
@@ -365,9 +453,10 @@ class OprmGeneralAudienceDiscoveryServiceTest {
                 subnicheRepository,
                 angleRepository,
                 evidenceRepository,
+                mock(OprmGeneralAudienceQualityReadingRepository.class),
                 mock(OprmGeneralAudienceHypothesisMaterializationRepository.class),
                 mock(OprmGeneralAudienceLeadExperimentMaterializationRepository.class),
-                mock(TargetingElementService.class));
+                mock(OprmGeneralAudienceFacebookAdsDataRepository.class));
     }
 
     /** Monta repositório que retorna um subnicho específico. */
@@ -377,24 +466,23 @@ class OprmGeneralAudienceDiscoveryServiceTest {
         return repository;
     }
 
-    /** Monta serviço de targeting que devolve elementos como se fossem persistidos. */
-    private TargetingElementService targetingElementServiceAssigningIds(boolean resolveMetaForApprovedJobs) {
-        TargetingElementService service = mock(TargetingElementService.class);
-        when(service.create(any(CreateTargetingElementRequest.class))).thenAnswer(invocation -> {
-            CreateTargetingElementRequest request = invocation.getArgument(0);
-            TargetingElement element = new TargetingElement();
-            element.setId((long) (request.getType().ordinal() + 1));
-            element.setType(request.getType());
-            element.setTerm(request.getTerm());
-            element.setStatus(request.getStatus());
-            if (resolveMetaForApprovedJobs
-                    && request.getType() == TargetingElementType.JOB_TITLE
-                    && request.getStatus() == TargetingElementStatus.APPROVED) {
-                element.setMetaId(request.getMetaId());
+    /** Monta repositório de dados do Facebook Ads que devolve itens como se fossem persistidos. */
+    private OprmGeneralAudienceFacebookAdsDataRepository facebookAdsDataRepositoryAssigningIds(boolean resolveMetaForReadyJobs) {
+        OprmGeneralAudienceFacebookAdsDataRepository repository = mock(OprmGeneralAudienceFacebookAdsDataRepository.class);
+        when(repository.saveAll(any())).thenAnswer(invocation -> {
+            List<OprmGeneralAudienceFacebookAdsData> items = invocation.getArgument(0);
+            for (int index = 0; index < items.size(); index++) {
+                OprmGeneralAudienceFacebookAdsData item = items.get(index);
+                item.setId((long) index + 1L);
+                if (resolveMetaForReadyJobs
+                        && item.getSignalType() == OprmGeneralAudienceAdSignalType.JOB_TITLE
+                        && item.isReadyForFacebookAds()) {
+                    item.setStatus(OprmGeneralAudienceAdSignalStatus.READY_FOR_FACEBOOK_ADS);
+                }
             }
-            return element;
+            return items;
         });
-        return service;
+        return repository;
     }
 
     /** Monta um ângulo aprovado com dor, isca e mecanismo para criação de hipótese. */

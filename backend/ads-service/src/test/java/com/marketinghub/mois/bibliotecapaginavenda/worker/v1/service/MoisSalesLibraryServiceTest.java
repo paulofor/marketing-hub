@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.dto.MoisSalesLibraryDtos;
@@ -197,6 +198,46 @@ class MoisSalesLibraryServiceTest {
         org.assertj.core.api.Assertions.assertThat(sqlCaptor.getValue())
                 .contains("mws.market_temperature IN ('HOT', 'PROMISING')")
                 .contains("ORDER BY mws.score_total IS NULL ASC, mws.score_total DESC");
+    }
+
+    /**
+     * Garante que o ranking de oportunidades combina página, aquecimento, saturação e recência no backend.
+     */
+    @Test
+    void shouldRankMarketWarmupOpportunitiesByCombinedCommercialScore() throws Exception {
+        given(jdbcTemplate.query(contains("combined_commercial_score"), isA(RowMapper.class), eq("workspace-001"), eq(5)))
+                .willAnswer(invocation -> {
+                    RowMapper<?> mapper = invocation.getArgument(1);
+                    ResultSet row = mock(ResultSet.class);
+                    given(row.getLong("page_id")).willReturn(77L);
+                    given(row.getString("title")).willReturn("Produto promissor");
+                    given(row.getString("url_canonical")).willReturn("https://example.com/oferta");
+                    given(row.getString("source")).willReturn("HOTMART");
+                    given(row.getBigDecimal("page_score_total")).willReturn(BigDecimal.valueOf(82));
+                    given(row.getBigDecimal("warmup_score_total")).willReturn(BigDecimal.valueOf(76));
+                    given(row.getBigDecimal("combined_commercial_score")).willReturn(BigDecimal.valueOf(79.5));
+                    given(row.getString("market_temperature")).willReturn("PROMISING");
+                    given(row.getString("ecosystem_type")).willReturn("CREATORS_HEATED");
+                    given(row.getString("recommendation")).willReturn("PRIORITIZE");
+                    given(row.getString("saturation_risk")).willReturn(null);
+                    given(row.getTimestamp("evidence_updated_at")).willReturn(Timestamp.from(Instant.parse("2026-06-09T12:00:00Z")));
+                    given(row.getString("next_experiment_suggestion")).willReturn("Criar experimento com promessa direta.");
+                    given(row.getString("opportunity_recommendation")).willReturn("Priorizar mercado.");
+                    return List.of(mapper.mapRow(row, 0));
+                });
+
+        MoisSalesLibraryDtos.MarketWarmupOpportunityRankingResponse response =
+                service.rankMarketWarmupOpportunities("workspace-001", 5);
+
+        org.assertj.core.api.Assertions.assertThat(response.items()).hasSize(1);
+        org.assertj.core.api.Assertions.assertThat(response.items().get(0).combinedCommercialScore()).isEqualByComparingTo("79.5");
+        org.assertj.core.api.Assertions.assertThat(response.items().get(0).suggestedNextAction()).isEqualTo("Criar experimento com promessa direta.");
+        ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+        verify(jdbcTemplate).query(sqlCaptor.capture(), isA(RowMapper.class), eq("workspace-001"), eq(5));
+        org.assertj.core.api.Assertions.assertThat(sqlCaptor.getValue())
+                .contains("COALESCE(p.score_total, 0) * 0.45")
+                .contains("mws.market_temperature = 'SATURATED'")
+                .contains("ORDER BY ranked.combined_commercial_score DESC");
     }
 
     /**

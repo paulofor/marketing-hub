@@ -308,6 +308,29 @@ paths:
           description: Ângulo não aprovado, subnicho sem MarketNiche ou campos mínimos ausentes.
         "404":
           description: Ângulo não encontrado.
+  /api/oprm/general-audiences/pain-angles/{angleId}/create-lead-experiment:
+    post:
+      summary: Cria experimento planejado de lead/isca para público geral.
+      tags: [OPRM Públicos Gerais]
+      parameters:
+        - $ref: "#/components/parameters/AngleId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateGeneralAudienceLeadExperimentRequest"
+      responses:
+        "201":
+          description: Experimento criado em planejamento, sem publicação automática.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeneralAudienceLeadExperiment"
+        "400":
+          description: Pacote experimental incompleto, orçamento grande ou duração longa.
+        "404":
+          description: Ângulo não encontrado.
   /api/oprm/general-audiences/seeds/{seedId}/source-evidences:
     get:
       summary: Lista evidências agregadas de uma semente.
@@ -710,6 +733,91 @@ components:
         createdAt:
           type: string
           format: date-time
+
+    CreateGeneralAudienceLeadExperimentRequest:
+      type: object
+      required:
+        [hypothesisId, primaryMetric, stopLossCpl, dailyBudget, durationDays]
+      properties:
+        hypothesisId:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 255
+          nullable: true
+        primaryMetric:
+          type: string
+          maxLength: 191
+        stopLossCpl:
+          type: number
+          format: decimal
+          minimum: 0.01
+        dailyBudget:
+          type: number
+          format: decimal
+          minimum: 0.01
+          maximum: 100
+        durationDays:
+          type: integer
+          minimum: 1
+          maximum: 14
+        kpiTargetCpl:
+          type: number
+          format: decimal
+          minimum: 0.01
+          nullable: true
+        sampleSize:
+          type: integer
+          minimum: 1
+          nullable: true
+    GeneralAudienceLeadExperiment:
+      type: object
+      required:
+        [
+          painAngleId,
+          subnicheId,
+          marketNicheId,
+          experimentId,
+          experimentName,
+          status,
+          primaryMetric,
+          stopLossCpl,
+          dailyBudget,
+          startDate,
+          endDate,
+        ]
+      properties:
+        painAngleId:
+          type: integer
+          format: int64
+        subnicheId:
+          type: integer
+          format: int64
+        marketNicheId:
+          type: integer
+          format: int64
+        experimentId:
+          type: integer
+          format: int64
+        experimentName:
+          type: string
+        status:
+          type: string
+        primaryMetric:
+          type: string
+        stopLossCpl:
+          type: number
+          format: decimal
+        dailyBudget:
+          type: number
+          format: decimal
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
 
     PainAngleStatus:
       type: string

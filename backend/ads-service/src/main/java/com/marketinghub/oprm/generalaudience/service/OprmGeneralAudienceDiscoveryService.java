@@ -7,6 +7,8 @@ import com.marketinghub.oprm.generalaudience.OprmGeneralAudienceSourceEvidence;
 import com.marketinghub.oprm.generalaudience.OprmGeneralAudienceSubniche;
 import com.marketinghub.oprm.generalaudience.OprmGeneralAudienceSubnicheStatus;
 import com.marketinghub.oprm.generalaudience.service.createHypothesis.CreateGeneralAudienceHypothesisRequest;
+import com.marketinghub.oprm.generalaudience.service.createLeadExperiment.CreateGeneralAudienceLeadExperimentRequest;
+import com.marketinghub.oprm.generalaudience.service.createLeadExperiment.GeneralAudienceLeadExperimentResponse;
 import com.marketinghub.oprm.generalaudience.service.createHypothesis.GeneralAudienceHypothesisResponse;
 import com.marketinghub.oprm.generalaudience.service.createPainAngle.CreateGeneralAudiencePainAngleRequest;
 import com.marketinghub.oprm.generalaudience.service.createSourceEvidence.CreateGeneralAudienceSourceEvidenceRequest;
@@ -15,10 +17,12 @@ import com.marketinghub.oprm.generalaudience.service.listSourceEvidences.General
 import com.marketinghub.oprm.generalaudience.service.qualityGate.GeneralAudienceQualityGateResponse;
 import com.marketinghub.oprm.generalaudience.service.updatePainAngle.UpdateGeneralAudiencePainAngleRequest;
 import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudienceHypothesisMaterializationRepository;
+import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudienceLeadExperimentMaterializationRepository;
 import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudiencePainAngleRepository;
 import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudienceSeedRepository;
 import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudienceSourceEvidenceRepository;
 import com.marketinghub.repository.jpa.oprm.generalaudience.OprmGeneralAudienceSubnicheRepository;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -40,7 +44,9 @@ public class OprmGeneralAudienceDiscoveryService {
     private final OprmGeneralAudienceSubnicheRepository subnicheRepository;
     private final OprmGeneralAudiencePainAngleRepository painAngleRepository;
     private final OprmGeneralAudienceSourceEvidenceRepository sourceEvidenceRepository;
+    private static final BigDecimal MAX_GENERAL_AUDIENCE_DAILY_BUDGET = new BigDecimal("100.00");
     private final OprmGeneralAudienceHypothesisMaterializationRepository hypothesisMaterializationRepository;
+    private final OprmGeneralAudienceLeadExperimentMaterializationRepository leadExperimentMaterializationRepository;
 
     /** Inicializa o serviço com repositórios centralizados do módulo OPRM. */
     public OprmGeneralAudienceDiscoveryService(
@@ -48,12 +54,14 @@ public class OprmGeneralAudienceDiscoveryService {
             OprmGeneralAudienceSubnicheRepository subnicheRepository,
             OprmGeneralAudiencePainAngleRepository painAngleRepository,
             OprmGeneralAudienceSourceEvidenceRepository sourceEvidenceRepository,
-            OprmGeneralAudienceHypothesisMaterializationRepository hypothesisMaterializationRepository) {
+            OprmGeneralAudienceHypothesisMaterializationRepository hypothesisMaterializationRepository,
+            OprmGeneralAudienceLeadExperimentMaterializationRepository leadExperimentMaterializationRepository) {
         this.seedRepository = seedRepository;
         this.subnicheRepository = subnicheRepository;
         this.painAngleRepository = painAngleRepository;
         this.sourceEvidenceRepository = sourceEvidenceRepository;
         this.hypothesisMaterializationRepository = hypothesisMaterializationRepository;
+        this.leadExperimentMaterializationRepository = leadExperimentMaterializationRepository;
     }
 
     /** Lista ângulos de dor de um subnicho para revisão antes de construir oferta. */
@@ -234,6 +242,51 @@ public class OprmGeneralAudienceDiscoveryService {
                 hypothesis.createdAt());
     }
 
+
+    /** Cria um experimento curto de lead/isca para validar a qualidade do público geral. */
+    @Transactional
+    public GeneralAudienceLeadExperimentResponse createLeadExperiment(
+            Long angleId,
+            CreateGeneralAudienceLeadExperimentRequest request) {
+        OprmGeneralAudiencePainAngle angle = findPainAngle(angleId);
+        validateAngleCanCreateLeadExperiment(angle, request);
+        OprmGeneralAudienceSubniche subniche = angle.getSubniche();
+        String leadMagnet = requiredText(angle.getProofOrLeadMagnet(), "proofOrLeadMagnet");
+        String safePromise = requiredText(angle.getSafePromise(), "safePromise");
+        String qualificationQuestion = resolveQualificationQuestion(subniche, angle);
+        String primaryMetric = resolveDefaultText(request.primaryMetric(), "CPL de lead qualificado");
+        String experimentName = resolveDefaultText(
+                request.name(),
+                "Lead Público Geral - " + subniche.getName() + " - " + shortText(angle.getPain(), 60));
+        String statement = buildHypothesisStatement(subniche, angle, leadMagnet);
+        var experiment = leadExperimentMaterializationRepository.createLeadExperiment(
+                subniche.getMarketNicheId(),
+                request.hypothesisId(),
+                experimentName,
+                statement,
+                primaryMetric,
+                request.stopLossCpl(),
+                request.dailyBudget(),
+                request.durationDays(),
+                request.kpiTargetCpl(),
+                request.sampleSize(),
+                buildLeadExperimentCampaignAngle(subniche, angle, leadMagnet, safePromise, qualificationQuestion),
+                buildLeadExperimentAdCopy(angle, safePromise, qualificationQuestion),
+                buildLeadExperimentLandingCopy(subniche, angle, leadMagnet, safePromise, qualificationQuestion));
+        return new GeneralAudienceLeadExperimentResponse(
+                angle.getId(),
+                subniche.getId(),
+                subniche.getMarketNicheId(),
+                experiment.id(),
+                experiment.name(),
+                experiment.status(),
+                experiment.primaryMetric(),
+                experiment.stopLossCpl(),
+                experiment.dailyBudget(),
+                experiment.startDate(),
+                experiment.endDate());
+    }
+
     /** Busca uma semente ou devolve erro HTTP de recurso inexistente. */
     private OprmGeneralAudienceSeed findSeed(Long seedId) {
         return seedRepository.findById(seedId)
@@ -256,6 +309,98 @@ public class OprmGeneralAudienceDiscoveryService {
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "Ângulo de público geral não encontrado: " + angleId));
+    }
+
+
+    /** Valida campos obrigatórios do pacote experimental de lead/isca. */
+    private void validateAngleCanCreateLeadExperiment(
+            OprmGeneralAudiencePainAngle angle,
+            CreateGeneralAudienceLeadExperimentRequest request) {
+        if (request == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Payload do experimento de lead é obrigatório");
+        }
+        validateAngleCanCreateHypothesis(angle);
+        requiredText(angle.getProofOrLeadMagnet(), "proofOrLeadMagnet");
+        requiredText(angle.getSafePromise(), "safePromise");
+        requiredText(resolveQualificationQuestion(angle.getSubniche(), angle), "qualificationQuestion");
+        requiredText(request.primaryMetric(), "primaryMetric");
+        if (request.hypothesisId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "hypothesisId é obrigatório");
+        }
+        if (request.stopLossCpl() == null || request.stopLossCpl().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "stopLossCpl deve ser maior que zero");
+        }
+        if (request.dailyBudget() == null || request.dailyBudget().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "dailyBudget deve ser maior que zero");
+        }
+        if (request.dailyBudget().compareTo(MAX_GENERAL_AUDIENCE_DAILY_BUDGET) > 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "dailyBudget deve manter orçamento pequeno até 100.00");
+        }
+        if (request.durationDays() == null || request.durationDays() < 1 || request.durationDays() > 14) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "durationDays deve representar duração curta entre 1 e 14 dias");
+        }
+    }
+
+    /** Resolve a pergunta qualificadora priorizando a pergunta específica da landing. */
+    private String resolveQualificationQuestion(
+            OprmGeneralAudienceSubniche subniche,
+            OprmGeneralAudiencePainAngle angle) {
+        if (StringUtils.hasText(angle.getLandingConfirmationQuestion())) {
+            return angle.getLandingConfirmationQuestion().trim();
+        }
+        return subniche.getQualificationQuestion();
+    }
+
+    /** Monta o ângulo de campanha do experimento de lead sem publicar campanha. */
+    private String buildLeadExperimentCampaignAngle(
+            OprmGeneralAudienceSubniche subniche,
+            OprmGeneralAudiencePainAngle angle,
+            String leadMagnet,
+            String safePromise,
+            String qualificationQuestion) {
+        return String.join("\n\n",
+                "Origem: Público Geral OPRM > " + subniche.getSeed().getName() + " > " + subniche.getName(),
+                "Dor principal: " + angle.getPain(),
+                "Isca: " + leadMagnet,
+                "Promessa segura: " + safePromise,
+                "Pergunta qualificadora: " + qualificationQuestion,
+                "Objetivo: capturar lead qualificado ou conversa de WhatsApp, sem venda direta.");
+    }
+
+    /** Monta rascunho de copy de anúncio com frase de triagem do público. */
+    private String buildLeadExperimentAdCopy(
+            OprmGeneralAudiencePainAngle angle,
+            String safePromise,
+            String qualificationQuestion) {
+        return String.join("\n",
+                StringUtils.hasText(angle.getFirstAdHook()) ? angle.getFirstAdHook().trim() : safePromise,
+                qualificationQuestion,
+                "Se fizer sentido para você, solicite a isca gratuita antes de qualquer oferta.");
+    }
+
+    /** Monta copy operacional da landing/formulário com confirmação de público. */
+    private String buildLeadExperimentLandingCopy(
+            OprmGeneralAudienceSubniche subniche,
+            OprmGeneralAudiencePainAngle angle,
+            String leadMagnet,
+            String safePromise,
+            String qualificationQuestion) {
+        return String.join("\n\n",
+                "Para quem é: " + subniche.getName(),
+                "Dor principal: " + angle.getPain(),
+                "O que a pessoa recebe: " + leadMagnet,
+                "Promessa segura: " + safePromise,
+                "Pergunta obrigatória: " + qualificationQuestion,
+                "Próximo passo: entregar a isca e medir qualidade do lead antes de qualquer venda.");
+    }
+
+    /** Encurta texto para nomes operacionais sem perder a decisão principal. */
+    private String shortText(String value, int maxLength) {
+        String text = requiredText(value, "text");
+        if (text.length() <= maxLength) {
+            return text;
+        }
+        return text.substring(0, maxLength).trim();
     }
 
     /** Valida que o ângulo e o subnicho estão prontos para criar uma hipótese específica. */

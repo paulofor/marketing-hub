@@ -231,3 +231,16 @@ Evitar fechamento prematuro de `import run` que destrói a totalização de mark
 - Classes em `com.marketinghub.oprm..` não devem importar `com.marketinghub.targeting..` nem `com.marketinghub.repository.jpa.targeting..`.
 - O OPRM pode validar se há dados mínimos para coleta futura pelo Facebook Ads, mas não deve criar elemento de targeting nem liberar publicação.
 - Se o Facebook Ads precisar de novo formato, o contrato deve nascer no backend e ser consumido pelo módulo Facebook Ads, mantendo o OPRM como produtor de dados e não como publicador.
+
+## Regra obrigatória — limite de responsabilidade do OPRM em confirmações e etapas posteriores
+
+- O OPRM deve tratar a situação de oportunidade, dor, público, rotina e confirmação dentro do seu próprio domínio e persistir os dados no banco por contratos/tabelas OPRM.
+- É proibido o pacote `com.marketinghub.oprm..` materializar diretamente fluxos de outros módulos, como Lead Portal, Experimentos, campanhas, ofertas finais ou publicações.
+- Quando o OPRM preparar uma confirmação de público/dor, ele deve registrar a situação em tabela OPRM, com identificadores externos apenas como valores simples quando necessário, sem importar entidades, services, DTOs ou repositories de outros módulos.
+- Módulos posteriores devem consumir os dados persistidos por contrato oficial/API própria, preservando isolamento e evitando que o OPRM ultrapasse seus limites.
+
+## Critério de efetividade — limite de responsabilidade do OPRM
+
+- Testes de arquitetura devem falhar quando classes em `com.marketinghub.oprm..` dependerem diretamente de pacotes internos que não sejam OPRM ou repositories OPRM, salvo exceções nominais já documentadas.
+- Endpoints OPRM de preparação/confirmação devem devolver registros OPRM persistidos, não IDs de entidades criadas em módulos externos.
+- O dado persistido pelo OPRM deve ser suficiente para orientar a próxima etapa do fluxo de vendas sem acoplamento direto entre módulos.

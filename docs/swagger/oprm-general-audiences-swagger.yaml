@@ -354,6 +354,30 @@ paths:
           description: Payload incompleto ou ângulo ainda sem prontidão mínima.
         "404":
           description: Ângulo não encontrado.
+  /api/oprm/general-audiences/pain-angles/{angleId}/create-confirmation-flow:
+    post:
+      summary: Registra no banco OPRM a situação de confirmação de público e dor.
+      description: O endpoint não cria fluxo no Lead Portal e não altera Experimento; apenas persiste o registro OPRM para etapa posterior consumir por contrato oficial.
+      tags: [OPRM Públicos Gerais]
+      parameters:
+        - $ref: "#/components/parameters/AngleId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateGeneralAudienceLandingConfirmationRequest"
+      responses:
+        "201":
+          description: Situação de confirmação registrada no banco OPRM.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeneralAudienceLandingConfirmation"
+        "400":
+          description: Payload incompleto ou ângulo ainda sem prontidão mínima.
+        "404":
+          description: Ângulo não encontrado.
   /api/oprm/general-audiences/seeds/{seedId}/source-evidences:
     get:
       summary: Lista evidências agregadas de uma semente.
@@ -966,6 +990,92 @@ components:
           type: string
           format: date
 
+    CreateGeneralAudienceLandingConfirmationRequest:
+      type: object
+      required: [experimentId, audienceConfirmationQuestion, qualificationOptions]
+      properties:
+        experimentId:
+          type: integer
+          format: int64
+        name:
+          type: string
+          nullable: true
+        audienceConfirmationQuestion:
+          type: string
+        qualificationOptions:
+          type: array
+          minItems: 2
+          items:
+            type: string
+        deliveryDescription:
+          type: string
+          nullable: true
+        whyItMakesSense:
+          type: string
+          nullable: true
+        nextStep:
+          type: string
+          nullable: true
+        painConfirmationQuestion:
+          type: string
+          nullable: true
+    GeneralAudienceLandingConfirmationQuestion:
+      type: object
+      required: [title, dataKey, type, required, options]
+      properties:
+        title:
+          type: string
+        dataKey:
+          type: string
+        type:
+          type: string
+        required:
+          type: boolean
+        options:
+          type: array
+          items:
+            type: string
+    GeneralAudienceLandingConfirmation:
+      type: object
+      required:
+        [confirmationRecordId, painAngleId, subnicheId, marketNicheId, experimentId, slug, name, audienceSummary, painSummary, deliveryDescription, whyItMakesSense, nextStep, status, questions]
+      properties:
+        confirmationRecordId:
+          type: integer
+          format: int64
+        painAngleId:
+          type: integer
+          format: int64
+        subnicheId:
+          type: integer
+          format: int64
+        marketNicheId:
+          type: integer
+          format: int64
+        experimentId:
+          type: integer
+          format: int64
+        slug:
+          type: string
+        name:
+          type: string
+        audienceSummary:
+          type: string
+        painSummary:
+          type: string
+        deliveryDescription:
+          type: string
+        whyItMakesSense:
+          type: string
+        nextStep:
+          type: string
+        status:
+          type: string
+          enum: [REGISTERED]
+        questions:
+          type: array
+          items:
+            $ref: "#/components/schemas/GeneralAudienceLandingConfirmationQuestion"
     PainAngleStatus:
       type: string
       enum: [DISCOVERED, NEEDS_REVIEW, APPROVED, REJECTED]

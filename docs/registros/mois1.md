@@ -1253,3 +1253,16 @@ Arquivos alterados:
 - `backend/ads-service/src/main/java/com/marketinghub/repository/jdbc/mois/bibliotecapaginavenda/worker/v1/MoisSalesPageMarketWarmupRepository.java`
 - `backend/ads-service/src/test/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesPageMarketWarmupServiceTest.java`
 - `docs/registros/mois1.md`
+
+## 2026-06-10 — Correção arquitetural do aquecimento de mercado MOIS
+
+- Corrigida a violação arquitetural da Biblioteca de Páginas de Vendas MOIS removendo dependências do pacote de repository para DTOs internos do módulo MOIS.
+- O gateway de persistência passou a expor dados primitivos/contratos próprios da camada de repository, e o service MOIS assumiu explicitamente os mapeamentos entre contratos HTTP e persistência.
+- Movida a persistência de aquecimento para o pacote canônico `repository.jpa.mois.bibliotecapaginavenda.worker.v1`, alinhado à exceção arquitetural já validada para a biblioteca MOIS.
+
+Arquivos alterados:
+- `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesPageMarketWarmupService.java`
+- `backend/ads-service/src/main/java/com/marketinghub/repository/jpa/mois/bibliotecapaginavenda/worker/v1/MoisSalesPageMarketWarmupGateway.java`
+- `backend/ads-service/src/main/java/com/marketinghub/repository/jpa/mois/bibliotecapaginavenda/worker/v1/MoisSalesPageMarketWarmupRepository.java`
+- `backend/ads-service/src/test/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesPageMarketWarmupServiceTest.java`
+- `docs/registros/mois1.md`

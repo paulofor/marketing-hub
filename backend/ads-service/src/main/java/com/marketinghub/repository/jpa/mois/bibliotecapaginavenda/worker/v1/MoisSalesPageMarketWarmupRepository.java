@@ -1,6 +1,5 @@
-package com.marketinghub.repository.jdbc.mois.bibliotecapaginavenda.worker.v1;
+package com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1;
 
-import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.dto.MoisSalesLibraryDtos;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -72,7 +71,7 @@ public class MoisSalesPageMarketWarmupRepository implements MoisSalesPageMarketW
         Number key = keyHolder.getKey();
         long jobId = key == null ? 0L : key.longValue();
         return findJob(jobId).orElseGet(() -> new MarketWarmupJobData(
-                jobId, page.pageId(), page.workspaceId(), MoisSalesLibraryDtos.MarketWarmupJobStatus.PENDING, Instant.now(), null, null));
+                jobId, page.pageId(), page.workspaceId(), "PENDING", Instant.now(), null, null));
     }
 
     /**
@@ -148,7 +147,7 @@ public class MoisSalesPageMarketWarmupRepository implements MoisSalesPageMarketW
      * Insere uma fonte pública rastreável coletada pelo worker.
      */
     @Override
-    public long insertSource(long jobId, long pageId, String workspaceId, MoisSalesLibraryDtos.MarketWarmupSourceCompleteItem source) {
+    public long insertSource(long jobId, long pageId, String workspaceId, MarketWarmupSourceData source) {
         KeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcTemplate.update(connection -> {
             PreparedStatement statement = connection.prepareStatement("""
@@ -161,8 +160,8 @@ public class MoisSalesPageMarketWarmupRepository implements MoisSalesPageMarketW
             statement.setLong(1, jobId);
             statement.setLong(2, pageId);
             statement.setString(3, workspaceId);
-            statement.setString(4, source.platform().name());
-            statement.setString(5, source.sourceType().name());
+            statement.setString(4, source.platform());
+            statement.setString(5, source.sourceType());
             statement.setString(6, source.sourceUrl());
             statement.setString(7, source.sourceTitle());
             statement.setString(8, source.authorName());
@@ -185,26 +184,26 @@ public class MoisSalesPageMarketWarmupRepository implements MoisSalesPageMarketW
      * Insere um sinal comercial vinculado à fonte pública correspondente.
      */
     @Override
-    public void insertSignal(long jobId, long pageId, String workspaceId, long sourceId, MoisSalesLibraryDtos.MarketWarmupSignalCompleteItem signal) {
+    public void insertSignal(long jobId, long pageId, String workspaceId, long sourceId, MarketWarmupSignalData signal) {
         jdbcTemplate.update("""
                 INSERT INTO mois_sales_page_market_warmup_signal
                 (job_id, source_id, sales_page_id, workspace_id, signal_type, signal_strength, signal_text, business_interpretation, created_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, UTC_TIMESTAMP())
-                """, jobId, sourceId, pageId, workspaceId, signal.signalType().name(), signal.signalStrength(), signal.signalText(), signal.businessInterpretation());
+                """, jobId, sourceId, pageId, workspaceId, signal.signalType(), signal.signalStrength(), signal.signalText(), signal.businessInterpretation());
     }
 
     /**
      * Insere o resumo final calculado para o job de aquecimento.
      */
     @Override
-    public void insertSummary(long jobId, long pageId, String workspaceId, MoisSalesLibraryDtos.MarketWarmupSummaryCompleteItem summary) {
+    public void insertSummary(long jobId, long pageId, String workspaceId, MarketWarmupSummaryWriteData summary) {
         jdbcTemplate.update("""
                 INSERT INTO mois_sales_page_market_warmup_summary
                 (job_id, sales_page_id, workspace_id, score_total, market_temperature, ecosystem_type, main_pains,
                  main_objections, main_promises, main_channels, main_competitors, saturation_risk,
                  opportunity_recommendation, next_experiment_suggestion, created_at, updated_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())
-                """, jobId, pageId, workspaceId, summary.scoreTotal(), summary.marketTemperature().name(), summary.ecosystemType().name(),
+                """, jobId, pageId, workspaceId, summary.scoreTotal(), summary.marketTemperature(), summary.ecosystemType(),
                 joinLines(summary.mainPains()), joinLines(summary.mainObjections()), joinLines(summary.mainPromises()), joinLines(summary.mainChannels()),
                 joinLines(summary.mainCompetitors()), summary.saturationRisk(), summary.opportunityRecommendation(), summary.nextExperimentSuggestion());
     }
@@ -213,13 +212,13 @@ public class MoisSalesPageMarketWarmupRepository implements MoisSalesPageMarketW
      * Marca o job como concluído e replica os principais classificadores comerciais para busca rápida.
      */
     @Override
-    public void markJobDone(long jobId, MoisSalesLibraryDtos.MarketWarmupSummaryCompleteItem summary, Instant finishedAt) {
+    public void markJobDone(long jobId, MarketWarmupSummaryWriteData summary, Instant finishedAt) {
         jdbcTemplate.update("""
                 UPDATE mois_sales_page_market_warmup_job
                 SET status = 'DONE', score_total = ?, market_temperature = ?, ecosystem_type = ?, recommendation = ?,
                     finished_at = ?, error_category = NULL, error_message = NULL, updated_at = UTC_TIMESTAMP()
                 WHERE id = ?
-                """, summary.scoreTotal(), summary.marketTemperature().name(), summary.ecosystemType().name(), summary.recommendation().name(),
+                """, summary.scoreTotal(), summary.marketTemperature(), summary.ecosystemType(), summary.recommendation(),
                 toTimestamp(finishedAt == null ? Instant.now() : finishedAt), jobId);
     }
 
@@ -262,7 +261,7 @@ public class MoisSalesPageMarketWarmupRepository implements MoisSalesPageMarketW
      * Lista fontes públicas de um job de aquecimento.
      */
     @Override
-    public List<MoisSalesLibraryDtos.MarketWarmupSourceResponse> listSources(long jobId) {
+    public List<MarketWarmupSourceData> listSources(long jobId) {
         return jdbcTemplate.query("""
                 SELECT id, job_id, sales_page_id, platform, source_type, source_url, source_title, author_name,
                        published_at, last_activity_at, followers_or_subscribers, views_count, likes_count, comments_count,
@@ -277,7 +276,7 @@ public class MoisSalesPageMarketWarmupRepository implements MoisSalesPageMarketW
      * Lista sinais comerciais extraídos de um job de aquecimento.
      */
     @Override
-    public List<MoisSalesLibraryDtos.MarketWarmupSignalResponse> listSignals(long jobId) {
+    public List<MarketWarmupSignalReadData> listSignals(long jobId) {
         return jdbcTemplate.query("""
                 SELECT id, job_id, source_id, sales_page_id, signal_type, signal_strength, signal_text, business_interpretation, created_at
                 FROM mois_sales_page_market_warmup_signal
@@ -299,7 +298,7 @@ public class MoisSalesPageMarketWarmupRepository implements MoisSalesPageMarketW
      */
     private MarketWarmupJobData mapJob(ResultSet rs, int rowNum) throws SQLException {
         return new MarketWarmupJobData(rs.getLong("id"), rs.getLong("sales_page_id"), rs.getString("workspace_id"),
-                MoisSalesLibraryDtos.MarketWarmupJobStatus.valueOf(rs.getString("status")), toInstant(rs.getTimestamp("created_at")),
+                rs.getString("status"), toInstant(rs.getTimestamp("created_at")),
                 rs.getString("error_category"), rs.getString("error_message"));
     }
 
@@ -308,7 +307,7 @@ public class MoisSalesPageMarketWarmupRepository implements MoisSalesPageMarketW
      */
     private MarketWarmupClaimData mapClaim(ResultSet rs, int rowNum) throws SQLException {
         MarketWarmupJobData job = new MarketWarmupJobData(rs.getLong("job_id"), rs.getLong("sales_page_id"), rs.getString("workspace_id"),
-                MoisSalesLibraryDtos.MarketWarmupJobStatus.valueOf(rs.getString("status")), toInstant(rs.getTimestamp("created_at")),
+                rs.getString("status"), toInstant(rs.getTimestamp("created_at")),
                 rs.getString("error_category"), rs.getString("error_message"));
         SalesPageWarmupData page = new SalesPageWarmupData(rs.getLong("sales_page_id"), rs.getString("workspace_id"), rs.getString("url_canonical"),
                 rs.getString("title"), rs.getString("offer_summary"), rs.getString("mechanism_summary"), rs.getString("promise_summary"), rs.getString("proof_summary"));
@@ -324,23 +323,23 @@ public class MoisSalesPageMarketWarmupRepository implements MoisSalesPageMarketW
         String recommendation = rs.getString("recommendation");
         return new MarketWarmupSummaryData(
                 rs.getLong("job_id"), rs.getLong("sales_page_id"), rs.getBigDecimal("score_total"),
-                temperature == null ? null : MoisSalesLibraryDtos.MarketWarmupTemperature.valueOf(temperature),
-                ecosystem == null ? null : MoisSalesLibraryDtos.MarketWarmupEcosystemType.valueOf(ecosystem),
-                recommendation == null ? null : MoisSalesLibraryDtos.MarketWarmupRecommendation.valueOf(recommendation),
+                temperature == null ? null : temperature,
+                ecosystem == null ? null : ecosystem,
+                recommendation == null ? null : recommendation,
                 rs.getString("main_pains"), rs.getString("main_objections"), rs.getString("main_promises"), rs.getString("main_channels"),
                 rs.getString("main_competitors"), rs.getString("saturation_risk"), rs.getString("opportunity_recommendation"),
-                rs.getString("next_experiment_suggestion"), MoisSalesLibraryDtos.MarketWarmupJobStatus.valueOf(rs.getString("status")),
+                rs.getString("next_experiment_suggestion"), rs.getString("status"),
                 rs.getString("error_category"), rs.getString("error_message"), toInstant(rs.getTimestamp("created_at")), toInstant(rs.getTimestamp("updated_at")));
     }
 
     /**
      * Converte uma linha de fonte em contrato de leitura para revisão humana.
      */
-    private MoisSalesLibraryDtos.MarketWarmupSourceResponse mapSource(ResultSet rs, int rowNum) throws SQLException {
-        return new MoisSalesLibraryDtos.MarketWarmupSourceResponse(
+    private MarketWarmupSourceData mapSource(ResultSet rs, int rowNum) throws SQLException {
+        return new MarketWarmupSourceData(
                 rs.getLong("id"), rs.getLong("job_id"), rs.getLong("sales_page_id"),
-                MoisSalesLibraryDtos.MarketWarmupPlatform.valueOf(rs.getString("platform")),
-                MoisSalesLibraryDtos.MarketWarmupSourceType.valueOf(rs.getString("source_type")),
+                rs.getString("platform"),
+                rs.getString("source_type"),
                 rs.getString("source_url"), rs.getString("source_title"), rs.getString("author_name"),
                 toInstant(rs.getTimestamp("published_at")), toInstant(rs.getTimestamp("last_activity_at")),
                 rs.getObject("followers_or_subscribers", Long.class), rs.getObject("views_count", Long.class),
@@ -352,10 +351,10 @@ public class MoisSalesPageMarketWarmupRepository implements MoisSalesPageMarketW
     /**
      * Converte uma linha de sinal em contrato de leitura para explicação do score.
      */
-    private MoisSalesLibraryDtos.MarketWarmupSignalResponse mapSignal(ResultSet rs, int rowNum) throws SQLException {
-        return new MoisSalesLibraryDtos.MarketWarmupSignalResponse(
+    private MarketWarmupSignalReadData mapSignal(ResultSet rs, int rowNum) throws SQLException {
+        return new MarketWarmupSignalReadData(
                 rs.getLong("id"), rs.getLong("job_id"), rs.getLong("source_id"), rs.getLong("sales_page_id"),
-                MoisSalesLibraryDtos.MarketWarmupSignalType.valueOf(rs.getString("signal_type")), rs.getBigDecimal("signal_strength"),
+                rs.getString("signal_type"), rs.getBigDecimal("signal_strength"),
                 rs.getString("signal_text"), rs.getString("business_interpretation"), toInstant(rs.getTimestamp("created_at")));
     }
 

@@ -1,11 +1,15 @@
 package com.marketinghub.oprm.nichocnae.meiaudienceprofile.service;
 
+import com.marketinghub.oprm.nichocnae.OprmNicheRoutineCard;
 import com.marketinghub.oprm.nichocnae.meiaudienceprofile.OprmMeiAudienceProfile;
 import com.marketinghub.oprm.nichocnae.meiaudienceprofile.service.detailAudienceProfile.MeiAudienceProfileDetailResponse;
 import com.marketinghub.oprm.nichocnae.meiaudienceprofile.service.upsertAudienceProfile.UpsertMeiAudienceProfileRequest;
 import com.marketinghub.oprm.nichocnae.meiaudienceprofile.service.upsertAudienceProfile.UpsertMeiAudienceProfileResponse;
+import com.marketinghub.repository.jpa.oprm.nichocnae.OprmNicheRoutineCardRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.meiaudienceprofile.OprmMeiAudienceProfileRepository;
 import java.time.Instant;
+import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,11 +17,18 @@ import org.springframework.transaction.annotation.Transactional;
 /** Serviço único responsável por orquestrar a persistência do perfil de público-alvo MEI/autônomo do OPRM. */
 @Service
 public class BackendMeiAudienceProfileService {
-  private final OprmMeiAudienceProfileRepository repository;
+  private static final String MEI_AUDIENCE_READY_STATUS = "MEI_AUDIENCE_READY";
+  private static final List<String> SOLUTION_LANGUAGE_TERMS = List.of(
+      " produto", " oferta", " promessa", " campanha", " landing page", " software", " automação", " inteligência artificial", " ia ", " curso", " ferramenta");
 
-  /** Inicializa o serviço com o repositório canônico de perfis MEI/autônomo. */
-  public BackendMeiAudienceProfileService(OprmMeiAudienceProfileRepository repository) {
+  private final OprmMeiAudienceProfileRepository repository;
+  private final OprmNicheRoutineCardRepository routineCardRepository;
+
+  /** Inicializa o serviço com os repositórios canônicos de perfil e gate do público MEI/autônomo. */
+  public BackendMeiAudienceProfileService(
+      OprmMeiAudienceProfileRepository repository, OprmNicheRoutineCardRepository routineCardRepository) {
     this.repository = repository;
+    this.routineCardRepository = routineCardRepository;
   }
 
   /** Grava ou atualiza o perfil de público-alvo MEI/autônomo de um ciclo de pesquisa. */
@@ -34,7 +45,17 @@ public class BackendMeiAudienceProfileService {
   /** Busca o perfil de público-alvo MEI/autônomo mais recente de um ciclo de pesquisa. */
   @Transactional(readOnly = true)
   public Optional<MeiAudienceProfileDetailResponse> detailByResearchCycleId(Long researchCycleId) {
-    return repository.findFirstByResearchCycleIdOrderByIdDesc(researchCycleId).map(this::toDetailResponse);
+    return repository.findFirstByResearchCycleIdOrderByIdDesc(researchCycleId).map(profile -> toDetailResponse(profile, latestCard(profile)));
+  }
+
+  /** Busca o perfil aprovado para consumo por módulos posteriores sem liberar pesquisas reprovadas ou contaminadas. */
+  @Transactional(readOnly = true)
+  public Optional<MeiAudienceProfileDetailResponse> approvedDetailByResearchCycleId(Long researchCycleId) {
+    return repository.findFirstByResearchCycleIdOrderByIdDesc(researchCycleId).map(profile -> {
+      OprmNicheRoutineCard card = latestCard(profile);
+      validateApprovedForConsumption(profile, card);
+      return toDetailResponse(profile, card);
+    });
   }
 
   /** Cria uma entidade nova com os metadados mínimos de rastreabilidade temporal. */
@@ -100,7 +121,7 @@ public class BackendMeiAudienceProfileService {
   }
 
   /** Converte a entidade persistida na resposta completa de detalhe do perfil MEI/autônomo. */
-  private MeiAudienceProfileDetailResponse toDetailResponse(OprmMeiAudienceProfile profile) {
+  private MeiAudienceProfileDetailResponse toDetailResponse(OprmMeiAudienceProfile profile, OprmNicheRoutineCard card) {
     return new MeiAudienceProfileDetailResponse(
         profile.getId(),
         profile.getResearchCycleId(),
@@ -123,6 +144,9 @@ public class BackendMeiAudienceProfileService {
         profile.getLanguagePatterns(),
         profile.getChannelsUsed(),
         profile.getRecentSourceSummary(),
+        card == null ? null : card.getQualityStatus(),
+        card == null ? Boolean.FALSE : isApprovedCard(card),
+        card == null ? null : card.getQualityCheckedAt(),
         profile.getAutonomousProfessionalFitScore(),
         profile.getBehavioralEvidenceScore(),
         profile.getSourceFreshnessScore(),
@@ -132,4 +156,55 @@ public class BackendMeiAudienceProfileService {
         profile.getCreatedAt(),
         profile.getUpdatedAt());
   }
+
+  /** Localiza o cartão de rotina mais recente vinculado ao perfil para consultar a decisão do gate. */
+  private OprmNicheRoutineCard latestCard(OprmMeiAudienceProfile profile) {
+    if (profile.getRoutineCardId() != null) {
+      return routineCardRepository.findById(profile.getRoutineCardId()).orElse(null);
+    }
+    return routineCardRepository.findFirstByResearchCycleIdOrderByIdDesc(profile.getResearchCycleId()).orElse(null);
+  }
+
+  /** Valida que o perfil final foi aprovado no gate e não carrega linguagem de solução no payload publicável. */
+  private void validateApprovedForConsumption(OprmMeiAudienceProfile profile, OprmNicheRoutineCard card) {
+    if (card == null || !isApprovedCard(card)) {
+      throw new IllegalStateException("Perfil MEI/autônomo ainda não foi aprovado pelo gate de qualidade");
+    }
+    rejectSolutionLanguage(profile);
+  }
+
+  /** Confirma que a decisão de qualidade autoriza o consumo do perfil por MDS, MOIS e estratégia. */
+  private boolean isApprovedCard(OprmNicheRoutineCard card) {
+    return Boolean.TRUE.equals(card.getReadyForHypothesis()) && MEI_AUDIENCE_READY_STATUS.equals(card.getQualityStatus());
+  }
+
+  /** Bloqueia contaminação por produto, oferta, campanha ou solução no perfil final exposto. */
+  private void rejectSolutionLanguage(OprmMeiAudienceProfile profile) {
+    String combined = String.join(" ",
+        safeText(profile.getAudienceName()),
+        safeText(profile.getOccupationTerms()),
+        safeText(profile.getWorkMode()),
+        safeText(profile.getCustomerAcquisitionBehavior()),
+        safeText(profile.getDailyRoutineSummary()),
+        safeText(profile.getRecurringTasksSummary()),
+        safeText(profile.getOperationalPainsSummary()),
+        safeText(profile.getEmotionalPainsSummary()),
+        safeText(profile.getDreamsSummary()),
+        safeText(profile.getFearsSummary()),
+        safeText(profile.getLanguagePatterns()),
+        safeText(profile.getChannelsUsed()),
+        safeText(profile.getRecentSourceSummary())).toLowerCase(Locale.ROOT);
+    String padded = " " + combined + " ";
+    for (String term : SOLUTION_LANGUAGE_TERMS) {
+      if (padded.contains(term)) {
+        throw new IllegalStateException("Perfil MEI/autônomo contém linguagem de solução proibida: " + term.trim());
+      }
+    }
+  }
+
+  /** Normaliza texto nulo para compor a validação de contaminação sem gerar exceção auxiliar. */
+  private String safeText(String value) {
+    return value == null ? "" : value;
+  }
+
 }

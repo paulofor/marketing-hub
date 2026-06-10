@@ -330,3 +330,4 @@
 
 - Implementada a etapa 1 do plano de públicos gerais sem sobreposição CNAE: cadastro, listagem, detalhe, atualização e arquivamento manual de sementes de público geral no backend.
 - O fluxo permanece separado do NichoCNAE e não cria nicho, hipótese, experimento ou campanha automaticamente.
+- 2026-06-10 00:00:00 (UTC): executada a etapa 10 do plano de redirecionamento OPRM NichoCNAE para MEI/autônomo: o backend passou a expor o detalhe do perfil final aprovado em `/api/oprm/nichocnae/mei-audience-profiles/research-cycles/{researchCycleId}`, liberando para MDS, MOIS e estratégia apenas perfis com gate `MEI_AUDIENCE_READY`, preservando rastreabilidade por ciclo/cartão/CNAE/scores e bloqueando payload final contaminado por linguagem de produto, oferta, campanha ou solução.

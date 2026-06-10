@@ -733,6 +733,34 @@ components:
           type: number
           format: double
           example: 90.0
+        audienceName:
+          type: string
+          nullable: true
+          example: Manicures MEI que atendem por agenda própria
+        autonomousProfessionalFitScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+          nullable: true
+        sourceFreshnessScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+          nullable: true
+        outdatedSourceRiskScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+          nullable: true
+        structuredBusinessDriftRiskScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+          nullable: true
+        gateStatus:
+          type: string
+          nullable: true
+          example: MEI_AUDIENCE_READY
         triggerSource:
           type: string
           description: Origem do ciclo; `AUTO_SCORE_QUEUE` para fila automática e `MANUAL_REPROCESS` para ciclos criados pelo botão Reprocessar CNAE.

@@ -79,7 +79,7 @@ describe("OprmPipelinePage", () => {
       screen.getAllByText("Cabeleireiros, manicure e pedicure").length,
     ).toBeGreaterThan(0);
     expect(
-      screen.getAllByText("ROUTINE_REALITY_RESEARCH").length,
+      screen.getAllByText("Pesquisa de rotina real").length,
     ).toBeGreaterThan(0);
     expect(screen.getAllByText("Em execução").length).toBeGreaterThan(0);
 
@@ -482,11 +482,11 @@ describe("OprmPipelinePage", () => {
       );
     });
     expect(
-      screen.getByText("Etapa 7 · Aguardando gate de qualidade"),
+      screen.getByText("Etapa 7 · Aguardando perfil MEI/autônomo"),
     ).toBeTruthy();
     expect(
       screen.getByText(
-        "A rotina já foi sintetizada; falta o gate validar se há evidência suficiente para aprovar ou pedir nova pesquisa.",
+        "A rotina já foi sintetizada; falta materializar o público dono-operador MEI/autônomo antes do gate.",
       ),
     ).toBeTruthy();
   });
@@ -598,7 +598,7 @@ describe("OprmPipelinePage", () => {
     expect(screen.getByText("MEI_ROUTINE_DISCOVERY: 1")).toBeTruthy();
     expect(
       screen.getByText(
-        "1 queries geradas para as próximas etapas. Abra o detalhe para ver a requisição enviada à IA e o JSON completo gerado.",
+        "1 queries geradas para as próximas etapas. As primeiras consultas mostram se a pesquisa está olhando para a pessoa MEI/autônoma.",
       ),
     ).toBeTruthy();
     expect(

@@ -5,5 +5,6 @@ package com.marketinghub.targeting;
  */
 public enum TargetingElementSource {
     MANUAL,
-    AI
+    AI,
+    OPRM_NICHE
 }

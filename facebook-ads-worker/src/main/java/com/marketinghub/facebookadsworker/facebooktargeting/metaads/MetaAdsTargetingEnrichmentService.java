@@ -14,6 +14,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
+/**
+ * Serviço responsável por resolver sinais de nicho na Meta Ads e retornar ID oficial e alcance ao backend.
+ */
 @Service
 public class MetaAdsTargetingEnrichmentService {
     private static final Logger LOGGER = LoggerFactory.getLogger(MetaAdsTargetingEnrichmentService.class);
@@ -23,6 +26,9 @@ public class MetaAdsTargetingEnrichmentService {
     private final String defaultAdAccountId;
     private final int batchSize;
 
+    /**
+     * Inicializa o serviço com cliente backend, cliente Meta Ads e parâmetros operacionais.
+     */
     public MetaAdsTargetingEnrichmentService(TargetingBackendClient backendClient,
                                              FacebookAdsService facebookAdsService,
                                              @Value("${facebook.targeting.metaads.default-ad-account-id:}") String defaultAdAccountId,
@@ -33,6 +39,9 @@ public class MetaAdsTargetingEnrichmentService {
         this.batchSize = batchSize;
     }
 
+    /**
+     * Processa os elementos pendentes disponibilizados pelo backend para enriquecer com dados oficiais da Meta.
+     */
     public void processPendingElements() {
         List<MetaAdsPendingElementPayload> pending = backendClient.listMetaAdsPendingElements(batchSize);
         if (pending.isEmpty()) {
@@ -43,6 +52,9 @@ public class MetaAdsTargetingEnrichmentService {
         }
     }
 
+    /**
+     * Resolve um elemento individual tentando locales úteis e persistindo o primeiro match com audiência.
+     */
     private void enrich(MetaAdsPendingElementPayload element) {
         if (element == null || element.id() == null || !StringUtils.hasText(element.term())) {
             return;
@@ -75,11 +87,21 @@ public class MetaAdsTargetingEnrichmentService {
                             selected.audienceSizeLowerBound(),
                             selected.audienceSizeUpperBound())
             );
+            LOGGER.info(
+                    "Meta Ads targeting element enriched with reach: elementId={}, term={}, metaId={}, lowerBound={}, upperBound={}",
+                    element.id(),
+                    term,
+                    selected.id(),
+                    selected.audienceSizeLowerBound(),
+                    selected.audienceSizeUpperBound());
             return;
         }
         LOGGER.info("No Meta Ads match found for targeting element {} and term {}", element.id(), term);
     }
 
+    /**
+     * Escolhe o resultado mais fiel ao termo original, com fallback para o primeiro retorno da Meta.
+     */
     private FacebookAdsService.FacebookTargetingSearchResult pickBestMatch(String term,
                                                                             List<FacebookAdsService.FacebookTargetingSearchResult> results) {
         String normalized = term.trim().toLowerCase(Locale.ROOT);
@@ -90,6 +112,9 @@ public class MetaAdsTargetingEnrichmentService {
                 .orElse(results.get(0));
     }
 
+    /**
+     * Converte o tipo interno do backend para o tipo aceito pelo endpoint de busca da Graph API.
+     */
     private FacebookAdsService.TargetingSearchType mapType(String backendType) {
         if (!StringUtils.hasText(backendType)) {
             return null;

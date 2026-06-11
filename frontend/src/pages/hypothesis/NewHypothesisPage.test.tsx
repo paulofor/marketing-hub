@@ -47,16 +47,31 @@ describe("NewHypothesisPage", () => {
           ],
         });
       }
+      if (url.includes("/hypothesis-pipeline/result/")) {
+        return Promise.resolve({
+          data: [
+            {
+              jobid: "aaaaaaaa-3894-43bd-9752-374f84eb6a2c",
+              marketNicheId: 18,
+              stageCode: "hypothesis-result",
+              status: "CONCLUIDO",
+              executionRequestedAt: "2026-06-11T00:21:01Z",
+              completedAt: "2026-06-11T00:25:01Z",
+              costUsd: 0.002,
+            },
+          ],
+        });
+      }
       return Promise.resolve({
         data: [
           {
-            jobid: "aaaaaaaa-3894-43bd-9752-374f84eb6a2c",
+            jobid: "bbbbbbbb-3894-43bd-9752-374f84eb6a2c",
             marketNicheId: 18,
-            stageCode: "hypothesis-result",
+            stageCode: "hypothesis-mechanism",
             status: "CONCLUIDO",
-            executionRequestedAt: "2026-06-11T00:21:01Z",
-            completedAt: "2026-06-11T00:25:01Z",
-            costUsd: 0.002,
+            executionRequestedAt: "2026-06-11T00:31:01Z",
+            completedAt: "2026-06-11T00:35:01Z",
+            costUsd: 0.003,
           },
         ],
       });
@@ -82,6 +97,7 @@ describe("NewHypothesisPage", () => {
     expect(
       screen.getByText("Etapa 2 — Resultado desejado"),
     ).toBeInTheDocument();
-    expect(screen.getByText(/US\$\s*0,014345/)).toBeInTheDocument();
+    expect(screen.getByText("Etapa 3 — Mecanismo")).toBeInTheDocument();
+    expect(screen.getByText(/US\$\s*0,017345/)).toBeInTheDocument();
   });
 });

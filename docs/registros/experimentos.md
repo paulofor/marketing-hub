@@ -4302,7 +4302,7 @@
 
 ## 2026-06-10 — Correção do job da etapa Dor da hipótese preso em INICIADO
 
-- diagnóstico: o job `hypothesis-pain` do nicho 18 ficou em `INICIADO` porque o AI Worker quebrava ao montar o payload de prompt quando algum campo opcional do nicho vinha `null`.
-- causa-raiz: `HypothesisPainInput` usava `Map.copyOf(promptData)`, que não aceita valores nulos; como o backend envia campos opcionais do nicho no payload pendente, o scheduler falhava antes de marcar o job como `PROCESSANDO`.
-- foi feito: a normalização do payload agora preserva valores nulos em cópia imutável, evitando a quebra do scheduler e permitindo que o worker capture o job pendente no próximo ciclo após deploy.
-- prevenção: adicionado teste unitário cobrindo payload com valor nulo e imutabilidade do mapa normalizado.
+- diagnóstico: o job `hypothesis-pain` do nicho 18 ficou em `INICIADO` porque o AI Worker quebrava ao montar o payload de prompt quando campos opcionais do nicho vinham `null`.
+- causa-raiz: o OPRM materializa o `market_niche` ainda sem promessas e ofertas, pois essa etapa deve descobrir a dor antes de construir oferta; por isso `promises` e `offers` são gravados como `null` no nicho e repassados pelo endpoint pendente.
+- foi feito: a montagem do contexto do prompt da etapa Dor agora converte campos textuais opcionais nulos para texto vazio antes de criar o `HypothesisPainInput`, mantendo `Map.copyOf` como guarda contra nulos inesperados no input final.
+- prevenção: adicionados testes unitários cobrindo a conversão de campos opcionais nulos do nicho para texto vazio e a imutabilidade do mapa normalizado.

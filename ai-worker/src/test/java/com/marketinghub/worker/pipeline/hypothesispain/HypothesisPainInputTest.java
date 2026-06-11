@@ -10,18 +10,12 @@ import org.junit.jupiter.api.Test;
 /** Responsabilidade: validar a normalização dos dados de entrada da etapa Dor da hipótese. */
 class HypothesisPainInputTest {
 
-    /** Garante que valores nulos opcionais vindos do backend sejam preservados no prompt. */
+    /** Garante que mapa ausente seja normalizado para um contexto vazio. */
     @Test
-    void shouldPreserveNullPromptValuesReturnedByBackend() {
-        Map<String, Object> promptData = new LinkedHashMap<>();
-        promptData.put("marketNicheId", 18L);
-        promptData.put("nicheName", "Cabeleireiros, manicure e pedicure");
-        promptData.put("extraTips", null);
+    void shouldNormalizeMissingPromptDataToEmptyMap() {
+        HypothesisPainInput input = new HypothesisPainInput(18L, "hypothesis-pain", "job-1", null);
 
-        HypothesisPainInput input = new HypothesisPainInput(18L, "hypothesis-pain", "job-1", promptData);
-
-        assertThat(input.promptData()).containsEntry("extraTips", null);
-        assertThat(input.promptData()).containsEntry("nicheName", "Cabeleireiros, manicure e pedicure");
+        assertThat(input.promptData()).isEmpty();
     }
 
     /** Garante que o mapa normalizado não seja alterado após a criação do input. */

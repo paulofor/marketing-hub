@@ -128,21 +128,26 @@ public class HypothesisPainBackendClient implements StageBackendPort<HypothesisP
     }
 
     /** Monta os dados do prompt com as informações do nicho e contexto comercial disponível. */
-    private Map<String, Object> buildPromptDataFromPending(Map<String, Object> pending) {
+    Map<String, Object> buildPromptDataFromPending(Map<String, Object> pending) {
         Map<String, Object> niche = asMap(pending.get("niche"));
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("marketNicheId", pending.get("marketNicheId"));
-        payload.put("nicheName", niche.get("name"));
-        payload.put("nicheDescription", niche.get("description"));
-        payload.put("demandVolume", niche.get("demandVolume"));
-        payload.put("promises", niche.get("promises"));
-        payload.put("offers", niche.get("offers"));
-        payload.put("baseSegmentation", niche.get("baseSegmentation"));
-        payload.put("interests", niche.get("interests"));
-        payload.put("demographicFilters", niche.get("demographicFilters"));
-        payload.put("extraTips", niche.get("extraTips"));
+        payload.put("nicheName", optionalText(niche.get("name")));
+        payload.put("nicheDescription", optionalText(niche.get("description")));
+        payload.put("demandVolume", optionalText(niche.get("demandVolume")));
+        payload.put("promises", optionalText(niche.get("promises")));
+        payload.put("offers", optionalText(niche.get("offers")));
+        payload.put("baseSegmentation", optionalText(niche.get("baseSegmentation")));
+        payload.put("interests", optionalText(niche.get("interests")));
+        payload.put("demographicFilters", optionalText(niche.get("demographicFilters")));
+        payload.put("extraTips", optionalText(niche.get("extraTips")));
         payload.put("CASE_DATA_BLOCK", buildCaseDataBlock(payload));
         return payload;
+    }
+
+    /** Normaliza campos textuais opcionais do nicho para evitar nulos no contexto do prompt. */
+    private String optionalText(Object value) {
+        return value != null ? value.toString() : "";
     }
 
     /** Monta o bloco textual de contexto estratégico exigido pelo prompt da etapa Dor. */

@@ -4420,3 +4420,10 @@
 - causa-raiz: o backend já expunha `openAiModel` nas execuções auditáveis, mas a interface ocultava esse dado; isso dificultava comparar custo, qualidade e rastreabilidade por etapa.
 - foi feito: a tela passou a mostrar o modelo usado no resumo da execução atual e em cada linha da tabela de execuções de Dor, Resultado, Mecanismo e Oferta.
 - impacto esperado: o usuário passa a auditar rapidamente qual modelo gerou cada etapa, conectando qualidade do output, custo de IA e decisão comercial.
+
+## 2026-06-11 — Plano de melhoria do Marketing Hub baseado no experimento 37
+
+- solicitação: analisar, como especialista em Marketing Digital, como melhorar o Marketing Hub com base no que aconteceu no experimento 37 e nos relatórios em `docs/relatorios/experimentos`.
+- foi feito: criado o documento `docs/relatorios/experimentos/plano-de-melhoria-marketing-hub-experimento-37.md` consolidando aprendizados estratégicos e recomendações de produto, marketing e operação.
+- diagnóstico: o experimento 37 teve atenção e clique, mas falhou na conversão pós-clique; a causa-raiz provável é sistêmica, combinando captura não validada ponta a ponta, persona genérica, segmentação ampla, landing abaixo do padrão e isca ampla demais para a dor quente do WhatsApp.
+- recomendação principal: implementar gates de pré-publicação para formulário, qualidade da landing e persona mínima antes de liberar mídia paga; depois rodar o experimento derivado 37B com foco em roteiro anti-preço para personal trainer.

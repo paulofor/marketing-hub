@@ -9,105 +9,87 @@ import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-/** Responsabilidade: validar as regras determinísticas da etapa dois antes da persistência no backend. */
+/** Responsabilidade: validar apenas a integridade mínima da etapa dois antes da persistência no backend. */
 class NicheResearchSeedBuilderValidatorTest {
     private final NicheResearchSeedBuilderValidator validator = new NicheResearchSeedBuilderValidator();
 
-    /** Deve aceitar seed completo com doze queries específicas vinculadas à rotina operacional do nicho. */
+    /** Deve aceitar seed completo com queries retornadas pelo modelo sem julgar conteúdo semântico. */
     @Test
-    void shouldAcceptSpecificPendingQueries() {
+    void shouldAcceptModelQueriesWithoutSemanticBlocking() {
         NicheResearchSeedBuilderPending pending = pending();
-        NicheResearchSeedBuilderOutput output = outputWithQueries(validQueryTexts());
+        NicheResearchSeedBuilderOutput output = outputWithQueries(modelQueryTexts());
 
         assertThatNoException().isThrownBy(() -> validator.validate(pending, output));
     }
 
-    /** Deve rejeitar query genérica porque ela não ajuda a pesquisar a rotina concreta do nicho. */
+    /** Deve aceitar query genérica porque a etapa passou a confiar no modelo e nas próximas fases do pipeline. */
     @Test
-    void shouldRejectGenericQuery() {
+    void shouldAcceptGenericQueryFromModel() {
         NicheResearchSeedBuilderPending pending = pending();
-        List<String> texts = new ArrayList<>(validQueryTexts());
+        List<String> texts = new ArrayList<>(modelQueryTexts());
         texts.set(0, "como vender mais");
         NicheResearchSeedBuilderOutput output = outputWithQueries(texts);
 
-        assertThatThrownBy(() -> validator.validate(pending, output))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Query genérica proibida");
+        assertThatNoException().isThrownBy(() -> validator.validate(pending, output));
     }
 
-    /** Deve rejeitar query contaminada por solução quando o termo não faz parte literal do CNAE. */
+    /** Deve aceitar linguagem de solução na query porque o bloqueio semântico foi removido desta etapa. */
     @Test
-    void shouldRejectSolutionLanguageQuery() {
+    void shouldAcceptSolutionLanguageQueryFromModel() {
         NicheResearchSeedBuilderPending pending = pending();
-        List<String> texts = new ArrayList<>(validQueryTexts());
+        List<String> texts = new ArrayList<>(modelQueryTexts());
         texts.set(0, "IA para crescimento de manicure MEI no Brasil");
         NicheResearchSeedBuilderOutput output = outputWithQueries(texts);
 
-        assertThatThrownBy(() -> validator.validate(pending, output))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("linguagem de solução proibida");
+        assertThatNoException().isThrownBy(() -> validator.validate(pending, output));
     }
 
-    /** Deve rejeitar query sem marcador explícito de MEI/autônomo para não voltar a pesquisar apenas o CNAE. */
+    /** Deve aceitar query sem marcador literal de MEI/autônomo porque a etapa não bloqueia mais semântica textual. */
     @Test
-    void shouldRejectQueryWithoutAudienceMarker() {
+    void shouldAcceptQueryWithoutAudienceMarker() {
         NicheResearchSeedBuilderPending pending = pending();
-        List<String> texts = new ArrayList<>(validQueryTexts());
+        List<String> texts = new ArrayList<>(modelQueryTexts());
         texts.set(0, "manicure rotina de atendimento no Brasil");
         NicheResearchSeedBuilderOutput output = outputWithQueries(texts);
 
-        assertThatThrownBy(() -> validator.validate(pending, output))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("marcador de MEI/autônomo");
-    }
-
-    /** Deve aceitar query sem marcador literal Brasil/pt-BR quando ela mantém nicho e público MEI/autônomo. */
-    @Test
-    void shouldAcceptQueryWithoutLiteralBrazilMarker() {
-        NicheResearchSeedBuilderPending pending = pending();
-        List<String> texts = new ArrayList<>(validQueryTexts());
-        texts.set(0, "manicure MEI rotina de atendimento agenda clientes");
-        NicheResearchSeedBuilderOutput output = outputWithQueries(texts);
-
         assertThatNoException().isThrownBy(() -> validator.validate(pending, output));
     }
 
-    /** Deve aceitar palavras repetidas nas queries porque repetição de conectivos não é duplicidade operacional. */
+    /** Deve aceitar qualquer quantidade positiva de queries porque a cobertura passa a ser responsabilidade do modelo. */
     @Test
-    void shouldAcceptRepeatedCommonWordsInQueryText() {
-        NicheResearchSeedBuilderPending pending = pending();
-        List<String> texts = new ArrayList<>(validQueryTexts());
-        NicheResearchSeedBuilderOutput output = outputWithQueries(texts);
-
-        assertThatNoException().isThrownBy(() -> validator.validate(pending, output));
-    }
-
-    /** Deve rejeitar saída com menos de doze queries para manter cobertura mínima do MVP. */
-    @Test
-    void shouldRejectTooFewQueries() {
+    void shouldAcceptPositiveQueryCountFromModel() {
         NicheResearchSeedBuilderPending pending = pending();
         NicheResearchSeedBuilderOutput output = outputWithQueries(List.of("manicure rotina de atendimento"));
 
-        assertThatThrownBy(() -> validator.validate(pending, output))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("entre 12 e 15 queries");
+        assertThatNoException().isThrownBy(() -> validator.validate(pending, output));
     }
 
-    /** Cria queries válidas com marcadores de MEI/autônomo e prioridade de contexto brasileiro. */
-    private List<String> validQueryTexts() {
+    /** Deve rejeitar somente ausência total de queries para evitar payload impossível de persistir operacionalmente. */
+    @Test
+    void shouldRejectEmptyQueryList() {
+        NicheResearchSeedBuilderPending pending = pending();
+        NicheResearchSeedBuilderOutput output = outputWithQueries(List.of());
+
+        assertThatThrownBy(() -> validator.validate(pending, output))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("pelo menos uma query");
+    }
+
+    /** Cria queries de exemplo com linguagem natural do modelo. */
+    private List<String> modelQueryTexts() {
         return List.of(
                 "manicure MEI rotina de atendimento no Brasil",
-                "profissional autônomo manicure responsabilidades agenda Brasil",
-                "trabalhador por conta própria unha em gel dúvidas pt-BR",
-                "MEI unha em gel quanto tempo dura Brasil",
-                "profissional autônomo manicure tarefas atendimento semanal brasileiro",
-                "MEI agenda manicure horários vazios Brasil",
-                "dono-operador salão beleza comunicação clientes whatsapp Brasil",
-                "profissional autônomo hidratação cabelo cliente pergunta brasileira",
-                "MEI cabeleireiro rotina salão pequeno Brasil",
-                "profissional autônomo pedicure biossegurança atendimento pt-BR",
-                "MEI manicure preço unha decorada Brasil",
-                "trabalhador por conta própria salão beleza recorrência clientes brasileiros");
+                "profissionais autônomos cabeleireiros enfrentam dificuldades no atendimento",
+                "cidades brasileiras comportamento de aquisição de clientes para salão pequeno",
+                "unha em gel quanto tempo dura na rotina de atendimento",
+                "tarefas semanais de manicure com agenda cheia",
+                "horários vazios na agenda de salão de beleza",
+                "comunicação com clientes pelo whatsapp em salão pequeno",
+                "hidratação cabelo cliente pergunta frequente",
+                "rotina de cabeleireiro em salão pequeno",
+                "biossegurança no atendimento de pedicure",
+                "preço de unha decorada e cobrança recorrente",
+                "recorrência de clientes em salão de bairro");
     }
 
     /** Cria uma pendência padrão equivalente ao ciclo RUNNING retornado pelo backend. */
@@ -118,37 +100,36 @@ class NicheResearchSeedBuilderValidatorTest {
                 "9602501",
                 "Cabeleireiros, manicure e pedicure",
                 "Cabeleireiros, manicure e pedicure",
-                BigDecimal.valueOf(92),
+                BigDecimal.valueOf(90),
                 "AUTO_SCORE_QUEUE",
                 "RUNNING",
-                Instant.now(),
-                Instant.now());
+                Instant.parse("2026-06-06T10:00:00Z"),
+                Instant.parse("2026-06-06T10:00:00Z"));
     }
 
-    /** Cria uma saída com seed de beleza e queries com objetivos alternados para validação. */
+    /** Monta a saída da etapa dois com as queries informadas. */
     private NicheResearchSeedBuilderOutput outputWithQueries(List<String> queryTexts) {
         NicheResearchSeed seed = new NicheResearchSeed(
                 1001L,
                 "9602501",
                 "Cabeleireiros, manicure e pedicure",
-                "Cabeleireiros, manicures e pedicures",
+                "Cabeleireiros, manicure e pedicure",
                 "serviço local de beleza",
-                "atendimento com agenda e recorrência por WhatsApp",
+                "agenda e atendimento recorrente",
                 "consumidor final recorrente",
-                "manicure, unha em gel, salão beleza, hidratação cabelo, pedicure, cabeleireiro, pacote fidelidade, agenda",
-                "O nicho depende de agenda cheia, recorrência e indicação.",
+                "manicure, pedicure, escova",
+                "depende de agenda cheia",
                 "INFERRED_FROM_CNAE",
                 "AI");
         List<ResearchQuery> queries = new ArrayList<>();
-        for (int index = 0; index < queryTexts.size(); index++) {
+        int priority = 1;
+        for (String text : queryTexts) {
             queries.add(new ResearchQuery(
                     1001L,
-                    queryTexts.get(index),
-                    index % 3 == 0
-                            ? "MEI_ROUTINE_DISCOVERY"
-                            : index % 3 == 1 ? "CUSTOMER_ACQUISITION_BEHAVIOR_DISCOVERY" : "DAILY_OPERATION_PAIN_DISCOVERY",
-                    "GENERAL_WEB",
-                    index + 1,
+                    text,
+                    "MEI_ROUTINE_DISCOVERY",
+                    "web",
+                    priority++,
                     "PENDING",
                     "AI"));
         }

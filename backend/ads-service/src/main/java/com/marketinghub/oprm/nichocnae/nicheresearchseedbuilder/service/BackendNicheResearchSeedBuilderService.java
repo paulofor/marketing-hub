@@ -14,13 +14,9 @@ import com.marketinghub.repository.jpa.oprm.nichocnae.OprmNicheResearchSeedRepos
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmResearchQueryRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmRoutineResearchCycleRepository;
 import jakarta.persistence.EntityNotFoundException;
-import java.text.Normalizer;
 import java.time.Instant;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
-import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
@@ -38,44 +34,6 @@ public class BackendNicheResearchSeedBuilderService {
   private static final String RETRYABLE_LEGACY_CONTRACT_ERROR = "nicheName is required";
   private static final String COMPLETE_STAGE_PATH_FRAGMENT = "niche-research-seed-builder/stage-executions";
   private static final String DEFAULT_CREATED_BY = "AI";
-  private static final int MIN_QUERY_COUNT = 12;
-  private static final int MAX_QUERY_COUNT = 15;
-  private static final Set<String> ALLOWED_QUERY_GOALS = Set.of(
-      "MEI_ROUTINE_DISCOVERY",
-      "AUTONOMOUS_WORK_MODE_DISCOVERY",
-      "CUSTOMER_ACQUISITION_BEHAVIOR_DISCOVERY",
-      "DAILY_OPERATION_PAIN_DISCOVERY",
-      "EMOTIONAL_PAIN_DISCOVERY",
-      "DREAM_DISCOVERY",
-      "FEAR_DISCOVERY",
-      "CHANNEL_BEHAVIOR_DISCOVERY",
-      "LANGUAGE_DISCOVERY",
-      "SOURCE_FRESHNESS_DISCOVERY");
-  private static final Set<String> SOLUTION_TERMS = Set.of(
-      "ia",
-      "inteligencia artificial",
-      "automacao",
-      "software",
-      "sistema",
-      "app",
-      "ferramenta",
-      "curso",
-      "template",
-      "produto",
-      "oferta",
-      "campanha",
-      "landing page");
-  private static final Set<String> GENERIC_QUERIES = Set.of("como vender mais", "aumentar vendas", "vender mais");
-  private static final Set<String> AUDIENCE_MARKERS = Set.of(
-      "mei",
-      "autonomo",
-      "profissional autonomo",
-      "trabalhador por conta propria",
-      "dono operador",
-      "dono-operador");
-  private static final Set<String> BRAZIL_MARKERS = Set.of(
-      "brasil", "brasileiro", "brasileira", "brasileiros", "pt-br");
-
   private final OprmRoutineResearchCycleRepository routineResearchCycleRepository;
   private final OprmNicheResearchSeedRepository nicheResearchSeedRepository;
   private final OprmResearchQueryRepository researchQueryRepository;
@@ -204,86 +162,21 @@ public class BackendNicheResearchSeedBuilderService {
     requiredText(request.commercialObjects(), "commercialObjects");
     requiredText(request.initialAssumptions(), "initialAssumptions");
     requiredText(request.confidenceLevel(), "confidenceLevel");
-    validateQueries(cycle, request.queries());
+    validateQueries(request.queries());
   }
 
-  /** Valida quantidade, objetivos, duplicidade, texto mínimo e ausência de solução nas queries geradas. */
-  private void validateQueries(OprmRoutineResearchCycle cycle, List<NicheResearchQueryRequest> queries) {
-    if (queries == null || queries.size() < MIN_QUERY_COUNT || queries.size() > MAX_QUERY_COUNT) {
-      throw new IllegalArgumentException("queries must contain between 12 and 15 items");
+  /** Valida apenas se a saída do modelo possui queries persistíveis, sem julgar conteúdo semântico. */
+  private void validateQueries(List<NicheResearchQueryRequest> queries) {
+    if (queries == null || queries.isEmpty()) {
+      throw new IllegalArgumentException("queries must contain at least one persistable item");
     }
-    Set<String> uniqueQueryTexts = new HashSet<>();
-    String allowedCnaeText = normalizeForTerms(cycle.getCnaeDescription());
     for (NicheResearchQueryRequest query : queries) {
-      String rawQueryText = requiredText(query == null ? null : query.queryText(), "queryText");
-      String queryText = normalizeForTerms(rawQueryText);
-      if (!uniqueQueryTexts.add(queryText)) {
-        throw new IllegalArgumentException("Duplicate queryText is not allowed: " + query.queryText());
+      if (query == null) {
+        throw new IllegalArgumentException("query item is required");
       }
-      rejectGenericQuery(rawQueryText, queryText);
-      rejectSolutionTerms(rawQueryText, allowedCnaeText);
-      validateAudienceAndBrazilMarkers(rawQueryText);
-      String queryGoal = requiredText(query.queryGoal(), "queryGoal");
-      if (!ALLOWED_QUERY_GOALS.contains(queryGoal)) {
-        throw new IllegalArgumentException("Unsupported queryGoal: " + queryGoal);
-      }
+      requiredText(query.queryText(), "queryText");
+      requiredText(query.queryGoal(), "queryGoal");
     }
-  }
-
-  /** Rejeita queries genéricas que não ajudam a pesquisar a rotina real do MEI/autônomo. */
-  private void rejectGenericQuery(String rawQueryText, String normalizedQueryText) {
-    if (GENERIC_QUERIES.contains(normalizedQueryText)) {
-      throw new IllegalArgumentException("Generic query is not allowed: " + rawQueryText);
-    }
-  }
-
-  /** Exige marcadores claros de público MEI/autônomo e de contexto brasileiro antes da persistência. */
-  private void validateAudienceAndBrazilMarkers(String queryText) {
-    String normalizedQuery = normalizeForTerms(queryText);
-    Set<String> queryTokens = tokenizeNormalizedText(normalizedQuery);
-    boolean hasAudienceMarker = AUDIENCE_MARKERS.stream()
-        .anyMatch(marker -> containsTerm(normalizedQuery, queryTokens, marker));
-    if (!hasAudienceMarker) {
-      throw new IllegalArgumentException("Query must mention MEI/autonomous professional audience: " + queryText);
-    }
-    boolean hasBrazilMarker = BRAZIL_MARKERS.stream()
-        .anyMatch(marker -> containsTerm(normalizedQuery, queryTokens, marker));
-    if (!hasBrazilMarker) {
-      throw new IllegalArgumentException("Query must mention Brazilian or pt-BR context: " + queryText);
-    }
-  }
-
-  /** Rejeita queries que nascem procurando solução sem esse termo existir literalmente na descrição CNAE. */
-  private void rejectSolutionTerms(String queryText, String allowedCnaeText) {
-    String normalizedQuery = normalizeForTerms(queryText);
-    Set<String> queryTokens = tokenizeNormalizedText(normalizedQuery);
-    for (String term : SOLUTION_TERMS) {
-      if (containsTerm(normalizedQuery, queryTokens, term) && !containsAllowedCnaeTerm(allowedCnaeText, term)) {
-        throw new IllegalArgumentException("Query contains forbidden solution language: " + queryText);
-      }
-    }
-  }
-
-  /** Verifica se a descrição CNAE autoriza literalmente o uso de um termo sensível. */
-  private boolean containsAllowedCnaeTerm(String allowedCnaeText, String term) {
-    Set<String> allowedTokens = tokenizeNormalizedText(allowedCnaeText);
-    return containsTerm(allowedCnaeText, allowedTokens, term);
-  }
-
-  /** Tokeniza texto normalizado sem falhar quando palavras comuns aparecem repetidas no payload da IA. */
-  private Set<String> tokenizeNormalizedText(String normalizedText) {
-    Set<String> tokens = new HashSet<>();
-    for (String token : normalizedText.split("[^a-z0-9]+")) {
-      if (StringUtils.hasText(token)) {
-        tokens.add(token);
-      }
-    }
-    return tokens;
-  }
-
-  /** Detecta termos simples por token e expressões compostas por ocorrência textual normalizada. */
-  private boolean containsTerm(String text, Set<String> tokens, String term) {
-    return term.matches(".*[^a-z0-9].*") ? text.contains(term) : tokens.contains(term);
   }
 
   /** Cria a entidade de seed do nicho usando o ciclo canônico como fonte dos dados CNAE. */
@@ -405,12 +298,6 @@ public class BackendNicheResearchSeedBuilderService {
     return value.trim();
   }
 
-
-  /** Normaliza texto removendo acentos para comparar termos de solução de forma determinística. */
-  private String normalizeForTerms(String value) {
-    String normalized = value == null ? "" : value.toLowerCase(Locale.ROOT).trim().replaceAll("\\s+", " ");
-    return Normalizer.normalize(normalized, Normalizer.Form.NFD).replaceAll("\\p{M}+", "");
-  }
 
   /** Converte strings vazias em nulo para campos opcionais persistidos. */
   private String trimToNull(String value) {

@@ -117,11 +117,12 @@ class BackendNicheResearchSeedBuilderServiceTest {
     assertThat(cycleCaptor.getValue().getTotalQueries()).isEqualTo(12);
   }
 
-  /** Deve rejeitar objetivos comerciais para impedir pesquisa inicial procurando produto, oferta ou solução. */
+  /** Deve aceitar objetivo retornado pelo modelo sem bloquear semanticamente a etapa preparatória. */
   @Test
-  void completeRejectsCommercialQueryGoal() {
+  void completeAcceptsModelReturnedQueryGoal() {
     OprmRoutineResearchCycle cycle = cycle();
     when(routineResearchCycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
+    stubSuccessfulPersistence();
     CompleteNicheResearchSeedBuilderRequest request = new CompleteNicheResearchSeedBuilderRequest(
         "Cabeleireiros, manicures e pedicures",
         "serviço local de beleza",
@@ -133,17 +134,18 @@ class BackendNicheResearchSeedBuilderServiceTest {
         "AI",
         validQueryRequestsWithFirst("manicure MEI serviços mais procurados Brasil", "PRODUCT_SERVICE_DISCOVERY"));
 
-    assertThatThrownBy(() -> service.complete(1001L, request))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("Unsupported queryGoal");
-    verify(nicheResearchSeedRepository, never()).save(any());
+    CompleteNicheResearchSeedBuilderResponse response = service.complete(1001L, request);
+
+    assertThat(response.totalQueries()).isEqualTo(12);
+    assertThat(response.queries()).extracting("queryGoal").contains("PRODUCT_SERVICE_DISCOVERY");
   }
 
-  /** Deve rejeitar queries contaminadas por solução quando o termo não faz parte literal do CNAE. */
+  /** Deve aceitar linguagem de solução retornada pelo modelo sem bloquear a criação das queries iniciais. */
   @Test
-  void completeRejectsSolutionLanguageQuery() {
+  void completeAcceptsSolutionLanguageQuery() {
     OprmRoutineResearchCycle cycle = cycle();
     when(routineResearchCycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
+    stubSuccessfulPersistence();
     CompleteNicheResearchSeedBuilderRequest request = new CompleteNicheResearchSeedBuilderRequest(
         "Cabeleireiros, manicures e pedicures",
         "serviço local de beleza",
@@ -155,17 +157,17 @@ class BackendNicheResearchSeedBuilderServiceTest {
         "AI",
         validQueryRequestsWithFirst("IA para crescimento de manicure MEI Brasil", "MEI_ROUTINE_DISCOVERY"));
 
-    assertThatThrownBy(() -> service.complete(1001L, request))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("forbidden solution language");
-    verify(nicheResearchSeedRepository, never()).save(any());
+    CompleteNicheResearchSeedBuilderResponse response = service.complete(1001L, request);
+
+    assertThat(response.totalQueries()).isEqualTo(12);
   }
 
-  /** Deve rejeitar query sem marcador de MEI/autônomo para impedir retorno ao segmento genérico por CNAE. */
+  /** Deve aceitar query sem marcador literal de MEI/autônomo porque a etapa passa a confiar no modelo. */
   @Test
-  void completeRejectsQueryWithoutAudienceMarker() {
+  void completeAcceptsQueryWithoutAudienceMarker() {
     OprmRoutineResearchCycle cycle = cycle();
     when(routineResearchCycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
+    stubSuccessfulPersistence();
     CompleteNicheResearchSeedBuilderRequest request = new CompleteNicheResearchSeedBuilderRequest(
         "Cabeleireiros, manicures e pedicures",
         "serviço local de beleza",
@@ -177,17 +179,17 @@ class BackendNicheResearchSeedBuilderServiceTest {
         "AI",
         validQueryRequestsWithFirst("manicure responsabilidades rotina Brasil", "MEI_ROUTINE_DISCOVERY"));
 
-    assertThatThrownBy(() -> service.complete(1001L, request))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("MEI/autonomous professional audience");
-    verify(nicheResearchSeedRepository, never()).save(any());
+    CompleteNicheResearchSeedBuilderResponse response = service.complete(1001L, request);
+
+    assertThat(response.totalQueries()).isEqualTo(12);
   }
 
-  /** Deve rejeitar query sem marcador brasileiro para manter fontes e linguagem do mercado nacional. */
+  /** Deve aceitar query sem marcador literal brasileiro porque a localização será tratada pelas próximas etapas. */
   @Test
-  void completeRejectsQueryWithoutBrazilMarker() {
+  void completeAcceptsQueryWithoutBrazilMarker() {
     OprmRoutineResearchCycle cycle = cycle();
     when(routineResearchCycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
+    stubSuccessfulPersistence();
     CompleteNicheResearchSeedBuilderRequest request = new CompleteNicheResearchSeedBuilderRequest(
         "Cabeleireiros, manicures e pedicures",
         "serviço local de beleza",
@@ -199,10 +201,9 @@ class BackendNicheResearchSeedBuilderServiceTest {
         "AI",
         validQueryRequestsWithFirst("manicure MEI responsabilidades rotina", "MEI_ROUTINE_DISCOVERY"));
 
-    assertThatThrownBy(() -> service.complete(1001L, request))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("Brazilian or pt-BR context");
-    verify(nicheResearchSeedRepository, never()).save(any());
+    CompleteNicheResearchSeedBuilderResponse response = service.complete(1001L, request);
+
+    assertThat(response.totalQueries()).isEqualTo(12);
   }
 
   /** Deve aceitar queries com palavras comuns repetidas sem gerar duplicate element na tokenização. */
@@ -210,14 +211,7 @@ class BackendNicheResearchSeedBuilderServiceTest {
   void completeAcceptsRepeatedCommonWordsInQueryText() {
     OprmRoutineResearchCycle cycle = cycle();
     when(routineResearchCycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
-    when(nicheResearchSeedRepository.existsByResearchCycleId(1001L)).thenReturn(false);
-    when(nicheResearchSeedRepository.save(any(OprmNicheResearchSeed.class)))
-        .thenAnswer(invocation -> {
-          OprmNicheResearchSeed seed = invocation.getArgument(0);
-          seed.setId(44L);
-          return seed;
-        });
-    when(researchQueryRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
+    stubSuccessfulPersistence();
     CompleteNicheResearchSeedBuilderRequest request = new CompleteNicheResearchSeedBuilderRequest(
         "Cabeleireiros, manicures e pedicures",
         "serviço local de beleza",
@@ -236,11 +230,12 @@ class BackendNicheResearchSeedBuilderServiceTest {
     verify(nicheResearchSeedRepository).save(any());
   }
 
-  /** Deve rejeitar payloads com mais de quinze queries para preservar o MVP documentado. */
+  /** Deve aceitar mais de quinze queries quando o modelo decidir ampliar a cobertura da pesquisa inicial. */
   @Test
-  void completeRejectsMoreThanFifteenQueries() {
+  void completeAcceptsMoreThanFifteenQueries() {
     OprmRoutineResearchCycle cycle = cycle();
     when(routineResearchCycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
+    stubSuccessfulPersistence();
     List<NicheResearchQueryRequest> manyQueries = java.util.stream.IntStream.rangeClosed(1, 16)
         .mapToObj(index -> new NicheResearchQueryRequest(
             "manicure MEI rotina Brasil " + index, "MEI_ROUTINE_DISCOVERY", "web", index))
@@ -256,9 +251,30 @@ class BackendNicheResearchSeedBuilderServiceTest {
         "AI",
         manyQueries);
 
+    CompleteNicheResearchSeedBuilderResponse response = service.complete(1001L, request);
+
+    assertThat(response.totalQueries()).isEqualTo(16);
+  }
+
+  /** Deve rejeitar somente ausência total de queries para evitar concluir etapa sem trabalho executável. */
+  @Test
+  void completeRejectsEmptyQueries() {
+    OprmRoutineResearchCycle cycle = cycle();
+    when(routineResearchCycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
+    CompleteNicheResearchSeedBuilderRequest request = new CompleteNicheResearchSeedBuilderRequest(
+        "Cabeleireiros, manicures e pedicures",
+        "serviço local de beleza",
+        "agenda e atendimento recorrente",
+        "consumidor final recorrente",
+        "manicure, pedicure, escova",
+        "depende de agenda cheia",
+        "INFERRED_FROM_CNAE",
+        "AI",
+        List.of());
+
     assertThatThrownBy(() -> service.complete(1001L, request))
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("between 12 and 15");
+        .hasMessageContaining("at least one persistable item");
     verify(nicheResearchSeedRepository, never()).save(any());
   }
 
@@ -310,7 +326,7 @@ class BackendNicheResearchSeedBuilderServiceTest {
         validQueryRequests());
   }
 
-  /** Cria a lista mínima válida de queries da etapa dois com marcadores de público e Brasil. */
+  /** Cria a lista padrão de queries da etapa dois usada pelos cenários de persistência. */
   private List<NicheResearchQueryRequest> validQueryRequests() {
     return List.of(
         new NicheResearchQueryRequest("manicure MEI responsabilidades rotina Brasil", "MEI_ROUTINE_DISCOVERY", "web", 1),
@@ -344,6 +360,26 @@ class BackendNicheResearchSeedBuilderServiceTest {
     List<NicheResearchQueryRequest> queries = new java.util.ArrayList<>(validQueryRequests());
     queries.set(0, new NicheResearchQueryRequest(queryText, queryGoal, "web", 1));
     return queries;
+  }
+
+
+  /** Configura os repositórios para simular persistência bem-sucedida da etapa dois. */
+  private void stubSuccessfulPersistence() {
+    when(nicheResearchSeedRepository.existsByResearchCycleId(1001L)).thenReturn(false);
+    when(nicheResearchSeedRepository.save(any(OprmNicheResearchSeed.class)))
+        .thenAnswer(invocation -> {
+          OprmNicheResearchSeed seed = invocation.getArgument(0);
+          seed.setId(44L);
+          return seed;
+        });
+    when(researchQueryRepository.saveAll(any())).thenAnswer(invocation -> {
+      @SuppressWarnings("unchecked")
+      List<OprmResearchQuery> queries = invocation.getArgument(0);
+      for (int i = 0; i < queries.size(); i++) {
+        queries.get(i).setId((long) i + 1);
+      }
+      return queries;
+    });
   }
 
   /** Monta um ciclo falho pelo contrato legado para validar recuperação automática da etapa dois. */

@@ -55,22 +55,18 @@ function buildPrompt(detail: {
     `nicheName: ${safe(detail.seed?.nicheName)}`,
     "sourceScore: não disponível no detalhe persistido",
     "",
-    "Regras obrigatórias:",
-    "1. Responda somente JSON válido aderente ao schema solicitado.",
-    "2. Gere um seed que responda quem é o profissional MEI/autônomo pesquisado no Brasil.",
-    "3. Gere de 12 a 15 queries, cada uma em linha lógica própria no array queries.",
-    "4. Cada query deve conter o nicho/CNAE e marcador explícito de pessoa: MEI, autônomo, trabalhador por conta própria, profissional autônomo ou dono-operador.",
-    "5. Cada query deve conter marcador Brasil/brasileiro/pt-BR/estado/cidade ou fonte brasileira recente quando fizer sentido.",
-    "6. Cubra rotina, modo de trabalho, aquisição de clientes, atendimento, cobrança, agenda, materiais, entrega, retrabalho, dores, sonhos, medos, canais e linguagem real.",
-    "7. Não gere query genérica como 'como vender mais' e não direcione pesquisa para solução, produto, oferta, IA, automação, software, curso ou campanha.",
-    "8. Todas as queries devem sair com status PENDING e createdBy AI.",
-    "9. Use queryGoal somente entre MEI_ROUTINE_DISCOVERY, AUTONOMOUS_WORK_MODE_DISCOVERY, CUSTOMER_ACQUISITION_BEHAVIOR_DISCOVERY, DAILY_OPERATION_PAIN_DISCOVERY, EMOTIONAL_PAIN_DISCOVERY, DREAM_DISCOVERY, FEAR_DISCOVERY, CHANNEL_BEHAVIOR_DISCOVERY, LANGUAGE_DISCOVERY e SOURCE_FRESHNESS_DISCOVERY.",
-    "10. Não inclua metadado técnico, comentário operacional, debugInfo ou JSON serializado dentro de texto funcional.",
+    "Orientações operacionais:",
+    "1. Responda JSON válido aderente ao schema estrutural solicitado.",
+    "2. Gere um seed que descreva o profissional pesquisado e o contexto operacional do nicho.",
+    "3. Gere queries suficientes para orientar as próximas etapas de busca, coleta e extração de sinais.",
+    "4. Prefira linguagem natural em pt-BR e termos que ajudem a encontrar rotina, aquisição de clientes, atendimento, cobrança, agenda, materiais, entrega, retrabalho, dores, sonhos, medos, canais e linguagem real.",
+    "5. A etapa confia no modelo: não precisa forçar marcador literal em toda query quando a intenção de pesquisa estiver clara.",
+    "6. Não inclua metadado técnico, comentário operacional, debugInfo ou JSON serializado dentro de texto funcional.",
   ];
   return lines.join("\n");
 }
 
-function buildStrictSchema() {
+function buildStructuralSchema() {
   const string = { type: "string" };
   const integer = { type: "integer" };
   return {
@@ -105,17 +101,12 @@ function buildStrictSchema() {
           customerType: string,
           commercialObjects: string,
           initialAssumptions: string,
-          confidenceLevel: {
-            type: "string",
-            enum: ["INFERRED_FROM_CNAE", "LOW_CONFIDENCE", "NEEDS_RESEARCH"],
-          },
-          createdBy: { type: "string", enum: ["AI"] },
+          confidenceLevel: string,
+          createdBy: string,
         },
       },
       queries: {
         type: "array",
-        minItems: 12,
-        maxItems: 15,
         items: {
           type: "object",
           additionalProperties: false,
@@ -131,25 +122,11 @@ function buildStrictSchema() {
           properties: {
             researchCycleId: integer,
             queryText: string,
-            queryGoal: {
-              type: "string",
-              enum: [
-                "MEI_ROUTINE_DISCOVERY",
-                "AUTONOMOUS_WORK_MODE_DISCOVERY",
-                "CUSTOMER_ACQUISITION_BEHAVIOR_DISCOVERY",
-                "DAILY_OPERATION_PAIN_DISCOVERY",
-                "EMOTIONAL_PAIN_DISCOVERY",
-                "DREAM_DISCOVERY",
-                "FEAR_DISCOVERY",
-                "CHANNEL_BEHAVIOR_DISCOVERY",
-                "LANGUAGE_DISCOVERY",
-                "SOURCE_FRESHNESS_DISCOVERY",
-              ],
-            },
+            queryGoal: string,
             sourceGroup: string,
             priority: integer,
-            status: { type: "string", enum: ["PENDING"] },
-            createdBy: { type: "string", enum: ["AI"] },
+            status: string,
+            createdBy: string,
           },
         },
       },
@@ -179,7 +156,7 @@ function buildAiRequestPreview(detail: {
         format: {
           type: "json_schema",
           name: "oprm_niche_research_seed_builder",
-          schema: buildStrictSchema(),
+          schema: buildStructuralSchema(),
           strict: true,
         },
       },

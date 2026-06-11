@@ -389,3 +389,9 @@
 - Mantida a validação obrigatória de marcador de público MEI/autônomo, a rejeição de query genérica e o bloqueio de linguagem de solução antes da persistência do seed.
 - Atualizado o teste de regressão para garantir que uma query com nicho e público MEI/autônomo continue válida mesmo sem o marcador literal Brasil/pt-BR.
 - 2026-06-10 22:30:00 (UTC): corrigida a experiência operacional da tela `/oprm/general-audiences/subniches/:id` após aprovação de subnicho: a aprovação já registrada agora fica clara para o usuário, e a próxima ação real disponível passa a ser a conversão controlada do subnicho aprovado em MarketNiche, evitando a percepção de botão travado quando o backend já gravou `APPROVED_FOR_EXPERIMENT`.
+
+## 2026-06-11 — OPRM NichoCNAE: confiança no modelo na etapa de seed e queries
+
+- Decisão operacional registrada: a etapa `niche-research-seed-builder` deve confiar no modelo para o conteúdo semântico das queries e não deve travar o ciclo por marcador literal de MEI/autônomo, Brasil/pt-BR, objetivo fechado, quantidade fixa, duplicidade textual, linguagem de solução ou genericidade.
+- Ajuste técnico: o validador do `oprm-coletor-mei`, o schema da Responses API, o preview do frontend e a validação do backend foram reduzidos ao mínimo persistível: estrutura, ciclo correto, seed obrigatório, lista não vazia de queries e campos de query exigidos pelo banco.
+- Causa-raiz tratada: falsos negativos em português natural estavam bloqueando uma etapa preparatória que deve apenas criar seed e perguntas de pesquisa para as etapas seguintes comprovarem com fontes, sinais, síntese e gate.

@@ -4407,3 +4407,10 @@
   - a liberação da Oferta passou a exigir Mecanismo concluído, preservando a causa-raiz do fluxo sequencial;
   - atualizada a documentação Swagger do pipeline de hipótese para incluir Oferta.
 - impacto esperado: o usuário passa a acompanhar e iniciar a construção da Oferta no mesmo lugar onde já acompanha as etapas anteriores, reduzindo dispersão operacional e mantendo foco em venda.
+
+## 2026-06-11 — Worker AI da etapa Oferta da hipótese
+
+- solicitação: verificar se o Worker AI tratava o job `5d10b6c6-fa05-4e28-8628-8641cddfcaec` e ajustar caso não houvesse fluxo.
+- causa-raiz: o job estava em `hypothesis_pain_stage_execution` com `stage_code=hypothesis-offer` e status `INICIADO`, mas o Worker AI só tinha workers ativos para Dor, Resultado e Mecanismo do pipeline de hipótese.
+- foi feito: adicionada a etapa `hypothesis-offer` no Worker AI, consumindo o endpoint interno de Oferta, usando Dor, Resultado e Mecanismo concluídos como contexto, com prompt, schema, scheduler e validação de resposta próprios.
+- impacto esperado: jobs de Oferta deixam de ficar parados em `INICIADO` e passam a avançar para geração OpenAI, completando o eixo Dor → Resultado → Mecanismo → Prova → Oferta com foco em vendas.

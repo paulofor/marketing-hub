@@ -186,6 +186,9 @@ describe("OprmPipelinePage", () => {
         "Novo ciclo de pesquisa de rotina criado imediatamente para reprocessar o CNAE com falha.",
       ),
     ).toBeTruthy();
+    expect(
+      screen.getAllByText("Etapa 2 · Seed de Pesquisa do Nicho").length,
+    ).toBeGreaterThan(0);
   });
 
   it("permite criar novo ciclo quando o status precisa de mais pesquisa", async () => {

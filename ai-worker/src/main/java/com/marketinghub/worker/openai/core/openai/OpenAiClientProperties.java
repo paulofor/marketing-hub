@@ -11,6 +11,7 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.bind.ConstructorBinding;
 import org.springframework.validation.annotation.Validated;
 
 /** Responsabilidade: centralizar credenciais, modelo, catálogo de preços e URL efetiva dos clientes OpenAI. */
@@ -51,6 +52,7 @@ public record OpenAiClientProperties(
     }
 
     /** Normaliza valores opcionais, resolve token por arquivo seguro e bloqueia placeholders em chamadas reais. */
+    @ConstructorBinding
     public OpenAiClientProperties {
         baseUrl = OpenAiBaseUrlGuard.resolve(baseUrl, allowLocalBaseUrl);
         if (timeout == null) {

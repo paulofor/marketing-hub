@@ -39,7 +39,7 @@ public final class WorkerDtos {
     public enum MarketWarmupRecommendation { PRIORITIZE, OBSERVE, RESEARCH_MORE, DISCARD, SATURATED_REQUIRES_ANGLE }
 
     public record MarketWarmupClaimRequest(String workspaceId, String workerId) {}
-    public record MarketWarmupClaimedJob(Long jobId, Long pageId, String workspaceId, String urlCanonical, String title, String offerSummary, String mechanismSummary, String promiseSummary, String proofSummary) {}
+    public record MarketWarmupClaimedJob(Long jobId, Long pageId, String workspaceId, String urlCanonical, String title, String producerName, String offerSummary, String mechanismSummary, String promiseSummary, String proofSummary) {}
     public record MarketWarmupClaimResponse(boolean claimed, MarketWarmupClaimedJob job) {}
     public record MarketWarmupSourceCompleteItem(MarketWarmupPlatform platform, MarketWarmupSourceType sourceType, String sourceUrl, String sourceTitle, String authorName, Instant publishedAt, Instant lastActivityAt, Long followersOrSubscribers, Long viewsCount, Long likesCount, Long commentsCount, BigDecimal recencyScore, BigDecimal engagementScore, String evidenceSummary) {}
     public record MarketWarmupSignalCompleteItem(int sourceIndex, MarketWarmupSignalType signalType, BigDecimal signalStrength, String signalText, String businessInterpretation) {}

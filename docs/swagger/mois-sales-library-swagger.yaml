@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Marketing Hub - MOIS Sales Library
   version: 0.7.0
-  description: Contratos operacionais da Biblioteca de Páginas de Vendas do MOIS. Na Fase 6, ingestão, captura HTML e análise usam `mois_sales_page` e `mois_sales_page_job_execution` como fonte de verdade operacional atual; tabelas legadas ficam congeladas em somente leitura para auditoria/backfill histórico e não alimentam a UI principal. A Etapa 3 (`MARKET_WARMUP_RESEARCH`) possui contrato HTTP completo para solicitação, consulta, auditoria de fontes/sinais e integração interna do worker, incluindo respostas de erro padronizadas.
+  description: Contratos operacionais da Biblioteca de Páginas de Vendas do MOIS. Na Fase 6, ingestão, captura HTML e análise usam `mois_sales_page` e `mois_sales_page_job_execution` como fonte de verdade operacional atual; tabelas legadas ficam congeladas em somente leitura para auditoria/backfill histórico e não alimentam a UI principal. A Etapa 3 (`MARKET_WARMUP_RESEARCH`) possui contrato HTTP completo para investigação de sucesso do produto, consulta, auditoria de fontes/sinais e integração interna do worker, incluindo respostas de erro padronizadas.
 servers:
   - url: /api/mois/sales-library
 paths:
@@ -392,14 +392,14 @@ paths:
                 $ref: '#/components/schemas/SalesLibrarySnapshotCaptureResponse'
   /pages/{pageId}/market-warmup:request:
     post:
-      summary: Solicita pesquisa de aquecimento de mercado para uma página
-      description: Cria ou reutiliza um job pendente da Etapa 3 para uma página de venda já existente. A execução apenas agenda a pesquisa; o worker interno processa posteriormente via endpoints de claim e conclusão.
+      summary: Solicita investigação de sucesso do produto para uma página
+      description: Cria ou reutiliza um job pendente da Etapa 3 para uma página de venda já existente. A execução agenda a investigação de autoridade, canais, funil, prova social e distribuição que podem explicar o sucesso do produto.
       tags: [MOIS Sales Library]
       parameters:
         - $ref: '#/components/parameters/PageId'
       responses:
         '202':
-          description: Pesquisa de aquecimento solicitada
+          description: Investigação de sucesso solicitada
           content:
             application/json:
               schema:
@@ -412,14 +412,14 @@ paths:
           $ref: '#/components/responses/MarketWarmupConflict'
   /pages/{pageId}/market-warmup:
     get:
-      summary: Consulta o resumo da pesquisa de aquecimento da página
-      description: Retorna o dossiê final da Etapa 3 com score, temperatura, tipo de ecossistema e recomendação objetiva, sem JSON serializado em campos textuais.
+      summary: Consulta o dossiê de sucesso do produto da página
+      description: Retorna o dossiê final da Etapa 3 com score, força da máquina de venda, motor provável, hipótese de sucesso e próxima investigação, sem JSON serializado em campos textuais.
       tags: [MOIS Sales Library]
       parameters:
         - $ref: '#/components/parameters/PageId'
       responses:
         '200':
-          description: Resumo de aquecimento encontrado
+          description: Dossiê de sucesso encontrado
           content:
             application/json:
               schema:
@@ -428,14 +428,14 @@ paths:
           $ref: '#/components/responses/MarketWarmupNotFound'
   /pages/{pageId}/market-warmup/sources:
     get:
-      summary: Lista fontes públicas da pesquisa de aquecimento
-      description: Retorna fontes rastreáveis usadas para sustentar o score e a recomendação da Etapa 3.
+      summary: Lista fontes públicas da investigação de sucesso
+      description: Retorna fontes rastreáveis usadas para explicar autoridade, canais, funil, prova social, distribuição e score da Etapa 3.
       tags: [MOIS Sales Library]
       parameters:
         - $ref: '#/components/parameters/PageId'
       responses:
         '200':
-          description: Fontes públicas da pesquisa
+          description: Fontes públicas da investigação
           content:
             application/json:
               schema:
@@ -444,14 +444,14 @@ paths:
           $ref: '#/components/responses/MarketWarmupNotFound'
   /pages/{pageId}/market-warmup/signals:
     get:
-      summary: Lista sinais comerciais da pesquisa de aquecimento
-      description: Retorna os sinais extraídos das fontes públicas para explicar o score da Etapa 3.
+      summary: Lista sinais que explicam a venda do produto
+      description: Retorna os sinais extraídos das fontes públicas para explicar como o produto vendeu ou ganhou tração.
       tags: [MOIS Sales Library]
       parameters:
         - $ref: '#/components/parameters/PageId'
       responses:
         '200':
-          description: Sinais comerciais da pesquisa
+          description: Sinais da investigação de sucesso
           content:
             application/json:
               schema:
@@ -887,6 +887,10 @@ components:
         title:
           type: string
           nullable: true
+        producerName:
+          type: string
+          nullable: true
+          description: Nome do produtor, marca ou autoridade coletada na origem, usado para evitar buscas genéricas e mapear a máquina de venda.
         offerSummary:
           type: string
           nullable: true
@@ -1340,6 +1344,10 @@ components:
         scoreTotal:
           type: number
           nullable: true
+        producerName:
+          type: string
+          nullable: true
+          description: Nome do produtor, marca ou autoridade coletada na origem, usado para evitar buscas genéricas e mapear a máquina de venda.
         offerSummary:
           type: string
           nullable: true

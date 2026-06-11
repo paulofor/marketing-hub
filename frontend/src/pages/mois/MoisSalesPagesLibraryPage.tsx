@@ -162,7 +162,7 @@ export default function MoisSalesPagesLibraryPage() {
             <div className="card border-0 shadow-sm h-100">
               <div className="card-body">
                 <p className="text-secondary mb-1">
-                  Elegíveis para aquecimento
+                  Elegíveis para dossiê de sucesso
                 </p>
                 <h3 className="mb-0">{summary.marketWarmupEligible}</h3>
               </div>
@@ -196,8 +196,8 @@ export default function MoisSalesPagesLibraryPage() {
               <div>
                 <h2 className="h5 mb-1">Ranking de oportunidades comerciais</h2>
                 <p className="text-secondary mb-0">
-                  Prioriza mercados combinando score da página, aquecimento,
-                  risco de saturação e recência das evidências.
+                  Prioriza produtos combinando score da página, engenharia de
+                  sucesso, risco de saturação e recência das evidências.
                 </p>
               </div>
             </div>
@@ -217,7 +217,7 @@ export default function MoisSalesPagesLibraryPage() {
                       <th>Prioridade</th>
                       <th>Mercado/produto</th>
                       <th>Score combinado</th>
-                      <th>Aquecimento</th>
+                      <th>Sucesso do produto</th>
                       <th>Próxima ação</th>
                       <th>Evidência</th>
                     </tr>
@@ -269,16 +269,17 @@ export default function MoisSalesPagesLibraryPage() {
         <div className="card-body d-flex flex-column gap-3">
           <div className="d-flex flex-wrap align-items-end justify-content-between gap-3">
             <div>
-              <h2 className="h5 mb-1">Priorização por aquecimento</h2>
+              <h2 className="h5 mb-1">Priorização por engenharia de sucesso</h2>
               <p className="text-secondary mb-0">
                 Ordene a listagem diretamente no backend pelo score de
-                aquecimento para decidir quais mercados merecem ação primeiro.
+                engenharia de sucesso para entender quais produtos vencedores
+                merecem estudo primeiro.
               </p>
             </div>
             <div className="d-flex flex-wrap gap-3">
               <div>
                 <label className="form-label small" htmlFor="warmupFilter">
-                  Filtro de aquecimento
+                  Filtro de sucesso
                 </label>
                 <select
                   id="warmupFilter"
@@ -307,7 +308,7 @@ export default function MoisSalesPagesLibraryPage() {
                   onChange={(event) => setSort(event.target.value)}
                 >
                   <option value="MARKET_WARMUP_SCORE">
-                    Maior score de aquecimento
+                    Maior score de sucesso
                   </option>
                   <option value="RECENT_ANALYSIS">Análise mais recente</option>
                 </select>
@@ -332,8 +333,8 @@ export default function MoisSalesPagesLibraryPage() {
                     <th>Produto</th>
                     <th>Origem</th>
                     <th>Status</th>
-                    <th>Aquecimento</th>
-                    <th>Score aquecimento</th>
+                    <th>Sucesso do produto</th>
+                    <th>Score sucesso</th>
                     <th>Data da análise</th>
                     <th>Fase no diagrama</th>
                     <th>Ações</th>

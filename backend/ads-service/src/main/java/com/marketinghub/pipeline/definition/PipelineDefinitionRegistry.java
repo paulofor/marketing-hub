@@ -332,7 +332,7 @@ public class PipelineDefinitionRegistry {
                 moisSalesPageLibraryStage(
                         "MARKET_WARMUP_RESEARCH",
                         "market-warmup-research",
-                        "Pesquisa de Aquecimento e Ecossistema de Mercado",
+                        "Investigação de Sucesso do Produto",
                         3,
                         true,
                         MOIS_MARKET_WARMUP_WORKER_MODULE,
@@ -343,7 +343,9 @@ public class PipelineDefinitionRegistry {
                                 "warmup-research",
                                 "ecosystem-research",
                                 "aquecimento-mercado",
-                                "pesquisa-aquecimento")));
+                                "pesquisa-aquecimento",
+                                "product-success-research",
+                                "investigacao-sucesso-produto")));
         return new PipelineDefinition(
                 MOIS_MODULE,
                 MOIS_SALES_PAGE_LIBRARY_PIPELINE_CODE,

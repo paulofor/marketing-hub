@@ -41,11 +41,11 @@ const ecosystemLabels: Record<MoisMarketWarmupEcosystemType, string> = {
 };
 
 const recommendationLabels: Record<MoisMarketWarmupRecommendation, string> = {
-  PRIORITIZE: "Priorizar experimento",
-  OBSERVE: "Observar com refinamento",
-  RESEARCH_MORE: "Pesquisar mais",
-  DISCARD: "Descartar por baixa prioridade",
-  SATURATED_REQUIRES_ANGLE: "Avançar só com ângulo diferenciado",
+  PRIORITIZE: "Máquina forte para estudar",
+  OBSERVE: "Estudar com refinamento",
+  RESEARCH_MORE: "Pesquisar mais evidências",
+  DISCARD: "Pouca evidência pública",
+  SATURATED_REQUIRES_ANGLE: "Sucesso exige ângulo diferenciado",
 };
 
 const statusLabels: Record<MoisMarketWarmupJobStatus, string> = {
@@ -394,10 +394,11 @@ export default function MoisSalesPageLibraryDetailPage() {
         <div className="card-body d-flex flex-column gap-3">
           <div className="d-flex flex-wrap justify-content-between align-items-start gap-3">
             <div>
-              <h2 className="h5 mb-1">Aquecimento do Mercado</h2>
+              <h2 className="h5 mb-1">Engenharia de Sucesso do Produto</h2>
               <p className="text-secondary mb-0">
-                Dossiê da Etapa 3 para decidir se existe conversa ativa, dor
-                clara e evidência suficiente para priorizar este mercado.
+                Dossiê da Etapa 3 para descobrir como este produto aparentemente
+                vencedor vende: autoridade, canais, funil, prova social e
+                distribuição.
               </p>
             </div>
             {!warmupQuery.data && !requestedWarmupJob ? (
@@ -418,24 +419,24 @@ export default function MoisSalesPageLibraryDetailPage() {
                     aria-hidden="true"
                   />
                 ) : null}
-                Executar pesquisa de aquecimento
+                Investigar sucesso do produto
               </button>
             ) : null}
           </div>
 
           {warmupQuery.isLoading ? (
             <p className="text-secondary mb-0">
-              Carregando aquecimento do mercado...
+              Carregando engenharia de sucesso...
             </p>
           ) : null}
           {warmupQuery.isError ? (
             <div className="alert alert-danger mb-0">
-              Falha ao carregar o dossiê de aquecimento.
+              Falha ao carregar o dossiê de sucesso.
             </div>
           ) : null}
           {requestWarmupMutation.isError ? (
             <div className="alert alert-danger mb-0">
-              Falha ao solicitar nova pesquisa de aquecimento.
+              Falha ao solicitar nova investigação de sucesso.
             </div>
           ) : null}
           {requestedWarmupJob ? (
@@ -449,9 +450,9 @@ export default function MoisSalesPageLibraryDetailPage() {
           !warmupQuery.data &&
           !requestedWarmupJob ? (
             <div className="alert alert-info mb-0">
-              Ainda não existe dossiê de aquecimento para esta página. Solicite
-              a pesquisa para medir temperatura, canais, dores e sinais de
-              compra do mercado.
+              Ainda não existe dossiê de sucesso para esta página. Solicite a
+              investigação para mapear autoridade, canais, funil, prova social e
+              distribuição que podem explicar as vendas do produto.
             </div>
           ) : null}
 
@@ -468,7 +469,7 @@ export default function MoisSalesPageLibraryDetailPage() {
                 </div>
                 <div className="col-md-3">
                   <div className="border rounded p-3 h-100 bg-light-subtle">
-                    <div className="text-secondary small">Temperatura</div>
+                    <div className="text-secondary small">Força da máquina</div>
                     <span
                       className={`badge ${getTemperatureBadgeClass(warmupQuery.data.marketTemperature)}`}
                     >
@@ -478,7 +479,7 @@ export default function MoisSalesPageLibraryDetailPage() {
                 </div>
                 <div className="col-md-3">
                   <div className="border rounded p-3 h-100 bg-light-subtle">
-                    <div className="text-secondary small">Ecossistema</div>
+                    <div className="text-secondary small">Motor provável</div>
                     <strong>
                       {ecosystemLabels[warmupQuery.data.ecosystemType]}
                     </strong>
@@ -494,7 +495,7 @@ export default function MoisSalesPageLibraryDetailPage() {
 
               <div className="border rounded p-3">
                 <div className="text-secondary small">
-                  Recomendação comercial
+                  Hipótese de como vende
                 </div>
                 <p className="mb-1 fw-semibold">
                   {recommendationLabels[warmupQuery.data.recommendation]}
@@ -505,7 +506,7 @@ export default function MoisSalesPageLibraryDetailPage() {
                 </p>
                 {warmupQuery.data.nextExperimentSuggestion ? (
                   <p className="mb-0 mt-2 small text-secondary">
-                    Próximo experimento sugerido:{" "}
+                    Próxima investigação sugerida:{" "}
                     {warmupQuery.data.nextExperimentSuggestion}
                   </p>
                 ) : null}
@@ -523,32 +524,34 @@ export default function MoisSalesPageLibraryDetailPage() {
 
               <div className="row g-3 small">
                 <div className="col-md-6">
-                  <strong>Dores principais</strong>
+                  <strong>Dor/promessa central</strong>
                   <TextList items={warmupQuery.data.mainPains} />
                 </div>
                 <div className="col-md-6">
-                  <strong>Objeções principais</strong>
+                  <strong>Objeções/riscos</strong>
                   <TextList items={warmupQuery.data.mainObjections} />
                 </div>
                 <div className="col-md-6">
-                  <strong>Canais principais</strong>
+                  <strong>Canais encontrados</strong>
                   <TextList items={warmupQuery.data.mainChannels} />
                 </div>
                 <div className="col-md-6">
-                  <strong>Concorrentes principais</strong>
+                  <strong>Alavancas de sucesso</strong>
                   <TextList items={warmupQuery.data.mainCompetitors} />
                 </div>
               </div>
 
               {warmupQuery.data.saturationRisk ? (
                 <div className="alert alert-warning mb-0">
-                  <strong>Risco de saturação:</strong>{" "}
+                  <strong>Risco comercial:</strong>{" "}
                   {warmupQuery.data.saturationRisk}
                 </div>
               ) : null}
 
               <div>
-                <h3 className="h6 mb-2">Fontes públicas rastreáveis</h3>
+                <h3 className="h6 mb-2">
+                  Fontes públicas para explicar o sucesso
+                </h3>
                 {warmupSourcesQuery.isLoading ? (
                   <p className="text-secondary mb-0">Carregando fontes...</p>
                 ) : null}
@@ -599,7 +602,7 @@ export default function MoisSalesPageLibraryDetailPage() {
               </div>
 
               <div>
-                <h3 className="h6 mb-2">Sinais que justificam a pontuação</h3>
+                <h3 className="h6 mb-2">Sinais que explicam a venda</h3>
                 {warmupSignalsQuery.isLoading ? (
                   <p className="text-secondary mb-0">Carregando sinais...</p>
                 ) : null}
@@ -611,7 +614,7 @@ export default function MoisSalesPageLibraryDetailPage() {
                 {!warmupSignalsQuery.isLoading &&
                 (warmupSignalsQuery.data?.items.length ?? 0) === 0 ? (
                   <p className="text-secondary mb-0">
-                    Nenhum sinal comercial registrado para este dossiê.
+                    Nenhum sinal de venda registrado para este dossiê.
                   </p>
                 ) : null}
                 <div className="row g-2">

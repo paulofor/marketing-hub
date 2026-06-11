@@ -1438,3 +1438,12 @@ Arquivos principais:
 
 Arquivo principal:
 - `frontend/src/pages/mois/MoisSalesPageLibraryDetailPage.tsx`
+
+## 2026-06-11 — Correção de compilação do worker de Biblioteca de Páginas MOIS
+
+- Corrigida a causa-raiz do erro de compilação que aparecia como `cannot find symbol: variable log` no worker MOIS.
+- O arquivo de processamento de aquecimento continha métodos duplicados após a evolução da Etapa 3; isso interrompia a compilação e impedia o Lombok de gerar corretamente o logger nas classes anotadas.
+- Removida a duplicidade mantendo a versão mais específica da sugestão de investigação da máquina de venda.
+
+Arquivo principal:
+- `mois-sales-library-worker/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/marketwarmup/MarketWarmupProcessor.java`

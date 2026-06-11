@@ -4364,3 +4364,10 @@
 - causa-raiz: a tela e os endpoints estavam presos ao primeiro passo `hypothesis-pain`, impedindo evolução sequencial do framework Dor → Resultado → Mecanismo → Prova → Oferta.
 - foi feito: adicionada a etapa 2 Resultado com card próprio na tela de nova hipótese, endpoints públicos e internos, reaproveitamento da tabela auditável de execuções, bloqueio para iniciar Resultado sem Dor concluída e worker AI isolado com prompt/schema próprios.
 - prevenção: o backend agora diferencia os estágios por `stageCode` e a etapa Resultado recebe a resposta concluída da Dor como contexto obrigatório para reduzir risco de promessa desconectada da dor real.
+
+## 2026-06-11 — Correção de compilação da etapa Resultado da hipótese
+
+- diagnóstico: o backend chamava os métodos internos `requireCompletedPain` e `latestCompletedPainResponse` na orquestração da etapa Resultado, mas esses métodos não tinham sido implementados na classe de serviço.
+- causa-raiz: a evolução da etapa Resultado acoplou a liberação e o contexto ao resultado concluído da etapa Dor sem completar o contrato interno de consulta dessa dependência sequencial.
+- foi feito: implementada a busca da Dor concluída mais recente por nicho, bloqueando Resultado quando não há resposta válida e entregando essa resposta ao Worker AI nos jobs pendentes da etapa Resultado.
+- prevenção: adicionado teste unitário para garantir que a etapa Resultado receba a resposta concluída da Dor como contexto obrigatório.

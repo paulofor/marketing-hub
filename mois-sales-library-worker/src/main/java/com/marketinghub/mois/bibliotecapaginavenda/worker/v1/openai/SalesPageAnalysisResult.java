@@ -13,6 +13,7 @@ public record SalesPageAnalysisResult(
         String imageJson,
         String analysisNotes,
         String requestPayloadJson,
+        String responsePayloadJson,
         String parserVersion,
         String promptVersion,
         String modelName,

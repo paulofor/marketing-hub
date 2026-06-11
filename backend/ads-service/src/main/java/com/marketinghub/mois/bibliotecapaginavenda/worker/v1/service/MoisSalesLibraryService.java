@@ -130,12 +130,13 @@ public class MoisSalesLibraryService {
                 UPDATE mois_sales_page_job_execution
                 SET job_type = 'PAGE_ANALYSIS', stage = 'ANALYSIS', status = 'DONE', score_total = ?,
                     sections_json = ?, copy_json = ?, visual_json = ?, image_json = ?,
-                    request_payload_json = ?, response_payload_json = ?, model_name = ?, input_tokens = ?, output_tokens = ?, model_cost_usd = ?,
+                    request_payload_json = ?, response_payload_json = ?, parser_version = ?, prompt_version = ?,
+                    model_name = ?, input_tokens = ?, output_tokens = ?, model_cost_usd = ?,
                     error_category = NULL, error_message = ?, finished_at = ?, updated_at = UTC_TIMESTAMP()
                 WHERE id = ?
                 """, request.scoreTotal(), request.sectionsJson(), request.copyJson(), request.visualJson(), request.imageJson(),
-                request.requestPayloadJson(), request.analysisNotes(), request.modelName(), request.inputTokens(), request.outputTokens(), modelCostUsd,
-                null, Timestamp.from(analyzedAt), jobId);
+                request.requestPayloadJson(), request.responsePayloadJson(), request.parserVersion(), request.promptVersion(),
+                request.modelName(), request.inputTokens(), request.outputTokens(), modelCostUsd, null, Timestamp.from(analyzedAt), jobId);
         jdbcTemplate.update("""
                 UPDATE mois_sales_page
                 SET current_stage = 'ANALYSIS', current_status = 'DONE', analysis_status = 'DONE', score_total = ?,
@@ -537,13 +538,15 @@ public class MoisSalesLibraryService {
                 ) mwj_latest ON mwj_latest.sales_page_id = p.id
                 LEFT JOIN mois_sales_page_market_warmup_job mwj ON mwj.id = mwj_latest.latest_warmup_job_id
                 LEFT JOIN mois_sales_page_market_warmup_summary mws ON mws.job_id = mwj.id
+                LEFT JOIN mois_collected_reference cr ON cr.id = p.collected_reference_id
                 WHERE p.workspace_id = ?
                 """ + warmupCondition;
         Long total = jdbcTemplate.queryForObject("SELECT COUNT(*) " + joins, Long.class, workspaceId);
         List<MoisSalesLibraryDtos.SalesLibraryPageResponse> items = jdbcTemplate.query("""
                 SELECT p.id, p.workspace_id, p.source, p.url_canonical, p.title, p.current_stage, p.current_status, p.capture_status,
                        COALESCE(p.analysis_status, p.current_status) AS analysis_status, p.url_final, p.http_status, p.html_sha256,
-                       p.html_bytes, p.score_total, p.offer_summary, p.mechanism_summary, p.promise_summary, p.proof_summary,
+                       p.html_bytes, p.score_total, p.product_name, cr.producer_name,
+                       p.offer_summary, p.mechanism_summary, p.promise_summary, p.proof_summary,
                        p.model_name, p.input_tokens, p.output_tokens, p.model_cost_usd,
                        p.last_error_category, p.last_error_message, p.last_job_execution_id, p.last_captured_at, p.last_analyzed_at, p.updated_at,
                        mws.score_total AS market_warmup_score_total, mws.market_temperature AS market_warmup_temperature,
@@ -689,7 +692,8 @@ public class MoisSalesLibraryService {
         List<MoisSalesLibraryDtos.SalesLibraryPageResponse> rows = jdbcTemplate.query("""
                 SELECT p.id, p.workspace_id, p.source, p.url_canonical, p.title, p.current_stage, p.current_status, p.capture_status,
                        COALESCE(p.analysis_status, p.current_status) AS analysis_status, p.url_final, p.http_status, p.html_sha256,
-                       p.html_bytes, p.score_total, p.offer_summary, p.mechanism_summary, p.promise_summary, p.proof_summary,
+                       p.html_bytes, p.score_total, p.product_name, cr.producer_name,
+                       p.offer_summary, p.mechanism_summary, p.promise_summary, p.proof_summary,
                        p.model_name, p.input_tokens, p.output_tokens, p.model_cost_usd,
                        p.last_error_category, p.last_error_message, p.last_job_execution_id, p.last_captured_at, p.last_analyzed_at, p.updated_at,
                        mws.score_total AS market_warmup_score_total, mws.market_temperature AS market_warmup_temperature,
@@ -703,6 +707,7 @@ public class MoisSalesLibraryService {
                 ) mwj_latest ON mwj_latest.sales_page_id = p.id
                 LEFT JOIN mois_sales_page_market_warmup_job mwj ON mwj.id = mwj_latest.latest_warmup_job_id
                 LEFT JOIN mois_sales_page_market_warmup_summary mws ON mws.job_id = mwj.id
+                LEFT JOIN mois_collected_reference cr ON cr.id = p.collected_reference_id
                 WHERE p.id = ? LIMIT 1
                 """, this::mapSalesPageResponse, pageId);
         if (rows.isEmpty()) throw new IllegalArgumentException("Page not found: " + pageId);
@@ -715,15 +720,16 @@ public class MoisSalesLibraryService {
     public MoisSalesLibraryDtos.SalesLibraryPageAnalysisResponse getPageAnalysis(long pageId) {
         List<MoisSalesLibraryDtos.SalesLibraryPageAnalysisResponse> rows = jdbcTemplate.query("""
                 SELECT e.id, e.sales_page_id, e.status, e.score_total, e.sections_json, e.copy_json, e.visual_json,
-                       e.image_json, e.request_payload_json, e.error_message, e.finished_at, e.updated_at
+                       e.image_json, e.request_payload_json, e.response_payload_json, e.error_message, e.parser_version, e.prompt_version,
+                       e.model_name, e.finished_at, e.updated_at
                 FROM mois_sales_page_job_execution e
                 WHERE e.sales_page_id = ? AND e.job_type = 'PAGE_ANALYSIS'
                 ORDER BY e.updated_at DESC, e.id DESC LIMIT 1
                 """, (rs, rn) -> new MoisSalesLibraryDtos.SalesLibraryPageAnalysisResponse(
                 rs.getLong("id"), rs.getLong("sales_page_id"), null, rs.getString("status"),
-                rs.getBigDecimal("score_total"), null, null, null, rs.getString("sections_json"),
+                rs.getBigDecimal("score_total"), rs.getString("parser_version"), rs.getString("prompt_version"), rs.getString("model_name"), rs.getString("sections_json"),
                 rs.getString("copy_json"), rs.getString("visual_json"), rs.getString("image_json"),
-                rs.getString("error_message"), rs.getString("request_payload_json"),
+                rs.getString("error_message"), rs.getString("request_payload_json"), rs.getString("response_payload_json"),
                 toInstant(rs.getTimestamp("finished_at")), toInstant(rs.getTimestamp("updated_at"))), pageId);
         if (rows.isEmpty()) throw new IllegalArgumentException("Analysis not found for page: " + pageId);
         return rows.get(0);
@@ -1344,6 +1350,8 @@ public class MoisSalesLibraryService {
                 rs.getString("source"),
                 rs.getString("url_canonical"),
                 rs.getString("title"),
+                rs.getString("product_name"),
+                rs.getString("producer_name"),
                 rs.getString("current_stage"),
                 rs.getString("current_status"),
                 rs.getString("capture_status"),

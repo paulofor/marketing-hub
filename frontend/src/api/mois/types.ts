@@ -260,6 +260,8 @@ export interface MoisSalesLibraryPage {
   source: string;
   urlCanonical: string;
   title?: string;
+  productName?: string;
+  producerName?: string;
   currentStage?: string;
   currentStatus?: string;
   captureStatus?: string;
@@ -558,6 +560,7 @@ export interface MoisSalesLibraryPageAnalysis {
   imageJson?: string;
   analysisNotes?: string;
   requestPayloadJson?: string;
+  responsePayloadJson?: string;
   analyzedAt?: string;
   updatedAt: string;
 }

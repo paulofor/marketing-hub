@@ -44,6 +44,7 @@ public final class MoisSalesLibraryDtos {
             String imageJson,
             String analysisNotes,
             String requestPayloadJson,
+            String responsePayloadJson,
             String parserVersion,
             String promptVersion,
             String modelName,
@@ -208,6 +209,8 @@ public final class MoisSalesLibraryDtos {
             String source,
             String urlCanonical,
             String title,
+            String productName,
+            String producerName,
             String currentStage,
             String currentStatus,
             String captureStatus,
@@ -358,6 +361,7 @@ public final class MoisSalesLibraryDtos {
             String imageJson,
             String analysisNotes,
             String requestPayloadJson,
+            String responsePayloadJson,
             Instant analyzedAt,
             Instant updatedAt
     ) {

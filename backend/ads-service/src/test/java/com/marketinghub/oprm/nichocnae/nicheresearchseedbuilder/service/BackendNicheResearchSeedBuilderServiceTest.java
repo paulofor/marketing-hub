@@ -44,7 +44,7 @@ class BackendNicheResearchSeedBuilderServiceTest {
     when(routineResearchCycleRepository.findSeedBuilderPendingOrRetryable(
             eq("RUNNING"),
             eq("FAILED"),
-            eq("nicheName is required"),
+            eq(""),
             eq("niche-research-seed-builder/stage-executions"),
             any(Pageable.class)))
         .thenReturn(List.of(cycle));
@@ -284,6 +284,42 @@ class BackendNicheResearchSeedBuilderServiceTest {
     assertThat(response.totalQueries()).isEqualTo(1);
     assertThat(response.queries().getFirst().queryGoal()).isEqualTo("ROUTINE_DISCOVERY");
     assertThat(response.queries().getFirst().queryText()).contains("rotina dificuldades atendimento clientes Brasil");
+  }
+
+  /** Deve limitar campos textuais variáveis ao contrato físico do banco antes da persistência. */
+  @Test
+  void completeLimitsModelTextFieldsToDatabaseContract() {
+    OprmRoutineResearchCycle cycle = cycle();
+    when(routineResearchCycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
+    when(nicheResearchSeedRepository.existsByResearchCycleId(1001L)).thenReturn(false);
+    when(nicheResearchSeedRepository.save(any(OprmNicheResearchSeed.class)))
+        .thenAnswer(invocation -> {
+          OprmNicheResearchSeed seed = invocation.getArgument(0);
+          seed.setId(44L);
+          return seed;
+        });
+    when(researchQueryRepository.saveAll(any()))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+    String longText = "x".repeat(600);
+    CompleteNicheResearchSeedBuilderRequest request = new CompleteNicheResearchSeedBuilderRequest(
+        longText,
+        longText,
+        "agenda e atendimento recorrente",
+        "consumidor final recorrente",
+        "manicure, pedicure, escova",
+        "depende de agenda cheia",
+        "INFERRED_FROM_CNAE",
+        longText,
+        List.of(new NicheResearchQueryRequest(longText, longText, longText, 1)));
+
+    CompleteNicheResearchSeedBuilderResponse response = service.complete(1001L, request);
+
+    assertThat(response.nicheName()).hasSize(255);
+    assertThat(response.businessType()).hasSize(255);
+    assertThat(response.createdBy()).hasSize(32);
+    assertThat(response.queries().getFirst().queryText()).hasSize(500);
+    assertThat(response.queries().getFirst().queryGoal()).hasSize(64);
+    assertThat(response.queries().getFirst().sourceGroup()).hasSize(64);
   }
 
   /** Deve marcar o ciclo como falho e registrar a mensagem operacional da falha da etapa dois. */

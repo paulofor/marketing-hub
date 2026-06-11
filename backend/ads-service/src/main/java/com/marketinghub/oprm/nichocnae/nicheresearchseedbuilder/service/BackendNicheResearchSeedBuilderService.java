@@ -31,9 +31,14 @@ public class BackendNicheResearchSeedBuilderService {
   private static final String CYCLE_STATUS_RUNNING = "RUNNING";
   private static final String CYCLE_STATUS_FAILED = "FAILED";
   private static final String QUERY_STATUS_PENDING = "PENDING";
-  private static final String RETRYABLE_LEGACY_CONTRACT_ERROR = "nicheName is required";
+  private static final String RETRYABLE_ERROR_FRAGMENT = "";
   private static final String COMPLETE_STAGE_PATH_FRAGMENT = "niche-research-seed-builder/stage-executions";
   private static final String DEFAULT_CREATED_BY = "AI";
+  private static final int CREATED_BY_MAX_LENGTH = 32;
+  private static final int SEED_SHORT_TEXT_MAX_LENGTH = 255;
+  private static final int QUERY_TEXT_MAX_LENGTH = 500;
+  private static final int QUERY_GOAL_MAX_LENGTH = 64;
+  private static final int SOURCE_GROUP_MAX_LENGTH = 64;
   private final OprmRoutineResearchCycleRepository routineResearchCycleRepository;
   private final OprmNicheResearchSeedRepository nicheResearchSeedRepository;
   private final OprmResearchQueryRepository researchQueryRepository;
@@ -55,7 +60,7 @@ public class BackendNicheResearchSeedBuilderService {
         .findSeedBuilderPendingOrRetryable(
             CYCLE_STATUS_RUNNING,
             CYCLE_STATUS_FAILED,
-            RETRYABLE_LEGACY_CONTRACT_ERROR,
+            RETRYABLE_ERROR_FRAGMENT,
             COMPLETE_STAGE_PATH_FRAGMENT,
             PageRequest.of(0, 20))
         .stream()
@@ -167,8 +172,10 @@ public class BackendNicheResearchSeedBuilderService {
     seed.setResearchCycleId(cycle.getId());
     seed.setCnaeCode(cycle.getCnaeCode());
     seed.setCnaeDescription(cycle.getCnaeDescription());
-    seed.setNicheName(textOrDefault(request == null ? null : request.nicheName(), cycle.getNicheName()));
-    seed.setBusinessType(textOrDefault(request == null ? null : request.businessType(), cycle.getCnaeDescription()));
+    seed.setNicheName(boundedTextOrDefault(
+        request == null ? null : request.nicheName(), cycle.getNicheName(), SEED_SHORT_TEXT_MAX_LENGTH));
+    seed.setBusinessType(boundedTextOrDefault(
+        request == null ? null : request.businessType(), cycle.getCnaeDescription(), SEED_SHORT_TEXT_MAX_LENGTH));
     seed.setOperationType(textOrDefault(
         request == null ? null : request.operationType(), "Rotina operacional do CNAE " + cycle.getCnaeCode()));
     seed.setCustomerType(
@@ -209,10 +216,12 @@ public class BackendNicheResearchSeedBuilderService {
     OprmResearchQuery query = new OprmResearchQuery();
     query.setResearchCycleId(cycle.getId());
     query.setNicheResearchSeedId(nicheResearchSeedId);
-    query.setQueryText(
-        textOrDefault(queryRequest == null ? null : queryRequest.queryText(), defaultQueryText(cycle)));
-    query.setQueryGoal(textOrDefault(queryRequest == null ? null : queryRequest.queryGoal(), "ROUTINE_DISCOVERY"));
-    query.setSourceGroup(trimToNull(queryRequest == null ? null : queryRequest.sourceGroup()));
+    query.setQueryText(boundedTextOrDefault(
+        queryRequest == null ? null : queryRequest.queryText(), defaultQueryText(cycle), QUERY_TEXT_MAX_LENGTH));
+    query.setQueryGoal(boundedTextOrDefault(
+        queryRequest == null ? null : queryRequest.queryGoal(), "ROUTINE_DISCOVERY", QUERY_GOAL_MAX_LENGTH));
+    query.setSourceGroup(
+        trimToNull(queryRequest == null ? null : queryRequest.sourceGroup(), SOURCE_GROUP_MAX_LENGTH));
     query.setPriority(queryRequest == null || queryRequest.priority() == null ? 100 : queryRequest.priority());
     query.setStatus(QUERY_STATUS_PENDING);
     query.setResultCount(0);
@@ -286,7 +295,20 @@ public class BackendNicheResearchSeedBuilderService {
 
   /** Normaliza o autor do artefato para manter o contrato simples quando a origem não for informada. */
   private String normalizeCreatedBy(String createdBy) {
-    return StringUtils.hasText(createdBy) ? createdBy.trim() : DEFAULT_CREATED_BY;
+    return boundedTextOrDefault(createdBy, DEFAULT_CREATED_BY, CREATED_BY_MAX_LENGTH);
+  }
+
+  /** Aplica default e limite físico do banco para manter payloads da IA persistíveis sem bloquear o ciclo. */
+  private String boundedTextOrDefault(String value, String fallback, int maxLength) {
+    return limitToDatabaseLength(textOrDefault(value, fallback), maxLength);
+  }
+
+  /** Corta texto no limite de coluna definido pelo contrato de persistência. */
+  private String limitToDatabaseLength(String value, int maxLength) {
+    if (value == null || value.length() <= maxLength) {
+      return value;
+    }
+    return value.substring(0, maxLength);
   }
 
   /** Garante que um campo textual obrigatório exista e remove espaços laterais antes da persistência. */
@@ -297,9 +319,13 @@ public class BackendNicheResearchSeedBuilderService {
     return value.trim();
   }
 
-
   /** Converte strings vazias em nulo para campos opcionais persistidos. */
   private String trimToNull(String value) {
-    return StringUtils.hasText(value) ? value.trim() : null;
+    return trimToNull(value, Integer.MAX_VALUE);
+  }
+
+  /** Converte strings vazias em nulo e respeita o limite físico de campos opcionais persistidos. */
+  private String trimToNull(String value, int maxLength) {
+    return StringUtils.hasText(value) ? limitToDatabaseLength(value.trim(), maxLength) : null;
   }
 }

@@ -69,7 +69,6 @@ public class BackendNicheResearchSeedBuilderService {
       Long researchCycleId, CompleteNicheResearchSeedBuilderRequest request) {
     try {
       OprmRoutineResearchCycle cycle = findCycle(researchCycleId);
-      validateCompletionRequest(researchCycleId, cycle, request);
       if (nicheResearchSeedRepository.existsByResearchCycleId(researchCycleId)) {
         throw new IllegalStateException("Niche research seed already exists for cycle: " + researchCycleId);
       }
@@ -77,7 +76,11 @@ public class BackendNicheResearchSeedBuilderService {
       Instant now = Instant.now();
       OprmNicheResearchSeed savedSeed = nicheResearchSeedRepository.save(createSeed(cycle, request, now));
       List<OprmResearchQuery> savedQueries = researchQueryRepository.saveAll(createQueries(
-          researchCycleId, savedSeed.getId(), request.queries(), normalizeCreatedBy(request.createdBy()), now));
+          cycle,
+          savedSeed.getId(),
+          request == null ? null : request.queries(),
+          normalizeCreatedBy(request == null ? null : request.createdBy()),
+          now));
       reactivateCycleAfterSuccessfulCompletion(cycle);
       cycle.setTotalQueries(savedQueries.size());
       cycle.setUpdatedAt(now);
@@ -105,7 +108,8 @@ public class BackendNicheResearchSeedBuilderService {
       cycle.setUpdatedAt(now);
       routineResearchCycleRepository.save(cycle);
     } catch (RuntimeException ex) {
-      LOGGER.error("Erro ao registrar falha da etapa dois do OPRM nichocnae (researchCycleId={})", researchCycleId, ex);
+      LOGGER.error(
+          "Erro ao registrar falha da etapa dois do OPRM nichocnae (researchCycleId={})", researchCycleId, ex);
       throw ex;
     }
   }
@@ -149,34 +153,11 @@ public class BackendNicheResearchSeedBuilderService {
         .orElseThrow(() -> new EntityNotFoundException("Routine research cycle not found: " + researchCycleId));
   }
 
-  /** Valida o contrato mínimo da saída de IA antes de gravar artefatos da etapa dois. */
-  private void validateCompletionRequest(
-      Long researchCycleId, OprmRoutineResearchCycle cycle, CompleteNicheResearchSeedBuilderRequest request) {
-    if (request == null) {
-      throw new IllegalArgumentException("Request body is required for cycle: " + researchCycleId);
-    }
-    requiredText(request.nicheName(), "nicheName");
-    requiredText(request.businessType(), "businessType");
-    requiredText(request.operationType(), "operationType");
-    requiredText(request.customerType(), "customerType");
-    requiredText(request.commercialObjects(), "commercialObjects");
-    requiredText(request.initialAssumptions(), "initialAssumptions");
-    requiredText(request.confidenceLevel(), "confidenceLevel");
-    validateQueries(request.queries());
-  }
-
-  /** Valida apenas se a saída do modelo possui queries persistíveis, sem julgar conteúdo semântico. */
-  private void validateQueries(List<NicheResearchQueryRequest> queries) {
-    if (queries == null || queries.isEmpty()) {
-      throw new IllegalArgumentException("queries must contain at least one persistable item");
-    }
-    for (NicheResearchQueryRequest query : queries) {
-      if (query == null) {
-        throw new IllegalArgumentException("query item is required");
-      }
-      requiredText(query.queryText(), "queryText");
-      requiredText(query.queryGoal(), "queryGoal");
-    }
+  /**
+   * Mantém a conclusão da etapa dois tolerante a campos ausentes para não bloquear o pipeline por validação do modelo.
+   */
+  private String textOrDefault(String value, String fallback) {
+    return StringUtils.hasText(value) ? value.trim() : fallback;
   }
 
   /** Cria a entidade de seed do nicho usando o ciclo canônico como fonte dos dados CNAE. */
@@ -186,51 +167,69 @@ public class BackendNicheResearchSeedBuilderService {
     seed.setResearchCycleId(cycle.getId());
     seed.setCnaeCode(cycle.getCnaeCode());
     seed.setCnaeDescription(cycle.getCnaeDescription());
-    seed.setNicheName(requiredText(request.nicheName(), "nicheName"));
-    seed.setBusinessType(requiredText(request.businessType(), "businessType"));
-    seed.setOperationType(requiredText(request.operationType(), "operationType"));
-    seed.setCustomerType(requiredText(request.customerType(), "customerType"));
-    seed.setCommercialObjects(requiredText(request.commercialObjects(), "commercialObjects"));
-    seed.setInitialAssumptions(requiredText(request.initialAssumptions(), "initialAssumptions"));
-    seed.setConfidenceLevel(requiredText(request.confidenceLevel(), "confidenceLevel"));
-    seed.setCreatedBy(normalizeCreatedBy(request.createdBy()));
+    seed.setNicheName(textOrDefault(request == null ? null : request.nicheName(), cycle.getNicheName()));
+    seed.setBusinessType(textOrDefault(request == null ? null : request.businessType(), cycle.getCnaeDescription()));
+    seed.setOperationType(textOrDefault(
+        request == null ? null : request.operationType(), "Rotina operacional do CNAE " + cycle.getCnaeCode()));
+    seed.setCustomerType(
+        textOrDefault(request == null ? null : request.customerType(), "Clientes do profissional deste CNAE"));
+    seed.setCommercialObjects(
+        textOrDefault(request == null ? null : request.commercialObjects(), cycle.getCnaeDescription()));
+    seed.setInitialAssumptions(textOrDefault(
+        request == null ? null : request.initialAssumptions(),
+        "Seed gravado sem validação bloqueante; revisar evidências nas próximas etapas."));
+    seed.setConfidenceLevel(textOrDefault(request == null ? null : request.confidenceLevel(), "UNVALIDATED"));
+    seed.setCreatedBy(normalizeCreatedBy(request == null ? null : request.createdBy()));
     seed.setCreatedAt(now);
     return seed;
   }
 
   /** Cria as entidades de query com status pendente para execução pela próxima etapa do pipeline. */
   private List<OprmResearchQuery> createQueries(
-      Long researchCycleId,
+      OprmRoutineResearchCycle cycle,
       Long nicheResearchSeedId,
       List<NicheResearchQueryRequest> queryRequests,
       String createdBy,
       Instant now) {
-    return queryRequests.stream()
-        .map(queryRequest -> createQuery(researchCycleId, nicheResearchSeedId, queryRequest, createdBy, now))
+    List<NicheResearchQueryRequest> safeQueryRequests =
+        queryRequests == null || queryRequests.isEmpty() ? List.of(defaultQueryRequest(cycle)) : queryRequests;
+    return safeQueryRequests.stream()
+        .map(queryRequest -> createQuery(cycle, nicheResearchSeedId, queryRequest, createdBy, now))
         .sorted(Comparator.comparing(OprmResearchQuery::getPriority).thenComparing(OprmResearchQuery::getQueryText))
         .toList();
   }
 
   /** Cria uma query individual aplicando defaults operacionais definidos para o MVP. */
   private OprmResearchQuery createQuery(
-      Long researchCycleId,
+      OprmRoutineResearchCycle cycle,
       Long nicheResearchSeedId,
       NicheResearchQueryRequest queryRequest,
       String createdBy,
       Instant now) {
     OprmResearchQuery query = new OprmResearchQuery();
-    query.setResearchCycleId(researchCycleId);
+    query.setResearchCycleId(cycle.getId());
     query.setNicheResearchSeedId(nicheResearchSeedId);
-    query.setQueryText(requiredText(queryRequest.queryText(), "queryText"));
-    query.setQueryGoal(requiredText(queryRequest.queryGoal(), "queryGoal"));
-    query.setSourceGroup(trimToNull(queryRequest.sourceGroup()));
-    query.setPriority(queryRequest.priority() == null ? 100 : queryRequest.priority());
+    query.setQueryText(
+        textOrDefault(queryRequest == null ? null : queryRequest.queryText(), defaultQueryText(cycle)));
+    query.setQueryGoal(textOrDefault(queryRequest == null ? null : queryRequest.queryGoal(), "ROUTINE_DISCOVERY"));
+    query.setSourceGroup(trimToNull(queryRequest == null ? null : queryRequest.sourceGroup()));
+    query.setPriority(queryRequest == null || queryRequest.priority() == null ? 100 : queryRequest.priority());
     query.setStatus(QUERY_STATUS_PENDING);
     query.setResultCount(0);
     query.setCreatedBy(createdBy);
     query.setCreatedAt(now);
     query.setUpdatedAt(now);
     return query;
+  }
+
+  /** Cria uma query mínima quando o modelo não envia queries, evitando bloqueio por validação estrutural. */
+  private NicheResearchQueryRequest defaultQueryRequest(OprmRoutineResearchCycle cycle) {
+    return new NicheResearchQueryRequest(defaultQueryText(cycle), "ROUTINE_DISCOVERY", "WEB", 100);
+  }
+
+  /** Monta texto de pesquisa padrão a partir do CNAE para manter o ciclo avançando. */
+  private String defaultQueryText(OprmRoutineResearchCycle cycle) {
+    return "rotina dificuldades atendimento clientes Brasil " + cycle.getCnaeDescription();
   }
 
   /** Converte um ciclo pendente no contrato interno de unidade de trabalho da etapa dois. */

@@ -41,7 +41,7 @@ class OpenAiNicheResearchSeedBuilderClientTest {
 
     /** Cria o client com dependências nulas porque o teste cobre apenas resolução de chave. */
     private OpenAiNicheResearchSeedBuilderClient clientWithProperties(NicheResearchSeedBuilderOpenAiProperties properties) {
-        return new OpenAiNicheResearchSeedBuilderClient(null, null, properties, null, null, null);
+        return new OpenAiNicheResearchSeedBuilderClient(null, null, properties, null, null);
     }
 
     /** Cria uma pendência mínima para contexto de logs de resolução de chave. */

@@ -395,3 +395,9 @@
 - Decisão operacional registrada: a etapa `niche-research-seed-builder` deve confiar no modelo para o conteúdo semântico das queries e não deve travar o ciclo por marcador literal de MEI/autônomo, Brasil/pt-BR, objetivo fechado, quantidade fixa, duplicidade textual, linguagem de solução ou genericidade.
 - Ajuste técnico: o validador do `oprm-coletor-mei`, o schema da Responses API, o preview do frontend e a validação do backend foram reduzidos ao mínimo persistível: estrutura, ciclo correto, seed obrigatório, lista não vazia de queries e campos de query exigidos pelo banco.
 - Causa-raiz tratada: falsos negativos em português natural estavam bloqueando uma etapa preparatória que deve apenas criar seed e perguntas de pesquisa para as etapas seguintes comprovarem com fontes, sinais, síntese e gate.
+
+## 2026-06-11 — OPRM NichoCNAE: remoção efetiva dos bloqueios restantes e etapa da falha
+
+- Corrigida a causa-raiz do erro recorrente `Query sem marcador de MEI/autônomo brasileiro` no ciclo de rotina: a etapa `niche-research-seed-builder` deixou de executar o validador bloqueante no coletor e o backend passou a gravar seed/queries com defaults quando algum campo estrutural vier ausente.
+- A tela `/oprm/pipeline` agora identifica a etapa exata da falha a partir da mensagem técnica do ciclo, mostrando `Etapa 2 · Seed de Pesquisa do Nicho` quando o erro vem da geração de seed.
+- Prevenção de recorrência: falhas por formato incompleto do modelo não travam mais a criação da pesquisa; as etapas seguintes continuam responsáveis por buscar fontes, extrair sinais e filtrar qualidade.

@@ -23,11 +23,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-/** Responsabilidade: orquestrar execuções auditáveis da etapa Dor do pipeline de hipótese. */
+/** Responsabilidade: orquestrar execuções auditáveis das etapas iniciais do pipeline de hipótese. */
 @Service
 public class HypothesisPainStageService {
     private static final Logger log = LoggerFactory.getLogger(HypothesisPainStageService.class);
     private static final String STAGE_CODE = "hypothesis-pain";
+    private static final String RESULT_STAGE_CODE = "hypothesis-result";
     private static final String STATUS_STARTED = "INICIADO";
     private static final String STATUS_WAITING_OPENAI_DISPATCH = "AGUARDANDO_RETORNO_OPENAI";
     private static final String STATUS_PROCESSING = "PROCESSANDO";
@@ -51,17 +52,31 @@ public class HypothesisPainStageService {
     /** Inicia uma nova execução manual da etapa Dor para o nicho informado. */
     @Transactional
     public HypothesisPainStartResponse start(Long marketNicheId) {
+        return startStage(marketNicheId, STAGE_CODE, "Dor", false);
+    }
+
+    /** Inicia uma nova execução manual da etapa Resultado para o nicho informado. */
+    @Transactional
+    public HypothesisPainStartResponse startResult(Long marketNicheId) {
+        return startStage(marketNicheId, RESULT_STAGE_CODE, "Resultado", true);
+    }
+
+    /** Inicia uma nova execução manual de uma etapa do pipeline para o nicho informado. */
+    private HypothesisPainStartResponse startStage(Long marketNicheId, String stageCode, String stageLabel, boolean requiresCompletedPain) {
         Instant now = Instant.now();
         MarketNiche niche = marketNicheRepository.findById(marketNicheId)
                 .orElseThrow(() -> new EntityNotFoundException("Market niche not found: " + marketNicheId));
+        if (requiresCompletedPain) {
+            requireCompletedPain(marketNicheId);
+        }
         HypothesisPainStageExecution execution = HypothesisPainStageExecution.builder()
                 .marketNicheId(niche.getId())
                 .marketNiche(niche)
-                .stageCode(STAGE_CODE)
+                .stageCode(stageCode)
                 .executionRequestedAt(now)
                 .createdAt(now)
                 .promptTemplateId("manual/start")
-                .promptContent("Início manual da etapa Dor via tela de nova hipótese.")
+                .promptContent("Início manual da etapa " + stageLabel + " via tela de nova hipótese.")
                 .status(STATUS_STARTED)
                 .idJob(toDatabaseIdJob(UUID.randomUUID().toString()))
                 .build();
@@ -72,11 +87,22 @@ public class HypothesisPainStageService {
     /** Lista execuções da etapa Dor para o nicho informado. */
     @Transactional(readOnly = true)
     public List<HypothesisPainExecutionSummaryResponse> listStageExecutions(Long marketNicheId, boolean includeCompleted) {
+        return listStageExecutions(marketNicheId, STAGE_CODE, includeCompleted);
+    }
+
+    /** Lista execuções da etapa Resultado para o nicho informado. */
+    @Transactional(readOnly = true)
+    public List<HypothesisPainExecutionSummaryResponse> listResultStageExecutions(Long marketNicheId, boolean includeCompleted) {
+        return listStageExecutions(marketNicheId, RESULT_STAGE_CODE, includeCompleted);
+    }
+
+    /** Lista execuções de uma etapa específica para o nicho informado. */
+    private List<HypothesisPainExecutionSummaryResponse> listStageExecutions(Long marketNicheId, String stageCode, boolean includeCompleted) {
         List<HypothesisPainStageExecution> executions = includeCompleted
-                ? executionRepository.findByMarketNicheIdAndStageCodeOrderByExecutionRequestedAtDesc(marketNicheId, STAGE_CODE)
+                ? executionRepository.findByMarketNicheIdAndStageCodeOrderByExecutionRequestedAtDesc(marketNicheId, stageCode)
                 : executionRepository.findTop20ByMarketNicheIdAndStageCodeAndStatusNotOrderByExecutionRequestedAtDesc(
                         marketNicheId,
-                        STAGE_CODE,
+                        stageCode,
                         STATUS_COMPLETED);
         return executions.stream().map(this::toSummaryResponse).toList();
     }
@@ -103,14 +129,26 @@ public class HypothesisPainStageService {
     /** Lista os jobs iniciados da etapa Dor para processamento pelo Worker AI. */
     @Transactional(readOnly = true)
     public List<HypothesisPainPendingExecution> listPending() {
-        return executionRepository.findTop20ByStageCodeAndStatusOrderByExecutionRequestedAtAsc(STAGE_CODE, STATUS_STARTED)
+        return listPendingByStage(STAGE_CODE);
+    }
+
+    /** Lista os jobs iniciados da etapa Resultado para processamento pelo Worker AI. */
+    @Transactional(readOnly = true)
+    public List<HypothesisPainPendingExecution> listResultPending() {
+        return listPendingByStage(RESULT_STAGE_CODE);
+    }
+
+    /** Lista os jobs iniciados de uma etapa para processamento pelo Worker AI. */
+    private List<HypothesisPainPendingExecution> listPendingByStage(String stageCode) {
+        return executionRepository.findTop20ByStageCodeAndStatusOrderByExecutionRequestedAtAsc(stageCode, STATUS_STARTED)
                 .stream()
                 .map(execution -> new HypothesisPainPendingExecution(
                         execution.getMarketNicheId(),
                         fromDatabaseIdJob(execution.getIdJob()),
                         execution.getStageCode(),
                         execution.getExecutionRequestedAt(),
-                        toPendingNiche(execution.getMarketNiche())))
+                        toPendingNiche(execution.getMarketNiche()),
+                        latestCompletedPainResponse(execution.getMarketNicheId())))
                 .toList();
     }
 
@@ -173,7 +211,7 @@ public class HypothesisPainStageService {
             costAttributionService.addUsdCostToNiche(execution.getMarketNiche(), costDeltaUsd);
         } catch (RuntimeException ex) {
             log.error(
-                    "Erro ao concluir resposta da etapa Dor (idJob={}, marketNicheId={}, stageCode={}, openAiJobId={}, modelResponseLength={}, errorMessage={})",
+                    "Erro ao concluir resposta da etapa do pipeline de hipótese (idJob={}, marketNicheId={}, stageCode={}, openAiJobId={}, modelResponseLength={}, errorMessage={})",
                     idJob,
                     request.marketNicheId(),
                     request.stageCode(),
@@ -183,6 +221,24 @@ public class HypothesisPainStageService {
                     ex);
             throw ex;
         }
+    }
+
+    /** Exige dor concluída antes de avançar para etapas que dependem dela. */
+    private void requireCompletedPain(Long marketNicheId) {
+        HypothesisPainStageExecution pain = executionRepository
+                .findTopByMarketNicheIdAndStageCodeOrderByExecutionRequestedAtDesc(marketNicheId, STAGE_CODE)
+                .orElseThrow(() -> new IllegalStateException("Conclua a etapa Dor antes de iniciar a etapa Resultado."));
+        if (!STATUS_COMPLETED.equals(pain.getStatus())) {
+            throw new IllegalStateException("Conclua a etapa Dor antes de iniciar a etapa Resultado.");
+        }
+    }
+
+    /** Retorna a resposta consolidada da dor concluída mais recente para alimentar etapas seguintes. */
+    private String latestCompletedPainResponse(Long marketNicheId) {
+        return executionRepository.findTopByMarketNicheIdAndStageCodeOrderByExecutionRequestedAtDesc(marketNicheId, STAGE_CODE)
+                .filter(execution -> STATUS_COMPLETED.equals(execution.getStatus()))
+                .map(HypothesisPainStageExecution::getModelResponse)
+                .orElse(null);
     }
 
     /** Calcula a diferença de custo em USD para manter o custo do nicho idempotente. */
@@ -198,7 +254,7 @@ public class HypothesisPainStageService {
             return errorMessage.trim();
         }
         if (StringUtils.hasText(normalizedErrorDetail)) {
-            return "Falha ao processar etapa Dor";
+            return "Falha ao processar etapa do pipeline de hipótese";
         }
         return null;
     }

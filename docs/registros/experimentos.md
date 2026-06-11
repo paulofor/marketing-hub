@@ -4355,3 +4355,9 @@
   - frontend/src/pages/experiment/ExperimentFunnelTab.tsx
   - backend/ads-service/src/test/java/com/marketinghub/experiment/funnel/ExperimentFunnelDiagnosticServiceTest.java
   - backend/ads-service/src/test/java/com/marketinghub/experiment/funnel/ExperimentFunnelAutoStopServiceTest.java
+## 2026-06-11 — Etapa Resultado na tela de nova hipótese
+
+- solicitação: avançar para a próxima etapa do pipeline e fazer com a etapa Resultado o mesmo acompanhamento auditável já aplicado à etapa Dor.
+- causa-raiz: a tela e os endpoints estavam presos ao primeiro passo `hypothesis-pain`, impedindo evolução sequencial do framework Dor → Resultado → Mecanismo → Prova → Oferta.
+- foi feito: adicionada a etapa 2 Resultado com card próprio na tela de nova hipótese, endpoints públicos e internos, reaproveitamento da tabela auditável de execuções, bloqueio para iniciar Resultado sem Dor concluída e worker AI isolado com prompt/schema próprios.
+- prevenção: o backend agora diferencia os estágios por `stageCode` e a etapa Resultado recebe a resposta concluída da Dor como contexto obrigatório para reduzir risco de promessa desconectada da dor real.

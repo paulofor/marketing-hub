@@ -1,8 +1,8 @@
 openapi: 3.0.3
 info:
-  title: Hypothesis Pain Stage API
+  title: Hypothesis Pipeline Initial Stages API
   version: 1.0.0
-  description: Contratos da etapa Dor do pipeline de hipótese.
+  description: Contratos das etapas Dor e Resultado do pipeline de hipótese.
 paths:
   /api/niches/{nicheId}/hypothesis-pipeline/pain/start:
     post:
@@ -93,6 +93,108 @@ paths:
   /api/internal/hypothesis-pipeline/pain/stage-executions/{idJob}/recebe-resposta:
     post:
       summary: Recebe resposta ou erro da OpenAI para concluir a etapa Dor.
+      parameters:
+        - in: path
+          name: idJob
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecebeRespostaRequest'
+      responses:
+        '202': { description: Resposta registrada. }
+  /api/niches/{nicheId}/hypothesis-pipeline/result/start:
+    post:
+      summary: Inicia a construção auditável do resultado desejado do nicho.
+      parameters:
+        - in: path
+          name: nicheId
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        '202':
+          description: Execução iniciada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HypothesisPainStartResponse'
+  /api/niches/{nicheId}/hypothesis-pipeline/result/stage-executions:
+    get:
+      summary: Lista execuções da etapa Resultado para acompanhamento na tela de nova hipótese.
+      parameters:
+        - in: path
+          name: nicheId
+          required: true
+          schema: { type: integer, format: int64 }
+        - in: query
+          name: includeCompleted
+          schema: { type: boolean, default: true }
+      responses:
+        '200':
+          description: Execuções retornadas.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/HypothesisPainExecutionSummaryResponse'
+  /api/niches/{nicheId}/hypothesis-pipeline/result/stage-executions/{idJob}:
+    get:
+      summary: Consulta detalhe auditável de uma execução da etapa Resultado para a tela de detalhe do job.
+      parameters:
+        - in: path
+          name: nicheId
+          required: true
+          schema: { type: integer, format: int64 }
+        - in: path
+          name: idJob
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Detalhe da execução retornado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HypothesisPainExecutionDetailResponse'
+  /api/internal/hypothesis-pipeline/result/stage-executions/pending:
+    get:
+      summary: Lista jobs pendentes da etapa Resultado para o Worker AI.
+      responses:
+        '200':
+          description: Jobs pendentes.
+  /api/internal/hypothesis-pipeline/result/stage-executions/{idJob}/running:
+    post:
+      summary: Marca uma execução de resultado como em processamento.
+      parameters:
+        - in: path
+          name: idJob
+          required: true
+          schema: { type: string }
+      responses:
+        '202': { description: Execução marcada. }
+  /api/internal/hypothesis-pipeline/result/stage-executions/{idJob}/recebe-prompt:
+    post:
+      summary: Recebe prompt, schema e request cru da etapa Resultado enviados para a OpenAI.
+      parameters:
+        - in: path
+          name: idJob
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecebePromptRequest'
+      responses:
+        '202': { description: Prompt registrado. }
+  /api/internal/hypothesis-pipeline/result/stage-executions/{idJob}/recebe-resposta:
+    post:
+      summary: Recebe resposta ou erro da OpenAI para concluir a etapa Resultado.
       parameters:
         - in: path
           name: idJob

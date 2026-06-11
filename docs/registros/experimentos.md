@@ -4396,3 +4396,14 @@
 - causa-raiz: o backend já criava e expunha jobs `hypothesis-mechanism`, mas o `ai-worker` não tinha configuração, backend client, processor, scheduler, prompt e schema próprios para consumir essa fila.
 - foi feito: adicionada a etapa `hypothesis-mechanism` no Worker AI, com consumo do endpoint interno de Mecanismo, uso de Dor e Resultado concluídos como contexto, resposta estruturada de mecanismo plausível e testes de contrato.
 - impacto esperado: jobs de Mecanismo deixam de ficar parados em `INICIADO` e passam a avançar para processamento OpenAI, completando o terceiro passo do eixo Dor → Resultado → Mecanismo.
+
+## 2026-06-11 — Etapa 5 Oferta na tela de nova hipótese
+
+- solicitação: transferir a etapa 5 para a tela `/niches/:nicheId/hypotheses/new`.
+- causa-raiz/objetivo: a tela de nova hipótese mostrava apenas Dor, Resultado e Mecanismo, deixando a etapa Oferta fora do acompanhamento operacional do fluxo Dor → Resultado → Mecanismo → Prova → Oferta.
+- foi feito:
+  - adicionada a Etapa 5 — Oferta na tela de nova hipótese, com listagem de execuções, botão assíncrono de início e inclusão do custo no total geral;
+  - criados endpoints backend públicos e internos para iniciar, listar, detalhar e acompanhar jobs da etapa `hypothesis-offer` usando a mesma tabela auditável do pipeline de hipótese;
+  - a liberação da Oferta passou a exigir Mecanismo concluído, preservando a causa-raiz do fluxo sequencial;
+  - atualizada a documentação Swagger do pipeline de hipótese para incluir Oferta.
+- impacto esperado: o usuário passa a acompanhar e iniciar a construção da Oferta no mesmo lugar onde já acompanha as etapas anteriores, reduzindo dispersão operacional e mantendo foco em venda.

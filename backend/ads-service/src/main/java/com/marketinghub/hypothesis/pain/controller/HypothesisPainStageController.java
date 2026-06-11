@@ -20,14 +20,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Responsável por expor os endpoints das etapas iniciais do pipeline de hipótese. */
+/** Responsável por expor os endpoints das etapas do pipeline de hipótese por nicho. */
 @RestController
 @RequestMapping("/api")
 public class HypothesisPainStageController {
     private static final Logger log = LoggerFactory.getLogger(HypothesisPainStageController.class);
     private final HypothesisPainStageService service;
 
-    /** Inicializa o controller com o serviço das etapas iniciais. */
+    /** Inicializa o controller com o serviço das etapas do pipeline de hipótese. */
     public HypothesisPainStageController(HypothesisPainStageService service) {
         this.service = service;
     }
@@ -48,6 +48,12 @@ public class HypothesisPainStageController {
     @PostMapping("/niches/{nicheId}/hypothesis-pipeline/mechanism/start")
     public ResponseEntity<HypothesisPainStartResponse> startMechanism(@PathVariable Long nicheId) {
         return ResponseEntity.accepted().body(service.startMechanism(nicheId));
+    }
+
+    /** Registra uma execução inicial da etapa Oferta para um nicho. */
+    @PostMapping("/niches/{nicheId}/hypothesis-pipeline/offer/start")
+    public ResponseEntity<HypothesisPainStartResponse> startOffer(@PathVariable Long nicheId) {
+        return ResponseEntity.accepted().body(service.startOffer(nicheId));
     }
 
     /** Lista execuções da etapa Dor para acompanhamento na tela de nova hipótese. */
@@ -74,6 +80,14 @@ public class HypothesisPainStageController {
         return ResponseEntity.ok(service.listMechanismStageExecutions(nicheId, includeCompleted));
     }
 
+    /** Lista execuções da etapa Oferta para acompanhamento na tela de nova hipótese. */
+    @GetMapping("/niches/{nicheId}/hypothesis-pipeline/offer/stage-executions")
+    public ResponseEntity<List<HypothesisPainExecutionSummaryResponse>> listOfferStageExecutions(
+            @PathVariable Long nicheId,
+            @RequestParam(defaultValue = "true") boolean includeCompleted) {
+        return ResponseEntity.ok(service.listOfferStageExecutions(nicheId, includeCompleted));
+    }
+
     /** Consulta detalhe auditável de uma execução da etapa Dor vinculada ao nicho. */
     @GetMapping("/niches/{nicheId}/hypothesis-pipeline/pain/stage-executions/{idJob}")
     public ResponseEntity<HypothesisPainExecutionDetailResponse> detailForNiche(
@@ -93,6 +107,14 @@ public class HypothesisPainStageController {
     /** Consulta detalhe auditável de uma execução da etapa Mecanismo vinculada ao nicho. */
     @GetMapping("/niches/{nicheId}/hypothesis-pipeline/mechanism/stage-executions/{idJob}")
     public ResponseEntity<HypothesisPainExecutionDetailResponse> detailMechanismForNiche(
+            @PathVariable Long nicheId,
+            @PathVariable String idJob) {
+        return ResponseEntity.ok(service.detailForNiche(nicheId, idJob));
+    }
+
+    /** Consulta detalhe auditável de uma execução da etapa Oferta vinculada ao nicho. */
+    @GetMapping("/niches/{nicheId}/hypothesis-pipeline/offer/stage-executions/{idJob}")
+    public ResponseEntity<HypothesisPainExecutionDetailResponse> detailOfferForNiche(
             @PathVariable Long nicheId,
             @PathVariable String idJob) {
         return ResponseEntity.ok(service.detailForNiche(nicheId, idJob));
@@ -122,11 +144,18 @@ public class HypothesisPainStageController {
         return service.listMechanismPending();
     }
 
+    /** Lista jobs pendentes da etapa Oferta para processamento pelo Worker AI. */
+    @GetMapping("/internal/hypothesis-pipeline/offer/stage-executions/pending")
+    public List<HypothesisPainPendingExecution> offerPending() {
+        return service.listOfferPending();
+    }
+
     /** Marca uma execução de etapa como em processamento. */
     @PostMapping({
             "/internal/hypothesis-pipeline/pain/stage-executions/{idJob}/running",
             "/internal/hypothesis-pipeline/result/stage-executions/{idJob}/running",
-            "/internal/hypothesis-pipeline/mechanism/stage-executions/{idJob}/running"
+            "/internal/hypothesis-pipeline/mechanism/stage-executions/{idJob}/running",
+            "/internal/hypothesis-pipeline/offer/stage-executions/{idJob}/running"
     })
     public ResponseEntity<Void> running(@PathVariable String idJob) {
         service.markRunning(idJob);
@@ -137,7 +166,8 @@ public class HypothesisPainStageController {
     @PostMapping({
             "/internal/hypothesis-pipeline/pain/stage-executions/{idJob}/recebe-prompt",
             "/internal/hypothesis-pipeline/result/stage-executions/{idJob}/recebe-prompt",
-            "/internal/hypothesis-pipeline/mechanism/stage-executions/{idJob}/recebe-prompt"
+            "/internal/hypothesis-pipeline/mechanism/stage-executions/{idJob}/recebe-prompt",
+            "/internal/hypothesis-pipeline/offer/stage-executions/{idJob}/recebe-prompt"
     })
     public ResponseEntity<Void> recebePrompt(
             @PathVariable String idJob,
@@ -165,7 +195,8 @@ public class HypothesisPainStageController {
     @PostMapping({
             "/internal/hypothesis-pipeline/pain/stage-executions/{idJob}/recebe-resposta",
             "/internal/hypothesis-pipeline/result/stage-executions/{idJob}/recebe-resposta",
-            "/internal/hypothesis-pipeline/mechanism/stage-executions/{idJob}/recebe-resposta"
+            "/internal/hypothesis-pipeline/mechanism/stage-executions/{idJob}/recebe-resposta",
+            "/internal/hypothesis-pipeline/offer/stage-executions/{idJob}/recebe-resposta"
     })
     public ResponseEntity<Void> recebeResposta(
             @PathVariable String idJob,

@@ -23,7 +23,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-/** Responsabilidade: validar a orquestração de custos da etapa Dor do pipeline de hipótese. */
+/** Responsabilidade: validar a orquestração das etapas do pipeline de hipótese por nicho. */
 @ExtendWith(MockitoExtension.class)
 class HypothesisPainStageServiceTest {
 
@@ -211,6 +211,103 @@ class HypothesisPainStageServiceTest {
         assertEquals(1, pending.size());
         assertEquals("{\"pain\":\"dor validada\"}", pending.getFirst().painModelResponse());
         assertEquals("{\"result\":\"resultado validado\"}", pending.getFirst().resultModelResponse());
+    }
+
+    /** Deve bloquear a etapa Oferta quando o mecanismo ainda não está concluído. */
+    @Test
+    void startOfferRequiresCompletedMechanism() {
+        MarketNiche niche = new MarketNiche();
+        niche.setId(18L);
+        when(marketNicheRepository.findById(18L)).thenReturn(Optional.of(niche));
+        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
+                        18L,
+                        "hypothesis-pain",
+                        "CONCLUIDO"))
+                .thenReturn(Optional.of(HypothesisPainStageExecution.builder()
+                        .marketNicheId(18L)
+                        .stageCode("hypothesis-pain")
+                        .status("CONCLUIDO")
+                        .modelResponse("{\"pain\":\"dor validada\"}")
+                        .build()));
+        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
+                        18L,
+                        "hypothesis-result",
+                        "CONCLUIDO"))
+                .thenReturn(Optional.of(HypothesisPainStageExecution.builder()
+                        .marketNicheId(18L)
+                        .stageCode("hypothesis-result")
+                        .status("CONCLUIDO")
+                        .modelResponse("{\"result\":\"resultado validado\"}")
+                        .build()));
+        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
+                        18L,
+                        "hypothesis-mechanism",
+                        "CONCLUIDO"))
+                .thenReturn(Optional.empty());
+
+        assertThrows(IllegalStateException.class, () -> service.startOffer(18L));
+    }
+
+    /** Deve entregar Dor, Resultado e Mecanismo concluídos para contextualizar a etapa Oferta no Worker AI. */
+    @Test
+    void listOfferPendingIncludesLatestCompletedPainResultAndMechanismResponses() {
+        MarketNiche niche = new MarketNiche();
+        niche.setId(18L);
+        niche.setName("Produtores digitais");
+        String offerJob = "5cc56a94-45bc-48bf-8e8d-e1f4f8b881df";
+        HypothesisPainStageExecution offerExecution = HypothesisPainStageExecution.builder()
+                .idJob(offerJob.getBytes(StandardCharsets.UTF_8))
+                .marketNicheId(18L)
+                .marketNiche(niche)
+                .stageCode("hypothesis-offer")
+                .status("INICIADO")
+                .executionRequestedAt(Instant.parse("2026-06-11T14:00:00Z"))
+                .build();
+        HypothesisPainStageExecution completedPain = HypothesisPainStageExecution.builder()
+                .marketNicheId(18L)
+                .stageCode("hypothesis-pain")
+                .status("CONCLUIDO")
+                .modelResponse("{\"pain\":\"dor validada\"}")
+                .build();
+        HypothesisPainStageExecution completedResult = HypothesisPainStageExecution.builder()
+                .marketNicheId(18L)
+                .stageCode("hypothesis-result")
+                .status("CONCLUIDO")
+                .modelResponse("{\"result\":\"resultado validado\"}")
+                .build();
+        HypothesisPainStageExecution completedMechanism = HypothesisPainStageExecution.builder()
+                .marketNicheId(18L)
+                .stageCode("hypothesis-mechanism")
+                .status("CONCLUIDO")
+                .modelResponse("{\"mechanism\":\"mecanismo validado\"}")
+                .build();
+
+        when(executionRepository.findTop20ByStageCodeAndStatusOrderByExecutionRequestedAtAsc(
+                        "hypothesis-offer",
+                        "INICIADO"))
+                .thenReturn(List.of(offerExecution));
+        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
+                        18L,
+                        "hypothesis-pain",
+                        "CONCLUIDO"))
+                .thenReturn(Optional.of(completedPain));
+        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
+                        18L,
+                        "hypothesis-result",
+                        "CONCLUIDO"))
+                .thenReturn(Optional.of(completedResult));
+        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
+                        18L,
+                        "hypothesis-mechanism",
+                        "CONCLUIDO"))
+                .thenReturn(Optional.of(completedMechanism));
+
+        var pending = service.listOfferPending();
+
+        assertEquals(1, pending.size());
+        assertEquals("{\"pain\":\"dor validada\"}", pending.getFirst().painModelResponse());
+        assertEquals("{\"result\":\"resultado validado\"}", pending.getFirst().resultModelResponse());
+        assertEquals("{\"mechanism\":\"mecanismo validado\"}", pending.getFirst().mechanismModelResponse());
     }
 
 }

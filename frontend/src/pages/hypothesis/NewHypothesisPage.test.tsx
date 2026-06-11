@@ -31,18 +31,35 @@ function renderPage() {
 
 describe("NewHypothesisPage", () => {
   it("shows the current pain job id as a link to the job detail page", async () => {
-    (axios.get as any).mockResolvedValue({
-      data: [
-        {
-          jobid: "9bb83a22-3894-43bd-9752-374f84eb6a2c",
-          marketNicheId: 18,
-          stageCode: "hypothesis-pain",
-          status: "INICIADO",
-          executionRequestedAt: "2026-06-11T00:16:01Z",
-          completedAt: "2026-06-11T00:20:01Z",
-          costUsd: 0.012345,
-        },
-      ],
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url.includes("/hypothesis-pipeline/pain/")) {
+        return Promise.resolve({
+          data: [
+            {
+              jobid: "9bb83a22-3894-43bd-9752-374f84eb6a2c",
+              marketNicheId: 18,
+              stageCode: "hypothesis-pain",
+              status: "INICIADO",
+              executionRequestedAt: "2026-06-11T00:16:01Z",
+              completedAt: "2026-06-11T00:20:01Z",
+              costUsd: 0.012345,
+            },
+          ],
+        });
+      }
+      return Promise.resolve({
+        data: [
+          {
+            jobid: "aaaaaaaa-3894-43bd-9752-374f84eb6a2c",
+            marketNicheId: 18,
+            stageCode: "hypothesis-result",
+            status: "CONCLUIDO",
+            executionRequestedAt: "2026-06-11T00:21:01Z",
+            completedAt: "2026-06-11T00:25:01Z",
+            costUsd: 0.002,
+          },
+        ],
+      });
     });
 
     renderPage();
@@ -62,5 +79,9 @@ describe("NewHypothesisPage", () => {
       }),
     ).toBeInTheDocument();
     expect(screen.getAllByText(/US\$\s*0,012345/)).not.toHaveLength(0);
+    expect(
+      screen.getByText("Etapa 2 — Resultado desejado"),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/US\$\s*0,014345/)).toBeInTheDocument();
   });
 });

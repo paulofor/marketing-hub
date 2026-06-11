@@ -29,13 +29,14 @@ export interface HypothesisPainStageExecutionDetail {
 export function useHypothesisPainStageExecutionDetail(
   nicheId?: string,
   jobId?: string,
+  stageSlug = "pain",
 ) {
   return useQuery({
-    queryKey: ["hypothesis-pain-stage-execution-detail", nicheId, jobId],
+    queryKey: ["hypothesis-stage-execution-detail", stageSlug, nicheId, jobId],
     enabled: Boolean(nicheId && jobId),
     queryFn: async () => {
       const { data } = await axios.get<HypothesisPainStageExecutionDetail>(
-        `/api/niches/${nicheId}/hypothesis-pipeline/pain/stage-executions/${jobId}`,
+        `/api/niches/${nicheId}/hypothesis-pipeline/${stageSlug}/stage-executions/${jobId}`,
       );
       return data;
     },

@@ -4331,3 +4331,10 @@
   - docs/registros/experimentos.md
   - frontend/src/pages/hypothesis/NewHypothesisPage.tsx
   - frontend/src/pages/hypothesis/NewHypothesisPage.test.tsx
+
+## 2026-06-11 — Custos na tela de nova hipótese
+
+- solicitação: exibir o custo de cada execução da etapa Dor, o custo total geral da criação da hipótese e garantir atualização do custo acumulado do nicho.
+- causa-raiz: a tela inicial mostrava apenas status e job atual, apesar de o backend já receber `costUsd` da IA; além disso, a conclusão do job gravava o custo da execução, mas não propagava esse valor para o custo acumulado do nicho.
+- foi feito: a tela passou a mostrar custo total e tabela de execuções com custo individual, e o backend passou a atribuir ao nicho somente o delta de custo em USD convertido pela regra central de custos, evitando duplicidade em reprocessamentos.
+- prevenção: adicionados testes de frontend para a visibilidade dos custos e teste unitário backend para garantir atribuição idempotente do delta ao nicho.

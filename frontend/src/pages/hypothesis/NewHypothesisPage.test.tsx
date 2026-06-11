@@ -39,23 +39,28 @@ describe("NewHypothesisPage", () => {
           stageCode: "hypothesis-pain",
           status: "INICIADO",
           executionRequestedAt: "2026-06-11T00:16:01Z",
+          completedAt: "2026-06-11T00:20:01Z",
+          costUsd: 0.012345,
         },
       ],
     });
 
     renderPage();
 
-    const link = await screen.findByRole("link", {
+    const links = await screen.findAllByRole("link", {
       name: "9bb83a22-3894-43bd-9752-374f84eb6a2c",
     });
 
-    expect(link).toHaveAttribute(
+    expect(links[0]).toHaveAttribute(
       "href",
       "/niches/18/hypothesis-pipeline/pain/stage-executions/9bb83a22-3894-43bd-9752-374f84eb6a2c",
     );
     expect(screen.queryByText("Dor de superfície")).not.toBeInTheDocument();
     expect(
-      screen.queryByRole("columnheader", { name: "Job" }),
-    ).not.toBeInTheDocument();
+      screen.getByText("Custo total geral da criação da hipótese:", {
+        exact: false,
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByText(/US\$\s*0,012345/)).not.toHaveLength(0);
   });
 });

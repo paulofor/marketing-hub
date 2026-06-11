@@ -1,5 +1,6 @@
 package com.marketinghub.hypothesis.pain.service;
 
+import com.marketinghub.cost.CostAttributionService;
 import com.marketinghub.hypothesis.pain.HypothesisPainStageExecution;
 import com.marketinghub.hypothesis.pain.service.detailStageExecution.HypothesisPainExecutionDetailResponse;
 import com.marketinghub.hypothesis.pain.service.listStageExecutions.HypothesisPainExecutionSummaryResponse;
@@ -11,6 +12,7 @@ import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.repository.jpa.hypothesis.HypothesisPainStageExecutionRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import jakarta.persistence.EntityNotFoundException;
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
@@ -34,13 +36,16 @@ public class HypothesisPainStageService {
 
     private final MarketNicheRepository marketNicheRepository;
     private final HypothesisPainStageExecutionRepository executionRepository;
+    private final CostAttributionService costAttributionService;
 
     /** Inicializa o serviço com os repositórios canônicos de nicho e execução de etapa. */
     public HypothesisPainStageService(
             MarketNicheRepository marketNicheRepository,
-            HypothesisPainStageExecutionRepository executionRepository) {
+            HypothesisPainStageExecutionRepository executionRepository,
+            CostAttributionService costAttributionService) {
         this.marketNicheRepository = marketNicheRepository;
         this.executionRepository = executionRepository;
+        this.costAttributionService = costAttributionService;
     }
 
     /** Inicia uma nova execução manual da etapa Dor para o nicho informado. */
@@ -68,7 +73,7 @@ public class HypothesisPainStageService {
     @Transactional(readOnly = true)
     public List<HypothesisPainExecutionSummaryResponse> listStageExecutions(Long marketNicheId, boolean includeCompleted) {
         List<HypothesisPainStageExecution> executions = includeCompleted
-                ? executionRepository.findTop20ByMarketNicheIdAndStageCodeOrderByExecutionRequestedAtDesc(marketNicheId, STAGE_CODE)
+                ? executionRepository.findByMarketNicheIdAndStageCodeOrderByExecutionRequestedAtDesc(marketNicheId, STAGE_CODE)
                 : executionRepository.findTop20ByMarketNicheIdAndStageCodeAndStatusNotOrderByExecutionRequestedAtDesc(
                         marketNicheId,
                         STAGE_CODE,
@@ -155,6 +160,8 @@ public class HypothesisPainStageService {
             }
             execution.setInputTokens(request.inputTokens());
             execution.setOutputTokens(request.outputTokens());
+            BigDecimal previousCostUsd = execution.getCostUsd();
+            BigDecimal costDeltaUsd = calculateCostDeltaUsd(previousCostUsd, request.costUsd());
             execution.setCostUsd(request.costUsd());
             String normalizedErrorDetail = StringUtils.hasText(request.errorDetail()) ? request.errorDetail().trim() : null;
             String normalizedErrorMessage = normalizeErrorMessage(request.errorMessage(), normalizedErrorDetail);
@@ -163,6 +170,7 @@ public class HypothesisPainStageService {
             execution.setCompletedAt(Instant.now());
             execution.setStatus(normalizedErrorMessage != null ? STATUS_FAILED : STATUS_COMPLETED);
             executionRepository.save(execution);
+            costAttributionService.addUsdCostToNiche(execution.getMarketNiche(), costDeltaUsd);
         } catch (RuntimeException ex) {
             log.error(
                     "Erro ao concluir resposta da etapa Dor (idJob={}, marketNicheId={}, stageCode={}, openAiJobId={}, modelResponseLength={}, errorMessage={})",
@@ -175,6 +183,13 @@ public class HypothesisPainStageService {
                     ex);
             throw ex;
         }
+    }
+
+    /** Calcula a diferença de custo em USD para manter o custo do nicho idempotente. */
+    private BigDecimal calculateCostDeltaUsd(BigDecimal previousCostUsd, BigDecimal currentCostUsd) {
+        BigDecimal previous = previousCostUsd != null ? previousCostUsd : BigDecimal.ZERO;
+        BigDecimal current = currentCostUsd != null ? currentCostUsd : BigDecimal.ZERO;
+        return current.subtract(previous);
     }
 
     /** Normaliza a mensagem de erro e garante status de falha quando há detalhe técnico. */

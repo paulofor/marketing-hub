@@ -18,8 +18,8 @@ public interface HypothesisPainStageExecutionRepository extends JpaRepository<Hy
     @EntityGraph(attributePaths = {"marketNiche", "hypothesis"})
     List<HypothesisPainStageExecution> findTop20ByStageCodeAndStatusOrderByExecutionRequestedAtAsc(String stageCode, String status);
 
-    /** Lista as últimas vinte execuções de uma etapa dentro de um nicho. */
-    List<HypothesisPainStageExecution> findTop20ByMarketNicheIdAndStageCodeOrderByExecutionRequestedAtDesc(Long marketNicheId, String stageCode);
+    /** Lista todas as execuções de uma etapa dentro de um nicho para totalização de custo. */
+    List<HypothesisPainStageExecution> findByMarketNicheIdAndStageCodeOrderByExecutionRequestedAtDesc(Long marketNicheId, String stageCode);
 
     /** Lista as últimas vinte execuções de uma etapa dentro de um nicho excluindo um status operacional. */
     List<HypothesisPainStageExecution> findTop20ByMarketNicheIdAndStageCodeAndStatusNotOrderByExecutionRequestedAtDesc(

@@ -13,6 +13,7 @@ interface PainExecution {
   executionRequestedAt?: string;
   processingStartedAt?: string;
   completedAt?: string;
+  costUsd?: number | string | null;
   errorMessage?: string;
 }
 
@@ -25,6 +26,23 @@ const RUNNING_STATUSES = new Set([
 function formatDate(value?: string) {
   if (!value) return "—";
   return new Date(value).toLocaleString("pt-BR");
+}
+
+function parseCostUsd(value?: number | string | null) {
+  if (value === null || value === undefined || value === "") return null;
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) ? numericValue : null;
+}
+
+function formatCostUsd(value?: number | string | null) {
+  const numericValue = parseCostUsd(value);
+  if (numericValue === null) return "—";
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 4,
+    maximumFractionDigits: 6,
+  }).format(numericValue);
 }
 
 export default function NewHypothesisPage() {
@@ -67,6 +85,10 @@ export default function NewHypothesisPage() {
 
   const executions = executionsQuery.data ?? [];
   const latest = executions[0];
+  const totalCreationCostUsd = executions.reduce((total, item) => {
+    const cost = parseCostUsd(item.costUsd);
+    return cost === null ? total : total + cost;
+  }, 0);
   const hasRunningExecution = executions.some((item) =>
     RUNNING_STATUSES.has(item.status),
   );
@@ -109,9 +131,15 @@ export default function NewHypothesisPage() {
         </div>
         <div className="card-body">
           {nicheId && (
-            <p className="mb-3">
-              <strong>Nicho recebido:</strong> #{nicheId}
-            </p>
+            <div className="d-flex flex-column flex-md-row gap-2 justify-content-between mb-3">
+              <p className="mb-0">
+                <strong>Nicho recebido:</strong> #{nicheId}
+              </p>
+              <p className="mb-0">
+                <strong>Custo total geral da criação da hipótese:</strong>{" "}
+                {formatCostUsd(totalCreationCostUsd)}
+              </p>
+            </div>
           )}
 
           {executionsQuery.isLoading ? (
@@ -135,6 +163,9 @@ export default function NewHypothesisPage() {
                         {latest.jobid}
                       </Link>
                     </div>
+                    <div className="text-muted small">
+                      Custo da última execução: {formatCostUsd(latest.costUsd)}
+                    </div>
                   </div>
                   <div className="text-muted small text-md-end">
                     Solicitado em {formatDate(latest.executionRequestedAt)}
@@ -147,6 +178,39 @@ export default function NewHypothesisPage() {
                     {latest.errorMessage}
                   </div>
                 )}
+              </div>
+
+              <div className="table-responsive">
+                <table className="table table-sm align-middle mb-0">
+                  <thead>
+                    <tr>
+                      <th>Execução</th>
+                      <th>Status</th>
+                      <th>Solicitado em</th>
+                      <th>Concluído em</th>
+                      <th className="text-end">Custo da execução</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {executions.map((execution) => (
+                      <tr key={execution.jobid}>
+                        <td>
+                          <Link
+                            to={`/niches/${nicheId}/hypothesis-pipeline/pain/stage-executions/${execution.jobid}`}
+                          >
+                            {execution.jobid}
+                          </Link>
+                        </td>
+                        <td>{execution.status}</td>
+                        <td>{formatDate(execution.executionRequestedAt)}</td>
+                        <td>{formatDate(execution.completedAt)}</td>
+                        <td className="text-end">
+                          {formatCostUsd(execution.costUsd)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}

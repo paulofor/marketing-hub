@@ -269,45 +269,6 @@ public class MarketWarmupProcessor {
         if (socialProofSignals == 0) {
             return "Coletar depoimentos, resultados e provas usadas para converter a audiência em compra.";
         }
-        return "Montar o mapa da máquina de venda: autoridade → canal → captura/aula/live → oferta → prova social → checkout.";
-    }
-
-    /**
-     * Resume alavancas prováveis que explicam a venda do produto observado.
-     */
-    private List<String> buildSuccessLevers(int authoritySignals, int socialProofSignals, int competitorSignals, int channelSignals) {
-        List<String> levers = new ArrayList<>();
-        if (authoritySignals > 0) {
-            levers.add("Autoridade pessoal ou marca especialista aparece como provável motor de confiança.");
-        }
-        if (channelSignals > 0) {
-            levers.add("Canais públicos como Instagram, YouTube, TikTok, WhatsApp ou lives aparecem como ativos de aquisição/aquecimento.");
-        }
-        if (socialProofSignals > 0) {
-            levers.add("Depoimentos, alunas ou resultados aparecem como prova social para conversão.");
-        }
-        if (competitorSignals > 0) {
-            levers.add("Há sinais de distribuição por oferta, afiliados, marketplace ou bônus.");
-        }
-        if (levers.isEmpty()) {
-            levers.add("Alavancas de sucesso ainda não ficaram claras nas fontes públicas V1.");
-        }
-        return levers;
-    }
-
-    /**
-     * Sugere a próxima investigação necessária para explicar como o produtor chegou ao sucesso.
-     */
-    private String buildNextInvestigationSuggestion(int authoritySignals, int socialProofSignals, int channelSignals) {
-        if (authoritySignals == 0) {
-            return "Buscar pessoa pública, fundador, especialista ou marca por trás do produto.";
-        }
-        if (channelSignals == 0) {
-            return "Mapear quais canais levam audiência para a oferta: Instagram, YouTube, TikTok, WhatsApp, lives, afiliados ou anúncios.";
-        }
-        if (socialProofSignals == 0) {
-            return "Coletar depoimentos, resultados e provas usadas para converter a audiência em compra.";
-        }
         return "Conteúdo público de autoridade → audiência em canal forte → cadastro/aula/live/WhatsApp → oferta principal → prova social/comunidade → checkout/marketplace.";
     }
 

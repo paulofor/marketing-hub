@@ -39,6 +39,25 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/HypothesisPainExecutionSummaryResponse'
+  /api/niches/{nicheId}/hypothesis-pipeline/pain/stage-executions/{idJob}:
+    get:
+      summary: Consulta detalhe auditável de uma execução da etapa Dor para a tela de detalhe do job.
+      parameters:
+        - in: path
+          name: nicheId
+          required: true
+          schema: { type: integer, format: int64 }
+        - in: path
+          name: idJob
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Detalhe da execução retornado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HypothesisPainExecutionDetailResponse'
   /api/internal/hypothesis-pipeline/pain/stage-executions/pending:
     get:
       summary: Lista jobs pendentes da etapa Dor para o Worker AI.
@@ -113,6 +132,31 @@ components:
         costUsd: { type: number, nullable: true }
         errorMessage: { type: string, nullable: true }
         modelResponse: { type: string, nullable: true }
+    HypothesisPainExecutionDetailResponse:
+      type: object
+      properties:
+        jobid: { type: string }
+        marketNicheId: { type: integer, format: int64 }
+        hypothesisId: { type: string, nullable: true }
+        stageCode: { type: string }
+        status: { type: string }
+        executionRequestedAt: { type: string, format: date-time }
+        processingStartedAt: { type: string, format: date-time, nullable: true }
+        completedAt: { type: string, format: date-time, nullable: true }
+        promptTemplateId: { type: string, nullable: true }
+        promptContent: { type: string, nullable: true }
+        prompt: { type: string, nullable: true }
+        promptMarkdownContent: { type: string, nullable: true }
+        schemaJson: { type: string, nullable: true }
+        openAiRequestBody: { type: string, nullable: true }
+        openAiModel: { type: string, nullable: true }
+        openAiJobId: { type: string, nullable: true }
+        modelResponse: { type: string, nullable: true }
+        errorMessage: { type: string, nullable: true }
+        errorDetail: { type: string, nullable: true }
+        inputTokens: { type: integer, nullable: true }
+        outputTokens: { type: integer, nullable: true }
+        costUsd: { type: number, nullable: true }
     RecebePromptRequest:
       type: object
       required: [prompt, schemaJson, requestBodyJson]

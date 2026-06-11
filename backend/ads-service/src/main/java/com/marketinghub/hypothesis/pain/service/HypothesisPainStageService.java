@@ -76,6 +76,17 @@ public class HypothesisPainStageService {
         return executions.stream().map(this::toSummaryResponse).toList();
     }
 
+    /** Retorna o detalhe completo de auditoria de uma execução pelo jobid dentro do nicho informado. */
+    @Transactional(readOnly = true)
+    public HypothesisPainExecutionDetailResponse detailForNiche(Long marketNicheId, String idJob) {
+        HypothesisPainStageExecution execution = findExecution(idJob);
+        if (!marketNicheId.equals(execution.getMarketNicheId())) {
+            throw new EntityNotFoundException(
+                    "Hypothesis pain execution not found for marketNicheId: " + marketNicheId + " and idJob: " + idJob);
+        }
+        return toDetailResponse(execution);
+    }
+
     /** Retorna o detalhe completo de auditoria de uma execução pelo jobid. */
     @Transactional(readOnly = true)
     public HypothesisPainExecutionDetailResponse detail(String idJob) {

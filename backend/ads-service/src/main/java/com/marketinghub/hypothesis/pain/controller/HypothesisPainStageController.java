@@ -46,7 +46,15 @@ public class HypothesisPainStageController {
         return ResponseEntity.ok(service.listStageExecutions(nicheId, includeCompleted));
     }
 
-    /** Consulta detalhe auditável de uma execução da etapa Dor. */
+    /** Consulta detalhe auditável de uma execução da etapa Dor vinculada ao nicho. */
+    @GetMapping("/niches/{nicheId}/hypothesis-pipeline/pain/stage-executions/{idJob}")
+    public ResponseEntity<HypothesisPainExecutionDetailResponse> detailForNiche(
+            @PathVariable Long nicheId,
+            @PathVariable String idJob) {
+        return ResponseEntity.ok(service.detailForNiche(nicheId, idJob));
+    }
+
+    /** Consulta detalhe auditável de uma execução da etapa Dor para integrações internas. */
     @GetMapping("/internal/hypothesis-pipeline/pain/stage-executions/{idJob}")
     public ResponseEntity<HypothesisPainExecutionDetailResponse> detail(@PathVariable String idJob) {
         return ResponseEntity.ok(service.detail(idJob));

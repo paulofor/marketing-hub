@@ -1,8 +1,6 @@
 package com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service;
 
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.dto.MoisSalesLibraryDtos;
-import com.marketinghub.openai.OpenAiResponse;
-import com.marketinghub.openai.service.OpenAiPricingService;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -41,7 +39,7 @@ public class MoisSalesLibraryService {
     private static final int COLLECTED_REFERENCE_HTML_CANDIDATE_SCAN_LIMIT = 2000;
 
     private final JdbcTemplate jdbcTemplate;
-    private final OpenAiPricingService openAiPricingService;
+    private final MoisSalesLibraryPricingService pricingService;
 
     /**
      * Reserva o próximo job pendente da biblioteca para processamento pelo worker.
@@ -167,10 +165,8 @@ public class MoisSalesLibraryService {
         if ((request.inputTokens() == null && request.outputTokens() == null) || request.modelName() == null || request.modelName().isBlank()) {
             return null;
         }
-        OpenAiResponse.OpenAiUsage usage = new OpenAiResponse.OpenAiUsage(
-                request.inputTokens(), request.outputTokens(), null, null, null);
         try {
-            return openAiPricingService.estimateBatchCost(request.modelName(), usage);
+            return pricingService.estimateBatchCost(request.modelName(), request.inputTokens(), request.outputTokens());
         } catch (RuntimeException ex) {
             log.error(
                     "Falha ao calcular custo OpenAI da análise MOIS. modulo=MOIS, operacao=resolveModelCostUsd, "

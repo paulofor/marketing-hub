@@ -1,3 +1,9 @@
+## 2026-06-11 18:20:00 UTC
+- corrigido o cálculo de custo da análise da Biblioteca de Páginas de Vendas do MOIS para não depender diretamente do pacote `com.marketinghub.openai`, preservando o isolamento arquitetural validado por ArchUnit.
+- criado serviço local no pacote `com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service` para calcular preço batch a partir dos tokens do worker.
+- criada leitura JDBC no gateway/repositório permitido `com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1` para obter `price_input_batch` e `price_output_batch` da tabela canônica `openai_model`.
+- adicionados testes unitários do cálculo e da leitura de preços, além da validação de arquitetura para prevenir recorrência do acoplamento com OpenAI central.
+
 ## 2026-06-07 — Timeout de captura HTML ampliado para 5 minutos
 
 - aumentado o timeout de captura HTTP/HTML da Biblioteca de Páginas de Vendas do MOIS para 5 minutos (`300000 ms`) no backend e no worker.

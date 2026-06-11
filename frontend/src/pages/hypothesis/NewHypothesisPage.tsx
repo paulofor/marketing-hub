@@ -141,7 +141,12 @@ export default function NewHypothesisPage() {
                 <div className="d-flex flex-column flex-md-row justify-content-between gap-2">
                   <div>
                     <strong>Status atual:</strong> {latest.status}
-                    <div className="text-muted small">Job: {latest.jobid}</div>
+                    <div className="text-muted small">
+                      Job:{" "}
+                      <Link to={`/niches/${nicheId}/hypothesis-pipeline/pain/stage-executions/${latest.jobid}`}>
+                        {latest.jobid}
+                      </Link>
+                    </div>
                   </div>
                   <div className="text-muted small text-md-end">
                     Solicitado em {formatDate(latest.executionRequestedAt)}
@@ -211,7 +216,11 @@ export default function NewHypothesisPage() {
                   <tbody>
                     {executions.map((execution) => (
                       <tr key={execution.jobid}>
-                        <td className="small text-break">{execution.jobid}</td>
+                        <td className="small text-break">
+                          <Link to={`/niches/${nicheId}/hypothesis-pipeline/pain/stage-executions/${execution.jobid}`}>
+                            {execution.jobid}
+                          </Link>
+                        </td>
                         <td>{execution.status}</td>
                         <td>{execution.openAiModel ?? "—"}</td>
                         <td>{formatDate(execution.executionRequestedAt)}</td>

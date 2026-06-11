@@ -9,13 +9,16 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Periodically evaluates running experiments using metrics. */
+/** Avalia periodicamente experimentos em execução usando métricas comerciais e estatísticas. */
 @Component
 public class ExperimentEngine {
     private final ExperimentRepository repository;
     private final ExperimentInsightsFetcher fetcher;
     private final ExperimentFunnelAutoStopService funnelAutoStopService;
 
+    /**
+     * Cria o avaliador com repositório, buscador de métricas e serviço de parada automática.
+     */
     public ExperimentEngine(ExperimentRepository repository, ExperimentInsightsFetcher fetcher,
                             ExperimentFunnelAutoStopService funnelAutoStopService) {
         this.repository = repository;
@@ -23,10 +26,16 @@ public class ExperimentEngine {
         this.funnelAutoStopService = funnelAutoStopService;
     }
 
+    /**
+     * Avalia os experimentos em execução e atualiza status quando uma regra operacional é comprovada.
+     */
     @Scheduled(fixedDelay = 60 * 60 * 1000)
     @Transactional
     public void evaluate() {
         for (Experiment exp : repository.findByStatus(ExperimentStatus.RUNNING)) {
+            if (funnelAutoStopService.stopIfAdInterestStatisticallyLow(exp)) {
+                continue;
+            }
             if (funnelAutoStopService.stopIfFormSubmissionZeroConversions(exp)) {
                 continue;
             }

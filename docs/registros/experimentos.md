@@ -4313,3 +4313,10 @@
 - causa-raiz: o Worker AI já recebia `OPENAI_API_KEY_FILE` no compose, porém a configuração central do core OpenAI lia apenas `OPENAI_API_KEY`; quando esse valor vinha como placeholder, ele era enviado para a OpenAI em vez de buscar o arquivo seguro.
 - foi feito: o core OpenAI do Worker AI passou a resolver a chave por arquivo seguro quando a variável estiver vazia ou com placeholder e a bloquear inicialização real com `test-key` caso não exista token válido.
 - prevenção: adicionada regressão unitária para garantir fallback por arquivo seguro e bloqueio de placeholder antes de qualquer requisição real à OpenAI.
+
+## 2026-06-11 — Alinhamento do botão Criar hipótese no detalhe do nicho
+
+- solicitação: fazer o botão `Criar hipótese` da tela de detalhe do nicho desviar para a mesma tela usada pelo botão `Criar hipótese` da tela de nicho enriquecido.
+- causa-raiz: o detalhe do nicho ainda abria o formulário manual embutido, enquanto o nicho enriquecido já apontava para o fluxo novo `/niches/:id/hypotheses/new` da construção auditável da hipótese.
+- foi feito: o botão principal do detalhe do nicho passou a ser um link para `/niches/:id/hypotheses/new`, mantendo a criação manual separada na seção própria da página.
+- impacto esperado: o usuário entra no mesmo fluxo de construção da hipótese a partir de qualquer origem, reduzindo desvio operacional e mantendo a etapa Dor como primeiro passo padrão.

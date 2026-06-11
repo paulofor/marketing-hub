@@ -959,14 +959,13 @@ export default function NicheDetailPage() {
           </div>
         </div>
         <div className="niche-detail__actions">
-          <button
-            type="button"
+          <Link
             className="btn btn-primary niche-detail__action-btn"
-            onClick={handleOpenManualHypothesisForm}
+            to={`/niches/${normalizedNicheId}/hypotheses/new`}
           >
             <Plus size={18} />
             <span>Criar hipótese</span>
-          </button>
+          </Link>
           <button
             type="button"
             className="btn btn-outline-secondary niche-detail__action-btn"

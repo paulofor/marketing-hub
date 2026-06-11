@@ -1447,3 +1447,24 @@ Arquivo principal:
 
 Arquivo principal:
 - `mois-sales-library-worker/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/marketwarmup/MarketWarmupProcessor.java`
+
+## 2026-06-11 — Remoção de conclusões fixas na investigação de sucesso MOIS
+
+- removidas conclusões hardcoded da narrativa da tela de detalhe da Biblioteca de Páginas de Vendas; a UI passa a exibir perguntas de pesquisa, evidências públicas e leituras persistidas, deixando lacunas sem conclusão.
+- ajustado o worker de aquecimento de mercado para não gerar hipótese genérica de sucesso quando não houver sinais públicos suficientes; próximas ações passam a ser solicitações de pesquisa ao modelo.
+- atualizado o cânone do MOIS para bloquear conclusões comerciais fixas antes da combinação entre modelo, solicitações de pesquisa e fontes/sinais públicos.
+
+Arquivos principais:
+- frontend/src/pages/mois/MoisSalesPageLibraryDetailPage.tsx
+- mois-sales-library-worker/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/marketwarmup/MarketWarmupProcessor.java
+- docs/canonical/mois-worker-canon.v1.md
+
+## 2026-06-11 — Revisão de causa-raiz nas conclusões da Etapa 3 MOIS
+
+- verificado que a correção anterior ainda tratava consequência: a tela deixou de mostrar conclusões antigas, mas continuava criando seções e perguntas fixas no próprio frontend.
+- corrigida a causa-raiz na UI: a narrativa de investigação agora renderiza somente conclusão persistida, próxima pesquisa registrada, fontes públicas e sinais/leitura persistidos; quando o contrato não traz dado, a tela mostra lacuna operacional.
+- reforçada a regra canônica para impedir não só conclusões fixas, mas também perguntas/seções explicativas hardcoded na UI da Etapa 3.
+
+Arquivos principais:
+- frontend/src/pages/mois/MoisSalesPageLibraryDetailPage.tsx
+- docs/canonical/mois-worker-canon.v1.md

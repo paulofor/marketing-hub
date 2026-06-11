@@ -112,8 +112,13 @@ function AuditBlock({
 }
 
 export default function HypothesisPainStageExecutionDetailPage() {
-  const { nicheId, jobId } = useParams();
-  const detailQuery = useHypothesisPainStageExecutionDetail(nicheId, jobId);
+  const { nicheId, jobId, stageSlug = "pain" } = useParams();
+  const stageLabel = stageSlug === "result" ? "resultado" : "dor";
+  const detailQuery = useHypothesisPainStageExecutionDetail(
+    nicheId,
+    jobId,
+    stageSlug,
+  );
   const detail = detailQuery.data;
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
@@ -136,7 +141,9 @@ export default function HypothesisPainStageExecutionDetailPage() {
 
   return (
     <div className="hypothesis-pain-stage-execution-detail-page">
-      <PageTitle icon={hypothesisIcon}>Detalhe do job da dor</PageTitle>
+      <PageTitle icon={hypothesisIcon}>
+        Detalhe do job da {stageLabel}
+      </PageTitle>
 
       <div className="mb-3">
         <Link

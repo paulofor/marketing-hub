@@ -24,6 +24,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
+/** Testa as regras de parada automática do funil de experimentos. */
 @ExtendWith(MockitoExtension.class)
 class ExperimentFunnelAutoStopServiceTest {
 
@@ -42,6 +43,41 @@ class ExperimentFunnelAutoStopServiceTest {
         experiment = new Experiment();
         experiment.setId(99L);
         experiment.setStatus(ExperimentStatus.RUNNING);
+    }
+
+    /**
+     * Garante parada quando o interesse no anúncio falha com confiança estatística.
+     */
+    @Test
+    void stopsExperimentWhenAdInterestStatisticallyFails() {
+        ExperimentFunnelStageDiagnosticDto stage = new ExperimentFunnelStageDiagnosticDto(
+                ExperimentFunnelStage.ACESSO_FORM_LEAD,
+                "Acesso ao formulário",
+                1199,
+                6,
+                0.005,
+                0.015,
+                0.0108,
+                List.of(new FunnelThresholdCheckDto(0.015, 200, 0.0025, false, true)),
+                FunnelDiagnosticStatus.STATISTICALLY_FAILED,
+                FunnelDiagnosticReasonCode.BELOW_MIN_RATE,
+                "",
+                false
+        );
+        when(diagnosticService.diagnose(99L))
+                .thenReturn(new ExperimentFunnelDiagnosticsResponseDto(List.of(stage), null));
+        FacebookAdsCampaign campaign = new FacebookAdsCampaign();
+        campaign.setId("camp-low-interest");
+        when(campaignRepository.findByExperimentId(99L)).thenReturn(List.of(campaign));
+
+        boolean stopped = service.stopIfAdInterestStatisticallyLow(experiment);
+
+        assertThat(stopped).isTrue();
+        assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.INVALIDATED);
+        assertThat(campaign.getStopReason())
+                .isEqualTo(FacebookCampaignStopReason.TARGET_AUDIENCE_LOW_INTEREST_STATISTICAL);
+        assertThat(campaign.getStopRequestedAt()).isNotNull();
+        assertThat(campaign.getStopLastError()).isNull();
     }
 
     @Test

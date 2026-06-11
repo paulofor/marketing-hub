@@ -20,14 +20,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Responsável por expor os endpoints da etapa Dor do pipeline de hipótese. */
+/** Responsável por expor os endpoints das etapas iniciais do pipeline de hipótese. */
 @RestController
 @RequestMapping("/api")
 public class HypothesisPainStageController {
     private static final Logger log = LoggerFactory.getLogger(HypothesisPainStageController.class);
     private final HypothesisPainStageService service;
 
-    /** Inicializa o controller com o serviço da etapa Dor. */
+    /** Inicializa o controller com o serviço das etapas iniciais. */
     public HypothesisPainStageController(HypothesisPainStageService service) {
         this.service = service;
     }
@@ -38,6 +38,12 @@ public class HypothesisPainStageController {
         return ResponseEntity.accepted().body(service.start(nicheId));
     }
 
+    /** Registra uma execução inicial da etapa Resultado para um nicho. */
+    @PostMapping("/niches/{nicheId}/hypothesis-pipeline/result/start")
+    public ResponseEntity<HypothesisPainStartResponse> startResult(@PathVariable Long nicheId) {
+        return ResponseEntity.accepted().body(service.startResult(nicheId));
+    }
+
     /** Lista execuções da etapa Dor para acompanhamento na tela de nova hipótese. */
     @GetMapping("/niches/{nicheId}/hypothesis-pipeline/pain/stage-executions")
     public ResponseEntity<List<HypothesisPainExecutionSummaryResponse>> listStageExecutions(
@@ -46,9 +52,25 @@ public class HypothesisPainStageController {
         return ResponseEntity.ok(service.listStageExecutions(nicheId, includeCompleted));
     }
 
+    /** Lista execuções da etapa Resultado para acompanhamento na tela de nova hipótese. */
+    @GetMapping("/niches/{nicheId}/hypothesis-pipeline/result/stage-executions")
+    public ResponseEntity<List<HypothesisPainExecutionSummaryResponse>> listResultStageExecutions(
+            @PathVariable Long nicheId,
+            @RequestParam(defaultValue = "true") boolean includeCompleted) {
+        return ResponseEntity.ok(service.listResultStageExecutions(nicheId, includeCompleted));
+    }
+
     /** Consulta detalhe auditável de uma execução da etapa Dor vinculada ao nicho. */
     @GetMapping("/niches/{nicheId}/hypothesis-pipeline/pain/stage-executions/{idJob}")
     public ResponseEntity<HypothesisPainExecutionDetailResponse> detailForNiche(
+            @PathVariable Long nicheId,
+            @PathVariable String idJob) {
+        return ResponseEntity.ok(service.detailForNiche(nicheId, idJob));
+    }
+
+    /** Consulta detalhe auditável de uma execução da etapa Resultado vinculada ao nicho. */
+    @GetMapping("/niches/{nicheId}/hypothesis-pipeline/result/stage-executions/{idJob}")
+    public ResponseEntity<HypothesisPainExecutionDetailResponse> detailResultForNiche(
             @PathVariable Long nicheId,
             @PathVariable String idJob) {
         return ResponseEntity.ok(service.detailForNiche(nicheId, idJob));
@@ -66,20 +88,26 @@ public class HypothesisPainStageController {
         return service.listPending();
     }
 
-    /** Marca uma execução da etapa Dor como em processamento. */
-    @PostMapping("/internal/hypothesis-pipeline/pain/stage-executions/{idJob}/running")
+    /** Lista jobs pendentes da etapa Resultado para processamento pelo Worker AI. */
+    @GetMapping("/internal/hypothesis-pipeline/result/stage-executions/pending")
+    public List<HypothesisPainPendingExecution> resultPending() {
+        return service.listResultPending();
+    }
+
+    /** Marca uma execução de etapa como em processamento. */
+    @PostMapping({"/internal/hypothesis-pipeline/pain/stage-executions/{idJob}/running", "/internal/hypothesis-pipeline/result/stage-executions/{idJob}/running"})
     public ResponseEntity<Void> running(@PathVariable String idJob) {
         service.markRunning(idJob);
         return ResponseEntity.accepted().build();
     }
 
     /** Recebe prompt, schema e request cru enviados para IA e marca a execução aguardando retorno. */
-    @PostMapping("/internal/hypothesis-pipeline/pain/stage-executions/{idJob}/recebe-prompt")
+    @PostMapping({"/internal/hypothesis-pipeline/pain/stage-executions/{idJob}/recebe-prompt", "/internal/hypothesis-pipeline/result/stage-executions/{idJob}/recebe-prompt"})
     public ResponseEntity<Void> recebePrompt(
             @PathVariable String idJob,
             @Valid @RequestBody RecebePromptRequest payload) {
         log.info(
-                "[HypothesisPain] Recebido request enviado para IA idJob={} jobidopenai={} promptLength={} promptMarkdownLength={} schemaLength={} requestBodyLength={}",
+                "[HypothesisPipeline] Recebido request enviado para IA idJob={} jobidopenai={} promptLength={} promptMarkdownLength={} schemaLength={} requestBodyLength={}",
                 idJob,
                 payload.jobidopenai(),
                 payload.prompt().length(),
@@ -97,13 +125,13 @@ public class HypothesisPainStageController {
         return ResponseEntity.accepted().build();
     }
 
-    /** Recebe a resposta da IA para a etapa Dor e conclui a execução do job. */
-    @PostMapping("/internal/hypothesis-pipeline/pain/stage-executions/{idJob}/recebe-resposta")
+    /** Recebe a resposta da IA para uma etapa e conclui a execução do job. */
+    @PostMapping({"/internal/hypothesis-pipeline/pain/stage-executions/{idJob}/recebe-resposta", "/internal/hypothesis-pipeline/result/stage-executions/{idJob}/recebe-resposta"})
     public ResponseEntity<Void> recebeResposta(
             @PathVariable String idJob,
             @Valid @RequestBody RecebeRespostaRequest payload) {
         log.info(
-                "[HypothesisPain] Recebida resposta da IA idJob={} marketNicheId={} stageCode={} openAiJobId={} inputTokens={} outputTokens={} costUsd={} hasError={}",
+                "[HypothesisPipeline] Recebida resposta da IA idJob={} marketNicheId={} stageCode={} openAiJobId={} inputTokens={} outputTokens={} costUsd={} hasError={}",
                 idJob,
                 payload.marketNicheId(),
                 payload.stageCode(),

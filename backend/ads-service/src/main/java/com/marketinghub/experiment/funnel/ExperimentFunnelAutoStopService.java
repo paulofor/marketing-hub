@@ -4,6 +4,7 @@ import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.funnel.dto.ExperimentFunnelDiagnosticsResponseDto;
 import com.marketinghub.experiment.funnel.dto.ExperimentFunnelStageDiagnosticDto;
+import com.marketinghub.experiment.funnel.dto.FunnelDiagnosticStatus;
 import com.marketinghub.experiment.funnel.dto.FunnelThresholdCheckDto;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
 import com.marketinghub.repository.jpa.facebookads.FacebookAdsCampaignRepository;
@@ -24,6 +25,7 @@ import java.util.Objects;
 public class ExperimentFunnelAutoStopService {
     private static final Logger LOGGER = LoggerFactory.getLogger(ExperimentFunnelAutoStopService.class);
     private static final double THREE_PERCENT = 0.03d;
+    private static final double AD_INTEREST_MINIMUM_RATE = 0.015d;
     private static final Duration LOW_IMPRESSIONS_MIN_CAMPAIGN_AGE = Duration.ofHours(48);
     private static final long LOW_IMPRESSIONS_MINIMUM = 100L;
 
@@ -37,6 +39,46 @@ public class ExperimentFunnelAutoStopService {
                                            FacebookAdsCampaignRepository campaignRepository) {
         this.diagnosticService = diagnosticService;
         this.campaignRepository = campaignRepository;
+    }
+
+    /**
+     * Avalia a taxa de interesse inicial do anúncio e invalida o experimento quando a conversão para o formulário falha
+     * estatisticamente.
+     *
+     * @return {@code true} quando o experimento foi parado automaticamente, {@code false} caso contrário.
+     */
+    public boolean stopIfAdInterestStatisticallyLow(Experiment experiment) {
+        if (experiment == null || experiment.getStatus() != ExperimentStatus.RUNNING) {
+            return false;
+        }
+        ExperimentFunnelDiagnosticsResponseDto diagnostics = diagnosticService.diagnose(experiment.getId());
+        ExperimentFunnelStageDiagnosticDto leadAccessStage = diagnostics.diagnostics().stream()
+                .filter(dto -> dto.stageKey() == ExperimentFunnelStage.ACESSO_FORM_LEAD)
+                .findFirst()
+                .orElse(null);
+        if (leadAccessStage == null || leadAccessStage.minAcceptableRate() == null) {
+            return false;
+        }
+        boolean lowInterestFailed = leadAccessStage.status() == FunnelDiagnosticStatus.STATISTICALLY_FAILED
+                && Math.abs(leadAccessStage.minAcceptableRate() - AD_INTEREST_MINIMUM_RATE) < 1e-9;
+        if (!lowInterestFailed) {
+            return false;
+        }
+        LOGGER.warn(
+                "Automatic stop triggered for experiment {} due to statistically low ad interest: attempts={}, successes={}, observedRate={}, minimumRate={}, upper95={}",
+                experiment.getId(),
+                leadAccessStage.attempts(),
+                leadAccessStage.successes(),
+                leadAccessStage.observedRate(),
+                leadAccessStage.minAcceptableRate(),
+                leadAccessStage.upper95RateIfZero()
+        );
+        invalidateExperimentAndRequestStops(
+                experiment,
+                FacebookCampaignStopReason.TARGET_AUDIENCE_LOW_INTEREST_STATISTICAL,
+                "taxa de acesso ao formulário abaixo de 1,5% com confiança estatística de 95%"
+        );
+        return true;
     }
 
     /**

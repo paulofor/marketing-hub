@@ -1,6 +1,7 @@
 package com.marketinghub.hypothesis.pain.service;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -81,4 +82,23 @@ class HypothesisPainStageServiceTest {
         verify(costCalculator).calculateFlexCostUsd("gpt-5.2", 1200, 300);
         verify(costCalculator).addFlexCostDeltaToNiche(niche, new BigDecimal("0.00500000"));
     }
+    /** Deve bloquear a etapa Resultado quando a dor ainda não está concluída. */
+    @Test
+    void startResultRequiresCompletedPain() {
+        MarketNiche niche = new MarketNiche();
+        niche.setId(18L);
+        HypothesisPainStageExecution painExecution = HypothesisPainStageExecution.builder()
+                .marketNicheId(18L)
+                .marketNiche(niche)
+                .stageCode("hypothesis-pain")
+                .status("INICIADO")
+                .build();
+
+        when(marketNicheRepository.findById(18L)).thenReturn(Optional.of(niche));
+        when(executionRepository.findTopByMarketNicheIdAndStageCodeOrderByExecutionRequestedAtDesc(18L, "hypothesis-pain"))
+                .thenReturn(Optional.of(painExecution));
+
+        assertThrows(IllegalStateException.class, () -> service.startResult(18L));
+    }
+
 }

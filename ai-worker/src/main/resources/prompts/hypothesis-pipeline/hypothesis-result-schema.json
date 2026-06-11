@@ -1,0 +1,28 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "desiredOutcome",
+    "measurableChange",
+    "beforeAfterContrast",
+    "fastWin",
+    "businessValue",
+    "plausibilityLimits",
+    "summary",
+    "evidenceSignals"
+  ],
+  "properties": {
+    "desiredOutcome": { "type": "string", "minLength": 10 },
+    "measurableChange": { "type": "string", "minLength": 10 },
+    "beforeAfterContrast": { "type": "string", "minLength": 10 },
+    "fastWin": { "type": "string", "minLength": 10 },
+    "businessValue": { "type": "string", "minLength": 10 },
+    "plausibilityLimits": { "type": "string", "minLength": 10 },
+    "summary": { "type": "string", "minLength": 10, "maxLength": 500 },
+    "evidenceSignals": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 5 }
+    }
+  }
+}

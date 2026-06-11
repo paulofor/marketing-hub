@@ -262,6 +262,8 @@ export interface MoisSalesLibraryPage {
   title?: string;
   productName?: string;
   producerName?: string;
+  hotmartPrice?: string;
+  hotmartProducer?: string;
   currentStage?: string;
   currentStatus?: string;
   captureStatus?: string;

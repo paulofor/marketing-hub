@@ -957,3 +957,7 @@ databaseChangeLog:
   - include:
       file: changesets/2026-06-10-hypothesis-pain-stage-execution.yaml
       relativeToChangelogFile: true
+
+  - include:
+      file: changesets/2026-06-11-mois-product-1057-hotmart-facts.yaml
+      relativeToChangelogFile: true

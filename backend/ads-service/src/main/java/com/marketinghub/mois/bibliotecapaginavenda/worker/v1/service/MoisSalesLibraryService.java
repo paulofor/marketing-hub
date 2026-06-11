@@ -541,7 +541,7 @@ public class MoisSalesLibraryService {
         List<MoisSalesLibraryDtos.SalesLibraryPageResponse> items = jdbcTemplate.query("""
                 SELECT p.id, p.workspace_id, p.source, p.url_canonical, p.title, p.current_stage, p.current_status, p.capture_status,
                        COALESCE(p.analysis_status, p.current_status) AS analysis_status, p.url_final, p.http_status, p.html_sha256,
-                       p.html_bytes, p.score_total, p.product_name, cr.producer_name,
+                       p.html_bytes, p.score_total, p.product_name, cr.producer_name, cr.hotmart_price, cr.hotmart_producer,
                        p.offer_summary, p.mechanism_summary, p.promise_summary, p.proof_summary,
                        p.model_name, p.input_tokens, p.output_tokens, p.model_cost_usd,
                        p.last_error_category, p.last_error_message, p.last_job_execution_id, p.last_captured_at, p.last_analyzed_at, p.updated_at,
@@ -688,7 +688,7 @@ public class MoisSalesLibraryService {
         List<MoisSalesLibraryDtos.SalesLibraryPageResponse> rows = jdbcTemplate.query("""
                 SELECT p.id, p.workspace_id, p.source, p.url_canonical, p.title, p.current_stage, p.current_status, p.capture_status,
                        COALESCE(p.analysis_status, p.current_status) AS analysis_status, p.url_final, p.http_status, p.html_sha256,
-                       p.html_bytes, p.score_total, p.product_name, cr.producer_name,
+                       p.html_bytes, p.score_total, p.product_name, cr.producer_name, cr.hotmart_price, cr.hotmart_producer,
                        p.offer_summary, p.mechanism_summary, p.promise_summary, p.proof_summary,
                        p.model_name, p.input_tokens, p.output_tokens, p.model_cost_usd,
                        p.last_error_category, p.last_error_message, p.last_job_execution_id, p.last_captured_at, p.last_analyzed_at, p.updated_at,
@@ -1348,6 +1348,8 @@ public class MoisSalesLibraryService {
                 rs.getString("title"),
                 rs.getString("product_name"),
                 rs.getString("producer_name"),
+                rs.getString("hotmart_price"),
+                rs.getString("hotmart_producer"),
                 rs.getString("current_stage"),
                 rs.getString("current_status"),
                 rs.getString("capture_status"),

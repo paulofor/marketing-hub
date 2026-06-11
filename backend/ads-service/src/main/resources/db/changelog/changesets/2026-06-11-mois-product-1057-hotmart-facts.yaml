@@ -1,0 +1,38 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-11-mois-product-1057-hotmart-facts
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: mois_sales_page
+        - tableExists:
+            tableName: mois_collected_reference
+        - columnExists:
+            tableName: mois_sales_page
+            columnName: collected_reference_id
+        - columnExists:
+            tableName: mois_collected_reference
+            columnName: hotmart_price
+        - columnExists:
+            tableName: mois_collected_reference
+            columnName: hotmart_producer
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE mois_collected_reference cr
+              JOIN mois_sales_page p ON p.collected_reference_id = cr.id
+              SET cr.hotmart_price = CASE
+                    WHEN cr.hotmart_price IS NULL OR TRIM(cr.hotmart_price) = '' THEN 'R$ 5.997,00'
+                    ELSE cr.hotmart_price
+                  END,
+                  cr.hotmart_producer = CASE
+                    WHEN cr.hotmart_producer IS NULL OR TRIM(cr.hotmart_producer) = '' THEN 'Abrantes Lima Empreendimentos LTDA'
+                    ELSE cr.hotmart_producer
+                  END
+              WHERE p.id = 1057;

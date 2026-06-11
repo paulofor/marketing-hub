@@ -1339,7 +1339,15 @@ components:
         producerName:
           type: string
           nullable: true
-          description: Nome do produtor, marca ou autoridade coletada na origem, usado para explicar a pesquisa pública do dossiê.
+          description: Nome do produtor, marca ou autoridade coletada na origem.
+        hotmartPrice:
+          type: string
+          nullable: true
+          description: Preço exibido pela Hotmart quando coletado na origem.
+        hotmartProducer:
+          type: string
+          nullable: true
+          description: Produtor exibido pela Hotmart quando coletado na origem.
         currentStage:
           type: string
           nullable: true

@@ -581,23 +581,17 @@ Contratos operacionais do backend:
 - `POST /api/mois/sales-library/collected-reference-html/{captureId}:complete` persiste HTML bruto, URL final, status HTTP, content type, hash e tamanho em `mois_sales_page_job_execution` e consolida `mois_sales_page`.
 - `POST /api/mois/sales-library/collected-reference-html/{captureId}:fail` registra falha de captura em `mois_sales_page_job_execution` e atualiza o último erro consolidado da página.
 
-### 13.9 Pipeline oficial da Biblioteca de Páginas de Vendas — Etapa 3
+### 13.9 Dossiê de produto da Biblioteca de Páginas de Vendas — reconstrução passo a passo
 
-A definição oficial do pipeline `mois-sales-page-library-pipeline` passa a ter três etapas canônicas, nesta ordem obrigatória:
+A Etapa 3 da Biblioteca de Páginas de Vendas fica temporariamente reduzida a um dossiê factual e incremental. A tela não deve apresentar score, narrativa, hipótese, fontes públicas, sinais, perguntas de pesquisa ou conclusões comerciais enquanto esses blocos não forem reconstruídos e validados passo a passo.
 
-| Posição | Código canônico | Código operacional | Nome | Responsabilidade | Módulo executor | Requer OpenAI | Aliases |
-|---:|---|---|---|---|---|---|---|
-| 1 | `HTML_ACQUISITION` | `html-acquisition` | Obtenção de HTML | Capturar HTML bruto útil da página de venda e preservar evidência operacional para análise posterior. | `mois-sales-library-worker` | Não | `html-capture`, `page-snapshot`, `capture`, `obtencao-html` |
-| 2 | `COMMERCIAL_PAGE_ANALYSIS` | `commercial-page-analysis` | Análise Comercial da Página | Usar o HTML capturado para extrair diagnóstico comercial da página, incluindo dor, promessa, mecanismo, prova, público, categoria e score. | `mois-sales-library-worker` | Sim | `page-analysis`, `analysis`, `commercial-analysis`, `analise-comercial` |
-| 3 | `MARKET_WARMUP_RESEARCH` | `market-warmup-research` | Investigação de Sucesso do Produto | Pesquisar fontes públicas rastreáveis para explicar como um produto aparentemente vencedor vende: autoridade por trás, canais de aquisição, funil, prova social, distribuição por afiliados/marketplace e riscos comerciais. | `mois-market-warmup-worker` | Sim | `market-warmup`, `warmup-research`, `ecosystem-research`, `aquecimento-mercado`, `pesquisa-aquecimento`, `product-success-research`, `investigacao-sucesso-produto` |
+Regra de reconstrução:
 
-Regras canônicas da Etapa 3:
-
-1. A Etapa 3 só pode iniciar para página com a Etapa 2 concluída, pois deve usar dor, promessa, mecanismo, prova, público e categoria já identificados na análise comercial.
-2. O backend principal continua sendo o único módulo com acesso ao banco; o worker de investigação deve conversar somente com endpoints do backend MOIS.
-3. Toda conclusão da Etapa 3 deve ser explicável por fontes públicas rastreáveis e sinais persistidos, evitando opinião sem evidência.
-4. O score da Etapa 3 passa a representar a força da **engenharia pública de sucesso do produto** em escala de 0 a 100, classificada como `Quente`, `Promissor`, `Morno`, `Frio` ou `Saturado` quando houver risco alto de saturação/desconfiança.
-5. A etapa deve preservar o eixo comercial `Dor → Resultado → Mecanismo → Prova → Oferta`, mas a decisão principal passa a ser explicar **como o produtor chegou ao sucesso**: marca pessoal, influenciador, canal de conteúdo, comunidade, aula/live, WhatsApp, afiliados, marketplace, prova social e checkout.
-6. As buscas públicas da Etapa 3 devem priorizar título do produto combinado com produtor/marca/autoridade para evitar resultados genéricos por palavras isoladas do nome do produto.
-7. O artefato final exibido ao usuário não pode conter marcador técnico, campo de debug ou JSON serializado dentro de texto funcional.
-8. A UI da Etapa 3 não pode apresentar conclusões comerciais, perguntas de pesquisa ou seções explicativas fixas antes da pesquisa. A narrativa exibida deve vir de uma combinação rastreável entre conclusões persistidas do modelo, solicitações de pesquisa feitas pelo modelo e fontes/sinais públicos retornados pelas tools de pesquisa web; quando o contrato ainda não possuir um desses itens, a tela deve mostrar ausência/lacuna operacional, nunca preencher com hipótese ou pergunta hardcoded.
+1. O primeiro bloco obrigatório do dossiê é a identificação básica observada na página de venda: **preço exibido** e **produtor exibido**.
+2. Para produtos Hotmart, esses dados devem ser lidos preferencialmente de `mois_collected_reference.hotmart_price` e `mois_collected_reference.hotmart_producer`.
+3. Se o banco não possuir preço ou produtor, a UI deve mostrar lacuna operacional em vez de inferir, completar por texto genérico ou usar conclusão do modelo.
+4. O dossiê só pode avançar para novos blocos depois que o bloco factual anterior estiver persistido e auditável.
+5. Para o produto `mois_sales_page.id = 1057`, a verificação manual da página Hotmart em 2026-06-11 identificou:
+   - preço exibido: `R$ 5.997,00`;
+   - produtor exibido: `Abrantes Lima Empreendimentos LTDA`.
+6. Esses dois fatos são apenas o ponto inicial do dossiê; nenhuma conclusão de venda, autoridade, canal, mecanismo ou prova deve ser derivada deles sem etapa posterior específica.

@@ -1515,3 +1515,18 @@ Arquivos principais:
 - backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/dto/MoisSalesLibraryDtos.java
 - backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibraryService.java
 - mois-sales-library-worker/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/openai/OpenAiSalesPageAnalyzer.java
+
+## 2026-06-11 — Reinício factual do dossiê MOIS para produto 1057
+
+- revertida a tentativa anterior de resolver o dossiê por filtragem genérica de fontes, pois a decisão agora é reconstruir a Etapa 3 passo a passo a partir de fatos simples.
+- limpo o cânone da Etapa 3 para remover narrativa, score, hipóteses, fontes, sinais e conclusões de tela enquanto o dossiê não for reconstruído incrementalmente.
+- verificado no banco que o produto 1057 tinha `hotmart_price` e `hotmart_producer` vazios; o campo legado `producer_name` apontava para `HubX Digital Marketing`, diferente do produtor exibido na página Hotmart.
+- adicionados os dois fatos levantados manualmente na página Hotmart: preço `R$ 5.997,00` e produtor `Abrantes Lima Empreendimentos LTDA`.
+- simplificada a tela de detalhe para mostrar somente o primeiro bloco factual do dossiê: preço e produtor Hotmart.
+
+Arquivos principais:
+- `docs/canonical/mois-worker-canon.v1.md`
+- `backend/ads-service/src/main/resources/db/changelog/changesets/2026-06-11-mois-product-1057-hotmart-facts.yaml`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/dto/MoisSalesLibraryDtos.java`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibraryService.java`
+- `frontend/src/pages/mois/MoisSalesPageLibraryDetailPage.tsx`

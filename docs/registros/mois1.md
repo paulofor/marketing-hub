@@ -1476,3 +1476,12 @@ Arquivos principais:
 - foi feito: adicionada persistência de `model_name`, `input_tokens`, `output_tokens` e `model_cost_usd` em `mois_sales_page` e `mois_sales_page_job_execution`, cálculo de custo batch pelo catálogo OpenAI do backend e exibição na biblioteca/detalhe da página.
 - foi feito: a criação de nicho passa a iniciar `totalCost` com `totalCost` explícito, ou com `cost` quando o total não for informado, ou zero como fallback.
 - frontend MOIS (`/mois/sales-pages-library`): ajustada a listagem de priorização para exibir temperatura Hotmart e data do dossiê, removendo score de sucesso e fase no diagrama da tabela principal para deixar a decisão comercial mais direta.
+
+## 2026-06-11 — Correção de build da Biblioteca MOIS
+
+- corrigida a compilação do backend após evolução do contrato `SalesLibraryPageResponse`, alinhando o mock de teste aos campos de aquecimento de mercado adicionados ao DTO.
+- corrigida a compilação do frontend restaurando a função de apresentação da fase/status do pipeline na listagem da Biblioteca de Páginas de Vendas.
+
+Arquivos principais:
+- backend/ads-service/src/test/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibraryServiceTest.java
+- frontend/src/pages/mois/MoisSalesPagesLibraryPage.tsx

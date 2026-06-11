@@ -23,6 +23,10 @@ public class MarketWarmupQueryBuilder {
         String proof = clean(job.proofSummary());
         String productAndProducer = clean(title + " " + producer);
         Set<String> queries = new LinkedHashSet<>();
+        if (!producer.isBlank() && !clean(title + " " + promise + " " + mechanism).isBlank()) {
+            addIfUseful(queries, exact(producer) + " " + exact(title) + " Instagram YouTube TikTok");
+            addIfUseful(queries, exact(producer) + " " + promise + " " + mechanism + " canal perfil especialista");
+        }
         if (!productAndProducer.isBlank()) {
             addIfUseful(queries, exact(title) + " " + producer + " Instagram YouTube TikTok influenciador fundador");
             addIfUseful(queries, productAndProducer + " depoimento review funciona vale a pena reclamação");
@@ -30,7 +34,7 @@ public class MarketWarmupQueryBuilder {
             addIfUseful(queries, productAndProducer + " afiliado hotmart produtor oferta bônus");
         }
         if (!producer.isBlank()) {
-            addIfUseful(queries, producer + " autoridade seguidores alunas método");
+            addIfUseful(queries, exact(producer) + " autoridade seguidores alunas método " + firstUseful(title, promise));
         }
         if (!clean(promise + " " + mechanism).isBlank()) {
             addIfUseful(queries, promise + " " + mechanism + " canal influencer especialista");
@@ -38,7 +42,15 @@ public class MarketWarmupQueryBuilder {
         if (!clean(offer + " " + proof).isBlank()) {
             addIfUseful(queries, offer + " " + proof + " prova social depoimentos resultados");
         }
-        return queries.stream().limit(6).toList();
+        return queries.stream().limit(8).toList();
+    }
+
+    /**
+     * Escolhe o primeiro texto comercial útil para ancorar a busca do produtor.
+     */
+    private String firstUseful(String first, String second) {
+        String primary = clean(first);
+        return primary.isBlank() ? clean(second) : primary;
     }
 
     /**

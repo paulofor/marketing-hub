@@ -1530,3 +1530,14 @@ Arquivos principais:
 - `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/dto/MoisSalesLibraryDtos.java`
 - `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibraryService.java`
 - `frontend/src/pages/mois/MoisSalesPageLibraryDetailPage.tsx`
+
+## 2026-06-11 — Pesquisa social qualificada do produtor no dossiê MOIS
+
+- implementada a próxima parte do dossiê: quando o nome do produtor Hotmart existe, a Etapa 3 passa a gerar buscas específicas em Instagram, YouTube e TikTok usando o produtor como âncora.
+- causa-raiz tratada: a pesquisa pública podia considerar resultados sociais genéricos, homônimos ou perfis do produtor falando de outro assunto; agora fontes sociais só entram quando contêm o mesmo nome do produtor e tokens comerciais semelhantes ao produto/promessa/mecanismo/oferta.
+- o detalhe da Biblioteca MOIS passa a mostrar a seção “redes do produtor”, destacando temperatura, recomendação, score e fontes sociais qualificadas, sem misturar perfis não confirmados ao dossiê.
+
+Arquivos principais:
+- `mois-sales-library-worker/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/marketwarmup/MarketWarmupQueryBuilder.java`
+- `mois-sales-library-worker/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/marketwarmup/MarketWarmupProcessor.java`
+- `frontend/src/pages/mois/MoisSalesPageLibraryDetailPage.tsx`

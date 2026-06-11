@@ -13,12 +13,15 @@ import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.model.WorkerDtos.Ma
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.model.WorkerDtos.MarketWarmupTemperature;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.text.Normalizer;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -30,6 +33,24 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 @Slf4j
 public class MarketWarmupProcessor {
+    private static final Pattern NON_ALPHANUMERIC = Pattern.compile("[^\\p{L}\\p{N}]+");
+    private static final Set<String> PRODUCT_STOPWORDS = Set.of(
+            "para",
+            "com",
+            "sem",
+            "dos",
+            "das",
+            "uma",
+            "por",
+            "que",
+            "curso",
+            "produto",
+            "oferta",
+            "metodo",
+            "hotmart",
+            "certificacao",
+            "avancada");
+
     private final MarketWarmupQueryBuilder queryBuilder;
     private final PublicWebSearchClient searchClient;
 
@@ -43,15 +64,95 @@ public class MarketWarmupProcessor {
             rawResults.addAll(searchClient.search(query, searchLimit));
         }
         List<PublicSearchResult> deduplicatedResults = deduplicate(rawResults).stream().limit(searchLimit * 2L).toList();
-        if (deduplicatedResults.isEmpty()) {
+        List<PublicSearchResult> qualifiedResults = keepOnlyQualifiedProducerSocialResults(job, deduplicatedResults);
+        if (qualifiedResults.isEmpty()) {
             throw new IllegalStateException("Busca pública não retornou fontes rastreáveis para montar o dossiê");
         }
-        List<MarketWarmupSourceCompleteItem> sources = buildSources(deduplicatedResults);
-        List<MarketWarmupSignalCompleteItem> signals = buildSignals(deduplicatedResults);
+        List<MarketWarmupSourceCompleteItem> sources = buildSources(qualifiedResults);
+        List<MarketWarmupSignalCompleteItem> signals = buildSignals(qualifiedResults);
         MarketWarmupSummaryCompleteItem summary = buildSummary(job, sources, signals);
         log.info("MOIS market-warmup dossier built. jobId={}, pageId={}, queries={}, sources={}, signals={}, score={}",
                 job.jobId(), job.pageId(), queries.size(), sources.size(), signals.size(), summary.scoreTotal());
         return new MarketWarmupCompleteRequest(sources, signals, summary, Instant.now());
+    }
+
+    /**
+     * Mantém fontes sociais do produtor somente quando o mesmo nome aparece junto de conteúdo semelhante ao produto.
+     */
+    private List<PublicSearchResult> keepOnlyQualifiedProducerSocialResults(MarketWarmupClaimedJob job, List<PublicSearchResult> results) {
+        List<String> producerTokens = meaningfulTokens(job.producerName());
+        Set<String> productTokens = new LinkedHashSet<>();
+        productTokens.addAll(meaningfulTokens(job.title()));
+        productTokens.addAll(meaningfulTokens(job.promiseSummary()));
+        productTokens.addAll(meaningfulTokens(job.mechanismSummary()));
+        productTokens.addAll(meaningfulTokens(job.offerSummary()));
+        List<PublicSearchResult> qualified = new ArrayList<>();
+        for (PublicSearchResult result : results) {
+            MarketWarmupPlatform platform = detectPlatform(result.url());
+            if (!isProducerSocialPlatform(platform)) {
+                qualified.add(result);
+                continue;
+            }
+            String text = normalizedComparableText(result.title() + " " + result.snippet() + " " + result.url());
+            if (containsAllTokens(text, producerTokens) && containsEnoughProductSimilarity(text, productTokens)) {
+                qualified.add(result);
+            } else {
+                log.info("MOIS market-warmup producer social source ignored. jobId={}, pageId={}, platform={}, url={}",
+                        job.jobId(), job.pageId(), platform, result.url());
+            }
+        }
+        return qualified;
+    }
+
+    /**
+     * Identifica plataformas sociais onde homônimos do produtor precisam ser bloqueados.
+     */
+    private boolean isProducerSocialPlatform(MarketWarmupPlatform platform) {
+        return platform == MarketWarmupPlatform.YOUTUBE || platform == MarketWarmupPlatform.INSTAGRAM || platform == MarketWarmupPlatform.TIKTOK;
+    }
+
+    /**
+     * Verifica se todos os tokens relevantes do nome do produtor aparecem na fonte social.
+     */
+    private boolean containsAllTokens(String text, List<String> tokens) {
+        return !tokens.isEmpty() && tokens.stream().allMatch(text::contains);
+    }
+
+    /**
+     * Exige semelhança mínima com o produto para evitar perfis corretos tratando de outro assunto.
+     */
+    private boolean containsEnoughProductSimilarity(String text, Set<String> productTokens) {
+        if (productTokens.isEmpty()) {
+            return false;
+        }
+        long matches = productTokens.stream().filter(text::contains).count();
+        return matches >= Math.min(2, productTokens.size());
+    }
+
+    /**
+     * Extrai tokens comparáveis de nomes e temas comerciais removendo ruído comum.
+     */
+    private List<String> meaningfulTokens(String value) {
+        String normalized = normalizedComparableText(value);
+        if (normalized.isBlank()) {
+            return List.of();
+        }
+        return Arrays.stream(normalized.split(" "))
+                .filter(token -> token.length() >= 3)
+                .filter(token -> !PRODUCT_STOPWORDS.contains(token))
+                .distinct()
+                .toList();
+    }
+
+    /**
+     * Normaliza acentos, caixa e pontuação para comparação robusta entre produtor e conteúdo.
+     */
+    private String normalizedComparableText(String value) {
+        if (value == null) {
+            return "";
+        }
+        String withoutAccents = Normalizer.normalize(value, Normalizer.Form.NFD).replaceAll("\\p{M}+", "");
+        return NON_ALPHANUMERIC.matcher(withoutAccents.toLowerCase(Locale.ROOT)).replaceAll(" ").replaceAll("\\s+", " ").trim();
     }
 
     /**

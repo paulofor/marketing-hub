@@ -154,12 +154,12 @@ public class MarketWarmupProcessor {
                 temperature,
                 classifyEcosystem(sources, competitorSignals, objectionSignals),
                 recommendation,
-                List.of(firstUseful(job.promiseSummary(), "Dor central inferida da promessa usada pelo produto vencedor.")),
-                objectionSignals > 0 ? List.of("Confiança no método e prova de resultado precisam ser reforçadas.") : List.of("Objeções explícitas ainda não apareceram com força na busca V1."),
-                List.of(firstUseful(job.promiseSummary(), "Promessa principal ainda precisa de refinamento pela análise comercial.")),
+                buildMainPains(job, painSignals),
+                buildMainObjections(objectionSignals),
+                buildMainPromises(job, painSignals),
                 collectChannels(sources),
                 buildSuccessLevers(authoritySignals, socialProofSignals, competitorSignals, channelSignals),
-                objectionSignals >= 3 ? "Risco moderado de desconfiança ou saturação; exigir ângulo e prova mais específicos." : "Risco de saturação baixo ou não conclusivo na coleta V1.",
+                buildSaturationRisk(objectionSignals),
                 buildOpportunityRecommendation(temperature, authoritySignals, socialProofSignals, channelSignals),
                 buildNextInvestigationSuggestion(authoritySignals, socialProofSignals, channelSignals));
     }
@@ -217,59 +217,115 @@ public class MarketWarmupProcessor {
     }
 
     /**
-     * Monta hipótese executiva sobre como o produto provavelmente conseguiu vender.
+     * Monta dores somente quando a coleta pública traz sinal compatível ou a análise comercial já trouxe promessa útil.
      */
-    private String buildOpportunityRecommendation(MarketWarmupTemperature temperature, int authoritySignals, int socialProofSignals, int channelSignals) {
-        if (authoritySignals > 0 || socialProofSignals > 0 || channelSignals > 0) {
-            return "Esse produto provavelmente fez sucesso porque não depende só da página de vendas. Ele parece estar apoiado em autoridade ou marca pessoal, audiência em canais públicos, funil educacional, promessa clara e prova social/oferta com valor percebido.";
+    private List<String> buildMainPains(MarketWarmupClaimedJob job, int painSignals) {
+        String promise = firstUseful(job.promiseSummary(), "");
+        if (painSignals == 0 && promise.isBlank()) {
+            return List.of();
         }
-        return switch (temperature) {
-            case HOT -> "Esse produto tem sinais fortes de engenharia pública de venda; a página de vendas deve ser analisada junto com autoridade, canal principal, funil e prova social.";
-            case PROMISING -> "Esse produto é promissor para estudo, mas ainda precisa detalhar autoridade, audiência, funil e prova social antes de concluir como chegou ao sucesso.";
-            case WARM -> "Há alguns sinais de venda, mas ainda faltam fontes para confirmar canal de aquisição, influenciador, funil e prova social.";
-            case SATURATED -> "O sucesso pode depender de ângulo muito específico ou de uma máquina já saturada; investigar diferenciação, confiança e prova antes de usar como referência.";
-            case COLD -> "Ainda há baixa evidência pública sobre a máquina de venda; antes de concluir, busque produtor, influenciador, canal, funil e prova social.";
-        };
+        if (promise.isBlank()) {
+            return List.of("Há sinais públicos de dor, mas o modelo ainda precisa consolidar a dor central.");
+        }
+        return List.of(promise);
     }
 
+    /**
+     * Monta objeções apenas a partir de sinais públicos de objeção.
+     */
+    private List<String> buildMainObjections(int objectionSignals) {
+        if (objectionSignals == 0) {
+            return List.of();
+        }
+        return List.of("A pesquisa pública encontrou sinais de objeção; revisar confiança, prova e risco antes de usar a referência.");
+    }
 
     /**
-     * Resume alavancas prováveis que explicam a venda do produto observado.
+     * Monta promessas somente quando a análise comercial forneceu promessa útil para cruzar com a pesquisa.
+     */
+    private List<String> buildMainPromises(MarketWarmupClaimedJob job, int painSignals) {
+        String promise = firstUseful(job.promiseSummary(), "");
+        if (promise.isBlank() || painSignals == 0) {
+            return List.of();
+        }
+        return List.of(promise);
+    }
+
+    /**
+     * Resume risco de saturação somente quando há evidência de objeção suficiente.
+     */
+    private String buildSaturationRisk(int objectionSignals) {
+        if (objectionSignals >= 3) {
+            return "Risco moderado de desconfiança ou saturação indicado por sinais públicos; exigir ângulo e prova mais específicos.";
+        }
+        return null;
+    }
+
+    /**
+     * Monta hipótese executiva somente com base nos sinais públicos disponíveis.
+     */
+    private String buildOpportunityRecommendation(MarketWarmupTemperature temperature, int authoritySignals, int socialProofSignals, int channelSignals) {
+        List<String> observed = new ArrayList<>();
+        if (authoritySignals > 0) {
+            observed.add("autoridade ou marca pública");
+        }
+        if (channelSignals > 0) {
+            observed.add("canal público de audiência");
+        }
+        if (socialProofSignals > 0) {
+            observed.add("prova social");
+        }
+        if (observed.isEmpty()) {
+            return null;
+        }
+        String strength = switch (temperature) {
+            case HOT -> "forte";
+            case PROMISING -> "promissora";
+            case WARM -> "parcial";
+            case SATURATED -> "com risco de saturação ou desconfiança";
+            case COLD -> "fraca";
+        };
+        return "A pesquisa pública encontrou evidência "
+                + strength
+                + " de "
+                + String.join(", ", observed)
+                + ". A conclusão final deve cruzar esses sinais com a análise do modelo e com as fontes listadas abaixo.";
+    }
+
+    /**
+     * Resume alavancas somente quando os sinais públicos sustentam a leitura.
      */
     private List<String> buildSuccessLevers(int authoritySignals, int socialProofSignals, int competitorSignals, int channelSignals) {
         List<String> levers = new ArrayList<>();
         if (authoritySignals > 0) {
-            levers.add("Autoridade pessoal ou marca especialista aparece como provável motor de confiança.");
+            levers.add("Sinais públicos apontam autoridade pessoal ou marca especialista como hipótese a validar.");
         }
         if (channelSignals > 0) {
-            levers.add("Canais públicos como Instagram, YouTube, TikTok, WhatsApp ou lives aparecem como ativos de aquisição/aquecimento.");
+            levers.add("Sinais públicos apontam canais de audiência ou aquecimento como hipótese a validar.");
         }
         if (socialProofSignals > 0) {
-            levers.add("Depoimentos, alunas ou resultados aparecem como prova social para conversão.");
+            levers.add("Sinais públicos apontam depoimentos, resultados ou prova social como hipótese a validar.");
         }
         if (competitorSignals > 0) {
-            levers.add("Há sinais de distribuição por oferta, afiliados, marketplace ou bônus.");
-        }
-        if (levers.isEmpty()) {
-            levers.add("Alavancas de sucesso ainda não ficaram claras nas fontes públicas V1.");
+            levers.add("Sinais públicos apontam oferta, afiliados, marketplace ou bônus como hipótese a validar.");
         }
         return levers;
     }
 
     /**
-     * Sugere a próxima investigação necessária para explicar como o produtor chegou ao sucesso.
+     * Sugere a próxima solicitação de pesquisa sem transformar lacuna em conclusão.
      */
     private String buildNextInvestigationSuggestion(int authoritySignals, int socialProofSignals, int channelSignals) {
         if (authoritySignals == 0) {
-            return "Buscar pessoa pública, fundador, especialista ou marca por trás do produto.";
+            return "Solicitar ao modelo novas buscas por pessoa pública, fundador, especialista, creator ou marca por trás do produto.";
         }
         if (channelSignals == 0) {
-            return "Mapear quais canais levam audiência para a oferta: Instagram, YouTube, TikTok, WhatsApp, lives, afiliados ou anúncios.";
+            return "Solicitar ao modelo novas buscas por canais de aquisição: Instagram, YouTube, TikTok, WhatsApp, lives, afiliados ou anúncios.";
         }
         if (socialProofSignals == 0) {
-            return "Coletar depoimentos, resultados e provas usadas para converter a audiência em compra.";
+            return "Solicitar ao modelo novas buscas por depoimentos, resultados, reviews e provas usadas para converter a audiência em compra.";
         }
-        return "Conteúdo público de autoridade → audiência em canal forte → cadastro/aula/live/WhatsApp → oferta principal → prova social/comunidade → checkout/marketplace.";
+        return "Solicitar ao modelo consolidação final cruzando autoridade, canais, prova social, oferta e fontes públicas rastreáveis.";
     }
 
     /**

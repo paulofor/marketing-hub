@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 class NicheResearchSeedBuilderPromptBuilderTest {
     private final NicheResearchSeedBuilderPromptBuilder promptBuilder = new NicheResearchSeedBuilderPromptBuilder();
 
-    /** Deve declarar explicitamente rotina/dificuldades e proibir produto, oferta, ferramenta e solução. */
+    /** Deve declarar rotina real, confiar no modelo para marcadores literais e proibir solução comercial. */
     @Test
     void shouldBuildRoutineRealityPromptWithoutSolutionSearch() {
         String prompt = promptBuilder.buildPrompt(pending());
@@ -18,16 +18,15 @@ class NicheResearchSeedBuilderPromptBuilderTest {
         assertThat(prompt)
                 .contains("profissional brasileiro MEI/autônomo")
                 .contains("português do Brasil")
-                .contains("fontes do Brasil")
-                .contains("domínios .br")
                 .contains("tarefas")
-                .contains("dificuldades")
+                .contains("não force marcador literal")
+                .contains("Não inclua metadado técnico")
                 .contains("Não proponha solução")
                 .contains("Não procure produto")
                 .contains("Não procure oferta")
                 .contains("Não procure ferramenta")
-                .contains("DAILY_OPERATION_PAIN_DISCOVERY")
-                .contains("MEI_ROUTINE_DISCOVERY")
+                .doesNotContain("fontes do Brasil")
+                .doesNotContain("domínios .br")
                 .doesNotContain("PRODUCT_SERVICE_DISCOVERY")
                 .doesNotContain("OFFER_PATTERN_DISCOVERY")
                 .doesNotContain("SALES_PAIN_DISCOVERY");

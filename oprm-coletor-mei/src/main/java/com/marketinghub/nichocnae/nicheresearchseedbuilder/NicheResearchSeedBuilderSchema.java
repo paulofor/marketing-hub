@@ -43,8 +43,8 @@ public class NicheResearchSeedBuilderSchema {
                 Map.entry("customerType", string()),
                 Map.entry("commercialObjects", string()),
                 Map.entry("initialAssumptions", string()),
-                Map.entry("confidenceLevel", enumString("INFERRED_FROM_CNAE", "LOW_CONFIDENCE", "NEEDS_RESEARCH")),
-                Map.entry("createdBy", enumString("AI"))));
+                Map.entry("confidenceLevel", string()),
+                Map.entry("createdBy", string())));
         return schema;
     }
 
@@ -55,21 +55,11 @@ public class NicheResearchSeedBuilderSchema {
         schema.put("properties", Map.of(
                 "researchCycleId", integer(),
                 "queryText", string(),
-                "queryGoal", enumString(
-                        "MEI_ROUTINE_DISCOVERY",
-                        "AUTONOMOUS_WORK_MODE_DISCOVERY",
-                        "CUSTOMER_ACQUISITION_BEHAVIOR_DISCOVERY",
-                        "DAILY_OPERATION_PAIN_DISCOVERY",
-                        "EMOTIONAL_PAIN_DISCOVERY",
-                        "DREAM_DISCOVERY",
-                        "FEAR_DISCOVERY",
-                        "CHANNEL_BEHAVIOR_DISCOVERY",
-                        "LANGUAGE_DISCOVERY",
-                        "SOURCE_FRESHNESS_DISCOVERY"),
+                "queryGoal", string(),
                 "sourceGroup", string(),
                 "priority", integer(),
-                "status", enumString("PENDING"),
-                "createdBy", enumString("AI")));
+                "status", string(),
+                "createdBy", string()));
         return schema;
     }
 
@@ -92,13 +82,8 @@ public class NicheResearchSeedBuilderSchema {
         return Map.of("type", "integer");
     }
 
-    /** Cria um campo textual restrito aos valores permitidos pela regra da etapa dois. */
-    private Map<String, Object> enumString(String... values) {
-        return Map.of("type", "string", "enum", List.of(values));
-    }
-
-    /** Cria um array tipado para a coleção de queries geradas pela IA. */
+    /** Cria um array tipado para a coleção de queries geradas pela IA sem restringir volume. */
     private Map<String, Object> array(Map<String, Object> itemSchema) {
-        return Map.of("type", "array", "minItems", 12, "maxItems", 15, "items", itemSchema);
+        return Map.of("type", "array", "items", itemSchema);
     }
 }

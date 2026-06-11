@@ -199,6 +199,7 @@ Evitar fechamento prematuro de `import run` que destrói a totalização de mark
 - É proibido acoplar uma etapa concreta a outra etapa concreta para avançar o fluxo; o encadeamento deve ocorrer por contratos persistidos, artefatos auditáveis, endpoints do backend ou outro contrato oficial.
 - O backend principal permanece como fonte de verdade dos dados e contratos; o módulo executor OPRM deve consumir e concluir etapas por endpoints do próprio OPRM/backend, sem acesso direto ao banco.
 - Chamadas ao modelo, prompts, validações e mapeamento de resposta devem ficar encapsulados no pacote da etapa concreta que usa IA, preservando isolamento, rastreabilidade e testabilidade.
+- Na etapa `niche-research-seed-builder`, o sistema deve confiar no modelo para conteúdo semântico das queries; validações determinísticas devem ficar restritas à integridade mínima persistível (estrutura, ciclo correto e campos obrigatórios de banco), sem bloquear por marcador literal de MEI/autônomo, Brasil/pt-BR, quantidade fixa, objetivo fechado, duplicidade textual, linguagem de solução ou genericidade.
 
 ## Critério de efetividade — execução modular das etapas NichoCNAE
 

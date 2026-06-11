@@ -4408,6 +4408,12 @@
   - atualizada a documentação Swagger do pipeline de hipótese para incluir Oferta.
 - impacto esperado: o usuário passa a acompanhar e iniciar a construção da Oferta no mesmo lugar onde já acompanha as etapas anteriores, reduzindo dispersão operacional e mantendo foco em venda.
 
+## 2026-06-11 — Resumo final do framework da hipótese
+
+- solicitação: adicionar na tela de nova hipótese um botão de resumo que leve a uma tela com a descrição final gerada em cada etapa do framework.
+- causa-raiz/objetivo: os conteúdos finais usados como insumo dos próximos pipelines estavam disponíveis apenas misturados ao histórico técnico dos jobs, dificultando leitura executiva e reaproveitamento comercial.
+- foi feito: criado endpoint de resumo final por nicho, botão “Resumo do framework” e tela dedicada exibindo somente o conteúdo persistido em `model_response` para cada etapa concluída, com observação de tabela e campo de origem.
+- impacto esperado: o usuário passa a enxergar rapidamente Dor, Resultado, Mecanismo e Oferta finais, sem ruído de prompt/request/log técnico, acelerando a decisão de avançar para experimentos e vendas.
 ## 2026-06-11 — Modelo OpenAI por etapa na tela de nova hipótese
 
 - solicitação: exibir na tela `/niches/:nicheId/hypotheses/new` qual modelo foi usado em cada etapa do pipeline de criação de hipótese.

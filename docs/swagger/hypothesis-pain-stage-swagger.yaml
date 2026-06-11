@@ -4,6 +4,23 @@ info:
   version: 1.0.0
   description: Contratos das etapas Dor, Resultado, Mecanismo e Oferta do pipeline de hipótese.
 paths:
+  /api/niches/{nicheId}/hypothesis-pipeline/summary:
+    get:
+      summary: Lista o conteúdo final concluído de cada etapa do framework de hipótese.
+      parameters:
+        - in: path
+          name: nicheId
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        '200':
+          description: Conteúdos finais retornados com origem no banco de dados.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/HypothesisStageFinalSummaryResponse'
   /api/niches/{nicheId}/hypothesis-pipeline/pain/start:
     post:
       summary: Inicia a construção auditável da dor do nicho.
@@ -420,6 +437,19 @@ components:
       properties:
         jobid: { type: string }
         status: { type: string }
+    HypothesisStageFinalSummaryResponse:
+      type: object
+      properties:
+        slug: { type: string }
+        stageNumber: { type: integer }
+        stageTitle: { type: string }
+        stageCode: { type: string }
+        jobid: { type: string, nullable: true }
+        status: { type: string, nullable: true }
+        completedAt: { type: string, format: date-time, nullable: true }
+        finalContent: { type: string, nullable: true }
+        sourceTable: { type: string }
+        sourceField: { type: string }
     HypothesisPainExecutionSummaryResponse:
       type: object
       properties:

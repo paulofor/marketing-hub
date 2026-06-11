@@ -310,4 +310,52 @@ class HypothesisPainStageServiceTest {
         assertEquals("{\"mechanism\":\"mecanismo validado\"}", pending.getFirst().mechanismModelResponse());
     }
 
+    /** Deve listar somente o conteúdo final persistido e a origem no banco para cada etapa do framework. */
+    @Test
+    void listFinalSummaryReturnsFinalContentAndDatabaseSource() {
+        String painJob = "9bb83a22-3894-43bd-9752-374f84eb6a2c";
+        HypothesisPainStageExecution completedPain = HypothesisPainStageExecution.builder()
+                .idJob(painJob.getBytes(StandardCharsets.UTF_8))
+                .marketNicheId(18L)
+                .stageCode("hypothesis-pain")
+                .status("CONCLUIDO")
+                .completedAt(Instant.parse("2026-06-11T01:36:19Z"))
+                .modelResponse("{\"pain\":\"dor final\"}")
+                .build();
+
+        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
+                        18L,
+                        "hypothesis-pain",
+                        "CONCLUIDO"))
+                .thenReturn(Optional.of(completedPain));
+        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
+                        18L,
+                        "hypothesis-result",
+                        "CONCLUIDO"))
+                .thenReturn(Optional.empty());
+        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
+                        18L,
+                        "hypothesis-mechanism",
+                        "CONCLUIDO"))
+                .thenReturn(Optional.empty());
+        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
+                        18L,
+                        "hypothesis-offer",
+                        "CONCLUIDO"))
+                .thenReturn(Optional.empty());
+
+        var summary = service.listFinalSummary(18L);
+
+        assertEquals(4, summary.size());
+        assertEquals("pain", summary.getFirst().slug());
+        assertEquals(painJob, summary.getFirst().jobid());
+        assertEquals("{\"pain\":\"dor final\"}", summary.getFirst().finalContent());
+        assertEquals("hypothesis_pain_stage_execution", summary.getFirst().sourceTable());
+        assertEquals("model_response", summary.getFirst().sourceField());
+        assertEquals("result", summary.get(1).slug());
+        assertEquals(null, summary.get(1).finalContent());
+        assertEquals("hypothesis_pain_stage_execution", summary.get(1).sourceTable());
+        assertEquals("model_response", summary.get(1).sourceField());
+    }
+
 }

@@ -28,7 +28,8 @@ public class NicheResearchSeedBuilderPromptBuilder {
         prompt.add("3. Gere queries suficientes em português do Brasil para orientar as próximas etapas de busca, coleta e extração de sinais.");
         prompt.add("4. Prefira frases de busca sobre clientes, atendimento, cobrança, agenda, materiais, entrega, retrabalho, sonhos, medos, inseguranças, canais usados e linguagem real.");
         prompt.add("5. A etapa confia no modelo: não force marcador literal em toda query quando a intenção de pesquisa estiver clara.");
-        prompt.add("6. Não inclua metadado técnico, comentário operacional, debugInfo ou JSON serializado dentro de texto funcional.");
+        prompt.add("6. Respeite os limites maxLength definidos no JSON Schema, especialmente queryGoal curto e queryText como frase de busca objetiva.");
+        prompt.add("7. Não inclua metadado técnico, comentário operacional, debugInfo ou JSON serializado dentro de texto funcional.");
         return prompt.toString();
     }
 

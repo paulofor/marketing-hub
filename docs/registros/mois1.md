@@ -1475,3 +1475,4 @@ Arquivos principais:
 - causa-raiz tratada: a análise da página registrava score e payload, mas não persistia tokens/custo do modelo no estado consolidado da página; além disso, a criação de nicho permitia nascer com `cost` informado e `totalCost` nulo.
 - foi feito: adicionada persistência de `model_name`, `input_tokens`, `output_tokens` e `model_cost_usd` em `mois_sales_page` e `mois_sales_page_job_execution`, cálculo de custo batch pelo catálogo OpenAI do backend e exibição na biblioteca/detalhe da página.
 - foi feito: a criação de nicho passa a iniciar `totalCost` com `totalCost` explícito, ou com `cost` quando o total não for informado, ou zero como fallback.
+- frontend MOIS (`/mois/sales-pages-library`): ajustada a listagem de priorização para exibir temperatura Hotmart e data do dossiê, removendo score de sucesso e fase no diagrama da tabela principal para deixar a decisão comercial mais direta.

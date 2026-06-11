@@ -4372,6 +4372,18 @@
 - foi feito: implementada a busca da Dor concluída mais recente por nicho, bloqueando Resultado quando não há resposta válida e entregando essa resposta ao Worker AI nos jobs pendentes da etapa Resultado.
 - prevenção: adicionado teste unitário para garantir que a etapa Resultado receba a resposta concluída da Dor como contexto obrigatório.
 
+## 2026-06-11 — Listagem de nichos orientada a custo e pipeline
+
+- solicitação: simplificar a tela de nichos removendo segmentação e link no nome, exibir hipóteses geradas pelo pipeline, custo total e paginação de 30 itens.
+- causa-raiz: a tela fazia agregações no frontend por linha e misturava dados operacionais pouco relevantes, o que deixava a priorização comercial menos clara e mais pesada.
+- foi feito: criada listagem backend paginada e ordenada por criação decrescente, com contagem de hipóteses concluídas pela etapa Resultado do pipeline, contagem de experimentos, custo total em reais e vínculo opcional para nicho enriquecido.
+- impacto esperado: o usuário passa a priorizar nichos recentes com base em custo e volume operacional, reduzindo ruído visual e mantendo foco em decisões que levam a vendas.
+## 2026-06-11 — Piso de R$ 25,00 para pausar baixo interesse no anúncio
+
+- solicitação: na situação de reprovação da etapa “Acesso ao formulário de lead”, desativar automaticamente a campanha quando o custo atingir R$ 25,00.
+- causa-raiz: a regra estatística de baixo interesse já invalidava o experimento assim que a reprovação era comprovada, mas não considerava um piso financeiro operacional para aguardar consumo mínimo de mídia antes da pausa.
+- foi feito: a parada automática por `TARGET_AUDIENCE_LOW_INTEREST_STATISTICAL` agora exige reprovação estatística da etapa e gasto sincronizado de mídia maior ou igual a R$ 25,00; a checagem também roda logo após a sincronização de métricas da campanha.
+- prevenção: o cânone de publicação Facebook foi atualizado e o teste unitário cobre tanto a espera em R$ 24,99 quanto a pausa a partir de R$ 25,00.
 ## 2026-06-11 — Etapa 3 do pipeline na tela de nova hipótese
 
 - A tela de nova hipótese passou a exibir a Etapa 3 — Mecanismo junto das etapas Dor e Resultado.

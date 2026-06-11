@@ -1,6 +1,7 @@
 package com.marketinghub.experiment.funnel;
 
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.ExperimentCampaignMetric;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.funnel.dto.ExperimentFunnelDiagnosticsResponseDto;
 import com.marketinghub.experiment.funnel.dto.ExperimentFunnelStageDiagnosticDto;
@@ -8,8 +9,9 @@ import com.marketinghub.experiment.funnel.dto.FunnelDiagnosticReasonCode;
 import com.marketinghub.experiment.funnel.dto.FunnelDiagnosticStatus;
 import com.marketinghub.experiment.funnel.dto.FunnelThresholdCheckDto;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
-import com.marketinghub.repository.jpa.facebookads.FacebookAdsCampaignRepository;
 import com.marketinghub.facebookads.FacebookCampaignStopReason;
+import com.marketinghub.repository.jpa.experiment.ExperimentCampaignMetricRepository;
+import com.marketinghub.repository.jpa.facebookads.FacebookAdsCampaignRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,9 +19,11 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
@@ -32,6 +36,8 @@ class ExperimentFunnelAutoStopServiceTest {
     private ExperimentFunnelDiagnosticService diagnosticService;
     @Mock
     private FacebookAdsCampaignRepository campaignRepository;
+    @Mock
+    private ExperimentCampaignMetricRepository campaignMetricRepository;
 
     @InjectMocks
     private ExperimentFunnelAutoStopService service;
@@ -46,10 +52,10 @@ class ExperimentFunnelAutoStopServiceTest {
     }
 
     /**
-     * Garante parada quando o interesse no anúncio falha com confiança estatística.
+     * Garante parada quando o interesse no anúncio falha com confiança estatística após R$ 25,00 de mídia.
      */
     @Test
-    void stopsExperimentWhenAdInterestStatisticallyFails() {
+    void stopsExperimentWhenAdInterestStatisticallyFailsAfterMinimumSpend() {
         ExperimentFunnelStageDiagnosticDto stage = new ExperimentFunnelStageDiagnosticDto(
                 ExperimentFunnelStage.ACESSO_FORM_LEAD,
                 "Acesso ao formulário",
@@ -66,6 +72,8 @@ class ExperimentFunnelAutoStopServiceTest {
         );
         when(diagnosticService.diagnose(99L))
                 .thenReturn(new ExperimentFunnelDiagnosticsResponseDto(List.of(stage), null));
+        when(campaignMetricRepository.findByExperiment(experiment))
+                .thenReturn(Optional.of(metricWithSpend("25.00")));
         FacebookAdsCampaign campaign = new FacebookAdsCampaign();
         campaign.setId("camp-low-interest");
         when(campaignRepository.findByExperimentId(99L)).thenReturn(List.of(campaign));
@@ -78,6 +86,36 @@ class ExperimentFunnelAutoStopServiceTest {
                 .isEqualTo(FacebookCampaignStopReason.TARGET_AUDIENCE_LOW_INTEREST_STATISTICAL);
         assertThat(campaign.getStopRequestedAt()).isNotNull();
         assertThat(campaign.getStopLastError()).isNull();
+    }
+
+    /**
+     * Garante que a reprovação estatística aguarde o piso de R$ 25,00 antes de desativar a campanha.
+     */
+    @Test
+    void keepsExperimentRunningWhenAdInterestFailsBeforeMinimumSpend() {
+        ExperimentFunnelStageDiagnosticDto stage = new ExperimentFunnelStageDiagnosticDto(
+                ExperimentFunnelStage.ACESSO_FORM_LEAD,
+                "Acesso ao formulário",
+                1476,
+                8,
+                0.0054,
+                0.015,
+                0.011,
+                List.of(new FunnelThresholdCheckDto(0.015, 200, 0.002, false, true)),
+                FunnelDiagnosticStatus.STATISTICALLY_FAILED,
+                FunnelDiagnosticReasonCode.BELOW_MIN_RATE,
+                "",
+                false
+        );
+        when(diagnosticService.diagnose(99L))
+                .thenReturn(new ExperimentFunnelDiagnosticsResponseDto(List.of(stage), null));
+        when(campaignMetricRepository.findByExperiment(experiment))
+                .thenReturn(Optional.of(metricWithSpend("24.99")));
+
+        boolean stopped = service.stopIfAdInterestStatisticallyLow(experiment);
+
+        assertThat(stopped).isFalse();
+        assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.RUNNING);
     }
 
     @Test
@@ -172,6 +210,16 @@ class ExperimentFunnelAutoStopServiceTest {
 
         assertThat(stopped).isFalse();
         assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.RUNNING);
+    }
+
+    /**
+     * Cria uma métrica de campanha com gasto de mídia para os cenários de parada automática.
+     */
+    private ExperimentCampaignMetric metricWithSpend(String spend) {
+        ExperimentCampaignMetric metric = new ExperimentCampaignMetric();
+        metric.setExperiment(experiment);
+        metric.setSpend(new BigDecimal(spend));
+        return metric;
     }
 
 }

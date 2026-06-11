@@ -39,7 +39,10 @@ public interface OprmRoutineResearchCycleRepository extends JpaRepository<OprmRo
                   or (
                       cycle.status = :failedStatus
                       and cycle.errorMessage is not null
-                      and lower(cycle.errorMessage) like lower(concat('%', :retryableErrorFragment, '%'))
+                      and (
+                          lower(cycle.errorMessage) like lower(concat('%', :legacyContractErrorFragment, '%'))
+                          or lower(cycle.errorMessage) like lower(concat('%', :queryGoalLengthErrorFragment, '%'))
+                      )
                       and lower(cycle.errorMessage) like lower(concat('%', :completePathFragment, '%'))
                   )
               )
@@ -48,7 +51,8 @@ public interface OprmRoutineResearchCycleRepository extends JpaRepository<OprmRo
     List<OprmRoutineResearchCycle> findSeedBuilderPendingOrRetryable(
             @Param("runningStatus") String runningStatus,
             @Param("failedStatus") String failedStatus,
-            @Param("retryableErrorFragment") String retryableErrorFragment,
+            @Param("legacyContractErrorFragment") String legacyContractErrorFragment,
+            @Param("queryGoalLengthErrorFragment") String queryGoalLengthErrorFragment,
             @Param("completePathFragment") String completePathFragment,
             Pageable pageable);
     /** Lista ciclos recentes cujo nome ou conteúdo principal ainda contém linguagem de solução. */

@@ -4407,3 +4407,10 @@
   - a liberação da Oferta passou a exigir Mecanismo concluído, preservando a causa-raiz do fluxo sequencial;
   - atualizada a documentação Swagger do pipeline de hipótese para incluir Oferta.
 - impacto esperado: o usuário passa a acompanhar e iniciar a construção da Oferta no mesmo lugar onde já acompanha as etapas anteriores, reduzindo dispersão operacional e mantendo foco em venda.
+
+## 2026-06-11 — Modelo OpenAI por etapa na tela de nova hipótese
+
+- solicitação: exibir na tela `/niches/:nicheId/hypotheses/new` qual modelo foi usado em cada etapa do pipeline de criação de hipótese.
+- causa-raiz: o backend já expunha `openAiModel` nas execuções auditáveis, mas a interface ocultava esse dado; isso dificultava comparar custo, qualidade e rastreabilidade por etapa.
+- foi feito: a tela passou a mostrar o modelo usado no resumo da execução atual e em cada linha da tabela de execuções de Dor, Resultado, Mecanismo e Oferta.
+- impacto esperado: o usuário passa a auditar rapidamente qual modelo gerou cada etapa, conectando qualidade do output, custo de IA e decisão comercial.

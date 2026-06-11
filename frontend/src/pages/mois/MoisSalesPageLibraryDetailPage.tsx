@@ -15,8 +15,11 @@ import type {
   MoisMarketWarmupEcosystemType,
   MoisMarketWarmupJobStatus,
   MoisMarketWarmupRecommendation,
+  MoisMarketWarmupSignal,
   MoisMarketWarmupSignalType,
+  MoisMarketWarmupSource,
   MoisMarketWarmupSourceType,
+  MoisMarketWarmupSummary,
   MoisMarketWarmupTemperature,
 } from "../../api/mois/types";
 
@@ -41,11 +44,11 @@ const ecosystemLabels: Record<MoisMarketWarmupEcosystemType, string> = {
 };
 
 const recommendationLabels: Record<MoisMarketWarmupRecommendation, string> = {
-  PRIORITIZE: "Priorizar experimento",
-  OBSERVE: "Observar com refinamento",
-  RESEARCH_MORE: "Pesquisar mais",
-  DISCARD: "Descartar por baixa prioridade",
-  SATURATED_REQUIRES_ANGLE: "Avançar só com ângulo diferenciado",
+  PRIORITIZE: "Máquina forte para estudar",
+  OBSERVE: "Estudar com refinamento",
+  RESEARCH_MORE: "Pesquisar mais evidências",
+  DISCARD: "Pouca evidência pública",
+  SATURATED_REQUIRES_ANGLE: "Sucesso exige ângulo diferenciado",
 };
 
 const statusLabels: Record<MoisMarketWarmupJobStatus, string> = {
@@ -131,6 +134,318 @@ function formatDate(value?: string) {
 
 function isObjectLike(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
+}
+
+type SuccessDetailSection = {
+  number: number;
+  title: string;
+  body: string;
+  conclusion: string;
+  evidences: string[];
+};
+
+function includesAny(value: string, terms: string[]) {
+  const normalized = value.toLowerCase();
+  return terms.some((term) => normalized.includes(term));
+}
+
+function sourceLabel(source?: MoisMarketWarmupSource) {
+  if (!source) return undefined;
+  try {
+    return new URL(source.sourceUrl).hostname.replace(/^www\./, "");
+  } catch {
+    return source.sourceTitle || source.sourceUrl;
+  }
+}
+
+function uniqueTexts(items: string[]) {
+  const seen = new Set<string>();
+  return items
+    .map((item) => item.replace(/\s+/g, " ").trim())
+    .filter((item) => item && !seen.has(item.toLowerCase()))
+    .filter((item) => {
+      seen.add(item.toLowerCase());
+      return true;
+    });
+}
+
+function evidenceFromSignals(
+  signals: MoisMarketWarmupSignal[],
+  sources: MoisMarketWarmupSource[],
+  predicate: (signal: MoisMarketWarmupSignal) => boolean,
+) {
+  const sourcesById = new Map(
+    sources.map((source) => [source.sourceId, source]),
+  );
+  return uniqueTexts(
+    signals.filter(predicate).map((signal) => {
+      const label = sourceLabel(sourcesById.get(signal.sourceId));
+      return label ? `${signal.signalText} (${label})` : signal.signalText;
+    }),
+  ).slice(0, 4);
+}
+
+function evidenceFromSources(
+  sources: MoisMarketWarmupSource[],
+  predicate: (source: MoisMarketWarmupSource) => boolean,
+) {
+  return uniqueTexts(
+    sources.filter(predicate).map((source) => {
+      const label = sourceLabel(source);
+      const title = source.sourceTitle || source.sourceUrl;
+      const summary = source.evidenceSummary
+        ? ` — ${source.evidenceSummary}`
+        : "";
+      return label ? `${title}${summary} (${label})` : `${title}${summary}`;
+    }),
+  ).slice(0, 4);
+}
+
+function ReportSection({ section }: { section: SuccessDetailSection }) {
+  return (
+    <section className="border rounded p-3 bg-white">
+      <h4 className="h6 mb-2">
+        {section.number}. {section.title}
+      </h4>
+      <p className="small mb-2">{section.body}</p>
+      {section.evidences.length > 0 ? (
+        <ul className="small mb-2 ps-3">
+          {section.evidences.map((evidence, index) => (
+            <li key={`${section.number}-${index}`}>{evidence}</li>
+          ))}
+        </ul>
+      ) : (
+        <p className="small text-secondary mb-2">
+          Sem evidência suficiente neste dossiê. A próxima execução deve buscar
+          fontes mais específicas sobre produtor, autoridade, canais e funil.
+        </p>
+      )}
+      <p className="small mb-0">
+        <strong>Conclusão:</strong> {section.conclusion}
+      </p>
+    </section>
+  );
+}
+
+function ProductSuccessNarrative({
+  productTitle,
+  summary,
+  signals,
+  sources,
+}: {
+  productTitle?: string;
+  summary: MoisMarketWarmupSummary;
+  signals: MoisMarketWarmupSignal[];
+  sources: MoisMarketWarmupSource[];
+}) {
+  const productName = productTitle?.trim() || "este produto";
+  const authorityEvidence = uniqueTexts([
+    ...evidenceFromSignals(
+      signals,
+      sources,
+      (signal) => signal.signalType === "CREATOR_AUTHORITY",
+    ),
+    ...evidenceFromSources(sources, (source) =>
+      includesAny(
+        `${source.sourceTitle ?? ""} ${source.evidenceSummary ?? ""} ${
+          source.sourceUrl
+        }`,
+        [
+          "fundador",
+          "fundadora",
+          "especialista",
+          "professora",
+          "criadora",
+          "criador",
+          "seguidores",
+          "instagram",
+          "autoridade",
+        ],
+      ),
+    ),
+  ]).slice(0, 4);
+  const channelEvidence = uniqueTexts([
+    ...evidenceFromSignals(
+      signals,
+      sources,
+      (signal) => signal.signalType === "CHANNEL_FIT",
+    ),
+    ...evidenceFromSources(
+      sources,
+      (source) =>
+        ["INSTAGRAM", "YOUTUBE", "TIKTOK"].includes(source.platform) ||
+        includesAny(source.sourceUrl, ["instagram", "youtube", "tiktok"]),
+    ),
+  ]).slice(0, 4);
+  const funnelEvidence = uniqueTexts([
+    ...evidenceFromSignals(signals, sources, (signal) =>
+      includesAny(signal.signalText, [
+        "aula",
+        "cadastro",
+        "whatsapp",
+        "live",
+        "evento",
+        "youtube",
+        "desafio",
+        "captura",
+        "comunidade",
+      ]),
+    ),
+    ...evidenceFromSources(sources, (source) =>
+      includesAny(
+        `${source.sourceTitle ?? ""} ${source.evidenceSummary ?? ""}`,
+        [
+          "aula",
+          "cadastro",
+          "whatsapp",
+          "live",
+          "evento",
+          "desafio",
+          "comunidade",
+          "gratuit",
+        ],
+      ),
+    ),
+  ]).slice(0, 4);
+  const promiseEvidence = uniqueTexts([
+    ...(summary.mainPains ?? []),
+    ...(summary.mainPromises ?? []),
+    ...evidenceFromSignals(
+      signals,
+      sources,
+      (signal) => signal.signalType === "PAIN_EXPLICIT",
+    ),
+  ]).slice(0, 4);
+  const offerEvidence = uniqueTexts([
+    ...(summary.mainCompetitors ?? []),
+    ...evidenceFromSignals(signals, sources, (signal) =>
+      ["SOCIAL_PROOF", "COMPETITOR_OFFER", "BUYING_INTENT"].includes(
+        signal.signalType,
+      ),
+    ),
+    ...evidenceFromSources(sources, (source) =>
+      includesAny(
+        `${source.sourceTitle ?? ""} ${source.evidenceSummary ?? ""}`,
+        [
+          "alunas",
+          "alunos",
+          "depoimento",
+          "resultado",
+          "acompanhamento",
+          "comunidade",
+          "bônus",
+          "hotmart",
+          "checkout",
+        ],
+      ),
+    ),
+  ]).slice(0, 4);
+
+  const executiveSummary =
+    summary.opportunityRecommendation ||
+    `${productName} provavelmente fez sucesso porque não depende só da página de vendas. Ele parece estar apoiado em autoridade/marca pessoal, audiência em canais públicos, funil educacional, promessa clara e oferta com prova social ou acompanhamento.`;
+
+  const sections: SuccessDetailSection[] = [
+    {
+      number: 1,
+      title: "Existe uma figura de autoridade por trás",
+      body: "A primeira hipótese a validar é se existe uma pessoa, marca ou especialista que empresta confiança para a oferta e leva audiência para a página de vendas.",
+      conclusion:
+        authorityEvidence.length > 0
+          ? "O produto provavelmente não vende só pela página. Ele vende porque existe autoridade ou marca no nicho levando tráfego e confiança para a oferta."
+          : "Ainda não dá para afirmar a autoridade principal; a próxima pesquisa precisa encontrar fundador, especialista, influenciador ou marca por trás do produto.",
+      evidences: authorityEvidence,
+    },
+    {
+      number: 2,
+      title: "O canal forte provável",
+      body: "A análise deve separar página fria de canal de audiência. O produto pode vender por Instagram, YouTube, TikTok, WhatsApp, lives, afiliados ou comunidade.",
+      conclusion:
+        channelEvidence.length > 0
+          ? "A hipótese mais forte é que a audiência já chega aquecida por canais públicos antes de encontrar a página de vendas."
+          : "O canal de aquisição ainda não ficou claro; é preciso buscar Instagram, YouTube, TikTok, afiliados, anúncios, WhatsApp e comunidades ligados ao produtor.",
+      evidences:
+        channelEvidence.length > 0 ? channelEvidence : summary.mainChannels,
+    },
+    {
+      number: 3,
+      title: "Funil com aula gratuita, cadastro, WhatsApp ou evento",
+      body: "Produtos de sucesso raramente dependem apenas do caminho anúncio → página → compra. A investigação deve procurar isca gratuita, cadastro, aula, live, grupo, desafio ou lançamento.",
+      conclusion:
+        funnelEvidence.length > 0
+          ? "A venda provavelmente passa por conteúdo gratuito ou evento de aquecimento antes da oferta."
+          : "Ainda falta evidência de funil; a próxima pesquisa deve procurar páginas de captura, aula gratuita, WhatsApp, lives, eventos e desafios.",
+      evidences: funnelEvidence,
+    },
+    {
+      number: 4,
+      title: "Promessa simples e dor clara",
+      body: "A página de sucesso precisa ser traduzida em dor concreta e resultado desejado. O importante é entender o motivo emocional e prático que faz o público comprar.",
+      conclusion:
+        promiseEvidence.length > 0
+          ? "O produto parece vender uma transformação prática e emocional conectada a uma dor clara do público."
+          : "A dor e a promessa ainda estão fracas; é preciso buscar a linguagem real usada pelo público e pelo produtor.",
+      evidences: promiseEvidence,
+    },
+    {
+      number: 5,
+      title: "Oferta com acompanhamento, comunidade ou prova social",
+      body: "A investigação deve identificar se a oferta é só um curso gravado ou se ganha valor com aulas ao vivo, grupo, comunidade, bônus, acompanhamento, depoimentos e checkout/marketplace.",
+      conclusion:
+        offerEvidence.length > 0
+          ? "A oferta tem mais valor percebido porque parece apoiada em prova social, distribuição ou componentes além da página de vendas."
+          : "Ainda falta confirmar os elementos de valor percebido: acompanhamento, aulas ao vivo, grupo, bônus, depoimentos, afiliados e checkout.",
+      evidences: offerEvidence,
+    },
+  ];
+
+  const machineSteps = summary.nextExperimentSuggestion?.includes("→")
+    ? summary.nextExperimentSuggestion.split("→").map((item) => item.trim())
+    : [
+        "Conteúdo público de autoridade gera confiança.",
+        "Audiência em canal forte chega mais aquecida.",
+        "Isca, aula, live, WhatsApp ou comunidade captura o lead.",
+        "Oferta apresenta transformação prática com prova social.",
+        "Checkout, afiliados ou marketplace convertem a demanda em venda.",
+      ];
+
+  return (
+    <article className="border rounded p-3 bg-primary-subtle">
+      <div className="text-secondary small">Resposta executiva</div>
+      <p className="mb-3 fw-semibold">{executiveSummary}</p>
+
+      <h3 className="h6 mb-2">
+        Minha leitura: como esse produtor provavelmente conseguiu sucesso
+      </h3>
+      <p className="small mb-3">
+        Pelo que foi encontrado, o sucesso parece vir de uma combinação de marca
+        pessoal, audiência, funil educacional e produto de transformação
+        prática.
+      </p>
+
+      <div className="d-flex flex-column gap-2">
+        {sections.map((section) => (
+          <ReportSection key={section.number} section={section} />
+        ))}
+      </div>
+
+      <section className="bg-white border rounded p-3 mt-3">
+        <h4 className="h6 mb-2">
+          Então, como ele provavelmente atingiu o sucesso?
+        </h4>
+        <p className="small mb-2">
+          <strong>Minha hipótese objetiva:</strong> {executiveSummary}
+        </p>
+        <p className="small mb-2">A página de vendas é só uma parte.</p>
+        <strong>A máquina provável é:</strong>
+        <ol className="small mb-0 mt-2 ps-3">
+          {machineSteps.filter(Boolean).map((step, index) => (
+            <li key={`${step}-${index}`}>{step}</li>
+          ))}
+        </ol>
+      </section>
+    </article>
+  );
 }
 
 function JsonTreeNode({
@@ -394,10 +709,11 @@ export default function MoisSalesPageLibraryDetailPage() {
         <div className="card-body d-flex flex-column gap-3">
           <div className="d-flex flex-wrap justify-content-between align-items-start gap-3">
             <div>
-              <h2 className="h5 mb-1">Aquecimento do Mercado</h2>
+              <h2 className="h5 mb-1">Engenharia de Sucesso do Produto</h2>
               <p className="text-secondary mb-0">
-                Dossiê da Etapa 3 para decidir se existe conversa ativa, dor
-                clara e evidência suficiente para priorizar este mercado.
+                Dossiê da Etapa 3 para descobrir como este produto aparentemente
+                vencedor vende: autoridade, canais, funil, prova social e
+                distribuição.
               </p>
             </div>
             {!warmupQuery.data && !requestedWarmupJob ? (
@@ -418,24 +734,24 @@ export default function MoisSalesPageLibraryDetailPage() {
                     aria-hidden="true"
                   />
                 ) : null}
-                Executar pesquisa de aquecimento
+                Investigar sucesso do produto
               </button>
             ) : null}
           </div>
 
           {warmupQuery.isLoading ? (
             <p className="text-secondary mb-0">
-              Carregando aquecimento do mercado...
+              Carregando engenharia de sucesso...
             </p>
           ) : null}
           {warmupQuery.isError ? (
             <div className="alert alert-danger mb-0">
-              Falha ao carregar o dossiê de aquecimento.
+              Falha ao carregar o dossiê de sucesso.
             </div>
           ) : null}
           {requestWarmupMutation.isError ? (
             <div className="alert alert-danger mb-0">
-              Falha ao solicitar nova pesquisa de aquecimento.
+              Falha ao solicitar nova investigação de sucesso.
             </div>
           ) : null}
           {requestedWarmupJob ? (
@@ -449,9 +765,9 @@ export default function MoisSalesPageLibraryDetailPage() {
           !warmupQuery.data &&
           !requestedWarmupJob ? (
             <div className="alert alert-info mb-0">
-              Ainda não existe dossiê de aquecimento para esta página. Solicite
-              a pesquisa para medir temperatura, canais, dores e sinais de
-              compra do mercado.
+              Ainda não existe dossiê de sucesso para esta página. Solicite a
+              investigação para mapear autoridade, canais, funil, prova social e
+              distribuição que podem explicar as vendas do produto.
             </div>
           ) : null}
 
@@ -468,7 +784,7 @@ export default function MoisSalesPageLibraryDetailPage() {
                 </div>
                 <div className="col-md-3">
                   <div className="border rounded p-3 h-100 bg-light-subtle">
-                    <div className="text-secondary small">Temperatura</div>
+                    <div className="text-secondary small">Força da máquina</div>
                     <span
                       className={`badge ${getTemperatureBadgeClass(warmupQuery.data.marketTemperature)}`}
                     >
@@ -478,7 +794,7 @@ export default function MoisSalesPageLibraryDetailPage() {
                 </div>
                 <div className="col-md-3">
                   <div className="border rounded p-3 h-100 bg-light-subtle">
-                    <div className="text-secondary small">Ecossistema</div>
+                    <div className="text-secondary small">Motor provável</div>
                     <strong>
                       {ecosystemLabels[warmupQuery.data.ecosystemType]}
                     </strong>
@@ -494,7 +810,7 @@ export default function MoisSalesPageLibraryDetailPage() {
 
               <div className="border rounded p-3">
                 <div className="text-secondary small">
-                  Recomendação comercial
+                  Hipótese de como vende
                 </div>
                 <p className="mb-1 fw-semibold">
                   {recommendationLabels[warmupQuery.data.recommendation]}
@@ -505,11 +821,18 @@ export default function MoisSalesPageLibraryDetailPage() {
                 </p>
                 {warmupQuery.data.nextExperimentSuggestion ? (
                   <p className="mb-0 mt-2 small text-secondary">
-                    Próximo experimento sugerido:{" "}
+                    Próxima investigação sugerida:{" "}
                     {warmupQuery.data.nextExperimentSuggestion}
                   </p>
                 ) : null}
               </div>
+
+              <ProductSuccessNarrative
+                productTitle={pageQuery.data?.title}
+                summary={warmupQuery.data}
+                signals={warmupSignalsQuery.data?.items ?? []}
+                sources={warmupSourcesQuery.data?.items ?? []}
+              />
 
               {warmupQuery.data.status === "FAILED" ? (
                 <div className="alert alert-danger mb-0">
@@ -523,32 +846,34 @@ export default function MoisSalesPageLibraryDetailPage() {
 
               <div className="row g-3 small">
                 <div className="col-md-6">
-                  <strong>Dores principais</strong>
+                  <strong>Dor/promessa central</strong>
                   <TextList items={warmupQuery.data.mainPains} />
                 </div>
                 <div className="col-md-6">
-                  <strong>Objeções principais</strong>
+                  <strong>Objeções/riscos</strong>
                   <TextList items={warmupQuery.data.mainObjections} />
                 </div>
                 <div className="col-md-6">
-                  <strong>Canais principais</strong>
+                  <strong>Canais encontrados</strong>
                   <TextList items={warmupQuery.data.mainChannels} />
                 </div>
                 <div className="col-md-6">
-                  <strong>Concorrentes principais</strong>
+                  <strong>Alavancas de sucesso</strong>
                   <TextList items={warmupQuery.data.mainCompetitors} />
                 </div>
               </div>
 
               {warmupQuery.data.saturationRisk ? (
                 <div className="alert alert-warning mb-0">
-                  <strong>Risco de saturação:</strong>{" "}
+                  <strong>Risco comercial:</strong>{" "}
                   {warmupQuery.data.saturationRisk}
                 </div>
               ) : null}
 
               <div>
-                <h3 className="h6 mb-2">Fontes públicas rastreáveis</h3>
+                <h3 className="h6 mb-2">
+                  Fontes públicas para explicar o sucesso
+                </h3>
                 {warmupSourcesQuery.isLoading ? (
                   <p className="text-secondary mb-0">Carregando fontes...</p>
                 ) : null}
@@ -599,7 +924,7 @@ export default function MoisSalesPageLibraryDetailPage() {
               </div>
 
               <div>
-                <h3 className="h6 mb-2">Sinais que justificam a pontuação</h3>
+                <h3 className="h6 mb-2">Sinais que explicam a venda</h3>
                 {warmupSignalsQuery.isLoading ? (
                   <p className="text-secondary mb-0">Carregando sinais...</p>
                 ) : null}
@@ -611,7 +936,7 @@ export default function MoisSalesPageLibraryDetailPage() {
                 {!warmupSignalsQuery.isLoading &&
                 (warmupSignalsQuery.data?.items.length ?? 0) === 0 ? (
                   <p className="text-secondary mb-0">
-                    Nenhum sinal comercial registrado para este dossiê.
+                    Nenhum sinal de venda registrado para este dossiê.
                   </p>
                 ) : null}
                 <div className="row g-2">

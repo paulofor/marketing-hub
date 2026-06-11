@@ -119,7 +119,7 @@ public class MoisSalesPageMarketWarmupService {
             log.info("Job de aquecimento MOIS reservado. modulo=MOIS, operacao=claimMarketWarmupJob, workspaceId={}, workerId={}, pageId={}, jobId={}",
                     request.workspaceId(), request.workerId(), page.pageId(), pending.job().jobId());
             return new MoisSalesLibraryDtos.MarketWarmupClaimResponse(true, new MoisSalesLibraryDtos.MarketWarmupClaimedJob(
-                    pending.job().jobId(), page.pageId(), page.workspaceId(), page.urlCanonical(), page.title(), page.offerSummary(),
+                    pending.job().jobId(), page.pageId(), page.workspaceId(), page.urlCanonical(), page.title(), page.producerName(), page.offerSummary(),
                     page.mechanismSummary(), page.promiseSummary(), page.proofSummary()));
         } catch (RuntimeException ex) {
             log.error("Falha ao reservar job de aquecimento MOIS. modulo=MOIS, operacao=claimMarketWarmupJob, workspaceId={}, workerId={}, erroClasse={}, erro={}",

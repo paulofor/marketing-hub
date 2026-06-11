@@ -112,11 +112,17 @@ public class MarketWarmupProcessor {
             if (containsAny(text, "reclama", "golpe", "não funciona", "risco", "contraindica", "procon")) {
                 addSignal(signals, index, MarketWarmupSignalType.OBJECTION, buildSignalText(result), "Existe objeção ou risco de confiança que precisa ser tratado na oferta.", 7);
             }
-            if (containsAny(text, "youtube", "instagram", "tiktok", "canal", "influencer")) {
-                addSignal(signals, index, MarketWarmupSignalType.CHANNEL_FIT, buildSignalText(result), "A fonte sugere canal público adequado para aquecer ou vender.", 5);
+            if (containsAny(text, "youtube", "instagram", "tiktok", "canal", "influencer", "whatsapp", "live")) {
+                addSignal(signals, index, MarketWarmupSignalType.CHANNEL_FIT, buildSignalText(result), "A fonte sugere canal público usado para aquecer, capturar ou vender.", 6);
             }
-            if (containsAny(text, "afiliado", "concorrente", "hotmart", "clickbank", "produto")) {
-                addSignal(signals, index, MarketWarmupSignalType.COMPETITOR_OFFER, buildSignalText(result), "Há sinal de maturidade de oferta ou concorrência no mercado.", 5);
+            if (containsAny(text, "fundador", "fundadora", "especialista", "professora", "mentor", "seguidores", "autoridade", "criadora", "criador")) {
+                addSignal(signals, index, MarketWarmupSignalType.CREATOR_AUTHORITY, buildSignalText(result), "Há sinal de autoridade pessoal ou marca especialista por trás do produto.", 8);
+            }
+            if (containsAny(text, "depoimento", "alunas", "alunos", "resultado", "transformação", "antes e depois", "casos de sucesso")) {
+                addSignal(signals, index, MarketWarmupSignalType.SOCIAL_PROOF, buildSignalText(result), "Há prova social pública que ajuda a explicar a confiança na oferta.", 7);
+            }
+            if (containsAny(text, "afiliado", "concorrente", "hotmart", "clickbank", "produto", "oferta", "bônus", "checkout")) {
+                addSignal(signals, index, MarketWarmupSignalType.COMPETITOR_OFFER, buildSignalText(result), "Há sinal de maturidade de oferta, distribuição ou venda do produto.", 5);
             }
         }
         return signals;
@@ -136,8 +142,11 @@ public class MarketWarmupProcessor {
         int painSignals = countSignals(signals, MarketWarmupSignalType.PAIN_EXPLICIT);
         int intentSignals = countSignals(signals, MarketWarmupSignalType.BUYING_INTENT);
         int competitorSignals = countSignals(signals, MarketWarmupSignalType.COMPETITOR_OFFER);
+        int authoritySignals = countSignals(signals, MarketWarmupSignalType.CREATOR_AUTHORITY);
+        int socialProofSignals = countSignals(signals, MarketWarmupSignalType.SOCIAL_PROOF);
+        int channelSignals = countSignals(signals, MarketWarmupSignalType.CHANNEL_FIT);
         int objectionSignals = countSignals(signals, MarketWarmupSignalType.OBJECTION);
-        int score = Math.min(100, 20 + Math.min(20, sources.size() * 3) + Math.min(20, painSignals * 5) + Math.min(20, intentSignals * 5) + Math.min(10, competitorSignals * 3) - Math.min(10, objectionSignals * 2));
+        int score = Math.min(100, 20 + Math.min(20, sources.size() * 3) + Math.min(20, painSignals * 5) + Math.min(20, intentSignals * 5) + Math.min(15, authoritySignals * 5) + Math.min(15, socialProofSignals * 5) + Math.min(10, channelSignals * 3) + Math.min(10, competitorSignals * 3) - Math.min(10, objectionSignals * 2));
         MarketWarmupTemperature temperature = classifyTemperature(score, objectionSignals);
         MarketWarmupRecommendation recommendation = classifyRecommendation(temperature);
         return new MarketWarmupSummaryCompleteItem(
@@ -145,14 +154,14 @@ public class MarketWarmupProcessor {
                 temperature,
                 classifyEcosystem(sources, competitorSignals, objectionSignals),
                 recommendation,
-                List.of(firstUseful(job.promiseSummary(), "Dor principal inferida das fontes públicas e da promessa analisada.")),
+                List.of(firstUseful(job.promiseSummary(), "Dor central inferida da promessa usada pelo produto vencedor.")),
                 objectionSignals > 0 ? List.of("Confiança no método e prova de resultado precisam ser reforçadas.") : List.of("Objeções explícitas ainda não apareceram com força na busca V1."),
                 List.of(firstUseful(job.promiseSummary(), "Promessa principal ainda precisa de refinamento pela análise comercial.")),
                 collectChannels(sources),
-                competitorSignals > 0 ? List.of("Há sinais de produtos, afiliados ou ofertas concorrentes nas fontes públicas.") : List.of("Concorrentes diretos não foram fortes no dossiê V1."),
+                buildSuccessLevers(authoritySignals, socialProofSignals, competitorSignals, channelSignals),
                 objectionSignals >= 3 ? "Risco moderado de desconfiança ou saturação; exigir ângulo e prova mais específicos." : "Risco de saturação baixo ou não conclusivo na coleta V1.",
-                buildOpportunityRecommendation(temperature),
-                "Validar experimento usando a dor e a promessa com maior presença nas fontes rastreáveis.");
+                buildOpportunityRecommendation(temperature, authoritySignals, socialProofSignals, channelSignals),
+                buildNextInvestigationSuggestion(authoritySignals, socialProofSignals, channelSignals));
     }
 
     /**
@@ -208,16 +217,58 @@ public class MarketWarmupProcessor {
     }
 
     /**
-     * Monta recomendação de negócio direta para orientar o próximo experimento.
+     * Monta hipótese executiva sobre como o produto provavelmente conseguiu vender.
      */
-    private String buildOpportunityRecommendation(MarketWarmupTemperature temperature) {
+    private String buildOpportunityRecommendation(MarketWarmupTemperature temperature, int authoritySignals, int socialProofSignals, int channelSignals) {
+        if (authoritySignals > 0 || socialProofSignals > 0 || channelSignals > 0) {
+            return "Esse produto provavelmente fez sucesso porque não depende só da página de vendas. Ele parece estar apoiado em autoridade ou marca pessoal, audiência em canais públicos, funil educacional, promessa clara e prova social/oferta com valor percebido.";
+        }
         return switch (temperature) {
-            case HOT -> "Priorizar experimento: há evidência pública suficiente para testar oferta rapidamente.";
-            case PROMISING -> "Priorizar com refinamento de ângulo: há sinais de demanda, mas a promessa deve ser diferenciada.";
-            case WARM -> "Pesquisar mais antes de criar oferta: o mercado tem sinais, mas ainda não sustenta prioridade máxima.";
-            case SATURATED -> "Avançar somente com ângulo diferenciado e prova forte para reduzir desconfiança.";
-            case COLD -> "Baixa prioridade comercial no momento; buscar outro mercado com dor mais explícita.";
+            case HOT -> "Esse produto tem sinais fortes de engenharia pública de venda; a página de vendas deve ser analisada junto com autoridade, canal principal, funil e prova social.";
+            case PROMISING -> "Esse produto é promissor para estudo, mas ainda precisa detalhar autoridade, audiência, funil e prova social antes de concluir como chegou ao sucesso.";
+            case WARM -> "Há alguns sinais de venda, mas ainda faltam fontes para confirmar canal de aquisição, influenciador, funil e prova social.";
+            case SATURATED -> "O sucesso pode depender de ângulo muito específico ou de uma máquina já saturada; investigar diferenciação, confiança e prova antes de usar como referência.";
+            case COLD -> "Ainda há baixa evidência pública sobre a máquina de venda; antes de concluir, busque produtor, influenciador, canal, funil e prova social.";
         };
+    }
+
+    /**
+     * Resume alavancas prováveis que explicam a venda do produto observado.
+     */
+    private List<String> buildSuccessLevers(int authoritySignals, int socialProofSignals, int competitorSignals, int channelSignals) {
+        List<String> levers = new ArrayList<>();
+        if (authoritySignals > 0) {
+            levers.add("Autoridade pessoal ou marca especialista aparece como provável motor de confiança.");
+        }
+        if (channelSignals > 0) {
+            levers.add("Canais públicos como Instagram, YouTube, TikTok, WhatsApp ou lives aparecem como ativos de aquisição/aquecimento.");
+        }
+        if (socialProofSignals > 0) {
+            levers.add("Depoimentos, alunas ou resultados aparecem como prova social para conversão.");
+        }
+        if (competitorSignals > 0) {
+            levers.add("Há sinais de distribuição por oferta, afiliados, marketplace ou bônus.");
+        }
+        if (levers.isEmpty()) {
+            levers.add("Alavancas de sucesso ainda não ficaram claras nas fontes públicas V1.");
+        }
+        return levers;
+    }
+
+    /**
+     * Sugere a próxima investigação necessária para explicar como o produtor chegou ao sucesso.
+     */
+    private String buildNextInvestigationSuggestion(int authoritySignals, int socialProofSignals, int channelSignals) {
+        if (authoritySignals == 0) {
+            return "Buscar pessoa pública, fundador, especialista ou marca por trás do produto.";
+        }
+        if (channelSignals == 0) {
+            return "Mapear quais canais levam audiência para a oferta: Instagram, YouTube, TikTok, WhatsApp, lives, afiliados ou anúncios.";
+        }
+        if (socialProofSignals == 0) {
+            return "Coletar depoimentos, resultados e provas usadas para converter a audiência em compra.";
+        }
+        return "Conteúdo público de autoridade → audiência em canal forte → cadastro/aula/live/WhatsApp → oferta principal → prova social/comunidade → checkout/marketplace.";
     }
 
     /**
@@ -254,8 +305,14 @@ public class MarketWarmupProcessor {
         if (containsAny(text, "reclama", "golpe", "procon")) {
             return MarketWarmupSourceType.COMPLAINT;
         }
-        if (containsAny(text, "youtube", "instagram", "tiktok", "canal")) {
+        if (containsAny(text, "instagram", "tiktok", "post", "perfil")) {
+            return MarketWarmupSourceType.SOCIAL_POST;
+        }
+        if (containsAny(text, "youtube", "canal", "live", "aula gratuita", "webinar")) {
             return MarketWarmupSourceType.CREATOR_CONTENT;
+        }
+        if (containsAny(text, "fundador", "fundadora", "especialista", "professora", "mentor", "autoridade")) {
+            return MarketWarmupSourceType.SPECIALIST_CONTENT;
         }
         if (containsAny(text, "afiliado", "hotmart", "clickbank")) {
             return MarketWarmupSourceType.AFFILIATE_PROMOTION;
@@ -275,7 +332,7 @@ public class MarketWarmupProcessor {
      */
     private BigDecimal scoreEngagement(PublicSearchResult result) {
         String text = normalizeText(result.title() + " " + result.snippet());
-        return containsAny(text, "coment", "pergunta", "review", "depoimento", "preço") ? BigDecimal.valueOf(6) : BigDecimal.valueOf(3);
+        return containsAny(text, "coment", "pergunta", "review", "depoimento", "preço", "seguidores", "alunas", "whatsapp", "live") ? BigDecimal.valueOf(7) : BigDecimal.valueOf(3);
     }
 
     /**

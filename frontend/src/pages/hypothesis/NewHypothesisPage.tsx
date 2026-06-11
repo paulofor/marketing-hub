@@ -4,6 +4,10 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import PageTitle from "../../components/PageTitle";
 import hypothesisIcon from "../../assets/icons/hypothesis-icon.svg";
+import {
+  HYPOTHESIS_PIPELINE_STAGES,
+  type HypothesisPipelineStageConfig,
+} from "./hypothesisPipelineStages";
 
 interface StageExecution {
   jobid: string;
@@ -13,79 +17,12 @@ interface StageExecution {
   executionRequestedAt?: string;
   processingStartedAt?: string;
   completedAt?: string;
+  openAiModel?: string | null;
   costUsd?: number | string | null;
   errorMessage?: string;
 }
 
-interface StageConfig {
-  slug: "pain" | "result" | "mechanism" | "offer";
-  number: number;
-  title: string;
-  startLabel: string;
-  startedToast: string;
-  startErrorToast: string;
-  loadingLabel: string;
-  emptyMessage: string;
-  description: string;
-}
-
-const STAGES: StageConfig[] = [
-  {
-    slug: "pain",
-    number: 1,
-    title: "Dor do nicho",
-    startLabel: "Iniciar construção da dor",
-    startedToast: "Etapa Dor iniciada",
-    startErrorToast: "Não foi possível iniciar a etapa Dor",
-    loadingLabel: "Carregando execuções de dor...",
-    emptyMessage:
-      "Nenhuma execução de dor iniciada para este nicho. Clique no botão acima para criar o job e acompanhar o resultado.",
-    description:
-      "Inicie a construção auditável da dor antes de avançar para resultado, mecanismo, prova e oferta.",
-  },
-  {
-    slug: "result",
-    number: 2,
-    title: "Resultado desejado",
-    startLabel: "Iniciar construção do resultado",
-    startedToast: "Etapa Resultado iniciada",
-    startErrorToast:
-      "Não foi possível iniciar a etapa Resultado. Conclua a dor antes de avançar.",
-    loadingLabel: "Carregando execuções de resultado...",
-    emptyMessage:
-      "Nenhuma execução de resultado iniciada para este nicho. Depois de concluir a dor, clique no botão acima para criar o job e acompanhar o resultado.",
-    description:
-      "Transforme a dor validada em um resultado claro, desejável e plausível antes de avançar para mecanismo, prova e oferta.",
-  },
-  {
-    slug: "mechanism",
-    number: 3,
-    title: "Mecanismo",
-    startLabel: "Iniciar construção do mecanismo",
-    startedToast: "Etapa Mecanismo iniciada",
-    startErrorToast:
-      "Não foi possível iniciar a etapa Mecanismo. Conclua o resultado antes de avançar.",
-    loadingLabel: "Carregando execuções de mecanismo...",
-    emptyMessage:
-      "Nenhuma execução de mecanismo iniciada para este nicho. Depois de concluir o resultado, clique no botão acima para criar o job e acompanhar o mecanismo.",
-    description:
-      "Converta o resultado desejado em um mecanismo plausível antes de avançar para prova e oferta.",
-  },
-  {
-    slug: "offer",
-    number: 5,
-    title: "Oferta",
-    startLabel: "Iniciar construção da oferta",
-    startedToast: "Etapa Oferta iniciada",
-    startErrorToast:
-      "Não foi possível iniciar a etapa Oferta. Conclua o mecanismo antes de avançar.",
-    loadingLabel: "Carregando execuções de oferta...",
-    emptyMessage:
-      "Nenhuma execução de oferta iniciada para este nicho. Depois de concluir o mecanismo, clique no botão acima para criar o job e acompanhar a oferta.",
-    description:
-      "Empacote mecanismo, prova prometida e promessa central em uma oferta clara para venda.",
-  },
-];
+const STAGES = HYPOTHESIS_PIPELINE_STAGES;
 
 const RUNNING_STATUSES = new Set([
   "INICIADO",
@@ -115,11 +52,15 @@ function formatCostUsd(value?: number | string | null) {
   }).format(numericValue);
 }
 
+function formatModel(value?: string | null) {
+  return value && value.trim().length > 0 ? value : "Aguardando IA";
+}
+
 function StageCard({
   stage,
   nicheId,
 }: {
-  stage: StageConfig;
+  stage: HypothesisPipelineStageConfig;
   nicheId?: string;
 }) {
   const queryClient = useQueryClient();
@@ -217,6 +158,9 @@ function StageCard({
                     </Link>
                   </div>
                   <div className="text-muted small">
+                    Modelo usado: {formatModel(latest.openAiModel)}
+                  </div>
+                  <div className="text-muted small">
                     Custo da última execução: {formatCostUsd(latest.costUsd)}
                   </div>
                 </div>
@@ -241,6 +185,7 @@ function StageCard({
                     <th>Status</th>
                     <th>Solicitado em</th>
                     <th>Concluído em</th>
+                    <th>Modelo usado</th>
                     <th className="text-end">Custo da execução</th>
                   </tr>
                 </thead>
@@ -257,6 +202,7 @@ function StageCard({
                       <td>{execution.status}</td>
                       <td>{formatDate(execution.executionRequestedAt)}</td>
                       <td>{formatDate(execution.completedAt)}</td>
+                      <td>{formatModel(execution.openAiModel)}</td>
                       <td className="text-end">
                         {formatCostUsd(execution.costUsd)}
                       </td>
@@ -325,9 +271,17 @@ export default function NewHypothesisPage() {
             a hipótese completa para avançar nos experimentos seguindo Dor →
             Resultado → Mecanismo → Prova → Oferta.
           </p>
-          <Link className="btn btn-outline-secondary" to="/niches">
-            Voltar para nichos
-          </Link>
+          <div className="d-flex flex-wrap gap-2">
+            <Link
+              className="btn btn-primary"
+              to={`/niches/${nicheId}/hypothesis-pipeline/summary`}
+            >
+              Resumo do framework
+            </Link>
+            <Link className="btn btn-outline-secondary" to="/niches">
+              Voltar para nichos
+            </Link>
+          </div>
         </div>
       </section>
     </div>

@@ -42,6 +42,7 @@ describe("NewHypothesisPage", () => {
               status: "INICIADO",
               executionRequestedAt: "2026-06-11T00:16:01Z",
               completedAt: "2026-06-11T00:20:01Z",
+              openAiModel: "gpt-4.1-mini",
               costUsd: 0.012345,
             },
           ],
@@ -57,6 +58,7 @@ describe("NewHypothesisPage", () => {
               status: "CONCLUIDO",
               executionRequestedAt: "2026-06-11T00:21:01Z",
               completedAt: "2026-06-11T00:25:01Z",
+              openAiModel: "gpt-4.1",
               costUsd: 0.002,
             },
           ],
@@ -109,11 +111,17 @@ describe("NewHypothesisPage", () => {
       }),
     ).toBeInTheDocument();
     expect(screen.getAllByText(/US\$\s*0,012345/)).not.toHaveLength(0);
+    expect(screen.getAllByText("gpt-4.1-mini")).not.toHaveLength(0);
+    expect(screen.getAllByText("gpt-4.1")).not.toHaveLength(0);
+    expect(screen.getAllByText("Aguardando IA")).not.toHaveLength(0);
     expect(
       screen.getByText("Etapa 2 — Resultado desejado"),
     ).toBeInTheDocument();
     expect(screen.getByText("Etapa 3 — Mecanismo")).toBeInTheDocument();
     expect(screen.getByText("Etapa 5 — Oferta")).toBeInTheDocument();
     expect(screen.getByText(/US\$\s*0,021345/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Resumo do framework" }),
+    ).toHaveAttribute("href", "/niches/18/hypothesis-pipeline/summary");
   });
 });

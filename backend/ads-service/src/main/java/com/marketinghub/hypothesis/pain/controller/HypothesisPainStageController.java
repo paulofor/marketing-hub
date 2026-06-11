@@ -7,6 +7,7 @@ import com.marketinghub.hypothesis.pain.service.pending.HypothesisPainPendingExe
 import com.marketinghub.hypothesis.pain.service.recebePrompt.RecebePromptRequest;
 import com.marketinghub.hypothesis.pain.service.recebeResposta.RecebeRespostaRequest;
 import com.marketinghub.hypothesis.pain.service.start.HypothesisPainStartResponse;
+import com.marketinghub.hypothesis.pain.service.summary.HypothesisStageFinalSummaryResponse;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.slf4j.Logger;
@@ -86,6 +87,12 @@ public class HypothesisPainStageController {
             @PathVariable Long nicheId,
             @RequestParam(defaultValue = "true") boolean includeCompleted) {
         return ResponseEntity.ok(service.listOfferStageExecutions(nicheId, includeCompleted));
+    }
+
+    /** Lista o conteúdo final de cada etapa concluída do framework para resumo executivo. */
+    @GetMapping("/niches/{nicheId}/hypothesis-pipeline/summary")
+    public ResponseEntity<List<HypothesisStageFinalSummaryResponse>> finalSummary(@PathVariable Long nicheId) {
+        return ResponseEntity.ok(service.listFinalSummary(nicheId));
     }
 
     /** Consulta detalhe auditável de uma execução da etapa Dor vinculada ao nicho. */

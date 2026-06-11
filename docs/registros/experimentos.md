@@ -4414,3 +4414,15 @@
 - causa-raiz: o job estava em `hypothesis_pain_stage_execution` com `stage_code=hypothesis-offer` e status `INICIADO`, mas o Worker AI só tinha workers ativos para Dor, Resultado e Mecanismo do pipeline de hipótese.
 - foi feito: adicionada a etapa `hypothesis-offer` no Worker AI, consumindo o endpoint interno de Oferta, usando Dor, Resultado e Mecanismo concluídos como contexto, com prompt, schema, scheduler e validação de resposta próprios.
 - impacto esperado: jobs de Oferta deixam de ficar parados em `INICIADO` e passam a avançar para geração OpenAI, completando o eixo Dor → Resultado → Mecanismo → Prova → Oferta com foco em vendas.
+## 2026-06-11 — Resumo final do framework da hipótese
+
+- solicitação: adicionar na tela de nova hipótese um botão de resumo que leve a uma tela com a descrição final gerada em cada etapa do framework.
+- causa-raiz/objetivo: os conteúdos finais usados como insumo dos próximos pipelines estavam disponíveis apenas misturados ao histórico técnico dos jobs, dificultando leitura executiva e reaproveitamento comercial.
+- foi feito: criado endpoint de resumo final por nicho, botão “Resumo do framework” e tela dedicada exibindo somente o conteúdo persistido em `model_response` para cada etapa concluída, com observação de tabela e campo de origem.
+- impacto esperado: o usuário passa a enxergar rapidamente Dor, Resultado, Mecanismo e Oferta finais, sem ruído de prompt/request/log técnico, acelerando a decisão de avançar para experimentos e vendas.
+## 2026-06-11 — Modelo OpenAI por etapa na tela de nova hipótese
+
+- solicitação: exibir na tela `/niches/:nicheId/hypotheses/new` qual modelo foi usado em cada etapa do pipeline de criação de hipótese.
+- causa-raiz: o backend já expunha `openAiModel` nas execuções auditáveis, mas a interface ocultava esse dado; isso dificultava comparar custo, qualidade e rastreabilidade por etapa.
+- foi feito: a tela passou a mostrar o modelo usado no resumo da execução atual e em cada linha da tabela de execuções de Dor, Resultado, Mecanismo e Oferta.
+- impacto esperado: o usuário passa a auditar rapidamente qual modelo gerou cada etapa, conectando qualidade do output, custo de IA e decisão comercial.

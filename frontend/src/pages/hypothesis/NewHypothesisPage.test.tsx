@@ -115,5 +115,8 @@ describe("NewHypothesisPage", () => {
     expect(screen.getByText("Etapa 3 — Mecanismo")).toBeInTheDocument();
     expect(screen.getByText("Etapa 5 — Oferta")).toBeInTheDocument();
     expect(screen.getByText(/US\$\s*0,021345/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Resumo do framework" }),
+    ).toHaveAttribute("href", "/niches/18/hypothesis-pipeline/summary");
   });
 });

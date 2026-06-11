@@ -8,6 +8,7 @@ import com.marketinghub.hypothesis.pain.service.pending.HypothesisPainPendingExe
 import com.marketinghub.hypothesis.pain.service.pending.HypothesisPainPendingNiche;
 import com.marketinghub.hypothesis.pain.service.recebeResposta.RecebeRespostaRequest;
 import com.marketinghub.hypothesis.pain.service.start.HypothesisPainStartResponse;
+import com.marketinghub.hypothesis.pain.service.summary.HypothesisStageFinalSummaryResponse;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.repository.jpa.hypothesis.HypothesisPainStageExecutionRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
@@ -166,6 +167,51 @@ public class HypothesisPainStageService {
         return executionRepository.findTopByIdJobOrderByExecutionRequestedAtDesc(toDatabaseIdJob(idJob))
                 .map(this::toDetailResponse)
                 .orElseThrow(() -> new EntityNotFoundException("Hypothesis pain execution not found for idJob: " + idJob));
+    }
+
+    /** Lista o conteúdo final concluído de cada etapa do framework para uso como insumo em próximos pipelines. */
+    @Transactional(readOnly = true)
+    public List<HypothesisStageFinalSummaryResponse> listFinalSummary(Long marketNicheId) {
+        return List.of(
+                toFinalSummary(marketNicheId, "pain", 1, "Dor do nicho", STAGE_CODE),
+                toFinalSummary(marketNicheId, "result", 2, "Resultado desejado", RESULT_STAGE_CODE),
+                toFinalSummary(marketNicheId, "mechanism", 3, "Mecanismo", MECHANISM_STAGE_CODE),
+                toFinalSummary(marketNicheId, "offer", 5, "Oferta", OFFER_STAGE_CODE));
+    }
+
+    /** Monta o resumo de uma etapa com a origem exata do conteúdo final no banco de dados. */
+    private HypothesisStageFinalSummaryResponse toFinalSummary(
+            Long marketNicheId,
+            String slug,
+            int stageNumber,
+            String stageTitle,
+            String stageCode) {
+        return executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
+                        marketNicheId,
+                        stageCode,
+                        STATUS_COMPLETED)
+                .map(execution -> new HypothesisStageFinalSummaryResponse(
+                        slug,
+                        stageNumber,
+                        stageTitle,
+                        stageCode,
+                        fromDatabaseIdJob(execution.getIdJob()),
+                        execution.getStatus(),
+                        execution.getCompletedAt(),
+                        execution.getModelResponse(),
+                        "hypothesis_pain_stage_execution",
+                        "model_response"))
+                .orElseGet(() -> new HypothesisStageFinalSummaryResponse(
+                        slug,
+                        stageNumber,
+                        stageTitle,
+                        stageCode,
+                        null,
+                        null,
+                        null,
+                        null,
+                        "hypothesis_pain_stage_execution",
+                        "model_response"));
     }
 
     /** Lista os jobs iniciados da etapa Dor para processamento pelo Worker AI. */

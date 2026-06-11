@@ -55,6 +55,7 @@ import HypothesesPage from "./pages/hypothesis/HypothesesPage";
 import HypothesisListPage from "./pages/hypothesis/HypothesisListPage";
 import NewHypothesisPage from "./pages/hypothesis/NewHypothesisPage";
 import HypothesisPainStageExecutionDetailPage from "./pages/hypothesis/HypothesisPainStageExecutionDetailPage";
+import HypothesisPipelineSummaryPage from "./pages/hypothesis/HypothesisPipelineSummaryPage";
 import EditHypothesisPage from "./pages/hypothesis/EditHypothesisPage";
 import AppLayout from "./app/AppLayout";
 import AnglesPage from "./pages/AnglesPage";
@@ -199,6 +200,10 @@ export default function App() {
                 <Route
                   path=":nicheId/hypotheses/new"
                   element={<NewHypothesisPage />}
+                />
+                <Route
+                  path=":nicheId/hypothesis-pipeline/summary"
+                  element={<HypothesisPipelineSummaryPage />}
                 />
                 <Route
                   path=":nicheId/hypothesis-pipeline/:stageSlug/stage-executions/:jobId"

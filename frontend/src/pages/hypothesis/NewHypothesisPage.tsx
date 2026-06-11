@@ -17,6 +17,7 @@ interface StageExecution {
   executionRequestedAt?: string;
   processingStartedAt?: string;
   completedAt?: string;
+  openAiModel?: string | null;
   costUsd?: number | string | null;
   errorMessage?: string;
 }
@@ -49,6 +50,10 @@ function formatCostUsd(value?: number | string | null) {
     minimumFractionDigits: 4,
     maximumFractionDigits: 6,
   }).format(numericValue);
+}
+
+function formatModel(value?: string | null) {
+  return value && value.trim().length > 0 ? value : "Aguardando IA";
 }
 
 function StageCard({
@@ -153,6 +158,9 @@ function StageCard({
                     </Link>
                   </div>
                   <div className="text-muted small">
+                    Modelo usado: {formatModel(latest.openAiModel)}
+                  </div>
+                  <div className="text-muted small">
                     Custo da última execução: {formatCostUsd(latest.costUsd)}
                   </div>
                 </div>
@@ -177,6 +185,7 @@ function StageCard({
                     <th>Status</th>
                     <th>Solicitado em</th>
                     <th>Concluído em</th>
+                    <th>Modelo usado</th>
                     <th className="text-end">Custo da execução</th>
                   </tr>
                 </thead>
@@ -193,6 +202,7 @@ function StageCard({
                       <td>{execution.status}</td>
                       <td>{formatDate(execution.executionRequestedAt)}</td>
                       <td>{formatDate(execution.completedAt)}</td>
+                      <td>{formatModel(execution.openAiModel)}</td>
                       <td className="text-end">
                         {formatCostUsd(execution.costUsd)}
                       </td>

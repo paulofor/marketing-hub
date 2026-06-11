@@ -28,9 +28,9 @@ class MarketWarmupQueryBuilderTest {
                 "depoimentos de alunos");
 
         assertThat(builder.buildQueries(job))
-                .hasSize(6)
-                .anySatisfy(query -> assertThat(query).contains("Especialista do Sono"))
-                .anySatisfy(query -> assertThat(query).contains("Instagram YouTube TikTok"))
+                .hasSize(8)
+                .anySatisfy(query -> assertThat(query).contains("\"Especialista do Sono\"").contains("Instagram YouTube TikTok"))
+                .anySatisfy(query -> assertThat(query).contains("Produto Sono Profundo"))
                 .anySatisfy(query -> assertThat(query).contains("aula gratuita"));
     }
 }

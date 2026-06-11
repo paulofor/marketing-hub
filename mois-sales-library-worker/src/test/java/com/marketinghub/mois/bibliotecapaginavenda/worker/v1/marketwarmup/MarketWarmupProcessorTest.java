@@ -44,6 +44,32 @@ class MarketWarmupProcessorTest {
     }
 
     /**
+     * Garante que uma rede social do produtor só entre no dossiê quando falar de conteúdo semelhante ao produto.
+     */
+    @Test
+    void shouldKeepOnlyProducerSocialProfileWithSimilarProductContent() throws Exception {
+        MarketWarmupProcessor processor = new MarketWarmupProcessor(new MarketWarmupQueryBuilder(), new ProducerSocialSearchClient());
+        MarketWarmupClaimedJob job = new MarketWarmupClaimedJob(
+                8L,
+                80L,
+                "workspace-001",
+                "https://example.com/peptideos",
+                "CAP - Certificação Avançada em Peptídeos",
+                "Thiago Bechara dos Santos",
+                "certificação para prescrição segura de peptídeos",
+                "protocolo avançado de peptídeos",
+                "dominar peptídeos com segurança clínica",
+                "depoimentos de profissionais");
+
+        var result = processor.process(job, 4);
+
+        assertThat(result.sources())
+                .extracting(source -> source.sourceUrl())
+                .contains("https://www.instagram.com/thiagobechara.peptideos")
+                .doesNotContain("https://www.instagram.com/thiagobechara.musica", "https://www.youtube.com/@outrothiagopeptideos");
+    }
+
+    /**
      * Simula uma fonte pública sem dependência de rede para manter o teste determinístico.
      */
     private static class FakeSearchClient implements PublicWebSearchClient {
@@ -53,8 +79,24 @@ class MarketWarmupProcessorTest {
         @Override
         public List<PublicSearchResult> search(String query, int limit) throws IOException {
             return List.of(
-                    new PublicSearchResult("Insônia: dor e dificuldade para dormir", "https://www.youtube.com/watch?v=abc", "Professora especialista faz live e comentários perguntam se funciona e preço do método.", "<div>raw</div>"),
+                    new PublicSearchResult("Especialista do Sono ensina Sono Profundo", "https://www.youtube.com/watch?v=abc", "Especialista do Sono é professora especialista e faz live sobre método respiratório para dormir melhor; comentários perguntam se funciona e preço.", "<div>raw</div>"),
                     new PublicSearchResult("Review Sono Profundo vale a pena", "https://blog.example.com/review", "Depoimento de alunos mostra resultado e objeção sobre confiança no produto.", "<div>raw</div>"));
+        }
+    }
+
+    /**
+     * Simula resultados sociais com homônimo e perfil do mesmo produtor em outro assunto.
+     */
+    private static class ProducerSocialSearchClient implements PublicWebSearchClient {
+        /**
+         * Retorna fontes sociais para validar o filtro de mesmo produtor e conteúdo semelhante.
+         */
+        @Override
+        public List<PublicSearchResult> search(String query, int limit) throws IOException {
+            return List.of(
+                    new PublicSearchResult("Thiago Bechara dos Santos | Peptídeos", "https://www.instagram.com/thiagobechara.peptideos", "Conteúdo sobre certificação avançada em peptídeos, protocolo seguro, prescrição clínica e depoimentos de profissionais.", "<div>raw</div>"),
+                    new PublicSearchResult("Thiago Bechara dos Santos músico", "https://www.instagram.com/thiagobechara.musica", "Agenda de shows, violão e bastidores de música autoral.", "<div>raw</div>"),
+                    new PublicSearchResult("Thiago Peptídeos", "https://www.youtube.com/@outrothiagopeptideos", "Canal sobre peptídeos sem relação com Thiago Bechara dos Santos.", "<div>raw</div>"));
         }
     }
 }

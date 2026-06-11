@@ -1,6 +1,8 @@
 import { Link, useParams } from "react-router-dom";
 import PageTitle from "../../components/PageTitle";
 import {
+  useMoisSalesLibraryMarketWarmup,
+  useMoisSalesLibraryMarketWarmupSources,
   useMoisSalesLibraryPage,
   useMoisSalesLibraryPageExecutions,
   useMoisSalesLibraryPages,
@@ -34,6 +36,36 @@ type HistoryItem = {
   detail: string;
 };
 
+const SOCIAL_PLATFORMS = new Set(["YOUTUBE", "INSTAGRAM", "TIKTOK"]);
+const PRODUCER_SOCIAL_SOURCE_TYPES = new Set([
+  "CREATOR_CONTENT",
+  "SPECIALIST_CONTENT",
+  "SOCIAL_POST",
+]);
+
+function labelPlatform(value: string) {
+  const labels: Record<string, string> = {
+    YOUTUBE: "YouTube",
+    INSTAGRAM: "Instagram",
+    TIKTOK: "TikTok",
+    WEB: "Web",
+    MARKETPLACE: "Marketplace",
+    REVIEW_SITE: "Reviews",
+  };
+  return labels[value] || value;
+}
+
+function labelRecommendation(value?: string) {
+  const labels: Record<string, string> = {
+    PRIORITIZE: "priorizar",
+    OBSERVE: "observar",
+    RESEARCH_MORE: "pesquisar mais",
+    DISCARD: "descartar",
+    SATURATED_REQUIRES_ANGLE: "exige novo ângulo",
+  };
+  return value ? labels[value] || value : "—";
+}
+
 export default function MoisSalesPageLibraryDetailPage() {
   const { pageId } = useParams();
   const numericPageId = Number(pageId);
@@ -42,6 +74,11 @@ export default function MoisSalesPageLibraryDetailPage() {
     : undefined;
   const pageQuery = useMoisSalesLibraryPage(validPageId);
   const executionsQuery = useMoisSalesLibraryPageExecutions(validPageId);
+  const marketWarmupQuery = useMoisSalesLibraryMarketWarmup(validPageId);
+  const marketWarmupSourcesQuery = useMoisSalesLibraryMarketWarmupSources(
+    validPageId,
+    Boolean(marketWarmupQuery.data),
+  );
   const pagesQuery = useMoisSalesLibraryPages(WORKSPACE_ID, 1, PAGE_SIZE);
   const updateStatusMutation =
     useUpdateMoisSalesLibraryPageStatus(WORKSPACE_ID);
@@ -56,6 +93,14 @@ export default function MoisSalesPageLibraryDetailPage() {
   const hotmartProducer =
     cleanText(pageQuery.data?.hotmartProducer) ||
     cleanText(pageQuery.data?.producerName);
+
+  const producerSocialSources = (marketWarmupSourcesQuery.data?.items ?? [])
+    .filter(
+      (source) =>
+        SOCIAL_PLATFORMS.has(source.platform) &&
+        PRODUCER_SOCIAL_SOURCE_TYPES.has(source.sourceType),
+    )
+    .slice(0, 6);
 
   const history: HistoryItem[] = (executionsQuery.data ?? []).map((item) => ({
     key: String(item.executionId),
@@ -207,6 +252,118 @@ export default function MoisSalesPageLibraryDetailPage() {
               próximo passo é corrigir a coleta para preencher preço e produtor
               diretamente da página de venda.
             </div>
+          ) : null}
+        </div>
+      </section>
+
+      <section className="card border-0 shadow-sm">
+        <div className="card-body d-flex flex-column gap-3">
+          <div>
+            <h2 className="h5 mb-1">Dossiê do produto — redes do produtor</h2>
+            <p className="text-secondary mb-0">
+              Quando o produtor Hotmart está disponível, a pesquisa pública
+              busca perfis sociais do mesmo nome e só aproveita fontes que
+              também falam de conteúdo semelhante ao produto.
+            </p>
+          </div>
+
+          {marketWarmupQuery.isLoading ? (
+            <p className="text-secondary mb-0">
+              Carregando pesquisa pública do dossiê...
+            </p>
+          ) : null}
+          {marketWarmupQuery.isError || marketWarmupSourcesQuery.isError ? (
+            <div className="alert alert-danger mb-0">
+              Falha ao carregar a pesquisa pública do produtor.
+            </div>
+          ) : null}
+          {!marketWarmupQuery.isLoading && !marketWarmupQuery.data ? (
+            <div className="alert alert-warning mb-0">
+              Ainda não há dossiê de aquecimento concluído para este produto.
+              Execute a etapa de pesquisa de aquecimento para validar redes e
+              autoridade do produtor.
+            </div>
+          ) : null}
+
+          {marketWarmupQuery.data ? (
+            <>
+              <div className="row g-3">
+                <div className="col-md-4">
+                  <div className="border rounded p-3 h-100 bg-light-subtle">
+                    <div className="text-secondary small">Temperatura</div>
+                    <strong>{marketWarmupQuery.data.marketTemperature}</strong>
+                  </div>
+                </div>
+                <div className="col-md-4">
+                  <div className="border rounded p-3 h-100 bg-light-subtle">
+                    <div className="text-secondary small">Recomendação</div>
+                    <strong>
+                      {labelRecommendation(
+                        marketWarmupQuery.data.recommendation,
+                      )}
+                    </strong>
+                  </div>
+                </div>
+                <div className="col-md-4">
+                  <div className="border rounded p-3 h-100 bg-light-subtle">
+                    <div className="text-secondary small">Score do dossiê</div>
+                    <strong>{marketWarmupQuery.data.scoreTotal ?? "—"}</strong>
+                  </div>
+                </div>
+              </div>
+
+              {marketWarmupQuery.data.opportunityRecommendation ? (
+                <div className="alert alert-info mb-0">
+                  {marketWarmupQuery.data.opportunityRecommendation}
+                </div>
+              ) : null}
+
+              <div>
+                <h3 className="h6 mb-2">Fontes sociais qualificadas</h3>
+                {marketWarmupSourcesQuery.isLoading ? (
+                  <p className="text-secondary mb-0">
+                    Carregando fontes sociais qualificadas...
+                  </p>
+                ) : null}
+                {!marketWarmupSourcesQuery.isLoading &&
+                producerSocialSources.length === 0 ? (
+                  <p className="text-secondary mb-0">
+                    Nenhuma rede social do produtor foi qualificada ainda. Isso
+                    evita usar homônimos ou perfis com assunto diferente do
+                    produto.
+                  </p>
+                ) : (
+                  <div className="d-flex flex-column gap-2">
+                    {producerSocialSources.map((source) => (
+                      <div
+                        key={source.sourceId}
+                        className="border rounded p-3 bg-light-subtle"
+                      >
+                        <div className="d-flex flex-wrap justify-content-between gap-2">
+                          <strong>
+                            {source.sourceTitle || source.sourceUrl}
+                          </strong>
+                          <span className="badge text-bg-primary">
+                            {labelPlatform(source.platform)}
+                          </span>
+                        </div>
+                        <p className="small text-secondary mb-2 mt-2">
+                          {source.evidenceSummary ||
+                            "Fonte social qualificada pela pesquisa pública."}
+                        </p>
+                        <a
+                          href={source.sourceUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Abrir fonte
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
           ) : null}
         </div>
       </section>

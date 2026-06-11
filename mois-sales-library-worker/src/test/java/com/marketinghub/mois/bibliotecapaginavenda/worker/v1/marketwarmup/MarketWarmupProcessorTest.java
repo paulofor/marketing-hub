@@ -38,6 +38,8 @@ class MarketWarmupProcessorTest {
         assertThat(result.sources()).extracting(source -> source.platform()).contains(MarketWarmupPlatform.YOUTUBE);
         assertThat(result.summary().recommendation()).isNotNull();
         assertThat(result.summary().scoreTotal()).isPositive();
+        assertThat(result.summary().opportunityRecommendation()).contains("não depende só da página de vendas");
+        assertThat(result.summary().nextExperimentSuggestion()).contains("cadastro/aula/live/WhatsApp");
     }
 
     /**

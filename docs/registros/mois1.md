@@ -1419,3 +1419,22 @@ Arquivos principais:
 - `backend/ads-service/src/main/java/com/marketinghub/repository/jpa/mois/bibliotecapaginavenda/worker/v1/MoisSalesPageMarketWarmupRepository.java`
 - `mois-sales-library-worker/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/marketwarmup/MarketWarmupQueryBuilder.java`
 - `mois-sales-library-worker/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/marketwarmup/MarketWarmupProcessor.java`
+
+## 2026-06-11 — Detalhamento narrativo do dossiê de sucesso do produto
+
+- Refinada a tela de detalhe da Biblioteca de Páginas de Vendas para apresentar uma leitura executiva no formato esperado pelo operador: por que o produto provavelmente fez sucesso e quais evidências sustentam essa hipótese.
+- Adicionado detalhamento em blocos objetivos: figura de autoridade, canal forte provável, funil de venda, promessa/dor clara, oferta com valor percebido e máquina provável de venda.
+- Ajustado o resumo produzido pelo worker para escrever explicitamente que o sucesso pode não depender só da página de vendas, mas de autoridade, audiência, funil educacional, promessa clara e prova social/oferta.
+
+Arquivos principais:
+- `frontend/src/pages/mois/MoisSalesPageLibraryDetailPage.tsx`
+- `mois-sales-library-worker/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/marketwarmup/MarketWarmupProcessor.java`
+- `mois-sales-library-worker/src/test/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/marketwarmup/MarketWarmupProcessorTest.java`
+
+## 2026-06-11 — Tela da Etapa 3 em formato de resposta executiva
+
+- Ajustada a tela de detalhe da Biblioteca de Páginas de Vendas para apresentar o dossiê de sucesso em formato parecido com uma resposta consultiva: resposta executiva, leitura do produtor, cinco blocos de análise com conclusão e a máquina provável de venda.
+- A tela passa a priorizar uma explicação legível para o operador antes das fontes e sinais técnicos, mantendo as evidências rastreáveis logo abaixo.
+
+Arquivo principal:
+- `frontend/src/pages/mois/MoisSalesPageLibraryDetailPage.tsx`

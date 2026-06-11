@@ -217,18 +217,18 @@ public class MarketWarmupProcessor {
     }
 
     /**
-     * Monta recomendação de negócio direta para orientar o próximo experimento.
+     * Monta hipótese executiva sobre como o produto provavelmente conseguiu vender.
      */
     private String buildOpportunityRecommendation(MarketWarmupTemperature temperature, int authoritySignals, int socialProofSignals, int channelSignals) {
         if (authoritySignals > 0 || socialProofSignals > 0 || channelSignals > 0) {
-            return "Investigar como o produto vende: há sinais de autoridade, canal de audiência, prova social ou funil público que podem explicar o sucesso.";
+            return "Esse produto provavelmente fez sucesso porque não depende só da página de vendas. Ele parece estar apoiado em autoridade ou marca pessoal, audiência em canais públicos, funil educacional, promessa clara e prova social/oferta com valor percebido.";
         }
         return switch (temperature) {
-            case HOT -> "Produto com sinais fortes de engenharia de venda pública; mapear canal principal e prova social antes de replicar.";
-            case PROMISING -> "Produto promissor para estudo; aprofundar autoridade, audiência e funil antes de criar referência.";
-            case WARM -> "Pesquisar mais fontes para confirmar canal de aquisição, influência e prova social.";
-            case SATURATED -> "Avançar somente se houver ângulo de diferenciação claro frente à saturação percebida.";
-            case COLD -> "Baixa evidência pública sobre a máquina de venda; buscar produtor, influenciador ou canal antes de concluir.";
+            case HOT -> "Esse produto tem sinais fortes de engenharia pública de venda; a página de vendas deve ser analisada junto com autoridade, canal principal, funil e prova social.";
+            case PROMISING -> "Esse produto é promissor para estudo, mas ainda precisa detalhar autoridade, audiência, funil e prova social antes de concluir como chegou ao sucesso.";
+            case WARM -> "Há alguns sinais de venda, mas ainda faltam fontes para confirmar canal de aquisição, influenciador, funil e prova social.";
+            case SATURATED -> "O sucesso pode depender de ângulo muito específico ou de uma máquina já saturada; investigar diferenciação, confiança e prova antes de usar como referência.";
+            case COLD -> "Ainda há baixa evidência pública sobre a máquina de venda; antes de concluir, busque produtor, influenciador, canal, funil e prova social.";
         };
     }
 
@@ -270,6 +270,45 @@ public class MarketWarmupProcessor {
             return "Coletar depoimentos, resultados e provas usadas para converter a audiência em compra.";
         }
         return "Montar o mapa da máquina de venda: autoridade → canal → captura/aula/live → oferta → prova social → checkout.";
+    }
+
+    /**
+     * Resume alavancas prováveis que explicam a venda do produto observado.
+     */
+    private List<String> buildSuccessLevers(int authoritySignals, int socialProofSignals, int competitorSignals, int channelSignals) {
+        List<String> levers = new ArrayList<>();
+        if (authoritySignals > 0) {
+            levers.add("Autoridade pessoal ou marca especialista aparece como provável motor de confiança.");
+        }
+        if (channelSignals > 0) {
+            levers.add("Canais públicos como Instagram, YouTube, TikTok, WhatsApp ou lives aparecem como ativos de aquisição/aquecimento.");
+        }
+        if (socialProofSignals > 0) {
+            levers.add("Depoimentos, alunas ou resultados aparecem como prova social para conversão.");
+        }
+        if (competitorSignals > 0) {
+            levers.add("Há sinais de distribuição por oferta, afiliados, marketplace ou bônus.");
+        }
+        if (levers.isEmpty()) {
+            levers.add("Alavancas de sucesso ainda não ficaram claras nas fontes públicas V1.");
+        }
+        return levers;
+    }
+
+    /**
+     * Sugere a próxima investigação necessária para explicar como o produtor chegou ao sucesso.
+     */
+    private String buildNextInvestigationSuggestion(int authoritySignals, int socialProofSignals, int channelSignals) {
+        if (authoritySignals == 0) {
+            return "Buscar pessoa pública, fundador, especialista ou marca por trás do produto.";
+        }
+        if (channelSignals == 0) {
+            return "Mapear quais canais levam audiência para a oferta: Instagram, YouTube, TikTok, WhatsApp, lives, afiliados ou anúncios.";
+        }
+        if (socialProofSignals == 0) {
+            return "Coletar depoimentos, resultados e provas usadas para converter a audiência em compra.";
+        }
+        return "Conteúdo público de autoridade → audiência em canal forte → cadastro/aula/live/WhatsApp → oferta principal → prova social/comunidade → checkout/marketplace.";
     }
 
     /**

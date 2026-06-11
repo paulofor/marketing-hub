@@ -37,6 +37,15 @@ function formatCurrencyUsd(value?: number | null) {
     : value.toLocaleString("pt-BR", { style: "currency", currency: "USD" });
 }
 
+function formatHotmartTemperature(value?: number | null) {
+  return value == null
+    ? "—"
+    : value.toLocaleString("pt-BR", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+}
+
 function getWarmupBadgeClass(value?: string | null) {
   switch (value) {
     case "HOT":
@@ -358,17 +367,22 @@ export default function MoisSalesPagesLibraryPage() {
                         </td>
                         <td>
                           {item.source === "HOTMART" ? (
-                            <span
-                              className={`badge ${getWarmupBadgeClass(item.marketWarmupTemperature || item.marketWarmupStatus)}`}
-                            >
-                              {item.marketWarmupTemperature
-                                ? warmupTemperatureLabels[
-                                    item.marketWarmupTemperature
-                                  ]
-                                : item.marketWarmupStatus
-                                  ? warmupStatusLabels[item.marketWarmupStatus]
-                                  : "Sem dossiê"}
-                            </span>
+                            <div className="d-flex flex-column align-items-start gap-1">
+                              <span className="fw-semibold">
+                                {formatHotmartTemperature(item.hotmartTemperature)}
+                              </span>
+                              <span
+                                className={`badge ${getWarmupBadgeClass(item.marketWarmupTemperature || item.marketWarmupStatus)}`}
+                              >
+                                Dossiê: {item.marketWarmupTemperature
+                                  ? warmupTemperatureLabels[
+                                      item.marketWarmupTemperature
+                                    ]
+                                  : item.marketWarmupStatus
+                                    ? warmupStatusLabels[item.marketWarmupStatus]
+                                    : "Sem dossiê"}
+                              </span>
+                            </div>
                           ) : (
                             "—"
                           )}

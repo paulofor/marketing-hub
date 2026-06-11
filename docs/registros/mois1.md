@@ -1541,3 +1541,16 @@ Arquivos principais:
 - `mois-sales-library-worker/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/marketwarmup/MarketWarmupQueryBuilder.java`
 - `mois-sales-library-worker/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/marketwarmup/MarketWarmupProcessor.java`
 - `frontend/src/pages/mois/MoisSalesPageLibraryDetailPage.tsx`
+
+## 2026-06-11 — Temperatura numérica Hotmart na Biblioteca MOIS
+
+- exposto no contrato da Biblioteca de Páginas de Vendas o campo `hotmartTemperature`, lido de `mois_collected_reference.hotmart_temperature` junto com os demais fatos Hotmart.
+- ajustada a tabela `/mois/sales-pages-library` para mostrar o indicador numérico coletado da Hotmart junto do rótulo de aquecimento do dossiê.
+- ajustada a tela de detalhe do produto para exibir a temperatura Hotmart no bloco factual inicial do dossiê.
+
+Arquivos principais:
+- `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/dto/MoisSalesLibraryDtos.java`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibraryService.java`
+- `frontend/src/pages/mois/MoisSalesPagesLibraryPage.tsx`
+- `frontend/src/pages/mois/MoisSalesPageLibraryDetailPage.tsx`
+- `docs/swagger/mois-sales-library-swagger.yaml`

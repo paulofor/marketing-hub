@@ -263,6 +263,7 @@ export interface MoisSalesLibraryPage {
   productName?: string;
   producerName?: string;
   hotmartPrice?: string;
+  hotmartTemperature?: number | null;
   hotmartProducer?: string;
   currentStage?: string;
   currentStatus?: string;

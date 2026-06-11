@@ -212,6 +212,7 @@ public final class MoisSalesLibraryDtos {
             String productName,
             String producerName,
             String hotmartPrice,
+            BigDecimal hotmartTemperature,
             String hotmartProducer,
             String currentStage,
             String currentStatus,

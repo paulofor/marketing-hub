@@ -21,6 +21,15 @@ function displayText(value?: string) {
   return cleanText(value) || "—";
 }
 
+function formatHotmartTemperature(value?: number | null) {
+  return value == null
+    ? "—"
+    : value.toLocaleString("pt-BR", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+}
+
 function formatDate(value?: string) {
   if (!value) return "—";
   const date = new Date(value);
@@ -90,6 +99,7 @@ export default function MoisSalesPageLibraryDetailPage() {
     currentIndex >= 0 ? pagesQuery.data?.items[currentIndex + 1] : undefined;
   const isMutating = updateStatusMutation.isPending;
   const hotmartPrice = cleanText(pageQuery.data?.hotmartPrice);
+  const hotmartTemperature = pageQuery.data?.hotmartTemperature;
   const hotmartProducer =
     cleanText(pageQuery.data?.hotmartProducer) ||
     cleanText(pageQuery.data?.producerName);
@@ -232,13 +242,24 @@ export default function MoisSalesPageLibraryDetailPage() {
           </div>
 
           <div className="row g-3">
-            <div className="col-md-6">
+            <div className="col-md-4">
               <div className="border rounded p-3 h-100 bg-light-subtle">
                 <div className="text-secondary small">Preço Hotmart</div>
                 <strong className="fs-5">{displayText(hotmartPrice)}</strong>
               </div>
             </div>
-            <div className="col-md-6">
+            <div className="col-md-4">
+              <div className="border rounded p-3 h-100 bg-light-subtle">
+                <div className="text-secondary small">Temperatura Hotmart</div>
+                <strong className="fs-5">
+                  {formatHotmartTemperature(hotmartTemperature)}
+                </strong>
+                <div className="small text-secondary">
+                  Indicador coletado diretamente da Hotmart
+                </div>
+              </div>
+            </div>
+            <div className="col-md-4">
               <div className="border rounded p-3 h-100 bg-light-subtle">
                 <div className="text-secondary small">Produtor Hotmart</div>
                 <strong className="fs-5">{displayText(hotmartProducer)}</strong>
@@ -246,11 +267,11 @@ export default function MoisSalesPageLibraryDetailPage() {
             </div>
           </div>
 
-          {!hotmartPrice || !hotmartProducer ? (
+          {!hotmartPrice || hotmartTemperature == null || !hotmartProducer ? (
             <div className="alert alert-warning mb-0">
               O banco ainda não possui todos os fatos básicos do dossiê. O
-              próximo passo é corrigir a coleta para preencher preço e produtor
-              diretamente da página de venda.
+              próximo passo é corrigir a coleta para preencher preço,
+              temperatura e produtor diretamente da página de venda.
             </div>
           ) : null}
         </div>

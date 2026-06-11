@@ -1,6 +1,6 @@
 package com.marketinghub.worker.openai.core.exception;
 
-/** Responsabilidade: transportar falhas HTTP retornadas pela OpenAI com o payload bruto de erro. */
+/** Responsabilidade: transportar falhas HTTP retornadas pela OpenAI sem expor segredos na mensagem operacional. */
 public class OpenAiHttpException extends StageWorkerException {
 
     private final int statusCode;
@@ -23,8 +23,11 @@ public class OpenAiHttpException extends StageWorkerException {
         return responseBody;
     }
 
-    /** Monta uma mensagem operacional incluindo o payload bruto quando disponível. */
+    /** Monta uma mensagem operacional segura sem vazar credenciais devolvidas pela OpenAI. */
     private static String buildMessage(int statusCode, String responseBody) {
+        if (statusCode == 401) {
+            return "OpenAI Responses API returned HTTP 401: credencial OpenAI inválida configurada no Worker AI";
+        }
         if (responseBody == null || responseBody.isBlank()) {
             return "OpenAI Responses API returned HTTP " + statusCode;
         }

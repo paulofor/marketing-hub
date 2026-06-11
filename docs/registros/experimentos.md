@@ -4306,3 +4306,10 @@
 - causa-raiz: o OPRM materializa o `market_niche` ainda sem promessas e ofertas, pois essa etapa deve descobrir a dor antes de construir oferta; por isso `promises` e `offers` são gravados como `null` no nicho e repassados pelo endpoint pendente.
 - foi feito: a montagem do contexto do prompt da etapa Dor agora converte campos textuais opcionais nulos para texto vazio antes de criar o `HypothesisPainInput`, mantendo `Map.copyOf` como guarda contra nulos inesperados no input final.
 - prevenção: adicionados testes unitários cobrindo a conversão de campos opcionais nulos do nicho para texto vazio e a imutabilidade do mapa normalizado.
+
+## 2026-06-11 — Bloqueio de `test-key` na etapa Dor da hipótese
+
+- diagnóstico: o job `hypothesis-pain` do nicho 18 chegou até o Worker AI, mas a credencial efetiva usada na chamada OpenAI era `test-key`, gerando falha 401 e exibindo erro operacional na tela.
+- causa-raiz: o Worker AI já recebia `OPENAI_API_KEY_FILE` no compose, porém a configuração central do core OpenAI lia apenas `OPENAI_API_KEY`; quando esse valor vinha como placeholder, ele era enviado para a OpenAI em vez de buscar o arquivo seguro.
+- foi feito: o core OpenAI do Worker AI passou a resolver a chave por arquivo seguro quando a variável estiver vazia ou com placeholder e a bloquear inicialização real com `test-key` caso não exista token válido.
+- prevenção: adicionada regressão unitária para garantir fallback por arquivo seguro e bloqueio de placeholder antes de qualquer requisição real à OpenAI.

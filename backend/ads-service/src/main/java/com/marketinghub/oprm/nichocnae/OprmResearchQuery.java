@@ -26,13 +26,13 @@ public class OprmResearchQuery {
     @Column(name = "niche_research_seed_id", nullable = false)
     private Long nicheResearchSeedId;
 
-    @Column(name = "query_text", columnDefinition = "LONGTEXT", nullable = false)
+    @Column(name = "query_text", nullable = false, length = 500)
     private String queryText;
 
-    @Column(name = "query_goal", columnDefinition = "LONGTEXT", nullable = false)
+    @Column(name = "query_goal", nullable = false, length = 64)
     private String queryGoal;
 
-    @Column(name = "source_group", columnDefinition = "LONGTEXT")
+    @Column(name = "source_group", length = 64)
     private String sourceGroup;
 
     @Column(name = "priority", nullable = false)
@@ -47,7 +47,7 @@ public class OprmResearchQuery {
     @Column(name = "error_message", columnDefinition = "LONGTEXT")
     private String errorMessage;
 
-    @Column(name = "created_by", columnDefinition = "LONGTEXT", nullable = false)
+    @Column(name = "created_by", nullable = false, length = 32)
     private String createdBy;
 
     @Column(name = "created_at", nullable = false)

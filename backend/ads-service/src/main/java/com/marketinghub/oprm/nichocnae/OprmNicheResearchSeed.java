@@ -29,10 +29,10 @@ public class OprmNicheResearchSeed {
     @Column(name = "cnae_description", nullable = false, length = 255)
     private String cnaeDescription;
 
-    @Column(name = "niche_name", columnDefinition = "LONGTEXT", nullable = false)
+    @Column(name = "niche_name", nullable = false, length = 255)
     private String nicheName;
 
-    @Column(name = "business_type", columnDefinition = "LONGTEXT", nullable = false)
+    @Column(name = "business_type", nullable = false, length = 255)
     private String businessType;
 
     @Column(name = "operation_type", columnDefinition = "LONGTEXT", nullable = false)
@@ -47,10 +47,10 @@ public class OprmNicheResearchSeed {
     @Column(name = "initial_assumptions", columnDefinition = "LONGTEXT", nullable = false)
     private String initialAssumptions;
 
-    @Column(name = "confidence_level", columnDefinition = "LONGTEXT", nullable = false)
+    @Column(name = "confidence_level", nullable = false, length = 64)
     private String confidenceLevel;
 
-    @Column(name = "created_by", columnDefinition = "LONGTEXT", nullable = false)
+    @Column(name = "created_by", nullable = false, length = 32)
     private String createdBy;
 
     @Column(name = "created_at", nullable = false)

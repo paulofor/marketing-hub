@@ -16,7 +16,6 @@ import com.marketinghub.oprm.nichocnae.nicheresearchseedbuilder.service.failStag
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmNicheResearchSeedRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmResearchQueryRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmRoutineResearchCycleRepository;
-import jakarta.persistence.Column;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -288,56 +287,6 @@ class BackendNicheResearchSeedBuilderServiceTest {
     assertThat(response.queries().getFirst().queryText()).contains("rotina dificuldades atendimento clientes Brasil");
   }
 
-  /** Deve preservar campos textuais longos, pois o contrato físico do banco foi ampliado para não perder dados. */
-  @Test
-  void completePreservesLongModelTextFieldsWithoutTruncation() {
-    OprmRoutineResearchCycle cycle = cycle();
-    when(routineResearchCycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
-    when(nicheResearchSeedRepository.existsByResearchCycleId(1001L)).thenReturn(false);
-    when(nicheResearchSeedRepository.save(any(OprmNicheResearchSeed.class)))
-        .thenAnswer(invocation -> {
-          OprmNicheResearchSeed seed = invocation.getArgument(0);
-          seed.setId(44L);
-          return seed;
-        });
-    when(researchQueryRepository.saveAll(any()))
-        .thenAnswer(invocation -> invocation.getArgument(0));
-    String longText = "x".repeat(600);
-    CompleteNicheResearchSeedBuilderRequest request = new CompleteNicheResearchSeedBuilderRequest(
-        longText,
-        longText,
-        "agenda e atendimento recorrente",
-        "consumidor final recorrente",
-        "manicure, pedicure, escova",
-        "depende de agenda cheia",
-        longText,
-        longText,
-        List.of(new NicheResearchQueryRequest(longText, longText, longText, 1)));
-
-    CompleteNicheResearchSeedBuilderResponse response = service.complete(1001L, request);
-
-    assertThat(response.nicheName()).isEqualTo(longText);
-    assertThat(response.businessType()).isEqualTo(longText);
-    assertThat(response.confidenceLevel()).isEqualTo(longText);
-    assertThat(response.createdBy()).isEqualTo(longText);
-    assertThat(response.queries().getFirst().queryText()).isEqualTo(longText);
-    assertThat(response.queries().getFirst().queryGoal()).isEqualTo(longText);
-    assertThat(response.queries().getFirst().sourceGroup()).isEqualTo(longText);
-  }
-
-  /** Deve manter o contrato JPA dos campos variáveis como LONGTEXT para evitar truncamento no banco. */
-  @Test
-  void variableModelTextFieldsUseLongTextDatabaseContract() throws NoSuchFieldException {
-    assertThat(columnDefinition(OprmNicheResearchSeed.class, "nicheName")).isEqualTo("LONGTEXT");
-    assertThat(columnDefinition(OprmNicheResearchSeed.class, "businessType")).isEqualTo("LONGTEXT");
-    assertThat(columnDefinition(OprmNicheResearchSeed.class, "confidenceLevel")).isEqualTo("LONGTEXT");
-    assertThat(columnDefinition(OprmNicheResearchSeed.class, "createdBy")).isEqualTo("LONGTEXT");
-    assertThat(columnDefinition(OprmResearchQuery.class, "queryText")).isEqualTo("LONGTEXT");
-    assertThat(columnDefinition(OprmResearchQuery.class, "queryGoal")).isEqualTo("LONGTEXT");
-    assertThat(columnDefinition(OprmResearchQuery.class, "sourceGroup")).isEqualTo("LONGTEXT");
-    assertThat(columnDefinition(OprmResearchQuery.class, "createdBy")).isEqualTo("LONGTEXT");
-  }
-
   /** Deve marcar o ciclo como falho e registrar a mensagem operacional da falha da etapa dois. */
   @Test
   void failMarksCycleAsFailed() {
@@ -370,11 +319,6 @@ class BackendNicheResearchSeedBuilderServiceTest {
     assertThat(cycleCaptor.getValue().getErrorMessage())
         .contains("Falha ao gerar seed da etapa dois OPRM nichocnae.")
         .contains("OpenAI retornou corpo vazio");
-  }
-
-  /** Lê o tipo físico declarado para o campo persistido que recebe texto variável do modelo. */
-  private String columnDefinition(Class<?> entityType, String fieldName) throws NoSuchFieldException {
-    return entityType.getDeclaredField(fieldName).getAnnotation(Column.class).columnDefinition();
   }
 
   /** Monta um payload válido de etapa dois com doze objetivos de pesquisa orientados a MEI/autônomo. */

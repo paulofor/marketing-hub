@@ -163,3 +163,7 @@ Fico pensando como fazer isso no âmbito de venda de produtos, tenho que mandar 
 --> eu vi que não tinha nada a ver com o que eu queria e expliquei o que queria
 --> o modelo mostrou no dialogo exatamente o que eu queria ver na tela naquela etapa do pipeline. Falei é isso que eu quero !
 
+6- Estou chegando a conclusão que esse trabalho de trabalho baseado em plano não é tão bom assim. 
+Estou tendo que reconstruir muita coisa no item e item, passo a passo e parece que isso esta funcioanndo mais.
+( será que com o AI Hub isso seria viavel ? )
+

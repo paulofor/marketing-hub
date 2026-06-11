@@ -195,6 +195,9 @@ public class OpenAiSalesPageAnalyzer {
                 outputText = root.path("response").path("body").path("output_text");
             }
             JsonNode parsed = objectMapper.readTree(outputText.asText());
+            JsonNode usage = root.path("response").path("body").path("usage");
+            Integer inputTokens = nullableInt(usage.path("input_tokens"));
+            Integer outputTokens = nullableInt(usage.path("output_tokens"));
             return new SalesPageAnalysisResult(
                     parsed.path("score_total").decimalValue(),
                     objectMapper.writeValueAsString(parsed.path("sections_json")),
@@ -205,12 +208,25 @@ public class OpenAiSalesPageAnalyzer {
                     requestPayloadJson,
                     "html-v1",
                     "openai-batch-v1",
-                    properties.normalizedModel()
+                    properties.normalizedModel(),
+                    inputTokens,
+                    outputTokens,
+                    null
             );
         } catch (Exception e) {
             log.error("Falha parse output batch OpenAI. output={}", outputJsonl, e);
             throw new IllegalStateException("Falha ao interpretar output do batch OpenAI", e);
         }
+    }
+
+    /**
+     * Lê um inteiro opcional do JSON de uso da OpenAI preservando nulo quando o campo não veio.
+     */
+    private Integer nullableInt(JsonNode node) {
+        if (node == null || node.isMissingNode() || node.isNull()) {
+            return null;
+        }
+        return node.asInt();
     }
 
     /**

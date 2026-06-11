@@ -123,6 +123,9 @@ public class PipelineRunner {
                     analysis.parserVersion(),
                     analysis.promptVersion(),
                     analysis.modelName(),
+                    analysis.inputTokens(),
+                    analysis.outputTokens(),
+                    analysis.modelCostUsd(),
                     Instant.now()));
             log.info("MOIS library job {} completed for page {}", jobId, claim.job().pageId());
         } catch (Exception ex) {

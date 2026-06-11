@@ -31,6 +31,12 @@ function formatWarmupScore(value?: number | null) {
   return value == null ? "—" : `${Math.round(value)}/100`;
 }
 
+function formatCurrencyUsd(value?: number | null) {
+  return value == null
+    ? "—"
+    : value.toLocaleString("pt-BR", { style: "currency", currency: "USD" });
+}
+
 function getWarmupBadgeClass(value?: string | null) {
   switch (value) {
     case "HOT":
@@ -316,14 +322,15 @@ export default function MoisSalesPagesLibraryPage() {
                     <th>Status</th>
                     <th>Temperatura Hotmart</th>
                     <th>Data da análise</th>
-                    <th>Data do dossiê</th>
+                    <th>Custo modelo</th>
+                    <th>Fase no diagrama</th>
                     <th>Ações</th>
                   </tr>
                 </thead>
                 <tbody>
                   {visiblePages.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="text-secondary">
+                      <td colSpan={9} className="text-secondary">
                         Nenhum produto coletado encontrado para o filtro atual.
                       </td>
                     </tr>
@@ -364,7 +371,20 @@ export default function MoisSalesPagesLibraryPage() {
                           {formatDateTime(item.analyzedAt)}
                         </td>
                         <td className="text-nowrap">
-                          {formatDateTime(item.marketWarmupUpdatedAt)}
+                          <span className="fw-semibold">
+                            {formatCurrencyUsd(item.modelCostUsd)}
+                          </span>
+                          {item.modelName ? (
+                            <div className="small text-secondary">
+                              {item.modelName}
+                            </div>
+                          ) : null}
+                        </td>
+                        <td>
+                          {getPipelinePhase(
+                            item.currentStage,
+                            item.currentStatus,
+                          )}
                         </td>
                         <td>
                           <div className="d-flex flex-wrap gap-2">

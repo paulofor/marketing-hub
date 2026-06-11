@@ -29,7 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 /**
- * Responsabilidade: coordenar regras administrativas e operacionais de nichos de mercado.
+ * Coordena as operações administrativas e de enriquecimento dos nichos de mercado.
  */
 @Service
 public class MarketNicheService {
@@ -76,7 +76,7 @@ public class MarketNicheService {
                 .offers(request.getOffers())
                 .cost(request.getCost())
                 .expense(request.getExpense())
-                .totalCost(request.getTotalCost())
+                .totalCost(resolveInitialTotalCost(request))
                 .totalRevenue(request.getTotalRevenue())
                 .baseSegmentation(request.getBaseSegmentation())
                 .interests(request.getInterests())
@@ -101,6 +101,17 @@ public class MarketNicheService {
         MarketNiche saved = repository.save(niche);
         targetingElementSyncService.syncManualLists(saved);
         return saved;
+    }
+
+    /** Define o custo total inicial do nicho usando o total explícito ou, na falta dele, o custo de origem informado. */
+    private java.math.BigDecimal resolveInitialTotalCost(CreateMarketNicheRequest request) {
+        if (request.getTotalCost() != null) {
+            return request.getTotalCost();
+        }
+        if (request.getCost() != null) {
+            return request.getCost();
+        }
+        return java.math.BigDecimal.ZERO;
     }
 
     /** Busca um nicho pelo identificador informado. */
@@ -206,7 +217,7 @@ public class MarketNicheService {
     }
 
     /**
-     * Solicita a geração de descrições detalhadas definindo a quantidade pendente.
+     * Solicita a geração assíncrona de descrições detalhadas para o nicho.
      */
     @Transactional
     public MarketNiche requestDetailedDescriptions(Long id, int quantity, String model) {
@@ -241,7 +252,7 @@ public class MarketNicheService {
     }
 
     /**
-     * Solicita a geração de novas hipóteses definindo a quantidade pendente.
+     * Solicita a geração assíncrona de novas hipóteses para o nicho.
      */
     @Transactional
     public MarketNiche requestHypotheses(Long id,

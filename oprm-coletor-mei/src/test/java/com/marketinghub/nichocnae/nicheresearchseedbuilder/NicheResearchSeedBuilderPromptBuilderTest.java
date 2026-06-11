@@ -20,6 +20,8 @@ class NicheResearchSeedBuilderPromptBuilderTest {
                 .contains("português do Brasil")
                 .contains("tarefas")
                 .contains("não force marcador literal")
+                .contains("limites maxLength")
+                .contains("queryGoal curto")
                 .contains("Não inclua metadado técnico")
                 .contains("Não proponha solução")
                 .contains("Não procure produto")

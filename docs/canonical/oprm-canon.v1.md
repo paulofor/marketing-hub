@@ -200,6 +200,7 @@ Evitar fechamento prematuro de `import run` que destrói a totalização de mark
 - O backend principal permanece como fonte de verdade dos dados e contratos; o módulo executor OPRM deve consumir e concluir etapas por endpoints do próprio OPRM/backend, sem acesso direto ao banco.
 - Chamadas ao modelo, prompts, validações e mapeamento de resposta devem ficar encapsulados no pacote da etapa concreta que usa IA, preservando isolamento, rastreabilidade e testabilidade.
 - Na etapa `niche-research-seed-builder`, o sistema deve confiar no modelo e não deve bloquear o ciclo por validações determinísticas de conteúdo ou completude do payload gerado; quando campos estruturais vierem ausentes, a persistência deve aplicar defaults operacionais rastreáveis para manter a pesquisa avançando para busca, coleta, extração, síntese e gate.
+- Campos textuais gerados pelo modelo na etapa `niche-research-seed-builder` não devem ser truncados antes da persistência; o JSON Schema enviado ao modelo deve declarar `maxLength` para campos gravados em colunas curtas do backend, preservando o contrato físico sem perda silenciosa de informação.
 
 ## Critério de efetividade — execução modular das etapas NichoCNAE
 

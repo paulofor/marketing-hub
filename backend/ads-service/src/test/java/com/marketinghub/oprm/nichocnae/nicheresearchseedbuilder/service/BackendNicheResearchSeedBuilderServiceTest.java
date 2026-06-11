@@ -45,6 +45,7 @@ class BackendNicheResearchSeedBuilderServiceTest {
             eq("RUNNING"),
             eq("FAILED"),
             eq("nicheName is required"),
+            eq("Data too long for column 'query_goal'"),
             eq("niche-research-seed-builder/stage-executions"),
             any(Pageable.class)))
         .thenReturn(List.of(cycle));

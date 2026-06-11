@@ -1491,3 +1491,27 @@ Arquivos principais:
 Arquivos principais:
 - backend/ads-service/src/test/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibraryServiceTest.java
 - frontend/src/pages/mois/MoisSalesPagesLibraryPage.tsx
+
+## 2026-06-11 — Clareza do dossiê de sucesso MOIS
+
+- corrigida a causa-raiz da confusão na tela de dossiê: a UI mostrava pesquisas públicas sem explicar que elas servem para encontrar autoridade, audiência, prova social e canais que podem justificar as vendas do produto.
+- o detalhe da Biblioteca MOIS passa a destacar produto analisado, produtor, oferta, promessa, mecanismo e provas antes das fontes públicas.
+- o backend passa a expor `productName` e `producerName` no contrato de página consolidada, usando `mois_sales_page` como estado operacional e `mois_collected_reference` apenas como origem bruta vinculada.
+
+Arquivos principais:
+- backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/dto/MoisSalesLibraryDtos.java
+- backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibraryService.java
+- frontend/src/pages/mois/MoisSalesPageLibraryDetailPage.tsx
+- docs/swagger/mois-sales-library-swagger.yaml
+
+## 2026-06-11 — Auditoria OpenAI no dossiê MOIS
+
+- adicionada seção visual separada no detalhe da Biblioteca MOIS para exibir prompt usado, request enviado para OpenAI, response cru da OpenAI e schema JSON quando houver.
+- a visualização usa layout JSON colapsável, seguindo o padrão usado nas telas de GeraLanding para facilitar auditoria pelo usuário.
+- corrigida a persistência da resposta crua da OpenAI na análise de página, separando `analysisNotes` de `responsePayloadJson`.
+
+Arquivos principais:
+- frontend/src/pages/mois/MoisSalesPageLibraryDetailPage.tsx
+- backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/dto/MoisSalesLibraryDtos.java
+- backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesLibraryService.java
+- mois-sales-library-worker/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/openai/OpenAiSalesPageAnalyzer.java

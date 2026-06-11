@@ -890,7 +890,6 @@ components:
         producerName:
           type: string
           nullable: true
-          description: Nome do produtor, marca ou autoridade coletada na origem, usado para evitar buscas genéricas e mapear a máquina de venda.
         offerSummary:
           type: string
           nullable: true
@@ -1118,6 +1117,10 @@ components:
           type: string
         requestPayloadJson:
           type: string
+        responsePayloadJson:
+          type: string
+          nullable: true
+          description: Resposta crua retornada pela OpenAI para auditoria da análise.
         parserVersion:
           type: string
         promptVersion:
@@ -1329,6 +1332,14 @@ components:
         title:
           type: string
           nullable: true
+        productName:
+          type: string
+          nullable: true
+          description: Nome comercial do produto coletado na origem, quando disponível.
+        producerName:
+          type: string
+          nullable: true
+          description: Nome do produtor, marca ou autoridade coletada na origem, usado para explicar a pesquisa pública do dossiê.
         currentStage:
           type: string
           nullable: true
@@ -1356,10 +1367,6 @@ components:
         scoreTotal:
           type: number
           nullable: true
-        producerName:
-          type: string
-          nullable: true
-          description: Nome do produtor, marca ou autoridade coletada na origem, usado para evitar buscas genéricas e mapear a máquina de venda.
         offerSummary:
           type: string
           nullable: true

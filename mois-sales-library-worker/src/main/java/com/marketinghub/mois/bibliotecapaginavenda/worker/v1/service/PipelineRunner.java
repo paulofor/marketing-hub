@@ -112,7 +112,7 @@ public class PipelineRunner {
             String text = extractAnalysisText(claim.job());
             SalesPageAnalysisResult analysis =
                     openAiSalesPageAnalyzer.analyze(jobId, claim.job().pageId(), claim.job().urlCanonical(), text);
-            backendClient.complete(jobId, new CompleteRequest(
+            CompleteRequest completeRequest = new CompleteRequest(
                     analysis.scoreTotal(),
                     analysis.sectionsJson(),
                     analysis.copyJson(),
@@ -120,13 +120,17 @@ public class PipelineRunner {
                     analysis.imageJson(),
                     analysis.analysisNotes(),
                     analysis.requestPayloadJson(),
+                    analysis.responsePayloadJson(),
                     analysis.parserVersion(),
                     analysis.promptVersion(),
                     analysis.modelName(),
                     analysis.inputTokens(),
                     analysis.outputTokens(),
                     analysis.modelCostUsd(),
-                    Instant.now()));
+                    Instant.now());
+            log.info("MOIS sales-library enviando payload de conclusão ao backend. jobId={}, payload={}",
+                    jobId, completeRequest);
+            backendClient.complete(jobId, completeRequest);
             log.info("MOIS library job {} completed for page {}", jobId, claim.job().pageId());
         } catch (Exception ex) {
             backendClient.fail(jobId, new FailRequest("PIPELINE_ERROR", ex.getMessage()));

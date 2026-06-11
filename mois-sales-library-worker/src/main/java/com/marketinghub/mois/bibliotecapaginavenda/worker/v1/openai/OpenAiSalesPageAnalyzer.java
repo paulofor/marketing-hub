@@ -206,6 +206,7 @@ public class OpenAiSalesPageAnalyzer {
                     objectMapper.writeValueAsString(parsed.path("image_json")),
                     parsed.path("analysis_notes").asText("Análise gerada via OpenAI batch"),
                     requestPayloadJson,
+                    outputJsonl,
                     "html-v1",
                     "openai-batch-v1",
                     properties.normalizedModel(),

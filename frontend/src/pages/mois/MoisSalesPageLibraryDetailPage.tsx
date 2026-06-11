@@ -1,5 +1,6 @@
 import { Link, useParams } from "react-router-dom";
 import PageTitle from "../../components/PageTitle";
+import CollapsibleJsonViewer from "../../components/CollapsibleJsonViewer";
 import {
   useMoisSalesLibraryMarketWarmup,
   useMoisSalesLibraryMarketWarmupSignals,
@@ -115,6 +116,15 @@ function formatCurrencyUsd(value?: number) {
     : value.toLocaleString("pt-BR", { style: "currency", currency: "USD" });
 }
 
+function cleanText(value?: string) {
+  const normalized = value?.trim();
+  return normalized ? normalized : undefined;
+}
+
+function displayText(value?: string) {
+  return cleanText(value) || "—";
+}
+
 function TextList({ items }: { items?: string[] }) {
   const visibleItems = (items ?? []).filter(Boolean);
   if (visibleItems.length === 0) {
@@ -167,17 +177,83 @@ function sourceEvidenceLabel(source: MoisMarketWarmupSource) {
   return label ? `${title}${summary} (${label})` : `${title}${summary}`;
 }
 
+function ProductIdentityCard({
+  productName,
+  producerName,
+  title,
+  offerSummary,
+  promiseSummary,
+  mechanismSummary,
+  proofSummary,
+}: {
+  productName?: string;
+  producerName?: string;
+  title?: string;
+  offerSummary?: string;
+  promiseSummary?: string;
+  mechanismSummary?: string;
+  proofSummary?: string;
+}) {
+  const resolvedProductName = cleanText(productName) || cleanText(title);
+
+  return (
+    <section className="border rounded p-3 bg-light-subtle">
+      <div className="d-flex flex-wrap justify-content-between gap-3 mb-3">
+        <div>
+          <div className="text-secondary small">Produto analisado</div>
+          <h3 className="h6 mb-1">{displayText(resolvedProductName)}</h3>
+          <p className="small text-secondary mb-0">
+            O dossiê parte deste produto para entender se existe uma máquina de
+            venda por trás: produtor, promessa, mecanismo, prova e canais de
+            aquisição.
+          </p>
+        </div>
+        <div className="text-md-end">
+          <div className="text-secondary small">Produtor</div>
+          <strong>{displayText(producerName)}</strong>
+        </div>
+      </div>
+
+      <div className="row g-2 small">
+        <div className="col-md-6">
+          <strong>O que é o produto/oferta</strong>
+          <p className="mb-0 text-secondary">
+            {displayText(offerSummary || resolvedProductName)}
+          </p>
+        </div>
+        <div className="col-md-6">
+          <strong>Promessa principal</strong>
+          <p className="mb-0 text-secondary">{displayText(promiseSummary)}</p>
+        </div>
+        <div className="col-md-6">
+          <strong>Mecanismo provável</strong>
+          <p className="mb-0 text-secondary">{displayText(mechanismSummary)}</p>
+        </div>
+        <div className="col-md-6">
+          <strong>Provas usadas na venda</strong>
+          <p className="mb-0 text-secondary">{displayText(proofSummary)}</p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function ProductSuccessNarrative({
   summary,
   signals,
   sources,
+  productName,
+  producerName,
 }: {
   summary: MoisMarketWarmupSummary;
   signals: MoisMarketWarmupSignal[];
   sources: MoisMarketWarmupSource[];
+  productName?: string;
+  producerName?: string;
 }) {
   const modelConclusion = summary.opportunityRecommendation?.trim();
   const nextResearch = summary.nextExperimentSuggestion?.trim();
+  const searchAnchor = cleanText(producerName) || cleanText(productName);
   const visibleSources = sources.map(sourceEvidenceLabel).filter(Boolean);
   const visibleSignals = signals
     .map((signal) => ({
@@ -191,10 +267,20 @@ function ProductSuccessNarrative({
       <div className="text-secondary small">Investigação de sucesso</div>
       <h3 className="h6 mb-2">Conclusões somente com base rastreável</h3>
       <p className="small mb-3">
-        Esta área não cria narrativa própria na tela. Ela mostra apenas a
-        conclusão persistida pelo processamento, a próxima pesquisa registrada e
-        as fontes/sinais públicos retornados para auditoria.
+        Esta área explica por que o sistema pesquisou pessoas, marcas e canais
+        relacionados ao produto. A pesquisa não procura apenas a palavra do
+        nome: ela tenta descobrir quem educa o mercado, onde existe audiência e
+        quais sinais públicos podem explicar as vendas.
       </p>
+
+      <section className="bg-white border rounded p-3 mb-2">
+        <h4 className="h6 mb-2">Por que estas pesquisas aparecem</h4>
+        <p className="small mb-0">
+          {searchAnchor
+            ? `O dossiê usa ${searchAnchor} como ponto de partida para encontrar autoridade, prova social, canais de audiência e ofertas concorrentes ao redor do produto.`
+            : "O dossiê usa o nome do produto, a página de venda e os termos da análise comercial como ponto de partida para encontrar autoridade, prova social, canais de audiência e ofertas concorrentes."}
+        </p>
+      </section>
 
       <section className="bg-white border rounded p-3 mb-2">
         <h4 className="h6 mb-2">Conclusão registrada</h4>
@@ -255,6 +341,123 @@ function ProductSuccessNarrative({
         )}
       </section>
     </article>
+  );
+}
+
+function parseJsonRecord(content?: string) {
+  if (!content?.trim()) return undefined;
+  try {
+    const parsed = JSON.parse(content) as unknown;
+    return isObjectLike(parsed) ? parsed : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function toPrettyJson(value: unknown) {
+  if (value == null) return undefined;
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return undefined;
+  }
+}
+
+function extractOpenAiRequestBody(requestPayloadJson?: string) {
+  const parsed = parseJsonRecord(requestPayloadJson);
+  if (!parsed) return undefined;
+  const body = parsed.body;
+  return isObjectLike(body) ? body : parsed;
+}
+
+function extractOpenAiPromptJson(requestPayloadJson?: string) {
+  const body = extractOpenAiRequestBody(requestPayloadJson);
+  if (!body) return undefined;
+  const input = body.input;
+  if (Array.isArray(input)) {
+    return toPrettyJson({ input });
+  }
+  return typeof input === "string" ? toPrettyJson({ input }) : undefined;
+}
+
+function extractOpenAiSchemaJson(requestPayloadJson?: string) {
+  const body = extractOpenAiRequestBody(requestPayloadJson);
+  if (!body) return undefined;
+  const text = body.text;
+  const format = isObjectLike(text) ? text.format : undefined;
+  if (!isObjectLike(format)) return undefined;
+
+  const schema = format.schema ?? format.json_schema;
+  if (schema) {
+    return toPrettyJson(schema);
+  }
+  return undefined;
+}
+
+function OpenAiAuditJsonBlock({
+  title,
+  content,
+  emptyMessage,
+}: {
+  title: string;
+  content?: string;
+  emptyMessage: string;
+}) {
+  return (
+    <div className="border rounded p-3 bg-light-subtle">
+      <h4 className="h6 mb-2">{title}</h4>
+      <CollapsibleJsonViewer
+        content={content}
+        emptyMessage={emptyMessage}
+        initiallyCollapsed
+      />
+    </div>
+  );
+}
+
+function OpenAiAnalysisAuditSection({
+  requestPayloadJson,
+  responsePayloadJson,
+}: {
+  requestPayloadJson?: string;
+  responsePayloadJson?: string;
+}) {
+  const promptJson = extractOpenAiPromptJson(requestPayloadJson);
+  const schemaJson = extractOpenAiSchemaJson(requestPayloadJson);
+
+  return (
+    <section className="border rounded p-3">
+      <div className="mb-3">
+        <div className="text-secondary small">Auditoria técnica da OpenAI</div>
+        <h3 className="h6 mb-1">Prompt, request, response e schema</h3>
+        <p className="small text-secondary mb-0">
+          Esta seção mostra os dados técnicos que explicam o que foi enviado ao
+          modelo e o que voltou dele, em layout JSON para facilitar auditoria.
+        </p>
+      </div>
+      <div className="d-flex flex-column gap-3">
+        <OpenAiAuditJsonBlock
+          title="Prompt usado"
+          content={promptJson}
+          emptyMessage="Prompt não registrado no payload desta análise."
+        />
+        <OpenAiAuditJsonBlock
+          title="Request enviado para OpenAI"
+          content={requestPayloadJson}
+          emptyMessage="Request OpenAI não registrado nesta análise."
+        />
+        <OpenAiAuditJsonBlock
+          title="Response da OpenAI"
+          content={responsePayloadJson}
+          emptyMessage="Response cru da OpenAI ainda não registrado nesta análise."
+        />
+        <OpenAiAuditJsonBlock
+          title="Schema JSON enviado"
+          content={schemaJson}
+          emptyMessage="Nenhum schema JSON explícito foi registrado; quando houver schema no request ele aparecerá aqui."
+        />
+      </div>
+    </section>
   );
 }
 
@@ -592,6 +795,16 @@ export default function MoisSalesPageLibraryDetailPage() {
 
           {warmupQuery.data ? (
             <>
+              <ProductIdentityCard
+                productName={pageQuery.data?.productName}
+                producerName={pageQuery.data?.producerName}
+                title={pageQuery.data?.title}
+                offerSummary={pageQuery.data?.offerSummary}
+                promiseSummary={pageQuery.data?.promiseSummary}
+                mechanismSummary={pageQuery.data?.mechanismSummary}
+                proofSummary={pageQuery.data?.proofSummary}
+              />
+
               <div className="row g-3">
                 <div className="col-md-3">
                   <div className="border rounded p-3 h-100 bg-light-subtle">
@@ -650,6 +863,10 @@ export default function MoisSalesPageLibraryDetailPage() {
                 summary={warmupQuery.data}
                 signals={warmupSignalsQuery.data?.items ?? []}
                 sources={warmupSourcesQuery.data?.items ?? []}
+                productName={
+                  pageQuery.data?.productName || pageQuery.data?.title
+                }
+                producerName={pageQuery.data?.producerName}
               />
 
               {warmupQuery.data.status === "FAILED" ? (
@@ -839,13 +1056,9 @@ export default function MoisSalesPageLibraryDetailPage() {
               title="Notas de análise retornadas pelo worker"
               content={analysisQuery.data.analysisNotes}
             />
-            <JsonCollapse
-              title="Request enviado ao modelo"
-              content={analysisQuery.data.requestPayloadJson}
-            />
-            <JsonCollapse
-              title="Prompt usado no modelo"
-              content={analysisQuery.data.promptVersion}
+            <OpenAiAnalysisAuditSection
+              requestPayloadJson={analysisQuery.data.requestPayloadJson}
+              responsePayloadJson={analysisQuery.data.responsePayloadJson}
             />
           </div>
         </section>

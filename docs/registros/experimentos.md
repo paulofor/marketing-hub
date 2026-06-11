@@ -4371,3 +4371,10 @@
 - causa-raiz: a evolução da etapa Resultado acoplou a liberação e o contexto ao resultado concluído da etapa Dor sem completar o contrato interno de consulta dessa dependência sequencial.
 - foi feito: implementada a busca da Dor concluída mais recente por nicho, bloqueando Resultado quando não há resposta válida e entregando essa resposta ao Worker AI nos jobs pendentes da etapa Resultado.
 - prevenção: adicionado teste unitário para garantir que a etapa Resultado receba a resposta concluída da Dor como contexto obrigatório.
+
+## 2026-06-11 — Piso de R$ 25,00 para pausar baixo interesse no anúncio
+
+- solicitação: na situação de reprovação da etapa “Acesso ao formulário de lead”, desativar automaticamente a campanha quando o custo atingir R$ 25,00.
+- causa-raiz: a regra estatística de baixo interesse já invalidava o experimento assim que a reprovação era comprovada, mas não considerava um piso financeiro operacional para aguardar consumo mínimo de mídia antes da pausa.
+- foi feito: a parada automática por `TARGET_AUDIENCE_LOW_INTEREST_STATISTICAL` agora exige reprovação estatística da etapa e gasto sincronizado de mídia maior ou igual a R$ 25,00; a checagem também roda logo após a sincronização de métricas da campanha.
+- prevenção: o cânone de publicação Facebook foi atualizado e o teste unitário cobre tanto a espera em R$ 24,99 quanto a pausa a partir de R$ 25,00.

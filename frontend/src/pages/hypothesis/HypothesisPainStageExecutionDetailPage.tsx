@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import PageTitle from "../../components/PageTitle";
 import hypothesisIcon from "../../assets/icons/hypothesis-icon.svg";
@@ -13,11 +14,96 @@ function formatCost(value?: number) {
   return value != null ? `$${value}` : "—";
 }
 
-function AuditBlock({ title, value }: { title: string; value?: string }) {
-  if (!value) return null;
+function formatFileName(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function isJsonContent(value: string) {
+  try {
+    JSON.parse(value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function buildDownloadHref(value: string) {
+  const mimeType = isJsonContent(value) ? "application/json" : "text/plain";
+  return `data:${mimeType};charset=utf-8,${encodeURIComponent(value)}`;
+}
+
+async function copyToClipboard(value: string) {
+  if (navigator.clipboard && window.isSecureContext) {
+    await navigator.clipboard.writeText(value);
+    return;
+  }
+
+  const textArea = document.createElement("textarea");
+  textArea.value = value;
+  textArea.style.position = "fixed";
+  textArea.style.opacity = "0";
+  document.body.appendChild(textArea);
+  textArea.focus();
+  textArea.select();
+  document.execCommand("copy");
+  document.body.removeChild(textArea);
+}
+
+function AuditBlock({
+  title,
+  value,
+  fileName,
+  copiedField,
+  onCopy,
+  showWhenEmpty = false,
+}: {
+  title: string;
+  value?: string;
+  fileName: string;
+  copiedField: string | null;
+  onCopy: (field: string, value?: string) => void;
+  showWhenEmpty?: boolean;
+}) {
+  if (!value && !showWhenEmpty) return null;
+  const downloadName = `${fileName}.${value && isJsonContent(value) ? "json" : "txt"}`;
+
   return (
     <section className="card mb-3">
-      <div className="card-header fw-semibold">{title}</div>
+      <div className="card-header d-flex flex-column flex-md-row gap-2 justify-content-md-between align-items-md-center">
+        <span className="fw-semibold">{title}</span>
+        <div className="d-flex flex-wrap gap-2">
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-secondary"
+            disabled={!value}
+            onClick={() => onCopy(fileName, value)}
+          >
+            {copiedField === fileName ? "Copiado!" : "Copiar"}
+          </button>
+          {value ? (
+            <a
+              className="btn btn-sm btn-outline-secondary"
+              href={buildDownloadHref(value)}
+              download={downloadName}
+            >
+              Baixar arquivo
+            </a>
+          ) : (
+            <button
+              type="button"
+              className="btn btn-sm btn-outline-secondary"
+              disabled
+            >
+              Baixar arquivo
+            </button>
+          )}
+        </div>
+      </div>
       <div className="card-body">
         <CollapsibleJsonViewer content={value} />
       </div>
@@ -29,6 +115,24 @@ export default function HypothesisPainStageExecutionDetailPage() {
   const { nicheId, jobId } = useParams();
   const detailQuery = useHypothesisPainStageExecutionDetail(nicheId, jobId);
   const detail = detailQuery.data;
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  const handleCopy = async (field: string, value?: string) => {
+    if (!value) return;
+
+    try {
+      await copyToClipboard(value);
+      setCopiedField(field);
+      window.setTimeout(
+        () => setCopiedField((current) => (current === field ? null : current)),
+        2000,
+      );
+    } catch {
+      setCopiedField(null);
+    }
+  };
+
+  const jobFileSuffix = formatFileName(detail?.jobid ?? jobId ?? "job");
 
   return (
     <div className="hypothesis-pain-stage-execution-detail-page">
@@ -57,7 +161,16 @@ export default function HypothesisPainStageExecutionDetailPage() {
           <section className="card mb-3">
             <div className="card-header d-flex flex-column flex-lg-row gap-2 justify-content-lg-between">
               <div>
-                <h2 className="h5 mb-1">Job {detail.jobid}</h2>
+                <div className="d-flex flex-wrap align-items-center gap-2 mb-1">
+                  <h2 className="h5 mb-0">Job {detail.jobid}</h2>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-secondary"
+                    onClick={() => handleCopy("jobid", detail.jobid)}
+                  >
+                    {copiedField === "jobid" ? "Job copiado!" : "Copiar jobid"}
+                  </button>
+                </div>
                 <span className="badge text-bg-light">{detail.status}</span>
               </div>
               <div className="text-muted small text-lg-end">
@@ -120,13 +233,45 @@ export default function HypothesisPainStageExecutionDetailPage() {
               detail.prompt ??
               detail.promptContent
             }
+            fileName={`prompt-usado-${jobFileSuffix}`}
+            copiedField={copiedField}
+            onCopy={handleCopy}
           />
-          <AuditBlock title="Schema enviado" value={detail.schemaJson} />
-          <AuditBlock title="Request OpenAI" value={detail.openAiRequestBody} />
-          <AuditBlock title="Resposta do modelo" value={detail.modelResponse} />
+          <AuditBlock
+            title="Schema enviado"
+            value={detail.schemaJson}
+            fileName={`schema-enviado-${jobFileSuffix}`}
+            copiedField={copiedField}
+            onCopy={handleCopy}
+          />
+          <AuditBlock
+            title="Request OpenAI"
+            value={detail.openAiRequestBody}
+            fileName={`request-openai-${jobFileSuffix}`}
+            copiedField={copiedField}
+            onCopy={handleCopy}
+          />
+          <AuditBlock
+            title="Resposta do modelo"
+            value={detail.modelResponse}
+            fileName={`resposta-modelo-${jobFileSuffix}`}
+            copiedField={copiedField}
+            onCopy={handleCopy}
+          />
           <AuditBlock
             title="Detalhe técnico do erro"
             value={detail.errorDetail}
+            fileName={`detalhe-tecnico-erro-${jobFileSuffix}`}
+            copiedField={copiedField}
+            onCopy={handleCopy}
+          />
+          <AuditBlock
+            title="JSON final gravado no banco de dados"
+            value={detail.modelResponse}
+            fileName={`json-final-banco-${jobFileSuffix}`}
+            copiedField={copiedField}
+            onCopy={handleCopy}
+            showWhenEmpty
           />
         </>
       ) : null}

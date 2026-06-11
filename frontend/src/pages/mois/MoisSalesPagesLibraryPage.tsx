@@ -77,6 +77,12 @@ function matchesWarmupFilter(item: MoisSalesLibraryPage, filter: string) {
   }
 }
 
+function getPipelinePhase(stage?: string | null, status?: string | null) {
+  const stageLabel = stage?.trim() || "Sem etapa";
+  const statusLabel = status?.trim() || "sem status";
+  return `${stageLabel} · ${statusLabel}`;
+}
+
 function formatDateTime(value?: string | null) {
   if (!value) {
     return "—";

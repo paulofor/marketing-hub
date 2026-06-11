@@ -4378,3 +4378,8 @@
 - causa-raiz: a regra estatística de baixo interesse já invalidava o experimento assim que a reprovação era comprovada, mas não considerava um piso financeiro operacional para aguardar consumo mínimo de mídia antes da pausa.
 - foi feito: a parada automática por `TARGET_AUDIENCE_LOW_INTEREST_STATISTICAL` agora exige reprovação estatística da etapa e gasto sincronizado de mídia maior ou igual a R$ 25,00; a checagem também roda logo após a sincronização de métricas da campanha.
 - prevenção: o cânone de publicação Facebook foi atualizado e o teste unitário cobre tanto a espera em R$ 24,99 quanto a pausa a partir de R$ 25,00.
+## 2026-06-11 — Etapa 3 do pipeline na tela de nova hipótese
+
+- A tela de nova hipótese passou a exibir a Etapa 3 — Mecanismo junto das etapas Dor e Resultado.
+- O backend expôs os contratos de início, listagem, detalhe e integrações internas da etapa `hypothesis-mechanism`, mantendo a exigência de Resultado concluído antes da execução.
+- A documentação Swagger do pipeline inicial de hipótese foi atualizada para incluir Dor, Resultado e Mecanismo.

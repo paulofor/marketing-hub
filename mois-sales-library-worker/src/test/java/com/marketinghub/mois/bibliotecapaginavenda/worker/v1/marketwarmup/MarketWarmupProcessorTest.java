@@ -25,6 +25,7 @@ class MarketWarmupProcessorTest {
                 "workspace-001",
                 "https://example.com/oferta",
                 "Sono Profundo",
+                "Especialista do Sono",
                 "Oferta contra insônia",
                 "método respiratório",
                 "dormir melhor em 7 dias",
@@ -33,7 +34,7 @@ class MarketWarmupProcessorTest {
         var result = processor.process(job, 3);
 
         assertThat(result.sources()).isNotEmpty();
-        assertThat(result.signals()).extracting(signal -> signal.signalType()).contains(MarketWarmupSignalType.PAIN_EXPLICIT, MarketWarmupSignalType.BUYING_INTENT);
+        assertThat(result.signals()).extracting(signal -> signal.signalType()).contains(MarketWarmupSignalType.PAIN_EXPLICIT, MarketWarmupSignalType.BUYING_INTENT, MarketWarmupSignalType.CREATOR_AUTHORITY, MarketWarmupSignalType.SOCIAL_PROOF);
         assertThat(result.sources()).extracting(source -> source.platform()).contains(MarketWarmupPlatform.YOUTUBE);
         assertThat(result.summary().recommendation()).isNotNull();
         assertThat(result.summary().scoreTotal()).isPositive();
@@ -49,8 +50,8 @@ class MarketWarmupProcessorTest {
         @Override
         public List<PublicSearchResult> search(String query, int limit) throws IOException {
             return List.of(
-                    new PublicSearchResult("Insônia: dor e dificuldade para dormir", "https://www.youtube.com/watch?v=abc", "Comentários perguntam se funciona e preço do método.", "<div>raw</div>"),
-                    new PublicSearchResult("Review Sono Profundo vale a pena", "https://blog.example.com/review", "Depoimento e objeção sobre confiança no produto.", "<div>raw</div>"));
+                    new PublicSearchResult("Insônia: dor e dificuldade para dormir", "https://www.youtube.com/watch?v=abc", "Professora especialista faz live e comentários perguntam se funciona e preço do método.", "<div>raw</div>"),
+                    new PublicSearchResult("Review Sono Profundo vale a pena", "https://blog.example.com/review", "Depoimento de alunos mostra resultado e objeção sobre confiança no produto.", "<div>raw</div>"));
         }
     }
 }

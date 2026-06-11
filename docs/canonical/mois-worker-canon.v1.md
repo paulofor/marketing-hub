@@ -587,13 +587,14 @@ A definição oficial do pipeline `mois-sales-page-library-pipeline` passa a ter
 |---:|---|---|---|---|---|---|---|
 | 1 | `HTML_ACQUISITION` | `html-acquisition` | Obtenção de HTML | Capturar HTML bruto útil da página de venda e preservar evidência operacional para análise posterior. | `mois-sales-library-worker` | Não | `html-capture`, `page-snapshot`, `capture`, `obtencao-html` |
 | 2 | `COMMERCIAL_PAGE_ANALYSIS` | `commercial-page-analysis` | Análise Comercial da Página | Usar o HTML capturado para extrair diagnóstico comercial da página, incluindo dor, promessa, mecanismo, prova, público, categoria e score. | `mois-sales-library-worker` | Sim | `page-analysis`, `analysis`, `commercial-analysis`, `analise-comercial` |
-| 3 | `MARKET_WARMUP_RESEARCH` | `market-warmup-research` | Pesquisa de Aquecimento e Ecossistema de Mercado | Pesquisar fontes públicas rastreáveis para medir se existe ecossistema ativo preparando o mercado para comprar solução parecida, separando presença do produto específico de sinais do mercado/dor. | `mois-market-warmup-worker` | Sim | `market-warmup`, `warmup-research`, `ecosystem-research`, `aquecimento-mercado`, `pesquisa-aquecimento` |
+| 3 | `MARKET_WARMUP_RESEARCH` | `market-warmup-research` | Investigação de Sucesso do Produto | Pesquisar fontes públicas rastreáveis para explicar como um produto aparentemente vencedor vende: autoridade por trás, canais de aquisição, funil, prova social, distribuição por afiliados/marketplace e riscos comerciais. | `mois-market-warmup-worker` | Sim | `market-warmup`, `warmup-research`, `ecosystem-research`, `aquecimento-mercado`, `pesquisa-aquecimento`, `product-success-research`, `investigacao-sucesso-produto` |
 
 Regras canônicas da Etapa 3:
 
 1. A Etapa 3 só pode iniciar para página com a Etapa 2 concluída, pois deve usar dor, promessa, mecanismo, prova, público e categoria já identificados na análise comercial.
-2. O backend principal continua sendo o único módulo com acesso ao banco; o worker de aquecimento deve conversar somente com endpoints do backend MOIS.
+2. O backend principal continua sendo o único módulo com acesso ao banco; o worker de investigação deve conversar somente com endpoints do backend MOIS.
 3. Toda conclusão da Etapa 3 deve ser explicável por fontes públicas rastreáveis e sinais persistidos, evitando opinião sem evidência.
-4. O score da Etapa 3 é o `Market Warm-up Score` de 0 a 100, classificado inicialmente como `Quente`, `Promissor`, `Morno`, `Frio` ou `Saturado` quando houver risco alto de saturação.
-5. A etapa deve preservar o eixo comercial `Dor → Resultado → Mecanismo → Prova → Oferta` e apoiar a decisão de priorizar, pesquisar mais, observar, descartar ou avançar apenas com ângulo diferenciado.
-6. O artefato final exibido ao usuário não pode conter marcador técnico, campo de debug ou JSON serializado dentro de texto funcional.
+4. O score da Etapa 3 passa a representar a força da **engenharia pública de sucesso do produto** em escala de 0 a 100, classificada como `Quente`, `Promissor`, `Morno`, `Frio` ou `Saturado` quando houver risco alto de saturação/desconfiança.
+5. A etapa deve preservar o eixo comercial `Dor → Resultado → Mecanismo → Prova → Oferta`, mas a decisão principal passa a ser explicar **como o produtor chegou ao sucesso**: marca pessoal, influenciador, canal de conteúdo, comunidade, aula/live, WhatsApp, afiliados, marketplace, prova social e checkout.
+6. As buscas públicas da Etapa 3 devem priorizar título do produto combinado com produtor/marca/autoridade para evitar resultados genéricos por palavras isoladas do nome do produto.
+7. O artefato final exibido ao usuário não pode conter marcador técnico, campo de debug ou JSON serializado dentro de texto funcional.

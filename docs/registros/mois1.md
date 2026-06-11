@@ -1400,3 +1400,22 @@ Arquivos principais:
 Arquivos principais:
 - `mois-sales-library-worker/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/marketwarmup/DuckDuckGoPublicWebSearchClient.java`
 - `mois-sales-library-worker/src/test/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/marketwarmup/DuckDuckGoPublicWebSearchClientTest.java`
+
+## 2026-06-11 — Reorientação da Etapa 3 para engenharia de sucesso do produto
+
+- Atualizada a regra canônica da **Etapa 3** da Biblioteca de Páginas de Vendas: o objetivo deixa de ser apenas medir aquecimento genérico de mercado e passa a ser explicar **como um produto aparentemente vencedor conseguiu vender**.
+- A investigação agora deve buscar evidências de autoridade, produtor/marca, influenciador, canais de aquisição, aula/live, WhatsApp, comunidade, afiliados, marketplace, prova social e riscos comerciais.
+- Ajustados os textos da UI para apresentar o bloco como **Engenharia de Sucesso do Produto**, com foco em hipótese de venda, canais encontrados, alavancas de sucesso e próxima investigação.
+- Ajustado o worker para incluir o produtor/marca no payload de claim e montar buscas públicas mais específicas, reduzindo resultados genéricos por palavras isoladas do nome do produto.
+
+Arquivos principais:
+- `docs/canonical/mois-worker-canon.v1.md`
+- `docs/swagger/mois-sales-library-swagger.yaml`
+- `frontend/src/pages/mois/MoisSalesPageLibraryDetailPage.tsx`
+- `frontend/src/pages/mois/MoisSalesPagesLibraryPage.tsx`
+- `frontend/src/pages/mois/MoisSalesPagesPipelinePage.tsx`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/dto/MoisSalesLibraryDtos.java`
+- `backend/ads-service/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/service/MoisSalesPageMarketWarmupService.java`
+- `backend/ads-service/src/main/java/com/marketinghub/repository/jpa/mois/bibliotecapaginavenda/worker/v1/MoisSalesPageMarketWarmupRepository.java`
+- `mois-sales-library-worker/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/marketwarmup/MarketWarmupQueryBuilder.java`
+- `mois-sales-library-worker/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/marketwarmup/MarketWarmupProcessor.java`

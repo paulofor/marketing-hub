@@ -304,6 +304,7 @@ class MoisSalesPageMarketWarmupServiceTest {
                 "workspace-001",
                 "https://example.test/oferta",
                 "Oferta principal",
+                "Produtor Especialista",
                 "Oferta transforma dor em resultado",
                 "Mecanismo plausível",
                 "Promessa clara",

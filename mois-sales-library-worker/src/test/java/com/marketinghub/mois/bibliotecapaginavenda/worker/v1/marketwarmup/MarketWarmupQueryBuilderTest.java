@@ -21,6 +21,7 @@ class MarketWarmupQueryBuilderTest {
                 "workspace-001",
                 "https://example.com/oferta",
                 "Produto Sono Profundo",
+                "Especialista do Sono",
                 "Curso para dormir melhor",
                 "rotina de respiração guiada",
                 "acabar com insônia sem remédios",
@@ -28,7 +29,8 @@ class MarketWarmupQueryBuilderTest {
 
         assertThat(builder.buildQueries(job))
                 .hasSize(6)
-                .anySatisfy(query -> assertThat(query).contains("acabar com insônia"))
-                .anySatisfy(query -> assertThat(query).contains("rotina de respiração guiada"));
+                .anySatisfy(query -> assertThat(query).contains("Especialista do Sono"))
+                .anySatisfy(query -> assertThat(query).contains("Instagram YouTube TikTok"))
+                .anySatisfy(query -> assertThat(query).contains("aula gratuita"));
     }
 }

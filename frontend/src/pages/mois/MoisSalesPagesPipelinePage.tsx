@@ -29,7 +29,7 @@ const htmlAcquisitionChecklist = [
 const marketWarmupChecklist = [
   "Páginas com análise comercial concluída",
   "Sinais públicos de demanda, conversa e concorrência",
-  "Score de aquecimento do mercado e risco de saturação",
+  "Score de engenharia de sucesso e riscos comerciais",
   "Recomendação comercial para priorizar, observar ou diferenciar o ângulo",
 ];
 
@@ -118,7 +118,7 @@ export default function MoisSalesPagesPipelinePage() {
           <p className="text-secondary mb-0">
             Execute e acompanhe o pipeline operacional: obter HTML bruto
             versionado, analisar comercialmente as páginas capturadas e preparar
-            a pesquisa de aquecimento do mercado.
+            a investigação de sucesso do produto.
           </p>
         </div>
         <Link
@@ -417,8 +417,9 @@ export default function MoisSalesPagesPipelinePage() {
                     {summaryQuery.isLoading ? "..." : analysisBacklog}
                   </h3>
                   <p className="text-secondary small mb-0 mt-2">
-                    Fila real: {analysisPending} pendentes · {analysisRunning}{" "}
-                    em execução · {analysisFailed} falhas registradas
+                    Fila real da investigação: {analysisPending} pendentes ·{" "}
+                    {analysisRunning} em execução · {analysisFailed} falhas
+                    registradas
                   </p>
                 </div>
               </div>
@@ -456,12 +457,12 @@ export default function MoisSalesPagesPipelinePage() {
           <div className="d-flex flex-wrap align-items-start justify-content-between gap-3">
             <div>
               <span className="badge text-bg-primary mb-2">Etapa 3</span>
-              <h2 className="h4 mb-2">Pesquisa de aquecimento e ecossistema</h2>
+              <h2 className="h4 mb-2">Investigação de sucesso do produto</h2>
               <p className="text-secondary mb-0">
                 Próximo bloco do pipeline: usar a análise comercial da etapa 2
-                para medir se o mercado já está sendo aquecido por conversas,
-                conteúdos, provas públicas e ofertas parecidas antes de criar
-                novos produtos ou ângulos de venda.
+                para descobrir como o produto aparentemente vencedor vende:
+                autoridade por trás, canais de audiência, funil, prova social e
+                distribuição.
               </p>
             </div>
             <span className="badge text-bg-warning align-self-start">
@@ -488,11 +489,11 @@ export default function MoisSalesPagesPipelinePage() {
                 <p className="text-uppercase text-secondary small fw-semibold mb-1">
                   Saída esperada
                 </p>
-                <h3 className="h6 mb-2">Score de aquecimento do mercado</h3>
+                <h3 className="h6 mb-2">Score da engenharia de sucesso</h3>
                 <p className="text-secondary small mb-0">
-                  O resultado esperado classifica o mercado como quente,
-                  promissor, morno, frio ou saturado com base em fontes públicas
-                  rastreáveis.
+                  O resultado esperado classifica a força da máquina de venda
+                  como quente, promissora, morna, fria ou saturada com base em
+                  fontes públicas rastreáveis.
                 </p>
               </div>
             </div>
@@ -503,8 +504,8 @@ export default function MoisSalesPagesPipelinePage() {
                 </p>
                 <h3 className="h6 mb-2">Decisão comercial explicável</h3>
                 <p className="text-secondary small mb-0">
-                  A recomendação deve preservar o eixo dor, resultado,
-                  mecanismo, prova e oferta, evitando opinião sem evidência.
+                  A recomendação deve explicar autoridade, canal, captura,
+                  oferta, prova e checkout, evitando opinião sem evidência.
                 </p>
               </div>
             </div>
@@ -515,8 +516,8 @@ export default function MoisSalesPagesPipelinePage() {
               <div>
                 <h3 className="h6 mb-1">Resumo da etapa 3</h3>
                 <p className="text-secondary small mb-0">
-                  Mostra cobertura real da Etapa 3 para priorizar mercados com
-                  dossiê concluído, fila visível e temperatura comercial.
+                  Mostra cobertura real da Etapa 3 para priorizar produtos com
+                  dossiê concluído, fila visível e força comercial.
                 </p>
               </div>
               {summaryQuery.isLoading ? (
@@ -528,7 +529,7 @@ export default function MoisSalesPagesPipelinePage() {
               <div className="col-sm-6 col-lg-4">
                 <div className="bg-light rounded-3 p-3 h-100">
                   <p className="text-secondary mb-1">
-                    Elegíveis para aquecimento
+                    Elegíveis para dossiê de sucesso
                   </p>
                   <h3 className="mb-0">
                     {summaryQuery.isLoading ? "..." : marketWarmupEligiblePages}
@@ -542,7 +543,8 @@ export default function MoisSalesPagesPipelinePage() {
                     {summaryQuery.isLoading ? "..." : marketWarmupCompleted}
                   </h3>
                   <p className="text-secondary small mb-0 mt-2">
-                    Pesquisa pronta para decisão comercial e revisão humana.
+                    Dossiê pronto para explicar a máquina de venda e revisão
+                    humana.
                   </p>
                 </div>
               </div>
@@ -555,16 +557,17 @@ export default function MoisSalesPagesPipelinePage() {
                       : marketWarmupHot + marketWarmupPromising}
                   </h3>
                   <p className="text-secondary small mb-0 mt-2">
-                    Mercados com maior prioridade inicial para experimentos.
+                    Produtos com maior prioridade para estudo de engenharia de
+                    venda.
                   </p>
                 </div>
               </div>
             </div>
             <p className="text-secondary small mb-0 mt-3">
-              Fila real: {marketWarmupPending} pendentes · {marketWarmupRunning}{" "}
-              em pesquisa · {marketWarmupStuck} presos há mais de 120 min ·{" "}
-              {marketWarmupFailed} falhas · {marketWarmupCold} frios ·{" "}
-              {marketWarmupSaturated} saturados.
+              Fila real da investigação: {marketWarmupPending} pendentes ·{" "}
+              {marketWarmupRunning} em pesquisa · {marketWarmupStuck} presos há
+              mais de 120 min · {marketWarmupFailed} falhas · {marketWarmupCold}{" "}
+              fracos · {marketWarmupSaturated} saturados.
             </p>
           </div>
 

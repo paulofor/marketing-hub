@@ -292,11 +292,11 @@ class MoisSalesPageMarketWarmupScoreEngine {
      */
     private String recommendationText(MarketWarmupRecommendation recommendation) {
         return switch (recommendation) {
-            case PRIORITIZE -> "Priorizar experimento comercial com este mercado.";
-            case OBSERVE -> "Observar e refinar o ângulo antes de escalar.";
-            case RESEARCH_MORE -> "Pesquisar mais fontes antes de criar oferta.";
-            case DISCARD -> "Descartar ou deixar em baixa prioridade.";
-            case SATURATED_REQUIRES_ANGLE -> "Avançar somente com ângulo claramente diferenciado.";
+            case PRIORITIZE -> "Produto com máquina de venda forte para estudar e usar como referência.";
+            case OBSERVE -> "Estudar com refinamento a autoridade, os canais e a prova antes de usar como referência.";
+            case RESEARCH_MORE -> "Pesquisar mais fontes para explicar canal, autoridade, funil e prova social.";
+            case DISCARD -> "Pouca evidência pública para explicar o sucesso; deixar em baixa prioridade até achar o canal real.";
+            case SATURATED_REQUIRES_ANGLE -> "Estudar com cautela: máquina possivelmente saturada ou dependente de ângulo muito específico.";
         };
     }
 
@@ -306,11 +306,11 @@ class MoisSalesPageMarketWarmupScoreEngine {
     private String experimentSuggestion(MarketWarmupRecommendation recommendation, MarketWarmupEcosystemType ecosystemType) {
         String ecosystem = ecosystemType.name().toLowerCase(Locale.ROOT).replace('_', ' ');
         return switch (recommendation) {
-            case PRIORITIZE -> "Criar experimento inicial apoiado no ecossistema " + ecosystem + ".";
-            case OBSERVE -> "Validar novo ângulo com mais sinais do ecossistema " + ecosystem + ".";
-            case RESEARCH_MORE -> "Coletar fontes adicionais antes do experimento.";
-            case DISCARD -> "Não criar experimento neste momento.";
-            case SATURATED_REQUIRES_ANGLE -> "Buscar promessa e mecanismo menos comoditizados antes de vender.";
+            case PRIORITIZE -> "Mapear detalhadamente a máquina de venda apoiada no ecossistema " + ecosystem + ".";
+            case OBSERVE -> "Confirmar autoridade, canal e prova social com mais sinais do ecossistema " + ecosystem + ".";
+            case RESEARCH_MORE -> "Coletar fontes adicionais antes de concluir como o produto vende.";
+            case DISCARD -> "Não concluir engenharia de sucesso neste momento; faltam evidências públicas.";
+            case SATURATED_REQUIRES_ANGLE -> "Buscar diferencial claro antes de usar este produto como referência.";
         };
     }
 

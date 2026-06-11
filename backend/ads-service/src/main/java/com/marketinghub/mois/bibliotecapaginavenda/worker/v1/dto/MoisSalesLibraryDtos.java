@@ -723,6 +723,7 @@ public final class MoisSalesLibraryDtos {
             String workspaceId,
             String urlCanonical,
             String title,
+            String producerName,
             String offerSummary,
             String mechanismSummary,
             String promiseSummary,

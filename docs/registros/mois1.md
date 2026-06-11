@@ -1468,3 +1468,5 @@ Arquivos principais:
 Arquivos principais:
 - frontend/src/pages/mois/MoisSalesPageLibraryDetailPage.tsx
 - docs/canonical/mois-worker-canon.v1.md
+
+- frontend MOIS (`/mois/sales-pages-library`): ajustada a listagem de priorização para exibir temperatura Hotmart e data do dossiê, removendo score de sucesso e fase no diagrama da tabela principal para deixar a decisão comercial mais direta.

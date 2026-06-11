@@ -4320,3 +4320,14 @@
 - causa-raiz: o detalhe do nicho ainda abria o formulário manual embutido, enquanto o nicho enriquecido já apontava para o fluxo novo `/niches/:id/hypotheses/new` da construção auditável da hipótese.
 - foi feito: o botão principal do detalhe do nicho passou a ser um link para `/niches/:id/hypotheses/new`, mantendo a criação manual separada na seção própria da página.
 - impacto esperado: o usuário entra no mesmo fluxo de construção da hipótese a partir de qualquer origem, reduzindo desvio operacional e mantendo a etapa Dor como primeiro passo padrão.
+
+## 2026-06-11 02:58:14 UTC-3
+- solicitação: remover da tela de nova hipótese as informações detalhadas marcadas em vermelho, mantendo apenas o acompanhamento essencial do job de dor.
+- raciocínio: a causa do excesso visual era a renderização do resultado estruturado completo e da tabela histórica diretamente na tela inicial; a correção simplifica a tela para reduzir ruído e direcionar o usuário ao fluxo principal.
+- registro do que foi feito: removida a exibição do detalhamento da dor e da tabela de execuções na página de nova hipótese; o teste da tela foi ajustado para garantir que apenas o link do job atual permaneça visível.
+- documentos lidos para pesquisar e resolver o problema:
+  - AGENTS.md
+  - frontend/AGENTS.md
+  - docs/registros/experimentos.md
+  - frontend/src/pages/hypothesis/NewHypothesisPage.tsx
+  - frontend/src/pages/hypothesis/NewHypothesisPage.test.tsx

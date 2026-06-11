@@ -152,6 +152,25 @@ public class HypothesisPainStageService {
                 .toList();
     }
 
+    /** Garante que a etapa Dor tenha sido concluída com resposta antes de liberar Resultado. */
+    private void requireCompletedPain(Long marketNicheId) {
+        if (!StringUtils.hasText(latestCompletedPainResponse(marketNicheId))) {
+            throw new IllegalStateException(
+                    "A etapa Dor precisa estar concluída antes de iniciar Resultado para o nicho: " + marketNicheId);
+        }
+    }
+
+    /** Retorna a resposta da Dor concluída mais recente para contextualizar etapas seguintes. */
+    private String latestCompletedPainResponse(Long marketNicheId) {
+        return executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
+                        marketNicheId,
+                        STAGE_CODE,
+                        STATUS_COMPLETED)
+                .map(HypothesisPainStageExecution::getModelResponse)
+                .filter(StringUtils::hasText)
+                .orElse(null);
+    }
+
     /** Marca uma execução como em processamento para evitar recaptura por outro ciclo do worker. */
     @Transactional
     public void markRunning(String idJob) {

@@ -29,7 +29,6 @@ import ExperimentLandingAnalyticsTab from "./ExperimentLandingAnalyticsTab";
 import ExperimentContentGenerationTab from "./ExperimentContentGenerationTab";
 import { ExperimentAudienceTab } from "./ExperimentAudienceTab";
 import LandingTab from "./LandingTab";
-import CollapsibleJsonViewer from "../../components/CollapsibleJsonViewer";
 import { useExperimentFacebookRelease } from "../../api/experiment/useExperimentFacebookRelease";
 import {
   useGeraLandingStageExecutionDetail,
@@ -104,92 +103,6 @@ type ChecklistItem = {
   actionDisabled?: boolean;
   actionLoading?: boolean;
 };
-
-type PipelineContentCard = {
-  key: string;
-  title: string;
-  description: string;
-  rawValue?: string | null;
-};
-
-const formatPipelineJson = (rawValue?: string | null) => {
-  if (!rawValue || rawValue.trim().length === 0) {
-    return null;
-  }
-
-  const trimmed = rawValue.trim();
-  try {
-    return JSON.stringify(JSON.parse(trimmed), null, 2);
-  } catch {
-    return trimmed;
-  }
-};
-
-async function copyToClipboard(content: string) {
-  if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-    await navigator.clipboard.writeText(content);
-    return;
-  }
-
-  if (typeof document === "undefined") {
-    throw new Error("Clipboard indisponível neste ambiente.");
-  }
-
-  const textarea = document.createElement("textarea");
-  textarea.value = content;
-  textarea.setAttribute("readonly", "");
-  textarea.style.position = "fixed";
-  textarea.style.top = "-1000px";
-  textarea.style.left = "-1000px";
-  document.body.appendChild(textarea);
-  textarea.focus();
-  textarea.select();
-
-  const copied = document.execCommand("copy");
-  document.body.removeChild(textarea);
-
-  if (!copied) {
-    throw new Error("Falha ao copiar conteúdo.");
-  }
-}
-
-function downloadPipelineStage(content: string, filename: string) {
-  const blob = new Blob([content], { type: "application/json;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-}
-
-function sanitizeFilenamePart(value: string) {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/\s+/g, "-")
-    .replace(/[^a-z0-9-]/g, "");
-}
-
-function resolveJobNumberFromStageContent(content: string) {
-  try {
-    const parsed = JSON.parse(content) as Record<string, unknown>;
-    const jobValue = parsed?.jobNumber ?? parsed?.jobId ?? parsed?.job_id;
-    if (jobValue === undefined || jobValue === null) {
-      return "sem-job";
-    }
-
-    const valueAsString = String(jobValue).trim();
-    return valueAsString.length > 0
-      ? sanitizeFilenamePart(valueAsString)
-      : "sem-job";
-  } catch {
-    return "sem-job";
-  }
-}
 
 function hasExecutionWithJobId(
   executions: GeraLandingStageExecutionItem[] | undefined,
@@ -303,11 +216,6 @@ export default function ExperimentDetailPage() {
   const { data: facebookCampaigns, isLoading: isLoadingFacebookCampaigns } =
     useExperimentFacebookCampaigns(expId);
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
-  const [copiedCardKey, setCopiedCardKey] = useState<string | null>(null);
-  const [copyingCardKey, setCopyingCardKey] = useState<string | null>(null);
-  const [downloadingCardKey, setDownloadingCardKey] = useState<string | null>(
-    null,
-  );
   const [isStartingWireframe, setIsStartingWireframe] = useState(false);
   const [isStartingCopy, setIsStartingCopy] = useState(false);
   const [isStartingDesignPreset, setIsStartingDesignPreset] = useState(false);
@@ -459,78 +367,6 @@ export default function ExperimentDetailPage() {
     }
   };
 
-  const pipelineContentCards = useMemo<PipelineContentCard[]>(
-    () => [
-      {
-        key: "campaign-angle",
-        title: "Etapa 1 · Campaign Angle",
-        description: "Conteúdo bruto salvo na coluna campaign_angle.",
-        rawValue: data?.campaignAngle,
-      },
-      {
-        key: "ad-copy",
-        title: "Etapa 2 · Ad Copy",
-        description: "Conteúdo bruto salvo na coluna ad_copy.",
-        rawValue: data?.adCopy,
-      },
-      {
-        key: "wireframe",
-        title: "Etapa 3 · Landing Wireframe",
-        description: "Conteúdo bruto salvo na coluna landing_page_wireframe.",
-        rawValue: data?.landingPageWireframe,
-      },
-      {
-        key: "copy",
-        title: "Etapa 4 · Landing Copy",
-        description: "Conteúdo bruto salvo na coluna landing_page_copy.",
-        rawValue: data?.landingPageCopy,
-      },
-      {
-        key: "image-planning",
-        title: "Etapa 5 · Planejamento de Imagens",
-        description:
-          "Conteúdo bruto salvo na coluna landing_page_image_planning.",
-        rawValue: data?.landingPageImagePlanning,
-      },
-      {
-        key: "design-preset",
-        title: "Etapa 6 · Preset Design",
-        description:
-          "Conteúdo bruto (JSON) salvo na coluna landing_page_design_preset.",
-        rawValue: data?.landingPageDesignPreset,
-      },
-      {
-        key: "geralanding-html",
-        title: "Etapa 7 · GeraLanding HTML",
-        description: "Conteúdo bruto salvo na coluna html_geralanding.",
-        rawValue: data?.htmlGeraLanding,
-      },
-      {
-        key: "landing-html",
-        title: "Etapa 8 · Landing HTML",
-        description: "Conteúdo bruto salvo na coluna landing_page_html.",
-        rawValue: data?.landingPageHtml,
-      },
-      {
-        key: "landing-page-deliverables",
-        title: "Etapa 9 · Landing Page Deliverables",
-        description:
-          "JSON final dos entregáveis da amostra e do produto final salvo na coluna landing_page_deliverables.",
-        rawValue: data?.landingPageDeliverables,
-      },
-    ],
-    [
-      data?.adCopy,
-      data?.campaignAngle,
-      data?.landingPageCopy,
-      data?.landingPageDesignPreset,
-      data?.htmlGeraLanding,
-      data?.landingPageDeliverables,
-      data?.landingPageHtml,
-      data?.landingPageImagePlanning,
-      data?.landingPageWireframe,
-    ],
-  );
   useBreadcrumbs([
     {
       label: niche?.name || "...",
@@ -2539,9 +2375,6 @@ export default function ExperimentDetailPage() {
             <Tabs.Trigger value="content-structure" className="nav-link">
               Estrutura de conteúdo
             </Tabs.Trigger>
-            <Tabs.Trigger value="conteudo" className="nav-link">
-              Conteúdo
-            </Tabs.Trigger>
             <Tabs.Trigger value="publico" className="nav-link">
               Público
             </Tabs.Trigger>
@@ -2603,6 +2436,12 @@ export default function ExperimentDetailPage() {
                     )}
                   </span>
                 </div>
+              </div>
+              <div className="alert alert-info mb-0" role="alert">
+                <strong>Tela de controle do processo:</strong> acompanhe aqui
+                status, histórico e custo das etapas. Para ver o conteúdo
+                produzido por uma execução, clique no <strong>Job ID</strong> e
+                consulte o detalhe do job.
               </div>
               <div className="card">
                 <div className="card-body d-flex flex-column gap-3">
@@ -3124,9 +2963,9 @@ export default function ExperimentDetailPage() {
                       </button>
                     ) : null}
                     <span className="small text-muted">
-                      Acompanhe a timeline detalhada na aba{" "}
-                      <strong>Conteúdo</strong>, bloco{" "}
-                      <strong>Gerar imagens em lote (AI Worker)</strong>.
+                      A tela desta etapa mostra apenas controle operacional;
+                      clique no Job ID para ver o resultado completo da
+                      execução.
                     </span>
                   </div>
                   {isLoadingPendingGeraLandingImageGenerationExecutions ? (
@@ -3772,113 +3611,6 @@ export default function ExperimentDetailPage() {
               nicheId={data?.nicheId}
               alterationLocked={alterationLocked}
             />
-          </Tabs.Content>
-          <Tabs.Content value="conteudo" asChild>
-            <div className="d-flex flex-column gap-3">
-              {pipelineContentCards.map((card) => {
-                const formattedValue = formatPipelineJson(card.rawValue);
-                return (
-                  <div className="card" key={card.key}>
-                    <div className="card-body">
-                      <div className="d-flex flex-wrap align-items-start justify-content-between gap-2">
-                        <h5 className="card-title mb-1">{card.title}</h5>
-                        {formattedValue ? (
-                          <div className="d-flex align-items-center gap-2">
-                            <button
-                              type="button"
-                              className="btn btn-outline-secondary btn-sm"
-                              disabled={copyingCardKey === card.key}
-                              onClick={async () => {
-                                try {
-                                  setCopyingCardKey(card.key);
-                                  await copyToClipboard(formattedValue);
-                                  setCopiedCardKey(card.key);
-                                  window.setTimeout(() => {
-                                    setCopiedCardKey((current) =>
-                                      current === card.key ? null : current,
-                                    );
-                                  }, 1600);
-                                } catch {
-                                  toast.error(
-                                    "Não foi possível copiar esta etapa para a área de transferência.",
-                                  );
-                                } finally {
-                                  setCopyingCardKey((current) =>
-                                    current === card.key ? null : current,
-                                  );
-                                }
-                              }}
-                            >
-                              {copyingCardKey === card.key ? (
-                                <span
-                                  className="spinner-border spinner-border-sm me-1"
-                                  role="status"
-                                  aria-hidden="true"
-                                />
-                              ) : null}
-                              {copiedCardKey === card.key
-                                ? "Copiado!"
-                                : "Copiar etapa"}
-                            </button>
-                            <button
-                              type="button"
-                              className="btn btn-outline-primary btn-sm"
-                              disabled={downloadingCardKey === card.key}
-                              onClick={async () => {
-                                try {
-                                  setDownloadingCardKey(card.key);
-                                  const safeTitle = sanitizeFilenamePart(
-                                    card.title,
-                                  );
-                                  const jobNumber =
-                                    resolveJobNumberFromStageContent(
-                                      formattedValue,
-                                    );
-                                  downloadPipelineStage(
-                                    formattedValue,
-                                    `${safeTitle || card.key}-job-${jobNumber}.json`,
-                                  );
-                                } catch {
-                                  toast.error(
-                                    "Não foi possível baixar esta etapa.",
-                                  );
-                                } finally {
-                                  setDownloadingCardKey((current) =>
-                                    current === card.key ? null : current,
-                                  );
-                                }
-                              }}
-                            >
-                              {downloadingCardKey === card.key ? (
-                                <span
-                                  className="spinner-border spinner-border-sm me-1"
-                                  role="status"
-                                  aria-hidden="true"
-                                />
-                              ) : null}
-                              Baixar etapa
-                            </button>
-                          </div>
-                        ) : null}
-                      </div>
-                      <p className="text-muted small mb-3">
-                        {card.description}
-                      </p>
-                      {formattedValue ? (
-                        <CollapsibleJsonViewer content={formattedValue} />
-                      ) : (
-                        <div
-                          className="alert alert-secondary mb-0"
-                          role="alert"
-                        >
-                          Sem conteúdo salvo para esta etapa.
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
           </Tabs.Content>
         </Tabs.Root>
       </div>

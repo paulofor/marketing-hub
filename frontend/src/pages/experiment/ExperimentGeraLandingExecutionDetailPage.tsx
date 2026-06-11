@@ -452,6 +452,108 @@ export default function ExperimentGeraLandingExecutionDetailPage() {
                 </div>
               </div>
 
+              <div className="border rounded p-3 bg-light-subtle d-flex flex-column gap-3">
+                <div>
+                  <h5 className="mb-1">Resultado da execução do job</h5>
+                  <p className="text-muted small mb-0">
+                    Conteúdo produzido pelo Worker IA. A tela de etapas fica
+                    apenas para controle operacional; o resultado completo deve
+                    ser consultado aqui, ao clicar no Job ID.
+                  </p>
+                </div>
+                <div>
+                  <div className="d-flex align-items-center gap-2 mb-2">
+                    <h6 className="mb-0">Model response</h6>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-secondary"
+                      onClick={() =>
+                        handleCopyJson(
+                          "modelResponse",
+                          detailQuery.data.modelResponse,
+                        )
+                      }
+                    >
+                      {copiedField === "modelResponse"
+                        ? "Copiado!"
+                        : "Copiar JSON"}
+                    </button>
+                    {(() => {
+                      const download = buildJsonDownloadProps(
+                        "model-response",
+                        detailQuery.data.modelResponse,
+                      );
+                      if (!download) return null;
+                      return (
+                        <a
+                          href={download.href}
+                          download={download.fileName}
+                          className="btn btn-sm btn-outline-secondary"
+                        >
+                          Baixar JSON
+                        </a>
+                      );
+                    })()}
+                  </div>
+                  <CollapsibleJsonViewer
+                    content={detailQuery.data.modelResponse}
+                  />
+                </div>
+                <div>
+                  <div className="d-flex align-items-center gap-2 mb-2">
+                    <h6 className="mb-0">HTML provisório</h6>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-secondary"
+                      onClick={() =>
+                        handleCopyJson("provisionalHtml", provisionalHtml)
+                      }
+                    >
+                      {copiedField === "provisionalHtml"
+                        ? "Copiado!"
+                        : "Copiar HTML"}
+                    </button>
+                    {(() => {
+                      const download = buildHtmlDownloadProps(
+                        "provisional-html",
+                        provisionalHtml,
+                      );
+                      if (!download) return null;
+                      return (
+                        <a
+                          href={download.href}
+                          download={download.fileName}
+                          className="btn btn-sm btn-outline-secondary"
+                        >
+                          Baixar HTML
+                        </a>
+                      );
+                    })()}
+                  </div>
+                  {provisionalHtml ? (
+                    <div className="d-flex flex-column gap-2">
+                      <Link
+                        to={`/experiments/${experimentId}/geralanding/stage-executions/${detailQuery.data.idJob}/provisional-html`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        Abrir HTML provisório em nova aba
+                      </Link>
+                      <pre
+                        className="border rounded bg-light p-3 mb-0 small overflow-auto"
+                        style={{ maxHeight: "320px" }}
+                      >
+                        <code>{provisionalHtml}</code>
+                      </pre>
+                    </div>
+                  ) : (
+                    <p className="text-muted mb-0">
+                      Nenhum HTML provisório disponível para este registro.
+                    </p>
+                  )}
+                </div>
+              </div>
+
               {isQualityReviewStage && qualityReviewAudit ? (
                 <div className="border rounded p-3 bg-light-subtle">
                   <div className="d-flex align-items-center justify-content-between gap-2 mb-2 flex-wrap">
@@ -782,97 +884,6 @@ export default function ExperimentGeraLandingExecutionDetailPage() {
                 <MarkdownContentViewer
                   content={detailQuery.data.promptMarkdownContent}
                 />
-              </div>
-              <div>
-                <div className="d-flex align-items-center gap-2 mb-2">
-                  <h6 className="mb-0">Model response</h6>
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-outline-secondary"
-                    onClick={() =>
-                      handleCopyJson(
-                        "modelResponse",
-                        detailQuery.data.modelResponse,
-                      )
-                    }
-                  >
-                    {copiedField === "modelResponse"
-                      ? "Copiado!"
-                      : "Copiar JSON"}
-                  </button>
-                  {(() => {
-                    const download = buildJsonDownloadProps(
-                      "model-response",
-                      detailQuery.data.modelResponse,
-                    );
-                    if (!download) return null;
-                    return (
-                      <a
-                        href={download.href}
-                        download={download.fileName}
-                        className="btn btn-sm btn-outline-secondary"
-                      >
-                        Baixar JSON
-                      </a>
-                    );
-                  })()}
-                </div>
-                <CollapsibleJsonViewer
-                  content={detailQuery.data.modelResponse}
-                />
-              </div>
-              <div>
-                <div className="d-flex align-items-center gap-2 mb-2">
-                  <h6 className="mb-0">HTML provisório</h6>
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-outline-secondary"
-                    onClick={() =>
-                      handleCopyJson("provisionalHtml", provisionalHtml)
-                    }
-                  >
-                    {copiedField === "provisionalHtml"
-                      ? "Copiado!"
-                      : "Copiar HTML"}
-                  </button>
-                  {(() => {
-                    const download = buildHtmlDownloadProps(
-                      "provisional-html",
-                      provisionalHtml,
-                    );
-                    if (!download) return null;
-                    return (
-                      <a
-                        href={download.href}
-                        download={download.fileName}
-                        className="btn btn-sm btn-outline-secondary"
-                      >
-                        Baixar HTML
-                      </a>
-                    );
-                  })()}
-                </div>
-                {provisionalHtml ? (
-                  <div className="d-flex flex-column gap-2">
-                    <Link
-                      to={`/experiments/${experimentId}/geralanding/stage-executions/${detailQuery.data.idJob}/provisional-html`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      Abrir HTML provisório em nova aba
-                    </Link>
-                    <pre
-                      className="border rounded bg-light p-3 mb-0 small overflow-auto"
-                      style={{ maxHeight: "320px" }}
-                    >
-                      <code>{provisionalHtml}</code>
-                    </pre>
-                  </div>
-                ) : (
-                  <p className="text-muted mb-0">
-                    Nenhum HTML provisório disponível para este registro.
-                  </p>
-                )}
               </div>
             </div>
           )}

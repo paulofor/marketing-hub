@@ -4320,3 +4320,10 @@
 - causa-raiz: o detalhe do nicho ainda abria o formulário manual embutido, enquanto o nicho enriquecido já apontava para o fluxo novo `/niches/:id/hypotheses/new` da construção auditável da hipótese.
 - foi feito: o botão principal do detalhe do nicho passou a ser um link para `/niches/:id/hypotheses/new`, mantendo a criação manual separada na seção própria da página.
 - impacto esperado: o usuário entra no mesmo fluxo de construção da hipótese a partir de qualquer origem, reduzindo desvio operacional e mantendo a etapa Dor como primeiro passo padrão.
+
+## 2026-06-11 — Separação entre controle de etapas e resultado do job no GeraLanding
+
+- solicitação: corrigir a tela do GeraLanding para que a área de etapas seja usada como controle operacional do processo, enquanto o conteúdo gerado pelo job fique no detalhe aberto pelo Job ID.
+- causa-raiz: a página do experimento ainda mantinha uma aba genérica de conteúdo bruto do pipeline, misturando informação gerada com a tela de acompanhamento das etapas.
+- foi feito: removida a aba `Conteúdo` do detalhe do experimento e reforçada a tela de detalhe da execução GeraLanding com um bloco inicial de `Resultado da execução do job`, contendo `modelResponse` e HTML provisório antes dos dados técnicos de prompt/request.
+- impacto esperado: a operação acompanha status, histórico e custos na tela de etapas; para avaliar o conteúdo produzido, o usuário clica no Job ID e entra no detalhe correto da execução.

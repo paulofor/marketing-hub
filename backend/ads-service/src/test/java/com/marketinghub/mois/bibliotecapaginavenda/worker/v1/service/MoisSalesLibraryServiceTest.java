@@ -34,6 +34,9 @@ class MoisSalesLibraryServiceTest {
     @Mock
     private JdbcTemplate jdbcTemplate;
 
+    @Mock
+    private MoisSalesLibraryPricingService pricingService;
+
     @InjectMocks
     private MoisSalesLibraryService service;
 

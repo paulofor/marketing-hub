@@ -286,9 +286,11 @@ public class FacebookAdsCampaignController {
         return status != null ? status : FacebookAdStatus.ACTIVE;
     }
 
+    /**
+     * Atualiza métricas da campanha e avalia paradas automáticas dependentes do gasto sincronizado.
+     */
     @PostMapping("/{campaignId}/metrics")
     @Transactional
-    // Atualiza métricas da campanha e avalia parada automática por baixa distribuição.
     public CampaignMetricSummary updateMetrics(
             @PathVariable String campaignId,
             @RequestBody CampaignMetricsUpdateRequest request) {
@@ -303,6 +305,7 @@ public class FacebookAdsCampaignController {
         FacebookAdsCampaign campaign = metric.getCampaign();
         campaign.setMetricsLastSyncedAt(Instant.now());
         campaign.setMetricsLastError(null);
+        funnelAutoStopService.stopIfAdInterestStatisticallyLow(campaign.getExperiment());
         funnelAutoStopService.stopIfLowImpressionsAfterRunningTime(
                 campaign.getExperiment(),
                 metric.getImpressions(),

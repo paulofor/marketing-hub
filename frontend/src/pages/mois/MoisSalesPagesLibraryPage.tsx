@@ -71,26 +71,7 @@ function matchesWarmupFilter(item: MoisSalesLibraryPage, filter: string) {
   }
 }
 
-function getPipelinePhase(stage?: string | null, status?: string | null) {
-  if (stage === "CAPTURE" && status === "FAILED") {
-    return "Captura falhou — revisar URL ou cooldown";
-  }
-  if (stage === "CAPTURE" && status === "CAPTURED") {
-    return "HTML capturado — pronto para análise";
-  }
-  if (stage === "ANALYSIS" && status === "DONE") {
-    return "Análise concluída — priorizar ofertas vencedoras";
-  }
-  if (stage === "ANALYSIS" && status === "PENDING") {
-    return "Aguardando análise comercial";
-  }
-  if (status === "BLOCKED_COOLDOWN") {
-    return "Bloqueada por cooldown";
-  }
-  return stage && status ? `${stage} — ${status}` : "Sem fase definida";
-}
-
-function formatAnalysisDate(value?: string | null) {
+function formatDateTime(value?: string | null) {
   if (!value) {
     return "—";
   }
@@ -131,8 +112,8 @@ export default function MoisSalesPagesLibraryPage() {
         <div>
           <PageTitle>Biblioteca de Páginas de Vendas</PageTitle>
           <p className="text-secondary mb-0">
-            Tabela consolidada com cada produto coletado e a fase atual no fluxo
-            canônico.
+            Tabela consolidada com cada produto coletado, análise comercial,
+            temperatura Hotmart e data do dossiê.
           </p>
         </div>
         <div className="d-flex flex-wrap gap-2">
@@ -271,9 +252,9 @@ export default function MoisSalesPagesLibraryPage() {
             <div>
               <h2 className="h5 mb-1">Priorização por engenharia de sucesso</h2>
               <p className="text-secondary mb-0">
-                Ordene a listagem diretamente no backend pelo score de
-                engenharia de sucesso para entender quais produtos vencedores
-                merecem estudo primeiro.
+                Ordene a listagem pelas evidências comerciais e veja rapidamente
+                a temperatura Hotmart e a data do dossiê para decidir quais
+                produtos vencedores merecem estudo primeiro.
               </p>
             </div>
             <div className="d-flex flex-wrap gap-3">
@@ -308,7 +289,7 @@ export default function MoisSalesPagesLibraryPage() {
                   onChange={(event) => setSort(event.target.value)}
                 >
                   <option value="MARKET_WARMUP_SCORE">
-                    Maior score de sucesso
+                    Maior temperatura/oportunidade
                   </option>
                   <option value="RECENT_ANALYSIS">Análise mais recente</option>
                 </select>
@@ -333,17 +314,16 @@ export default function MoisSalesPagesLibraryPage() {
                     <th>Produto</th>
                     <th>Origem</th>
                     <th>Status</th>
-                    <th>Sucesso do produto</th>
-                    <th>Score sucesso</th>
+                    <th>Temperatura Hotmart</th>
                     <th>Data da análise</th>
-                    <th>Fase no diagrama</th>
+                    <th>Data do dossiê</th>
                     <th>Ações</th>
                   </tr>
                 </thead>
                 <tbody>
                   {visiblePages.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="text-secondary">
+                      <td colSpan={7} className="text-secondary">
                         Nenhum produto coletado encontrado para o filtro atual.
                       </td>
                     </tr>
@@ -364,29 +344,27 @@ export default function MoisSalesPagesLibraryPage() {
                           </span>
                         </td>
                         <td>
-                          <span
-                            className={`badge ${getWarmupBadgeClass(item.marketWarmupTemperature || item.marketWarmupStatus)}`}
-                          >
-                            {item.marketWarmupTemperature
-                              ? warmupTemperatureLabels[
-                                  item.marketWarmupTemperature
-                                ]
-                              : item.marketWarmupStatus
-                                ? warmupStatusLabels[item.marketWarmupStatus]
-                                : "Sem dossiê"}
-                          </span>
-                        </td>
-                        <td className="text-nowrap fw-semibold">
-                          {formatWarmupScore(item.marketWarmupScoreTotal)}
+                          {item.source === "HOTMART" ? (
+                            <span
+                              className={`badge ${getWarmupBadgeClass(item.marketWarmupTemperature || item.marketWarmupStatus)}`}
+                            >
+                              {item.marketWarmupTemperature
+                                ? warmupTemperatureLabels[
+                                    item.marketWarmupTemperature
+                                  ]
+                                : item.marketWarmupStatus
+                                  ? warmupStatusLabels[item.marketWarmupStatus]
+                                  : "Sem dossiê"}
+                            </span>
+                          ) : (
+                            "—"
+                          )}
                         </td>
                         <td className="text-nowrap">
-                          {formatAnalysisDate(item.analyzedAt)}
+                          {formatDateTime(item.analyzedAt)}
                         </td>
-                        <td>
-                          {getPipelinePhase(
-                            item.currentStage,
-                            item.currentStatus,
-                          )}
+                        <td className="text-nowrap">
+                          {formatDateTime(item.marketWarmupUpdatedAt)}
                         </td>
                         <td>
                           <div className="d-flex flex-wrap gap-2">

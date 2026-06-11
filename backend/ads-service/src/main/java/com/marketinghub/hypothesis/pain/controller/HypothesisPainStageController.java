@@ -44,6 +44,12 @@ public class HypothesisPainStageController {
         return ResponseEntity.accepted().body(service.startResult(nicheId));
     }
 
+    /** Registra uma execução inicial da etapa Mecanismo para um nicho. */
+    @PostMapping("/niches/{nicheId}/hypothesis-pipeline/mechanism/start")
+    public ResponseEntity<HypothesisPainStartResponse> startMechanism(@PathVariable Long nicheId) {
+        return ResponseEntity.accepted().body(service.startMechanism(nicheId));
+    }
+
     /** Lista execuções da etapa Dor para acompanhamento na tela de nova hipótese. */
     @GetMapping("/niches/{nicheId}/hypothesis-pipeline/pain/stage-executions")
     public ResponseEntity<List<HypothesisPainExecutionSummaryResponse>> listStageExecutions(
@@ -60,6 +66,14 @@ public class HypothesisPainStageController {
         return ResponseEntity.ok(service.listResultStageExecutions(nicheId, includeCompleted));
     }
 
+    /** Lista execuções da etapa Mecanismo para acompanhamento na tela de nova hipótese. */
+    @GetMapping("/niches/{nicheId}/hypothesis-pipeline/mechanism/stage-executions")
+    public ResponseEntity<List<HypothesisPainExecutionSummaryResponse>> listMechanismStageExecutions(
+            @PathVariable Long nicheId,
+            @RequestParam(defaultValue = "true") boolean includeCompleted) {
+        return ResponseEntity.ok(service.listMechanismStageExecutions(nicheId, includeCompleted));
+    }
+
     /** Consulta detalhe auditável de uma execução da etapa Dor vinculada ao nicho. */
     @GetMapping("/niches/{nicheId}/hypothesis-pipeline/pain/stage-executions/{idJob}")
     public ResponseEntity<HypothesisPainExecutionDetailResponse> detailForNiche(
@@ -71,6 +85,14 @@ public class HypothesisPainStageController {
     /** Consulta detalhe auditável de uma execução da etapa Resultado vinculada ao nicho. */
     @GetMapping("/niches/{nicheId}/hypothesis-pipeline/result/stage-executions/{idJob}")
     public ResponseEntity<HypothesisPainExecutionDetailResponse> detailResultForNiche(
+            @PathVariable Long nicheId,
+            @PathVariable String idJob) {
+        return ResponseEntity.ok(service.detailForNiche(nicheId, idJob));
+    }
+
+    /** Consulta detalhe auditável de uma execução da etapa Mecanismo vinculada ao nicho. */
+    @GetMapping("/niches/{nicheId}/hypothesis-pipeline/mechanism/stage-executions/{idJob}")
+    public ResponseEntity<HypothesisPainExecutionDetailResponse> detailMechanismForNiche(
             @PathVariable Long nicheId,
             @PathVariable String idJob) {
         return ResponseEntity.ok(service.detailForNiche(nicheId, idJob));
@@ -94,15 +116,29 @@ public class HypothesisPainStageController {
         return service.listResultPending();
     }
 
+    /** Lista jobs pendentes da etapa Mecanismo para processamento pelo Worker AI. */
+    @GetMapping("/internal/hypothesis-pipeline/mechanism/stage-executions/pending")
+    public List<HypothesisPainPendingExecution> mechanismPending() {
+        return service.listMechanismPending();
+    }
+
     /** Marca uma execução de etapa como em processamento. */
-    @PostMapping({"/internal/hypothesis-pipeline/pain/stage-executions/{idJob}/running", "/internal/hypothesis-pipeline/result/stage-executions/{idJob}/running"})
+    @PostMapping({
+            "/internal/hypothesis-pipeline/pain/stage-executions/{idJob}/running",
+            "/internal/hypothesis-pipeline/result/stage-executions/{idJob}/running",
+            "/internal/hypothesis-pipeline/mechanism/stage-executions/{idJob}/running"
+    })
     public ResponseEntity<Void> running(@PathVariable String idJob) {
         service.markRunning(idJob);
         return ResponseEntity.accepted().build();
     }
 
     /** Recebe prompt, schema e request cru enviados para IA e marca a execução aguardando retorno. */
-    @PostMapping({"/internal/hypothesis-pipeline/pain/stage-executions/{idJob}/recebe-prompt", "/internal/hypothesis-pipeline/result/stage-executions/{idJob}/recebe-prompt"})
+    @PostMapping({
+            "/internal/hypothesis-pipeline/pain/stage-executions/{idJob}/recebe-prompt",
+            "/internal/hypothesis-pipeline/result/stage-executions/{idJob}/recebe-prompt",
+            "/internal/hypothesis-pipeline/mechanism/stage-executions/{idJob}/recebe-prompt"
+    })
     public ResponseEntity<Void> recebePrompt(
             @PathVariable String idJob,
             @Valid @RequestBody RecebePromptRequest payload) {
@@ -126,7 +162,11 @@ public class HypothesisPainStageController {
     }
 
     /** Recebe a resposta da IA para uma etapa e conclui a execução do job. */
-    @PostMapping({"/internal/hypothesis-pipeline/pain/stage-executions/{idJob}/recebe-resposta", "/internal/hypothesis-pipeline/result/stage-executions/{idJob}/recebe-resposta"})
+    @PostMapping({
+            "/internal/hypothesis-pipeline/pain/stage-executions/{idJob}/recebe-resposta",
+            "/internal/hypothesis-pipeline/result/stage-executions/{idJob}/recebe-resposta",
+            "/internal/hypothesis-pipeline/mechanism/stage-executions/{idJob}/recebe-resposta"
+    })
     public ResponseEntity<Void> recebeResposta(
             @PathVariable String idJob,
             @Valid @RequestBody RecebeRespostaRequest payload) {

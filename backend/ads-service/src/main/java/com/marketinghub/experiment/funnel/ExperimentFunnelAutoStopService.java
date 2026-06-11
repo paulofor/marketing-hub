@@ -1,18 +1,21 @@
 package com.marketinghub.experiment.funnel;
 
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.ExperimentCampaignMetric;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.funnel.dto.ExperimentFunnelDiagnosticsResponseDto;
 import com.marketinghub.experiment.funnel.dto.ExperimentFunnelStageDiagnosticDto;
 import com.marketinghub.experiment.funnel.dto.FunnelDiagnosticStatus;
 import com.marketinghub.experiment.funnel.dto.FunnelThresholdCheckDto;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
-import com.marketinghub.repository.jpa.facebookads.FacebookAdsCampaignRepository;
 import com.marketinghub.facebookads.FacebookCampaignStopReason;
+import com.marketinghub.repository.jpa.experiment.ExperimentCampaignMetricRepository;
+import com.marketinghub.repository.jpa.facebookads.FacebookAdsCampaignRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -26,24 +29,28 @@ public class ExperimentFunnelAutoStopService {
     private static final Logger LOGGER = LoggerFactory.getLogger(ExperimentFunnelAutoStopService.class);
     private static final double THREE_PERCENT = 0.03d;
     private static final double AD_INTEREST_MINIMUM_RATE = 0.015d;
+    private static final BigDecimal LOW_AD_INTEREST_STOP_MINIMUM_SPEND = new BigDecimal("25.00");
     private static final Duration LOW_IMPRESSIONS_MIN_CAMPAIGN_AGE = Duration.ofHours(48);
     private static final long LOW_IMPRESSIONS_MINIMUM = 100L;
 
     private final ExperimentFunnelDiagnosticService diagnosticService;
     private final FacebookAdsCampaignRepository campaignRepository;
+    private final ExperimentCampaignMetricRepository campaignMetricRepository;
 
     /**
-     * Cria o serviço com diagnóstico de funil e repositório de campanhas para registrar pausas automáticas.
+     * Cria o serviço com diagnóstico de funil, campanhas e métricas para registrar pausas automáticas.
      */
     public ExperimentFunnelAutoStopService(ExperimentFunnelDiagnosticService diagnosticService,
-                                           FacebookAdsCampaignRepository campaignRepository) {
+                                           FacebookAdsCampaignRepository campaignRepository,
+                                           ExperimentCampaignMetricRepository campaignMetricRepository) {
         this.diagnosticService = diagnosticService;
         this.campaignRepository = campaignRepository;
+        this.campaignMetricRepository = campaignMetricRepository;
     }
 
     /**
      * Avalia a taxa de interesse inicial do anúncio e invalida o experimento quando a conversão para o formulário falha
-     * estatisticamente.
+     * estatisticamente depois de atingir o gasto mínimo de mídia.
      *
      * @return {@code true} quando o experimento foi parado automaticamente, {@code false} caso contrário.
      */
@@ -64,21 +71,45 @@ public class ExperimentFunnelAutoStopService {
         if (!lowInterestFailed) {
             return false;
         }
+        BigDecimal campaignSpend = resolveCampaignSpend(experiment);
+        if (campaignSpend.compareTo(LOW_AD_INTEREST_STOP_MINIMUM_SPEND) < 0) {
+            LOGGER.info(
+                    "Low ad interest confirmed for experiment {}, but automatic stop is waiting for minimum spend: currentSpend={}, minimumSpend={}",
+                    experiment.getId(),
+                    campaignSpend,
+                    LOW_AD_INTEREST_STOP_MINIMUM_SPEND
+            );
+            return false;
+        }
         LOGGER.warn(
-                "Automatic stop triggered for experiment {} due to statistically low ad interest: attempts={}, successes={}, observedRate={}, minimumRate={}, upper95={}",
+                "Automatic stop triggered for experiment {} due to statistically low ad interest after minimum spend: attempts={}, successes={}, observedRate={}, minimumRate={}, upper95={}, spend={}, minimumSpend={}",
                 experiment.getId(),
                 leadAccessStage.attempts(),
                 leadAccessStage.successes(),
                 leadAccessStage.observedRate(),
                 leadAccessStage.minAcceptableRate(),
-                leadAccessStage.upper95RateIfZero()
+                leadAccessStage.upper95RateIfZero(),
+                campaignSpend,
+                LOW_AD_INTEREST_STOP_MINIMUM_SPEND
         );
         invalidateExperimentAndRequestStops(
                 experiment,
                 FacebookCampaignStopReason.TARGET_AUDIENCE_LOW_INTEREST_STATISTICAL,
-                "taxa de acesso ao formulário abaixo de 1,5% com confiança estatística de 95%"
+                "taxa de acesso ao formulário abaixo de 1,5% com confiança estatística de 95% após atingir R$ 25,00 de mídia"
         );
         return true;
+    }
+
+    /**
+     * Recupera o gasto de mídia sincronizado para decidir se a parada por baixo interesse já pode ser executada.
+     */
+    private BigDecimal resolveCampaignSpend(Experiment experiment) {
+        if (experiment == null) {
+            return BigDecimal.ZERO;
+        }
+        return campaignMetricRepository.findByExperiment(experiment)
+                .map(ExperimentCampaignMetric::getSpend)
+                .orElse(BigDecimal.ZERO);
     }
 
     /**

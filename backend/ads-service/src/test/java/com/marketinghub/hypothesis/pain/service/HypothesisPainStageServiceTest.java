@@ -138,4 +138,79 @@ class HypothesisPainStageServiceTest {
         assertEquals("{\"pain\":\"dor validada\"}", pending.getFirst().painModelResponse());
     }
 
+    /** Deve bloquear a etapa Mecanismo quando o resultado ainda não está concluído. */
+    @Test
+    void startMechanismRequiresCompletedResult() {
+        MarketNiche niche = new MarketNiche();
+        niche.setId(18L);
+        when(marketNicheRepository.findById(18L)).thenReturn(Optional.of(niche));
+        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
+                        18L,
+                        "hypothesis-pain",
+                        "CONCLUIDO"))
+                .thenReturn(Optional.of(HypothesisPainStageExecution.builder()
+                        .marketNicheId(18L)
+                        .stageCode("hypothesis-pain")
+                        .status("CONCLUIDO")
+                        .modelResponse("{\"pain\":\"dor validada\"}")
+                        .build()));
+        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
+                        18L,
+                        "hypothesis-result",
+                        "CONCLUIDO"))
+                .thenReturn(Optional.empty());
+
+        assertThrows(IllegalStateException.class, () -> service.startMechanism(18L));
+    }
+
+    /** Deve entregar Dor e Resultado concluídos para contextualizar a etapa Mecanismo no Worker AI. */
+    @Test
+    void listMechanismPendingIncludesLatestCompletedPainAndResultResponses() {
+        MarketNiche niche = new MarketNiche();
+        niche.setId(18L);
+        niche.setName("Produtores digitais");
+        String mechanismJob = "4cc56a94-45bc-48bf-8e8d-e1f4f8b881df";
+        HypothesisPainStageExecution mechanismExecution = HypothesisPainStageExecution.builder()
+                .idJob(mechanismJob.getBytes(StandardCharsets.UTF_8))
+                .marketNicheId(18L)
+                .marketNiche(niche)
+                .stageCode("hypothesis-mechanism")
+                .status("INICIADO")
+                .executionRequestedAt(Instant.parse("2026-06-11T13:00:00Z"))
+                .build();
+        HypothesisPainStageExecution completedPain = HypothesisPainStageExecution.builder()
+                .marketNicheId(18L)
+                .stageCode("hypothesis-pain")
+                .status("CONCLUIDO")
+                .modelResponse("{\"pain\":\"dor validada\"}")
+                .build();
+        HypothesisPainStageExecution completedResult = HypothesisPainStageExecution.builder()
+                .marketNicheId(18L)
+                .stageCode("hypothesis-result")
+                .status("CONCLUIDO")
+                .modelResponse("{\"result\":\"resultado validado\"}")
+                .build();
+
+        when(executionRepository.findTop20ByStageCodeAndStatusOrderByExecutionRequestedAtAsc(
+                        "hypothesis-mechanism",
+                        "INICIADO"))
+                .thenReturn(List.of(mechanismExecution));
+        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
+                        18L,
+                        "hypothesis-pain",
+                        "CONCLUIDO"))
+                .thenReturn(Optional.of(completedPain));
+        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
+                        18L,
+                        "hypothesis-result",
+                        "CONCLUIDO"))
+                .thenReturn(Optional.of(completedResult));
+
+        var pending = service.listMechanismPending();
+
+        assertEquals(1, pending.size());
+        assertEquals("{\"pain\":\"dor validada\"}", pending.getFirst().painModelResponse());
+        assertEquals("{\"result\":\"resultado validado\"}", pending.getFirst().resultModelResponse());
+    }
+
 }

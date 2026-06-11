@@ -406,3 +406,9 @@
 
 - Corrigida a causa-raiz da falha do teste `NicheResearchSeedBuilderPromptBuilderTest`: o teste ainda exigia marcadores literais de fonte Brasil/domínio `.br` e objetivos antigos, enquanto a regra operacional atual da etapa 2 passou a confiar no modelo e não bloquear por marcador literal.
 - O teste agora valida o comportamento correto do prompt: pesquisa de rotina real, proibição de solução/oferta/produto/ferramenta, ausência de exigência de marcadores literais e prevenção de metadado técnico no texto funcional.
+
+## 2026-06-11 — OPRM NichoCNAE: correção sem truncamento para `query_goal` longo
+
+- Corrigida a causa-raiz do erro de banco `Data too long for column 'query_goal'` sem truncar campos e sem ampliar o banco: o schema JSON da etapa `niche-research-seed-builder` agora declara `maxLength` nos campos gravados em colunas curtas, fazendo o modelo responder dentro do contrato persistível.
+- A fila da etapa 2 considera como reprocessáveis as falhas sem seed/queries causadas pelo contrato legado (`nicheName is required`) ou pelo estouro de `query_goal`, permitindo recuperação após o deploy da correção.
+- Adicionados testes de regressão para garantir que o schema solicite ao modelo limites compatíveis com `query_text`, `query_goal`, `source_group`, `created_by`, `niche_name`, `business_type` e `confidence_level`, sem corte silencioso no backend.

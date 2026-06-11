@@ -32,6 +32,7 @@ public class BackendNicheResearchSeedBuilderService {
   private static final String CYCLE_STATUS_FAILED = "FAILED";
   private static final String QUERY_STATUS_PENDING = "PENDING";
   private static final String RETRYABLE_LEGACY_CONTRACT_ERROR = "nicheName is required";
+  private static final String RETRYABLE_QUERY_GOAL_LENGTH_ERROR = "Data too long for column 'query_goal'";
   private static final String COMPLETE_STAGE_PATH_FRAGMENT = "niche-research-seed-builder/stage-executions";
   private static final String DEFAULT_CREATED_BY = "AI";
   private final OprmRoutineResearchCycleRepository routineResearchCycleRepository;
@@ -56,6 +57,7 @@ public class BackendNicheResearchSeedBuilderService {
             CYCLE_STATUS_RUNNING,
             CYCLE_STATUS_FAILED,
             RETRYABLE_LEGACY_CONTRACT_ERROR,
+            RETRYABLE_QUERY_GOAL_LENGTH_ERROR,
             COMPLETE_STAGE_PATH_FRAGMENT,
             PageRequest.of(0, 20))
         .stream()
@@ -296,7 +298,6 @@ public class BackendNicheResearchSeedBuilderService {
     }
     return value.trim();
   }
-
 
   /** Converte strings vazias em nulo para campos opcionais persistidos. */
   private String trimToNull(String value) {

@@ -400,7 +400,7 @@ export default function ExperimentFunnelTab({
                           ? ` · Mín. aceitável: ${formatPercent(item.minAcceptableRate)}`
                           : ""}
                         {item.upper95RateIfZero != null
-                          ? ` · Limite 95% (0 sucessos): ${formatPercent(item.upper95RateIfZero)}`
+                          ? ` · Limite superior 95%: ${formatPercent(item.upper95RateIfZero)}`
                           : ""}
                       </div>
                       {item.thresholdChecks?.map((thresholdCheck) => (

@@ -14,18 +14,27 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+/**
+ * Serviço responsável por diagnosticar estatisticamente gargalos do funil de experimentos.
+ */
 @Service
 public class ExperimentFunnelDiagnosticService {
 
     private final ExperimentFunnelService funnelService;
     private final ExperimentFunnelDiagnosticConfig config;
 
+    /**
+     * Cria o serviço com a fonte de métricas do funil e a configuração canônica dos limites.
+     */
     public ExperimentFunnelDiagnosticService(ExperimentFunnelService funnelService,
                                              ExperimentFunnelDiagnosticConfig config) {
         this.funnelService = funnelService;
         this.config = config;
     }
 
+    /**
+     * Diagnostica as transições prioritárias do funil para um experimento.
+     */
     public ExperimentFunnelDiagnosticsResponseDto diagnose(Long experimentId) {
         List<ExperimentFunnelStageDto> stages = funnelService.summarize(experimentId);
         Map<ExperimentFunnelStage, ExperimentFunnelStageDto> byStage = stages.stream()
@@ -46,6 +55,9 @@ public class ExperimentFunnelDiagnosticService {
         return new ExperimentFunnelDiagnosticsResponseDto(diagnostics, contextualAlert);
     }
 
+    /**
+     * Aplica uma regra de conversão sobre os totais de uma transição do funil.
+     */
     private ExperimentFunnelStageDiagnosticDto diagnoseRule(Map<ExperimentFunnelStage, ExperimentFunnelStageDto> byStage,
                                                             ExperimentFunnelDiagnosticConfig.ConversionRuleSpec rule) {
         long attempts = Optional.ofNullable(byStage.get(rule.from()))
@@ -144,6 +156,23 @@ public class ExperimentFunnelDiagnosticService {
         }
 
         if (observedRate < rule.minAcceptableRate()) {
+            double upper95 = wilsonUpper95(successes, attempts);
+            if (upper95 <= rule.minAcceptableRate()) {
+                return new ExperimentFunnelStageDiagnosticDto(
+                        rule.to(),
+                        rule.to().getLabel(),
+                        attempts,
+                        successes,
+                        observedRate,
+                        rule.minAcceptableRate(),
+                        upper95,
+                        thresholdChecks,
+                        FunnelDiagnosticStatus.STATISTICALLY_FAILED,
+                        FunnelDiagnosticReasonCode.BELOW_MIN_RATE,
+                        "Etapa reprovada estatisticamente: mesmo considerando a margem de 95%, a conversão fica abaixo do mínimo definido.",
+                        false
+                );
+            }
             return new ExperimentFunnelStageDiagnosticDto(
                     rule.to(),
                     rule.to().getLabel(),
@@ -151,7 +180,7 @@ public class ExperimentFunnelDiagnosticService {
                     successes,
                     observedRate,
                     rule.minAcceptableRate(),
-                    null,
+                    upper95,
                     thresholdChecks,
                     FunnelDiagnosticStatus.WEAK_SIGNAL,
                     FunnelDiagnosticReasonCode.BELOW_MIN_RATE,
@@ -176,6 +205,9 @@ public class ExperimentFunnelDiagnosticService {
         );
     }
 
+    /**
+     * Monta os marcos estatísticos usados para explicar a regra dos 3% quando ainda há zero sucesso.
+     */
     private List<FunnelThresholdCheckDto> buildThresholdChecks(ExperimentFunnelDiagnosticConfig.ConversionRuleSpec rule,
                                                                long attempts,
                                                                long successes) {
@@ -197,6 +229,23 @@ public class ExperimentFunnelDiagnosticService {
                     );
                 })
                 .toList();
+    }
+
+    /**
+     * Calcula o limite superior de 95% pelo intervalo de Wilson para conversões com sucesso não nulo.
+     */
+    private double wilsonUpper95(long successes, long attempts) {
+        if (attempts <= 0) {
+            return 1.0;
+        }
+        double z = 1.96d;
+        double n = attempts;
+        double phat = (double) successes / n;
+        double z2 = z * z;
+        double denominator = 1.0d + z2 / n;
+        double centre = phat + z2 / (2.0d * n);
+        double margin = z * Math.sqrt((phat * (1.0d - phat) + z2 / (4.0d * n)) / n);
+        return (centre + margin) / denominator;
     }
 
 }

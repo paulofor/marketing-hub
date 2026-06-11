@@ -15,6 +15,11 @@ public class ExperimentFunnelDiagnosticConfig {
 
     private static final List<ConversionRuleSpec> PRIORITIZED_RULES = List.of(
             new ConversionRuleSpec(
+                    ExperimentFunnelStage.VISUALIZACAO_ANUNCIO,
+                    ExperimentFunnelStage.ACESSO_FORM_LEAD,
+                    0.015
+            ),
+            new ConversionRuleSpec(
                     ExperimentFunnelStage.VISUALIZACAO_FORM,
                     ExperimentFunnelStage.ENVIO_FORM,
                     0.10,
@@ -24,10 +29,16 @@ public class ExperimentFunnelDiagnosticConfig {
             new ConversionRuleSpec(ExperimentFunnelStage.ACESSO_CHECKOUT, ExperimentFunnelStage.COMPRA, 0.03)
     );
 
+    /**
+     * Retorna as transições do funil que devem ser diagnosticadas pelo backend.
+     */
     public List<ConversionRuleSpec> prioritizedRules() {
         return PRIORITIZED_RULES;
     }
 
+    /**
+     * Retorna o volume mínimo de evento principal para considerar o aprendizado operacional suficiente.
+     */
     public int minOptimizationEventVolumeForContext() {
         return MIN_OPTIMIZATION_EVENT_VOLUME_FOR_CONTEXT;
     }
@@ -38,12 +49,18 @@ public class ExperimentFunnelDiagnosticConfig {
             double minAcceptableRate,
             List<Double> additionalThresholdRates
     ) {
+        /**
+         * Cria uma regra simples com apenas o limite principal de conversão.
+         */
         public ConversionRuleSpec(ExperimentFunnelStage from,
                                   ExperimentFunnelStage to,
                                   double minAcceptableRate) {
             this(from, to, minAcceptableRate, List.of());
         }
 
+        /**
+         * Retorna todos os limites de conversão ordenados do mais exigente ao menos exigente.
+         */
         public List<Double> allThresholdRates() {
             return java.util.stream.Stream.concat(
                             java.util.stream.Stream.of(minAcceptableRate),

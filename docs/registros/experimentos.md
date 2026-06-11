@@ -4339,6 +4339,22 @@
 - foi feito: a tela passou a mostrar custo total e tabela de execuções com custo individual, e o backend passou a atribuir ao nicho somente o delta de custo em USD convertido pela regra central de custos, evitando duplicidade em reprocessamentos.
 - prevenção: adicionados testes de frontend para a visibilidade dos custos e teste unitário backend para garantir atribuição idempotente do delta ao nicho.
 
+## 2026-06-11 — Critério estatístico de baixo interesse do anúncio
+
+- solicitação: criar outro critério de invalidação para identificar estatisticamente quando o anúncio não está interessando ao público-alvo.
+- causa-raiz tratada: o funil já invalidava baixa entrega e zero envio de formulário, mas não havia uma regra para parar cedo quando há muitas visualizações do anúncio e poucas pessoas demonstram intenção mínima de avançar ao formulário.
+- foi feito: adicionada regra canônica para a transição `Visualização do anúncio → Acesso ao formulário de lead`, com mínimo aceitável de 1,5% e reprovação somente quando o limite superior estatístico de 95% também fica abaixo desse mínimo.
+- impacto esperado: experimentos com sinal estatisticamente comprovado de baixo interesse do público-alvo passam a ser invalidados automaticamente e têm pausa solicitada ao Facebook Ads Worker, evitando gasto e tempo em anúncio/ângulo sem tração.
+- arquivos alterados:
+  - docs/canonical/facebook-campaign-publication-canon.v1.md
+  - backend/ads-service/src/main/java/com/marketinghub/experiment/funnel/ExperimentFunnelDiagnosticConfig.java
+  - backend/ads-service/src/main/java/com/marketinghub/experiment/funnel/ExperimentFunnelDiagnosticService.java
+  - backend/ads-service/src/main/java/com/marketinghub/experiment/funnel/ExperimentFunnelAutoStopService.java
+  - backend/ads-service/src/main/java/com/marketinghub/experiment/service/ExperimentEngine.java
+  - backend/ads-service/src/main/java/com/marketinghub/facebookads/FacebookCampaignStopReason.java
+  - frontend/src/pages/experiment/ExperimentFunnelTab.tsx
+  - backend/ads-service/src/test/java/com/marketinghub/experiment/funnel/ExperimentFunnelDiagnosticServiceTest.java
+  - backend/ads-service/src/test/java/com/marketinghub/experiment/funnel/ExperimentFunnelAutoStopServiceTest.java
 ## 2026-06-11 — Etapa Resultado na tela de nova hipótese
 
 - solicitação: avançar para a próxima etapa do pipeline e fazer com a etapa Resultado o mesmo acompanhamento auditável já aplicado à etapa Dor.

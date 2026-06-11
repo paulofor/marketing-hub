@@ -15,6 +15,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
+/** Testa os diagnósticos estatísticos das transições do funil de experimentos. */
 @ExtendWith(MockitoExtension.class)
 class ExperimentFunnelDiagnosticServiceTest {
 
@@ -86,6 +87,29 @@ class ExperimentFunnelDiagnosticServiceTest {
                     }
                 });
         assertThat(response.contextualAlert()).contains("Alerta contextual");
+    }
+
+    /**
+     * Garante reprovação estatística quando a taxa de acesso ao formulário fica abaixo do mínimo com confiança.
+     */
+    @Test
+    void marksAdInterestAsStatisticallyFailedWhenAccessRateIsBelowMinimumWithConfidence() {
+        when(funnelService.summarize(40L)).thenReturn(stageList(
+                stage(ExperimentFunnelStage.VISUALIZACAO_ANUNCIO, 1199),
+                stage(ExperimentFunnelStage.ACESSO_FORM_LEAD, 6),
+                stage(ExperimentFunnelStage.COMPRA, 0)
+        ));
+
+        ExperimentFunnelDiagnosticsResponseDto response = service.diagnose(40L);
+
+        assertThat(response.diagnostics())
+                .anySatisfy(item -> {
+                    if (item.stageKey() == ExperimentFunnelStage.ACESSO_FORM_LEAD) {
+                        assertThat(item.status()).isEqualTo(FunnelDiagnosticStatus.STATISTICALLY_FAILED);
+                        assertThat(item.observedRate()).isLessThan(item.minAcceptableRate());
+                        assertThat(item.upper95RateIfZero()).isLessThanOrEqualTo(item.minAcceptableRate());
+                    }
+                });
     }
 
     private List<ExperimentFunnelStageDto> stageList(ExperimentFunnelStageDto... stages) {

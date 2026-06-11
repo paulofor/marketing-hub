@@ -52,6 +52,21 @@ paths:
                     type: integer
                   number:
                     type: integer
+  /api/niches/summary:
+    get:
+      tags: [Niches]
+      summary: Listar nichos paginados com agregados comerciais
+      description: Retorna a tela de nichos ordenada por criação desc, com 30 itens por página no frontend, custo total em BRL e contagens operacionais.
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/SizeParam'
+      responses:
+        '200':
+          description: Página de nichos para listagem administrativa
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NicheSummaryPage'
   /api/niches/{nicheId}/experiments:
     post:
       tags: [Experiments]
@@ -965,6 +980,48 @@ components:
         default: 20
 
   schemas:
+    NicheSummaryPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/NicheSummaryItem'
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+        page:
+          type: integer
+        size:
+          type: integer
+    NicheSummaryItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        enrichedNicheProfileId:
+          type: integer
+          format: int64
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        totalCost:
+          type: number
+          format: decimal
+          description: Custo total em BRL, acumulando campanhas e execuções de modelos convertidas a R$ 5,00 por US$ 1,00.
+        pipelineHypothesesCount:
+          type: integer
+          format: int64
+          description: Quantidade de hipóteses concluídas pela etapa Resultado do pipeline de hipótese.
+        experimentsCount:
+          type: integer
+          format: int64
     ProblemResponse:
       type: object
       properties:

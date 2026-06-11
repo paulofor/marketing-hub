@@ -4371,3 +4371,10 @@
 - causa-raiz: a evolução da etapa Resultado acoplou a liberação e o contexto ao resultado concluído da etapa Dor sem completar o contrato interno de consulta dessa dependência sequencial.
 - foi feito: implementada a busca da Dor concluída mais recente por nicho, bloqueando Resultado quando não há resposta válida e entregando essa resposta ao Worker AI nos jobs pendentes da etapa Resultado.
 - prevenção: adicionado teste unitário para garantir que a etapa Resultado receba a resposta concluída da Dor como contexto obrigatório.
+
+## 2026-06-11 — Listagem de nichos orientada a custo e pipeline
+
+- solicitação: simplificar a tela de nichos removendo segmentação e link no nome, exibir hipóteses geradas pelo pipeline, custo total e paginação de 30 itens.
+- causa-raiz: a tela fazia agregações no frontend por linha e misturava dados operacionais pouco relevantes, o que deixava a priorização comercial menos clara e mais pesada.
+- foi feito: criada listagem backend paginada e ordenada por criação decrescente, com contagem de hipóteses concluídas pela etapa Resultado do pipeline, contagem de experimentos, custo total em reais e vínculo opcional para nicho enriquecido.
+- impacto esperado: o usuário passa a priorizar nichos recentes com base em custo e volume operacional, reduzindo ruído visual e mantendo foco em decisões que levam a vendas.

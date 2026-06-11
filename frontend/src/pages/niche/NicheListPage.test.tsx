@@ -7,63 +7,61 @@ import axios from "axios";
 
 vi.mock("axios");
 
+function renderPage() {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  render(
+    <QueryClientProvider client={client}>
+      <BrowserRouter>
+        <NicheListPage />
+      </BrowserRouter>
+    </QueryClientProvider>,
+  );
+}
+
+function pageResponse(items: unknown[], totalPages = 1) {
+  return {
+    items,
+    totalElements: items.length,
+    totalPages,
+    page: 0,
+    size: 30,
+  };
+}
+
 describe("NicheListPage", () => {
   it("renders table", async () => {
-    (axios.get as any).mockResolvedValue({ data: [] });
-    const client = new QueryClient();
-    render(
-      <QueryClientProvider client={client}>
-        <BrowserRouter>
-          <NicheListPage />
-        </BrowserRouter>
-      </QueryClientProvider>,
-    );
+    (axios.get as any).mockResolvedValue({ data: pageResponse([]) });
+    renderPage();
     expect(await screen.findByText(/Novo Nicho/)).toBeTruthy();
   });
 
-  it("shows detail button", async () => {
+  it("shows detail button without linking the niche name", async () => {
     const niche = {
       id: 1,
       name: "Teste",
-      description: "",
-      interestCategory: "",
-      roleCategory: "",
-      demandVolume: "",
-      promises: "",
-      offers: "",
-      baseSegmentation: "",
-      interests: "",
-      demographicFilters: "",
-      extraTips: "",
+      totalCost: 25,
+      pipelineHypothesesCount: 3,
+      experimentsCount: 2,
+      enrichedNicheProfileId: null,
     };
-    (axios.get as any)
-      .mockResolvedValueOnce({ data: [niche] })
-      .mockResolvedValue({ data: [] });
-    const client = new QueryClient();
-    render(
-      <QueryClientProvider client={client}>
-        <BrowserRouter>
-          <NicheListPage />
-        </BrowserRouter>
-      </QueryClientProvider>,
-    );
+    (axios.get as any).mockResolvedValueOnce({ data: pageResponse([niche]) });
+    renderPage();
+
     expect(await screen.findByText("Detalhes")).toBeTruthy();
+    expect(screen.getByText("Teste").closest("a")).toBeNull();
+    expect(screen.queryByText("Segmentação (I/C/B)")).toBeNull();
+    expect(screen.getByText("R$ 25,00")).toBeTruthy();
   });
 
   it("shows enriched niche link only when the niche has an enriched profile", async () => {
     const enriched = {
       id: 1,
       name: "Com enriquecimento",
-      description: "",
-      interestCategory: "",
-      roleCategory: "",
-      demandVolume: "",
-      promises: "",
-      offers: "",
-      baseSegmentation: "",
-      interests: "",
-      demographicFilters: "",
-      extraTips: "",
+      totalCost: 0,
+      pipelineHypothesesCount: 1,
+      experimentsCount: 1,
       enrichedNicheProfileId: 77,
     };
     const plain = {
@@ -72,17 +70,10 @@ describe("NicheListPage", () => {
       name: "Sem enriquecimento",
       enrichedNicheProfileId: null,
     };
-    (axios.get as any)
-      .mockResolvedValueOnce({ data: [enriched, plain] })
-      .mockResolvedValue({ data: [] });
-    const client = new QueryClient();
-    render(
-      <QueryClientProvider client={client}>
-        <BrowserRouter>
-          <NicheListPage />
-        </BrowserRouter>
-      </QueryClientProvider>,
-    );
+    (axios.get as any).mockResolvedValueOnce({
+      data: pageResponse([enriched, plain]),
+    });
+    renderPage();
 
     const links = await screen.findAllByRole("link", {
       name: "Nicho enriquecido",

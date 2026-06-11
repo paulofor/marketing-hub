@@ -7,6 +7,7 @@ import com.marketinghub.repository.jpa.differentiatedtechnology.DifferentiatedTe
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.MarketNicheEnrichmentProfile;
 import com.marketinghub.niche.dto.CreateMarketNicheRequest;
+import com.marketinghub.niche.dto.MarketNicheListItemProjection;
 import com.marketinghub.niche.description.NicheDetailedDescription;
 import com.marketinghub.repository.jpa.niche.description.NicheDetailedDescriptionRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
@@ -19,13 +20,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 /**
- * Service layer for market niches.
+ * Responsabilidade: coordenar regras administrativas e operacionais de nichos de mercado.
  */
 @Service
 public class MarketNicheService {
@@ -52,7 +56,7 @@ public class MarketNicheService {
     }
 
     /**
-     * Creates and stores a market niche.
+     * Cria e persiste um nicho de mercado.
      */
     @Transactional
     public MarketNiche create(CreateMarketNicheRequest request) {
@@ -202,7 +206,7 @@ public class MarketNicheService {
     }
 
     /**
-     * Requests generation of detailed descriptions by setting the pending quantity.
+     * Solicita a geração de descrições detalhadas definindo a quantidade pendente.
      */
     @Transactional
     public MarketNiche requestDetailedDescriptions(Long id, int quantity, String model) {
@@ -237,7 +241,7 @@ public class MarketNicheService {
     }
 
     /**
-     * Requests generation of new hypotheses by setting the pending quantity.
+     * Solicita a geração de novas hipóteses definindo a quantidade pendente.
      */
     @Transactional
     public MarketNiche requestHypotheses(Long id,
@@ -259,11 +263,35 @@ public class MarketNicheService {
         return niche;
     }
 
+
+    /** Lista uma página de nichos com agregados comerciais para a tela administrativa. */
+    public Page<MarketNicheListItemProjection> listItems(int page, int size) {
+        int safePage = Math.max(0, page);
+        int safeSize = Math.max(1, Math.min(size, 100));
+        Pageable pageable = PageRequest.of(safePage, safeSize);
+        return repository.findListItems(pageable);
+    }
+
     /** Lista todos os nichos cadastrados para a tela administrativa. */
     public Iterable<MarketNiche> list() {
         return repository.findAll();
     }
 
+
+    /** Lista o perfil enriquecido mais recente por identificador de nicho para listagens paginadas. */
+    public Map<Long, MarketNicheEnrichmentProfile> latestEnrichmentProfilesByNicheIds(List<Long> nicheIds) {
+        if (nicheIds == null) {
+            return Map.of();
+        }
+        List<Long> safeIds = nicheIds.stream()
+                .filter(id -> id != null)
+                .toList();
+        if (safeIds.isEmpty()) {
+            return Map.of();
+        }
+        return enrichmentProfileRepository.findLatestByMarketNicheIds(safeIds).stream()
+                .collect(Collectors.toMap(profile -> profile.getMarketNiche().getId(), Function.identity()));
+    }
 
     /** Lista o perfil enriquecido mais recente por nicho para habilitar navegação contextual no frontend. */
     public Map<Long, MarketNicheEnrichmentProfile> latestEnrichmentProfilesByNiche(List<MarketNiche> niches) {

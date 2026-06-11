@@ -4,8 +4,12 @@ import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.MarketNicheEnrichmentProfile;
 import com.marketinghub.niche.dto.CreateMarketNicheRequest;
 import com.marketinghub.niche.dto.MarketNicheDto;
+import com.marketinghub.niche.dto.MarketNicheListItemDto;
+import com.marketinghub.niche.dto.MarketNicheListItemProjection;
+import com.marketinghub.niche.dto.MarketNicheListPageDto;
 import com.marketinghub.niche.mapper.MarketNicheMapper;
 import com.marketinghub.niche.service.MarketNicheService;
+import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -13,7 +17,7 @@ import java.util.Map;
 import java.util.stream.StreamSupport;
 
 /**
- * REST controller for market niches.
+ * Responsabilidade: expor endpoints administrativos de nichos de mercado.
  */
 @RestController
 @RequestMapping("/api/niches")
@@ -92,6 +96,34 @@ public class MarketNicheController {
                                                       @RequestParam("quantity") int quantity,
                                                       @RequestParam(value = "model", required = false) String model) {
         return mapper.toDto(service.requestDetailedDescriptions(id, quantity, model));
+    }
+
+    /** Lista nichos paginados para a tela administrativa com custo total e contagens operacionais. */
+    @GetMapping("/summary")
+    public MarketNicheListPageDto listSummary(
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "30") int size) {
+        Page<MarketNicheListItemProjection> nichePage = service.listItems(page, size);
+        List<Long> nicheIds = nichePage.getContent().stream()
+                .map(MarketNicheListItemProjection::getId)
+                .toList();
+        Map<Long, MarketNicheEnrichmentProfile> profilesByNiche = service.latestEnrichmentProfilesByNicheIds(nicheIds);
+        List<MarketNicheListItemDto> items = nichePage.getContent().stream()
+                .map(item -> new MarketNicheListItemDto(
+                        item.getId(),
+                        item.getName(),
+                        profilesByNiche.containsKey(item.getId()) ? profilesByNiche.get(item.getId()).getId() : null,
+                        item.getCreatedAt(),
+                        item.getTotalCost(),
+                        item.getPipelineHypothesesCount(),
+                        item.getExperimentsCount()))
+                .toList();
+        return new MarketNicheListPageDto(
+                items,
+                nichePage.getTotalElements(),
+                nichePage.getTotalPages(),
+                nichePage.getNumber(),
+                nichePage.getSize());
     }
 
     /** Lista os nichos e marca aqueles que já possuem perfil enriquecido materializado. */

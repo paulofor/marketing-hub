@@ -86,16 +86,19 @@ describe("niche navigation", () => {
       </QueryClientProvider>,
     );
 
+    const user = userEvent.setup();
     await screen.findByText("Fitness");
-    userEvent.click(screen.getByText("Fitness"));
+    await user.click(screen.getByText("Fitness"));
     await screen.findByText("Ver detalhes");
     await screen.findByText(/Entrega:/);
-    await screen.findByRole("button", { name: /^criar hipótese$/i });
+    expect(
+      await screen.findByRole("link", { name: /^criar hipótese$/i }),
+    ).toHaveAttribute("href", "/niches/1/hypotheses/new");
     await screen.findByRole("button", { name: /salvar em markdown/i });
-    userEvent.click(screen.getByText("Ver detalhes"));
+    await user.click(screen.getByText("Ver detalhes"));
     await screen.findByText("Criar Experimento");
-    userEvent.click(screen.getByText("Abrir"));
-    expect(await screen.findByText("Exp 1")).toBeTruthy();
+    await user.click(screen.getByText("Abrir"));
+    expect(await screen.findAllByText("Exp 1")).not.toHaveLength(0);
     const bc = screen.getByRole("navigation", { name: /breadcrumb/i });
     expect(bc).toBeTruthy();
     expect(within(bc).getByText("Fitness")).toBeTruthy();

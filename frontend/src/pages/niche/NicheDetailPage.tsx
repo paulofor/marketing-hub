@@ -218,7 +218,9 @@ export default function NicheDetailPage() {
   const leadPortalFlowList = Array.isArray(nicheLeadPortalFlows)
     ? nicheLeadPortalFlows
     : [];
-  const [flowBeingEdited, setFlowBeingEdited] = useState<LeadPortalFlow | null>(null);
+  const [flowBeingEdited, setFlowBeingEdited] = useState<LeadPortalFlow | null>(
+    null,
+  );
   const { data: detailedDescriptions } = useNicheDetailedDescriptions(nicheId);
   const requestHypotheses = useRequestHypotheses(id);
   const requestDetailedDescriptions = useRequestDetailedDescriptions(id);
@@ -359,6 +361,16 @@ export default function NicheDetailPage() {
   const handleManualHypothesisSuccess = useCallback(() => {
     setManualHypothesisFormVisible(false);
   }, []);
+
+  const handleOpenManualHypothesisForm = useCallback(() => {
+    setManualHypothesisFormVisible(true);
+    const scrollToForm = () => scrollToSection("niche-manual-hypothesis-form");
+    if (typeof window.requestAnimationFrame === "function") {
+      window.requestAnimationFrame(scrollToForm);
+      return;
+    }
+    window.setTimeout(scrollToForm, 0);
+  }, [scrollToSection]);
 
   const list = Array.isArray(hypotheses)
     ? [...hypotheses].sort((a, b) => {
@@ -642,7 +654,9 @@ export default function NicheDetailPage() {
       icon: Sparkles,
       label: "Pixel do Facebook",
       value: facebookPixelId ? "Ativo" : "Pendente",
-      helper: facebookPixelId ?? "Gerado automaticamente quando um experimento é liberado",
+      helper:
+        facebookPixelId ??
+        "Gerado automaticamente quando um experimento é liberado",
       targetId: "niche-facebook-pixel",
     },
     {
@@ -947,7 +961,15 @@ export default function NicheDetailPage() {
         <div className="niche-detail__actions">
           <button
             type="button"
-            className="btn btn-outline-secondary niche-detail__export-btn"
+            className="btn btn-primary niche-detail__action-btn"
+            onClick={handleOpenManualHypothesisForm}
+          >
+            <Plus size={18} />
+            <span>Criar hipótese</span>
+          </button>
+          <button
+            type="button"
+            className="btn btn-outline-secondary niche-detail__action-btn"
             onClick={handleSaveMarkdown}
           >
             <FileDown size={18} />
@@ -1028,7 +1050,10 @@ export default function NicheDetailPage() {
       >
         <div className="niche-section__header">
           <div>
-            <h2 className="niche-section__title" id="niche-facebook-pixel-title">
+            <h2
+              className="niche-section__title"
+              id="niche-facebook-pixel-title"
+            >
               Pixel do Facebook
             </h2>
             <p className="niche-section__subtitle">
@@ -1060,13 +1085,15 @@ export default function NicheDetailPage() {
               />
             ) : (
               <div className="alert alert-info mb-0">
-                Pixel registrado. Aguarde o retorno do código completo pela Meta.
+                Pixel registrado. Aguarde o retorno do código completo pela
+                Meta.
               </div>
             )}
           </div>
         ) : (
           <div className="alert alert-warning mb-0">
-            Libere um experimento pronto para que o worker gere o pixel automaticamente.
+            Libere um experimento pronto para que o worker gere o pixel
+            automaticamente.
           </div>
         )}
       </section>
@@ -2063,10 +2090,14 @@ export default function NicheDetailPage() {
                             {flow.approved ? "Aprovado" : "Pendente"}
                           </span>
                           {flow.customFormHtml ? (
-                            <span className="badge text-bg-info">HTML personalizado</span>
+                            <span className="badge text-bg-info">
+                              HTML personalizado
+                            </span>
                           ) : null}
                           {flowBeingEdited?.id === flow.id ? (
-                            <span className="badge text-bg-warning">Em edição</span>
+                            <span className="badge text-bg-warning">
+                              Em edição
+                            </span>
                           ) : null}
                         </div>
                         <p className="text-muted small mb-1">
@@ -2093,7 +2124,9 @@ export default function NicheDetailPage() {
                         {flow.customFormHtml ? (
                           <details className="mt-2">
                             <summary>Ver HTML personalizado</summary>
-                            <pre className="bg-body-tertiary rounded-3 p-3 small overflow-auto">{flow.customFormHtml}</pre>
+                            <pre className="bg-body-tertiary rounded-3 p-3 small overflow-auto">
+                              {flow.customFormHtml}
+                            </pre>
                           </details>
                         ) : null}
 

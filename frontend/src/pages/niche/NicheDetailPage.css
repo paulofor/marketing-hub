@@ -91,7 +91,7 @@
   gap: 0.75rem;
 }
 
-.niche-detail__export-btn {
+.niche-detail__action-btn {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
@@ -101,7 +101,7 @@
   box-shadow: 0 16px 30px -20px rgba(var(--bs-primary-rgb, 13, 110, 253), 0.45);
 }
 
-.niche-detail__export-btn:focus-visible {
+.niche-detail__action-btn:focus-visible {
   outline: 3px solid rgba(var(--bs-primary-rgb, 13, 110, 253), 0.35);
   outline-offset: 2px;
 }
@@ -127,7 +127,9 @@
 
 .niche-detail__stat--interactive {
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .niche-detail__stat--interactive:hover {
@@ -714,6 +716,16 @@
 @media (max-width: 576px) {
   .niche-detail__header {
     padding: 1.25rem;
+  }
+
+  .niche-detail__actions {
+    align-items: stretch;
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .niche-detail__action-btn {
+    justify-content: center;
   }
 
   .niche-detail__stats {

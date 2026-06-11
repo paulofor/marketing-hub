@@ -1,6 +1,8 @@
 package com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service;
 
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.dto.MoisSalesLibraryDtos;
+import com.marketinghub.openai.OpenAiResponse;
+import com.marketinghub.openai.service.OpenAiPricingService;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -39,6 +41,7 @@ public class MoisSalesLibraryService {
     private static final int COLLECTED_REFERENCE_HTML_CANDIDATE_SCAN_LIMIT = 2000;
 
     private final JdbcTemplate jdbcTemplate;
+    private final OpenAiPricingService openAiPricingService;
 
     /**
      * Reserva o próximo job pendente da biblioteca para processamento pelo worker.
@@ -122,24 +125,62 @@ public class MoisSalesLibraryService {
             throw new IllegalArgumentException("Operational analysis execution not found: " + jobId);
         }
         Instant analyzedAt = request.analyzedAt() == null ? Instant.now() : request.analyzedAt();
+        BigDecimal modelCostUsd = resolveModelCostUsd(request);
         jdbcTemplate.update("""
                 UPDATE mois_sales_page_job_execution
                 SET job_type = 'PAGE_ANALYSIS', stage = 'ANALYSIS', status = 'DONE', score_total = ?,
                     sections_json = ?, copy_json = ?, visual_json = ?, image_json = ?,
-                    request_payload_json = ?, response_payload_json = ?, error_category = NULL, error_message = ?,
-                    finished_at = ?, updated_at = UTC_TIMESTAMP()
+                    request_payload_json = ?, response_payload_json = ?, model_name = ?, input_tokens = ?, output_tokens = ?, model_cost_usd = ?,
+                    error_category = NULL, error_message = ?, finished_at = ?, updated_at = UTC_TIMESTAMP()
                 WHERE id = ?
                 """, request.scoreTotal(), request.sectionsJson(), request.copyJson(), request.visualJson(), request.imageJson(),
-                request.requestPayloadJson(), request.analysisNotes(), null, Timestamp.from(analyzedAt), jobId);
+                request.requestPayloadJson(), request.analysisNotes(), request.modelName(), request.inputTokens(), request.outputTokens(), modelCostUsd,
+                null, Timestamp.from(analyzedAt), jobId);
         jdbcTemplate.update("""
                 UPDATE mois_sales_page
                 SET current_stage = 'ANALYSIS', current_status = 'DONE', analysis_status = 'DONE', score_total = ?,
+                    model_name = ?, input_tokens = ?, output_tokens = ?, model_cost_usd = ?,
                     last_error_category = NULL, last_error_message = NULL, last_job_execution_id = ?,
                     last_analyzed_at = ?, updated_at = UTC_TIMESTAMP()
                 WHERE id = ?
-                """, request.scoreTotal(), jobId, Timestamp.from(analyzedAt), salesPageId);
-        log.info("MOIS sales-library análise concluída no modelo operacional novo. modulo=MOIS, operacao=completeJob, pageId={}, executionId={}, scoreTotal={}",
-                salesPageId, jobId, request.scoreTotal());
+                """, request.scoreTotal(), request.modelName(), request.inputTokens(), request.outputTokens(), modelCostUsd,
+                jobId, Timestamp.from(analyzedAt), salesPageId);
+        log.info(
+                "MOIS sales-library análise concluída no modelo operacional novo. modulo=MOIS, operacao=completeJob, "
+                        + "pageId={}, executionId={}, scoreTotal={}, modelName={}, inputTokens={}, outputTokens={}, modelCostUsd={}",
+                salesPageId,
+                jobId,
+                request.scoreTotal(),
+                request.modelName(),
+                request.inputTokens(),
+                request.outputTokens(),
+                modelCostUsd);
+    }
+
+    /**
+     * Calcula o custo batch do modelo a partir dos tokens retornados pela OpenAI, usando fallback do payload quando necessário.
+     */
+    private BigDecimal resolveModelCostUsd(MoisSalesLibraryDtos.SalesLibraryCompleteRequest request) {
+        if (request.modelCostUsd() != null) {
+            return request.modelCostUsd();
+        }
+        if ((request.inputTokens() == null && request.outputTokens() == null) || request.modelName() == null || request.modelName().isBlank()) {
+            return null;
+        }
+        OpenAiResponse.OpenAiUsage usage = new OpenAiResponse.OpenAiUsage(
+                request.inputTokens(), request.outputTokens(), null, null, null);
+        try {
+            return openAiPricingService.estimateBatchCost(request.modelName(), usage);
+        } catch (RuntimeException ex) {
+            log.error(
+                    "Falha ao calcular custo OpenAI da análise MOIS. modulo=MOIS, operacao=resolveModelCostUsd, "
+                            + "modelName={}, inputTokens={}, outputTokens={}",
+                    request.modelName(),
+                    request.inputTokens(),
+                    request.outputTokens(),
+                    ex);
+            return null;
+        }
     }
 
     /**
@@ -503,6 +544,7 @@ public class MoisSalesLibraryService {
                 SELECT p.id, p.workspace_id, p.source, p.url_canonical, p.title, p.current_stage, p.current_status, p.capture_status,
                        COALESCE(p.analysis_status, p.current_status) AS analysis_status, p.url_final, p.http_status, p.html_sha256,
                        p.html_bytes, p.score_total, p.offer_summary, p.mechanism_summary, p.promise_summary, p.proof_summary,
+                       p.model_name, p.input_tokens, p.output_tokens, p.model_cost_usd,
                        p.last_error_category, p.last_error_message, p.last_job_execution_id, p.last_captured_at, p.last_analyzed_at, p.updated_at,
                        mws.score_total AS market_warmup_score_total, mws.market_temperature AS market_warmup_temperature,
                        mws.ecosystem_type AS market_warmup_ecosystem_type, mwj.recommendation AS market_warmup_recommendation,
@@ -648,6 +690,7 @@ public class MoisSalesLibraryService {
                 SELECT p.id, p.workspace_id, p.source, p.url_canonical, p.title, p.current_stage, p.current_status, p.capture_status,
                        COALESCE(p.analysis_status, p.current_status) AS analysis_status, p.url_final, p.http_status, p.html_sha256,
                        p.html_bytes, p.score_total, p.offer_summary, p.mechanism_summary, p.promise_summary, p.proof_summary,
+                       p.model_name, p.input_tokens, p.output_tokens, p.model_cost_usd,
                        p.last_error_category, p.last_error_message, p.last_job_execution_id, p.last_captured_at, p.last_analyzed_at, p.updated_at,
                        mws.score_total AS market_warmup_score_total, mws.market_temperature AS market_warmup_temperature,
                        mws.ecosystem_type AS market_warmup_ecosystem_type, mwj.recommendation AS market_warmup_recommendation,
@@ -1314,6 +1357,10 @@ public class MoisSalesLibraryService {
                 rs.getString("mechanism_summary"),
                 rs.getString("promise_summary"),
                 rs.getString("proof_summary"),
+                rs.getString("model_name"),
+                (Integer) rs.getObject("input_tokens"),
+                (Integer) rs.getObject("output_tokens"),
+                rs.getBigDecimal("model_cost_usd"),
                 rs.getString("last_error_category"),
                 rs.getString("last_error_message"),
                 rs.getObject("last_job_execution_id", Long.class),

@@ -273,6 +273,10 @@ export interface MoisSalesLibraryPage {
   mechanismSummary?: string;
   promiseSummary?: string;
   proofSummary?: string;
+  modelName?: string;
+  inputTokens?: number;
+  outputTokens?: number;
+  modelCostUsd?: number;
   lastErrorCategory?: string;
   lastErrorMessage?: string;
   lastJobExecutionId?: number;

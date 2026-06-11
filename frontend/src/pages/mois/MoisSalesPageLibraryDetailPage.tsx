@@ -109,6 +109,12 @@ function formatScore(value?: number) {
   return value == null ? "—" : `${Math.round(value)}/100`;
 }
 
+function formatCurrencyUsd(value?: number) {
+  return value == null
+    ? "—"
+    : value.toLocaleString("pt-BR", { style: "currency", currency: "USD" });
+}
+
 function TextList({ items }: { items?: string[] }) {
   const visibleItems = (items ?? []).filter(Boolean);
   if (visibleItems.length === 0) {
@@ -438,6 +444,15 @@ export default function MoisSalesPageLibraryDetailPage() {
             ) : (
               "—"
             )}
+          </p>
+          <p className="text-secondary mb-0">
+            Custo de uso do modelo:{" "}
+            <strong>{formatCurrencyUsd(pageQuery.data?.modelCostUsd)}</strong>
+            {pageQuery.data?.modelName ? ` · ${pageQuery.data.modelName}` : ""}
+            {pageQuery.data?.inputTokens != null ||
+            pageQuery.data?.outputTokens != null
+              ? ` · ${formatNumber(pageQuery.data?.inputTokens)} entrada / ${formatNumber(pageQuery.data?.outputTokens)} saída`
+              : ""}
           </p>
         </div>
         <div className="d-flex flex-wrap gap-2">

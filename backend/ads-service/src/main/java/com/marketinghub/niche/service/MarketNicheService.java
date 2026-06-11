@@ -25,7 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 /**
- * Service layer for market niches.
+ * Coordena as operações administrativas e de enriquecimento dos nichos de mercado.
  */
 @Service
 public class MarketNicheService {
@@ -52,7 +52,7 @@ public class MarketNicheService {
     }
 
     /**
-     * Creates and stores a market niche.
+     * Cria e persiste um nicho de mercado.
      */
     @Transactional
     public MarketNiche create(CreateMarketNicheRequest request) {
@@ -72,7 +72,7 @@ public class MarketNicheService {
                 .offers(request.getOffers())
                 .cost(request.getCost())
                 .expense(request.getExpense())
-                .totalCost(request.getTotalCost())
+                .totalCost(resolveInitialTotalCost(request))
                 .totalRevenue(request.getTotalRevenue())
                 .baseSegmentation(request.getBaseSegmentation())
                 .interests(request.getInterests())
@@ -97,6 +97,17 @@ public class MarketNicheService {
         MarketNiche saved = repository.save(niche);
         targetingElementSyncService.syncManualLists(saved);
         return saved;
+    }
+
+    /** Define o custo total inicial do nicho usando o total explícito ou, na falta dele, o custo de origem informado. */
+    private java.math.BigDecimal resolveInitialTotalCost(CreateMarketNicheRequest request) {
+        if (request.getTotalCost() != null) {
+            return request.getTotalCost();
+        }
+        if (request.getCost() != null) {
+            return request.getCost();
+        }
+        return java.math.BigDecimal.ZERO;
     }
 
     /** Busca um nicho pelo identificador informado. */
@@ -202,7 +213,7 @@ public class MarketNicheService {
     }
 
     /**
-     * Requests generation of detailed descriptions by setting the pending quantity.
+     * Solicita a geração assíncrona de descrições detalhadas para o nicho.
      */
     @Transactional
     public MarketNiche requestDetailedDescriptions(Long id, int quantity, String model) {
@@ -237,7 +248,7 @@ public class MarketNicheService {
     }
 
     /**
-     * Requests generation of new hypotheses by setting the pending quantity.
+     * Solicita a geração assíncrona de novas hipóteses para o nicho.
      */
     @Transactional
     public MarketNiche requestHypotheses(Long id,

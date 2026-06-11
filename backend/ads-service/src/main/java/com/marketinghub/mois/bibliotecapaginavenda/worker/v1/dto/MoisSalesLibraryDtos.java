@@ -47,6 +47,9 @@ public final class MoisSalesLibraryDtos {
             String parserVersion,
             String promptVersion,
             String modelName,
+            Integer inputTokens,
+            Integer outputTokens,
+            BigDecimal modelCostUsd,
             Instant analyzedAt
     ) {
     }
@@ -218,6 +221,10 @@ public final class MoisSalesLibraryDtos {
             String mechanismSummary,
             String promiseSummary,
             String proofSummary,
+            String modelName,
+            Integer inputTokens,
+            Integer outputTokens,
+            BigDecimal modelCostUsd,
             String lastErrorCategory,
             String lastErrorMessage,
             Long lastJobExecutionId,

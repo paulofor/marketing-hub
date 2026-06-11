@@ -531,6 +531,8 @@ Critérios de aceite da Fase 5:
 
 A partir de 2026-06-04, a Biblioteca de Páginas de Vendas considera concluída a troca operacional para o modelo de duas tabelas. O estado atual da operação deve ser lido e escrito somente em `mois_sales_page`, e o histórico/auditoria de execuções deve ser lido e escrito somente em `mois_sales_page_job_execution`.
 
+A partir de 2026-06-11, toda análise OpenAI concluída de página de venda deve registrar no backend o modelo usado, tokens de entrada, tokens de saída e custo USD calculado em modo batch. O estado consolidado da página em `mois_sales_page` deve expor esse custo para decisão comercial, e o histórico em `mois_sales_page_job_execution` deve manter a auditoria da execução que gerou o valor.
+
 Tabelas legadas congeladas:
 
 - `mois_sales_library_url_ingest`;

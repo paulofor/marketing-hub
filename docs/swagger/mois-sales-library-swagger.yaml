@@ -1124,6 +1124,18 @@ components:
           type: string
         modelName:
           type: string
+        inputTokens:
+          type: integer
+          nullable: true
+          description: Tokens de entrada retornados pela OpenAI para cálculo de custo.
+        outputTokens:
+          type: integer
+          nullable: true
+          description: Tokens de saída retornados pela OpenAI para cálculo de custo.
+        modelCostUsd:
+          type: number
+          nullable: true
+          description: Custo USD já calculado pelo worker ou pelo backend para a chamada do modelo.
         analyzedAt:
           type: string
           format: date-time
@@ -1360,6 +1372,22 @@ components:
         proofSummary:
           type: string
           nullable: true
+        modelName:
+          type: string
+          nullable: true
+          description: Modelo OpenAI usado na análise comercial mais recente da página.
+        inputTokens:
+          type: integer
+          nullable: true
+          description: Tokens de entrada da análise comercial mais recente.
+        outputTokens:
+          type: integer
+          nullable: true
+          description: Tokens de saída da análise comercial mais recente.
+        modelCostUsd:
+          type: number
+          nullable: true
+          description: Custo USD do modelo na análise comercial mais recente da página.
         lastErrorCategory:
           type: string
           nullable: true

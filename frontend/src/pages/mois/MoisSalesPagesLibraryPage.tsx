@@ -31,6 +31,12 @@ function formatWarmupScore(value?: number | null) {
   return value == null ? "—" : `${Math.round(value)}/100`;
 }
 
+function formatCurrencyUsd(value?: number | null) {
+  return value == null
+    ? "—"
+    : value.toLocaleString("pt-BR", { style: "currency", currency: "USD" });
+}
+
 function getWarmupBadgeClass(value?: string | null) {
   switch (value) {
     case "HOT":
@@ -336,6 +342,7 @@ export default function MoisSalesPagesLibraryPage() {
                     <th>Sucesso do produto</th>
                     <th>Score sucesso</th>
                     <th>Data da análise</th>
+                    <th>Custo modelo</th>
                     <th>Fase no diagrama</th>
                     <th>Ações</th>
                   </tr>
@@ -343,7 +350,7 @@ export default function MoisSalesPagesLibraryPage() {
                 <tbody>
                   {visiblePages.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="text-secondary">
+                      <td colSpan={9} className="text-secondary">
                         Nenhum produto coletado encontrado para o filtro atual.
                       </td>
                     </tr>
@@ -381,6 +388,16 @@ export default function MoisSalesPagesLibraryPage() {
                         </td>
                         <td className="text-nowrap">
                           {formatAnalysisDate(item.analyzedAt)}
+                        </td>
+                        <td className="text-nowrap">
+                          <span className="fw-semibold">
+                            {formatCurrencyUsd(item.modelCostUsd)}
+                          </span>
+                          {item.modelName ? (
+                            <div className="small text-secondary">
+                              {item.modelName}
+                            </div>
+                          ) : null}
                         </td>
                         <td>
                           {getPipelinePhase(

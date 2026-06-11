@@ -1,0 +1,49 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-11-mois-sales-page-model-cost-page
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: mois_sales_page
+        - not:
+            columnExists:
+              tableName: mois_sales_page
+              columnName: model_cost_usd
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE mois_sales_page
+                ADD COLUMN model_name VARCHAR(120) NULL AFTER proof_summary,
+                ADD COLUMN input_tokens INT NULL AFTER model_name,
+                ADD COLUMN output_tokens INT NULL AFTER input_tokens,
+                ADD COLUMN model_cost_usd DECIMAL(10,4) NULL AFTER output_tokens;
+  - changeSet:
+      id: 2026-06-11-mois-sales-page-model-cost-job
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: mois_sales_page_job_execution
+        - not:
+            columnExists:
+              tableName: mois_sales_page_job_execution
+              columnName: model_cost_usd
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE mois_sales_page_job_execution
+                ADD COLUMN model_name VARCHAR(120) NULL AFTER response_payload_json,
+                ADD COLUMN input_tokens INT NULL AFTER model_name,
+                ADD COLUMN output_tokens INT NULL AFTER input_tokens,
+                ADD COLUMN model_cost_usd DECIMAL(10,4) NULL AFTER output_tokens;

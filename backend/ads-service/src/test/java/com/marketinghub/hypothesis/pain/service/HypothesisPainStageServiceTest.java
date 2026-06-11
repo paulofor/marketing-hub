@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.marketinghub.cost.CostAttributionService;
+import com.marketinghub.hypothesis.pain.HypothesisPainCostCalculator;
 import com.marketinghub.hypothesis.pain.HypothesisPainStageExecution;
 import com.marketinghub.hypothesis.pain.service.recebeResposta.RecebeRespostaRequest;
 import com.marketinghub.niche.MarketNiche;
@@ -31,7 +31,7 @@ class HypothesisPainStageServiceTest {
     private HypothesisPainStageExecutionRepository executionRepository;
 
     @Mock
-    private CostAttributionService costAttributionService;
+    private HypothesisPainCostCalculator costCalculator;
 
     private HypothesisPainStageService service;
 
@@ -41,10 +41,10 @@ class HypothesisPainStageServiceTest {
         service = new HypothesisPainStageService(
                 marketNicheRepository,
                 executionRepository,
-                costAttributionService);
+                costCalculator);
     }
 
-    /** Deve atribuir ao nicho somente o delta de custo recebido para evitar soma duplicada em reprocessamentos. */
+    /** Deve atribuir ao nicho somente o delta de custo calculado para evitar soma duplicada em reprocessamentos. */
     @Test
     void markCompletedFromResponseAttributesOnlyCostDeltaToNiche() {
         String idJob = "9bb83a22-3894-43bd-9752-374f84eb6a2c";
@@ -56,7 +56,8 @@ class HypothesisPainStageServiceTest {
                 .marketNiche(niche)
                 .stageCode("hypothesis-pain")
                 .status("PROCESSANDO")
-                .costUsd(new BigDecimal("0.010000"))
+                .costUsd(new BigDecimal("0.01000000"))
+                .openAiModel("gpt-5.2")
                 .build();
         RecebeRespostaRequest request = new RecebeRespostaRequest(
                 18L,
@@ -64,7 +65,7 @@ class HypothesisPainStageServiceTest {
                 "{\"pain\":\"dor validada\"}",
                 1200,
                 300,
-                new BigDecimal("0.015000"),
+                new BigDecimal("999.00000000"),
                 "openai-job-1",
                 null,
                 null);
@@ -73,10 +74,13 @@ class HypothesisPainStageServiceTest {
                 .thenReturn(Optional.of(execution));
         when(executionRepository.save(any(HypothesisPainStageExecution.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
+        when(costCalculator.calculateFlexCostUsd("gpt-5.2", 1200, 300))
+                .thenReturn(new BigDecimal("0.01500000"));
 
         service.markCompletedFromResponse(idJob, request);
 
-        verify(costAttributionService).addUsdCostToNiche(niche, new BigDecimal("0.005000"));
+        verify(costCalculator).calculateFlexCostUsd("gpt-5.2", 1200, 300);
+        verify(costCalculator).addFlexCostDeltaToNiche(niche, new BigDecimal("0.00500000"));
     }
     /** Deve bloquear a etapa Resultado quando a dor ainda não está concluída. */
     @Test

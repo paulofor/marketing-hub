@@ -27,25 +27,22 @@ public class OpenAiNicheResearchSeedBuilderClient {
     private final NicheResearchSeedBuilderOpenAiProperties properties;
     private final NicheResearchSeedBuilderPromptBuilder promptBuilder;
     private final NicheResearchSeedBuilderSchema schema;
-    private final NicheResearchSeedBuilderValidator validator;
 
-    /** Inicializa o client da OpenAI com dependências de prompt, schema e validação da etapa dois. */
+    /** Inicializa o client da OpenAI com dependências de prompt e schema da etapa dois. */
     public OpenAiNicheResearchSeedBuilderClient(
             RestClient restClient,
             ObjectMapper objectMapper,
             NicheResearchSeedBuilderOpenAiProperties properties,
             NicheResearchSeedBuilderPromptBuilder promptBuilder,
-            NicheResearchSeedBuilderSchema schema,
-            NicheResearchSeedBuilderValidator validator) {
+            NicheResearchSeedBuilderSchema schema) {
         this.restClient = restClient;
         this.objectMapper = objectMapper;
         this.properties = properties;
         this.promptBuilder = promptBuilder;
         this.schema = schema;
-        this.validator = validator;
     }
 
-    /** Gera seed e queries por IA, extrai o JSON estruturado e valida regras de contrato antes do retorno. */
+    /** Gera seed e queries por IA e devolve o JSON estruturado sem aplicar validações semânticas bloqueantes. */
     public OpenAiSeedBuilderResult generate(NicheResearchSeedBuilderPending input) {
         String apiKey = resolveApiKey(input);
         if (apiKey.isBlank()) {
@@ -61,8 +58,8 @@ public class OpenAiNicheResearchSeedBuilderClient {
                 throw new IllegalStateException("OpenAI retornou corpo vazio para a etapa dois OPRM nichocnae.");
             }
             String rawModelResponse = extractModelResponse(raw);
-            NicheResearchSeedBuilderOutput output = objectMapper.readValue(rawModelResponse, NicheResearchSeedBuilderOutput.class);
-            validator.validate(input, output);
+            NicheResearchSeedBuilderOutput output =
+                    objectMapper.readValue(rawModelResponse, NicheResearchSeedBuilderOutput.class);
             return new OpenAiSeedBuilderResult(
                     output,
                     rawModelResponse,

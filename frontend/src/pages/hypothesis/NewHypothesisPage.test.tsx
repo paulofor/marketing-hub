@@ -30,7 +30,7 @@ function renderPage() {
 }
 
 describe("NewHypothesisPage", () => {
-  it("shows the pain job id as links to the job detail page", async () => {
+  it("shows the current pain job id as a link to the job detail page", async () => {
     (axios.get as any).mockResolvedValue({
       data: [
         {
@@ -45,16 +45,17 @@ describe("NewHypothesisPage", () => {
 
     renderPage();
 
-    const links = await screen.findAllByRole("link", {
+    const link = await screen.findByRole("link", {
       name: "9bb83a22-3894-43bd-9752-374f84eb6a2c",
     });
 
-    expect(links).toHaveLength(2);
-    links.forEach((link) => {
-      expect(link).toHaveAttribute(
-        "href",
-        "/niches/18/hypothesis-pipeline/pain/stage-executions/9bb83a22-3894-43bd-9752-374f84eb6a2c",
-      );
-    });
+    expect(link).toHaveAttribute(
+      "href",
+      "/niches/18/hypothesis-pipeline/pain/stage-executions/9bb83a22-3894-43bd-9752-374f84eb6a2c",
+    );
+    expect(screen.queryByText("Dor de superfície")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("columnheader", { name: "Job" }),
+    ).not.toBeInTheDocument();
   });
 });

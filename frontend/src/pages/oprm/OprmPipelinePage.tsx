@@ -154,16 +154,36 @@ function formatResearchMode(value?: string | null) {
   return value ?? "Modo não informado";
 }
 
-function isRecentSource(source: { sourceFreshnessScore?: number | null; outdatedSourceRisk?: boolean | null }) {
-  return Boolean(source.sourceFreshnessScore && source.sourceFreshnessScore >= 60 && !source.outdatedSourceRisk);
+function isRecentSource(source: {
+  sourceFreshnessScore?: number | null;
+  outdatedSourceRisk?: boolean | null;
+}) {
+  return Boolean(
+    source.sourceFreshnessScore &&
+    source.sourceFreshnessScore >= 60 &&
+    !source.outdatedSourceRisk,
+  );
 }
 
-function isOutdatedSource(source: { sourceFreshnessScore?: number | null; outdatedSourceRisk?: boolean | null }) {
-  return Boolean(source.outdatedSourceRisk || (source.sourceFreshnessScore !== null && source.sourceFreshnessScore !== undefined && source.sourceFreshnessScore < 40));
+function isOutdatedSource(source: {
+  sourceFreshnessScore?: number | null;
+  outdatedSourceRisk?: boolean | null;
+}) {
+  return Boolean(
+    source.outdatedSourceRisk ||
+    (source.sourceFreshnessScore !== null &&
+      source.sourceFreshnessScore !== undefined &&
+      source.sourceFreshnessScore < 40),
+  );
 }
 
 function filterSignalsByIntent(
-  signals: Array<{ extractedSignalId: number; signalType: string; signalText: string; evidenceExcerpt: string }>,
+  signals: Array<{
+    extractedSignalId: number;
+    signalType: string;
+    signalText: string;
+    evidenceExcerpt: string;
+  }>,
   intents: string[],
 ) {
   const normalizedIntents = intents.map((intent) => intent.toLowerCase());
@@ -177,7 +197,6 @@ function filterSignalsByIntent(
     )
     .slice(0, 3);
 }
-
 
 function formatProcessedAt(value: string) {
   const date = new Date(value);
@@ -393,7 +412,54 @@ function buildFailureMessage(errorMessage?: string | null) {
   return errorMessage.trim();
 }
 
-function buildProblemPoint(status: string) {
+function detectFailureStage(errorMessage?: string | null) {
+  const normalized = errorMessage?.toLowerCase() ?? "";
+  const stageMatch = pipelineStages.find((stage) =>
+    normalized.includes(stage.technicalName.toLowerCase()),
+  );
+  if (stageMatch) {
+    return `Etapa ${stageMatch.number} · ${stageMatch.title}`;
+  }
+  if (normalized.includes("etapa dois") || normalized.includes("seed")) {
+    return "Etapa 2 · Seed de Pesquisa do Nicho";
+  }
+  if (
+    normalized.includes("busca de fontes") ||
+    normalized.includes("source search")
+  ) {
+    return "Etapa 3 · Busca de Fontes";
+  }
+  if (
+    normalized.includes("coleta de fontes") ||
+    normalized.includes("source fetch")
+  ) {
+    return "Etapa 4 · Coleta de Fontes";
+  }
+  if (
+    normalized.includes("extração") ||
+    normalized.includes("signal extractor")
+  ) {
+    return "Etapa 5 · Extração de Sinais";
+  }
+  if (normalized.includes("síntese") || normalized.includes("synthesizer")) {
+    return "Etapa 6 · Síntese da Rotina";
+  }
+  if (normalized.includes("mei") || normalized.includes("audience segmenter")) {
+    return "Etapa 7 · Perfil MEI/autônomo";
+  }
+  if (normalized.includes("quality gate") || normalized.includes("gate")) {
+    return "Etapa 8 · Gate de Qualidade";
+  }
+  if (
+    normalized.includes("materializer") ||
+    normalized.includes("nicho enriquecido")
+  ) {
+    return "Etapa 9 · Nicho Enriquecido";
+  }
+  return "Etapa não identificada no detalhe técnico";
+}
+
+function buildProblemPoint(status: string, errorMessage?: string | null) {
   if (
     status === "NEEDS_MORE_RESEARCH" ||
     status === "NEEDS_MORE_MEI_RESEARCH"
@@ -454,9 +520,9 @@ function buildProblemPoint(status: string) {
   if (status === "FAILED") {
     return {
       label: "Ponto da falha",
-      value: "Etapa interrompida no ciclo",
+      value: detectFailureStage(errorMessage),
       description:
-        "Veja o detalhe técnico abaixo para identificar a etapa exata que registrou a interrupção.",
+        "A etapa acima foi identificada a partir da mensagem técnica gravada no ciclo.",
       className: "text-danger",
     };
   }
@@ -498,7 +564,7 @@ export default function OprmPipelinePage() {
   const reprocessCycleMutation = useReprocessOprmRoutineResearchCycle(10);
   const latestCycle = recentProcessed[0];
   const latestProblemPoint = latestCycle
-    ? buildProblemPoint(latestCycle.cycleStatus)
+    ? buildProblemPoint(latestCycle.cycleStatus, latestCycle.errorMessage)
     : null;
   const latestRunningCycle = recentProcessed.find(
     (item) => item.cycleStatus === "RUNNING",
@@ -585,38 +651,37 @@ export default function OprmPipelinePage() {
   ).length;
   const recentSources = sourceSnapshots.filter(isRecentSource).slice(0, 3);
   const outdatedSources = sourceSnapshots.filter(isOutdatedSource).slice(0, 3);
-  const routineSignals = filterSignalsByIntent(signalExtractorDetail?.signals ?? [], [
-    "routine",
-    "rotina",
-    "task",
-    "tarefa",
-  ]);
-  const painSignals = filterSignalsByIntent(signalExtractorDetail?.signals ?? [], [
-    "pain",
-    "dor",
-    "friction",
-    "dificuldade",
-  ]);
-  const dreamFearChannelSignals = filterSignalsByIntent(signalExtractorDetail?.signals ?? [], [
-    "dream",
-    "sonho",
-    "fear",
-    "medo",
-    "channel",
-    "canal",
-    "whatsapp",
-    "instagram",
-  ]);
+  const routineSignals = filterSignalsByIntent(
+    signalExtractorDetail?.signals ?? [],
+    ["routine", "rotina", "task", "tarefa"],
+  );
+  const painSignals = filterSignalsByIntent(
+    signalExtractorDetail?.signals ?? [],
+    ["pain", "dor", "friction", "dificuldade"],
+  );
+  const dreamFearChannelSignals = filterSignalsByIntent(
+    signalExtractorDetail?.signals ?? [],
+    [
+      "dream",
+      "sonho",
+      "fear",
+      "medo",
+      "channel",
+      "canal",
+      "whatsapp",
+      "instagram",
+    ],
+  );
 
   return (
     <div className="d-flex flex-column gap-4">
       <header className="d-flex flex-column gap-2">
         <PageTitle>Pipeline NichoCNAE</PageTitle>
         <p className="text-secondary mb-0">
-          Esta tela mostra se o OPRM está pesquisando o profissional MEI/autônomo
-          por trás do CNAE: rotina, canais, dores, sonhos, medos, linguagem e
-          atualidade das fontes. O objetivo aqui é validar público-alvo antes de
-          qualquer solução, produto ou oferta.
+          Esta tela mostra se o OPRM está pesquisando o profissional
+          MEI/autônomo por trás do CNAE: rotina, canais, dores, sonhos, medos,
+          linguagem e atualidade das fontes. O objetivo aqui é validar
+          público-alvo antes de qualquer solução, produto ou oferta.
         </p>
       </header>
 
@@ -689,7 +754,10 @@ export default function OprmPipelinePage() {
                 <tbody>
                   {recentProcessed.map((item) => {
                     const cycleStage = getCycleStage(item.cycleStatus);
-                    const problemPoint = buildProblemPoint(item.cycleStatus);
+                    const problemPoint = buildProblemPoint(
+                      item.cycleStatus,
+                      item.errorMessage,
+                    );
                     return (
                       <tr key={item.researchCycleId}>
                         <td className="text-nowrap">
@@ -719,10 +787,12 @@ export default function OprmPipelinePage() {
                             maximumFractionDigits: 2,
                           })}
                           <span className="text-secondary small d-block">
-                            Aderência: {formatPercent(item.autonomousProfessionalFitScore)}
+                            Aderência:{" "}
+                            {formatPercent(item.autonomousProfessionalFitScore)}
                           </span>
                           <span className="text-secondary small d-block">
-                            Atualidade: {formatPercent(item.sourceFreshnessScore)}
+                            Atualidade:{" "}
+                            {formatPercent(item.sourceFreshnessScore)}
                           </span>
                         </td>
                         <td>
@@ -733,10 +803,17 @@ export default function OprmPipelinePage() {
                             Foco: {formatResearchMode(item.researchMode)}
                           </span>
                           <span className="text-secondary small d-block">
-                            Fonte antiga: {formatPercent(item.outdatedSourceRiskScore)} · Empresa estruturada: {formatPercent(item.structuredBusinessDriftRiskScore)}
+                            Fonte antiga:{" "}
+                            {formatPercent(item.outdatedSourceRiskScore)} ·
+                            Empresa estruturada:{" "}
+                            {formatPercent(
+                              item.structuredBusinessDriftRiskScore,
+                            )}
                           </span>
                           {item.gateStatus ? (
-                            <span className={buildStatusBadgeClass(item.gateStatus)}>
+                            <span
+                              className={buildStatusBadgeClass(item.gateStatus)}
+                            >
                               Gate: {formatStatusLabel(item.gateStatus)}
                             </span>
                           ) : null}
@@ -926,13 +1003,16 @@ export default function OprmPipelinePage() {
                           Público
                         </dt>
                         <dd className="col-7 mb-0 fw-semibold">
-                          {latestCycle.audienceName ?? "Aguardando segmentação MEI/autônomo"}
+                          {latestCycle.audienceName ??
+                            "Aguardando segmentação MEI/autônomo"}
                         </dd>
                         <dt className="col-5 text-secondary fw-normal">
                           Aderência autônomo
                         </dt>
                         <dd className="col-7 mb-0">
-                          {formatPercent(latestCycle.autonomousProfessionalFitScore)}
+                          {formatPercent(
+                            latestCycle.autonomousProfessionalFitScore,
+                          )}
                         </dd>
                         <dt className="col-5 text-secondary fw-normal">
                           Atualidade fontes
@@ -950,7 +1030,9 @@ export default function OprmPipelinePage() {
                           Risco empresa estruturada
                         </dt>
                         <dd className="col-7 mb-0">
-                          {formatPercent(latestCycle.structuredBusinessDriftRiskScore)}
+                          {formatPercent(
+                            latestCycle.structuredBusinessDriftRiskScore,
+                          )}
                         </dd>
                         <dt className="col-5 text-secondary fw-normal">
                           Risco solução
@@ -1072,8 +1154,9 @@ export default function OprmPipelinePage() {
                           </p>
                           <p className="text-secondary mb-2">
                             {generatedSeed.queries.length} queries geradas para
-                            as próximas etapas. As primeiras consultas mostram se
-                            a pesquisa está olhando para a pessoa MEI/autônoma.
+                            as próximas etapas. As primeiras consultas mostram
+                            se a pesquisa está olhando para a pessoa
+                            MEI/autônoma.
                           </p>
                           <ul className="list-unstyled d-flex flex-column gap-2 mb-3">
                             {generatedSeed.queries.slice(0, 4).map((query) => (
@@ -1333,24 +1416,40 @@ export default function OprmPipelinePage() {
                                 </span>
                                 {recentSources.length > 0 ? (
                                   recentSources.map((source) => (
-                                    <span className="d-block" key={`recent-${source.sourceSnapshotId}`}>
-                                      {source.sourceDomain} · {formatPercent(source.sourceFreshnessScore)}
+                                    <span
+                                      className="d-block"
+                                      key={`recent-${source.sourceSnapshotId}`}
+                                    >
+                                      {source.sourceDomain} ·{" "}
+                                      {formatPercent(
+                                        source.sourceFreshnessScore,
+                                      )}
                                     </span>
                                   ))
                                 ) : (
-                                  <span className="d-block">Ainda sem fonte recente suficiente.</span>
+                                  <span className="d-block">
+                                    Ainda sem fonte recente suficiente.
+                                  </span>
                                 )}
                                 <span className="fw-semibold d-block text-warning mt-2">
                                   Antigas penalizadas
                                 </span>
                                 {outdatedSources.length > 0 ? (
                                   outdatedSources.map((source) => (
-                                    <span className="d-block" key={`old-${source.sourceSnapshotId}`}>
-                                      {source.sourceDomain} · {formatPercent(source.sourceFreshnessScore)}
+                                    <span
+                                      className="d-block"
+                                      key={`old-${source.sourceSnapshotId}`}
+                                    >
+                                      {source.sourceDomain} ·{" "}
+                                      {formatPercent(
+                                        source.sourceFreshnessScore,
+                                      )}
                                     </span>
                                   ))
                                 ) : (
-                                  <span className="d-block">Nenhuma fonte antiga crítica neste resumo.</span>
+                                  <span className="d-block">
+                                    Nenhuma fonte antiga crítica neste resumo.
+                                  </span>
                                 )}
                               </div>
                             </div>
@@ -1435,8 +1534,14 @@ export default function OprmPipelinePage() {
                                 <span className="fw-semibold d-block mb-1">
                                   Rotina e tarefas
                                 </span>
-                                {(routineSignals.length > 0 ? routineSignals : latestSignals.slice(0, 1)).map((signal) => (
-                                  <p className="mb-1 text-secondary" key={`routine-${signal.extractedSignalId}`}>
+                                {(routineSignals.length > 0
+                                  ? routineSignals
+                                  : latestSignals.slice(0, 1)
+                                ).map((signal) => (
+                                  <p
+                                    className="mb-1 text-secondary"
+                                    key={`routine-${signal.extractedSignalId}`}
+                                  >
                                     {signal.signalText}
                                   </p>
                                 ))}
@@ -1445,8 +1550,14 @@ export default function OprmPipelinePage() {
                                 <span className="fw-semibold d-block mb-1">
                                   Dores práticas/emocionais
                                 </span>
-                                {(painSignals.length > 0 ? painSignals : latestSignals.slice(0, 1)).map((signal) => (
-                                  <p className="mb-1 text-secondary" key={`pain-${signal.extractedSignalId}`}>
+                                {(painSignals.length > 0
+                                  ? painSignals
+                                  : latestSignals.slice(0, 1)
+                                ).map((signal) => (
+                                  <p
+                                    className="mb-1 text-secondary"
+                                    key={`pain-${signal.extractedSignalId}`}
+                                  >
                                     {signal.signalText}
                                   </p>
                                 ))}
@@ -1455,8 +1566,14 @@ export default function OprmPipelinePage() {
                                 <span className="fw-semibold d-block mb-1">
                                   Sonhos, medos e canais
                                 </span>
-                                {(dreamFearChannelSignals.length > 0 ? dreamFearChannelSignals : latestSignals.slice(0, 1)).map((signal) => (
-                                  <p className="mb-1 text-secondary" key={`outcome-${signal.extractedSignalId}`}>
+                                {(dreamFearChannelSignals.length > 0
+                                  ? dreamFearChannelSignals
+                                  : latestSignals.slice(0, 1)
+                                ).map((signal) => (
+                                  <p
+                                    className="mb-1 text-secondary"
+                                    key={`outcome-${signal.extractedSignalId}`}
+                                  >
                                     {signal.signalText}
                                   </p>
                                 ))}
@@ -1583,13 +1700,16 @@ export default function OprmPipelinePage() {
                             Público
                           </dt>
                           <dd className="col-6 mb-0 fw-semibold">
-                            {latestCycle.audienceName ?? "Aguardando segmentação"}
+                            {latestCycle.audienceName ??
+                              "Aguardando segmentação"}
                           </dd>
                           <dt className="col-6 text-secondary fw-normal">
                             Aderência autônomo
                           </dt>
                           <dd className="col-6 mb-0 fw-semibold">
-                            {formatPercent(latestCycle.autonomousProfessionalFitScore)}
+                            {formatPercent(
+                              latestCycle.autonomousProfessionalFitScore,
+                            )}
                           </dd>
                           <dt className="col-6 text-secondary fw-normal">
                             Atualidade
@@ -1607,11 +1727,14 @@ export default function OprmPipelinePage() {
                             Risco empresa estruturada
                           </dt>
                           <dd className="col-6 mb-0 fw-semibold">
-                            {formatPercent(latestCycle.structuredBusinessDriftRiskScore)}
+                            {formatPercent(
+                              latestCycle.structuredBusinessDriftRiskScore,
+                            )}
                           </dd>
                         </dl>
                         <p className="text-secondary mb-0">
-                          Este perfil deve explicar a pessoa que executa o trabalho, não a empresa/CNAE abstrato.
+                          Este perfil deve explicar a pessoa que executa o
+                          trabalho, não a empresa/CNAE abstrato.
                         </p>
                       </div>
                     </div>

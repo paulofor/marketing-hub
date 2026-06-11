@@ -1,10 +1,8 @@
 package com.marketinghub.oprm.nichocnae.nicheresearchseedbuilder.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -256,11 +254,20 @@ class BackendNicheResearchSeedBuilderServiceTest {
     assertThat(response.totalQueries()).isEqualTo(16);
   }
 
-  /** Deve rejeitar somente ausência total de queries para evitar concluir etapa sem trabalho executável. */
+  /** Deve aceitar ausência total de queries criando uma query padrão para manter o ciclo avançando. */
   @Test
-  void completeRejectsEmptyQueries() {
+  void completeCreatesDefaultQueryWhenModelReturnsEmptyQueries() {
     OprmRoutineResearchCycle cycle = cycle();
     when(routineResearchCycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
+    when(nicheResearchSeedRepository.existsByResearchCycleId(1001L)).thenReturn(false);
+    when(nicheResearchSeedRepository.save(any(OprmNicheResearchSeed.class)))
+        .thenAnswer(invocation -> {
+          OprmNicheResearchSeed seed = invocation.getArgument(0);
+          seed.setId(44L);
+          return seed;
+        });
+    when(researchQueryRepository.saveAll(any()))
+        .thenAnswer(invocation -> invocation.getArgument(0));
     CompleteNicheResearchSeedBuilderRequest request = new CompleteNicheResearchSeedBuilderRequest(
         "Cabeleireiros, manicures e pedicures",
         "serviço local de beleza",
@@ -272,10 +279,11 @@ class BackendNicheResearchSeedBuilderServiceTest {
         "AI",
         List.of());
 
-    assertThatThrownBy(() -> service.complete(1001L, request))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("at least one persistable item");
-    verify(nicheResearchSeedRepository, never()).save(any());
+    CompleteNicheResearchSeedBuilderResponse response = service.complete(1001L, request);
+
+    assertThat(response.totalQueries()).isEqualTo(1);
+    assertThat(response.queries().getFirst().queryGoal()).isEqualTo("ROUTINE_DISCOVERY");
+    assertThat(response.queries().getFirst().queryText()).contains("rotina dificuldades atendimento clientes Brasil");
   }
 
   /** Deve marcar o ciclo como falho e registrar a mensagem operacional da falha da etapa dois. */

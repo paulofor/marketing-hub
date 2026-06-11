@@ -158,3 +158,8 @@ Fico pensando como fazer isso no âmbito de venda de produtos, tenho que mandar 
 . a experiencia de um leigo com essas telas vai deixando elas mais intuitivas.
 
 5- Tendo as referencias pelas telas fica bem mais concreto e palpavel o que esta sendo feito e melhor para evoluir.
+--> eu não estava entendendo nada que a tela mostrava e pedi explicações
+--> o modelo respondeu
+--> eu vi que não tinha nada a ver com o que eu queria e expliquei o que queria
+--> o modelo mostrou no dialogo exatamente o que eu queria ver na tela naquela etapa do pipeline. Falei é isso que eu quero !
+

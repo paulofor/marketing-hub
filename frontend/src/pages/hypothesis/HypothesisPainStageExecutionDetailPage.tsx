@@ -2,6 +2,7 @@ import { Link, useParams } from "react-router-dom";
 import PageTitle from "../../components/PageTitle";
 import hypothesisIcon from "../../assets/icons/hypothesis-icon.svg";
 import { useHypothesisPainStageExecutionDetail } from "../../api/hypothesis/useHypothesisPainStageExecutionDetail";
+import CollapsibleJsonViewer from "../../components/CollapsibleJsonViewer";
 
 function formatDate(value?: string) {
   if (!value) return "—";
@@ -18,12 +19,7 @@ function AuditBlock({ title, value }: { title: string; value?: string }) {
     <section className="card mb-3">
       <div className="card-header fw-semibold">{title}</div>
       <div className="card-body">
-        <pre
-          className="bg-light border rounded p-3 mb-0 small text-break"
-          style={{ whiteSpace: "pre-wrap" }}
-        >
-          {value}
-        </pre>
+        <CollapsibleJsonViewer content={value} />
       </div>
     </section>
   );

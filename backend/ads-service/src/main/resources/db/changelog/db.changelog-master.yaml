@@ -78,6 +78,9 @@ databaseChangeLog:
       file: changesets/2026-06-02-oprm-nichocnae-seed-builder.yaml
       relativeToChangelogFile: true
   - include:
+      file: changesets/2026-06-11-oprm-seed-query-longtext-contract.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-06-01-pipeline-crud.yaml
       relativeToChangelogFile: true
   - include:

@@ -9,6 +9,7 @@ public record HypothesisPainPendingExecution(
         String stageCode,
         Instant executionRequestedAt,
         HypothesisPainPendingNiche niche,
-        String painModelResponse
+        String painModelResponse,
+        String resultModelResponse
 ) {
 }

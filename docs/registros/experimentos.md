@@ -4371,3 +4371,9 @@
 - causa-raiz: a evolução da etapa Resultado acoplou a liberação e o contexto ao resultado concluído da etapa Dor sem completar o contrato interno de consulta dessa dependência sequencial.
 - foi feito: implementada a busca da Dor concluída mais recente por nicho, bloqueando Resultado quando não há resposta válida e entregando essa resposta ao Worker AI nos jobs pendentes da etapa Resultado.
 - prevenção: adicionado teste unitário para garantir que a etapa Resultado receba a resposta concluída da Dor como contexto obrigatório.
+
+## 2026-06-11 — Etapa 3 do pipeline na tela de nova hipótese
+
+- A tela de nova hipótese passou a exibir a Etapa 3 — Mecanismo junto das etapas Dor e Resultado.
+- O backend expôs os contratos de início, listagem, detalhe e integrações internas da etapa `hypothesis-mechanism`, mantendo a exigência de Resultado concluído antes da execução.
+- A documentação Swagger do pipeline inicial de hipótese foi atualizada para incluir Dor, Resultado e Mecanismo.

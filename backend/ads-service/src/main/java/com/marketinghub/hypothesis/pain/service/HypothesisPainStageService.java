@@ -29,6 +29,7 @@ public class HypothesisPainStageService {
     private static final Logger log = LoggerFactory.getLogger(HypothesisPainStageService.class);
     private static final String STAGE_CODE = "hypothesis-pain";
     private static final String RESULT_STAGE_CODE = "hypothesis-result";
+    private static final String MECHANISM_STAGE_CODE = "hypothesis-mechanism";
     private static final String STATUS_STARTED = "INICIADO";
     private static final String STATUS_WAITING_OPENAI_DISPATCH = "AGUARDANDO_RETORNO_OPENAI";
     private static final String STATUS_PROCESSING = "PROCESSANDO";
@@ -52,22 +53,36 @@ public class HypothesisPainStageService {
     /** Inicia uma nova execução manual da etapa Dor para o nicho informado. */
     @Transactional
     public HypothesisPainStartResponse start(Long marketNicheId) {
-        return startStage(marketNicheId, STAGE_CODE, "Dor", false);
+        return startStage(marketNicheId, STAGE_CODE, "Dor", false, false);
     }
 
     /** Inicia uma nova execução manual da etapa Resultado para o nicho informado. */
     @Transactional
     public HypothesisPainStartResponse startResult(Long marketNicheId) {
-        return startStage(marketNicheId, RESULT_STAGE_CODE, "Resultado", true);
+        return startStage(marketNicheId, RESULT_STAGE_CODE, "Resultado", true, false);
+    }
+
+    /** Inicia uma nova execução manual da etapa Mecanismo para o nicho informado. */
+    @Transactional
+    public HypothesisPainStartResponse startMechanism(Long marketNicheId) {
+        return startStage(marketNicheId, MECHANISM_STAGE_CODE, "Mecanismo", true, true);
     }
 
     /** Inicia uma nova execução manual de uma etapa do pipeline para o nicho informado. */
-    private HypothesisPainStartResponse startStage(Long marketNicheId, String stageCode, String stageLabel, boolean requiresCompletedPain) {
+    private HypothesisPainStartResponse startStage(
+            Long marketNicheId,
+            String stageCode,
+            String stageLabel,
+            boolean requiresCompletedPain,
+            boolean requiresCompletedResult) {
         Instant now = Instant.now();
         MarketNiche niche = marketNicheRepository.findById(marketNicheId)
                 .orElseThrow(() -> new EntityNotFoundException("Market niche not found: " + marketNicheId));
         if (requiresCompletedPain) {
             requireCompletedPain(marketNicheId);
+        }
+        if (requiresCompletedResult) {
+            requireCompletedResult(marketNicheId);
         }
         HypothesisPainStageExecution execution = HypothesisPainStageExecution.builder()
                 .marketNicheId(niche.getId())
@@ -94,6 +109,14 @@ public class HypothesisPainStageService {
     @Transactional(readOnly = true)
     public List<HypothesisPainExecutionSummaryResponse> listResultStageExecutions(Long marketNicheId, boolean includeCompleted) {
         return listStageExecutions(marketNicheId, RESULT_STAGE_CODE, includeCompleted);
+    }
+
+    /** Lista execuções da etapa Mecanismo para o nicho informado. */
+    @Transactional(readOnly = true)
+    public List<HypothesisPainExecutionSummaryResponse> listMechanismStageExecutions(
+            Long marketNicheId,
+            boolean includeCompleted) {
+        return listStageExecutions(marketNicheId, MECHANISM_STAGE_CODE, includeCompleted);
     }
 
     /** Lista execuções de uma etapa específica para o nicho informado. */
@@ -138,6 +161,12 @@ public class HypothesisPainStageService {
         return listPendingByStage(RESULT_STAGE_CODE);
     }
 
+    /** Lista os jobs iniciados da etapa Mecanismo para processamento pelo Worker AI. */
+    @Transactional(readOnly = true)
+    public List<HypothesisPainPendingExecution> listMechanismPending() {
+        return listPendingByStage(MECHANISM_STAGE_CODE);
+    }
+
     /** Lista os jobs iniciados de uma etapa para processamento pelo Worker AI. */
     private List<HypothesisPainPendingExecution> listPendingByStage(String stageCode) {
         return executionRepository.findTop20ByStageCodeAndStatusOrderByExecutionRequestedAtAsc(stageCode, STATUS_STARTED)
@@ -148,7 +177,8 @@ public class HypothesisPainStageService {
                         execution.getStageCode(),
                         execution.getExecutionRequestedAt(),
                         toPendingNiche(execution.getMarketNiche()),
-                        latestCompletedPainResponse(execution.getMarketNicheId())))
+                        latestCompletedPainResponse(execution.getMarketNicheId()),
+                        latestCompletedResultResponse(execution.getMarketNicheId())))
                 .toList();
     }
 
@@ -160,11 +190,29 @@ public class HypothesisPainStageService {
         }
     }
 
+    /** Garante que a etapa Resultado tenha sido concluída com resposta antes de liberar Mecanismo. */
+    private void requireCompletedResult(Long marketNicheId) {
+        if (!StringUtils.hasText(latestCompletedResultResponse(marketNicheId))) {
+            throw new IllegalStateException(
+                    "A etapa Resultado precisa estar concluída antes de iniciar Mecanismo para o nicho: " + marketNicheId);
+        }
+    }
+
     /** Retorna a resposta da Dor concluída mais recente para contextualizar etapas seguintes. */
     private String latestCompletedPainResponse(Long marketNicheId) {
+        return latestCompletedStageResponse(marketNicheId, STAGE_CODE);
+    }
+
+    /** Retorna a resposta do Resultado concluído mais recente para contextualizar Mecanismo. */
+    private String latestCompletedResultResponse(Long marketNicheId) {
+        return latestCompletedStageResponse(marketNicheId, RESULT_STAGE_CODE);
+    }
+
+    /** Retorna a resposta concluída mais recente de uma etapa para contextualizar próximas etapas. */
+    private String latestCompletedStageResponse(Long marketNicheId, String stageCode) {
         return executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
                         marketNicheId,
-                        STAGE_CODE,
+                        stageCode,
                         STATUS_COMPLETED)
                 .map(HypothesisPainStageExecution::getModelResponse)
                 .filter(StringUtils::hasText)

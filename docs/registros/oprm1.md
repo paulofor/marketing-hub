@@ -401,3 +401,8 @@
 - Corrigida a causa-raiz do erro recorrente `Query sem marcador de MEI/autônomo brasileiro` no ciclo de rotina: a etapa `niche-research-seed-builder` deixou de executar o validador bloqueante no coletor e o backend passou a gravar seed/queries com defaults quando algum campo estrutural vier ausente.
 - A tela `/oprm/pipeline` agora identifica a etapa exata da falha a partir da mensagem técnica do ciclo, mostrando `Etapa 2 · Seed de Pesquisa do Nicho` quando o erro vem da geração de seed.
 - Prevenção de recorrência: falhas por formato incompleto do modelo não travam mais a criação da pesquisa; as etapas seguintes continuam responsáveis por buscar fontes, extrair sinais e filtrar qualidade.
+
+## 2026-06-11 — OPRM NichoCNAE: alinhamento do teste do prompt da etapa 2
+
+- Corrigida a causa-raiz da falha do teste `NicheResearchSeedBuilderPromptBuilderTest`: o teste ainda exigia marcadores literais de fonte Brasil/domínio `.br` e objetivos antigos, enquanto a regra operacional atual da etapa 2 passou a confiar no modelo e não bloquear por marcador literal.
+- O teste agora valida o comportamento correto do prompt: pesquisa de rotina real, proibição de solução/oferta/produto/ferramenta, ausência de exigência de marcadores literais e prevenção de metadado técnico no texto funcional.

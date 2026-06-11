@@ -201,7 +201,7 @@ export default function App() {
                   element={<NewHypothesisPage />}
                 />
                 <Route
-                  path=":nicheId/hypothesis-pipeline/pain/stage-executions/:jobId"
+                  path=":nicheId/hypothesis-pipeline/:stageSlug/stage-executions/:jobId"
                   element={<HypothesisPainStageExecutionDetailPage />}
                 />
                 <Route

@@ -4338,3 +4338,10 @@
 - causa-raiz: a tela inicial mostrava apenas status e job atual, apesar de o backend já receber `costUsd` da IA; além disso, a conclusão do job gravava o custo da execução, mas não propagava esse valor para o custo acumulado do nicho.
 - foi feito: a tela passou a mostrar custo total e tabela de execuções com custo individual, e o backend passou a atribuir ao nicho somente o delta de custo em USD convertido pela regra central de custos, evitando duplicidade em reprocessamentos.
 - prevenção: adicionados testes de frontend para a visibilidade dos custos e teste unitário backend para garantir atribuição idempotente do delta ao nicho.
+
+## 2026-06-11 — Etapa Resultado na tela de nova hipótese
+
+- solicitação: avançar para a próxima etapa do pipeline e fazer com a etapa Resultado o mesmo acompanhamento auditável já aplicado à etapa Dor.
+- causa-raiz: a tela e os endpoints estavam presos ao primeiro passo `hypothesis-pain`, impedindo evolução sequencial do framework Dor → Resultado → Mecanismo → Prova → Oferta.
+- foi feito: adicionada a etapa 2 Resultado com card próprio na tela de nova hipótese, endpoints públicos e internos, reaproveitamento da tabela auditável de execuções, bloqueio para iniciar Resultado sem Dor concluída e worker AI isolado com prompt/schema próprios.
+- prevenção: o backend agora diferencia os estágios por `stageCode` e a etapa Resultado recebe a resposta concluída da Dor como contexto obrigatório para reduzir risco de promessa desconectada da dor real.

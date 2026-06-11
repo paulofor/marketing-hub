@@ -1,6 +1,6 @@
 package com.marketinghub.hypothesis.pain.service;
 
-import com.marketinghub.cost.CostAttributionService;
+import com.marketinghub.hypothesis.pain.HypothesisPainCostCalculator;
 import com.marketinghub.hypothesis.pain.HypothesisPainStageExecution;
 import com.marketinghub.hypothesis.pain.service.detailStageExecution.HypothesisPainExecutionDetailResponse;
 import com.marketinghub.hypothesis.pain.service.listStageExecutions.HypothesisPainExecutionSummaryResponse;
@@ -36,16 +36,16 @@ public class HypothesisPainStageService {
 
     private final MarketNicheRepository marketNicheRepository;
     private final HypothesisPainStageExecutionRepository executionRepository;
-    private final CostAttributionService costAttributionService;
+    private final HypothesisPainCostCalculator costCalculator;
 
-    /** Inicializa o serviço com os repositórios canônicos de nicho e execução de etapa. */
+    /** Inicializa o serviço com os repositórios canônicos e o calculador interno de custo da etapa. */
     public HypothesisPainStageService(
             MarketNicheRepository marketNicheRepository,
             HypothesisPainStageExecutionRepository executionRepository,
-            CostAttributionService costAttributionService) {
+            HypothesisPainCostCalculator costCalculator) {
         this.marketNicheRepository = marketNicheRepository;
         this.executionRepository = executionRepository;
-        this.costAttributionService = costAttributionService;
+        this.costCalculator = costCalculator;
     }
 
     /** Inicia uma nova execução manual da etapa Dor para o nicho informado. */
@@ -161,16 +161,17 @@ public class HypothesisPainStageService {
             execution.setInputTokens(request.inputTokens());
             execution.setOutputTokens(request.outputTokens());
             BigDecimal previousCostUsd = execution.getCostUsd();
-            BigDecimal costDeltaUsd = calculateCostDeltaUsd(previousCostUsd, request.costUsd());
-            execution.setCostUsd(request.costUsd());
             String normalizedErrorDetail = StringUtils.hasText(request.errorDetail()) ? request.errorDetail().trim() : null;
             String normalizedErrorMessage = normalizeErrorMessage(request.errorMessage(), normalizedErrorDetail);
+            BigDecimal calculatedCostUsd = calculateInternalCostUsd(execution, request, normalizedErrorMessage);
+            BigDecimal costDeltaUsd = calculateCostDeltaUsd(previousCostUsd, calculatedCostUsd);
+            execution.setCostUsd(calculatedCostUsd);
             execution.setErrorMessage(normalizedErrorMessage);
             execution.setErrorDetail(normalizedErrorDetail);
             execution.setCompletedAt(Instant.now());
             execution.setStatus(normalizedErrorMessage != null ? STATUS_FAILED : STATUS_COMPLETED);
             executionRepository.save(execution);
-            costAttributionService.addUsdCostToNiche(execution.getMarketNiche(), costDeltaUsd);
+            costCalculator.addFlexCostDeltaToNiche(execution.getMarketNiche(), costDeltaUsd);
         } catch (RuntimeException ex) {
             log.error(
                     "Erro ao concluir resposta da etapa Dor (idJob={}, marketNicheId={}, stageCode={}, openAiJobId={}, modelResponseLength={}, errorMessage={})",
@@ -183,6 +184,22 @@ public class HypothesisPainStageService {
                     ex);
             throw ex;
         }
+    }
+
+    /** Calcula internamente o custo flex da resposta usando o modelo salvo e os tokens recebidos. */
+    private BigDecimal calculateInternalCostUsd(
+            HypothesisPainStageExecution execution, RecebeRespostaRequest request, String normalizedErrorMessage) {
+        boolean tokensAusentes = request.inputTokens() == null && request.outputTokens() == null;
+        if (normalizedErrorMessage != null && tokensAusentes) {
+            return null;
+        }
+        if (tokensAusentes) {
+            throw new IllegalStateException("Tokens ausentes para cálculo de custo da etapa Dor");
+        }
+        return costCalculator.calculateFlexCostUsd(
+                execution.getOpenAiModel(),
+                request.inputTokens(),
+                request.outputTokens());
     }
 
     /** Calcula a diferença de custo em USD para manter o custo do nicho idempotente. */

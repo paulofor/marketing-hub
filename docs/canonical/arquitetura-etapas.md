@@ -143,6 +143,10 @@ padrão canônico deve seguir o núcleo `com.marketinghub.worker.openai.core`:
     e corpo JSON produzido pelo `StagePromptBuilder` da etapa;
 12. quando a etapa usar modo flex, o client OpenAI do core deve adicionar `service_tier=flex` ao corpo
     final antes de enviar ao endpoint `/responses`.
+13. nos callbacks de conclusão das etapas, o backend deve calcular o custo internamente usando o
+    modelo OpenAI registrado na execução, os tokens de entrada/saída retornados e os preços do
+    modo flex cadastrados em `openai_model`; o `costUsd` enviado por workers deve ser tratado
+    apenas como dado auxiliar/legado e não como fonte de verdade.
 
 No exemplo de wireframe, o fluxo canônico agora é: `WireframeExecutionScheduler` chama
 `StageWorker.processPending`, o `WireframeBackendClient` consulta o endpoint `pending` e transforma a

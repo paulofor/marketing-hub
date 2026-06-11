@@ -4338,3 +4338,7 @@
 - causa-raiz: a tela inicial mostrava apenas status e job atual, apesar de o backend já receber `costUsd` da IA; além disso, a conclusão do job gravava o custo da execução, mas não propagava esse valor para o custo acumulado do nicho.
 - foi feito: a tela passou a mostrar custo total e tabela de execuções com custo individual, e o backend passou a atribuir ao nicho somente o delta de custo em USD convertido pela regra central de custos, evitando duplicidade em reprocessamentos.
 - prevenção: adicionados testes de frontend para a visibilidade dos custos e teste unitário backend para garantir atribuição idempotente do delta ao nicho.
+
+## 2026-06-11 — Custo interno da etapa Dor de hipótese
+- A etapa Dor do pipeline de hipótese passou a calcular internamente o custo USD em modo flex com base no modelo OpenAI salvo na execução, nos tokens de entrada/saída retornados e nos preços cadastrados em `openai_model`.
+- O backend deixou de confiar no `costUsd` recebido do worker para essa etapa e mantém atribuição idempotente ao nicho pelo delta recalculado.

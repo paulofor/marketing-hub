@@ -4389,3 +4389,10 @@
 - A tela de nova hipótese passou a exibir a Etapa 3 — Mecanismo junto das etapas Dor e Resultado.
 - O backend expôs os contratos de início, listagem, detalhe e integrações internas da etapa `hypothesis-mechanism`, mantendo a exigência de Resultado concluído antes da execução.
 - A documentação Swagger do pipeline inicial de hipótese foi atualizada para incluir Dor, Resultado e Mecanismo.
+
+## 2026-06-11 — Worker AI da etapa Mecanismo da hipótese
+
+- solicitação: fazer no Worker AI o equivalente da etapa Resultado para a etapa Mecanismo do pipeline de hipótese.
+- causa-raiz: o backend já criava e expunha jobs `hypothesis-mechanism`, mas o `ai-worker` não tinha configuração, backend client, processor, scheduler, prompt e schema próprios para consumir essa fila.
+- foi feito: adicionada a etapa `hypothesis-mechanism` no Worker AI, com consumo do endpoint interno de Mecanismo, uso de Dor e Resultado concluídos como contexto, resposta estruturada de mecanismo plausível e testes de contrato.
+- impacto esperado: jobs de Mecanismo deixam de ficar parados em `INICIADO` e passam a avançar para processamento OpenAI, completando o terceiro passo do eixo Dor → Resultado → Mecanismo.

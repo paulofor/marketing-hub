@@ -23,13 +23,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-/** Responsabilidade: orquestrar execuções auditáveis das etapas iniciais do pipeline de hipótese. */
+/** Responsabilidade: orquestrar execuções auditáveis das etapas do pipeline de hipótese por nicho. */
 @Service
 public class HypothesisPainStageService {
     private static final Logger log = LoggerFactory.getLogger(HypothesisPainStageService.class);
     private static final String STAGE_CODE = "hypothesis-pain";
     private static final String RESULT_STAGE_CODE = "hypothesis-result";
     private static final String MECHANISM_STAGE_CODE = "hypothesis-mechanism";
+    private static final String OFFER_STAGE_CODE = "hypothesis-offer";
     private static final String STATUS_STARTED = "INICIADO";
     private static final String STATUS_WAITING_OPENAI_DISPATCH = "AGUARDANDO_RETORNO_OPENAI";
     private static final String STATUS_PROCESSING = "PROCESSANDO";
@@ -53,19 +54,25 @@ public class HypothesisPainStageService {
     /** Inicia uma nova execução manual da etapa Dor para o nicho informado. */
     @Transactional
     public HypothesisPainStartResponse start(Long marketNicheId) {
-        return startStage(marketNicheId, STAGE_CODE, "Dor", false, false);
+        return startStage(marketNicheId, STAGE_CODE, "Dor", false, false, false);
     }
 
     /** Inicia uma nova execução manual da etapa Resultado para o nicho informado. */
     @Transactional
     public HypothesisPainStartResponse startResult(Long marketNicheId) {
-        return startStage(marketNicheId, RESULT_STAGE_CODE, "Resultado", true, false);
+        return startStage(marketNicheId, RESULT_STAGE_CODE, "Resultado", true, false, false);
     }
 
     /** Inicia uma nova execução manual da etapa Mecanismo para o nicho informado. */
     @Transactional
     public HypothesisPainStartResponse startMechanism(Long marketNicheId) {
-        return startStage(marketNicheId, MECHANISM_STAGE_CODE, "Mecanismo", true, true);
+        return startStage(marketNicheId, MECHANISM_STAGE_CODE, "Mecanismo", true, true, false);
+    }
+
+    /** Inicia uma nova execução manual da etapa Oferta para o nicho informado. */
+    @Transactional
+    public HypothesisPainStartResponse startOffer(Long marketNicheId) {
+        return startStage(marketNicheId, OFFER_STAGE_CODE, "Oferta", true, true, true);
     }
 
     /** Inicia uma nova execução manual de uma etapa do pipeline para o nicho informado. */
@@ -74,7 +81,8 @@ public class HypothesisPainStageService {
             String stageCode,
             String stageLabel,
             boolean requiresCompletedPain,
-            boolean requiresCompletedResult) {
+            boolean requiresCompletedResult,
+            boolean requiresCompletedMechanism) {
         Instant now = Instant.now();
         MarketNiche niche = marketNicheRepository.findById(marketNicheId)
                 .orElseThrow(() -> new EntityNotFoundException("Market niche not found: " + marketNicheId));
@@ -83,6 +91,9 @@ public class HypothesisPainStageService {
         }
         if (requiresCompletedResult) {
             requireCompletedResult(marketNicheId);
+        }
+        if (requiresCompletedMechanism) {
+            requireCompletedMechanism(marketNicheId);
         }
         HypothesisPainStageExecution execution = HypothesisPainStageExecution.builder()
                 .marketNicheId(niche.getId())
@@ -117,6 +128,14 @@ public class HypothesisPainStageService {
             Long marketNicheId,
             boolean includeCompleted) {
         return listStageExecutions(marketNicheId, MECHANISM_STAGE_CODE, includeCompleted);
+    }
+
+    /** Lista execuções da etapa Oferta para o nicho informado. */
+    @Transactional(readOnly = true)
+    public List<HypothesisPainExecutionSummaryResponse> listOfferStageExecutions(
+            Long marketNicheId,
+            boolean includeCompleted) {
+        return listStageExecutions(marketNicheId, OFFER_STAGE_CODE, includeCompleted);
     }
 
     /** Lista execuções de uma etapa específica para o nicho informado. */
@@ -167,6 +186,12 @@ public class HypothesisPainStageService {
         return listPendingByStage(MECHANISM_STAGE_CODE);
     }
 
+    /** Lista os jobs iniciados da etapa Oferta para processamento pelo Worker AI. */
+    @Transactional(readOnly = true)
+    public List<HypothesisPainPendingExecution> listOfferPending() {
+        return listPendingByStage(OFFER_STAGE_CODE);
+    }
+
     /** Lista os jobs iniciados de uma etapa para processamento pelo Worker AI. */
     private List<HypothesisPainPendingExecution> listPendingByStage(String stageCode) {
         return executionRepository.findTop20ByStageCodeAndStatusOrderByExecutionRequestedAtAsc(stageCode, STATUS_STARTED)
@@ -177,9 +202,34 @@ public class HypothesisPainStageService {
                         execution.getStageCode(),
                         execution.getExecutionRequestedAt(),
                         toPendingNiche(execution.getMarketNiche()),
-                        latestCompletedPainResponse(execution.getMarketNicheId()),
-                        latestCompletedResultResponse(execution.getMarketNicheId())))
+                        pendingPainResponse(execution),
+                        pendingResultResponse(execution),
+                        pendingMechanismResponse(execution)))
                 .toList();
+    }
+
+    /** Retorna a Dor concluída quando a etapa pendente precisa desse contexto. */
+    private String pendingPainResponse(HypothesisPainStageExecution execution) {
+        return RESULT_STAGE_CODE.equals(execution.getStageCode())
+                || MECHANISM_STAGE_CODE.equals(execution.getStageCode())
+                || OFFER_STAGE_CODE.equals(execution.getStageCode())
+                ? latestCompletedPainResponse(execution.getMarketNicheId())
+                : null;
+    }
+
+    /** Retorna o Resultado concluído quando a etapa pendente precisa desse contexto. */
+    private String pendingResultResponse(HypothesisPainStageExecution execution) {
+        return MECHANISM_STAGE_CODE.equals(execution.getStageCode())
+                        || OFFER_STAGE_CODE.equals(execution.getStageCode())
+                ? latestCompletedResultResponse(execution.getMarketNicheId())
+                : null;
+    }
+
+    /** Retorna o Mecanismo concluído quando a etapa pendente precisa desse contexto. */
+    private String pendingMechanismResponse(HypothesisPainStageExecution execution) {
+        return OFFER_STAGE_CODE.equals(execution.getStageCode())
+                ? latestCompletedMechanismResponse(execution.getMarketNicheId())
+                : null;
     }
 
     /** Garante que a etapa Dor tenha sido concluída com resposta antes de liberar Resultado. */
@@ -198,6 +248,14 @@ public class HypothesisPainStageService {
         }
     }
 
+    /** Garante que a etapa Mecanismo tenha sido concluída com resposta antes de liberar Oferta. */
+    private void requireCompletedMechanism(Long marketNicheId) {
+        if (!StringUtils.hasText(latestCompletedMechanismResponse(marketNicheId))) {
+            throw new IllegalStateException(
+                    "A etapa Mecanismo precisa estar concluída antes de iniciar Oferta para o nicho: " + marketNicheId);
+        }
+    }
+
     /** Retorna a resposta da Dor concluída mais recente para contextualizar etapas seguintes. */
     private String latestCompletedPainResponse(Long marketNicheId) {
         return latestCompletedStageResponse(marketNicheId, STAGE_CODE);
@@ -206,6 +264,11 @@ public class HypothesisPainStageService {
     /** Retorna a resposta do Resultado concluído mais recente para contextualizar Mecanismo. */
     private String latestCompletedResultResponse(Long marketNicheId) {
         return latestCompletedStageResponse(marketNicheId, RESULT_STAGE_CODE);
+    }
+
+    /** Retorna a resposta do Mecanismo concluído mais recente para contextualizar Oferta. */
+    private String latestCompletedMechanismResponse(Long marketNicheId) {
+        return latestCompletedStageResponse(marketNicheId, MECHANISM_STAGE_CODE);
     }
 
     /** Retorna a resposta concluída mais recente de uma etapa para contextualizar próximas etapas. */

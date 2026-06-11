@@ -18,7 +18,7 @@ interface StageExecution {
 }
 
 interface StageConfig {
-  slug: "pain" | "result" | "mechanism";
+  slug: "pain" | "result" | "mechanism" | "offer";
   number: number;
   title: string;
   startLabel: string;
@@ -70,6 +70,20 @@ const STAGES: StageConfig[] = [
       "Nenhuma execução de mecanismo iniciada para este nicho. Depois de concluir o resultado, clique no botão acima para criar o job e acompanhar o mecanismo.",
     description:
       "Converta o resultado desejado em um mecanismo plausível antes de avançar para prova e oferta.",
+  },
+  {
+    slug: "offer",
+    number: 5,
+    title: "Oferta",
+    startLabel: "Iniciar construção da oferta",
+    startedToast: "Etapa Oferta iniciada",
+    startErrorToast:
+      "Não foi possível iniciar a etapa Oferta. Conclua o mecanismo antes de avançar.",
+    loadingLabel: "Carregando execuções de oferta...",
+    emptyMessage:
+      "Nenhuma execução de oferta iniciada para este nicho. Depois de concluir o mecanismo, clique no botão acima para criar o job e acompanhar a oferta.",
+    description:
+      "Empacote mecanismo, prova prometida e promessa central em uma oferta clara para venda.",
   },
 ];
 
@@ -307,9 +321,9 @@ export default function NewHypothesisPage() {
       <section className="card">
         <div className="card-body">
           <p className="text-muted mb-3">
-            Depois que dor, resultado e mecanismo estiverem claros, avance para
-            construir a hipótese completa seguindo Dor → Resultado → Mecanismo
-            → Prova → Oferta.
+            Depois que dor, resultado, mecanismo e oferta estiverem claros, use
+            a hipótese completa para avançar nos experimentos seguindo Dor →
+            Resultado → Mecanismo → Prova → Oferta.
           </p>
           <Link className="btn btn-outline-secondary" to="/niches">
             Voltar para nichos

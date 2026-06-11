@@ -67,6 +67,15 @@ class ArquiteturaTest {
             Pattern.compile("^com\\.marketinghub\\.geralanding\\.[a-zA-Z0-9_]+\\.web$");
     private static final Pattern BACKEND_STAGE_SERVICE_PACKAGE_PATTERN =
             Pattern.compile("^com\\.marketinghub\\.geralanding\\.[a-zA-Z0-9_]+\\.service$");
+    private static final String HYPOTHESIS_PAIN_STAGE_EXECUTION_REPOSITORY_CLASS =
+            "com.marketinghub.repository.jpa.hypothesis.HypothesisPainStageExecutionRepository";
+    private static final String MARKET_NICHE_REPOSITORY_CLASS =
+            "com.marketinghub.repository.jpa.niche.MarketNicheRepository";
+    private static final String HYPOTHESIS_CLASS = "com.marketinghub.hypothesis.Hypothesis";
+    private static final String MARKET_NICHE_CLASS = "com.marketinghub.niche.MarketNiche";
+    private static final List<String> ALLOWED_HYPOTHESIS_STAGE_SERVICE_REPOSITORIES = List.of(
+            HYPOTHESIS_PAIN_STAGE_EXECUTION_REPOSITORY_CLASS,
+            MARKET_NICHE_REPOSITORY_CLASS);
     private static final Pattern BACKEND_CONTROLLER_NAME_PATTERN = Pattern.compile("^Backend([A-Za-z0-9]+)Controller$");
     private static final Pattern BACKEND_SERVICE_NAME_PATTERN = Pattern.compile("^Backend([A-Za-z0-9]+)Service$");
     private static final Pattern EPM_CONTROLLER_PACKAGE_PATTERN = Pattern.compile("^com\\.marketinghub\\.epm\\.controller$");
@@ -227,6 +236,25 @@ class ArquiteturaTest {
             classes().that().resideInAPackage("com.marketinghub.geralanding..service..")
                     .should(onlyDependOnAllowedMarketingHubClasses())
                     .because("[ARQUITETURA] [BACKEND][GeraLanding] serviços em geralanding.*.service só podem acessar classes permitidas dentro de com.marketinghub");
+
+    @ArchTest
+    static final ArchRule hypothesisControllerPackagesShouldOnlyDependOnControllerOrServiceInSameStage =
+            classes().that().resideInAPackage("com.marketinghub.hypothesis.*.controller..")
+                    .should(onlyDependOnHypothesisControllerOrServiceWithinSameStage())
+                    .because("[ARQUITETURA] [BACKEND][Hypothesis] controller em hypothesis.*.controller só pode acessar classes de hypothesis.*.controller e hypothesis.*.service da mesma etapa");
+
+    @ArchTest
+    static final ArchRule hypothesisProvisorioPackagesShouldOnlyDependOnOwnProvisorioPackage =
+            classes().that().resideInAPackage("com.marketinghub.hypothesis.*.provisorio..")
+                    .should(onlyDependOnHypothesisProvisorioWithinSameStage())
+                    .allowEmptyShould(true)
+                    .because("[ARQUITETURA] [BACKEND][Hypothesis] provisorio em hypothesis.*.provisorio só pode acessar classes do próprio pacote hypothesis.*.provisorio");
+
+    @ArchTest
+    static final ArchRule hypothesisServicePackagesShouldOnlyAccessAllowedMarketingHubClasses =
+            classes().that().resideInAPackage("com.marketinghub.hypothesis.*.service..")
+                    .should(onlyDependOnAllowedHypothesisStageMarketingHubClasses())
+                    .because("[ARQUITETURA] [BACKEND][Hypothesis] serviços em hypothesis.*.service só podem acessar classes permitidas dentro de com.marketinghub");
 
     @ArchTest
     static final ArchRule epmControllerPackagesShouldOnlyDependOnControllerOrService =
@@ -1537,6 +1565,144 @@ class ArquiteturaTest {
     }
 
     /**
+     * Garante que controllers dependam apenas de controller/service da mesma etapa hypothesis.
+     */
+    private static ArchCondition<JavaClass> onlyDependOnHypothesisControllerOrServiceWithinSameStage() {
+        return new ArchCondition<>("[ARQUITETURA] [BACKEND][Hypothesis] controller only depends on same-stage controller/service") {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                item.getDirectDependenciesFromSelf().forEach(dependency -> {
+                    String targetName = dependency.getTargetClass().getName();
+                    if (!targetName.startsWith("com.marketinghub.hypothesis.")) {
+                        return;
+                    }
+                    String sourceStage = extractHypothesisStage(item.getPackageName());
+                    String targetStage = extractHypothesisStage(dependency.getTargetClass().getPackageName());
+                    String targetLayer = extractHypothesisLayer(dependency.getTargetClass().getPackageName());
+                    if (sourceStage == null) {
+                        return;
+                    }
+                    boolean valid = sourceStage.equals(targetStage)
+                            && ("controller".equals(targetLayer) || "service".equals(targetLayer));
+                    if (!valid) {
+                        String message = "[ARQUITETURA] [BACKEND][Hypothesis] classe-origem=" + item.getName()
+                                + " possui import/dependência violadora: " + dependency.getDescription()
+                                + " (alvo: " + targetName + ")"
+                                + " | regra: hypothesis.*.controller só pode acessar hypothesis.*.controller "
+                                + "e hypothesis.*.service da mesma etapa";
+                        events.add(SimpleConditionEvent.violated(item, message));
+                    }
+                });
+            }
+        };
+    }
+
+    /**
+     * Garante que classes provisorio dependam apenas de provisorio da mesma etapa hypothesis.
+     */
+    private static ArchCondition<JavaClass> onlyDependOnHypothesisProvisorioWithinSameStage() {
+        return new ArchCondition<>("[ARQUITETURA] [BACKEND][Hypothesis] provisorio only depends on same-stage provisorio") {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                item.getDirectDependenciesFromSelf().forEach(dependency -> {
+                    String targetName = dependency.getTargetClass().getName();
+                    if (!targetName.startsWith("com.marketinghub.hypothesis.")) {
+                        return;
+                    }
+                    String sourceStage = extractHypothesisStage(item.getPackageName());
+                    String targetStage = extractHypothesisStage(dependency.getTargetClass().getPackageName());
+                    String targetLayer = extractHypothesisLayer(dependency.getTargetClass().getPackageName());
+                    if (sourceStage == null) {
+                        return;
+                    }
+                    boolean valid = sourceStage.equals(targetStage) && "provisorio".equals(targetLayer);
+                    if (!valid) {
+                        String message = "[ARQUITETURA] [BACKEND][Hypothesis] classe-origem=" + item.getName()
+                                + " possui import/dependência violadora: " + dependency.getDescription()
+                                + " (alvo: " + targetName + ")"
+                                + " | regra: hypothesis.*.provisorio só pode acessar hypothesis.*.provisorio da mesma etapa";
+                        events.add(SimpleConditionEvent.violated(item, message));
+                    }
+                });
+            }
+        };
+    }
+
+    /**
+     * Garante que services hypothesis acessem services/provisórios internos da mesma etapa e classes compartilhadas permitidas.
+     */
+    private static ArchCondition<JavaClass> onlyDependOnAllowedHypothesisStageMarketingHubClasses() {
+        return new ArchCondition<>("[ARQUITETURA] [BACKEND][Hypothesis] depend only on same-stage service/provisorio packages and explicit allowed classes") {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                item.getDirectDependenciesFromSelf().forEach(dependency -> {
+                    JavaClass targetClass = dependency.getTargetClass();
+                    String targetName = targetClass.getName();
+                    if (!targetName.startsWith("com.marketinghub.")) {
+                        return;
+                    }
+                    if (isSameStageHypothesisServiceDependency(item, targetClass)
+                            || isSameStageHypothesisProvisorioDependency(item, targetClass)
+                            || isSameStageHypothesisDomainDependency(item, targetClass)
+                            || targetName.equals(HYPOTHESIS_CLASS)
+                            || targetName.equals(MARKET_NICHE_CLASS)
+                            || isAllowedHypothesisStageServiceRepository(targetName)) {
+                        return;
+                    }
+                    String message = "[ARQUITETURA] [BACKEND][Hypothesis] classe-origem=" + item.getName()
+                            + " possui import/dependência violadora: " + dependency.getDescription()
+                            + " (alvo: " + targetName + ")"
+                            + " | regra: serviços em hypothesis.*.service só podem acessar "
+                            + "pacotes internos hypothesis.<etapa>.service.*, hypothesis.<etapa>.provisorio.* "
+                            + "e entidades da mesma etapa, "
+                            + HYPOTHESIS_CLASS + ", "
+                            + MARKET_NICHE_CLASS
+                            + " e somente repositories canônicos explicitamente liberados: "
+                            + ALLOWED_HYPOTHESIS_STAGE_SERVICE_REPOSITORIES;
+                    events.add(SimpleConditionEvent.violated(item, message));
+                });
+            }
+        };
+    }
+
+    /**
+     * Verifica se a dependência alvo é um repository liberado para services do Hypothesis.
+     */
+    private static boolean isAllowedHypothesisStageServiceRepository(String targetName) {
+        return ALLOWED_HYPOTHESIS_STAGE_SERVICE_REPOSITORIES.contains(targetName);
+    }
+
+    /**
+     * Verifica se a dependência alvo pertence à árvore service da mesma etapa Hypothesis.
+     */
+    private static boolean isSameStageHypothesisServiceDependency(JavaClass sourceClass, JavaClass targetClass) {
+        String sourceStage = extractHypothesisStage(sourceClass.getPackageName());
+        String targetStage = extractHypothesisStage(targetClass.getPackageName());
+        String targetLayer = extractHypothesisLayer(targetClass.getPackageName());
+        return sourceStage != null && sourceStage.equals(targetStage) && "service".equals(targetLayer);
+    }
+
+    /**
+     * Verifica se a dependência alvo pertence à árvore provisorio da mesma etapa Hypothesis.
+     */
+    private static boolean isSameStageHypothesisProvisorioDependency(JavaClass sourceClass, JavaClass targetClass) {
+        String sourceStage = extractHypothesisStage(sourceClass.getPackageName());
+        String targetStage = extractHypothesisStage(targetClass.getPackageName());
+        String targetLayer = extractHypothesisLayer(targetClass.getPackageName());
+        return sourceStage != null && sourceStage.equals(targetStage) && "provisorio".equals(targetLayer);
+    }
+
+    /**
+     * Verifica se a dependência alvo pertence ao domínio direto da mesma etapa Hypothesis.
+     */
+    private static boolean isSameStageHypothesisDomainDependency(JavaClass sourceClass, JavaClass targetClass) {
+        String sourceStage = extractHypothesisStage(sourceClass.getPackageName());
+        String targetStage = extractHypothesisStage(targetClass.getPackageName());
+        String targetLayer = extractHypothesisLayer(targetClass.getPackageName());
+        return sourceStage != null && sourceStage.equals(targetStage) && targetLayer == null;
+    }
+
+    /**
      * Garante que classes web dependam apenas de web/service da mesma etapa geralanding.
      */
     private static ArchCondition<JavaClass> onlyDependOnWebOrServiceWithinSameStage() {
@@ -1710,6 +1876,40 @@ class ArquiteturaTest {
                 });
             }
         };
+    }
+
+    /**
+     * Extrai a etapa hypothesis (subpacote após hypothesis).
+     */
+    private static String extractHypothesisStage(String packageName) {
+        String marker = "com.marketinghub.hypothesis.";
+        if (!packageName.startsWith(marker)) {
+            return null;
+        }
+        String remainder = packageName.substring(marker.length());
+        int idx = remainder.indexOf('.');
+        return idx > 0 ? remainder.substring(0, idx) : remainder;
+    }
+
+    /**
+     * Extrai o layer principal da etapa hypothesis (controller/service/provisorio).
+     */
+    private static String extractHypothesisLayer(String packageName) {
+        String stage = extractHypothesisStage(packageName);
+        if (stage == null) {
+            return null;
+        }
+        String stagePackage = "com.marketinghub.hypothesis." + stage;
+        if (packageName.equals(stagePackage)) {
+            return null;
+        }
+        String prefix = stagePackage + ".";
+        if (!packageName.startsWith(prefix)) {
+            return null;
+        }
+        String remainder = packageName.substring(prefix.length());
+        int idx = remainder.indexOf('.');
+        return idx > 0 ? remainder.substring(0, idx) : remainder;
     }
 
     /**

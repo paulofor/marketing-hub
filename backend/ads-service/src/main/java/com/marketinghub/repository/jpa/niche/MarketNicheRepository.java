@@ -1,9 +1,12 @@
 package com.marketinghub.repository.jpa.niche;
 
 import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.niche.dto.MarketNicheListItemProjection;
 import com.marketinghub.experiment.ExperimentPlatform;
 import com.marketinghub.experiment.ExperimentStatus;
 import java.math.BigDecimal;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -12,14 +15,34 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 /**
- * JPA repository for {@link MarketNiche} entities.
+ * Responsabilidade: persistir e consultar nichos de mercado no banco de dados.
  */
 public interface MarketNicheRepository extends JpaRepository<MarketNiche, Long> {
     /**
-     * Retrieves niches configured to generate hypotheses.
+     * Lista os nichos para a tela administrativa com agregados de hipóteses do pipeline e experimentos.
+     */
+    @Query("""
+            select n.id as id,
+                   n.name as name,
+                   n.createdAt as createdAt,
+                   coalesce(n.totalCost, 0) as totalCost,
+                   (select count(hp.idJob)
+                    from HypothesisPainStageExecution hp
+                    where hp.marketNicheId = n.id
+                      and hp.stageCode = 'hypothesis-result'
+                      and hp.status = 'CONCLUIDO') as pipelineHypothesesCount,
+                   (select count(e.id)
+                    from Experiment e
+                    where e.niche = n) as experimentsCount
+            from MarketNiche n
+            order by n.createdAt desc, n.id desc
+            """)
+    Page<MarketNicheListItemProjection> findListItems(Pageable pageable);
+
+    /**
+     * Busca nichos configurados para geração de hipóteses.
      *
-     * <p>Filters are handled in the query so we only fetch the records we
-     * actually need.</p>
+     * <p>Os filtros ficam na consulta para carregar apenas os registros necessários.</p>
      */
     @Query("""
             select n from MarketNiche n
@@ -30,7 +53,7 @@ public interface MarketNicheRepository extends JpaRepository<MarketNiche, Long> 
     List<MarketNiche> findAllToGenerateHypotheses();
 
     /**
-     * Retrieves niches configured to generate interests.
+     * Busca nichos configurados para geração de interesses.
      */
     @Query("""
             select distinct n from MarketNiche n
@@ -41,7 +64,7 @@ public interface MarketNicheRepository extends JpaRepository<MarketNiche, Long> 
     List<MarketNiche> findAllToGenerateInterests();
 
     /**
-     * Retrieves niches configured to generate job titles.
+     * Busca nichos configurados para geração de cargos.
      */
     @Query("""
             select distinct n from MarketNiche n
@@ -52,7 +75,7 @@ public interface MarketNicheRepository extends JpaRepository<MarketNiche, Long> 
     List<MarketNiche> findAllToGenerateJobTitles();
 
     /**
-     * Retrieves niches configured to generate behaviors.
+     * Busca nichos configurados para geração de comportamentos.
      */
     @Query("""
             select distinct n from MarketNiche n
@@ -63,7 +86,7 @@ public interface MarketNicheRepository extends JpaRepository<MarketNiche, Long> 
     List<MarketNiche> findAllToGenerateBehaviors();
 
     /**
-     * Retrieves niches configured to generate detailed descriptions.
+     * Busca nichos configurados para geração de descrições detalhadas.
      */
     @Query("""
             select distinct n from MarketNiche n
@@ -74,7 +97,7 @@ public interface MarketNicheRepository extends JpaRepository<MarketNiche, Long> 
     List<MarketNiche> findAllToGenerateDetailedDescriptions();
 
     /**
-     * Lists niches that have at least one experiment ready for pixel creation.
+     * Lista nichos que possuem ao menos um experimento pronto para criação de pixel.
      */
     @Query("""
             select distinct n from MarketNiche n
@@ -92,7 +115,7 @@ public interface MarketNicheRepository extends JpaRepository<MarketNiche, Long> 
                                        @Param("platform") ExperimentPlatform platform);
 
     /**
-     * Increments the total cost accumulated for a niche.
+     * Incrementa o custo total acumulado de um nicho.
      */
     @Modifying
     @Query("""

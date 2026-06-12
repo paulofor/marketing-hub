@@ -66,10 +66,34 @@ class BackendRoutineQualityGateServiceTest {
     assertThat(pending.getFirst().routineEvidenceScore()).isEqualTo(86);
     assertThat(pending.getFirst().brazilianSourceCount()).isEqualTo(2);
     assertThat(pending.getFirst().recentSourceCount()).isEqualTo(2);
+    assertThat(pending.getFirst().customerBehaviorSummary()).contains("WhatsApp");
+    assertThat(pending.getFirst().channelsSummary()).contains("Instagram");
     assertThat(pending.getFirst().customerAcquisitionEvidenceCount()).isEqualTo(3);
     assertThat(pending.getFirst().emotionalOutcomeEvidenceCount()).isEqualTo(4);
     assertThat(pending.getFirst().autonomousProfessionalFitScore()).isEqualTo(82);
   }
+
+
+  /** Deve entregar resumos fracos ao coletor sem contar placeholders como evidência positiva de aquisição/canais. */
+  @Test
+  void shouldNotCountGenericAcquisitionAndChannelsAsPositiveEvidence() {
+    OprmNicheRoutineCard card = card();
+    OprmMeiAudienceProfile profile = profile();
+    profile.setCustomerAcquisitionBehavior("Sem evidência suficiente sobre comportamento de clientes.");
+    profile.setChannelsUsed("Sem evidência suficiente sobre canais usados.");
+    when(cardRepository.findByQualityCheckedAtIsNullOrderByCreatedAtAscIdAsc(any(Pageable.class))).thenReturn(List.of(card));
+    when(meiAudienceProfileRepository.existsByResearchCycleId(1001L)).thenReturn(true);
+    when(snapshotRepository.findByResearchCycleIdOrderByIdAsc(1001L)).thenReturn(List.of(snapshot(false, 80, 70, false, false, "a.com.br")));
+    when(meiAudienceProfileRepository.findFirstByResearchCycleIdOrderByIdDesc(1001L)).thenReturn(Optional.of(profile));
+    when(signalRepository.findByResearchCycleIdOrderByIdAsc(1001L)).thenReturn(List.of(signal("ROUTINE_TASK")));
+
+    List<RecordRoutineQualityGatePending> pending = service.listPending();
+
+    assertThat(pending.getFirst().customerBehaviorSummary()).contains("Sem evidência suficiente");
+    assertThat(pending.getFirst().channelsSummary()).contains("Sem evidência suficiente");
+    assertThat(pending.getFirst().customerAcquisitionEvidenceCount()).isZero();
+  }
+
 
   /** Deve persistir a decisão final no cartão e refletir o status de qualidade no ciclo. */
   @Test
@@ -152,7 +176,7 @@ class BackendRoutineQualityGateServiceTest {
   private OprmMeiAudienceProfile profile() {
     OprmMeiAudienceProfile profile = new OprmMeiAudienceProfile();
     profile.setCustomerAcquisitionBehavior("Clientes vêm por WhatsApp e Instagram.");
-    profile.setChannelsUsed("WhatsApp, Instagram e indicação.");
+    profile.setChannelsUsed("Canais usados na rotina: WhatsApp, Instagram, indicação e telefone para retorno de clientes.");
     profile.setEmotionalPainsSummary("Medo de agenda vazia.");
     profile.setDreamsSummary("Agenda previsível.");
     profile.setFearsSummary("Perder clientes para concorrentes.");

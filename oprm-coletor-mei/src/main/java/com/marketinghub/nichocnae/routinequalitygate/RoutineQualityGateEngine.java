@@ -39,10 +39,16 @@ public class RoutineQualityGateEngine {
         boolean hasRecentSources = value(pending.recentSourceCount()) >= 2 || value(pending.sourceFreshnessScore()) >= 70;
         boolean hasAuditableEvidence = hasText(pending.evidenceSummary()) && distinctDomainCount(pending.sourceDomains()) >= 2 && hasBrazilianSources;
         boolean hasRoutineTask = value(pending.routineTaskCount()) > 0;
-        boolean hasAcquisitionOrChannel = value(pending.customerAcquisitionEvidenceCount()) > 0;
+        boolean hasUsefulCustomerBehaviorSummary = hasUsefulCommercialSummary(pending.customerBehaviorSummary());
+        boolean hasUsefulChannelsSummary = hasUsefulCommercialSummary(pending.channelsSummary());
+        boolean hasAcquisitionOrChannelCounter = value(pending.customerAcquisitionEvidenceCount()) > 0;
+        boolean hasCommercialAcquisitionEvidence = hasAcquisitionOrChannelCounter
+                && hasUsefulCustomerBehaviorSummary
+                && hasUsefulChannelsSummary;
         boolean hasPracticalPain = value(pending.operationalDifficultyCount()) > 0 || value(pending.painSignalCount()) > 0;
         boolean hasHumanOutcome = value(pending.emotionalOutcomeEvidenceCount()) > 0;
-        boolean hasMinimumSignalMix = hasRoutineTask && hasAcquisitionOrChannel && hasPracticalPain && hasHumanOutcome;
+        boolean hasMinimumSignalMix = hasRoutineTask && hasCommercialAcquisitionEvidence && hasPracticalPain && hasHumanOutcome;
+        boolean weakAcquisitionOrChannels = !hasCommercialAcquisitionEvidence;
         boolean dominatedBySolution = effectiveSolutionRiskScore > MAX_ACCEPTABLE_SOLUTION_RISK
                 || value(pending.solutionLanguageRiskCount()) > signalCount / 2;
         boolean outdated = outdatedRiskScore > MAX_ACCEPTABLE_OUTDATED_RISK || !hasRecentSources;
@@ -66,7 +72,7 @@ public class RoutineQualityGateEngine {
                 && !outdated
                 && !tooCorporate
                 && !generic;
-        String status = chooseStatus(generic, dominatedBySolution, outdated, tooCorporate, approved, hasMinimumSignalMix);
+        String status = chooseStatus(generic, weakAcquisitionOrChannels, dominatedBySolution, outdated, tooCorporate, approved, hasMinimumSignalMix);
         return new RoutineQualityDecision(
                 status,
                 approved,
@@ -77,6 +83,9 @@ public class RoutineQualityGateEngine {
                         pending,
                         status,
                         hasMinimumSignalMix,
+                        hasUsefulCustomerBehaviorSummary,
+                        hasUsefulChannelsSummary,
+                        weakAcquisitionOrChannels,
                         hasAuditableEvidence,
                         hasRecentSources,
                         dominatedBySolution,
@@ -93,6 +102,7 @@ public class RoutineQualityGateEngine {
     /** Escolhe o status mais útil para orientar nova pesquisa ou bloqueio operacional. */
     private String chooseStatus(
             boolean generic,
+            boolean weakAcquisitionOrChannels,
             boolean dominatedBySolution,
             boolean outdated,
             boolean tooCorporate,
@@ -106,6 +116,9 @@ public class RoutineQualityGateEngine {
         }
         if (outdated) {
             return OUTDATED_SOURCES;
+        }
+        if (weakAcquisitionOrChannels) {
+            return NEEDS_MORE_MEI_RESEARCH;
         }
         if (generic) {
             return GENERIC;
@@ -231,6 +244,9 @@ public class RoutineQualityGateEngine {
             RoutineQualityGatePending pending,
             String status,
             boolean hasMinimumSignalMix,
+            boolean hasUsefulCustomerBehaviorSummary,
+            boolean hasUsefulChannelsSummary,
+            boolean weakAcquisitionOrChannels,
             boolean hasAuditableEvidence,
             boolean hasRecentSources,
             boolean dominatedBySolution,
@@ -254,6 +270,9 @@ public class RoutineQualityGateEngine {
         notes.add("rotinaApenasGestaoAgendaAtendimentoOrganizacao=" + routineAdministrativeOnly);
         notes.add("rotinaRevelaTarefasReaisExecutor=" + routineRevealsExecutorTasks);
         notes.add("aquisicaoOuCanal=" + value(pending.customerAcquisitionEvidenceCount()));
+        notes.add("resumoComportamentoClienteUtil=" + hasUsefulCustomerBehaviorSummary);
+        notes.add("resumoCanaisUtil=" + hasUsefulChannelsSummary);
+        notes.add("faltaEvidenciaAquisicaoCanaisRecorrenciaOuComportamentoClientes=" + weakAcquisitionOrChannels);
         notes.add("dorPratica=" + (value(pending.operationalDifficultyCount()) + value(pending.painSignalCount())));
         notes.add("dorEmocionalSonhoOuMedo=" + value(pending.emotionalOutcomeEvidenceCount()));
         notes.add("mixMinimoMeiAutonomo=" + hasMinimumSignalMix);
@@ -284,6 +303,55 @@ public class RoutineQualityGateEngine {
             return 0;
         }
         return (int) List.of(sourceDomains.split(",")).stream().map(String::trim).filter(StringUtils::hasText).distinct().count();
+    }
+
+
+    /** Verifica se o resumo comercial contém evidência acionável e não apenas placeholder de ausência de evidência. */
+    private boolean hasUsefulCommercialSummary(String value) {
+        if (!hasText(value)) {
+            return false;
+        }
+        String normalized = normalize(value);
+        if (normalized.length() < 35 || containsInsufficientEvidencePlaceholder(normalized)) {
+            return false;
+        }
+        return containsCommercialActionMarker(normalized);
+    }
+
+    /** Identifica frases genéricas que explicitam falta de evidência e não podem virar sinal positivo. */
+    private boolean containsInsufficientEvidencePlaceholder(String normalized) {
+        return normalized.contains("sem evidencia suficiente")
+                || normalized.contains("sem evidencias suficientes")
+                || normalized.contains("nao ha evidencia")
+                || normalized.contains("nao existe evidencia")
+                || normalized.contains("sem dados suficientes")
+                || normalized.contains("informacao insuficiente")
+                || normalized.contains("nao identificado")
+                || normalized.contains("nao foi identificado");
+    }
+
+    /** Procura marcadores de aquisição, canal, recorrência ou comportamento de clientes em linguagem operacional. */
+    private boolean containsCommercialActionMarker(String normalized) {
+        return List.of(
+                        "whatsapp",
+                        "instagram",
+                        "indicacao",
+                        "cliente",
+                        "clientes",
+                        "canal",
+                        "agenda",
+                        "retorno",
+                        "recorr",
+                        "orcamento",
+                        "atendimento",
+                        "telefone",
+                        "google",
+                        "rede social",
+                        "redes sociais",
+                        "bairro",
+                        "fidelizacao")
+                .stream()
+                .anyMatch(normalized::contains);
     }
 
     /** Detecta marcadores concretos que normalmente indicam texto menos genérico e mais comportamental. */

@@ -30,7 +30,16 @@ public class SourceIntentClassifier {
     private static final int RECENT_MONTHS_LIMIT = 24;
     private static final Pattern YEAR_PATTERN = Pattern.compile("\\b(20[0-9]{2})\\b");
     private static final List<String> ROUTINE_TERMS = List.of(
-            "rotina", "dia a dia", "tarefas", "atividade", "trabalho", "processo", "procedimento", "operação");
+            "rotina", "dia a dia", "tarefas", "atividade", "trabalho", "processo", "procedimento", "operação",
+            "execução", "executa", "executado", "executada", "atendimento cliente", "tarefas diárias",
+            "tarefas do dia a dia", "rotina de trabalho", "prática profissional");
+    private static final List<String> PRACTICAL_EXECUTION_TERMS = List.of(
+            "o que faz", "como faz", "atendimento", "cliente", "higiene", "esterilização", "lavar", "cortar",
+            "escovar", "colorir", "preparar", "aplicar", "organizar", "limpar", "cuidar", "agenda de atendimento");
+    private static final List<String> PROFESSIONAL_SOURCE_TERMS = List.of(
+            "cbo", "classificação brasileira de ocupações", "guia profissional", "relato de profissional",
+            "relato profissional", "profissional relata", "profissionais relatam", "experiência profissional",
+            "ocupação", "descrição da ocupação", "atribuições", "funções");
     private static final List<String> PROBLEM_TERMS = List.of(
             "problema", "dificuldade", "desafio", "erro", "reclamação", "dúvida", "pergunta", "como fazer");
     private static final List<String> GUIDE_TERMS = List.of(
@@ -39,7 +48,11 @@ public class SourceIntentClassifier {
             "curso", "aula", "apostila", "artigo", "entenda", "o que é", "conceito");
     private static final List<String> COMMERCIAL_TERMS = List.of(
             "comprar", "preço", "orçamento", "promoção", "software", "plataforma", "ferramenta", "curso online",
-            "consultoria", "agende", "contrate", "venda", "solução", "produto", "serviço");
+            "consultoria", "agende", "contrate", "venda", "solução", "produto", "serviço", "agenda online",
+            "app", "aplicativo", "automação", "sistema");
+    private static final List<String> SOFTWARE_SALES_TERMS = List.of(
+            "software", "plataforma", "agenda online", "app", "aplicativo", "automação", "sistema", "gestão de salão",
+            "sistema para salão", "sistema para manicure", "marcação online", "reservas online", "crm");
     private static final List<String> COMMERCIAL_DOMAINS = List.of(
             "hotmart.", "kiwify.", "eduzz.", "monetizze.", "shopify.", "mercadolivre.", "amazon.");
     private static final List<String> BRAZIL_MARKERS = List.of(
@@ -62,21 +75,31 @@ public class SourceIntentClassifier {
         int routineHits = countHits(text, ROUTINE_TERMS);
         int problemHits = countHits(text, PROBLEM_TERMS);
         int guideHits = countHits(text, GUIDE_TERMS);
+        int practicalExecutionHits = countHits(text, PRACTICAL_EXECUTION_TERMS);
+        int professionalSourceHits = countHits(text, PROFESSIONAL_SOURCE_TERMS);
         int educationalHits = countHits(text, EDUCATIONAL_TERMS);
         int commercialHits = countHits(text, COMMERCIAL_TERMS) + countHits(domain, COMMERCIAL_DOMAINS);
+        int softwareSalesHits = countHits(text, SOFTWARE_SALES_TERMS);
         int brazilScore = brazilRelevanceScore(text, domain);
         int autonomousScore = autonomousProfessionalEvidenceScore(text);
         boolean structuredBusinessDriftRisk = structuredBusinessDriftRisk(text, autonomousScore);
-        boolean commercialRisk = commercialHits > 0 && routineHits + problemHits + autonomousScore / 25 < 2;
+        boolean commercialRisk = commercialRisk(
+                commercialHits, softwareSalesHits, routineHits, problemHits, practicalExecutionHits, professionalSourceHits,
+                autonomousScore);
         boolean solutionRisk =
                 containsAny(text, List.of("solução", "software", "ferramenta", "produto", "venda", "comprar"));
         Instant publishedAt = extractPublishedAt(result, text);
         int freshnessScore = sourceFreshnessScore(publishedAt);
         boolean outdatedRisk = outdatedSourceRisk(publishedAt, freshnessScore);
-        String intent = classifyIntent(routineHits, problemHits, guideHits, educationalHits, commercialRisk);
+        String intent = classifyIntent(
+                routineHits, problemHits, guideHits, practicalExecutionHits, professionalSourceHits, educationalHits,
+                commercialRisk);
         String classificationType = classifySourceType(
-                domain, text, commercialRisk, structuredBusinessDriftRisk, publishedAt, freshnessScore, problemHits);
-        int score = routineEvidenceScore(routineHits, problemHits, guideHits, educationalHits, commercialHits);
+                domain, text, commercialRisk, structuredBusinessDriftRisk, publishedAt, freshnessScore, problemHits,
+                practicalExecutionHits, professionalSourceHits);
+        int score = routineEvidenceScore(
+                routineHits, problemHits, guideHits, practicalExecutionHits, professionalSourceHits, educationalHits,
+                commercialHits, softwareSalesHits);
         return new SourceSearchResult(
                 result.sourceUrl(),
                 result.sourceTitle(),
@@ -98,17 +121,23 @@ public class SourceIntentClassifier {
 
     /** Decide a intenção operacional priorizando rotina, perguntas reais e guias não vendedores. */
     private String classifyIntent(
-            int routineHits, int problemHits, int guideHits, int educationalHits, boolean commercialRisk) {
+            int routineHits,
+            int problemHits,
+            int guideHits,
+            int practicalExecutionHits,
+            int professionalSourceHits,
+            int educationalHits,
+            boolean commercialRisk) {
         if (commercialRisk) {
             return INTENT_COMMERCIAL_PAGE_RISK;
         }
-        if (routineHits > 0) {
+        if (routineHits > 0 || practicalExecutionHits > 1 || professionalSourceHits > 0) {
             return INTENT_ROUTINE_REPORT;
         }
         if (problemHits > 0) {
             return INTENT_REAL_QUESTION;
         }
-        if (guideHits > 0) {
+        if (guideHits > 0 || practicalExecutionHits > 0) {
             return INTENT_PRACTICAL_GUIDE;
         }
         if (educationalHits > 0) {
@@ -125,7 +154,9 @@ public class SourceIntentClassifier {
             boolean structuredBusinessDriftRisk,
             Instant publishedAt,
             int freshnessScore,
-            int problemHits) {
+            int problemHits,
+            int practicalExecutionHits,
+            int professionalSourceHits) {
         if (commercialRisk) {
             return TYPE_COMMERCIAL_PAGE;
         }
@@ -136,7 +167,10 @@ public class SourceIntentClassifier {
             return TYPE_BRAZILIAN_OFFICIAL_SOURCE;
         }
         boolean communitySource = countHits(domain, COMMUNITY_DOMAINS) > 0;
-        if ((communitySource && (problemHits > 0 || containsAny(text, AUTONOMOUS_TERMS)))
+        if (professionalSourceHits > 0 && (practicalExecutionHits > 0 || problemHits > 0)) {
+            return TYPE_REAL_PROFESSIONAL_REPORT_OR_QUESTION;
+        }
+        if ((communitySource && (problemHits > 0 || practicalExecutionHits > 0 || containsAny(text, AUTONOMOUS_TERMS)))
                 || (problemHits > 0 && containsAny(text, AUTONOMOUS_TERMS))) {
             return TYPE_REAL_PROFESSIONAL_REPORT_OR_QUESTION;
         }
@@ -154,14 +188,40 @@ public class SourceIntentClassifier {
 
     /** Calcula escore simples para ordenar fontes com maior evidência de rotina antes de páginas comerciais. */
     private int routineEvidenceScore(
-            int routineHits, int problemHits, int guideHits, int educationalHits, int commercialHits) {
-        int score = 45
-                + routineHits * 20
-                + problemHits * 15
+            int routineHits,
+            int problemHits,
+            int guideHits,
+            int practicalExecutionHits,
+            int professionalSourceHits,
+            int educationalHits,
+            int commercialHits,
+            int softwareSalesHits) {
+        int score = 40
+                + routineHits * 22
+                + practicalExecutionHits * 14
+                + professionalSourceHits * 18
+                + problemHits * 12
                 + guideHits * 10
-                + educationalHits * 5
-                - commercialHits * 20;
+                + educationalHits * 4
+                - commercialHits * 14
+                - softwareSalesHits * 18;
         return Math.max(0, Math.min(100, score));
+    }
+
+    /** Marca risco comercial quando venda de sistema domina a fonte sem tarefas concretas do executor. */
+    private boolean commercialRisk(
+            int commercialHits,
+            int softwareSalesHits,
+            int routineHits,
+            int problemHits,
+            int practicalExecutionHits,
+            int professionalSourceHits,
+            int autonomousScore) {
+        int concreteExecutionSignals = routineHits + problemHits + practicalExecutionHits + professionalSourceHits;
+        if (softwareSalesHits > 0 && concreteExecutionSignals < 2) {
+            return true;
+        }
+        return commercialHits > 0 && concreteExecutionSignals + autonomousScore / 25 < 2;
     }
 
     /** Calcula aderência Brasil-first por domínio e marcadores explícitos do mercado brasileiro. */

@@ -13,6 +13,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 /** Responsabilidade: validar a orquestração da etapa três entre provedor de busca, backend e StageProcessor. */
 class SourceSearcherProcessorTest {
@@ -22,7 +23,8 @@ class SourceSearcherProcessorTest {
     void shouldSearchProviderAndCompleteSourceSearcherOutput() {
         PublicSourceSearchProvider searchProvider = mock(PublicSourceSearchProvider.class);
         SourceSearcherBackendClient backendClient = mock(SourceSearcherBackendClient.class);
-        SourceSearcherProcessor processor = new SourceSearcherProcessor(searchProvider, backendClient, new SourceIntentClassifier());
+        SourceSearcherProcessor processor =
+                new SourceSearcherProcessor(searchProvider, backendClient, new SourceIntentClassifier());
         SourceSearcherPending pending = pending();
         List<SourceSearchResult> searchResults = List.of(new SourceSearchResult(
                 "https://exemplo.com/agenda",
@@ -52,6 +54,54 @@ class SourceSearcherProcessorTest {
                 .containsEntry("resultCount", 1)
                 .containsEntry("searchProvider", "DUCKDUCKGO_HTML");
         verify(backendClient).completeStageExecution(eq(pending), eq("DUCKDUCKGO_HTML"), any());
+    }
+
+    /** Deve ordenar fontes priorizando execução prática antes de páginas de agenda ou sistema. */
+    @Test
+    void shouldPrioritizePracticalExecutionSourcesBeforeSoftwareAgendaPages() {
+        PublicSourceSearchProvider searchProvider = mock(PublicSourceSearchProvider.class);
+        SourceSearcherBackendClient backendClient = mock(SourceSearcherBackendClient.class);
+        SourceSearcherProcessor processor =
+                new SourceSearcherProcessor(searchProvider, backendClient, new SourceIntentClassifier());
+        SourceSearcherPending pending = pending();
+        SourceSearchResult softwarePage = new SourceSearchResult(
+                "https://agenda.example.com/salao",
+                "Sistema com agenda online e app para salão",
+                "Automação e software para vender mais com reservas online.",
+                "agenda.example.com",
+                1,
+                null,
+                null,
+                false,
+                false);
+        SourceSearchResult practicalPage = new SourceSearchResult(
+                "https://ocupacoes.example.com.br/cbo-manicure-2026",
+                "CBO manicure pedicure: rotina executada",
+                "Guia profissional com procedimentos de atendimento cliente, higiene e esterilização no dia a dia.",
+                "ocupacoes.example.com.br",
+                2,
+                null,
+                null,
+                false,
+                false);
+        SourceSearcherOutput output = output();
+        when(searchProvider.search(pending.queryText(), 20)).thenReturn(List.of(softwarePage, practicalPage));
+        when(searchProvider.providerCode()).thenReturn("DUCKDUCKGO_HTML");
+        when(backendClient.completeStageExecution(eq(pending), eq("DUCKDUCKGO_HTML"), any())).thenReturn(output);
+
+        processor.process(new StageContext<>(
+                new StageExecution<>("job-1", pending, Map.of()),
+                pending,
+                (artifact, content) -> artifact,
+                Map.of()));
+
+        ArgumentCaptor<List<SourceSearchResult>> captor = ArgumentCaptor.captor();
+        verify(backendClient).completeStageExecution(eq(pending), eq("DUCKDUCKGO_HTML"), captor.capture());
+        assertThat(captor.getValue())
+                .extracting(SourceSearchResult::sourceUrl)
+                .containsExactly("https://ocupacoes.example.com.br/cbo-manicure-2026", "https://agenda.example.com/salao");
+        assertThat(captor.getValue().get(0).commercialPageRisk()).isFalse();
+        assertThat(captor.getValue().get(1).commercialPageRisk()).isTrue();
     }
 
     /** Cria uma pendência mínima para a etapa três. */

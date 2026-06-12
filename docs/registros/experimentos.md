@@ -4440,3 +4440,10 @@
 - causa-raiz: o fluxo de hipótese havia recebido Mecanismo e Oferta, mas a etapa Prova não existia no contrato da tela, nos endpoints do backend nem no Worker AI; além disso, Oferta era liberada após Mecanismo, permitindo avançar sem prova.
 - foi feito: adicionada a Etapa 4 — Prova na tela, nos endpoints públicos/internos, no resumo final, no contexto pendente do backend e no Worker AI com prompt/schema próprios; a Oferta agora exige Prova concluída e recebe `proofModelResponse` como contexto.
 - impacto esperado: o eixo Dor → Resultado → Mecanismo → Prova → Oferta volta a ficar completo, sequencial e auditável, reduzindo risco de criar oferta sem elemento de credibilidade para venda.
+
+## 2026-06-12 — Schema de motivo de parada automática do Facebook Ads
+
+- solicitação: corrigir o schema real de `facebook_ads_campaign.stop_reason` para aceitar todos os motivos atuais de parada automática.
+- causa-raiz: a coluna no banco real estava como `enum('FORM_ZERO_CONVERSION_RULE_OF_THREE')`, enquanto a entidade JPA já tratava o motivo como enum textual com tamanho 100 e o domínio passou a gravar novos motivos como `TARGET_AUDIENCE_LOW_INTEREST_STATISTICAL`.
+- foi feito: criado changelog Liquibase incremental para converter `stop_reason` para `VARCHAR(100)`, registrado no master changelog e adicionado teste de regressão do `POST /api/facebook-campaigns/{campaignId}/metrics` cobrindo a gravação do motivo de baixo interesse estatístico.
+- prevenção: o teste também valida que todos os valores atuais de `FacebookCampaignStopReason` cabem no contrato textual persistido, evitando novo bloqueio por enum físico restritivo no banco.

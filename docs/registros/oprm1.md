@@ -521,3 +521,8 @@
 - Ajustada a tela de detalhe do CNAE para inferir conclusão das etapas do pipeline pelos contadores reais do ciclo: queries, fontes candidatas, snapshots coletados e sinais extraídos.
 - Causa-raiz tratada: o status `FAILED` do ciclo pai era exibido como falha do card inicial, escondendo a etapa operacional provável da quebra e obrigando o usuário a abrir detalhes técnicos.
 - Prevenção de recorrência: a mensagem de erro do ciclo agora aparece junto ao status atual e direciona a falha provável para o card compatível, incluindo `mei-audience-segmenter` como falha da etapa 7. MEI.
+## 2026-06-12 — OPRM MEI: barreira operacional para chave OpenAI da segmentação
+
+- Adicionada verificação operacional da etapa `mei-audience-segmenter` no `oprm-coletor-mei` para bloquear busca/processamento de pendências quando não houver chave OpenAI dedicada nem fallback global.
+- Causa-raiz tratada: a etapa podia chegar até a execução da IA sem evidência operacional clara da variável ausente, mascarando a falha de configuração e consumindo o fluxo de pendências sem uma mensagem acionável.
+- Prevenção de recorrência: logs padronizados passaram a registrar `module=oprm-coletor-mei`, `operation=mei-audience-segmenter`, variável esperada, fallback e `researchCycleId` quando aplicável; os testes cobrem ausência de `OPRM_MEI_AUDIENCE_SEGMENTER_OPENAI_API_KEY`, fallback por `OPENAI_API_KEY` já resolvido pelo `application.yml` e notificação do erro operacional ao backend quando houver ciclo conhecido.

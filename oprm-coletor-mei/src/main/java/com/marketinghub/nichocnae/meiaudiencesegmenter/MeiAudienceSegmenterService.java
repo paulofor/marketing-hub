@@ -18,22 +18,29 @@ public class MeiAudienceSegmenterService {
     private final MeiAudienceSegmenterBackendClient backendClient;
     private final MeiAudienceSegmenterProcessor processor;
     private final ArtifactStore artifactStore;
+    private final MeiAudienceSegmenterOperationalGuard operationalGuard;
 
     /** Inicializa o serviço com borda backend, processor concreto e armazenamento genérico de artefatos. */
     public MeiAudienceSegmenterService(
-            MeiAudienceSegmenterBackendClient backendClient, MeiAudienceSegmenterProcessor processor, ArtifactStore artifactStore) {
+            MeiAudienceSegmenterBackendClient backendClient,
+            MeiAudienceSegmenterProcessor processor,
+            ArtifactStore artifactStore,
+            MeiAudienceSegmenterOperationalGuard operationalGuard) {
         this.backendClient = backendClient;
         this.processor = processor;
         this.artifactStore = artifactStore;
+        this.operationalGuard = operationalGuard;
     }
 
     /** Lista ciclos pendentes que ainda precisam de segmentação comportamental. */
     public List<MeiAudienceSegmenterPending> listPendingCycles() {
+        operationalGuard.assertReadyForExecution(null);
         return backendClient.listPendingCycles();
     }
 
     /** Processa ciclos pendentes pela etapa de segmentação e retorna perfis gravados no backend. */
     public List<MeiAudienceSegmenterOutput> processPending(String requestedBy) {
+        operationalGuard.assertReadyForExecution(null);
         List<MeiAudienceSegmenterPending> pendingCycles = backendClient.listPendingCycles();
         return pendingCycles.stream()
                 .map(pending -> processOne(pending, requestedBy))
@@ -47,6 +54,7 @@ public class MeiAudienceSegmenterService {
                 pending,
                 Map.of("stage", "oprmMeiAudienceSegmenter", "requestedBy", requestedBy));
         try {
+            operationalGuard.assertReadyForExecution(pending.researchCycleId());
             PipelineWorker<MeiAudienceSegmenterPending, MeiAudienceSegmenterOutput> worker = new PipelineWorker<>(processor, artifactStore);
             StageResult<MeiAudienceSegmenterOutput> result = worker.processResult(execution);
             return result.output();

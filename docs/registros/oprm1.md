@@ -522,7 +522,8 @@
 - Causa-raiz tratada: o status `FAILED` do ciclo pai era exibido como falha do card inicial, escondendo a etapa operacional provável da quebra e obrigando o usuário a abrir detalhes técnicos.
 - Prevenção de recorrência: a mensagem de erro do ciclo agora aparece junto ao status atual e direciona a falha provável para o card compatível, incluindo `mei-audience-segmenter` como falha da etapa 7. MEI.
 ## 2026-06-12 — OPRM MEI: barreira operacional para chave OpenAI da segmentação
+## 2026-06-12 — OPRM MEI: chave OpenAI da etapa de segmentação de audiência
 
-- Adicionada verificação operacional da etapa `mei-audience-segmenter` no `oprm-coletor-mei` para bloquear busca/processamento de pendências quando não houver chave OpenAI dedicada nem fallback global.
-- Causa-raiz tratada: a etapa podia chegar até a execução da IA sem evidência operacional clara da variável ausente, mascarando a falha de configuração e consumindo o fluxo de pendências sem uma mensagem acionável.
-- Prevenção de recorrência: logs padronizados passaram a registrar `module=oprm-coletor-mei`, `operation=mei-audience-segmenter`, variável esperada, fallback e `researchCycleId` quando aplicável; os testes cobrem ausência de `OPRM_MEI_AUDIENCE_SEGMENTER_OPENAI_API_KEY`, fallback por `OPENAI_API_KEY` já resolvido pelo `application.yml` e notificação do erro operacional ao backend quando houver ciclo conhecido.
+- Configurado o ambiente Docker do `oprm-coletor-mei` para expor explicitamente `OPRM_MEI_AUDIENCE_SEGMENTER_OPENAI_API_KEY_FILE` apontando para o segredo OpenAI montado em `/run/secrets/openai_api_key`.
+- Causa-raiz tratada: a etapa `mei-audience-segmenter` já esperava chave própria ou fallback compartilhado no `application.yml`, mas os manifests do serviço só configuravam a chave da etapa seed, deixando a segmentação MEI sem credencial garantida no ambiente de execução.
+- Prevenção de recorrência: o modelo da etapa também ficou parametrizado nos manifests, mantendo paridade operacional entre seed e segmentação MEI/autônomo.

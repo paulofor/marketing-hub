@@ -1,8 +1,5 @@
 package com.marketinghub.oprm.nichocnae.nicheresearchseedbuilder.service;
 
-import com.marketinghub.openai.OpenAiModel;
-import com.marketinghub.openai.OpenAiResponse;
-import com.marketinghub.openai.service.OpenAiPricingService;
 import com.marketinghub.oprm.nichocnae.OprmNicheResearchSeed;
 import com.marketinghub.oprm.nichocnae.OprmResearchQuery;
 import com.marketinghub.oprm.nichocnae.OprmRoutineResearchCycle;
@@ -16,8 +13,6 @@ import com.marketinghub.oprm.nichocnae.nicheresearchseedbuilder.service.pending.
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmNicheResearchSeedRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmResearchQueryRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmRoutineResearchCycleRepository;
-import com.marketinghub.repository.jpa.pipeline.PipelineStageConfigRepository;
-import com.marketinghub.repository.jpa.pipeline.PipelineStageRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -41,30 +36,21 @@ public class BackendNicheResearchSeedBuilderService {
   private static final String RETRYABLE_QUERY_GOAL_LENGTH_ERROR = "Data too long for column 'query_goal'";
   private static final String COMPLETE_STAGE_PATH_FRAGMENT = "niche-research-seed-builder/stage-executions";
   private static final String DEFAULT_CREATED_BY = "AI";
-  private static final String OPRM_NICHO_CNAE_PIPELINE_CODE = "oprm-nicho-cnae-pipeline";
-  private static final String OPRM_NICHO_CNAE_CANONICAL_VERSION = "oprm-nichocnae-canon.v1";
-  private static final String SEED_BUILDER_CANONICAL_CODE = "NICHE_RESEARCH_SEED_BUILDER";
   private final OprmRoutineResearchCycleRepository routineResearchCycleRepository;
   private final OprmNicheResearchSeedRepository nicheResearchSeedRepository;
   private final OprmResearchQueryRepository researchQueryRepository;
-  private final PipelineStageConfigRepository pipelineStageConfigRepository;
-  private final PipelineStageRepository pipelineStageRepository;
-  private final OpenAiPricingService openAiPricingService;
+  private final OprmNicheResearchSeedBuilderConfigurationGateway configurationGateway;
 
   /** Inicializa o serviço com os repositórios canônicos da etapa dois do pipeline. */
   public BackendNicheResearchSeedBuilderService(
       OprmRoutineResearchCycleRepository routineResearchCycleRepository,
       OprmNicheResearchSeedRepository nicheResearchSeedRepository,
       OprmResearchQueryRepository researchQueryRepository,
-      PipelineStageConfigRepository pipelineStageConfigRepository,
-      PipelineStageRepository pipelineStageRepository,
-      OpenAiPricingService openAiPricingService) {
+      OprmNicheResearchSeedBuilderConfigurationGateway configurationGateway) {
     this.routineResearchCycleRepository = routineResearchCycleRepository;
     this.nicheResearchSeedRepository = nicheResearchSeedRepository;
     this.researchQueryRepository = researchQueryRepository;
-    this.pipelineStageConfigRepository = pipelineStageConfigRepository;
-    this.pipelineStageRepository = pipelineStageRepository;
-    this.openAiPricingService = openAiPricingService;
+    this.configurationGateway = configurationGateway;
   }
 
   /** Lista ciclos em execução ou falhas retryáveis que ainda precisam receber seed e queries. */
@@ -260,7 +246,7 @@ public class BackendNicheResearchSeedBuilderService {
 
   /** Converte um ciclo pendente no contrato interno de unidade de trabalho da etapa dois. */
   private RecordNicheResearchSeedBuilderPending toPending(OprmRoutineResearchCycle cycle) {
-    OpenAiModel configuredModel = resolveConfiguredOpenAiModel();
+    OprmNicheResearchSeedBuilderModel configuredModel = resolveConfiguredOpenAiModel();
     return new RecordNicheResearchSeedBuilderPending(
         cycle.getId(),
         cycle.getSourceNicheId(),
@@ -268,8 +254,8 @@ public class BackendNicheResearchSeedBuilderService {
         cycle.getCnaeDescription(),
         cycle.getNicheName(),
         cycle.getSourceScore(),
-        configuredModel == null ? null : configuredModel.getCode(),
-        configuredModel == null ? null : configuredModel.getName(),
+        configuredModel == null ? null : configuredModel.code(),
+        configuredModel == null ? null : configuredModel.name(),
         cycle.getStatus(),
         cycle.getStartedAt(),
         cycle.getCreatedAt());
@@ -338,9 +324,7 @@ public class BackendNicheResearchSeedBuilderService {
       return null;
     }
     try {
-      return openAiPricingService.estimateStandardCost(
-          request.model(),
-          new OpenAiResponse.OpenAiUsage(request.inputTokens(), request.outputTokens(), null, null, null));
+      return configurationGateway.estimateCostUsd(request.model(), request.inputTokens(), request.outputTokens());
     } catch (RuntimeException ex) {
       LOGGER.warn(
           "Não foi possível calcular custo da etapa dois OPRM nichocnae (model={}, inputTokens={}, outputTokens={})",
@@ -352,20 +336,9 @@ public class BackendNicheResearchSeedBuilderService {
     }
   }
 
-  /** Recupera o modelo OpenAI configurado, priorizando contrato persistente e caindo no pipeline operacional legado. */
-  private OpenAiModel resolveConfiguredOpenAiModel() {
-    OpenAiModel persistentModel = pipelineStageConfigRepository
-        .findOfficialStageConfig(
-            OPRM_NICHO_CNAE_PIPELINE_CODE, OPRM_NICHO_CNAE_CANONICAL_VERSION, SEED_BUILDER_CANONICAL_CODE)
-        .map(config -> config.getOpenAiModel())
-        .orElse(null);
-    if (persistentModel != null) {
-      return persistentModel;
-    }
-    return pipelineStageRepository
-        .findByPipelineCodeAndStageCode(OPRM_NICHO_CNAE_PIPELINE_CODE, "niche-research-seed-builder")
-        .map(stage -> stage.getOpenAiModel())
-        .orElse(null);
+  /** Recupera o modelo de IA configurado pela abstração canônica permitida para o OPRM. */
+  private OprmNicheResearchSeedBuilderModel resolveConfiguredOpenAiModel() {
+    return configurationGateway.findConfiguredModel().orElse(null);
   }
 
   /** Converte strings vazias em nulo para campos opcionais persistidos. */

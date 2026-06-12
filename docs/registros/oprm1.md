@@ -508,3 +508,10 @@
   - a conclusão da etapa passou a enviar e persistir modelo, resposta bruta, tokens de entrada/saída, `openAiResponseId` e custo estimado;
   - a tela de detalhe da etapa passou a exibir a telemetria real quando persistida.
 - verificação operacional: consulta via MCP confirmou que a etapa operacional `niche-research-seed-builder` está configurada com `gpt-5.4` no banco.
+
+## 2026-06-12 — OPRM NichoCNAE: isolamento arquitetural da etapa seed
+
+- Removida a dependência direta do serviço OPRM `BackendNicheResearchSeedBuilderService` em pacotes `openai` e `pipeline`.
+- Criado contrato próprio da etapa seed para consultar modelo configurado e estimar custo, com implementação fora do pacote funcional OPRM para preservar o limite arquitetural validado pelo ArchUnit.
+- Causa-raiz tratada: a etapa OPRM consumia diretamente serviços e repositórios compartilhados para dados auxiliares de IA, rompendo a regra de isolamento do módulo.
+- Prevenção de recorrência: os testes da etapa passaram a mockar a abstração OPRM, mantendo o serviço de negócio sem imports proibidos.

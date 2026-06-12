@@ -7,12 +7,14 @@ import org.springframework.stereotype.Component;
 @Component
 public class NicheResearchSeedBuilderPromptBuilder {
 
-    /** Cria instruções objetivas para a IA transformar CNAE em seed operacional e queries de pesquisa. */
+    /** Cria instruções para transformar CNAE em seed e queries de rotina com aquisição como eixo operacional. */
     public String buildPrompt(NicheResearchSeedBuilderPending input) {
         StringJoiner prompt = new StringJoiner("\n");
         prompt.add("Você é o construtor da etapa 2 do pipeline OPRM nichocnae.");
         prompt.add("Objetivo: transformar o CNAE em pesquisas sobre o profissional brasileiro MEI/autônomo que executa o trabalho, sem assumir solução, IA, automação, produto, curso, ferramenta ou oferta.");
         prompt.add("Gere apenas seed operacional e frases de pesquisa sobre comportamento, rotina, tarefas, decisões, atendimento, agenda, materiais, clientes, cobrança, entrega, retrabalho, sonhos, medos, inseguranças, canais usados e linguagem real em pt-BR.");
+        prompt.add("A aquisição de clientes deve aparecer como eixo obrigatório da realidade operacional do profissional: busque evidências de captação de clientes, canais usados, indicação, redes sociais, WhatsApp, orçamento, agenda vazia, retorno, fidelização, cancelamento, reativação e recorrência.");
+        prompt.add("Trate aquisição de clientes somente como comportamento operacional observado no trabalho real do MEI/autônomo, não como recomendação de marketing, criação de campanha, funil, anúncio, oferta, promessa ou estratégia de venda.");
         prompt.add("Não proponha solução. Não procure produto. Não procure oferta. Não procure ferramenta. Não procure campanha ou landing page. Não direcione a pesquisa para IA, automação, software, sistema, app, curso ou template.");
         prompt.add("");
         prompt.add("Dados do ciclo:");
@@ -27,6 +29,8 @@ public class NicheResearchSeedBuilderPromptBuilder {
         prompt.add("2. Gere um seed que descreva o profissional pesquisado e o contexto operacional do nicho sem transformar a pesquisa em oferta.");
         prompt.add("3. Gere queries suficientes em português do Brasil para orientar as próximas etapas de busca, coleta e extração de sinais.");
         prompt.add("4. Prefira frases de busca sobre clientes, atendimento, cobrança, agenda, materiais, entrega, retrabalho, sonhos, medos, inseguranças, canais usados e linguagem real.");
+        prompt.add("4.1. Inclua queries que investiguem aquisição como operação cotidiana: como o profissional consegue clientes, recebe indicações, usa redes sociais/WhatsApp, lida com orçamento, agenda vazia, retorno, fidelização, cancelamento, reativação e recorrência.");
+        prompt.add("4.2. Não transforme essas queries em aconselhamento de marketing; elas devem observar o que o profissional já faz ou sofre na rotina.");
         prompt.add("5. A etapa confia no modelo: não force marcador literal em toda query quando a intenção de pesquisa estiver clara.");
         prompt.add("6. Respeite os limites maxLength definidos no JSON Schema, especialmente queryGoal curto e queryText como frase de busca objetiva.");
         prompt.add("7. Não inclua metadado técnico, comentário operacional, debugInfo ou JSON serializado dentro de texto funcional.");

@@ -21,8 +21,11 @@ public class SignalExtractorEngine {
         Map<String, ExtractedSignal> signals = new LinkedHashMap<>();
         addIfPresent(signals, normalized, evidence, List.of("mei", "autônom", "por conta própria", "dono-operador", "profissional independente"),
                 "AUTONOMOUS_WORK_MODE", "Trabalho executado diretamente pelo MEI ou profissional autônomo", 86);
-        addIfPresent(signals, normalized, evidence, List.of("agenda", "atendimento", "cliente", "serviço", "rotina", "material", "entrega"),
-                "ROUTINE_TASK", "Executar rotina diária de atendimento, agenda, materiais e entrega do serviço", 82);
+        addSpecificRoutineTaskSignals(signals, normalized, evidence);
+        if (!containsSignalType(signals, "ROUTINE_TASK")) {
+            addIfPresent(signals, normalized, evidence, List.of("agenda", "atendimento", "cliente", "serviço", "rotina", "material", "entrega"),
+                    "ROUTINE_TASK", "Executar rotina diária de atendimento, agenda, materiais e entrega do serviço", 82);
+        }
         addIfPresent(signals, normalized, evidence, List.of("whatsapp", "instagram", "facebook", "google", "indicação", "rede social", "mensagem"),
                 "CHANNEL_USAGE", "Usar canais digitais, mensagens ou indicações para contato com clientes", 86);
         addIfPresent(signals, normalized, evidence, List.of("cliente", "conseguir clientes", "captar", "divulgar", "orçamento", "venda", "fidel", "recorr", "retorno", "relacionamento"),
@@ -57,6 +60,75 @@ public class SignalExtractorEngine {
                     "LANGUAGE_MARKER", "Vocabulário público do nicho identificado para síntese", evidence, 60));
         }
         return signals.values().stream().limit(MAX_SIGNALS).toList();
+    }
+
+    /** Adiciona sinais de rotina preservando ações concretas encontradas na evidência pública. */
+    private void addSpecificRoutineTaskSignals(Map<String, ExtractedSignal> signals, String normalized, String evidence) {
+        addRoutineTaskIfPresent(
+                signals,
+                normalized,
+                evidence,
+                List.of("esteriliz", "higieniz", "desinfect"),
+                List.of("alicate", "material", "instrument"),
+                "Esterilizar alicates e materiais antes do atendimento",
+                88);
+        addRoutineTaskIfPresent(
+                signals,
+                normalized,
+                evidence,
+                List.of("lixar", "cutícula", "cuticula", "esmaltar", "unha"),
+                List.of("manicure", "unha", "cutícula", "cuticula", "esmalte"),
+                "Lixar, retirar cutícula e esmaltar unhas",
+                88);
+        addRoutineTaskIfPresent(
+                signals,
+                normalized,
+                evidence,
+                List.of("lavar", "cortar", "escovar", "finalizar"),
+                List.of("cabelo", "cabeleireiro", "salão", "salao"),
+                "Lavar, cortar, escovar e finalizar cabelo",
+                88);
+        addRoutineTaskIfPresent(
+                signals,
+                normalized,
+                evidence,
+                List.of("preparar", "misturar", "aplicar"),
+                List.of("tintura", "química", "quimica", "hidratação", "hidratacao"),
+                "Preparar tintura, química ou hidratação",
+                86);
+        addRoutineTaskIfPresent(
+                signals,
+                normalized,
+                evidence,
+                List.of("confirmar", "remarcar"),
+                List.of("horário", "horario", "whatsapp", "cliente", "mensagem"),
+                "Confirmar horários e remarcar clientes pelo WhatsApp",
+                86);
+    }
+
+    /** Adiciona uma tarefa de rotina quando existe verbo de ação e objeto concreto na evidência. */
+    private void addRoutineTaskIfPresent(
+            Map<String, ExtractedSignal> signals,
+            String normalized,
+            String evidence,
+            List<String> actionKeywords,
+            List<String> objectKeywords,
+            String signalText,
+            Integer confidenceScore) {
+        if (!containsAny(normalized, actionKeywords) || !containsAny(normalized, objectKeywords)) {
+            return;
+        }
+        signals.putIfAbsent("ROUTINE_TASK|" + signalText, new ExtractedSignal("ROUTINE_TASK", signalText, evidence, confidenceScore));
+    }
+
+    /** Verifica se algum sinal do tipo informado já foi extraído. */
+    private boolean containsSignalType(Map<String, ExtractedSignal> signals, String signalType) {
+        return signals.values().stream().anyMatch(signal -> signal.signalType().equals(signalType));
+    }
+
+    /** Verifica se o texto contém qualquer indicador textual da lista informada. */
+    private boolean containsAny(String normalized, List<String> keywords) {
+        return keywords.stream().anyMatch(normalized::contains);
     }
 
     /** Adiciona risco de solução quando a evidência contém termos explícitos de solução precoce. */

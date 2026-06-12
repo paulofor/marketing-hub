@@ -14,38 +14,47 @@ import { useBreadcrumbs } from "../../app/breadcrumbs";
 
 const pipelineStages = [
   {
+    code: "cycle",
     title: "1. Ciclo",
     description: "Ciclo pai criado para pesquisar a rotina real do CNAE.",
   },
   {
+    code: "seed",
     title: "2. Seed",
     description: "Transforma CNAE em nicho operacional e queries de pesquisa.",
   },
   {
+    code: "search",
     title: "3. Busca",
     description: "Procura fontes públicas sobre rotina, tarefas e dificuldades.",
   },
   {
+    code: "fetch",
     title: "4. Coleta",
     description: "Coleta metadados e trechos úteis das fontes selecionadas.",
   },
   {
+    code: "signals",
     title: "5. Sinais",
     description: "Extrai sinais estruturados sobre dores, rotina e linguagem.",
   },
   {
+    code: "synthesis",
     title: "6. Síntese",
     description: "Monta o cartão de rotina do nicho com evidências.",
   },
   {
+    code: "mei",
     title: "7. MEI",
     description: "Define o público MEI/autônomo dono-operador do nicho.",
   },
   {
+    code: "quality",
     title: "8. Qualidade",
     description: "Valida se a pesquisa é específica, recente e sem solução pronta.",
   },
   {
+    code: "materialization",
     title: "9. Materialização",
     description: "Grava o nicho enriquecido para alimentar ofertas e experimentos.",
   },
@@ -299,9 +308,25 @@ export default function OprmCnaeDetailPlaceholderPage() {
                         <h3 className="h6 mb-0">{stage.title}</h3>
                         <span className="badge text-bg-light">{state.label}</span>
                       </div>
-                      <p className="small text-secondary mb-0">
+                      <p className="small text-secondary mb-3">
                         {stage.description}
                       </p>
+                      {latestCycle ? (
+                        <Link
+                          className="btn btn-outline-primary btn-sm"
+                          to={`/oprm/cnaes/${encodeURIComponent(decodedCnaeCode)}/pipeline/${latestCycle.researchCycleId}/stages/${stage.code}`}
+                        >
+                          Ver detalhes
+                        </Link>
+                      ) : (
+                        <button
+                          type="button"
+                          className="btn btn-outline-secondary btn-sm"
+                          disabled
+                        >
+                          Ver detalhes
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>

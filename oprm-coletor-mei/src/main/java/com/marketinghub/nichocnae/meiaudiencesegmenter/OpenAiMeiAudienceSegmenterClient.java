@@ -49,7 +49,30 @@ public class OpenAiMeiAudienceSegmenterClient {
     public MeiAudienceSegmentDraft segment(MeiAudienceSegmenterPending input) {
         String apiKey = resolveApiKey(input);
         if (apiKey.isBlank()) {
-            throw new IllegalStateException("OPRM mei-audience-segmenter OpenAI API key não configurada.");
+            log.error(
+                    "Configuração operacional ausente antes de chamar OpenAI (module={}, operation={}, expectedVariable={}, fallbackVariable={}, researchCycleId={}, cnaeCode={})",
+                    MeiAudienceSegmenterOperationalGuard.MODULE,
+                    MeiAudienceSegmenterOperationalGuard.OPERATION,
+                    properties.expectedApiKeyVariable(),
+                    properties.fallbackApiKeyVariable(),
+                    input.researchCycleId(),
+                    input.cnaeCode());
+            throw new MeiAudienceSegmenterOperationalException(
+                    "Falha operacional na etapa mei-audience-segmenter: variável "
+                            + properties.expectedApiKeyVariable()
+                            + " ausente e fallback "
+                            + properties.fallbackApiKeyVariable()
+                            + " indisponível. module="
+                            + MeiAudienceSegmenterOperationalGuard.MODULE
+                            + ", operation="
+                            + MeiAudienceSegmenterOperationalGuard.OPERATION
+                            + ", expectedVariable="
+                            + properties.expectedApiKeyVariable()
+                            + ", fallbackVariable="
+                            + properties.fallbackApiKeyVariable()
+                            + ", researchCycleId="
+                            + input.researchCycleId()
+                            + ".");
         }
         String prompt = promptBuilder.buildPrompt(input);
         Map<String, Object> requestBody = buildRequestBody(prompt);
@@ -63,6 +86,8 @@ public class OpenAiMeiAudienceSegmenterClient {
             MeiAudienceSegmentDraft draft = objectMapper.readValue(rawModelResponse, MeiAudienceSegmentDraft.class);
             validator.validate(input, draft);
             return draft;
+        } catch (MeiAudienceSegmenterOperationalException ex) {
+            throw ex;
         } catch (RestClientException | JsonProcessingException | IllegalStateException | IllegalArgumentException ex) {
             log.error(
                     "Erro ao segmentar público MEI/autônomo com OpenAI (endpoint={}, researchCycleId={}, cnaeCode={})",

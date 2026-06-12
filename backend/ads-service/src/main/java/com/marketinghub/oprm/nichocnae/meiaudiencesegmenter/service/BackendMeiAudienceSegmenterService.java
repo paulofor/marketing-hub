@@ -22,6 +22,7 @@ import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
@@ -33,6 +34,7 @@ import org.springframework.util.StringUtils;
 @Service
 public class BackendMeiAudienceSegmenterService {
   private static final Logger LOGGER = LoggerFactory.getLogger(BackendMeiAudienceSegmenterService.class);
+  private static final String ROUTINE_SYNTHESIZED_STATUS = "ROUTINE_SYNTHESIZED";
   private static final String SEGMENTED_STATUS = "MEI_AUDIENCE_SEGMENTED";
   private static final String FAILED_STATUS = "FAILED";
   private static final int MAX_PENDING = 10;
@@ -62,11 +64,12 @@ public class BackendMeiAudienceSegmenterService {
     this.profileService = profileService;
   }
 
-  /** Lista cartões sintetizados que ainda precisam de segmentação comportamental antes do gate e materialização. */
+  /** Lista somente cartões de ciclos ativos e elegíveis para segmentação comportamental antes do gate e materialização. */
   @Transactional(readOnly = true)
   public List<RecordMeiAudienceSegmenterPending> listPending() {
     return routineCardRepository.findPendingMeiAudienceSegmentation(PageRequest.of(0, MAX_PENDING)).stream()
-        .map(this::toPending)
+        .map(this::toPendingIfEligible)
+        .flatMap(Optional::stream)
         .toList();
   }
 
@@ -117,9 +120,17 @@ public class BackendMeiAudienceSegmenterService {
     }
   }
 
-  /** Converte cartão, ciclo, fontes e sinais na unidade de trabalho enviada ao coletor de IA. */
-  private RecordMeiAudienceSegmenterPending toPending(OprmNicheRoutineCard card) {
+  /** Revalida a elegibilidade do ciclo antes de expor o cartão na fila MEI/autônomo. */
+  private Optional<RecordMeiAudienceSegmenterPending> toPendingIfEligible(OprmNicheRoutineCard card) {
     OprmRoutineResearchCycle cycle = findCycle(card.getResearchCycleId());
+    if (!ROUTINE_SYNTHESIZED_STATUS.equals(cycle.getStatus())) {
+      return Optional.empty();
+    }
+    return Optional.of(toPending(card, cycle));
+  }
+
+  /** Converte cartão, ciclo, fontes e sinais na unidade de trabalho enviada ao coletor de IA. */
+  private RecordMeiAudienceSegmenterPending toPending(OprmNicheRoutineCard card, OprmRoutineResearchCycle cycle) {
     List<OprmSourceSnapshot> snapshots = sourceSnapshotRepository.findByResearchCycleIdOrderByIdAsc(card.getResearchCycleId());
     List<OprmExtractedSignal> signals = extractedSignalRepository.findByResearchCycleIdOrderByIdAsc(card.getResearchCycleId());
     return new RecordMeiAudienceSegmenterPending(

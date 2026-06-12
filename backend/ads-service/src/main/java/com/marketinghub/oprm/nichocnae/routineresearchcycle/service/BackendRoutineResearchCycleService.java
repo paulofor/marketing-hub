@@ -90,9 +90,12 @@ public class BackendRoutineResearchCycleService {
         cycle.getSourceScore(),
         cycle.getStatus(),
         cycle.getTotalQueries(),
+        cycle.getTotalSourceCandidates(),
+        cycle.getTotalSourceSnapshots(),
         cycle.getTotalExtractedSignals(),
         cycle.getStartedAt(),
-        cycle.getFinishedAt());
+        cycle.getFinishedAt(),
+        cycle.getErrorMessage());
   }
 
   /** Converte um ciclo em detalhe operacional completo. */

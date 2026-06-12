@@ -26,7 +26,8 @@ const pipelineStages = [
   {
     code: "search",
     title: "3. Busca",
-    description: "Procura fontes públicas sobre rotina, tarefas e dificuldades.",
+    description:
+      "Procura fontes públicas sobre rotina, tarefas e dificuldades.",
   },
   {
     code: "fetch",
@@ -51,12 +52,14 @@ const pipelineStages = [
   {
     code: "quality",
     title: "8. Qualidade",
-    description: "Valida se a pesquisa é específica, recente e sem solução pronta.",
+    description:
+      "Valida se a pesquisa é específica, recente e sem solução pronta.",
   },
   {
     code: "materialization",
     title: "9. Materialização",
-    description: "Grava o nicho enriquecido para alimentar ofertas e experimentos.",
+    description:
+      "Grava o nicho enriquecido para alimentar ofertas e experimentos.",
   },
 ];
 
@@ -104,6 +107,77 @@ function statusLabel(status?: string | null) {
   return status ? (labels[status] ?? status) : "Aguardando";
 }
 
+function getCompletedStageIndex(cycle: OprmRoutineResearchCycleSummary) {
+  if ((cycle.totalExtractedSignals ?? 0) > 0) {
+    return 4;
+  }
+  if ((cycle.totalSourceSnapshots ?? 0) > 0) {
+    return 3;
+  }
+  if ((cycle.totalSourceCandidates ?? 0) > 0) {
+    return 2;
+  }
+  if ((cycle.totalQueries ?? 0) > 0) {
+    return 1;
+  }
+  return 0;
+}
+
+function inferFailureStageIndex(errorMessage?: string | null) {
+  const normalized = errorMessage?.toLowerCase() ?? "";
+  if (!normalized) {
+    return undefined;
+  }
+  if (normalized.includes("mei-audience-segmenter")) {
+    return 6;
+  }
+  if (normalized.includes("seed") || normalized.includes("etapa dois")) {
+    return 1;
+  }
+  if (
+    normalized.includes("source-search") ||
+    normalized.includes("source search") ||
+    normalized.includes("busca")
+  ) {
+    return 2;
+  }
+  if (
+    normalized.includes("source-fetch") ||
+    normalized.includes("source fetch") ||
+    normalized.includes("coleta")
+  ) {
+    return 3;
+  }
+  if (
+    normalized.includes("signal") ||
+    normalized.includes("sinal") ||
+    normalized.includes("extração")
+  ) {
+    return 4;
+  }
+  if (
+    normalized.includes("synthesis") ||
+    normalized.includes("synthesizer") ||
+    normalized.includes("síntese")
+  ) {
+    return 5;
+  }
+  if (normalized.includes("mei") || normalized.includes("audience segmenter")) {
+    return 6;
+  }
+  if (normalized.includes("quality") || normalized.includes("gate")) {
+    return 7;
+  }
+  if (
+    normalized.includes("materialization") ||
+    normalized.includes("materializer") ||
+    normalized.includes("nicho enriquecido")
+  ) {
+    return 8;
+  }
+  return undefined;
+}
+
 function inferStageState(
   stageIndex: number,
   cycle?: OprmRoutineResearchCycleSummary,
@@ -114,22 +188,27 @@ function inferStageState(
       className: "border-secondary text-secondary",
     };
   }
-  if (cycle.status === "FAILED" || cycle.status?.includes("FAILED")) {
-    return stageIndex === 0
-      ? { label: "Falhou", className: "border-danger text-danger" }
-      : { label: "Bloqueado", className: "border-secondary text-secondary" };
+
+  const completedStageIndex = getCompletedStageIndex(cycle);
+  const failed = cycle.status === "FAILED" || cycle.status?.includes("FAILED");
+  const failureStageIndex = failed
+    ? inferFailureStageIndex(cycle.errorMessage)
+    : undefined;
+
+  if (failed && stageIndex === failureStageIndex) {
+    return { label: "Falhou", className: "border-danger text-danger" };
   }
-  if (cycle.finishedAt) {
+  if (!failed && cycle.finishedAt) {
     return { label: "Concluído", className: "border-success text-success" };
   }
-  if (stageIndex === 0) {
+  if (stageIndex <= completedStageIndex) {
+    return { label: "Concluído", className: "border-success text-success" };
+  }
+  if (failed) {
+    return { label: "Bloqueado", className: "border-secondary text-secondary" };
+  }
+  if (stageIndex === completedStageIndex + 1) {
     return { label: "Em execução", className: "border-primary text-primary" };
-  }
-  if (stageIndex === 1 && cycle.totalQueries > 0) {
-    return { label: "Concluído", className: "border-success text-success" };
-  }
-  if (stageIndex <= 4 && cycle.totalExtractedSignals > 0) {
-    return { label: "Com sinais", className: "border-success text-success" };
   }
   return { label: "Na fila", className: "border-secondary text-secondary" };
 }
@@ -175,7 +254,8 @@ export default function OprmCnaeDetailPlaceholderPage() {
               <h2 className="h4 mb-2">{cnaeDescription}</h2>
               <p className="text-secondary mb-0">
                 Score e volume ajudam a priorizar mercados com maior chance de
-                virar produto digital vendável sem perder a visão de rotina real.
+                virar produto digital vendável sem perder a visão de rotina
+                real.
               </p>
             </div>
             <div className="d-flex align-items-start gap-2">
@@ -236,7 +316,8 @@ export default function OprmCnaeDetailPlaceholderPage() {
                 {formatNumber(volumeQuery.data?.totalEstabelecimentos)}
               </div>
               <span className="small text-secondary">
-                Ativos: {formatNumber(volumeQuery.data?.totalEstabelecimentosAtivos)}
+                Ativos:{" "}
+                {formatNumber(volumeQuery.data?.totalEstabelecimentosAtivos)}
               </span>
             </div>
           </div>
@@ -259,10 +340,18 @@ export default function OprmCnaeDetailPlaceholderPage() {
             <div className="card-body">
               <span className="text-secondary small">Componentes do score</span>
               <div className="small d-flex flex-column gap-1 mt-2">
-                <span>Volume: {formatScore(scoreQuery.data?.marketVolumeScore)}</span>
-                <span>MEI: {formatScore(scoreQuery.data?.meiDensityScore)}</span>
-                <span>Digital: {formatScore(scoreQuery.data?.digitalFitScore)}</span>
-                <span>Dor: {formatScore(scoreQuery.data?.painClarityScore)}</span>
+                <span>
+                  Volume: {formatScore(scoreQuery.data?.marketVolumeScore)}
+                </span>
+                <span>
+                  MEI: {formatScore(scoreQuery.data?.meiDensityScore)}
+                </span>
+                <span>
+                  Digital: {formatScore(scoreQuery.data?.digitalFitScore)}
+                </span>
+                <span>
+                  Dor: {formatScore(scoreQuery.data?.painClarityScore)}
+                </span>
               </div>
             </div>
           </div>
@@ -280,15 +369,23 @@ export default function OprmCnaeDetailPlaceholderPage() {
               </p>
             </div>
             <span className="badge text-bg-light align-self-start">
-              Último ciclo: {latestCycle ? `#${latestCycle.researchCycleId}` : "nenhum"}
+              Último ciclo:{" "}
+              {latestCycle ? `#${latestCycle.researchCycleId}` : "nenhum"}
             </span>
           </div>
 
           {latestCycle ? (
             <div className="alert alert-info mb-0">
-              Status atual: <strong>{statusLabel(latestCycle.status)}</strong> ·
-              iniciado em {formatDateTime(latestCycle.startedAt)} · sinais extraídos: {" "}
-              {formatNumber(latestCycle.totalExtractedSignals)}
+              <div>
+                Status atual: <strong>{statusLabel(latestCycle.status)}</strong>{" "}
+                · iniciado em {formatDateTime(latestCycle.startedAt)} · sinais
+                extraídos: {formatNumber(latestCycle.totalExtractedSignals)}
+              </div>
+              {latestCycle.errorMessage ? (
+                <div className="mt-2 text-danger">
+                  Falha registrada: {latestCycle.errorMessage}
+                </div>
+              ) : null}
             </div>
           ) : (
             <div className="alert alert-secondary mb-0">
@@ -306,7 +403,9 @@ export default function OprmCnaeDetailPlaceholderPage() {
                     <div className="card-body">
                       <div className="d-flex justify-content-between gap-2 mb-2">
                         <h3 className="h6 mb-0">{stage.title}</h3>
-                        <span className="badge text-bg-light">{state.label}</span>
+                        <span className="badge text-bg-light">
+                          {state.label}
+                        </span>
                       </div>
                       <p className="small text-secondary mb-3">
                         {stage.description}

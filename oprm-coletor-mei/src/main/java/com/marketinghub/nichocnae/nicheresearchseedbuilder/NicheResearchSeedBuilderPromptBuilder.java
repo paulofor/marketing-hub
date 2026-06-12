@@ -7,12 +7,15 @@ import org.springframework.stereotype.Component;
 @Component
 public class NicheResearchSeedBuilderPromptBuilder {
 
-    /** Cria instruções objetivas para a IA transformar CNAE em seed operacional e queries de pesquisa. */
+    /** Cria instruções para transformar CNAE em seed e queries de rotina com aquisição como eixo operacional. */
     public String buildPrompt(NicheResearchSeedBuilderPending input) {
         StringJoiner prompt = new StringJoiner("\n");
         prompt.add("Você é o construtor da etapa 2 do pipeline OPRM nichocnae.");
         prompt.add("Objetivo: transformar o CNAE em pesquisas sobre o profissional brasileiro MEI/autônomo que executa o trabalho, sem assumir solução, IA, automação, produto, curso, ferramenta ou oferta.");
         prompt.add("Gere apenas seed operacional e frases de pesquisa sobre comportamento, rotina executada, tarefas do dia a dia, procedimentos práticos, decisões, atendimento, agenda, materiais, clientes, cobrança, entrega, retrabalho, sonhos, medos, inseguranças, canais usados e linguagem real em pt-BR.");
+        prompt.add("Gere apenas seed operacional e frases de pesquisa sobre comportamento, rotina, tarefas, decisões, atendimento, agenda, materiais, clientes, cobrança, entrega, retrabalho, sonhos, medos, inseguranças, canais usados e linguagem real em pt-BR.");
+        prompt.add("A aquisição de clientes deve aparecer como eixo obrigatório da realidade operacional do profissional: busque evidências de captação de clientes, canais usados, indicação, redes sociais, WhatsApp, orçamento, agenda vazia, retorno, fidelização, cancelamento, reativação e recorrência.");
+        prompt.add("Trate aquisição de clientes somente como comportamento operacional observado no trabalho real do MEI/autônomo, não como recomendação de marketing, criação de campanha, funil, anúncio, oferta, promessa ou estratégia de venda.");
         prompt.add("Não proponha solução. Não procure produto. Não procure oferta. Não procure ferramenta. Não procure campanha ou landing page. Não direcione a pesquisa para IA, automação, software, sistema, app, curso ou template.");
         prompt.add("");
         prompt.add("Dados do ciclo:");

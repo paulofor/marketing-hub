@@ -42,6 +42,40 @@ class SignalExtractorEngineTest {
                 .noneMatch(text -> text.toLowerCase().contains("apoio por ia"));
     }
 
+    /** Deve preservar tarefas concretas de manicure em vez de reduzir a rotina a uma frase genérica. */
+    @Test
+    void shouldPreserveSpecificManicureRoutineTasksFromPublicEvidence() {
+        var signals = engine.extract(pending(
+                "Rotina de manicure autônoma no atendimento",
+                "Antes do atendimento, esterilizar alicates e materiais e organizar agenda das clientes.",
+                "No serviço, a profissional precisa lixar, retirar cutícula e esmaltar unhas sem atrasar o próximo horário."));
+
+        assertThat(signals).extracting(ExtractedSignal::signalType)
+                .contains("ROUTINE_TASK");
+        assertThat(signals).extracting(ExtractedSignal::signalText)
+                .contains(
+                        "Esterilizar alicates e materiais antes do atendimento",
+                        "Lixar, retirar cutícula e esmaltar unhas")
+                .doesNotContain("Executar rotina diária de atendimento, agenda, materiais e entrega do serviço");
+    }
+
+    /** Deve preservar tarefas concretas de cabeleireiro e agenda quando aparecem na evidência pública. */
+    @Test
+    void shouldPreserveSpecificHairdresserRoutineTasksFromPublicEvidence() {
+        var signals = engine.extract(pending(
+                "Atendimento de cabeleireiro com agenda pelo WhatsApp",
+                "A rotina inclui lavar, cortar, escovar e finalizar cabelo entre um cliente e outro.",
+                "Também precisa preparar tintura, química ou hidratação, confirmar horários e remarcar clientes pelo WhatsApp."));
+
+        assertThat(signals).extracting(ExtractedSignal::signalType)
+                .contains("ROUTINE_TASK", "CHANNEL_USAGE");
+        assertThat(signals).extracting(ExtractedSignal::signalText)
+                .contains(
+                        "Lavar, cortar, escovar e finalizar cabelo",
+                        "Preparar tintura, química ou hidratação",
+                        "Confirmar horários e remarcar clientes pelo WhatsApp")
+                .doesNotContain("Executar rotina diária de atendimento, agenda, materiais e entrega do serviço");
+    }
 
     /** Deve evitar falso positivo de IA quando a sílaba aparece dentro de palavras comuns. */
     @Test

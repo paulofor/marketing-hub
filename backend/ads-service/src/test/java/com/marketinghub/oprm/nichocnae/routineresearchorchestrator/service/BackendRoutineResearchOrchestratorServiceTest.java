@@ -168,6 +168,34 @@ class BackendRoutineResearchOrchestratorServiceTest {
         assertThat(candidateCaptor.getValue().getLastRoutineResearchCycleId()).isEqualTo(322L);
     }
 
+    /** Deve criar novo ciclo imediatamente ao reprocessar um ciclo parado sem progresso. */
+    @Test
+    void reprocessStalledCycleCreatesNewCycleImmediately() {
+        OprmRoutineResearchCycle stalledCycle = cycle(321L, 55L, "Cabeleireiros e manicures", "2026-06-03T01:00:00Z");
+        stalledCycle.setStatus("STALLED");
+        OprmNicheCandidate candidate = candidate();
+        candidate.setRoutineResearchStatus("RESEARCH_STALLED");
+        candidate.setLastRoutineResearchCycleId(321L);
+        when(routineResearchCycleRepository.findById(321L)).thenReturn(Optional.of(stalledCycle));
+        when(nicheCandidateRepository.findById(55L)).thenReturn(Optional.of(candidate));
+        when(routineResearchCycleRepository.save(any(OprmRoutineResearchCycle.class)))
+                .thenAnswer(invocation -> {
+                    OprmRoutineResearchCycle newCycle = invocation.getArgument(0);
+                    newCycle.setId(322L);
+                    return newCycle;
+                });
+        when(nicheCandidateRepository.save(any(OprmNicheCandidate.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        var result = service.reprocessCycle(321L);
+
+        assertThat(result.researchCycleId()).isEqualTo(322L);
+        assertThat(result.previousCycleStatus()).isEqualTo("STALLED");
+        assertThat(result.previousRoutineResearchStatus()).isEqualTo("RESEARCH_STALLED");
+        assertThat(result.routineResearchStatus()).isEqualTo("RESEARCH_RUNNING");
+        assertThat(result.message()).contains("pipeline parado");
+    }
+
     /** Deve criar novo ciclo imediato quando a pesquisa chegou fraca e precisa de mais evidência. */
     @Test
     void reprocessNeedsMoreResearchCycleCreatesNewCycleImmediately() {

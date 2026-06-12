@@ -2,6 +2,7 @@ package com.marketinghub.repository.jpa.oprm.nichocnae;
 
 import com.marketinghub.oprm.nichocnae.OprmRoutineResearchCycle;
 import jakarta.persistence.LockModeType;
+import java.time.Instant;
 import java.util.List;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -71,6 +72,22 @@ public interface OprmRoutineResearchCycleRepository extends JpaRepository<OprmRo
             @Param("queryGoalLengthErrorFragment") String queryGoalLengthErrorFragment,
             @Param("completePathFragment") String completePathFragment,
             Pageable pageable);
+
+    /** Lista ciclos RUNNING antigos sem qualquer contador de progresso para proteção operacional. */
+    @Query("""
+            select cycle
+            from OprmRoutineResearchCycle cycle
+            where cycle.status = :runningStatus
+              and cycle.updatedAt < :threshold
+              and cycle.totalQueries = 0
+              and cycle.totalSourceCandidates = 0
+              and cycle.totalSourceSnapshots = 0
+              and cycle.totalExtractedSignals = 0
+              and cycle.finishedAt is null
+            order by cycle.updatedAt asc
+            """)
+    List<OprmRoutineResearchCycle> findRunningCyclesWithoutProgressBefore(
+            @Param("runningStatus") String runningStatus, @Param("threshold") Instant threshold, Pageable pageable);
 
     /** Localiza o identificador do nicho materializado mais recente vinculado ao ciclo informado. */
     @Query("""

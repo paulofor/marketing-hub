@@ -228,6 +228,19 @@ Evitar fechamento prematuro de `import run` que destrói a totalização de mark
 - O compose do `oprm-coletor-mei` deve montar o mesmo arquivo de chave OpenAI em modo `ro` e configurar a etapa `oprmNicheResearchSeedBuilder` para ler esse arquivo.
 - É proibido commitar a chave OpenAI ou materializar o segredo em `.env` versionado; apenas o caminho do arquivo/volume pode ser versionado.
 
+## Regra obrigatória — ciclos NichoCNAE sem progresso
+
+- Ciclos `RUNNING` do pipeline OPRM NichoCNAE não podem permanecer indefinidamente como execução saudável quando não houver avanço operacional persistido.
+- O backend deve marcar como `STALLED` ciclos `RUNNING` sem progresso por mais de 6 horas, considerando ausência simultânea de queries, candidatos de fonte, snapshots e sinais extraídos.
+- Ao marcar um ciclo como `STALLED`, o backend deve preencher `finishedAt`, registrar `errorMessage` com orientação operacional e atualizar o candidato de origem para `RESEARCH_STALLED` quando ele existir.
+- A correção de um ciclo `STALLED` deve investigar primeiro executor `oprm-coletor-mei`, carregamento do pacote `com.marketinghub.nichocnae`, scheduler da etapa parada e conectividade com o backend antes de abrir novo ciclo.
+
+## Critério de efetividade — ciclos NichoCNAE sem progresso
+
+- A tela operacional não deve tratar `STALLED` como ciclo saudável em execução.
+- O log backend deve registrar a quantidade de ciclos marcados como `STALLED` e os identificadores operacionais (`researchCycleId`, `sourceNicheId`, `cnaeCode`).
+- O limite de 6 horas deve impedir falso positivo em execuções demoradas, mas revelar parada real do pipeline no mesmo dia operacional.
+
 ## Regra obrigatória — dados para Facebook Ads
 
 - O OPRM não deve acessar, materializar ou depender diretamente de entidades, services, repositories ou controllers de targeting/Facebook Ads.

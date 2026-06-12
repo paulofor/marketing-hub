@@ -31,7 +31,7 @@ oprm:
         model: ${OPRM_MEI_AUDIENCE_SEGMENTER_OPENAI_MODEL:gpt-4.1-mini}
   market-import:
     collector:
-      backend-base-url: ${OPRM_COLLECTOR_BACKEND_BASE_URL:http://191.252.181.168:8000}
+      backend-base-url: ${OPRM_COLLECTOR_BACKEND_BASE_URL:http://191.252.181.168}
       temp-dir: ${OPRM_MARKET_IMPORT_TEMP_DIR:/tmp/oprm-cnpj-import}
     schedule:
       enabled: ${OPRM_MARKET_IMPORT_SCHEDULE_ENABLED:true}

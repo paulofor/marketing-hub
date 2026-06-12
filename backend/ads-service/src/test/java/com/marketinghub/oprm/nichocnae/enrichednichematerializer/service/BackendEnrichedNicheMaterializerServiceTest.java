@@ -133,6 +133,45 @@ class BackendEnrichedNicheMaterializerServiceTest {
             && "Objeções".equals(profile.getObjections())));
   }
 
+  /** Deve revisar nicho existente quando outro ciclo tiver mesmo CNAE e nome neutro normalizado. */
+  @Test
+  void shouldReuseExistingNicheForSameCnaeAndNeutralName() {
+    OprmRoutineResearchCycle cycle = cycle();
+    OprmNicheRoutineCard card = card();
+    OprmNicheCandidate candidate = candidate();
+    MarketNiche existingNiche = new MarketNiche();
+    existingNiche.setId(200L);
+    existingNiche.setName("salões pequenos");
+    MarketNicheEnrichmentProfile existingProfile = profile(existingNiche);
+    when(cycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
+    when(cardRepository.findById(10L)).thenReturn(Optional.of(card));
+    when(candidateRepository.findById(77L)).thenReturn(Optional.of(candidate));
+    when(profileRepository.existsBySourceRoutineCardId(10L)).thenReturn(false);
+    when(profileRepository.findMaterializedByCnaeAndNormalizedNeutralName("9602501", "salões pequenos", Pageable.ofSize(1)))
+        .thenReturn(List.of(existingProfile));
+    when(metaSignalService.buildSignalPackage(cycle, card)).thenReturn(metaSignalPackage);
+    when(marketNicheRepository.save(any(MarketNiche.class))).thenAnswer(invocation -> invocation.getArgument(0));
+    when(profileRepository.save(any(MarketNicheEnrichmentProfile.class))).thenAnswer(invocation -> {
+      MarketNicheEnrichmentProfile profile = invocation.getArgument(0);
+      profile.setId(301L);
+      return profile;
+    });
+
+    CompleteEnrichedNicheMaterializerResponse response = service.complete(1001L, new CompleteEnrichedNicheMaterializerRequest(
+        1001L, 10L, "Persona", "Linguagem", "Gatilhos", "Objeções", "test"));
+
+    assertThat(response.marketNicheId()).isEqualTo(200L);
+    assertThat(response.enrichedNicheProfileId()).isEqualTo(301L);
+    assertThat(response.cycleStatus()).isEqualTo("ENRICHED_NICHE_UPDATED");
+    assertThat(response.operationalMessage()).contains("atualização/revisão");
+    assertThat(candidate.getMarketNicheId()).isEqualTo(200L);
+    assertThat(cycle.getStatus()).isEqualTo("ENRICHED_NICHE_UPDATED");
+    verify(profileRepository).save(org.mockito.ArgumentMatchers.argThat(profile ->
+        Long.valueOf(200L).equals(profile.getMarketNiche().getId())
+            && "9602501".equals(profile.getCnaeCode())
+            && "Salões pequenos".equals(profile.getNeutralNicheName())));
+  }
+
   /** Deve localizar registros históricos contaminados para orientar novo ciclo neutro. */
   @Test
   void shouldDiagnoseHistoricalContamination() {

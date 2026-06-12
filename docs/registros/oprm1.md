@@ -449,3 +449,9 @@
 - Ajustada a instrução inicial da etapa de seed para apresentar a IA como especialista em Marketing e Comportamento do Consumidor no Digital, evitando linguagem interna como construtor/executor de pipeline na requisição exibida ao usuário.
 - Causa-raiz tratada: a tela reconstruía corretamente a requisição, mas o contrato textual da etapa ainda expunha nomenclatura operacional interna, reduzindo clareza de negócio para validação do usuário.
 - Prevenção de recorrência: adicionado teste garantindo presença da persona de marketing/comportamento e ausência das expressões técnicas antigas no prompt da etapa.
+
+## 2026-06-12 — OPRM NichoCNAE: materialização idempotente por CNAE e nome neutro
+
+- Corrigida a causa-raiz de duplicação de `market_niche` quando um novo ciclo OPRM materializava o mesmo CNAE e o mesmo nome neutro já materializados anteriormente.
+- O materializador agora consulta primeiro perfis enriquecidos existentes pelo par CNAE/nome neutro normalizado, atualiza o `market_niche` encontrado e vincula o novo ciclo/perfil a esse nicho, registrando status operacional de atualização/revisão em vez de criação.
+- Prevenção de recorrência: adicionado teste cobrindo duplicidade para o CNAE `9602501` com nome neutro `Salões pequenos`, garantindo reaproveitamento do nicho existente.

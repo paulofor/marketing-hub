@@ -515,3 +515,9 @@
 - Criado contrato próprio da etapa seed para consultar modelo configurado e estimar custo, com implementação fora do pacote funcional OPRM para preservar o limite arquitetural validado pelo ArchUnit.
 - Causa-raiz tratada: a etapa OPRM consumia diretamente serviços e repositórios compartilhados para dados auxiliares de IA, rompendo a regra de isolamento do módulo.
 - Prevenção de recorrência: os testes da etapa passaram a mockar a abstração OPRM, mantendo o serviço de negócio sem imports proibidos.
+
+## 2026-06-12 — OPRM MEI: chave OpenAI da etapa de segmentação de audiência
+
+- Configurado o ambiente Docker do `oprm-coletor-mei` para expor explicitamente `OPRM_MEI_AUDIENCE_SEGMENTER_OPENAI_API_KEY_FILE` apontando para o segredo OpenAI montado em `/run/secrets/openai_api_key`.
+- Causa-raiz tratada: a etapa `mei-audience-segmenter` já esperava chave própria ou fallback compartilhado no `application.yml`, mas os manifests do serviço só configuravam a chave da etapa seed, deixando a segmentação MEI sem credencial garantida no ambiente de execução.
+- Prevenção de recorrência: o modelo da etapa também ficou parametrizado nos manifests, mantendo paridade operacional entre seed e segmentação MEI/autônomo.

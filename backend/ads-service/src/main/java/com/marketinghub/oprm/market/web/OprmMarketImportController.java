@@ -103,4 +103,12 @@ public class OprmMarketImportController {
             @RequestParam(defaultValue = "50") int size) {
         return service.listTopCnaesByMarketVolume(page, size);
     }
+
+    /**
+     * Retorna o volume e o score do CNAE informado no snapshot mais recente.
+     */
+    @GetMapping("/cnaes/{cnaeCode}/latest-volume")
+    public OprmTopCnaeMarketVolumeDto getLatestCnaeVolume(@PathVariable String cnaeCode) {
+        return service.getLatestCnaeMarketVolume(cnaeCode);
+    }
 }

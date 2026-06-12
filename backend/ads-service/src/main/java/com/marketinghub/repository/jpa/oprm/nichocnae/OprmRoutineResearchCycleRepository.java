@@ -14,6 +14,9 @@ public interface OprmRoutineResearchCycleRepository extends JpaRepository<OprmRo
     /** Lista ciclos vinculados ao nicho CNAE de origem em ordem operacional decrescente. */
     List<OprmRoutineResearchCycle> findBySourceNicheIdOrderByStartedAtDesc(Long sourceNicheId);
 
+    /** Lista ciclos vinculados ao CNAE informado em ordem operacional decrescente. */
+    List<OprmRoutineResearchCycle> findByCnaeCodeOrderByStartedAtDesc(String cnaeCode);
+
     /** Lista ciclos por status para filas internas do pipeline de pesquisa de rotina. */
     List<OprmRoutineResearchCycle> findByStatusOrderByStartedAtAsc(String status, Pageable pageable);
 

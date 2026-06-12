@@ -4,6 +4,28 @@ info:
   version: 0.5.0
   description: Endpoints internos do backend para o pipeline OPRM de pesquisa de rotina por nicho CNAE.
 paths:
+  /api/oprm/cnaes/{cnaeCode}/opportunity-score:
+    get:
+      summary: Retorna o score OPRM calculado para o CNAE exibido na tela de detalhe.
+      tags: [OPRM CNAE]
+      parameters:
+        - $ref: '#/components/parameters/CnaeCode'
+      responses:
+        '200':
+          description: Score de oportunidade do CNAE.
+        '404':
+          description: Score ainda não calculado para o CNAE.
+  /api/oprm/market/import-runs/cnaes/{cnaeCode}/latest-volume:
+    get:
+      summary: Retorna volume de mercado e score agregado do CNAE no snapshot mais recente.
+      tags: [OPRM CNAE]
+      parameters:
+        - $ref: '#/components/parameters/CnaeCode'
+      responses:
+        '200':
+          description: Volume de estabelecimentos, empresas, MEIs e score do CNAE.
+        '404':
+          description: CNAE não encontrado no snapshot mais recente.
   /api/internal/oprm/nichocnae/routine-research-orchestrator/stage-executions/pending:
     get:
       summary: Lista o próximo nicho CNAE pendente para a etapa zero.
@@ -50,6 +72,17 @@ paths:
           description: Ciclo ou nicho CNAE de origem não encontrado.
         '409':
           description: Ciclo não está em status FAILED, NEEDS_MORE_RESEARCH, GENERIC ou ENRICHED_NICHE_FAILED e não pode ser reprocessado.
+  /api/oprm/nichocnae/cnaes/{cnaeCode}/routine-research-orchestrator/run:
+    post:
+      summary: Executa a etapa zero para iniciar o pipeline NichoCNAE do CNAE escolhido manualmente na tela de detalhe.
+      tags: [OPRM Nicho CNAE]
+      parameters:
+        - $ref: '#/components/parameters/CnaeCode'
+      responses:
+        '202':
+          description: Ciclo criado e nicho marcado como em pesquisa para o CNAE informado.
+        '404':
+          description: Não existe candidato de nicho pendente para iniciar o pipeline desse CNAE.
   /api/internal/oprm/nichocnae/routine-research-orchestrator/run-next:
     post:
       summary: Executa a etapa zero e abre o próximo ciclo de pesquisa de rotina.
@@ -66,6 +99,15 @@ paths:
       responses:
         '200':
           description: Ciclos em execução.
+  /api/oprm/nichocnae/cnaes/{cnaeCode}/routine-research-cycle/stage-executions:
+    get:
+      summary: Lista ciclos de pesquisa de rotina por código CNAE para acompanhamento da tela de detalhe.
+      tags: [OPRM Nicho CNAE]
+      parameters:
+        - $ref: '#/components/parameters/CnaeCode'
+      responses:
+        '200':
+          description: Lista de ciclos vinculados ao CNAE.
   /api/oprm/nichocnae/{sourceNicheId}/routine-research-cycle/stage-executions:
     get:
       summary: Lista ciclos de pesquisa de rotina por nicho CNAE de origem.
@@ -674,6 +716,14 @@ paths:
 
 components:
   parameters:
+    CnaeCode:
+      name: cnaeCode
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 7
+        maxLength: 7
     ResearchCycleId:
       name: researchCycleId
       in: path

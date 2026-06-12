@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 /**
  * Repositório responsável por persistir e consultar candidatos de nicho gerados pelo OPRM.
@@ -22,6 +23,18 @@ public interface OprmNicheCandidateRepository extends JpaRepository<OprmNicheCan
                     + "and c.opportunityScore is not null "
                     + "order by c.opportunityScore desc, c.createdAt asc")
     List<OprmNicheCandidate> findNextPendingRoutineResearchCandidate(Pageable pageable);
+
+    /**
+     * Seleciona com bloqueio pessimista candidatos pendentes de pesquisa para o CNAE escolhido manualmente.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query(
+            "select c from OprmNicheCandidate c "
+                    + "where c.cnaeCode = :cnaeCode "
+                    + "and (c.routineResearchStatus is null or c.routineResearchStatus = 'PENDING') "
+                    + "and c.opportunityScore is not null "
+                    + "order by c.opportunityScore desc, c.createdAt asc")
+    List<OprmNicheCandidate> findPendingRoutineResearchCandidateByCnaeCode(@Param("cnaeCode") String cnaeCode, Pageable pageable);
 
     /**
      * Lista sem bloqueio pessimista os melhores candidatos ainda pendentes de pesquisa de rotina para visualização.

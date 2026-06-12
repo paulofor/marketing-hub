@@ -12,11 +12,10 @@ import com.marketinghub.repository.jpa.oprm.market.OprmCnpjImportRunRepository;
 import com.marketinghub.repository.jpa.oprm.market.OprmMarketSizeByCnaeRepository;
 import java.time.Instant;
 import java.util.List;
-import com.marketinghub.oprm.market.dto.OprmTopCnaeMarketVolumeDto;
 import com.marketinghub.oprm.market.exception.SQLException;
-import org.springframework.data.domain.PageRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -350,5 +349,14 @@ public class OprmMarketImportService {
         int safePage = Math.max(page, 0);
         int safeSize = Math.min(Math.max(size, 1), 100);
         return marketSizeRepository.findTopByLatestSnapshot(PageRequest.of(safePage, safeSize));
+    }
+
+    /**
+     * Retorna os dados de volume e score do CNAE informado no snapshot mais recente.
+     */
+    @Transactional(readOnly = true)
+    public OprmTopCnaeMarketVolumeDto getLatestCnaeMarketVolume(String cnaeCode) {
+        return marketSizeRepository.findLatestSnapshotByCnaeCode(cnaeCode)
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "CNAE não encontrado no snapshot mais recente: " + cnaeCode));
     }
 }

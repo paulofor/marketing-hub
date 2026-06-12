@@ -449,3 +449,9 @@
 - Ajustada a instrução inicial da etapa de seed para apresentar a IA como especialista em Marketing e Comportamento do Consumidor no Digital, evitando linguagem interna como construtor/executor de pipeline na requisição exibida ao usuário.
 - Causa-raiz tratada: a tela reconstruía corretamente a requisição, mas o contrato textual da etapa ainda expunha nomenclatura operacional interna, reduzindo clareza de negócio para validação do usuário.
 - Prevenção de recorrência: adicionado teste garantindo presença da persona de marketing/comportamento e ausência das expressões técnicas antigas no prompt da etapa.
+
+## 2026-06-12 — OPRM NichoCNAE: trava por perfil MEI/autônomo aprovado
+
+- Corrigida a liberação final do OPRM para exigir `oprm_mei_audience_profile` antes de materializar `market_niche` e `market_niche_enrichment_profile`, mantendo ciclos sem perfil na etapa visual “Aguardando perfil MEI/autônomo”.
+- Causa-raiz tratada: a etapa final confiava apenas no `readyForHypothesis` do cartão e podia ser chamada diretamente sem comprovar o perfil humano MEI/autônomo que sustenta os fluxos comerciais seguintes.
+- Prevenção de recorrência: adicionado teste de regressão bloqueando ciclo `ROUTINE_SYNTHESIZED` sem perfil MEI/autônomo e regra canônica para atualizar nicho existente de forma controlada, sem duplicar `market_niche`.

@@ -108,6 +108,7 @@ Evitar fechamento prematuro de `import run` que destrói a totalização de mark
 ## Regra obrigatória — materialização final do NichoCNAE em nicho enriquecido
 
 - Após o `oprmRoutineQualityGate` aprovar um cartão com `readyForHypothesis=true`, o pipeline OPRM NichoCNAE deve executar uma etapa final chamada `oprmEnrichedNicheMaterializer`.
+- A etapa final só pode liberar materialização, estratégia ou próximos fluxos comerciais quando existir `oprm_mei_audience_profile` rastreável para o `research_cycle_id` ou, em retentativas controladas, para o `market_niche_id` já materializado; sem esse perfil, o ciclo deve permanecer operacionalmente como “Aguardando perfil MEI/autônomo”.
 - Essa etapa final deve alimentar obrigatoriamente duas estruturas persistidas: a tabela principal de nichos (`market_niche`) e a tabela de nicho enriquecido (`market_niche_enrichment_profile`).
 - A materialização final não deve criar hipótese, experimento, oferta, campanha ou landing page; hipótese será tratada em fluxo próprio posterior.
 - O `market_niche` deve receber o cadastro operacional do nicho com nome neutro, descrição enriquecida, segmentação base e contexto de uso, sem inventar uma oferta; o nome original contaminado deve ficar apenas como auditoria.
@@ -120,6 +121,7 @@ Evitar fechamento prematuro de `import run` que destrói a totalização de mark
 
 - Um cartão aprovado pelo gate só pode ser considerado finalizado quando existir um registro correspondente em `market_niche_enrichment_profile` e um `market_niche_id` persistido.
 - A etapa deve ser idempotente por `routine_card_id` e `research_cycle_id`, evitando duplicar nichos enriquecidos quando houver retentativa do coletor.
+- Quando já existir `market_niche_id` associado ao candidato ou ao perfil MEI/autônomo, a etapa final deve atualizar esse nicho de forma controlada em vez de criar duplicata.
 - A tela `/oprm/pipeline` deve exibir a etapa final e informar o `marketNicheId`, o `enrichedNicheProfileId` e o status de materialização.
 - Ciclos em `ENRICHED_NICHE_FAILED` devem oferecer ação operacional pelo próprio front-end para abrir novo ciclo rastreável; o usuário não deve ser orientado a corrigir esse caso por acesso direto ao banco de dados.
 - O contrato da etapa final deve seguir o padrão de unidade de trabalho fechada: o endpoint `pending` precisa entregar todos os dados necessários para o coletor concluir a materialização sem buscar detalhes adicionais.

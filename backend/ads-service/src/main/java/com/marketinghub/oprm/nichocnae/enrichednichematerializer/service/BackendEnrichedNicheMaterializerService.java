@@ -17,6 +17,7 @@ import com.marketinghub.oprm.nichocnae.enrichednichematerializer.service.diagnos
 import com.marketinghub.oprm.nichocnae.enrichednichematerializer.service.diagnoseContamination.ContaminatedNicheDiagnosticResponse;
 import com.marketinghub.oprm.nichocnae.enrichednichematerializer.service.failStageExecution.FailEnrichedNicheMaterializerRequest;
 import com.marketinghub.oprm.nichocnae.enrichednichematerializer.service.pending.RecordEnrichedNicheMaterializerPending;
+import com.marketinghub.oprm.nichocnae.meiaudienceprofile.OprmMeiAudienceProfile;
 import com.marketinghub.repository.jpa.niche.MarketNicheEnrichmentProfileRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import com.marketinghub.repository.jpa.oprm.cnae.OprmNicheCandidateRepository;
@@ -27,6 +28,7 @@ import com.marketinghub.repository.jpa.oprm.nichocnae.OprmResearchQueryRepositor
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmRoutineResearchCycleRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmSourceCandidateRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmSourceSnapshotRepository;
+import com.marketinghub.repository.jpa.oprm.nichocnae.meiaudienceprofile.OprmMeiAudienceProfileRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -34,6 +36,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.springframework.data.domain.PageRequest;
@@ -62,6 +65,7 @@ public class BackendEnrichedNicheMaterializerService {
   private final OprmExtractedSignalRepository extractedSignalRepository;
   private final MarketNicheRepository marketNicheRepository;
   private final MarketNicheEnrichmentProfileRepository enrichmentProfileRepository;
+  private final OprmMeiAudienceProfileRepository meiAudienceProfileRepository;
   private final OprmEnrichedNicheMetaSignalService metaSignalService;
 
   /** Inicializa o serviço com os repositórios oficiais do backend usados pela etapa final. */
@@ -76,6 +80,7 @@ public class BackendEnrichedNicheMaterializerService {
       OprmExtractedSignalRepository extractedSignalRepository,
       MarketNicheRepository marketNicheRepository,
       MarketNicheEnrichmentProfileRepository enrichmentProfileRepository,
+      OprmMeiAudienceProfileRepository meiAudienceProfileRepository,
       OprmEnrichedNicheMetaSignalService metaSignalService) {
     this.cycleRepository = cycleRepository;
     this.routineCardRepository = routineCardRepository;
@@ -87,6 +92,7 @@ public class BackendEnrichedNicheMaterializerService {
     this.extractedSignalRepository = extractedSignalRepository;
     this.marketNicheRepository = marketNicheRepository;
     this.enrichmentProfileRepository = enrichmentProfileRepository;
+    this.meiAudienceProfileRepository = meiAudienceProfileRepository;
     this.metaSignalService = metaSignalService;
   }
 
@@ -94,6 +100,7 @@ public class BackendEnrichedNicheMaterializerService {
   @Transactional(readOnly = true)
   public List<RecordEnrichedNicheMaterializerPending> listPending() {
     return routineCardRepository.findPendingEnrichedNicheMaterialization(PageRequest.of(0, MAX_PENDING)).stream()
+        .filter(this::hasMeiAudienceProfileForPending)
         .map(this::toPending)
         .toList();
   }
@@ -111,6 +118,8 @@ public class BackendEnrichedNicheMaterializerService {
     if (!Boolean.TRUE.equals(card.getReadyForHypothesis())) {
       throw new IllegalArgumentException("routine card is not approved by quality gate");
     }
+    OprmNicheCandidate candidate = nicheCandidateRepository.findById(cycle.getSourceNicheId()).orElse(null);
+    OprmMeiAudienceProfile meiAudienceProfile = requireApprovedMeiAudienceProfile(cycle, candidate);
     if (enrichmentProfileRepository.existsBySourceRoutineCardId(card.getId())) {
       MarketNicheEnrichmentProfile existing = enrichmentProfileRepository.findFirstByResearchCycleIdOrderByIdDesc(researchCycleId)
           .orElseThrow(() -> new IllegalStateException("routine card already materialized without retrievable profile"));
@@ -119,9 +128,8 @@ public class BackendEnrichedNicheMaterializerService {
           researchCycleId, card.getId(), existing.getMarketNiche().getId(), existing.getId(), cycle.getStatus(), existing.getCreatedAt());
     }
 
-    OprmNicheCandidate candidate = nicheCandidateRepository.findById(cycle.getSourceNicheId()).orElse(null);
     OprmEnrichedNicheMetaSignalService.MetaSignalPackage metaSignalPackage = metaSignalService.buildSignalPackage(cycle, card);
-    MarketNiche marketNiche = resolveMarketNiche(card, cycle, candidate, metaSignalPackage);
+    MarketNiche marketNiche = resolveMarketNiche(card, cycle, candidate, meiAudienceProfile, metaSignalPackage);
     MarketNicheEnrichmentProfile profile = buildProfile(card, cycle, candidate, marketNiche, request);
     MarketNicheEnrichmentProfile savedProfile = enrichmentProfileRepository.save(profile);
     updateCycleAndCandidate(cycle, candidate, marketNiche.getId());
@@ -234,6 +242,16 @@ public class BackendEnrichedNicheMaterializerService {
     marketNicheRepository.save(marketNiche);
   }
 
+  /** Confirma se a pendência final tem perfil MEI/autônomo rastreável antes de expor ao coletor. */
+  private boolean hasMeiAudienceProfileForPending(OprmNicheRoutineCard card) {
+    if (meiAudienceProfileRepository.existsByResearchCycleId(card.getResearchCycleId())) {
+      return true;
+    }
+    OprmRoutineResearchCycle cycle = findCycle(card.getResearchCycleId());
+    OprmNicheCandidate candidate = nicheCandidateRepository.findById(cycle.getSourceNicheId()).orElse(null);
+    return findProfileByMaterializedNiche(candidate).isPresent();
+  }
+
   /** Converte cartão aprovado em unidade de trabalho completa para o coletor OPRM. */
   private RecordEnrichedNicheMaterializerPending toPending(OprmNicheRoutineCard card) {
     OprmRoutineResearchCycle cycle = findCycle(card.getResearchCycleId());
@@ -268,14 +286,34 @@ public class BackendEnrichedNicheMaterializerService {
         card.getQualityCheckedAt());
   }
 
-  /** Reaproveita nicho existente do candidato ou cria um nicho base com dados enriquecidos do card. */
+  /** Exige perfil MEI/autônomo aprovado para impedir avanço estratégico sem público humano validado. */
+  private OprmMeiAudienceProfile requireApprovedMeiAudienceProfile(OprmRoutineResearchCycle cycle, OprmNicheCandidate candidate) {
+    return meiAudienceProfileRepository.findFirstByResearchCycleIdOrderByIdDesc(cycle.getId())
+        .or(() -> findProfileByMaterializedNiche(candidate))
+        .orElseThrow(() -> new IllegalStateException(
+            "Ciclo OPRM aguardando perfil MEI/autônomo aprovado antes da materialização final"));
+  }
+
+  /** Busca perfil MEI/autônomo por nicho já materializado quando o ciclo atual é retentativa controlada. */
+  private Optional<OprmMeiAudienceProfile> findProfileByMaterializedNiche(OprmNicheCandidate candidate) {
+    if (candidate == null || candidate.getMarketNicheId() == null) {
+      return Optional.empty();
+    }
+    return meiAudienceProfileRepository.findFirstByMarketNicheIdOrderByIdDesc(candidate.getMarketNicheId());
+  }
+
+  /** Reaproveita nicho existente do candidato/perfil MEI ou cria um nicho base com dados enriquecidos do card. */
   private MarketNiche resolveMarketNiche(
       OprmNicheRoutineCard card,
       OprmRoutineResearchCycle cycle,
       OprmNicheCandidate candidate,
+      OprmMeiAudienceProfile meiAudienceProfile,
       OprmEnrichedNicheMetaSignalService.MetaSignalPackage metaSignalPackage) {
-    MarketNiche marketNiche = candidate != null && candidate.getMarketNicheId() != null
-        ? marketNicheRepository.findById(candidate.getMarketNicheId()).orElseGet(MarketNiche::new)
+    Long existingMarketNicheId = candidate != null && candidate.getMarketNicheId() != null
+        ? candidate.getMarketNicheId()
+        : meiAudienceProfile.getMarketNicheId();
+    MarketNiche marketNiche = existingMarketNicheId != null
+        ? marketNicheRepository.findById(existingMarketNicheId).orElseGet(MarketNiche::new)
         : new MarketNiche();
     marketNiche.setName(requiredText(neutralNicheName(cycle), "neutralNicheName"));
     marketNiche.setDescription(buildMarketNicheDescription(card, cycle));

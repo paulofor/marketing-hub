@@ -42,6 +42,15 @@ describe("OPRM navigation", () => {
     expect(link.getAttribute("href")).toBe("/oprm");
   });
 
+  it("renders placeholder niche detail page on /oprm/cnaes/:cnaeCode route", () => {
+    setup(<App />, ["/oprm/cnaes/9602501"]);
+    expect(screen.getByText(/^Detalhe do nicho CNAE$/)).toBeTruthy();
+    expect(screen.getByText(/^CNAE 9602501$/)).toBeTruthy();
+    expect(
+      screen.getByRole("link", { name: /voltar para cnaes/i }),
+    ).toBeTruthy();
+  });
+
   it("renders Pipeline page on /oprm/pipeline route", () => {
     setup(<App />, ["/oprm/pipeline"]);
     expect(screen.getByText(/^Pipeline NichoCNAE$/)).toBeTruthy();

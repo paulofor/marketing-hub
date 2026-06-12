@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import PageTitle from "../../components/PageTitle";
 import OprmModuleNavigation from "./OprmModuleNavigation";
 import { useOprmTopCnaeMarketVolume } from "../../api/oprm/useOprmTopCnaeMarketVolume";
@@ -287,7 +288,15 @@ export default function OprmCnaeVolumePage() {
                       <tr key={`${item.snapshotDate}-${item.cnaeCode}`}>
                         <td>{(currentPage - 1) * pageSize + index + 1}</td>
                         <td>{item.cnaeCode}</td>
-                        <td>{item.cnaeDescription ?? "-"}</td>
+                        <td>
+                          <Link
+                            to={`/oprm/cnaes/${encodeURIComponent(item.cnaeCode)}`}
+                            className="fw-semibold text-decoration-none"
+                            title="Abrir detalhe do nicho CNAE"
+                          >
+                            {item.cnaeDescription ?? "Nicho sem descrição"}
+                          </Link>
+                        </td>
                         <td>
                           {formatScore(item.opportunityScore ?? undefined)}
                         </td>
@@ -307,7 +316,15 @@ export default function OprmCnaeVolumePage() {
                         <tr key={item.cnaeCode}>
                           <td>{index + 1}</td>
                           <td>{item.cnaeCode}</td>
-                          <td>{item.description ?? "-"}</td>
+                          <td>
+                            <Link
+                              to={`/oprm/cnaes/${encodeURIComponent(item.cnaeCode)}`}
+                              className="fw-semibold text-decoration-none"
+                              title="Abrir detalhe do nicho CNAE"
+                            >
+                              {item.description ?? "Nicho sem descrição"}
+                            </Link>
+                          </td>
                           <td>{item.active ? "Importado" : "Inativo"}</td>
                         </tr>
                       ))}

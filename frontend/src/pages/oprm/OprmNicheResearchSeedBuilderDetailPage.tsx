@@ -7,7 +7,6 @@ import PageTitle from "../../components/PageTitle";
 import OprmModuleNavigation from "./OprmModuleNavigation";
 
 const OPENAI_RESPONSES_ENDPOINT = "https://api.openai.com/v1/responses";
-const OPENAI_MODEL = "gpt-4.1-mini";
 
 function formatProcessedAt(value?: string | null) {
   if (!value) {
@@ -134,13 +133,13 @@ function buildStructuralSchema() {
   };
 }
 
+function resolveOpenAiModel(seed?: OprmNicheResearchSeedDetail | null) {
+  return safe(seed?.model);
+}
+
 function buildAiRequestPreview(detail: {
   researchCycleId: number;
-  seed?: {
-    cnaeCode: string;
-    cnaeDescription: string;
-    nicheName: string;
-  } | null;
+  seed?: OprmNicheResearchSeedDetail | null;
 }) {
   return {
     method: "POST",
@@ -150,7 +149,7 @@ function buildAiRequestPreview(detail: {
       "Content-Type": "application/json",
     },
     body: {
-      model: OPENAI_MODEL,
+      model: resolveOpenAiModel(detail.seed),
       input: buildPrompt(detail),
       text: {
         format: {
@@ -209,6 +208,10 @@ export default function OprmNicheResearchSeedBuilderDetailPage() {
     useOprmNicheResearchSeedBuilderDetail(isValidCycleId ? cycleId : undefined);
   const generatedPayload = buildGeneratedPayload(data?.seed ?? null);
   const aiRequestPreview = data ? buildAiRequestPreview(data) : null;
+  const tokenSummary = data?.seed
+    ? `${data.seed.inputTokens ?? "não informado"} entrada / ${data.seed.outputTokens ?? "não informado"} saída`
+    : "não informado";
+  const costSummary = data?.seed?.costUsd == null ? "não informado" : `US$ ${data.seed.costUsd}`;
 
   return (
     <div className="d-flex flex-column gap-4">
@@ -270,6 +273,11 @@ export default function OprmNicheResearchSeedBuilderDetailPage() {
                     <span className="d-block">
                       Criado por {data.seed.createdBy}
                     </span>
+                    <span className="d-block">
+                      Modelo {resolveOpenAiModel(data.seed)}
+                    </span>
+                    <span className="d-block">Tokens {tokenSummary}</span>
+                    <span className="d-block">Custo {costSummary}</span>
                   </div>
                 ) : null}
               </div>
@@ -294,6 +302,22 @@ export default function OprmNicheResearchSeedBuilderDetailPage() {
                   {JSON.stringify(aiRequestPreview, null, 2)}
                 </pre>
               ) : null}
+            </div>
+          </section>
+
+          <section className="card border-0 shadow-sm">
+            <div className="card-body">
+              <h2 className="h5 mb-3">Telemetria OpenAI persistida</h2>
+              <dl className="row g-3 mb-0">
+                <dt className="col-md-3 text-secondary fw-normal">Modelo usado</dt>
+                <dd className="col-md-9 mb-0 fw-semibold">{resolveOpenAiModel(data.seed)}</dd>
+                <dt className="col-md-3 text-secondary fw-normal">Tokens</dt>
+                <dd className="col-md-9 mb-0">{tokenSummary}</dd>
+                <dt className="col-md-3 text-secondary fw-normal">Custo</dt>
+                <dd className="col-md-9 mb-0">{costSummary}</dd>
+                <dt className="col-md-3 text-secondary fw-normal">Resposta OpenAI</dt>
+                <dd className="col-md-9 mb-0">{safe(data.seed?.openAiResponseId)}</dd>
+              </dl>
             </div>
           </section>
 

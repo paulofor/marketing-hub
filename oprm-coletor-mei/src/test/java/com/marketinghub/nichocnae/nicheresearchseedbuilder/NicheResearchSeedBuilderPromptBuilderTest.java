@@ -71,6 +71,8 @@ class NicheResearchSeedBuilderPromptBuilderTest {
                 "Cabeleireiros, manicure e pedicure",
                 "Cabeleireiros, manicure e pedicure",
                 BigDecimal.valueOf(92),
+                "gpt-5.4",
+                "gpt-5.4 (gpt-5.4)",
                 "AUTO_SCORE_QUEUE",
                 "RUNNING",
                 Instant.now(),

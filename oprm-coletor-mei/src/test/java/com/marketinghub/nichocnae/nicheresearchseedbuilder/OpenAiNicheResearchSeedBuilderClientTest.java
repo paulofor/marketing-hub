@@ -39,7 +39,18 @@ class OpenAiNicheResearchSeedBuilderClientTest {
         assertThat(apiKey).isEqualTo("file-key");
     }
 
-    /** Cria o client com dependências nulas porque o teste cobre apenas resolução de chave. */
+    /** Confirma que a configuração operacional recebida do backend define o modelo enviado à OpenAI. */
+    @Test
+    void shouldResolveModelFromPendingStageConfiguration() {
+        OpenAiNicheResearchSeedBuilderClient client = clientWithProperties(
+                new NicheResearchSeedBuilderOpenAiProperties("https://api.openai.com/v1", "direct-key", "", "gpt-4.1-mini"));
+
+        String model = client.resolveModel(pending());
+
+        assertThat(model).isEqualTo("gpt-5.4");
+    }
+
+    /** Cria o client com dependências nulas porque o teste cobre apenas resolução de chave e modelo. */
     private OpenAiNicheResearchSeedBuilderClient clientWithProperties(NicheResearchSeedBuilderOpenAiProperties properties) {
         return new OpenAiNicheResearchSeedBuilderClient(null, null, properties, null, null);
     }
@@ -53,6 +64,8 @@ class OpenAiNicheResearchSeedBuilderClientTest {
                 "Cabeleireiros, manicure e pedicure",
                 "Cabeleireiros, manicure e pedicure",
                 BigDecimal.valueOf(92),
+                "gpt-5.4",
+                "gpt-5.4 (gpt-5.4)",
                 "AUTO_SCORE_QUEUE",
                 "RUNNING",
                 Instant.now(),

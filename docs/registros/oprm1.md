@@ -493,3 +493,13 @@
 - A nova página informa as tabelas populadas por etapa, o tipo de conteúdo gravado, os dados retornados pelo backend e se a etapa acessa modelo de IA.
 - Para etapas com IA, a página exibe request/response conceitual, modelo configurado e deixa explícito quando tokens e custo ainda não estão persistidos no detalhe operacional.
 - 2026-06-12 00:00:00 (UTC): diagnosticada parada do ciclo OPRM NichoCNAE #20 na etapa `oprmNicheResearchSeedBuilder`: endpoint backend operacional em `http://191.252.181.168/api/internal/oprm/nichocnae/niche-research-seed-builder/stage-executions/pending` retorna o ciclo, enquanto a porta `:8000` responde indisponível para o coletor e os logs publicados não exibem o boot do scheduler `Scheduler da etapa dois OPRM NichoCNAE carregado`. Corrigido o default do `oprm-coletor-mei` para usar a URL operacional sem porta, adicionado teste de carregamento do pacote `com.marketinghub.nichocnae` e criada proteção backend para marcar ciclos `RUNNING` sem progresso como `STALLED`, evitando tela com execução aparentemente saudável quando o pipeline estiver parado.
+
+## 2026-06-12 — Correção do modelo e telemetria OpenAI da etapa seed NichoCNAE
+
+- causa-raiz: a tela `/pipelines` gravava o modelo da etapa `niche-research-seed-builder` no pipeline operacional, mas o coletor OPRM usava apenas a propriedade local `gpt-4.1-mini`; além disso, o contrato de conclusão da etapa descartava `usage` da OpenAI, impedindo cálculo e exibição de tokens/custo.
+- correção aplicada:
+  - o backend passou a enviar na pendência da etapa seed o modelo configurado no pipeline oficial/pipeline operacional;
+  - o coletor OPRM passou a priorizar esse modelo recebido do backend na chamada à OpenAI Responses API;
+  - a conclusão da etapa passou a enviar e persistir modelo, resposta bruta, tokens de entrada/saída, `openAiResponseId` e custo estimado;
+  - a tela de detalhe da etapa passou a exibir a telemetria real quando persistida.
+- verificação operacional: consulta via MCP confirmou que a etapa operacional `niche-research-seed-builder` está configurada com `gpt-5.4` no banco.

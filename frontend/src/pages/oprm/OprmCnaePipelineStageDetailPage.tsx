@@ -155,17 +155,34 @@ function formatJson(value: unknown) {
   return JSON.stringify(value, null, 2);
 }
 
-function buildAiTelemetry(metadata: StageMetadata) {
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function textValue(value: unknown) {
+  if (value === null || value === undefined || value === "") {
+    return "não informado";
+  }
+  return String(value);
+}
+
+function buildAiTelemetry(metadata: StageMetadata, data: unknown) {
   if (!metadata.usesAiModel) {
     return null;
   }
+  const payload = asRecord(data);
+  const seed = asRecord(payload?.seed) ?? payload;
   return {
-    modelo: metadata.aiModel ?? "não informado",
+    modelo: textValue(seed?.model ?? metadata.aiModel),
     request: metadata.aiRequestSummary,
-    response: metadata.aiResponseSummary,
-    tokensEntrada: "não persistido no detalhe atual",
-    tokensSaida: "não persistido no detalhe atual",
-    custoUsd: "não persistido no detalhe atual",
+    response: textValue(seed?.openAiResponseId ?? metadata.aiResponseSummary),
+    tokensEntrada: textValue(seed?.inputTokens),
+    tokensSaida: textValue(seed?.outputTokens),
+    custoUsd: seed?.costUsd == null ? "não informado" : `US$ ${seed.costUsd}`,
+    hasPersistedTelemetry:
+      seed?.model != null || seed?.inputTokens != null || seed?.outputTokens != null || seed?.costUsd != null,
   };
 }
 
@@ -184,7 +201,7 @@ export default function OprmCnaePipelineStageDetailPage() {
     validStageCode,
     isValidCycleId ? cycleId : undefined,
   );
-  const aiTelemetry = metadata ? buildAiTelemetry(metadata) : null;
+  const aiTelemetry = metadata ? buildAiTelemetry(metadata, data) : null;
 
   useBreadcrumbs([
     { label: "OPRM", to: "/oprm" },
@@ -287,10 +304,11 @@ export default function OprmCnaePipelineStageDetailPage() {
                     <dt className="col-md-3 text-secondary fw-normal">Custo</dt>
                     <dd className="col-md-9 mb-0">{aiTelemetry.custoUsd}</dd>
                   </dl>
-                  <div className="alert alert-info mb-0 small" role="status">
-                    Para exibir tokens e custo reais, o backend precisa receber
-                    e persistir telemetria de uso da chamada OpenAI desta etapa.
-                  </div>
+                  {!aiTelemetry.hasPersistedTelemetry ? (
+                    <div className="alert alert-info mb-0 small" role="status">
+                      Esta execução ainda não possui telemetria persistida; novas execuções da etapa seed passam a gravar modelo, tokens e custo.
+                    </div>
+                  ) : null}
                 </div>
               ) : (
                 <div className="alert alert-secondary mb-0" role="status">

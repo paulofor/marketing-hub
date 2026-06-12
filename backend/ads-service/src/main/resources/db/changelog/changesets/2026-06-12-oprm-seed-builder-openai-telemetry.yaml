@@ -1,0 +1,27 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-12-oprm-seed-builder-openai-telemetry
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: oprm_niche_research_seed
+        - not:
+            columnExists:
+              tableName: oprm_niche_research_seed
+              columnName: model
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE oprm_niche_research_seed
+                ADD COLUMN model VARCHAR(128) NULL AFTER created_at,
+                ADD COLUMN raw_model_response LONGTEXT NULL AFTER model,
+                ADD COLUMN input_tokens INT NULL AFTER raw_model_response,
+                ADD COLUMN output_tokens INT NULL AFTER input_tokens,
+                ADD COLUMN cost_usd DECIMAL(12,4) NULL AFTER output_tokens,
+                ADD COLUMN openai_response_id VARCHAR(128) NULL AFTER cost_usd;

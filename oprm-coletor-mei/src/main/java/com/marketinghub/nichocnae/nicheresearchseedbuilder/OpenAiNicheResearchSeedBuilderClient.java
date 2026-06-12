@@ -49,8 +49,9 @@ public class OpenAiNicheResearchSeedBuilderClient {
             throw new IllegalStateException("OPRM nichocnae seed builder OpenAI API key não configurada.");
         }
 
+        String model = resolveModel(input);
         String prompt = promptBuilder.buildPrompt(input);
-        Map<String, Object> requestBody = buildRequestBody(prompt);
+        Map<String, Object> requestBody = buildRequestBody(prompt, model);
         String url = properties.baseUrl() + RESPONSES_PATH;
         try {
             Map<String, Object> raw = responseBody(url, requestBody, apiKey);
@@ -66,7 +67,7 @@ public class OpenAiNicheResearchSeedBuilderClient {
                     extractInteger(raw, "usage", "input_tokens"),
                     extractInteger(raw, "usage", "output_tokens"),
                     stringValue(raw.get("id")),
-                    properties.model());
+                    model);
         } catch (RestClientException | JsonProcessingException | IllegalStateException | IllegalArgumentException ex) {
             log.error(
                     "Erro ao gerar seed da etapa dois OPRM nichocnae com OpenAI (endpoint={}, researchCycleId={}, cnaeCode={})",
@@ -112,8 +113,16 @@ public class OpenAiNicheResearchSeedBuilderClient {
         return response == null ? null : (Map<String, Object>) response;
     }
 
+    /** Resolve o modelo efetivo da etapa priorizando a configuração operacional recebida do backend. */
+    String resolveModel(NicheResearchSeedBuilderPending input) {
+        if (input != null && input.openAiModelCode() != null && !input.openAiModelCode().isBlank()) {
+            return input.openAiModelCode().trim();
+        }
+        return properties.model();
+    }
+
     /** Monta o corpo da Responses API com schema JSON estrito para evitar saída ambígua ou fora do contrato. */
-    private Map<String, Object> buildRequestBody(String prompt) {
+    private Map<String, Object> buildRequestBody(String prompt, String model) {
         Map<String, Object> format = new LinkedHashMap<>();
         format.put("type", "json_schema");
         format.put("name", SCHEMA_NAME);
@@ -124,7 +133,7 @@ public class OpenAiNicheResearchSeedBuilderClient {
         text.put("format", format);
 
         Map<String, Object> body = new LinkedHashMap<>();
-        body.put("model", properties.model());
+        body.put("model", model);
         body.put("input", prompt);
         body.put("text", text);
         return body;

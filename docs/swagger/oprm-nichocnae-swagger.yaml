@@ -108,6 +108,12 @@ paths:
       responses:
         '200':
           description: Lista de ciclos vinculados ao CNAE.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RoutineResearchCycleExecutionSummary'
   /api/oprm/nichocnae/{sourceNicheId}/routine-research-cycle/stage-executions:
     get:
       summary: Lista ciclos de pesquisa de rotina por nicho CNAE de origem.
@@ -117,6 +123,12 @@ paths:
       responses:
         '200':
           description: Lista de ciclos vinculados ao nicho.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RoutineResearchCycleExecutionSummary'
   /api/oprm/nichocnae/routine-research-cycle/stage-executions/{researchCycleId}:
     get:
       summary: Detalha um ciclo de pesquisa de rotina.
@@ -761,6 +773,57 @@ components:
         type: integer
         format: int64
   schemas:
+    RoutineResearchCycleExecutionSummary:
+      type: object
+      properties:
+        researchCycleId:
+          type: integer
+          format: int64
+        sourceNicheId:
+          type: integer
+          format: int64
+        cnaeCode:
+          type: string
+        nicheName:
+          type: string
+        originalNicheName:
+          type: string
+          nullable: true
+        neutralNicheName:
+          type: string
+          nullable: true
+        researchMode:
+          type: string
+        solutionLanguageRiskScore:
+          type: number
+          nullable: true
+        sourceScore:
+          type: number
+          nullable: true
+        status:
+          type: string
+        totalQueries:
+          type: integer
+          nullable: true
+        totalSourceCandidates:
+          type: integer
+          nullable: true
+        totalSourceSnapshots:
+          type: integer
+          nullable: true
+        totalExtractedSignals:
+          type: integer
+          nullable: true
+        startedAt:
+          type: string
+          format: date-time
+        finishedAt:
+          type: string
+          format: date-time
+          nullable: true
+        errorMessage:
+          type: string
+          nullable: true
     RoutineResearchOrchestratorRecent:
       type: object
       properties:

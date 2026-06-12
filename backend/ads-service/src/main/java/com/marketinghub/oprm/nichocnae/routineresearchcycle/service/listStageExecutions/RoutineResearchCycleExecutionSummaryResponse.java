@@ -16,6 +16,9 @@ public record RoutineResearchCycleExecutionSummaryResponse(
     BigDecimal sourceScore,
     String status,
     Integer totalQueries,
+    Integer totalSourceCandidates,
+    Integer totalSourceSnapshots,
     Integer totalExtractedSignals,
     Instant startedAt,
-    Instant finishedAt) {}
+    Instant finishedAt,
+    String errorMessage) {}

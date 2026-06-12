@@ -12,8 +12,11 @@ export interface OprmRoutineResearchCycleSummary {
   solutionLanguageRiskScore: number | null;
   sourceScore: number | null;
   status: string;
-  totalQueries: number;
-  totalExtractedSignals: number;
+  totalQueries: number | null;
+  totalSourceCandidates: number | null;
+  totalSourceSnapshots: number | null;
+  totalExtractedSignals: number | null;
+  errorMessage: string | null;
   startedAt: string;
   finishedAt: string | null;
 }

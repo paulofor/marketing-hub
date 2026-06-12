@@ -516,6 +516,12 @@
 - Causa-raiz tratada: a etapa OPRM consumia diretamente serviços e repositórios compartilhados para dados auxiliares de IA, rompendo a regra de isolamento do módulo.
 - Prevenção de recorrência: os testes da etapa passaram a mockar a abstração OPRM, mantendo o serviço de negócio sem imports proibidos.
 
+## 2026-06-12 — OPRM NichoCNAE: status visual do detalhe CNAE
+
+- Ajustada a tela de detalhe do CNAE para inferir conclusão das etapas do pipeline pelos contadores reais do ciclo: queries, fontes candidatas, snapshots coletados e sinais extraídos.
+- Causa-raiz tratada: o status `FAILED` do ciclo pai era exibido como falha do card inicial, escondendo a etapa operacional provável da quebra e obrigando o usuário a abrir detalhes técnicos.
+- Prevenção de recorrência: a mensagem de erro do ciclo agora aparece junto ao status atual e direciona a falha provável para o card compatível, incluindo `mei-audience-segmenter` como falha da etapa 7. MEI.
+## 2026-06-12 — OPRM MEI: barreira operacional para chave OpenAI da segmentação
 ## 2026-06-12 — OPRM MEI: chave OpenAI da etapa de segmentação de audiência
 
 - Configurado o ambiente Docker do `oprm-coletor-mei` para expor explicitamente `OPRM_MEI_AUDIENCE_SEGMENTER_OPENAI_API_KEY_FILE` apontando para o segredo OpenAI montado em `/run/secrets/openai_api_key`.

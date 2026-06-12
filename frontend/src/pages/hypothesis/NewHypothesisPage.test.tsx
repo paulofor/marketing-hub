@@ -1,7 +1,7 @@
-import { render, screen } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import axios from "axios";
 import NewHypothesisPage from "./NewHypothesisPage";
 
@@ -30,6 +30,14 @@ function renderPage() {
 }
 
 describe("NewHypothesisPage", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
   it("shows the current pain job id as a link to the job detail page", async () => {
     (axios.get as any).mockImplementation((url: string) => {
       if (url.includes("/hypothesis-pipeline/pain/")) {
@@ -139,5 +147,62 @@ describe("NewHypothesisPage", () => {
     expect(
       screen.getByRole("link", { name: "Resumo do framework" }),
     ).toHaveAttribute("href", "/niches/18/hypothesis-pipeline/summary");
+  });
+
+  it("keeps the Offer button blocked until Proof is completed", async () => {
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url.includes("/hypothesis-pipeline/pain/")) {
+        return Promise.resolve({
+          data: [
+            {
+              jobid: "pain-completed",
+              marketNicheId: 18,
+              stageCode: "hypothesis-pain",
+              status: "CONCLUIDO",
+              costUsd: 0.001,
+            },
+          ],
+        });
+      }
+      if (url.includes("/hypothesis-pipeline/result/")) {
+        return Promise.resolve({
+          data: [
+            {
+              jobid: "result-completed",
+              marketNicheId: 18,
+              stageCode: "hypothesis-result",
+              status: "CONCLUIDO",
+              costUsd: 0.001,
+            },
+          ],
+        });
+      }
+      if (url.includes("/hypothesis-pipeline/mechanism/")) {
+        return Promise.resolve({
+          data: [
+            {
+              jobid: "mechanism-completed",
+              marketNicheId: 18,
+              stageCode: "hypothesis-mechanism",
+              status: "CONCLUIDO",
+              costUsd: 0.001,
+            },
+          ],
+        });
+      }
+      if (url.includes("/hypothesis-pipeline/proof/")) {
+        return Promise.resolve({ data: [] });
+      }
+      return Promise.resolve({ data: [] });
+    });
+
+    renderPage();
+
+    expect(
+      await screen.findByText("Conclua a Prova antes de iniciar Oferta"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Iniciar construção da oferta" }),
+    ).toBeDisabled();
   });
 });

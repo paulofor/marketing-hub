@@ -1,5 +1,6 @@
 package com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service;
 
+import com.marketinghub.niche.MarketNicheEnrichmentProfile;
 import com.marketinghub.oprm.cnae.OprmNicheCandidate;
 import com.marketinghub.oprm.nichocnae.OprmNicheRoutineCard;
 import com.marketinghub.oprm.nichocnae.OprmRoutineResearchCycle;
@@ -10,6 +11,7 @@ import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.pendi
 import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.recent.RecordRoutineResearchOrchestratorRecent;
 import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.reprocess.RecordRoutineResearchOrchestratorReprocessResult;
 import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.runNext.RecordRoutineResearchOrchestratorResult;
+import com.marketinghub.repository.jpa.niche.MarketNicheEnrichmentProfileRepository;
 import com.marketinghub.repository.jpa.oprm.cnae.OprmNicheCandidateRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmNicheRoutineCardRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmRoutineResearchCycleRepository;
@@ -46,6 +48,7 @@ public class BackendRoutineResearchOrchestratorService {
     private final OprmRoutineResearchCycleRepository routineResearchCycleRepository;
     private final OprmMeiAudienceProfileRepository meiAudienceProfileRepository;
     private final OprmNicheRoutineCardRepository routineCardRepository;
+    private final MarketNicheEnrichmentProfileRepository enrichmentProfileRepository;
     private final RoutineResearchNicheNameNormalizer nicheNameNormalizer = new RoutineResearchNicheNameNormalizer();
 
     /** Inicializa o serviço com os repositórios canônicos usados pela etapa zero do pipeline. */
@@ -53,11 +56,13 @@ public class BackendRoutineResearchOrchestratorService {
             OprmNicheCandidateRepository nicheCandidateRepository,
             OprmRoutineResearchCycleRepository routineResearchCycleRepository,
             OprmMeiAudienceProfileRepository meiAudienceProfileRepository,
-            OprmNicheRoutineCardRepository routineCardRepository) {
+            OprmNicheRoutineCardRepository routineCardRepository,
+            MarketNicheEnrichmentProfileRepository enrichmentProfileRepository) {
         this.nicheCandidateRepository = nicheCandidateRepository;
         this.routineResearchCycleRepository = routineResearchCycleRepository;
         this.meiAudienceProfileRepository = meiAudienceProfileRepository;
         this.routineCardRepository = routineCardRepository;
+        this.enrichmentProfileRepository = enrichmentProfileRepository;
     }
 
     /** Lista o próximo nicho CNAE pendente que seria selecionado pela etapa zero. */
@@ -281,9 +286,12 @@ public class BackendRoutineResearchOrchestratorService {
         OprmNicheRoutineCard routineCard = routineCardRepository
                 .findFirstByResearchCycleIdOrderByIdDesc(cycle.getId())
                 .orElse(null);
+        Long existingMarketNicheId = resolveExistingMarketNicheId(cycle);
         return new RecordRoutineResearchOrchestratorRecent(
                 cycle.getId(),
                 cycle.getSourceNicheId(),
+                existingMarketNicheId,
+                existingMarketNicheId != null,
                 cycle.getCnaeCode(),
                 cycle.getCnaeDescription(),
                 cycle.getNicheName(),
@@ -303,6 +311,22 @@ public class BackendRoutineResearchOrchestratorService {
                 cycle.getStartedAt(),
                 cycle.getFinishedAt(),
                 cycle.getErrorMessage());
+    }
+
+    /** Identifica o nicho de mercado já associado ao ciclo para evitar linguagem de criação duplicada na UI. */
+    private Long resolveExistingMarketNicheId(OprmRoutineResearchCycle cycle) {
+        Long candidateMarketNicheId = nicheCandidateRepository
+                .findById(cycle.getSourceNicheId())
+                .map(OprmNicheCandidate::getMarketNicheId)
+                .orElse(null);
+        if (candidateMarketNicheId != null) {
+            return candidateMarketNicheId;
+        }
+        return enrichmentProfileRepository
+                .findFirstByResearchCycleIdOrderByIdDesc(cycle.getId())
+                .map(MarketNicheEnrichmentProfile::getMarketNiche)
+                .map(marketNiche -> marketNiche == null ? null : marketNiche.getId())
+                .orElse(null);
     }
 
     /** Converte o candidato selecionável para o contrato de pendência da etapa zero. */

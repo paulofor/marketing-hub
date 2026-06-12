@@ -449,3 +449,9 @@
 - Ajustada a instrução inicial da etapa de seed para apresentar a IA como especialista em Marketing e Comportamento do Consumidor no Digital, evitando linguagem interna como construtor/executor de pipeline na requisição exibida ao usuário.
 - Causa-raiz tratada: a tela reconstruía corretamente a requisição, mas o contrato textual da etapa ainda expunha nomenclatura operacional interna, reduzindo clareza de negócio para validação do usuário.
 - Prevenção de recorrência: adicionado teste garantindo presença da persona de marketing/comportamento e ausência das expressões técnicas antigas no prompt da etapa.
+
+## 2026-06-12 — OPRM Pipeline: indicação de nicho já materializado
+
+- A tela `/oprm/pipeline` passou a diferenciar ciclos que já possuem `market_niche` associado, exibindo o badge “Nicho já existe” e priorizando a ação “Abrir nicho existente”.
+- O endpoint de últimos ciclos processados agora informa `existingMarketNicheId` e `alreadyMaterialized`, evitando que a interface induza o usuário a criar um novo nicho quando o ativo comercial já foi materializado.
+- Causa-raiz tratada: a tabela mostrava o ciclo apenas como execução do pipeline e não levava para o nicho operacional já criado, gerando ambiguidade entre atualizar/consultar um nicho existente e criar novamente.

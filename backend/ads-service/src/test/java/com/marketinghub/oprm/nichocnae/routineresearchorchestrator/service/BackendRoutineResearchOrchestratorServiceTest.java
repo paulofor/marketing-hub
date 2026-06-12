@@ -2,15 +2,18 @@ package com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.niche.MarketNicheEnrichmentProfile;
 import com.marketinghub.oprm.cnae.OprmNicheCandidate;
 import com.marketinghub.oprm.nichocnae.OprmRoutineResearchCycle;
 import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.pending.RecordRoutineResearchOrchestratorPending;
 import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.recent.RecordRoutineResearchOrchestratorRecent;
 import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.runNext.RecordRoutineResearchOrchestratorResult;
+import com.marketinghub.repository.jpa.niche.MarketNicheEnrichmentProfileRepository;
 import com.marketinghub.repository.jpa.oprm.cnae.OprmNicheCandidateRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmNicheRoutineCardRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmRoutineResearchCycleRepository;
@@ -38,6 +41,8 @@ class BackendRoutineResearchOrchestratorServiceTest {
 
     @Mock private OprmNicheRoutineCardRepository routineCardRepository;
 
+    @Mock private MarketNicheEnrichmentProfileRepository enrichmentProfileRepository;
+
     @InjectMocks private BackendRoutineResearchOrchestratorService service;
 
     /** Deve listar o próximo candidato pendente sem usar a consulta com bloqueio pessimista. */
@@ -57,7 +62,8 @@ class BackendRoutineResearchOrchestratorServiceTest {
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
         verify(nicheCandidateRepository).findNextPendingRoutineResearchCandidatePreview(pageableCaptor.capture());
         assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(1);
-        verifyNoInteractions(routineResearchCycleRepository);
+        verify(routineResearchCycleRepository, never())
+                .findAllByOrderByStartedAtDesc(any(Pageable.class));
     }
 
     /** Deve listar os últimos nichos processados pela etapa zero com horário do ciclo criado. */
@@ -73,6 +79,8 @@ class BackendRoutineResearchOrchestratorServiceTest {
         assertThat(result).hasSize(2);
         assertThat(result.getFirst().researchCycleId()).isEqualTo(321L);
         assertThat(result.getFirst().sourceNicheId()).isEqualTo(55L);
+        assertThat(result.getFirst().existingMarketNicheId()).isNull();
+        assertThat(result.getFirst().alreadyMaterialized()).isFalse();
         assertThat(result.getFirst().nicheName()).isEqualTo("Cabeleireiros e manicures");
         assertThat(result.getFirst().originalNicheName()).isEqualTo("Cabeleireiros e manicures");
         assertThat(result.getFirst().neutralNicheName()).isEqualTo("Cabeleireiros e manicures");
@@ -86,7 +94,44 @@ class BackendRoutineResearchOrchestratorServiceTest {
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
         verify(routineResearchCycleRepository).findAllByOrderByStartedAtDesc(pageableCaptor.capture());
         assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(10);
-        verifyNoInteractions(nicheCandidateRepository);
+    }
+
+    /** Deve indicar o nicho existente quando o candidato já foi materializado em MarketNiche. */
+    @Test
+    void listRecentProcessedReturnsExistingMarketNicheAssociation() {
+        OprmRoutineResearchCycle cycle = cycle(321L, 55L, "Cabeleireiros e manicures", "2026-06-03T01:00:00Z");
+        OprmNicheCandidate candidate = candidate();
+        candidate.setMarketNicheId(987L);
+        when(routineResearchCycleRepository.findAllByOrderByStartedAtDesc(any(Pageable.class)))
+                .thenReturn(List.of(cycle));
+        when(nicheCandidateRepository.findById(55L)).thenReturn(Optional.of(candidate));
+
+        List<RecordRoutineResearchOrchestratorRecent> result = service.listRecentProcessed(10);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst().existingMarketNicheId()).isEqualTo(987L);
+        assertThat(result.getFirst().alreadyMaterialized()).isTrue();
+    }
+
+    /** Deve indicar o nicho existente pelo perfil enriquecido quando o candidato não tem vínculo direto. */
+    @Test
+    void listRecentProcessedReturnsMarketNicheAssociationFromEnrichmentProfile() {
+        OprmRoutineResearchCycle cycle = cycle(321L, 55L, "Cabeleireiros e manicures", "2026-06-03T01:00:00Z");
+        MarketNiche marketNiche = new MarketNiche();
+        marketNiche.setId(654L);
+        MarketNicheEnrichmentProfile profile = new MarketNicheEnrichmentProfile();
+        profile.setMarketNiche(marketNiche);
+        when(routineResearchCycleRepository.findAllByOrderByStartedAtDesc(any(Pageable.class)))
+                .thenReturn(List.of(cycle));
+        when(nicheCandidateRepository.findById(55L)).thenReturn(Optional.empty());
+        when(enrichmentProfileRepository.findFirstByResearchCycleIdOrderByIdDesc(321L))
+                .thenReturn(Optional.of(profile));
+
+        List<RecordRoutineResearchOrchestratorRecent> result = service.listRecentProcessed(10);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst().existingMarketNicheId()).isEqualTo(654L);
+        assertThat(result.getFirst().alreadyMaterialized()).isTrue();
     }
 
     /** Deve criar novo ciclo imediatamente ao reprocessar um ciclo falho. */

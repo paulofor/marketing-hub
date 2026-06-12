@@ -19,16 +19,32 @@ public interface OprmNicheRoutineCardRepository extends JpaRepository<OprmNicheR
   /** Lista cartões sintetizados ainda não avaliados pelo gate de qualidade. */
   List<OprmNicheRoutineCard> findByQualityCheckedAtIsNullOrderByCreatedAtAscIdAsc(Pageable pageable);
 
-  /** Lista cartões sintetizados que ainda não possuem segmentação comportamental MEI/autônomo persistida. */
+  /** Lista cartões do ciclo ativo sintetizado mais recente que ainda não possuem segmentação MEI/autônomo. */
   @Query("""
       select c from OprmNicheRoutineCard c
-      where not exists (
-        select 1 from OprmMeiAudienceProfile p
-        where p.researchCycleId = c.researchCycleId
-      )
-      order by c.createdAt asc, c.id asc
+      join OprmRoutineResearchCycle cycle on cycle.id = c.researchCycleId
+      where cycle.status = 'ROUTINE_SYNTHESIZED'
+        and not exists (
+          select 1 from OprmMeiAudienceProfile p
+          where p.researchCycleId = c.researchCycleId
+        )
+        and not exists (
+          select 1 from MarketNicheEnrichmentProfile enrichment
+          where enrichment.sourceRoutineCardId = c.id
+             or enrichment.researchCycleId = c.researchCycleId
+        )
+        and not exists (
+          select 1 from OprmRoutineResearchCycle newerCycle
+          where newerCycle.sourceNicheId = cycle.sourceNicheId
+            and (
+              newerCycle.startedAt > cycle.startedAt
+              or (newerCycle.startedAt = cycle.startedAt and newerCycle.id > cycle.id)
+            )
+        )
+      order by cycle.startedAt desc, c.createdAt asc, c.id asc
       """)
   List<OprmNicheRoutineCard> findPendingMeiAudienceSegmentation(Pageable pageable);
+
   /** Lista cartões aprovados no gate de qualidade que ainda não alimentaram nicho e nicho enriquecido. */
   @Query("""
       select c from OprmNicheRoutineCard c

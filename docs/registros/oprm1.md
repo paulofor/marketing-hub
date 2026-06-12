@@ -1,3 +1,10 @@
+## 2026-06-12 — OPRM CNAE: detalhe acionável com pipeline NichoCNAE
+
+- Evoluída a tela `/oprm/cnaes/:cnaeCode` para exibir descrição do CNAE, score OPRM, componentes do score, quantidade de estabelecimentos, empresas e MEIs.
+- Adicionado comando manual para disparar o pipeline NichoCNAE do CNAE selecionado quando houver candidato pendente, sem obrigar o usuário a depender apenas da fila automática por score.
+- Criado acompanhamento por cards das fases do pipeline na tela de detalhe, usando o último ciclo do CNAE para indicar início, status, sinais extraídos e conclusão/falha.
+- Causa-raiz tratada: a tela existia apenas como placeholder, deixando o usuário sem dados de decisão e sem comando direto para transformar CNAE priorizado em pesquisa operacional.
+
 # Registros — OPRM
 
 - 2026-06-11 21:26:05 (UTC-3): atualizado o fluxo OPRM NichoCNAE para tratar aquisição de clientes como realidade operacional obrigatória do MEI/autônomo, reforçando no prompt e no cânone a busca por evidências de captação, canais, indicação, redes sociais, WhatsApp, orçamento, agenda vazia, retorno, fidelização, cancelamento, reativação e recorrência, sem permitir solução, campanha ou oferta.

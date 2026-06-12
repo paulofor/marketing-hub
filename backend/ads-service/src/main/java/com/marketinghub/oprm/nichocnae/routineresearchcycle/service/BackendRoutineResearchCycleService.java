@@ -32,6 +32,14 @@ public class BackendRoutineResearchCycleService {
         .toList();
   }
 
+  /** Lista execuções do ciclo de pesquisa de rotina associadas ao CNAE informado. */
+  @Transactional(readOnly = true)
+  public List<RoutineResearchCycleExecutionSummaryResponse> listStageExecutionsByCnae(String cnaeCode) {
+    return routineResearchCycleRepository.findByCnaeCodeOrderByStartedAtDesc(cnaeCode).stream()
+        .map(this::toSummary)
+        .toList();
+  }
+
   /** Lista execuções do ciclo de pesquisa de rotina associadas a um nicho CNAE de origem. */
   @Transactional(readOnly = true)
   public List<RoutineResearchCycleExecutionSummaryResponse> listStageExecutions(Long sourceNicheId) {

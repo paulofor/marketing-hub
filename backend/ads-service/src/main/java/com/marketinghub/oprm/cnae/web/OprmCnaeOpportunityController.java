@@ -55,6 +55,14 @@ public class OprmCnaeOpportunityController {
     }
 
     /**
+     * Retorna o score OPRM calculado para o CNAE informado.
+     */
+    @GetMapping("/cnaes/{cnaeCode}/opportunity-score")
+    public OprmCnaeOpportunityScoreResponseDto getScore(@PathVariable String cnaeCode) {
+        return service.getScore(cnaeCode);
+    }
+
+    /**
      * Lista os melhores scores já calculados para enriquecimento automático pelo OPRM.
      */
     @GetMapping("/cnaes/opportunity-scores/top")

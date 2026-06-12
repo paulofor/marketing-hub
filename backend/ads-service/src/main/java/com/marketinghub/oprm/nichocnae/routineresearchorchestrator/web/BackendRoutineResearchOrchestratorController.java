@@ -44,6 +44,12 @@ public class BackendRoutineResearchOrchestratorController {
         return executionService.reprocessCycle(researchCycleId);
     }
 
+    /** Executa a etapa zero para iniciar pesquisa de rotina do CNAE escolhido na tela de detalhe. */
+    @PostMapping("/oprm/nichocnae/cnaes/{cnaeCode}/routine-research-orchestrator/run")
+    public ResponseEntity<RecordRoutineResearchOrchestratorResult> runForCnae(@PathVariable String cnaeCode) {
+        return ResponseEntity.accepted().body(executionService.runForCnae(cnaeCode));
+    }
+
     /** Executa a etapa zero para iniciar o próximo ciclo de pesquisa de rotina por score. */
     @PostMapping("/internal/oprm/nichocnae/routine-research-orchestrator/run-next")
     public ResponseEntity<RecordRoutineResearchOrchestratorResult> runNext() {

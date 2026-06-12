@@ -40,6 +40,7 @@ public class BackendRoutineResearchOrchestratorService {
     private static final String CYCLE_STATUS_GENERIC = "GENERIC";
     private static final String TRIGGER_SOURCE_AUTO_SCORE_QUEUE = "AUTO_SCORE_QUEUE";
     private static final String TRIGGER_SOURCE_MANUAL_REPROCESS = "MANUAL_REPROCESS";
+    private static final String TRIGGER_SOURCE_MANUAL_CNAE_DETAIL = "MANUAL_CNAE_DETAIL";
     private static final String RESEARCH_MODE_ROUTINE_REALITY = "ROUTINE_REALITY_RESEARCH";
 
     private final OprmNicheCandidateRepository nicheCandidateRepository;
@@ -174,6 +175,21 @@ public class BackendRoutineResearchOrchestratorService {
         return "Novo ciclo de pesquisa de rotina criado imediatamente para refazer um CNAE genérico ou sem material suficiente.";
     }
 
+    /** Executa a etapa zero para o CNAE escolhido manualmente na tela de detalhe. */
+    @Transactional
+    public RecordRoutineResearchOrchestratorResult runForCnae(String cnaeCode) {
+        LOGGER.info("Iniciando etapa zero OPRM nichocnae por CNAE manual (cnaeCode={})", cnaeCode);
+        List<OprmNicheCandidate> candidates = nicheCandidateRepository.findPendingRoutineResearchCandidateByCnaeCode(
+                cnaeCode, PageRequest.of(0, 1));
+        if (candidates.isEmpty()) {
+            LOGGER.info("Nenhum candidato pendente encontrado para acionamento manual do CNAE (cnaeCode={})", cnaeCode);
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "Não existe candidato de nicho pendente para iniciar o pipeline deste CNAE: " + cnaeCode);
+        }
+        return startCycleForCandidate(candidates.getFirst(), TRIGGER_SOURCE_MANUAL_CNAE_DETAIL);
+    }
+
     /** Executa a etapa zero, marcando o nicho selecionado como em pesquisa e criando o ciclo pai. */
     @Transactional
     public RecordRoutineResearchOrchestratorResult runNext() {
@@ -188,18 +204,24 @@ public class BackendRoutineResearchOrchestratorService {
                     "Nenhum nicho CNAE pendente com score disponível para pesquisa de rotina.");
         }
 
-        OprmNicheCandidate candidate = candidates.getFirst();
+        return startCycleForCandidate(candidates.getFirst(), TRIGGER_SOURCE_AUTO_SCORE_QUEUE);
+    }
+
+    /** Cria ciclo de pesquisa para um candidato já selecionado e atualiza o status operacional do nicho. */
+    private RecordRoutineResearchOrchestratorResult startCycleForCandidate(OprmNicheCandidate candidate, String triggerSource) {
         LOGGER.info(
-                "Candidato selecionado para etapa zero OPRM nichocnae (sourceNicheId={}, cnaeCode={}, nicheName={}, score={}, routineStatus={}, lastRoutineResearchCycleId={})",
+                "Candidato selecionado para etapa zero OPRM nichocnae (sourceNicheId={}, cnaeCode={}, nicheName={}, score={}, routineStatus={}, lastRoutineResearchCycleId={}, triggerSource={})",
                 candidate.getId(),
                 candidate.getCnaeCode(),
                 candidate.getCandidateNicheName(),
                 candidate.getOpportunityScore(),
                 candidate.getRoutineResearchStatus(),
-                candidate.getLastRoutineResearchCycleId());
+                candidate.getLastRoutineResearchCycleId(),
+                triggerSource);
         Instant now = Instant.now();
         try {
             OprmRoutineResearchCycle cycle = createCycle(candidate, now);
+            cycle.setTriggerSource(triggerSource);
             OprmRoutineResearchCycle savedCycle = routineResearchCycleRepository.save(cycle);
             LOGGER.info(
                     "Ciclo de pesquisa de rotina criado pela etapa zero OPRM nichocnae (researchCycleId={}, sourceNicheId={}, cnaeCode={}, originalNicheName={}, neutralNicheName={}, researchMode={}, solutionLanguageRiskScore={}, cycleStatus={}, triggerSource={}, startedAt={})",
@@ -237,11 +259,12 @@ public class BackendRoutineResearchOrchestratorService {
             return result;
         } catch (RuntimeException ex) {
             LOGGER.error(
-                    "Erro ao executar etapa zero do OPRM nichocnae (sourceNicheId={}, cnaeCode={}, nicheName={}, score={})",
+                    "Erro ao executar etapa zero do OPRM nichocnae (sourceNicheId={}, cnaeCode={}, nicheName={}, score={}, triggerSource={})",
                     candidate.getId(),
                     candidate.getCnaeCode(),
                     candidate.getCandidateNicheName(),
                     candidate.getOpportunityScore(),
+                    triggerSource,
                     ex);
             throw ex;
         }

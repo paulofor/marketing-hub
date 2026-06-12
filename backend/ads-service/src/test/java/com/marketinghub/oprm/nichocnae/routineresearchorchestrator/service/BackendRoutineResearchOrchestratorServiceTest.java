@@ -155,7 +155,8 @@ class BackendRoutineResearchOrchestratorServiceTest {
         assertThat(result.lastRoutineResearchCycleId()).isEqualTo(322L);
         assertThat(result.message()).contains("CNAE com falha");
 
-        ArgumentCaptor<OprmRoutineResearchCycle> cycleCaptor = ArgumentCaptor.forClass(OprmRoutineResearchCycle.class);
+        ArgumentCaptor<OprmRoutineResearchCycle> cycleCaptor =
+                ArgumentCaptor.forClass(OprmRoutineResearchCycle.class);
         verify(routineResearchCycleRepository).save(cycleCaptor.capture());
         assertThat(cycleCaptor.getValue().getSourceNicheId()).isEqualTo(55L);
         assertThat(cycleCaptor.getValue().getStatus()).isEqualTo("RUNNING");
@@ -194,7 +195,8 @@ class BackendRoutineResearchOrchestratorServiceTest {
         assertThat(result.previousCycleStatus()).isEqualTo("NEEDS_MORE_RESEARCH");
         assertThat(result.message()).contains("precisava de mais pesquisa");
 
-        ArgumentCaptor<OprmRoutineResearchCycle> cycleCaptor = ArgumentCaptor.forClass(OprmRoutineResearchCycle.class);
+        ArgumentCaptor<OprmRoutineResearchCycle> cycleCaptor =
+                ArgumentCaptor.forClass(OprmRoutineResearchCycle.class);
         verify(routineResearchCycleRepository).save(cycleCaptor.capture());
         assertThat(cycleCaptor.getValue().getStatus()).isEqualTo("RUNNING");
         assertThat(cycleCaptor.getValue().getTriggerSource()).isEqualTo("MANUAL_REPROCESS");
@@ -232,7 +234,8 @@ class BackendRoutineResearchOrchestratorServiceTest {
         assertThat(result.previousCycleStatus()).isEqualTo("ENRICHED_NICHE_FAILED");
         assertThat(result.message()).contains("refazer pelo front-end");
 
-        ArgumentCaptor<OprmRoutineResearchCycle> cycleCaptor = ArgumentCaptor.forClass(OprmRoutineResearchCycle.class);
+        ArgumentCaptor<OprmRoutineResearchCycle> cycleCaptor =
+                ArgumentCaptor.forClass(OprmRoutineResearchCycle.class);
         verify(routineResearchCycleRepository).save(cycleCaptor.capture());
         assertThat(cycleCaptor.getValue().getStatus()).isEqualTo("RUNNING");
         assertThat(cycleCaptor.getValue().getTriggerSource()).isEqualTo("MANUAL_REPROCESS");
@@ -268,7 +271,8 @@ class BackendRoutineResearchOrchestratorServiceTest {
         assertThat(result.neutralNicheName()).isEqualTo("Cabeleireiros e manicures");
         assertThat(result.researchMode()).isEqualTo("ROUTINE_REALITY_RESEARCH");
 
-        ArgumentCaptor<OprmRoutineResearchCycle> cycleCaptor = ArgumentCaptor.forClass(OprmRoutineResearchCycle.class);
+        ArgumentCaptor<OprmRoutineResearchCycle> cycleCaptor =
+                ArgumentCaptor.forClass(OprmRoutineResearchCycle.class);
         verify(routineResearchCycleRepository).save(cycleCaptor.capture());
         OprmRoutineResearchCycle savedCycle = cycleCaptor.getValue();
         assertThat(savedCycle.getSourceNicheId()).isEqualTo(55L);
@@ -313,7 +317,8 @@ class BackendRoutineResearchOrchestratorServiceTest {
         assertThat(result.researchMode()).isEqualTo("ROUTINE_REALITY_RESEARCH");
         assertThat(result.solutionLanguageRiskScore()).isEqualByComparingTo("100.00");
 
-        ArgumentCaptor<OprmRoutineResearchCycle> cycleCaptor = ArgumentCaptor.forClass(OprmRoutineResearchCycle.class);
+        ArgumentCaptor<OprmRoutineResearchCycle> cycleCaptor =
+                ArgumentCaptor.forClass(OprmRoutineResearchCycle.class);
         verify(routineResearchCycleRepository).save(cycleCaptor.capture());
         OprmRoutineResearchCycle savedCycle = cycleCaptor.getValue();
         assertThat(savedCycle.getNicheName()).isEqualTo("Cabeleireiros, manicure e pedicure");
@@ -321,6 +326,38 @@ class BackendRoutineResearchOrchestratorServiceTest {
         assertThat(savedCycle.getNeutralNicheName()).isEqualTo("Cabeleireiros, manicure e pedicure");
         assertThat(savedCycle.getResearchMode()).isEqualTo("ROUTINE_REALITY_RESEARCH");
         assertThat(savedCycle.getSolutionLanguageRiskScore()).isEqualByComparingTo("100.00");
+    }
+
+    /** Deve criar ciclo manual para o CNAE escolhido na tela de detalhe. */
+    @Test
+    void runForCnaeCreatesManualCycleForSelectedCnae() {
+        OprmNicheCandidate candidate = candidate();
+        when(nicheCandidateRepository.findPendingRoutineResearchCandidateByCnaeCode(
+                        any(String.class), any(Pageable.class)))
+                .thenReturn(List.of(candidate));
+        when(routineResearchCycleRepository.save(any(OprmRoutineResearchCycle.class)))
+                .thenAnswer(invocation -> {
+                    OprmRoutineResearchCycle cycle = invocation.getArgument(0);
+                    cycle.setId(323L);
+                    return cycle;
+                });
+
+        RecordRoutineResearchOrchestratorResult result = service.runForCnae("9602501");
+
+        assertThat(result.started()).isTrue();
+        assertThat(result.researchCycleId()).isEqualTo(323L);
+        assertThat(result.cnaeCode()).isEqualTo("9602501");
+        assertThat(result.triggerSource()).isEqualTo("MANUAL_CNAE_DETAIL");
+        assertThat(result.routineResearchStatus()).isEqualTo("RESEARCH_RUNNING");
+
+        ArgumentCaptor<OprmRoutineResearchCycle> cycleCaptor =
+                ArgumentCaptor.forClass(OprmRoutineResearchCycle.class);
+        verify(routineResearchCycleRepository).save(cycleCaptor.capture());
+        assertThat(cycleCaptor.getValue().getTriggerSource()).isEqualTo("MANUAL_CNAE_DETAIL");
+
+        ArgumentCaptor<OprmNicheCandidate> candidateCaptor = ArgumentCaptor.forClass(OprmNicheCandidate.class);
+        verify(nicheCandidateRepository).save(candidateCaptor.capture());
+        assertThat(candidateCaptor.getValue().getLastRoutineResearchCycleId()).isEqualTo(323L);
     }
 
     /** Deve retornar resultado sem início quando não houver nicho pendente com score. */

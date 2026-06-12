@@ -85,6 +85,16 @@ public class OprmCnaeOpportunityPersistenceService {
     }
 
     /**
+     * Retorna o score de oportunidade já calculado para um CNAE específico.
+     */
+    @Transactional(readOnly = true)
+    public OprmCnaeOpportunityScoreResponseDto getScore(String cnaeCode) {
+        return scoreRepository.findById(cnaeCode)
+                .map(this::toScoreResponse)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Score OPRM não encontrado para CNAE: " + cnaeCode));
+    }
+
+    /**
      * Lista scores já calculados pelo OPRM, com filtro opcional para retornar somente itens ainda não enriquecidos.
      */
     @Transactional(readOnly = true)

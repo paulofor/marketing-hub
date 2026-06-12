@@ -28,6 +28,13 @@ public class BackendRoutineResearchCycleController {
     return executionService.listPending();
   }
 
+  /** Lista execuções do ciclo de pesquisa de rotina vinculadas ao CNAE informado. */
+  @GetMapping("/oprm/nichocnae/cnaes/{cnaeCode}/routine-research-cycle/stage-executions")
+  public ResponseEntity<List<RoutineResearchCycleExecutionSummaryResponse>> listStageExecutionsByCnae(
+      @PathVariable String cnaeCode) {
+    return ResponseEntity.ok(executionService.listStageExecutionsByCnae(cnaeCode));
+  }
+
   /** Lista execuções do ciclo de pesquisa de rotina vinculadas ao nicho CNAE informado. */
   @GetMapping("/oprm/nichocnae/{sourceNicheId}/routine-research-cycle/stage-executions")
   public ResponseEntity<List<RoutineResearchCycleExecutionSummaryResponse>> listStageExecutions(

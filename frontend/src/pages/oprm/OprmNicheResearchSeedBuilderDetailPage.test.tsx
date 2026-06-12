@@ -100,6 +100,12 @@ describe("OprmNicheResearchSeedBuilderDetailPage", () => {
       screen.getAllByText(/oprm_niche_research_seed_builder/).length,
     ).toBeGreaterThan(0);
     expect(
+      screen.getAllByText(
+        /especialista em Marketing e Comportamento do Consumidor no Digital/,
+      ).length,
+    ).toBeGreaterThan(0);
+    expect(screen.queryByText(/construtor da etapa 2/)).toBeNull();
+    expect(
       screen.getAllByText(/Quais são as etapas diárias na rotina de trabalho\?/)
         .length,
     ).toBeGreaterThan(0);

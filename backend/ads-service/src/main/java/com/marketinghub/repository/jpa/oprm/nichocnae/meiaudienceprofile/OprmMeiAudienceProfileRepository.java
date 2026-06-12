@@ -13,6 +13,9 @@ public interface OprmMeiAudienceProfileRepository extends JpaRepository<OprmMeiA
   /** Busca o perfil de público-alvo MEI/autônomo mais recente de um ciclo de pesquisa. */
   Optional<OprmMeiAudienceProfile> findFirstByResearchCycleIdOrderByIdDesc(Long researchCycleId);
 
+  /** Busca o perfil de público-alvo MEI/autônomo mais recente vinculado a um nicho já materializado. */
+  Optional<OprmMeiAudienceProfile> findFirstByMarketNicheIdOrderByIdDesc(Long marketNicheId);
+
   /** Lista perfis de público-alvo MEI/autônomo vinculados a um CNAE. */
   List<OprmMeiAudienceProfile> findByCnaeCodeOrderByCreatedAtDesc(String cnaeCode);
 }

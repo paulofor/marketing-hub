@@ -331,6 +331,28 @@ const cycleStageByStatus: Record<
   },
 };
 
+function hasMeiAudienceProfile(item: { audienceName?: string | null }) {
+  return Boolean(item.audienceName?.trim());
+}
+
+function getEffectiveCycleStatus(item: {
+  cycleStatus: string;
+  audienceName?: string | null;
+}) {
+  if (
+    !hasMeiAudienceProfile(item) &&
+    [
+      "MEI_AUDIENCE_SEGMENTED",
+      "LIGHTLY_RESEARCHED",
+      "MEI_AUDIENCE_READY",
+      "ENRICHED_NICHE_CREATED",
+    ].includes(item.cycleStatus)
+  ) {
+    return "ROUTINE_SYNTHESIZED";
+  }
+  return item.cycleStatus;
+}
+
 function formatStatusLabel(status: string) {
   return statusLabels[status] ?? status;
 }
@@ -564,8 +586,14 @@ export default function OprmPipelinePage() {
   } = useOprmRoutineResearchOrchestratorRecent(10);
   const reprocessCycleMutation = useReprocessOprmRoutineResearchCycle(10);
   const latestCycle = recentProcessed[0];
+  const latestEffectiveCycleStatus = latestCycle
+    ? getEffectiveCycleStatus(latestCycle)
+    : undefined;
   const latestProblemPoint = latestCycle
-    ? buildProblemPoint(latestCycle.cycleStatus, latestCycle.errorMessage)
+    ? buildProblemPoint(
+        latestEffectiveCycleStatus ?? latestCycle.cycleStatus,
+        latestCycle.errorMessage,
+      )
     : null;
   const latestRunningCycle = recentProcessed.find(
     (item) => item.cycleStatus === "RUNNING",
@@ -758,9 +786,10 @@ export default function OprmPipelinePage() {
                 </thead>
                 <tbody>
                   {recentProcessed.map((item) => {
-                    const cycleStage = getCycleStage(item.cycleStatus);
+                    const effectiveCycleStatus = getEffectiveCycleStatus(item);
+                    const cycleStage = getCycleStage(effectiveCycleStatus);
                     const problemPoint = buildProblemPoint(
-                      item.cycleStatus,
+                      effectiveCycleStatus,
                       item.errorMessage,
                     );
                     return (
@@ -825,12 +854,14 @@ export default function OprmPipelinePage() {
                         </td>
                         <td>
                           <span
-                            className={buildStatusBadgeClass(item.cycleStatus)}
+                            className={buildStatusBadgeClass(
+                              effectiveCycleStatus,
+                            )}
                           >
-                            {formatStatusLabel(item.cycleStatus)}
+                            {formatStatusLabel(effectiveCycleStatus)}
                           </span>
-                          {item.cycleStatus === "FAILED" ||
-                          item.cycleStatus === "ENRICHED_NICHE_FAILED" ? (
+                          {effectiveCycleStatus === "FAILED" ||
+                          effectiveCycleStatus === "ENRICHED_NICHE_FAILED" ? (
                             <div className="text-danger small mt-1">
                               <span className="fw-semibold">Detalhe:</span>{" "}
                               {buildFailureMessage(item.errorMessage)}
@@ -2010,6 +2041,13 @@ export default function OprmPipelinePage() {
                             </p>
                           ) : null}
                         </div>
+                      ) : latestEffectiveCycleStatus ===
+                        "ROUTINE_SYNTHESIZED" ? (
+                        <p className="text-secondary small mb-0">
+                          Ciclo #{latestCycle.researchCycleId} está aguardando
+                          perfil MEI/autônomo aprovado antes de liberar nicho,
+                          materialização ou estratégia final.
+                        </p>
                       ) : routineQualityGateDetail?.readyForHypothesis ? (
                         <p className="text-primary mb-0 small">
                           O card aprovado está pronto para alimentar nicho e

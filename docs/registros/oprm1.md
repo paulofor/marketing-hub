@@ -413,6 +413,12 @@
 - Corrigida a causa-raiz do erro de banco `Data too long for column 'query_goal'` sem truncar campos e sem ampliar o banco: o schema JSON da etapa `niche-research-seed-builder` agora declara `maxLength` nos campos gravados em colunas curtas, fazendo o modelo responder dentro do contrato persistível.
 - A fila da etapa 2 considera como reprocessáveis as falhas sem seed/queries causadas pelo contrato legado (`nicheName is required`) ou pelo estouro de `query_goal`, permitindo recuperação após o deploy da correção.
 - Adicionados testes de regressão para garantir que o schema solicite ao modelo limites compatíveis com `query_text`, `query_goal`, `source_group`, `created_by`, `niche_name`, `business_type` e `confidence_level`, sem corte silencioso no backend.
+
+## 2026-06-12 — OPRM Rotina: apresentação por blocos de valor
+
+- A tela de rotina do OPRM passou a organizar as tarefas e sinais em blocos de valor: antes do atendimento, durante o atendimento, depois do atendimento, administração entre clientes, aquisição/fidelização, dores e riscos observados e oportunidades de produto.
+- A apresentação prioriza leitura comercial para identificar dores vendáveis e evita repetir listas genéricas como “gerenciar rotina e agenda”, mantendo fallback compatível com o payload atual e com campos mais específicos que o backend passar a entregar.
+- O pipeline NichoCNAE também passou a exibir um resumo dos blocos de valor na etapa de síntese, ajudando o usuário a validar rapidamente se a rotina tem sinais úteis para produto digital antes de seguir para oferta.
 - 2026-06-11 21:35:00 (UTC-3): aprimorado o gate de qualidade de rotina do `oprm-coletor-mei` para bloquear cards que repetem a frase genérica "Gerenciar rotina de atendimento e agenda do nicho", exigir tarefas concretas distintas no `routineSummary`, penalizar rotina limitada a gestão/agenda/atendimento/organização e impedir hipótese quando a rotina não revela tarefas reais do executor. Adicionados testes de regressão para rotina genérica repetida e rotina concreta de manicure/cabeleireiro com evidência suficiente.
 
 ## 2026-06-12 — OPRM NichoCNAE: busca por rotina executada

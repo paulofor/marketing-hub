@@ -13,8 +13,8 @@ class RoutineQualityGateEngineTest {
     @Test
     void shouldApproveSpecificCardWithEnoughEvidence() {
         RoutineQualityDecision decision = engine.evaluate(pending(
-                text("Rotina concreta com agenda, WhatsApp, clientes, horários, pacotes e retorno", 8),
-                text("Dores concretas de falta, preço cedo demais e horários vazios", 8),
+                text("Rotina concreta: cortar cabelo, lavar cabelo, escovar cabelo, preparar coloração e finalizar cabelo", 8),
+                text("Dores concretas de falta, preço cedo demais, horários vazios e retrabalho na coloração", 8),
                 text("Resultados desejados com agenda cheia e previsibilidade", 8),
                 text("Mecanismo com lembretes, reativação e pacote mensal", 8),
                 6,
@@ -42,8 +42,8 @@ class RoutineQualityGateEngineTest {
     @Test
     void shouldRequestMoreResearchWhenEvidenceIsWeak() {
         RoutineQualityDecision decision = engine.evaluate(pending(
-                text("Rotina com agenda e clientes", 5),
-                text("Dores com faltas", 5),
+                text("Rotina com cortar cabelo, lavar cabelo e escovar cabelo para clientes", 5),
+                text("Dores com faltas e atraso na preparação da coloração", 5),
                 text("Resultados desejados", 5),
                 text("Mecanismo de WhatsApp", 5),
                 2,
@@ -147,6 +147,66 @@ class RoutineQualityGateEngineTest {
         assertThat(decision.qualityStatus()).isEqualTo("SOLUTION_CONTAMINATED");
         assertThat(decision.readyForHypothesis()).isFalse();
         assertThat(decision.qualityNotes()).contains("riscoTextualSolucao=").contains("dominadoPorSolucao=true");
+    }
+
+    /** Deve reprovar ou colocar em revisão rotina repetida que não revela tarefa real do executor. */
+    @Test
+    void shouldRejectOrReviewRepeatedGenericRoutine() {
+        RoutineQualityDecision decision = engine.evaluate(pending(
+                text("Gerenciar rotina de atendimento e agenda do nicho", 8),
+                text("Dores concretas de falta, atraso, remarcação, retrabalho e cobrança", 8),
+                text("Resultados desejados com agenda cheia e previsibilidade", 8),
+                text("Contexto operacional público do nicho", 8),
+                6,
+                14,
+                2,
+                3,
+                1,
+                0,
+                4,
+                0,
+                2,
+                0,
+                86,
+                84,
+                72,
+                0));
+
+        assertThat(decision.readyForHypothesis()).isFalse();
+        assertThat(decision.qualityStatus()).isIn("GENERIC", "NEEDS_MORE_MEI_RESEARCH");
+        assertThat(decision.qualityNotes())
+                .contains("rotinaGenericaRepetida=true")
+                .contains("rotinaRevelaTarefasReaisExecutor=false");
+    }
+
+    /** Deve aprovar rotina de manicure/cabeleireiro quando há tarefas concretas distintas e evidência suficiente. */
+    @Test
+    void shouldApproveManicureHairdresserRoutineWithConcreteTasksAndEnoughEvidence() {
+        RoutineQualityDecision decision = engine.evaluate(pending(
+                text("Rotina concreta: cortar cabelo, lavar cabelo, escovar cabelo, lixar unhas, retirar cutícula e esmaltar unhas", 8),
+                text("Dores concretas de atraso, falta, retrabalho na esmaltação e cobrança de pacote", 8),
+                text("Perguntas do profissional sobre preço, retorno, pacote e cancelamento", 8),
+                text("Contexto operacional público do nicho", 8),
+                6,
+                16,
+                3,
+                3,
+                2,
+                0,
+                6,
+                0,
+                3,
+                0,
+                90,
+                88,
+                78,
+                0));
+
+        assertThat(decision.qualityStatus()).isEqualTo("MEI_AUDIENCE_READY");
+        assertThat(decision.readyForHypothesis()).isTrue();
+        assertThat(decision.qualityNotes())
+                .contains("tarefasConcretasDistintas=")
+                .contains("rotinaRevelaTarefasReaisExecutor=true");
     }
 
     /** Deve reprovar como genérico quando a síntese não informa evidências e fontes auditáveis. */

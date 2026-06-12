@@ -419,6 +419,18 @@
 - Atualizado o materializador de nicho enriquecido para preencher gatilhos comportamentais e objeções prováveis a partir de evidências do cartão aprovado, usando dores, resultados, comportamento do cliente, canais e linguagem pública sem criar produto, promessa, campanha ou landing page.
 - Causa-raiz tratada: os campos `commercialTriggers` e `objections` permaneciam nulos porque a etapa final preservava somente contexto operacional, deixando sinais comerciais observáveis sem registro mesmo quando havia evidência suficiente.
 - Prevenção de recorrência: adicionados testes para garantir preenchimento determinístico em perfis aprovados e ausência de linguagem técnica/de solução nos campos comerciais sintetizados.
+## 2026-06-12 — OPRM Rotina: apresentação por blocos de valor
+
+- A tela de rotina do OPRM passou a organizar as tarefas e sinais em blocos de valor: antes do atendimento, durante o atendimento, depois do atendimento, administração entre clientes, aquisição/fidelização, dores e riscos observados e oportunidades de produto.
+- A apresentação prioriza leitura comercial para identificar dores vendáveis e evita repetir listas genéricas como “gerenciar rotina e agenda”, mantendo fallback compatível com o payload atual e com campos mais específicos que o backend passar a entregar.
+- O pipeline NichoCNAE também passou a exibir um resumo dos blocos de valor na etapa de síntese, ajudando o usuário a validar rapidamente se a rotina tem sinais úteis para produto digital antes de seguir para oferta.
+- 2026-06-11 21:35:00 (UTC-3): aprimorado o gate de qualidade de rotina do `oprm-coletor-mei` para bloquear cards que repetem a frase genérica "Gerenciar rotina de atendimento e agenda do nicho", exigir tarefas concretas distintas no `routineSummary`, penalizar rotina limitada a gestão/agenda/atendimento/organização e impedir hipótese quando a rotina não revela tarefas reais do executor. Adicionados testes de regressão para rotina genérica repetida e rotina concreta de manicure/cabeleireiro com evidência suficiente.
+
+## 2026-06-12 — OPRM NichoCNAE: busca por rotina executada
+
+- Ajustada a etapa de seed para orientar o modelo a priorizar queries sobre rotina executada, tarefas do dia a dia, procedimentos práticos, CBO, guias profissionais e relatos de profissionais antes de dores genéricas ou temas comerciais.
+- Reforçado o classificador de fontes da etapa de busca para aumentar score de execução prática e penalizar páginas dominadas por software, agenda online, app, automação ou sistema quando não descrevem tarefas concretas do executor.
+- Atualizada a ordenação de fontes candidatas para colocar evidência de rotina prática antes de sinais secundários, reduzindo o risco de fontes comerciais virarem base da análise OPRM.
 - 2026-06-12 00:00:00 (UTC): ajustado o gate de qualidade OPRM NichoCNAE para diferenciar rotina operacional suficiente de nicho comercialmente acionável; aquisição, canais, recorrência e comportamento de clientes agora precisam de evidência útil, e placeholders como “Sem evidência suficiente” bloqueiam avanço com `NEEDS_MORE_MEI_RESEARCH`.
 
 ## 2026-06-12 — OPRM NichoCNAE: sinais de rotina com tarefas específicas

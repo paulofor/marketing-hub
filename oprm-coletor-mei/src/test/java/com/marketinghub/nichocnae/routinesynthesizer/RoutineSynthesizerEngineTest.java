@@ -35,6 +35,43 @@ class RoutineSynthesizerEngineTest {
         assertThat(draft.mechanismOpportunitiesSummary().toLowerCase()).doesNotContain("automação", "software", "oferta", "produto");
     }
 
+    /** Deve manter aquisição e canais específicos visíveis mesmo quando sinais genéricos têm maior confiança. */
+    @Test
+    void shouldPrioritizeAcquisitionAndChannelSignalsOverGenericRoutineSignals() {
+        RoutineCardDraft draft = engine.synthesize(pending(List.of(
+                signal("QUESTION_SIGNAL", "Pergunta genérica sobre horário de atendimento 1", "Perguntas amplas sobre agenda", 99),
+                signal("QUESTION_SIGNAL", "Pergunta genérica sobre horário de atendimento 2", "Perguntas amplas sobre agenda", 98),
+                signal("QUESTION_SIGNAL", "Pergunta genérica sobre horário de atendimento 3", "Perguntas amplas sobre agenda", 97),
+                signal("QUESTION_SIGNAL", "Pergunta genérica sobre horário de atendimento 4", "Perguntas amplas sobre agenda", 96),
+                signal("QUESTION_SIGNAL", "Pergunta genérica sobre horário de atendimento 5", "Perguntas amplas sobre agenda", 95),
+                signal("QUESTION_SIGNAL", "Pergunta genérica sobre horário de atendimento 6", "Perguntas amplas sobre agenda", 94),
+                signal("COMMERCIAL_OBJECT", "Objeto comercial genérico sobre orçamento", "Página cita orçamento sem canal", 93),
+                signal("COMMERCIAL_OBJECT", "Objeto comercial genérico sobre preço", "Página cita preço sem canal", 92),
+                signal("CUSTOMER_ACQUISITION_BEHAVIOR", "Novas clientes chegam por indicação de vizinhas", "Relato liga novas clientes à indicação", 61),
+                signal("CHANNEL_USAGE", "Agenda recebe pedidos pelo WhatsApp e pelo Instagram", "Fonte cita WhatsApp e Instagram", 60),
+                signal("COMMERCIAL_TASK", "Responde orçamento por mensagem antes do agendamento", "Fonte cita orçamento por mensagem", 59))));
+
+        assertThat(draft.customerBehaviorSummary()).contains("Novas clientes chegam por indicação de vizinhas");
+        assertThat(draft.channelsSummary())
+                .contains("Agenda recebe pedidos pelo WhatsApp e pelo Instagram")
+                .contains("Responde orçamento por mensagem antes do agendamento");
+    }
+
+    /** Deve orientar nova pesquisa comercial quando aquisição e canais não têm sinais próprios. */
+    @Test
+    void shouldRequestSpecificResearchWhenCommercialBlocksAreEmpty() {
+        RoutineCardDraft draft = engine.synthesize(pending(List.of(
+                signal("ROUTINE_TASK", "Organiza agenda e compra materiais", "Rotina operacional sem aquisição", 90),
+                signal("OPERATIONAL_PAIN", "Sofre com remarcações", "Remarcações prejudicam o dia", 88))));
+
+        assertThat(draft.customerBehaviorSummary())
+                .contains("Evidência insuficiente para cartão vendável")
+                .contains("pesquisar especificamente como o cliente chega");
+        assertThat(draft.channelsSummary())
+                .contains("Evidência insuficiente para cartão vendável")
+                .contains("pesquisar especificamente quais canais trazem cliente");
+    }
+
     /** Cria uma pendência mínima da etapa seis para o sintetizador local. */
     private RoutineSynthesizerPending pending(List<SignalForRoutineSynthesis> signals) {
         return new RoutineSynthesizerPending(

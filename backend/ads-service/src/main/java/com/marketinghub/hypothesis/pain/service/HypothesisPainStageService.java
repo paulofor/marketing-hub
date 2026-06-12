@@ -264,10 +264,11 @@ public class HypothesisPainStageService {
         return listPendingByStage(OFFER_STAGE_CODE);
     }
 
-    /** Lista os jobs iniciados de uma etapa para processamento pelo Worker AI. */
+    /** Lista apenas jobs iniciados que ainda respeitam a ordem obrigatória do pipeline. */
     private List<HypothesisPainPendingExecution> listPendingByStage(String stageCode) {
         return executionRepository.findTop20ByStageCodeAndStatusOrderByExecutionRequestedAtAsc(stageCode, STATUS_STARTED)
                 .stream()
+                .filter(this::hasCompletedPrerequisites)
                 .map(execution -> new HypothesisPainPendingExecution(
                         execution.getMarketNicheId(),
                         fromDatabaseIdJob(execution.getIdJob()),
@@ -279,6 +280,23 @@ public class HypothesisPainStageService {
                         pendingMechanismResponse(execution),
                         pendingProofResponse(execution)))
                 .toList();
+    }
+
+    /** Verifica se a execução pendente possui todos os pré-requisitos concluídos antes de ir ao worker. */
+    private boolean hasCompletedPrerequisites(HypothesisPainStageExecution execution) {
+        try {
+            requireCompletedPrerequisites(execution.getMarketNicheId(), execution.getStageCode());
+            return true;
+        } catch (IllegalStateException ex) {
+            log.warn(
+                    "[HypothesisPipeline] Job pendente fora de ordem ignorado stageCode={} marketNicheId={} idJob={} motivo={}",
+                    execution.getStageCode(),
+                    execution.getMarketNicheId(),
+                    fromDatabaseIdJob(execution.getIdJob()),
+                    ex.getMessage(),
+                    ex);
+            return false;
+        }
     }
 
     /** Retorna a Dor concluída quando a etapa pendente precisa desse contexto. */
@@ -315,6 +333,31 @@ public class HypothesisPainStageService {
                 : null;
     }
 
+    /** Garante todos os pré-requisitos da etapa antes de iniciar, listar ou capturar o job. */
+    private void requireCompletedPrerequisites(Long marketNicheId, String stageCode) {
+        if (RESULT_STAGE_CODE.equals(stageCode)) {
+            requireCompletedPain(marketNicheId);
+            return;
+        }
+        if (MECHANISM_STAGE_CODE.equals(stageCode)) {
+            requireCompletedPain(marketNicheId);
+            requireCompletedResult(marketNicheId);
+            return;
+        }
+        if (PROOF_STAGE_CODE.equals(stageCode)) {
+            requireCompletedPain(marketNicheId);
+            requireCompletedResult(marketNicheId);
+            requireCompletedMechanism(marketNicheId);
+            return;
+        }
+        if (OFFER_STAGE_CODE.equals(stageCode)) {
+            requireCompletedPain(marketNicheId);
+            requireCompletedResult(marketNicheId);
+            requireCompletedMechanism(marketNicheId);
+            requireCompletedProof(marketNicheId);
+        }
+    }
+
     /** Garante que a etapa Dor tenha sido concluída com resposta antes de liberar Resultado. */
     private void requireCompletedPain(Long marketNicheId) {
         if (!StringUtils.hasText(latestCompletedPainResponse(marketNicheId))) {
@@ -331,11 +374,11 @@ public class HypothesisPainStageService {
         }
     }
 
-    /** Garante que a etapa Mecanismo tenha sido concluída com resposta antes de liberar Oferta. */
+    /** Garante que a etapa Mecanismo tenha sido concluída com resposta antes de liberar Prova ou Oferta. */
     private void requireCompletedMechanism(Long marketNicheId) {
         if (!StringUtils.hasText(latestCompletedMechanismResponse(marketNicheId))) {
             throw new IllegalStateException(
-                    "A etapa Mecanismo precisa estar concluída antes de iniciar Oferta para o nicho: " + marketNicheId);
+                    "A etapa Mecanismo precisa estar concluída antes de iniciar Prova ou Oferta para o nicho: " + marketNicheId);
         }
     }
 
@@ -378,10 +421,11 @@ public class HypothesisPainStageService {
                 .orElse(null);
     }
 
-    /** Marca uma execução como em processamento para evitar recaptura por outro ciclo do worker. */
+    /** Marca uma execução como em processamento após validar novamente a ordem do pipeline. */
     @Transactional
     public void markRunning(String idJob) {
         HypothesisPainStageExecution execution = findExecution(idJob);
+        requireCompletedPrerequisites(execution.getMarketNicheId(), execution.getStageCode());
         execution.setProcessingStartedAt(Instant.now());
         execution.setStatus(STATUS_PROCESSING);
         executionRepository.save(execution);

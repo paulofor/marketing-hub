@@ -4447,3 +4447,10 @@
 - causa-raiz: a coluna no banco real estava como `enum('FORM_ZERO_CONVERSION_RULE_OF_THREE')`, enquanto a entidade JPA já tratava o motivo como enum textual com tamanho 100 e o domínio passou a gravar novos motivos como `TARGET_AUDIENCE_LOW_INTEREST_STATISTICAL`.
 - foi feito: criado changelog Liquibase incremental para converter `stop_reason` para `VARCHAR(100)`, registrado no master changelog e adicionado teste de regressão do `POST /api/facebook-campaigns/{campaignId}/metrics` cobrindo a gravação do motivo de baixo interesse estatístico.
 - prevenção: o teste também valida que todos os valores atuais de `FacebookCampaignStopReason` cabem no contrato textual persistido, evitando novo bloqueio por enum físico restritivo no banco.
+
+## 2026-06-12 — Gate de Prova concluída antes da Oferta
+
+- solicitação: revisar o fluxo de criação e processamento da etapa Oferta para impedir execução sem Prova concluída.
+- causa-raiz: a criação manual já bloqueava a Oferta sem Prova, mas a fila interna de pendentes ainda podia entregar ao Worker AI jobs antigos ou inconsistentes fora da ordem canônica.
+- foi feito: a listagem de pendentes e a marcação de execução em processamento passaram a revalidar os pré-requisitos sequenciais; no frontend, etapas futuras ficam bloqueadas enquanto a etapa anterior não estiver `CONCLUIDO`, com mensagem objetiva para Oferta.
+- prevenção: adicionados testes backend e frontend garantindo que Oferta não entra em pendentes e que o botão da Oferta permanece bloqueado até a Prova concluída.

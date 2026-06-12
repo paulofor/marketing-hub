@@ -1,5 +1,5 @@
 import { Link, useParams } from "react-router-dom";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { toast } from "react-toastify";
 import PageTitle from "../../components/PageTitle";
@@ -59,29 +59,19 @@ function formatModel(value?: string | null) {
 function StageCard({
   stage,
   nicheId,
+  executionsQuery,
+  blockedMessage,
 }: {
   stage: HypothesisPipelineStageConfig;
   nicheId?: string;
+  executionsQuery: {
+    data?: StageExecution[];
+    isLoading: boolean;
+  };
+  blockedMessage?: string;
 }) {
   const queryClient = useQueryClient();
   const queryKey = ["hypothesis-stage-executions", stage.slug, nicheId];
-
-  const executionsQuery = useQuery({
-    queryKey,
-    enabled: Boolean(nicheId),
-    queryFn: async () => {
-      const { data } = await axios.get<StageExecution[]>(
-        `/api/niches/${nicheId}/hypothesis-pipeline/${stage.slug}/stage-executions`,
-      );
-      return data;
-    },
-    refetchInterval: (query) => {
-      const items = query.state.data ?? [];
-      return items.some((item) => RUNNING_STATUSES.has(item.status))
-        ? 5000
-        : false;
-    },
-  });
 
   const startMutation = useMutation({
     mutationFn: async () => {
@@ -107,6 +97,12 @@ function StageCard({
   const hasRunningExecution = executions.some((item) =>
     RUNNING_STATUSES.has(item.status),
   );
+  const isBlockedByPreviousStage = Boolean(blockedMessage);
+  const isStartDisabled =
+    !nicheId ||
+    startMutation.isPending ||
+    hasRunningExecution ||
+    isBlockedByPreviousStage;
 
   return (
     <section className="card mb-4">
@@ -120,7 +116,7 @@ function StageCard({
         <button
           type="button"
           className="btn btn-primary align-self-start align-self-lg-center"
-          disabled={!nicheId || startMutation.isPending || hasRunningExecution}
+          disabled={isStartDisabled}
           onClick={() => startMutation.mutate()}
         >
           {startMutation.isPending ? (
@@ -139,6 +135,11 @@ function StageCard({
         </button>
       </div>
       <div className="card-body">
+        {blockedMessage && (
+          <div className="alert alert-warning py-2 mb-3" role="alert">
+            {blockedMessage}
+          </div>
+        )}
         {executionsQuery.isLoading ? (
           <p className="text-muted mb-0">{stage.loadingLabel}</p>
         ) : executions.length === 0 ? (
@@ -218,27 +219,37 @@ function StageCard({
   );
 }
 
+function stageIsCompleted(executions?: StageExecution[]) {
+  return executions?.[0]?.status === "CONCLUIDO";
+}
+
 export default function NewHypothesisPage() {
   const { nicheId } = useParams();
-  const totalCostQuery = useQuery({
-    queryKey: ["hypothesis-stage-total-cost", nicheId],
-    enabled: Boolean(nicheId),
-    queryFn: async () => {
-      const responses = await Promise.all(
-        STAGES.map((stage) =>
-          axios.get<StageExecution[]>(
-            `/api/niches/${nicheId}/hypothesis-pipeline/${stage.slug}/stage-executions`,
-          ),
-        ),
-      );
-      return responses
-        .flatMap((response) => response.data)
-        .reduce((total, item) => {
-          const cost = parseCostUsd(item.costUsd);
-          return cost === null ? total : total + cost;
-        }, 0);
-    },
+  const stageQueries = useQueries({
+    queries: STAGES.map((stage) => ({
+      queryKey: ["hypothesis-stage-executions", stage.slug, nicheId],
+      enabled: Boolean(nicheId),
+      queryFn: async () => {
+        const { data } = await axios.get<StageExecution[]>(
+          `/api/niches/${nicheId}/hypothesis-pipeline/${stage.slug}/stage-executions`,
+        );
+        return data;
+      },
+      refetchInterval: (query: { state: { data?: StageExecution[] } }) => {
+        const items = query.state.data ?? [];
+        return items.some((item) => RUNNING_STATUSES.has(item.status))
+          ? 5000
+          : false;
+      },
+    })),
   });
+  const totalCostLoading = stageQueries.some((query) => query.isLoading);
+  const totalCost = stageQueries
+    .flatMap((query) => query.data ?? [])
+    .reduce((total, item) => {
+      const cost = parseCostUsd(item.costUsd);
+      return cost === null ? total : total + cost;
+    }, 0);
 
   return (
     <div className="hypothesis-new-page">
@@ -252,17 +263,31 @@ export default function NewHypothesisPage() {
             </p>
             <p className="mb-0">
               <strong>Custo total geral da criação da hipótese:</strong>{" "}
-              {totalCostQuery.isLoading
-                ? "Calculando..."
-                : formatCostUsd(totalCostQuery.data ?? 0)}
+              {totalCostLoading ? "Calculando..." : formatCostUsd(totalCost)}
             </p>
           </div>
         </section>
       )}
 
-      {STAGES.map((stage) => (
-        <StageCard key={stage.slug} stage={stage} nicheId={nicheId} />
-      ))}
+      {STAGES.map((stage, index) => {
+        const previousStagesCompleted = STAGES.slice(0, index).every(
+          (_, previousIndex) =>
+            stageIsCompleted(stageQueries[previousIndex]?.data),
+        );
+        const blockedMessage = previousStagesCompleted
+          ? undefined
+          : stage.blockedMessage;
+
+        return (
+          <StageCard
+            key={stage.slug}
+            stage={stage}
+            nicheId={nicheId}
+            executionsQuery={stageQueries[index]}
+            blockedMessage={blockedMessage}
+          />
+        );
+      })}
 
       <section className="card">
         <div className="card-body">

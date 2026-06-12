@@ -9,6 +9,7 @@ export interface HypothesisPipelineStageConfig {
   loadingLabel: string;
   emptyMessage: string;
   description: string;
+  blockedMessage?: string;
 }
 
 export const HYPOTHESIS_PIPELINE_STAGES: HypothesisPipelineStageConfig[] = [
@@ -40,6 +41,7 @@ export const HYPOTHESIS_PIPELINE_STAGES: HypothesisPipelineStageConfig[] = [
       "Nenhuma execução de resultado iniciada para este nicho. Depois de concluir a dor, clique no botão acima para criar o job e acompanhar o resultado.",
     description:
       "Transforme a dor validada em um resultado claro, desejável e plausível antes de avançar para mecanismo, prova e oferta.",
+    blockedMessage: "Conclua a Dor antes de iniciar Resultado",
   },
   {
     slug: "mechanism",
@@ -55,6 +57,7 @@ export const HYPOTHESIS_PIPELINE_STAGES: HypothesisPipelineStageConfig[] = [
       "Nenhuma execução de mecanismo iniciada para este nicho. Depois de concluir o resultado, clique no botão acima para criar o job e acompanhar o mecanismo.",
     description:
       "Converta o resultado desejado em um mecanismo plausível antes de avançar para prova e oferta.",
+    blockedMessage: "Conclua o Resultado antes de iniciar Mecanismo",
   },
   {
     slug: "proof",
@@ -70,6 +73,7 @@ export const HYPOTHESIS_PIPELINE_STAGES: HypothesisPipelineStageConfig[] = [
       "Nenhuma execução de prova iniciada para este nicho. Depois de concluir o mecanismo, clique no botão acima para criar o job e acompanhar a prova.",
     description:
       "Transforme o mecanismo em prova clara e crível antes de empacotar a oferta.",
+    blockedMessage: "Conclua o Mecanismo antes de iniciar Prova",
   },
   {
     slug: "offer",
@@ -85,5 +89,6 @@ export const HYPOTHESIS_PIPELINE_STAGES: HypothesisPipelineStageConfig[] = [
       "Nenhuma execução de oferta iniciada para este nicho. Depois de concluir a prova, clique no botão acima para criar o job e acompanhar a oferta.",
     description:
       "Empacote mecanismo, prova prometida e promessa central em uma oferta clara para venda.",
+    blockedMessage: "Conclua a Prova antes de iniciar Oferta",
   },
 ];

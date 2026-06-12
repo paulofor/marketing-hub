@@ -368,6 +368,66 @@ class HypothesisPainStageServiceTest {
         assertEquals("{\"proof\":\"prova validada\"}", pending.getFirst().proofModelResponse());
     }
 
+    /** Deve impedir que Oferta seja entregue como pendente quando a Prova ainda não foi concluída. */
+    @Test
+    void listOfferPendingDoesNotReturnOfferWhenProofIsNotCompleted() {
+        MarketNiche niche = new MarketNiche();
+        niche.setId(18L);
+        String offerJob = "6cc56a94-45bc-48bf-8e8d-e1f4f8b881df";
+        HypothesisPainStageExecution offerExecution = HypothesisPainStageExecution.builder()
+                .idJob(offerJob.getBytes(StandardCharsets.UTF_8))
+                .marketNicheId(18L)
+                .marketNiche(niche)
+                .stageCode("hypothesis-offer")
+                .status("INICIADO")
+                .executionRequestedAt(Instant.parse("2026-06-11T15:00:00Z"))
+                .build();
+
+        when(executionRepository.findTop20ByStageCodeAndStatusOrderByExecutionRequestedAtAsc(
+                        "hypothesis-offer",
+                        "INICIADO"))
+                .thenReturn(List.of(offerExecution));
+        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
+                        18L,
+                        "hypothesis-pain",
+                        "CONCLUIDO"))
+                .thenReturn(Optional.of(HypothesisPainStageExecution.builder()
+                        .marketNicheId(18L)
+                        .stageCode("hypothesis-pain")
+                        .status("CONCLUIDO")
+                        .modelResponse("{\"pain\":\"dor validada\"}")
+                        .build()));
+        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
+                        18L,
+                        "hypothesis-result",
+                        "CONCLUIDO"))
+                .thenReturn(Optional.of(HypothesisPainStageExecution.builder()
+                        .marketNicheId(18L)
+                        .stageCode("hypothesis-result")
+                        .status("CONCLUIDO")
+                        .modelResponse("{\"result\":\"resultado validado\"}")
+                        .build()));
+        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
+                        18L,
+                        "hypothesis-mechanism",
+                        "CONCLUIDO"))
+                .thenReturn(Optional.of(HypothesisPainStageExecution.builder()
+                        .marketNicheId(18L)
+                        .stageCode("hypothesis-mechanism")
+                        .status("CONCLUIDO")
+                        .modelResponse("{\"mechanism\":\"mecanismo validado\"}")
+                        .build()));
+        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
+                        18L,
+                        "hypothesis-proof",
+                        "CONCLUIDO"))
+                .thenReturn(Optional.empty());
+
+        var pending = service.listOfferPending();
+
+        assertEquals(0, pending.size());
+    }
+
     /** Deve listar somente o conteúdo final persistido e a origem no banco para cada etapa do framework. */
     @Test
     void listFinalSummaryReturnsFinalContentAndDatabaseSource() {

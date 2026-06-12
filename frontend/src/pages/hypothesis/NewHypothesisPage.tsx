@@ -267,9 +267,9 @@ export default function NewHypothesisPage() {
       <section className="card">
         <div className="card-body">
           <p className="text-muted mb-3">
-            Depois que dor, resultado, mecanismo e oferta estiverem claros, use
-            a hipótese completa para avançar nos experimentos seguindo Dor →
-            Resultado → Mecanismo → Prova → Oferta.
+            Depois que dor, resultado, mecanismo, prova e oferta estiverem
+            claros, use a hipótese completa para avançar nos experimentos
+            seguindo Dor → Resultado → Mecanismo → Prova → Oferta.
           </p>
           <div className="d-flex flex-wrap gap-2">
             <Link

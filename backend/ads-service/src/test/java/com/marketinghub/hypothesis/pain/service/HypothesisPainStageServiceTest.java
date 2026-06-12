@@ -248,9 +248,55 @@ class HypothesisPainStageServiceTest {
         assertThrows(IllegalStateException.class, () -> service.startOffer(18L));
     }
 
-    /** Deve entregar Dor, Resultado e Mecanismo concluídos para contextualizar a etapa Oferta no Worker AI. */
+
+    /** Deve bloquear a etapa Oferta quando a prova ainda não está concluída. */
     @Test
-    void listOfferPendingIncludesLatestCompletedPainResultAndMechanismResponses() {
+    void startOfferRequiresCompletedProof() {
+        MarketNiche niche = new MarketNiche();
+        niche.setId(18L);
+        when(marketNicheRepository.findById(18L)).thenReturn(Optional.of(niche));
+        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
+                        18L,
+                        "hypothesis-pain",
+                        "CONCLUIDO"))
+                .thenReturn(Optional.of(HypothesisPainStageExecution.builder()
+                        .marketNicheId(18L)
+                        .stageCode("hypothesis-pain")
+                        .status("CONCLUIDO")
+                        .modelResponse("{\"pain\":\"dor validada\"}")
+                        .build()));
+        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
+                        18L,
+                        "hypothesis-result",
+                        "CONCLUIDO"))
+                .thenReturn(Optional.of(HypothesisPainStageExecution.builder()
+                        .marketNicheId(18L)
+                        .stageCode("hypothesis-result")
+                        .status("CONCLUIDO")
+                        .modelResponse("{\"result\":\"resultado validado\"}")
+                        .build()));
+        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
+                        18L,
+                        "hypothesis-mechanism",
+                        "CONCLUIDO"))
+                .thenReturn(Optional.of(HypothesisPainStageExecution.builder()
+                        .marketNicheId(18L)
+                        .stageCode("hypothesis-mechanism")
+                        .status("CONCLUIDO")
+                        .modelResponse("{\"mechanism\":\"mecanismo validado\"}")
+                        .build()));
+        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
+                        18L,
+                        "hypothesis-proof",
+                        "CONCLUIDO"))
+                .thenReturn(Optional.empty());
+
+        assertThrows(IllegalStateException.class, () -> service.startOffer(18L));
+    }
+
+    /** Deve entregar Dor, Resultado, Mecanismo e Prova concluídos para contextualizar a etapa Oferta no Worker AI. */
+    @Test
+    void listOfferPendingIncludesLatestCompletedPainResultMechanismAndProofResponses() {
         MarketNiche niche = new MarketNiche();
         niche.setId(18L);
         niche.setName("Produtores digitais");
@@ -281,6 +327,12 @@ class HypothesisPainStageServiceTest {
                 .status("CONCLUIDO")
                 .modelResponse("{\"mechanism\":\"mecanismo validado\"}")
                 .build();
+        HypothesisPainStageExecution completedProof = HypothesisPainStageExecution.builder()
+                .marketNicheId(18L)
+                .stageCode("hypothesis-proof")
+                .status("CONCLUIDO")
+                .modelResponse("{\"proof\":\"prova validada\"}")
+                .build();
 
         when(executionRepository.findTop20ByStageCodeAndStatusOrderByExecutionRequestedAtAsc(
                         "hypothesis-offer",
@@ -301,6 +353,11 @@ class HypothesisPainStageServiceTest {
                         "hypothesis-mechanism",
                         "CONCLUIDO"))
                 .thenReturn(Optional.of(completedMechanism));
+        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
+                        18L,
+                        "hypothesis-proof",
+                        "CONCLUIDO"))
+                .thenReturn(Optional.of(completedProof));
 
         var pending = service.listOfferPending();
 
@@ -308,6 +365,7 @@ class HypothesisPainStageServiceTest {
         assertEquals("{\"pain\":\"dor validada\"}", pending.getFirst().painModelResponse());
         assertEquals("{\"result\":\"resultado validado\"}", pending.getFirst().resultModelResponse());
         assertEquals("{\"mechanism\":\"mecanismo validado\"}", pending.getFirst().mechanismModelResponse());
+        assertEquals("{\"proof\":\"prova validada\"}", pending.getFirst().proofModelResponse());
     }
 
     /** Deve listar somente o conteúdo final persistido e a origem no banco para cada etapa do framework. */
@@ -340,13 +398,18 @@ class HypothesisPainStageServiceTest {
                 .thenReturn(Optional.empty());
         when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
                         18L,
+                        "hypothesis-proof",
+                        "CONCLUIDO"))
+                .thenReturn(Optional.empty());
+        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
+                        18L,
                         "hypothesis-offer",
                         "CONCLUIDO"))
                 .thenReturn(Optional.empty());
 
         var summary = service.listFinalSummary(18L);
 
-        assertEquals(4, summary.size());
+        assertEquals(5, summary.size());
         assertEquals("pain", summary.getFirst().slug());
         assertEquals(painJob, summary.getFirst().jobid());
         assertEquals("{\"pain\":\"dor final\"}", summary.getFirst().finalContent());

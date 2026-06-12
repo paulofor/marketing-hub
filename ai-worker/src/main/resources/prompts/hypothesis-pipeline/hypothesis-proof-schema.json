@@ -1,0 +1,31 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "proofType",
+    "proofAsset",
+    "proofMessage",
+    "evidenceSignals",
+    "collectionMethod",
+    "credibilityRationale",
+    "objectionReduced",
+    "boundaryConditions",
+    "summary"
+  ],
+  "properties": {
+    "proofType": { "type": "string", "minLength": 5, "maxLength": 120 },
+    "proofAsset": { "type": "string", "minLength": 10, "maxLength": 200 },
+    "proofMessage": { "type": "string", "minLength": 10 },
+    "evidenceSignals": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 5,
+      "items": { "type": "string", "minLength": 5 }
+    },
+    "collectionMethod": { "type": "string", "minLength": 10 },
+    "credibilityRationale": { "type": "string", "minLength": 10 },
+    "objectionReduced": { "type": "string", "minLength": 10 },
+    "boundaryConditions": { "type": "string", "minLength": 10 },
+    "summary": { "type": "string", "minLength": 10, "maxLength": 500 }
+  }
+}

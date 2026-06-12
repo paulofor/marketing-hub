@@ -79,6 +79,21 @@ describe("NewHypothesisPage", () => {
           ],
         });
       }
+      if (url.includes("/hypothesis-pipeline/proof/")) {
+        return Promise.resolve({
+          data: [
+            {
+              jobid: "dddddddd-3894-43bd-9752-374f84eb6a2c",
+              marketNicheId: 18,
+              stageCode: "hypothesis-proof",
+              status: "CONCLUIDO",
+              executionRequestedAt: "2026-06-11T00:36:01Z",
+              completedAt: "2026-06-11T00:40:01Z",
+              costUsd: 0.005,
+            },
+          ],
+        });
+      }
       return Promise.resolve({
         data: [
           {
@@ -118,8 +133,9 @@ describe("NewHypothesisPage", () => {
       screen.getByText("Etapa 2 — Resultado desejado"),
     ).toBeInTheDocument();
     expect(screen.getByText("Etapa 3 — Mecanismo")).toBeInTheDocument();
+    expect(screen.getByText("Etapa 4 — Prova")).toBeInTheDocument();
     expect(screen.getByText("Etapa 5 — Oferta")).toBeInTheDocument();
-    expect(screen.getByText(/US\$\s*0,021345/)).toBeInTheDocument();
+    expect(screen.getByText(/US\$\s*0,026345/)).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "Resumo do framework" }),
     ).toHaveAttribute("href", "/niches/18/hypothesis-pipeline/summary");

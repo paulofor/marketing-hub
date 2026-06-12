@@ -31,6 +31,7 @@ public class HypothesisPainStageService {
     private static final String STAGE_CODE = "hypothesis-pain";
     private static final String RESULT_STAGE_CODE = "hypothesis-result";
     private static final String MECHANISM_STAGE_CODE = "hypothesis-mechanism";
+    private static final String PROOF_STAGE_CODE = "hypothesis-proof";
     private static final String OFFER_STAGE_CODE = "hypothesis-offer";
     private static final String STATUS_STARTED = "INICIADO";
     private static final String STATUS_WAITING_OPENAI_DISPATCH = "AGUARDANDO_RETORNO_OPENAI";
@@ -55,25 +56,31 @@ public class HypothesisPainStageService {
     /** Inicia uma nova execução manual da etapa Dor para o nicho informado. */
     @Transactional
     public HypothesisPainStartResponse start(Long marketNicheId) {
-        return startStage(marketNicheId, STAGE_CODE, "Dor", false, false, false);
+        return startStage(marketNicheId, STAGE_CODE, "Dor", false, false, false, false);
     }
 
     /** Inicia uma nova execução manual da etapa Resultado para o nicho informado. */
     @Transactional
     public HypothesisPainStartResponse startResult(Long marketNicheId) {
-        return startStage(marketNicheId, RESULT_STAGE_CODE, "Resultado", true, false, false);
+        return startStage(marketNicheId, RESULT_STAGE_CODE, "Resultado", true, false, false, false);
     }
 
     /** Inicia uma nova execução manual da etapa Mecanismo para o nicho informado. */
     @Transactional
     public HypothesisPainStartResponse startMechanism(Long marketNicheId) {
-        return startStage(marketNicheId, MECHANISM_STAGE_CODE, "Mecanismo", true, true, false);
+        return startStage(marketNicheId, MECHANISM_STAGE_CODE, "Mecanismo", true, true, false, false);
+    }
+
+    /** Inicia uma nova execução manual da etapa Prova para o nicho informado. */
+    @Transactional
+    public HypothesisPainStartResponse startProof(Long marketNicheId) {
+        return startStage(marketNicheId, PROOF_STAGE_CODE, "Prova", true, true, true, false);
     }
 
     /** Inicia uma nova execução manual da etapa Oferta para o nicho informado. */
     @Transactional
     public HypothesisPainStartResponse startOffer(Long marketNicheId) {
-        return startStage(marketNicheId, OFFER_STAGE_CODE, "Oferta", true, true, true);
+        return startStage(marketNicheId, OFFER_STAGE_CODE, "Oferta", true, true, true, true);
     }
 
     /** Inicia uma nova execução manual de uma etapa do pipeline para o nicho informado. */
@@ -83,7 +90,8 @@ public class HypothesisPainStageService {
             String stageLabel,
             boolean requiresCompletedPain,
             boolean requiresCompletedResult,
-            boolean requiresCompletedMechanism) {
+            boolean requiresCompletedMechanism,
+            boolean requiresCompletedProof) {
         Instant now = Instant.now();
         MarketNiche niche = marketNicheRepository.findById(marketNicheId)
                 .orElseThrow(() -> new EntityNotFoundException("Market niche not found: " + marketNicheId));
@@ -95,6 +103,9 @@ public class HypothesisPainStageService {
         }
         if (requiresCompletedMechanism) {
             requireCompletedMechanism(marketNicheId);
+        }
+        if (requiresCompletedProof) {
+            requireCompletedProof(marketNicheId);
         }
         HypothesisPainStageExecution execution = HypothesisPainStageExecution.builder()
                 .marketNicheId(niche.getId())
@@ -129,6 +140,14 @@ public class HypothesisPainStageService {
             Long marketNicheId,
             boolean includeCompleted) {
         return listStageExecutions(marketNicheId, MECHANISM_STAGE_CODE, includeCompleted);
+    }
+
+    /** Lista execuções da etapa Prova para o nicho informado. */
+    @Transactional(readOnly = true)
+    public List<HypothesisPainExecutionSummaryResponse> listProofStageExecutions(
+            Long marketNicheId,
+            boolean includeCompleted) {
+        return listStageExecutions(marketNicheId, PROOF_STAGE_CODE, includeCompleted);
     }
 
     /** Lista execuções da etapa Oferta para o nicho informado. */
@@ -176,6 +195,7 @@ public class HypothesisPainStageService {
                 toFinalSummary(marketNicheId, "pain", 1, "Dor do nicho", STAGE_CODE),
                 toFinalSummary(marketNicheId, "result", 2, "Resultado desejado", RESULT_STAGE_CODE),
                 toFinalSummary(marketNicheId, "mechanism", 3, "Mecanismo", MECHANISM_STAGE_CODE),
+                toFinalSummary(marketNicheId, "proof", 4, "Prova", PROOF_STAGE_CODE),
                 toFinalSummary(marketNicheId, "offer", 5, "Oferta", OFFER_STAGE_CODE));
     }
 
@@ -232,6 +252,12 @@ public class HypothesisPainStageService {
         return listPendingByStage(MECHANISM_STAGE_CODE);
     }
 
+    /** Lista os jobs iniciados da etapa Prova para processamento pelo Worker AI. */
+    @Transactional(readOnly = true)
+    public List<HypothesisPainPendingExecution> listProofPending() {
+        return listPendingByStage(PROOF_STAGE_CODE);
+    }
+
     /** Lista os jobs iniciados da etapa Oferta para processamento pelo Worker AI. */
     @Transactional(readOnly = true)
     public List<HypothesisPainPendingExecution> listOfferPending() {
@@ -250,7 +276,8 @@ public class HypothesisPainStageService {
                         toPendingNiche(execution.getMarketNiche()),
                         pendingPainResponse(execution),
                         pendingResultResponse(execution),
-                        pendingMechanismResponse(execution)))
+                        pendingMechanismResponse(execution),
+                        pendingProofResponse(execution)))
                 .toList();
     }
 
@@ -258,6 +285,7 @@ public class HypothesisPainStageService {
     private String pendingPainResponse(HypothesisPainStageExecution execution) {
         return RESULT_STAGE_CODE.equals(execution.getStageCode())
                 || MECHANISM_STAGE_CODE.equals(execution.getStageCode())
+                || PROOF_STAGE_CODE.equals(execution.getStageCode())
                 || OFFER_STAGE_CODE.equals(execution.getStageCode())
                 ? latestCompletedPainResponse(execution.getMarketNicheId())
                 : null;
@@ -266,6 +294,7 @@ public class HypothesisPainStageService {
     /** Retorna o Resultado concluído quando a etapa pendente precisa desse contexto. */
     private String pendingResultResponse(HypothesisPainStageExecution execution) {
         return MECHANISM_STAGE_CODE.equals(execution.getStageCode())
+                        || PROOF_STAGE_CODE.equals(execution.getStageCode())
                         || OFFER_STAGE_CODE.equals(execution.getStageCode())
                 ? latestCompletedResultResponse(execution.getMarketNicheId())
                 : null;
@@ -273,8 +302,16 @@ public class HypothesisPainStageService {
 
     /** Retorna o Mecanismo concluído quando a etapa pendente precisa desse contexto. */
     private String pendingMechanismResponse(HypothesisPainStageExecution execution) {
-        return OFFER_STAGE_CODE.equals(execution.getStageCode())
+        return PROOF_STAGE_CODE.equals(execution.getStageCode())
+                || OFFER_STAGE_CODE.equals(execution.getStageCode())
                 ? latestCompletedMechanismResponse(execution.getMarketNicheId())
+                : null;
+    }
+
+    /** Retorna a Prova concluída quando a etapa pendente precisa desse contexto. */
+    private String pendingProofResponse(HypothesisPainStageExecution execution) {
+        return OFFER_STAGE_CODE.equals(execution.getStageCode())
+                ? latestCompletedProofResponse(execution.getMarketNicheId())
                 : null;
     }
 
@@ -302,6 +339,14 @@ public class HypothesisPainStageService {
         }
     }
 
+    /** Garante que a etapa Prova tenha sido concluída com resposta antes de liberar Oferta. */
+    private void requireCompletedProof(Long marketNicheId) {
+        if (!StringUtils.hasText(latestCompletedProofResponse(marketNicheId))) {
+            throw new IllegalStateException(
+                    "A etapa Prova precisa estar concluída antes de iniciar Oferta para o nicho: " + marketNicheId);
+        }
+    }
+
     /** Retorna a resposta da Dor concluída mais recente para contextualizar etapas seguintes. */
     private String latestCompletedPainResponse(Long marketNicheId) {
         return latestCompletedStageResponse(marketNicheId, STAGE_CODE);
@@ -315,6 +360,11 @@ public class HypothesisPainStageService {
     /** Retorna a resposta do Mecanismo concluído mais recente para contextualizar Oferta. */
     private String latestCompletedMechanismResponse(Long marketNicheId) {
         return latestCompletedStageResponse(marketNicheId, MECHANISM_STAGE_CODE);
+    }
+
+    /** Retorna a resposta da Prova concluída mais recente para contextualizar Oferta. */
+    private String latestCompletedProofResponse(Long marketNicheId) {
+        return latestCompletedStageResponse(marketNicheId, PROOF_STAGE_CODE);
     }
 
     /** Retorna a resposta concluída mais recente de uma etapa para contextualizar próximas etapas. */

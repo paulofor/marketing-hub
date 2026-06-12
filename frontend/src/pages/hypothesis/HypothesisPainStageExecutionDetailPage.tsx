@@ -113,7 +113,14 @@ function AuditBlock({
 
 export default function HypothesisPainStageExecutionDetailPage() {
   const { nicheId, jobId, stageSlug = "pain" } = useParams();
-  const stageLabel = stageSlug === "result" ? "resultado" : "dor";
+  const stageLabelBySlug: Record<string, string> = {
+    pain: "dor",
+    result: "resultado",
+    mechanism: "mecanismo",
+    proof: "prova",
+    offer: "oferta",
+  };
+  const stageLabel = stageLabelBySlug[stageSlug] ?? "etapa";
   const detailQuery = useHypothesisPainStageExecutionDetail(
     nicheId,
     jobId,

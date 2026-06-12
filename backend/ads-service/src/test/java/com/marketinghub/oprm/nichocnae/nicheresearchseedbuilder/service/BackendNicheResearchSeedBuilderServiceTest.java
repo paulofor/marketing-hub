@@ -7,8 +7,6 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.marketinghub.openai.OpenAiResponse;
-import com.marketinghub.openai.service.OpenAiPricingService;
 import com.marketinghub.oprm.nichocnae.OprmNicheResearchSeed;
 import com.marketinghub.oprm.nichocnae.OprmResearchQuery;
 import com.marketinghub.oprm.nichocnae.OprmRoutineResearchCycle;
@@ -19,8 +17,6 @@ import com.marketinghub.oprm.nichocnae.nicheresearchseedbuilder.service.failStag
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmNicheResearchSeedRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmResearchQueryRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmRoutineResearchCycleRepository;
-import com.marketinghub.repository.jpa.pipeline.PipelineStageConfigRepository;
-import com.marketinghub.repository.jpa.pipeline.PipelineStageRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -39,9 +35,7 @@ class BackendNicheResearchSeedBuilderServiceTest {
   @Mock private OprmRoutineResearchCycleRepository routineResearchCycleRepository;
   @Mock private OprmNicheResearchSeedRepository nicheResearchSeedRepository;
   @Mock private OprmResearchQueryRepository researchQueryRepository;
-  @Mock private PipelineStageConfigRepository pipelineStageConfigRepository;
-  @Mock private PipelineStageRepository pipelineStageRepository;
-  @Mock private OpenAiPricingService openAiPricingService;
+  @Mock private OprmNicheResearchSeedBuilderConfigurationGateway configurationGateway;
 
   @InjectMocks private BackendNicheResearchSeedBuilderService service;
 
@@ -49,14 +43,9 @@ class BackendNicheResearchSeedBuilderServiceTest {
   @org.junit.jupiter.api.BeforeEach
   void setUpPricing() {
     lenient()
-        .when(openAiPricingService.estimateStandardCost(eq("gpt-5.4"), any(OpenAiResponse.OpenAiUsage.class)))
+        .when(configurationGateway.estimateCostUsd(eq("gpt-5.4"), any(), any()))
         .thenReturn(new BigDecimal("0.0123"));
-    lenient()
-        .when(pipelineStageConfigRepository.findOfficialStageConfig(any(), any(), any()))
-        .thenReturn(Optional.empty());
-    lenient()
-        .when(pipelineStageRepository.findByPipelineCodeAndStageCode(any(), any()))
-        .thenReturn(Optional.empty());
+    lenient().when(configurationGateway.findConfiguredModel()).thenReturn(Optional.empty());
   }
 
   /** Deve listar ciclos em execução e falhas retryáveis sem seed para a etapa dois. */

@@ -412,3 +412,9 @@
 - Corrigida a causa-raiz do erro de banco `Data too long for column 'query_goal'` sem truncar campos e sem ampliar o banco: o schema JSON da etapa `niche-research-seed-builder` agora declara `maxLength` nos campos gravados em colunas curtas, fazendo o modelo responder dentro do contrato persistível.
 - A fila da etapa 2 considera como reprocessáveis as falhas sem seed/queries causadas pelo contrato legado (`nicheName is required`) ou pelo estouro de `query_goal`, permitindo recuperação após o deploy da correção.
 - Adicionados testes de regressão para garantir que o schema solicite ao modelo limites compatíveis com `query_text`, `query_goal`, `source_group`, `created_by`, `niche_name`, `business_type` e `confidence_level`, sem corte silencioso no backend.
+
+## 2026-06-12 — OPRM NichoCNAE: busca por rotina executada
+
+- Ajustada a etapa de seed para orientar o modelo a priorizar queries sobre rotina executada, tarefas do dia a dia, procedimentos práticos, CBO, guias profissionais e relatos de profissionais antes de dores genéricas ou temas comerciais.
+- Reforçado o classificador de fontes da etapa de busca para aumentar score de execução prática e penalizar páginas dominadas por software, agenda online, app, automação ou sistema quando não descrevem tarefas concretas do executor.
+- Atualizada a ordenação de fontes candidatas para colocar evidência de rotina prática antes de sinais secundários, reduzindo o risco de fontes comerciais virarem base da análise OPRM.

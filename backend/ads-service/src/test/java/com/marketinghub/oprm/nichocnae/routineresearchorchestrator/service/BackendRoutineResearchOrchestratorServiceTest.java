@@ -6,14 +6,11 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.marketinghub.niche.MarketNiche;
-import com.marketinghub.niche.MarketNicheEnrichmentProfile;
 import com.marketinghub.oprm.cnae.OprmNicheCandidate;
 import com.marketinghub.oprm.nichocnae.OprmRoutineResearchCycle;
 import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.pending.RecordRoutineResearchOrchestratorPending;
 import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.recent.RecordRoutineResearchOrchestratorRecent;
 import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.runNext.RecordRoutineResearchOrchestratorResult;
-import com.marketinghub.repository.jpa.niche.MarketNicheEnrichmentProfileRepository;
 import com.marketinghub.repository.jpa.oprm.cnae.OprmNicheCandidateRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmNicheRoutineCardRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmRoutineResearchCycleRepository;
@@ -40,8 +37,6 @@ class BackendRoutineResearchOrchestratorServiceTest {
     @Mock private OprmMeiAudienceProfileRepository meiAudienceProfileRepository;
 
     @Mock private OprmNicheRoutineCardRepository routineCardRepository;
-
-    @Mock private MarketNicheEnrichmentProfileRepository enrichmentProfileRepository;
 
     @InjectMocks private BackendRoutineResearchOrchestratorService service;
 
@@ -117,15 +112,12 @@ class BackendRoutineResearchOrchestratorServiceTest {
     @Test
     void listRecentProcessedReturnsMarketNicheAssociationFromEnrichmentProfile() {
         OprmRoutineResearchCycle cycle = cycle(321L, 55L, "Cabeleireiros e manicures", "2026-06-03T01:00:00Z");
-        MarketNiche marketNiche = new MarketNiche();
-        marketNiche.setId(654L);
-        MarketNicheEnrichmentProfile profile = new MarketNicheEnrichmentProfile();
-        profile.setMarketNiche(marketNiche);
         when(routineResearchCycleRepository.findAllByOrderByStartedAtDesc(any(Pageable.class)))
                 .thenReturn(List.of(cycle));
         when(nicheCandidateRepository.findById(55L)).thenReturn(Optional.empty());
-        when(enrichmentProfileRepository.findFirstByResearchCycleIdOrderByIdDesc(321L))
-                .thenReturn(Optional.of(profile));
+        when(routineResearchCycleRepository.findLatestMaterializedMarketNicheIdByResearchCycleId(
+                org.mockito.ArgumentMatchers.eq(321L), any(Pageable.class)))
+                .thenReturn(List.of(654L));
 
         List<RecordRoutineResearchOrchestratorRecent> result = service.listRecentProcessed(10);
 

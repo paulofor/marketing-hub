@@ -225,7 +225,7 @@ const statusLabels: Record<string, string> = {
   COMPLETED: "Concluído",
   ROUTINE_SYNTHESIZED: "Rotina sintetizada",
   MEI_AUDIENCE_SEGMENTED: "Perfil MEI/autônomo criado",
-  ENRICHED_NICHE_CREATED: "Nicho enriquecido criado",
+  ENRICHED_NICHE_CREATED: "Nicho enriquecido disponível",
   ENRICHED_NICHE_FAILED: "Falha no nicho enriquecido",
 };
 
@@ -309,9 +309,9 @@ const cycleStageByStatus: Record<
       "badge text-bg-secondary-subtle border border-secondary-subtle text-secondary",
   },
   ENRICHED_NICHE_CREATED: {
-    label: "Finalizado · Nicho enriquecido criado",
+    label: "Finalizado · Nicho enriquecido disponível",
     description:
-      "A materialização final foi concluída e o nicho já pode alimentar os próximos fluxos de oportunidade e produto.",
+      "A materialização final foi concluída e o nicho existente já pode alimentar os próximos fluxos de oportunidade e produto.",
     badgeClass:
       "badge text-bg-success-subtle border border-success-subtle text-success",
   },
@@ -396,6 +396,13 @@ function getNewResearchCycleButtonLabel(status: string) {
     return "Refazer pelo front-end";
   }
   return "Pesquisar novamente";
+}
+
+function isAlreadyMaterialized(item: {
+  alreadyMaterialized?: boolean | null;
+  existingMarketNicheId?: number | null;
+}) {
+  return Boolean(item.alreadyMaterialized || item.existingMarketNicheId);
 }
 
 function getNewResearchCycleButtonClass(status: string) {
@@ -804,10 +811,15 @@ export default function OprmPipelinePage() {
                           <span className="text-secondary small d-block">
                             Original: {getOriginalName(item)}
                           </span>
-                          <span className="text-secondary small">
+                          <span className="text-secondary small d-block">
                             Ciclo #{item.researchCycleId} ·{" "}
                             {formatResearchMode(item.researchMode)}
                           </span>
+                          {isAlreadyMaterialized(item) ? (
+                            <span className="badge text-bg-success-subtle border border-success-subtle text-success mt-1">
+                              Nicho já existe
+                            </span>
+                          ) : null}
                         </td>
                         <td>
                           <span className="text-nowrap">{item.cnaeCode}</span>
@@ -895,7 +907,14 @@ export default function OprmPipelinePage() {
                           ) : null}
                         </td>
                         <td className="text-end">
-                          {canCreateNewResearchCycle(item.cycleStatus) ? (
+                          {item.existingMarketNicheId ? (
+                            <Link
+                              className="btn btn-outline-success btn-sm text-nowrap"
+                              to={`/niches/${item.existingMarketNicheId}`}
+                            >
+                              Abrir nicho existente
+                            </Link>
+                          ) : canCreateNewResearchCycle(item.cycleStatus) ? (
                             <button
                               type="button"
                               className={getNewResearchCycleButtonClass(
@@ -1098,6 +1117,11 @@ export default function OprmPipelinePage() {
                           >
                             {formatStatusLabel(latestCycle.cycleStatus)}
                           </span>
+                          {isAlreadyMaterialized(latestCycle) ? (
+                            <span className="badge text-bg-success-subtle border border-success-subtle text-success d-block mt-1">
+                              Nicho já existe
+                            </span>
+                          ) : null}
                           {latestCycle.finishedAt ? (
                             <span className="text-secondary d-block mt-1">
                               Finalizado em{" "}

@@ -7,6 +7,8 @@ export const oprmRoutineResearchOrchestratorRecentQueryKey = (limit = 10) =>
 export interface OprmRoutineResearchOrchestratorRecent {
   researchCycleId: number;
   sourceNicheId: number;
+  existingMarketNicheId?: number | null;
+  alreadyMaterialized?: boolean | null;
   cnaeCode: string;
   cnaeDescription: string;
   nicheName: string;
@@ -47,6 +49,8 @@ async function fetchRecentProcessed(
 export interface OprmRoutineResearchOrchestratorReprocessResult {
   researchCycleId: number;
   sourceNicheId: number;
+  existingMarketNicheId?: number | null;
+  alreadyMaterialized?: boolean | null;
   cnaeCode: string;
   cnaeDescription: string;
   previousCycleStatus: string;

@@ -7,6 +7,8 @@ import java.time.Instant;
 public record RecordRoutineResearchOrchestratorRecent(
         Long researchCycleId,
         Long sourceNicheId,
+        Long existingMarketNicheId,
+        Boolean alreadyMaterialized,
         String cnaeCode,
         String cnaeDescription,
         String nicheName,

@@ -720,6 +720,14 @@ components:
         sourceNicheId:
           type: integer
           format: int64
+        existingMarketNicheId:
+          type: integer
+          format: int64
+          nullable: true
+          description: ID do market_niche já associado ao ciclo/candidato, quando o nicho já foi materializado.
+        alreadyMaterialized:
+          type: boolean
+          description: Indica se o ciclo já possui market_niche associado e não deve ser tratado como criação de novo nicho.
         cnaeCode:
           type: string
           example: '9602501'

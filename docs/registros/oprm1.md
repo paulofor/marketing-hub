@@ -450,13 +450,8 @@
 - Causa-raiz tratada: a tela reconstruía corretamente a requisição, mas o contrato textual da etapa ainda expunha nomenclatura operacional interna, reduzindo clareza de negócio para validação do usuário.
 - Prevenção de recorrência: adicionado teste garantindo presença da persona de marketing/comportamento e ausência das expressões técnicas antigas no prompt da etapa.
 
-## 2026-06-12 — OPRM NichoCNAE: trava por perfil MEI/autônomo aprovado
+## 2026-06-12 — OPRM Pipeline: indicação de nicho já materializado
 
-- Corrigida a liberação final do OPRM para exigir `oprm_mei_audience_profile` antes de materializar `market_niche` e `market_niche_enrichment_profile`, mantendo ciclos sem perfil na etapa visual “Aguardando perfil MEI/autônomo”.
-- Causa-raiz tratada: a etapa final confiava apenas no `readyForHypothesis` do cartão e podia ser chamada diretamente sem comprovar o perfil humano MEI/autônomo que sustenta os fluxos comerciais seguintes.
-- Prevenção de recorrência: adicionado teste de regressão bloqueando ciclo `ROUTINE_SYNTHESIZED` sem perfil MEI/autônomo e regra canônica para atualizar nicho existente de forma controlada, sem duplicar `market_niche`.
-## 2026-06-12 — OPRM NichoCNAE: materialização idempotente por CNAE e nome neutro
-
-- Corrigida a causa-raiz de duplicação de `market_niche` quando um novo ciclo OPRM materializava o mesmo CNAE e o mesmo nome neutro já materializados anteriormente.
-- O materializador agora consulta primeiro perfis enriquecidos existentes pelo par CNAE/nome neutro normalizado, atualiza o `market_niche` encontrado e vincula o novo ciclo/perfil a esse nicho, registrando status operacional de atualização/revisão em vez de criação.
-- Prevenção de recorrência: adicionado teste cobrindo duplicidade para o CNAE `9602501` com nome neutro `Salões pequenos`, garantindo reaproveitamento do nicho existente.
+- A tela `/oprm/pipeline` passou a diferenciar ciclos que já possuem `market_niche` associado, exibindo o badge “Nicho já existe” e priorizando a ação “Abrir nicho existente”.
+- O endpoint de últimos ciclos processados agora informa `existingMarketNicheId` e `alreadyMaterialized`, evitando que a interface induza o usuário a criar um novo nicho quando o ativo comercial já foi materializado.
+- Causa-raiz tratada: a tabela mostrava o ciclo apenas como execução do pipeline e não levava para o nicho operacional já criado, gerando ambiguidade entre atualizar/consultar um nicho existente e criar novamente.

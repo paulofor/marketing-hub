@@ -1,5 +1,6 @@
 # Registros — OPRM
 
+- 2026-06-11 21:26:05 (UTC-3): atualizado o fluxo OPRM NichoCNAE para tratar aquisição de clientes como realidade operacional obrigatória do MEI/autônomo, reforçando no prompt e no cânone a busca por evidências de captação, canais, indicação, redes sociais, WhatsApp, orçamento, agenda vazia, retorno, fidelização, cancelamento, reativação e recorrência, sem permitir solução, campanha ou oferta.
 > Orientação: todos os registros deste documento devem sempre incluir **data e hora no fuso UTC-3**.
 > Este documento segue política de **append-only** (não pode ter nenhuma linha apagada; apenas inserções).
 

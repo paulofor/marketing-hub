@@ -515,3 +515,9 @@
 - Criado contrato próprio da etapa seed para consultar modelo configurado e estimar custo, com implementação fora do pacote funcional OPRM para preservar o limite arquitetural validado pelo ArchUnit.
 - Causa-raiz tratada: a etapa OPRM consumia diretamente serviços e repositórios compartilhados para dados auxiliares de IA, rompendo a regra de isolamento do módulo.
 - Prevenção de recorrência: os testes da etapa passaram a mockar a abstração OPRM, mantendo o serviço de negócio sem imports proibidos.
+
+## 2026-06-12 — OPRM MEI: barreira operacional para chave OpenAI da segmentação
+
+- Adicionada verificação operacional da etapa `mei-audience-segmenter` no `oprm-coletor-mei` para bloquear busca/processamento de pendências quando não houver chave OpenAI dedicada nem fallback global.
+- Causa-raiz tratada: a etapa podia chegar até a execução da IA sem evidência operacional clara da variável ausente, mascarando a falha de configuração e consumindo o fluxo de pendências sem uma mensagem acionável.
+- Prevenção de recorrência: logs padronizados passaram a registrar `module=oprm-coletor-mei`, `operation=mei-audience-segmenter`, variável esperada, fallback e `researchCycleId` quando aplicável; os testes cobrem ausência de `OPRM_MEI_AUDIENCE_SEGMENTER_OPENAI_API_KEY`, fallback por `OPENAI_API_KEY` já resolvido pelo `application.yml` e notificação do erro operacional ao backend quando houver ciclo conhecido.

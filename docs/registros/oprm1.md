@@ -486,3 +486,9 @@
 - Alterada a regra operacional do botão de execução manual por CNAE: quando o usuário solicita novo ciclo para um CNAE específico, o backend encerra automaticamente todos os ciclos ainda abertos desse CNAE e cria uma execução completamente nova.
 - Causa-raiz tratada: o endpoint manual só aceitava candidatos pendentes, então CNAEs já em `RESEARCH_RUNNING` devolviam 404 e impediam nova execução mesmo quando a decisão operacional era recomeçar do zero.
 - Prevenção de recorrência: a regra foi registrada no cânone OPRM, o contrato Swagger foi atualizado e foi criado teste garantindo que ciclos antigos abertos sejam marcados como `CANCELLED_BY_MANUAL_RESTART` antes da criação do novo ciclo.
+
+## 2026-06-12 — OPRM NichoCNAE: detalhe por card do CNAE
+
+- A tela de detalhe do CNAE ganhou botão “Ver detalhes” em cada card do pipeline, abrindo uma página separada para não poluir a visão principal.
+- A nova página informa as tabelas populadas por etapa, o tipo de conteúdo gravado, os dados retornados pelo backend e se a etapa acessa modelo de IA.
+- Para etapas com IA, a página exibe request/response conceitual, modelo configurado e deixa explícito quando tokens e custo ainda não estão persistidos no detalhe operacional.

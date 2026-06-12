@@ -12,4 +12,9 @@ public record CompleteNicheResearchSeedBuilderRequest(
     String initialAssumptions,
     String confidenceLevel,
     String createdBy,
+    String model,
+    String rawModelResponse,
+    Integer inputTokens,
+    Integer outputTokens,
+    String openAiResponseId,
     List<NicheResearchQueryRequest> queries) {}

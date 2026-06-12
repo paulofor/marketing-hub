@@ -6,6 +6,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
 import java.time.Instant;
 import lombok.Data;
 
@@ -55,4 +56,22 @@ public class OprmNicheResearchSeed {
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
+
+    @Column(name = "model", length = 128)
+    private String model;
+
+    @Column(name = "raw_model_response", columnDefinition = "LONGTEXT")
+    private String rawModelResponse;
+
+    @Column(name = "input_tokens")
+    private Integer inputTokens;
+
+    @Column(name = "output_tokens")
+    private Integer outputTokens;
+
+    @Column(name = "cost_usd", precision = 12, scale = 4)
+    private BigDecimal costUsd;
+
+    @Column(name = "openai_response_id", length = 128)
+    private String openAiResponseId;
 }

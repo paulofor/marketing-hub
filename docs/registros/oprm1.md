@@ -499,3 +499,12 @@
 - Ajustada a fila da etapa MEI/autônomo para expor somente cartões do ciclo mais recente realmente elegível em `ROUTINE_SYNTHESIZED`, sem puxar ciclos falhos, cancelados por reinício manual, já segmentados ou antigos substituídos por execução mais nova.
 - Causa-raiz tratada: a consulta anterior olhava apenas a ausência de perfil MEI/autônomo e podia reenfileirar cartões históricos ou descartados, consumindo IA em ciclos que não faziam mais parte do fluxo ativo de venda.
 - Prevenção de recorrência: adicionada revalidação no serviço da fila e teste de regressão garantindo que somente o ciclo `ROUTINE_SYNTHESIZED` mais recente aparece para processamento.
+## 2026-06-12 — Correção do modelo e telemetria OpenAI da etapa seed NichoCNAE
+
+- causa-raiz: a tela `/pipelines` gravava o modelo da etapa `niche-research-seed-builder` no pipeline operacional, mas o coletor OPRM usava apenas a propriedade local `gpt-4.1-mini`; além disso, o contrato de conclusão da etapa descartava `usage` da OpenAI, impedindo cálculo e exibição de tokens/custo.
+- correção aplicada:
+  - o backend passou a enviar na pendência da etapa seed o modelo configurado no pipeline oficial/pipeline operacional;
+  - o coletor OPRM passou a priorizar esse modelo recebido do backend na chamada à OpenAI Responses API;
+  - a conclusão da etapa passou a enviar e persistir modelo, resposta bruta, tokens de entrada/saída, `openAiResponseId` e custo estimado;
+  - a tela de detalhe da etapa passou a exibir a telemetria real quando persistida.
+- verificação operacional: consulta via MCP confirmou que a etapa operacional `niche-research-seed-builder` está configurada com `gpt-5.4` no banco.

@@ -71,7 +71,7 @@ public class NicheResearchSeedBuilderBackendClient {
     public NicheResearchSeedBuilderOutput completeStageExecution(OpenAiSeedBuilderResult result) {
         Long researchCycleId = result.output().researchCycleId();
         String url = collectorProperties.backendBaseUrl() + COMPLETE_PATH_PREFIX + researchCycleId + COMPLETE_PATH_SUFFIX;
-        NicheResearchSeedBuilderBackendCompletionRequest request = toBackendCompletionRequest(result.output());
+        NicheResearchSeedBuilderBackendCompletionRequest request = toBackendCompletionRequest(result);
         try {
             NicheResearchSeedBuilderBackendCompletionResponse response = restClient.post()
                     .uri(url)
@@ -93,8 +93,9 @@ public class NicheResearchSeedBuilderBackendClient {
         }
     }
 
-    /** Converte a saída validada da IA para o DTO achatado esperado pelo backend. */
-    NicheResearchSeedBuilderBackendCompletionRequest toBackendCompletionRequest(NicheResearchSeedBuilderOutput output) {
+    /** Converte a saída validada da IA e telemetria para o DTO achatado esperado pelo backend. */
+    NicheResearchSeedBuilderBackendCompletionRequest toBackendCompletionRequest(OpenAiSeedBuilderResult result) {
+        NicheResearchSeedBuilderOutput output = result == null ? null : result.output();
         if (output == null || output.seed() == null) {
             throw new IllegalArgumentException("Seed builder output is required to complete stage two.");
         }
@@ -108,6 +109,11 @@ public class NicheResearchSeedBuilderBackendClient {
                 seed.initialAssumptions(),
                 seed.confidenceLevel(),
                 seed.createdBy(),
+                result.model(),
+                result.rawModelResponse(),
+                result.inputTokens(),
+                result.outputTokens(),
+                result.openAiResponseId(),
                 output.queries());
     }
 

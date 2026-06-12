@@ -1,5 +1,8 @@
 package com.marketinghub.oprm.nichocnae.nicheresearchseedbuilder.service;
 
+import com.marketinghub.openai.OpenAiModel;
+import com.marketinghub.openai.OpenAiResponse;
+import com.marketinghub.openai.service.OpenAiPricingService;
 import com.marketinghub.oprm.nichocnae.OprmNicheResearchSeed;
 import com.marketinghub.oprm.nichocnae.OprmResearchQuery;
 import com.marketinghub.oprm.nichocnae.OprmRoutineResearchCycle;
@@ -13,7 +16,10 @@ import com.marketinghub.oprm.nichocnae.nicheresearchseedbuilder.service.pending.
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmNicheResearchSeedRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmResearchQueryRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmRoutineResearchCycleRepository;
+import com.marketinghub.repository.jpa.pipeline.PipelineStageConfigRepository;
+import com.marketinghub.repository.jpa.pipeline.PipelineStageRepository;
 import jakarta.persistence.EntityNotFoundException;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
@@ -35,18 +41,30 @@ public class BackendNicheResearchSeedBuilderService {
   private static final String RETRYABLE_QUERY_GOAL_LENGTH_ERROR = "Data too long for column 'query_goal'";
   private static final String COMPLETE_STAGE_PATH_FRAGMENT = "niche-research-seed-builder/stage-executions";
   private static final String DEFAULT_CREATED_BY = "AI";
+  private static final String OPRM_NICHO_CNAE_PIPELINE_CODE = "oprm-nicho-cnae-pipeline";
+  private static final String OPRM_NICHO_CNAE_CANONICAL_VERSION = "oprm-nichocnae-canon.v1";
+  private static final String SEED_BUILDER_CANONICAL_CODE = "NICHE_RESEARCH_SEED_BUILDER";
   private final OprmRoutineResearchCycleRepository routineResearchCycleRepository;
   private final OprmNicheResearchSeedRepository nicheResearchSeedRepository;
   private final OprmResearchQueryRepository researchQueryRepository;
+  private final PipelineStageConfigRepository pipelineStageConfigRepository;
+  private final PipelineStageRepository pipelineStageRepository;
+  private final OpenAiPricingService openAiPricingService;
 
   /** Inicializa o serviço com os repositórios canônicos da etapa dois do pipeline. */
   public BackendNicheResearchSeedBuilderService(
       OprmRoutineResearchCycleRepository routineResearchCycleRepository,
       OprmNicheResearchSeedRepository nicheResearchSeedRepository,
-      OprmResearchQueryRepository researchQueryRepository) {
+      OprmResearchQueryRepository researchQueryRepository,
+      PipelineStageConfigRepository pipelineStageConfigRepository,
+      PipelineStageRepository pipelineStageRepository,
+      OpenAiPricingService openAiPricingService) {
     this.routineResearchCycleRepository = routineResearchCycleRepository;
     this.nicheResearchSeedRepository = nicheResearchSeedRepository;
     this.researchQueryRepository = researchQueryRepository;
+    this.pipelineStageConfigRepository = pipelineStageConfigRepository;
+    this.pipelineStageRepository = pipelineStageRepository;
+    this.openAiPricingService = openAiPricingService;
   }
 
   /** Lista ciclos em execução ou falhas retryáveis que ainda precisam receber seed e queries. */
@@ -183,6 +201,12 @@ public class BackendNicheResearchSeedBuilderService {
     seed.setConfidenceLevel(textOrDefault(request == null ? null : request.confidenceLevel(), "UNVALIDATED"));
     seed.setCreatedBy(normalizeCreatedBy(request == null ? null : request.createdBy()));
     seed.setCreatedAt(now);
+    seed.setModel(trimToNull(request == null ? null : request.model()));
+    seed.setRawModelResponse(trimToNull(request == null ? null : request.rawModelResponse()));
+    seed.setInputTokens(request == null ? null : request.inputTokens());
+    seed.setOutputTokens(request == null ? null : request.outputTokens());
+    seed.setCostUsd(estimateCostUsd(request));
+    seed.setOpenAiResponseId(trimToNull(request == null ? null : request.openAiResponseId()));
     return seed;
   }
 
@@ -236,6 +260,7 @@ public class BackendNicheResearchSeedBuilderService {
 
   /** Converte um ciclo pendente no contrato interno de unidade de trabalho da etapa dois. */
   private RecordNicheResearchSeedBuilderPending toPending(OprmRoutineResearchCycle cycle) {
+    OpenAiModel configuredModel = resolveConfiguredOpenAiModel();
     return new RecordNicheResearchSeedBuilderPending(
         cycle.getId(),
         cycle.getSourceNicheId(),
@@ -243,6 +268,8 @@ public class BackendNicheResearchSeedBuilderService {
         cycle.getCnaeDescription(),
         cycle.getNicheName(),
         cycle.getSourceScore(),
+        configuredModel == null ? null : configuredModel.getCode(),
+        configuredModel == null ? null : configuredModel.getName(),
         cycle.getStatus(),
         cycle.getStartedAt(),
         cycle.getCreatedAt());
@@ -265,6 +292,12 @@ public class BackendNicheResearchSeedBuilderService {
         seed.getConfidenceLevel(),
         seed.getCreatedBy(),
         seed.getCreatedAt(),
+        seed.getModel(),
+        seed.getRawModelResponse(),
+        seed.getInputTokens(),
+        seed.getOutputTokens(),
+        seed.getCostUsd(),
+        seed.getOpenAiResponseId(),
         queries.size(),
         queries.stream().map(this::toQueryResponse).toList());
   }
@@ -297,6 +330,42 @@ public class BackendNicheResearchSeedBuilderService {
       throw new IllegalArgumentException(fieldName + " is required");
     }
     return value.trim();
+  }
+
+  /** Calcula o custo padrão da chamada OpenAI sem bloquear a persistência quando o catálogo estiver incompleto. */
+  private BigDecimal estimateCostUsd(CompleteNicheResearchSeedBuilderRequest request) {
+    if (request == null || !StringUtils.hasText(request.model())) {
+      return null;
+    }
+    try {
+      return openAiPricingService.estimateStandardCost(
+          request.model(),
+          new OpenAiResponse.OpenAiUsage(request.inputTokens(), request.outputTokens(), null, null, null));
+    } catch (RuntimeException ex) {
+      LOGGER.warn(
+          "Não foi possível calcular custo da etapa dois OPRM nichocnae (model={}, inputTokens={}, outputTokens={})",
+          request.model(),
+          request.inputTokens(),
+          request.outputTokens(),
+          ex);
+      return null;
+    }
+  }
+
+  /** Recupera o modelo OpenAI configurado, priorizando contrato persistente e caindo no pipeline operacional legado. */
+  private OpenAiModel resolveConfiguredOpenAiModel() {
+    OpenAiModel persistentModel = pipelineStageConfigRepository
+        .findOfficialStageConfig(
+            OPRM_NICHO_CNAE_PIPELINE_CODE, OPRM_NICHO_CNAE_CANONICAL_VERSION, SEED_BUILDER_CANONICAL_CODE)
+        .map(config -> config.getOpenAiModel())
+        .orElse(null);
+    if (persistentModel != null) {
+      return persistentModel;
+    }
+    return pipelineStageRepository
+        .findByPipelineCodeAndStageCode(OPRM_NICHO_CNAE_PIPELINE_CODE, "niche-research-seed-builder")
+        .map(stage -> stage.getOpenAiModel())
+        .orElse(null);
   }
 
   /** Converte strings vazias em nulo para campos opcionais persistidos. */

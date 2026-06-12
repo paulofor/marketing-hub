@@ -11,6 +11,8 @@ public record RecordNicheResearchSeedBuilderPending(
     String cnaeDescription,
     String nicheName,
     BigDecimal sourceScore,
+    String openAiModelCode,
+    String openAiModelName,
     String status,
     Instant startedAt,
     Instant createdAt) {}

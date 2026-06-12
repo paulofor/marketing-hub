@@ -467,3 +467,8 @@
 - Ajustada a regra canônica do NichoCNAE para permitir múltiplos registros em `market_niche_enrichment_profile` para o mesmo nicho quando houver reprocessamento operacional.
 - A materialização final passa a reaproveitar o `market_niche` existente e criar um novo perfil enriquecido rastreável, preservando histórico em vez de bloquear pela materialização anterior.
 - Criado changelog incremental para remover unicidade rígida por `routine_card_id` e `research_cycle_id` e manter índices não únicos de consulta.
+
+## 2026-06-12 — OPRM NichoCNAE: diagrama de dados
+
+- Documentado o diagrama de dados do pipeline OPRM NichoCNAE em `docs/relatorios/oprm-nichocnae-diagrama-dados.md`, cobrindo base CNAE/CNPJ, candidatos, ciclo de pesquisa, seed, queries, fontes, snapshots, sinais, cartão de rotina, perfil MEI/autônomo, `market_niche` e `market_niche_enrichment_profile`.
+- A análise foi validada contra o schema real via MCP e registrou que parte dos vínculos OPRM é lógica por `*_id`, com FK física confirmada entre `market_niche_enrichment_profile.market_niche_id` e `market_niche.id`.

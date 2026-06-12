@@ -480,3 +480,9 @@
 
 - Documentado o diagrama de dados do pipeline OPRM NichoCNAE em `docs/relatorios/oprm-nichocnae-diagrama-dados.md`, cobrindo base CNAE/CNPJ, candidatos, ciclo de pesquisa, seed, queries, fontes, snapshots, sinais, cartão de rotina, perfil MEI/autônomo, `market_niche` e `market_niche_enrichment_profile`.
 - A análise foi validada contra o schema real via MCP e registrou que parte dos vínculos OPRM é lógica por `*_id`, com FK física confirmada entre `market_niche_enrichment_profile.market_niche_id` e `market_niche.id`.
+
+## 2026-06-12 — OPRM NichoCNAE: reinício manual completo por CNAE
+
+- Alterada a regra operacional do botão de execução manual por CNAE: quando o usuário solicita novo ciclo para um CNAE específico, o backend encerra automaticamente todos os ciclos ainda abertos desse CNAE e cria uma execução completamente nova.
+- Causa-raiz tratada: o endpoint manual só aceitava candidatos pendentes, então CNAEs já em `RESEARCH_RUNNING` devolviam 404 e impediam nova execução mesmo quando a decisão operacional era recomeçar do zero.
+- Prevenção de recorrência: a regra foi registrada no cânone OPRM, o contrato Swagger foi atualizado e foi criado teste garantindo que ciclos antigos abertos sejam marcados como `CANCELLED_BY_MANUAL_RESTART` antes da criação do novo ciclo.

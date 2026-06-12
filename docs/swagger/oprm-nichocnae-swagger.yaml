@@ -74,15 +74,15 @@ paths:
           description: Ciclo não está em status FAILED, NEEDS_MORE_RESEARCH, GENERIC ou ENRICHED_NICHE_FAILED e não pode ser reprocessado.
   /api/oprm/nichocnae/cnaes/{cnaeCode}/routine-research-orchestrator/run:
     post:
-      summary: Executa a etapa zero para iniciar o pipeline NichoCNAE do CNAE escolhido manualmente na tela de detalhe.
+      summary: Encerra ciclos abertos e executa a etapa zero para iniciar um novo pipeline NichoCNAE do CNAE escolhido manualmente na tela de detalhe.
       tags: [OPRM Nicho CNAE]
       parameters:
         - $ref: '#/components/parameters/CnaeCode'
       responses:
         '202':
-          description: Ciclo criado e nicho marcado como em pesquisa para o CNAE informado.
+          description: Ciclos abertos anteriores encerrados, ciclo novo criado e nicho marcado como em pesquisa para o CNAE informado.
         '404':
-          description: Não existe candidato de nicho pendente para iniciar o pipeline desse CNAE.
+          description: Não existe candidato de nicho com score para iniciar um novo pipeline desse CNAE.
   /api/internal/oprm/nichocnae/routine-research-orchestrator/run-next:
     post:
       summary: Executa a etapa zero e abre o próximo ciclo de pesquisa de rotina.

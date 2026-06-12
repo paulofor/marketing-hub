@@ -1,9 +1,11 @@
 package com.marketinghub.repository.jpa.oprm.nichocnae;
 
 import com.marketinghub.oprm.nichocnae.OprmRoutineResearchCycle;
+import jakarta.persistence.LockModeType;
 import java.util.List;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -16,6 +18,17 @@ public interface OprmRoutineResearchCycleRepository extends JpaRepository<OprmRo
 
     /** Lista ciclos vinculados ao CNAE informado em ordem operacional decrescente. */
     List<OprmRoutineResearchCycle> findByCnaeCodeOrderByStartedAtDesc(String cnaeCode);
+
+    /** Seleciona com bloqueio pessimista ciclos abertos do CNAE para encerramento antes de reinício manual. */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+            select cycle
+            from OprmRoutineResearchCycle cycle
+            where cycle.cnaeCode = :cnaeCode
+              and cycle.finishedAt is null
+            order by cycle.startedAt desc
+            """)
+    List<OprmRoutineResearchCycle> findOpenCyclesByCnaeCodeForUpdate(@Param("cnaeCode") String cnaeCode);
 
     /** Lista ciclos por status para filas internas do pipeline de pesquisa de rotina. */
     List<OprmRoutineResearchCycle> findByStatusOrderByStartedAtAsc(String status, Pageable pageable);

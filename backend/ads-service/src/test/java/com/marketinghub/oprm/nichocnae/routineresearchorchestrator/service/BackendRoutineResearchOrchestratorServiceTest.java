@@ -332,7 +332,7 @@ class BackendRoutineResearchOrchestratorServiceTest {
     @Test
     void runForCnaeCreatesManualCycleForSelectedCnae() {
         OprmNicheCandidate candidate = candidate();
-        when(nicheCandidateRepository.findPendingRoutineResearchCandidateByCnaeCode(
+        when(nicheCandidateRepository.findManualRoutineResearchCandidateByCnaeCode(
                         any(String.class), any(Pageable.class)))
                 .thenReturn(List.of(candidate));
         when(routineResearchCycleRepository.save(any(OprmRoutineResearchCycle.class)))
@@ -354,6 +354,47 @@ class BackendRoutineResearchOrchestratorServiceTest {
                 ArgumentCaptor.forClass(OprmRoutineResearchCycle.class);
         verify(routineResearchCycleRepository).save(cycleCaptor.capture());
         assertThat(cycleCaptor.getValue().getTriggerSource()).isEqualTo("MANUAL_CNAE_DETAIL");
+
+        ArgumentCaptor<OprmNicheCandidate> candidateCaptor = ArgumentCaptor.forClass(OprmNicheCandidate.class);
+        verify(nicheCandidateRepository).save(candidateCaptor.capture());
+        assertThat(candidateCaptor.getValue().getLastRoutineResearchCycleId()).isEqualTo(323L);
+    }
+
+    /** Deve encerrar ciclos abertos do CNAE antes de criar um ciclo manual completamente novo. */
+    @Test
+    void runForCnaeFinishesOpenCyclesBeforeCreatingFreshManualCycle() {
+        OprmNicheCandidate candidate = candidate();
+        candidate.setRoutineResearchStatus("RESEARCH_RUNNING");
+        candidate.setLastRoutineResearchCycleId(321L);
+        OprmRoutineResearchCycle openCycle = cycle(321L, 55L, "Cabeleireiros e manicures", "2026-06-03T01:00:00Z");
+        openCycle.setStatus("ROUTINE_SYNTHESIZED");
+        openCycle.setFinishedAt(null);
+        openCycle.setErrorMessage(null);
+        when(nicheCandidateRepository.findManualRoutineResearchCandidateByCnaeCode(
+                        any(String.class), any(Pageable.class)))
+                .thenReturn(List.of(candidate));
+        when(routineResearchCycleRepository.findOpenCyclesByCnaeCodeForUpdate("9602501"))
+                .thenReturn(List.of(openCycle));
+        when(routineResearchCycleRepository.save(any(OprmRoutineResearchCycle.class)))
+                .thenAnswer(invocation -> {
+                    OprmRoutineResearchCycle cycle = invocation.getArgument(0);
+                    cycle.setId(323L);
+                    return cycle;
+                });
+
+        RecordRoutineResearchOrchestratorResult result = service.runForCnae("9602501");
+
+        assertThat(result.started()).isTrue();
+        assertThat(result.researchCycleId()).isEqualTo(323L);
+        assertThat(result.routineResearchStatus()).isEqualTo("RESEARCH_RUNNING");
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Iterable<OprmRoutineResearchCycle>> openCyclesCaptor = ArgumentCaptor.forClass(Iterable.class);
+        verify(routineResearchCycleRepository).saveAll(openCyclesCaptor.capture());
+        OprmRoutineResearchCycle cancelledCycle = openCyclesCaptor.getValue().iterator().next();
+        assertThat(cancelledCycle.getStatus()).isEqualTo("CANCELLED_BY_MANUAL_RESTART");
+        assertThat(cancelledCycle.getFinishedAt()).isNotNull();
+        assertThat(cancelledCycle.getErrorMessage()).contains("reinício manual completo do CNAE 9602501");
 
         ArgumentCaptor<OprmNicheCandidate> candidateCaptor = ArgumentCaptor.forClass(OprmNicheCandidate.class);
         verify(nicheCandidateRepository).save(candidateCaptor.capture());

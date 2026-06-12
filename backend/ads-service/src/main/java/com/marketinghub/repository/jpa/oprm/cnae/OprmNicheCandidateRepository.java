@@ -25,16 +25,15 @@ public interface OprmNicheCandidateRepository extends JpaRepository<OprmNicheCan
     List<OprmNicheCandidate> findNextPendingRoutineResearchCandidate(Pageable pageable);
 
     /**
-     * Seleciona com bloqueio pessimista candidatos pendentes de pesquisa para o CNAE escolhido manualmente.
+     * Seleciona com bloqueio pessimista candidatos com score para reinício manual do CNAE escolhido.
      */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query(
             "select c from OprmNicheCandidate c "
                     + "where c.cnaeCode = :cnaeCode "
-                    + "and (c.routineResearchStatus is null or c.routineResearchStatus = 'PENDING') "
                     + "and c.opportunityScore is not null "
                     + "order by c.opportunityScore desc, c.createdAt asc")
-    List<OprmNicheCandidate> findPendingRoutineResearchCandidateByCnaeCode(@Param("cnaeCode") String cnaeCode, Pageable pageable);
+    List<OprmNicheCandidate> findManualRoutineResearchCandidateByCnaeCode(@Param("cnaeCode") String cnaeCode, Pageable pageable);
 
     /**
      * Lista sem bloqueio pessimista os melhores candidatos ainda pendentes de pesquisa de rotina para visualização.

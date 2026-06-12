@@ -134,6 +134,7 @@ Evitar fechamento prematuro de `import run` que destrói a totalização de mark
 - Todas as etapas do pipeline oficial devem permanecer obrigatórias, ativas e executadas pelo módulo `oprm-coletor-mei`, consumindo exclusivamente endpoints OPRM do backend principal.
 - Somente a etapa `niche-research-seed-builder` deve ser marcada como consumidora direta de modelo OpenAI configurável. As demais etapas são orquestração, consulta, coleta pública, extração/síntese/gate determinísticos ou materialização baseada em dados já coletados, e não devem exibir seleção de modelo OpenAI na tela administrativa quando não houver modelo operacional legado configurado.
 - O pipeline oficial deve preservar a separação canônica: pesquisa de realidade operacional e materialização de nicho enriquecido não podem criar hipótese, experimento, oferta, campanha ou landing page.
+- Quando o usuário solicitar execução manual do pipeline para um CNAE específico, o sistema deve encerrar automaticamente todos os ciclos ainda abertos desse CNAE e iniciar um ciclo completamente novo, mantendo rastreabilidade dos ciclos encerrados e impedindo concorrência entre execuções antigas e a nova solicitação operacional.
 
 ## Critério de efetividade — pipeline oficial OPRM NichoCNAE
 

@@ -38,6 +38,7 @@ public class BackendRoutineResearchOrchestratorService {
     private static final String CYCLE_STATUS_TOO_CORPORATE = "TOO_CORPORATE";
     private static final String CYCLE_STATUS_SOLUTION_CONTAMINATED = "SOLUTION_CONTAMINATED";
     private static final String CYCLE_STATUS_GENERIC = "GENERIC";
+    private static final String CYCLE_STATUS_CANCELLED_BY_MANUAL_RESTART = "CANCELLED_BY_MANUAL_RESTART";
     private static final String TRIGGER_SOURCE_AUTO_SCORE_QUEUE = "AUTO_SCORE_QUEUE";
     private static final String TRIGGER_SOURCE_MANUAL_REPROCESS = "MANUAL_REPROCESS";
     private static final String TRIGGER_SOURCE_MANUAL_CNAE_DETAIL = "MANUAL_CNAE_DETAIL";
@@ -175,19 +176,45 @@ public class BackendRoutineResearchOrchestratorService {
         return "Novo ciclo de pesquisa de rotina criado imediatamente para refazer um CNAE genérico ou sem material suficiente.";
     }
 
-    /** Executa a etapa zero para o CNAE escolhido manualmente na tela de detalhe. */
+    /** Executa a etapa zero para o CNAE escolhido, encerrando ciclos abertos antes de criar uma execução nova. */
     @Transactional
     public RecordRoutineResearchOrchestratorResult runForCnae(String cnaeCode) {
-        LOGGER.info("Iniciando etapa zero OPRM nichocnae por CNAE manual (cnaeCode={})", cnaeCode);
-        List<OprmNicheCandidate> candidates = nicheCandidateRepository.findPendingRoutineResearchCandidateByCnaeCode(
+        LOGGER.info("Iniciando etapa zero OPRM nichocnae por CNAE manual com reinício forçado (cnaeCode={})", cnaeCode);
+        List<OprmNicheCandidate> candidates = nicheCandidateRepository.findManualRoutineResearchCandidateByCnaeCode(
                 cnaeCode, PageRequest.of(0, 1));
         if (candidates.isEmpty()) {
-            LOGGER.info("Nenhum candidato pendente encontrado para acionamento manual do CNAE (cnaeCode={})", cnaeCode);
+            LOGGER.info("Nenhum candidato com score encontrado para acionamento manual do CNAE (cnaeCode={})", cnaeCode);
             throw new ResponseStatusException(
                     HttpStatus.NOT_FOUND,
-                    "Não existe candidato de nicho pendente para iniciar o pipeline deste CNAE: " + cnaeCode);
+                    "Não existe candidato de nicho com score para iniciar um novo pipeline deste CNAE: " + cnaeCode);
         }
+        finishOpenCyclesForManualRestart(cnaeCode);
         return startCycleForCandidate(candidates.getFirst(), TRIGGER_SOURCE_MANUAL_CNAE_DETAIL);
+    }
+
+    /** Encerra ciclos ainda abertos do CNAE para impedir que execuções antigas continuem concorrendo com o novo ciclo manual. */
+    private void finishOpenCyclesForManualRestart(String cnaeCode) {
+        List<OprmRoutineResearchCycle> openCycles =
+                routineResearchCycleRepository.findOpenCyclesByCnaeCodeForUpdate(cnaeCode);
+        if (openCycles == null || openCycles.isEmpty()) {
+            LOGGER.info(
+                    "Nenhum ciclo aberto encontrado para encerramento antes do reinício manual do CNAE (cnaeCode={})",
+                    cnaeCode);
+            return;
+        }
+        Instant now = Instant.now();
+        openCycles.forEach(cycle -> {
+            cycle.setStatus(CYCLE_STATUS_CANCELLED_BY_MANUAL_RESTART);
+            cycle.setFinishedAt(now);
+            cycle.setUpdatedAt(now);
+            cycle.setErrorMessage("Ciclo encerrado automaticamente para reinício manual completo do CNAE " + cnaeCode + ".");
+        });
+        routineResearchCycleRepository.saveAll(openCycles);
+        LOGGER.info(
+                "Ciclos abertos encerrados antes do reinício manual OPRM nichocnae (cnaeCode={}, count={}, status={})",
+                cnaeCode,
+                openCycles.size(),
+                CYCLE_STATUS_CANCELLED_BY_MANUAL_RESTART);
     }
 
     /** Executa a etapa zero, marcando o nicho selecionado como em pesquisa e criando o ciclo pai. */

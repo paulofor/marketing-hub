@@ -462,3 +462,9 @@
 - A etapa final de materialização agora resolve o nicho existente por CNAE/nome neutro com variáveis locais e salva explicitamente o `market_niche` antes de criar o perfil enriquecido, mantendo a indicação correta de criação versus atualização.
 - A consulta usada pela etapa zero para indicar nicho já materializado foi movida para o repositório OPRM, evitando dependência direta do serviço OPRM em repositórios/classes do pacote de nicho e mantendo a UI informando “nicho já existe” sem violar o isolamento modular.
 - 2026-06-12 00:12:11 (UTC-3): ajustada a tela de CNAEs por Score OPRM para transformar o nome/descrição do nicho em link para `/oprm/cnaes/:cnaeCode`, com criação de tela placeholder de detalhe do nicho CNAE para evolução futura do fluxo de análise de nicho.
+
+## 2026-06-12 — Reprocessamento de perfil enriquecido OPRM
+
+- Ajustada a regra canônica do NichoCNAE para permitir múltiplos registros em `market_niche_enrichment_profile` para o mesmo nicho quando houver reprocessamento operacional.
+- A materialização final passa a reaproveitar o `market_niche` existente e criar um novo perfil enriquecido rastreável, preservando histórico em vez de bloquear pela materialização anterior.
+- Criado changelog incremental para remover unicidade rígida por `routine_card_id` e `research_cycle_id` e manter índices não únicos de consulta.

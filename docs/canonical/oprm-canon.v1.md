@@ -119,9 +119,10 @@ Evitar fechamento prematuro de `import run` que destrói a totalização de mark
 
 ## Critério de efetividade — nicho enriquecido materializado
 
-- Um cartão aprovado pelo gate só pode ser considerado finalizado quando existir um registro correspondente em `market_niche_enrichment_profile` e um `market_niche_id` persistido.
-- A etapa deve ser idempotente por `routine_card_id` e `research_cycle_id`, evitando duplicar nichos enriquecidos quando houver retentativa do coletor.
-- Quando já existir `market_niche_id` associado ao candidato ou ao perfil MEI/autônomo, a etapa final deve atualizar esse nicho de forma controlada em vez de criar duplicata.
+- Um cartão aprovado pelo gate só pode ser considerado finalizado quando existir pelo menos um registro correspondente em `market_niche_enrichment_profile` e um `market_niche_id` persistido.
+- É permitido gerar múltiplos registros em `market_niche_enrichment_profile` para o mesmo `market_niche_id`, inclusive para o mesmo `routine_card_id` ou `research_cycle_id`, quando houver reprocessamento operacional; cada registro deve preservar a auditoria histórica da execução que o criou.
+- Reprocessamentos devem reaproveitar e atualizar o `market_niche` existente de forma controlada, criando novo perfil enriquecido rastreável em vez de bloquear a execução por idempotência rígida.
+- Quando já existir `market_niche_id` associado ao candidato, ao perfil MEI/autônomo ou a materialização anterior do mesmo CNAE/nome neutro, a etapa final deve atualizar esse nicho de forma controlada em vez de criar duplicata.
 - A tela `/oprm/pipeline` deve exibir a etapa final e informar o `marketNicheId`, o `enrichedNicheProfileId` e o status de materialização.
 - Ciclos em `ENRICHED_NICHE_FAILED` devem oferecer ação operacional pelo próprio front-end para abrir novo ciclo rastreável; o usuário não deve ser orientado a corrigir esse caso por acesso direto ao banco de dados.
 - O contrato da etapa final deve seguir o padrão de unidade de trabalho fechada: o endpoint `pending` precisa entregar todos os dados necessários para o coletor concluir a materialização sem buscar detalhes adicionais.

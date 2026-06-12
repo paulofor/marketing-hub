@@ -122,20 +122,6 @@ public class BackendEnrichedNicheMaterializerService {
     }
     OprmNicheCandidate candidate = nicheCandidateRepository.findById(cycle.getSourceNicheId()).orElse(null);
     OprmMeiAudienceProfile meiAudienceProfile = requireApprovedMeiAudienceProfile(cycle, candidate);
-    if (enrichmentProfileRepository.existsBySourceRoutineCardId(card.getId())) {
-      MarketNicheEnrichmentProfile existing = enrichmentProfileRepository.findFirstByResearchCycleIdOrderByIdDesc(researchCycleId)
-          .orElseThrow(() -> new IllegalStateException("routine card already materialized without retrievable profile"));
-      publishMetaSignalsForExistingProfile(cycle, card, existing);
-      return new CompleteEnrichedNicheMaterializerResponse(
-          researchCycleId,
-          card.getId(),
-          existing.getMarketNiche().getId(),
-          existing.getId(),
-          cycle.getStatus(),
-          existing.getCreatedAt(),
-          "Cartão já materializado anteriormente; sinais do nicho existente foram revisados sem criar novo market_niche.");
-    }
-
     OprmEnrichedNicheMetaSignalService.MetaSignalPackage metaSignalPackage = metaSignalService.buildSignalPackage(cycle, card);
     Optional<MarketNiche> existingMarketNicheByCnaeAndNeutralName = findExistingMarketNicheByCnaeAndNeutralName(cycle);
     boolean existingMatchedByCnaeAndNeutralName = existingMarketNicheByCnaeAndNeutralName.isPresent();
@@ -252,17 +238,6 @@ public class BackendEnrichedNicheMaterializerService {
         profile == null ? scoreOrZero(card == null ? null : card.getSourceDiversityScore()) : profile.getSourceDiversityScore(),
         profile == null ? scoreOrZero(card == null ? null : card.getSolutionLanguageRiskScore()) : profile.getSolutionLanguageRiskScore(),
         profile == null ? null : profile.getCreatedAt());
-  }
-
-  /** Atualiza sinais Meta Ads quando uma materialização idempotente já possui perfil final. */
-  private void publishMetaSignalsForExistingProfile(
-      OprmRoutineResearchCycle cycle,
-      OprmNicheRoutineCard card,
-      MarketNicheEnrichmentProfile existing) {
-    OprmEnrichedNicheMetaSignalService.MetaSignalPackage metaSignalPackage = metaSignalService.buildSignalPackage(cycle, card);
-    MarketNiche marketNiche = existing.getMarketNiche();
-    applyMetaSignalsToNiche(marketNiche, metaSignalPackage);
-    marketNicheRepository.save(marketNiche);
   }
 
   /** Confirma se a pendência final tem perfil MEI/autônomo rastreável antes de expor ao coletor. */

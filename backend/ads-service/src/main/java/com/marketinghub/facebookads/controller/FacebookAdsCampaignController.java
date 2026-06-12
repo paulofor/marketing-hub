@@ -298,6 +298,7 @@ public class FacebookAdsCampaignController {
                 campaignId,
                 request.dateStart(),
                 request.dateStop(),
+                request.reach(),
                 request.impressions(),
                 request.clicks(),
                 request.leads(),
@@ -648,6 +649,7 @@ public class FacebookAdsCampaignController {
         return new CampaignMetricSummary(
                 metric.getDateStart(),
                 metric.getDateStop(),
+                metric.getReach(),
                 metric.getImpressions(),
                 metric.getClicks(),
                 metric.getLeads(),
@@ -720,6 +722,7 @@ public class FacebookAdsCampaignController {
     public record CampaignMetricSummary(
             LocalDate dateStart,
             LocalDate dateStop,
+            Long reach,
             Long impressions,
             Long clicks,
             Long leads,
@@ -734,6 +737,7 @@ public class FacebookAdsCampaignController {
     public record CampaignMetricsUpdateRequest(
             LocalDate dateStart,
             LocalDate dateStop,
+            Long reach,
             Long impressions,
             Long clicks,
             Long leads,

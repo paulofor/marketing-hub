@@ -204,6 +204,7 @@ public class ExperimentCompleteMarkdownReportService {
         appendJsonBlock(markdown, "campaign_metric", mapOf(
                 "dateStart", metric.getDateStart(),
                 "dateStop", metric.getDateStop(),
+                "reach", metric.getReach(),
                 "impressions", metric.getImpressions(),
                 "clicks", metric.getClicks(),
                 "leads", metric.getLeads(),

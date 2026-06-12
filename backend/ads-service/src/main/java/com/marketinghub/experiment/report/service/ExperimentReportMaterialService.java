@@ -268,6 +268,9 @@ public class ExperimentReportMaterialService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Converte as métricas de campanha para o DTO usado pelo material de relatório.
+     */
     private ExperimentCampaignMetricDto toCampaignMetricDto(ExperimentCampaignMetric metric) {
         if (metric == null) {
             return null;
@@ -275,6 +278,7 @@ public class ExperimentReportMaterialService {
         ExperimentCampaignMetricDto dto = new ExperimentCampaignMetricDto();
         dto.setDateStart(metric.getDateStart());
         dto.setDateStop(metric.getDateStop());
+        dto.setReach(metric.getReach());
         dto.setImpressions(metric.getImpressions());
         dto.setClicks(metric.getClicks());
         dto.setLeads(metric.getLeads());

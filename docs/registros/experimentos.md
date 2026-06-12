@@ -4460,3 +4460,9 @@
 - causa-raiz: jobs que perdiam o ciclo do Worker AI ficavam fora da fila porque a listagem consumia apenas `INICIADO`, criando travamento operacional sem decisão de recuperação ou falha.
 - foi feito: definido lease operacional de 45 minutos; jobs antigos em `PROCESSANDO` sem `openai_job_id` voltam para `INICIADO` com mensagem clara; jobs antigos com possível execução OpenAI ativa viram `FALHA` para evitar duplicidade.
 - prevenção: adicionados testes unitários cobrindo recuperação segura e bloqueio de recaptura quando existe `openai_job_id` associado.
+
+## 2026-06-12 — Alcance nos relatórios gerais do experimento
+
+- Confirmado que a sincronização de métricas do Facebook Ads não coletava nem persistia `reach`/alcance: o worker consultava apenas `impressions`, `clicks`, `spend`, `actions`, `date_start` e `date_stop`.
+- Adicionada a métrica `reach` ao contrato de insights, persistência em `experiment_campaign_metric`, DTOs, material de relatório e Markdown completo baixado pelo botão **Relatório completo (.md)**.
+- Atualizado o painel de material do relatório para exibir Alcance junto das demais métricas de campanha.

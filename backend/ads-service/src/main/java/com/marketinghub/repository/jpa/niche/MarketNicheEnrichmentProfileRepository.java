@@ -3,6 +3,7 @@ package com.marketinghub.repository.jpa.niche;
 import com.marketinghub.niche.MarketNicheEnrichmentProfile;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -14,6 +15,19 @@ public interface MarketNicheEnrichmentProfileRepository extends JpaRepository<Ma
 
   /** Busca o perfil enriquecido materializado para um ciclo de pesquisa de rotina. */
   Optional<MarketNicheEnrichmentProfile> findFirstByResearchCycleIdOrderByIdDesc(Long researchCycleId);
+
+  /** Busca perfis que já materializaram o mesmo CNAE com o mesmo nome neutro normalizado. */
+  @Query("""
+      select p from MarketNicheEnrichmentProfile p
+      join fetch p.marketNiche n
+      where p.cnaeCode = :cnaeCode
+        and lower(trim(p.neutralNicheName)) = :normalizedNeutralNicheName
+      order by p.updatedAt desc, p.id desc
+      """)
+  List<MarketNicheEnrichmentProfile> findMaterializedByCnaeAndNormalizedNeutralName(
+      @Param("cnaeCode") String cnaeCode,
+      @Param("normalizedNeutralNicheName") String normalizedNeutralNicheName,
+      Pageable pageable);
 
   /** Lista o perfil enriquecido mais recente de cada nicho informado. */
   @Query("""

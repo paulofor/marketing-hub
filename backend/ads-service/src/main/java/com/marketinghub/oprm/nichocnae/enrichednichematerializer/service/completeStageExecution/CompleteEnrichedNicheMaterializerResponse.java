@@ -9,4 +9,5 @@ public record CompleteEnrichedNicheMaterializerResponse(
     Long marketNicheId,
     Long enrichedNicheProfileId,
     String cycleStatus,
-    Instant materializedAt) {}
+    Instant materializedAt,
+    String operationalMessage) {}

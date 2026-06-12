@@ -455,3 +455,8 @@
 - Corrigida a liberação final do OPRM para exigir `oprm_mei_audience_profile` antes de materializar `market_niche` e `market_niche_enrichment_profile`, mantendo ciclos sem perfil na etapa visual “Aguardando perfil MEI/autônomo”.
 - Causa-raiz tratada: a etapa final confiava apenas no `readyForHypothesis` do cartão e podia ser chamada diretamente sem comprovar o perfil humano MEI/autônomo que sustenta os fluxos comerciais seguintes.
 - Prevenção de recorrência: adicionado teste de regressão bloqueando ciclo `ROUTINE_SYNTHESIZED` sem perfil MEI/autônomo e regra canônica para atualizar nicho existente de forma controlada, sem duplicar `market_niche`.
+## 2026-06-12 — OPRM NichoCNAE: materialização idempotente por CNAE e nome neutro
+
+- Corrigida a causa-raiz de duplicação de `market_niche` quando um novo ciclo OPRM materializava o mesmo CNAE e o mesmo nome neutro já materializados anteriormente.
+- O materializador agora consulta primeiro perfis enriquecidos existentes pelo par CNAE/nome neutro normalizado, atualiza o `market_niche` encontrado e vincula o novo ciclo/perfil a esse nicho, registrando status operacional de atualização/revisão em vez de criação.
+- Prevenção de recorrência: adicionado teste cobrindo duplicidade para o CNAE `9602501` com nome neutro `Salões pequenos`, garantindo reaproveitamento do nicho existente.

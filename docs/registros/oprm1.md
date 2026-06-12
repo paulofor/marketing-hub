@@ -533,3 +533,10 @@
 - Ajustada a tela de detalhe do CNAE para não inferir “em execução” quando o ciclo já foi bloqueado pelo gate de qualidade com status como `OUTDATED_SOURCES`, `NEEDS_MORE_RESEARCH`, `NEEDS_MORE_MEI_RESEARCH`, `TOO_CORPORATE`, `SOLUTION_CONTAMINATED` ou `GENERIC`.
 - Causa-raiz tratada: a tela usava apenas contadores do ciclo e `finishedAt` nulo para decidir a próxima etapa visual, então um ciclo já reprovado por qualidade aparecia como “Síntese em execução”.
 - Prevenção de recorrência: adicionada mensagem de negócio explicando o bloqueio e teste de regressão garantindo que “Fontes antigas” aparece no gate de qualidade, a síntese aparece concluída e a materialização fica bloqueada.
+
+## 2026-06-12 — OPRM NichoCNAE: validação da marcação IA do pipeline
+
+- Verificado que a tela `/pipelines` está correta ao mostrar apenas a etapa `niche-research-seed-builder` com marcador IA no pipeline oficial `oprm-nicho-cnae-pipeline`.
+- Evidência da causa-raiz: o cânone OPRM define que somente essa etapa consome diretamente modelo OpenAI configurável; as demais etapas são orquestração, busca/coleta pública, extração/síntese/gate determinísticos ou materialização a partir dos dados coletados.
+- Validação operacional: consulta via MCP confirmou no banco que, nas nove etapas oficiais do pipeline, apenas `NICHE_RESEARCH_SEED_BUILDER` está com `requires_openai_model = true`.
+- Ajuste necessário: nenhum ajuste funcional foi aplicado, pois código, cânone, teste de contrato e banco já estão alinhados.

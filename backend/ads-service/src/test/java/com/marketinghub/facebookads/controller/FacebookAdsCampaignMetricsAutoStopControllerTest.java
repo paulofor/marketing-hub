@@ -164,6 +164,7 @@ class FacebookAdsCampaignMetricsAutoStopControllerTest {
                 .experiment(experiment)
                 .dateStart(LocalDate.parse("2026-06-12"))
                 .dateStop(LocalDate.parse("2026-06-12"))
+                .reach(1300L)
                 .impressions(1500L)
                 .clicks(120L)
                 .leads(6L)
@@ -176,6 +177,7 @@ class FacebookAdsCampaignMetricsAutoStopControllerTest {
                 eq(CAMPAIGN_ID),
                 eq(LocalDate.parse("2026-06-12")),
                 eq(LocalDate.parse("2026-06-12")),
+                eq(1300L),
                 eq(1500L),
                 eq(120L),
                 eq(6L),
@@ -190,6 +192,7 @@ class FacebookAdsCampaignMetricsAutoStopControllerTest {
                 {
                   "dateStart": "2026-06-12",
                   "dateStop": "2026-06-12",
+                  "reach": 1300,
                   "impressions": 1500,
                   "clicks": 120,
                   "leads": 6,
@@ -201,6 +204,7 @@ class FacebookAdsCampaignMetricsAutoStopControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.reach").value(1300))
                 .andExpect(jsonPath("$.impressions").value(1500))
                 .andExpect(jsonPath("$.spend").value(25.0));
 

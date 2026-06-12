@@ -1,0 +1,22 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-12-experiment-campaign-metric-reach
+      author: marketinghub
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: experiment_campaign_metric
+        - not:
+            columnExists:
+              tableName: experiment_campaign_metric
+              columnName: reach
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE experiment_campaign_metric
+                  ADD COLUMN reach BIGINT NULL AFTER date_stop;

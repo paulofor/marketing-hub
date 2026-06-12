@@ -970,3 +970,7 @@ databaseChangeLog:
   - include:
       file: changesets/2026-06-11-mois-product-1057-hotmart-facts.yaml
       relativeToChangelogFile: true
+
+  - include:
+      file: changesets/2026-06-12-experiment-campaign-metric-reach.yaml
+      relativeToChangelogFile: true

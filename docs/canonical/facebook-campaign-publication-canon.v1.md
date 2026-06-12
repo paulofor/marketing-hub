@@ -44,8 +44,8 @@ As etapas oficiais expostas para operação são:
 5. `campaign-hierarchy-publication` — criar campanha, conjunto, imagem, criativo e anúncio na Meta.
 6. `publication-registration` — persistir IDs externos no backend e marcar rastreabilidade da publicação.
 7. `metrics-sync-target-selection` — selecionar campanhas em execução para sincronização de métricas.
-8. `meta-insights-collection` — coletar insights da Graph API.
-9. `metrics-persistence` — atualizar `experiment_campaign_metric` e dados de última sincronização.
+8. `meta-insights-collection` — coletar insights da Graph API, incluindo `reach`/alcance, impressões, cliques, gasto e ações de lead.
+9. `metrics-persistence` — atualizar `experiment_campaign_metric` e dados de última sincronização, preservando alcance para relatórios gerais do experimento.
 10. `metrics-error-handling` — registrar falhas de coleta para correção de causa-raiz.
 
 Esse pipeline é administrativo e operacional: ele torna visível o fluxo do worker, mas não transfere ownership de banco para o worker. O backend continua sendo o único responsável por persistência, e o Facebook Ads Worker continua consumindo contratos HTTP do módulo Facebook.
@@ -79,7 +79,7 @@ Quando a Meta não retornar os limites ou o público ficar fora dessa faixa, o e
 | `experiment.follow_up_action_url` | `marketinghubdb.experiment` | Representa a landing aprovada na aba Landing; com valor preenchido, a página está publicada para uso como destino da campanha. |
 | `targeting_element` (job_title) | `marketinghubdb.targeting_element` | Para publicação manual, pelo menos **1** elemento `JOB_TITLE` com `status='APPROVED'`; quando existirem `meta_id`/`meta_key`, o `facebook-ads-worker` deve preferi-los no payload de targeting. |
 | `experiment.daily_budget`, `facebook_release_requested_at`, `funnel_reset_at`, `market_niche.facebook_pixel_id`, `status` | `marketinghubdb.experiment` | Controlam orçamento, liberação, resets e sincronismo de pixel. |
-| `experiment_campaign_metric` + eventos do Lead Portal + checkout/pagamentos | bancos do domínio de experimentos e `lead-portal` | Usados para preencher o funil e o custo por etapa. |
+| `experiment_campaign_metric` + eventos do Lead Portal + checkout/pagamentos | bancos do domínio de experimentos e `lead-portal` | Usados para preencher alcance, impressões, funil e custo por etapa. |
 
 ## 5. Bloqueios canônicos de publicação (diagnóstico do worker)
 
@@ -188,7 +188,7 @@ Consequência arquitetural: a publicação de campanha passa a ser substituível
 
 1. **Invalidação por baixa distribuição** – quando uma campanha vinculada a experimento `RUNNING` completar **48 horas** desde o registro em `facebook_ads_campaign.created_at` e ainda tiver **menos de 100 impressões** sincronizadas em `experiment_campaign_metric.impressions`, o backend deve invalidar o experimento (`experiment.status='INVALIDATED'`), registrar o motivo operacional em `facebook_ads_campaign.stop_reason='LOW_IMPRESSIONS_AFTER_RUNNING_TIME'` e criar uma solicitação de pausa para o Facebook Ads Worker (`stop_requested_at`). Essa regra evita consumo de tempo em campanhas sem entrega mínima suficiente para validar demanda.
 2. **Invalidação por baixo interesse do público-alvo** – quando a transição `Visualização do anúncio → Acesso ao formulário de lead` ficar abaixo de **1,5%** e o limite superior estatístico de 95% também ficar abaixo desse mínimo, o backend deve manter o experimento em execução até o gasto de mídia sincronizado em `experiment_campaign_metric.spend` atingir **R$ 25,00**. A partir desse piso financeiro, o backend deve invalidar o experimento (`experiment.status='INVALIDATED'`), registrar `facebook_ads_campaign.stop_reason='TARGET_AUDIENCE_LOW_INTEREST_STATISTICAL'` e solicitar pausa ao Facebook Ads Worker. Essa regra diferencia falta de interesse real do público-alvo de amostra pequena e também evita parar antes de um gasto mínimo operacional: não basta CTR baixo observado; a margem estatística precisa confirmar que o anúncio/ângulo não está gerando intenção suficiente para avançar ao formulário e a campanha precisa ter consumido ao menos R$ 25,00.
-3. **Aba Funil de vendas** – expõe nove etapas da jornada (impressão → download/compra) usando `experiment_campaign_metric` para mídia, eventos do `lead-portal` para engajamentos e eventos de checkout/pagamento para conversões finais.
+3. **Aba Funil de vendas e relatórios gerais** – expõem alcance, impressões e nove etapas da jornada (impressão → download/compra) usando `experiment_campaign_metric` para mídia, eventos do `lead-portal` para engajamentos e eventos de checkout/pagamento para conversões finais.
 4. **Custo por etapa** – o cartão mostra o gasto total sincronizado pela Marketing API do Meta Ads e divide o valor por conversão em cada etapa, permitindo encontrar gargalos sem sair do experimento. (Fonte externa: [Meta Marketing API](https://developers.facebook.com/docs/marketing-api/)).
 5. **Composição canônica do custo total do experimento** – para qualquer visão consolidada de custo (cards, listagens, relatórios e APIs de resumo), o valor de `custo_total_experimento_brl` deve ser calculado pela soma:
    - `custo_campanha_brl` (gasto de mídia sincronizado da Meta Ads API);

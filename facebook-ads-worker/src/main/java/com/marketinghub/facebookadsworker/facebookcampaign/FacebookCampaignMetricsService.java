@@ -29,6 +29,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+/**
+ * Sincroniza métricas de campanhas Facebook na Graph API e envia o agregado ao backend.
+ */
 @Service
 public class FacebookCampaignMetricsService {
     private static final Logger LOGGER = LoggerFactory.getLogger(FacebookCampaignMetricsService.class);
@@ -41,6 +44,9 @@ public class FacebookCampaignMetricsService {
     private final String apiPrefix;
     private final AtomicBoolean configurationUnavailableWarningLogged = new AtomicBoolean(false);
 
+    /**
+     * Inicializa o sincronizador com clientes da Meta, backend e configuração operacional.
+     */
     public FacebookCampaignMetricsService(FacebookAdsService facebookAdsService,
                                           FacebookAccessTokenManager accessTokenManager,
                                           FacebookWorkerConfigurationClient configurationClient,
@@ -55,6 +61,9 @@ public class FacebookCampaignMetricsService {
         this.apiPrefix = apiPrefix;
     }
 
+    /**
+     * Busca a configuração ativa e sincroniza métricas de todas as campanhas elegíveis.
+     */
     public void syncCampaignMetrics() {
         Optional<FacebookWorkerConfiguration> configuration = configurationClient.fetchConfiguration();
         if (configuration.isEmpty()) {
@@ -82,6 +91,9 @@ public class FacebookCampaignMetricsService {
         }
     }
 
+    /**
+     * Processa uma campanha elegível consultando insights e reportando sucesso ou erro ao backend.
+     */
     private void processTarget(CampaignMetricsSyncTarget target) {
         try {
             JsonNode insights = facebookAdsService.getCampaignInsights(target.campaignId(), buildInsightsQuery());
@@ -103,7 +115,7 @@ public class FacebookCampaignMetricsService {
                 processTarget(target);
             }
         } catch (FacebookPermissionException ex) {
-            LOGGER.warn("Facebook permission error while fetching metrics for campaign {}: {}", target.campaignId(), ex.getMessage());
+            LOGGER.warn("Facebook permission error while fetching metrics for campaign {}: {}", target.campaignId(), ex.getMessage(), ex);
             reportMetricsError(target.campaignId(), "Permission error: " + ex.getMessage());
         } catch (WebClientRequestException ex) {
             LOGGER.warn("Backend connectivity error while syncing metrics for campaign {}", target.campaignId(), ex);
@@ -113,53 +125,74 @@ public class FacebookCampaignMetricsService {
         }
     }
 
+    /**
+     * Monta os parâmetros canônicos de consulta de insights de campanha na Meta.
+     */
     private Map<String, String> buildInsightsQuery() {
         Map<String, String> params = new HashMap<>();
-        params.put("fields", "campaign_name,impressions,clicks,spend,actions,date_start,date_stop");
+        params.put("fields", "campaign_name,reach,impressions,clicks,spend,actions,date_start,date_stop");
         params.put("date_preset", "maximum");
         params.put("time_increment", "all_days");
         return params;
     }
 
+    /**
+     * Converte a linha de insights da Meta no payload aceito pelo backend.
+     */
     private CampaignMetricsUpdateRequest mapToPayload(JsonNode row) {
         if (row == null || row.isNull()) {
             return null;
         }
         LocalDate dateStart = parseDate(row.path("date_start").asText(null));
         LocalDate dateStop = parseDate(row.path("date_stop").asText(null));
+        Long reach = parseLong(row.path("reach"));
         Long impressions = parseLong(row.path("impressions"));
         Long clicks = parseLong(row.path("clicks"));
         BigDecimal spend = parseBigDecimal(row.path("spend"));
         Long leads = extractLeadCount(row.path("actions"));
-        return new CampaignMetricsUpdateRequest(dateStart, dateStop, impressions, clicks, leads, spend);
+        return new CampaignMetricsUpdateRequest(dateStart, dateStop, reach, impressions, clicks, leads, spend);
     }
 
+    /**
+     * Cria payload zerado quando a Meta não retorna linha de insights para a campanha.
+     */
     private CampaignMetricsUpdateRequest buildEmptyMetricsPayload() {
-        return new CampaignMetricsUpdateRequest(null, null, 0L, 0L, 0L, BigDecimal.ZERO);
+        return new CampaignMetricsUpdateRequest(null, null, 0L, 0L, 0L, 0L, BigDecimal.ZERO);
     }
 
+    /**
+     * Lê um número inteiro longo de um nó JSON, retornando zero quando ausente ou inválido.
+     */
     private Long parseLong(JsonNode node) {
         if (node == null || node.isNull()) {
             return 0L;
         }
         try {
             return node.asLong();
-        } catch (Exception ex) {
+        } catch (RuntimeException ex) {
+            LOGGER.debug("Could not parse Long from metrics payload: {}", node, ex);
             return 0L;
         }
     }
 
+    /**
+     * Converte uma data textual ISO-8601 da Meta para LocalDate.
+     */
     private LocalDate parseDate(String value) {
         if (!StringUtils.hasText(value)) {
             return null;
         }
         try {
             return LocalDate.parse(value);
-        } catch (Exception ex) {
+        } catch (RuntimeException ex) {
+            LOGGER.debug("Could not parse LocalDate from metrics payload value {}", value, ex);
             return null;
         }
     }
 
+    /**
+     * Lê valor decimal de um nó JSON, retornando zero quando ausente ou inválido.
+     */
     private BigDecimal parseBigDecimal(JsonNode node) {
         if (node == null || node.isNull()) {
             return BigDecimal.ZERO;
@@ -171,11 +204,14 @@ public class FacebookCampaignMetricsService {
         try {
             return new BigDecimal(text);
         } catch (NumberFormatException ex) {
-            LOGGER.debug("Could not parse BigDecimal from value {}: {}", text, ex.getMessage());
+            LOGGER.debug("Could not parse BigDecimal from metrics payload value {}", text, ex);
             return BigDecimal.ZERO;
         }
     }
 
+    /**
+     * Soma ações de lead retornadas pela Meta no payload de insights.
+     */
     private long extractLeadCount(JsonNode actionsNode) {
         if (actionsNode == null || !actionsNode.isArray()) {
             return 0L;
@@ -193,6 +229,9 @@ public class FacebookCampaignMetricsService {
         return total;
     }
 
+    /**
+     * Envia ao backend as métricas sincronizadas de uma campanha.
+     */
     private void sendMetrics(String campaignId, CampaignMetricsUpdateRequest payload) {
         String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/facebook-campaigns/" + campaignId + "/metrics");
         backendClient.post()
@@ -207,6 +246,9 @@ public class FacebookCampaignMetricsService {
             .block();
     }
 
+    /**
+     * Registra no backend uma falha de sincronização de métricas da campanha.
+     */
     private void reportMetricsError(String campaignId, String message) {
         String sanitized = sanitizeMessage(message);
         String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/facebook-campaigns/" + campaignId + "/metrics-error");
@@ -223,6 +265,9 @@ public class FacebookCampaignMetricsService {
         }
     }
 
+    /**
+     * Limita mensagens de erro para persistência segura no backend.
+     */
     private String sanitizeMessage(String message) {
         if (!StringUtils.hasText(message)) {
             return "Unknown error";
@@ -230,6 +275,9 @@ public class FacebookCampaignMetricsService {
         return message.length() > 500 ? message.substring(0, 500) : message;
     }
 
+    /**
+     * Busca no backend as campanhas que precisam de sincronização de métricas.
+     */
     private List<CampaignMetricsSyncTarget> fetchSyncTargets() {
         String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/facebook-campaigns/metrics/sync-targets");
         try {
@@ -247,6 +295,9 @@ public class FacebookCampaignMetricsService {
         }
     }
 
+    /**
+     * Atualiza o token usado nas chamadas da Meta quando a configuração mudou.
+     */
     private void ensureAccessToken(String configuredToken) {
         String currentToken = facebookAdsService.getCurrentAccessToken();
         if (!StringUtils.hasText(currentToken) || !currentToken.equals(configuredToken)) {
@@ -254,6 +305,9 @@ public class FacebookCampaignMetricsService {
         }
     }
 
+    /**
+     * Tenta renovar o token e informa se a sincronização pode ser repetida.
+     */
     private boolean tryRenewAccessToken() {
         FacebookAccessTokenManager.RenewalAttemptResult renewalResult = accessTokenManager.tryRenewAccessTokenIfPossible();
         if (renewalResult.outcome() == FacebookAccessTokenManager.RenewalOutcome.SUCCESS) {
@@ -273,6 +327,7 @@ public class FacebookCampaignMetricsService {
     public record CampaignMetricsUpdateRequest(
             LocalDate dateStart,
             LocalDate dateStop,
+            Long reach,
             Long impressions,
             Long clicks,
             Long leads,

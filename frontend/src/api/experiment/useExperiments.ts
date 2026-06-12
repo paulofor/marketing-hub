@@ -43,6 +43,7 @@ export interface FacebookInstantFormSummary {
 export interface ExperimentCampaignMetric {
   dateStart?: string | null;
   dateStop?: string | null;
+  reach?: number | null;
   impressions?: number | null;
   clicks?: number | null;
   leads?: number | null;

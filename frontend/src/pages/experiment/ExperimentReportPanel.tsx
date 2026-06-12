@@ -290,7 +290,8 @@ function ReportMaterialPreview({
       {material.campaignMetric ? (
         <div className="border rounded p-3">
           <h6 className="fw-semibold mb-2">Métricas da campanha</h6>
-          <div className="row row-cols-2 row-cols-md-4 g-3 text-center">
+          <div className="row row-cols-2 row-cols-md-5 g-3 text-center">
+            <MetricItem label="Alcance" value={material.campaignMetric.reach} />
             <MetricItem
               label="Impressões"
               value={material.campaignMetric.impressions}
@@ -310,7 +311,7 @@ function ReportMaterialPreview({
       {material.landingAnalytics ? (
         <div className="border rounded p-3">
           <h6 className="fw-semibold mb-2">Analytics da landing</h6>
-          <div className="row row-cols-2 row-cols-md-4 g-3 text-center mb-3">
+          <div className="row row-cols-2 row-cols-md-5 g-3 text-center mb-3">
             <MetricItem
               label="Sessões"
               value={material.landingAnalytics.totalSessions}

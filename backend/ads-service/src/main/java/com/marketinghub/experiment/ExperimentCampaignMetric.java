@@ -11,7 +11,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 
 /**
- * Stores aggregated performance metrics for an experiment's Facebook campaign.
+ * Guarda as métricas agregadas de desempenho da campanha Facebook vinculada ao experimento.
  */
 @Entity
 @Table(name = "experiment_campaign_metric")
@@ -35,6 +35,8 @@ public class ExperimentCampaignMetric {
 
     private LocalDate dateStart;
     private LocalDate dateStop;
+    @Column(name = "reach")
+    private Long reach;
     private Long impressions;
     private Long clicks;
     private Long leads;

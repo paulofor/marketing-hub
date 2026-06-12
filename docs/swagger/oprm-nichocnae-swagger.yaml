@@ -1905,6 +1905,10 @@ components:
           type: string
         mechanismOpportunitiesSummary:
           type: string
+        customerBehaviorSummary:
+          type: string
+        channelsSummary:
+          type: string
         evidenceSummary:
           type: string
         sourceDomains:
@@ -2300,6 +2304,10 @@ components:
           type: string
         mechanismOpportunitiesSummary:
           type: string
+        customerBehaviorSummary:
+          type: string
+        channelsSummary:
+          type: string
         evidenceSummary:
           type: string
         sourceDomains:
@@ -2489,6 +2497,10 @@ components:
         resultsSummary:
           type: string
         mechanismOpportunitiesSummary:
+          type: string
+        customerBehaviorSummary:
+          type: string
+        channelsSummary:
           type: string
         evidenceSummary:
           type: string

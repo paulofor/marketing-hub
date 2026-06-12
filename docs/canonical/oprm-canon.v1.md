@@ -60,6 +60,8 @@ Evitar fechamento prematuro de `import run` que destrói a totalização de mark
 - Termos de solução, como IA, automação, sistema, app, software, ferramenta, curso ou marketing digital, não podem direcionar a pesquisa inicial quando vierem apenas de enquadramento comercial do nome do candidato.
 - O nome operacional usado para pesquisa deve representar o nicho/CNAE de forma neutra; nomes originais contaminados por linguagem de solução devem ser preservados apenas para auditoria e não como fonte de direcionamento da busca.
 - A etapa inicial deve priorizar evidências públicas sobre execução do trabalho, problemas operacionais, dúvidas reais, atividades, responsabilidades, limitações, sazonalidade, riscos, custos, retrabalho, gargalos e vocabulário usado pelo próprio mercado brasileiro.
+- A aquisição de clientes deve ser pesquisada como eixo obrigatório da realidade operacional do profissional, buscando evidências de captação de clientes, canais usados, indicação, redes sociais, WhatsApp, orçamento, agenda vazia, retorno, fidelização, cancelamento, reativação e recorrência.
+- Aquisição de clientes nessa fase significa comportamento observado do MEI/autônomo para manter a operação funcionando; é proibido tratá-la como recomendação de marketing, criação de campanha, oferta, funil, anúncio ou estratégia comercial prescritiva.
 - A etapa `oprmNicheResearchSeedBuilder` deve aceitar somente objetivos de query compatíveis com rotina real: `ROUTINE_DISCOVERY`, `ROUTINE_TASK_DISCOVERY`, `OPERATIONAL_DIFFICULTY_DISCOVERY`, `NICHE_OWNER_QUESTION_DISCOVERY`, `FINAL_CUSTOMER_QUESTION_DISCOVERY`, `LANGUAGE_DISCOVERY` e `OPERATIONAL_CONTEXT_DISCOVERY`.
 - As queries e buscas do pipeline OPRM NichoCNAE devem ser Brasil-first: português do Brasil, mercado brasileiro, preferência por fontes brasileiras, domínios `.br`, instituições brasileiras, entidades setoriais brasileiras, notícias/fóruns brasileiros e páginas que descrevam a rotina do nicho no Brasil.
 - Quando a pesquisa cair em `NEEDS_MORE_RESEARCH` ou `GENERIC`, a UI deve oferecer saída operacional simples para o usuário abrir nova pesquisa manual do mesmo CNAE, criando um novo ciclo rastreável sem avançar material fraco para hipótese/oferta.
@@ -93,6 +95,7 @@ Evitar fechamento prematuro de `import run` que destrói a totalização de mark
 - A síntese deve destacar comportamento, rotina, dores, sonhos, linguagem e canais reais antes de qualquer discussão posterior sobre solução.
 - Qualquer material com produto, oferta, campanha ou promessa comercial deve ser bloqueado ou tratado como contaminação de fase, não como resultado válido da pesquisa inicial.
 - A avaliação de qualidade deve considerar aderência a MEI/autônomo brasileiro, evidência comportamental, atualidade das fontes e risco de desvio para empresa estruturada ou linguagem comercial.
+- O gate de qualidade só pode liberar materialização quando aquisição de clientes, canais usados, recorrência e comportamento de clientes tiverem evidência útil; placeholders como “Sem evidência suficiente” devem resultar em `NEEDS_MORE_MEI_RESEARCH`, mesmo quando a rotina operacional estiver bem descrita.
 
 ## Critério de efetividade — pesquisa inicial NichoCNAE sem viés de solução
 

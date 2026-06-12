@@ -1,5 +1,6 @@
 # Registros — OPRM
 
+- 2026-06-11 21:26:05 (UTC-3): atualizado o fluxo OPRM NichoCNAE para tratar aquisição de clientes como realidade operacional obrigatória do MEI/autônomo, reforçando no prompt e no cânone a busca por evidências de captação, canais, indicação, redes sociais, WhatsApp, orçamento, agenda vazia, retorno, fidelização, cancelamento, reativação e recorrência, sem permitir solução, campanha ou oferta.
 > Orientação: todos os registros deste documento devem sempre incluir **data e hora no fuso UTC-3**.
 > Este documento segue política de **append-only** (não pode ter nenhuma linha apagada; apenas inserções).
 
@@ -418,3 +419,10 @@
 - Atualizado o materializador de nicho enriquecido para preencher gatilhos comportamentais e objeções prováveis a partir de evidências do cartão aprovado, usando dores, resultados, comportamento do cliente, canais e linguagem pública sem criar produto, promessa, campanha ou landing page.
 - Causa-raiz tratada: os campos `commercialTriggers` e `objections` permaneciam nulos porque a etapa final preservava somente contexto operacional, deixando sinais comerciais observáveis sem registro mesmo quando havia evidência suficiente.
 - Prevenção de recorrência: adicionados testes para garantir preenchimento determinístico em perfis aprovados e ausência de linguagem técnica/de solução nos campos comerciais sintetizados.
+- 2026-06-12 00:00:00 (UTC): ajustado o gate de qualidade OPRM NichoCNAE para diferenciar rotina operacional suficiente de nicho comercialmente acionável; aquisição, canais, recorrência e comportamento de clientes agora precisam de evidência útil, e placeholders como “Sem evidência suficiente” bloqueiam avanço com `NEEDS_MORE_MEI_RESEARCH`.
+
+## 2026-06-12 — OPRM NichoCNAE: sinais de rotina com tarefas específicas
+
+- Corrigida a causa-raiz da perda de especificidade na etapa cinco do `oprm-coletor-mei`: evidências públicas com ações concretas de manicure/cabeleireiro agora geram sinais `ROUTINE_TASK` com verbo e objeto de trabalho, como esterilizar alicates, lixar/cutilar/esmaltar unhas, lavar/cortar/finalizar cabelo, preparar química/hidratação e confirmar/remarcar horários pelo WhatsApp.
+- Prevenção de recorrência: quando uma rotina específica é extraída, o coletor deixa de substituir o sinal pela frase genérica de agenda/atendimento, preservando valor operacional para dor, resultado, mecanismo e oferta nas etapas posteriores.
+- 2026-06-11 21:27:42 (UTC-3): ajustada a síntese da etapa seis OPRM NichoCNAE para priorizar sinais comerciais específicos (`CUSTOMER_ACQUISITION_BEHAVIOR`, `CHANNEL_USAGE`, `COMMERCIAL_TASK`) antes de equivalentes genéricos, impedindo que aquisição e canais fiquem residuais no cartão de rotina. Quando aquisição ou canais não têm evidência própria, o cartão passa a orientar nova pesquisa específica antes de venda, evitando materialização comercial pobre. Adicionado teste de regressão validando presença de aquisição/canais nos resumos e orientação de nova pesquisa para blocos vazios.

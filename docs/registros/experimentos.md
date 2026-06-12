@@ -4447,3 +4447,10 @@
 - causa-raiz: a coluna no banco real estava como `enum('FORM_ZERO_CONVERSION_RULE_OF_THREE')`, enquanto a entidade JPA já tratava o motivo como enum textual com tamanho 100 e o domínio passou a gravar novos motivos como `TARGET_AUDIENCE_LOW_INTEREST_STATISTICAL`.
 - foi feito: criado changelog Liquibase incremental para converter `stop_reason` para `VARCHAR(100)`, registrado no master changelog e adicionado teste de regressão do `POST /api/facebook-campaigns/{campaignId}/metrics` cobrindo a gravação do motivo de baixo interesse estatístico.
 - prevenção: o teste também valida que todos os valores atuais de `FacebookCampaignStopReason` cabem no contrato textual persistido, evitando novo bloqueio por enum físico restritivo no banco.
+
+## 2026-06-12 — Lease operacional para execuções do pipeline de hipótese
+
+- solicitação: implementar política de timeout para execuções presas em `PROCESSANDO` ou `AGUARDANDO_RETORNO_OPENAI` na tabela `hypothesis_pain_stage_execution`.
+- causa-raiz: jobs que perdiam o ciclo do Worker AI ficavam fora da fila porque a listagem consumia apenas `INICIADO`, criando travamento operacional sem decisão de recuperação ou falha.
+- foi feito: definido lease operacional de 45 minutos; jobs antigos em `PROCESSANDO` sem `openai_job_id` voltam para `INICIADO` com mensagem clara; jobs antigos com possível execução OpenAI ativa viram `FALHA` para evitar duplicidade.
+- prevenção: adicionados testes unitários cobrindo recuperação segura e bloqueio de recaptura quando existe `openai_job_id` associado.

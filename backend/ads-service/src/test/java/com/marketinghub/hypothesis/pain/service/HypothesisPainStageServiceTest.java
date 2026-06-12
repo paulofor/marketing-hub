@@ -1,6 +1,7 @@
 package com.marketinghub.hypothesis.pain.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -20,6 +21,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -85,6 +87,81 @@ class HypothesisPainStageServiceTest {
         verify(costCalculator).calculateFlexCostUsd("gpt-5.2", 1200, 300);
         verify(costCalculator).addFlexCostDeltaToNiche(niche, new BigDecimal("0.00500000"));
     }
+
+    /** Deve recuperar job antigo em PROCESSANDO sem openai_job_id para impedir travamento operacional da fila. */
+    @Test
+    void listPendingRecoversOldProcessingJobWithoutOpenAiJobId() {
+        MarketNiche niche = new MarketNiche();
+        niche.setId(18L);
+        String idJob = "7bb83a22-3894-43bd-9752-374f84eb6a2c";
+        HypothesisPainStageExecution expiredExecution = HypothesisPainStageExecution.builder()
+                .idJob(idJob.getBytes(StandardCharsets.UTF_8))
+                .marketNicheId(18L)
+                .marketNiche(niche)
+                .stageCode("hypothesis-pain")
+                .status("PROCESSANDO")
+                .processingStartedAt(Instant.parse("2026-06-11T10:00:00Z"))
+                .executionRequestedAt(Instant.parse("2026-06-11T09:59:00Z"))
+                .build();
+
+        when(executionRepository.findTop50ByStageCodeAndStatusInAndCompletedAtIsNullAndProcessingStartedAtBeforeOrderByProcessingStartedAtAsc(
+                        any(),
+                        any(),
+                        any()))
+                .thenReturn(List.of(expiredExecution));
+        when(executionRepository.findTop20ByStageCodeAndStatusOrderByExecutionRequestedAtAsc(
+                        "hypothesis-pain",
+                        "INICIADO"))
+                .thenReturn(List.of(expiredExecution));
+
+        var pending = service.listPending();
+
+        assertEquals(1, pending.size());
+        assertEquals(idJob, pending.getFirst().jobid());
+        assertEquals("INICIADO", pending.getFirst().status());
+        assertNull(pending.getFirst().processingStartedAt());
+        ArgumentCaptor<List<HypothesisPainStageExecution>> captor = ArgumentCaptor.forClass(List.class);
+        verify(executionRepository).saveAll(captor.capture());
+        HypothesisPainStageExecution recovered = captor.getValue().getFirst();
+        assertEquals("INICIADO", recovered.getStatus());
+        assertNull(recovered.getProcessingStartedAt());
+        assertEquals(
+                "Timeout operacional: execução ficou em PROCESSANDO por mais de 45 minutos sem conclusão. Job recuperado automaticamente e devolvido para a fila de processamento.",
+                recovered.getErrorMessage());
+    }
+
+    /** Deve falhar job antigo com openai_job_id para impedir recaptura duplicada de execução ativa na OpenAI. */
+    @Test
+    void listPendingFailsOldWaitingJobWithOpenAiJobId() {
+        String idJob = "8bb83a22-3894-43bd-9752-374f84eb6a2c";
+        HypothesisPainStageExecution expiredExecution = HypothesisPainStageExecution.builder()
+                .idJob(idJob.getBytes(StandardCharsets.UTF_8))
+                .marketNicheId(18L)
+                .stageCode("hypothesis-pain")
+                .status("AGUARDANDO_RETORNO_OPENAI")
+                .openAiJobId("openai-active-1")
+                .processingStartedAt(Instant.parse("2026-06-11T10:00:00Z"))
+                .executionRequestedAt(Instant.parse("2026-06-11T09:59:00Z"))
+                .build();
+
+        when(executionRepository.findTop50ByStageCodeAndStatusInAndCompletedAtIsNullAndProcessingStartedAtBeforeOrderByProcessingStartedAtAsc(
+                        any(),
+                        any(),
+                        any()))
+                .thenReturn(List.of(expiredExecution));
+
+        var pending = service.listPending();
+
+        assertEquals(0, pending.size());
+        ArgumentCaptor<List<HypothesisPainStageExecution>> captor = ArgumentCaptor.forClass(List.class);
+        verify(executionRepository).saveAll(captor.capture());
+        HypothesisPainStageExecution failed = captor.getValue().getFirst();
+        assertEquals("FALHA", failed.getStatus());
+        assertEquals(
+                "Timeout operacional: execução ficou em AGUARDANDO_RETORNO_OPENAI por mais de 45 minutos sem conclusão. Job marcado como FALHA para evitar recaptura enquanto há possível execução ativa na OpenAI.",
+                failed.getErrorMessage());
+    }
+
     /** Deve bloquear a etapa Resultado quando a dor ainda não está concluída. */
     @Test
     void startResultRequiresCompletedPain() {

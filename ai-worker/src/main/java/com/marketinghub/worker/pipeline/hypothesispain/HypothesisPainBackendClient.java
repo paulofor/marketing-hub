@@ -15,7 +15,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 /** Responsabilidade: integrar a etapa Dor do pipeline de hipótese aos endpoints internos do backend. */
 public class HypothesisPainBackendClient implements StageBackendPort<HypothesisPainInput, HypothesisPainOutput> {
-    private static final String STATUS_STARTED = "INICIADO";
     private final WebClient webClient;
     private final HypothesisPainWorkerProperties properties;
     private final ObjectMapper objectMapper;
@@ -124,7 +123,8 @@ public class HypothesisPainBackendClient implements StageBackendPort<HypothesisP
         String stageCode = asString(item.get("stageCode"));
         String idJob = asString(firstPresent(item.get("jobid"), item.get("idJob")));
         HypothesisPainInput input = new HypothesisPainInput(marketNicheId, stageCode, idJob, buildPromptDataFromPending(item));
-        return new StageExecution<>(idJob, marketNicheId, stageCode, STATUS_STARTED, asInstant(item.get("executionRequestedAt")), input, Map.of());
+        String status = asString(firstPresent(item.get("status"), "INICIADO"));
+        return new StageExecution<>(idJob, marketNicheId, stageCode, status, asInstant(item.get("executionRequestedAt")), input, Map.of());
     }
 
     /** Monta os dados do prompt com as informações do nicho e contexto comercial disponível. */

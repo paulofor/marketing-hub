@@ -1,0 +1,75 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-12-01-oprm-enriched-niche-drop-unique-card-index
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - indexExists:
+            tableName: market_niche_enrichment_profile
+            indexName: uk_market_niche_enrichment_profile_card
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              DROP INDEX uk_market_niche_enrichment_profile_card ON market_niche_enrichment_profile;
+  - changeSet:
+      id: 2026-06-12-02-oprm-enriched-niche-drop-unique-cycle-index
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - indexExists:
+            tableName: market_niche_enrichment_profile
+            indexName: uk_market_niche_enrichment_profile_cycle
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              DROP INDEX uk_market_niche_enrichment_profile_cycle ON market_niche_enrichment_profile;
+  - changeSet:
+      id: 2026-06-12-03-oprm-enriched-niche-reprocess-card-index
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: market_niche_enrichment_profile
+        - not:
+            indexExists:
+              tableName: market_niche_enrichment_profile
+              indexName: idx_market_niche_enrichment_profile_card
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE INDEX idx_market_niche_enrichment_profile_card ON market_niche_enrichment_profile (routine_card_id);
+  - changeSet:
+      id: 2026-06-12-04-oprm-enriched-niche-reprocess-cycle-index
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: market_niche_enrichment_profile
+        - not:
+            indexExists:
+              tableName: market_niche_enrichment_profile
+              indexName: idx_market_niche_enrichment_profile_cycle
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE INDEX idx_market_niche_enrichment_profile_cycle ON market_niche_enrichment_profile (research_cycle_id);

@@ -167,6 +167,8 @@ public class BackendRoutineQualityGateService {
         card.getPainsSummary(),
         card.getResultsSummary(),
         card.getMechanismOpportunitiesSummary(),
+        profile == null ? null : profile.getCustomerAcquisitionBehavior(),
+        profile == null ? null : profile.getChannelsUsed(),
         card.getEvidenceSummary(),
         card.getSourceDomains(),
         card.getConfidenceScore(),
@@ -230,8 +232,8 @@ public class BackendRoutineQualityGateService {
   /** Conta evidências de aquisição, atendimento ou canal combinando sinais e o perfil segmentado. */
   private int countCustomerAcquisitionEvidence(List<OprmExtractedSignal> signals, OprmMeiAudienceProfile profile) {
     int signalCount = countSignals(signals, "CUSTOMER_ACQUISITION_BEHAVIOR", "CHANNEL_USAGE", "CHANNEL_BEHAVIOR", "CUSTOMER_SERVICE_CHANNEL");
-    int profileEvidence = hasText(profile == null ? null : profile.getCustomerAcquisitionBehavior()) ? 1 : 0;
-    int channelEvidence = hasText(profile == null ? null : profile.getChannelsUsed()) ? 1 : 0;
+    int profileEvidence = hasUsefulCommercialText(profile == null ? null : profile.getCustomerAcquisitionBehavior()) ? 1 : 0;
+    int channelEvidence = hasUsefulCommercialText(profile == null ? null : profile.getChannelsUsed()) ? 1 : 0;
     return signalCount + profileEvidence + channelEvidence;
   }
 
@@ -366,6 +368,42 @@ public class BackendRoutineQualityGateService {
       throw new IllegalArgumentException(fieldName + " is required");
     }
     return value.trim();
+  }
+
+
+  /** Verifica se o texto de aquisição/canal do perfil é evidência útil e não placeholder genérico. */
+  private boolean hasUsefulCommercialText(String value) {
+    if (!StringUtils.hasText(value)) {
+      return false;
+    }
+    String normalized = value.toLowerCase(Locale.ROOT)
+        .replace('á', 'a')
+        .replace('à', 'a')
+        .replace('ã', 'a')
+        .replace('â', 'a')
+        .replace('é', 'e')
+        .replace('ê', 'e')
+        .replace('í', 'i')
+        .replace('ó', 'o')
+        .replace('õ', 'o')
+        .replace('ô', 'o')
+        .replace('ú', 'u')
+        .replace('ç', 'c')
+        .replaceAll("\\s+", " ")
+        .trim();
+    return normalized.length() >= 35 && !containsInsufficientEvidencePlaceholder(normalized);
+  }
+
+  /** Detecta placeholders de ausência de evidência para não inflar contadores de aquisição/canal. */
+  private boolean containsInsufficientEvidencePlaceholder(String normalized) {
+    return normalized.contains("sem evidencia suficiente")
+        || normalized.contains("sem evidencias suficientes")
+        || normalized.contains("nao ha evidencia")
+        || normalized.contains("nao existe evidencia")
+        || normalized.contains("sem dados suficientes")
+        || normalized.contains("informacao insuficiente")
+        || normalized.contains("nao identificado")
+        || normalized.contains("nao foi identificado");
   }
 
   /** Verifica se existe texto útil em campo opcional de perfil ou fonte. */

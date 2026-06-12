@@ -93,6 +93,7 @@ Evitar fechamento prematuro de `import run` que destrói a totalização de mark
 - A síntese deve destacar comportamento, rotina, dores, sonhos, linguagem e canais reais antes de qualquer discussão posterior sobre solução.
 - Qualquer material com produto, oferta, campanha ou promessa comercial deve ser bloqueado ou tratado como contaminação de fase, não como resultado válido da pesquisa inicial.
 - A avaliação de qualidade deve considerar aderência a MEI/autônomo brasileiro, evidência comportamental, atualidade das fontes e risco de desvio para empresa estruturada ou linguagem comercial.
+- O gate de qualidade só pode liberar materialização quando aquisição de clientes, canais usados, recorrência e comportamento de clientes tiverem evidência útil; placeholders como “Sem evidência suficiente” devem resultar em `NEEDS_MORE_MEI_RESEARCH`, mesmo quando a rotina operacional estiver bem descrita.
 
 ## Critério de efetividade — pesquisa inicial NichoCNAE sem viés de solução
 

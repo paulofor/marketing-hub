@@ -11,6 +11,8 @@ public record RoutineQualityGatePending(
         String painsSummary,
         String resultsSummary,
         String mechanismOpportunitiesSummary,
+        String customerBehaviorSummary,
+        String channelsSummary,
         String evidenceSummary,
         String sourceDomains,
         Integer cardConfidenceScore,

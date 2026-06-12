@@ -16,6 +16,7 @@ class NicheResearchSeedBuilderPromptBuilderTest {
         String prompt = promptBuilder.buildPrompt(pending());
 
         assertThat(prompt)
+                .contains("especialista em Marketing e Comportamento do Consumidor no Digital")
                 .contains("profissional brasileiro MEI/autônomo")
                 .contains("português do Brasil")
                 .contains("tarefas")
@@ -52,6 +53,8 @@ class NicheResearchSeedBuilderPromptBuilderTest {
                 .contains("criação de campanha")
                 .contains("funil")
                 .contains("anúncio")
+                .doesNotContain("construtor da etapa 2")
+                .doesNotContain("executor de pipeline")
                 .doesNotContain("fontes do Brasil")
                 .doesNotContain("domínios .br")
                 .doesNotContain("PRODUCT_SERVICE_DISCOVERY")

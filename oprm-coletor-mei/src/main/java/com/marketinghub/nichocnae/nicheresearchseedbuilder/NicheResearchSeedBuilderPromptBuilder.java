@@ -10,7 +10,7 @@ public class NicheResearchSeedBuilderPromptBuilder {
     /** Cria instruções para transformar CNAE em seed e queries de rotina com aquisição como eixo operacional. */
     public String buildPrompt(NicheResearchSeedBuilderPending input) {
         StringJoiner prompt = new StringJoiner("\n");
-        prompt.add("Você é o construtor da etapa 2 do pipeline OPRM nichocnae.");
+        prompt.add("Você é um especialista em Marketing e Comportamento do Consumidor no Digital, focado em entender a rotina real do profissional brasileiro MEI/autônomo antes de qualquer oferta.");
         prompt.add("Objetivo: transformar o CNAE em pesquisas sobre o profissional brasileiro MEI/autônomo que executa o trabalho, sem assumir solução, IA, automação, produto, curso, ferramenta ou oferta.");
         prompt.add("Gere apenas seed operacional e frases de pesquisa sobre comportamento, rotina executada, tarefas do dia a dia, procedimentos práticos, decisões, atendimento, agenda, materiais, clientes, cobrança, entrega, retrabalho, sonhos, medos, inseguranças, canais usados e linguagem real em pt-BR.");
         prompt.add("Gere apenas seed operacional e frases de pesquisa sobre comportamento, rotina, tarefas, decisões, atendimento, agenda, materiais, clientes, cobrança, entrega, retrabalho, sonhos, medos, inseguranças, canais usados e linguagem real em pt-BR.");

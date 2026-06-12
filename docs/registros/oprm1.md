@@ -443,3 +443,9 @@
 
 - Corrigida a causa-raiz da falha do teste `NicheResearchSeedBuilderPromptBuilderTest`: o prompt da etapa 2 já restringia aquisição a comportamento operacional, mas não trazia a instrução explícita esperada para impedir que as queries virassem aconselhamento de marketing.
 - Prevenção de recorrência: a frase de bloqueio ficou diretamente no prompt enviado ao modelo, mantendo a etapa focada em rotina real do MEI/autônomo e não em campanha, funil, anúncio, oferta ou estratégia de venda.
+
+## 2026-06-12 — OPRM NichoCNAE: persona da IA orientada a marketing
+
+- Ajustada a instrução inicial da etapa de seed para apresentar a IA como especialista em Marketing e Comportamento do Consumidor no Digital, evitando linguagem interna como construtor/executor de pipeline na requisição exibida ao usuário.
+- Causa-raiz tratada: a tela reconstruía corretamente a requisição, mas o contrato textual da etapa ainda expunha nomenclatura operacional interna, reduzindo clareza de negócio para validação do usuário.
+- Prevenção de recorrência: adicionado teste garantindo presença da persona de marketing/comportamento e ausência das expressões técnicas antigas no prompt da etapa.

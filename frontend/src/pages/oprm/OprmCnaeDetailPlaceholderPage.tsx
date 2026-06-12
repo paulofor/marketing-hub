@@ -90,21 +90,87 @@ function formatDateTime(value?: string | null) {
   }).format(new Date(value));
 }
 
+const statusLabels: Record<string, string> = {
+  RUNNING: "Em execução",
+  COMPLETED: "Concluído",
+  READY_FOR_HYPOTHESIS: "Pronto",
+  LIGHTLY_RESEARCHED: "Pesquisa inicial concluída",
+  ROUTINE_SYNTHESIZED: "Rotina sintetizada",
+  MEI_AUDIENCE_SEGMENTED: "Perfil MEI/autônomo criado",
+  MEI_AUDIENCE_READY: "Público MEI/autônomo pronto",
+  ENRICHED_NICHE_CREATED: "Nicho enriquecido disponível",
+  FAILED: "Falhou",
+  STALLED: "Parado sem progresso",
+  CANCELLED_BY_MANUAL_RESTART: "Cancelado por reinício",
+  NEEDS_MORE_RESEARCH: "Precisa aprofundar",
+  NEEDS_MORE_MEI_RESEARCH: "Precisa de mais MEI",
+  OUTDATED_SOURCES: "Fontes antigas",
+  TOO_CORPORATE: "Corporativo demais",
+  SOLUTION_CONTAMINATED: "Contaminado por solução",
+  GENERIC: "Genérico",
+  ENRICHED_NICHE_FAILED: "Falha na materialização",
+};
+
+const qualityBlockedStatuses = new Set([
+  "NEEDS_MORE_RESEARCH",
+  "NEEDS_MORE_MEI_RESEARCH",
+  "OUTDATED_SOURCES",
+  "TOO_CORPORATE",
+  "SOLUTION_CONTAMINATED",
+  "GENERIC",
+]);
+
 function statusLabel(status?: string | null) {
-  const labels: Record<string, string> = {
-    RUNNING: "Em execução",
-    COMPLETED: "Concluído",
-    READY_FOR_HYPOTHESIS: "Pronto",
-    FAILED: "Falhou",
-    NEEDS_MORE_RESEARCH: "Precisa aprofundar",
-    NEEDS_MORE_MEI_RESEARCH: "Precisa de mais MEI",
-    OUTDATED_SOURCES: "Fontes antigas",
-    TOO_CORPORATE: "Corporativo demais",
-    SOLUTION_CONTAMINATED: "Contaminado por solução",
-    GENERIC: "Genérico",
-    ENRICHED_NICHE_FAILED: "Falha na materialização",
+  return status ? (statusLabels[status] ?? status) : "Aguardando";
+}
+
+function isQualityBlockedStatus(status?: string | null) {
+  return Boolean(status && qualityBlockedStatuses.has(status));
+}
+
+function isCycleStoppedStatus(status?: string | null) {
+  return Boolean(
+    status &&
+    (isQualityBlockedStatus(status) ||
+      [
+        "FAILED",
+        "STALLED",
+        "CANCELLED_BY_MANUAL_RESTART",
+        "ENRICHED_NICHE_FAILED",
+      ].includes(status)),
+  );
+}
+
+function qualityBlockedMessage(status?: string | null) {
+  const messages: Record<string, string> = {
+    NEEDS_MORE_RESEARCH:
+      "A pesquisa chegou ao gate de qualidade, mas ainda precisa de mais evidências práticas antes de virar nicho enriquecido.",
+    NEEDS_MORE_MEI_RESEARCH:
+      "A pesquisa chegou ao gate de qualidade, mas faltam sinais mais fortes do público MEI/autônomo dono-operador.",
+    OUTDATED_SOURCES:
+      "A pesquisa chegou ao gate de qualidade, mas foi bloqueada por fontes antigas ou sem atualidade suficiente.",
+    TOO_CORPORATE:
+      "A pesquisa chegou ao gate de qualidade, mas as evidências estão corporativas demais para MEI/autônomo dono-operador.",
+    SOLUTION_CONTAMINATED:
+      "A pesquisa chegou ao gate de qualidade, mas foi contaminada por linguagem de solução/oferta antes da hora.",
+    GENERIC:
+      "A pesquisa chegou ao gate de qualidade, mas ficou genérica demais para sustentar uma oferta vendável.",
   };
-  return status ? (labels[status] ?? status) : "Aguardando";
+  return status ? messages[status] : undefined;
+}
+
+function pipelineAlertClass(status?: string | null) {
+  if (isQualityBlockedStatus(status)) {
+    return "alert alert-warning mb-0";
+  }
+  if (
+    status === "FAILED" ||
+    status === "STALLED" ||
+    status === "ENRICHED_NICHE_FAILED"
+  ) {
+    return "alert alert-danger mb-0";
+  }
+  return "alert alert-info mb-0";
 }
 
 function getCompletedStageIndex(cycle: OprmRoutineResearchCycleSummary) {
@@ -195,6 +261,70 @@ function inferStageState(
     ? inferFailureStageIndex(cycle.errorMessage)
     : undefined;
 
+  if (isQualityBlockedStatus(cycle.status)) {
+    if (stageIndex <= 6) {
+      return { label: "Concluído", className: "border-success text-success" };
+    }
+    if (stageIndex === 7) {
+      return {
+        label: statusLabel(cycle.status),
+        className: "border-warning text-warning",
+      };
+    }
+    return { label: "Bloqueado", className: "border-secondary text-secondary" };
+  }
+
+  if (cycle.status === "ROUTINE_SYNTHESIZED") {
+    if (stageIndex <= 5) {
+      return { label: "Concluído", className: "border-success text-success" };
+    }
+    if (stageIndex === 6) {
+      return { label: "Em execução", className: "border-primary text-primary" };
+    }
+    return { label: "Na fila", className: "border-secondary text-secondary" };
+  }
+
+  if (cycle.status === "MEI_AUDIENCE_SEGMENTED") {
+    if (stageIndex <= 6) {
+      return { label: "Concluído", className: "border-success text-success" };
+    }
+    if (stageIndex === 7) {
+      return { label: "Em execução", className: "border-primary text-primary" };
+    }
+    return { label: "Na fila", className: "border-secondary text-secondary" };
+  }
+
+  if (
+    cycle.status === "MEI_AUDIENCE_READY" ||
+    cycle.status === "LIGHTLY_RESEARCHED"
+  ) {
+    if (stageIndex <= 7) {
+      return { label: "Concluído", className: "border-success text-success" };
+    }
+    return { label: "Em execução", className: "border-primary text-primary" };
+  }
+
+  if (cycle.status === "ENRICHED_NICHE_CREATED") {
+    return { label: "Concluído", className: "border-success text-success" };
+  }
+
+  if (cycle.status === "STALLED") {
+    if (stageIndex <= completedStageIndex) {
+      return { label: "Concluído", className: "border-success text-success" };
+    }
+    if (stageIndex === completedStageIndex + 1) {
+      return { label: "Parado", className: "border-danger text-danger" };
+    }
+    return { label: "Bloqueado", className: "border-secondary text-secondary" };
+  }
+
+  if (cycle.status === "CANCELLED_BY_MANUAL_RESTART") {
+    if (stageIndex <= completedStageIndex) {
+      return { label: "Concluído", className: "border-success text-success" };
+    }
+    return { label: "Cancelado", className: "border-secondary text-secondary" };
+  }
+
   if (failed && stageIndex === failureStageIndex) {
     return { label: "Falhou", className: "border-danger text-danger" };
   }
@@ -207,7 +337,10 @@ function inferStageState(
   if (failed) {
     return { label: "Bloqueado", className: "border-secondary text-secondary" };
   }
-  if (stageIndex === completedStageIndex + 1) {
+  if (
+    !isCycleStoppedStatus(cycle.status) &&
+    stageIndex === completedStageIndex + 1
+  ) {
     return { label: "Em execução", className: "border-primary text-primary" };
   }
   return { label: "Na fila", className: "border-secondary text-secondary" };
@@ -265,9 +398,17 @@ export default function OprmCnaeDetailPlaceholderPage() {
                 disabled={startPipelineMutation.isPending}
                 onClick={() => startPipelineMutation.mutate()}
               >
-                {startPipelineMutation.isPending
-                  ? "Disparando..."
-                  : "Disparar pipeline NichoCNAE"}
+                {startPipelineMutation.isPending ? (
+                  <>
+                    <span
+                      className="spinner-border spinner-border-sm me-2"
+                      aria-hidden="true"
+                    />
+                    Disparando...
+                  </>
+                ) : (
+                  "Disparar pipeline NichoCNAE"
+                )}
               </button>
               <Link className="btn btn-outline-secondary" to="/oprm">
                 Voltar para CNAEs
@@ -375,12 +516,19 @@ export default function OprmCnaeDetailPlaceholderPage() {
           </div>
 
           {latestCycle ? (
-            <div className="alert alert-info mb-0">
+            <div className={pipelineAlertClass(latestCycle.status)}>
               <div>
                 Status atual: <strong>{statusLabel(latestCycle.status)}</strong>{" "}
                 · iniciado em {formatDateTime(latestCycle.startedAt)} · sinais
                 extraídos: {formatNumber(latestCycle.totalExtractedSignals)}
               </div>
+              {qualityBlockedMessage(latestCycle.status) ? (
+                <div className="mt-2">
+                  {qualityBlockedMessage(latestCycle.status)} O pipeline não
+                  está em execução agora; pesquise novamente após corrigir a
+                  causa do bloqueio.
+                </div>
+              ) : null}
               {latestCycle.errorMessage ? (
                 <div className="mt-2 text-danger">
                   Falha registrada: {latestCycle.errorMessage}

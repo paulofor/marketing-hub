@@ -527,3 +527,9 @@
 - Configurado o ambiente Docker do `oprm-coletor-mei` para expor explicitamente `OPRM_MEI_AUDIENCE_SEGMENTER_OPENAI_API_KEY_FILE` apontando para o segredo OpenAI montado em `/run/secrets/openai_api_key`.
 - Causa-raiz tratada: a etapa `mei-audience-segmenter` já esperava chave própria ou fallback compartilhado no `application.yml`, mas os manifests do serviço só configuravam a chave da etapa seed, deixando a segmentação MEI sem credencial garantida no ambiente de execução.
 - Prevenção de recorrência: o modelo da etapa também ficou parametrizado nos manifests, mantendo paridade operacional entre seed e segmentação MEI/autônomo.
+
+## 2026-06-12 — OPRM NichoCNAE: status visual de bloqueio no detalhe do CNAE
+
+- Ajustada a tela de detalhe do CNAE para não inferir “em execução” quando o ciclo já foi bloqueado pelo gate de qualidade com status como `OUTDATED_SOURCES`, `NEEDS_MORE_RESEARCH`, `NEEDS_MORE_MEI_RESEARCH`, `TOO_CORPORATE`, `SOLUTION_CONTAMINATED` ou `GENERIC`.
+- Causa-raiz tratada: a tela usava apenas contadores do ciclo e `finishedAt` nulo para decidir a próxima etapa visual, então um ciclo já reprovado por qualidade aparecia como “Síntese em execução”.
+- Prevenção de recorrência: adicionada mensagem de negócio explicando o bloqueio e teste de regressão garantindo que “Fontes antigas” aparece no gate de qualidade, a síntese aparece concluída e a materialização fica bloqueada.

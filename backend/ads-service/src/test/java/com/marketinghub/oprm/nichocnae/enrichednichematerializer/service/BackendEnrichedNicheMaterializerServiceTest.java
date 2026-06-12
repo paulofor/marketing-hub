@@ -96,7 +96,6 @@ class BackendEnrichedNicheMaterializerServiceTest {
     when(cycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
     when(cardRepository.findById(10L)).thenReturn(Optional.of(card));
     when(candidateRepository.findById(77L)).thenReturn(Optional.of(candidate));
-    when(profileRepository.existsBySourceRoutineCardId(10L)).thenReturn(false);
     when(meiAudienceProfileRepository.findFirstByResearchCycleIdOrderByIdDesc(1001L)).thenReturn(Optional.of(meiProfile()));
     when(metaSignalService.buildSignalPackage(cycle, card)).thenReturn(metaSignalPackage);
     when(marketNicheRepository.save(any(MarketNiche.class))).thenAnswer(invocation -> {
@@ -140,6 +139,45 @@ class BackendEnrichedNicheMaterializerServiceTest {
             && "Objeções".equals(profile.getObjections())));
   }
 
+  /** Deve permitir reprocessar o mesmo cartão criando novo perfil para o mesmo nicho existente. */
+  @Test
+  void shouldCreateNewProfileWhenReprocessingAlreadyMaterializedCard() {
+    OprmRoutineResearchCycle cycle = cycle();
+    OprmNicheRoutineCard card = card();
+    OprmNicheCandidate candidate = candidate();
+    MarketNiche existingNiche = new MarketNiche();
+    existingNiche.setId(200L);
+    MarketNicheEnrichmentProfile previousProfile = profile(existingNiche);
+    when(cycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
+    when(cardRepository.findById(10L)).thenReturn(Optional.of(card));
+    when(candidateRepository.findById(77L)).thenReturn(Optional.of(candidate));
+    when(meiAudienceProfileRepository.findFirstByResearchCycleIdOrderByIdDesc(1001L)).thenReturn(Optional.of(meiProfile()));
+    when(profileRepository.findMaterializedByCnaeAndNormalizedNeutralName(
+        org.mockito.ArgumentMatchers.eq("9602501"),
+        org.mockito.ArgumentMatchers.eq("salões pequenos"),
+        any(Pageable.class)))
+        .thenReturn(List.of(previousProfile));
+    when(metaSignalService.buildSignalPackage(cycle, card)).thenReturn(metaSignalPackage);
+    when(marketNicheRepository.save(any(MarketNiche.class))).thenAnswer(invocation -> invocation.getArgument(0));
+    when(profileRepository.save(any(MarketNicheEnrichmentProfile.class))).thenAnswer(invocation -> {
+      MarketNicheEnrichmentProfile profile = invocation.getArgument(0);
+      profile.setId(301L);
+      return profile;
+    });
+
+    CompleteEnrichedNicheMaterializerResponse response = service.complete(1001L, new CompleteEnrichedNicheMaterializerRequest(
+        1001L, 10L, "Persona reprocessada", "Linguagem reprocessada", "Gatilhos", "Objeções", "test"));
+
+    assertThat(response.marketNicheId()).isEqualTo(200L);
+    assertThat(response.enrichedNicheProfileId()).isEqualTo(301L);
+    assertThat(response.cycleStatus()).isEqualTo("ENRICHED_NICHE_UPDATED");
+    verify(profileRepository).save(org.mockito.ArgumentMatchers.argThat(profile ->
+        Long.valueOf(200L).equals(profile.getMarketNiche().getId())
+            && Long.valueOf(1001L).equals(profile.getResearchCycleId())
+            && Long.valueOf(10L).equals(profile.getSourceRoutineCardId())
+            && "Persona reprocessada".equals(profile.getPersonaSummary())));
+  }
+
   /** Deve bloquear materialização quando o ciclo sintetizado não tem perfil MEI/autônomo aprovado. */
   @Test
   void shouldNotReleaseMaterializationWithoutMeiAudienceProfile() {
@@ -150,7 +188,6 @@ class BackendEnrichedNicheMaterializerServiceTest {
     when(cycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
     when(cardRepository.findById(10L)).thenReturn(Optional.of(card));
     when(candidateRepository.findById(77L)).thenReturn(Optional.of(candidate));
-    when(profileRepository.existsBySourceRoutineCardId(10L)).thenReturn(false);
     when(meiAudienceProfileRepository.findFirstByResearchCycleIdOrderByIdDesc(1001L)).thenReturn(Optional.empty());
 
     assertThatThrownBy(() -> service.complete(1001L, new CompleteEnrichedNicheMaterializerRequest(

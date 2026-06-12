@@ -461,3 +461,9 @@
 - Corrigida a causa-raiz da falha ArchUnit no OPRM sem afrouxar a regra de arquitetura: removido o `record` interno que fazia o materializador final parecer uma nova classe dependente de `MarketNiche` fora da exceção nominal.
 - A etapa final de materialização agora resolve o nicho existente por CNAE/nome neutro com variáveis locais e salva explicitamente o `market_niche` antes de criar o perfil enriquecido, mantendo a indicação correta de criação versus atualização.
 - A consulta usada pela etapa zero para indicar nicho já materializado foi movida para o repositório OPRM, evitando dependência direta do serviço OPRM em repositórios/classes do pacote de nicho e mantendo a UI informando “nicho já existe” sem violar o isolamento modular.
+
+## 2026-06-12 — Reprocessamento de perfil enriquecido OPRM
+
+- Ajustada a regra canônica do NichoCNAE para permitir múltiplos registros em `market_niche_enrichment_profile` para o mesmo nicho quando houver reprocessamento operacional.
+- A materialização final passa a reaproveitar o `market_niche` existente e criar um novo perfil enriquecido rastreável, preservando histórico em vez de bloquear pela materialização anterior.
+- Criado changelog incremental para remover unicidade rígida por `routine_card_id` e `research_cycle_id` e manter índices não únicos de consulta.

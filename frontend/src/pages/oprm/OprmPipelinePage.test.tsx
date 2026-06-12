@@ -191,6 +191,86 @@ describe("OprmPipelinePage", () => {
     ).toBeGreaterThan(0);
   });
 
+  it("permite reiniciar ciclo parado sem progresso", async () => {
+    const fetchMock = vi.fn(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = input.toString();
+        if (
+          url.includes("routine-research-orchestrator/recent-processed") &&
+          init?.method === "POST"
+        ) {
+          return new Response(
+            JSON.stringify({
+              researchCycleId: 21,
+              sourceNicheId: 1,
+              cnaeCode: "9602501",
+              cnaeDescription: "Cabeleireiros, manicure e pedicure",
+              previousCycleStatus: "STALLED",
+              previousRoutineResearchStatus: "RESEARCH_STALLED",
+              routineResearchStatus: "RESEARCH_RUNNING",
+              lastRoutineResearchCycleId: 21,
+              message:
+                "Novo ciclo de pesquisa de rotina criado imediatamente para recuperar um pipeline parado sem progresso.",
+            }),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+          );
+        }
+
+        if (url.includes("routine-research-orchestrator/recent-processed")) {
+          return new Response(
+            JSON.stringify([
+              {
+                researchCycleId: 20,
+                sourceNicheId: 1,
+                cnaeCode: "9602501",
+                cnaeDescription: "Cabeleireiros, manicure e pedicure",
+                nicheName: "Cabeleireiros, manicure e pedicure",
+                originalNicheName: "Cabeleireiros, manicure e pedicure",
+                neutralNicheName: "Cabeleireiros, manicure e pedicure",
+                researchMode: "ROUTINE_REALITY_RESEARCH",
+                solutionLanguageRiskScore: 0,
+                sourceScore: 90,
+                triggerSource: "AUTO_SCORE_QUEUE",
+                cycleStatus: "STALLED",
+                processedAt: "2026-06-12T04:30:59Z",
+                finishedAt: "2026-06-12T10:30:59Z",
+                errorMessage:
+                  "Pipeline OPRM NichoCNAE sem progresso por mais de 6 horas",
+              },
+            ]),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+          );
+        }
+
+        return new Response("[]", {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      },
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(
+        screen.getAllByText("Parado sem progresso").length,
+      ).toBeGreaterThan(0);
+    });
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Reiniciar ciclo parado" }),
+    );
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining(
+          "routine-research-orchestrator/recent-processed/20/reprocess",
+        ),
+        { method: "POST" },
+      );
+    });
+  });
+
   it("permite criar novo ciclo quando o status precisa de mais pesquisa", async () => {
     const fetchMock = vi.fn(
       async (input: RequestInfo | URL, init?: RequestInit) => {

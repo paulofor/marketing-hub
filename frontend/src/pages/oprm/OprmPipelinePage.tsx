@@ -220,6 +220,7 @@ const statusLabels: Record<string, string> = {
   SOLUTION_CONTAMINATED: "Contaminado por solução",
   GENERIC: "Genérico",
   FAILED: "Falhou",
+  STALLED: "Parado sem progresso",
   RUNNING: "Em execução",
   PENDING: "Pendente",
   COMPLETED: "Concluído",
@@ -329,6 +330,13 @@ const cycleStageByStatus: Record<
     badgeClass:
       "badge text-bg-danger-subtle border border-danger-subtle text-danger",
   },
+  STALLED: {
+    label: "Parado · Sem progresso",
+    description:
+      "O backend detectou que o ciclo ficou horas sem avançar; corrija executor/conectividade e crie novo ciclo.",
+    badgeClass:
+      "badge text-bg-danger-subtle border border-danger-subtle text-danger",
+  },
 };
 
 function hasMeiAudienceProfile(item: { audienceName?: string | null }) {
@@ -378,6 +386,7 @@ function formatQualityNotes(value: string) {
 function canCreateNewResearchCycle(status: string) {
   return [
     "FAILED",
+    "STALLED",
     "NEEDS_MORE_RESEARCH",
     "NEEDS_MORE_MEI_RESEARCH",
     "OUTDATED_SOURCES",
@@ -391,6 +400,9 @@ function canCreateNewResearchCycle(status: string) {
 function getNewResearchCycleButtonLabel(status: string) {
   if (status === "FAILED" || status === "SOLUTION_CONTAMINATED") {
     return "Reprocessar CNAE";
+  }
+  if (status === "STALLED") {
+    return "Reiniciar ciclo parado";
   }
   if (status === "ENRICHED_NICHE_FAILED") {
     return "Refazer pelo front-end";
@@ -406,7 +418,11 @@ function isAlreadyMaterialized(item: {
 }
 
 function getNewResearchCycleButtonClass(status: string) {
-  if (status === "FAILED" || status === "ENRICHED_NICHE_FAILED") {
+  if (
+    status === "FAILED" ||
+    status === "STALLED" ||
+    status === "ENRICHED_NICHE_FAILED"
+  ) {
     return "btn btn-outline-danger btn-sm text-nowrap";
   }
   return "btn btn-outline-warning btn-sm text-nowrap";
@@ -426,7 +442,7 @@ function buildStatusBadgeClass(status: string) {
   if (status === "GENERIC" || status === "TOO_CORPORATE") {
     return "badge text-bg-secondary-subtle border border-secondary-subtle text-secondary";
   }
-  if (status === "FAILED") {
+  if (status === "FAILED" || status === "STALLED") {
     return "badge text-bg-danger-subtle border border-danger-subtle text-danger";
   }
   if (status === "RUNNING" || status === "ROUTINE_SYNTHESIZED") {

@@ -39,6 +39,7 @@ public class BackendRoutineResearchOrchestratorService {
     private static final String CYCLE_STATUS_SOLUTION_CONTAMINATED = "SOLUTION_CONTAMINATED";
     private static final String CYCLE_STATUS_GENERIC = "GENERIC";
     private static final String CYCLE_STATUS_CANCELLED_BY_MANUAL_RESTART = "CANCELLED_BY_MANUAL_RESTART";
+    private static final String CYCLE_STATUS_STALLED = "STALLED";
     private static final String TRIGGER_SOURCE_AUTO_SCORE_QUEUE = "AUTO_SCORE_QUEUE";
     private static final String TRIGGER_SOURCE_MANUAL_REPROCESS = "MANUAL_REPROCESS";
     private static final String TRIGGER_SOURCE_MANUAL_CNAE_DETAIL = "MANUAL_CNAE_DETAIL";
@@ -102,7 +103,7 @@ public class BackendRoutineResearchOrchestratorService {
         if (!isReprocessableStatus(cycle.getStatus())) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
-                    "Only failed, weak MEI audience, outdated, corporate, contaminated, generic or materialization-failed routine research cycles can be reprocessed: "
+                    "Only failed, stalled, weak MEI audience, outdated, corporate, contaminated, generic or materialization-failed routine research cycles can be reprocessed: "
                             + researchCycleId);
         }
         OprmNicheCandidate candidate = nicheCandidateRepository
@@ -144,6 +145,7 @@ public class BackendRoutineResearchOrchestratorService {
     /** Informa se o ciclo terminal permite nova pesquisa manual para sair de falha, material fraco ou falha de materialização. */
     private boolean isReprocessableStatus(String status) {
         return CYCLE_STATUS_FAILED.equals(status)
+                || CYCLE_STATUS_STALLED.equals(status)
                 || CYCLE_STATUS_NEEDS_MORE_RESEARCH.equals(status)
                 || CYCLE_STATUS_NEEDS_MORE_MEI_RESEARCH.equals(status)
                 || CYCLE_STATUS_OUTDATED_SOURCES.equals(status)
@@ -157,6 +159,9 @@ public class BackendRoutineResearchOrchestratorService {
     private String buildReprocessMessage(String previousStatus) {
         if (CYCLE_STATUS_FAILED.equals(previousStatus)) {
             return "Novo ciclo de pesquisa de rotina criado imediatamente para reprocessar o CNAE com falha.";
+        }
+        if (CYCLE_STATUS_STALLED.equals(previousStatus)) {
+            return "Novo ciclo de pesquisa de rotina criado imediatamente para recuperar um pipeline parado sem progresso.";
         }
         if (CYCLE_STATUS_NEEDS_MORE_RESEARCH.equals(previousStatus) || CYCLE_STATUS_NEEDS_MORE_MEI_RESEARCH.equals(previousStatus)) {
             return "Novo ciclo de pesquisa de rotina criado imediatamente para aprofundar um público MEI/autônomo que precisava de mais pesquisa.";

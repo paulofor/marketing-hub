@@ -1,0 +1,19 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-12-facebook-campaign-stop-reason-varchar
+      author: assistant
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - columnExists:
+            tableName: facebook_ads_campaign
+            columnName: stop_reason
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE facebook_ads_campaign
+              MODIFY stop_reason VARCHAR(100) NULL;

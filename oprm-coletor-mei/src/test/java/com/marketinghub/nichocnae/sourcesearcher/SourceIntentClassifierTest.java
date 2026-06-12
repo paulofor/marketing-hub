@@ -118,4 +118,48 @@ class SourceIntentClassifierTest {
         assertThat(result.autonomousProfessionalEvidenceScore()).isLessThan(40);
     }
 
+    /** Deve aumentar o escore de fontes com execução prática, CBO, guias e relatos profissionais. */
+    @Test
+    void shouldBoostPracticalExecutionProfessionalSources() {
+        SourceIntentClassifier classifier = new SourceIntentClassifier();
+
+        SourceSearchResult result = classifier.classify(new SourceSearchResult(
+                "https://ocupacoes.example.com.br/cbo-manicure-2026",
+                "CBO manicure pedicure: guia profissional da rotina executada",
+                "Relato de profissional sobre procedimentos de atendimento cliente, higiene e esterilização no dia a dia.",
+                "ocupacoes.example.com.br",
+                1,
+                null,
+                null,
+                false,
+                false));
+
+        assertThat(result.sourceIntent()).isEqualTo("ROUTINE_REPORT");
+        assertThat(result.sourceClassificationType()).isEqualTo("REAL_PROFESSIONAL_REPORT_OR_QUESTION");
+        assertThat(result.routineEvidenceScore()).isGreaterThanOrEqualTo(90);
+        assertThat(result.commercialPageRisk()).isFalse();
+    }
+
+    /** Deve penalizar venda de sistema quando a página não descreve tarefas concretas do executor. */
+    @Test
+    void shouldPenalizeSoftwareAgendaPagesWithoutConcreteExecutorTasks() {
+        SourceIntentClassifier classifier = new SourceIntentClassifier();
+
+        SourceSearchResult result = classifier.classify(new SourceSearchResult(
+                "https://agenda.example.com/salao",
+                "Sistema com agenda online e app para salão",
+                "Automação, plataforma e software para vender mais com reservas online.",
+                "agenda.example.com",
+                2,
+                null,
+                null,
+                false,
+                false));
+
+        assertThat(result.sourceIntent()).isEqualTo("COMMERCIAL_PAGE_RISK");
+        assertThat(result.sourceClassificationType()).isEqualTo("COMMERCIAL_PAGE");
+        assertThat(result.commercialPageRisk()).isTrue();
+        assertThat(result.routineEvidenceScore()).isLessThanOrEqualTo(20);
+    }
+
 }

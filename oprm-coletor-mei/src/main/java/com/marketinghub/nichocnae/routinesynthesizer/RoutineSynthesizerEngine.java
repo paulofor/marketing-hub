@@ -6,6 +6,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -25,10 +26,19 @@ public class RoutineSynthesizerEngine {
                 .toList();
         String routine = buildBlock("Rotina", pending,
                 filterByType(signals, "ROUTINE_TASK", "ROUTINE", "TASK", "AUTONOMOUS_WORK_MODE"));
-        String customerBehavior = buildBlock("Comportamento de clientes", pending,
-                filterByType(signals, "CUSTOMER_ACQUISITION_BEHAVIOR", "CUSTOMER_QUESTION", "NICHE_OWNER_QUESTION", "FINAL_CUSTOMER_QUESTION", "QUESTION_SIGNAL"));
-        String channels = buildBlock("Canais", pending,
-                filterByType(signals, "CHANNEL_USAGE", "COMMERCIAL_TASK", "COMMERCIAL_OBJECT"));
+        String customerBehavior = buildRequiredCommercialBlock(
+                "Comportamento de clientes",
+                pending,
+                "pesquisar especificamente como o cliente chega, compara, pede orçamento, decide e compra antes de vender",
+                filterByPriority(
+                        signals,
+                        List.of("CUSTOMER_ACQUISITION_BEHAVIOR"),
+                        List.of("CUSTOMER_QUESTION", "NICHE_OWNER_QUESTION", "FINAL_CUSTOMER_QUESTION", "QUESTION_SIGNAL")));
+        String channels = buildRequiredCommercialBlock(
+                "Canais",
+                pending,
+                "pesquisar especificamente quais canais trazem cliente, conversa, orçamento, agendamento e recompra antes de vender",
+                filterByPriority(signals, List.of("CHANNEL_USAGE", "COMMERCIAL_TASK"), List.of("COMMERCIAL_OBJECT")));
         String operationalPains = buildBlock("Dores práticas", pending,
                 filterByType(signals, "OPERATIONAL_PAIN", "OPERATIONAL_FRICTION", "PAIN_POINT", "PAIN_SIGNAL", "TIME_PRESSURE", "INCOME_INSTABILITY", "PRICE_INSECURITY", "CLIENT_NO_SHOW_OR_CANCELLATION"));
         String emotionalPains = buildBlock("Dores emocionais", pending,
@@ -78,6 +88,41 @@ public class RoutineSynthesizerEngine {
                 .limit(MAX_ITEMS_PER_BLOCK)
                 .toList();
         return filtered.isEmpty() ? List.of() : filtered;
+    }
+
+    /** Prioriza sinais comerciais específicos antes de sinais equivalentes para impedir que aquisição e canais virem resíduos. */
+    private List<SignalForRoutineSynthesis> filterByPriority(
+            List<SignalForRoutineSynthesis> signals, List<String> priorityTypes, List<String> equivalentTypes) {
+        Map<String, Boolean> priority = priorityTypes.stream()
+                .collect(Collectors.toMap(type -> type, type -> Boolean.TRUE));
+        Map<String, Boolean> equivalent = equivalentTypes.stream()
+                .collect(Collectors.toMap(type -> type, type -> Boolean.TRUE));
+        List<SignalForRoutineSynthesis> prioritized = signals.stream()
+                .filter(signal -> priority.containsKey(normalizeType(signal.signalType())))
+                .limit(MAX_ITEMS_PER_BLOCK)
+                .toList();
+        if (prioritized.size() >= MAX_ITEMS_PER_BLOCK) {
+            return prioritized;
+        }
+        List<SignalForRoutineSynthesis> complements = signals.stream()
+                .filter(signal -> equivalent.containsKey(normalizeType(signal.signalType())))
+                .limit(MAX_ITEMS_PER_BLOCK - prioritized.size())
+                .toList();
+        return Stream.concat(prioritized.stream(), complements.stream()).toList();
+    }
+
+    /** Monta bloco comercial obrigatório ou orienta pesquisa específica quando faltam evidências vendáveis. */
+    private String buildRequiredCommercialBlock(
+            String title,
+            RoutineSynthesizerPending pending,
+            String researchGuidance,
+            List<SignalForRoutineSynthesis> signals) {
+        if (signals.isEmpty()) {
+            return title + " para " + pending.nicheName() + " / CNAE " + pending.cnaeCode() + ":\n"
+                    + "- Evidência insuficiente para cartão vendável; " + researchGuidance
+                    + ". Não materializar venda com este bloco vazio.";
+        }
+        return buildBlock(title, pending, signals);
     }
 
     /** Monta um bloco textual curto do cartão citando sinais e evidências de apoio sem sugerir produto ou oferta. */

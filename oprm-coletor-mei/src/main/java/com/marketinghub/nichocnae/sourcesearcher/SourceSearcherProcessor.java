@@ -35,11 +35,11 @@ public class SourceSearcherProcessor implements StageProcessor<SourceSearcherPen
                 .map(sourceIntentClassifier::classify)
                 .sorted(Comparator.comparing(SourceSearchResult::commercialPageRisk)
                         .thenComparing(SourceSearchResult::structuredBusinessDriftRisk)
-                        .thenComparing(SourceSearchResult::outdatedSourceRisk)
-                        .thenComparing(Comparator.comparing(SourceSearchResult::brazilRelevanceScore).reversed())
-                        .thenComparing(Comparator.comparing(SourceSearchResult::autonomousProfessionalEvidenceScore).reversed())
-                        .thenComparing(Comparator.comparing(SourceSearchResult::sourceFreshnessScore).reversed())
                         .thenComparing(Comparator.comparing(SourceSearchResult::routineEvidenceScore).reversed())
+                        .thenComparing(Comparator.comparing(SourceSearchResult::autonomousProfessionalEvidenceScore).reversed())
+                        .thenComparing(Comparator.comparing(SourceSearchResult::brazilRelevanceScore).reversed())
+                        .thenComparing(SourceSearchResult::outdatedSourceRisk)
+                        .thenComparing(Comparator.comparing(SourceSearchResult::sourceFreshnessScore).reversed())
                         .thenComparing(SourceSearchResult::searchPosition))
                 .toList();
         SourceSearcherOutput output =

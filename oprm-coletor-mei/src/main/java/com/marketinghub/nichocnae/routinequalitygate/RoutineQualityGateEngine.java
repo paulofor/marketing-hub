@@ -27,6 +27,10 @@ public class RoutineQualityGateEngine {
         int effectiveSolutionRiskScore = Math.max(Math.max(solutionRiskScore, textualSolutionRiskScore), value(pending.profileSolutionLanguageRiskScore()));
         int outdatedRiskScore = calculateOutdatedSourceRiskScore(pending, sourceCount);
         int corporateRiskScore = calculateCorporateDriftRiskScore(pending, sourceCount);
+        int concreteRoutineTaskCount = countDistinctConcreteRoutineTasks(pending.routineSummary());
+        boolean hasRepeatedGenericRoutine = hasRepeatedGenericRoutinePhrase(pending.routineSummary());
+        boolean routineAdministrativeOnly = isRoutineAdministrativeOnly(pending.routineSummary());
+        boolean routineRevealsExecutorTasks = concreteRoutineTaskCount >= 2 && !hasRepeatedGenericRoutine && !routineAdministrativeOnly;
         int specificityScore = calculateSpecificityScore(pending);
         int confidenceScore = calculateConfidenceScore(pending, sourceCount, signalCount, effectiveSolutionRiskScore, outdatedRiskScore, corporateRiskScore);
         int duplicationScore = calculateDuplicationScore(pending);
@@ -35,15 +39,25 @@ public class RoutineQualityGateEngine {
         boolean hasRecentSources = value(pending.recentSourceCount()) >= 2 || value(pending.sourceFreshnessScore()) >= 70;
         boolean hasAuditableEvidence = hasText(pending.evidenceSummary()) && distinctDomainCount(pending.sourceDomains()) >= 2 && hasBrazilianSources;
         boolean hasRoutineTask = value(pending.routineTaskCount()) > 0;
-        boolean hasAcquisitionOrChannel = value(pending.customerAcquisitionEvidenceCount()) > 0;
+        boolean hasUsefulCustomerBehaviorSummary = hasUsefulCommercialSummary(pending.customerBehaviorSummary());
+        boolean hasUsefulChannelsSummary = hasUsefulCommercialSummary(pending.channelsSummary());
+        boolean hasAcquisitionOrChannelCounter = value(pending.customerAcquisitionEvidenceCount()) > 0;
+        boolean hasCommercialAcquisitionEvidence = hasAcquisitionOrChannelCounter
+                && hasUsefulCustomerBehaviorSummary
+                && hasUsefulChannelsSummary;
         boolean hasPracticalPain = value(pending.operationalDifficultyCount()) > 0 || value(pending.painSignalCount()) > 0;
         boolean hasHumanOutcome = value(pending.emotionalOutcomeEvidenceCount()) > 0;
-        boolean hasMinimumSignalMix = hasRoutineTask && hasAcquisitionOrChannel && hasPracticalPain && hasHumanOutcome;
+        boolean hasMinimumSignalMix = hasRoutineTask && hasCommercialAcquisitionEvidence && hasPracticalPain && hasHumanOutcome;
+        boolean weakAcquisitionOrChannels = !hasCommercialAcquisitionEvidence;
         boolean dominatedBySolution = effectiveSolutionRiskScore > MAX_ACCEPTABLE_SOLUTION_RISK
                 || value(pending.solutionLanguageRiskCount()) > signalCount / 2;
         boolean outdated = outdatedRiskScore > MAX_ACCEPTABLE_OUTDATED_RISK || !hasRecentSources;
         boolean tooCorporate = corporateRiskScore > MAX_ACCEPTABLE_CORPORATE_RISK || value(pending.autonomousProfessionalFitScore()) < 50;
-        boolean generic = specificityScore < 40 || duplicationScore >= 70 || !hasRequiredSummaries || !hasAuditableEvidence;
+        boolean generic = specificityScore < 40
+                || duplicationScore >= 70
+                || !hasRequiredSummaries
+                || !hasAuditableEvidence
+                || !routineRevealsExecutorTasks;
         boolean approved = sourceCount >= 3
                 && signalCount >= 6
                 && specificityScore >= 60
@@ -52,12 +66,13 @@ public class RoutineQualityGateEngine {
                 && hasAuditableEvidence
                 && hasRecentSources
                 && hasMinimumSignalMix
+                && routineRevealsExecutorTasks
                 && value(pending.behavioralEvidenceScore()) >= 55
                 && !dominatedBySolution
                 && !outdated
                 && !tooCorporate
                 && !generic;
-        String status = chooseStatus(generic, dominatedBySolution, outdated, tooCorporate, approved, hasMinimumSignalMix);
+        String status = chooseStatus(generic, weakAcquisitionOrChannels, dominatedBySolution, outdated, tooCorporate, approved, hasMinimumSignalMix);
         return new RoutineQualityDecision(
                 status,
                 approved,
@@ -68,18 +83,26 @@ public class RoutineQualityGateEngine {
                         pending,
                         status,
                         hasMinimumSignalMix,
+                        hasUsefulCustomerBehaviorSummary,
+                        hasUsefulChannelsSummary,
+                        weakAcquisitionOrChannels,
                         hasAuditableEvidence,
                         hasRecentSources,
                         dominatedBySolution,
                         outdatedRiskScore,
                         corporateRiskScore,
                         effectiveSolutionRiskScore,
-                        textualSolutionRiskScore));
+                        textualSolutionRiskScore,
+                        concreteRoutineTaskCount,
+                        hasRepeatedGenericRoutine,
+                        routineAdministrativeOnly,
+                        routineRevealsExecutorTasks));
     }
 
     /** Escolhe o status mais útil para orientar nova pesquisa ou bloqueio operacional. */
     private String chooseStatus(
             boolean generic,
+            boolean weakAcquisitionOrChannels,
             boolean dominatedBySolution,
             boolean outdated,
             boolean tooCorporate,
@@ -93,6 +116,9 @@ public class RoutineQualityGateEngine {
         }
         if (outdated) {
             return OUTDATED_SOURCES;
+        }
+        if (weakAcquisitionOrChannels) {
+            return NEEDS_MORE_MEI_RESEARCH;
         }
         if (generic) {
             return GENERIC;
@@ -116,8 +142,16 @@ public class RoutineQualityGateEngine {
                 + value(pending.customerAcquisitionEvidenceCount()) * 5
                 + value(pending.emotionalOutcomeEvidenceCount()) * 4
                 + (value(pending.questionSignalCount()) + value(pending.languageMarkerCount())));
+        int concreteRoutineTasks = countDistinctConcreteRoutineTasks(pending.routineSummary());
+        score += Math.min(12, concreteRoutineTasks * 6);
         if (containsConcreteMarker(pending.routineSummary() + " " + pending.painsSummary() + " " + pending.resultsSummary())) {
             score += 8;
+        }
+        if (hasRepeatedGenericRoutinePhrase(pending.routineSummary())) {
+            score -= 20;
+        }
+        if (isRoutineAdministrativeOnly(pending.routineSummary())) {
+            score -= 18;
         }
         return clamp(score);
     }
@@ -210,13 +244,20 @@ public class RoutineQualityGateEngine {
             RoutineQualityGatePending pending,
             String status,
             boolean hasMinimumSignalMix,
+            boolean hasUsefulCustomerBehaviorSummary,
+            boolean hasUsefulChannelsSummary,
+            boolean weakAcquisitionOrChannels,
             boolean hasAuditableEvidence,
             boolean hasRecentSources,
             boolean dominatedBySolution,
             int outdatedRiskScore,
             int corporateRiskScore,
             int solutionRiskScore,
-            int textualSolutionRiskScore) {
+            int textualSolutionRiskScore,
+            int concreteRoutineTaskCount,
+            boolean hasRepeatedGenericRoutine,
+            boolean routineAdministrativeOnly,
+            boolean routineRevealsExecutorTasks) {
         List<String> notes = new ArrayList<>();
         notes.add("status=" + status);
         notes.add("fontes=" + value(pending.sourceCount()));
@@ -224,7 +265,14 @@ public class RoutineQualityGateEngine {
         notes.add("fontesRecentes=" + value(pending.recentSourceCount()));
         notes.add("sinais=" + value(pending.signalCount()));
         notes.add("tarefasRotina=" + value(pending.routineTaskCount()));
+        notes.add("tarefasConcretasDistintas=" + concreteRoutineTaskCount);
+        notes.add("rotinaGenericaRepetida=" + hasRepeatedGenericRoutine);
+        notes.add("rotinaApenasGestaoAgendaAtendimentoOrganizacao=" + routineAdministrativeOnly);
+        notes.add("rotinaRevelaTarefasReaisExecutor=" + routineRevealsExecutorTasks);
         notes.add("aquisicaoOuCanal=" + value(pending.customerAcquisitionEvidenceCount()));
+        notes.add("resumoComportamentoClienteUtil=" + hasUsefulCustomerBehaviorSummary);
+        notes.add("resumoCanaisUtil=" + hasUsefulChannelsSummary);
+        notes.add("faltaEvidenciaAquisicaoCanaisRecorrenciaOuComportamentoClientes=" + weakAcquisitionOrChannels);
         notes.add("dorPratica=" + (value(pending.operationalDifficultyCount()) + value(pending.painSignalCount())));
         notes.add("dorEmocionalSonhoOuMedo=" + value(pending.emotionalOutcomeEvidenceCount()));
         notes.add("mixMinimoMeiAutonomo=" + hasMinimumSignalMix);
@@ -257,9 +305,214 @@ public class RoutineQualityGateEngine {
         return (int) List.of(sourceDomains.split(",")).stream().map(String::trim).filter(StringUtils::hasText).distinct().count();
     }
 
+
+    /** Verifica se o resumo comercial contém evidência acionável e não apenas placeholder de ausência de evidência. */
+    private boolean hasUsefulCommercialSummary(String value) {
+        if (!hasText(value)) {
+            return false;
+        }
+        String normalized = normalize(value);
+        if (normalized.length() < 35 || containsInsufficientEvidencePlaceholder(normalized)) {
+            return false;
+        }
+        return containsCommercialActionMarker(normalized);
+    }
+
+    /** Identifica frases genéricas que explicitam falta de evidência e não podem virar sinal positivo. */
+    private boolean containsInsufficientEvidencePlaceholder(String normalized) {
+        return normalized.contains("sem evidencia suficiente")
+                || normalized.contains("sem evidencias suficientes")
+                || normalized.contains("nao ha evidencia")
+                || normalized.contains("nao existe evidencia")
+                || normalized.contains("sem dados suficientes")
+                || normalized.contains("informacao insuficiente")
+                || normalized.contains("nao identificado")
+                || normalized.contains("nao foi identificado");
+    }
+
+    /** Procura marcadores de aquisição, canal, recorrência ou comportamento de clientes em linguagem operacional. */
+    private boolean containsCommercialActionMarker(String normalized) {
+        return List.of(
+                        "whatsapp",
+                        "instagram",
+                        "indicacao",
+                        "cliente",
+                        "clientes",
+                        "canal",
+                        "agenda",
+                        "retorno",
+                        "recorr",
+                        "orcamento",
+                        "atendimento",
+                        "telefone",
+                        "google",
+                        "rede social",
+                        "redes sociais",
+                        "bairro",
+                        "fidelizacao")
+                .stream()
+                .anyMatch(normalized::contains);
+    }
+
     /** Detecta marcadores concretos que normalmente indicam texto menos genérico e mais comportamental. */
     private boolean containsConcreteMarker(String value) {
         return hasText(value) && value.matches(".*(\\d|WhatsApp|Instagram|agenda|cliente|preço|pacote|retorno|horário|cancelamento|atraso|falta).*");
+    }
+
+    /** Conta tarefas concretas e distintas do executor descritas no resumo de rotina. */
+    private int countDistinctConcreteRoutineTasks(String routineSummary) {
+        String text = normalize(routineSummary);
+        if (!StringUtils.hasText(text)) {
+            return 0;
+        }
+        List<String> tasks = new ArrayList<>();
+        for (String marker : concreteTaskMarkers()) {
+            if ((" " + text + " ").contains(" " + marker + " ")) {
+                tasks.add(marker);
+            }
+        }
+        for (String fragment : text.split("[.;:!?\n]+")) {
+            String normalizedFragment = fragment.trim();
+            if (isConcreteExecutorAction(normalizedFragment)) {
+                tasks.add(normalizedFragment);
+            }
+        }
+        return (int) tasks.stream().filter(StringUtils::hasText).distinct().count();
+    }
+
+    /** Lista marcadores de ações do ofício que diferenciam execução real de gestão genérica. */
+    private List<String> concreteTaskMarkers() {
+        return List.of(
+                "cortar cabelo",
+                "lavar cabelo",
+                "escovar cabelo",
+                "hidratar cabelo",
+                "finalizar cabelo",
+                "preparar coloracao",
+                "aplicar coloracao",
+                "descolorir cabelo",
+                "alisar cabelo",
+                "modelar cabelo",
+                "aparar barba",
+                "fazer barba",
+                "lixar unhas",
+                "cortar unhas",
+                "remover esmalte",
+                "retirar cuticula",
+                "empurrar cuticula",
+                "esmaltar unhas",
+                "aplicar gel",
+                "fazer alongamento",
+                "esterilizar alicates",
+                "higienizar materiais",
+                "preparar massa",
+                "assar alimento",
+                "costurar roupa",
+                "instalar tomada",
+                "reparar equipamento",
+                "trocar peca",
+                "medir area",
+                "pintar parede");
+    }
+
+    /** Verifica se um fragmento contém verbo operacional e objeto específico do trabalho executado. */
+    private boolean isConcreteExecutorAction(String fragment) {
+        if (!StringUtils.hasText(fragment) || isAdministrativeFragment(fragment)) {
+            return false;
+        }
+        boolean hasActionVerb = List.of(
+                        "cortar",
+                        "lavar",
+                        "escovar",
+                        "hidratar",
+                        "preparar",
+                        "aplicar",
+                        "remover",
+                        "retirar",
+                        "empurrar",
+                        "lixar",
+                        "esmaltar",
+                        "esterilizar",
+                        "higienizar",
+                        "alisar",
+                        "descolorir",
+                        "finalizar",
+                        "modelar",
+                        "aparar",
+                        "barbear",
+                        "instalar",
+                        "reparar",
+                        "trocar",
+                        "medir",
+                        "pintar",
+                        "costurar",
+                        "assar",
+                        "cozinhar",
+                        "montar",
+                        "limpar")
+                .stream()
+                .anyMatch(verb -> (" " + fragment + " ").contains(" " + verb + " "));
+        boolean hasSpecificObject = List.of(
+                        "cabelo",
+                        "mecha",
+                        "raiz",
+                        "coloracao",
+                        "tintura",
+                        "escova",
+                        "barba",
+                        "unha",
+                        "unhas",
+                        "cuticula",
+                        "esmalte",
+                        "gel",
+                        "alicate",
+                        "materiais",
+                        "peca",
+                        "equipamento",
+                        "produto",
+                        "material",
+                        "ferramenta",
+                        "documento",
+                        "medida",
+                        "area",
+                        "roupa",
+                        "alimento",
+                        "massa",
+                        "motor",
+                        "parede",
+                        "piso",
+                        "tomada")
+                .stream()
+                .anyMatch(object -> (" " + fragment + " ").contains(" " + object + " "));
+        return hasActionVerb && hasSpecificObject;
+    }
+
+    /** Identifica repetição do texto genérico usado quando a coleta não revelou rotina real. */
+    private boolean hasRepeatedGenericRoutinePhrase(String routineSummary) {
+        String text = normalize(routineSummary);
+        String phrase = "gerenciar rotina de atendimento e agenda do nicho";
+        int firstIndex = text.indexOf(phrase);
+        return firstIndex >= 0 && text.indexOf(phrase, firstIndex + phrase.length()) >= 0;
+    }
+
+    /** Detecta rotina composta apenas por gestão, agenda, atendimento ou organização sem ação específica do ofício. */
+    private boolean isRoutineAdministrativeOnly(String routineSummary) {
+        String text = normalize(routineSummary);
+        if (!StringUtils.hasText(text) || countDistinctConcreteRoutineTasks(routineSummary) > 0) {
+            return false;
+        }
+        return List.of(
+                        "gestao", "gerenciar", "agenda", "agendamento", "atendimento", "organizar", "organizacao", "rotina")
+                .stream()
+                .anyMatch(term -> (" " + text + " ").contains(" " + term + " "));
+    }
+
+    /** Verifica se um fragmento descreve apenas administração do atendimento, sem execução do ofício. */
+    private boolean isAdministrativeFragment(String fragment) {
+        return List.of(
+                        "gerenciar", "gestao", "agenda", "agendamento", "atendimento", "organizar", "organizacao", "rotina", "nicho")
+                .stream()
+                .anyMatch(term -> (" " + fragment + " ").contains(" " + term + " "));
     }
 
     /** Normaliza texto para comparação de duplicidade simples. */

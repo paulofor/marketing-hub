@@ -25,6 +25,8 @@ public record EnrichedNicheMaterializerPending(
         Integer solutionLanguageRiskScore,
         String routineSummary,
         String painsSummary,
+        String customerBehaviorSummary,
+        String channelsSummary,
         String resultsSummary,
         String mechanismOpportunitiesSummary,
         String evidenceSummary,

@@ -76,6 +76,8 @@ class BackendEnrichedNicheMaterializerServiceTest {
     assertThat(pending.getFirst().researchMode()).isEqualTo("ROUTINE_REALITY_RESEARCH");
     assertThat(pending.getFirst().routineEvidenceScore()).isEqualTo(87);
     assertThat(pending.getFirst().solutionLanguageRiskScore()).isEqualTo(35);
+    assertThat(pending.getFirst().customerBehaviorSummary()).contains("indicação");
+    assertThat(pending.getFirst().channelsSummary()).contains("WhatsApp");
     assertThat(pending.getFirst().mechanismOpportunitiesSummary()).contains("Contexto operacional");
   }
 
@@ -127,8 +129,8 @@ class BackendEnrichedNicheMaterializerServiceTest {
             && Integer.valueOf(35).equals(profile.getSolutionLanguageRiskScore())
             && profile.getMechanismOpportunitiesSummary().contains("Contexto operacional")
             && !profile.getMechanismOpportunitiesSummary().contains("Mecanismo de agenda")
-            && profile.getCommercialTriggers() == null
-            && profile.getObjections() == null));
+            && "Gatilhos".equals(profile.getCommercialTriggers())
+            && "Objeções".equals(profile.getObjections())));
   }
 
   /** Deve localizar registros históricos contaminados para orientar novo ciclo neutro. */
@@ -184,6 +186,8 @@ class BackendEnrichedNicheMaterializerServiceTest {
     card.setNicheName("IA para salões pequenos");
     card.setRoutineSummary("Rotina com agenda, atendimento e retorno de clientes.");
     card.setPainsSummary("Dores de falta de tempo e organização.");
+    card.setCustomerBehaviorSummary("Comportamento de clientes: indicação, retorno e desmarcações.");
+    card.setChannelsSummary("Canais usados: WhatsApp e conversa direta.");
     card.setResultsSummary("Perguntas do profissional sobre encaixes e retornos de clientes.");
     card.setMechanismOpportunitiesSummary("Contexto operacional e linguagem do nicho: agenda, encaixes, retorno e horários vagos.");
     card.setEvidenceSummary("Evidência em fontes de gestão para salões.");

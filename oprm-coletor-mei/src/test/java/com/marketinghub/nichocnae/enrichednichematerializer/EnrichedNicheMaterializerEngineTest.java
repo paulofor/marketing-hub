@@ -19,6 +19,8 @@ class EnrichedNicheMaterializerEngineTest {
                 "LIGHTLY_RESEARCHED", 84, 100, 0, 87, 82, 72, 35,
                 "Rotina com agenda e retorno de clientes.",
                 "Dores de falta de tempo e organização.",
+                "Comportamento de clientes: dependência de indicação e clientes que desmarcam.",
+                "Canais usados: WhatsApp e conversa direta para horários.",
                 "Perguntas sobre horários e retornos.",
                 "Contexto operacional e linguagem do nicho: agenda e encaixes.",
                 "Evidência em fontes públicas.",
@@ -28,8 +30,10 @@ class EnrichedNicheMaterializerEngineTest {
         assertThat(draft.personaSummary()).contains("Cabeleireiros");
         assertThat(draft.personaSummary()).contains("ROUTINE_REALITY_RESEARCH");
         assertThat(draft.languagePatterns()).contains("Dores de falta de tempo");
-        assertThat(draft.commercialTriggers()).isNull();
-        assertThat(draft.objections()).isNull();
+        assertThat(draft.commercialTriggers()).contains("agenda vazia", "perda de retorno", "dependência de indicação");
+        assertThat(draft.commercialTriggers()).doesNotContain("IA", "software", "produto", "oferta", "campanha", "landing page");
+        assertThat(draft.objections()).contains("receio de expor desorganização", "apego ao jeito atual");
+        assertThat(draft.objections()).doesNotContain("IA", "software", "produto", "oferta", "campanha", "landing page");
     }
 
     /** Deve ignorar frases contaminadas por linguagem de solução sem quebrar a materialização aprovada. */
@@ -44,6 +48,8 @@ class EnrichedNicheMaterializerEngineTest {
                 100, 100, 80, 18,
                 "Rotina com sistema de agendamento e automação de retornos.",
                 "Dores com aplicativo de agenda e ferramenta de cobrança.",
+                "Comportamento de clientes: retorno, encaixes e desmarcações recorrentes.",
+                "Canais usados: WhatsApp e conversa direta para atendimento.",
                 "Perguntas sobre encaixes, atrasos e retorno de clientes.",
                 "Contexto operacional e linguagem do nicho: controle de horários, encaixes e atendimento.",
                 "Evidência em fontes públicas.",
@@ -55,5 +61,7 @@ class EnrichedNicheMaterializerEngineTest {
         assertThat(draft.languagePatterns()).contains("Contexto operacional");
         assertThat(draft.languagePatterns()).doesNotContain("sistema de agendamento");
         assertThat(draft.languagePatterns()).doesNotContain("aplicativo de agenda");
+        assertThat(draft.commercialTriggers()).contains("perda de retorno", "cliente que desmarca");
+        assertThat(draft.commercialTriggers()).doesNotContain("automação", "ferramenta", "produto", "oferta");
     }
 }

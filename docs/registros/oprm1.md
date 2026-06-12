@@ -412,3 +412,9 @@
 - Corrigida a causa-raiz do erro de banco `Data too long for column 'query_goal'` sem truncar campos e sem ampliar o banco: o schema JSON da etapa `niche-research-seed-builder` agora declara `maxLength` nos campos gravados em colunas curtas, fazendo o modelo responder dentro do contrato persistível.
 - A fila da etapa 2 considera como reprocessáveis as falhas sem seed/queries causadas pelo contrato legado (`nicheName is required`) ou pelo estouro de `query_goal`, permitindo recuperação após o deploy da correção.
 - Adicionados testes de regressão para garantir que o schema solicite ao modelo limites compatíveis com `query_text`, `query_goal`, `source_group`, `created_by`, `niche_name`, `business_type` e `confidence_level`, sem corte silencioso no backend.
+
+## 2026-06-12 — OPRM NichoCNAE: materializador com campos comerciais não-ofertivos
+
+- Atualizado o materializador de nicho enriquecido para preencher gatilhos comportamentais e objeções prováveis a partir de evidências do cartão aprovado, usando dores, resultados, comportamento do cliente, canais e linguagem pública sem criar produto, promessa, campanha ou landing page.
+- Causa-raiz tratada: os campos `commercialTriggers` e `objections` permaneciam nulos porque a etapa final preservava somente contexto operacional, deixando sinais comerciais observáveis sem registro mesmo quando havia evidência suficiente.
+- Prevenção de recorrência: adicionados testes para garantir preenchimento determinístico em perfis aprovados e ausência de linguagem técnica/de solução nos campos comerciais sintetizados.

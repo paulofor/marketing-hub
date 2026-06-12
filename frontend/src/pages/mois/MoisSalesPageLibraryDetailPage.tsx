@@ -4,6 +4,7 @@ import {
   useMoisSalesLibraryMarketWarmup,
   useMoisSalesLibraryMarketWarmupSources,
   useMoisSalesLibraryPage,
+  useRequestMoisSalesLibraryMarketWarmup,
   useMoisSalesLibraryPageExecutions,
   useMoisSalesLibraryPages,
   useUpdateMoisSalesLibraryPageStatus,
@@ -91,6 +92,8 @@ export default function MoisSalesPageLibraryDetailPage() {
   const pagesQuery = useMoisSalesLibraryPages(WORKSPACE_ID, 1, PAGE_SIZE);
   const updateStatusMutation =
     useUpdateMoisSalesLibraryPageStatus(WORKSPACE_ID);
+  const requestWarmupMutation =
+    useRequestMoisSalesLibraryMarketWarmup(WORKSPACE_ID);
 
   const currentIndex =
     pagesQuery.data?.items.findIndex((item) => item.pageId === validPageId) ??
@@ -98,6 +101,14 @@ export default function MoisSalesPageLibraryDetailPage() {
   const nextItem =
     currentIndex >= 0 ? pagesQuery.data?.items[currentIndex + 1] : undefined;
   const isMutating = updateStatusMutation.isPending;
+  const hasActiveWarmupDossier = Boolean(
+    marketWarmupQuery.data ||
+    ["PENDING", "FETCHING", "DONE"].includes(
+      pageQuery.data?.marketWarmupStatus || "",
+    ),
+  );
+  const isWarmupRequestDisabled =
+    !validPageId || requestWarmupMutation.isPending || hasActiveWarmupDossier;
   const hotmartPrice = cleanText(pageQuery.data?.hotmartPrice);
   const hotmartTemperature = pageQuery.data?.hotmartTemperature;
   const hotmartProducer =
@@ -195,6 +206,25 @@ export default function MoisSalesPageLibraryDetailPage() {
         </button>
         <button
           type="button"
+          className="btn btn-outline-primary"
+          disabled={isWarmupRequestDisabled}
+          onClick={() =>
+            validPageId && requestWarmupMutation.mutate(validPageId)
+          }
+        >
+          {requestWarmupMutation.isPending ? (
+            <span
+              className="spinner-border spinner-border-sm me-2"
+              role="status"
+              aria-hidden="true"
+            />
+          ) : null}
+          {requestWarmupMutation.isPending
+            ? "Solicitando dossiê..."
+            : "Iniciar dossiê"}
+        </button>
+        <button
+          type="button"
           className="btn btn-outline-danger"
           disabled={!validPageId || isMutating}
           onClick={() =>
@@ -219,6 +249,17 @@ export default function MoisSalesPageLibraryDetailPage() {
       {updateStatusMutation.isError ? (
         <div className="alert alert-danger mb-0">
           Falha ao atualizar status da página.
+        </div>
+      ) : null}
+
+      {requestWarmupMutation.isSuccess ? (
+        <div className="alert alert-success mb-0">
+          Dossiê enviado para fila.
+        </div>
+      ) : null}
+      {requestWarmupMutation.isError ? (
+        <div className="alert alert-danger mb-0">
+          Falha ao solicitar dossiê.
         </div>
       ) : null}
 

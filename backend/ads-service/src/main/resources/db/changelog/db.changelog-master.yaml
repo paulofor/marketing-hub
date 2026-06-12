@@ -87,6 +87,9 @@ databaseChangeLog:
       file: changesets/2026-06-02-oprm-nichocnae-seed-builder.yaml
       relativeToChangelogFile: true
   - include:
+      file: changesets/2026-06-12-oprm-seed-builder-openai-telemetry.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-06-01-pipeline-crud.yaml
       relativeToChangelogFile: true
   - include:

@@ -35,7 +35,13 @@ class NicheResearchSeedBuilderBackendClientTest {
                 "AI");
 
         NicheResearchSeedBuilderBackendCompletionRequest request = client.toBackendCompletionRequest(
-                new NicheResearchSeedBuilderOutput(1L, seed, List.of(query)));
+                new OpenAiSeedBuilderResult(
+                        new NicheResearchSeedBuilderOutput(1L, seed, List.of(query)),
+                        "{\"seed\":true}",
+                        1200,
+                        800,
+                        "resp_seed",
+                        "gpt-5.4"));
 
         assertThat(request.nicheName()).isEqualTo("Cabeleireiros MEI e profissionais autônomos");
         assertThat(request.businessType()).isEqualTo("Serviços de beleza");
@@ -45,6 +51,10 @@ class NicheResearchSeedBuilderBackendClientTest {
         assertThat(request.initialAssumptions()).isEqualTo("clientes sofrem com agenda vazia");
         assertThat(request.confidenceLevel()).isEqualTo("HIGH");
         assertThat(request.createdBy()).isEqualTo("AI");
+        assertThat(request.model()).isEqualTo("gpt-5.4");
+        assertThat(request.inputTokens()).isEqualTo(1200);
+        assertThat(request.outputTokens()).isEqualTo(800);
+        assertThat(request.openAiResponseId()).isEqualTo("resp_seed");
         assertThat(request.queries()).containsExactly(query);
     }
 
@@ -79,6 +89,12 @@ class NicheResearchSeedBuilderBackendClientTest {
                 "HIGH",
                 "AI",
                 null,
+                "gpt-5.4",
+                "{\"seed\":true}",
+                1200,
+                800,
+                new java.math.BigDecimal("0.0123"),
+                "resp_seed",
                 1,
                 List.of(query));
 

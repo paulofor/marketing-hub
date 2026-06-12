@@ -12,4 +12,9 @@ public record NicheResearchSeedBuilderBackendCompletionRequest(
         String initialAssumptions,
         String confidenceLevel,
         String createdBy,
+        String model,
+        String rawModelResponse,
+        Integer inputTokens,
+        Integer outputTokens,
+        String openAiResponseId,
         List<ResearchQuery> queries) {}

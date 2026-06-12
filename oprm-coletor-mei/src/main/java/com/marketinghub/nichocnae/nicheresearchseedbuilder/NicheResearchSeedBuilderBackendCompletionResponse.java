@@ -18,5 +18,11 @@ public record NicheResearchSeedBuilderBackendCompletionResponse(
         String confidenceLevel,
         String createdBy,
         Instant createdAt,
+        String model,
+        String rawModelResponse,
+        Integer inputTokens,
+        Integer outputTokens,
+        java.math.BigDecimal costUsd,
+        String openAiResponseId,
         Integer totalQueries,
         List<NicheResearchSeedBuilderBackendQueryResponse> queries) {}

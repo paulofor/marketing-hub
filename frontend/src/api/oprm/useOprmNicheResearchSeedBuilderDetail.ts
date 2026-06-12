@@ -30,6 +30,12 @@ export interface OprmNicheResearchSeedDetail {
   confidenceLevel: string;
   createdBy: string;
   createdAt: string;
+  model?: string | null;
+  rawModelResponse?: string | null;
+  inputTokens?: number | null;
+  outputTokens?: number | null;
+  costUsd?: number | string | null;
+  openAiResponseId?: string | null;
   totalQueries: number;
   queries: OprmNicheResearchQueryDetail[];
 }

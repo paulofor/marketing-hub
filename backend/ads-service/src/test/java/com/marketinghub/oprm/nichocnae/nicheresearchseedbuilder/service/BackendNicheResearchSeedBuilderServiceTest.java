@@ -3,9 +3,12 @@ package com.marketinghub.oprm.nichocnae.nicheresearchseedbuilder.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.marketinghub.openai.OpenAiResponse;
+import com.marketinghub.openai.service.OpenAiPricingService;
 import com.marketinghub.oprm.nichocnae.OprmNicheResearchSeed;
 import com.marketinghub.oprm.nichocnae.OprmResearchQuery;
 import com.marketinghub.oprm.nichocnae.OprmRoutineResearchCycle;
@@ -16,6 +19,8 @@ import com.marketinghub.oprm.nichocnae.nicheresearchseedbuilder.service.failStag
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmNicheResearchSeedRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmResearchQueryRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmRoutineResearchCycleRepository;
+import com.marketinghub.repository.jpa.pipeline.PipelineStageConfigRepository;
+import com.marketinghub.repository.jpa.pipeline.PipelineStageRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -34,8 +39,25 @@ class BackendNicheResearchSeedBuilderServiceTest {
   @Mock private OprmRoutineResearchCycleRepository routineResearchCycleRepository;
   @Mock private OprmNicheResearchSeedRepository nicheResearchSeedRepository;
   @Mock private OprmResearchQueryRepository researchQueryRepository;
+  @Mock private PipelineStageConfigRepository pipelineStageConfigRepository;
+  @Mock private PipelineStageRepository pipelineStageRepository;
+  @Mock private OpenAiPricingService openAiPricingService;
 
   @InjectMocks private BackendNicheResearchSeedBuilderService service;
+
+  /** Configura preço padrão para os testes que enviam telemetria de OpenAI. */
+  @org.junit.jupiter.api.BeforeEach
+  void setUpPricing() {
+    lenient()
+        .when(openAiPricingService.estimateStandardCost(eq("gpt-5.4"), any(OpenAiResponse.OpenAiUsage.class)))
+        .thenReturn(new BigDecimal("0.0123"));
+    lenient()
+        .when(pipelineStageConfigRepository.findOfficialStageConfig(any(), any(), any()))
+        .thenReturn(Optional.empty());
+    lenient()
+        .when(pipelineStageRepository.findByPipelineCodeAndStageCode(any(), any()))
+        .thenReturn(Optional.empty());
+  }
 
   /** Deve listar ciclos em execução e falhas retryáveis sem seed para a etapa dois. */
   @Test
@@ -85,6 +107,10 @@ class BackendNicheResearchSeedBuilderServiceTest {
     assertThat(response.totalQueries()).isEqualTo(12);
     assertThat(response.queries()).extracting("status").containsOnly("PENDING");
     assertThat(response.queries()).extracting("resultCount").containsOnly(0);
+    assertThat(response.model()).isEqualTo("gpt-5.4");
+    assertThat(response.inputTokens()).isEqualTo(1200);
+    assertThat(response.outputTokens()).isEqualTo(800);
+    assertThat(response.costUsd()).isEqualByComparingTo("0.0123");
 
     ArgumentCaptor<OprmRoutineResearchCycle> cycleCaptor = ArgumentCaptor.forClass(OprmRoutineResearchCycle.class);
     verify(routineResearchCycleRepository).save(cycleCaptor.capture());
@@ -131,6 +157,11 @@ class BackendNicheResearchSeedBuilderServiceTest {
         "depende de agenda cheia",
         "INFERRED_FROM_CNAE",
         "AI",
+        "gpt-5.4",
+        "{\"seed\":true}",
+        1200,
+        800,
+        "resp_seed",
         validQueryRequestsWithFirst("manicure MEI serviços mais procurados Brasil", "PRODUCT_SERVICE_DISCOVERY"));
 
     CompleteNicheResearchSeedBuilderResponse response = service.complete(1001L, request);
@@ -154,6 +185,11 @@ class BackendNicheResearchSeedBuilderServiceTest {
         "depende de agenda cheia",
         "INFERRED_FROM_CNAE",
         "AI",
+        "gpt-5.4",
+        "{\"seed\":true}",
+        1200,
+        800,
+        "resp_seed",
         validQueryRequestsWithFirst("IA para crescimento de manicure MEI Brasil", "MEI_ROUTINE_DISCOVERY"));
 
     CompleteNicheResearchSeedBuilderResponse response = service.complete(1001L, request);
@@ -176,6 +212,11 @@ class BackendNicheResearchSeedBuilderServiceTest {
         "depende de agenda cheia",
         "INFERRED_FROM_CNAE",
         "AI",
+        "gpt-5.4",
+        "{\"seed\":true}",
+        1200,
+        800,
+        "resp_seed",
         validQueryRequestsWithFirst("manicure responsabilidades rotina Brasil", "MEI_ROUTINE_DISCOVERY"));
 
     CompleteNicheResearchSeedBuilderResponse response = service.complete(1001L, request);
@@ -198,6 +239,11 @@ class BackendNicheResearchSeedBuilderServiceTest {
         "depende de agenda cheia",
         "INFERRED_FROM_CNAE",
         "AI",
+        "gpt-5.4",
+        "{\"seed\":true}",
+        1200,
+        800,
+        "resp_seed",
         validQueryRequestsWithFirst("manicure MEI responsabilidades rotina", "MEI_ROUTINE_DISCOVERY"));
 
     CompleteNicheResearchSeedBuilderResponse response = service.complete(1001L, request);
@@ -220,6 +266,11 @@ class BackendNicheResearchSeedBuilderServiceTest {
         "depende de agenda cheia",
         "INFERRED_FROM_CNAE",
         "AI",
+        "gpt-5.4",
+        "{\"seed\":true}",
+        1200,
+        800,
+        "resp_seed",
         validQueryRequestsWithFirst(
             "rotina de manicure MEI e atendimento e organização diária Brasil", "MEI_ROUTINE_DISCOVERY"));
 
@@ -248,6 +299,11 @@ class BackendNicheResearchSeedBuilderServiceTest {
         "depende de agenda cheia",
         "INFERRED_FROM_CNAE",
         "AI",
+        "gpt-5.4",
+        "{\"seed\":true}",
+        1200,
+        800,
+        "resp_seed",
         manyQueries);
 
     CompleteNicheResearchSeedBuilderResponse response = service.complete(1001L, request);
@@ -278,6 +334,11 @@ class BackendNicheResearchSeedBuilderServiceTest {
         "depende de agenda cheia",
         "INFERRED_FROM_CNAE",
         "AI",
+        "gpt-5.4",
+        "{\"seed\":true}",
+        1200,
+        800,
+        "resp_seed",
         List.of());
 
     CompleteNicheResearchSeedBuilderResponse response = service.complete(1001L, request);
@@ -332,6 +393,11 @@ class BackendNicheResearchSeedBuilderServiceTest {
         "depende de agenda cheia",
         "INFERRED_FROM_CNAE",
         null,
+        "gpt-5.4",
+        "{\"seed\":true}",
+        1200,
+        800,
+        "resp_seed",
         validQueryRequests());
   }
 

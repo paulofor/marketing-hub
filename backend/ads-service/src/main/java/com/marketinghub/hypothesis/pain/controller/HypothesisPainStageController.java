@@ -51,6 +51,12 @@ public class HypothesisPainStageController {
         return ResponseEntity.accepted().body(service.startMechanism(nicheId));
     }
 
+    /** Registra uma execução inicial da etapa Prova para um nicho. */
+    @PostMapping("/niches/{nicheId}/hypothesis-pipeline/proof/start")
+    public ResponseEntity<HypothesisPainStartResponse> startProof(@PathVariable Long nicheId) {
+        return ResponseEntity.accepted().body(service.startProof(nicheId));
+    }
+
     /** Registra uma execução inicial da etapa Oferta para um nicho. */
     @PostMapping("/niches/{nicheId}/hypothesis-pipeline/offer/start")
     public ResponseEntity<HypothesisPainStartResponse> startOffer(@PathVariable Long nicheId) {
@@ -79,6 +85,14 @@ public class HypothesisPainStageController {
             @PathVariable Long nicheId,
             @RequestParam(defaultValue = "true") boolean includeCompleted) {
         return ResponseEntity.ok(service.listMechanismStageExecutions(nicheId, includeCompleted));
+    }
+
+    /** Lista execuções da etapa Prova para acompanhamento na tela de nova hipótese. */
+    @GetMapping("/niches/{nicheId}/hypothesis-pipeline/proof/stage-executions")
+    public ResponseEntity<List<HypothesisPainExecutionSummaryResponse>> listProofStageExecutions(
+            @PathVariable Long nicheId,
+            @RequestParam(defaultValue = "true") boolean includeCompleted) {
+        return ResponseEntity.ok(service.listProofStageExecutions(nicheId, includeCompleted));
     }
 
     /** Lista execuções da etapa Oferta para acompanhamento na tela de nova hipótese. */
@@ -119,6 +133,14 @@ public class HypothesisPainStageController {
         return ResponseEntity.ok(service.detailForNiche(nicheId, idJob));
     }
 
+    /** Consulta detalhe auditável de uma execução da etapa Prova vinculada ao nicho. */
+    @GetMapping("/niches/{nicheId}/hypothesis-pipeline/proof/stage-executions/{idJob}")
+    public ResponseEntity<HypothesisPainExecutionDetailResponse> detailProofForNiche(
+            @PathVariable Long nicheId,
+            @PathVariable String idJob) {
+        return ResponseEntity.ok(service.detailForNiche(nicheId, idJob));
+    }
+
     /** Consulta detalhe auditável de uma execução da etapa Oferta vinculada ao nicho. */
     @GetMapping("/niches/{nicheId}/hypothesis-pipeline/offer/stage-executions/{idJob}")
     public ResponseEntity<HypothesisPainExecutionDetailResponse> detailOfferForNiche(
@@ -151,6 +173,12 @@ public class HypothesisPainStageController {
         return service.listMechanismPending();
     }
 
+    /** Lista jobs pendentes da etapa Prova para processamento pelo Worker AI. */
+    @GetMapping("/internal/hypothesis-pipeline/proof/stage-executions/pending")
+    public List<HypothesisPainPendingExecution> proofPending() {
+        return service.listProofPending();
+    }
+
     /** Lista jobs pendentes da etapa Oferta para processamento pelo Worker AI. */
     @GetMapping("/internal/hypothesis-pipeline/offer/stage-executions/pending")
     public List<HypothesisPainPendingExecution> offerPending() {
@@ -162,6 +190,7 @@ public class HypothesisPainStageController {
             "/internal/hypothesis-pipeline/pain/stage-executions/{idJob}/running",
             "/internal/hypothesis-pipeline/result/stage-executions/{idJob}/running",
             "/internal/hypothesis-pipeline/mechanism/stage-executions/{idJob}/running",
+            "/internal/hypothesis-pipeline/proof/stage-executions/{idJob}/running",
             "/internal/hypothesis-pipeline/offer/stage-executions/{idJob}/running"
     })
     public ResponseEntity<Void> running(@PathVariable String idJob) {
@@ -174,6 +203,7 @@ public class HypothesisPainStageController {
             "/internal/hypothesis-pipeline/pain/stage-executions/{idJob}/recebe-prompt",
             "/internal/hypothesis-pipeline/result/stage-executions/{idJob}/recebe-prompt",
             "/internal/hypothesis-pipeline/mechanism/stage-executions/{idJob}/recebe-prompt",
+            "/internal/hypothesis-pipeline/proof/stage-executions/{idJob}/recebe-prompt",
             "/internal/hypothesis-pipeline/offer/stage-executions/{idJob}/recebe-prompt"
     })
     public ResponseEntity<Void> recebePrompt(
@@ -203,6 +233,7 @@ public class HypothesisPainStageController {
             "/internal/hypothesis-pipeline/pain/stage-executions/{idJob}/recebe-resposta",
             "/internal/hypothesis-pipeline/result/stage-executions/{idJob}/recebe-resposta",
             "/internal/hypothesis-pipeline/mechanism/stage-executions/{idJob}/recebe-resposta",
+            "/internal/hypothesis-pipeline/proof/stage-executions/{idJob}/recebe-resposta",
             "/internal/hypothesis-pipeline/offer/stage-executions/{idJob}/recebe-resposta"
     })
     public ResponseEntity<Void> recebeResposta(

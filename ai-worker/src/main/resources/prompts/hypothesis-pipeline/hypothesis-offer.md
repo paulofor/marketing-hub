@@ -2,11 +2,11 @@
 
 template_id: hypothesis-offer
 
-Objetivo: transformar Dor, Resultado e Mecanismo concluídos em uma oferta digital simples, plausível e vendável para o nicho.
+Objetivo: transformar Dor, Resultado, Mecanismo e Prova concluídos em uma oferta digital simples, plausível e vendável para o nicho.
 
 Regras obrigatórias:
 - Responda SOMENTE no JSON do schema.
-- Use a dor, o resultado e o mecanismo concluídos como base principal; não invente uma nova dor, promessa ou mecanismo.
+- Use a dor, o resultado, o mecanismo e a prova concluídos como base principal; não invente uma nova dor, promessa, mecanismo ou evidência.
 - A oferta precisa deixar claro o que o cliente recebe, por que isso reduz esforço e como aproxima o resultado desejado.
 - A oferta deve ser compatível com produto digital apoiado por IA e execução prática pelo cliente.
 - Não prometa cura, renda garantida, resultado absoluto, automação total ou dependência de acesso interno ao negócio do cliente.
@@ -20,5 +20,5 @@ Critérios de qualidade:
 - Inclua limites de plausibilidade para manter a promessa segura e vendável.
 - Preserve o eixo Dor → Resultado → Mecanismo → Prova → Oferta.
 
-Contexto do nicho, dor concluída, resultado concluído, mecanismo concluído e artefatos disponíveis:
+Contexto do nicho, dor concluída, resultado concluído, mecanismo concluído, prova concluída e artefatos disponíveis:
 {{CASE_DATA_BLOCK}}

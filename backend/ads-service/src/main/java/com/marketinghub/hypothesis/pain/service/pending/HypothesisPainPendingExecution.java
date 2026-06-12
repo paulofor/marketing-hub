@@ -11,6 +11,7 @@ public record HypothesisPainPendingExecution(
         HypothesisPainPendingNiche niche,
         String painModelResponse,
         String resultModelResponse,
-        String mechanismModelResponse
+        String mechanismModelResponse,
+        String proofModelResponse
 ) {
 }

@@ -1,4 +1,4 @@
-package com.marketinghub.worker.pipeline.hypothesisoffer;
+package com.marketinghub.worker.pipeline.hypothesisproof;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.worker.openai.core.model.OpenAiRequest;
@@ -13,25 +13,25 @@ import java.util.Map;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.web.reactive.function.client.WebClient;
 
-/** Responsabilidade: integrar a etapa Oferta do pipeline de hipótese aos endpoints internos do backend. */
-public class HypothesisOfferBackendClient implements StageBackendPort<HypothesisOfferInput, HypothesisOfferOutput> {
+/** Responsabilidade: integrar a etapa Prova do pipeline de hipótese aos endpoints internos do backend. */
+public class HypothesisProofBackendClient implements StageBackendPort<HypothesisProofInput, HypothesisProofOutput> {
     private static final String STATUS_STARTED = "INICIADO";
     private final WebClient webClient;
-    private final HypothesisOfferWorkerProperties properties;
+    private final HypothesisProofWorkerProperties properties;
     private final ObjectMapper objectMapper;
 
-    /** Inicializa o cliente com WebClient, propriedades da etapa Oferta e ObjectMapper para normalizar contexto. */
-    public HypothesisOfferBackendClient(WebClient.Builder builder, HypothesisOfferWorkerProperties properties, ObjectMapper objectMapper) {
+    /** Inicializa o cliente com WebClient, propriedades da etapa Prova e ObjectMapper para normalizar contexto. */
+    public HypothesisProofBackendClient(WebClient.Builder builder, HypothesisProofWorkerProperties properties, ObjectMapper objectMapper) {
         this.webClient = builder.build();
         this.properties = properties;
         this.objectMapper = objectMapper;
     }
 
-    /** Busca no backend os jobs da etapa Oferta iniciados e aptos para processamento. */
+    /** Busca no backend os jobs da etapa Prova iniciados e aptos para processamento. */
     @Override
-    public List<StageExecution<HypothesisOfferInput>> listPending(int limit) {
+    public List<StageExecution<HypothesisProofInput>> listPending(int limit) {
         int effectiveLimit = Math.max(1, limit);
-        String uri = joinPath(properties.backendBaseUrl(), properties.apiPrefix(), "/internal/hypothesis-pipeline/offer/stage-executions/pending");
+        String uri = joinPath(properties.backendBaseUrl(), properties.apiPrefix(), "/internal/hypothesis-pipeline/proof/stage-executions/pending");
         List<Map<String, Object>> payload = webClient.get()
                 .uri(uri)
                 .retrieve()
@@ -49,7 +49,7 @@ public class HypothesisOfferBackendClient implements StageBackendPort<Hypothesis
 
     /** Marca a execução como em processamento para impedir recaptura em ciclos concorrentes. */
     @Override
-    public void markRunning(StageExecution<HypothesisOfferInput> execution) {
+    public void markRunning(StageExecution<HypothesisProofInput> execution) {
         webClient.post()
                 .uri(stageExecutionBaseUrl() + "/{idJob}/running", execution.idJob())
                 .retrieve()
@@ -58,7 +58,7 @@ public class HypothesisOfferBackendClient implements StageBackendPort<Hypothesis
     }
 
     /** Persiste no backend o prompt renderizado, schema e request bruto enviados para OpenAI. */
-    public void saveOpenAiRequest(StageExecution<HypothesisOfferInput> execution, OpenAiRequest request) {
+    public void saveOpenAiRequest(StageExecution<HypothesisProofInput> execution, OpenAiRequest request) {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("prompt", request.prompt());
         body.put("promptMarkdownContent", request.promptMarkdownContent());
@@ -74,9 +74,9 @@ public class HypothesisOfferBackendClient implements StageBackendPort<Hypothesis
                 .block(properties.timeout());
     }
 
-    /** Envia ao backend a resposta validada da OpenAI para concluir a etapa Oferta. */
+    /** Envia ao backend a resposta validada da OpenAI para concluir a etapa Prova. */
     @Override
-    public void markCompleted(StageExecution<HypothesisOfferInput> execution, StageResult<HypothesisOfferOutput> result) {
+    public void markCompleted(StageExecution<HypothesisProofInput> execution, StageResult<HypothesisProofOutput> result) {
         OpenAiResult<String> openAiResult = openAiResult(result);
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("marketNicheId", execution.aggregateId());
@@ -97,9 +97,9 @@ public class HypothesisOfferBackendClient implements StageBackendPort<Hypothesis
                 .block(properties.timeout());
     }
 
-    /** Envia ao backend os dados de falha quando a etapa Oferta não é concluída. */
+    /** Envia ao backend os dados de falha quando a etapa Prova não é concluída. */
     @Override
-    public void markFailed(StageExecution<HypothesisOfferInput> execution, Throwable error) {
+    public void markFailed(StageExecution<HypothesisProofInput> execution, Throwable error) {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("marketNicheId", execution.aggregateId());
         body.put("stageCode", execution.stageCode());
@@ -120,11 +120,11 @@ public class HypothesisOfferBackendClient implements StageBackendPort<Hypothesis
     }
 
     /** Converte o payload pendente do backend para o modelo interno de execução da etapa. */
-    private StageExecution<HypothesisOfferInput> toStageExecution(Map<String, Object> item) {
+    private StageExecution<HypothesisProofInput> toStageExecution(Map<String, Object> item) {
         Long marketNicheId = asLong(item.get("marketNicheId"));
         String stageCode = asString(item.get("stageCode"));
         String idJob = asString(firstPresent(item.get("jobid"), item.get("idJob")));
-        HypothesisOfferInput input = new HypothesisOfferInput(marketNicheId, stageCode, idJob, buildPromptDataFromPending(item));
+        HypothesisProofInput input = new HypothesisProofInput(marketNicheId, stageCode, idJob, buildPromptDataFromPending(item));
         return new StageExecution<>(idJob, marketNicheId, stageCode, STATUS_STARTED, asInstant(item.get("executionRequestedAt")), input, Map.of());
     }
 
@@ -145,7 +145,6 @@ public class HypothesisOfferBackendClient implements StageBackendPort<Hypothesis
         payload.put("painModelResponse", optionalText(pending.get("painModelResponse")));
         payload.put("resultModelResponse", optionalText(pending.get("resultModelResponse")));
         payload.put("mechanismModelResponse", optionalText(pending.get("mechanismModelResponse")));
-        payload.put("proofModelResponse", optionalText(pending.get("proofModelResponse")));
         payload.put("CASE_DATA_BLOCK", buildCaseDataBlock(payload));
         return payload;
     }
@@ -155,7 +154,7 @@ public class HypothesisOfferBackendClient implements StageBackendPort<Hypothesis
         return value != null ? value.toString() : "";
     }
 
-    /** Monta o bloco textual de contexto estratégico exigido pelo prompt da etapa Oferta. */
+    /** Monta o bloco textual de contexto estratégico exigido pelo prompt da etapa Prova. */
     private String buildCaseDataBlock(Map<String, Object> payload) {
         StringBuilder builder = new StringBuilder("[CASE_DATA_BEGIN]\n");
         appendCaseData(builder, "marketNicheId", payload.get("marketNicheId"));
@@ -171,7 +170,6 @@ public class HypothesisOfferBackendClient implements StageBackendPort<Hypothesis
         appendCaseData(builder, "painModelResponse", payload.get("painModelResponse"));
         appendCaseData(builder, "resultModelResponse", payload.get("resultModelResponse"));
         appendCaseData(builder, "mechanismModelResponse", payload.get("mechanismModelResponse"));
-        appendCaseData(builder, "proofModelResponse", payload.get("proofModelResponse"));
         builder.append("[CASE_DATA_END]");
         return builder.toString();
     }
@@ -181,13 +179,13 @@ public class HypothesisOfferBackendClient implements StageBackendPort<Hypothesis
         builder.append(key).append(": ").append(toJsonOrText(value).trim()).append('\n');
     }
 
-    /** Extrai a oferta OpenAI bruto armazenado nas métricas da oferta da etapa. */
-    private OpenAiResult<String> openAiResult(StageResult<HypothesisOfferOutput> result) {
+    /** Extrai a prova OpenAI bruto armazenado nas métricas da prova da etapa. */
+    private OpenAiResult<String> openAiResult(StageResult<HypothesisProofOutput> result) {
         Object value = result.metrics().get("openAiResult");
         if (value instanceof OpenAiResult<?> raw) {
             return new OpenAiResult<>(raw.openAiJobId(), raw.rawResponse(), raw.modelResponse(), raw.modelResponse(), raw.inputTokens(), raw.outputTokens(), raw.costUsd());
         }
-        throw new IllegalStateException("Resultado da etapa Oferta sem métrica openAiResult");
+        throw new IllegalStateException("Resultado da etapa Prova sem métrica openAiResult");
     }
 
     /** Renderiza objetos estruturados como JSON formatado e preserva textos simples. */
@@ -201,8 +199,8 @@ public class HypothesisOfferBackendClient implements StageBackendPort<Hypothesis
         try {
             return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(value);
         } catch (Exception error) {
-            org.slf4j.LoggerFactory.getLogger(HypothesisOfferBackendClient.class).warn(
-                    "Falha ao serializar valor do prompt da etapa Oferta; usando fallback textual. valueType={}",
+            org.slf4j.LoggerFactory.getLogger(HypothesisProofBackendClient.class).warn(
+                    "Falha ao serializar valor do prompt da etapa Prova; usando fallback textual. valueType={}",
                     value.getClass().getName(),
                     error);
             return value.toString();
@@ -255,21 +253,21 @@ public class HypothesisOfferBackendClient implements StageBackendPort<Hypothesis
         return null;
     }
 
-    /** Monta a URL base dos endpoints internos de execução da etapa Oferta. */
+    /** Monta a URL base dos endpoints internos de execução da etapa Prova. */
     private String stageExecutionBaseUrl() {
-        return joinPath(properties.backendBaseUrl(), properties.apiPrefix(), "/internal/hypothesis-pipeline/offer/stage-executions");
+        return joinPath(properties.backendBaseUrl(), properties.apiPrefix(), "/internal/hypothesis-pipeline/proof/stage-executions");
     }
 
     /** Registra o payload enviado de volta para o backend com o jobId operacional. */
     private void logBackendPayload(String idJob, Map<String, Object> body) {
         try {
-            org.slf4j.LoggerFactory.getLogger(HypothesisOfferBackendClient.class).info(
-                    "Enviando payload para backend na etapa Oferta. jobId={} payload={}",
+            org.slf4j.LoggerFactory.getLogger(HypothesisProofBackendClient.class).info(
+                    "Enviando payload para backend na etapa Prova. jobId={} payload={}",
                     idJob,
                     objectMapper.writeValueAsString(body));
         } catch (Exception error) {
-            org.slf4j.LoggerFactory.getLogger(HypothesisOfferBackendClient.class).warn(
-                    "Falha ao serializar payload de log da etapa Oferta. jobId={}",
+            org.slf4j.LoggerFactory.getLogger(HypothesisProofBackendClient.class).warn(
+                    "Falha ao serializar payload de log da etapa Prova. jobId={}",
                     idJob,
                     error);
         }

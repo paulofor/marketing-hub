@@ -4433,3 +4433,10 @@
 - foi feito: criado o documento `docs/relatorios/experimentos/plano-de-melhoria-marketing-hub-experimento-37.md` consolidando aprendizados estratégicos e recomendações de produto, marketing e operação.
 - diagnóstico: o experimento 37 teve atenção e clique, mas falhou na conversão pós-clique; a causa-raiz provável é sistêmica, combinando captura não validada ponta a ponta, persona genérica, segmentação ampla, landing abaixo do padrão e isca ampla demais para a dor quente do WhatsApp.
 - recomendação principal: implementar gates de pré-publicação para formulário, qualidade da landing e persona mínima antes de liberar mídia paga; depois rodar o experimento derivado 37B com foco em roteiro anti-preço para personal trainer.
+
+## 2026-06-11 — Correção da Etapa 4 Prova no pipeline de hipótese
+
+- solicitação: investigar por que a tela mostrava Etapa 3 e Etapa 5, pulando a Etapa 4.
+- causa-raiz: o fluxo de hipótese havia recebido Mecanismo e Oferta, mas a etapa Prova não existia no contrato da tela, nos endpoints do backend nem no Worker AI; além disso, Oferta era liberada após Mecanismo, permitindo avançar sem prova.
+- foi feito: adicionada a Etapa 4 — Prova na tela, nos endpoints públicos/internos, no resumo final, no contexto pendente do backend e no Worker AI com prompt/schema próprios; a Oferta agora exige Prova concluída e recebe `proofModelResponse` como contexto.
+- impacto esperado: o eixo Dor → Resultado → Mecanismo → Prova → Oferta volta a ficar completo, sequencial e auditável, reduzindo risco de criar oferta sem elemento de credibilidade para venda.

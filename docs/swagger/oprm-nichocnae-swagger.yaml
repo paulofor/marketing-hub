@@ -2488,6 +2488,12 @@ components:
           type: string
         painsSummary:
           type: string
+        customerBehaviorSummary:
+          type: string
+          nullable: true
+        channelsSummary:
+          type: string
+          nullable: true
         resultsSummary:
           type: string
         mechanismOpportunitiesSummary:

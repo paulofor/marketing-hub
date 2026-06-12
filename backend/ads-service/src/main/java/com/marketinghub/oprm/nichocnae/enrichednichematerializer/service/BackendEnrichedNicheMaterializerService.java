@@ -259,6 +259,8 @@ public class BackendEnrichedNicheMaterializerService {
         scoreOrZero(card.getSolutionLanguageRiskScore()),
         card.getRoutineSummary(),
         card.getPainsSummary(),
+        card.getCustomerBehaviorSummary(),
+        card.getChannelsSummary(),
         card.getResultsSummary(),
         card.getMechanismOpportunitiesSummary(),
         card.getEvidenceSummary(),
@@ -584,8 +586,8 @@ public class BackendEnrichedNicheMaterializerService {
     profile.setSourceDomains(trimOptional(card.getSourceDomains()));
     profile.setPersonaSummary(trimOptional(request.personaSummary()));
     profile.setLanguagePatterns(trimOptional(request.languagePatterns()));
-    profile.setCommercialTriggers(null);
-    profile.setObjections(null);
+    profile.setCommercialTriggers(trimOptional(request.commercialTriggers()));
+    profile.setObjections(trimOptional(request.objections()));
     profile.setCreatedBy(defaultText(request.materializedBy(), "oprmEnrichedNicheMaterializer"));
     profile.setCreatedAt(now);
     profile.setUpdatedAt(now);

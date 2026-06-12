@@ -414,6 +414,11 @@
 - A fila da etapa 2 considera como reprocessáveis as falhas sem seed/queries causadas pelo contrato legado (`nicheName is required`) ou pelo estouro de `query_goal`, permitindo recuperação após o deploy da correção.
 - Adicionados testes de regressão para garantir que o schema solicite ao modelo limites compatíveis com `query_text`, `query_goal`, `source_group`, `created_by`, `niche_name`, `business_type` e `confidence_level`, sem corte silencioso no backend.
 
+## 2026-06-12 — OPRM NichoCNAE: materializador com campos comerciais não-ofertivos
+
+- Atualizado o materializador de nicho enriquecido para preencher gatilhos comportamentais e objeções prováveis a partir de evidências do cartão aprovado, usando dores, resultados, comportamento do cliente, canais e linguagem pública sem criar produto, promessa, campanha ou landing page.
+- Causa-raiz tratada: os campos `commercialTriggers` e `objections` permaneciam nulos porque a etapa final preservava somente contexto operacional, deixando sinais comerciais observáveis sem registro mesmo quando havia evidência suficiente.
+- Prevenção de recorrência: adicionados testes para garantir preenchimento determinístico em perfis aprovados e ausência de linguagem técnica/de solução nos campos comerciais sintetizados.
 ## 2026-06-12 — OPRM Rotina: apresentação por blocos de valor
 
 - A tela de rotina do OPRM passou a organizar as tarefas e sinais em blocos de valor: antes do atendimento, durante o atendimento, depois do atendimento, administração entre clientes, aquisição/fidelização, dores e riscos observados e oportunidades de produto.

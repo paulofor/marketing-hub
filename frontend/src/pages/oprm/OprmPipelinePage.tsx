@@ -13,6 +13,7 @@ import { useOprmSignalExtractorDetail } from "../../api/oprm/useOprmSignalExtrac
 import { useOprmSourceSearcherDetail } from "../../api/oprm/useOprmSourceSearcherDetail";
 import PageTitle from "../../components/PageTitle";
 import OprmModuleNavigation from "./OprmModuleNavigation";
+import { buildRoutineValueBlocks } from "./oprmRoutineValueBlocks";
 
 const pipelineStages = [
   {
@@ -619,6 +620,10 @@ export default function OprmPipelinePage() {
     isFetching: isRoutineSynthesizerDetailFetching,
   } = useOprmRoutineSynthesizerDetail(latestCycle?.researchCycleId);
   const routineCard = routineSynthesizerDetail?.routineCard;
+  const routineValueBlocks = buildRoutineValueBlocks(routineCard);
+  const routineValueBlocksWithItems = routineValueBlocks.filter(
+    (block) => block.items.length > 0,
+  );
   const {
     data: routineQualityGateDetail,
     error: routineQualityGateDetailError,
@@ -1665,9 +1670,34 @@ export default function OprmPipelinePage() {
                           <p className="mb-2 fw-semibold">
                             {routineCard.nicheName}
                           </p>
-                          <p className="text-secondary mb-2 text-truncate">
+                          <p className="text-secondary mb-2">
                             {routineCard.routineSummary}
                           </p>
+                          <div className="border rounded p-2 mb-2">
+                            <span className="fw-semibold d-block mb-1">
+                              Blocos de valor da rotina
+                            </span>
+                            {routineValueBlocksWithItems.length > 0 ? (
+                              <ul className="mb-0 ps-3">
+                                {routineValueBlocksWithItems
+                                  .slice(0, 4)
+                                  .map((block) => (
+                                    <li key={block.id}>
+                                      <span className="fw-semibold">
+                                        {block.title}:
+                                      </span>{" "}
+                                      {block.items[0]}
+                                    </li>
+                                  ))}
+                              </ul>
+                            ) : (
+                              <p className="text-secondary mb-0">
+                                Aguardando tarefas mais específicas do backend
+                                para separar antes, durante, depois, admin,
+                                aquisição, dores e oportunidades.
+                              </p>
+                            )}
+                          </div>
                           <p className="text-secondary mb-0">
                             Fontes: {routineCard.sourceDomains}
                           </p>

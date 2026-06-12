@@ -455,3 +455,9 @@
 - A tela `/oprm/pipeline` passou a diferenciar ciclos que já possuem `market_niche` associado, exibindo o badge “Nicho já existe” e priorizando a ação “Abrir nicho existente”.
 - O endpoint de últimos ciclos processados agora informa `existingMarketNicheId` e `alreadyMaterialized`, evitando que a interface induza o usuário a criar um novo nicho quando o ativo comercial já foi materializado.
 - Causa-raiz tratada: a tabela mostrava o ciclo apenas como execução do pipeline e não levava para o nicho operacional já criado, gerando ambiguidade entre atualizar/consultar um nicho existente e criar novamente.
+
+## 2026-06-12 — OPRM: regra de arquitetura preservada na materialização
+
+- Corrigida a causa-raiz da falha ArchUnit no OPRM sem afrouxar a regra de arquitetura: removido o `record` interno que fazia o materializador final parecer uma nova classe dependente de `MarketNiche` fora da exceção nominal.
+- A etapa final de materialização agora resolve o nicho existente por CNAE/nome neutro com variáveis locais e salva explicitamente o `market_niche` antes de criar o perfil enriquecido, mantendo a indicação correta de criação versus atualização.
+- A consulta usada pela etapa zero para indicar nicho já materializado foi movida para o repositório OPRM, evitando dependência direta do serviço OPRM em repositórios/classes do pacote de nicho e mantendo a UI informando “nicho já existe” sem violar o isolamento modular.

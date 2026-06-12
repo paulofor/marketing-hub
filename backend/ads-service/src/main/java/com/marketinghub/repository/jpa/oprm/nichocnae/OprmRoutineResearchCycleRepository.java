@@ -55,6 +55,18 @@ public interface OprmRoutineResearchCycleRepository extends JpaRepository<OprmRo
             @Param("queryGoalLengthErrorFragment") String queryGoalLengthErrorFragment,
             @Param("completePathFragment") String completePathFragment,
             Pageable pageable);
+
+    /** Localiza o identificador do nicho materializado mais recente vinculado ao ciclo informado. */
+    @Query("""
+            select profile.marketNiche.id
+            from MarketNicheEnrichmentProfile profile
+            where profile.researchCycleId = :researchCycleId
+              and profile.marketNiche is not null
+            order by profile.id desc
+            """)
+    List<Long> findLatestMaterializedMarketNicheIdByResearchCycleId(
+            @Param("researchCycleId") Long researchCycleId, Pageable pageable);
+
     /** Lista ciclos recentes cujo nome ou conteúdo principal ainda contém linguagem de solução. */
     @Query("""
             select cycle

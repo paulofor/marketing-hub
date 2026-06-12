@@ -137,22 +137,27 @@ public class BackendEnrichedNicheMaterializerService {
     }
 
     OprmEnrichedNicheMetaSignalService.MetaSignalPackage metaSignalPackage = metaSignalService.buildSignalPackage(cycle, card);
-    MarketNiche marketNiche = resolveMarketNiche(card, cycle, candidate, meiAudienceProfile, metaSignalPackage);
-    MarketNicheEnrichmentProfile profile = buildProfile(card, cycle, candidate, marketNiche, request);
+    Optional<MarketNiche> existingMarketNicheByCnaeAndNeutralName = findExistingMarketNicheByCnaeAndNeutralName(cycle);
+    boolean existingMatchedByCnaeAndNeutralName = existingMarketNicheByCnaeAndNeutralName.isPresent();
+    MarketNiche marketNiche = existingMarketNicheByCnaeAndNeutralName
+        .orElseGet(() -> resolveMarketNiche(candidate, meiAudienceProfile));
+    applyRoutineCardToMarketNiche(marketNiche, card, cycle, metaSignalPackage);
+    MarketNiche savedMarketNiche = marketNicheRepository.save(marketNiche);
+    MarketNicheEnrichmentProfile profile = buildProfile(card, cycle, candidate, savedMarketNiche, request);
     MarketNicheEnrichmentProfile savedProfile = enrichmentProfileRepository.save(profile);
     updateCycleAndCandidate(
         cycle,
         candidate,
-        resolvedMarketNiche.marketNiche().getId(),
-        resolvedMarketNiche.existingMatchedByCnaeAndNeutralName());
+        savedMarketNiche.getId(),
+        existingMatchedByCnaeAndNeutralName);
     return new CompleteEnrichedNicheMaterializerResponse(
         researchCycleId,
         card.getId(),
-        resolvedMarketNiche.marketNiche().getId(),
+        savedMarketNiche.getId(),
         savedProfile.getId(),
         cycle.getStatus(),
         savedProfile.getCreatedAt(),
-        buildCompletionMessage(resolvedMarketNiche.existingMatchedByCnaeAndNeutralName()));
+        buildCompletionMessage(existingMatchedByCnaeAndNeutralName));
   }
 
   /** Registra falha da etapa final no ciclo para manter rastreabilidade operacional. */
@@ -320,19 +325,22 @@ public class BackendEnrichedNicheMaterializerService {
     return meiAudienceProfileRepository.findFirstByMarketNicheIdOrderByIdDesc(candidate.getMarketNicheId());
   }
 
-  /** Reaproveita nicho existente do candidato/perfil MEI ou cria um nicho base com dados enriquecidos do card. */
-  private MarketNiche resolveMarketNiche(
-      OprmNicheRoutineCard card,
-      OprmRoutineResearchCycle cycle,
-      OprmNicheCandidate candidate,
-      OprmMeiAudienceProfile meiAudienceProfile,
-      OprmEnrichedNicheMetaSignalService.MetaSignalPackage metaSignalPackage) {
+  /** Reaproveita nicho existente do candidato/perfil MEI ou cria um nicho base vazio para materialização. */
+  private MarketNiche resolveMarketNiche(OprmNicheCandidate candidate, OprmMeiAudienceProfile meiAudienceProfile) {
     Long existingMarketNicheId = candidate != null && candidate.getMarketNicheId() != null
         ? candidate.getMarketNicheId()
         : meiAudienceProfile.getMarketNicheId();
-    MarketNiche marketNiche = existingMarketNicheId != null
+    return existingMarketNicheId != null
         ? marketNicheRepository.findById(existingMarketNicheId).orElseGet(MarketNiche::new)
         : new MarketNiche();
+  }
+
+  /** Aplica os dados finais do cartão de rotina ao nicho base antes de salvar a materialização. */
+  private void applyRoutineCardToMarketNiche(
+      MarketNiche marketNiche,
+      OprmNicheRoutineCard card,
+      OprmRoutineResearchCycle cycle,
+      OprmEnrichedNicheMetaSignalService.MetaSignalPackage metaSignalPackage) {
     marketNiche.setName(requiredText(neutralNicheName(cycle), "neutralNicheName"));
     marketNiche.setDescription(buildMarketNicheDescription(card, cycle));
     marketNiche.setDemandVolume("CNAE " + cycle.getCnaeCode() + " · Score OPRM " + cycle.getSourceScore());
@@ -342,7 +350,6 @@ public class BackendEnrichedNicheMaterializerService {
     marketNiche.setDemographicFilters("Público profissional/empreendedor ligado a " + cycle.getCnaeDescription());
     applyMetaSignalsToNiche(marketNiche, metaSignalPackage);
     marketNiche.setExtraTips(buildExtraTips(card));
-    return marketNiche;
   }
 
   /** Localiza nicho já vinculado ao mesmo CNAE e ao mesmo nome neutro normalizado por perfil OPRM anterior. */
@@ -717,9 +724,6 @@ public class BackendEnrichedNicheMaterializerService {
     }
     return "Ciclo materializado com criação de novo market_niche porque não havia nicho anterior para o mesmo CNAE e nome neutro.";
   }
-
-  /** Representa o nicho resolvido e se ele veio do match canônico CNAE/nome neutro. */
-  private record ResolvedMarketNiche(MarketNiche marketNiche, boolean existingMatchedByCnaeAndNeutralName) {}
 
   /** Converte um ciclo contaminado em item de diagnóstico operacional. */
   private ContaminatedNicheDiagnosticItem toCycleDiagnosticItem(OprmRoutineResearchCycle cycle, String matchedTerm) {

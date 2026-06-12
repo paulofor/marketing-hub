@@ -4454,3 +4454,9 @@
 - causa-raiz: a criação manual já bloqueava a Oferta sem Prova, mas a fila interna de pendentes ainda podia entregar ao Worker AI jobs antigos ou inconsistentes fora da ordem canônica.
 - foi feito: a listagem de pendentes e a marcação de execução em processamento passaram a revalidar os pré-requisitos sequenciais; no frontend, etapas futuras ficam bloqueadas enquanto a etapa anterior não estiver `CONCLUIDO`, com mensagem objetiva para Oferta.
 - prevenção: adicionados testes backend e frontend garantindo que Oferta não entra em pendentes e que o botão da Oferta permanece bloqueado até a Prova concluída.
+## 2026-06-12 — Lease operacional para execuções do pipeline de hipótese
+
+- solicitação: implementar política de timeout para execuções presas em `PROCESSANDO` ou `AGUARDANDO_RETORNO_OPENAI` na tabela `hypothesis_pain_stage_execution`.
+- causa-raiz: jobs que perdiam o ciclo do Worker AI ficavam fora da fila porque a listagem consumia apenas `INICIADO`, criando travamento operacional sem decisão de recuperação ou falha.
+- foi feito: definido lease operacional de 45 minutos; jobs antigos em `PROCESSANDO` sem `openai_job_id` voltam para `INICIADO` com mensagem clara; jobs antigos com possível execução OpenAI ativa viram `FALHA` para evitar duplicidade.
+- prevenção: adicionados testes unitários cobrindo recuperação segura e bloqueio de recaptura quando existe `openai_job_id` associado.

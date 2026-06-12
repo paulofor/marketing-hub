@@ -1,6 +1,7 @@
 package com.marketinghub.repository.jpa.hypothesis;
 
 import com.marketinghub.hypothesis.pain.HypothesisPainStageExecution;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -23,6 +24,12 @@ public interface HypothesisPainStageExecutionRepository extends JpaRepository<Hy
     /** Busca as execuções mais antigas de uma etapa com nicho carregado. */
     @EntityGraph(attributePaths = {"marketNiche", "hypothesis"})
     List<HypothesisPainStageExecution> findTop20ByStageCodeAndStatusOrderByExecutionRequestedAtAsc(String stageCode, String status);
+
+    /** Busca execuções antigas sem conclusão para aplicação da política de lease operacional. */
+    List<HypothesisPainStageExecution> findTop50ByStageCodeAndStatusInAndCompletedAtIsNullAndProcessingStartedAtBeforeOrderByProcessingStartedAtAsc(
+            String stageCode,
+            List<String> statuses,
+            Instant threshold);
 
     /** Lista todas as execuções de uma etapa dentro de um nicho para totalização de custo. */
     List<HypothesisPainStageExecution> findByMarketNicheIdAndStageCodeOrderByExecutionRequestedAtDesc(Long marketNicheId, String stageCode);

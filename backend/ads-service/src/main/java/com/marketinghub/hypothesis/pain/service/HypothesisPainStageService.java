@@ -15,6 +15,7 @@ import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -38,6 +39,10 @@ public class HypothesisPainStageService {
     private static final String STATUS_PROCESSING = "PROCESSANDO";
     private static final String STATUS_COMPLETED = "CONCLUIDO";
     private static final String STATUS_FAILED = "FALHA";
+    private static final Duration OPERATIONAL_LEASE_TIMEOUT = Duration.ofMinutes(45);
+    private static final List<String> LEASE_GUARDED_STATUSES = List.of(
+            STATUS_PROCESSING,
+            STATUS_WAITING_OPENAI_DISPATCH);
 
     private final MarketNicheRepository marketNicheRepository;
     private final HypothesisPainStageExecutionRepository executionRepository;
@@ -235,37 +240,39 @@ public class HypothesisPainStageService {
     }
 
     /** Lista os jobs iniciados da etapa Dor para processamento pelo Worker AI. */
-    @Transactional(readOnly = true)
+    @Transactional
     public List<HypothesisPainPendingExecution> listPending() {
         return listPendingByStage(STAGE_CODE);
     }
 
     /** Lista os jobs iniciados da etapa Resultado para processamento pelo Worker AI. */
-    @Transactional(readOnly = true)
+    @Transactional
     public List<HypothesisPainPendingExecution> listResultPending() {
         return listPendingByStage(RESULT_STAGE_CODE);
     }
 
     /** Lista os jobs iniciados da etapa Mecanismo para processamento pelo Worker AI. */
-    @Transactional(readOnly = true)
+    @Transactional
     public List<HypothesisPainPendingExecution> listMechanismPending() {
         return listPendingByStage(MECHANISM_STAGE_CODE);
     }
 
     /** Lista os jobs iniciados da etapa Prova para processamento pelo Worker AI. */
-    @Transactional(readOnly = true)
+    @Transactional
     public List<HypothesisPainPendingExecution> listProofPending() {
         return listPendingByStage(PROOF_STAGE_CODE);
     }
 
     /** Lista os jobs iniciados da etapa Oferta para processamento pelo Worker AI. */
-    @Transactional(readOnly = true)
+    @Transactional
     public List<HypothesisPainPendingExecution> listOfferPending() {
         return listPendingByStage(OFFER_STAGE_CODE);
     }
 
     /** Lista apenas jobs iniciados que ainda respeitam a ordem obrigatória do pipeline. */
+    /** Lista os jobs iniciados de uma etapa para processamento pelo Worker AI após aplicar recuperação de lease vencido. */
     private List<HypothesisPainPendingExecution> listPendingByStage(String stageCode) {
+        recoverExpiredOperationalLeases(stageCode);
         return executionRepository.findTop20ByStageCodeAndStatusOrderByExecutionRequestedAtAsc(stageCode, STATUS_STARTED)
                 .stream()
                 .filter(this::hasCompletedPrerequisites)
@@ -273,7 +280,9 @@ public class HypothesisPainStageService {
                         execution.getMarketNicheId(),
                         fromDatabaseIdJob(execution.getIdJob()),
                         execution.getStageCode(),
+                        execution.getStatus(),
                         execution.getExecutionRequestedAt(),
+                        execution.getProcessingStartedAt(),
                         toPendingNiche(execution.getMarketNiche()),
                         pendingPainResponse(execution),
                         pendingResultResponse(execution),
@@ -297,6 +306,44 @@ public class HypothesisPainStageService {
                     ex);
             return false;
         }
+    }
+
+    /** Recupera leases antigos com segurança, sem recapturar execuções que já possuem job ativo na OpenAI. */
+    private void recoverExpiredOperationalLeases(String stageCode) {
+        Instant now = Instant.now();
+        Instant threshold = now.minus(OPERATIONAL_LEASE_TIMEOUT);
+        List<HypothesisPainStageExecution> expiredExecutions = executionRepository
+                .findTop50ByStageCodeAndStatusInAndCompletedAtIsNullAndProcessingStartedAtBeforeOrderByProcessingStartedAtAsc(
+                        stageCode,
+                        LEASE_GUARDED_STATUSES,
+                        threshold);
+        expiredExecutions.forEach(execution -> applyExpiredLeaseDecision(execution, now));
+        if (!expiredExecutions.isEmpty()) {
+            executionRepository.saveAll(expiredExecutions);
+        }
+    }
+
+    /** Decide se o lease vencido pode voltar para a fila ou se deve falhar para evitar duplicidade na OpenAI. */
+    private void applyExpiredLeaseDecision(HypothesisPainStageExecution execution, Instant now) {
+        String previousStatus = execution.getStatus();
+        String timeoutMessage = "Timeout operacional: execução ficou em " + previousStatus
+                + " por mais de " + OPERATIONAL_LEASE_TIMEOUT.toMinutes()
+                + " minutos sem conclusão. ";
+        if (STATUS_PROCESSING.equals(previousStatus) && !StringUtils.hasText(execution.getOpenAiJobId())) {
+            execution.setStatus(STATUS_STARTED);
+            execution.setProcessingStartedAt(null);
+            execution.setErrorMessage(
+                    timeoutMessage + "Job recuperado automaticamente e devolvido para a fila de processamento.");
+            execution.setErrorDetail(
+                    "Recuperação automática por lease vencido em " + now + ". Nenhum openai_job_id estava associado ao job.");
+            return;
+        }
+        execution.setStatus(STATUS_FAILED);
+        execution.setCompletedAt(now);
+        execution.setErrorMessage(
+                timeoutMessage + "Job marcado como FALHA para evitar recaptura enquanto há possível execução ativa na OpenAI.");
+        execution.setErrorDetail(
+                "Bloqueio automático por lease vencido em " + now + ". openai_job_id=" + execution.getOpenAiJobId());
     }
 
     /** Retorna a Dor concluída quando a etapa pendente precisa desse contexto. */

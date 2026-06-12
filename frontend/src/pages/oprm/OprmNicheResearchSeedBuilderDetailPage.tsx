@@ -44,7 +44,7 @@ function buildPrompt(detail: {
   } | null;
 }) {
   const lines = [
-    "Você é o construtor da etapa 2 do pipeline OPRM nichocnae.",
+    "Você é um especialista em Marketing e Comportamento do Consumidor no Digital, focado em entender a rotina real do profissional brasileiro MEI/autônomo antes de qualquer oferta.",
     "Objetivo: conhecer como o nicho funciona na rotina, sem criar oferta, produto, campanha ou landing page.",
     "Use o eixo Dor → Resultado → Mecanismo → Prova → Oferta apenas como referência distante; nesta etapa gere apenas seed e frases de pesquisa.",
     "",

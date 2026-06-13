@@ -70,12 +70,13 @@ public class OpenAiNicheResearchSeedBuilderClient {
                     model);
         } catch (RestClientException | JsonProcessingException | IllegalStateException | IllegalArgumentException ex) {
             log.error(
-                    "Erro ao gerar seed da etapa dois OPRM nichocnae com OpenAI (endpoint={}, researchCycleId={}, cnaeCode={})",
+                    "Erro ao gerar seed da etapa dois OPRM nichocnae com OpenAI (endpoint={}, researchCycleId={}, cnaeCode={}, serviceTier={})",
                     url,
                     input.researchCycleId(),
                     input.cnaeCode(),
+                    properties.serviceTier(),
                     ex);
-            throw new IllegalStateException("Falha ao gerar seed da etapa dois OPRM nichocnae.", ex);
+            throw new IllegalStateException("Falha na OpenAI ao gerar seed da etapa dois OPRM nichocnae.", ex);
         }
     }
 
@@ -122,7 +123,7 @@ public class OpenAiNicheResearchSeedBuilderClient {
     }
 
     /** Monta o corpo da Responses API com schema JSON estrito para evitar saída ambígua ou fora do contrato. */
-    private Map<String, Object> buildRequestBody(String prompt, String model) {
+    Map<String, Object> buildRequestBody(String prompt, String model) {
         Map<String, Object> format = new LinkedHashMap<>();
         format.put("type", "json_schema");
         format.put("name", SCHEMA_NAME);
@@ -136,6 +137,7 @@ public class OpenAiNicheResearchSeedBuilderClient {
         body.put("model", model);
         body.put("input", prompt);
         body.put("text", text);
+        body.put("service_tier", properties.serviceTier());
         return body;
     }
 

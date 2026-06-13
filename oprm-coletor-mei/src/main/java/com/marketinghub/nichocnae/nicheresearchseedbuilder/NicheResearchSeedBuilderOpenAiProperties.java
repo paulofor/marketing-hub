@@ -8,7 +8,8 @@ public record NicheResearchSeedBuilderOpenAiProperties(
         String baseUrl,
         String apiKey,
         String apiKeyFile,
-        String model) {
+        String model,
+        String serviceTier) {
 
     /** Normaliza valores padrão seguros para a chamada síncrona da Responses API. */
     public NicheResearchSeedBuilderOpenAiProperties {
@@ -16,5 +17,6 @@ public record NicheResearchSeedBuilderOpenAiProperties(
         apiKey = apiKey == null ? "" : apiKey;
         apiKeyFile = apiKeyFile == null ? "" : apiKeyFile;
         model = model == null || model.isBlank() ? "gpt-4.1-mini" : model;
+        serviceTier = serviceTier == null || serviceTier.isBlank() ? "flex" : serviceTier;
     }
 }

@@ -23,6 +23,7 @@ oprm:
         api-key: ${OPRM_NICHO_CNAE_SEED_BUILDER_OPENAI_API_KEY:${OPENAI_API_KEY:}}
         api-key-file: ${OPRM_NICHO_CNAE_SEED_BUILDER_OPENAI_API_KEY_FILE:${OPENAI_API_KEY_FILE:}}
         model: ${OPRM_NICHO_CNAE_SEED_BUILDER_OPENAI_MODEL:gpt-4.1-mini}
+        service-tier: ${OPRM_NICHO_CNAE_SEED_BUILDER_OPENAI_SERVICE_TIER:flex}
     mei-audience-segmenter:
       openai:
         base-url: ${OPRM_MEI_AUDIENCE_SEGMENTER_OPENAI_BASE_URL:https://api.openai.com/v1}

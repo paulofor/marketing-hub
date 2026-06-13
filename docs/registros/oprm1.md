@@ -558,3 +558,10 @@
 - Corrigida a fila interna da etapa 4 (`source-fetcher`) para listar apenas fontes `FOUND` de ciclos `RUNNING` ainda sem `finishedAt`, impedindo que pendências residuais de ciclos falhados entrem antes do ciclo atual.
 - Causa-raiz tratada: a etapa de coleta buscava candidatas pendentes globalmente por status da fonte, sem validar o status do ciclo pai, permitindo que o ciclo #26 `FAILED` represasse a coleta do ciclo #27.
 - Prevenção de recorrência: o cânone OPRM passou a exigir independência operacional entre ciclos NichoCNAE e o teste da etapa valida o filtro por ciclo ativo.
+
+## 2026-06-13 — OPRM NichoCNAE: Flex Processing e erro claro na OpenAI da etapa seed
+
+- Verificado que a etapa `niche-research-seed-builder` chamava a OpenAI Responses API sem `service_tier`, portanto não estava forçando o modo Flex no payload da requisição.
+- Ajustado o coletor OPRM para enviar `service_tier=flex` por padrão na etapa seed, com configuração operacional `OPRM_NICHO_CNAE_SEED_BUILDER_OPENAI_SERVICE_TIER` para manter rastreabilidade e flexibilidade futura.
+- Causa-raiz tratada na observabilidade: a mensagem persistida começava apenas com “Falha ao gerar seed”, escondendo do usuário que a falha veio da OpenAI; agora a exceção operacional começa com “Falha na OpenAI ao gerar seed da etapa dois OPRM nichocnae”.
+- Prevenção de recorrência: adicionado teste de regressão garantindo que o payload enviado contém `service_tier=flex` e que falhas de transporte como `Broken pipe` preservam mensagem explícita de OpenAI.

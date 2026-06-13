@@ -167,7 +167,23 @@ A etapa `landing-page-quality-review` deve avaliar o artefato final publicável 
 
 O prompt textual do Quality Review não deve receber `experiment.landing_page_html` como fallback legado, nem JSONs intermediários de wireframe, copy, image planning, image generation ou design preset. A causa-raiz apontada pelo Quality Review deve ser inferida apenas a partir do HTML final e da evidência visual renderizada, preservando o foco no artefato que será publicado e evitando falhas quando `landing_page_html` ainda estiver nulo antes da aprovação/publicação.
 
-### 5.7 Worker AI — divisão equivalente por etapa (obrigatória)
+### 5.7 Contrato operacional de `landingPageHtml`
+
+A etapa `LANDING_PAGE_HTML` / `landingPageHtml` deve gerar um documento HTML final completo, publicável e livre de metadados técnicos internos. A resposta do gerador deve ser HTML puro; envelopes como `{ "landingPageHtml": { "htmlDocument": "..." } }` são quebra de contrato da etapa.
+
+O HTML final da landing deve implementar, no mínimo:
+- listener de `submit` no formulário alvo;
+- `event.preventDefault()`;
+- gate de validação com `checkValidity()` e `reportValidity()`;
+- envio assíncrono com `fetch(form.action, ...)`;
+- payload usando `new FormData(form)`;
+- controle de loading no botão de submit, desabilitando durante a requisição e restaurando depois;
+- feedback inline de sucesso/erro ao usuário;
+- acabamento visual do feedback como banner/card coerente com `landingPageDesignPreset`, incluindo fundo semântico, borda sutil, espaçamento, contraste AA e leitura clara no mobile.
+
+A geração deve preservar a paridade entre variantes públicas quando houver geração dupla de landing: a mesma entrada canônica e as mesmas validações críticas devem ser aplicadas às variantes `deterministic` e `ai`, mantendo comparabilidade comercial entre os outputs.
+
+### 5.8 Worker AI — divisão equivalente por etapa (obrigatória)
 
 No `ai-worker`, a mesma divisão por etapa deve ser mantida para evitar acoplamento entre execução,
 prompt e schema. A arquitetura canônica vigente para qualquer etapa de landing no Worker AI é o núcleo

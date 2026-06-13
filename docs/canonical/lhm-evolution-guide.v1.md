@@ -19,7 +19,7 @@ Leitura obrigatória antes de qualquer alteração em:
 ## 3. Checklist obrigatório de evolução do LHM
 
 1. **Revalidar contrato canônico vigente**
-   - Ler `docs/canonical/modelo-canonico-artefatos-pipeline-experimento.md` (seção `landingPageHtml`).
+   - Ler `docs/canonical/procedimento-experimento-canon.v1.md` (seção do contrato operacional de `landingPageHtml`).
    - Confirmar requisitos obrigatórios do runtime (`submit` assíncrono, validação, loading, feedback inline).
 
 2. **Aplicar evolução orientada a contrato (não por heurística local)**

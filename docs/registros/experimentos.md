@@ -4471,3 +4471,8 @@
 
 - Criado o documento canônico `docs/canonical/pipeline-operacional-canon.v1.md` para definir o padrão de implementação de pipelines usando o GeraLanding como referência.
 - O documento consolida regras de etapas, arquitetura backend/worker, encadeamento, estados, formato de telas, cards, validações, diagnóstico de causa-raiz e checklist de PR.
+
+## 2026-06-13 — Consolidação de referências canônicas ativas
+- Revisadas referências ativas aos cânones obsoletos `modelo-canonico-artefatos-pipeline-experimento.md` e `experiments-automation-flow-canon.v1.md`.
+- Regras válidas de `landingPageHtml` foram consolidadas em `docs/canonical/procedimento-experimento-canon.v1.md`.
+- Referências operacionais gerais foram redirecionadas para `docs/canonical/pipeline-operacional-canon.v1.md` e referências não aplicáveis ao MOIS foram removidas.

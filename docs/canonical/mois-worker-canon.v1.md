@@ -116,8 +116,9 @@ Este documento é o único cânone ativo para o worker do MOIS.
 
 ## 11. Referências normativas
 - `docs/canonical/system-governance-canon.v2.md`
-- `docs/canonical/modelo-canonico-artefatos-pipeline-experimento.md`
-- `docs/canonical/experiments-automation-flow-canon.v1.md`
+- `docs/canonical/pipeline-operacional-canon.v1.md`
+
+O MOIS Worker segue as regras gerais de governança e operação de pipelines, mas não depende dos cânones legados específicos do pipeline de experimento. Regras específicas de experimento só se aplicam ao MOIS quando forem explicitamente incorporadas neste documento.
 
 ## 12. Fluxo canônico de alimentação da biblioteca de páginas de vendas
 

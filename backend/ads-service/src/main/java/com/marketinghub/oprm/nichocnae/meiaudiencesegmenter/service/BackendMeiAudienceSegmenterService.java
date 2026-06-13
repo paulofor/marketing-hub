@@ -37,6 +37,8 @@ public class BackendMeiAudienceSegmenterService {
   private static final String ROUTINE_SYNTHESIZED_STATUS = "ROUTINE_SYNTHESIZED";
   private static final String SEGMENTED_STATUS = "MEI_AUDIENCE_SEGMENTED";
   private static final String FAILED_STATUS = "FAILED";
+  private static final String NEEDS_MORE_RESEARCH_STATUS = "NEEDS_MORE_RESEARCH";
+  private static final String INSUFFICIENT_OPERATIONAL_PAIN_REASON = "cartão sem evidência mínima de dor prática";
   private static final int MAX_PENDING = 10;
   private static final int MAX_SIGNALS = 120;
   private static final int MAX_SOURCES = 30;
@@ -85,7 +87,7 @@ public class BackendMeiAudienceSegmenterService {
   }
 
   /** Lista somente cartões de ciclos ativos e elegíveis para segmentação comportamental antes do gate e materialização. */
-  @Transactional(readOnly = true)
+  @Transactional
   public List<RecordMeiAudienceSegmenterPending> listPending() {
     return routineCardRepository.findPendingMeiAudienceSegmentation(PageRequest.of(0, MAX_PENDING)).stream()
         .map(this::toPendingIfEligible)
@@ -146,7 +148,49 @@ public class BackendMeiAudienceSegmenterService {
     if (!ROUTINE_SYNTHESIZED_STATUS.equals(cycle.getStatus())) {
       return Optional.empty();
     }
+    if (!hasMinimumOperationalPainEvidence(card)) {
+      markCycleAsNeedingMoreResearch(cycle);
+      return Optional.empty();
+    }
     return Optional.of(toPending(card, cycle));
+  }
+
+  /** Marca o ciclo para nova pesquisa quando o cartão não comprova uma dor operacional prática. */
+  private void markCycleAsNeedingMoreResearch(OprmRoutineResearchCycle cycle) {
+    Instant now = Instant.now();
+    cycle.setStatus(NEEDS_MORE_RESEARCH_STATUS);
+    cycle.setErrorMessage(INSUFFICIENT_OPERATIONAL_PAIN_REASON);
+    cycle.setFinishedAt(now);
+    cycle.setUpdatedAt(now);
+    routineResearchCycleRepository.save(cycle);
+    LOGGER.info(
+        "Ciclo OPRM nichocnae bloqueado antes da segmentação MEI/autônomo por falta de evidência mínima de dor prática (researchCycleId={}, status={}, motivo={})",
+        cycle.getId(),
+        cycle.getStatus(),
+        cycle.getErrorMessage());
+  }
+
+  /** Verifica se o cartão tem pontuação e texto suficientes para comprovar dor operacional concreta. */
+  private boolean hasMinimumOperationalPainEvidence(OprmNicheRoutineCard card) {
+    return positiveScore(card.getRoutineEvidenceScore())
+        && positiveScore(card.getDifficultyEvidenceScore())
+        && hasConcreteEvidenceText(card.getRoutineSummary())
+        && hasConcreteEvidenceText(card.getPainsSummary())
+        && hasConcreteEvidenceText(card.getOperationalPainsSummary())
+        && hasConcreteEvidenceText(card.getEvidenceSummary());
+  }
+
+  /** Indica se a pontuação numérica do cartão confirma alguma evidência observável. */
+  private boolean positiveScore(Integer score) {
+    return score != null && score > 0;
+  }
+
+  /** Bloqueia textos vazios ou marcadores explícitos de ausência de evidência. */
+  private boolean hasConcreteEvidenceText(String value) {
+    if (!StringUtils.hasText(value)) {
+      return false;
+    }
+    return !value.toLowerCase(Locale.ROOT).contains("sem evidência suficiente");
   }
 
   /** Converte cartão, ciclo, fontes e sinais na unidade de trabalho enviada ao coletor de IA. */

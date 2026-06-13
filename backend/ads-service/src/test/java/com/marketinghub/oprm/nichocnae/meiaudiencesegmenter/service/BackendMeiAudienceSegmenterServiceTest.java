@@ -3,6 +3,7 @@ package com.marketinghub.oprm.nichocnae.meiaudiencesegmenter.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.marketinghub.oprm.nichocnae.OprmNicheRoutineCard;
@@ -51,6 +52,26 @@ class BackendMeiAudienceSegmenterServiceTest {
         .extracting(pending -> pending.researchCycleId())
         .containsExactly(20L);
     assertThat(service.listPending().get(0).openAiModelCode()).isEqualTo("gpt-5.4");
+  }
+
+  /** Garante que cartão vazio não avance para segmentação e peça nova pesquisa com motivo operacional. */
+  @Test
+  void listPendingShouldMarkEmptyRoutineCardAsNeedingMoreResearch() {
+    OprmNicheRoutineCard emptyCard = card(30L, 3L);
+    emptyCard.setRoutineEvidenceScore(0);
+    emptyCard.setDifficultyEvidenceScore(0);
+    emptyCard.setOperationalPainsSummary("Sem evidência suficiente para afirmar dor prática.");
+    OprmRoutineResearchCycle cycle = cycle(30L, "ROUTINE_SYNTHESIZED");
+    when(routineCardRepository.findPendingMeiAudienceSegmentation(any(Pageable.class))).thenReturn(List.of(emptyCard));
+    when(cycleRepository.findById(30L)).thenReturn(Optional.of(cycle));
+
+    assertThat(service.listPending()).isEmpty();
+
+    verify(cycleRepository).save(cycle);
+    assertThat(cycle.getStatus()).isEqualTo("NEEDS_MORE_RESEARCH");
+    assertThat(cycle.getErrorMessage()).isEqualTo("cartão sem evidência mínima de dor prática");
+    assertThat(cycle.getFinishedAt()).isNotNull();
+    assertThat(cycle.getUpdatedAt()).isNotNull();
   }
 
   /** Monta um ciclo mínimo usado pela revalidação da fila MEI/autônomo. */

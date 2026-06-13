@@ -1,18 +1,15 @@
 package com.marketinghub.oprmcoletormei;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.marketinghub.nichocnae.nicheresearchseedbuilder.NicheResearchSeedBuilderScheduler;
 import com.marketinghub.nichocnae.nicheresearchseedbuilder.web.NicheResearchSeedBuilderController;
-import com.marketinghub.oprmcoletormei.opportunity.service.OprmCnaeEnrichmentScheduler;
-import com.marketinghub.oprmcoletormei.opportunity.service.OprmCnaeOpportunityScheduler;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.event.EventListener;
 import org.springframework.core.env.Environment;
-import org.springframework.scheduling.annotation.Scheduled;
 
 /**
  * Valida que o contexto Spring do coletor OPRM sobe sem disparar integrações externas durante testes.
@@ -42,23 +39,20 @@ class OprmColetorMeiApplicationTests {
                 .isEqualTo("http://191.252.181.168");
     }
 
-    /** Confirma que os ciclos CNAE automáticos ficam desligados por padrão para evitar execuções sem necessidade operacional. */
+    /** Confirma que os ciclos CNAE automáticos foram removidos do coletor para evitar religamento por configuração. */
     @Test
-    void cnaeAutomaticCyclesAreDisabledByDefault() {
-        assertThat(applicationContext.getBeanNamesForType(OprmCnaeOpportunityScheduler.class)).isEmpty();
-        assertThat(applicationContext.getBeanNamesForType(OprmCnaeEnrichmentScheduler.class)).isEmpty();
-        assertThat(environment.getProperty("oprm.cnae-opportunity.scheduler.enabled")).isEqualTo("false");
-        assertThat(environment.getProperty("oprm.cnae-enrichment.scheduler.enabled")).isEqualTo("false");
-        assertThat(environment.getProperty("oprm.cnae-enrichment.startup-catch-up.enabled")).isEqualTo("false");
+    void cnaeAutomaticCyclesAreRemovedFromCollector() {
+        assertThat(environment.getProperty("oprm.cnae-opportunity.scheduler.enabled")).isNull();
+        assertThat(environment.getProperty("oprm.cnae-enrichment.scheduler.enabled")).isNull();
+        assertThat(environment.getProperty("oprm.cnae-enrichment.startup-catch-up.enabled")).isNull();
     }
 
-    /** Confirma que os executores CNAE não possuem gatilhos automáticos por cron ou evento de inicialização. */
+    /** Confirma que as classes antigas de scheduler CNAE não existem mais no artefato do coletor. */
     @Test
-    void cnaeExecutorsDoNotDeclareAutomaticTriggers() {
-        assertThat(OprmCnaeOpportunityScheduler.class.getDeclaredMethods())
-                .noneMatch(method -> method.isAnnotationPresent(Scheduled.class));
-        assertThat(OprmCnaeEnrichmentScheduler.class.getDeclaredMethods())
-                .noneMatch(method -> method.isAnnotationPresent(Scheduled.class))
-                .noneMatch(method -> method.isAnnotationPresent(EventListener.class));
+    void cnaeSchedulerClassesAreAbsentFromCollectorArtifact() {
+        assertThatThrownBy(() -> Class.forName("com.marketinghub.oprmcoletormei.opportunity.service.OprmCnaeOpportunityScheduler"))
+                .isInstanceOf(ClassNotFoundException.class);
+        assertThatThrownBy(() -> Class.forName("com.marketinghub.oprmcoletormei.opportunity.service.OprmCnaeEnrichmentScheduler"))
+                .isInstanceOf(ClassNotFoundException.class);
     }
 }

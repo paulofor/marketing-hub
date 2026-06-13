@@ -4466,3 +4466,8 @@
 - Confirmado que a sincronização de métricas do Facebook Ads não coletava nem persistia `reach`/alcance: o worker consultava apenas `impressions`, `clicks`, `spend`, `actions`, `date_start` e `date_stop`.
 - Adicionada a métrica `reach` ao contrato de insights, persistência em `experiment_campaign_metric`, DTOs, material de relatório e Markdown completo baixado pelo botão **Relatório completo (.md)**.
 - Atualizado o painel de material do relatório para exibir Alcance junto das demais métricas de campanha.
+
+## 2026-06-13 — Documento canônico de padrão de pipelines
+
+- Criado o documento canônico `docs/canonical/pipeline-operacional-canon.v1.md` para definir o padrão de implementação de pipelines usando o GeraLanding como referência.
+- O documento consolida regras de etapas, arquitetura backend/worker, encadeamento, estados, formato de telas, cards, validações, diagnóstico de causa-raiz e checklist de PR.

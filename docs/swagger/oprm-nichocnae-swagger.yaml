@@ -966,6 +966,11 @@ components:
         sourceScore:
           type: number
           format: double
+        meiVolume:
+          type: integer
+          format: int64
+          nullable: true
+          example: 125000
         status:
           type: string
           example: RUNNING

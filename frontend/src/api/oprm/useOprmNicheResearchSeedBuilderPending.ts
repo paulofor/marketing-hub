@@ -8,6 +8,7 @@ export interface OprmNicheResearchSeedBuilderPending {
   cnaeDescription: string;
   nicheName: string;
   sourceScore: number;
+  meiVolume?: number | null;
   triggerSource: string;
   status: string;
   startedAt: string;

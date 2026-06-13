@@ -234,14 +234,15 @@ public class BackendNicheResearchSeedBuilderService {
     return query;
   }
 
-  /** Cria uma query mínima quando o modelo não envia queries, evitando bloqueio por validação estrutural. */
+  /** Cria uma query mínima comercial-operacional quando o modelo não envia queries. */
   private NicheResearchQueryRequest defaultQueryRequest(OprmRoutineResearchCycle cycle) {
-    return new NicheResearchQueryRequest(defaultQueryText(cycle), "ROUTINE_DISCOVERY", "WEB", 100);
+    return new NicheResearchQueryRequest(defaultQueryText(cycle), "COMMERCIAL_OPERATION_DISCOVERY", "WEB", 100);
   }
 
-  /** Monta texto de pesquisa padrão a partir do CNAE para manter o ciclo avançando. */
+  /** Monta texto de pesquisa padrão a partir do CNAE com foco em clientes, agenda, cobrança e retrabalho. */
   private String defaultQueryText(OprmRoutineResearchCycle cycle) {
-    return "rotina dificuldades atendimento clientes Brasil " + cycle.getCnaeDescription();
+    return "WhatsApp Instagram indicação agenda faltas preço cobrança materiais retrabalho Brasil "
+        + cycle.getCnaeDescription();
   }
 
   /** Converte um ciclo pendente no contrato interno de unidade de trabalho da etapa dois. */

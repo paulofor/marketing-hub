@@ -566,3 +566,9 @@
 - Causa-raiz tratada na observabilidade: a mensagem persistida começava apenas com “Falha ao gerar seed”, escondendo do usuário que a falha veio da OpenAI; agora a exceção operacional começa com “Falha na OpenAI ao gerar seed da etapa dois OPRM nichocnae”.
 - Prevenção de recorrência: adicionado teste de regressão garantindo que o payload enviado contém `service_tier=flex` e que falhas de transporte como `Broken pipe` preservam mensagem explícita de OpenAI.
 - 2026-06-13 02:05:00 (UTC): desligados os ciclos automáticos OPRM CNAE_SCORE e CNAE_ENRICHMENT no `oprm-coletor-mei`; a causa-raiz dos ciclos recorrentes era a presença de `@Scheduled` nos executores de score/enriquecimento e de catch-up por `ApplicationReadyEvent` no enriquecimento. Os métodos de execução foram preservados para acionamento manual/controlado, mas sem disparo automático por cron ou inicialização da aplicação.
+
+## 2026-06-13 — OPRM NichoCNAE: ícone IA nos cards de etapa
+
+- Ajustada a tela de detalhe do CNAE para marcar visualmente os cards das etapas que acessam diretamente IA no pipeline NichoCNAE e aplicar fundos leves por status operacional.
+- Foram sinalizadas as etapas `Seed` e `MEI`, alinhadas ao cânone OPRM que define apenas `niche-research-seed-builder` e `mei-audience-segmenter` como consumidoras diretas de modelo OpenAI configurável.
+- Causa-raiz tratada: a tela operacional mostrava o estado da execução, mas não diferenciava rapidamente as etapas que dependem de IA nem criava hierarquia visual suficiente entre concluído, execução, bloqueio/falha e fila, dificultando o diagnóstico de falhas e decisões operacionais.

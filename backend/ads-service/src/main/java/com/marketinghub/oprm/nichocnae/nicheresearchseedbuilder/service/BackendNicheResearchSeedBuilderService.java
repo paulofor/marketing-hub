@@ -10,6 +10,7 @@ import com.marketinghub.oprm.nichocnae.nicheresearchseedbuilder.service.complete
 import com.marketinghub.oprm.nichocnae.nicheresearchseedbuilder.service.detailStageExecution.NicheResearchSeedBuilderDetailResponse;
 import com.marketinghub.oprm.nichocnae.nicheresearchseedbuilder.service.failStageExecution.FailNicheResearchSeedBuilderRequest;
 import com.marketinghub.oprm.nichocnae.nicheresearchseedbuilder.service.pending.RecordNicheResearchSeedBuilderPending;
+import com.marketinghub.repository.jpa.oprm.market.OprmMarketSizeByCnaeRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmNicheResearchSeedRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmResearchQueryRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmRoutineResearchCycleRepository;
@@ -40,17 +41,20 @@ public class BackendNicheResearchSeedBuilderService {
   private final OprmNicheResearchSeedRepository nicheResearchSeedRepository;
   private final OprmResearchQueryRepository researchQueryRepository;
   private final OprmNicheResearchSeedBuilderConfigurationGateway configurationGateway;
+  private final OprmMarketSizeByCnaeRepository marketSizeByCnaeRepository;
 
   /** Inicializa o serviço com os repositórios canônicos da etapa dois do pipeline. */
   public BackendNicheResearchSeedBuilderService(
       OprmRoutineResearchCycleRepository routineResearchCycleRepository,
       OprmNicheResearchSeedRepository nicheResearchSeedRepository,
       OprmResearchQueryRepository researchQueryRepository,
-      OprmNicheResearchSeedBuilderConfigurationGateway configurationGateway) {
+      OprmNicheResearchSeedBuilderConfigurationGateway configurationGateway,
+      OprmMarketSizeByCnaeRepository marketSizeByCnaeRepository) {
     this.routineResearchCycleRepository = routineResearchCycleRepository;
     this.nicheResearchSeedRepository = nicheResearchSeedRepository;
     this.researchQueryRepository = researchQueryRepository;
     this.configurationGateway = configurationGateway;
+    this.marketSizeByCnaeRepository = marketSizeByCnaeRepository;
   }
 
   /** Lista ciclos em execução ou falhas retryáveis que ainda precisam receber seed e queries. */
@@ -254,11 +258,20 @@ public class BackendNicheResearchSeedBuilderService {
         cycle.getCnaeDescription(),
         cycle.getNicheName(),
         cycle.getSourceScore(),
+        resolveMeiVolume(cycle),
         configuredModel == null ? null : configuredModel.code(),
         configuredModel == null ? null : configuredModel.name(),
         cycle.getStatus(),
         cycle.getStartedAt(),
         cycle.getCreatedAt());
+  }
+
+  /** Busca o volume MEI mais recente do CNAE para orientar a quebra em subnichos vendáveis. */
+  private Long resolveMeiVolume(OprmRoutineResearchCycle cycle) {
+    return marketSizeByCnaeRepository
+        .findLatestSnapshotByCnaeCode(cycle.getCnaeCode())
+        .map(volume -> volume.totalEmpresasMei())
+        .orElse(null);
   }
 
   /** Converte as entidades persistidas no contrato público de resultado da etapa dois. */

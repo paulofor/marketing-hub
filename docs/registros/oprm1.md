@@ -540,3 +540,9 @@
 - Causa-raiz tratada: a etapa MEI foi criada no fluxo operacional e no detalhe do CNAE, mas não foi incorporada ao contrato administrativo `oprm-nicho-cnae-pipeline`, deixando a tela `/pipelines` com apenas uma etapa IA e com nove etapas em vez das dez executadas no fluxo real.
 - Correção aplicada: o cânone, enum oficial, teste de contrato e changelog incremental foram ajustados para incluir `mei-audience-segmenter` entre a síntese e o gate, marcada com `requires_openai_model = true`.
 - Ajuste visual complementar: a mensagem de telemetria do detalhe da etapa deixou de citar apenas a etapa seed quando a tela está exibindo a segmentação MEI.
+
+## 2026-06-13 — OPRM NichoCNAE: notas estruturadas do gate de qualidade
+
+- Alterado o detalhe do gate de qualidade para expor `qualityNotes` como objeto JSON chave/valor, mantendo a gravação legada em texto auditável no banco e estruturando o contrato apenas na resposta de detalhe.
+- Ajustada a tela de detalhe do pipeline para exibir os scores completos do gate e destacar em vermelho os indicadores que não atenderam aos limites de aprovação.
+- Causa-raiz tratada: a nota do gate era uma string única com pares `chave=valor`, dificultando leitura pela tela e impedindo sinalização visual objetiva dos critérios reprovados.

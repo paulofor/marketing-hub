@@ -14,6 +14,7 @@ import com.marketinghub.oprm.nichocnae.OprmSourceSnapshot;
 import com.marketinghub.oprm.nichocnae.meiaudienceprofile.OprmMeiAudienceProfile;
 import com.marketinghub.oprm.nichocnae.routinequalitygate.service.completeStageExecution.CompleteRoutineQualityGateRequest;
 import com.marketinghub.oprm.nichocnae.routinequalitygate.service.completeStageExecution.CompleteRoutineQualityGateResponse;
+import com.marketinghub.oprm.nichocnae.routinequalitygate.service.detailStageExecution.RoutineQualityGateDetailResponse;
 import com.marketinghub.oprm.nichocnae.routinequalitygate.service.pending.RecordRoutineQualityGatePending;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmExtractedSignalRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmNicheRoutineCardRepository;
@@ -116,6 +117,31 @@ class BackendRoutineQualityGateServiceTest {
     assertThat(card.getQualityCheckedAt()).isNotNull();
     verify(cardRepository).save(card);
     verify(cycleRepository).save(cycle);
+  }
+
+  /** Deve expor notas de qualidade como objeto JSON tipado para a tela de detalhe. */
+  @Test
+  void shouldDetailQualityNotesAsStructuredObject() {
+    OprmRoutineResearchCycle cycle = new OprmRoutineResearchCycle();
+    cycle.setId(1001L);
+    cycle.setStatus("SOLUTION_CONTAMINATED");
+    OprmNicheRoutineCard card = card();
+    card.setQualityStatus("SOLUTION_CONTAMINATED");
+    card.setReadyForHypothesis(false);
+    card.setSpecificityScore(72);
+    card.setConfidenceScore(32);
+    card.setDuplicationScore(10);
+    card.setQualityNotes("status=SOLUTION_CONTAMINATED; fontes=46; mixMinimoMeiAutonomo=false; riscoLinguagemSolucao=70");
+    when(cycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
+    when(cardRepository.findFirstByResearchCycleIdOrderByIdDesc(1001L)).thenReturn(Optional.of(card));
+
+    RoutineQualityGateDetailResponse response = service.detail(1001L);
+
+    assertThat(response.qualityNotes())
+        .containsEntry("status", "SOLUTION_CONTAMINATED")
+        .containsEntry("fontes", 46)
+        .containsEntry("mixMinimoMeiAutonomo", false)
+        .containsEntry("riscoLinguagemSolucao", 70);
   }
 
   /** Deve bloquear liberação para hipótese quando o status final ainda exige mais pesquisa MEI/autônomo. */

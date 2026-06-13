@@ -2800,8 +2800,18 @@ components:
           type: integer
           nullable: true
         qualityNotes:
-          type: string
+          type: object
           nullable: true
+          additionalProperties:
+            oneOf:
+              - type: string
+              - type: integer
+              - type: boolean
+          example:
+            status: SOLUTION_CONTAMINATED
+            fontes: 46
+            mixMinimoMeiAutonomo: false
+            riscoLinguagemSolucao: 70
         checkedBy:
           type: string
           nullable: true

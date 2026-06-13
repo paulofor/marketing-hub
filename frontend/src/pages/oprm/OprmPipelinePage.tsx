@@ -7,7 +7,10 @@ import {
   useReprocessOprmRoutineResearchCycle,
 } from "../../api/oprm/useOprmRoutineResearchOrchestratorRecent";
 import { useOprmRoutineSynthesizerDetail } from "../../api/oprm/useOprmRoutineSynthesizerDetail";
-import { useOprmRoutineQualityGateDetail } from "../../api/oprm/useOprmRoutineQualityGateDetail";
+import {
+  type OprmQualityNotes,
+  useOprmRoutineQualityGateDetail,
+} from "../../api/oprm/useOprmRoutineQualityGateDetail";
 import { useOprmSourceFetcherDetail } from "../../api/oprm/useOprmSourceFetcherDetail";
 import { useOprmSignalExtractorDetail } from "../../api/oprm/useOprmSignalExtractorDetail";
 import { useOprmSourceSearcherDetail } from "../../api/oprm/useOprmSourceSearcherDetail";
@@ -376,11 +379,146 @@ function getCycleStage(status: string) {
   );
 }
 
-function formatQualityNotes(value: string) {
-  return Object.entries(statusLabels).reduce(
-    (formatted, [status, label]) => formatted.split(status).join(label),
-    value,
-  );
+const qualityNoteLabels: Record<string, string> = {
+  status: "Status",
+  fontes: "Fontes",
+  fontesBrasileiras: "Fontes brasileiras",
+  fontesRecentes: "Fontes recentes",
+  sinais: "Sinais",
+  tarefasRotina: "Tarefas de rotina",
+  tarefasConcretasDistintas: "Tarefas concretas distintas",
+  rotinaGenericaRepetida: "Rotina genérica repetida",
+  rotinaApenasGestaoAgendaAtendimentoOrganizacao:
+    "Rotina apenas gestão/agenda/organização",
+  rotinaRevelaTarefasReaisExecutor: "Revela tarefas reais do executor",
+  aquisicaoOuCanal: "Aquisição ou canal",
+  resumoComportamentoClienteUtil: "Resumo de comportamento útil",
+  resumoCanaisUtil: "Resumo de canais útil",
+  faltaEvidenciaAquisicaoCanaisRecorrenciaOuComportamentoClientes:
+    "Falta evidência comercial",
+  dorPratica: "Dor prática",
+  dorEmocionalSonhoOuMedo: "Dor emocional/sonho/medo",
+  mixMinimoMeiAutonomo: "Mix mínimo MEI/autônomo",
+  evidenciaAuditavelBrasil: "Evidência auditável Brasil",
+  fontesRecentesSuficientes: "Fontes recentes suficientes",
+  riscoFonteAntiga: "Risco de fonte antiga",
+  riscoEmpresaEstruturada: "Risco empresa estruturada",
+  riscoLinguagemSolucao: "Risco linguagem de solução",
+  riscoTextualSolucao: "Risco textual de solução",
+  dominadoPorSolucao: "Dominado por solução",
+  fitMeiAutonomo: "Fit MEI/autônomo",
+  evidenciaComportamental: "Evidência comportamental",
+  fontesDistintas: "Fontes distintas",
+};
+
+function formatQualityNoteValue(value: string | number | boolean) {
+  if (typeof value === "boolean") {
+    return value ? "Sim" : "Não";
+  }
+  if (typeof value === "string") {
+    return formatStatusLabel(value);
+  }
+  return String(value);
+}
+
+function isQualityNoteAccepted(key: string, value: string | number | boolean) {
+  if (key === "status") {
+    return value === "MEI_AUDIENCE_READY";
+  }
+  if (typeof value === "boolean") {
+    const expectedTrue = new Set([
+      "rotinaRevelaTarefasReaisExecutor",
+      "resumoComportamentoClienteUtil",
+      "resumoCanaisUtil",
+      "mixMinimoMeiAutonomo",
+      "evidenciaAuditavelBrasil",
+      "fontesRecentesSuficientes",
+    ]);
+    const expectedFalse = new Set([
+      "rotinaGenericaRepetida",
+      "rotinaApenasGestaoAgendaAtendimentoOrganizacao",
+      "faltaEvidenciaAquisicaoCanaisRecorrenciaOuComportamentoClientes",
+      "dominadoPorSolucao",
+    ]);
+    if (expectedTrue.has(key)) {
+      return value;
+    }
+    if (expectedFalse.has(key)) {
+      return !value;
+    }
+  }
+  if (typeof value === "number") {
+    const minimums: Record<string, number> = {
+      fontes: 3,
+      fontesBrasileiras: 3,
+      fontesRecentes: 2,
+      sinais: 6,
+      tarefasRotina: 1,
+      tarefasConcretasDistintas: 2,
+      aquisicaoOuCanal: 1,
+      dorPratica: 1,
+      dorEmocionalSonhoOuMedo: 1,
+      fitMeiAutonomo: 50,
+      evidenciaComportamental: 55,
+      fontesDistintas: 2,
+    };
+    const maximums: Record<string, number> = {
+      riscoFonteAntiga: 45,
+      riscoEmpresaEstruturada: 45,
+      riscoLinguagemSolucao: 35,
+      riscoTextualSolucao: 35,
+    };
+    if (minimums[key] !== undefined) {
+      return value >= minimums[key];
+    }
+    if (maximums[key] !== undefined) {
+      return value <= maximums[key];
+    }
+  }
+  return true;
+}
+
+function getQualityScoreClass(
+  scoreName:
+    | "specificity"
+    | "confidence"
+    | "duplication"
+    | "routineEvidence"
+    | "difficultyEvidence"
+    | "sourceDiversity"
+    | "solutionRisk",
+  value?: number | null,
+) {
+  if (value === null || value === undefined) {
+    return "col-6 mb-0 fw-semibold";
+  }
+  const accepted =
+    scoreName === "duplication"
+      ? value < 70
+      : scoreName === "solutionRisk"
+        ? value <= 35
+        : scoreName === "confidence"
+          ? value >= 50
+          : value >= 60;
+  return `col-6 mb-0 fw-semibold ${accepted ? "" : "text-danger"}`;
+}
+
+function renderQualityNotes(notes: OprmQualityNotes) {
+  return Object.entries(notes).map(([key, value]) => {
+    const accepted = isQualityNoteAccepted(key, value);
+    return (
+      <span
+        className={`badge border me-1 mb-1 ${
+          accepted
+            ? "text-bg-light text-secondary"
+            : "text-bg-danger border-danger"
+        }`}
+        key={key}
+      >
+        {qualityNoteLabels[key] ?? key}: {formatQualityNoteValue(value)}
+      </span>
+    );
+  });
 }
 
 function canCreateNewResearchCycle(status: string) {
@@ -1878,7 +2016,13 @@ export default function OprmPipelinePage() {
                             <dt className="col-6 text-secondary fw-normal">
                               Pronto para hipótese
                             </dt>
-                            <dd className="col-6 mb-0 fw-semibold">
+                            <dd
+                              className={`col-6 mb-0 fw-semibold ${
+                                routineQualityGateDetail.readyForHypothesis
+                                  ? ""
+                                  : "text-danger"
+                              }`}
+                            >
                               {routineQualityGateDetail.readyForHypothesis
                                 ? "Sim"
                                 : "Não"}
@@ -1886,7 +2030,12 @@ export default function OprmPipelinePage() {
                             <dt className="col-6 text-secondary fw-normal">
                               Especificidade
                             </dt>
-                            <dd className="col-6 mb-0 fw-semibold">
+                            <dd
+                              className={getQualityScoreClass(
+                                "specificity",
+                                routineQualityGateDetail.specificityScore,
+                              )}
+                            >
                               {formatStageCount(
                                 routineQualityGateDetail.specificityScore ??
                                   undefined,
@@ -1896,7 +2045,12 @@ export default function OprmPipelinePage() {
                             <dt className="col-6 text-secondary fw-normal">
                               Confiança
                             </dt>
-                            <dd className="col-6 mb-0 fw-semibold">
+                            <dd
+                              className={getQualityScoreClass(
+                                "confidence",
+                                routineQualityGateDetail.confidenceScore,
+                              )}
+                            >
                               {formatStageCount(
                                 routineQualityGateDetail.confidenceScore ??
                                   undefined,
@@ -1906,7 +2060,12 @@ export default function OprmPipelinePage() {
                             <dt className="col-6 text-secondary fw-normal">
                               Duplicação
                             </dt>
-                            <dd className="col-6 mb-0 fw-semibold">
+                            <dd
+                              className={getQualityScoreClass(
+                                "duplication",
+                                routineQualityGateDetail.duplicationScore,
+                              )}
+                            >
                               {formatStageCount(
                                 routineQualityGateDetail.duplicationScore ??
                                   undefined,
@@ -1916,7 +2075,12 @@ export default function OprmPipelinePage() {
                             <dt className="col-6 text-secondary fw-normal">
                               Evidência rotina
                             </dt>
-                            <dd className="col-6 mb-0 fw-semibold">
+                            <dd
+                              className={getQualityScoreClass(
+                                "routineEvidence",
+                                routineQualityGateDetail.routineEvidenceScore,
+                              )}
+                            >
                               {formatStageCount(
                                 routineQualityGateDetail.routineEvidenceScore ??
                                   undefined,
@@ -1924,9 +2088,44 @@ export default function OprmPipelinePage() {
                               %
                             </dd>
                             <dt className="col-6 text-secondary fw-normal">
+                              Evidência dificuldade
+                            </dt>
+                            <dd
+                              className={getQualityScoreClass(
+                                "difficultyEvidence",
+                                routineQualityGateDetail.difficultyEvidenceScore,
+                              )}
+                            >
+                              {formatStageCount(
+                                routineQualityGateDetail.difficultyEvidenceScore ??
+                                  undefined,
+                              )}
+                              %
+                            </dd>
+                            <dt className="col-6 text-secondary fw-normal">
+                              Diversidade fontes
+                            </dt>
+                            <dd
+                              className={getQualityScoreClass(
+                                "sourceDiversity",
+                                routineQualityGateDetail.sourceDiversityScore,
+                              )}
+                            >
+                              {formatStageCount(
+                                routineQualityGateDetail.sourceDiversityScore ??
+                                  undefined,
+                              )}
+                              %
+                            </dd>
+                            <dt className="col-6 text-secondary fw-normal">
                               Risco solução
                             </dt>
-                            <dd className="col-6 mb-0 fw-semibold">
+                            <dd
+                              className={getQualityScoreClass(
+                                "solutionRisk",
+                                routineQualityGateDetail.solutionLanguageRiskScore,
+                              )}
+                            >
                               {formatStageCount(
                                 routineQualityGateDetail.solutionLanguageRiskScore ??
                                   undefined,
@@ -1951,8 +2150,8 @@ export default function OprmPipelinePage() {
                               <span className="fw-semibold d-block">
                                 Justificativa do gate
                               </span>
-                              <span>
-                                {formatQualityNotes(
+                              <span className="d-block">
+                                {renderQualityNotes(
                                   routineQualityGateDetail.qualityNotes,
                                 )}
                               </span>

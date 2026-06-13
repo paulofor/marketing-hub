@@ -1580,3 +1580,12 @@ Arquivos principais:
 - Atualizado o deploy do backend para injetar `MOIS_SALES_PAGE_BACKFILL_ENABLED=false` por padrão e alinhado o default interno do backend para evitar execução acidental em novos ambientes.
 - Registrada a regra na Fase 5 do cânone MOIS, exigindo confirmação operacional em logs com `operacao=salesPageBackfill` quando houver reinício/execução.
 
+
+## 2026-06-13 11:58:40 UTC-3
+- solicitada programação da próxima coleta de página de vendas Hotmart para 12:20.
+- a causa operacional é que o ciclo 2 é o responsável por enriquecer os produtos com URL/página de vendas, então o agendamento correto deve ficar no scheduler do ciclo 2.
+- ajustado o ciclo 2 do `mois-hotmart-collector` para execução pontual em 13/06/2026 às 12:20 no timezone `America/Sao_Paulo`, com guarda de ano para evitar repetição futura indevida.
+- atualizado o teste do scheduler e o cânone de mapeamento dos ciclos Hotmart para manter a documentação aderente ao comportamento operacional.
+- documentos lidos para tratar a situação:
+  - docs/canonical/mois-hotmart-mapeamento-ciclos-campos-banco.md
+  - mois-hotmart-collector/AGENTS.md

@@ -575,7 +575,7 @@ class PipelineServiceTest {
         assertThat(definitionRegistry.findByPipelineCode("oprm-nicho-cnae-pipeline")).hasValueSatisfying(pipeline -> {
             assertThat(pipeline.module()).isEqualTo("OPRM");
             assertThat(pipeline.name()).isEqualTo("Pipeline Nicho CNAE");
-            assertThat(pipeline.stages()).hasSize(9);
+            assertThat(pipeline.stages()).hasSize(10);
             assertThat(pipeline.stages()).extracting(stage -> stage.operationalCode())
                     .containsExactly(
                             "routine-research-orchestrator",
@@ -585,6 +585,7 @@ class PipelineServiceTest {
                             "source-fetcher",
                             "signal-extractor",
                             "routine-synthesizer",
+                            "mei-audience-segmenter",
                             "routine-quality-gate",
                             "enriched-niche-materializer");
             assertThat(pipeline.stages())
@@ -597,7 +598,7 @@ class PipelineServiceTest {
             assertThat(pipeline.stages())
                     .filteredOn(stage -> stage.requiresOpenAiModel())
                     .extracting(stage -> stage.operationalCode())
-                    .containsExactly("niche-research-seed-builder");
+                    .containsExactly("niche-research-seed-builder", "mei-audience-segmenter");
             assertThat(definitionRegistry.findStage(pipeline, "oprmEnrichedNicheMaterializer"))
                     .hasValueSatisfying(stage -> assertThat(stage.operationalCode()).isEqualTo("enriched-niche-materializer"));
         });
@@ -758,7 +759,7 @@ class PipelineServiceTest {
 
         PipelineSyncResultDto result = synchronizer.syncOfficialByCode("oprm-nicho-cnae-pipeline");
 
-        assertThat(result.appliedActions()).hasSize(9);
+        assertThat(result.appliedActions()).hasSize(10);
         assertThat(result.canonicalPipelineCode()).isEqualTo("oprm-nicho-cnae-pipeline");
     }
 

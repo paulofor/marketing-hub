@@ -306,7 +306,10 @@ export default function OprmCnaePipelineStageDetailPage() {
                   </dl>
                   {!aiTelemetry.hasPersistedTelemetry ? (
                     <div className="alert alert-info mb-0 small" role="status">
-                      Esta execução ainda não possui telemetria persistida; novas execuções da etapa seed passam a gravar modelo, tokens e custo.
+                      Esta execução ainda não possui telemetria persistida para a
+                      etapa; o marcador IA indica acesso direto ao modelo, mas
+                      tokens e custo só aparecem quando forem gravados pelo
+                      backend.
                     </div>
                   ) : null}
                 </div>

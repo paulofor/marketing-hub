@@ -1,0 +1,141 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-12-oprm-nichocnae-mei-pipeline-stage
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: pipeline
+        - tableExists:
+            tableName: pipeline_stage
+        - tableExists:
+            tableName: pipeline_definition
+        - tableExists:
+            tableName: pipeline_stage_definition
+        - columnExists:
+            tableName: pipeline_stage_definition
+            columnName: requires_openai_model
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE pipeline_stage ps
+              INNER JOIN pipeline p ON p.id = ps.pipeline_id
+              SET ps.position = 110,
+                  ps.updated_at = NOW()
+              WHERE p.code = 'oprm-nicho-cnae-pipeline'
+                AND ps.code = 'enriched-niche-materializer'
+                AND ps.position = 9;
+
+              UPDATE pipeline_stage ps
+              INNER JOIN pipeline p ON p.id = ps.pipeline_id
+              SET ps.position = 109,
+                  ps.updated_at = NOW()
+              WHERE p.code = 'oprm-nicho-cnae-pipeline'
+                AND ps.code = 'routine-quality-gate'
+                AND ps.position = 8;
+
+              INSERT INTO pipeline_stage (pipeline_id, position, name, code, description, execution_module, root_package, required, active, openai_model_id, created_at, updated_at)
+              SELECT p.id, 8, 'Segmentação comportamental MEI/autônomo', 'mei-audience-segmenter', 'Define o perfil comportamental MEI/autônomo dono-operador do nicho sem criar produto ou campanha.', 'oprm-coletor-mei', 'com.marketinghub.oprm.nichocnae.meiaudiencesegmenter', 1, 1, NULL, NOW(), NOW()
+              FROM pipeline p
+              LEFT JOIN pipeline_stage existing_stage ON existing_stage.pipeline_id = p.id AND existing_stage.code = 'mei-audience-segmenter'
+              LEFT JOIN pipeline_stage position_conflict ON position_conflict.pipeline_id = p.id AND position_conflict.position = 8
+              WHERE p.code = 'oprm-nicho-cnae-pipeline'
+                AND existing_stage.id IS NULL
+                AND position_conflict.id IS NULL;
+
+              UPDATE pipeline_stage ps
+              INNER JOIN pipeline p ON p.id = ps.pipeline_id
+              LEFT JOIN pipeline_stage conflict ON conflict.pipeline_id = ps.pipeline_id AND conflict.position = 9 AND conflict.id <> ps.id
+              SET ps.position = 9,
+                  ps.updated_at = NOW()
+              WHERE p.code = 'oprm-nicho-cnae-pipeline'
+                AND ps.code = 'routine-quality-gate'
+                AND ps.position = 109
+                AND conflict.id IS NULL;
+
+              UPDATE pipeline_stage ps
+              INNER JOIN pipeline p ON p.id = ps.pipeline_id
+              LEFT JOIN pipeline_stage conflict ON conflict.pipeline_id = ps.pipeline_id AND conflict.position = 10 AND conflict.id <> ps.id
+              SET ps.position = 10,
+                  ps.updated_at = NOW()
+              WHERE p.code = 'oprm-nicho-cnae-pipeline'
+                AND ps.code = 'enriched-niche-materializer'
+                AND ps.position = 110
+                AND conflict.id IS NULL;
+
+              UPDATE pipeline_stage_definition psd
+              INNER JOIN pipeline_definition pd ON pd.id = psd.pipeline_definition_id
+              SET psd.position = 110,
+                  psd.updated_at = NOW()
+              WHERE pd.code = 'oprm-nicho-cnae-pipeline'
+                AND pd.canonical_version = 'oprm-nichocnae-canon.v1'
+                AND psd.canonical_code = 'ENRICHED_NICHE_MATERIALIZER'
+                AND psd.position = 9;
+
+              UPDATE pipeline_stage_definition psd
+              INNER JOIN pipeline_definition pd ON pd.id = psd.pipeline_definition_id
+              SET psd.position = 109,
+                  psd.updated_at = NOW()
+              WHERE pd.code = 'oprm-nicho-cnae-pipeline'
+                AND pd.canonical_version = 'oprm-nichocnae-canon.v1'
+                AND psd.canonical_code = 'ROUTINE_QUALITY_GATE'
+                AND psd.position = 8;
+
+              INSERT INTO pipeline_stage_definition (pipeline_definition_id, canonical_code, display_name, position, required, implemented_stage_enum, requires_openai_model, configurable, execution_module, root_package, created_at, updated_at)
+              SELECT pd.id, 'MEI_AUDIENCE_SEGMENTER', 'Segmentação comportamental MEI/autônomo', 8, 1, 'MEI_AUDIENCE_SEGMENTER', 1, 1, 'oprm-coletor-mei', 'com.marketinghub.oprm.nichocnae.meiaudiencesegmenter', NOW(), NOW()
+              FROM pipeline_definition pd
+              LEFT JOIN pipeline_stage_definition existing_stage ON existing_stage.pipeline_definition_id = pd.id AND existing_stage.canonical_code = 'MEI_AUDIENCE_SEGMENTER'
+              LEFT JOIN pipeline_stage_definition position_conflict ON position_conflict.pipeline_definition_id = pd.id AND position_conflict.position = 8
+              WHERE pd.code = 'oprm-nicho-cnae-pipeline'
+                AND pd.canonical_version = 'oprm-nichocnae-canon.v1'
+                AND existing_stage.id IS NULL
+                AND position_conflict.id IS NULL;
+
+              UPDATE pipeline_stage_definition psd
+              INNER JOIN pipeline_definition pd ON pd.id = psd.pipeline_definition_id
+              LEFT JOIN pipeline_stage_definition conflict ON conflict.pipeline_definition_id = psd.pipeline_definition_id AND conflict.position = 9 AND conflict.id <> psd.id
+              SET psd.position = 9,
+                  psd.updated_at = NOW()
+              WHERE pd.code = 'oprm-nicho-cnae-pipeline'
+                AND pd.canonical_version = 'oprm-nichocnae-canon.v1'
+                AND psd.canonical_code = 'ROUTINE_QUALITY_GATE'
+                AND psd.position = 109
+                AND conflict.id IS NULL;
+
+              UPDATE pipeline_stage_definition psd
+              INNER JOIN pipeline_definition pd ON pd.id = psd.pipeline_definition_id
+              LEFT JOIN pipeline_stage_definition conflict ON conflict.pipeline_definition_id = psd.pipeline_definition_id AND conflict.position = 10 AND conflict.id <> psd.id
+              SET psd.position = 10,
+                  psd.updated_at = NOW()
+              WHERE pd.code = 'oprm-nicho-cnae-pipeline'
+                AND pd.canonical_version = 'oprm-nichocnae-canon.v1'
+                AND psd.canonical_code = 'ENRICHED_NICHE_MATERIALIZER'
+                AND psd.position = 110
+                AND conflict.id IS NULL;
+
+              UPDATE pipeline_stage_definition psd
+              INNER JOIN pipeline_definition pd ON pd.id = psd.pipeline_definition_id
+              SET psd.requires_openai_model = CASE
+                WHEN psd.canonical_code IN ('NICHE_RESEARCH_SEED_BUILDER', 'MEI_AUDIENCE_SEGMENTER') THEN 1
+                ELSE 0
+              END,
+                  psd.updated_at = NOW()
+              WHERE pd.code = 'oprm-nicho-cnae-pipeline'
+                AND pd.canonical_version = 'oprm-nichocnae-canon.v1'
+                AND psd.canonical_code IN (
+                  'ROUTINE_RESEARCH_ORCHESTRATOR',
+                  'ROUTINE_RESEARCH_CYCLE',
+                  'NICHE_RESEARCH_SEED_BUILDER',
+                  'SOURCE_SEARCHER',
+                  'SOURCE_FETCHER',
+                  'SIGNAL_EXTRACTOR',
+                  'ROUTINE_SYNTHESIZER',
+                  'MEI_AUDIENCE_SEGMENTER',
+                  'ROUTINE_QUALITY_GATE',
+                  'ENRICHED_NICHE_MATERIALIZER'
+                );

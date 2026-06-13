@@ -56,15 +56,22 @@ public enum OprmNichoCnaePipelineSection {
             false,
             "com.marketinghub.oprm.nichocnae.routinesynthesizer",
             Set.of("routinesynthesizer", "oprmRoutineSynthesizer")),
-    ROUTINE_QUALITY_GATE(
+    MEI_AUDIENCE_SEGMENTER(
             8,
+            "mei-audience-segmenter",
+            "Segmentação comportamental MEI/autônomo",
+            true,
+            "com.marketinghub.oprm.nichocnae.meiaudiencesegmenter",
+            Set.of("meiaudiencesegmenter", "oprmMeiAudienceSegmenter", "mei")),
+    ROUTINE_QUALITY_GATE(
+            9,
             "routine-quality-gate",
             "Gate de qualidade da rotina",
             false,
             "com.marketinghub.oprm.nichocnae.routinequalitygate",
             Set.of("routinequalitygate", "oprmRoutineQualityGate")),
     ENRICHED_NICHE_MATERIALIZER(
-            9,
+            10,
             "enriched-niche-materializer",
             "Materialização do nicho enriquecido",
             false,

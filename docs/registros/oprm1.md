@@ -606,3 +606,9 @@
 - Removidas as configurações `oprm.cnae-opportunity.scheduler.enabled`, `oprm.cnae-enrichment.scheduler.enabled` e `oprm.cnae-enrichment.startup-catch-up.enabled` do `application.yml` para não deixar contrato operacional ambíguo.
 - Causa-raiz tratada: manter os executores como beans condicionais permitia que uma configuração externa ou imagem antiga reativasse os ciclos vazios, gerando ruído operacional na tela OPRM.
 - Prevenção de recorrência: o teste de contexto agora valida que as propriedades antigas não existem e que as classes antigas de scheduler CNAE não entram mais no artefato do coletor.
+
+## 2026-06-13 — Recomendação de negócio em falhas NichoCNAE
+
+- Atualizada a tela de detalhe do CNAE e a tela de pipeline OPRM para transformar falhas por contaminação de solução ou ausência de evidência de dor em uma recomendação operacional objetiva.
+- A interface agora orienta reprocessamento com foco em rotina/público, informa quando não há dor operacional suficiente e sugere subnicho operacional quando existe evidência de rotina.
+- O comando principal para esses casos foi padronizado como **Reprocessar com subnicho operacional**.

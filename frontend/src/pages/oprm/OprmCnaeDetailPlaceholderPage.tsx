@@ -9,6 +9,7 @@ import {
   useOprmCnaePipelineCycles,
   useStartOprmCnaePipeline,
 } from "../../api/oprm/useOprmCnaePipeline";
+import { useOprmRoutineQualityGateDetail } from "../../api/oprm/useOprmRoutineQualityGateDetail";
 import PageTitle from "../../components/PageTitle";
 import OprmModuleNavigation from "./OprmModuleNavigation";
 import { useBreadcrumbs } from "../../app/breadcrumbs";
@@ -144,6 +145,42 @@ function isCycleStoppedStatus(status?: string | null) {
         "ENRICHED_NICHE_FAILED",
       ].includes(status)),
   );
+}
+
+function isSolutionContaminationFailure(
+  status?: string | null,
+  errorMessage?: string | null,
+) {
+  const normalized = `${status ?? ""} ${errorMessage ?? ""}`.toLowerCase();
+  return (
+    status === "SOLUTION_CONTAMINATED" ||
+    normalized.includes("segmentação contaminada por linguagem de solução") ||
+    normalized.includes("contaminada por linguagem de solução") ||
+    normalized.includes("contaminado por solução") ||
+    normalized.includes("linguagem de solução")
+  );
+}
+
+function buildBusinessRecommendation(params: {
+  status?: string | null;
+  errorMessage?: string | null;
+  difficultyEvidenceScore?: number | null;
+  routineEvidenceScore?: number | null;
+  recommendedSubniche?: string | null;
+}) {
+  if (isSolutionContaminationFailure(params.status, params.errorMessage)) {
+    return "A pesquisa pulou cedo para produto/oferta; reprocessar com foco em rotina e público.";
+  }
+  if (params.difficultyEvidenceScore === 0) {
+    return "Ainda não há dor operacional suficiente para transformar em nicho vendável.";
+  }
+  if (
+    (params.routineEvidenceScore ?? 0) > 0 &&
+    params.recommendedSubniche?.trim()
+  ) {
+    return `Subnicho recomendado: ${params.recommendedSubniche.trim()}.`;
+  }
+  return null;
 }
 
 function qualityBlockedMessage(status?: string | null) {
@@ -389,6 +426,19 @@ export default function OprmCnaeDetailPlaceholderPage() {
   const cyclesQuery = useOprmCnaePipelineCycles(decodedCnaeCode);
   const startPipelineMutation = useStartOprmCnaePipeline(decodedCnaeCode);
   const latestCycle = cyclesQuery.data?.[0];
+  const qualityGateQuery = useOprmRoutineQualityGateDetail(
+    latestCycle?.researchCycleId,
+  );
+  const businessRecommendation = latestCycle
+    ? buildBusinessRecommendation({
+        status: latestCycle.status,
+        errorMessage: latestCycle.errorMessage,
+        difficultyEvidenceScore: qualityGateQuery.data?.difficultyEvidenceScore,
+        routineEvidenceScore: qualityGateQuery.data?.routineEvidenceScore,
+        recommendedSubniche:
+          latestCycle.neutralNicheName ?? latestCycle.nicheName,
+      })
+    : null;
   const cnaeDescription =
     volumeQuery.data?.cnaeDescription ??
     scoreQuery.data?.cnaeDescription ??
@@ -441,6 +491,8 @@ export default function OprmCnaeDetailPlaceholderPage() {
                     />
                     Disparando...
                   </>
+                ) : latestCycle && businessRecommendation ? (
+                  "Reprocessar com subnicho operacional"
                 ) : (
                   "Disparar pipeline NichoCNAE"
                 )}
@@ -564,6 +616,17 @@ export default function OprmCnaeDetailPlaceholderPage() {
                   causa do bloqueio.
                 </div>
               ) : null}
+              {businessRecommendation ? (
+                <div className="alert alert-light border mt-3 mb-0">
+                  <span className="fw-semibold d-block">
+                    Recomendação de negócio
+                  </span>
+                  {businessRecommendation}
+                  <span className="d-block small text-secondary mt-1">
+                    Comando recomendado: Reprocessar com subnicho operacional.
+                  </span>
+                </div>
+              ) : null}
               {latestCycle.errorMessage ? (
                 <div className="mt-2 text-danger">
                   Falha registrada: {latestCycle.errorMessage}
@@ -619,7 +682,9 @@ export default function OprmCnaeDetailPlaceholderPage() {
                       </p>
                       {latestCycle ? (
                         <Link
-                          className={stageDetailButtonClassName(state.className)}
+                          className={stageDetailButtonClassName(
+                            state.className,
+                          )}
                           to={`/oprm/cnaes/${encodeURIComponent(decodedCnaeCode)}/pipeline/${latestCycle.researchCycleId}/stages/${stage.code}`}
                         >
                           Ver detalhes

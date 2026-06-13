@@ -606,3 +606,10 @@
 - Removidas as configurações `oprm.cnae-opportunity.scheduler.enabled`, `oprm.cnae-enrichment.scheduler.enabled` e `oprm.cnae-enrichment.startup-catch-up.enabled` do `application.yml` para não deixar contrato operacional ambíguo.
 - Causa-raiz tratada: manter os executores como beans condicionais permitia que uma configuração externa ou imagem antiga reativasse os ciclos vazios, gerando ruído operacional na tela OPRM.
 - Prevenção de recorrência: o teste de contexto agora valida que as propriedades antigas não existem e que as classes antigas de scheduler CNAE não entram mais no artefato do coletor.
+
+## 2026-06-13 — Seed OPRM com queries comerciais-operacionais
+
+- Solicitação: ajustar a etapa `oprmNicheResearchSeedBuilder` para gerar buscas mais comerciais e operacionais, evitando dependência excessiva de CBO, tabelas salariais e páginas institucionais.
+- Causa-raiz: o prompt anterior ainda priorizava rotina ocupacional, procedimentos, CBO e guias profissionais como primeiras buscas, o que tendia a capturar descrições oficiais da profissão em vez de sinais de venda, agenda, cobrança, materiais, retrabalho e relatos reais do autônomo.
+- Correção aplicada: o prompt da etapa 2 passou a exigir cinco famílias de queries — aquisição por WhatsApp/Instagram/indicação; agenda/faltas/remarcações/clientes que somem; precificação/cobrança/pacotes/recorrência; materiais/tempo/retrabalho; relatos reais em fóruns/vídeos/comentários/perguntas frequentes — e rebaixou CBO/tabelas salariais/páginas institucionais para apoio secundário.
+- Defesa backend: o fallback de query padrão também passou a usar foco comercial-operacional para não voltar ao padrão ocupacional quando o modelo retornar lista vazia.

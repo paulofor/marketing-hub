@@ -1573,3 +1573,10 @@ Arquivos principais:
 ## 2026-06-13 — Reexecução Hotmart ciclo 1 às 01:35
 - Após falha operacional às 00:05 causada por JWT Hotmart expirado, o ciclo 1 de listagem do `mois-hotmart-collector` foi reagendado para execução pontual única em **13/06/2026 às 01:35** no timezone `America/Sao_Paulo`.
 - Atualizados scheduler, teste unitário e cânone Hotmart para usar o cron `0 35 1 13 6 *`, mantendo o alvo operacional de 400 produtos e a guarda de execução apenas em 2026.
+
+### 2026-06-13 — Backfill de páginas de venda MOIS desabilitado por padrão
+
+- Decidido que o backfill `MOIS_SALES_PAGE_BACKFILL_ENABLED` não é rotina automática de produção; ele deve permanecer `false` e ser usado apenas em migração controlada/manual.
+- Atualizado o deploy do backend para injetar `MOIS_SALES_PAGE_BACKFILL_ENABLED=false` por padrão e alinhado o default interno do backend para evitar execução acidental em novos ambientes.
+- Registrada a regra na Fase 5 do cânone MOIS, exigindo confirmação operacional em logs com `operacao=salesPageBackfill` quando houver reinício/execução.
+

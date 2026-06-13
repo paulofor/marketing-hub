@@ -516,6 +516,7 @@ Regras obrigatórias da Fase 5:
 - a conclusão ou falha de análise deve atualizar primeiro `mois_sales_page_job_execution` e depois o estado consolidado em `mois_sales_page`;
 - reanálise e atualização manual de status devem criar execuções novas no histórico consolidado sem depender de tabelas legadas;
 - tabelas legadas de URL, job e análise não podem receber a escrita operacional principal nem ser fonte de verdade da UI operacional;
+- o backfill de páginas de venda (`MOIS_SALES_PAGE_BACKFILL_ENABLED`) deve permanecer desabilitado por padrão em produção (`false`) e só pode ser ligado temporariamente para migração controlada/manual, com reinício explícito do backend e confirmação em logs por `operacao=salesPageBackfill`;
 - logs de transição devem informar `pageId`, `executionId`, operação executada e resultado para rastrear cada mudança de etapa;
 - contratos Swagger da Biblioteca devem explicitar que `jobId` de claim/complete/fail representa `mois_sales_page_job_execution.id` nesta fase;
 - o endpoint de listagem de entradas (`GET /api/mois/sales-library/entries`) deve ler `mois_sales_page`; o campo compatível `firstCapturedAt` passa a representar `first_seen_at` enquanto o contrato externo não for renomeado.

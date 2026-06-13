@@ -19,7 +19,7 @@ public class MoisSalesPageBackfillService implements ApplicationRunner {
 
     private final MoisSalesPageBackfillGateway gateway;
 
-    @Value("${mois.sales-page.backfill.enabled:true}")
+    @Value("${mois.sales-page.backfill.enabled:false}")
     private boolean enabled;
 
     /**

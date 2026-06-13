@@ -10,6 +10,7 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_API_KEY_FILE: ${OPENAI_API_KEY_FILE:-/run/secrets/openai_api_key}
       OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      MOIS_SALES_PAGE_BACKFILL_ENABLED: ${MOIS_SALES_PAGE_BACKFILL_ENABLED:-false}
     ports:
       - "80:8000"
       - "8000:8000"

@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+/** Responsável por disparar os ciclos agendados do coletor Clickbank quando o agendamento estiver habilitado. */
 @Component
 public class ClickbankCollectorScheduler {
 
@@ -19,9 +20,10 @@ public class ClickbankCollectorScheduler {
     private final String source;
     private final int maxProducts;
 
+    /** Inicializa o agendador com serviço, chave de ativação, fonte e limite configurados. */
     public ClickbankCollectorScheduler(
             ClickbankCollectorService collectorService,
-            @Value("${collector.scheduler.enabled:true}") boolean enabled,
+            @Value("${collector.scheduler.enabled:false}") boolean enabled,
             @Value("${collector.scheduler.source:clickbank-market}") String source,
             @Value("${collector.scheduler.max-products:25}") int maxProducts
     ) {
@@ -31,6 +33,7 @@ public class ClickbankCollectorScheduler {
         this.maxProducts = maxProducts;
     }
 
+    /** Executa o ciclo Clickbank correspondente ao horário atual quando o scheduler está ativo. */
     @Scheduled(cron = "${collector.scheduler.cron:0 0 * * * *}")
     public void collectHourly() {
         log.info("Iniciando execução agendada do Clickbank Collector source={} maxProducts={}", source, maxProducts);

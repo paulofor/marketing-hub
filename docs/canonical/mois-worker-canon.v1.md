@@ -55,8 +55,8 @@ O worker seleciona a fonte por ciclo com a seguinte ordem canônica:
 ### 7.1 Worker
 - `worker.backend-base-url` → `${BACKEND_BASE_URL:http://191.252.181.168:8000}`
 - `worker.workspace-id` → `${MOIS_WORKSPACE_ID:workspace-001}`
-- `worker.source` → `${MOIS_SOURCE:CLICKBANK}`
-- `worker.sources` → `${MOIS_SOURCES:}`
+- `worker.source` → `${MOIS_SOURCE:HOTMART}`
+- `worker.sources` → `${MOIS_SOURCES:}`; operação atual deve manter somente `HOTMART` em runtime/deploy para evitar reprocessamento de fontes ClickBank durante o reinício da biblioteca.
 - `worker.poll-interval-ms` → `${MOIS_POLL_INTERVAL_MS:15000}`
 - `worker.request-timeout-ms` → `${MOIS_REQUEST_TIMEOUT_MS:300000}`
 

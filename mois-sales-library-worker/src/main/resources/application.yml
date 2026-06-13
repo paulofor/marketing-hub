@@ -23,7 +23,7 @@ spring:
 worker:
   backend-base-url: ${BACKEND_BASE_URL:http://191.252.181.168:8000}
   workspace-id: ${MOIS_WORKSPACE_ID:workspace-001}
-  source: ${MOIS_SOURCE:CLICKBANK}
+  source: ${MOIS_SOURCE:HOTMART}
   sources: ${MOIS_SOURCES:}
   raw-html-source: ${MOIS_RAW_HTML_SOURCE:HOTMART}
   raw-html-sources: ${MOIS_RAW_HTML_SOURCES:}

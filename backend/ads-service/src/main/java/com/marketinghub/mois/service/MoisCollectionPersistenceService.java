@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
+/** Persiste e consulta estados de coleta MOIS e suas referências relacionais consolidadas. */
 @Service
 @RequiredArgsConstructor
 public class MoisCollectionPersistenceService {
@@ -22,6 +23,7 @@ public class MoisCollectionPersistenceService {
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
 
+    /** Grava o estado de um job de coleta e sincroniza suas referências coletadas. */
     public MoisCollectionPersistenceDtos.CollectionJobStateResponse upsertJobState(
             String jobId,
             MoisCollectionPersistenceDtos.CollectionJobStateResponse state
@@ -55,6 +57,7 @@ public class MoisCollectionPersistenceService {
         return state;
     }
 
+    /** Busca o estado serializado de um job de coleta pelo identificador. */
     public Optional<MoisCollectionPersistenceDtos.CollectionJobStateResponse> getJobState(String jobId) {
         List<MoisCollectionPersistenceDtos.CollectionJobStateResponse> items = jdbcTemplate.query(
                 "SELECT payload_json FROM mois_collection_job_state WHERE job_id = ?",
@@ -64,6 +67,7 @@ public class MoisCollectionPersistenceService {
         return items.stream().findFirst();
     }
 
+    /** Lista estados de coleta filtrando opcionalmente por workspace e status. */
     public MoisCollectionPersistenceDtos.CollectionJobStateListResponse listJobStates(String workspaceId, String status) {
         StringBuilder sql = new StringBuilder("SELECT payload_json FROM mois_collection_job_state WHERE 1=1");
         List<Object> params = new ArrayList<>();
@@ -88,6 +92,7 @@ public class MoisCollectionPersistenceService {
         return new MoisCollectionPersistenceDtos.CollectionJobStateListResponse(new ArrayList<>(items));
     }
 
+    /** Serializa o estado de coleta para armazenamento em JSON. */
     private String writeState(MoisCollectionPersistenceDtos.CollectionJobStateResponse state) {
         try {
             return objectMapper.writeValueAsString(state);
@@ -96,6 +101,7 @@ public class MoisCollectionPersistenceService {
         }
     }
 
+    /** Desserializa o payload JSON persistido para o contrato de estado de coleta. */
     private MoisCollectionPersistenceDtos.CollectionJobStateResponse readState(String payload) {
         try {
             return objectMapper.readValue(payload, MoisCollectionPersistenceDtos.CollectionJobStateResponse.class);
@@ -104,6 +110,7 @@ public class MoisCollectionPersistenceService {
         }
     }
 
+    /** Recria as referências relacionais de um job preservando dados comerciais Hotmart quando enviados no metadado. */
     private void persistCollectedReferences(
             String jobId,
             String workspaceId,
@@ -142,7 +149,7 @@ public class MoisCollectionPersistenceService {
                     ps.setDouble(15, item.engagementRelative());
                     ps.setDouble(16, item.recurrenceScore());
                     ps.setDouble(17, item.evidenceScore());
-                    ps.setString(18, metadataValue(item, "hotmartDescription"));
+                    ps.setString(18, coalesceNotBlank(metadataValue(item, "hotmartDescription"), metadataValue(item, "description"), metadataValue(item, "productDescription")));
                     ps.setString(19, metadataValue(item, "hotmartProducer"));
                     ps.setString(20, metadataValue(item, "hotmartImageUrl"));
                     ps.setString(21, metadataValue(item, "hotmartHighlight"));
@@ -162,6 +169,7 @@ public class MoisCollectionPersistenceService {
         );
     }
 
+    /** Retorna o primeiro texto preenchido entre os valores informados. */
     private String coalesceNotBlank(String... values) {
         if (values == null) {
             return null;
@@ -174,11 +182,13 @@ public class MoisCollectionPersistenceService {
         return null;
     }
 
+    /** Converte texto decimal vindo de metadados para BigDecimal sem interromper a persistência. */
     private java.math.BigDecimal parseDecimal(String value) {
         if (value == null || value.isBlank()) return null;
         try { return new java.math.BigDecimal(value.trim()); } catch (NumberFormatException ex) { return null; }
     }
 
+    /** Lê uma chave do mapa de metadados bruto de uma referência coletada. */
     private String metadataValue(com.marketinghub.mois.dto.MoisWorkspaceDtos.CollectedReferenceResponse item, String key) {
         if (item.rawMetadata() == null) {
             return null;
@@ -186,6 +196,7 @@ public class MoisCollectionPersistenceService {
         return item.rawMetadata().get(key);
     }
 
+    /** Resume as referências coletadas por fonte para apoiar priorização operacional. */
     public MoisCollectionPersistenceDtos.SourceHighlightListResponse summarizeBySource(String workspaceId, String status) {
         List<MoisCollectionPersistenceDtos.CollectionJobStateResponse> states = listJobStates(workspaceId, status).items();
         Map<String, List<com.marketinghub.mois.dto.MoisWorkspaceDtos.CollectedReferenceResponse>> bySource = new HashMap<>();
@@ -205,6 +216,7 @@ public class MoisCollectionPersistenceService {
         return new MoisCollectionPersistenceDtos.SourceHighlightListResponse(items);
     }
 
+    /** Converte as referências de uma fonte em métricas agregadas de destaque. */
     private MoisCollectionPersistenceDtos.SourceHighlightResponse toSourceHighlight(
             String source,
             List<com.marketinghub.mois.dto.MoisWorkspaceDtos.CollectedReferenceResponse> references

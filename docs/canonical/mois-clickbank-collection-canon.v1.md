@@ -96,7 +96,7 @@ Principais chaves:
 - `collector.clickbank.top-offers-url` (default `https://www.clickbank.com/blog/clickbank-top-offers/`)
 - `collector.backend.base-url` (default `http://191.252.181.168:8000`)
 - `collector.clickbank.jwt-setting-key` (default `clickbank_access_token_jwt`)
-- `collector.scheduler.enabled` (default `true`)
+- `collector.scheduler.enabled` (default `false` na operação Hotmart-only; reativar explicitamente apenas quando ClickBank voltar a ser fonte ativa)
 - `collector.scheduler.cron` (default `0 0 */2 * * *`)
 - `collector.scheduler.max-products` (default `25`)
 

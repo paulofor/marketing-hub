@@ -1554,3 +1554,18 @@ Arquivos principais:
 - `frontend/src/pages/mois/MoisSalesPagesLibraryPage.tsx`
 - `frontend/src/pages/mois/MoisSalesPageLibraryDetailPage.tsx`
 - `docs/swagger/mois-sales-library-swagger.yaml`
+
+## 2026-06-13 — Foco operacional Hotmart na Biblioteca de Páginas de Vendas
+- Após reset operacional da biblioteca, o `mois-sales-library-worker` foi configurado para usar apenas `HOTMART` como fonte padrão de análise/claim, removendo `CLICKBANK` da rotação `MOIS_SOURCES` nos compose local/deploy.
+- O scheduler do `mois-clickbank-collector` passou a ficar desabilitado por padrão no `application.properties` e nos compose local/deploy, preservando o módulo disponível para acionamento explícito futuro, mas impedindo novos ciclos automáticos de ClickBank durante o reinício das páginas de vendas.
+- Os cânones do worker MOIS e da coleta ClickBank foram atualizados para refletir que a operação vigente deve manter apenas Hotmart como fonte ativa nesse reinício.
+
+## 2026-06-13 — Dados comerciais obrigatórios nas coletas Hotmart
+- O coletor Hotmart passou a carregar descrição do produto no snapshot e no `rawMetadata`, junto com temperatura, produtor e `collectedAt`, para preservar comparações de novas coletas do mesmo produto no futuro.
+- O `referenceId` enviado para persistência Hotmart passou a ser estável por produto quando houver `ucode`, mantendo histórico por job sem sobrescrever coletas futuras.
+- O backend passou a expor `description` em `/api/v1/mois/hotmart/products`, e a tela Hotmart passou a exibir descrição e data de coleta por card.
+- Adicionado changelog para ampliar `mois_collected_reference.hotmart_description` para 1000 caracteres e reduzir truncamento de descrições comerciais.
+
+## 2026-06-13 — Hotmart ciclo 1 agendado para execução única às 00:05
+- Ajustado o `HotmartCollectorScheduler` para executar o ciclo 1 de listagem uma única vez em **13/06/2026 às 00:05** no timezone `America/Sao_Paulo`.
+- Atualizados teste do scheduler e cânone Hotmart para refletir o novo cron `0 5 0 13 6 *` e preservar a guarda operacional de execução somente no ano de 2026.

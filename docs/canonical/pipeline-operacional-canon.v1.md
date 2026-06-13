@@ -42,7 +42,7 @@ As regras abaixo pertencem ao domínio de geração de landing pages. Elas podem
 
 1. **HTML provisório:** é um artefato intermediário útil no GeraLanding para visualizar evolução de landing page, mas outros pipelines devem definir o artefato intermediário adequado ao seu domínio.
 2. **`html_geralanding`:** é um campo consolidado específico do GeraLanding e não deve virar nome padrão de outros pipelines.
-3. **`landing_page_html`:** representa o HTML publicável da landing page; outros domínios devem usar nomes que expressem seu próprio artefato final.
+3. **`landing_page_html`:** não é responsabilidade do GeraLanding; representa o HTML publicável da landing page em uma etapa/módulo de publicação ou consolidação final, e outros domínios devem usar nomes que expressem seu próprio artefato final.
 4. **Quality review visual:** é gate específico para avaliar qualidade visual/comercial de landing page; outros pipelines devem definir gates compatíveis com o risco e o resultado do seu artefato.
 5. **Presets de design:** pertencem ao fluxo de composição visual do GeraLanding; novos pipelines só devem ter presets quando isso fizer sentido para o domínio.
 6. **Renderização e screenshots:** são necessários para validar landing pages renderizadas; outros pipelines devem substituir por evidências apropriadas, como prévia textual, simulação, validação de contrato, arquivo final ou métrica operacional.

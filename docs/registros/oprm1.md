@@ -612,6 +612,17 @@
 - Atualizada a tela de detalhe do CNAE e a tela de pipeline OPRM para transformar falhas por contaminação de solução ou ausência de evidência de dor em uma recomendação operacional objetiva.
 - A interface agora orienta reprocessamento com foco em rotina/público, informa quando não há dor operacional suficiente e sugere subnicho operacional quando existe evidência de rotina.
 - O comando principal para esses casos foi padronizado como **Reprocessar com subnicho operacional**.
+## 2026-06-13 — Seed OPRM com queries comerciais-operacionais
+
+- Solicitação: ajustar a etapa `oprmNicheResearchSeedBuilder` para gerar buscas mais comerciais e operacionais, evitando dependência excessiva de CBO, tabelas salariais e páginas institucionais.
+- Causa-raiz: o prompt anterior ainda priorizava rotina ocupacional, procedimentos, CBO e guias profissionais como primeiras buscas, o que tendia a capturar descrições oficiais da profissão em vez de sinais de venda, agenda, cobrança, materiais, retrabalho e relatos reais do autônomo.
+- Correção aplicada: o prompt da etapa 2 passou a exigir cinco famílias de queries — aquisição por WhatsApp/Instagram/indicação; agenda/faltas/remarcações/clientes que somem; precificação/cobrança/pacotes/recorrência; materiais/tempo/retrabalho; relatos reais em fóruns/vídeos/comentários/perguntas frequentes — e rebaixou CBO/tabelas salariais/páginas institucionais para apoio secundário.
+- Defesa backend: o fallback de query padrão também passou a usar foco comercial-operacional para não voltar ao padrão ocupacional quando o modelo retornar lista vazia.
+## 2026-06-13 — OPRM NichoCNAE: bloqueio de segmentação MEI sem dor prática
+
+- Causa-raiz corrigida: a fila da etapa `mei-audience-segmenter` podia expor cartões sintetizados com pontuação zero ou texto explícito de ausência de evidência, permitindo avanço sem dor operacional concreta.
+- Correção aplicada: antes de expor a pendência, o backend valida pontuações e textos essenciais do `oprm_niche_routine_card`; cartões sem evidência mínima bloqueiam o ciclo como `NEEDS_MORE_RESEARCH` com o motivo “cartão sem evidência mínima de dor prática”.
+- Prevenção de recorrência: o cânone OPRM passou a exigir esse gate antes da segmentação MEI/autônomo e o teste unitário cobre cartão vazio que não entra na fila.
 ## 2026-06-13 — OPRM MEI: bloqueio de incentivo indireto na segmentação
 
 - Causa-raiz tratada: a etapa `mei-audience-segmenter` já bloqueava parte da linguagem de solução, mas o prompt e a pré-validação não reforçavam explicitamente todos os termos de contaminação indireta, como software, IA, automação e ferramenta, antes do envio ao backend.

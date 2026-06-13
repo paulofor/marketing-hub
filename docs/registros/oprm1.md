@@ -612,6 +612,9 @@
 - Atualizada a tela de detalhe do CNAE e a tela de pipeline OPRM para transformar falhas por contaminação de solução ou ausência de evidência de dor em uma recomendação operacional objetiva.
 - A interface agora orienta reprocessamento com foco em rotina/público, informa quando não há dor operacional suficiente e sugere subnicho operacional quando existe evidência de rotina.
 - O comando principal para esses casos foi padronizado como **Reprocessar com subnicho operacional**.
+## 2026-06-13 — OPRM NichoCNAE quebra CNAE amplo em subnichos vendáveis
+
+- 2026-06-13 00:00:00 (UTC): adicionada etapa complementar dentro do `oprmNicheResearchSeedBuilder` para ler CNAE, descrição, score OPRM e volume MEI antes de gerar o seed; o prompt agora exige gerar mentalmente 3 a 7 subnichos operacionais focados em MEI/autônomo, pontuar recorrência, urgência da dor, capacidade de pagar, clareza do resultado e compatibilidade com produto digital, e rodar as próximas pesquisas apenas sobre o subnicho vencedor. O backend passou a enviar o volume MEI mais recente do CNAE para o coletor, preservando o pipeline profundo no seed mais promissor.
 ## 2026-06-13 — Seed OPRM com queries comerciais-operacionais
 
 - Solicitação: ajustar a etapa `oprmNicheResearchSeedBuilder` para gerar buscas mais comerciais e operacionais, evitando dependência excessiva de CBO, tabelas salariais e páginas institucionais.

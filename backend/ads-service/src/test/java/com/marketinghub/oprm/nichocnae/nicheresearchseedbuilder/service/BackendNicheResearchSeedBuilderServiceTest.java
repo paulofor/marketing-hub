@@ -14,6 +14,7 @@ import com.marketinghub.oprm.nichocnae.nicheresearchseedbuilder.service.complete
 import com.marketinghub.oprm.nichocnae.nicheresearchseedbuilder.service.completeStageExecution.CompleteNicheResearchSeedBuilderResponse;
 import com.marketinghub.oprm.nichocnae.nicheresearchseedbuilder.service.completeStageExecution.NicheResearchQueryRequest;
 import com.marketinghub.oprm.nichocnae.nicheresearchseedbuilder.service.failStageExecution.FailNicheResearchSeedBuilderRequest;
+import com.marketinghub.repository.jpa.oprm.market.OprmMarketSizeByCnaeRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmNicheResearchSeedRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmResearchQueryRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmRoutineResearchCycleRepository;
@@ -36,6 +37,7 @@ class BackendNicheResearchSeedBuilderServiceTest {
   @Mock private OprmNicheResearchSeedRepository nicheResearchSeedRepository;
   @Mock private OprmResearchQueryRepository researchQueryRepository;
   @Mock private OprmNicheResearchSeedBuilderConfigurationGateway configurationGateway;
+  @Mock private OprmMarketSizeByCnaeRepository marketSizeByCnaeRepository;
 
   @InjectMocks private BackendNicheResearchSeedBuilderService service;
 
@@ -66,6 +68,7 @@ class BackendNicheResearchSeedBuilderServiceTest {
     assertThat(result).hasSize(1);
     assertThat(result.getFirst().researchCycleId()).isEqualTo(1001L);
     assertThat(result.getFirst().cnaeCode()).isEqualTo("9602501");
+    assertThat(result.getFirst().meiVolume()).isNull();
   }
 
   /** Deve gravar seed, queries pendentes e total de queries no ciclo quando o payload é válido. */

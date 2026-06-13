@@ -18,6 +18,14 @@ class NicheResearchSeedBuilderPromptBuilderTest {
         assertThat(prompt)
                 .contains("especialista em Marketing e Comportamento do Consumidor no Digital")
                 .contains("profissional brasileiro MEI/autônomo")
+                .contains("quebrar o CNAE amplo em 3 a 7 subnichos operacionais mais vendáveis")
+                .contains("Pontue cada subnicho de 1 a 5 por recorrência")
+                .contains("urgência da dor")
+                .contains("capacidade de pagar")
+                .contains("clareza do resultado")
+                .contains("compatibilidade com produto digital")
+                .contains("seed.nicheName deve ser o subnicho vencedor")
+                .contains("meiVolume: 125000")
                 .contains("português do Brasil")
                 .contains("operação comercial real")
                 .contains("rotina executada")
@@ -80,6 +88,7 @@ class NicheResearchSeedBuilderPromptBuilderTest {
                 "Cabeleireiros, manicure e pedicure",
                 "Cabeleireiros, manicure e pedicure",
                 BigDecimal.valueOf(92),
+                125000L,
                 "gpt-5.4",
                 "gpt-5.4 (gpt-5.4)",
                 "AUTO_SCORE_QUEUE",

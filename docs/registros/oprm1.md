@@ -606,3 +606,9 @@
 - Removidas as configurações `oprm.cnae-opportunity.scheduler.enabled`, `oprm.cnae-enrichment.scheduler.enabled` e `oprm.cnae-enrichment.startup-catch-up.enabled` do `application.yml` para não deixar contrato operacional ambíguo.
 - Causa-raiz tratada: manter os executores como beans condicionais permitia que uma configuração externa ou imagem antiga reativasse os ciclos vazios, gerando ruído operacional na tela OPRM.
 - Prevenção de recorrência: o teste de contexto agora valida que as propriedades antigas não existem e que as classes antigas de scheduler CNAE não entram mais no artefato do coletor.
+
+## 2026-06-13 — OPRM NichoCNAE: bloqueio de segmentação MEI sem dor prática
+
+- Causa-raiz corrigida: a fila da etapa `mei-audience-segmenter` podia expor cartões sintetizados com pontuação zero ou texto explícito de ausência de evidência, permitindo avanço sem dor operacional concreta.
+- Correção aplicada: antes de expor a pendência, o backend valida pontuações e textos essenciais do `oprm_niche_routine_card`; cartões sem evidência mínima bloqueiam o ciclo como `NEEDS_MORE_RESEARCH` com o motivo “cartão sem evidência mínima de dor prática”.
+- Prevenção de recorrência: o cânone OPRM passou a exigir esse gate antes da segmentação MEI/autônomo e o teste unitário cobre cartão vazio que não entra na fila.

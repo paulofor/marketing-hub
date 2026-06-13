@@ -21,7 +21,7 @@ import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Locale;
+import java.text.Normalizer;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,12 +37,31 @@ public class BackendMeiAudienceSegmenterService {
   private static final String ROUTINE_SYNTHESIZED_STATUS = "ROUTINE_SYNTHESIZED";
   private static final String SEGMENTED_STATUS = "MEI_AUDIENCE_SEGMENTED";
   private static final String FAILED_STATUS = "FAILED";
+  private static final String NEEDS_MORE_RESEARCH_STATUS = "NEEDS_MORE_RESEARCH";
+  private static final String INSUFFICIENT_OPERATIONAL_PAIN_REASON = "cartão sem evidência mínima de dor prática";
   private static final int MAX_PENDING = 10;
   private static final int MAX_SIGNALS = 120;
   private static final int MAX_SOURCES = 30;
   private static final int MAX_TEXT_LENGTH = 4000;
   private static final List<String> SOLUTION_TERMS = List.of(
-      " produto", " oferta", " preço", " promessa", " campanha", " landing page", " software", " automação", " inteligência artificial", " ia ", " curso", " ferramenta");
+      "produto",
+      "oferta",
+      "preço",
+      "promessa",
+      "campanha",
+      "landing page",
+      "software",
+      "automacao",
+      "automação",
+      "inteligencia artificial",
+      "inteligência artificial",
+      "ia",
+      "curso",
+      "ferramenta",
+      "aplicativo",
+      "app",
+      "solução",
+      "solucao");
 
   private final OprmRoutineResearchCycleRepository routineResearchCycleRepository;
   private final OprmNicheRoutineCardRepository routineCardRepository;
@@ -68,7 +87,7 @@ public class BackendMeiAudienceSegmenterService {
   }
 
   /** Lista somente cartões de ciclos ativos e elegíveis para segmentação comportamental antes do gate e materialização. */
-  @Transactional(readOnly = true)
+  @Transactional
   public List<RecordMeiAudienceSegmenterPending> listPending() {
     return routineCardRepository.findPendingMeiAudienceSegmentation(PageRequest.of(0, MAX_PENDING)).stream()
         .map(this::toPendingIfEligible)
@@ -129,7 +148,49 @@ public class BackendMeiAudienceSegmenterService {
     if (!ROUTINE_SYNTHESIZED_STATUS.equals(cycle.getStatus())) {
       return Optional.empty();
     }
+    if (!hasMinimumOperationalPainEvidence(card)) {
+      markCycleAsNeedingMoreResearch(cycle);
+      return Optional.empty();
+    }
     return Optional.of(toPending(card, cycle));
+  }
+
+  /** Marca o ciclo para nova pesquisa quando o cartão não comprova uma dor operacional prática. */
+  private void markCycleAsNeedingMoreResearch(OprmRoutineResearchCycle cycle) {
+    Instant now = Instant.now();
+    cycle.setStatus(NEEDS_MORE_RESEARCH_STATUS);
+    cycle.setErrorMessage(INSUFFICIENT_OPERATIONAL_PAIN_REASON);
+    cycle.setFinishedAt(now);
+    cycle.setUpdatedAt(now);
+    routineResearchCycleRepository.save(cycle);
+    LOGGER.info(
+        "Ciclo OPRM nichocnae bloqueado antes da segmentação MEI/autônomo por falta de evidência mínima de dor prática (researchCycleId={}, status={}, motivo={})",
+        cycle.getId(),
+        cycle.getStatus(),
+        cycle.getErrorMessage());
+  }
+
+  /** Verifica se o cartão tem pontuação e texto suficientes para comprovar dor operacional concreta. */
+  private boolean hasMinimumOperationalPainEvidence(OprmNicheRoutineCard card) {
+    return positiveScore(card.getRoutineEvidenceScore())
+        && positiveScore(card.getDifficultyEvidenceScore())
+        && hasConcreteEvidenceText(card.getRoutineSummary())
+        && hasConcreteEvidenceText(card.getPainsSummary())
+        && hasConcreteEvidenceText(card.getOperationalPainsSummary())
+        && hasConcreteEvidenceText(card.getEvidenceSummary());
+  }
+
+  /** Indica se a pontuação numérica do cartão confirma alguma evidência observável. */
+  private boolean positiveScore(Integer score) {
+    return score != null && score > 0;
+  }
+
+  /** Bloqueia textos vazios ou marcadores explícitos de ausência de evidência. */
+  private boolean hasConcreteEvidenceText(String value) {
+    if (!StringUtils.hasText(value)) {
+      return false;
+    }
+    return !value.toLowerCase(Locale.ROOT).contains("sem evidência suficiente");
   }
 
   /** Converte cartão, ciclo, fontes e sinais na unidade de trabalho enviada ao coletor de IA. */
@@ -236,15 +297,21 @@ public class BackendMeiAudienceSegmenterService {
 
   /** Bloqueia linguagem de produto/oferta no payload final publicável de perfil. */
   private void rejectSolutionLanguage(CompleteMeiAudienceSegmenterRequest request) {
-    String combined = (request.audienceName() + " " + request.workMode() + " " + request.customerAcquisitionBehavior() + " "
-        + request.dailyRoutineSummary() + " " + request.operationalPainsSummary() + " " + request.emotionalPainsSummary() + " "
-        + request.dreamsSummary() + " " + request.fearsSummary() + " " + request.languagePatterns() + " " + request.channelsUsed())
-        .toLowerCase(Locale.ROOT);
+    String combined = normalize(" " + request.audienceName() + " " + request.occupationTerms() + " " + request.workMode() + " "
+        + request.customerAcquisitionBehavior() + " " + request.dailyRoutineSummary() + " " + request.recurringTasksSummary() + " "
+        + request.operationalPainsSummary() + " " + request.emotionalPainsSummary() + " " + request.dreamsSummary() + " "
+        + request.fearsSummary() + " " + request.languagePatterns() + " " + request.channelsUsed() + " " + request.recentSourceSummary() + " ");
     for (String term : SOLUTION_TERMS) {
-      if ((" " + combined + " ").contains(term)) {
+      if ((" " + combined + " ").contains(" " + normalize(term).trim() + " ")) {
         throw new IllegalArgumentException("Segmentação MEI/autônomo contém linguagem de solução proibida: " + term.trim());
       }
     }
+  }
+
+  /** Normaliza texto para comparação consistente de termos proibidos. */
+  private String normalize(String value) {
+    String normalized = Normalizer.normalize(value == null ? "" : value.toLowerCase(java.util.Locale.ROOT), Normalizer.Form.NFD);
+    return normalized.replaceAll("\\p{M}+", "").replaceAll("\\s+", " ").trim();
   }
 
   /** Valida pontuação percentual obrigatória entre zero e cem. */

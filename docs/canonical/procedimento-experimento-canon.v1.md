@@ -51,6 +51,19 @@ Endpoints administrativos vigentes:
 
 A sincronização segura pode criar pipeline/etapas oficiais ausentes e corrigir campos estruturais permitidos, mas deve bloquear divergências destrutivas, como etapa extra sem mapeamento canônico ou duplicidade operacional, para evitar perda de histórico e preservar a causa-raiz para decisão humana. A interface administrativa do frontend não deve oferecer criação manual de pipelines nem de etapas; esses cadastros nascem do contrato canônico e de rotinas do backend, enquanto a tela fica restrita à visualização, diagnóstico, ajuste oficial controlado e edição operacional segura de registros existentes.
 
+### 4.1.1 Blocos operacionais na tela `/pipelines`
+
+Na tela administrativa `/pipelines`, o fluxo de experimento deve ser tratado como **um único pipeline oficial** com código operacional `experiment-pipeline`. As etapas `CAMPAIGN_ANGLE`, `AD_COPY` e `AD_IMAGE_BRIEFING` pertencem ao bloco inicial desse mesmo pipeline administrativo; elas não formam pipeline separado. O GeraLanding também não é pipeline oficial próprio: ele é o bloco/subpipeline operacional de landing dentro do pipeline oficial `experiment-pipeline`, usado para materializar a landing do experimento após o bloco inicial.
+
+Códigos operacionais oficiais a exibir e sincronizar:
+
+| Bloco | Pipeline oficial em `/pipelines` | Etapas operacionais | Obrigatoriedade e acionamento |
+|---|---|---|---|
+| Núcleo inicial do experimento | `experiment-pipeline` | `campaign-angle`, `ad-copy`, `ad-image-briefing` | etapas obrigatórias; execução por comando operacional do usuário ou rotina explícita; a ordem é obrigatória e cada etapa depende da anterior concluída. |
+| GeraLanding dentro do experimento | `experiment-pipeline` | `landing-page-wireframe`, `landing-page-copy`, `landing-page-image-planning`, `landing-page-image-generation`, `landing-page-design-preset`, `landing-page-quality-review`, `landing-page-deliverables` | etapas obrigatórias para preparar landing publicável; o início do bloco é manual/operacional após o bloco inicial estar pronto, e as transições internas previstas como automáticas devem enfileirar a próxima etapa sem novo clique. |
+
+A transição entre o bloco inicial e o GeraLanding ocorre quando `AD_IMAGE_BRIEFING` conclui com sucesso e o experimento já possui ângulo, copy e briefing de imagem suficientes para gerar a landing. A partir desse ponto, o usuário ou a rotina operacional autorizada inicia `landing-page-wireframe`; depois disso, o backend mantém o encadeamento automático documentado neste cânone para copy, planejamento de imagem, geração de imagem e preset de design. Aprovação/publicação da landing e decisões de liberação para campanha continuam sendo passos manuais de controle operacional, pois impactam diretamente o que será exposto ao público e medido como experimento comercial.
+
 ### 4.2 Prompts dessas etapas
 Os prompts do pipeline ficam versionados no repositório, em `resources` do Worker AI.
 
@@ -78,13 +91,14 @@ Os blocos de dor, resultado, prova e oferta já são tratados em outras etapas d
 
 ## 5. Pipeline Gera Landing (núcleo da landing)
 
-No fluxo atual, a geração da landing segue as etapas:
+No fluxo atual, a geração da landing segue as etapas administrativas oficiais do bloco GeraLanding dentro de `experiment-pipeline`:
 1. gerar wireframe (`LANDING_PAGE_WIREFRAME`), que deve enfileirar automaticamente o Gera Copy após conclusão bem-sucedida;
 2. gerar copy (`LANDING_PAGE_COPY`);
 3. gerar planejamento/prompt de imagens (`LANDING_PAGE_IMAGE_PLANNING`), que deve enfileirar automaticamente o Gera Imagem após conclusão bem-sucedida;
 4. gerar imagens (`LANDING_PAGE_IMAGE_GENERATION`), materializando `experiment.landing_page_image_assets` com as URLs finais;
 5. gerar preset de design (`LANDING_PAGE_DESIGN_PRESET`), que deve ser enfileirado automaticamente após a conclusão bem-sucedida do Gera Imagem;
-6. gerar entregável HTML da landing (`LANDING_PAGE_HTML`).
+6. revisar qualidade visual/comercial (`LANDING_PAGE_QUALITY_REVIEW`);
+7. gerar entregáveis finais da landing (`LANDING_PAGE_DELIVERABLES`, alias operacional legado `landing-page-html`).
 
 ### 5.1 Observação obrigatória — HTML provisório por etapa
 Durante o pipeline de Gera Landing, existe produção incremental/provisória de conteúdo para permitir evolução etapa a etapa. No estágio de design preset é consolidada a base visual e ocorre a etapa usada para ingestão do pixel no fluxo atual. Ao concluir o Gera WireFrame com sucesso e persistir `experiment.landing_page_wireframe`, o backend deve criar automaticamente uma execução `landing-page-copy` com `promptTemplateId` operacional `auto/wireframe`. Ao concluir o Gera Prompt Imagem com sucesso e persistir `experiment.landing_page_image_planning`, o backend deve criar automaticamente uma execução `landing-page-image-generation` com `promptTemplateId` operacional `auto/image-planning`. Ao concluir o Gera Imagem com sucesso e persistir `experiment.landing_page_image_assets`, o backend deve criar automaticamente uma execução `landing-page-design-preset` com `promptTemplateId` operacional `auto/image-generation`, mantendo a continuidade do fluxo sem exigir novo clique do usuário.

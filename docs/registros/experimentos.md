@@ -4471,3 +4471,9 @@
 
 - Criado o documento canônico `docs/canonical/pipeline-operacional-canon.v1.md` para definir o padrão de implementação de pipelines usando o GeraLanding como referência.
 - O documento consolida regras de etapas, arquitetura backend/worker, encadeamento, estados, formato de telas, cards, validações, diagnóstico de causa-raiz e checklist de PR.
+
+## 2026-06-13 — Esclarecimento canônico do pipeline de experimento e GeraLanding
+
+- solicitação: esclarecer no procedimento canônico se `CAMPAIGN_ANGLE`, `AD_COPY`, `AD_IMAGE_BRIEFING` e GeraLanding pertencem ao mesmo pipeline administrativo ou a pipelines separados.
+- foi feito: adicionada seção curta definindo que a tela `/pipelines` deve tratar o fluxo como um único pipeline oficial `experiment-pipeline`, com bloco inicial do experimento e bloco/subpipeline operacional GeraLanding dentro do mesmo contrato.
+- impacto esperado: reduz ambiguidade operacional na administração de pipelines, sincronização canônica e execução das etapas obrigatórias, automáticas e manuais do experimento.

@@ -18,10 +18,11 @@ import com.marketinghub.repository.jpa.oprm.nichocnae.OprmNicheRoutineCardReposi
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmRoutineResearchCycleRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmSourceSnapshotRepository;
 import jakarta.persistence.EntityNotFoundException;
+import java.text.Normalizer;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
-import java.text.Normalizer;
+import java.util.Locale;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -310,7 +311,7 @@ public class BackendMeiAudienceSegmenterService {
 
   /** Normaliza texto para comparação consistente de termos proibidos. */
   private String normalize(String value) {
-    String normalized = Normalizer.normalize(value == null ? "" : value.toLowerCase(java.util.Locale.ROOT), Normalizer.Form.NFD);
+    String normalized = Normalizer.normalize(value == null ? "" : value.toLowerCase(Locale.ROOT), Normalizer.Form.NFD);
     return normalized.replaceAll("\\p{M}+", "").replaceAll("\\s+", " ").trim();
   }
 

@@ -6,6 +6,7 @@ export interface HotmartCollectedProduct {
   referenceId: string;
   title: string;
   productUrl: string;
+  description?: string | null;
   producerName?: string | null;
   imageUrl?: string | null;
   price?: string | null;
@@ -26,14 +27,16 @@ export function useHotmartCollectedProducts(workspaceId: string, limit = 24) {
     queryKey: ["settings", "hotmart", "products", workspaceId, limit],
     enabled: workspaceId.trim().length > 0,
     queryFn: async () => {
-      const { data } = await axios.get<HotmartCollectedProductListResponse>("/api/v1/mois/hotmart/products", {
-        params: { workspaceId, limit },
-      });
+      const { data } = await axios.get<HotmartCollectedProductListResponse>(
+        "/api/v1/mois/hotmart/products",
+        {
+          params: { workspaceId, limit },
+        },
+      );
       return data.items;
     },
   });
 }
-
 
 export interface HotmartCollectionJob {
   jobId: string;
@@ -52,9 +55,12 @@ export function useHotmartCollectionJobs(workspaceId: string) {
     queryKey: ["settings", "hotmart", "jobs", workspaceId],
     enabled: workspaceId.trim().length > 0,
     queryFn: async () => {
-      const { data } = await axios.get<HotmartCollectionJobListResponse>("/api/v1/mois/collection-jobs", {
-        params: { workspaceId },
-      });
+      const { data } = await axios.get<HotmartCollectionJobListResponse>(
+        "/api/v1/mois/collection-jobs",
+        {
+          params: { workspaceId },
+        },
+      );
       return data.items;
     },
   });

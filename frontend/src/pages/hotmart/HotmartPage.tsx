@@ -318,6 +318,7 @@ export default function HotmartPage() {
                   {hotmartProductsQuery.data.map((item) => {
                     const imageUrl = item.imageUrl;
                     const producer = item.producerName;
+                    const description = item.description?.trim() || null;
                     const price = item.price;
                     const currency = item.currency ?? "BRL";
                     const salesPageUrl = item.salesPageUrl?.trim() || null;
@@ -341,9 +342,15 @@ export default function HotmartPage() {
                             <p className="small text-muted mb-2">
                               Produtor: {producer || "Não informado"}
                             </p>
+                            <p className="small text-muted mb-2">
+                              Coletado em: {formatUpdatedAt(item.collectedAt)}
+                            </p>
                             <p className="small mb-2">
                               Temperatura:{" "}
                               <strong>{item.temperature ?? "—"}</strong>
+                            </p>
+                            <p className="small mb-2">
+                              Descrição: {description || "Não informada"}
                             </p>
                             <p className="small mb-2">
                               Página de vendas:{" "}

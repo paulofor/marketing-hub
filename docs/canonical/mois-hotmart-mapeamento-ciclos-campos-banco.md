@@ -29,8 +29,10 @@ Campos extraídos para snapshot base (`HotmartProductSnapshot`):
 - `category`
 - `format`
 - `producerName`
+- `description` / `productDescription` / `shortDescription` / `summary`
 - `detailsUrl` / `productUrl` / `url`
 - `temperature` / `hotmartTemperature`
+- `collectedAt` com a data/hora da coleta específica
 - `salesPageUrl` / `pageUrl` (quando já vier na listagem)
 
 Observação: no ciclo 1, pode não existir página de vendas final confiável; por isso o ciclo 2 é usado para reforçar/confirmar o link final.
@@ -57,6 +59,8 @@ Campos priorizados/extraídos no enriquecimento:
   - `name` / `title`
   - `image`
   - `producer.name`
+  - `description` / `productDescription` / `shortDescription`
+  - `temperature` / `hotmartTemperature` quando o detalhe trouxer valor mais atual
 
 Regra aplicada no snapshot enriquecido:
 
@@ -77,11 +81,13 @@ A persistência acontece via payload `references` + `rawMetadata`. O backend gra
 | `product_name` | `reference.title`, `rawMetadata.productName`, `rawMetadata.hotmartProductName` | primeiro não-vazio |
 | `product_url` | `reference.url`, `rawMetadata.productUrl` | primeiro não-vazio |
 | `producer_name` | `rawMetadata.hotmartProducer`, `rawMetadata.producerName`, `rawMetadata.producer` | primeiro não-vazio |
+| `hotmart_description` | `rawMetadata.hotmartDescription`, `rawMetadata.description` | descrição comercial da coleta; coluna ampliada para até 1000 caracteres |
+| `collected_at` | `reference.collectedAt`, `rawMetadata.collectedAt` | data/hora da coleta específica, preservando novas coletas do mesmo produto em jobs futuros |
+| `reference_id` | `productUcode` normalizado quando disponível | estável por produto dentro de cada job para comparar o mesmo produto entre coletas |
 | `sales_page_url` | `rawMetadata.salesPageUrl`, `rawMetadata.pageSalesLink`, `rawMetadata.checkoutUrl`, `reference.url` | primeiro não-vazio |
 | `hotmart_temperature` | `rawMetadata.hotmartTemperature` | parse decimal |
 | `hotmart_image_url` | `rawMetadata.hotmartImageUrl` | direto |
 | `hotmart_producer` | `rawMetadata.hotmartProducer` | direto |
-| `hotmart_description` | `rawMetadata.hotmartDescription` | direto |
 | `hotmart_highlight` | `rawMetadata.hotmartHighlight` | direto |
 
 ---
@@ -89,9 +95,11 @@ A persistência acontece via payload `references` + `rawMetadata`. O backend gra
 ## 4) Pontos de atenção operacionais
 
 1. A coluna **`sales_page_url`** é a coluna canônica para “página de vendas” no banco.
-2. O ciclo 2 existe para reduzir ambiguidade de URL e melhorar qualidade comercial do link final.
-3. Se `salesPageUrl` vier vazio mesmo no ciclo 2, a persistência ainda pode usar fallback (`checkoutUrl`/`reference.url`) para não quebrar o fluxo.
-4. Para consumo em UI, priorizar sempre `salesPageUrl` exposto pelo backend quando disponível.
+2. Temperatura, descrição, produtor e `collected_at` devem ser persistidos em toda coleta para permitir comparar o mesmo produto em execuções futuras.
+3. O `reference_id` Hotmart deve ser estável por produto quando houver `ucode`, evitando perder rastreabilidade histórica entre jobs.
+4. O ciclo 2 existe para reduzir ambiguidade de URL e melhorar qualidade comercial do link final.
+5. Se `salesPageUrl` vier vazio mesmo no ciclo 2, a persistência ainda pode usar fallback (`checkoutUrl`/`reference.url`) para não quebrar o fluxo.
+6. Para consumo em UI, priorizar sempre `salesPageUrl` exposto pelo backend quando disponível.
 
 ---
 
@@ -184,9 +192,9 @@ Em resumo: o erro normalmente não está na UI; ele nasce na qualidade do campo 
 
 Agendamento operacional vigente no `mois-hotmart-collector`:
 
-- **Ciclo 1 (listagem):** execução pontual em **1 de junho de 2026 às 21:00**, no fuso `America/Sao_Paulo`.
+- **Ciclo 1 (listagem):** execução pontual única em **13 de junho de 2026 às 00:05**, no fuso `America/Sao_Paulo`.
 - **Ciclo 2 (detalhes):** execução diária às **17:00**, conforme scheduler vigente do coletor.
-- O cron do ciclo 1 fica hardcoded no `HotmartCollectorScheduler` para manter rastreabilidade operacional do horário combinado.
+- O cron do ciclo 1 fica hardcoded no `HotmartCollectorScheduler` para manter rastreabilidade operacional do horário combinado e possui guarda de ano para não repetir após 2026.
 
 Sequência operacional consolidada:
 

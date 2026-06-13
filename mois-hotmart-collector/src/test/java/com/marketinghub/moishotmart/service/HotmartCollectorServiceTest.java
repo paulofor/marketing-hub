@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.marketinghub.moishotmart.dto.HotmartDtos.HotmartCollectionRequest;
+import com.marketinghub.moishotmart.dto.HotmartDtos.HotmartProductSnapshot;
+import java.time.Instant;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -102,6 +104,33 @@ class HotmartCollectorServiceTest {
                         "https://example.com"
                 )
         );
+    }
+
+    /**
+     * Garante que o mesmo produto mantenha referenceId estável em coletas futuras diferentes.
+     */
+    @Test
+    void shouldBuildStableReferenceIdFromHotmartProductCode() {
+        HotmartProductSnapshot product = new HotmartProductSnapshot(
+                " ABC-123 ",
+                "Produto Teste",
+                null,
+                "4.8",
+                100,
+                90.0,
+                "N/A",
+                199.0,
+                "Negócios",
+                "Curso",
+                "Descrição comercial",
+                "Produtor Oficial",
+                "https://app.hotmart.com/products/abc",
+                88.5,
+                "https://example.com/sales",
+                Instant.parse("2026-06-13T12:00:00Z")
+        );
+
+        assertEquals("hotmart-abc-123", HotmartCollectorService.buildStableHotmartReferenceId(1, product));
     }
 
 }

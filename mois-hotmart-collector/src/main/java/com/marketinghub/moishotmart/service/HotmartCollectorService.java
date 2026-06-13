@@ -350,7 +350,8 @@ public class HotmartCollectorService {
                         extractProductNumber(item, "priceValue", "value"),
                         extractProductText(item, "category"),
                         extractProductText(item, "format"),
-                        extractProductText(item, "producerName"),
+                        extractHotmartDescription(item),
+                        extractProductText(item, "producerName", "hotmartProducer"),
                         pickFirstNonBlank(extractProductText(item, "detailsUrl", "productUrl", "url"), hotmartMarketUrl),
                         extractProductNumber(item, "temperature", "hotmartTemperature"),
                         pickFirstNonBlank(extractProductText(item, "salesPageUrl", "pageSalesLink"), extractProductText(item, "detailsUrl", "productUrl", "url")),
@@ -455,10 +456,14 @@ public class HotmartCollectorService {
             if (product.priceValue() != null) rawMetadata.put("priceValue", String.valueOf(product.priceValue()));
             rawMetadata.put("category", product.category());
             rawMetadata.put("format", product.format());
+            rawMetadata.put("hotmartDescription", product.description());
+            rawMetadata.put("description", product.description());
             rawMetadata.put("producerName", product.producerName());
+            rawMetadata.put("hotmartProducer", product.producerName());
+            rawMetadata.put("collectedAt", product.collectedAt() == null ? Instant.now().toString() : product.collectedAt().toString());
 
             Map<String, Object> reference = new HashMap<>();
-            reference.put("referenceId", "hotmart-" + position + "-" + UUID.randomUUID().toString().substring(0, 8));
+            reference.put("referenceId", buildStableHotmartReferenceId(position, product));
             reference.put("jobId", jobId);
             reference.put("source", "HOTMART");
             reference.put("title", product.title());
@@ -480,6 +485,40 @@ public class HotmartCollectorService {
             position++;
         }
         return references;
+    }
+
+    /**
+     * Monta um identificador estável por produto dentro do job para permitir comparar novas coletas do mesmo produto.
+     */
+    static String buildStableHotmartReferenceId(int position, HotmartProductSnapshot product) {
+        String productKey = pickFirstNonBlank(product == null ? null : product.ucode(), product == null ? null : product.title());
+        if (productKey == null || productKey.isBlank()) {
+            return "hotmart-pos-" + position;
+        }
+        String normalized = productKey.trim().toLowerCase(Locale.ROOT)
+                .replaceAll("[^a-z0-9]+", "-")
+                .replaceAll("(^-|-$)", "");
+        if (normalized.isBlank()) {
+            return "hotmart-pos-" + position;
+        }
+        return "hotmart-" + normalized.substring(0, Math.min(64, normalized.length()));
+    }
+
+    /**
+     * Extrai a descrição comercial do produto nos formatos conhecidos da listagem e do detalhe Hotmart.
+     */
+    private String extractHotmartDescription(JsonNode item) {
+        return pickFirstNonBlank(
+                extractProductText(item, "description", "productDescription", "hotmartDescription"),
+                extractProductText(item, "shortDescription", "summary", "subtitle", "headline")
+        );
+    }
+
+    /**
+     * Escolhe o primeiro número não nulo preservando zero como valor válido.
+     */
+    private Double pickFirstNonNull(Double first, Double fallback) {
+        return first != null ? first : fallback;
     }
 
     private String fetchHotmartJwtFromGeneralSettings() {
@@ -673,6 +712,7 @@ public class HotmartCollectorService {
                             extractProductNumber(item, "value"),
                             extractProductText(item, "category"),
                             extractProductText(item, "format"),
+                            extractHotmartDescription(item),
                             producerName,
                             url,
                             temperature,
@@ -717,6 +757,7 @@ public class HotmartCollectorService {
         }
     }
 
+    /** Enriquece um snapshot base com detalhe Hotmart, preservando descrição, produtor, temperatura e URL de vendas. */
     private HotmartProductSnapshot enrichProductWithDetails(String accessToken, JsonNode listItem, HotmartProductSnapshot baseSnapshot) {
         String productId = pickFirstNonBlank(
                 extractProductText(listItem, "id", "productId", "uuid"),
@@ -763,9 +804,10 @@ public class HotmartCollectorService {
                     baseSnapshot.priceValue(),
                     baseSnapshot.category(),
                     baseSnapshot.format(),
-                    pickFirstNonBlank(firstText(detailsNode.path("producer"), "name"), baseSnapshot.producerName()),
+                    pickFirstNonBlank(extractHotmartDescription(detailsNode), baseSnapshot.description()),
+                    pickFirstNonBlank(firstText(detailsNode.path("producer"), "name"), extractProductText(detailsNode, "producerName", "hotmartProducer", "producer"), baseSnapshot.producerName()),
                     detailPageUrl,
-                    baseSnapshot.temperature(),
+                    pickFirstNonNull(extractProductNumber(detailsNode, "temperature", "hotmartTemperature", "temp", "hotness"), baseSnapshot.temperature()),
                     pickFirstNonBlank(salesPageFromDetails, baseSnapshot.salesPageUrl()),
                     baseSnapshot.collectedAt()
             );
@@ -844,6 +886,7 @@ public class HotmartCollectorService {
                         null,
                         null,
                         null,
+                        null,
                         detailsUrl == null ? hotmartMarketUrl : detailsUrl,
                         null,
                         detailsUrl == null ? hotmartMarketUrl : detailsUrl,
@@ -886,6 +929,7 @@ public class HotmartCollectorService {
     }
 
 
+    /** Coleta produtos pela API de market no contexto autenticado do Playwright como fallback operacional. */
     private int collectProductsViaMarketApi(Page page, String accessToken, int boundedMax, List<HotmartProductSnapshot> products) {
         try {
             log.info("Fallback API Hotmart: iniciando chamada. hasAccessToken={}, tokenPreview='{}'",
@@ -946,6 +990,7 @@ public class HotmartCollectorService {
                         extractProductNumber(item, "value"),
                         extractProductText(item, "category"),
                         extractProductText(item, "format"),
+                        extractHotmartDescription(item),
                         firstText(item.path("producer"), "name"),
                         url,
                         extractProductNumber(item, "temperature", "temp", "hotness"),
@@ -1136,12 +1181,17 @@ public class HotmartCollectorService {
         return value.substring(0, maxLength) + "...[TRUNCATED]";
     }
 
-    private String pickFirstNonBlank(String primary, String fallback) {
-        if (primary != null && !primary.isBlank()) {
-            return primary;
+    /**
+     * Retorna o primeiro texto preenchido recebido nos argumentos.
+     */
+    private static String pickFirstNonBlank(String... values) {
+        if (values == null) {
+            return "";
         }
-        if (fallback != null && !fallback.isBlank()) {
-            return fallback;
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                return value;
+            }
         }
         return "";
     }

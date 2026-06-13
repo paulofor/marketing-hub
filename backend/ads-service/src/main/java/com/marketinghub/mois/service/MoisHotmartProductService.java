@@ -7,12 +7,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
+/** Consulta produtos Hotmart coletados e expõe os dados comerciais usados na tela e no ciclo 2. */
 @Service
 @RequiredArgsConstructor
 public class MoisHotmartProductService {
 
     private final JdbcTemplate jdbcTemplate;
 
+    /** Lista os produtos Hotmart da coleta mais recente do workspace informado. */
     public MoisHotmartProductDtos.HotmartCollectedProductListResponse listLatestByWorkspace(String workspaceId, int limit) {
         String latestJobId = jdbcTemplate.query(
                         """
@@ -35,7 +37,7 @@ public class MoisHotmartProductService {
 
         List<MoisHotmartProductDtos.HotmartCollectedProductResponse> items = jdbcTemplate.query(
                 """
-                        SELECT job_id, reference_id, product_name, product_url, producer_name,
+                        SELECT job_id, reference_id, product_name, product_url, hotmart_description, producer_name,
                                hotmart_image_url, hotmart_price, sales_page_url, hotmart_temperature, collected_at
                         FROM mois_collected_reference
                         WHERE workspace_id = ?
@@ -51,6 +53,7 @@ public class MoisHotmartProductService {
                             rs.getString("reference_id"),
                             rs.getString("product_name"),
                             rs.getString("product_url"),
+                            rs.getString("hotmart_description"),
                             rs.getString("producer_name"),
                             rs.getString("hotmart_image_url"),
                             rs.getString("hotmart_price"),

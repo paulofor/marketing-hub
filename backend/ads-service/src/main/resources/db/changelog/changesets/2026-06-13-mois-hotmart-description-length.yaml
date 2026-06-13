@@ -1,0 +1,20 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-13-mois-hotmart-description-length
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - columnExists:
+            tableName: mois_collected_reference
+            columnName: hotmart_description
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE mois_collected_reference
+                MODIFY COLUMN hotmart_description VARCHAR(1000) NULL;

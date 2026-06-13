@@ -606,3 +606,9 @@
 - Removidas as configurações `oprm.cnae-opportunity.scheduler.enabled`, `oprm.cnae-enrichment.scheduler.enabled` e `oprm.cnae-enrichment.startup-catch-up.enabled` do `application.yml` para não deixar contrato operacional ambíguo.
 - Causa-raiz tratada: manter os executores como beans condicionais permitia que uma configuração externa ou imagem antiga reativasse os ciclos vazios, gerando ruído operacional na tela OPRM.
 - Prevenção de recorrência: o teste de contexto agora valida que as propriedades antigas não existem e que as classes antigas de scheduler CNAE não entram mais no artefato do coletor.
+
+## 2026-06-13 — OPRM MEI: bloqueio de incentivo indireto na segmentação
+
+- Causa-raiz tratada: a etapa `mei-audience-segmenter` já bloqueava parte da linguagem de solução, mas o prompt e a pré-validação não reforçavam explicitamente todos os termos de contaminação indireta, como software, IA, automação e ferramenta, antes do envio ao backend.
+- Correção aplicada: o prompt passou a limitar a saída a perfil comportamental (quem é, como trabalha, como consegue clientes, dores, medos, linguagem, canais e evidências), sem criar produto, sugerir solução ou mencionar oferta, software, IA, automação ou ferramenta.
+- Prevenção de recorrência: o coletor agora pré-valida a resposta com a mesma lista de termos proibidos, regenera uma única vez com instrução corretiva quando detectar contaminação e só registra falha se a resposta corrigida continuar inválida.

@@ -21,7 +21,7 @@ import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Locale;
+import java.text.Normalizer;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,7 +42,24 @@ public class BackendMeiAudienceSegmenterService {
   private static final int MAX_SOURCES = 30;
   private static final int MAX_TEXT_LENGTH = 4000;
   private static final List<String> SOLUTION_TERMS = List.of(
-      " produto", " oferta", " preço", " promessa", " campanha", " landing page", " software", " automação", " inteligência artificial", " ia ", " curso", " ferramenta");
+      "produto",
+      "oferta",
+      "preço",
+      "promessa",
+      "campanha",
+      "landing page",
+      "software",
+      "automacao",
+      "automação",
+      "inteligencia artificial",
+      "inteligência artificial",
+      "ia",
+      "curso",
+      "ferramenta",
+      "aplicativo",
+      "app",
+      "solução",
+      "solucao");
 
   private final OprmRoutineResearchCycleRepository routineResearchCycleRepository;
   private final OprmNicheRoutineCardRepository routineCardRepository;
@@ -236,15 +253,21 @@ public class BackendMeiAudienceSegmenterService {
 
   /** Bloqueia linguagem de produto/oferta no payload final publicável de perfil. */
   private void rejectSolutionLanguage(CompleteMeiAudienceSegmenterRequest request) {
-    String combined = (request.audienceName() + " " + request.workMode() + " " + request.customerAcquisitionBehavior() + " "
-        + request.dailyRoutineSummary() + " " + request.operationalPainsSummary() + " " + request.emotionalPainsSummary() + " "
-        + request.dreamsSummary() + " " + request.fearsSummary() + " " + request.languagePatterns() + " " + request.channelsUsed())
-        .toLowerCase(Locale.ROOT);
+    String combined = normalize(" " + request.audienceName() + " " + request.occupationTerms() + " " + request.workMode() + " "
+        + request.customerAcquisitionBehavior() + " " + request.dailyRoutineSummary() + " " + request.recurringTasksSummary() + " "
+        + request.operationalPainsSummary() + " " + request.emotionalPainsSummary() + " " + request.dreamsSummary() + " "
+        + request.fearsSummary() + " " + request.languagePatterns() + " " + request.channelsUsed() + " " + request.recentSourceSummary() + " ");
     for (String term : SOLUTION_TERMS) {
-      if ((" " + combined + " ").contains(term)) {
+      if ((" " + combined + " ").contains(" " + normalize(term).trim() + " ")) {
         throw new IllegalArgumentException("Segmentação MEI/autônomo contém linguagem de solução proibida: " + term.trim());
       }
     }
+  }
+
+  /** Normaliza texto para comparação consistente de termos proibidos. */
+  private String normalize(String value) {
+    String normalized = Normalizer.normalize(value == null ? "" : value.toLowerCase(java.util.Locale.ROOT), Normalizer.Form.NFD);
+    return normalized.replaceAll("\\p{M}+", "").replaceAll("\\s+", " ").trim();
   }
 
   /** Valida pontuação percentual obrigatória entre zero e cem. */

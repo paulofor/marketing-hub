@@ -1,6 +1,7 @@
 package com.marketinghub.oprm.nichocnae.routinequalitygate.service.detailStageExecution;
 
 import java.time.Instant;
+import java.util.Map;
 
 /** Detalhe público da avaliação de qualidade de um cartão de rotina OPRM NichoCNAE. */
 public record RoutineQualityGateDetailResponse(
@@ -16,6 +17,6 @@ public record RoutineQualityGateDetailResponse(
     Integer difficultyEvidenceScore,
     Integer sourceDiversityScore,
     Integer solutionLanguageRiskScore,
-    String qualityNotes,
+    Map<String, Object> qualityNotes,
     String checkedBy,
     Instant checkedAt) {}

@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { buildApiUrl } from "../../utils/buildApiUrl";
 
+export type OprmQualityNotes = Record<string, string | number | boolean>;
+
 export interface OprmRoutineQualityGateDetail {
   researchCycleId: number;
   cycleStatus: string;
@@ -14,7 +16,7 @@ export interface OprmRoutineQualityGateDetail {
   difficultyEvidenceScore?: number | null;
   sourceDiversityScore?: number | null;
   solutionLanguageRiskScore?: number | null;
-  qualityNotes: string | null;
+  qualityNotes: OprmQualityNotes | null;
   checkedBy: string | null;
   checkedAt: string | null;
 }

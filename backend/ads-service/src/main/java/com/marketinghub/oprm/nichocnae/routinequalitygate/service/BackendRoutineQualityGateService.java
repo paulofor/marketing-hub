@@ -17,8 +17,10 @@ import com.marketinghub.repository.jpa.oprm.nichocnae.OprmSourceSnapshotReposito
 import com.marketinghub.repository.jpa.oprm.nichocnae.meiaudienceprofile.OprmMeiAudienceProfileRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
@@ -149,9 +151,46 @@ public class BackendRoutineQualityGateService {
         card == null ? null : card.getDifficultyEvidenceScore(),
         card == null ? null : card.getSourceDiversityScore(),
         card == null ? null : card.getSolutionLanguageRiskScore(),
-        card == null ? null : card.getQualityNotes(),
+        card == null ? null : parseQualityNotes(card.getQualityNotes()),
         card == null ? null : card.getQualityCheckedBy(),
         card == null ? null : card.getQualityCheckedAt());
+  }
+
+  /** Converte as notas legadas em chave/valor para um objeto JSON estável na consulta de detalhe. */
+  private Map<String, Object> parseQualityNotes(String qualityNotes) {
+    String notes = trimOptional(qualityNotes);
+    if (notes == null) {
+      return null;
+    }
+    Map<String, Object> parsed = new LinkedHashMap<>();
+    for (String part : notes.split(";")) {
+      String item = part.trim();
+      if (!StringUtils.hasText(item)) {
+        continue;
+      }
+      int separatorIndex = item.indexOf('=');
+      if (separatorIndex <= 0) {
+        parsed.put("texto", item);
+        continue;
+      }
+      String key = item.substring(0, separatorIndex).trim();
+      String value = item.substring(separatorIndex + 1).trim();
+      if (StringUtils.hasText(key)) {
+        parsed.put(key, parseQualityNoteValue(value));
+      }
+    }
+    return parsed.isEmpty() ? Map.of("texto", notes) : parsed;
+  }
+
+  /** Converte valores textuais das notas para booleano ou número quando possível. */
+  private Object parseQualityNoteValue(String value) {
+    if ("true".equalsIgnoreCase(value) || "false".equalsIgnoreCase(value)) {
+      return Boolean.valueOf(value);
+    }
+    if (value.matches("-?\\d+") && value.replace("-", "").length() <= 9) {
+      return Integer.valueOf(value);
+    }
+    return value;
   }
 
   /** Converte um cartão persistido na unidade de trabalho usada pelo coletor da etapa sete. */

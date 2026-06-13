@@ -11,13 +11,15 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 /**
- * Scheduler responsável por calcular automaticamente scores de oportunidade para CNAEs ainda não pontuados.
+ * Scheduler responsável por calcular scores de oportunidade para CNAEs ainda não pontuados quando habilitado operacionalmente.
  */
 @Component
+@ConditionalOnProperty(name = "oprm.cnae-opportunity.scheduler.enabled", havingValue = "true")
 public class OprmCnaeOpportunityScheduler {
     private static final Logger log = LoggerFactory.getLogger(OprmCnaeOpportunityScheduler.class);
     private static final String CYCLE_TYPE = "CNAE_SCORE";
@@ -31,7 +33,7 @@ public class OprmCnaeOpportunityScheduler {
         this.backendClient = backendClient;
     }
 
-    /** Executa periodicamente o ciclo de score automático para CNAEs sem score. */
+    /** Executa o ciclo agendado de score para CNAEs sem score quando o scheduler estiver habilitado. */
     @Scheduled(cron = "0 */30 * * * *", zone = "America/Sao_Paulo")
     public void runScoreCycle() {
         Long cycleNumber = backendClient.nextCycleNumber(CYCLE_TYPE);

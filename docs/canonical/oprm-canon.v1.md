@@ -186,10 +186,10 @@ Evitar fechamento prematuro de `import run` que destrói a totalização de mark
 ## Regra obrigatória — responsabilidade do OPRM no fluxo CNAE → oportunidade
 
 - No fluxo CNAE → score → enriquecimento → candidatos de nicho, o **módulo OPRM** é o único responsável por cálculo de score de oportunidade, seleção de CNAEs prioritários para enriquecimento, pesquisa externa, acionamento de MDS/Worker AI e geração de candidatos de nicho.
-- O usuário não deve precisar solicitar manualmente a geração de score de oportunidade; o OPRM deve processar CNAEs sem score ou com score vencido por execução agendada.
-- O enriquecimento de CNAEs com melhor score deve ocorrer em execução agendada separada do cálculo de score, para permitir controle operacional, retentativa e auditoria independentes.
+- O usuário não deve precisar solicitar manualmente a geração de score de oportunidade quando houver necessidade real de atualização; porém, como a base CNAE muda pouco, os ciclos agendados de score e enriquecimento devem ficar desligados por padrão e só devem ser religados por configuração operacional explícita.
+- O enriquecimento de CNAEs com melhor score deve ocorrer em execução agendada separada do cálculo de score quando habilitado, para permitir controle operacional, retentativa e auditoria independentes.
 - O backend deve atuar somente como camada de API e persistência para esse fluxo: leitura, gravação, paginação, filtros e validação técnica de contrato. É proibido colocar no backend cálculo de score, enriquecimento, chamada a integrações externas ou regra de negócio de priorização CNAE.
-- Cada execução agendada desse fluxo deve registrar identificadores de ciclo, no mínimo `cycleId`, `cycleType` e `cycleNumber`, e os logs devem incluir esses identificadores junto com o `cnaeCode` quando aplicável.
+- Cada execução agendada desse fluxo, quando habilitada, deve registrar identificadores de ciclo, no mínimo `cycleId`, `cycleType` e `cycleNumber`, e os logs devem incluir esses identificadores junto com o `cnaeCode` quando aplicável.
 
 ## Critério de efetividade — ciclos CNAE de oportunidade
 

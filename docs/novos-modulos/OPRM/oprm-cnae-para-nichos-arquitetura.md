@@ -4,15 +4,15 @@
 
 Este documento descreve como a lista de CNAEs deve ser usada para descobrir, priorizar e transformar oportunidades de mercado em candidatos de nicho, preservando o eixo **Dor → Resultado → Mecanismo → Prova → Oferta**.
 
-A proposta evita criar nichos automaticamente apenas pelo nome do CNAE. O CNAE entra como evidência de tamanho e concentração de mercado; o score, o enriquecimento, as pesquisas externas e a geração de candidatos são responsabilidades do **módulo OPRM**, executadas por ciclos agendados. O backend atua somente como camada de API e persistência: lê dados, valida contrato técnico e grava dados, sem cálculo, enriquecimento ou regra de negócio.
+A proposta evita criar nichos automaticamente apenas pelo nome do CNAE. O CNAE entra como evidência de tamanho e concentração de mercado; o score, o enriquecimento, as pesquisas externas e a geração de candidatos são responsabilidades do **módulo OPRM**, executadas por ciclos agendados habilitáveis sob demanda operacional. O backend atua somente como camada de API e persistência: lê dados, valida contrato técnico e grava dados, sem cálculo, enriquecimento ou regra de negócio.
 
 ## Princípios operacionais
 
 1. **CNAE não é nicho final**: CNAE é fonte estruturada para encontrar mercados com volume e densidade.
 2. **Backend é somente API e persistência**: o backend lê e grava dados, aplica validações técnicas de contrato e integridade, mas não calcula score, não enriquece dados e não decide prioridade de negócio.
 3. **OPRM é dono da regra de negócio CNAE → oportunidade**: todo cálculo de score, seleção de CNAEs para enriquecimento, pesquisa externa, geração de sinais e criação de candidatos fica no módulo OPRM.
-4. **Processamento é automático por scheduler**: o usuário não solicita geração de score; o OPRM periodicamente busca CNAEs sem score e grava o resultado. Outro scheduler seleciona CNAEs com melhor score para enriquecimento e pesquisa externa.
-5. **Ciclos precisam ser rastreáveis**: cada execução agendada deve ter `cycleId`, `cycleType`, `cycleNumber` e logs com início, critérios, quantidade lida, quantidade processada, falhas e resumo final.
+4. **Processamento por scheduler sob demanda operacional**: a base CNAE muda pouco; por isso os schedulers de score e enriquecimento ficam desligados por padrão e só rodam quando a operação habilitar explicitamente a atualização.
+5. **Ciclos precisam ser rastreáveis**: cada execução agendada habilitada deve ter `cycleId`, `cycleType`, `cycleNumber` e logs com início, critérios, quantidade lida, quantidade processada, falhas e resumo final.
 6. **Frontend orienta decisão humana**: a UI mostra ranking, score, candidatos, ciclos e próximos passos, mas a criação oficial do nicho depende de aprovação humana.
 7. **Integrações externas são insumos, não fonte única de verdade**: dados públicos, fontes web, MDS e Worker AI complementam o banco interno e os documentos canônicos.
 
@@ -22,7 +22,7 @@ A proposta evita criar nichos automaticamente apenas pelo nome do CNAE. O CNAE e
 | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
 | Frontend Marketing Hub            | Exibir CNAEs, scores, ciclos, enriquecimentos e candidatos; permitir aprovação/rejeição humana.                                               | Calcular score, enriquecer dados, chamar integrações externas diretamente ou gravar no banco.                                        |
 | Backend Marketing Hub             | Expor endpoints do pacote OPRM; consultar e persistir dados; validar contrato técnico; aplicar paginação e filtros de leitura.                | Calcular score, escolher CNAEs prioritários, chamar MDS/AI/fontes externas para enriquecimento ou executar regra de negócio do OPRM. |
-| Módulo OPRM                       | Executar schedulers; calcular score; selecionar melhores CNAEs; pesquisar fontes externas; acionar MDS/AI; gerar candidatos e justificativas. | Escrever direto no banco ou consumir controllers de outro módulo fora do escopo OPRM.                                                |
+| Módulo OPRM                       | Executar schedulers quando habilitados; calcular score; selecionar melhores CNAEs; pesquisar fontes externas; acionar MDS/AI; gerar candidatos e justificativas. | Escrever direto no banco ou consumir controllers de outro módulo fora do escopo OPRM.                                                |
 | MySQL 5.7                         | Guardar catálogo CNAE, market size, scores, ciclos, artefatos e candidatos.                                                                   | Executar regra de negócio fora de consultas/filtros necessários.                                                                     |
 | MDS / Worker AI / fontes externas | Fornecer evidências, mecanismos, conteúdo bruto e apoio de estruturação.                                                                      | Ser fonte única de verdade ou publicar nicho automaticamente.                                                                        |
 
@@ -44,13 +44,13 @@ Para facilitar logs, comunicação e auditoria, cada execução do OPRM deve reg
 Tipos iniciais sugeridos:
 
 1. **Ciclo de score — `CNAE_SCORE`**
-   - Scheduler do OPRM roda de tempos em tempos.
+   - Scheduler do OPRM roda somente quando habilitado por configuração operacional explícita.
    - OPRM chama o backend para buscar CNAEs sem score ou com score vencido.
    - OPRM calcula `opportunityScore` e componentes do score.
    - OPRM grava score e justificativa por endpoint do backend.
 
 2. **Ciclo de enriquecimento — `CNAE_ENRICHMENT`**
-   - Scheduler separado do OPRM roda de tempos em tempos.
+   - Scheduler separado do OPRM roda somente quando habilitado por configuração operacional explícita.
    - OPRM chama o backend para buscar CNAEs com melhor score e ainda não enriquecidos.
    - OPRM pesquisa fontes externas, aciona MDS/AI quando necessário e gera sinais de rotina, dor, resultado, mecanismo, prova e oferta.
    - OPRM grava artefatos, candidatos e vínculos por endpoint do backend.

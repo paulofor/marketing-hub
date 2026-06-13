@@ -8,16 +8,18 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 /**
- * Scheduler responsável por enriquecer automaticamente CNAEs com melhor score e publicar candidatos de nicho.
+ * Scheduler responsável por enriquecer CNAEs com melhor score e publicar candidatos de nicho quando habilitado operacionalmente.
  */
 @Component
+@ConditionalOnProperty(name = "oprm.cnae-enrichment.scheduler.enabled", havingValue = "true")
 public class OprmCnaeEnrichmentScheduler {
     private static final Logger log = LoggerFactory.getLogger(OprmCnaeEnrichmentScheduler.class);
     private static final String CYCLE_TYPE = "CNAE_ENRICHMENT";
@@ -31,7 +33,7 @@ public class OprmCnaeEnrichmentScheduler {
     public OprmCnaeEnrichmentScheduler(
             OprmCnaeOpportunityBackendClient backendClient,
             OprmCnaeRoutineSignalBuilder routineSignalBuilder,
-            @Value("${oprm.cnae-enrichment.startup-catch-up.enabled:true}") boolean startupCatchUpEnabled) {
+            @Value("${oprm.cnae-enrichment.startup-catch-up.enabled:false}") boolean startupCatchUpEnabled) {
         this.backendClient = backendClient;
         this.routineSignalBuilder = routineSignalBuilder;
         this.startupCatchUpEnabled = startupCatchUpEnabled;
@@ -48,7 +50,7 @@ public class OprmCnaeEnrichmentScheduler {
         runEnrichmentCycle();
     }
 
-    /** Executa periodicamente o ciclo de enriquecimento para CNAEs priorizados por score já calculado. */
+    /** Executa o ciclo agendado de enriquecimento para CNAEs priorizados por score quando o scheduler estiver habilitado. */
     @Scheduled(cron = "0 15 * * * *", zone = "America/Sao_Paulo")
     public void runEnrichmentCycle() {
         Long cycleNumber = null;

@@ -546,3 +546,9 @@
 - Alterado o detalhe do gate de qualidade para expor `qualityNotes` como objeto JSON chave/valor, mantendo a gravação legada em texto auditável no banco e estruturando o contrato apenas na resposta de detalhe.
 - Ajustada a tela de detalhe do pipeline para exibir os scores completos do gate e destacar em vermelho os indicadores que não atenderam aos limites de aprovação.
 - Causa-raiz tratada: a nota do gate era uma string única com pares `chave=valor`, dificultando leitura pela tela e impedindo sinalização visual objetiva dos critérios reprovados.
+
+## 2026-06-13 — OPRM CNAE: desligamento padrão dos ciclos automáticos
+
+- Desligados por padrão os ciclos agendados de score CNAE (`CNAE_SCORE`) e enriquecimento CNAE (`CNAE_ENRICHMENT`) no `oprm-coletor-mei`, mantendo possibilidade de religar por configuração operacional explícita quando houver atualização real da base.
+- Causa-raiz tratada: a base CNAE/mercado não muda com frequência suficiente para justificar execuções recorrentes, que geravam ciclos vazios e ruído operacional na tela de acompanhamento.
+- Prevenção de recorrência: o cânone OPRM foi atualizado para definir scheduler sob demanda operacional e o teste de contexto garante que os schedulers ficam ausentes por padrão.

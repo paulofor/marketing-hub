@@ -209,7 +209,7 @@ A tela é considerada pronta quando o usuário consegue saber se a base de merca
 
 ### Objetivo
 
-Acompanhar os ciclos automáticos de Score OPRM e enriquecimento sem confundir o usuário com execução manual.
+Acompanhar os últimos ciclos de Score OPRM e enriquecimento, que ficam desligados por padrão e só rodam quando habilitados operacionalmente.
 
 ### Perguntas que responde
 

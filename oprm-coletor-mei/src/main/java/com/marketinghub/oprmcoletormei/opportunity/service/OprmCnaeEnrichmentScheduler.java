@@ -8,15 +8,11 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.event.EventListener;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 /**
- * Scheduler responsável por enriquecer CNAEs com melhor score e publicar candidatos de nicho quando habilitado operacionalmente.
+ * Executor manual responsável por enriquecer CNAEs com melhor score e publicar candidatos de nicho, sem ciclos automáticos.
  */
 @Component
 @ConditionalOnProperty(name = "oprm.cnae-enrichment.scheduler.enabled", havingValue = "true")
@@ -27,31 +23,16 @@ public class OprmCnaeEnrichmentScheduler {
 
     private final OprmCnaeOpportunityBackendClient backendClient;
     private final OprmCnaeRoutineSignalBuilder routineSignalBuilder;
-    private final boolean startupCatchUpEnabled;
 
-    /** Inicializa o scheduler com o cliente de APIs OPRM do backend, o builder de sinais de rotina e o controle de catch-up inicial. */
+    /** Inicializa o executor manual com o cliente de APIs OPRM do backend e o builder de sinais de rotina. */
     public OprmCnaeEnrichmentScheduler(
             OprmCnaeOpportunityBackendClient backendClient,
-            OprmCnaeRoutineSignalBuilder routineSignalBuilder,
-            @Value("${oprm.cnae-enrichment.startup-catch-up.enabled:false}") boolean startupCatchUpEnabled) {
+            OprmCnaeRoutineSignalBuilder routineSignalBuilder) {
         this.backendClient = backendClient;
         this.routineSignalBuilder = routineSignalBuilder;
-        this.startupCatchUpEnabled = startupCatchUpEnabled;
     }
 
-    /** Executa uma tentativa de recuperação ao iniciar para processar scores que ficaram sem enriquecimento. */
-    @EventListener(ApplicationReadyEvent.class)
-    public void runStartupEnrichmentCatchUp() {
-        if (!startupCatchUpEnabled) {
-            log.info("[OPRM-CNAE-ENRICHMENT] Catch-up inicial desabilitado por configuração.");
-            return;
-        }
-        log.info("[OPRM-CNAE-ENRICHMENT] Executando catch-up inicial de enriquecimento após subida da aplicação.");
-        runEnrichmentCycle();
-    }
-
-    /** Executa o ciclo agendado de enriquecimento para CNAEs priorizados por score quando o scheduler estiver habilitado. */
-    @Scheduled(cron = "0 15 * * * *", zone = "America/Sao_Paulo")
+    /** Executa manualmente o ciclo de enriquecimento para CNAEs priorizados por score. */
     public void runEnrichmentCycle() {
         Long cycleNumber = null;
         String cycleId = "OPRM-CNAE-ENRICHMENT-UNRESOLVED";

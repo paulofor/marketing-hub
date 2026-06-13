@@ -12,11 +12,10 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 /**
- * Scheduler responsável por calcular scores de oportunidade para CNAEs ainda não pontuados quando habilitado operacionalmente.
+ * Executor manual responsável por calcular scores de oportunidade para CNAEs ainda não pontuados, sem ciclos automáticos.
  */
 @Component
 @ConditionalOnProperty(name = "oprm.cnae-opportunity.scheduler.enabled", havingValue = "true")
@@ -28,13 +27,12 @@ public class OprmCnaeOpportunityScheduler {
 
     private final OprmCnaeOpportunityBackendClient backendClient;
 
-    /** Inicializa o scheduler com o cliente de APIs OPRM do backend. */
+    /** Inicializa o executor manual com o cliente de APIs OPRM do backend. */
     public OprmCnaeOpportunityScheduler(OprmCnaeOpportunityBackendClient backendClient) {
         this.backendClient = backendClient;
     }
 
-    /** Executa o ciclo agendado de score para CNAEs sem score quando o scheduler estiver habilitado. */
-    @Scheduled(cron = "0 */30 * * * *", zone = "America/Sao_Paulo")
+    /** Executa manualmente o ciclo de score para CNAEs sem score. */
     public void runScoreCycle() {
         Long cycleNumber = backendClient.nextCycleNumber(CYCLE_TYPE);
         String cycleId = buildCycleId(CYCLE_TYPE, cycleNumber);

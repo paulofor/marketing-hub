@@ -1569,3 +1569,7 @@ Arquivos principais:
 ## 2026-06-13 — Hotmart ciclo 1 agendado para execução única às 00:05
 - Ajustado o `HotmartCollectorScheduler` para executar o ciclo 1 de listagem uma única vez em **13/06/2026 às 00:05** no timezone `America/Sao_Paulo`.
 - Atualizados teste do scheduler e cânone Hotmart para refletir o novo cron `0 5 0 13 6 *` e preservar a guarda operacional de execução somente no ano de 2026.
+
+## 2026-06-13 — Reexecução Hotmart ciclo 1 às 01:35
+- Após falha operacional às 00:05 causada por JWT Hotmart expirado, o ciclo 1 de listagem do `mois-hotmart-collector` foi reagendado para execução pontual única em **13/06/2026 às 01:35** no timezone `America/Sao_Paulo`.
+- Atualizados scheduler, teste unitário e cânone Hotmart para usar o cron `0 35 1 13 6 *`, mantendo o alvo operacional de 400 produtos e a guarda de execução apenas em 2026.

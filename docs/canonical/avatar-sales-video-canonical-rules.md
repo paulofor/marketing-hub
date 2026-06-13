@@ -184,6 +184,6 @@ Mudanças que flexibilizem ética/evidência exigem revisão humana explícita.
 Este documento complementa e deve ser usado junto com:
 
 - `docs/canonical/system-governance-canon.v2.md`
-- `docs/canonical/modelo-canonico-artefatos-pipeline-experimento.md`
+- `docs/canonical/pipeline-operacional-canon.v1.md`
 
 Em caso de conflito operacional geral, prevalece o `system-governance-canon.v2.md`; em caso de conteúdo específico de avatar de venda, prevalece este documento no escopo do módulo.

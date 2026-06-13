@@ -593,6 +593,8 @@
 - Causa-raiz corrigida: a etapa `mei-audience-segmenter` era marcada como IA configurável na tela de pipeline, mas o backend não enviava o modelo configurado na pendência da etapa e o coletor usava o fallback local `gpt-4.1-mini`.
 - Correção aplicada: o backend agora lê o modelo configurado na configuração oficial/legada do pipeline OPRM NichoCNAE e envia `openAiModelCode/openAiModelName` para o coletor; o coletor passa a priorizar esse modelo ao montar a chamada para a OpenAI.
 - Prevenção de recorrência: adicionados testes cobrindo a fila backend da segmentação MEI e a resolução de modelo no cliente OpenAI do coletor, além de remover da tela de detalhe o fallback visual fixo que sugeria `gpt-4.1-mini` quando não havia telemetria persistida.
+- 2026-06-13 15:03:26 (UTC): registrada no cânone OPRM a regra de limite máximo de 4000 caracteres para campos textuais sintéticos persistidos no pipeline NichoCNAE, incluindo `mechanismOpportunitiesSummary`; quando houver geração por IA, o prompt deve declarar esse limite e a camada determinística deve validar ou compactar antes do envio ao backend.
+- 2026-06-13 15:18:00 (UTC): ampliada a regra operacional do cartão de rotina OPRM NichoCNAE para usar limite de 20000 caracteres em campos textuais sintéticos persistidos em `LONGTEXT`, corrigindo a causa-raiz do bloqueio do ciclo #33 sem truncar evidência útil antes da etapa de segmentação MEI/autônomo.
 
 ## 2026-06-13 — OPRM MEI audience segmenter: falhas OpenAI acionáveis
 

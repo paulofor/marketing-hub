@@ -34,7 +34,7 @@ public class BackendRoutineSynthesizerService {
   private static final String DEFAULT_SYNTHESIZED_BY = "oprmRoutineSynthesizer";
   private static final int MAX_PENDING = 10;
   private static final int MAX_SIGNALS_PER_CYCLE = 120;
-  private static final int MAX_SUMMARY_LENGTH = 4000;
+  private static final int MAX_SUMMARY_LENGTH = 20000;
 
   private final OprmRoutineResearchCycleRepository routineResearchCycleRepository;
   private final OprmExtractedSignalRepository extractedSignalRepository;

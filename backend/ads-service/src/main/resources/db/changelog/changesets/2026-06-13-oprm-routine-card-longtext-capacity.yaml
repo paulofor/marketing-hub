@@ -1,0 +1,51 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-13-01-oprm-routine-card-longtext-capacity
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: oprm_niche_routine_card
+        - sqlCheck:
+            expectedResult: "1"
+            sql: |
+              SELECT CASE WHEN COUNT(*) > 0 THEN 1 ELSE 0 END
+              FROM information_schema.columns
+              WHERE table_schema = DATABASE()
+                AND table_name = 'oprm_niche_routine_card'
+                AND column_name IN (
+                  'routine_summary',
+                  'customer_behavior_summary',
+                  'channels_summary',
+                  'operational_pains_summary',
+                  'emotional_pains_summary',
+                  'dreams_summary',
+                  'fears_summary',
+                  'language_summary',
+                  'pains_summary',
+                  'results_summary',
+                  'mechanism_opportunities_summary',
+                  'evidence_summary'
+                )
+                AND data_type <> 'longtext'
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE oprm_niche_routine_card
+                MODIFY routine_summary LONGTEXT NOT NULL,
+                MODIFY customer_behavior_summary LONGTEXT NOT NULL,
+                MODIFY channels_summary LONGTEXT NOT NULL,
+                MODIFY operational_pains_summary LONGTEXT NOT NULL,
+                MODIFY emotional_pains_summary LONGTEXT NOT NULL,
+                MODIFY dreams_summary LONGTEXT NOT NULL,
+                MODIFY fears_summary LONGTEXT NOT NULL,
+                MODIFY language_summary LONGTEXT NOT NULL,
+                MODIFY pains_summary LONGTEXT NOT NULL,
+                MODIFY results_summary LONGTEXT NOT NULL,
+                MODIFY mechanism_opportunities_summary LONGTEXT NOT NULL,
+                MODIFY evidence_summary LONGTEXT NOT NULL;

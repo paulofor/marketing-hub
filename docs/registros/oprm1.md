@@ -587,3 +587,9 @@
 - Ajustada a tela de detalhe do CNAE para marcar visualmente os cards das etapas que acessam diretamente IA no pipeline NichoCNAE e aplicar fundos leves por status operacional.
 - Foram sinalizadas as etapas `Seed` e `MEI`, alinhadas ao cânone OPRM que define apenas `niche-research-seed-builder` e `mei-audience-segmenter` como consumidoras diretas de modelo OpenAI configurável.
 - Causa-raiz tratada: a tela operacional mostrava o estado da execução, mas não diferenciava rapidamente as etapas que dependem de IA nem criava hierarquia visual suficiente entre concluído, execução, bloqueio/falha e fila, dificultando o diagnóstico de falhas e decisões operacionais.
+
+## 2026-06-13 — OPRM MEI: uso do modelo configurado no pipeline
+
+- Causa-raiz corrigida: a etapa `mei-audience-segmenter` era marcada como IA configurável na tela de pipeline, mas o backend não enviava o modelo configurado na pendência da etapa e o coletor usava o fallback local `gpt-4.1-mini`.
+- Correção aplicada: o backend agora lê o modelo configurado na configuração oficial/legada do pipeline OPRM NichoCNAE e envia `openAiModelCode/openAiModelName` para o coletor; o coletor passa a priorizar esse modelo ao montar a chamada para a OpenAI.
+- Prevenção de recorrência: adicionados testes cobrindo a fila backend da segmentação MEI e a resolução de modelo no cliente OpenAI do coletor, além de remover da tela de detalhe o fallback visual fixo que sugeria `gpt-4.1-mini` quando não havia telemetria persistida.

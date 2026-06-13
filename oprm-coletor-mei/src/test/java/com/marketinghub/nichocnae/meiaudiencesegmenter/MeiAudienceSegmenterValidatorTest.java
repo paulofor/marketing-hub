@@ -35,6 +35,8 @@ class MeiAudienceSegmenterValidatorTest {
                 "Cabeleireiros, manicure e pedicure",
                 "serviços de beleza",
                 "serviços de beleza",
+                null,
+                null,
                 "rotina com atendimento por agenda e deslocamento",
                 "clientes chegam por indicação e retorno",
                 "WhatsApp e Instagram",

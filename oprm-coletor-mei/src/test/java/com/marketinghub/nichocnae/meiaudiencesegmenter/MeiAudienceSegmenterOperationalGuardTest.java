@@ -99,6 +99,8 @@ class MeiAudienceSegmenterOperationalGuardTest {
                 "Cabeleireiros, manicure e pedicure",
                 "Serviços de beleza",
                 "Beleza MEI",
+                null,
+                null,
                 "Rotina operacional",
                 "Captação por indicação",
                 "Instagram e WhatsApp",

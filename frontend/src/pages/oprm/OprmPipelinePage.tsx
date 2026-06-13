@@ -537,7 +537,7 @@ function canCreateNewResearchCycle(status: string) {
 
 function getNewResearchCycleButtonLabel(status: string) {
   if (status === "FAILED" || status === "SOLUTION_CONTAMINATED") {
-    return "Reprocessar CNAE";
+    return "Reprocessar com subnicho operacional";
   }
   if (status === "STALLED") {
     return "Reiniciar ciclo parado";
@@ -587,6 +587,42 @@ function buildStatusBadgeClass(status: string) {
     return "badge text-bg-primary-subtle border border-primary-subtle text-primary";
   }
   return "badge text-bg-light border text-secondary";
+}
+
+function isSolutionContaminationFailure(
+  status?: string | null,
+  errorMessage?: string | null,
+) {
+  const normalized = `${status ?? ""} ${errorMessage ?? ""}`.toLowerCase();
+  return (
+    status === "SOLUTION_CONTAMINATED" ||
+    normalized.includes("segmentação contaminada por linguagem de solução") ||
+    normalized.includes("contaminada por linguagem de solução") ||
+    normalized.includes("contaminado por solução") ||
+    normalized.includes("linguagem de solução")
+  );
+}
+
+function buildBusinessRecommendation(params: {
+  status?: string | null;
+  errorMessage?: string | null;
+  difficultyEvidenceScore?: number | null;
+  routineEvidenceScore?: number | null;
+  recommendedSubniche?: string | null;
+}) {
+  if (isSolutionContaminationFailure(params.status, params.errorMessage)) {
+    return "A pesquisa pulou cedo para produto/oferta; reprocessar com foco em rotina e público.";
+  }
+  if (params.difficultyEvidenceScore === 0) {
+    return "Ainda não há dor operacional suficiente para transformar em nicho vendável.";
+  }
+  if (
+    (params.routineEvidenceScore ?? 0) > 0 &&
+    params.recommendedSubniche?.trim()
+  ) {
+    return `Subnicho recomendado: ${params.recommendedSubniche.trim()}.`;
+  }
+  return null;
 }
 
 function buildFailureMessage(errorMessage?: string | null) {
@@ -866,6 +902,22 @@ export default function OprmPipelinePage() {
       "instagram",
     ],
   );
+  const latestBusinessRecommendation = latestCycle
+    ? buildBusinessRecommendation({
+        status: latestEffectiveCycleStatus ?? latestCycle.cycleStatus,
+        errorMessage: latestCycle.errorMessage,
+        difficultyEvidenceScore:
+          routineQualityGateDetail?.difficultyEvidenceScore ??
+          routineCard?.difficultyEvidenceScore,
+        routineEvidenceScore:
+          routineQualityGateDetail?.routineEvidenceScore ??
+          routineCard?.routineEvidenceScore,
+        recommendedSubniche:
+          latestCycle.audienceName ??
+          latestCycle.neutralNicheName ??
+          latestCycle.nicheName,
+      })
+    : null;
 
   return (
     <div className="d-flex flex-column gap-4">
@@ -890,6 +942,17 @@ export default function OprmPipelinePage() {
             mostrando se existe público MEI/autônomo válido e recente para os
             próximos fluxos de estratégia.
           </p>
+          {latestBusinessRecommendation ? (
+            <div className="alert alert-light border mt-3 mb-0" role="status">
+              <span className="fw-semibold d-block">
+                Recomendação de negócio
+              </span>
+              {latestBusinessRecommendation}
+              <span className="d-block small text-secondary mt-1">
+                Comando único: Reprocessar com subnicho operacional.
+              </span>
+            </div>
+          ) : null}
         </div>
       </section>
 

@@ -170,7 +170,9 @@ describe("OprmPipelinePage", () => {
     renderPage();
 
     fireEvent.click(
-      await screen.findByRole("button", { name: "Reprocessar CNAE" }),
+      await screen.findByRole("button", {
+        name: "Reprocessar com subnicho operacional",
+      }),
     );
 
     await waitFor(() => {

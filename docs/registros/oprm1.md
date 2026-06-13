@@ -607,6 +607,11 @@
 - Causa-raiz tratada: manter os executores como beans condicionais permitia que uma configuração externa ou imagem antiga reativasse os ciclos vazios, gerando ruído operacional na tela OPRM.
 - Prevenção de recorrência: o teste de contexto agora valida que as propriedades antigas não existem e que as classes antigas de scheduler CNAE não entram mais no artefato do coletor.
 
+## 2026-06-13 — Recomendação de negócio em falhas NichoCNAE
+
+- Atualizada a tela de detalhe do CNAE e a tela de pipeline OPRM para transformar falhas por contaminação de solução ou ausência de evidência de dor em uma recomendação operacional objetiva.
+- A interface agora orienta reprocessamento com foco em rotina/público, informa quando não há dor operacional suficiente e sugere subnicho operacional quando existe evidência de rotina.
+- O comando principal para esses casos foi padronizado como **Reprocessar com subnicho operacional**.
 ## 2026-06-13 — OPRM NichoCNAE quebra CNAE amplo em subnichos vendáveis
 
 - 2026-06-13 00:00:00 (UTC): adicionada etapa complementar dentro do `oprmNicheResearchSeedBuilder` para ler CNAE, descrição, score OPRM e volume MEI antes de gerar o seed; o prompt agora exige gerar mentalmente 3 a 7 subnichos operacionais focados em MEI/autônomo, pontuar recorrência, urgência da dor, capacidade de pagar, clareza do resultado e compatibilidade com produto digital, e rodar as próximas pesquisas apenas sobre o subnicho vencedor. O backend passou a enviar o volume MEI mais recente do CNAE para o coletor, preservando o pipeline profundo no seed mais promissor.

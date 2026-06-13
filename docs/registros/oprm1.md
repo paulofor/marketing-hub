@@ -1,3 +1,18 @@
+## 2026-06-13 — OPRM NichoCNAE: registro de efeito perceptivo das cores antigas
+
+- Registrado ponto de pesquisa futura sobre as cores antigas dos cards do pipeline: `bg-success-subtle` (`#d1e7dd`) para concluído e `bg-primary-subtle` (`#cfe2ff`) para em execução criavam um efeito visual interessante; de perto pareciam muito semelhantes, mas de longe a diferença entre verde claro e azul claro ficava mais perceptível.
+- Hipótese para investigar depois: esse comportamento pode estar ligado a contraste cromático de baixa saturação, distância de observação, mistura óptica e percepção periférica, podendo ser útil para interfaces que precisam indicar estados sem gerar poluição visual.
+
+## 2026-06-13 — OPRM NichoCNAE: ícones para etapas com pesquisa na internet
+
+- Adicionados ícones/selo `Web` nas etapas `Busca` e `Coleta` da tela `/oprm/cnaes/:cnaeCode`, deixando claro quais fases acessam a internet para pesquisar e coletar fontes públicas.
+- Causa-raiz tratada: a tela diferenciava uso de IA, mas não indicava visualmente as etapas que dependem de pesquisa externa na internet, reduzindo clareza operacional durante acompanhamento do pipeline.
+
+## 2026-06-13 — OPRM NichoCNAE: contraste visual dos cards de execução
+
+- Ajustada a tela `/oprm/cnaes/:cnaeCode` para diferenciar claramente cards concluídos e em execução: concluído passou a usar fundo verde sólido com texto claro, enquanto etapa em execução permanece em azul claro com borda reforçada.
+- Causa-raiz tratada: os dois estados usavam fundos leves muito próximos, reduzindo a leitura operacional rápida do andamento do pipeline.
+
 ## 2026-06-12 — OPRM CNAE: detalhe acionável com pipeline NichoCNAE
 
 - Evoluída a tela `/oprm/cnaes/:cnaeCode` para exibir descrição do CNAE, score OPRM, componentes do score, quantidade de estabelecimentos, empresas e MEIs.

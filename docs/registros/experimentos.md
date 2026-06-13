@@ -4476,3 +4476,8 @@
 - Revisadas referências ativas aos cânones obsoletos `modelo-canonico-artefatos-pipeline-experimento.md` e `experiments-automation-flow-canon.v1.md`.
 - Regras válidas de `landingPageHtml` foram consolidadas em `docs/canonical/procedimento-experimento-canon.v1.md`.
 - Referências operacionais gerais foram redirecionadas para `docs/canonical/pipeline-operacional-canon.v1.md` e referências não aplicáveis ao MOIS foram removidas.
+## 2026-06-13 — Esclarecimento canônico do pipeline de experimento e GeraLanding
+
+- solicitação: esclarecer no procedimento canônico se `CAMPAIGN_ANGLE`, `AD_COPY`, `AD_IMAGE_BRIEFING` e GeraLanding pertencem ao mesmo pipeline administrativo ou a pipelines separados.
+- foi feito: adicionada seção curta definindo que a tela `/pipelines` deve tratar o fluxo como um único pipeline oficial `experiment-pipeline`, com bloco inicial do experimento e bloco/subpipeline operacional GeraLanding dentro do mesmo contrato.
+- impacto esperado: reduz ambiguidade operacional na administração de pipelines, sincronização canônica e execução das etapas obrigatórias, automáticas e manuais do experimento.

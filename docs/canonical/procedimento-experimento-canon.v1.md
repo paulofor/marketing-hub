@@ -339,7 +339,7 @@ Os diagramas canônicos de arquitetura do GeraLanding (backend e worker ai), der
 
 - `docs/canonical/geralanding-arquitetura-canon.v1.md`
 
-> Observação: manter este procedimento como referência de fluxo e o documento acima como referência primária de arquitetura do módulo GeraLanding.
+> Observação: manter este procedimento como referência de fluxo, o documento acima como referência primária de arquitetura do módulo GeraLanding e `docs/canonical/pipeline-operacional-canon.v1.md` como referência primária para o padrão geral de criação de pipelines, telas e cards.
 
 ### 15.5 Regra mandatória — bloqueio de metainstrução na copy final
 

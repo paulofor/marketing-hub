@@ -631,3 +631,9 @@
 - Causa-raiz tratada: a etapa `mei-audience-segmenter` já bloqueava parte da linguagem de solução, mas o prompt e a pré-validação não reforçavam explicitamente todos os termos de contaminação indireta, como software, IA, automação e ferramenta, antes do envio ao backend.
 - Correção aplicada: o prompt passou a limitar a saída a perfil comportamental (quem é, como trabalha, como consegue clientes, dores, medos, linguagem, canais e evidências), sem criar produto, sugerir solução ou mencionar oferta, software, IA, automação ou ferramenta.
 - Prevenção de recorrência: o coletor agora pré-valida a resposta com a mesma lista de termos proibidos, regenera uma única vez com instrução corretiva quando detectar contaminação e só registra falha se a resposta corrigida continuar inválida.
+
+## 2026-06-13 — OPRM MEI: correção de compilação no gate de dor prática
+
+- Causa-raiz corrigida: o gate de evidência mínima da etapa `mei-audience-segmenter` passou a usar `Locale.ROOT` para normalizar textos de ausência de evidência, mas a classe não importava `java.util.Locale`, quebrando a compilação do `ads-service`.
+- Correção aplicada: adicionado o import explícito de `java.util.Locale` no serviço backend da segmentação MEI/autônomo.
+- Prevenção de recorrência: executada compilação Maven direcionada ao módulo `ads-service` para validar que o erro `cannot find symbol Locale` não retorna.

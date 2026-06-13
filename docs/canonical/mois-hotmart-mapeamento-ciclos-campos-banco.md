@@ -192,7 +192,7 @@ Em resumo: o erro normalmente não está na UI; ele nasce na qualidade do campo 
 
 Agendamento operacional vigente no `mois-hotmart-collector`:
 
-- **Ciclo 1 (listagem):** execução pontual única em **13 de junho de 2026 às 00:05**, no fuso `America/Sao_Paulo`.
+- **Ciclo 1 (listagem):** execução pontual única em **13 de junho de 2026 às 01:35**, no fuso `America/Sao_Paulo`.
 - **Ciclo 2 (detalhes):** execução diária às **17:00**, conforme scheduler vigente do coletor.
 - O cron do ciclo 1 fica hardcoded no `HotmartCollectorScheduler` para manter rastreabilidade operacional do horário combinado e possui guarda de ano para não repetir após 2026.
 

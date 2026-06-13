@@ -11,8 +11,24 @@ import org.springframework.util.StringUtils;
 public class MeiAudienceSegmenterValidator {
     private static final int MAX_TEXT_LENGTH = 4000;
     private static final List<String> SOLUTION_TERMS = List.of(
-            " produto", " oferta", " preço", " promessa", " campanha", " landing page", " software", " automacao", " automação",
-            " inteligencia artificial", " inteligência artificial", " ia ", " curso", " ferramenta", " aplicativo", " app ");
+            "produto",
+            "oferta",
+            "preço",
+            "promessa",
+            "campanha",
+            "landing page",
+            "software",
+            "automacao",
+            "automação",
+            "inteligencia artificial",
+            "inteligência artificial",
+            "ia",
+            "curso",
+            "ferramenta",
+            "aplicativo",
+            "app",
+            "solução",
+            "solucao");
 
     /** Valida presença de público, comportamento, evidências e ausência de linguagem de solução. */
     public void validate(MeiAudienceSegmenterPending input, MeiAudienceSegmentDraft draft) {
@@ -36,6 +52,20 @@ public class MeiAudienceSegmenterValidator {
         rejectSolutionLanguage(draft);
     }
 
+    /** Retorna o primeiro termo proibido encontrado no rascunho comportamental. */
+    public String firstForbiddenTerm(MeiAudienceSegmentDraft draft) {
+        if (draft == null) {
+            return null;
+        }
+        String normalized = normalizedDraft(draft);
+        for (String term : SOLUTION_TERMS) {
+            if (containsTerm(normalized, term)) {
+                return term;
+            }
+        }
+        return null;
+    }
+
     /** Exige texto preenchido dentro do limite operacional do perfil. */
     private void requireText(String value, String fieldName) {
         if (!StringUtils.hasText(value)) {
@@ -55,15 +85,23 @@ public class MeiAudienceSegmenterValidator {
 
     /** Bloqueia qualquer vocabulário de oferta, produto, campanha ou solução no artefato final. */
     private void rejectSolutionLanguage(MeiAudienceSegmentDraft draft) {
-        String normalized = normalize(" " + draft.audienceName() + " " + draft.occupationTerms() + " " + draft.workMode() + " "
+        String forbiddenTerm = firstForbiddenTerm(draft);
+        if (forbiddenTerm != null) {
+            throw new IllegalArgumentException("Segmentação contaminada por linguagem de solução: " + forbiddenTerm);
+        }
+    }
+
+    /** Junta somente campos do perfil comportamental final para verificação de contaminação. */
+    private String normalizedDraft(MeiAudienceSegmentDraft draft) {
+        return normalize(" " + draft.audienceName() + " " + draft.occupationTerms() + " " + draft.workMode() + " "
                 + draft.customerAcquisitionBehavior() + " " + draft.dailyRoutineSummary() + " " + draft.recurringTasksSummary() + " "
                 + draft.operationalPainsSummary() + " " + draft.emotionalPainsSummary() + " " + draft.dreamsSummary() + " "
-                + draft.fearsSummary() + " " + draft.languagePatterns() + " " + draft.channelsUsed() + " ");
-        for (String term : SOLUTION_TERMS) {
-            if (normalized.contains(normalize(term))) {
-                throw new IllegalArgumentException("Segmentação contaminada por linguagem de solução: " + term.trim());
-            }
-        }
+                + draft.fearsSummary() + " " + draft.languagePatterns() + " " + draft.channelsUsed() + " " + draft.recentSourceSummary() + " ");
+    }
+
+    /** Verifica termo completo com bordas de espaço para reduzir falsos positivos. */
+    private boolean containsTerm(String normalized, String term) {
+        return (" " + normalized + " ").contains(" " + normalize(term).trim() + " ");
     }
 
     /** Normaliza texto removendo acentos para comparação de termos proibidos. */

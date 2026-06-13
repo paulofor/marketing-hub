@@ -610,3 +610,8 @@
 ## 2026-06-13 — OPRM NichoCNAE quebra CNAE amplo em subnichos vendáveis
 
 - 2026-06-13 00:00:00 (UTC): adicionada etapa complementar dentro do `oprmNicheResearchSeedBuilder` para ler CNAE, descrição, score OPRM e volume MEI antes de gerar o seed; o prompt agora exige gerar mentalmente 3 a 7 subnichos operacionais focados em MEI/autônomo, pontuar recorrência, urgência da dor, capacidade de pagar, clareza do resultado e compatibilidade com produto digital, e rodar as próximas pesquisas apenas sobre o subnicho vencedor. O backend passou a enviar o volume MEI mais recente do CNAE para o coletor, preservando o pipeline profundo no seed mais promissor.
+## 2026-06-13 — OPRM MEI: bloqueio de incentivo indireto na segmentação
+
+- Causa-raiz tratada: a etapa `mei-audience-segmenter` já bloqueava parte da linguagem de solução, mas o prompt e a pré-validação não reforçavam explicitamente todos os termos de contaminação indireta, como software, IA, automação e ferramenta, antes do envio ao backend.
+- Correção aplicada: o prompt passou a limitar a saída a perfil comportamental (quem é, como trabalha, como consegue clientes, dores, medos, linguagem, canais e evidências), sem criar produto, sugerir solução ou mencionar oferta, software, IA, automação ou ferramenta.
+- Prevenção de recorrência: o coletor agora pré-valida a resposta com a mesma lista de termos proibidos, regenera uma única vez com instrução corretiva quando detectar contaminação e só registra falha se a resposta corrigida continuar inválida.

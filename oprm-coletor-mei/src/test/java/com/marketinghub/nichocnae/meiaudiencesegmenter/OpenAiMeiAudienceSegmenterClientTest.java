@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.client.ExpectedCount.once;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.URI;
@@ -15,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 
@@ -72,6 +74,37 @@ class OpenAiMeiAudienceSegmenterClientTest {
         server.verify();
     }
 
+
+    /** Garante pré-validação no worker e uma regeneração corretiva antes de registrar falha por contaminação. */
+    @Test
+    void shouldRegenerateOnceWhenPreValidationDetectsForbiddenTerm() {
+        RestClient.Builder builder = RestClient.builder();
+        MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+        server.expect(once(), requestTo(URI.create("https://api.openai.com/v1/responses")))
+                .andRespond(withSuccess(openAiResponse("Profissionais com software de agenda"), MediaType.APPLICATION_JSON));
+        server.expect(once(), requestTo(URI.create("https://api.openai.com/v1/responses")))
+                .andRespond(withSuccess(openAiResponse("Profissionais com agenda instável"), MediaType.APPLICATION_JSON));
+        MeiAudienceSegmenterPromptBuilder promptBuilder = mock(MeiAudienceSegmenterPromptBuilder.class);
+        MeiAudienceSegmenterPending pending = pending("gpt-5.4");
+        when(promptBuilder.buildPrompt(pending)).thenReturn("prompt original");
+        when(promptBuilder.buildCorrectivePrompt(pending, "software")).thenReturn("prompt corretivo");
+        MeiAudienceSegmenterSchema schema = mock(MeiAudienceSegmenterSchema.class);
+        when(schema.buildSchema()).thenReturn(Map.of("type", "object"));
+        OpenAiMeiAudienceSegmenterClient client = new OpenAiMeiAudienceSegmenterClient(
+                builder.build(),
+                new ObjectMapper(),
+                new MeiAudienceSegmenterOpenAiProperties("https://api.openai.com/v1", "key", "", "gpt-4.1-mini",
+                        "OPRM_MEI_AUDIENCE_SEGMENTER_OPENAI_API_KEY", "OPENAI_API_KEY"),
+                promptBuilder,
+                schema,
+                new MeiAudienceSegmenterValidator());
+
+        MeiAudienceSegmentDraft draft = client.segment(pending);
+
+        assertThat(draft.audienceName()).isEqualTo("Profissionais com agenda instável");
+        server.verify();
+    }
+
     /** Cria cliente com dependências simuladas para validar apenas resolução de modelo. */
     private OpenAiMeiAudienceSegmenterClient client(String fallbackModel) {
         return new OpenAiMeiAudienceSegmenterClient(
@@ -82,6 +115,35 @@ class OpenAiMeiAudienceSegmenterClientTest {
                 mock(MeiAudienceSegmenterPromptBuilder.class),
                 mock(MeiAudienceSegmenterSchema.class),
                 mock(MeiAudienceSegmenterValidator.class));
+    }
+
+
+    /** Cria resposta mínima da OpenAI contendo JSON válido no campo output_text. */
+    private String openAiResponse(String audienceName) {
+        String json = """
+                {
+                  \"audienceName\": \"%s\",
+                  \"occupationTerms\": \"termos ocupacionais usados nas fontes\",
+                  \"workMode\": \"trabalha por conta própria e organiza agenda manualmente\",
+                  \"customerAcquisitionBehavior\": \"consegue clientes por indicação e retorno de clientes antigos\",
+                  \"dailyRoutineSummary\": \"rotina com atendimento, orçamento, compras e remarcações\",
+                  \"recurringTasksSummary\": \"tarefas recorrentes de agenda, atendimento, cobrança e reposição\",
+                  \"operationalPainsSummary\": \"dor prática com cancelamento, atraso e fluxo irregular\",
+                  \"emotionalPainsSummary\": \"dor emocional com insegurança de renda e reputação local\",
+                  \"dreamsSummary\": \"busca estabilidade, reconhecimento e agenda previsível\",
+                  \"fearsSummary\": \"teme perder clientes, receber calote e ficar sem movimento\",
+                  \"languagePatterns\": \"frases observadas sobre agenda, cliente sumido e indicação\",
+                  \"channelsUsed\": \"usa WhatsApp, indicação, redes sociais locais e agenda própria\",
+                  \"recentSourceSummary\": \"fontes brasileiras recentes com evidências curtas\",
+                  \"autonomousProfessionalFitScore\": 85,
+                  \"behavioralEvidenceScore\": 75,
+                  \"sourceFreshnessScore\": 80,
+                  \"outdatedSourceRiskScore\": 10,
+                  \"structuredBusinessDriftRiskScore\": 5,
+                  \"solutionLanguageRiskScore\": 0
+                }
+                """.formatted(audienceName).replace("\n", " ").replace("\"", "\\\"");
+        return "{\"output_text\":\"" + json + "\"}";
     }
 
     /** Cria uma pendência mínima com modelo configurável para teste da chamada OpenAI. */

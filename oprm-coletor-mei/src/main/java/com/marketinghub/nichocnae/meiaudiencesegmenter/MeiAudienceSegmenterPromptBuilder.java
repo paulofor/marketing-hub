@@ -14,13 +14,15 @@ public class MeiAudienceSegmenterPromptBuilder {
     public String buildPrompt(MeiAudienceSegmenterPending input) {
         return """
                 Você é analista de comportamento de profissionais MEI/autônomos brasileiros.
-                Tarefa: transformar evidências coletadas em segmentos comportamentais claros dentro de um CNAE, sem criar produto.
+                Tarefa: transformar evidências coletadas em perfil comportamental claro dentro de um CNAE.
 
                 Regras obrigatórias:
-                - Descreva pessoas, rotina, dores, sonhos, medos, canais e linguagem real observada.
+                - Não criar produto, não sugerir solução, não mencionar oferta, software, IA, automação ou ferramenta.
+                - A saída deve aceitar apenas perfil comportamental: quem é, como trabalha, como consegue clientes, dores, medos, linguagem, canais e evidências.
+                - Descreva pessoas, rotina, dores, medos, canais e linguagem real observada.
                 - Separe públicos diferentes dentro do CNAE quando houver evidência.
                 - Cada afirmação importante deve citar evidência resumida ou fonte no próprio texto.
-                - Não escreva produto, oferta, preço, promessa, campanha, solução, software, automação, IA, curso ou ferramenta.
+                - Não escreva produto, oferta, preço, promessa, campanha, solução, software, automação, IA, curso, aplicativo ou ferramenta.
                 - Não invente dado sem evidência; quando faltar dado, diga que a evidência é insuficiente.
                 - Responda somente JSON aderente ao schema.
 
@@ -76,6 +78,14 @@ public class MeiAudienceSegmenterPromptBuilder {
                 clean(input.evidenceSummary()),
                 sourceLines(input),
                 signalLines(input));
+    }
+
+    /** Monta prompt corretivo para uma única regeneração quando houver termo proibido. */
+    public String buildCorrectivePrompt(MeiAudienceSegmenterPending input, String forbiddenTerm) {
+        return buildPrompt(input)
+                + "\nCorreção obrigatória: a resposta anterior foi contaminada pelo termo proibido '"
+                + clean(forbiddenTerm)
+                + "'. Regenere uma única saída removendo qualquer incentivo indireto a produto, oferta, promessa, campanha, software, IA, automação, ferramenta ou solução. Mantenha somente perfil comportamental e evidências.";
     }
 
     /** Serializa fontes curtas com indicadores sem incluir HTML completo. */

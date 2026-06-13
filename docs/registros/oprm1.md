@@ -595,3 +595,14 @@
 - Prevenção de recorrência: adicionados testes cobrindo a fila backend da segmentação MEI e a resolução de modelo no cliente OpenAI do coletor, além de remover da tela de detalhe o fallback visual fixo que sugeria `gpt-4.1-mini` quando não havia telemetria persistida.
 - 2026-06-13 15:03:26 (UTC): registrada no cânone OPRM a regra de limite máximo de 4000 caracteres para campos textuais sintéticos persistidos no pipeline NichoCNAE, incluindo `mechanismOpportunitiesSummary`; quando houver geração por IA, o prompt deve declarar esse limite e a camada determinística deve validar ou compactar antes do envio ao backend.
 - 2026-06-13 15:18:00 (UTC): ampliada a regra operacional do cartão de rotina OPRM NichoCNAE para usar limite de 20000 caracteres em campos textuais sintéticos persistidos em `LONGTEXT`, corrigindo a causa-raiz do bloqueio do ciclo #33 sem truncar evidência útil antes da etapa de segmentação MEI/autônomo.
+
+## 2026-06-13 — OPRM MEI audience segmenter: falhas OpenAI acionáveis
+
+- Origem comprovada: a etapa `meiaudiencesegmenter` encapsulava falhas da OpenAI com uma mensagem genérica, fazendo o backend persistir apenas `Falha ao segmentar público MEI/autônomo com OpenAI.` e removendo contexto operacional essencial.
+- Correção escolhida: a mensagem de falha agora inclui tipo da exceção, causa-raiz, `researchCycleId`, `routineCardId`, modelo OpenAI, endpoint chamado e, em falhas HTTP, status e corpo resumido da resposta. Também foi adicionado teste cobrindo o envio dessa mensagem ao endpoint de falha do backend.
+## 2026-06-13 — OPRM CNAE: remoção definitiva dos schedulers automáticos
+
+- Removidas as classes `OprmCnaeOpportunityScheduler` e `OprmCnaeEnrichmentScheduler` do `oprm-coletor-mei`, eliminando a possibilidade de religar os ciclos CNAE_SCORE e CNAE_ENRICHMENT por variável de ambiente.
+- Removidas as configurações `oprm.cnae-opportunity.scheduler.enabled`, `oprm.cnae-enrichment.scheduler.enabled` e `oprm.cnae-enrichment.startup-catch-up.enabled` do `application.yml` para não deixar contrato operacional ambíguo.
+- Causa-raiz tratada: manter os executores como beans condicionais permitia que uma configuração externa ou imagem antiga reativasse os ciclos vazios, gerando ruído operacional na tela OPRM.
+- Prevenção de recorrência: o teste de contexto agora valida que as propriedades antigas não existem e que as classes antigas de scheduler CNAE não entram mais no artefato do coletor.

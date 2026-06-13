@@ -33,14 +33,6 @@ oprm:
         expected-api-key-variable: OPRM_MEI_AUDIENCE_SEGMENTER_OPENAI_API_KEY
         fallback-api-key-variable: OPENAI_API_KEY
 
-  cnae-opportunity:
-    scheduler:
-      enabled: ${OPRM_CNAE_OPPORTUNITY_SCHEDULER_ENABLED:false}
-  cnae-enrichment:
-    scheduler:
-      enabled: ${OPRM_CNAE_ENRICHMENT_SCHEDULER_ENABLED:false}
-    startup-catch-up:
-      enabled: ${OPRM_CNAE_ENRICHMENT_STARTUP_CATCH_UP_ENABLED:false}
   market-import:
     collector:
       backend-base-url: ${OPRM_COLLECTOR_BACKEND_BASE_URL:http://191.252.181.168}

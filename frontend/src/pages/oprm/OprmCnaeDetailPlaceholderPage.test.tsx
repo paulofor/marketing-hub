@@ -136,7 +136,7 @@ describe("OprmCnaeDetailPlaceholderPage", () => {
     expect(screen.queryByText("Em execução")).toBeNull();
   });
 
-  it("diferencia visualmente os cards por status com fundos leves", async () => {
+  it("diferencia visualmente os cards concluídos e em execução por contraste forte", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(async (input: RequestInfo | URL) => {
@@ -176,15 +176,31 @@ describe("OprmCnaeDetailPlaceholderPage", () => {
     await screen.findByText(/status atual:/i);
 
     const seedCard = screen.getByText("2. Seed");
-    expect(seedCard.closest(".card")?.className).toContain("bg-success-subtle");
+    expect(seedCard.closest(".card")?.className).toContain("bg-success");
+    expect(seedCard.closest(".card")?.className).toContain("text-white");
     expect(
       within(seedCard.closest(".card") as HTMLElement).getByLabelText(
         "Etapa com uso direto de IA",
       ),
     ).toBeTruthy();
 
+    const searchCard = screen.getByText("3. Busca").closest(".card");
+    expect(
+      within(searchCard as HTMLElement).getByLabelText(
+        "Etapa que acessa a internet para pesquisar fontes",
+      ),
+    ).toBeTruthy();
+
+    const fetchCard = screen.getByText("4. Coleta").closest(".card");
+    expect(
+      within(fetchCard as HTMLElement).getByLabelText(
+        "Etapa que acessa a internet para pesquisar fontes",
+      ),
+    ).toBeTruthy();
+
     const synthesisCard = screen.getByText("6. Síntese").closest(".card");
     expect(synthesisCard?.className).toContain("bg-primary-subtle");
+    expect(synthesisCard?.className).toContain("border-2");
 
     const meiCard = screen.getByText("7. MEI").closest(".card");
     expect(meiCard?.className).toContain("bg-body-tertiary");

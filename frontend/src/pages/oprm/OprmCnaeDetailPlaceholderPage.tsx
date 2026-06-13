@@ -1,4 +1,4 @@
-import { Sparkles } from "lucide-react";
+import { Globe2, Sparkles } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import {
   useOprmCnaeScore,
@@ -30,11 +30,13 @@ const pipelineStages = [
     title: "3. Busca",
     description:
       "Procura fontes públicas sobre rotina, tarefas e dificuldades.",
+    usesInternetResearch: true,
   },
   {
     code: "fetch",
     title: "4. Coleta",
     description: "Coleta metadados e trechos úteis das fontes selecionadas.",
+    usesInternetResearch: true,
   },
   {
     code: "signals",
@@ -249,18 +251,32 @@ function inferFailureStageIndex(errorMessage?: string | null) {
 
 function stageCardClassName(stateClassName: string) {
   if (stateClassName.includes("border-success")) {
-    return `${stateClassName} bg-success-subtle`;
+    return "border-success bg-success text-white shadow-sm";
   }
   if (stateClassName.includes("border-primary")) {
-    return `${stateClassName} bg-primary-subtle`;
+    return `${stateClassName} bg-primary-subtle border-2`;
   }
   if (stateClassName.includes("border-warning")) {
-    return `${stateClassName} bg-warning-subtle`;
+    return `${stateClassName} bg-warning-subtle border-2`;
   }
   if (stateClassName.includes("border-danger")) {
-    return `${stateClassName} bg-danger-subtle`;
+    return `${stateClassName} bg-danger-subtle border-2`;
   }
   return `${stateClassName} bg-body-tertiary`;
+}
+
+function stageDescriptionClassName(stateClassName: string) {
+  if (stateClassName.includes("border-success")) {
+    return "small text-white-50 mb-3";
+  }
+  return "small text-secondary mb-3";
+}
+
+function stageDetailButtonClassName(stateClassName: string) {
+  if (stateClassName.includes("border-success")) {
+    return "btn btn-light btn-sm";
+  }
+  return "btn btn-outline-primary btn-sm";
 }
 
 function inferStageState(
@@ -583,17 +599,27 @@ export default function OprmCnaeDetailPlaceholderPage() {
                               IA
                             </span>
                           ) : null}
+                          {stage.usesInternetResearch ? (
+                            <span
+                              className="badge text-bg-info d-inline-flex align-items-center gap-1"
+                              title="Etapa que acessa a internet para pesquisar fontes"
+                              aria-label="Etapa que acessa a internet para pesquisar fontes"
+                            >
+                              <Globe2 size={14} aria-hidden="true" />
+                              Web
+                            </span>
+                          ) : null}
                         </div>
                         <span className="badge text-bg-light">
                           {state.label}
                         </span>
                       </div>
-                      <p className="small text-secondary mb-3">
+                      <p className={stageDescriptionClassName(state.className)}>
                         {stage.description}
                       </p>
                       {latestCycle ? (
                         <Link
-                          className="btn btn-outline-primary btn-sm"
+                          className={stageDetailButtonClassName(state.className)}
                           to={`/oprm/cnaes/${encodeURIComponent(decodedCnaeCode)}/pipeline/${latestCycle.researchCycleId}/stages/${stage.code}`}
                         >
                           Ver detalhes

@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -29,6 +29,7 @@ function renderPage() {
 
 describe("OprmCnaeDetailPlaceholderPage", () => {
   afterEach(() => {
+    cleanup();
     vi.restoreAllMocks();
   });
 
@@ -133,5 +134,64 @@ describe("OprmCnaeDetailPlaceholderPage", () => {
       within(materializationCard as HTMLElement).getByText("Bloqueado"),
     ).toBeTruthy();
     expect(screen.queryByText("Em execução")).toBeNull();
+  });
+
+  it("diferencia visualmente os cards por status com fundos leves", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = input.toString();
+
+        if (url.includes("routine-research-cycle/stage-executions")) {
+          return new Response(
+            JSON.stringify([
+              {
+                researchCycleId: 31,
+                sourceNicheId: 1,
+                cnaeCode: "9602501",
+                nicheName: "Cabeleireiros, manicure e pedicure",
+                status: "RUNNING",
+                totalQueries: 48,
+                totalSourceCandidates: 340,
+                totalSourceSnapshots: 104,
+                totalExtractedSignals: 266,
+                startedAt: "2026-06-13T07:31:00Z",
+                finishedAt: null,
+                errorMessage: null,
+              },
+            ]),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+          );
+        }
+
+        return new Response("{}", {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }),
+    );
+
+    renderPage();
+
+    await screen.findByText(/status atual:/i);
+
+    const seedCard = screen.getByText("2. Seed");
+    expect(seedCard.closest(".card")?.className).toContain("bg-success-subtle");
+    expect(
+      within(seedCard.closest(".card") as HTMLElement).getByLabelText(
+        "Etapa com uso direto de IA",
+      ),
+    ).toBeTruthy();
+
+    const synthesisCard = screen.getByText("6. Síntese").closest(".card");
+    expect(synthesisCard?.className).toContain("bg-primary-subtle");
+
+    const meiCard = screen.getByText("7. MEI").closest(".card");
+    expect(meiCard?.className).toContain("bg-body-tertiary");
+    expect(
+      within(meiCard as HTMLElement).getByLabelText(
+        "Etapa com uso direto de IA",
+      ),
+    ).toBeTruthy();
   });
 });

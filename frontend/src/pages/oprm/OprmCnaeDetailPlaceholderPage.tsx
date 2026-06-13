@@ -1,3 +1,4 @@
+import { Sparkles } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import {
   useOprmCnaeScore,
@@ -22,6 +23,7 @@ const pipelineStages = [
     code: "seed",
     title: "2. Seed",
     description: "Transforma CNAE em nicho operacional e queries de pesquisa.",
+    usesAiModel: true,
   },
   {
     code: "search",
@@ -48,6 +50,7 @@ const pipelineStages = [
     code: "mei",
     title: "7. MEI",
     description: "Define o público MEI/autônomo dono-operador do nicho.",
+    usesAiModel: true,
   },
   {
     code: "quality",
@@ -242,6 +245,22 @@ function inferFailureStageIndex(errorMessage?: string | null) {
     return 8;
   }
   return undefined;
+}
+
+function stageCardClassName(stateClassName: string) {
+  if (stateClassName.includes("border-success")) {
+    return `${stateClassName} bg-success-subtle`;
+  }
+  if (stateClassName.includes("border-primary")) {
+    return `${stateClassName} bg-primary-subtle`;
+  }
+  if (stateClassName.includes("border-warning")) {
+    return `${stateClassName} bg-warning-subtle`;
+  }
+  if (stateClassName.includes("border-danger")) {
+    return `${stateClassName} bg-danger-subtle`;
+  }
+  return `${stateClassName} bg-body-tertiary`;
 }
 
 function inferStageState(
@@ -547,10 +566,24 @@ export default function OprmCnaeDetailPlaceholderPage() {
               const state = inferStageState(index, latestCycle);
               return (
                 <div className="col-md-4" key={stage.title}>
-                  <div className={`card h-100 ${state.className}`}>
+                  <div
+                    className={`card h-100 ${stageCardClassName(state.className)}`}
+                  >
                     <div className="card-body">
                       <div className="d-flex justify-content-between gap-2 mb-2">
-                        <h3 className="h6 mb-0">{stage.title}</h3>
+                        <div className="d-flex align-items-center gap-2">
+                          <h3 className="h6 mb-0">{stage.title}</h3>
+                          {stage.usesAiModel ? (
+                            <span
+                              className="badge text-bg-primary d-inline-flex align-items-center gap-1"
+                              title="Etapa com uso direto de IA"
+                              aria-label="Etapa com uso direto de IA"
+                            >
+                              <Sparkles size={14} aria-hidden="true" />
+                              IA
+                            </span>
+                          ) : null}
+                        </div>
                         <span className="badge text-bg-light">
                           {state.label}
                         </span>

@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.marketinghub.nichocnae.nicheresearchseedbuilder.NicheResearchSeedBuilderScheduler;
 import com.marketinghub.nichocnae.nicheresearchseedbuilder.web.NicheResearchSeedBuilderController;
+import com.marketinghub.oprmcoletormei.opportunity.service.OprmCnaeEnrichmentScheduler;
+import com.marketinghub.oprmcoletormei.opportunity.service.OprmCnaeOpportunityScheduler;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -13,7 +15,7 @@ import org.springframework.core.env.Environment;
 /**
  * Valida que o contexto Spring do coletor OPRM sobe sem disparar integrações externas durante testes.
  */
-@SpringBootTest(properties = "oprm.cnae-enrichment.startup-catch-up.enabled=false")
+@SpringBootTest
 class OprmColetorMeiApplicationTests {
     @Autowired private ApplicationContext applicationContext;
     @Autowired private Environment environment;
@@ -36,5 +38,15 @@ class OprmColetorMeiApplicationTests {
     void backendBaseUrlDefaultsToOperationalHttpPort() {
         assertThat(environment.getProperty("oprm.market-import.collector.backend-base-url"))
                 .isEqualTo("http://191.252.181.168");
+    }
+
+    /** Confirma que os ciclos CNAE automáticos ficam desligados por padrão para evitar execuções sem necessidade operacional. */
+    @Test
+    void cnaeAutomaticCyclesAreDisabledByDefault() {
+        assertThat(applicationContext.getBeanNamesForType(OprmCnaeOpportunityScheduler.class)).isEmpty();
+        assertThat(applicationContext.getBeanNamesForType(OprmCnaeEnrichmentScheduler.class)).isEmpty();
+        assertThat(environment.getProperty("oprm.cnae-opportunity.scheduler.enabled")).isEqualTo("false");
+        assertThat(environment.getProperty("oprm.cnae-enrichment.scheduler.enabled")).isEqualTo("false");
+        assertThat(environment.getProperty("oprm.cnae-enrichment.startup-catch-up.enabled")).isEqualTo("false");
     }
 }

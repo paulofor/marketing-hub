@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestClientResponseException;
 
 /** Executa chamada à OpenAI Responses API para segmentar comportamento MEI/autônomo com JSON estruturado. */
 @Component
@@ -96,8 +97,47 @@ public class OpenAiMeiAudienceSegmenterClient {
                     input.researchCycleId(),
                     input.cnaeCode(),
                     ex);
-            throw new IllegalStateException("Falha ao segmentar público MEI/autônomo com OpenAI.", ex);
+            String operationalMessage = buildOperationalFailureMessage(input, model, url, ex);
+            throw new IllegalStateException(operationalMessage, ex);
         }
+    }
+
+    /** Monta mensagem curta com causa-raiz suficiente para ação operacional no backend. */
+    String buildOperationalFailureMessage(
+            MeiAudienceSegmenterPending input, String model, String endpoint, Exception ex) {
+        StringBuilder message = new StringBuilder("Falha ao segmentar público MEI/autônomo com OpenAI");
+        message.append("; tipo=").append(ex.getClass().getSimpleName());
+        message.append("; causaRaiz=").append(summarize(rootCauseMessage(ex)));
+        message.append("; researchCycleId=").append(input.researchCycleId());
+        message.append("; routineCardId=").append(input.routineCardId());
+        message.append("; modeloOpenAI=").append(model);
+        message.append("; endpoint=").append(endpoint);
+        if (ex instanceof RestClientResponseException responseException) {
+            message.append("; httpStatus=").append(responseException.getStatusCode().value());
+            message.append("; httpBody=").append(summarize(responseException.getResponseBodyAsString()));
+        }
+        return message.toString();
+    }
+
+    /** Encontra a mensagem da causa-raiz preservando o tipo quando não houver mensagem textual. */
+    private String rootCauseMessage(Exception ex) {
+        Throwable root = ex;
+        while (root.getCause() != null) {
+            root = root.getCause();
+        }
+        if (root.getMessage() == null || root.getMessage().isBlank()) {
+            return root.getClass().getSimpleName();
+        }
+        return root.getMessage();
+    }
+
+    /** Resume textos de erro para evitar payload excessivo no registro operacional. */
+    private String summarize(String value) {
+        if (value == null || value.isBlank()) {
+            return "indisponível";
+        }
+        String normalized = value.replaceAll("\\s+", " ").trim();
+        return normalized.length() <= 300 ? normalized : normalized.substring(0, 300) + "...";
     }
 
     /** Resolve chave OpenAI por variável direta ou arquivo montado no host. */

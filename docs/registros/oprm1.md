@@ -593,3 +593,8 @@
 - Causa-raiz corrigida: a etapa `mei-audience-segmenter` era marcada como IA configurável na tela de pipeline, mas o backend não enviava o modelo configurado na pendência da etapa e o coletor usava o fallback local `gpt-4.1-mini`.
 - Correção aplicada: o backend agora lê o modelo configurado na configuração oficial/legada do pipeline OPRM NichoCNAE e envia `openAiModelCode/openAiModelName` para o coletor; o coletor passa a priorizar esse modelo ao montar a chamada para a OpenAI.
 - Prevenção de recorrência: adicionados testes cobrindo a fila backend da segmentação MEI e a resolução de modelo no cliente OpenAI do coletor, além de remover da tela de detalhe o fallback visual fixo que sugeria `gpt-4.1-mini` quando não havia telemetria persistida.
+
+## 2026-06-13 — OPRM MEI audience segmenter: falhas OpenAI acionáveis
+
+- Origem comprovada: a etapa `meiaudiencesegmenter` encapsulava falhas da OpenAI com uma mensagem genérica, fazendo o backend persistir apenas `Falha ao segmentar público MEI/autônomo com OpenAI.` e removendo contexto operacional essencial.
+- Correção escolhida: a mensagem de falha agora inclui tipo da exceção, causa-raiz, `researchCycleId`, `routineCardId`, modelo OpenAI, endpoint chamado e, em falhas HTTP, status e corpo resumido da resposta. Também foi adicionado teste cobrindo o envio dessa mensagem ao endpoint de falha do backend.

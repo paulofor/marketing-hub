@@ -336,8 +336,9 @@ class BackendNicheResearchSeedBuilderServiceTest {
     CompleteNicheResearchSeedBuilderResponse response = service.complete(1001L, request);
 
     assertThat(response.totalQueries()).isEqualTo(1);
-    assertThat(response.queries().getFirst().queryGoal()).isEqualTo("ROUTINE_DISCOVERY");
-    assertThat(response.queries().getFirst().queryText()).contains("rotina dificuldades atendimento clientes Brasil");
+    assertThat(response.queries().getFirst().queryGoal()).isEqualTo("COMMERCIAL_OPERATION_DISCOVERY");
+    assertThat(response.queries().getFirst().queryText())
+        .contains("WhatsApp Instagram indicação agenda faltas preço cobrança materiais retrabalho Brasil");
   }
 
   /** Deve marcar o ciclo como falho e registrar a mensagem operacional da falha da etapa dois. */
@@ -374,7 +375,7 @@ class BackendNicheResearchSeedBuilderServiceTest {
         .contains("OpenAI retornou corpo vazio");
   }
 
-  /** Monta um payload válido de etapa dois com doze objetivos de pesquisa orientados a MEI/autônomo. */
+  /** Monta um payload válido de etapa dois com doze objetivos comerciais-operacionais para MEI/autônomo. */
   private CompleteNicheResearchSeedBuilderRequest validRequest() {
     return new CompleteNicheResearchSeedBuilderRequest(
         "Cabeleireiros, manicures e pedicures",
@@ -396,30 +397,30 @@ class BackendNicheResearchSeedBuilderServiceTest {
   /** Cria a lista padrão de queries da etapa dois usada pelos cenários de persistência. */
   private List<NicheResearchQueryRequest> validQueryRequests() {
     return List.of(
-        new NicheResearchQueryRequest("manicure MEI responsabilidades rotina Brasil", "MEI_ROUTINE_DISCOVERY", "web", 1),
         new NicheResearchQueryRequest(
-            "profissional autônomo agenda manicure horários vazios Brasil", "DAILY_OPERATION_PAIN_DISCOVERY", "web", 2),
+            "manicure autônoma clientes WhatsApp Instagram indicação Brasil", "CUSTOMER_ACQUISITION", "web", 1),
         new NicheResearchQueryRequest(
-            "trabalhador por conta própria manicure consegue clientes Brasil",
-            "CUSTOMER_ACQUISITION_BEHAVIOR_DISCOVERY",
-            "web",
-            3),
+            "profissional autônomo manicure agenda faltas remarcações clientes somem", "SCHEDULE_NO_SHOWS", "web", 2),
         new NicheResearchQueryRequest(
-            "dono-operador salão beleza modo de trabalho Brasil", "AUTONOMOUS_WORK_MODE_DISCOVERY", "web", 4),
+            "manicure preço cobrança sinal pacotes recorrência Brasil", "PRICING_BILLING", "web", 3),
         new NicheResearchQueryRequest(
-            "MEI manicure dor emocional agenda vazia Brasil", "EMOTIONAL_PAIN_DISCOVERY", "web", 5),
+            "manicure materiais tempo atendimento retrabalho Brasil", "MATERIALS_REWORK", "web", 4),
         new NicheResearchQueryRequest(
-            "profissional autônomo manicure sonhos objetivos Brasil", "DREAM_DISCOVERY", "web", 6),
-        new NicheResearchQueryRequest("MEI manicure medos inseguranças Brasil", "FEAR_DISCOVERY", "web", 7),
+            "relatos reais manicure autônoma fórum comentários perguntas frequentes", "REAL_REPORTS", "web", 5),
         new NicheResearchQueryRequest(
-            "profissional autônomo manicure canais WhatsApp clientes Brasil", "CHANNEL_BEHAVIOR_DISCOVERY", "web", 8),
-        new NicheResearchQueryRequest("MEI manicure linguagem real clientes pt-BR", "LANGUAGE_DISCOVERY", "web", 9),
+            "cabeleireiro autônomo clientes indicação Instagram WhatsApp", "CUSTOMER_ACQUISITION", "web", 6),
         new NicheResearchQueryRequest(
-            "MEI manicure fontes recentes rotina Brasil", "SOURCE_FRESHNESS_DISCOVERY", "web", 10),
+            "cabeleireiro agenda vazia cliente falta remarcar horário", "SCHEDULE_NO_SHOWS", "web", 7),
         new NicheResearchQueryRequest(
-            "profissional autônomo pedicure compra materiais Brasil", "DAILY_OPERATION_PAIN_DISCOVERY", "web", 11),
+            "cabeleireiro preço pacote cobrança recorrência salão pequeno", "PRICING_BILLING", "web", 8),
         new NicheResearchQueryRequest(
-            "trabalhador por conta própria cabeleireiro retrabalho Brasil", "MEI_ROUTINE_DISCOVERY", "web", 12));
+            "pedicure material esterilização tempo atendimento retrabalho", "MATERIALS_REWORK", "web", 9),
+        new NicheResearchQueryRequest(
+            "vídeos comentários manicure autônoma dúvidas clientes cobrança", "REAL_REPORTS", "web", 10),
+        new NicheResearchQueryRequest(
+            "profissional beleza cliente sumiu depois orçamento WhatsApp", "SCHEDULE_NO_SHOWS", "web", 11),
+        new NicheResearchQueryRequest(
+            "profissional autônomo beleza pacotes mensalidade fidelização clientes", "PRICING_BILLING", "web", 12));
   }
 
   /** Substitui a primeira query válida para testar validações específicas sem quebrar o contrato mínimo. */

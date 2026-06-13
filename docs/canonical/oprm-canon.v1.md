@@ -130,15 +130,15 @@ Evitar fechamento prematuro de `import run` que destrói a totalização de mark
 ## Regra obrigatória — pipeline oficial OPRM NichoCNAE
 
 - O pipeline oficial de pesquisa e materialização de NichoCNAE deve usar o código operacional `oprm-nicho-cnae-pipeline` e o módulo `OPRM`.
-- O contrato estrutural do pipeline deve refletir as etapas já implementadas no backend e no coletor OPRM: `routine-research-orchestrator`, `routine-research-cycle`, `niche-research-seed-builder`, `source-searcher`, `source-fetcher`, `signal-extractor`, `routine-synthesizer`, `routine-quality-gate` e `enriched-niche-materializer`.
+- O contrato estrutural do pipeline deve refletir as etapas já implementadas no backend e no coletor OPRM: `routine-research-orchestrator`, `routine-research-cycle`, `niche-research-seed-builder`, `source-searcher`, `source-fetcher`, `signal-extractor`, `routine-synthesizer`, `mei-audience-segmenter`, `routine-quality-gate` e `enriched-niche-materializer`.
 - Todas as etapas do pipeline oficial devem permanecer obrigatórias, ativas e executadas pelo módulo `oprm-coletor-mei`, consumindo exclusivamente endpoints OPRM do backend principal.
-- Somente a etapa `niche-research-seed-builder` deve ser marcada como consumidora direta de modelo OpenAI configurável. As demais etapas são orquestração, consulta, coleta pública, extração/síntese/gate determinísticos ou materialização baseada em dados já coletados, e não devem exibir seleção de modelo OpenAI na tela administrativa quando não houver modelo operacional legado configurado.
+- Somente as etapas `niche-research-seed-builder` e `mei-audience-segmenter` devem ser marcadas como consumidoras diretas de modelo OpenAI configurável. As demais etapas são orquestração, consulta, coleta pública, extração/síntese/gate determinísticos ou materialização baseada em dados já coletados, e não devem exibir seleção de modelo OpenAI na tela administrativa quando não houver modelo operacional legado configurado.
 - O pipeline oficial deve preservar a separação canônica: pesquisa de realidade operacional e materialização de nicho enriquecido não podem criar hipótese, experimento, oferta, campanha ou landing page.
 - Quando o usuário solicitar execução manual do pipeline para um CNAE específico, o sistema deve encerrar automaticamente todos os ciclos ainda abertos desse CNAE e iniciar um ciclo completamente novo, mantendo rastreabilidade dos ciclos encerrados e impedindo concorrência entre execuções antigas e a nova solicitação operacional.
 
 ## Critério de efetividade — pipeline oficial OPRM NichoCNAE
 
-- A tela administrativa de pipelines deve reconhecer `oprm-nicho-cnae-pipeline` como contrato oficial com nove etapas esperadas.
+- A tela administrativa de pipelines deve reconhecer `oprm-nicho-cnae-pipeline` como contrato oficial com dez etapas esperadas, incluindo a segmentação comportamental MEI/autônomo antes do gate de qualidade.
 - O diagnóstico do pipeline deve bloquear etapas extras, ausentes, fora de posição ou marcadas como opcionais/inativas.
 - A sincronização oficial pode reparar nome, posição, obrigatoriedade, módulo executor e pacote raiz sem sobrescrever descrição operacional ou modelo OpenAI configurado.
 

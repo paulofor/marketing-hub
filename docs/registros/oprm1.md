@@ -533,3 +533,10 @@
 - Ajustada a tela de detalhe do CNAE para não inferir “em execução” quando o ciclo já foi bloqueado pelo gate de qualidade com status como `OUTDATED_SOURCES`, `NEEDS_MORE_RESEARCH`, `NEEDS_MORE_MEI_RESEARCH`, `TOO_CORPORATE`, `SOLUTION_CONTAMINATED` ou `GENERIC`.
 - Causa-raiz tratada: a tela usava apenas contadores do ciclo e `finishedAt` nulo para decidir a próxima etapa visual, então um ciclo já reprovado por qualidade aparecia como “Síntese em execução”.
 - Prevenção de recorrência: adicionada mensagem de negócio explicando o bloqueio e teste de regressão garantindo que “Fontes antigas” aparece no gate de qualidade, a síntese aparece concluída e a materialização fica bloqueada.
+
+## 2026-06-12 — OPRM NichoCNAE: correção da marcação IA do pipeline
+
+- Corrigida a validação anterior: a etapa `mei-audience-segmenter` também acessa diretamente a OpenAI para segmentar o perfil comportamental MEI/autônomo e precisa aparecer no contrato oficial do pipeline.
+- Causa-raiz tratada: a etapa MEI foi criada no fluxo operacional e no detalhe do CNAE, mas não foi incorporada ao contrato administrativo `oprm-nicho-cnae-pipeline`, deixando a tela `/pipelines` com apenas uma etapa IA e com nove etapas em vez das dez executadas no fluxo real.
+- Correção aplicada: o cânone, enum oficial, teste de contrato e changelog incremental foram ajustados para incluir `mei-audience-segmenter` entre a síntese e o gate, marcada com `requires_openai_model = true`.
+- Ajuste visual complementar: a mensagem de telemetria do detalhe da etapa deixou de citar apenas a etapa seed quando a tela está exibindo a segmentação MEI.

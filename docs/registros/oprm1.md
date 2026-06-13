@@ -552,3 +552,9 @@
 - Desligados por padrão os ciclos agendados de score CNAE (`CNAE_SCORE`) e enriquecimento CNAE (`CNAE_ENRICHMENT`) no `oprm-coletor-mei`, mantendo possibilidade de religar por configuração operacional explícita quando houver atualização real da base.
 - Causa-raiz tratada: a base CNAE/mercado não muda com frequência suficiente para justificar execuções recorrentes, que geravam ciclos vazios e ruído operacional na tela de acompanhamento.
 - Prevenção de recorrência: o cânone OPRM foi atualizado para definir scheduler sob demanda operacional e o teste de contexto garante que os schedulers ficam ausentes por padrão.
+
+## 2026-06-13 — OPRM NichoCNAE: independência da fila de coleta entre ciclos
+
+- Corrigida a fila interna da etapa 4 (`source-fetcher`) para listar apenas fontes `FOUND` de ciclos `RUNNING` ainda sem `finishedAt`, impedindo que pendências residuais de ciclos falhados entrem antes do ciclo atual.
+- Causa-raiz tratada: a etapa de coleta buscava candidatas pendentes globalmente por status da fonte, sem validar o status do ciclo pai, permitindo que o ciclo #26 `FAILED` represasse a coleta do ciclo #27.
+- Prevenção de recorrência: o cânone OPRM passou a exigir independência operacional entre ciclos NichoCNAE e o teste da etapa valida o filtro por ciclo ativo.

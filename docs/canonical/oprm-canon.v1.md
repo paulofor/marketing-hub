@@ -215,6 +215,18 @@ Evitar fechamento prematuro de `import run` que destrói a totalização de mark
 - Testes de arquitetura/ArchUnit devem proteger que o núcleo do pipeline não dependa de etapas concretas e que etapas concretas não dependam entre si.
 - A implementação ou revisão de uma etapa deve validar se o avanço para a próxima etapa ocorre por dados/contratos oficiais, e não por chamada direta entre classes de etapas.
 
+## Regra obrigatória — independência dos ciclos NichoCNAE
+
+- Cada ciclo do pipeline OPRM NichoCNAE deve ser operacionalmente independente dos ciclos anteriores e posteriores do mesmo CNAE.
+- A falha, cancelamento, bloqueio, parada ou pendência residual de um ciclo anterior não pode entrar na fila de execução de um novo ciclo ativo.
+- Filas internas de etapas por candidato, fonte, snapshot, sinal, card ou perfil devem restringir a busca a ciclos `RUNNING` com `finishedAt` vazio, salvo rotinas explícitas de diagnóstico, auditoria ou reprocessamento manual.
+- Ao reiniciar manualmente um CNAE, o novo ciclo deve conseguir avançar mesmo que existam registros `FOUND`, `PENDING` ou parcialmente processados em ciclos antigos já finalizados.
+
+## Critério de efetividade — independência dos ciclos NichoCNAE
+
+- Endpoints internos de fila não devem retornar unidades de trabalho de ciclos `FAILED`, `STALLED`, `CANCELLED_BY_MANUAL_RESTART` ou com `finishedAt` preenchido.
+- Testes de regressão devem cobrir que pendências antigas de ciclo falhado não bloqueiam a etapa equivalente de um ciclo novo em execução.
+
 ## Regra obrigatória — publicação do executor OPRM com acesso à chave OpenAI
 
 - O `oprm-coletor-mei`, quando executar etapas NichoCNAE com IA, deve ser publicado no mesmo host do `ai-worker`: `191.252.120.96`.

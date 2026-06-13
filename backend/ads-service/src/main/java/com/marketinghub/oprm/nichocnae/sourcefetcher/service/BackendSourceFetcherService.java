@@ -27,6 +27,7 @@ import org.springframework.util.StringUtils;
 public class BackendSourceFetcherService {
   private static final Logger LOGGER = LoggerFactory.getLogger(BackendSourceFetcherService.class);
   private static final String CANDIDATE_STATUS_FOUND = "FOUND";
+  private static final String CYCLE_STATUS_RUNNING = "RUNNING";
   private static final String CANDIDATE_STATUS_FETCHED = "FETCHED";
   private static final String CANDIDATE_STATUS_REJECTED = "REJECTED";
   private static final String DEFAULT_FETCH_STATUS = "COMPLETED";
@@ -51,12 +52,12 @@ public class BackendSourceFetcherService {
     this.routineResearchCycleRepository = routineResearchCycleRepository;
   }
 
-  /** Lista fontes candidatas encontradas e ainda não selecionadas para coleta curta. */
+  /** Lista fontes candidatas encontradas apenas de ciclos ativos para coleta curta independente por ciclo. */
   @Transactional(readOnly = true)
   public List<RecordSourceFetcherPending> listPending() {
     return sourceCandidateRepository
-        .findByStatusAndSelectedForFetchFalseOrderByResearchCycleIdAscResearchQueryIdAscSearchPositionAscIdAsc(
-            CANDIDATE_STATUS_FOUND, PageRequest.of(0, MAX_PENDING))
+        .findPendingForFetchFromActiveCycles(
+            CANDIDATE_STATUS_FOUND, CYCLE_STATUS_RUNNING, PageRequest.of(0, MAX_PENDING))
         .stream()
         .map(this::toPending)
         .toList();

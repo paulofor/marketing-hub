@@ -38,12 +38,11 @@ class BackendSourceFetcherServiceTest {
 
   @InjectMocks private BackendSourceFetcherService service;
 
-  /** Deve listar fontes encontradas ainda não selecionadas para coleta curta. */
+  /** Deve listar fontes encontradas apenas de ciclos ativos para não misturar falhas antigas com ciclos novos. */
   @Test
-  void listPendingUsesFoundAndNotSelectedFilter() {
+  void listPendingUsesFoundNotSelectedAndRunningCycleFilter() {
     when(sourceCandidateRepository
-            .findByStatusAndSelectedForFetchFalseOrderByResearchCycleIdAscResearchQueryIdAscSearchPositionAscIdAsc(
-                eq("FOUND"), any(Pageable.class)))
+            .findPendingForFetchFromActiveCycles(eq("FOUND"), eq("RUNNING"), any(Pageable.class)))
         .thenReturn(List.of(candidate()));
 
     var result = service.listPending();
@@ -51,6 +50,8 @@ class BackendSourceFetcherServiceTest {
     assertThat(result).hasSize(1);
     assertThat(result.getFirst().sourceCandidateId()).isEqualTo(301L);
     assertThat(result.getFirst().sourceUrl()).isEqualTo("https://exemplo.com/clientes-manicure");
+    verify(sourceCandidateRepository)
+        .findPendingForFetchFromActiveCycles(eq("FOUND"), eq("RUNNING"), any(Pageable.class));
   }
 
   /** Deve gravar snapshot, marcar a candidata como coletada e atualizar o total do ciclo. */

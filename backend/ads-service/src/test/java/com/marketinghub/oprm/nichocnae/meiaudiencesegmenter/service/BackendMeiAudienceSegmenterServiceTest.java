@@ -25,12 +25,14 @@ class BackendMeiAudienceSegmenterServiceTest {
   private final OprmExtractedSignalRepository extractedSignalRepository = mock(OprmExtractedSignalRepository.class);
   private final OprmSourceSnapshotRepository sourceSnapshotRepository = mock(OprmSourceSnapshotRepository.class);
   private final BackendMeiAudienceProfileService profileService = mock(BackendMeiAudienceProfileService.class);
+  private final MeiAudienceSegmenterConfigurationGateway configurationGateway = mock(MeiAudienceSegmenterConfigurationGateway.class);
   private final BackendMeiAudienceSegmenterService service = new BackendMeiAudienceSegmenterService(
       cycleRepository,
       routineCardRepository,
       extractedSignalRepository,
       sourceSnapshotRepository,
-      profileService);
+      profileService,
+      configurationGateway);
 
   /** Garante que o serviço não exponha cartões caso a consulta retorne ciclo fora do status elegível. */
   @Test
@@ -43,10 +45,12 @@ class BackendMeiAudienceSegmenterServiceTest {
     when(cycleRepository.findById(20L)).thenReturn(Optional.of(cycle(20L, "ROUTINE_SYNTHESIZED")));
     when(sourceSnapshotRepository.findByResearchCycleIdOrderByIdAsc(20L)).thenReturn(List.of());
     when(extractedSignalRepository.findByResearchCycleIdOrderByIdAsc(20L)).thenReturn(List.of());
+    when(configurationGateway.findConfiguredModel()).thenReturn(Optional.of(new MeiAudienceSegmenterModel("gpt-5.4", "GPT-5.4")));
 
     assertThat(service.listPending())
         .extracting(pending -> pending.researchCycleId())
         .containsExactly(20L);
+    assertThat(service.listPending().get(0).openAiModelCode()).isEqualTo("gpt-5.4");
   }
 
   /** Monta um ciclo mínimo usado pela revalidação da fila MEI/autônomo. */

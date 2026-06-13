@@ -49,6 +49,7 @@ public class BackendMeiAudienceSegmenterService {
   private final OprmExtractedSignalRepository extractedSignalRepository;
   private final OprmSourceSnapshotRepository sourceSnapshotRepository;
   private final BackendMeiAudienceProfileService profileService;
+  private final MeiAudienceSegmenterConfigurationGateway configurationGateway;
 
   /** Inicializa o serviço com repositórios e serviço de perfil canônico usados pela etapa de segmentação. */
   public BackendMeiAudienceSegmenterService(
@@ -56,12 +57,14 @@ public class BackendMeiAudienceSegmenterService {
       OprmNicheRoutineCardRepository routineCardRepository,
       OprmExtractedSignalRepository extractedSignalRepository,
       OprmSourceSnapshotRepository sourceSnapshotRepository,
-      BackendMeiAudienceProfileService profileService) {
+      BackendMeiAudienceProfileService profileService,
+      MeiAudienceSegmenterConfigurationGateway configurationGateway) {
     this.routineResearchCycleRepository = routineResearchCycleRepository;
     this.routineCardRepository = routineCardRepository;
     this.extractedSignalRepository = extractedSignalRepository;
     this.sourceSnapshotRepository = sourceSnapshotRepository;
     this.profileService = profileService;
+    this.configurationGateway = configurationGateway;
   }
 
   /** Lista somente cartões de ciclos ativos e elegíveis para segmentação comportamental antes do gate e materialização. */
@@ -133,6 +136,7 @@ public class BackendMeiAudienceSegmenterService {
   private RecordMeiAudienceSegmenterPending toPending(OprmNicheRoutineCard card, OprmRoutineResearchCycle cycle) {
     List<OprmSourceSnapshot> snapshots = sourceSnapshotRepository.findByResearchCycleIdOrderByIdAsc(card.getResearchCycleId());
     List<OprmExtractedSignal> signals = extractedSignalRepository.findByResearchCycleIdOrderByIdAsc(card.getResearchCycleId());
+    Optional<MeiAudienceSegmenterModel> configuredModel = resolveConfiguredOpenAiModel();
     return new RecordMeiAudienceSegmenterPending(
         cycle.getId(),
         card.getId(),
@@ -141,6 +145,8 @@ public class BackendMeiAudienceSegmenterService {
         cycle.getCnaeDescription(),
         cycle.getNeutralNicheName(),
         card.getNicheName(),
+        configuredModel.map(MeiAudienceSegmenterModel::code).orElse(null),
+        configuredModel.map(MeiAudienceSegmenterModel::name).orElse(null),
         card.getRoutineSummary(),
         card.getCustomerBehaviorSummary(),
         card.getChannelsSummary(),
@@ -160,6 +166,12 @@ public class BackendMeiAudienceSegmenterService {
         card.getCreatedAt(),
         snapshots.stream().sorted(Comparator.comparing(OprmSourceSnapshot::getId)).limit(MAX_SOURCES).map(this::toSource).toList(),
         signals.stream().sorted(Comparator.comparing(OprmExtractedSignal::getId)).limit(MAX_SIGNALS).map(this::toSignal).toList());
+  }
+
+
+  /** Recupera o modelo configurado para a etapa MEI/autônomo sem bloquear a fila quando ausente. */
+  private Optional<MeiAudienceSegmenterModel> resolveConfiguredOpenAiModel() {
+    return configurationGateway.findConfiguredModel();
   }
 
   /** Converte snapshot persistido em fonte curta com indicadores de atualidade e aderência. */

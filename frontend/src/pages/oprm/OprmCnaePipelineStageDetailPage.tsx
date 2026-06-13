@@ -4,6 +4,7 @@ import {
   type OprmCnaePipelineStageCode,
   useOprmCnaePipelineStageDetail,
 } from "../../api/oprm/useOprmCnaePipelineStageDetail";
+import { usePipelines } from "../../api/pipeline/usePipelines";
 import { useBreadcrumbs } from "../../app/breadcrumbs";
 import PageTitle from "../../components/PageTitle";
 import OprmModuleNavigation from "./OprmModuleNavigation";
@@ -47,7 +48,6 @@ const stageMetadataByCode: Record<OprmCnaePipelineStageCode, StageMetadata> = {
       "Queries priorizadas com objetivo, grupo de fonte, status e contador de resultados.",
     ],
     usesAiModel: true,
-    aiModel: "gpt-4.1-mini",
     aiRequestSummary:
       "Request para OpenAI Responses API com prompt de pesquisa de rotina real e schema JSON estruturado para seed e queries.",
     aiResponseSummary:
@@ -117,7 +117,6 @@ const stageMetadataByCode: Record<OprmCnaePipelineStageCode, StageMetadata> = {
       "Scores de aderência autônoma, evidência comportamental, frescor da fonte e riscos de desvio corporativo/solução.",
     ],
     usesAiModel: true,
-    aiModel: "gpt-4.1-mini",
     aiRequestSummary:
       "Request para OpenAI Responses API com cartão de rotina, fontes e sinais para segmentar o público MEI/autônomo real.",
     aiResponseSummary:
@@ -168,14 +167,14 @@ function textValue(value: unknown) {
   return String(value);
 }
 
-function buildAiTelemetry(metadata: StageMetadata, data: unknown) {
+function buildAiTelemetry(metadata: StageMetadata, data: unknown, configuredModel?: string | null) {
   if (!metadata.usesAiModel) {
     return null;
   }
   const payload = asRecord(data);
   const seed = asRecord(payload?.seed) ?? payload;
   return {
-    modelo: textValue(seed?.model ?? metadata.aiModel),
+    modelo: textValue(seed?.model ?? configuredModel ?? metadata.aiModel ?? "modelo configurado na tela de pipeline"),
     request: metadata.aiRequestSummary,
     response: textValue(seed?.openAiResponseId ?? metadata.aiResponseSummary),
     tokensEntrada: textValue(seed?.inputTokens),
@@ -201,7 +200,21 @@ export default function OprmCnaePipelineStageDetailPage() {
     validStageCode,
     isValidCycleId ? cycleId : undefined,
   );
-  const aiTelemetry = metadata ? buildAiTelemetry(metadata, data) : null;
+  const { data: pipelines } = usePipelines();
+  const configuredPipelineModel = metadata
+    ? pipelines
+        ?.find((pipeline) => pipeline.code === "oprm-nicho-cnae-pipeline")
+        ?.stages.find(
+          (stage) =>
+            stage.code === metadata.technicalName ||
+            stage.code === metadata.code ||
+            (stage.code === "mei-audience-segmenter" && metadata.code === "mei") ||
+            (stage.code === "niche-research-seed-builder" && metadata.code === "seed"),
+        )?.openAiModelCode
+    : null;
+  const aiTelemetry = metadata
+    ? buildAiTelemetry(metadata, data, configuredPipelineModel)
+    : null;
 
   useBreadcrumbs([
     { label: "OPRM", to: "/oprm" },

@@ -75,7 +75,8 @@ public class OpenAiMeiAudienceSegmenterClient {
                             + ".");
         }
         String prompt = promptBuilder.buildPrompt(input);
-        Map<String, Object> requestBody = buildRequestBody(prompt);
+        String model = resolveModel(input);
+        Map<String, Object> requestBody = buildRequestBody(prompt, model);
         String url = properties.baseUrl() + RESPONSES_PATH;
         try {
             Map<String, Object> raw = responseBody(url, requestBody, apiKey);
@@ -133,8 +134,16 @@ public class OpenAiMeiAudienceSegmenterClient {
         return response == null ? null : (Map<String, Object>) response;
     }
 
+    /** Resolve o modelo efetivo priorizando a configuração operacional recebida do backend. */
+    String resolveModel(MeiAudienceSegmenterPending input) {
+        if (input != null && input.openAiModelCode() != null && !input.openAiModelCode().isBlank()) {
+            return input.openAiModelCode().trim();
+        }
+        return properties.model();
+    }
+
     /** Monta corpo da Responses API com schema JSON estrito. */
-    private Map<String, Object> buildRequestBody(String prompt) {
+    private Map<String, Object> buildRequestBody(String prompt, String model) {
         Map<String, Object> format = new LinkedHashMap<>();
         format.put("type", "json_schema");
         format.put("name", SCHEMA_NAME);
@@ -145,7 +154,7 @@ public class OpenAiMeiAudienceSegmenterClient {
         text.put("format", format);
 
         Map<String, Object> body = new LinkedHashMap<>();
-        body.put("model", properties.model());
+        body.put("model", model);
         body.put("input", prompt);
         body.put("text", text);
         return body;

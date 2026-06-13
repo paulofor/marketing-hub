@@ -12,6 +12,8 @@ public record MeiAudienceSegmenterPending(
         String cnaeDescription,
         String neutralNicheName,
         String nicheName,
+        String openAiModelCode,
+        String openAiModelName,
         String routineSummary,
         String customerBehaviorSummary,
         String channelsSummary,

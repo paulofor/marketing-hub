@@ -80,14 +80,7 @@ public class OpenAiMeiAudienceSegmenterClient {
         Map<String, Object> requestBody = buildRequestBody(prompt, model);
         String url = properties.baseUrl() + RESPONSES_PATH;
         try {
-            Map<String, Object> raw = responseBody(url, requestBody, apiKey);
-            if (raw == null) {
-                throw new IllegalStateException("OpenAI retornou corpo vazio para segmentação MEI/autônomo.");
-            }
-            String rawModelResponse = extractModelResponse(raw);
-            MeiAudienceSegmentDraft draft = objectMapper.readValue(rawModelResponse, MeiAudienceSegmentDraft.class);
-            validator.validate(input, draft);
-            return draft;
+            return generateValidatedDraft(input, url, requestBody, apiKey, false);
         } catch (MeiAudienceSegmenterOperationalException ex) {
             throw ex;
         } catch (RestClientException | JsonProcessingException | IllegalStateException | IllegalArgumentException ex) {
@@ -100,6 +93,31 @@ public class OpenAiMeiAudienceSegmenterClient {
             String operationalMessage = buildOperationalFailureMessage(input, model, url, ex);
             throw new IllegalStateException(operationalMessage, ex);
         }
+    }
+
+    /** Gera, pré-valida e regenera uma vez quando a saída vier contaminada por termo proibido. */
+    private MeiAudienceSegmentDraft generateValidatedDraft(
+            MeiAudienceSegmenterPending input, String url, Map<String, Object> requestBody, String apiKey, boolean correctiveAttempt)
+            throws JsonProcessingException {
+        Map<String, Object> raw = responseBody(url, requestBody, apiKey);
+        if (raw == null) {
+            throw new IllegalStateException("OpenAI retornou corpo vazio para segmentação MEI/autônomo.");
+        }
+        String rawModelResponse = extractModelResponse(raw);
+        MeiAudienceSegmentDraft draft = objectMapper.readValue(rawModelResponse, MeiAudienceSegmentDraft.class);
+        String forbiddenTerm = validator.firstForbiddenTerm(draft);
+        if (forbiddenTerm != null && !correctiveAttempt) {
+            log.warn(
+                    "Pré-validação bloqueou segmentação MEI/autônomo contaminada; regenerando uma vez (researchCycleId={}, cnaeCode={}, forbiddenTerm={})",
+                    input.researchCycleId(),
+                    input.cnaeCode(),
+                    forbiddenTerm);
+            String correctivePrompt = promptBuilder.buildCorrectivePrompt(input, forbiddenTerm);
+            Map<String, Object> correctiveRequestBody = buildRequestBody(correctivePrompt, resolveModel(input));
+            return generateValidatedDraft(input, url, correctiveRequestBody, apiKey, true);
+        }
+        validator.validate(input, draft);
+        return draft;
     }
 
     /** Monta mensagem curta com causa-raiz suficiente para ação operacional no backend. */

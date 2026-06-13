@@ -10,7 +10,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.event.EventListener;
 import org.springframework.core.env.Environment;
+import org.springframework.scheduling.annotation.Scheduled;
 
 /**
  * Valida que o contexto Spring do coletor OPRM sobe sem disparar integrações externas durante testes.
@@ -48,5 +50,15 @@ class OprmColetorMeiApplicationTests {
         assertThat(environment.getProperty("oprm.cnae-opportunity.scheduler.enabled")).isEqualTo("false");
         assertThat(environment.getProperty("oprm.cnae-enrichment.scheduler.enabled")).isEqualTo("false");
         assertThat(environment.getProperty("oprm.cnae-enrichment.startup-catch-up.enabled")).isEqualTo("false");
+    }
+
+    /** Confirma que os executores CNAE não possuem gatilhos automáticos por cron ou evento de inicialização. */
+    @Test
+    void cnaeExecutorsDoNotDeclareAutomaticTriggers() {
+        assertThat(OprmCnaeOpportunityScheduler.class.getDeclaredMethods())
+                .noneMatch(method -> method.isAnnotationPresent(Scheduled.class));
+        assertThat(OprmCnaeEnrichmentScheduler.class.getDeclaredMethods())
+                .noneMatch(method -> method.isAnnotationPresent(Scheduled.class))
+                .noneMatch(method -> method.isAnnotationPresent(EventListener.class));
     }
 }

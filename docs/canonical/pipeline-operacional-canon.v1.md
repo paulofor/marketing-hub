@@ -20,7 +20,34 @@ Todo pipeline deve preservar o eixo central do Marketing Hub:
 6. **Artefatos finais não podem ser contaminados por metadados técnicos.** Comentários operacionais, flags internas, placeholders e textos de debug devem ficar fora do conteúdo publicado.
 7. **Automação deve reduzir esforço, não esconder falhas.** Encadeamentos automáticos são obrigatórios quando a próxima etapa depende apenas de sucesso da etapa anterior; bloqueios devem mostrar causa-raiz e ação recomendada.
 
-## 3. Modelo conceitual obrigatório
+## 3. Regras universais e limites de reutilização
+
+Esta seção separa o que é regra obrigatória para qualquer pipeline do que é característica específica do GeraLanding. O GeraLanding continua sendo o exemplo principal, mas novos pipelines devem adaptar nomes, artefatos e executores ao seu próprio domínio.
+
+### 3.1 Regras universais para qualquer pipeline
+
+Estas regras são obrigatórias para qualquer pipeline operacional do Marketing Hub:
+
+1. **Backend como fonte de verdade:** o backend principal mantém contrato, estado, validação, auditoria e persistência consolidada; frontend, workers e serviços auxiliares devem operar por APIs do backend.
+2. **Etapa com responsabilidade única:** cada etapa executa uma transformação clara, com objetivo comercial próprio, sem acumular responsabilidades de outras etapas.
+3. **Entrada, saída e auditoria explícitas:** toda etapa declara o que recebe, o que produz e quais evidências permitem explicar a execução, a falha e a decisão seguinte.
+4. **Estados mínimos:** toda execução deve ser traduzível para estados operacionais mínimos como fila, execução, conclusão, falha, bloqueio, cancelamento ou substituição.
+5. **Contrato de tela:** a UI deve mostrar contexto, status, artefato, bloqueio e próxima ação em linguagem de negócio, deixando diagnóstico técnico em nível secundário.
+6. **Avanço automático ou manual declarado:** cada transição precisa informar se o backend avança automaticamente após sucesso ou se exige decisão humana explícita.
+7. **Bloqueio por falha ou contrato inválido:** falha técnica, ausência de entrada, resposta inválida, artefato incompleto ou contrato divergente devem impedir avanço e publicação até a causa-raiz ser corrigida.
+
+### 3.2 Regras específicas do GeraLanding, não copiáveis automaticamente
+
+As regras abaixo pertencem ao domínio de geração de landing pages. Elas podem servir como referência, mas não devem ser copiadas automaticamente para pipelines de outros domínios sem adaptação explícita:
+
+1. **HTML provisório:** é um artefato intermediário útil no GeraLanding para visualizar evolução de landing page, mas outros pipelines devem definir o artefato intermediário adequado ao seu domínio.
+2. **`html_geralanding`:** é um campo consolidado específico do GeraLanding e não deve virar nome padrão de outros pipelines.
+3. **`landing_page_html`:** representa o HTML publicável da landing page; outros domínios devem usar nomes que expressem seu próprio artefato final.
+4. **Quality review visual:** é gate específico para avaliar qualidade visual/comercial de landing page; outros pipelines devem definir gates compatíveis com o risco e o resultado do seu artefato.
+5. **Presets de design:** pertencem ao fluxo de composição visual do GeraLanding; novos pipelines só devem ter presets quando isso fizer sentido para o domínio.
+6. **Renderização e screenshots:** são necessários para validar landing pages renderizadas; outros pipelines devem substituir por evidências apropriadas, como prévia textual, simulação, validação de contrato, arquivo final ou métrica operacional.
+
+## 4. Modelo conceitual obrigatório
 
 Todo pipeline deve ser descrito por quatro camadas:
 
@@ -31,7 +58,7 @@ Todo pipeline deve ser descrito por quatro camadas:
 | Execução | Registra jobs, status, prompt, resposta, erro, evidência e artefatos intermediários. | `gera_landing_stage_execution` com prompt, resposta, HTML provisório e auditoria. |
 | Artefato consolidado | Estado funcional atual usado pela próxima etapa, tela ou publicação. | `experiment.landing_page_wireframe`, `experiment.landing_page_copy`, `experiment.landing_page_image_assets`, `experiment.html_geralanding`. |
 
-## 4. Desenho de uma etapa
+## 5. Desenho de uma etapa
 
 Cada etapa canônica deve declarar, no mínimo:
 
@@ -52,9 +79,9 @@ Cada etapa canônica deve declarar, no mínimo:
 | Persistência | Sim | Tabelas e campos consolidados. |
 | Auditoria | Sim | Dados mínimos para explicar o que aconteceu. |
 
-## 5. Padrão de arquitetura inspirado no GeraLanding
+## 6. Padrão de arquitetura inspirado no GeraLanding
 
-### 5.1 Backend
+### 6.1 Backend
 
 O backend deve concentrar:
 
@@ -89,7 +116,7 @@ POST /api/internal/<dominio>/<etapa>/stage-executions/{idJob}/recebe-resposta
 
 A nomenclatura pode variar por domínio, mas o padrão funcional não pode variar: iniciar, listar, detalhar, buscar pendentes, registrar prompt e registrar resposta.
 
-### 5.2 Worker AI
+### 6.2 Worker AI
 
 Quando uma etapa usa OpenAI, o Worker AI deve seguir o padrão do núcleo por etapa:
 
@@ -101,7 +128,7 @@ Cada etapa deve possuir configuração própria, adapter de backend, construtor 
 
 O worker não acessa banco. Ele busca pendências no backend, monta prompt, chama OpenAI, valida resposta e devolve o resultado ao backend.
 
-### 5.3 Persistência
+### 6.3 Persistência
 
 A persistência deve separar:
 
@@ -112,7 +139,7 @@ A persistência deve separar:
 
 Nunca misturar resposta bruta, artefato funcional e metadado técnico no mesmo campo final publicável.
 
-## 6. Encadeamento de etapas
+## 7. Encadeamento de etapas
 
 O encadeamento deve seguir uma regra simples:
 
@@ -129,7 +156,7 @@ No GeraLanding, a regra canônica é:
 
 Novos pipelines devem declarar explicitamente quais transições são automáticas e quais são manuais.
 
-## 7. Estados mínimos de execução
+## 8. Estados mínimos de execução
 
 Todo pipeline deve mapear os estados para linguagem operacional simples:
 
@@ -145,11 +172,11 @@ Todo pipeline deve mapear os estados para linguagem operacional simples:
 
 Quando a base ainda não possuir todos os estados, a tela deve traduzir os estados existentes para essa semântica sem inventar progresso falso.
 
-## 8. Formato canônico das telas de pipeline
+## 9. Formato canônico das telas de pipeline
 
 Toda tela administrativa de pipeline deve ter cinco áreas, nesta ordem:
 
-### 8.1 Cabeçalho de contexto
+### 9.1 Cabeçalho de contexto
 
 Deve responder rapidamente:
 
@@ -166,7 +193,7 @@ Formato recomendado:
 3. badges de módulo, código, status e quantidade de etapas;
 4. botão principal apenas quando existir uma ação prioritária inequívoca.
 
-### 8.2 Card de contrato operacional
+### 9.2 Card de contrato operacional
 
 Deve mostrar se o pipeline está aderente ao contrato canônico.
 
@@ -180,7 +207,7 @@ Conteúdo mínimo:
 
 Esse card evita tratar sintomas na tela quando a causa-raiz é contrato divergente.
 
-### 8.3 Visão do fluxo
+### 9.3 Visão do fluxo
 
 Deve mostrar as etapas em ordem real, preferencialmente em cards responsivos.
 
@@ -194,7 +221,7 @@ A visão do fluxo deve priorizar:
 6. próxima ação;
 7. indicação de IA, humano, backend ou integração externa.
 
-### 8.4 Detalhe da etapa
+### 9.4 Detalhe da etapa
 
 Ao abrir uma etapa, a tela deve mostrar:
 
@@ -207,7 +234,7 @@ Ao abrir uma etapa, a tela deve mostrar:
 
 Detalhes técnicos devem ficar colapsados por padrão para não poluir a operação.
 
-### 8.5 Área de publicação ou decisão final
+### 9.5 Área de publicação ou decisão final
 
 Quando o pipeline gera um ativo publicável ou decisão de negócio, deve existir uma área final explícita:
 
@@ -218,11 +245,11 @@ Quando o pipeline gera um ativo publicável ou decisão de negócio, deve existi
 - link para o resultado publicado;
 - status de mensuração pós-publicação.
 
-## 9. Padrão canônico de cards de etapa
+## 10. Padrão canônico de cards de etapa
 
 Cada card de etapa deve ser uma unidade de decisão. O usuário deve conseguir olhar o card e saber o que aconteceu e o que fazer.
 
-### 9.1 Estrutura visual obrigatória
+### 10.1 Estrutura visual obrigatória
 
 Um card de etapa deve conter:
 
@@ -237,7 +264,7 @@ Um card de etapa deve conter:
 9. **Próxima ação** em botão único prioritário, quando houver.
 10. **Ações secundárias** discretas: detalhes, histórico, logs, reprocessar.
 
-### 9.2 Hierarquia visual
+### 10.2 Hierarquia visual
 
 A hierarquia deve seguir:
 
@@ -249,7 +276,7 @@ A hierarquia deve seguir:
 
 Não colocar JSON bruto, stack trace, payload completo ou logs longos no primeiro nível do card.
 
-### 9.3 Cores semânticas
+### 10.3 Cores semânticas
 
 | Situação | Uso visual recomendado |
 |---|---|
@@ -261,7 +288,7 @@ Não colocar JSON bruto, stack trace, payload completo ou logs longos no primeir
 | IA | Indicador visual com brilho/ícone, sem exagero decorativo. |
 | Manual/humano | Âmbar ou neutro, destacando decisão necessária. |
 
-### 9.4 Ações no card
+### 10.4 Ações no card
 
 Cada card deve ter no máximo uma ação primária visível. Exemplos:
 
@@ -273,7 +300,7 @@ Cada card deve ter no máximo uma ação primária visível. Exemplos:
 
 Ações destrutivas, reprocessamento e sincronização devem exigir confirmação quando puderem substituir artefato, recriar etapa, consumir crédito, publicar conteúdo ou alterar contrato.
 
-### 9.5 Cards de configuração de pipeline
+### 10.5 Cards de configuração de pipeline
 
 Para telas administrativas de configuração, como a tela de Pipelines, o card de etapa deve conter:
 
@@ -288,7 +315,7 @@ Para telas administrativas de configuração, como a tela de Pipelines, o card d
 
 Esse formato já é adotado na tela administrativa de pipelines e deve ser usado como base para novas telas.
 
-## 10. Padrão de informação para cards
+## 11. Padrão de informação para cards
 
 A informação exibida deve seguir a regra: **decisão primeiro, diagnóstico depois**.
 
@@ -299,7 +326,7 @@ A informação exibida deve seguir a regra: **decisão primeiro, diagnóstico de
 | 3 | Modelo, endpoint, pacote, identificadores técnicos | Visível em configuração ou detalhe. |
 | 4 | Prompt, resposta, payload, logs, stack trace | Colapsado, sob demanda. |
 
-## 11. Padrão de tela mobile
+## 12. Padrão de tela mobile
 
 Toda tela de pipeline deve ser mobile-first:
 
@@ -310,7 +337,7 @@ Toda tela de pipeline deve ser mobile-first:
 5. preview de artefato com altura controlada e opção de abrir em nova aba;
 6. nenhuma ação crítica escondida apenas em hover.
 
-## 12. Padrão de copy das telas
+## 13. Padrão de copy das telas
 
 A linguagem da tela deve ser operacional e orientada a negócio.
 
@@ -328,7 +355,7 @@ Preferir:
 - “Reprocesse o planejamento de imagens antes de publicar”;
 - “Contrato divergente: há etapa extra fora do cânone”.
 
-## 13. Validações antes de avançar
+## 14. Validações antes de avançar
 
 Antes de permitir avanço, a etapa deve validar:
 
@@ -343,7 +370,7 @@ Antes de permitir avanço, a etapa deve validar:
 
 No caso de HTML, JSON final, anúncio, landing, checkout ou conteúdo publicado, a validação deve bloquear contaminação por comentário técnico, debug, placeholder e texto de instrução interna.
 
-## 14. Diagnóstico e causa-raiz
+## 15. Diagnóstico e causa-raiz
 
 Quando uma etapa falhar, a tela e a API devem distinguir:
 
@@ -358,7 +385,7 @@ Quando uma etapa falhar, a tela e a API devem distinguir:
 
 A correção deve atacar a causa-raiz, não apenas o sintoma visível.
 
-## 15. Checklist para criar novo pipeline
+## 16. Checklist para criar novo pipeline
 
 Antes de implementar um novo pipeline, responder e documentar:
 
@@ -375,7 +402,7 @@ Antes de implementar um novo pipeline, responder e documentar:
 - [ ] Quais logs e auditorias permitem investigar causa-raiz?
 - [ ] Quais testes garantem contrato, ordem e ausência de contaminação?
 
-## 16. Checklist de PR para pipelines
+## 17. Checklist de PR para pipelines
 
 Um PR que cria ou altera pipeline só está completo quando:
 
@@ -390,7 +417,7 @@ Um PR que cria ou altera pipeline só está completo quando:
 - [ ] logs de exceção capturada incluem contexto e stack trace;
 - [ ] registro da tarefa foi feito em `/docs/registros` conforme o tema.
 
-## 17. Referência canônica do GeraLanding
+## 18. Referência canônica do GeraLanding
 
 O GeraLanding permanece a principal referência de pipeline operacional porque demonstra:
 

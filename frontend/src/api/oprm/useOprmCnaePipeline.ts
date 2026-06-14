@@ -16,6 +16,8 @@ export interface OprmRoutineResearchCycleSummary {
   totalSourceCandidates: number | null;
   totalSourceSnapshots: number | null;
   totalExtractedSignals: number | null;
+  executionCostUsd: number | string | null;
+  cnaeTotalCostUsd: number | string | null;
   errorMessage: string | null;
   startedAt: string;
   finishedAt: string | null;

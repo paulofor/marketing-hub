@@ -656,3 +656,9 @@
 - Causa-raiz tratada: o card de bloqueio do detalhe do CNAE informava que o gate rejeitou o ciclo, mas não explicava claramente quais critérios práticos foram reprovados para orientar a ação do usuário.
 - Correção aplicada: o card agora mostra o resultado apurado do gate e lista situações rejeitadas em linguagem operacional, incluindo contaminação por solução, fontes antigas, desvio corporativo, falta de tarefas reais do executor, mix MEI/autônomo incompleto, aquisição/recorrência fraca e ausência de dor prática.
 - Prevenção de recorrência: teste de tela cobre a exibição das rejeições detalhadas no bloqueio por qualidade.
+
+## 2026-06-14 — OPRM NichoCNAE: custos por execução na tela do CNAE
+
+- Solicitação atendida: a tela de detalhe do CNAE passou a mostrar o custo do job atual, o custo total acumulado do CNAE em destaque e uma tabela final com todos os jobs executados e o custo total de cada execução.
+- Causa-raiz tratada: o endpoint de acompanhamento do pipeline já listava os ciclos, mas não carregava a telemetria financeira gravada pela etapa de IA, impedindo decisão operacional sobre gasto antes de escalar o nicho.
+- Correção aplicada: o backend passou a somar o custo registrado nos seeds por ciclo e a devolver também o acumulado do CNAE; o frontend passou a exibir esses valores em USD no resumo e no histórico.

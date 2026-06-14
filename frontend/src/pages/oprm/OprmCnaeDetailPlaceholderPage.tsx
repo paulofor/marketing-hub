@@ -89,6 +89,22 @@ function formatScore(value?: number | null) {
   });
 }
 
+function formatUsd(value?: number | string | null) {
+  if (value === null || value === undefined || value === "") {
+    return "US$ 0,0000";
+  }
+  const numericValue = Number(value);
+  if (Number.isNaN(numericValue)) {
+    return "US$ 0,0000";
+  }
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 4,
+    maximumFractionDigits: 4,
+  }).format(numericValue);
+}
+
 function formatDateTime(value?: string | null) {
   if (!value) {
     return "Ainda não finalizado";
@@ -688,7 +704,7 @@ export default function OprmCnaeDetailPlaceholderPage() {
 
       <section className="card border-0 shadow-sm">
         <div className="card-body d-flex flex-column gap-3">
-          <div className="d-flex flex-wrap justify-content-between gap-2">
+          <div className="d-flex flex-wrap justify-content-between gap-3 align-items-start">
             <div>
               <h2 className="h5 mb-1">Execução do pipeline NichoCNAE</h2>
               <p className="text-secondary mb-0">
@@ -696,10 +712,20 @@ export default function OprmCnaeDetailPlaceholderPage() {
                 transformar o CNAE em nicho enriquecido.
               </p>
             </div>
-            <span className="badge text-bg-light align-self-start">
-              Último ciclo:{" "}
-              {latestCycle ? `#${latestCycle.researchCycleId}` : "nenhum"}
-            </span>
+            <div className="d-flex flex-wrap gap-2 align-items-start justify-content-end">
+              <div className="border rounded-3 bg-light px-3 py-2 text-end">
+                <span className="d-block small text-secondary">
+                  Custo total do CNAE
+                </span>
+                <strong className="fs-5">
+                  {formatUsd(latestCycle?.cnaeTotalCostUsd)}
+                </strong>
+              </div>
+              <span className="badge text-bg-light align-self-start">
+                Último ciclo:{" "}
+                {latestCycle ? `#${latestCycle.researchCycleId}` : "nenhum"}
+              </span>
+            </div>
           </div>
 
           {latestCycle ? (
@@ -707,7 +733,9 @@ export default function OprmCnaeDetailPlaceholderPage() {
               <div>
                 Status atual: <strong>{statusLabel(latestCycle.status)}</strong>{" "}
                 · iniciado em {formatDateTime(latestCycle.startedAt)} · sinais
-                extraídos: {formatNumber(latestCycle.totalExtractedSignals)}
+                extraídos: {formatNumber(latestCycle.totalExtractedSignals)} ·
+                custo do job atual:{" "}
+                <strong>{formatUsd(latestCycle.executionCostUsd)}</strong>
               </div>
               {qualityBlockedMessage(latestCycle.status) ? (
                 <div className="mt-2">
@@ -823,6 +851,62 @@ export default function OprmCnaeDetailPlaceholderPage() {
                 </div>
               );
             })}
+          </div>
+
+          <div className="card border-0 bg-light">
+            <div className="card-body">
+              <div className="d-flex flex-wrap justify-content-between gap-2 mb-3">
+                <div>
+                  <h3 className="h6 mb-1">Jobs executados para este CNAE</h3>
+                  <p className="small text-secondary mb-0">
+                    Histórico por execução para controlar gasto operacional
+                    antes de escalar o nicho.
+                  </p>
+                </div>
+                <strong>
+                  Total: {formatUsd(latestCycle?.cnaeTotalCostUsd)}
+                </strong>
+              </div>
+              <div className="table-responsive">
+                <table className="table table-sm align-middle mb-0">
+                  <thead>
+                    <tr>
+                      <th scope="col">Job</th>
+                      <th scope="col">Status</th>
+                      <th scope="col">Início</th>
+                      <th scope="col">Fim</th>
+                      <th scope="col" className="text-end">
+                        Custo total
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {cyclesQuery.data && cyclesQuery.data.length > 0 ? (
+                      cyclesQuery.data.map((cycle) => (
+                        <tr key={cycle.researchCycleId}>
+                          <td>#{cycle.researchCycleId}</td>
+                          <td>{statusLabel(cycle.status)}</td>
+                          <td>{formatDateTime(cycle.startedAt)}</td>
+                          <td>{formatDateTime(cycle.finishedAt)}</td>
+                          <td className="text-end fw-semibold">
+                            {formatUsd(cycle.executionCostUsd)}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td
+                          colSpan={5}
+                          className="text-secondary text-center py-3"
+                        >
+                          Nenhum job executado para este CNAE.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </div>
       </section>

@@ -17,6 +17,15 @@ management:
 
 oprm:
   nichocnae:
+    source-searcher:
+      google:
+        enabled: ${OPRM_NICHO_CNAE_SOURCE_SEARCHER_GOOGLE_ENABLED:false}
+        api-key: ${OPRM_NICHO_CNAE_SOURCE_SEARCHER_GOOGLE_API_KEY:}
+        search-engine-id: ${OPRM_NICHO_CNAE_SOURCE_SEARCHER_GOOGLE_SEARCH_ENGINE_ID:}
+        base-url: ${OPRM_NICHO_CNAE_SOURCE_SEARCHER_GOOGLE_BASE_URL:https://www.googleapis.com/customsearch/v1}
+        date-restrict: ${OPRM_NICHO_CNAE_SOURCE_SEARCHER_GOOGLE_DATE_RESTRICT:m24}
+        country-restrict: ${OPRM_NICHO_CNAE_SOURCE_SEARCHER_GOOGLE_COUNTRY_RESTRICT:countryBR}
+        language-restrict: ${OPRM_NICHO_CNAE_SOURCE_SEARCHER_GOOGLE_LANGUAGE_RESTRICT:lang_pt}
     seed-builder:
       openai:
         base-url: ${OPRM_NICHO_CNAE_SEED_BUILDER_OPENAI_BASE_URL:https://api.openai.com/v1}

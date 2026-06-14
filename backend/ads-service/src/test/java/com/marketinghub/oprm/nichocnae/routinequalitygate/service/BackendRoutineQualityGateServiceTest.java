@@ -129,7 +129,7 @@ class BackendRoutineQualityGateServiceTest {
     card.setSpecificityScore(72);
     card.setConfidenceScore(32);
     card.setDuplicationScore(10);
-    card.setQualityNotes("status=SOLUTION_CONTAMINATED; fontes=46; mixMinimoMeiAutonomo=false; riscoLinguagemSolucao=70");
+    card.setQualityNotes("status=SOLUTION_CONTAMINATED; proximoMovimentoCodigo=REFAZER_BUSCA_SEM_SOLUCAO; proximoMovimento=Reexecutar busca removendo fontes de solucao; fontes=46; mixMinimoMeiAutonomo=false; riscoLinguagemSolucao=70");
     when(cycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
     when(cardRepository.findFirstByResearchCycleIdOrderByIdDesc(1001L)).thenReturn(Optional.of(card));
 
@@ -137,6 +137,8 @@ class BackendRoutineQualityGateServiceTest {
 
     assertThat(response.qualityNotes())
         .containsEntry("status", "SOLUTION_CONTAMINATED")
+        .containsEntry("proximoMovimentoCodigo", "REFAZER_BUSCA_SEM_SOLUCAO")
+        .containsEntry("proximoMovimento", "Reexecutar busca removendo fontes de solucao")
         .containsEntry("fontes", 46)
         .containsEntry("mixMinimoMeiAutonomo", false)
         .containsEntry("riscoLinguagemSolucao", 70);

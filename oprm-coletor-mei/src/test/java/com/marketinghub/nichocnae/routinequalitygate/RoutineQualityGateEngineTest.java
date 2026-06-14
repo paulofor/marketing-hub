@@ -36,6 +36,7 @@ class RoutineQualityGateEngineTest {
         assertThat(decision.readyForHypothesis()).isTrue();
         assertThat(decision.specificityScore()).isGreaterThanOrEqualTo(60);
         assertThat(decision.confidenceScore()).isGreaterThanOrEqualTo(50);
+        assertThat(decision.qualityNotes()).contains("proximoMovimentoCodigo=MATERIALIZAR_NICHO");
     }
 
     /** Deve reprovar como precisa de pesquisa quando o card tem pouco volume de evidência. */
@@ -117,7 +118,9 @@ class RoutineQualityGateEngineTest {
 
         assertThat(decision.qualityStatus()).isEqualTo("SOLUTION_CONTAMINATED");
         assertThat(decision.readyForHypothesis()).isFalse();
-        assertThat(decision.qualityNotes()).contains("dominadoPorSolucao=true");
+        assertThat(decision.qualityNotes())
+                .contains("dominadoPorSolucao=true")
+                .contains("proximoMovimentoCodigo=REFAZER_BUSCA_SEM_SOLUCAO");
     }
 
 
@@ -341,7 +344,62 @@ class RoutineQualityGateEngineTest {
         assertThat(decision.qualityNotes())
                 .contains("resumoComportamentoClienteUtil=false")
                 .contains("resumoCanaisUtil=false")
-                .contains("faltaEvidenciaAquisicaoCanaisRecorrenciaOuComportamentoClientes=true");
+                .contains("faltaEvidenciaAquisicaoCanaisRecorrenciaOuComportamentoClientes=true")
+                .contains("proximoMovimentoCodigo=VALIDAR_AQUISICAO_CANAIS");
+    }
+
+    /** Deve pedir mais pesquisa quando há rotina, mas a dor ainda não mostra potencial claro de compra. */
+    @Test
+    void shouldRequestMoreResearchWhenPainIsNotSellableEnough() {
+        RoutineQualityGatePending weakSellablePain = new RoutineQualityGatePending(
+                10L,
+                1001L,
+                "Cabeleireiros",
+                text("Rotina concreta: cortar cabelo, lavar cabelo, escovar cabelo, preparar coloração e finalizar cabelo", 8),
+                text("Dores leves de organização geral e dúvidas simples do atendimento", 8),
+                text("Resultados desejados descritos de forma ampla e pouco ligada a compra", 8),
+                text("Contexto operacional público do nicho", 8),
+                "Clientes entram em contato pelo WhatsApp e Instagram para dúvidas gerais do atendimento.",
+                "Canais usados: WhatsApp e Instagram para mensagens de clientes.",
+                "Evidências em fontes públicas brasileiras",
+                "a.com.br,b.com.br,c.com.br,d.com.br",
+                80,
+                6,
+                14,
+                2,
+                3,
+                0,
+                3,
+                2,
+                2,
+                0,
+                0,
+                86,
+                84,
+                72,
+                0,
+                4,
+                2,
+                0,
+                0,
+                1,
+                1,
+                82,
+                80,
+                76,
+                0,
+                0,
+                0,
+                Instant.parse("2026-06-04T00:00:00Z"));
+
+        RoutineQualityDecision decision = engine.evaluate(weakSellablePain);
+
+        assertThat(decision.qualityStatus()).isEqualTo("NEEDS_MORE_MEI_RESEARCH");
+        assertThat(decision.readyForHypothesis()).isFalse();
+        assertThat(decision.qualityNotes())
+                .contains("dorVendavelSuficiente=false")
+                .contains("dorVendavelScore=")
+                .contains("proximoMovimentoCodigo=VALIDAR_DOR_VENDAVEL");
     }
 
 
@@ -393,6 +451,7 @@ class RoutineQualityGateEngineTest {
 
         assertThat(decision.qualityStatus()).isEqualTo("OUTDATED_SOURCES");
         assertThat(decision.readyForHypothesis()).isFalse();
+        assertThat(decision.qualityNotes()).contains("proximoMovimentoCodigo=BUSCAR_FONTES_BRASILEIRAS_RECENTES");
     }
 
     /** Deve bloquear como corporativo quando o perfil não representa dono-operador MEI/autônomo. */
@@ -443,6 +502,7 @@ class RoutineQualityGateEngineTest {
 
         assertThat(decision.qualityStatus()).isEqualTo("TOO_CORPORATE");
         assertThat(decision.readyForHypothesis()).isFalse();
+        assertThat(decision.qualityNotes()).contains("proximoMovimentoCodigo=TROCAR_PARA_DONO_OPERADOR");
     }
 
     /** Cria uma pendência mínima da etapa sete para validar as regras do engine. */

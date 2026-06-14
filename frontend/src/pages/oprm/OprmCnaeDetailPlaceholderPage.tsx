@@ -202,6 +202,11 @@ function buildBusinessRecommendation(params: {
   return null;
 }
 
+function getQualityNoteText(notes: OprmQualityNotes | null | undefined, key: string) {
+  const value = notes?.[key];
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
 function describeRejectedSituations(notes?: OprmQualityNotes | null) {
   if (!notes) {
     return [];
@@ -555,6 +560,10 @@ export default function OprmCnaeDetailPlaceholderPage() {
   const qualityResultSummary = buildQualityResultSummary(
     qualityGateQuery.data?.qualityNotes,
   );
+  const qualityNextMove = getQualityNoteText(
+    qualityGateQuery.data?.qualityNotes,
+    "proximoMovimento",
+  );
   const cnaeDescription =
     volumeQuery.data?.cnaeDescription ??
     scoreQuery.data?.cnaeDescription ??
@@ -749,6 +758,14 @@ export default function OprmCnaeDetailPlaceholderPage() {
                       <span className="fw-semibold">Resultado apurado:</span>{" "}
                       {qualityResultSummary}.
                     </p>
+                  ) : null}
+                  {qualityNextMove ? (
+                    <div className="alert alert-info border mb-2 py-2 px-3">
+                      <span className="fw-semibold d-block mb-1">
+                        Próximo movimento automático
+                      </span>
+                      <span>{qualityNextMove}.</span>
+                    </div>
                   ) : null}
                   {qualityRejectedSituations.length > 0 ? (
                     <div className="alert alert-light border mb-0 py-2 px-3">

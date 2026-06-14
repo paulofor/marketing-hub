@@ -116,6 +116,19 @@ class BackendSourceFetcherServiceTest {
     verify(sourceSnapshotRepository, never()).save(any());
   }
 
+  /** Deve rejeitar coleta de candidata marcada como fonte de solução para não contaminar rotina. */
+  @Test
+  void completeRejectsSolutionSourceCandidate() {
+    OprmSourceCandidate candidate = candidate();
+    candidate.setSolutionLanguageRisk(true);
+    when(sourceCandidateRepository.findById(301L)).thenReturn(Optional.of(candidate));
+
+    assertThatThrownBy(() -> service.complete(301L, validRequest()))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("sourceCandidate must be a routine source without solution or commercial risk");
+    verify(sourceSnapshotRepository, never()).save(any());
+  }
+
   /** Deve registrar rejeição da fonte candidata quando ela não merece coleta. */
   @Test
   void failMarksCandidateAsRejected() {

@@ -162,6 +162,29 @@ class SourceIntentClassifierTest {
         assertThat(result.routineEvidenceScore()).isLessThanOrEqualTo(20);
     }
 
+    /** Deve separar fonte de solução pública de fonte de rotina mesmo fora de marketplace comercial. */
+    @Test
+    void shouldClassifyPublicSolutionLanguageAsContaminationRisk() {
+        SourceIntentClassifier classifier = new SourceIntentClassifier();
+
+        SourceSearchResult result = classifier.classify(new SourceSearchResult(
+                "https://blog.example.com.br/ferramenta-agenda-2026",
+                "Ferramenta para automatizar agenda de manicure",
+                "Solução com app, plataforma e planos para organizar clientes e vender mais.",
+                "blog.example.com.br",
+                3,
+                null,
+                null,
+                false,
+                false));
+
+        assertThat(result.sourceIntent()).isEqualTo("COMMERCIAL_PAGE_RISK");
+        assertThat(result.sourceClassificationType()).isEqualTo("COMMERCIAL_PAGE");
+        assertThat(result.solutionLanguageRisk()).isTrue();
+        assertThat(result.commercialPageRisk()).isTrue();
+        assertThat(result.routineEvidenceScore()).isLessThanOrEqualTo(20);
+    }
+
     /** Deve valorizar evidência de atendimento real, fidelização e linguagem própria do executor. */
     @Test
     void shouldBoostRealWorkEvidenceAndKeepItNonCommercial() {

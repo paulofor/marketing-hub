@@ -381,6 +381,8 @@ function getCycleStage(status: string) {
 
 const qualityNoteLabels: Record<string, string> = {
   status: "Status",
+  proximoMovimentoCodigo: "Código do próximo movimento",
+  proximoMovimento: "Próximo movimento",
   fontes: "Fontes",
   fontesBrasileiras: "Fontes brasileiras",
   fontesRecentes: "Fontes recentes",
@@ -424,6 +426,9 @@ function formatQualityNoteValue(value: string | number | boolean) {
 function isQualityNoteAccepted(key: string, value: string | number | boolean) {
   if (key === "status") {
     return value === "MEI_AUDIENCE_READY";
+  }
+  if (key === "proximoMovimento" || key === "proximoMovimentoCodigo") {
+    return true;
   }
   if (typeof value === "boolean") {
     const expectedTrue = new Set([

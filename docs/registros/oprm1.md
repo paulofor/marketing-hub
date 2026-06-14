@@ -637,3 +637,9 @@
 - Causa-raiz corrigida: o gate de evidência mínima da etapa `mei-audience-segmenter` passou a usar `Locale.ROOT` para normalizar textos de ausência de evidência, mas a classe não importava `java.util.Locale`, quebrando a compilação do `ads-service`.
 - Correção aplicada: adicionado o import explícito de `java.util.Locale` no serviço backend da segmentação MEI/autônomo.
 - Prevenção de recorrência: executada compilação Maven direcionada ao módulo `ads-service` para validar que o erro `cannot find symbol Locale` não retorna.
+
+## 2026-06-14 — OPRM NichoCNAE: desbloqueio do gate de qualidade após segmentação MEI/autônomo
+
+- Diagnosticado que o ciclo #39 do CNAE 9602501 estava com status `MEI_AUDIENCE_SEGMENTED`, cartão de rotina e perfil MEI/autônomo criados, mas sem pendência retornada para a etapa de qualidade.
+- Causa-raiz corrigida no backend: a fila do gate de qualidade aplicava limite antes de filtrar cartões com perfil MEI/autônomo, permitindo que cartões antigos sem perfil ocupassem a página e escondessem o ciclo elegível atual.
+- Ajustada a consulta do repositório para filtrar no banco apenas cartões não avaliados que já possuem perfil MEI/autônomo, prevenindo nova parada silenciosa do pipeline na etapa de qualidade.

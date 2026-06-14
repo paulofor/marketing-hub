@@ -5,6 +5,8 @@ public record NicheResearchSeedBuilderCompletionRequest(
         NicheResearchSeedBuilderOutput output,
         String model,
         String rawModelResponse,
+        String rawOpenAiRequest,
+        String rawOpenAiResponse,
         Integer inputTokens,
         Integer outputTokens,
         String openAiResponseId) {}

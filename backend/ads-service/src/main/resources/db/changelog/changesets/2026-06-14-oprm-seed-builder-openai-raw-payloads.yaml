@@ -1,0 +1,23 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-14-oprm-seed-builder-openai-raw-payloads
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: oprm_niche_research_seed
+        - not:
+            columnExists:
+              tableName: oprm_niche_research_seed
+              columnName: raw_openai_request
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE oprm_niche_research_seed
+                ADD COLUMN raw_openai_request LONGTEXT NULL AFTER raw_model_response,
+                ADD COLUMN raw_openai_response LONGTEXT NULL AFTER raw_openai_request;

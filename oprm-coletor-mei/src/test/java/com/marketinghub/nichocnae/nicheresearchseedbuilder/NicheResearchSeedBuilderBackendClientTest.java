@@ -38,6 +38,8 @@ class NicheResearchSeedBuilderBackendClientTest {
                 new OpenAiSeedBuilderResult(
                         new NicheResearchSeedBuilderOutput(1L, seed, List.of(query)),
                         "{\"seed\":true}",
+                        "{\"input\":true}",
+                        "{\"id\":\"resp_seed\"}",
                         1200,
                         800,
                         "resp_seed",
@@ -52,6 +54,8 @@ class NicheResearchSeedBuilderBackendClientTest {
         assertThat(request.confidenceLevel()).isEqualTo("HIGH");
         assertThat(request.createdBy()).isEqualTo("AI");
         assertThat(request.model()).isEqualTo("gpt-5.4");
+        assertThat(request.rawOpenAiRequest()).isEqualTo("{\"input\":true}");
+        assertThat(request.rawOpenAiResponse()).isEqualTo("{\"id\":\"resp_seed\"}");
         assertThat(request.inputTokens()).isEqualTo(1200);
         assertThat(request.outputTokens()).isEqualTo(800);
         assertThat(request.openAiResponseId()).isEqualTo("resp_seed");
@@ -91,6 +95,8 @@ class NicheResearchSeedBuilderBackendClientTest {
                 null,
                 "gpt-5.4",
                 "{\"seed\":true}",
+                "{\"input\":true}",
+                "{\"id\":\"resp_seed\"}",
                 1200,
                 800,
                 new java.math.BigDecimal("0.0123"),

@@ -206,6 +206,8 @@ public class BackendNicheResearchSeedBuilderService {
     seed.setCreatedAt(now);
     seed.setModel(trimToNull(request == null ? null : request.model()));
     seed.setRawModelResponse(trimToNull(request == null ? null : request.rawModelResponse()));
+    seed.setRawOpenAiRequest(trimToNull(request == null ? null : request.rawOpenAiRequest()));
+    seed.setRawOpenAiResponse(trimToNull(request == null ? null : request.rawOpenAiResponse()));
     seed.setInputTokens(request == null ? null : request.inputTokens());
     seed.setOutputTokens(request == null ? null : request.outputTokens());
     seed.setCostUsd(estimateCostUsd(request));
@@ -479,6 +481,8 @@ public class BackendNicheResearchSeedBuilderService {
         seed.getCreatedAt(),
         seed.getModel(),
         seed.getRawModelResponse(),
+        seed.getRawOpenAiRequest(),
+        seed.getRawOpenAiResponse(),
         seed.getInputTokens(),
         seed.getOutputTokens(),
         seed.getCostUsd(),

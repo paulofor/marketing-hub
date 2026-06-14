@@ -14,7 +14,44 @@ public record CompleteNicheResearchSeedBuilderRequest(
     String createdBy,
     String model,
     String rawModelResponse,
+    String rawOpenAiRequest,
+    String rawOpenAiResponse,
     Integer inputTokens,
     Integer outputTokens,
     String openAiResponseId,
-    List<NicheResearchQueryRequest> queries) {}
+    List<NicheResearchQueryRequest> queries) {
+  /** Mantém compatibilidade com chamadas antigas que ainda não enviam payloads crus da OpenAI. */
+  public CompleteNicheResearchSeedBuilderRequest(
+      String nicheName,
+      String businessType,
+      String operationType,
+      String customerType,
+      String commercialObjects,
+      String initialAssumptions,
+      String confidenceLevel,
+      String createdBy,
+      String model,
+      String rawModelResponse,
+      Integer inputTokens,
+      Integer outputTokens,
+      String openAiResponseId,
+      List<NicheResearchQueryRequest> queries) {
+    this(
+        nicheName,
+        businessType,
+        operationType,
+        customerType,
+        commercialObjects,
+        initialAssumptions,
+        confidenceLevel,
+        createdBy,
+        model,
+        rawModelResponse,
+        null,
+        null,
+        inputTokens,
+        outputTokens,
+        openAiResponseId,
+        queries);
+  }
+}

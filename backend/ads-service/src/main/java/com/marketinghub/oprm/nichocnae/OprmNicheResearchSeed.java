@@ -63,6 +63,12 @@ public class OprmNicheResearchSeed {
     @Column(name = "raw_model_response", columnDefinition = "LONGTEXT")
     private String rawModelResponse;
 
+    @Column(name = "raw_openai_request", columnDefinition = "LONGTEXT")
+    private String rawOpenAiRequest;
+
+    @Column(name = "raw_openai_response", columnDefinition = "LONGTEXT")
+    private String rawOpenAiResponse;
+
     @Column(name = "input_tokens")
     private Integer inputTokens;
 

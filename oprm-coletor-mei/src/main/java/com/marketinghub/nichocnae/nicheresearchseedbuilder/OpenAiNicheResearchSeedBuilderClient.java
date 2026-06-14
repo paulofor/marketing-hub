@@ -54,16 +54,20 @@ public class OpenAiNicheResearchSeedBuilderClient {
         Map<String, Object> requestBody = buildRequestBody(prompt, model);
         String url = properties.baseUrl() + RESPONSES_PATH;
         try {
+            String rawOpenAiRequest = objectMapper.writeValueAsString(requestBody);
             Map<String, Object> raw = responseBody(url, requestBody, apiKey);
             if (raw == null) {
                 throw new IllegalStateException("OpenAI retornou corpo vazio para a etapa dois OPRM nichocnae.");
             }
+            String rawOpenAiResponse = objectMapper.writeValueAsString(raw);
             String rawModelResponse = extractModelResponse(raw);
             NicheResearchSeedBuilderOutput output =
                     objectMapper.readValue(rawModelResponse, NicheResearchSeedBuilderOutput.class);
             return new OpenAiSeedBuilderResult(
                     output,
                     rawModelResponse,
+                    rawOpenAiRequest,
+                    rawOpenAiResponse,
                     extractInteger(raw, "usage", "input_tokens"),
                     extractInteger(raw, "usage", "output_tokens"),
                     stringValue(raw.get("id")),

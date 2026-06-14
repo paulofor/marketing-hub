@@ -718,3 +718,9 @@
 
 - A tela `/oprm/cnaes/:cnaeCode` passa a informar quando o ciclo atual foi criado por reprocessamento automático do gate, mostrando o ciclo anterior, a causa de reprovação, o reaproveitamento do aprendizado e o contador de tentativas automáticas.
 - O resumo de ciclos por CNAE passou a expor `triggerSource`, permitindo diferenciar ciclo manual, fila automática e reprocessamento automático sem depender de inferência visual.
+
+## 2026-06-14 — Auditoria crua OpenAI no pipeline NichoCNAE
+
+- A tela de detalhe das etapas OPRM passou a destacar request cru enviado à OpenAI e resposta crua recebida sempre que a etapa usa modelo.
+- A etapa `oprmNicheResearchSeedBuilder` passou a persistir o payload completo enviado à Responses API e o corpo completo retornado pela OpenAI, além da resposta estruturada já existente.
+- As demais etapas foram verificadas: no fluxo NichoCNAE atual, `seed` e `mei` declaram acesso ao modelo; `seed` recebeu persistência completa nesta alteração e a tela mostra alerta objetivo quando uma etapa com IA ainda não tiver payload cru persistido.

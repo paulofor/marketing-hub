@@ -111,6 +111,8 @@ public class NicheResearchSeedBuilderBackendClient {
                 seed.createdBy(),
                 result.model(),
                 result.rawModelResponse(),
+                result.rawOpenAiRequest(),
+                result.rawOpenAiResponse(),
                 result.inputTokens(),
                 result.outputTokens(),
                 result.openAiResponseId(),

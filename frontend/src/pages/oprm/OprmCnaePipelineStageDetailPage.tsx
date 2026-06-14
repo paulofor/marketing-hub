@@ -160,6 +160,13 @@ function asRecord(value: unknown): Record<string, unknown> | null {
     : null;
 }
 
+function rawTextValue(value: unknown) {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+  return typeof value === "string" ? value : formatJson(value);
+}
+
 function textValue(value: unknown) {
   if (value === null || value === undefined || value === "") {
     return "não informado";
@@ -177,11 +184,13 @@ function buildAiTelemetry(metadata: StageMetadata, data: unknown, configuredMode
     modelo: textValue(seed?.model ?? configuredModel ?? metadata.aiModel ?? "modelo configurado na tela de pipeline"),
     request: metadata.aiRequestSummary,
     response: textValue(seed?.openAiResponseId ?? metadata.aiResponseSummary),
+    rawRequest: rawTextValue(seed?.rawOpenAiRequest ?? seed?.rawRequest ?? seed?.requestBodyJson),
+    rawResponse: rawTextValue(seed?.rawOpenAiResponse ?? seed?.rawResponse ?? seed?.rawModelResponse),
     tokensEntrada: textValue(seed?.inputTokens),
     tokensSaida: textValue(seed?.outputTokens),
     custoUsd: seed?.costUsd == null ? "não informado" : `US$ ${seed.costUsd}`,
     hasPersistedTelemetry:
-      seed?.model != null || seed?.inputTokens != null || seed?.outputTokens != null || seed?.costUsd != null,
+      seed?.model != null || seed?.inputTokens != null || seed?.outputTokens != null || seed?.costUsd != null || seed?.rawOpenAiRequest != null || seed?.rawOpenAiResponse != null,
   };
 }
 
@@ -317,6 +326,26 @@ export default function OprmCnaePipelineStageDetailPage() {
                     <dt className="col-md-3 text-secondary fw-normal">Custo</dt>
                     <dd className="col-md-9 mb-0">{aiTelemetry.custoUsd}</dd>
                   </dl>
+                  {aiTelemetry.rawRequest || aiTelemetry.rawResponse ? (
+                    <div className="row g-3">
+                      <div className="col-12 col-xl-6">
+                        <h3 className="h6">Request cru enviado para OpenAI</h3>
+                        <pre className="bg-body-tertiary border rounded p-3 small overflow-auto mb-0" style={{ maxHeight: 420 }}>
+                          {aiTelemetry.rawRequest ?? "não informado"}
+                        </pre>
+                      </div>
+                      <div className="col-12 col-xl-6">
+                        <h3 className="h6">Resposta crua recebida da OpenAI</h3>
+                        <pre className="bg-body-tertiary border rounded p-3 small overflow-auto mb-0" style={{ maxHeight: 420 }}>
+                          {aiTelemetry.rawResponse ?? "não informado"}
+                        </pre>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="alert alert-warning mb-0 small" role="status">
+                      Esta etapa usa modelo OpenAI, mas ainda não possui request e resposta crus persistidos para esta execução.
+                    </div>
+                  )}
                   {!aiTelemetry.hasPersistedTelemetry ? (
                     <div className="alert alert-info mb-0 small" role="status">
                       Esta execução ainda não possui telemetria persistida para a

@@ -20,6 +20,8 @@ public record NicheResearchSeedBuilderBackendCompletionResponse(
         Instant createdAt,
         String model,
         String rawModelResponse,
+        String rawOpenAiRequest,
+        String rawOpenAiResponse,
         Integer inputTokens,
         Integer outputTokens,
         java.math.BigDecimal costUsd,

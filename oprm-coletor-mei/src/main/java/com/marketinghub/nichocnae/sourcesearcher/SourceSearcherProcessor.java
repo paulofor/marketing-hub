@@ -34,7 +34,9 @@ public class SourceSearcherProcessor implements StageProcessor<SourceSearcherPen
         List<SourceSearchResult> searchResults = searchProvider.search(input.queryText(), MAX_RESULTS_PER_QUERY).stream()
                 .map(sourceIntentClassifier::classify)
                 .sorted(Comparator.comparing(SourceSearchResult::commercialPageRisk)
+                        .thenComparing(SourceSearchResult::solutionLanguageRisk)
                         .thenComparing(SourceSearchResult::structuredBusinessDriftRisk)
+                        .thenComparing(Comparator.comparing(this::realWorkEvidenceSelectionScore).reversed())
                         .thenComparing(Comparator.comparing(SourceSearchResult::routineEvidenceScore).reversed())
                         .thenComparing(Comparator.comparing(SourceSearchResult::autonomousProfessionalEvidenceScore).reversed())
                         .thenComparing(Comparator.comparing(SourceSearchResult::brazilRelevanceScore).reversed())
@@ -53,5 +55,27 @@ public class SourceSearcherProcessor implements StageProcessor<SourceSearcherPen
                 "outdatedRiskCount", searchResults.stream().filter(SourceSearchResult::outdatedSourceRisk).count(),
                 "structuredBusinessDriftRiskCount", searchResults.stream().filter(SourceSearchResult::structuredBusinessDriftRisk).count());
         return new StageResult<>(output, List.of(), metrics);
+    }
+
+    /** Calcula prioridade de seleção para fontes com rotina manual, atendimento real e linguagem do executor. */
+    private int realWorkEvidenceSelectionScore(SourceSearchResult result) {
+        String text = (safe(result.sourceTitle()) + " " + safe(result.sourceSnippet())).toLowerCase();
+        int score = 0;
+        score += contains(text, "rotina manual") ? 20 : 0;
+        score += contains(text, "atendimento real") || contains(text, "atendimento cliente") ? 18 : 0;
+        score += contains(text, "fidelização") || contains(text, "recorrência") || contains(text, "indicação") ? 16 : 0;
+        score += contains(text, "dor") || contains(text, "medo") || contains(text, "insegurança") || contains(text, "frustração") ? 14 : 0;
+        score += contains(text, "relato") || contains(text, "minha rotina") || contains(text, "profissional relata") ? 14 : 0;
+        return score;
+    }
+
+    /** Verifica presença literal de um termo em texto já normalizado. */
+    private boolean contains(String text, String term) {
+        return text.contains(term);
+    }
+
+    /** Normaliza nulos para comparação local de priorização. */
+    private String safe(String value) {
+        return value == null ? "" : value;
     }
 }

@@ -31,28 +31,35 @@ public class SourceIntentClassifier {
     private static final Pattern YEAR_PATTERN = Pattern.compile("\\b(20[0-9]{2})\\b");
     private static final List<String> ROUTINE_TERMS = List.of(
             "rotina", "dia a dia", "tarefas", "atividade", "trabalho", "processo", "procedimento", "operação",
-            "execução", "executa", "executado", "executada", "atendimento cliente", "tarefas diárias",
-            "tarefas do dia a dia", "rotina de trabalho", "prática profissional");
+            "execução", "executa", "executado", "executada", "atendimento cliente", "atendimento real",
+            "tarefas diárias", "tarefas do dia a dia", "rotina de trabalho", "rotina manual",
+            "prática profissional", "relato da rotina", "como atende");
     private static final List<String> PRACTICAL_EXECUTION_TERMS = List.of(
             "o que faz", "como faz", "atendimento", "cliente", "higiene", "esterilização", "lavar", "cortar",
-            "escovar", "colorir", "preparar", "aplicar", "organizar", "limpar", "cuidar", "agenda de atendimento");
+            "escovar", "colorir", "preparar", "aplicar", "organizar", "limpar", "cuidar",
+            "agenda de atendimento", "confirmar horário", "remarcar", "cobrar", "orçamento", "materiais",
+            "antes do atendimento", "durante o atendimento", "depois do atendimento");
     private static final List<String> PROFESSIONAL_SOURCE_TERMS = List.of(
             "cbo", "classificação brasileira de ocupações", "guia profissional", "relato de profissional",
             "relato profissional", "profissional relata", "profissionais relatam", "experiência profissional",
             "ocupação", "descrição da ocupação", "atribuições", "funções");
     private static final List<String> PROBLEM_TERMS = List.of(
-            "problema", "dificuldade", "desafio", "erro", "reclamação", "dúvida", "pergunta", "como fazer");
+            "problema", "dificuldade", "desafio", "erro", "reclamação", "dúvida", "pergunta", "como fazer",
+            "cansaço", "ansiedade", "estresse", "sobrecarga", "insegurança", "medo", "frustração",
+            "falta", "cancelamento", "atraso", "retrabalho");
     private static final List<String> GUIDE_TERMS = List.of(
             "guia", "passo a passo", "manual", "tutorial", "boas práticas", "checklist", "orientação");
     private static final List<String> EDUCATIONAL_TERMS = List.of(
             "curso", "aula", "apostila", "artigo", "entenda", "o que é", "conceito");
     private static final List<String> COMMERCIAL_TERMS = List.of(
-            "comprar", "preço", "orçamento", "promoção", "software", "plataforma", "ferramenta", "curso online",
-            "consultoria", "agende", "contrate", "venda", "solução", "produto", "serviço", "agenda online",
-            "app", "aplicativo", "automação", "sistema");
+            "comprar", "promoção", "software", "plataforma", "ferramenta", "curso online",
+            "consultoria", "agende", "contrate", "venda", "solução", "produto", "agenda online",
+            "app", "aplicativo", "automação", "sistema", "template", "landing page", "funil", "campanha",
+            "demonstração", "teste grátis", "planos", "assinatura");
     private static final List<String> SOFTWARE_SALES_TERMS = List.of(
             "software", "plataforma", "agenda online", "app", "aplicativo", "automação", "sistema", "gestão de salão",
-            "sistema para salão", "sistema para manicure", "marcação online", "reservas online", "crm");
+            "sistema para salão", "sistema para manicure", "marcação online", "reservas online", "crm",
+            "template", "curso online", "ferramenta", "ia para", "inteligência artificial");
     private static final List<String> COMMERCIAL_DOMAINS = List.of(
             "hotmart.", "kiwify.", "eduzz.", "monetizze.", "shopify.", "mercadolivre.", "amazon.");
     private static final List<String> BRAZIL_MARKERS = List.of(
@@ -80,12 +87,13 @@ public class SourceIntentClassifier {
         int educationalHits = countHits(text, EDUCATIONAL_TERMS);
         int commercialHits = countHits(text, COMMERCIAL_TERMS) + countHits(domain, COMMERCIAL_DOMAINS);
         int softwareSalesHits = countHits(text, SOFTWARE_SALES_TERMS);
+        int realWorkEvidenceHits = countRealWorkEvidenceHits(text);
         int brazilScore = brazilRelevanceScore(text, domain);
         int autonomousScore = autonomousProfessionalEvidenceScore(text);
         boolean structuredBusinessDriftRisk = structuredBusinessDriftRisk(text, autonomousScore);
         boolean commercialRisk = commercialRisk(
                 commercialHits, softwareSalesHits, routineHits, problemHits, practicalExecutionHits, professionalSourceHits,
-                autonomousScore);
+                autonomousScore, realWorkEvidenceHits);
         boolean solutionRisk =
                 containsAny(text, List.of("solução", "software", "ferramenta", "produto", "venda", "comprar"));
         Instant publishedAt = extractPublishedAt(result, text);
@@ -99,7 +107,7 @@ public class SourceIntentClassifier {
                 practicalExecutionHits, professionalSourceHits);
         int score = routineEvidenceScore(
                 routineHits, problemHits, guideHits, practicalExecutionHits, professionalSourceHits, educationalHits,
-                commercialHits, softwareSalesHits);
+                commercialHits, softwareSalesHits, realWorkEvidenceHits);
         return new SourceSearchResult(
                 result.sourceUrl(),
                 result.sourceTitle(),
@@ -195,7 +203,8 @@ public class SourceIntentClassifier {
             int professionalSourceHits,
             int educationalHits,
             int commercialHits,
-            int softwareSalesHits) {
+            int softwareSalesHits,
+            int realWorkEvidenceHits) {
         int score = 40
                 + routineHits * 22
                 + practicalExecutionHits * 14
@@ -203,8 +212,9 @@ public class SourceIntentClassifier {
                 + problemHits * 12
                 + guideHits * 10
                 + educationalHits * 4
-                - commercialHits * 14
-                - softwareSalesHits * 18;
+                + realWorkEvidenceHits * 10
+                - commercialHits * 16
+                - softwareSalesHits * 24;
         return Math.max(0, Math.min(100, score));
     }
 
@@ -216,12 +226,21 @@ public class SourceIntentClassifier {
             int problemHits,
             int practicalExecutionHits,
             int professionalSourceHits,
-            int autonomousScore) {
+            int autonomousScore,
+            int realWorkEvidenceHits) {
         int concreteExecutionSignals = routineHits + problemHits + practicalExecutionHits + professionalSourceHits;
-        if (softwareSalesHits > 0 && concreteExecutionSignals < 2) {
+        if (softwareSalesHits > 0 && concreteExecutionSignals + realWorkEvidenceHits < 3) {
             return true;
         }
-        return commercialHits > 0 && concreteExecutionSignals + autonomousScore / 25 < 2;
+        return commercialHits > 0 && concreteExecutionSignals + realWorkEvidenceHits + autonomousScore / 25 < 2;
+    }
+
+    /** Conta grupos de evidência humana e operacional que indicam trabalho real em vez de página de solução. */
+    private int countRealWorkEvidenceHits(String text) {
+        return countHits(text, List.of(
+                "rotina manual", "atendimento real", "relato", "cliente faltou", "desmarcou", "fidelização",
+                "recorrência", "indicação", "boca a boca", "mensagem de cliente", "como eu faço",
+                "minha rotina", "meus clientes", "dor", "medo", "insegurança", "cobrar cliente"));
     }
 
     /** Calcula aderência Brasil-first por domínio e marcadores explícitos do mercado brasileiro. */

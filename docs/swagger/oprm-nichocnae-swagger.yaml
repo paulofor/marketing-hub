@@ -979,6 +979,31 @@ components:
           format: int64
           nullable: true
           example: 125000
+        openAiModelCode:
+          type: string
+          nullable: true
+        openAiModelName:
+          type: string
+          nullable: true
+        triggerSource:
+          type: string
+          nullable: true
+        previousQualityStatus:
+          type: string
+          nullable: true
+          description: Status do gate de qualidade do ciclo anterior usado para aprendizado automático.
+        previousNextMoveCode:
+          type: string
+          nullable: true
+          description: Código do próximo movimento indicado pelo gate anterior.
+        previousNextMove:
+          type: string
+          nullable: true
+          description: Orientação operacional do gate anterior para mudar a nova pesquisa.
+        previousLearningNotes:
+          type: string
+          nullable: true
+          description: Notas compactas do gate anterior para evitar repetir a causa dominante de reprovação.
         status:
           type: string
           example: RUNNING

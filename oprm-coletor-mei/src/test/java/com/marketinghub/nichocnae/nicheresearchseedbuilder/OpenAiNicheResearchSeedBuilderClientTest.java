@@ -119,6 +119,10 @@ class OpenAiNicheResearchSeedBuilderClientTest {
                 "gpt-5.4",
                 "gpt-5.4 (gpt-5.4)",
                 "AUTO_SCORE_QUEUE",
+                null,
+                null,
+                null,
+                null,
                 "RUNNING",
                 Instant.now(),
                 Instant.now());

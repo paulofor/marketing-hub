@@ -1,6 +1,7 @@
 package com.marketinghub.oprm.nichocnae.nicheresearchseedbuilder.service;
 
 import com.marketinghub.oprm.nichocnae.OprmNicheResearchSeed;
+import com.marketinghub.oprm.nichocnae.OprmNicheRoutineCard;
 import com.marketinghub.oprm.nichocnae.OprmResearchQuery;
 import com.marketinghub.oprm.nichocnae.OprmRoutineResearchCycle;
 import com.marketinghub.oprm.nichocnae.nicheresearchseedbuilder.service.completeStageExecution.CompleteNicheResearchSeedBuilderRequest;
@@ -12,6 +13,7 @@ import com.marketinghub.oprm.nichocnae.nicheresearchseedbuilder.service.failStag
 import com.marketinghub.oprm.nichocnae.nicheresearchseedbuilder.service.pending.RecordNicheResearchSeedBuilderPending;
 import com.marketinghub.repository.jpa.oprm.market.OprmMarketSizeByCnaeRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmNicheResearchSeedRepository;
+import com.marketinghub.repository.jpa.oprm.nichocnae.OprmNicheRoutineCardRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmResearchQueryRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmRoutineResearchCycleRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -47,6 +49,7 @@ public class BackendNicheResearchSeedBuilderService {
   private final OprmResearchQueryRepository researchQueryRepository;
   private final OprmNicheResearchSeedBuilderConfigurationGateway configurationGateway;
   private final OprmMarketSizeByCnaeRepository marketSizeByCnaeRepository;
+  private final OprmNicheRoutineCardRepository routineCardRepository;
 
   /** Inicializa o serviço com os repositórios canônicos da etapa dois do pipeline. */
   public BackendNicheResearchSeedBuilderService(
@@ -54,12 +57,14 @@ public class BackendNicheResearchSeedBuilderService {
       OprmNicheResearchSeedRepository nicheResearchSeedRepository,
       OprmResearchQueryRepository researchQueryRepository,
       OprmNicheResearchSeedBuilderConfigurationGateway configurationGateway,
-      OprmMarketSizeByCnaeRepository marketSizeByCnaeRepository) {
+      OprmMarketSizeByCnaeRepository marketSizeByCnaeRepository,
+      OprmNicheRoutineCardRepository routineCardRepository) {
     this.routineResearchCycleRepository = routineResearchCycleRepository;
     this.nicheResearchSeedRepository = nicheResearchSeedRepository;
     this.researchQueryRepository = researchQueryRepository;
     this.configurationGateway = configurationGateway;
     this.marketSizeByCnaeRepository = marketSizeByCnaeRepository;
+    this.routineCardRepository = routineCardRepository;
   }
 
   /** Lista ciclos em execução ou falhas retryáveis que ainda precisam receber seed e queries. */
@@ -389,9 +394,11 @@ public class BackendNicheResearchSeedBuilderService {
         + cycle.getCnaeDescription();
   }
 
-  /** Converte um ciclo pendente no contrato interno de unidade de trabalho da etapa dois. */
+  /** Converte um ciclo pendente no contrato interno de unidade de trabalho da etapa dois com aprendizado do gate anterior. */
   private RecordNicheResearchSeedBuilderPending toPending(OprmRoutineResearchCycle cycle) {
     OprmNicheResearchSeedBuilderModel configuredModel = resolveConfiguredOpenAiModel();
+    OprmNicheRoutineCard previousCard = findPreviousCheckedCard(cycle);
+    String previousNotes = previousCard == null ? null : previousCard.getQualityNotes();
     return new RecordNicheResearchSeedBuilderPending(
         cycle.getId(),
         cycle.getSourceNicheId(),
@@ -402,9 +409,47 @@ public class BackendNicheResearchSeedBuilderService {
         resolveMeiVolume(cycle),
         configuredModel == null ? null : configuredModel.code(),
         configuredModel == null ? null : configuredModel.name(),
+        cycle.getTriggerSource(),
+        previousCard == null ? null : previousCard.getQualityStatus(),
+        extractQualityNote(previousNotes, "proximoMovimentoCodigo"),
+        extractQualityNote(previousNotes, "proximoMovimento"),
+        compactLearningNotes(previousNotes),
         cycle.getStatus(),
         cycle.getStartedAt(),
         cycle.getCreatedAt());
+  }
+
+  /** Localiza o último bloqueio de qualidade do mesmo candidato para evitar repetir a causa dominante. */
+  private OprmNicheRoutineCard findPreviousCheckedCard(OprmRoutineResearchCycle cycle) {
+    return routineCardRepository
+        .findLatestCheckedCardForLearning(cycle.getSourceNicheId(), cycle.getId(), PageRequest.of(0, 1))
+        .stream()
+        .findFirst()
+        .orElse(null);
+  }
+
+  /** Extrai um par chave-valor das notas determinísticas do gate para orientar o próximo seed. */
+  private String extractQualityNote(String notes, String key) {
+    String cleanKey = key + "=";
+    if (!StringUtils.hasText(notes) || !notes.contains(cleanKey)) {
+      return null;
+    }
+    for (String part : notes.split(";")) {
+      String trimmed = part.trim();
+      if (trimmed.startsWith(cleanKey)) {
+        return trimToNull(trimmed.substring(cleanKey.length()));
+      }
+    }
+    return null;
+  }
+
+  /** Compacta as notas do gate anterior para expor aprendizado operacional sem payload longo no prompt. */
+  private String compactLearningNotes(String notes) {
+    String trimmed = trimToNull(notes);
+    if (trimmed == null) {
+      return null;
+    }
+    return trimmed.length() <= 900 ? trimmed : trimmed.substring(0, 900);
   }
 
   /** Busca o volume MEI mais recente do CNAE para orientar a quebra em subnichos vendáveis. */

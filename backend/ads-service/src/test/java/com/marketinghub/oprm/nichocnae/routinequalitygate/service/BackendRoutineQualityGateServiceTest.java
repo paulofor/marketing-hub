@@ -41,8 +41,7 @@ class BackendRoutineQualityGateServiceTest {
   @Test
   void shouldListPendingWithSignalTypeAliases() {
     OprmNicheRoutineCard card = card();
-    when(cardRepository.findByQualityCheckedAtIsNullOrderByCreatedAtAscIdAsc(any(Pageable.class))).thenReturn(List.of(card));
-    when(meiAudienceProfileRepository.existsByResearchCycleId(1001L)).thenReturn(true);
+    when(cardRepository.findPendingRoutineQualityGate(any(Pageable.class))).thenReturn(List.of(card));
     when(snapshotRepository.findByResearchCycleIdOrderByIdAsc(1001L)).thenReturn(List.of(new OprmSourceSnapshot(), new OprmSourceSnapshot()));
     OprmSourceSnapshot riskSnapshot = snapshot(true, 80, 70, false, false, "a.com.br");
     OprmSourceSnapshot routineSnapshot = snapshot(false, 75, 65, false, false, "b.com.br");
@@ -82,8 +81,7 @@ class BackendRoutineQualityGateServiceTest {
     OprmMeiAudienceProfile profile = profile();
     profile.setCustomerAcquisitionBehavior("Sem evidência suficiente sobre comportamento de clientes.");
     profile.setChannelsUsed("Sem evidência suficiente sobre canais usados.");
-    when(cardRepository.findByQualityCheckedAtIsNullOrderByCreatedAtAscIdAsc(any(Pageable.class))).thenReturn(List.of(card));
-    when(meiAudienceProfileRepository.existsByResearchCycleId(1001L)).thenReturn(true);
+    when(cardRepository.findPendingRoutineQualityGate(any(Pageable.class))).thenReturn(List.of(card));
     when(snapshotRepository.findByResearchCycleIdOrderByIdAsc(1001L)).thenReturn(List.of(snapshot(false, 80, 70, false, false, "a.com.br")));
     when(meiAudienceProfileRepository.findFirstByResearchCycleIdOrderByIdDesc(1001L)).thenReturn(Optional.of(profile));
     when(signalRepository.findByResearchCycleIdOrderByIdAsc(1001L)).thenReturn(List.of(signal("ROUTINE_TASK")));

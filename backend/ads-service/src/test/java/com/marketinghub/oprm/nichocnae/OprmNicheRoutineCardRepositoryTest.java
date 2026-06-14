@@ -43,6 +43,22 @@ class OprmNicheRoutineCardRepositoryTest {
         .doesNotContain(oldCard.getId(), failedCard.getId(), cancelledCard.getId(), segmentedCard.getId());
   }
 
+  /** Garante que a fila do gate de qualidade não fica presa por cartões antigos sem perfil MEI/autônomo. */
+  @Test
+  void findPendingRoutineQualityGateShouldIgnoreCardsWithoutMeiAudienceProfileBeforeApplyingLimit() {
+    for (int index = 0; index < 12; index++) {
+      OprmRoutineResearchCycle oldCycle = saveCycle(500L + index, "ROUTINE_SYNTHESIZED", "2026-06-06T10:0" + (index % 10) + ":00Z");
+      saveCard(oldCycle, "cartão antigo sem perfil " + index);
+    }
+    OprmRoutineResearchCycle eligibleCycle = saveCycle(900L, "MEI_AUDIENCE_SEGMENTED", "2026-06-07T10:00:00Z");
+    OprmNicheRoutineCard eligibleCard = saveCard(eligibleCycle, "cartão elegível com perfil MEI");
+    saveProfile(eligibleCycle, eligibleCard);
+
+    assertThat(routineCardRepository.findPendingRoutineQualityGate(PageRequest.of(0, 10)))
+        .extracting(OprmNicheRoutineCard::getId)
+        .containsExactly(eligibleCard.getId());
+  }
+
   /** Persiste um ciclo com os campos mínimos exigidos pelo contrato JPA do NichoCNAE. */
   private OprmRoutineResearchCycle saveCycle(Long sourceNicheId, String status, String startedAt) {
     Instant start = Instant.parse(startedAt);

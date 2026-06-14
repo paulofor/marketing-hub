@@ -16,8 +16,17 @@ public interface OprmNicheRoutineCardRepository extends JpaRepository<OprmNicheR
   /** Busca o cartão de rotina mais recente de um ciclo. */
   Optional<OprmNicheRoutineCard> findFirstByResearchCycleIdOrderByIdDesc(Long researchCycleId);
 
-  /** Lista cartões sintetizados ainda não avaliados pelo gate de qualidade. */
-  List<OprmNicheRoutineCard> findByQualityCheckedAtIsNullOrderByCreatedAtAscIdAsc(Pageable pageable);
+  /** Lista cartões sintetizados, segmentados como MEI/autônomo e ainda não avaliados pelo gate de qualidade. */
+  @Query("""
+      select c from OprmNicheRoutineCard c
+      where c.qualityCheckedAt is null
+        and exists (
+          select 1 from OprmMeiAudienceProfile p
+          where p.researchCycleId = c.researchCycleId
+        )
+      order by c.createdAt asc, c.id asc
+      """)
+  List<OprmNicheRoutineCard> findPendingRoutineQualityGate(Pageable pageable);
 
   /** Lista cartões do ciclo ativo sintetizado mais recente que ainda não possuem segmentação MEI/autônomo. */
   @Query("""

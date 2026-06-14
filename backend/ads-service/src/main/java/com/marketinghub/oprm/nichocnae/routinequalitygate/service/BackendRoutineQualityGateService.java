@@ -67,8 +67,7 @@ public class BackendRoutineQualityGateService {
   /** Lista cartões sintetizados ainda não avaliados com contadores concretos de fontes e sinais. */
   @Transactional(readOnly = true)
   public List<RecordRoutineQualityGatePending> listPending() {
-    return routineCardRepository.findByQualityCheckedAtIsNullOrderByCreatedAtAscIdAsc(PageRequest.of(0, MAX_PENDING)).stream()
-        .filter(card -> meiAudienceProfileRepository.existsByResearchCycleId(card.getResearchCycleId()))
+    return routineCardRepository.findPendingRoutineQualityGate(PageRequest.of(0, MAX_PENDING)).stream()
         .map(this::toPending)
         .toList();
   }

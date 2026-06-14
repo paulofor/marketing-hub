@@ -1,3 +1,8 @@
+## 2026-06-14 19:42:42 (UTC-3) — OPRM NichoCNAE: plano para validação de rotina executora
+
+- Criado plano de implementação em `docs/implementacao/oprm/plano-melhoria-nichocnae-validacao-rotina-executora.md` para corrigir a causa-raiz observada nos ciclos #49 a #52 do CNAE 9602501: o pipeline validou dor comercial e fit MEI/autônomo, mas reprovou por não comprovar tarefas concretas da executora.
+- Proposta principal: introduzir status/fluxo `NEEDS_EXECUTOR_ROUTINE_EVIDENCE` e próximo movimento `BUSCAR_TAREFAS_REAIS_EXECUTOR`, separando validação de dor vendável da validação de rotina manual real antes de reprovar como `GENERIC`.
+
 ## 2026-06-13 — OPRM NichoCNAE: registro de efeito perceptivo das cores antigas
 
 - Registrado ponto de pesquisa futura sobre as cores antigas dos cards do pipeline: `bg-success-subtle` (`#d1e7dd`) para concluído e `bg-primary-subtle` (`#cfe2ff`) para em execução criavam um efeito visual interessante; de perto pareciam muito semelhantes, mas de longe a diferença entre verde claro e azul claro ficava mais perceptível.

@@ -1,3 +1,15 @@
+## 2026-06-14 00:00:00 (UTC) — OPRM NichoCNAE: múltiplos nichos por CNAE
+
+- Alterado o conceito de materialização para permitir mais de um `market_niche` por CNAE quando ciclos aprovados representarem subnichos diferentes.
+- A materialização final agora só atualiza nicho existente quando houver perfil anterior com o mesmo `cnae_code` e o mesmo `neutral_niche_name` normalizado; vínculo antigo do candidato/perfil não bloqueia a criação de novo nicho para subnicho diferente.
+
+## 2026-06-14 00:00:00 (UTC) — OPRM NichoCNAE: rotina executora antes de genérico
+
+- Implementado o status `NEEDS_EXECUTOR_ROUTINE_EVIDENCE` para diferenciar nicho comercialmente promissor com lacuna de evidência da rotina manual executada, evitando reprovação genérica prematura.
+- O gate agora direciona o próximo movimento `BUSCAR_TAREFAS_REAIS_EXECUTOR`, com reprocessamento automático recuperável no backend e reprocessamento manual pela UI.
+- A etapa de seed passou a orientar pesquisas focadas em tarefas reais, materiais, tempo, deslocamento, higiene, retrabalho e relatos brasileiros, reduzindo a dominância de agenda/captação/cobrança nessa rodada.
+- A busca e extração de sinais receberam reforços para relatos de execução, retrabalho/reclamação, materiais/insumos e higiene/biossegurança.
+
 ## 2026-06-14 19:42:42 (UTC-3) — OPRM NichoCNAE: plano para validação de rotina executora
 
 - Criado plano de implementação em `docs/implementacao/oprm/plano-melhoria-nichocnae-validacao-rotina-executora.md` para corrigir a causa-raiz observada nos ciclos #49 a #52 do CNAE 9602501: o pipeline validou dor comercial e fit MEI/autônomo, mas reprovou por não comprovar tarefas concretas da executora.

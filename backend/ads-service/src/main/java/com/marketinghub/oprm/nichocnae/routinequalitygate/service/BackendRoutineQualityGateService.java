@@ -44,6 +44,7 @@ public class BackendRoutineQualityGateService {
   private static final String TOO_CORPORATE_STATUS = "TOO_CORPORATE";
   private static final String SOLUTION_CONTAMINATED_STATUS = "SOLUTION_CONTAMINATED";
   private static final String GENERIC_STATUS = "GENERIC";
+  private static final String NEEDS_EXECUTOR_ROUTINE_EVIDENCE_STATUS = "NEEDS_EXECUTOR_ROUTINE_EVIDENCE";
   private static final String AUTO_QUALITY_REPROCESS_TRIGGER = "AUTO_QUALITY_REPROCESS";
   private static final String ROUTINE_RESEARCH_RUNNING_STATUS = "RESEARCH_RUNNING";
   private static final int MAX_PENDING = 10;
@@ -176,7 +177,8 @@ public class BackendRoutineQualityGateService {
         || OUTDATED_SOURCES_STATUS.equals(qualityStatus)
         || TOO_CORPORATE_STATUS.equals(qualityStatus)
         || SOLUTION_CONTAMINATED_STATUS.equals(qualityStatus)
-        || GENERIC_STATUS.equals(qualityStatus);
+        || GENERIC_STATUS.equals(qualityStatus)
+        || NEEDS_EXECUTOR_ROUTINE_EVIDENCE_STATUS.equals(qualityStatus);
   }
 
   /** Cria novo ciclo usando o subnicho já aprendido no ciclo anterior como ponto de partida auditável. */
@@ -466,7 +468,7 @@ public class BackendRoutineQualityGateService {
     String normalized = requiredText(value, "qualityStatus").toUpperCase(Locale.ROOT);
     if (!isSupportedQualityStatus(normalized)) {
       throw new IllegalArgumentException(
-          "qualityStatus must be MEI_AUDIENCE_READY, NEEDS_MORE_MEI_RESEARCH, OUTDATED_SOURCES, TOO_CORPORATE, SOLUTION_CONTAMINATED or GENERIC");
+          "qualityStatus must be MEI_AUDIENCE_READY, NEEDS_MORE_MEI_RESEARCH, OUTDATED_SOURCES, TOO_CORPORATE, SOLUTION_CONTAMINATED, NEEDS_EXECUTOR_ROUTINE_EVIDENCE or GENERIC");
     }
     return normalized;
   }
@@ -484,6 +486,7 @@ public class BackendRoutineQualityGateService {
         || TOO_CORPORATE_STATUS.equals(normalized)
         || SOLUTION_CONTAMINATED_STATUS.equals(normalized)
         || GENERIC_STATUS.equals(normalized)
+        || NEEDS_EXECUTOR_ROUTINE_EVIDENCE_STATUS.equals(normalized)
         || LIGHTLY_RESEARCHED_STATUS.equals(normalized)
         || NEEDS_MORE_RESEARCH_STATUS.equals(normalized);
   }

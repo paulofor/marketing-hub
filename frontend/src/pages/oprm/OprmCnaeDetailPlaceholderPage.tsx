@@ -132,6 +132,7 @@ const statusLabels: Record<string, string> = {
   OUTDATED_SOURCES: "Fontes antigas",
   TOO_CORPORATE: "Corporativo demais",
   SOLUTION_CONTAMINATED: "Contaminado por solução",
+  NEEDS_EXECUTOR_ROUTINE_EVIDENCE: "Precisa evidência da execução real",
   GENERIC: "Genérico",
   ENRICHED_NICHE_FAILED: "Falha na materialização",
 };
@@ -201,6 +202,7 @@ const qualityBlockedStatuses = new Set([
   "OUTDATED_SOURCES",
   "TOO_CORPORATE",
   "SOLUTION_CONTAMINATED",
+  "NEEDS_EXECUTOR_ROUTINE_EVIDENCE",
   "GENERIC",
 ]);
 
@@ -369,6 +371,8 @@ function qualityBlockedMessage(status?: string | null) {
       "A pesquisa chegou ao gate de qualidade, mas as evidências estão corporativas demais para MEI/autônomo dono-operador.",
     SOLUTION_CONTAMINATED:
       "A pesquisa chegou ao gate de qualidade, mas foi contaminada por linguagem de solução/oferta antes da hora.",
+    NEEDS_EXECUTOR_ROUTINE_EVIDENCE:
+      "O nicho tem sinais de venda, mas falta comprovar a rotina manual executada pelo profissional. Próximo movimento: pesquisar tarefas reais, materiais, tempo, deslocamento, retrabalho e problemas práticos do atendimento.",
     GENERIC:
       "A pesquisa chegou ao gate de qualidade, mas ficou genérica demais para sustentar uma oferta vendável.",
   };

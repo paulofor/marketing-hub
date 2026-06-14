@@ -38,6 +38,7 @@ public class BackendRoutineResearchOrchestratorService {
     private static final String CYCLE_STATUS_TOO_CORPORATE = "TOO_CORPORATE";
     private static final String CYCLE_STATUS_SOLUTION_CONTAMINATED = "SOLUTION_CONTAMINATED";
     private static final String CYCLE_STATUS_GENERIC = "GENERIC";
+    private static final String CYCLE_STATUS_NEEDS_EXECUTOR_ROUTINE_EVIDENCE = "NEEDS_EXECUTOR_ROUTINE_EVIDENCE";
     private static final String CYCLE_STATUS_CANCELLED_BY_MANUAL_RESTART = "CANCELLED_BY_MANUAL_RESTART";
     private static final String CYCLE_STATUS_STALLED = "STALLED";
     private static final String TRIGGER_SOURCE_AUTO_SCORE_QUEUE = "AUTO_SCORE_QUEUE";
@@ -152,6 +153,7 @@ public class BackendRoutineResearchOrchestratorService {
                 || CYCLE_STATUS_TOO_CORPORATE.equals(status)
                 || CYCLE_STATUS_SOLUTION_CONTAMINATED.equals(status)
                 || CYCLE_STATUS_GENERIC.equals(status)
+                || CYCLE_STATUS_NEEDS_EXECUTOR_ROUTINE_EVIDENCE.equals(status)
                 || "ENRICHED_NICHE_FAILED".equals(status);
     }
 

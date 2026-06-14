@@ -120,6 +120,46 @@ class NicheResearchSeedBuilderPromptBuilderTest {
                 .contains("priorize relatos manuais");
     }
 
+    /** Deve orientar busca complementar para tarefas reais quando o gate pedir evidência da execução. */
+    @Test
+    void shouldPrioritizeExecutorRoutineQueriesWhenPreviousNextMoveRequestsRealTasks() {
+        NicheResearchSeedBuilderPending pending = new NicheResearchSeedBuilderPending(
+                1001L,
+                55L,
+                "9602501",
+                "Cabeleireiros, manicure e pedicure",
+                "Manicure autônoma domiciliar",
+                BigDecimal.valueOf(92),
+                125000L,
+                "gpt-5.4",
+                "gpt-5.4 (gpt-5.4)",
+                "AUTO_QUALITY_REPROCESS",
+                "NEEDS_EXECUTOR_ROUTINE_EVIDENCE",
+                "BUSCAR_TAREFAS_REAIS_EXECUTOR",
+                "Pesquisar relatos e tarefas concretas do executor",
+                "rotinaRevelaTarefasReaisExecutor=false; tarefasConcretasDistintas=0",
+                "RUNNING",
+                Instant.now(),
+                Instant.now());
+
+        String prompt = promptBuilder.buildPrompt(pending);
+
+        assertThat(prompt)
+                .contains("previousNextMoveCode: BUSCAR_TAREFAS_REAIS_EXECUTOR")
+                .contains("priorizar execução manual real")
+                .contains("rotina do atendimento em domicílio")
+                .contains("materiais e maleta")
+                .contains("deslocamento")
+                .contains("tempo de atendimento")
+                .contains("esterilização")
+                .contains("cutilagem")
+                .contains("esmalte descascado")
+                .contains("retrabalho")
+                .contains("reduza temporariamente a dominância de agenda, WhatsApp, Instagram")
+                .contains("rotina real manicure atendimento em domicílio passo a passo Brasil");
+    }
+
+
     /** Cria uma pendência padrão para montagem determinística do prompt da etapa dois. */
     private NicheResearchSeedBuilderPending pending() {
         return new NicheResearchSeedBuilderPending(

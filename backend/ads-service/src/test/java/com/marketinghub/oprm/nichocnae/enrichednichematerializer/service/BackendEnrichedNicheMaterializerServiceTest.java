@@ -178,6 +178,53 @@ class BackendEnrichedNicheMaterializerServiceTest {
             && "Persona reprocessada".equals(profile.getPersonaSummary())));
   }
 
+  /** Deve criar outro market_niche para subnicho diferente do mesmo CNAE, sem sobrescrever o nicho anterior do candidato. */
+  @Test
+  void shouldCreateAnotherMarketNicheForDifferentNeutralNameInSameCnae() {
+    OprmRoutineResearchCycle cycle = cycle();
+    cycle.setNicheName("Manicure autônoma domiciliar");
+    cycle.setOriginalNicheName("Manicure autônoma domiciliar");
+    cycle.setNeutralNicheName("Manicure autônoma domiciliar");
+    OprmNicheRoutineCard card = card();
+    card.setNicheName("Manicure autônoma domiciliar");
+    OprmNicheCandidate candidate = candidate();
+    candidate.setMarketNicheId(200L);
+    OprmMeiAudienceProfile profile = meiProfile();
+    profile.setMarketNicheId(200L);
+    profile.setNeutralNicheName("Manicure autônoma domiciliar");
+    when(cycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
+    when(cardRepository.findById(10L)).thenReturn(Optional.of(card));
+    when(candidateRepository.findById(77L)).thenReturn(Optional.of(candidate));
+    when(meiAudienceProfileRepository.findFirstByResearchCycleIdOrderByIdDesc(1001L)).thenReturn(Optional.of(profile));
+    when(profileRepository.findMaterializedByCnaeAndNormalizedNeutralName(
+        org.mockito.ArgumentMatchers.eq("9602501"),
+        org.mockito.ArgumentMatchers.eq("manicure autônoma domiciliar"),
+        any(Pageable.class)))
+        .thenReturn(List.of());
+    when(metaSignalService.buildSignalPackage(cycle, card)).thenReturn(metaSignalPackage);
+    when(marketNicheRepository.save(any(MarketNiche.class))).thenAnswer(invocation -> {
+      MarketNiche niche = invocation.getArgument(0);
+      niche.setId(201L);
+      return niche;
+    });
+    when(profileRepository.save(any(MarketNicheEnrichmentProfile.class))).thenAnswer(invocation -> {
+      MarketNicheEnrichmentProfile saved = invocation.getArgument(0);
+      saved.setId(301L);
+      return saved;
+    });
+
+    CompleteEnrichedNicheMaterializerResponse response = service.complete(1001L, new CompleteEnrichedNicheMaterializerRequest(
+        1001L, 10L, "Persona manicure", "Linguagem", "Gatilhos", "Objeções", "test"));
+
+    assertThat(response.marketNicheId()).isEqualTo(201L);
+    assertThat(response.cycleStatus()).isEqualTo("ENRICHED_NICHE_CREATED");
+    assertThat(response.operationalMessage()).contains("mesmo CNAE pode ter outros nichos");
+    assertThat(candidate.getMarketNicheId()).isEqualTo(201L);
+    verify(marketNicheRepository, never()).findById(200L);
+    verify(marketNicheRepository).save(org.mockito.ArgumentMatchers.argThat(niche ->
+        Long.valueOf(201L).equals(niche.getId()) && "Manicure autônoma domiciliar".equals(niche.getName())));
+  }
+
   /** Deve bloquear materialização quando o ciclo sintetizado não tem perfil MEI/autônomo aprovado. */
   @Test
   void shouldNotReleaseMaterializationWithoutMeiAudienceProfile() {

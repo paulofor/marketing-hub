@@ -221,6 +221,7 @@ const statusLabels: Record<string, string> = {
   OUTDATED_SOURCES: "Fontes antigas",
   TOO_CORPORATE: "Corporativo demais",
   SOLUTION_CONTAMINATED: "Contaminado por solução",
+  NEEDS_EXECUTOR_ROUTINE_EVIDENCE: "Precisa evidência da execução real",
   GENERIC: "Genérico",
   FAILED: "Falhou",
   STALLED: "Parado sem progresso",
@@ -304,6 +305,13 @@ const cycleStageByStatus: Record<
       "O gate bloqueou a pesquisa porque a síntese trouxe linguagem de produto, oferta, software, IA ou mecanismo antes da hora.",
     badgeClass:
       "badge text-bg-danger-subtle border border-danger-subtle text-danger",
+  },
+  NEEDS_EXECUTOR_ROUTINE_EVIDENCE: {
+    label: "Etapa 7 · Falta execução real",
+    description:
+      "O nicho tem sinais de venda, mas falta comprovar a rotina manual executada pelo profissional.",
+    badgeClass:
+      "badge text-bg-warning-subtle border border-warning-subtle text-warning",
   },
   GENERIC: {
     label: "Etapa 7 · Gate marcou como genérico",
@@ -535,6 +543,7 @@ function canCreateNewResearchCycle(status: string) {
     "OUTDATED_SOURCES",
     "TOO_CORPORATE",
     "SOLUTION_CONTAMINATED",
+    "NEEDS_EXECUTOR_ROUTINE_EVIDENCE",
     "GENERIC",
     "ENRICHED_NICHE_FAILED",
   ].includes(status);
@@ -578,7 +587,8 @@ function buildStatusBadgeClass(status: string) {
   if (
     status === "NEEDS_MORE_RESEARCH" ||
     status === "NEEDS_MORE_MEI_RESEARCH" ||
-    status === "OUTDATED_SOURCES"
+    status === "OUTDATED_SOURCES" ||
+    status === "NEEDS_EXECUTOR_ROUTINE_EVIDENCE"
   ) {
     return "badge text-bg-warning-subtle border border-warning-subtle text-warning";
   }
@@ -722,6 +732,15 @@ function buildProblemPoint(status: string, errorMessage?: string | null) {
       description:
         "A pesquisa chegou ao gate, mas foi bloqueada por linguagem de produto, oferta, IA, software ou mecanismo antes da etapa correta.",
       className: "text-danger",
+    };
+  }
+  if (status === "NEEDS_EXECUTOR_ROUTINE_EVIDENCE") {
+    return {
+      label: "Ponto do problema",
+      value: "Etapa 7 · Rotina executora insuficiente",
+      description:
+        "O nicho tem sinais de venda, mas falta comprovar tarefas reais, materiais, tempo, deslocamento, retrabalho e problemas práticos do atendimento.",
+      className: "text-warning",
     };
   }
   if (status === "GENERIC") {

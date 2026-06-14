@@ -174,6 +174,29 @@ class BackendRoutineQualityGateServiceTest {
     verify(nicheCandidateRepository).save(candidate);
   }
 
+  /** Deve aceitar o status específico de lacuna de rotina executora e mantê-lo recuperável. */
+  @Test
+  void shouldAcceptExecutorRoutineEvidenceStatus() {
+    OprmRoutineResearchCycle cycle = new OprmRoutineResearchCycle();
+    cycle.setId(1001L);
+    cycle.setSourceNicheId(55L);
+    cycle.setStatus("ROUTINE_SYNTHESIZED");
+    OprmNicheRoutineCard card = card();
+    when(cycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
+    when(cardRepository.findById(10L)).thenReturn(Optional.of(card));
+    when(cardRepository.save(any(OprmNicheRoutineCard.class))).thenAnswer(invocation -> invocation.getArgument(0));
+    when(cycleRepository.save(any(OprmRoutineResearchCycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
+    when(cycleRepository.countBySourceNicheIdAndTriggerSource(55L, "AUTO_QUALITY_REPROCESS")).thenReturn(3L);
+
+    CompleteRoutineQualityGateResponse response = service.complete(1001L, new CompleteRoutineQualityGateRequest(
+        1001L, 10L, "NEEDS_EXECUTOR_ROUTINE_EVIDENCE", false, 75, 80, 10, "status=NEEDS_EXECUTOR_ROUTINE_EVIDENCE", "test"));
+
+    assertThat(response.qualityStatus()).isEqualTo("NEEDS_EXECUTOR_ROUTINE_EVIDENCE");
+    assertThat(cycle.getStatus()).isEqualTo("NEEDS_EXECUTOR_ROUTINE_EVIDENCE");
+    verify(cycleRepository).countBySourceNicheIdAndTriggerSource(55L, "AUTO_QUALITY_REPROCESS");
+  }
+
+
   /** Deve parar o reprocessamento automático no limite para evitar gasto infinito. */
   @Test
   void shouldNotAutomaticallyReprocessWhenLimitWasReached() {

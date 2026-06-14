@@ -102,6 +102,45 @@ class BackendSourceSearcherServiceTest {
     assertThat(queryCaptor.getValue().getResultCount()).isEqualTo(2);
   }
 
+  /** Deve bloquear fonte de solução mesmo sem domínio comercial para separar rotina de oferta. */
+  @Test
+  void completeMarksSolutionLanguageSourceAsContaminationRisk() {
+    OprmResearchQuery query = query();
+    OprmRoutineResearchCycle cycle = cycle();
+    when(researchQueryRepository.findById(2001L)).thenReturn(Optional.of(query));
+    when(routineResearchCycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
+    when(sourceCandidateRepository.existsByResearchQueryIdAndSourceUrl(eq(2001L), any())).thenReturn(false);
+    when(sourceCandidateRepository.saveAll(any()))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+    when(sourceCandidateRepository.findByResearchCycleIdOrderByResearchQueryIdAscSearchPositionAscIdAsc(1001L))
+        .thenAnswer(invocation -> List.of());
+
+    CompleteSourceSearcherRequest request = new CompleteSourceSearcherRequest(
+        "BRAVE_SEARCH",
+        List.of(
+            new SourceCandidateRequest(
+                "https://blog.example.com/ferramenta-agenda",
+                "Ferramenta para automatizar agenda de manicure",
+                "Veja a solução para organizar clientes e vender mais.",
+                "blog.example.com",
+                "PUBLIC_CONTENT",
+                1,
+                null,
+                "PRACTICAL_GUIDE",
+                78,
+                false,
+                true)));
+
+    CompleteSourceSearcherResponse response = service.complete(2001L, request);
+
+    assertThat(response.candidates()).hasSize(1);
+    assertThat(response.candidates().getFirst().status()).isEqualTo("CONTAMINATION_RISK");
+    assertThat(response.candidates().getFirst().routineEvidenceScore()).isEqualTo(20);
+    assertThat(response.candidates().getFirst().solutionLanguageRisk()).isTrue();
+    assertThat(response.candidates().getFirst().rejectionReason())
+        .isEqualTo("Fonte com linguagem de solução; registrada apenas como risco e não usada na coleta de rotina.");
+  }
+
   /** Deve rejeitar resultados com URL duplicada para evitar fontes repetidas na mesma query. */
   @Test
   void completeRejectsDuplicatedUrlsInPayload() {

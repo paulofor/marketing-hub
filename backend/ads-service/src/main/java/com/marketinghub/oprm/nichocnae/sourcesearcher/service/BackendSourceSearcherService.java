@@ -217,7 +217,7 @@ public class BackendSourceSearcherService {
     boolean commercialRisk = Boolean.TRUE.equals(result.commercialPageRisk())
         || SOURCE_INTENT_COMMERCIAL_PAGE_RISK.equals(sourceIntent);
     boolean solutionRisk = Boolean.TRUE.equals(result.solutionLanguageRisk());
-    int routineEvidenceScore = normalizeScore(result.routineEvidenceScore(), commercialRisk);
+    int routineEvidenceScore = normalizeScore(result.routineEvidenceScore(), commercialRisk || solutionRisk);
     boolean outdatedRisk = Boolean.TRUE.equals(result.outdatedSourceRisk());
     boolean structuredBusinessDriftRisk = Boolean.TRUE.equals(result.structuredBusinessDriftRisk());
     candidate.setSourceGroup(sourceIntent);
@@ -237,7 +237,7 @@ public class BackendSourceSearcherService {
     candidate.setRelevanceScore(routineEvidenceScore);
     candidate.setSelectedForFetch(false);
     candidate.setRejectionReason(rejectionReason(commercialRisk, solutionRisk, outdatedRisk, structuredBusinessDriftRisk));
-    candidate.setStatus(commercialRisk ? CANDIDATE_STATUS_CONTAMINATION_RISK : CANDIDATE_STATUS_FOUND);
+    candidate.setStatus((commercialRisk || solutionRisk) ? CANDIDATE_STATUS_CONTAMINATION_RISK : CANDIDATE_STATUS_FOUND);
     candidate.setCreatedAt(now);
     candidate.setUpdatedAt(now);
     return candidate;
@@ -318,10 +318,10 @@ public class BackendSourceSearcherService {
     return value.trim();
   }
 
-  /** Normaliza o escore de aderência à rotina e rebaixa fontes comerciais para não virarem base principal. */
-  private Integer normalizeScore(Integer routineEvidenceScore, boolean commercialRisk) {
+  /** Normaliza o escore de aderência à rotina e rebaixa fontes de solução para não virarem base principal. */
+  private Integer normalizeScore(Integer routineEvidenceScore, boolean contaminationRisk) {
     int score = routineEvidenceScore == null ? 50 : Math.max(0, Math.min(100, routineEvidenceScore));
-    return commercialRisk ? Math.min(score, 20) : score;
+    return contaminationRisk ? Math.min(score, 20) : score;
   }
 
   /** Registra o motivo de risco para fontes que não devem alimentar a coleta principal. */
@@ -340,7 +340,7 @@ public class BackendSourceSearcherService {
       return "Fonte antiga ou sem data; usar apenas como apoio quando não houver alternativa recente.";
     }
     if (solutionRisk) {
-      return "Fonte pública com linguagem de solução; revisar antes de usar como evidência principal.";
+      return "Fonte com linguagem de solução; registrada apenas como risco e não usada na coleta de rotina.";
     }
     return null;
   }

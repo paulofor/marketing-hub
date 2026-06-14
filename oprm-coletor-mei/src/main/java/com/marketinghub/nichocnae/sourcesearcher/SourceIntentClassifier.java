@@ -60,6 +60,10 @@ public class SourceIntentClassifier {
             "software", "plataforma", "agenda online", "app", "aplicativo", "automação", "sistema", "gestão de salão",
             "sistema para salão", "sistema para manicure", "marcação online", "reservas online", "crm",
             "template", "curso online", "ferramenta", "ia para", "inteligência artificial");
+    private static final List<String> SOLUTION_SOURCE_TERMS = List.of(
+            "solução", "software", "ferramenta", "produto", "comprar", "contrate", "agende uma demonstração",
+            "teste grátis", "planos", "assinatura", "automação", "plataforma", "app", "aplicativo", "curso online",
+            "template", "funil", "campanha", "landing page");
     private static final List<String> COMMERCIAL_DOMAINS = List.of(
             "hotmart.", "kiwify.", "eduzz.", "monetizze.", "shopify.", "mercadolivre.", "amazon.");
     private static final List<String> BRAZIL_MARKERS = List.of(
@@ -94,16 +98,15 @@ public class SourceIntentClassifier {
         boolean commercialRisk = commercialRisk(
                 commercialHits, softwareSalesHits, routineHits, problemHits, practicalExecutionHits, professionalSourceHits,
                 autonomousScore, realWorkEvidenceHits);
-        boolean solutionRisk =
-                containsAny(text, List.of("solução", "software", "ferramenta", "produto", "venda", "comprar"));
+        boolean solutionRisk = solutionLanguageRisk(text, commercialHits, softwareSalesHits, realWorkEvidenceHits);
         Instant publishedAt = extractPublishedAt(result, text);
         int freshnessScore = sourceFreshnessScore(publishedAt);
         boolean outdatedRisk = outdatedSourceRisk(publishedAt, freshnessScore);
         String intent = classifyIntent(
                 routineHits, problemHits, guideHits, practicalExecutionHits, professionalSourceHits, educationalHits,
-                commercialRisk);
+                commercialRisk || solutionRisk);
         String classificationType = classifySourceType(
-                domain, text, commercialRisk, structuredBusinessDriftRisk, publishedAt, freshnessScore, problemHits,
+                domain, text, commercialRisk || solutionRisk, structuredBusinessDriftRisk, publishedAt, freshnessScore, problemHits,
                 practicalExecutionHits, professionalSourceHits);
         int score = routineEvidenceScore(
                 routineHits, problemHits, guideHits, practicalExecutionHits, professionalSourceHits, educationalHits,
@@ -233,6 +236,13 @@ public class SourceIntentClassifier {
             return true;
         }
         return commercialHits > 0 && concreteExecutionSignals + realWorkEvidenceHits + autonomousScore / 25 < 2;
+    }
+
+    /** Marca fonte de solução quando a página vende resposta pronta em vez de relatar rotina do executor. */
+    private boolean solutionLanguageRisk(
+            String text, int commercialHits, int softwareSalesHits, int realWorkEvidenceHits) {
+        return containsAny(text, SOLUTION_SOURCE_TERMS)
+                && commercialHits + softwareSalesHits > realWorkEvidenceHits;
     }
 
     /** Conta grupos de evidência humana e operacional que indicam trabalho real em vez de página de solução. */

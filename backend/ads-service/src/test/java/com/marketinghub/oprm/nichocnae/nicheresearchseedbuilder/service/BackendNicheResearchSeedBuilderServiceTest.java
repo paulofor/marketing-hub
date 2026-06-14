@@ -1,6 +1,7 @@
 package com.marketinghub.oprm.nichocnae.nicheresearchseedbuilder.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
@@ -107,6 +108,64 @@ class BackendNicheResearchSeedBuilderServiceTest {
     ArgumentCaptor<OprmRoutineResearchCycle> cycleCaptor = ArgumentCaptor.forClass(OprmRoutineResearchCycle.class);
     verify(routineResearchCycleRepository).save(cycleCaptor.capture());
     assertThat(cycleCaptor.getValue().getTotalQueries()).isEqualTo(12);
+    assertThat(cycleCaptor.getValue().getNicheName()).isEqualTo("Manicures autônomas com agenda instável pelo WhatsApp");
+    assertThat(cycleCaptor.getValue().getNeutralNicheName())
+        .isEqualTo("Manicures autônomas com agenda instável pelo WhatsApp");
+    assertThat(cycleCaptor.getValue().getOriginalNicheName()).isEqualTo("Cabeleireiros, manicures e pedicures");
+  }
+
+  /** Deve bloquear resposta que tenta manter o CNAE amplo como se fosse o nicho final. */
+  @Test
+  void completeRejectsBroadCnaeNameInsteadOfSpecificWinningSubniche() {
+    OprmRoutineResearchCycle cycle = cycle();
+    when(routineResearchCycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
+    when(nicheResearchSeedRepository.existsByResearchCycleId(1001L)).thenReturn(false);
+    CompleteNicheResearchSeedBuilderRequest request = new CompleteNicheResearchSeedBuilderRequest(
+        "Cabeleireiros, manicures e pedicures",
+        "serviço local de beleza",
+        "agenda e atendimento recorrente",
+        "consumidor final recorrente",
+        "manicure, pedicure, escova",
+        commercialPreGateAssumptions(),
+        "INFERRED_FROM_CNAE",
+        "AI",
+        "gpt-5.4",
+        "{\"seed\":true}",
+        1200,
+        800,
+        "resp_seed",
+        validQueryRequests());
+
+    assertThatThrownBy(() -> service.complete(1001L, request))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("specific winning subniche");
+  }
+
+  /** Deve bloquear seed sem evidência comercial mínima antes de gastar busca, coleta e extração profundas. */
+  @Test
+  void completeRejectsSeedWithoutCommercialPreGateCoverage() {
+    OprmRoutineResearchCycle cycle = cycle();
+    when(routineResearchCycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
+    when(nicheResearchSeedRepository.existsByResearchCycleId(1001L)).thenReturn(false);
+    CompleteNicheResearchSeedBuilderRequest request = new CompleteNicheResearchSeedBuilderRequest(
+        "Manicures autônomas com agenda instável pelo WhatsApp",
+        "serviço local de beleza",
+        "rotina operacional de atendimento",
+        "consumidor final",
+        "manicure",
+        "subnicho escolhido por ser comum no CNAE",
+        "INFERRED_FROM_CNAE",
+        "AI",
+        "gpt-5.4",
+        "{\"seed\":true}",
+        1200,
+        800,
+        "resp_seed",
+        List.of(new NicheResearchQueryRequest("rotina manicure Brasil", "ROUTINE_DISCOVERY", "web", 1)));
+
+    assertThatThrownBy(() -> service.complete(1001L, request))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Commercial pre-gate rejected seed");
   }
 
   /** Deve reabrir automaticamente ciclo falho retryável quando a conclusão da etapa dois passa a funcionar. */
@@ -141,12 +200,12 @@ class BackendNicheResearchSeedBuilderServiceTest {
     when(routineResearchCycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
     stubSuccessfulPersistence();
     CompleteNicheResearchSeedBuilderRequest request = new CompleteNicheResearchSeedBuilderRequest(
-        "Cabeleireiros, manicures e pedicures",
+        "Manicures autônomas com agenda instável pelo WhatsApp",
         "serviço local de beleza",
         "agenda e atendimento recorrente",
         "consumidor final recorrente",
         "manicure, pedicure, escova",
-        "depende de agenda cheia",
+        commercialPreGateAssumptions(),
         "INFERRED_FROM_CNAE",
         "AI",
         "gpt-5.4",
@@ -169,12 +228,12 @@ class BackendNicheResearchSeedBuilderServiceTest {
     when(routineResearchCycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
     stubSuccessfulPersistence();
     CompleteNicheResearchSeedBuilderRequest request = new CompleteNicheResearchSeedBuilderRequest(
-        "Cabeleireiros, manicures e pedicures",
+        "Manicures autônomas com agenda instável pelo WhatsApp",
         "serviço local de beleza",
         "agenda e atendimento recorrente",
         "consumidor final recorrente",
         "manicure, pedicure, escova",
-        "depende de agenda cheia",
+        commercialPreGateAssumptions(),
         "INFERRED_FROM_CNAE",
         "AI",
         "gpt-5.4",
@@ -196,12 +255,12 @@ class BackendNicheResearchSeedBuilderServiceTest {
     when(routineResearchCycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
     stubSuccessfulPersistence();
     CompleteNicheResearchSeedBuilderRequest request = new CompleteNicheResearchSeedBuilderRequest(
-        "Cabeleireiros, manicures e pedicures",
+        "Manicures autônomas com agenda instável pelo WhatsApp",
         "serviço local de beleza",
         "agenda e atendimento recorrente",
         "consumidor final recorrente",
         "manicure, pedicure, escova",
-        "depende de agenda cheia",
+        commercialPreGateAssumptions(),
         "INFERRED_FROM_CNAE",
         "AI",
         "gpt-5.4",
@@ -223,12 +282,12 @@ class BackendNicheResearchSeedBuilderServiceTest {
     when(routineResearchCycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
     stubSuccessfulPersistence();
     CompleteNicheResearchSeedBuilderRequest request = new CompleteNicheResearchSeedBuilderRequest(
-        "Cabeleireiros, manicures e pedicures",
+        "Manicures autônomas com agenda instável pelo WhatsApp",
         "serviço local de beleza",
         "agenda e atendimento recorrente",
         "consumidor final recorrente",
         "manicure, pedicure, escova",
-        "depende de agenda cheia",
+        commercialPreGateAssumptions(),
         "INFERRED_FROM_CNAE",
         "AI",
         "gpt-5.4",
@@ -250,12 +309,12 @@ class BackendNicheResearchSeedBuilderServiceTest {
     when(routineResearchCycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
     stubSuccessfulPersistence();
     CompleteNicheResearchSeedBuilderRequest request = new CompleteNicheResearchSeedBuilderRequest(
-        "Cabeleireiros, manicures e pedicures",
+        "Manicures autônomas com agenda instável pelo WhatsApp",
         "serviço local de beleza",
         "agenda e atendimento recorrente",
         "consumidor final recorrente",
         "manicure, pedicure, escova",
-        "depende de agenda cheia",
+        commercialPreGateAssumptions(),
         "INFERRED_FROM_CNAE",
         "AI",
         "gpt-5.4",
@@ -283,12 +342,12 @@ class BackendNicheResearchSeedBuilderServiceTest {
             "manicure MEI rotina Brasil " + index, "MEI_ROUTINE_DISCOVERY", "web", index))
         .toList();
     CompleteNicheResearchSeedBuilderRequest request = new CompleteNicheResearchSeedBuilderRequest(
-        "Cabeleireiros, manicures e pedicures",
+        "Manicures autônomas com agenda instável pelo WhatsApp",
         "serviço local de beleza",
         "agenda e atendimento recorrente",
         "consumidor final recorrente",
         "manicure, pedicure, escova",
-        "depende de agenda cheia",
+        commercialPreGateAssumptions(),
         "INFERRED_FROM_CNAE",
         "AI",
         "gpt-5.4",
@@ -318,12 +377,12 @@ class BackendNicheResearchSeedBuilderServiceTest {
     when(researchQueryRepository.saveAll(any()))
         .thenAnswer(invocation -> invocation.getArgument(0));
     CompleteNicheResearchSeedBuilderRequest request = new CompleteNicheResearchSeedBuilderRequest(
-        "Cabeleireiros, manicures e pedicures",
+        "Manicures autônomas com agenda instável pelo WhatsApp",
         "serviço local de beleza",
         "agenda e atendimento recorrente",
         "consumidor final recorrente",
         "manicure, pedicure, escova",
-        "depende de agenda cheia",
+        commercialPreGateAssumptions(),
         "INFERRED_FROM_CNAE",
         "AI",
         "gpt-5.4",
@@ -378,12 +437,12 @@ class BackendNicheResearchSeedBuilderServiceTest {
   /** Monta um payload válido de etapa dois com doze objetivos comerciais-operacionais para MEI/autônomo. */
   private CompleteNicheResearchSeedBuilderRequest validRequest() {
     return new CompleteNicheResearchSeedBuilderRequest(
-        "Cabeleireiros, manicures e pedicures",
+        "Manicures autônomas com agenda instável pelo WhatsApp",
         "serviço local de beleza",
         "agenda e atendimento recorrente",
         "consumidor final recorrente",
         "manicure, pedicure, escova",
-        "depende de agenda cheia",
+        commercialPreGateAssumptions(),
         "INFERRED_FROM_CNAE",
         null,
         "gpt-5.4",
@@ -392,6 +451,14 @@ class BackendNicheResearchSeedBuilderServiceTest {
         800,
         "resp_seed",
         validQueryRequests());
+  }
+
+  /** Monta justificativa com cobertura dos critérios comerciais exigidos pelo pré-gate. */
+  private String commercialPreGateAssumptions() {
+    return "Subnichos avaliados por recorrência, urgência da dor, capacidade de pagar, clareza do resultado "
+        + "e compatibilidade com produto digital. Venceu manicure autônoma com agenda instável pelo WhatsApp "
+        + "porque sofre com cancelamento, agenda vazia, cobrança de sinal, pacotes mensais, fidelização, "
+        + "resultado de agenda cheia, renda previsível e possibilidade de guia/checklist digital.";
   }
 
   /** Cria a lista padrão de queries da etapa dois usada pelos cenários de persistência. */
@@ -468,6 +535,10 @@ class BackendNicheResearchSeedBuilderServiceTest {
     cycle.setCnaeCode("9602501");
     cycle.setCnaeDescription("Cabeleireiros, manicure e pedicure");
     cycle.setNicheName("Cabeleireiros, manicures e pedicures");
+    cycle.setOriginalNicheName("Cabeleireiros, manicures e pedicures");
+    cycle.setNeutralNicheName("Cabeleireiros, manicures e pedicures");
+    cycle.setResearchMode("ROUTINE_REALITY_RESEARCH");
+    cycle.setSolutionLanguageRiskScore(BigDecimal.ZERO);
     cycle.setSourceScore(new BigDecimal("91.50"));
     cycle.setTriggerSource("AUTO_SCORE_QUEUE");
     cycle.setStatus("RUNNING");

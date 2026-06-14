@@ -116,6 +116,8 @@ describe("OprmCnaeDetailPlaceholderPage", () => {
             solutionLanguageRiskScore: 20,
             qualityNotes: {
               status: "OUTDATED_SOURCES",
+              proximoMovimentoCodigo: "BUSCAR_FONTES_BRASILEIRAS_RECENTES",
+              proximoMovimento: "Abrir nova pesquisa priorizando fontes brasileiras recentes dos ultimos 24 meses",
               fontes: 54,
               sinais: 85,
               tarefasConcretasDistintas: 0,
@@ -163,6 +165,10 @@ describe("OprmCnaeDetailPlaceholderPage", () => {
     ).toBeTruthy();
     expect(screen.getByText(/Resultado apurado:/i)).toBeTruthy();
     expect(screen.getByText(/54 fontes · 85 sinais/i)).toBeTruthy();
+    expect(screen.getByText("Próximo movimento automático")).toBeTruthy();
+    expect(
+      screen.getByText(/Abrir nova pesquisa priorizando fontes brasileiras recentes/i),
+    ).toBeTruthy();
     expect(screen.getByText(/Atualidade das fontes: risco 85%/i)).toBeTruthy();
     expect(screen.getByText(/Rotina do executor insuficiente/i)).toBeTruthy();
     expect(screen.getByText(/Dor prática ausente/i)).toBeTruthy();

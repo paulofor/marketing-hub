@@ -69,6 +69,7 @@ public class BackendSourceFetcherService {
     try {
       validateCompletionRequest(sourceCandidateId, request);
       OprmSourceCandidate candidate = findCandidate(sourceCandidateId);
+      validateRoutineSourceEligibleForFetch(candidate);
       validateCandidateMatchesRequest(candidate, request);
       OprmRoutineResearchCycle cycle = findCycle(candidate.getResearchCycleId());
       if (sourceSnapshotRepository.existsBySourceCandidateId(sourceCandidateId)) {
@@ -178,6 +179,17 @@ public class BackendSourceFetcherService {
     }
     if (!candidate.getSourceDomain().equals(requiredText(request.sourceDomain(), "sourceDomain"))) {
       throw new IllegalArgumentException("sourceDomain must match source candidate domain");
+    }
+  }
+
+  /** Bloqueia coleta de fontes de solução ou comerciais para preservar a pesquisa de rotina real. */
+  private void validateRoutineSourceEligibleForFetch(OprmSourceCandidate candidate) {
+    if (!CANDIDATE_STATUS_FOUND.equals(candidate.getStatus())) {
+      throw new IllegalArgumentException("sourceCandidate must be FOUND before fetch");
+    }
+    if (Boolean.TRUE.equals(candidate.getCommercialPageRisk())
+        || Boolean.TRUE.equals(candidate.getSolutionLanguageRisk())) {
+      throw new IllegalArgumentException("sourceCandidate must be a routine source without solution or commercial risk");
     }
   }
 

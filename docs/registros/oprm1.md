@@ -645,6 +645,18 @@
 - Ajustada a consulta do repositório para filtrar no banco apenas cartões não avaliados que já possuem perfil MEI/autônomo, prevenindo nova parada silenciosa do pipeline na etapa de qualidade.
 
 
+## 2026-06-14 — OPRM NichoCNAE: CNAE como fonte inicial e subnicho vencedor
+
+- Decisão operacional registrada: no pipeline NichoCNAE, o CNAE passa a ser usado apenas como fonte inicial de descoberta e auditoria; o objetivo da etapa de seed passa a ser escolher um subnicho específico vencedor, não criar ou materializar o nicho amplo.
+- Ajuste técnico: o prompt da etapa `niche-research-seed-builder` reforça que o modelo deve comparar 3 a 7 subnichos por recorrência, urgência da dor, capacidade de pagar, clareza do resultado e compatibilidade com produto digital, gravando em `seed.nicheName` apenas o subnicho vencedor com público, contexto operacional e dor/resultado observável.
+- Prevenção de recorrência: o backend bloqueia conclusão da etapa quando a IA retorna o CNAE amplo como nome do nicho e atualiza o ciclo para que as etapas profundas posteriores pesquisem e materializem o subnicho vencedor.
+
+## 2026-06-14 — OPRM NichoCNAE: pré-gate comercial antes da pesquisa profunda
+
+- Implementada a sugestão de pré-gate comercial na etapa `niche-research-seed-builder`: antes de persistir queries para busca/coleta/extração profundas, o backend valida se o seed cobre recorrência, urgência da dor, capacidade de pagar, clareza do resultado, compatibilidade com produto digital e famílias mínimas de query sobre dor, pagamento/cobrança/preço, resultado, aquisição/fidelização e evidência pública.
+- Ajuste técnico: o prompt passou a orientar a IA a executar esse pré-gate antes de gerar queries profundas e a explicitar os critérios em `initialAssumptions`; o backend falha cedo quando a cobertura mínima não existe, evitando gasto de execução completa em subnicho fraco.
+- Prevenção de recorrência: adicionados testes para garantir bloqueio de seed sem cobertura comercial e permanência do comportamento de aplicar o subnicho vencedor ao ciclo.
+
 ## 2026-06-14 — OPRM NichoCNAE: seleção de evidências sem contaminação de solução
 
 - Causa-raiz tratada: ciclos do CNAE 9602501 chegavam ao gate de qualidade com sinais suficientes, mas ainda dominados por linguagem de solução/produto, porque a geração de queries e a seleção de fontes não priorizavam com força suficiente rotina manual, atendimento real, aquisição/fidelização/recorrência, dores humanas e linguagem do executor.
@@ -662,3 +674,24 @@
 - Solicitação atendida: a tela de detalhe do CNAE passou a mostrar o custo do job atual, o custo total acumulado do CNAE em destaque e uma tabela final com todos os jobs executados e o custo total de cada execução.
 - Causa-raiz tratada: o endpoint de acompanhamento do pipeline já listava os ciclos, mas não carregava a telemetria financeira gravada pela etapa de IA, impedindo decisão operacional sobre gasto antes de escalar o nicho.
 - Correção aplicada: o backend passou a somar o custo registrado nos seeds por ciclo e a devolver também o acumulado do CNAE; o frontend passou a exibir esses valores em USD no resumo e no histórico.
+
+## 2026-06-14 — OPRM NichoCNAE: separação entre fonte de rotina e fonte de solução
+
+- Implementada a sugestão de separar fonte de rotina de fonte de solução na pesquisa NichoCNAE: fonte de rotina continua alimentando coleta, snapshot e síntese; fonte de solução/oferta passa a ficar preservada apenas como risco auditável.
+- Causa-raiz tratada: páginas públicas com linguagem de ferramenta, app, software, curso, automação, template, funil ou promessa podiam chegar como `FOUND` quando não eram domínio comercial explícito, permitindo gasto de coleta e risco de transformar resposta vendida pelo mercado em evidência da dor.
+- Correção aplicada: o classificador amplia a marcação de linguagem de solução; o backend grava essas fontes como `CONTAMINATION_RISK`, rebaixa o escore de rotina e a etapa de fetch filtra e bloqueia qualquer candidata com risco comercial ou de solução.
+- Prevenção de recorrência: adicionados testes para solução pública sem marketplace, persistência como risco e bloqueio defensivo antes do snapshot curto.
+
+## 2026-06-14 — OPRM NichoCNAE: medição de dor vendável no gate de qualidade
+
+- Implementada a sugestão de medir dor vendável, não apenas rotina existente, na etapa `routine-quality-gate`.
+- Causa-raiz tratada: cartões podiam comprovar tarefas e rotina real, mas ainda não demonstrar uma dor com força comercial suficiente para sustentar produto digital, porque o gate media principalmente evidência operacional, aquisição/canais e ausência de contaminação.
+- Correção aplicada: o gate passou a calcular `dorVendavelScore` combinando urgência, recorrência, impacto em dinheiro/tempo, tentativa operacional de resolver e resultado desejado; quando o score fica abaixo do mínimo, o ciclo volta para `NEEDS_MORE_MEI_RESEARCH` antes de hipótese/oferta.
+- Prevenção de recorrência: adicionados testes para aprovar rotina com dor forte e bloquear rotina existente com dor fraca ou genérica, mantendo a decisão explicável nas notas do gate.
+
+## 2026-06-14 — OPRM NichoCNAE: próximo movimento automático após reprovação
+
+- Implementada a sugestão de decidir automaticamente o próximo movimento quando o gate de qualidade reprovar um ciclo.
+- Causa-raiz tratada: a reprovação já protegia o pipeline contra nichos fracos, contaminados ou sem dor vendável, mas ainda exigia interpretação manual para decidir se a próxima ação era refazer busca sem solução, buscar fontes recentes, trocar foco para dono-operador, validar aquisição/canais, validar dor vendável ou completar o mix MEI/autônomo.
+- Correção aplicada: o gate agora grava `proximoMovimentoCodigo` e `proximoMovimento` nas notas de qualidade, com decisão determinística por causa dominante; a tela de detalhe do CNAE exibe o próximo movimento automático no bloqueio de qualidade.
+- Prevenção de recorrência: testes unitários validam os movimentos automáticos para aprovação e para reprovações por solução, fontes antigas, desvio corporativo, aquisição/canais fracos e dor vendável fraca.

@@ -17,7 +17,7 @@ public interface OprmSourceCandidateRepository extends JpaRepository<OprmSourceC
     /** Verifica se uma URL já foi salva para uma query de pesquisa específica. */
     boolean existsByResearchQueryIdAndSourceUrl(Long researchQueryId, String sourceUrl);
 
-    /** Lista fontes candidatas pendentes apenas de ciclos ativos para manter cada ciclo operacional independente. */
+    /** Lista apenas fontes de rotina, sem risco de solução/comercial, de ciclos ativos para coleta curta. */
     @Query("""
             select candidate
             from OprmSourceCandidate candidate, OprmRoutineResearchCycle cycle
@@ -26,7 +26,16 @@ public interface OprmSourceCandidateRepository extends JpaRepository<OprmSourceC
               and cycle.finishedAt is null
               and candidate.status = :candidateStatus
               and candidate.selectedForFetch = false
-            order by candidate.researchCycleId asc, candidate.researchQueryId asc, candidate.searchPosition asc, candidate.id asc
+              and candidate.commercialPageRisk = false
+              and candidate.solutionLanguageRisk = false
+            order by candidate.researchCycleId asc,
+              candidate.routineEvidenceScore desc,
+              candidate.autonomousProfessionalEvidenceScore desc,
+              candidate.brazilRelevanceScore desc,
+              candidate.sourceFreshnessScore desc,
+              candidate.researchQueryId asc,
+              candidate.searchPosition asc,
+              candidate.id asc
             """)
     List<OprmSourceCandidate> findPendingForFetchFromActiveCycles(
             @Param("candidateStatus") String candidateStatus,

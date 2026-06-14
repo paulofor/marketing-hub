@@ -17,6 +17,7 @@ public class RoutineQualityGateEngine {
     private static final int MAX_ACCEPTABLE_SOLUTION_RISK = 35;
     private static final int MAX_ACCEPTABLE_OUTDATED_RISK = 45;
     private static final int MAX_ACCEPTABLE_CORPORATE_RISK = 45;
+    private static final int MIN_SELLABLE_PAIN_SCORE = 55;
 
     /** Calcula a decisão da etapa sete exigindo sinais humanos/comportamentais de MEI/autônomo antes da materialização. */
     public RoutineQualityDecision evaluate(RoutineQualityGatePending pending) {
@@ -33,6 +34,7 @@ public class RoutineQualityGateEngine {
         boolean routineRevealsExecutorTasks = concreteRoutineTaskCount >= 2 && !hasRepeatedGenericRoutine && !routineAdministrativeOnly;
         int specificityScore = calculateSpecificityScore(pending);
         int confidenceScore = calculateConfidenceScore(pending, sourceCount, signalCount, effectiveSolutionRiskScore, outdatedRiskScore, corporateRiskScore);
+        int sellablePainScore = calculateSellablePainScore(pending);
         int duplicationScore = calculateDuplicationScore(pending);
         boolean hasRequiredSummaries = hasText(pending.routineSummary()) && hasText(pending.painsSummary());
         boolean hasBrazilianSources = value(pending.brazilianSourceCount()) >= 3;
@@ -49,6 +51,7 @@ public class RoutineQualityGateEngine {
         boolean hasHumanOutcome = value(pending.emotionalOutcomeEvidenceCount()) > 0;
         boolean hasMinimumSignalMix = hasRoutineTask && hasCommercialAcquisitionEvidence && hasPracticalPain && hasHumanOutcome;
         boolean weakAcquisitionOrChannels = !hasCommercialAcquisitionEvidence;
+        boolean weakSellablePain = sellablePainScore < MIN_SELLABLE_PAIN_SCORE;
         boolean dominatedBySolution = effectiveSolutionRiskScore > MAX_ACCEPTABLE_SOLUTION_RISK
                 || value(pending.solutionLanguageRiskCount()) > signalCount / 2;
         boolean outdated = outdatedRiskScore > MAX_ACCEPTABLE_OUTDATED_RISK || !hasRecentSources;
@@ -66,13 +69,15 @@ public class RoutineQualityGateEngine {
                 && hasAuditableEvidence
                 && hasRecentSources
                 && hasMinimumSignalMix
+                && !weakSellablePain
                 && routineRevealsExecutorTasks
                 && value(pending.behavioralEvidenceScore()) >= 55
                 && !dominatedBySolution
                 && !outdated
                 && !tooCorporate
                 && !generic;
-        String status = chooseStatus(generic, weakAcquisitionOrChannels, dominatedBySolution, outdated, tooCorporate, approved, hasMinimumSignalMix);
+        String status = chooseStatus(
+                generic, weakAcquisitionOrChannels, weakSellablePain, dominatedBySolution, outdated, tooCorporate, approved, hasMinimumSignalMix);
         return new RoutineQualityDecision(
                 status,
                 approved,
@@ -86,6 +91,8 @@ public class RoutineQualityGateEngine {
                         hasUsefulCustomerBehaviorSummary,
                         hasUsefulChannelsSummary,
                         weakAcquisitionOrChannels,
+                        sellablePainScore,
+                        weakSellablePain,
                         hasAuditableEvidence,
                         hasRecentSources,
                         dominatedBySolution,
@@ -103,6 +110,7 @@ public class RoutineQualityGateEngine {
     private String chooseStatus(
             boolean generic,
             boolean weakAcquisitionOrChannels,
+            boolean weakSellablePain,
             boolean dominatedBySolution,
             boolean outdated,
             boolean tooCorporate,
@@ -118,6 +126,9 @@ public class RoutineQualityGateEngine {
             return OUTDATED_SOURCES;
         }
         if (weakAcquisitionOrChannels) {
+            return NEEDS_MORE_MEI_RESEARCH;
+        }
+        if (weakSellablePain) {
             return NEEDS_MORE_MEI_RESEARCH;
         }
         if (generic) {
@@ -239,6 +250,27 @@ public class RoutineQualityGateEngine {
         return clamp(matches * 12);
     }
 
+    /** Mede se a dor é vendável, exigindo urgência, recorrência, impacto financeiro e resultado desejado. */
+    private int calculateSellablePainScore(RoutineQualityGatePending pending) {
+        String text = normalize(String.join(
+                " ",
+                nullToEmpty(pending.painsSummary()),
+                nullToEmpty(pending.resultsSummary()),
+                nullToEmpty(pending.customerBehaviorSummary()),
+                nullToEmpty(pending.channelsSummary())));
+        int score = 0;
+        score += containsAnyTerm(text, List.of("urgente", "falta", "cancelamento", "desmarc", "atraso", "perder cliente", "medo", "inseguranca", "frustracao")) ? 18 : 0;
+        score += containsAnyTerm(text, List.of("recorr", "retorno", "pacote", "mensal", "toda semana", "agenda cheia", "fidelizacao")) ? 18 : 0;
+        score += containsAnyTerm(text, List.of("preco", "cobrar", "cobranca", "orcamento", "valor", "renda", "faturamento", "dinheiro", "previsibilidade", "mes fraco")) ? 18 : 0;
+        score += containsAnyTerm(text, List.of("retrabalho", "sem tempo", "horario", "material acabou", "correria", "prazo", "no-show", "agenda vazia")) ? 16 : 0;
+        score += containsAnyTerm(text, List.of("whatsapp", "instagram", "indicacao", "google", "confirmar", "remarcar", "reativar", "organizar", "controle")) ? 14 : 0;
+        score += containsAnyTerm(text, List.of("agenda cheia", "previsibilidade", "mais clientes", "cliente novo", "crescer", "independencia", "resultado")) ? 16 : 0;
+        score += Math.min(18, (value(pending.operationalDifficultyCount()) + value(pending.painSignalCount())) * 4
+                + value(pending.customerAcquisitionEvidenceCount()) * 3
+                + value(pending.emotionalOutcomeEvidenceCount()) * 3);
+        return clamp(score);
+    }
+
     /** Monta notas objetivas para explicar a decisão operacional do gate. */
     private String buildNotes(
             RoutineQualityGatePending pending,
@@ -247,6 +279,8 @@ public class RoutineQualityGateEngine {
             boolean hasUsefulCustomerBehaviorSummary,
             boolean hasUsefulChannelsSummary,
             boolean weakAcquisitionOrChannels,
+            int sellablePainScore,
+            boolean weakSellablePain,
             boolean hasAuditableEvidence,
             boolean hasRecentSources,
             boolean dominatedBySolution,
@@ -259,7 +293,19 @@ public class RoutineQualityGateEngine {
             boolean routineAdministrativeOnly,
             boolean routineRevealsExecutorTasks) {
         List<String> notes = new ArrayList<>();
+        NextMove nextMove = resolveNextMove(
+                status,
+                hasMinimumSignalMix,
+                weakAcquisitionOrChannels,
+                weakSellablePain,
+                dominatedBySolution,
+                !hasRecentSources,
+                corporateRiskScore > MAX_ACCEPTABLE_CORPORATE_RISK || value(pending.autonomousProfessionalFitScore()) < 50,
+                !hasAuditableEvidence,
+                !routineRevealsExecutorTasks);
         notes.add("status=" + status);
+        notes.add("proximoMovimentoCodigo=" + nextMove.code());
+        notes.add("proximoMovimento=" + nextMove.description());
         notes.add("fontes=" + value(pending.sourceCount()));
         notes.add("fontesBrasileiras=" + value(pending.brazilianSourceCount()));
         notes.add("fontesRecentes=" + value(pending.recentSourceCount()));
@@ -275,6 +321,8 @@ public class RoutineQualityGateEngine {
         notes.add("faltaEvidenciaAquisicaoCanaisRecorrenciaOuComportamentoClientes=" + weakAcquisitionOrChannels);
         notes.add("dorPratica=" + (value(pending.operationalDifficultyCount()) + value(pending.painSignalCount())));
         notes.add("dorEmocionalSonhoOuMedo=" + value(pending.emotionalOutcomeEvidenceCount()));
+        notes.add("dorVendavelScore=" + sellablePainScore);
+        notes.add("dorVendavelSuficiente=" + !weakSellablePain);
         notes.add("mixMinimoMeiAutonomo=" + hasMinimumSignalMix);
         notes.add("evidenciaAuditavelBrasil=" + hasAuditableEvidence);
         notes.add("fontesRecentesSuficientes=" + hasRecentSources);
@@ -288,6 +336,48 @@ public class RoutineQualityGateEngine {
         notes.add("fontesDistintas=" + distinctDomainCount(pending.sourceDomains()));
         return String.join("; ", notes);
     }
+
+
+    /** Define o próximo movimento operacional para transformar reprovação em ação automática de pipeline. */
+    private NextMove resolveNextMove(
+            String status,
+            boolean hasMinimumSignalMix,
+            boolean weakAcquisitionOrChannels,
+            boolean weakSellablePain,
+            boolean dominatedBySolution,
+            boolean outdated,
+            boolean tooCorporate,
+            boolean weakAuditableEvidence,
+            boolean weakExecutorRoutine) {
+        if (MEI_AUDIENCE_READY.equals(status)) {
+            return new NextMove("MATERIALIZAR_NICHO", "Materializar nicho enriquecido com perfil MEI/autonomo aprovado");
+        }
+        if (dominatedBySolution || SOLUTION_CONTAMINATED.equals(status)) {
+            return new NextMove("REFAZER_BUSCA_SEM_SOLUCAO", "Reexecutar busca removendo fontes de software app curso automacao e oferta");
+        }
+        if (tooCorporate || TOO_CORPORATE.equals(status)) {
+            return new NextMove("TROCAR_PARA_DONO_OPERADOR", "Refazer pesquisa focando MEI autonomo e dono-operador que executa pessoalmente o trabalho");
+        }
+        if (outdated || OUTDATED_SOURCES.equals(status)) {
+            return new NextMove("BUSCAR_FONTES_BRASILEIRAS_RECENTES", "Abrir nova pesquisa priorizando fontes brasileiras recentes dos ultimos 24 meses");
+        }
+        if (weakAcquisitionOrChannels) {
+            return new NextMove("VALIDAR_AQUISICAO_CANAIS", "Pesquisar WhatsApp Instagram indicacao retorno fidelizacao recorrencia e comportamento de clientes");
+        }
+        if (weakSellablePain) {
+            return new NextMove("VALIDAR_DOR_VENDAVEL", "Pesquisar urgencia recorrencia impacto em dinheiro ou tempo e resultado desejado antes da hipotese");
+        }
+        if (weakExecutorRoutine || GENERIC.equals(status)) {
+            return new NextMove("BUSCAR_TAREFAS_REAIS_EXECUTOR", "Pesquisar relatos e tarefas concretas do executor em fontes publicas brasileiras");
+        }
+        if (!hasMinimumSignalMix || weakAuditableEvidence) {
+            return new NextMove("COMPLETAR_MIX_MEI_AUTONOMO", "Coletar sinais de rotina aquisicao dor pratica e dor emocional do MEI autonomo");
+        }
+        return new NextMove("REVISAR_MANUALMENTE_GATE", "Revisar criterios do gate e abrir nova pesquisa direcionada");
+    }
+
+    /** Representa o próximo movimento operacional recomendado após a decisão do gate. */
+    private record NextMove(String code, String description) {}
 
     /** Converte texto em pontuação por tamanho útil com teto informado. */
     private int cappedLengthScore(String value, int cap) {
@@ -352,6 +442,11 @@ public class RoutineQualityGateEngine {
                         "fidelizacao")
                 .stream()
                 .anyMatch(normalized::contains);
+    }
+
+    /** Verifica se algum marcador comercial aparece no texto normalizado. */
+    private boolean containsAnyTerm(String normalized, List<String> terms) {
+        return terms.stream().anyMatch(normalized::contains);
     }
 
     /** Detecta marcadores concretos que normalmente indicam texto menos genérico e mais comportamental. */

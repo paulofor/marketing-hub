@@ -87,6 +87,39 @@ class NicheResearchSeedBuilderPromptBuilderTest {
                 .doesNotContain("SALES_PAIN_DISCOVERY");
     }
 
+    /** Deve transformar a reprovação anterior em orientação obrigatória para o novo ciclo. */
+    @Test
+    void shouldIncludeAutomaticLearningFromPreviousQualityGate() {
+        NicheResearchSeedBuilderPending pending = new NicheResearchSeedBuilderPending(
+                1001L,
+                55L,
+                "9602501",
+                "Cabeleireiros, manicure e pedicure",
+                "Cabeleireiros, manicure e pedicure",
+                BigDecimal.valueOf(92),
+                125000L,
+                "gpt-5.4",
+                "gpt-5.4 (gpt-5.4)",
+                "MANUAL_REPROCESS",
+                "SOLUTION_CONTAMINATED",
+                "REFAZER_BUSCA_SEM_SOLUCAO",
+                "Reexecutar busca removendo fontes de solucao",
+                "riscoLinguagemSolucao=70; dominadoPorSolucao=true",
+                "RUNNING",
+                Instant.now(),
+                Instant.now());
+
+        String prompt = promptBuilder.buildPrompt(pending);
+
+        assertThat(prompt)
+                .contains("Aprendizado automático do ciclo anterior")
+                .contains("previousQualityStatus: SOLUTION_CONTAMINATED")
+                .contains("previousNextMoveCode: REFAZER_BUSCA_SEM_SOLUCAO")
+                .contains("não repita a mesma causa de reprovação")
+                .contains("exclua termos de solução")
+                .contains("priorize relatos manuais");
+    }
+
     /** Cria uma pendência padrão para montagem determinística do prompt da etapa dois. */
     private NicheResearchSeedBuilderPending pending() {
         return new NicheResearchSeedBuilderPending(
@@ -100,6 +133,10 @@ class NicheResearchSeedBuilderPromptBuilderTest {
                 "gpt-5.4",
                 "gpt-5.4 (gpt-5.4)",
                 "AUTO_SCORE_QUEUE",
+                null,
+                null,
+                null,
+                null,
                 "RUNNING",
                 Instant.now(),
                 Instant.now());

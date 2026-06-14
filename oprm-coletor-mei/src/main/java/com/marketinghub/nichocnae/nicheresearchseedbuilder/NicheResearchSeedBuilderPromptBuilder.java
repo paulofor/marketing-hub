@@ -25,6 +25,15 @@ public class NicheResearchSeedBuilderPromptBuilder {
         prompt.add("nicheName: " + safe(input.nicheName()));
         prompt.add("sourceScore: " + input.sourceScore());
         prompt.add("meiVolume: " + (input.meiVolume() == null ? "não informado" : input.meiVolume()));
+        if (hasText(input.previousQualityStatus()) || hasText(input.previousNextMoveCode()) || hasText(input.previousLearningNotes())) {
+            prompt.add("");
+            prompt.add("Aprendizado automático do ciclo anterior:");
+            prompt.add("previousQualityStatus: " + safe(input.previousQualityStatus()));
+            prompt.add("previousNextMoveCode: " + safe(input.previousNextMoveCode()));
+            prompt.add("previousNextMove: " + safe(input.previousNextMove()));
+            prompt.add("previousLearningNotes: " + safe(input.previousLearningNotes()));
+            prompt.add("Use esse aprendizado como restrição obrigatória: não repita a mesma causa de reprovação; altere o subnicho, as famílias de queries e a estratégia de fontes para executar o próximo movimento indicado.");
+        }
         prompt.add("");
         prompt.add("Orientações operacionais:");
         prompt.add("1. Responda JSON válido aderente ao schema estrutural solicitado.");
@@ -49,11 +58,17 @@ public class NicheResearchSeedBuilderPromptBuilder {
         prompt.add("20. A etapa confia no modelo: não force marcador literal em toda query quando a intenção de pesquisa estiver clara.");
         prompt.add("21. Respeite os limites maxLength definidos no JSON Schema, especialmente queryGoal curto e queryText como frase de busca objetiva.");
         prompt.add("22. Não inclua metadado técnico, comentário operacional, debugInfo ou JSON serializado dentro de texto funcional.");
+        prompt.add("23. Se houver aprendizado anterior REFAZER_BUSCA_SEM_SOLUCAO, exclua termos de solução e priorize relatos manuais; se BUSCAR_FONTES_BRASILEIRAS_RECENTES, gere queries com recorte Brasil e últimos 24 meses; se VALIDAR_DOR_VENDAVEL, priorize perda financeira, recorrência, cobrança, preço, sinal, agenda vazia e tentativa de resolver; se VALIDAR_AQUISICAO_CANAIS, priorize WhatsApp, Instagram, indicação, retorno, fidelização e cliente que some; se TROCAR_PARA_DONO_OPERADOR, troque o foco para executor MEI/autônomo e não empresa estruturada.");
         return prompt.toString();
     }
 
     /** Devolve texto seguro para evitar valores nulos no prompt enviado à IA. */
     private String safe(String value) {
         return value == null || value.isBlank() ? "não informado" : value;
+    }
+
+    /** Informa se um texto opcional tem conteúdo útil para entrar no prompt. */
+    private boolean hasText(String value) {
+        return value != null && !value.isBlank();
     }
 }

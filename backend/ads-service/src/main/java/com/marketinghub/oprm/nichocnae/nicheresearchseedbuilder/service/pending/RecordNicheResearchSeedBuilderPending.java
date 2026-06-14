@@ -14,6 +14,11 @@ public record RecordNicheResearchSeedBuilderPending(
     Long meiVolume,
     String openAiModelCode,
     String openAiModelName,
+    String triggerSource,
+    String previousQualityStatus,
+    String previousNextMoveCode,
+    String previousNextMove,
+    String previousLearningNotes,
     String status,
     Instant startedAt,
     Instant createdAt) {}

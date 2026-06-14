@@ -3,12 +3,14 @@ package com.marketinghub.oprm.nichocnae.nicheresearchseedbuilder.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.marketinghub.oprm.nichocnae.OprmNicheResearchSeed;
+import com.marketinghub.oprm.nichocnae.OprmNicheRoutineCard;
 import com.marketinghub.oprm.nichocnae.OprmResearchQuery;
 import com.marketinghub.oprm.nichocnae.OprmRoutineResearchCycle;
 import com.marketinghub.oprm.nichocnae.nicheresearchseedbuilder.service.completeStageExecution.CompleteNicheResearchSeedBuilderRequest;
@@ -17,6 +19,7 @@ import com.marketinghub.oprm.nichocnae.nicheresearchseedbuilder.service.complete
 import com.marketinghub.oprm.nichocnae.nicheresearchseedbuilder.service.failStageExecution.FailNicheResearchSeedBuilderRequest;
 import com.marketinghub.repository.jpa.oprm.market.OprmMarketSizeByCnaeRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmNicheResearchSeedRepository;
+import com.marketinghub.repository.jpa.oprm.nichocnae.OprmNicheRoutineCardRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmResearchQueryRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmRoutineResearchCycleRepository;
 import java.math.BigDecimal;
@@ -39,6 +42,7 @@ class BackendNicheResearchSeedBuilderServiceTest {
   @Mock private OprmResearchQueryRepository researchQueryRepository;
   @Mock private OprmNicheResearchSeedBuilderConfigurationGateway configurationGateway;
   @Mock private OprmMarketSizeByCnaeRepository marketSizeByCnaeRepository;
+  @Mock private OprmNicheRoutineCardRepository routineCardRepository;
 
   @InjectMocks private BackendNicheResearchSeedBuilderService service;
 
@@ -70,6 +74,35 @@ class BackendNicheResearchSeedBuilderServiceTest {
     assertThat(result.getFirst().researchCycleId()).isEqualTo(1001L);
     assertThat(result.getFirst().cnaeCode()).isEqualTo("9602501");
     assertThat(result.getFirst().meiVolume()).isNull();
+  }
+
+  /** Deve expor aprendizado do gate anterior para a etapa de seed não repetir a reprovação dominante. */
+  @Test
+  void listPendingIncludesPreviousQualityGateLearning() {
+    OprmRoutineResearchCycle cycle = cycle();
+    OprmNicheRoutineCard card = new OprmNicheRoutineCard();
+    card.setQualityStatus("SOLUTION_CONTAMINATED");
+    card.setQualityNotes(
+        "status=SOLUTION_CONTAMINATED; proximoMovimentoCodigo=REFAZER_BUSCA_SEM_SOLUCAO; "
+            + "proximoMovimento=Reexecutar busca removendo fontes de solucao; riscoLinguagemSolucao=70");
+    when(routineResearchCycleRepository.findSeedBuilderPendingOrRetryable(
+            eq("RUNNING"),
+            eq("FAILED"),
+            eq("nicheName is required"),
+            eq("Data too long for column 'query_goal'"),
+            eq("niche-research-seed-builder/stage-executions"),
+            any(Pageable.class)))
+        .thenReturn(List.of(cycle));
+    when(routineCardRepository.findLatestCheckedCardForLearning(anyLong(), eq(1001L), any(Pageable.class)))
+        .thenReturn(List.of(card));
+
+    var result = service.listPending();
+
+    assertThat(result).hasSize(1);
+    assertThat(result.getFirst().previousQualityStatus()).isEqualTo("SOLUTION_CONTAMINATED");
+    assertThat(result.getFirst().previousNextMoveCode()).isEqualTo("REFAZER_BUSCA_SEM_SOLUCAO");
+    assertThat(result.getFirst().previousNextMove()).isEqualTo("Reexecutar busca removendo fontes de solucao");
+    assertThat(result.getFirst().previousLearningNotes()).contains("riscoLinguagemSolucao=70");
   }
 
   /** Deve gravar seed, queries pendentes e total de queries no ciclo quando o payload é válido. */

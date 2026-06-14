@@ -696,6 +696,12 @@
 - Correção aplicada: o gate agora grava `proximoMovimentoCodigo` e `proximoMovimento` nas notas de qualidade, com decisão determinística por causa dominante; a tela de detalhe do CNAE exibe o próximo movimento automático no bloqueio de qualidade.
 - Prevenção de recorrência: testes unitários validam os movimentos automáticos para aprovação e para reprovações por solução, fontes antigas, desvio corporativo, aquisição/canais fracos e dor vendável fraca.
 
+## 2026-06-14 — OPRM NichoCNAE: aprendizado automático entre ciclos reprovados
+
+- Implementada propagação automática do aprendizado do gate de qualidade anterior para a etapa de seed do novo ciclo.
+- Causa-raiz tratada: reprocessamentos podiam repetir o mesmo tipo de erro — solução contaminada, fontes antigas, desvio corporativo, aquisição/canais fracos ou dor vendável fraca — porque o novo seed não recebia a causa dominante da reprovação anterior como restrição operacional.
+- Correção aplicada: o backend passa a expor no pending da etapa `niche-research-seed-builder` o `previousQualityStatus`, `previousNextMoveCode`, `previousNextMove` e notas compactas do gate anterior; o prompt do coletor transforma esse aprendizado em instrução obrigatória para alterar subnicho, famílias de queries e estratégia de fontes.
+- Prevenção de recorrência: adicionados testes no backend e no coletor para garantir que a etapa de seed receba e use o aprendizado automático antes da nova pesquisa profunda.
 ## 2026-06-14 — OPRM NichoCNAE: busca Google para fontes recentes
 
 - Adicionado provedor `GOOGLE_CUSTOM_SEARCH_RECENT` na etapa `oprmSourceSearcher`, configurável por variáveis `OPRM_NICHO_CNAE_SOURCE_SEARCHER_GOOGLE_*`, para priorizar fontes brasileiras recentes com `dateRestrict` padrão de 24 meses antes do fallback DuckDuckGo.

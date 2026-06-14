@@ -83,6 +83,7 @@ describe("OprmCnaeDetailPlaceholderPage", () => {
               researchMode: "ROUTINE_REALITY_RESEARCH",
               solutionLanguageRiskScore: 100,
               sourceScore: 90,
+              triggerSource: "MANUAL_CNAE_DETAIL",
               status: "OUTDATED_SOURCES",
               totalQueries: 48,
               totalSourceCandidates: 340,
@@ -195,6 +196,86 @@ describe("OprmCnaeDetailPlaceholderPage", () => {
     expect(screen.queryByText("Em execução")).toBeNull();
   });
 
+
+  it("informa quando o ciclo atual foi reprocessado automaticamente com aprendizado", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = input.toString();
+
+        if (url.includes("routine-research-cycle/stage-executions")) {
+          return new Response(
+            JSON.stringify([
+              {
+                researchCycleId: 48,
+                sourceNicheId: 1,
+                cnaeCode: "9602501",
+                nicheName: "Manicure autônoma com agenda instável",
+                originalNicheName: "Cabeleireiros, manicure e pedicure",
+                neutralNicheName: "Manicure autônoma com agenda instável",
+                researchMode: "ROUTINE_REALITY_RESEARCH",
+                solutionLanguageRiskScore: 10,
+                sourceScore: 90,
+                triggerSource: "AUTO_QUALITY_REPROCESS",
+                status: "RUNNING",
+                totalQueries: 8,
+                totalSourceCandidates: 20,
+                totalSourceSnapshots: 4,
+                totalExtractedSignals: 12,
+                executionCostUsd: 0.01,
+                cnaeTotalCostUsd: 0.05,
+                startedAt: "2026-06-14T19:07:28Z",
+                finishedAt: null,
+                errorMessage: null,
+              },
+              {
+                researchCycleId: 47,
+                sourceNicheId: 1,
+                cnaeCode: "9602501",
+                nicheName: "Manicure autônoma com agenda instável",
+                originalNicheName: "Cabeleireiros, manicure e pedicure",
+                neutralNicheName: "Manicure autônoma com agenda instável",
+                researchMode: "ROUTINE_REALITY_RESEARCH",
+                solutionLanguageRiskScore: 10,
+                sourceScore: 90,
+                triggerSource: "MANUAL_CNAE_DETAIL",
+                status: "TOO_CORPORATE",
+                totalQueries: 29,
+                totalSourceCandidates: 160,
+                totalSourceSnapshots: 17,
+                totalExtractedSignals: 59,
+                executionCostUsd: 0.0373,
+                cnaeTotalCostUsd: 0.05,
+                startedAt: "2026-06-14T18:33:52Z",
+                finishedAt: "2026-06-14T18:59:59Z",
+                errorMessage: null,
+              },
+            ]),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+          );
+        }
+
+        return new Response("{}", {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }),
+    );
+
+    renderPage();
+
+    expect(
+      await screen.findByText("Reprocessamento automático em andamento"),
+    ).toBeTruthy();
+    expect(
+      screen.getByText(/ciclo #48 foi criado automaticamente depois que o ciclo #47 terminou como corporativo demais/i),
+    ).toBeTruthy();
+    expect(
+      screen.getByText(/tentativas automáticas usadas: 1\/3/i),
+    ).toBeTruthy();
+  });
+
+
   it("diferencia visualmente os cards concluídos e em execução por contraste forte", async () => {
     vi.stubGlobal(
       "fetch",
@@ -209,6 +290,7 @@ describe("OprmCnaeDetailPlaceholderPage", () => {
                 sourceNicheId: 1,
                 cnaeCode: "9602501",
                 nicheName: "Cabeleireiros, manicure e pedicure",
+                triggerSource: "MANUAL_CNAE_DETAIL",
                 status: "RUNNING",
                 totalQueries: 48,
                 totalSourceCandidates: 340,

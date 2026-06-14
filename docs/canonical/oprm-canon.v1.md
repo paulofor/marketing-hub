@@ -306,6 +306,7 @@ Evitar fechamento prematuro de `import run` que destrói a totalização de mark
 - Quando a reprovação do gate for recuperável (`NEEDS_MORE_RESEARCH`, `NEEDS_MORE_MEI_RESEARCH`, `OUTDATED_SOURCES`, `TOO_CORPORATE`, `SOLUTION_CONTAMINATED` ou `GENERIC`), o backend deve iniciar automaticamente novo ciclo de pesquisa até o limite de 3 tentativas automáticas por candidato, sem exigir clique humano a cada reprovação.
 - Cada novo ciclo automático deve preservar o subnicho aprendido e disponibilizar ao seed o status, o próximo movimento e as notas compactadas do gate anterior, para que a próxima execução não perca aprendizado e não repita a mesma causa dominante de reprovação.
 - A tela operacional deve expor esse próximo movimento em linguagem de negócio, mantendo os detalhes técnicos como apoio e não como principal orientação ao usuário.
+- Quando houver reprocessamento automático, a tela do fluxo deve informar claramente ao usuário que o novo ciclo foi criado sem clique manual, qual ciclo anterior gerou o aprendizado, qual causa do gate orientou a nova tentativa e quantas tentativas automáticas já foram usadas.
 
 ## Critério de efetividade — próximo movimento automático no gate NichoCNAE
 

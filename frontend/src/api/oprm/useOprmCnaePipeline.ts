@@ -11,6 +11,7 @@ export interface OprmRoutineResearchCycleSummary {
   researchMode: string;
   solutionLanguageRiskScore: number | null;
   sourceScore: number | null;
+  triggerSource: string | null;
   status: string;
   totalQueries: number | null;
   totalSourceCandidates: number | null;

@@ -713,3 +713,8 @@
 - O gate de qualidade do NichoCNAE passa a abrir automaticamente novo ciclo quando reprovar por causa corrigível (`NEEDS_MORE_RESEARCH`, `NEEDS_MORE_MEI_RESEARCH`, `OUTDATED_SOURCES`, `TOO_CORPORATE`, `SOLUTION_CONTAMINATED` ou `GENERIC`), limitado a 3 reprocessamentos automáticos por candidato para controlar custo.
 - O ciclo reprocessado preserva o subnicho vencedor e as notas estruturadas do gate anterior; a etapa de seed já recebe `previousQualityStatus`, `previousNextMoveCode`, `previousNextMove` e `previousLearningNotes`, evitando perder aprendizado e reduzindo repetição da mesma causa de reprovação.
 - Causa-raiz: o fluxo dependia de clique humano após reprovações recuperáveis, e ciclos reprovados ficavam como decisão terminal sem disparar automaticamente a próxima tentativa orientada pelo aprendizado.
+
+## 2026-06-14 — OPRM NichoCNAE: transparência do reprocessamento automático na tela do fluxo
+
+- A tela `/oprm/cnaes/:cnaeCode` passa a informar quando o ciclo atual foi criado por reprocessamento automático do gate, mostrando o ciclo anterior, a causa de reprovação, o reaproveitamento do aprendizado e o contador de tentativas automáticas.
+- O resumo de ciclos por CNAE passou a expor `triggerSource`, permitindo diferenciar ciclo manual, fila automática e reprocessamento automático sem depender de inferência visual.

@@ -63,7 +63,7 @@ paths:
         - $ref: '#/components/parameters/ResearchCycleId'
       responses:
         '200':
-          description: Novo ciclo criado e nicho marcado como em pesquisa para sair de FAILED, STALLED, NEEDS_MORE_RESEARCH, GENERIC ou ENRICHED_NICHE_FAILED.
+          description: Novo ciclo criado e nicho marcado como em pesquisa para sair de FAILED, STALLED, NEEDS_MORE_RESEARCH, NEEDS_EXECUTOR_ROUTINE_EVIDENCE, GENERIC ou ENRICHED_NICHE_FAILED.
           content:
             application/json:
               schema:
@@ -71,7 +71,7 @@ paths:
         '404':
           description: Ciclo ou nicho CNAE de origem não encontrado.
         '409':
-          description: Ciclo não está em status FAILED, STALLED, NEEDS_MORE_RESEARCH, GENERIC ou ENRICHED_NICHE_FAILED e não pode ser reprocessado.
+          description: Ciclo não está em status FAILED, STALLED, NEEDS_MORE_RESEARCH, NEEDS_EXECUTOR_ROUTINE_EVIDENCE, GENERIC ou ENRICHED_NICHE_FAILED e não pode ser reprocessado.
   /api/oprm/nichocnae/cnaes/{cnaeCode}/routine-research-orchestrator/run:
     post:
       summary: Encerra ciclos abertos e executa a etapa zero para iniciar um novo pipeline NichoCNAE do CNAE escolhido manualmente na tela de detalhe.
@@ -903,7 +903,7 @@ components:
           example: AUTO_SCORE_QUEUE
         cycleStatus:
           type: string
-          description: Status do ciclo; STALLED, NEEDS_MORE_RESEARCH, GENERIC e ENRICHED_NICHE_FAILED podem abrir novo ciclo manual pelo endpoint de reprocessamento.
+          description: Status do ciclo; STALLED, NEEDS_MORE_RESEARCH, NEEDS_EXECUTOR_ROUTINE_EVIDENCE, GENERIC e ENRICHED_NICHE_FAILED podem abrir novo ciclo manual pelo endpoint de reprocessamento.
           example: RUNNING
         processedAt:
           type: string
@@ -941,6 +941,7 @@ components:
             - OUTDATED_SOURCES
             - TOO_CORPORATE
             - SOLUTION_CONTAMINATED
+            - NEEDS_EXECUTOR_ROUTINE_EVIDENCE
             - GENERIC
           example: FAILED
         previousRoutineResearchStatus:
@@ -2565,7 +2566,7 @@ components:
           format: int64
         qualityStatus:
           type: string
-          enum: [MEI_AUDIENCE_READY, NEEDS_MORE_MEI_RESEARCH, OUTDATED_SOURCES, TOO_CORPORATE, SOLUTION_CONTAMINATED, GENERIC]
+          enum: [MEI_AUDIENCE_READY, NEEDS_MORE_MEI_RESEARCH, OUTDATED_SOURCES, TOO_CORPORATE, SOLUTION_CONTAMINATED, NEEDS_EXECUTOR_ROUTINE_EVIDENCE, GENERIC]
         readyForHypothesis:
           type: boolean
         specificityScore:

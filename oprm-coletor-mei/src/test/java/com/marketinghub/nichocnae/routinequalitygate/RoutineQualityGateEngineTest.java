@@ -176,11 +176,42 @@ class RoutineQualityGateEngineTest {
                 0));
 
         assertThat(decision.readyForHypothesis()).isFalse();
-        assertThat(decision.qualityStatus()).isIn("GENERIC", "NEEDS_MORE_MEI_RESEARCH");
+        assertThat(decision.qualityStatus()).isEqualTo("NEEDS_EXECUTOR_ROUTINE_EVIDENCE");
         assertThat(decision.qualityNotes())
                 .contains("rotinaGenericaRepetida=true")
                 .contains("rotinaRevelaTarefasReaisExecutor=false");
     }
+
+    /** Deve diferenciar nicho vendável com lacuna de rotina executora de reprovação genérica. */
+    @Test
+    void shouldRequestExecutorRoutineEvidenceWhenCommercialSignalsAreStrongButRoutineTasksAreMissing() {
+        RoutineQualityDecision decision = engine.evaluate(pending(
+                text("Rotina observada de agenda, atendimento, organização e acompanhamento de clientes recorrentes", 8),
+                text("Dores concretas de falta, remarcação, cliente que some, cobrança, renda instável e retrabalho", 8),
+                text("Resultados desejados com agenda cheia, retorno quinzenal, previsibilidade e menos buracos", 8),
+                text("Contexto operacional público do nicho", 8),
+                6,
+                14,
+                2,
+                3,
+                1,
+                0,
+                4,
+                0,
+                2,
+                0,
+                86,
+                84,
+                72,
+                0));
+
+        assertThat(decision.qualityStatus()).isEqualTo("NEEDS_EXECUTOR_ROUTINE_EVIDENCE");
+        assertThat(decision.readyForHypothesis()).isFalse();
+        assertThat(decision.qualityNotes())
+                .contains("rotinaRevelaTarefasReaisExecutor=false")
+                .contains("proximoMovimentoCodigo=BUSCAR_TAREFAS_REAIS_EXECUTOR");
+    }
+
 
     /** Deve aprovar rotina de manicure/cabeleireiro quando há tarefas concretas distintas e evidência suficiente. */
     @Test

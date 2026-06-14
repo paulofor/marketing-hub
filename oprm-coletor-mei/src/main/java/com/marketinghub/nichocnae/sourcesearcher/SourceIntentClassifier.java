@@ -38,13 +38,15 @@ public class SourceIntentClassifier {
             "o que faz", "como faz", "atendimento", "cliente", "higiene", "esterilização", "lavar", "cortar",
             "escovar", "colorir", "preparar", "aplicar", "organizar", "limpar", "cuidar",
             "agenda de atendimento", "confirmar horário", "remarcar", "cobrar", "orçamento", "materiais",
-            "antes do atendimento", "durante o atendimento", "depois do atendimento");
+            "antes do atendimento", "durante o atendimento", "depois do atendimento", "maleta", "deslocamento",
+            "tempo de atendimento", "cutilagem", "esmaltar", "unha quebrada", "esmalte descascou",
+            "retrabalho", "reclamação", "reposição de insumos", "biossegurança");
     private static final List<String> PROFESSIONAL_SOURCE_TERMS = List.of(
             "cbo", "classificação brasileira de ocupações", "guia profissional", "relato de profissional",
             "relato profissional", "profissional relata", "profissionais relatam", "experiência profissional",
             "ocupação", "descrição da ocupação", "atribuições", "funções");
     private static final List<String> PROBLEM_TERMS = List.of(
-            "problema", "dificuldade", "desafio", "erro", "reclamação", "dúvida", "pergunta", "como fazer",
+            "problema", "dificuldade", "desafio", "erro", "reclamação", "retrabalho", "unha quebrada", "esmalte descascou", "dúvida", "pergunta", "como fazer",
             "cansaço", "ansiedade", "estresse", "sobrecarga", "insegurança", "medo", "frustração",
             "falta", "cancelamento", "atraso", "retrabalho");
     private static final List<String> GUIDE_TERMS = List.of(

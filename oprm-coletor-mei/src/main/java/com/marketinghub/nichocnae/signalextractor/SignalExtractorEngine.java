@@ -40,8 +40,14 @@ public class SignalExtractorEngine {
                 "FEAR_SIGNAL", "Medo ou insegurança que influencia decisões do profissional autônomo", 80);
         addIfPresent(signals, normalized, evidence, List.of("reconhecimento", "respeito", "profissionalismo", "confiança", "reputação", "indicação"),
                 "STATUS_DESIRE", "Desejo de reconhecimento, confiança e reputação profissional", 78);
-        addIfPresent(signals, normalized, evidence, List.of("correria", "pressa", "prazo", "urgente", "sem tempo", "horário", "atrasado"),
+        addIfPresent(signals, normalized, evidence, List.of("correria", "pressa", "prazo", "urgente", "sem tempo", "horário", "atrasado", "tempo de atendimento"),
                 "TIME_PRESSURE", "Pressão de tempo ou conflito de horários na execução do serviço", 78);
+        addIfPresent(signals, normalized, evidence, List.of("retrabalho", "refazer", "conserto", "unha quebrada", "esmalte descascou", "reclamação", "cliente reclama"),
+                "REWORK_OR_COMPLAINT", "Retrabalho, falha ou reclamação prática depois do atendimento", 84);
+        addIfPresent(signals, normalized, evidence, List.of("material acabou", "insumo", "maleta", "alicate", "esmalte", "reposição", "produto acabou"),
+                "MATERIAL_OR_SUPPLY_PAIN", "Dificuldade com materiais, maleta, insumos ou reposição", 82);
+        addIfPresent(signals, normalized, evidence, List.of("higiene", "esterilização", "esteriliz", "biossegurança", "desinfecção", "alicate esterilizado"),
+                "HYGIENE_OR_SAFETY_ROUTINE", "Rotina de higiene, esterilização ou biossegurança no atendimento", 82);
         addIfPresent(signals, normalized, evidence, List.of("renda", "faturamento", "ganho", "dinheiro", "instável", "mês fraco", "previsibilidade"),
                 "INCOME_INSTABILITY", "Instabilidade de renda ou baixa previsibilidade financeira do autônomo", 80);
         addIfPresent(signals, normalized, evidence, List.of("qualidade", "higiene", "segurança", "confiança", "avaliação", "reclamação", "reputação"),

@@ -14,6 +14,7 @@ public class RoutineQualityGateEngine {
     private static final String TOO_CORPORATE = "TOO_CORPORATE";
     private static final String SOLUTION_CONTAMINATED = "SOLUTION_CONTAMINATED";
     private static final String GENERIC = "GENERIC";
+    private static final String NEEDS_EXECUTOR_ROUTINE_EVIDENCE = "NEEDS_EXECUTOR_ROUTINE_EVIDENCE";
     private static final int MAX_ACCEPTABLE_SOLUTION_RISK = 35;
     private static final int MAX_ACCEPTABLE_OUTDATED_RISK = 45;
     private static final int MAX_ACCEPTABLE_CORPORATE_RISK = 45;
@@ -56,11 +57,25 @@ public class RoutineQualityGateEngine {
                 || value(pending.solutionLanguageRiskCount()) > signalCount / 2;
         boolean outdated = outdatedRiskScore > MAX_ACCEPTABLE_OUTDATED_RISK || !hasRecentSources;
         boolean tooCorporate = corporateRiskScore > MAX_ACCEPTABLE_CORPORATE_RISK || value(pending.autonomousProfessionalFitScore()) < 50;
+        boolean commerciallyPromisingNeedsExecutorRoutine = !routineRevealsExecutorTasks
+                && hasRequiredSummaries
+                && specificityScore >= 40
+                && duplicationScore < 70
+                && !weakAcquisitionOrChannels
+                && !weakSellablePain
+                && hasPracticalPain
+                && hasHumanOutcome
+                && hasAuditableEvidence
+                && hasRecentSources
+                && value(pending.autonomousProfessionalFitScore()) >= 50
+                && !dominatedBySolution
+                && !outdated
+                && !tooCorporate;
         boolean generic = specificityScore < 40
                 || duplicationScore >= 70
                 || !hasRequiredSummaries
                 || !hasAuditableEvidence
-                || !routineRevealsExecutorTasks;
+                || (!routineRevealsExecutorTasks && !commerciallyPromisingNeedsExecutorRoutine);
         boolean approved = sourceCount >= 3
                 && signalCount >= 6
                 && specificityScore >= 60
@@ -77,7 +92,7 @@ public class RoutineQualityGateEngine {
                 && !tooCorporate
                 && !generic;
         String status = chooseStatus(
-                generic, weakAcquisitionOrChannels, weakSellablePain, dominatedBySolution, outdated, tooCorporate, approved, hasMinimumSignalMix);
+                generic, weakAcquisitionOrChannels, weakSellablePain, dominatedBySolution, outdated, tooCorporate, approved, hasMinimumSignalMix, commerciallyPromisingNeedsExecutorRoutine);
         return new RoutineQualityDecision(
                 status,
                 approved,
@@ -115,7 +130,8 @@ public class RoutineQualityGateEngine {
             boolean outdated,
             boolean tooCorporate,
             boolean approved,
-            boolean hasMinimumSignalMix) {
+            boolean hasMinimumSignalMix,
+            boolean commerciallyPromisingNeedsExecutorRoutine) {
         if (dominatedBySolution) {
             return SOLUTION_CONTAMINATED;
         }
@@ -130,6 +146,9 @@ public class RoutineQualityGateEngine {
         }
         if (weakSellablePain) {
             return NEEDS_MORE_MEI_RESEARCH;
+        }
+        if (commerciallyPromisingNeedsExecutorRoutine) {
+            return NEEDS_EXECUTOR_ROUTINE_EVIDENCE;
         }
         if (generic) {
             return GENERIC;
@@ -367,7 +386,7 @@ public class RoutineQualityGateEngine {
         if (weakSellablePain) {
             return new NextMove("VALIDAR_DOR_VENDAVEL", "Pesquisar urgencia recorrencia impacto em dinheiro ou tempo e resultado desejado antes da hipotese");
         }
-        if (weakExecutorRoutine || GENERIC.equals(status)) {
+        if (weakExecutorRoutine || NEEDS_EXECUTOR_ROUTINE_EVIDENCE.equals(status) || GENERIC.equals(status)) {
             return new NextMove("BUSCAR_TAREFAS_REAIS_EXECUTOR", "Pesquisar relatos e tarefas concretas do executor em fontes publicas brasileiras");
         }
         if (!hasMinimumSignalMix || weakAuditableEvidence) {

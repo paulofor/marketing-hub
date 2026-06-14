@@ -1589,3 +1589,11 @@ Arquivos principais:
 - documentos lidos para tratar a situação:
   - docs/canonical/mois-hotmart-mapeamento-ciclos-campos-banco.md
   - mois-hotmart-collector/AGENTS.md
+
+## 2026-06-14 — Reagendamento Hotmart ciclo 1 para 13:00
+- Após constatar que a execução anterior do ciclo 1 não coletou produtos porque o JWT Hotmart estava expirado/inválido, o ciclo 1 de listagem do `mois-hotmart-collector` foi reagendado para execução pontual única em **14/06/2026 às 13:00** no timezone `America/Sao_Paulo`.
+- Atualizados scheduler, teste unitário e cânone Hotmart para usar o cron `0 0 13 14 6 *`, mantendo o alvo operacional de 400 produtos e a guarda de execução apenas em 2026.
+
+## 2026-06-14 — Reagendamento Hotmart ciclo 1 para 22:00
+- Por solicitação operacional, o ciclo 1 de listagem do `mois-hotmart-collector` foi reagendado de 13:00 para execução pontual única em **14/06/2026 às 22:00** no timezone `America/Sao_Paulo`.
+- Atualizados scheduler, teste unitário e cânone Hotmart para usar o cron `0 0 22 14 6 *`, mantendo o alvo operacional de 400 produtos e a guarda de execução apenas em 2026.

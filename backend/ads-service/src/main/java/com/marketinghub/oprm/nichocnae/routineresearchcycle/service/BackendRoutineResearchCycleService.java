@@ -4,8 +4,10 @@ import com.marketinghub.oprm.nichocnae.OprmRoutineResearchCycle;
 import com.marketinghub.oprm.nichocnae.routineresearchcycle.service.detailStageExecution.RecordBackendRoutineResearchCycleDetalheDto;
 import com.marketinghub.oprm.nichocnae.routineresearchcycle.service.listStageExecutions.RoutineResearchCycleExecutionSummaryResponse;
 import com.marketinghub.oprm.nichocnae.routineresearchcycle.service.pending.RecordRoutineResearchCyclePending;
+import com.marketinghub.repository.jpa.oprm.nichocnae.OprmNicheResearchSeedRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmRoutineResearchCycleRepository;
 import jakarta.persistence.EntityNotFoundException;
+import java.math.BigDecimal;
 import java.util.List;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -17,16 +19,21 @@ public class BackendRoutineResearchCycleService {
   private static final String CYCLE_STATUS_RUNNING = "RUNNING";
 
   private final OprmRoutineResearchCycleRepository routineResearchCycleRepository;
+  private final OprmNicheResearchSeedRepository nicheResearchSeedRepository;
 
   /** Inicializa o serviço com o repositório canônico de ciclos de pesquisa de rotina. */
-  public BackendRoutineResearchCycleService(OprmRoutineResearchCycleRepository routineResearchCycleRepository) {
+  public BackendRoutineResearchCycleService(
+      OprmRoutineResearchCycleRepository routineResearchCycleRepository,
+      OprmNicheResearchSeedRepository nicheResearchSeedRepository) {
     this.routineResearchCycleRepository = routineResearchCycleRepository;
+    this.nicheResearchSeedRepository = nicheResearchSeedRepository;
   }
 
   /** Lista ciclos de pesquisa de rotina pendentes para processamento assíncrono da etapa. */
   @Transactional(readOnly = true)
   public List<RecordRoutineResearchCyclePending> listPending() {
-    return routineResearchCycleRepository.findByStatusOrderByStartedAtAsc(CYCLE_STATUS_RUNNING, PageRequest.of(0, 20))
+    return routineResearchCycleRepository
+        .findByStatusOrderByStartedAtAsc(CYCLE_STATUS_RUNNING, PageRequest.of(0, 20))
         .stream()
         .map(this::toPending)
         .toList();
@@ -35,25 +42,37 @@ public class BackendRoutineResearchCycleService {
   /** Lista execuções do ciclo de pesquisa de rotina associadas ao CNAE informado. */
   @Transactional(readOnly = true)
   public List<RoutineResearchCycleExecutionSummaryResponse> listStageExecutionsByCnae(String cnaeCode) {
-    return routineResearchCycleRepository.findByCnaeCodeOrderByStartedAtDesc(cnaeCode).stream()
-        .map(this::toSummary)
-        .toList();
+    List<OprmRoutineResearchCycle> cycles =
+        routineResearchCycleRepository.findByCnaeCodeOrderByStartedAtDesc(cnaeCode);
+    BigDecimal cnaeTotalCostUsd =
+        cycles.stream()
+            .map(cycle -> executionCostUsd(cycle.getId()))
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+    return cycles.stream().map(cycle -> toSummary(cycle, cnaeTotalCostUsd)).toList();
   }
 
   /** Lista execuções do ciclo de pesquisa de rotina associadas a um nicho CNAE de origem. */
   @Transactional(readOnly = true)
   public List<RoutineResearchCycleExecutionSummaryResponse> listStageExecutions(Long sourceNicheId) {
-    return routineResearchCycleRepository.findBySourceNicheIdOrderByStartedAtDesc(sourceNicheId).stream()
-        .map(this::toSummary)
-        .toList();
+    List<OprmRoutineResearchCycle> cycles =
+        routineResearchCycleRepository.findBySourceNicheIdOrderByStartedAtDesc(sourceNicheId);
+    BigDecimal totalCostUsd =
+        cycles.stream()
+            .map(cycle -> executionCostUsd(cycle.getId()))
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+    return cycles.stream().map(cycle -> toSummary(cycle, totalCostUsd)).toList();
   }
 
   /** Retorna os detalhes operacionais de uma execução específica do ciclo de pesquisa de rotina. */
   @Transactional(readOnly = true)
   public RecordBackendRoutineResearchCycleDetalheDto detailStageExecution(Long researchCycleId) {
-    OprmRoutineResearchCycle cycle = routineResearchCycleRepository
-        .findById(researchCycleId)
-        .orElseThrow(() -> new EntityNotFoundException("Routine research cycle not found: " + researchCycleId));
+    OprmRoutineResearchCycle cycle =
+        routineResearchCycleRepository
+            .findById(researchCycleId)
+            .orElseThrow(
+                () ->
+                    new EntityNotFoundException(
+                        "Routine research cycle not found: " + researchCycleId));
     return toDetail(cycle);
   }
 
@@ -77,7 +96,8 @@ public class BackendRoutineResearchCycleService {
   }
 
   /** Converte um ciclo em resumo para listagem operacional. */
-  private RoutineResearchCycleExecutionSummaryResponse toSummary(OprmRoutineResearchCycle cycle) {
+  private RoutineResearchCycleExecutionSummaryResponse toSummary(
+      OprmRoutineResearchCycle cycle, BigDecimal cnaeTotalCostUsd) {
     return new RoutineResearchCycleExecutionSummaryResponse(
         cycle.getId(),
         cycle.getSourceNicheId(),
@@ -93,9 +113,16 @@ public class BackendRoutineResearchCycleService {
         cycle.getTotalSourceCandidates(),
         cycle.getTotalSourceSnapshots(),
         cycle.getTotalExtractedSignals(),
+        executionCostUsd(cycle.getId()),
+        cnaeTotalCostUsd,
         cycle.getStartedAt(),
         cycle.getFinishedAt(),
         cycle.getErrorMessage());
+  }
+
+  /** Soma o custo registrado pelas etapas com telemetria de IA para uma execução do ciclo. */
+  private BigDecimal executionCostUsd(Long researchCycleId) {
+    return nicheResearchSeedRepository.sumCostUsdByResearchCycleId(researchCycleId);
   }
 
   /** Converte um ciclo em detalhe operacional completo. */

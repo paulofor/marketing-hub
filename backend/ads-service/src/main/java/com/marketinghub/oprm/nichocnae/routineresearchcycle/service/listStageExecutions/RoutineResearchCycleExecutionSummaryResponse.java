@@ -19,6 +19,8 @@ public record RoutineResearchCycleExecutionSummaryResponse(
     Integer totalSourceCandidates,
     Integer totalSourceSnapshots,
     Integer totalExtractedSignals,
+    BigDecimal executionCostUsd,
+    BigDecimal cnaeTotalCostUsd,
     Instant startedAt,
     Instant finishedAt,
     String errorMessage) {}

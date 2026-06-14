@@ -814,6 +814,14 @@ components:
         totalExtractedSignals:
           type: integer
           nullable: true
+        executionCostUsd:
+          type: number
+          nullable: true
+          description: Custo total em USD registrado para esta execução do pipeline.
+        cnaeTotalCostUsd:
+          type: number
+          nullable: true
+          description: Custo total em USD de todas as execuções do CNAE.
         startedAt:
           type: string
           format: date-time

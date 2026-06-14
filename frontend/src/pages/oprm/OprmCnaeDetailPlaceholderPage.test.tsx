@@ -88,6 +88,8 @@ describe("OprmCnaeDetailPlaceholderPage", () => {
               totalSourceCandidates: 340,
               totalSourceSnapshots: 104,
               totalExtractedSignals: 266,
+              executionCostUsd: 0.0123,
+              cnaeTotalCostUsd: 0.0456,
               startedAt: "2026-06-12T19:08:26Z",
               finishedAt: null,
               errorMessage: null,
@@ -145,6 +147,11 @@ describe("OprmCnaeDetailPlaceholderPage", () => {
     renderPage();
 
     expect(await screen.findByText(/status atual:/i)).toBeTruthy();
+    expect(screen.getByText("Custo total do CNAE")).toBeTruthy();
+    expect(screen.getAllByText("US$ 0,0456").length).toBeGreaterThan(0);
+    expect(screen.getByText(/custo do job atual:/i)).toBeTruthy();
+    expect(screen.getAllByText("US$ 0,0123").length).toBeGreaterThan(0);
+    expect(screen.getByText("Jobs executados para este CNAE")).toBeTruthy();
     expect(
       screen.getByText(/bloqueada por fontes antigas ou sem atualidade/i),
     ).toBeTruthy();

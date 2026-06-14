@@ -14,6 +14,8 @@ public record NicheResearchSeedBuilderBackendCompletionRequest(
         String createdBy,
         String model,
         String rawModelResponse,
+        String rawOpenAiRequest,
+        String rawOpenAiResponse,
         Integer inputTokens,
         Integer outputTokens,
         String openAiResponseId,

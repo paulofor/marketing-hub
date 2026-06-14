@@ -24,7 +24,7 @@ class NicheResearchSeedBuilderProcessorTest {
         NicheResearchSeedBuilderProcessor processor = new NicheResearchSeedBuilderProcessor(openAiClient, backendClient);
         NicheResearchSeedBuilderPending pending = pending();
         NicheResearchSeedBuilderOutput output = output();
-        OpenAiSeedBuilderResult generated = new OpenAiSeedBuilderResult(output, "{}", 10, 20, "resp_123", "gpt-test");
+        OpenAiSeedBuilderResult generated = new OpenAiSeedBuilderResult(output, "{}", "{\"input\":true}", "{\"id\":\"resp_123\"}", 10, 20, "resp_123", "gpt-test");
         when(openAiClient.generate(pending)).thenReturn(generated);
         when(backendClient.completeStageExecution(generated)).thenReturn(output);
 

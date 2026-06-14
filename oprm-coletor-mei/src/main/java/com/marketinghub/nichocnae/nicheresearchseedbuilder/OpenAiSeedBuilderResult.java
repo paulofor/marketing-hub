@@ -4,6 +4,8 @@ package com.marketinghub.nichocnae.nicheresearchseedbuilder;
 public record OpenAiSeedBuilderResult(
         NicheResearchSeedBuilderOutput output,
         String rawModelResponse,
+        String rawOpenAiRequest,
+        String rawOpenAiResponse,
         Integer inputTokens,
         Integer outputTokens,
         String openAiResponseId,

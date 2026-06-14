@@ -1,3 +1,8 @@
+## 2026-06-14 00:00:00 (UTC) — OPRM NichoCNAE: múltiplos nichos por CNAE
+
+- Alterado o conceito de materialização para permitir mais de um `market_niche` por CNAE quando ciclos aprovados representarem subnichos diferentes.
+- A materialização final agora só atualiza nicho existente quando houver perfil anterior com o mesmo `cnae_code` e o mesmo `neutral_niche_name` normalizado; vínculo antigo do candidato/perfil não bloqueia a criação de novo nicho para subnicho diferente.
+
 ## 2026-06-14 00:00:00 (UTC) — OPRM NichoCNAE: rotina executora antes de genérico
 
 - Implementado o status `NEEDS_EXECUTOR_ROUTINE_EVIDENCE` para diferenciar nicho comercialmente promissor com lacuna de evidência da rotina manual executada, evitando reprovação genérica prematura.

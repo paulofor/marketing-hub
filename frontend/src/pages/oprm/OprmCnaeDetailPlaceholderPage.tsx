@@ -9,7 +9,10 @@ import {
   useOprmCnaePipelineCycles,
   useStartOprmCnaePipeline,
 } from "../../api/oprm/useOprmCnaePipeline";
-import { useOprmRoutineQualityGateDetail } from "../../api/oprm/useOprmRoutineQualityGateDetail";
+import {
+  type OprmQualityNotes,
+  useOprmRoutineQualityGateDetail,
+} from "../../api/oprm/useOprmRoutineQualityGateDetail";
 import PageTitle from "../../components/PageTitle";
 import OprmModuleNavigation from "./OprmModuleNavigation";
 import { useBreadcrumbs } from "../../app/breadcrumbs";
@@ -181,6 +184,97 @@ function buildBusinessRecommendation(params: {
     return `Subnicho recomendado: ${params.recommendedSubniche.trim()}.`;
   }
   return null;
+}
+
+function describeRejectedSituations(notes?: OprmQualityNotes | null) {
+  if (!notes) {
+    return [];
+  }
+  const rejected: string[] = [];
+  const numberValue = (key: string) =>
+    typeof notes[key] === "number" ? Number(notes[key]) : undefined;
+  const booleanValue = (key: string) =>
+    typeof notes[key] === "boolean" ? Boolean(notes[key]) : undefined;
+
+  const solutionRisk = numberValue("riscoLinguagemSolucao");
+  const textualSolutionRisk = numberValue("riscoTextualSolucao");
+  if (booleanValue("dominadoPorSolucao") === true || (solutionRisk ?? 0) > 35) {
+    rejected.push(
+      `Contaminação por solução: risco ${solutionRisk ?? "não informado"}%${
+        textualSolutionRisk !== undefined
+          ? ` e risco textual ${textualSolutionRisk}%`
+          : ""
+      }. Rejeitado porque apareceu produto, software, app, automação, curso, template ou oferta antes de validar a rotina real.`,
+    );
+  }
+
+  const outdatedRisk = numberValue("riscoFonteAntiga");
+  if (
+    booleanValue("fontesRecentesSuficientes") === false ||
+    (outdatedRisk ?? 0) > 45
+  ) {
+    rejected.push(
+      `Atualidade das fontes: risco ${outdatedRisk ?? "não informado"}%. Rejeitado porque as evidências são antigas, sem data ou pouco recentes para sustentar decisão comercial.`,
+    );
+  }
+
+  const corporateRisk = numberValue("riscoEmpresaEstruturada");
+  if ((corporateRisk ?? 0) > 45) {
+    rejected.push(
+      `Desvio para empresa estruturada: risco ${corporateRisk}%. Rejeitado porque a pesquisa ficou mais parecida com empresa/corporação do que com MEI ou autônomo dono-operador.`,
+    );
+  }
+
+  if (booleanValue("rotinaRevelaTarefasReaisExecutor") === false) {
+    rejected.push(
+      "Rotina do executor insuficiente: faltam tarefas manuais concretas do profissional, como atendimento real, materiais, procedimentos, entrega e retrabalho.",
+    );
+  }
+
+  if (booleanValue("mixMinimoMeiAutonomo") === false) {
+    rejected.push(
+      "Mix mínimo MEI/autônomo incompleto: a pesquisa ainda não juntou rotina, aquisição/canais, dor prática e dor emocional/sonho/medo no mesmo cartão.",
+    );
+  }
+
+  if (
+    booleanValue(
+      "faltaEvidenciaAquisicaoCanaisRecorrenciaOuComportamentoClientes",
+    ) === true
+  ) {
+    rejected.push(
+      "Aquisição e recorrência fracas: faltam evidências claras de como o profissional consegue clientes, fideliza, reativa, agenda, cobra ou gera recorrência.",
+    );
+  }
+
+  const practicalPain = numberValue("dorPratica");
+  if (practicalPain !== undefined && practicalPain < 1) {
+    rejected.push(
+      "Dor prática ausente: o gate não encontrou problema operacional concreto suficiente para virar oportunidade vendável.",
+    );
+  }
+
+  return rejected;
+}
+
+function buildQualityResultSummary(notes?: OprmQualityNotes | null) {
+  if (!notes) {
+    return null;
+  }
+  const parts = [
+    typeof notes.fontes === "number" ? `${notes.fontes} fontes` : null,
+    typeof notes.sinais === "number" ? `${notes.sinais} sinais` : null,
+    typeof notes.tarefasConcretasDistintas === "number"
+      ? `${notes.tarefasConcretasDistintas} tarefas concretas distintas`
+      : null,
+    typeof notes.aquisicaoOuCanal === "number"
+      ? `${notes.aquisicaoOuCanal} sinais de aquisição/canal`
+      : null,
+    typeof notes.dorPratica === "number"
+      ? `${notes.dorPratica} dores práticas`
+      : null,
+  ].filter(Boolean);
+  return parts.length > 0 ? parts.join(" · ") : null;
 }
 
 function qualityBlockedMessage(status?: string | null) {
@@ -439,6 +533,12 @@ export default function OprmCnaeDetailPlaceholderPage() {
           latestCycle.neutralNicheName ?? latestCycle.nicheName,
       })
     : null;
+  const qualityRejectedSituations = describeRejectedSituations(
+    qualityGateQuery.data?.qualityNotes,
+  );
+  const qualityResultSummary = buildQualityResultSummary(
+    qualityGateQuery.data?.qualityNotes,
+  );
   const cnaeDescription =
     volumeQuery.data?.cnaeDescription ??
     scoreQuery.data?.cnaeDescription ??
@@ -611,9 +711,29 @@ export default function OprmCnaeDetailPlaceholderPage() {
               </div>
               {qualityBlockedMessage(latestCycle.status) ? (
                 <div className="mt-2">
-                  {qualityBlockedMessage(latestCycle.status)} O pipeline não
-                  está em execução agora; pesquise novamente após corrigir a
-                  causa do bloqueio.
+                  <p className="mb-2">
+                    {qualityBlockedMessage(latestCycle.status)} O pipeline não
+                    está em execução agora; pesquise novamente após corrigir a
+                    causa do bloqueio.
+                  </p>
+                  {qualityResultSummary ? (
+                    <p className="mb-2 small">
+                      <span className="fw-semibold">Resultado apurado:</span>{" "}
+                      {qualityResultSummary}.
+                    </p>
+                  ) : null}
+                  {qualityRejectedSituations.length > 0 ? (
+                    <div className="alert alert-light border mb-0 py-2 px-3">
+                      <span className="fw-semibold d-block mb-1">
+                        Situações rejeitadas pelo gate
+                      </span>
+                      <ul className="mb-0 ps-3">
+                        {qualityRejectedSituations.map((situation) => (
+                          <li key={situation}>{situation}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
                 </div>
               ) : null}
               {businessRecommendation ? (

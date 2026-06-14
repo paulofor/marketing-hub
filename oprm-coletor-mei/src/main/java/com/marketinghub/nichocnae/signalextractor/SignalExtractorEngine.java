@@ -26,11 +26,11 @@ public class SignalExtractorEngine {
             addIfPresent(signals, normalized, evidence, List.of("agenda", "atendimento", "cliente", "serviço", "rotina", "material", "entrega"),
                     "ROUTINE_TASK", "Executar rotina diária de atendimento, agenda, materiais e entrega do serviço", 82);
         }
-        addIfPresent(signals, normalized, evidence, List.of("whatsapp", "instagram", "facebook", "google", "indicação", "rede social", "mensagem"),
+        addIfPresent(signals, normalized, evidence, List.of("whatsapp", "instagram", "facebook", "google", "indicação", "boca a boca", "rede social", "mensagem", "direct", "comentário"),
                 "CHANNEL_USAGE", "Usar canais digitais, mensagens ou indicações para contato com clientes", 86);
-        addIfPresent(signals, normalized, evidence, List.of("cliente", "conseguir clientes", "captar", "divulgar", "orçamento", "venda", "fidel", "recorr", "retorno", "relacionamento"),
+        addIfPresent(signals, normalized, evidence, List.of("cliente", "conseguir clientes", "captar", "divulgar", "orçamento", "fidel", "recorr", "retorno", "reativar", "pacote", "relacionamento", "agenda cheia", "cliente novo"),
                 "CUSTOMER_ACQUISITION_BEHAVIOR", "Conseguir, atender, fidelizar ou recuperar clientes na rotina autônoma", 84);
-        addIfPresent(signals, normalized, evidence, List.of("falta", "cancelamento", "atraso", "caos", "falha", "problema", "dificuldade", "retrabalho"),
+        addIfPresent(signals, normalized, evidence, List.of("falta", "cancelamento", "desmarcou", "remarcação", "atraso", "caos", "falha", "problema", "dificuldade", "retrabalho", "agenda vazia", "material acabou"),
                 "OPERATIONAL_PAIN", "Dificuldade prática que gera perda de agenda, retrabalho ou falha no atendimento", 84);
         addIfPresent(signals, normalized, evidence, List.of("cansaço", "ansiedade", "estresse", "sobrecarga", "insegurança", "medo", "vergonha", "frustração"),
                 "EMOTIONAL_PAIN", "Dor emocional ligada à pressão, insegurança ou sobrecarga do trabalho autônomo", 82);
@@ -50,9 +50,9 @@ public class SignalExtractorEngine {
                 "PRICE_INSECURITY", "Insegurança para precificar, cobrar ou defender o valor do serviço", 80);
         addIfPresent(signals, normalized, evidence, List.of("falta", "não apareceu", "desmarcou", "cancelou", "remarcação", "no-show"),
                 "CLIENT_NO_SHOW_OR_CANCELLATION", "Cliente que falta, cancela ou remarca prejudicando agenda e renda", 82);
-        addIfPresent(signals, normalized, evidence, List.of("pergunta", "como", "dúvida", "orientação"),
+        addIfPresent(signals, normalized, evidence, List.of("pergunta", "como", "dúvida", "orientação", "cliente perguntou", "cliente pede"),
                 "CUSTOMER_QUESTION", "Pergunta prática que bloqueia decisão ou execução", 76);
-        addIfPresent(signals, normalized, evidence, List.of("organizar", "controle", "processo"),
+        addIfPresent(signals, normalized, evidence, List.of("organizar", "controle", "processo", "minha rotina", "meus clientes", "linguagem", "apelido"),
                 "CONTEXT_MARKER", "Sinal de organização e controle observado na rotina", 74);
         addSolutionRiskIfPresent(signals, normalized, evidence);
         if (signals.isEmpty() && StringUtils.hasText(evidence)) {

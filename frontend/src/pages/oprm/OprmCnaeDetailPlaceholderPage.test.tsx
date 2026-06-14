@@ -97,6 +97,44 @@ describe("OprmCnaeDetailPlaceholderPage", () => {
         );
       }
 
+      if (url.includes("routine-quality-gate/stage-executions/24")) {
+        return new Response(
+          JSON.stringify({
+            researchCycleId: 24,
+            cycleStatus: "OUTDATED_SOURCES",
+            routineCardId: 15,
+            qualityStatus: "OUTDATED_SOURCES",
+            readyForHypothesis: false,
+            specificityScore: 71,
+            confidenceScore: 43,
+            duplicationScore: 0,
+            routineEvidenceScore: 64,
+            difficultyEvidenceScore: 0,
+            sourceDiversityScore: 80,
+            solutionLanguageRiskScore: 20,
+            qualityNotes: {
+              status: "OUTDATED_SOURCES",
+              fontes: 54,
+              sinais: 85,
+              tarefasConcretasDistintas: 0,
+              aquisicaoOuCanal: 12,
+              dorPratica: 0,
+              riscoFonteAntiga: 85,
+              fontesRecentesSuficientes: true,
+              riscoEmpresaEstruturada: 30,
+              riscoLinguagemSolucao: 20,
+              dominadoPorSolucao: false,
+              rotinaRevelaTarefasReaisExecutor: false,
+              mixMinimoMeiAutonomo: false,
+              faltaEvidenciaAquisicaoCanaisRecorrenciaOuComportamentoClientes: true,
+            },
+            checkedBy: "oprmRoutineQualityGate",
+            checkedAt: "2026-06-12T19:40:05Z",
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }
+
       return new Response("{}", {
         status: 200,
         headers: { "Content-Type": "application/json" },
@@ -113,6 +151,14 @@ describe("OprmCnaeDetailPlaceholderPage", () => {
     expect(
       screen.getByText(/o pipeline não está em execução agora/i),
     ).toBeTruthy();
+    expect(
+      await screen.findByText("Situações rejeitadas pelo gate"),
+    ).toBeTruthy();
+    expect(screen.getByText(/Resultado apurado:/i)).toBeTruthy();
+    expect(screen.getByText(/54 fontes · 85 sinais/i)).toBeTruthy();
+    expect(screen.getByText(/Atualidade das fontes: risco 85%/i)).toBeTruthy();
+    expect(screen.getByText(/Rotina do executor insuficiente/i)).toBeTruthy();
+    expect(screen.getByText(/Dor prática ausente/i)).toBeTruthy();
 
     const synthesisCard = screen.getByText("6. Síntese").closest(".card");
     expect(synthesisCard).toBeTruthy();

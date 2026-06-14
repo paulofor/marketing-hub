@@ -104,6 +104,52 @@ class SourceSearcherProcessorTest {
         assertThat(captor.getValue().get(1).commercialPageRisk()).isTrue();
     }
 
+    /** Deve selecionar evidência humana de rotina real antes de fonte genérica quando os riscos são equivalentes. */
+    @Test
+    void shouldPrioritizeRealWorkEvidenceWhenRisksAreEquivalent() {
+        PublicSourceSearchProvider searchProvider = mock(PublicSourceSearchProvider.class);
+        SourceSearcherBackendClient backendClient = mock(SourceSearcherBackendClient.class);
+        SourceSearcherProcessor processor =
+                new SourceSearcherProcessor(searchProvider, backendClient, new SourceIntentClassifier());
+        SourceSearcherPending pending = pending();
+        SourceSearchResult genericRoutine = new SourceSearchResult(
+                "https://blog.example.com.br/rotina-salao-2026",
+                "Rotina de salão no Brasil",
+                "Texto sobre tarefas, atendimento e organização de materiais.",
+                "blog.example.com.br",
+                1,
+                null,
+                null,
+                false,
+                false);
+        SourceSearchResult realWorkEvidence = new SourceSearchResult(
+                "https://relatos.example.com.br/manicure-rotina-2026",
+                "Minha rotina manual de manicure autônoma no atendimento real",
+                "Relato com indicação, fidelização, recorrência e medo de cliente desmarcar.",
+                "relatos.example.com.br",
+                2,
+                null,
+                null,
+                false,
+                false);
+        SourceSearcherOutput output = output();
+        when(searchProvider.search(pending.queryText(), 20)).thenReturn(List.of(genericRoutine, realWorkEvidence));
+        when(searchProvider.providerCode()).thenReturn("DUCKDUCKGO_HTML");
+        when(backendClient.completeStageExecution(eq(pending), eq("DUCKDUCKGO_HTML"), any())).thenReturn(output);
+
+        processor.process(new StageContext<>(
+                new StageExecution<>("job-1", pending, Map.of()),
+                pending,
+                (artifact, content) -> artifact,
+                Map.of()));
+
+        ArgumentCaptor<List<SourceSearchResult>> captor = ArgumentCaptor.captor();
+        verify(backendClient).completeStageExecution(eq(pending), eq("DUCKDUCKGO_HTML"), captor.capture());
+        assertThat(captor.getValue())
+                .extracting(SourceSearchResult::sourceUrl)
+                .startsWith("https://relatos.example.com.br/manicure-rotina-2026");
+    }
+
     /** Cria uma pendência mínima para a etapa três. */
     private SourceSearcherPending pending() {
         return new SourceSearcherPending(

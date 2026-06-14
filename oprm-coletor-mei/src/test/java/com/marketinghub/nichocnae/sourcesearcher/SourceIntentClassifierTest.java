@@ -162,4 +162,26 @@ class SourceIntentClassifierTest {
         assertThat(result.routineEvidenceScore()).isLessThanOrEqualTo(20);
     }
 
+    /** Deve valorizar evidência de atendimento real, fidelização e linguagem própria do executor. */
+    @Test
+    void shouldBoostRealWorkEvidenceAndKeepItNonCommercial() {
+        SourceIntentClassifier classifier = new SourceIntentClassifier();
+
+        SourceSearchResult result = classifier.classify(new SourceSearchResult(
+                "https://relatos.example.com.br/manicure-rotina-2026",
+                "Minha rotina manual de manicure autônoma no atendimento real",
+                "Relato com indicação, boca a boca, fidelização, recorrência, medo de cliente desmarcar e como cobrar cliente.",
+                "relatos.example.com.br",
+                1,
+                null,
+                null,
+                false,
+                false));
+
+        assertThat(result.sourceIntent()).isEqualTo("ROUTINE_REPORT");
+        assertThat(result.routineEvidenceScore()).isGreaterThanOrEqualTo(90);
+        assertThat(result.commercialPageRisk()).isFalse();
+        assertThat(result.solutionLanguageRisk()).isFalse();
+    }
+
 }

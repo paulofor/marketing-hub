@@ -643,3 +643,16 @@
 - Diagnosticado que o ciclo #39 do CNAE 9602501 estava com status `MEI_AUDIENCE_SEGMENTED`, cartão de rotina e perfil MEI/autônomo criados, mas sem pendência retornada para a etapa de qualidade.
 - Causa-raiz corrigida no backend: a fila do gate de qualidade aplicava limite antes de filtrar cartões com perfil MEI/autônomo, permitindo que cartões antigos sem perfil ocupassem a página e escondessem o ciclo elegível atual.
 - Ajustada a consulta do repositório para filtrar no banco apenas cartões não avaliados que já possuem perfil MEI/autônomo, prevenindo nova parada silenciosa do pipeline na etapa de qualidade.
+
+
+## 2026-06-14 — OPRM NichoCNAE: seleção de evidências sem contaminação de solução
+
+- Causa-raiz tratada: ciclos do CNAE 9602501 chegavam ao gate de qualidade com sinais suficientes, mas ainda dominados por linguagem de solução/produto, porque a geração de queries e a seleção de fontes não priorizavam com força suficiente rotina manual, atendimento real, aquisição/fidelização/recorrência, dores humanas e linguagem do executor.
+- Correção aplicada: o seed agora pede explicitamente busca por execução manual e relato real; o classificador de fontes amplia termos de rotina, atendimento, dores e recorrência, aumenta penalização de apps/software/automação/curso/template e a etapa de busca ordena primeiro fontes com evidência humana-operacional.
+- Prevenção de recorrência: adicionados testes para garantir que relatos reais do profissional sejam priorizados e que páginas de solução continuem rebaixadas como risco antes da coleta e síntese.
+
+## 2026-06-14 — OPRM NichoCNAE: card de erro com rejeições detalhadas
+
+- Causa-raiz tratada: o card de bloqueio do detalhe do CNAE informava que o gate rejeitou o ciclo, mas não explicava claramente quais critérios práticos foram reprovados para orientar a ação do usuário.
+- Correção aplicada: o card agora mostra o resultado apurado do gate e lista situações rejeitadas em linguagem operacional, incluindo contaminação por solução, fontes antigas, desvio corporativo, falta de tarefas reais do executor, mix MEI/autônomo incompleto, aquisição/recorrência fraca e ausência de dor prática.
+- Prevenção de recorrência: teste de tela cobre a exibição das rejeições detalhadas no bloqueio por qualidade.

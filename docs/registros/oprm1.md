@@ -707,3 +707,9 @@
 - Adicionado provedor `GOOGLE_CUSTOM_SEARCH_RECENT` na etapa `oprmSourceSearcher`, configurável por variáveis `OPRM_NICHO_CNAE_SOURCE_SEARCHER_GOOGLE_*`, para priorizar fontes brasileiras recentes com `dateRestrict` padrão de 24 meses antes do fallback DuckDuckGo.
 - Causa-raiz tratada: ciclos do CNAE 9602501 estavam chegando ao gate com sinais suficientes, mas bloqueados por `OUTDATED_SOURCES`; a busca anterior dependia somente do DuckDuckGo HTML e frequentemente retornava resultados sem data clara, aumentando risco de fonte antiga.
 - Prevenção de recorrência: criado provedor composto recent-first com fallback auditável, preservando o provider persistido no backend e evitando travar o pipeline caso Google não esteja configurado ou falhe.
+
+## 2026-06-14 — OPRM NichoCNAE: reprocessamento automático com aprendizado entre ciclos
+
+- O gate de qualidade do NichoCNAE passa a abrir automaticamente novo ciclo quando reprovar por causa corrigível (`NEEDS_MORE_RESEARCH`, `NEEDS_MORE_MEI_RESEARCH`, `OUTDATED_SOURCES`, `TOO_CORPORATE`, `SOLUTION_CONTAMINATED` ou `GENERIC`), limitado a 3 reprocessamentos automáticos por candidato para controlar custo.
+- O ciclo reprocessado preserva o subnicho vencedor e as notas estruturadas do gate anterior; a etapa de seed já recebe `previousQualityStatus`, `previousNextMoveCode`, `previousNextMove` e `previousLearningNotes`, evitando perder aprendizado e reduzindo repetição da mesma causa de reprovação.
+- Causa-raiz: o fluxo dependia de clique humano após reprovações recuperáveis, e ciclos reprovados ficavam como decisão terminal sem disparar automaticamente a próxima tentativa orientada pelo aprendizado.

@@ -1,5 +1,6 @@
 package com.marketinghub.oprm.nichocnae.routinequalitygate.service;
 
+import com.marketinghub.oprm.cnae.OprmNicheCandidate;
 import com.marketinghub.oprm.nichocnae.OprmExtractedSignal;
 import com.marketinghub.oprm.nichocnae.OprmNicheRoutineCard;
 import com.marketinghub.oprm.nichocnae.OprmRoutineResearchCycle;
@@ -10,6 +11,7 @@ import com.marketinghub.oprm.nichocnae.routinequalitygate.service.completeStageE
 import com.marketinghub.oprm.nichocnae.routinequalitygate.service.detailStageExecution.RoutineQualityGateDetailResponse;
 import com.marketinghub.oprm.nichocnae.routinequalitygate.service.failStageExecution.FailRoutineQualityGateRequest;
 import com.marketinghub.oprm.nichocnae.routinequalitygate.service.pending.RecordRoutineQualityGatePending;
+import com.marketinghub.repository.jpa.oprm.cnae.OprmNicheCandidateRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmExtractedSignalRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmNicheRoutineCardRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmRoutineResearchCycleRepository;
@@ -33,6 +35,7 @@ import org.springframework.util.StringUtils;
 public class BackendRoutineQualityGateService {
   private static final Logger LOGGER = LoggerFactory.getLogger(BackendRoutineQualityGateService.class);
   private static final String FAILED_STATUS = "FAILED";
+  private static final String CYCLE_STATUS_RUNNING = "RUNNING";
   private static final String LIGHTLY_RESEARCHED_STATUS = "LIGHTLY_RESEARCHED";
   private static final String MEI_AUDIENCE_READY_STATUS = "MEI_AUDIENCE_READY";
   private static final String NEEDS_MORE_RESEARCH_STATUS = "NEEDS_MORE_RESEARCH";
@@ -41,7 +44,10 @@ public class BackendRoutineQualityGateService {
   private static final String TOO_CORPORATE_STATUS = "TOO_CORPORATE";
   private static final String SOLUTION_CONTAMINATED_STATUS = "SOLUTION_CONTAMINATED";
   private static final String GENERIC_STATUS = "GENERIC";
+  private static final String AUTO_QUALITY_REPROCESS_TRIGGER = "AUTO_QUALITY_REPROCESS";
+  private static final String ROUTINE_RESEARCH_RUNNING_STATUS = "RESEARCH_RUNNING";
   private static final int MAX_PENDING = 10;
+  private static final int MAX_AUTO_REPROCESS_PER_CANDIDATE = 3;
   private static final int MAX_NOTES_LENGTH = 4000;
 
   private final OprmRoutineResearchCycleRepository routineResearchCycleRepository;
@@ -49,6 +55,7 @@ public class BackendRoutineQualityGateService {
   private final OprmExtractedSignalRepository extractedSignalRepository;
   private final OprmSourceSnapshotRepository sourceSnapshotRepository;
   private final OprmMeiAudienceProfileRepository meiAudienceProfileRepository;
+  private final OprmNicheCandidateRepository nicheCandidateRepository;
 
   /** Inicializa o serviço com os repositórios canônicos necessários para calcular o contexto da qualidade. */
   public BackendRoutineQualityGateService(
@@ -56,12 +63,14 @@ public class BackendRoutineQualityGateService {
       OprmNicheRoutineCardRepository routineCardRepository,
       OprmExtractedSignalRepository extractedSignalRepository,
       OprmSourceSnapshotRepository sourceSnapshotRepository,
-      OprmMeiAudienceProfileRepository meiAudienceProfileRepository) {
+      OprmMeiAudienceProfileRepository meiAudienceProfileRepository,
+      OprmNicheCandidateRepository nicheCandidateRepository) {
     this.routineResearchCycleRepository = routineResearchCycleRepository;
     this.routineCardRepository = routineCardRepository;
     this.extractedSignalRepository = extractedSignalRepository;
     this.sourceSnapshotRepository = sourceSnapshotRepository;
     this.meiAudienceProfileRepository = meiAudienceProfileRepository;
+    this.nicheCandidateRepository = nicheCandidateRepository;
   }
 
   /** Lista cartões sintetizados ainda não avaliados com contadores concretos de fontes e sinais. */
@@ -96,11 +105,12 @@ public class BackendRoutineQualityGateService {
       routineCardRepository.save(card);
       cycle.setStatus(qualityStatus);
       cycle.setUpdatedAt(now);
+      cycle.setFinishedAt(now);
       if (isApprovedQualityStatus(qualityStatus)) {
-        cycle.setFinishedAt(now);
         cycle.setErrorMessage(null);
       }
       routineResearchCycleRepository.save(cycle);
+      maybeStartAutomaticReprocess(cycle, card, qualityStatus, now);
       return new CompleteRoutineQualityGateResponse(
           card.getId(), cycle.getId(), cycle.getStatus(), qualityStatus, card.getReadyForHypothesis(),
           card.getSpecificityScore(), card.getConfidenceScore(), card.getDuplicationScore(), card.getQualityCheckedAt());
@@ -113,6 +123,84 @@ public class BackendRoutineQualityGateService {
           ex);
       throw ex;
     }
+  }
+
+  /** Cria automaticamente um novo ciclo quando o gate reprova por causa corrigível e ainda há tentativas disponíveis. */
+  private void maybeStartAutomaticReprocess(
+      OprmRoutineResearchCycle rejectedCycle, OprmNicheRoutineCard rejectedCard, String qualityStatus, Instant now) {
+    if (!isAutomaticReprocessStatus(qualityStatus)) {
+      return;
+    }
+    long automaticAttempts = routineResearchCycleRepository.countBySourceNicheIdAndTriggerSource(
+        rejectedCycle.getSourceNicheId(), AUTO_QUALITY_REPROCESS_TRIGGER);
+    if (automaticAttempts >= MAX_AUTO_REPROCESS_PER_CANDIDATE) {
+      LOGGER.info(
+          "Limite de reprocessamento automático OPRM nichocnae atingido (sourceNicheId={}, rejectedResearchCycleId={}, qualityStatus={}, automaticAttempts={}, limit={})",
+          rejectedCycle.getSourceNicheId(),
+          rejectedCycle.getId(),
+          qualityStatus,
+          automaticAttempts,
+          MAX_AUTO_REPROCESS_PER_CANDIDATE);
+      return;
+    }
+    OprmNicheCandidate candidate = nicheCandidateRepository.findById(rejectedCycle.getSourceNicheId()).orElse(null);
+    if (candidate == null) {
+      LOGGER.warn(
+          "Reprocessamento automático OPRM nichocnae ignorado porque o candidato não foi encontrado (sourceNicheId={}, rejectedResearchCycleId={})",
+          rejectedCycle.getSourceNicheId(),
+          rejectedCycle.getId());
+      return;
+    }
+    OprmRoutineResearchCycle newCycle = createLearningCycle(rejectedCycle, now);
+    OprmRoutineResearchCycle savedCycle = routineResearchCycleRepository.save(newCycle);
+    candidate.setRoutineResearchStatus(ROUTINE_RESEARCH_RUNNING_STATUS);
+    candidate.setLastRoutineResearchCycleId(savedCycle.getId());
+    candidate.setUpdatedAt(now);
+    nicheCandidateRepository.save(candidate);
+    LOGGER.info(
+        "Reprocessamento automático OPRM nichocnae criado preservando aprendizado do gate (previousResearchCycleId={}, newResearchCycleId={}, sourceNicheId={}, cnaeCode={}, qualityStatus={}, qualityNotes={}, automaticAttempt={}/{})",
+        rejectedCycle.getId(),
+        savedCycle.getId(),
+        rejectedCycle.getSourceNicheId(),
+        rejectedCycle.getCnaeCode(),
+        qualityStatus,
+        rejectedCard == null ? null : rejectedCard.getQualityNotes(),
+        automaticAttempts + 1,
+        MAX_AUTO_REPROCESS_PER_CANDIDATE);
+  }
+
+  /** Informa se o status reprovado deve abrir novo ciclo sem clique humano. */
+  private boolean isAutomaticReprocessStatus(String qualityStatus) {
+    return NEEDS_MORE_RESEARCH_STATUS.equals(qualityStatus)
+        || NEEDS_MORE_MEI_RESEARCH_STATUS.equals(qualityStatus)
+        || OUTDATED_SOURCES_STATUS.equals(qualityStatus)
+        || TOO_CORPORATE_STATUS.equals(qualityStatus)
+        || SOLUTION_CONTAMINATED_STATUS.equals(qualityStatus)
+        || GENERIC_STATUS.equals(qualityStatus);
+  }
+
+  /** Cria novo ciclo usando o subnicho já aprendido no ciclo anterior como ponto de partida auditável. */
+  private OprmRoutineResearchCycle createLearningCycle(OprmRoutineResearchCycle previousCycle, Instant now) {
+    OprmRoutineResearchCycle newCycle = new OprmRoutineResearchCycle();
+    newCycle.setSourceNicheId(previousCycle.getSourceNicheId());
+    newCycle.setCnaeCode(previousCycle.getCnaeCode());
+    newCycle.setCnaeDescription(previousCycle.getCnaeDescription());
+    newCycle.setNicheName(previousCycle.getNicheName());
+    newCycle.setOriginalNicheName(previousCycle.getOriginalNicheName());
+    newCycle.setNeutralNicheName(previousCycle.getNeutralNicheName());
+    newCycle.setResearchMode(previousCycle.getResearchMode());
+    newCycle.setSolutionLanguageRiskScore(previousCycle.getSolutionLanguageRiskScore());
+    newCycle.setSourceScore(previousCycle.getSourceScore());
+    newCycle.setTriggerSource(AUTO_QUALITY_REPROCESS_TRIGGER);
+    newCycle.setStatus(CYCLE_STATUS_RUNNING);
+    newCycle.setTotalQueries(0);
+    newCycle.setTotalSourceCandidates(0);
+    newCycle.setTotalSourceSnapshots(0);
+    newCycle.setTotalExtractedSignals(0);
+    newCycle.setStartedAt(now);
+    newCycle.setCreatedAt(now);
+    newCycle.setUpdatedAt(now);
+    return newCycle;
   }
 
   /** Registra falha operacional da avaliação de qualidade no ciclo para investigação posterior. */

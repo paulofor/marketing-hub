@@ -303,6 +303,8 @@ Evitar fechamento prematuro de `import run` que destrói a totalização de mark
 - Toda reprovação da etapa `routine-quality-gate` deve produzir um próximo movimento operacional explícito, persistido nas notas estruturadas de qualidade, para evitar que o pipeline apenas pare sem direcionamento.
 - O próximo movimento deve ser escolhido pela causa dominante da reprovação: contaminação de solução, desvio corporativo, fonte antiga, aquisição/canais fracos, dor vendável fraca, rotina genérica ou mix MEI/autônomo incompleto.
 - Quando o gate aprovar o ciclo, o próximo movimento deve apontar para materialização do nicho enriquecido; quando reprovar, deve apontar para a nova pesquisa direcionada ou correção objetiva antes de gastar nova execução profunda.
+- Quando a reprovação do gate for recuperável (`NEEDS_MORE_RESEARCH`, `NEEDS_MORE_MEI_RESEARCH`, `OUTDATED_SOURCES`, `TOO_CORPORATE`, `SOLUTION_CONTAMINATED` ou `GENERIC`), o backend deve iniciar automaticamente novo ciclo de pesquisa até o limite de 3 tentativas automáticas por candidato, sem exigir clique humano a cada reprovação.
+- Cada novo ciclo automático deve preservar o subnicho aprendido e disponibilizar ao seed o status, o próximo movimento e as notas compactadas do gate anterior, para que a próxima execução não perca aprendizado e não repita a mesma causa dominante de reprovação.
 - A tela operacional deve expor esse próximo movimento em linguagem de negócio, mantendo os detalhes técnicos como apoio e não como principal orientação ao usuário.
 
 ## Critério de efetividade — próximo movimento automático no gate NichoCNAE

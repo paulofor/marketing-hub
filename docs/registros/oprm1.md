@@ -702,3 +702,8 @@
 - Causa-raiz tratada: reprocessamentos podiam repetir o mesmo tipo de erro — solução contaminada, fontes antigas, desvio corporativo, aquisição/canais fracos ou dor vendável fraca — porque o novo seed não recebia a causa dominante da reprovação anterior como restrição operacional.
 - Correção aplicada: o backend passa a expor no pending da etapa `niche-research-seed-builder` o `previousQualityStatus`, `previousNextMoveCode`, `previousNextMove` e notas compactas do gate anterior; o prompt do coletor transforma esse aprendizado em instrução obrigatória para alterar subnicho, famílias de queries e estratégia de fontes.
 - Prevenção de recorrência: adicionados testes no backend e no coletor para garantir que a etapa de seed receba e use o aprendizado automático antes da nova pesquisa profunda.
+## 2026-06-14 — OPRM NichoCNAE: busca Google para fontes recentes
+
+- Adicionado provedor `GOOGLE_CUSTOM_SEARCH_RECENT` na etapa `oprmSourceSearcher`, configurável por variáveis `OPRM_NICHO_CNAE_SOURCE_SEARCHER_GOOGLE_*`, para priorizar fontes brasileiras recentes com `dateRestrict` padrão de 24 meses antes do fallback DuckDuckGo.
+- Causa-raiz tratada: ciclos do CNAE 9602501 estavam chegando ao gate com sinais suficientes, mas bloqueados por `OUTDATED_SOURCES`; a busca anterior dependia somente do DuckDuckGo HTML e frequentemente retornava resultados sem data clara, aumentando risco de fonte antiga.
+- Prevenção de recorrência: criado provedor composto recent-first com fallback auditável, preservando o provider persistido no backend e evitando travar o pipeline caso Google não esteja configurado ou falhe.

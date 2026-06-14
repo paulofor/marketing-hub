@@ -695,3 +695,9 @@
 - Causa-raiz tratada: a reprovação já protegia o pipeline contra nichos fracos, contaminados ou sem dor vendável, mas ainda exigia interpretação manual para decidir se a próxima ação era refazer busca sem solução, buscar fontes recentes, trocar foco para dono-operador, validar aquisição/canais, validar dor vendável ou completar o mix MEI/autônomo.
 - Correção aplicada: o gate agora grava `proximoMovimentoCodigo` e `proximoMovimento` nas notas de qualidade, com decisão determinística por causa dominante; a tela de detalhe do CNAE exibe o próximo movimento automático no bloqueio de qualidade.
 - Prevenção de recorrência: testes unitários validam os movimentos automáticos para aprovação e para reprovações por solução, fontes antigas, desvio corporativo, aquisição/canais fracos e dor vendável fraca.
+
+## 2026-06-14 — OPRM NichoCNAE: busca Google para fontes recentes
+
+- Adicionado provedor `GOOGLE_CUSTOM_SEARCH_RECENT` na etapa `oprmSourceSearcher`, configurável por variáveis `OPRM_NICHO_CNAE_SOURCE_SEARCHER_GOOGLE_*`, para priorizar fontes brasileiras recentes com `dateRestrict` padrão de 24 meses antes do fallback DuckDuckGo.
+- Causa-raiz tratada: ciclos do CNAE 9602501 estavam chegando ao gate com sinais suficientes, mas bloqueados por `OUTDATED_SOURCES`; a busca anterior dependia somente do DuckDuckGo HTML e frequentemente retornava resultados sem data clara, aumentando risco de fonte antiga.
+- Prevenção de recorrência: criado provedor composto recent-first com fallback auditável, preservando o provider persistido no backend e evitando travar o pipeline caso Google não esteja configurado ou falhe.

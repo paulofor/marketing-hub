@@ -108,6 +108,7 @@ public class BackendRoutineResearchCycleService {
         cycle.getResearchMode(),
         cycle.getSolutionLanguageRiskScore(),
         cycle.getSourceScore(),
+        cycle.getTriggerSource(),
         cycle.getStatus(),
         cycle.getTotalQueries(),
         cycle.getTotalSourceCandidates(),

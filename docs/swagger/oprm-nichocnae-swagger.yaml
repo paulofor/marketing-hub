@@ -800,6 +800,10 @@ components:
         sourceScore:
           type: number
           nullable: true
+        triggerSource:
+          type: string
+          nullable: true
+          description: Origem do ciclo, incluindo AUTO_QUALITY_REPROCESS quando criado automaticamente pelo gate.
         status:
           type: string
         totalQueries:

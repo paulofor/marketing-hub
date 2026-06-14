@@ -4,9 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.marketinghub.oprm.cnae.OprmNicheCandidate;
 import com.marketinghub.oprm.nichocnae.OprmExtractedSignal;
 import com.marketinghub.oprm.nichocnae.OprmNicheRoutineCard;
 import com.marketinghub.oprm.nichocnae.OprmRoutineResearchCycle;
@@ -16,11 +18,13 @@ import com.marketinghub.oprm.nichocnae.routinequalitygate.service.completeStageE
 import com.marketinghub.oprm.nichocnae.routinequalitygate.service.completeStageExecution.CompleteRoutineQualityGateResponse;
 import com.marketinghub.oprm.nichocnae.routinequalitygate.service.detailStageExecution.RoutineQualityGateDetailResponse;
 import com.marketinghub.oprm.nichocnae.routinequalitygate.service.pending.RecordRoutineQualityGatePending;
+import com.marketinghub.repository.jpa.oprm.cnae.OprmNicheCandidateRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmExtractedSignalRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmNicheRoutineCardRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmRoutineResearchCycleRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmSourceSnapshotRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.meiaudienceprofile.OprmMeiAudienceProfileRepository;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -34,8 +38,15 @@ class BackendRoutineQualityGateServiceTest {
   private final OprmExtractedSignalRepository signalRepository = mock(OprmExtractedSignalRepository.class);
   private final OprmSourceSnapshotRepository snapshotRepository = mock(OprmSourceSnapshotRepository.class);
   private final OprmMeiAudienceProfileRepository meiAudienceProfileRepository = mock(OprmMeiAudienceProfileRepository.class);
+  private final OprmNicheCandidateRepository nicheCandidateRepository = mock(OprmNicheCandidateRepository.class);
   private final BackendRoutineQualityGateService service =
-      new BackendRoutineQualityGateService(cycleRepository, cardRepository, signalRepository, snapshotRepository, meiAudienceProfileRepository);
+      new BackendRoutineQualityGateService(
+          cycleRepository,
+          cardRepository,
+          signalRepository,
+          snapshotRepository,
+          meiAudienceProfileRepository,
+          nicheCandidateRepository);
 
   /** Deve montar pendência com aliases de tipos de sinais já gerados pela etapa cinco. */
   @Test
@@ -115,6 +126,72 @@ class BackendRoutineQualityGateServiceTest {
     assertThat(card.getQualityCheckedAt()).isNotNull();
     verify(cardRepository).save(card);
     verify(cycleRepository).save(cycle);
+  }
+
+
+  /** Deve abrir automaticamente novo ciclo reprovado preservando subnicho e aprendizado para a etapa de seed. */
+  @Test
+  void shouldAutomaticallyReprocessRejectedQualityGateWithinLimit() {
+    OprmRoutineResearchCycle cycle = new OprmRoutineResearchCycle();
+    cycle.setId(1001L);
+    cycle.setSourceNicheId(55L);
+    cycle.setCnaeCode("9602501");
+    cycle.setCnaeDescription("Cabeleireiros, manicure e pedicure");
+    cycle.setNicheName("Manicure autônoma com agenda instável");
+    cycle.setOriginalNicheName("Cabeleireiros, manicure e pedicure");
+    cycle.setNeutralNicheName("Manicure autônoma com agenda instável");
+    cycle.setResearchMode("ROUTINE_REALITY_RESEARCH");
+    cycle.setSolutionLanguageRiskScore(BigDecimal.ZERO);
+    cycle.setSourceScore(BigDecimal.valueOf(91));
+    cycle.setStatus("ROUTINE_SYNTHESIZED");
+    OprmNicheRoutineCard card = card();
+    card.setQualityNotes(
+        "status=TOO_CORPORATE; proximoMovimentoCodigo=TROCAR_PARA_DONO_OPERADOR; proximoMovimento=Focar dono-operador");
+    OprmNicheCandidate candidate = new OprmNicheCandidate();
+    candidate.setId(55L);
+    when(cycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
+    when(cardRepository.findById(10L)).thenReturn(Optional.of(card));
+    when(cardRepository.save(any(OprmNicheRoutineCard.class))).thenAnswer(invocation -> invocation.getArgument(0));
+    when(cycleRepository.save(any(OprmRoutineResearchCycle.class))).thenAnswer(invocation -> {
+      OprmRoutineResearchCycle saved = invocation.getArgument(0);
+      if (saved.getId() == null) {
+        saved.setId(1002L);
+      }
+      return saved;
+    });
+    when(cycleRepository.countBySourceNicheIdAndTriggerSource(55L, "AUTO_QUALITY_REPROCESS")).thenReturn(2L);
+    when(nicheCandidateRepository.findById(55L)).thenReturn(Optional.of(candidate));
+    when(nicheCandidateRepository.save(any(OprmNicheCandidate.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+    CompleteRoutineQualityGateResponse response = service.complete(1001L, new CompleteRoutineQualityGateRequest(
+        1001L, 10L, "TOO_CORPORATE", false, 75, 80, 10, card.getQualityNotes(), "test"));
+
+    assertThat(response.qualityStatus()).isEqualTo("TOO_CORPORATE");
+    assertThat(cycle.getFinishedAt()).isNotNull();
+    assertThat(candidate.getRoutineResearchStatus()).isEqualTo("RESEARCH_RUNNING");
+    assertThat(candidate.getLastRoutineResearchCycleId()).isEqualTo(1002L);
+    verify(cycleRepository).countBySourceNicheIdAndTriggerSource(55L, "AUTO_QUALITY_REPROCESS");
+    verify(nicheCandidateRepository).save(candidate);
+  }
+
+  /** Deve parar o reprocessamento automático no limite para evitar gasto infinito. */
+  @Test
+  void shouldNotAutomaticallyReprocessWhenLimitWasReached() {
+    OprmRoutineResearchCycle cycle = new OprmRoutineResearchCycle();
+    cycle.setId(1001L);
+    cycle.setSourceNicheId(55L);
+    cycle.setStatus("ROUTINE_SYNTHESIZED");
+    OprmNicheRoutineCard card = card();
+    when(cycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
+    when(cardRepository.findById(10L)).thenReturn(Optional.of(card));
+    when(cardRepository.save(any(OprmNicheRoutineCard.class))).thenAnswer(invocation -> invocation.getArgument(0));
+    when(cycleRepository.save(any(OprmRoutineResearchCycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
+    when(cycleRepository.countBySourceNicheIdAndTriggerSource(55L, "AUTO_QUALITY_REPROCESS")).thenReturn(3L);
+
+    service.complete(1001L, new CompleteRoutineQualityGateRequest(
+        1001L, 10L, "GENERIC", false, 75, 80, 10, "status=GENERIC", "test"));
+
+    verify(nicheCandidateRepository, never()).save(any(OprmNicheCandidate.class));
   }
 
   /** Deve expor notas de qualidade como objeto JSON tipado para a tela de detalhe. */

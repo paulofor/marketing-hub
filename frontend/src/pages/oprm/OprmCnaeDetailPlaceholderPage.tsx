@@ -136,6 +136,65 @@ const statusLabels: Record<string, string> = {
   ENRICHED_NICHE_FAILED: "Falha na materialização",
 };
 
+
+const AUTO_QUALITY_REPROCESS_TRIGGER = "AUTO_QUALITY_REPROCESS";
+const MAX_AUTO_REPROCESS_PER_CANDIDATE = 3;
+
+function isAutomaticReprocessCycle(
+  cycle?: OprmRoutineResearchCycleSummary | null,
+) {
+  return cycle?.triggerSource === AUTO_QUALITY_REPROCESS_TRIGGER;
+}
+
+function countAutomaticReprocessCycles(
+  cycles?: OprmRoutineResearchCycleSummary[],
+) {
+  return (cycles ?? []).filter(isAutomaticReprocessCycle).length;
+}
+
+function findPreviousCycle(
+  cycles: OprmRoutineResearchCycleSummary[] | undefined,
+  latestCycle?: OprmRoutineResearchCycleSummary | null,
+) {
+  return (cycles ?? []).find(
+    (cycle) => cycle.researchCycleId !== latestCycle?.researchCycleId,
+  );
+}
+
+function automaticProcessMessage(
+  latestCycle?: OprmRoutineResearchCycleSummary | null,
+  previousCycle?: OprmRoutineResearchCycleSummary | null,
+  automaticAttempts = 0,
+) {
+  if (!latestCycle) {
+    return null;
+  }
+  if (isAutomaticReprocessCycle(latestCycle)) {
+    return {
+      title: "Reprocessamento automático em andamento",
+      text: previousCycle
+        ? `O ciclo #${latestCycle.researchCycleId} foi criado automaticamente depois que o ciclo #${previousCycle.researchCycleId} terminou como ${statusLabel(previousCycle.status)}. O sistema reaproveitou o subnicho aprendido e as notas do gate anterior para tentar corrigir a causa sem novo clique.`
+        : `O ciclo #${latestCycle.researchCycleId} foi criado automaticamente. O sistema está reaproveitando o aprendizado do gate anterior para continuar sem novo clique.`,
+      className: "alert alert-primary border mt-3 mb-0",
+    };
+  }
+  if (isQualityBlockedStatus(latestCycle.status)) {
+    const reachedLimit = automaticAttempts >= MAX_AUTO_REPROCESS_PER_CANDIDATE;
+    return {
+      title: reachedLimit
+        ? "Limite automático atingido"
+        : "Aguardando reprocessamento automático",
+      text: reachedLimit
+        ? `O sistema já usou ${automaticAttempts}/${MAX_AUTO_REPROCESS_PER_CANDIDATE} tentativas automáticas para este candidato. Revise o detalhe da etapa de qualidade antes de gastar novo ciclo manual.`
+        : `O gate indicou ${statusLabel(latestCycle.status)}. O backend deve abrir a próxima tentativa automaticamente e carregar este aprendizado para o seed do novo ciclo.`,
+      className: reachedLimit
+        ? "alert alert-warning border mt-3 mb-0"
+        : "alert alert-info border mt-3 mb-0",
+    };
+  }
+  return null;
+}
+
 const qualityBlockedStatuses = new Set([
   "NEEDS_MORE_RESEARCH",
   "NEEDS_MORE_MEI_RESEARCH",
@@ -541,6 +600,13 @@ export default function OprmCnaeDetailPlaceholderPage() {
   const cyclesQuery = useOprmCnaePipelineCycles(decodedCnaeCode);
   const startPipelineMutation = useStartOprmCnaePipeline(decodedCnaeCode);
   const latestCycle = cyclesQuery.data?.[0];
+  const previousCycle = findPreviousCycle(cyclesQuery.data, latestCycle);
+  const automaticAttempts = countAutomaticReprocessCycles(cyclesQuery.data);
+  const automaticProcess = automaticProcessMessage(
+    latestCycle,
+    previousCycle,
+    automaticAttempts,
+  );
   const qualityGateQuery = useOprmRoutineQualityGateDetail(
     latestCycle?.researchCycleId,
   );
@@ -779,6 +845,18 @@ export default function OprmCnaeDetailPlaceholderPage() {
                       </ul>
                     </div>
                   ) : null}
+                </div>
+              ) : null}
+              {automaticProcess ? (
+                <div className={automaticProcess.className} role="status">
+                  <span className="fw-semibold d-block mb-1">
+                    {automaticProcess.title}
+                  </span>
+                  <span>{automaticProcess.text}</span>
+                  <span className="d-block small text-secondary mt-1">
+                    Tentativas automáticas usadas: {automaticAttempts}/
+                    {MAX_AUTO_REPROCESS_PER_CANDIDATE}.
+                  </span>
                 </div>
               ) : null}
               {businessRecommendation ? (

@@ -14,6 +14,7 @@ public record RoutineResearchCycleExecutionSummaryResponse(
     String researchMode,
     BigDecimal solutionLanguageRiskScore,
     BigDecimal sourceScore,
+    String triggerSource,
     String status,
     Integer totalQueries,
     Integer totalSourceCandidates,

@@ -767,3 +767,9 @@
 - Causa-raiz tratada: a etapa final `oprmEnrichedNicheMaterializer` copiava rotina, segmentação e evidências para `market_niche`, mas não transferia o custo de identificação registrado em `oprm_niche_research_seed.cost_usd`; por isso o nicho materializado ficava com custo inicial zerado/nulo mesmo após gastar IA para identificar o subnicho.
 - Correção aplicada: a materialização final agora soma o custo USD do seed do ciclo, converte para BRL pelo serviço canônico de moeda e preenche `market_niche.cost` e `market_niche.totalCost` quando ainda estiverem vazios/zerados, sem duplicar custo em reprocessamentos.
 - Prevenção de recorrência: adicionado teste de regressão na etapa final e changelog de backfill para corrigir nichos OPRM já materializados sem custo de identificação.
+
+## 2026-06-15 — OPRM NichoCNAE: isolamento arquitetural da conversão de moeda
+
+- Causa-raiz tratada: o materializador enriquecido do OPRM dependia diretamente de `com.marketinghub.finance.CurrencyConversionService`, quebrando a regra ArchUnit de isolamento do módulo OPRM.
+- Correção aplicada: criado conversor próprio dentro do pacote OPRM para custos de identificação, preservando a mesma configuração `app.currency.usd-to-brl` e o mesmo arredondamento financeiro sem acoplar o materializador ao pacote financeiro.
+- Prevenção de recorrência: a suíte ArchUnit foi executada junto com o teste do materializador para garantir que o OPRM permaneça dependente apenas dos pacotes autorizados.

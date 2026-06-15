@@ -8,7 +8,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.marketinghub.finance.CurrencyConversionService;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.MarketNicheEnrichmentProfile;
 import com.marketinghub.oprm.cnae.OprmNicheCandidate;
@@ -55,7 +54,7 @@ class BackendEnrichedNicheMaterializerServiceTest {
   private final MarketNicheEnrichmentProfileRepository profileRepository = mock(MarketNicheEnrichmentProfileRepository.class);
   private final OprmMeiAudienceProfileRepository meiAudienceProfileRepository = mock(OprmMeiAudienceProfileRepository.class);
   private final OprmEnrichedNicheMetaSignalService metaSignalService = mock(OprmEnrichedNicheMetaSignalService.class);
-  private final CurrencyConversionService currencyConversionService = mock(CurrencyConversionService.class);
+  private final OprmCurrencyConversionService currencyConversionService = mock(OprmCurrencyConversionService.class);
   private final OprmEnrichedNicheMetaSignalService.MetaSignalPackage metaSignalPackage = new OprmEnrichedNicheMetaSignalService.MetaSignalPackage(
       List.of("Salão de beleza"), List.of("Cabeleireiro"), List.of("Small business owners"));
   private final BackendEnrichedNicheMaterializerService service = new BackendEnrichedNicheMaterializerService(

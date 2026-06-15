@@ -26,6 +26,17 @@ public interface MarketNicheEnrichmentProfileRepository extends JpaRepository<Ma
       @Param("normalizedNeutralNicheName") String normalizedNeutralNicheName,
       Pageable pageable);
 
+  /** Lista os nichos enriquecidos já materializados para um CNAE. */
+  @Query("""
+      select p from MarketNicheEnrichmentProfile p
+      join fetch p.marketNiche n
+      where p.cnaeCode = :cnaeCode
+      order by p.createdAt desc, p.id desc
+      """)
+  List<MarketNicheEnrichmentProfile> findGeneratedByCnaeCode(
+      @Param("cnaeCode") String cnaeCode,
+      Pageable pageable);
+
   /** Lista o perfil enriquecido mais recente de cada nicho informado. */
   @Query("""
       select p from MarketNicheEnrichmentProfile p

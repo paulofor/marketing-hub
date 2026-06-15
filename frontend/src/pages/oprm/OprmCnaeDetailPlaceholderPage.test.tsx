@@ -1,4 +1,5 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -118,7 +119,8 @@ describe("OprmCnaeDetailPlaceholderPage", () => {
             qualityNotes: {
               status: "OUTDATED_SOURCES",
               proximoMovimentoCodigo: "BUSCAR_FONTES_BRASILEIRAS_RECENTES",
-              proximoMovimento: "Abrir nova pesquisa priorizando fontes brasileiras recentes dos ultimos 24 meses",
+              proximoMovimento:
+                "Abrir nova pesquisa priorizando fontes brasileiras recentes dos ultimos 24 meses",
               fontes: 54,
               sinais: 85,
               tarefasConcretasDistintas: 0,
@@ -149,6 +151,9 @@ describe("OprmCnaeDetailPlaceholderPage", () => {
 
     renderPage();
 
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Gerar novo nicho" }),
+    );
     expect(await screen.findByText(/status atual:/i)).toBeTruthy();
     expect(screen.getByText("Custo total do CNAE")).toBeTruthy();
     expect(screen.getAllByText("US$ 0,0456").length).toBeGreaterThan(0);
@@ -168,7 +173,9 @@ describe("OprmCnaeDetailPlaceholderPage", () => {
     expect(screen.getByText(/54 fontes · 85 sinais/i)).toBeTruthy();
     expect(screen.getByText("Próximo movimento automático")).toBeTruthy();
     expect(
-      screen.getByText(/Abrir nova pesquisa priorizando fontes brasileiras recentes/i),
+      screen.getByText(
+        /Abrir nova pesquisa priorizando fontes brasileiras recentes/i,
+      ),
     ).toBeTruthy();
     expect(screen.getByText(/Atualidade das fontes: risco 85%/i)).toBeTruthy();
     expect(screen.getByText(/Rotina do executor insuficiente/i)).toBeTruthy();
@@ -195,7 +202,6 @@ describe("OprmCnaeDetailPlaceholderPage", () => {
     ).toBeTruthy();
     expect(screen.queryByText("Em execução")).toBeNull();
   });
-
 
   it("informa quando o ciclo atual foi reprocessado automaticamente com aprendizado", async () => {
     vi.stubGlobal(
@@ -264,17 +270,21 @@ describe("OprmCnaeDetailPlaceholderPage", () => {
 
     renderPage();
 
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Gerar novo nicho" }),
+    );
     expect(
       await screen.findByText("Reprocessamento automático em andamento"),
     ).toBeTruthy();
     expect(
-      screen.getByText(/ciclo #48 foi criado automaticamente depois que o ciclo #47 terminou como corporativo demais/i),
+      screen.getByText(
+        /ciclo #48 foi criado automaticamente depois que o ciclo #47 terminou como corporativo demais/i,
+      ),
     ).toBeTruthy();
     expect(
       screen.getByText(/tentativas automáticas usadas: 1\/3/i),
     ).toBeTruthy();
   });
-
 
   it("diferencia visualmente os cards concluídos e em execução por contraste forte", async () => {
     vi.stubGlobal(
@@ -314,6 +324,9 @@ describe("OprmCnaeDetailPlaceholderPage", () => {
 
     renderPage();
 
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Gerar novo nicho" }),
+    );
     await screen.findByText(/status atual:/i);
 
     const seedCard = screen.getByText("2. Seed");

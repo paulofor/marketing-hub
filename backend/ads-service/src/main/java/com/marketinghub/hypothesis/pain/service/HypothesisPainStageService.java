@@ -510,6 +510,7 @@ public class HypothesisPainStageService {
                 .orElseThrow(() -> new EntityNotFoundException("Hypothesis pain execution not found for idJob: " + idJob));
         try {
             execution.setModelResponse(request.modelResponse());
+            execution.setRawResponse(request.rawResponse());
             if (StringUtils.hasText(request.openAiJobId())) {
                 execution.setOpenAiJobId(request.openAiJobId());
             }
@@ -646,6 +647,7 @@ public class HypothesisPainStageService {
                 execution.getOpenAiRequestBody(),
                 execution.getOpenAiModel(),
                 execution.getOpenAiJobId(),
+                execution.getRawResponse(),
                 execution.getModelResponse(),
                 execution.getErrorMessage(),
                 execution.getErrorDetail(),

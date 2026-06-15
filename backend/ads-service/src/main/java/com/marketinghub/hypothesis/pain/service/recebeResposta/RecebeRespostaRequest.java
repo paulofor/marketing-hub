@@ -7,6 +7,7 @@ public record RecebeRespostaRequest(
         Long marketNicheId,
         String stageCode,
         String modelResponse,
+        String rawResponse,
         Integer inputTokens,
         Integer outputTokens,
         BigDecimal costUsd,

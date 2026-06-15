@@ -22,6 +22,15 @@ interface StageExecution {
   errorMessage?: string;
 }
 
+interface StageExecutionDetail extends StageExecution {
+  promptContent?: string | null;
+  prompt?: string | null;
+  promptMarkdownContent?: string | null;
+  openAiRequestBody?: string | null;
+  rawResponse?: string | null;
+  modelResponse?: string | null;
+}
+
 const STAGES = HYPOTHESIS_PIPELINE_STAGES;
 
 const RUNNING_STATUSES = new Set([
@@ -54,6 +63,73 @@ function formatCostUsd(value?: number | string | null) {
 
 function formatModel(value?: string | null) {
   return value && value.trim().length > 0 ? value : "Aguardando IA";
+}
+
+function safeReportValue(value?: string | null) {
+  return value && value.trim().length > 0 ? value : "Não registrado.";
+}
+
+function buildHypothesisAuditReport(
+  nicheId: string,
+  details: Array<{
+    stage: HypothesisPipelineStageConfig;
+    detail: StageExecutionDetail;
+  }>,
+) {
+  const generatedAt = new Date().toLocaleString("pt-BR");
+  const lines = [
+    `# Relatório auditável da criação da hipótese`,
+    ``,
+    `Nicho: #${nicheId}`,
+    `Gerado em: ${generatedAt}`,
+    ``,
+  ];
+
+  details.forEach(({ stage, detail }) => {
+    lines.push(
+      `## Etapa ${stage.number} — ${stage.title}`,
+      ``,
+      `- Job: ${detail.jobid}`,
+      `- Status: ${detail.status}`,
+      `- Modelo usado: ${formatModel(detail.openAiModel)}`,
+      `- Custo: ${formatCostUsd(detail.costUsd)}`,
+      ``,
+      `### Prompt usado`,
+      "```text",
+      safeReportValue(detail.prompt ?? detail.promptContent),
+      "```",
+      ``,
+      `### Request cru enviado para OpenAI`,
+      "```json",
+      safeReportValue(detail.openAiRequestBody),
+      "```",
+      ``,
+      `### Response cru recebido da OpenAI`,
+      "```json",
+      safeReportValue(detail.rawResponse ?? detail.modelResponse),
+      "```",
+      ``,
+      `### Informação final guardada no banco de dados`,
+      "```json",
+      safeReportValue(detail.modelResponse),
+      "```",
+      ``,
+    );
+  });
+
+  return lines.join("\n");
+}
+
+function downloadTextFile(filename: string, content: string) {
+  const blob = new Blob([content], { type: "text/markdown;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
 }
 
 function StageCard({
@@ -251,6 +327,42 @@ export default function NewHypothesisPage() {
       return cost === null ? total : total + cost;
     }, 0);
 
+  const reportMutation = useMutation({
+    mutationFn: async () => {
+      if (!nicheId) {
+        throw new Error("Nicho não informado.");
+      }
+      const completedStages = STAGES.map((stage, index) => ({
+        stage,
+        latest: stageQueries[index]?.data?.[0],
+      })).filter(({ latest }) => latest?.status === "CONCLUIDO");
+
+      if (completedStages.length === 0) {
+        throw new Error("Nenhuma etapa concluída para gerar relatório.");
+      }
+
+      const details = await Promise.all(
+        completedStages.map(async ({ stage, latest }) => {
+          const { data } = await axios.get<StageExecutionDetail>(
+            `/api/niches/${nicheId}/hypothesis-pipeline/${stage.slug}/stage-executions/${latest?.jobid}`,
+          );
+          return { stage, detail: data };
+        }),
+      );
+
+      return buildHypothesisAuditReport(nicheId, details);
+    },
+    onSuccess: (content) => {
+      downloadTextFile(`relatorio-hipotese-nicho-${nicheId}.md`, content);
+      toast.success("Relatório gerado para download.");
+    },
+    onError: (error) => {
+      const message =
+        error instanceof Error ? error.message : "Falha ao gerar relatório.";
+      toast.error(message);
+    },
+  });
+
   return (
     <div className="hypothesis-new-page">
       <PageTitle icon={hypothesisIcon}>Nova hipótese</PageTitle>
@@ -261,10 +373,30 @@ export default function NewHypothesisPage() {
             <p className="mb-0">
               <strong>Nicho recebido:</strong> #{nicheId}
             </p>
-            <p className="mb-0">
-              <strong>Custo total geral da criação da hipótese:</strong>{" "}
-              {totalCostLoading ? "Calculando..." : formatCostUsd(totalCost)}
-            </p>
+            <div className="d-flex flex-column flex-md-row gap-2 align-items-md-center">
+              <p className="mb-0">
+                <strong>Custo total geral da criação da hipótese:</strong>{" "}
+                {totalCostLoading ? "Calculando..." : formatCostUsd(totalCost)}
+              </p>
+              <button
+                type="button"
+                className="btn btn-outline-primary btn-sm"
+                disabled={!nicheId || reportMutation.isPending}
+                onClick={() => reportMutation.mutate()}
+              >
+                {reportMutation.isPending ? (
+                  <span className="d-inline-flex align-items-center gap-2">
+                    <span
+                      className="spinner-border spinner-border-sm"
+                      aria-hidden="true"
+                    />
+                    Gerando...
+                  </span>
+                ) : (
+                  "Baixar relatório auditável"
+                )}
+              </button>
+            </div>
           </div>
         </section>
       )}

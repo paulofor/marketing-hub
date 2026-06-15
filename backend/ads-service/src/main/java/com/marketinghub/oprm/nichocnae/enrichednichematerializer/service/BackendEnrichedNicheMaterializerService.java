@@ -1,6 +1,5 @@
 package com.marketinghub.oprm.nichocnae.enrichednichematerializer.service;
 
-import com.marketinghub.finance.CurrencyConversionService;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.MarketNicheEnrichmentProfile;
 import com.marketinghub.oprm.cnae.OprmNicheCandidate;
@@ -72,7 +71,7 @@ public class BackendEnrichedNicheMaterializerService {
   private final MarketNicheEnrichmentProfileRepository enrichmentProfileRepository;
   private final OprmMeiAudienceProfileRepository meiAudienceProfileRepository;
   private final OprmEnrichedNicheMetaSignalService metaSignalService;
-  private final CurrencyConversionService currencyConversionService;
+  private final OprmCurrencyConversionService currencyConversionService;
 
   /** Inicializa o serviço com os repositórios oficiais do backend usados pela etapa final. */
   public BackendEnrichedNicheMaterializerService(
@@ -88,7 +87,7 @@ public class BackendEnrichedNicheMaterializerService {
       MarketNicheEnrichmentProfileRepository enrichmentProfileRepository,
       OprmMeiAudienceProfileRepository meiAudienceProfileRepository,
       OprmEnrichedNicheMetaSignalService metaSignalService,
-      CurrencyConversionService currencyConversionService) {
+      OprmCurrencyConversionService currencyConversionService) {
     this.cycleRepository = cycleRepository;
     this.routineCardRepository = routineCardRepository;
     this.nicheCandidateRepository = nicheCandidateRepository;

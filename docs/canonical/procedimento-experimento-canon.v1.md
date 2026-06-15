@@ -71,6 +71,18 @@ Local canônico vigente:
 - pipeline de experimento (núcleo inicial): `ai-worker/src/main/resources/prompts/experiment`;
 - pipeline de landing no Worker AI: prompts e schemas devem ser resolvidos por configuração tipada da etapa em `openai.core.<etapa>`; o caminho físico em `resources/prompts/<dominio>` é detalhe de recurso versionado e não define namespace Java do Worker AI.
 
+### 4.2.1 Regra mandatória — oferta low-ticket da hipótese
+
+A etapa `hypothesis-offer` do pipeline de hipótese deve materializar uma oferta low-ticket digital, não uma oferta genérica. O objetivo é entregar um produto de entrada simples, vendável e aplicável rapidamente, que depois possa alimentar página de vendas, isca digital e campanha sem precisar redescobrir a oferta.
+
+Regras obrigatórias:
+- a oferta deve transformar Dor, Resultado, Mecanismo e Prova em um produto digital de baixo atrito, com promessa de entrada específica e vitória rápida plausível;
+- a resposta deve explicitar posicionamento da oferta, promessa de entrada, ancoragem/faixa de preço low-ticket, entregáveis concretos, pilha de valor, percepção de muito por pouco, formato de produção, ativo de quick win e prontidão para a próxima etapa comercial;
+- os entregáveis devem poder virar ativos produzíveis pelo Marketing Hub, como diagnóstico, roteiro, checklist, template, biblioteca, calculadora simples, prompts, plano ou mini-kit; o pacote deve parecer robusto, com vários componentes úteis e complementares por um preço baixo;
+- a etapa pode sugerir faixa de preço compatível com low-ticket, mas não deve criar checkout, desconto falso, urgência artificial, campanha de anúncios, página de vendas, headline completa de landing ou estratégia de Facebook;
+- a oferta deve preservar limites de plausibilidade: sem renda garantida, sem agenda cheia garantida, sem cura, sem automação total e sem depender de acesso interno ao negócio do cliente;
+- quando a solução ficar ampla demais, o prompt deve reduzir o escopo para o menor kit capaz de atacar a causa-raiz prioritária da dor.
+
 ### 4.3 Regra de diferenciação de ângulo após experimento reprovado
 
 Ao gerar a etapa `CAMPAIGN_ANGLE`, o prompt deve receber o histórico dos experimentos reprovados por 100 acessos sem envio da mesma hipótese, quando existir. A reprovação de um experimento reprova aquela materialização de mercado (público, criativo, landing, isca e formulário), mas não reprova automaticamente a hipótese estratégica.

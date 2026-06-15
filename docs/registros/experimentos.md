@@ -4497,3 +4497,17 @@
   - backend/ads-service/src/main/java/com/marketinghub/hypothesis/pain/HypothesisPainStageExecution.java
   - backend/ads-service/src/main/java/com/marketinghub/hypothesis/pain/service/HypothesisPainStageService.java
   - frontend/src/pages/hypothesis/NewHypothesisPage.tsx
+
+## 2026-06-15 — Oferta low-ticket no pipeline de hipótese
+
+- solicitação: ajustar o pipeline de hipótese para que a etapa Oferta entregue um produto low-ticket estruturado, pronto para alimentar futuras etapas de página de vendas, isca digital e campanha.
+- causa-raiz: a etapa Oferta gerava uma oferta digital plausível, mas ainda genérica demais para virar diretamente um produto de entrada vendável e materializável pelo Marketing Hub.
+- foi feito: atualizado o prompt e o schema da etapa `hypothesis-offer` para exigir posicionamento low-ticket, promessa de entrada, faixa/ancoragem de preço, entregáveis concretos, ativo de quick win, formato de produção e prontidão para a próxima etapa comercial.
+- prevenção: registrado no cânone de procedimento de experimento que a oferta da hipótese deve materializar um low-ticket digital, sem criar checkout, campanha, landing ou promessa exagerada nessa etapa.
+
+## 2026-06-15 — Pilha de valor para oferta low-ticket
+
+- solicitação: reforçar que o low-ticket do pipeline de hipótese deve parecer um pacote robusto, em que o cliente percebe que recebe muita coisa útil por um preço baixo.
+- causa-raiz: a estrutura anterior já exigia low-ticket, mas ainda podia gerar uma oferta enxuta demais, com poucos itens e sem contraste explícito de valor percebido.
+- foi feito: adicionados ao prompt, schema, DTO e validador os conceitos de pilha de valor e percepção de valor, exigindo vários componentes úteis, complementares e produzíveis pelo Marketing Hub.
+- prevenção: o cânone passou a exigir que a oferta low-ticket comunique pacote robusto e relação de muito por pouco, sem desconto falso, urgência artificial ou ancoragem enganosa.

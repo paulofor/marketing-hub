@@ -20,9 +20,18 @@ public class HypothesisOfferResponseValidator {
         try {
             HypothesisOfferOutput output = objectMapper.readValue(modelResponse, HypothesisOfferOutput.class);
             requireText(output.offerName(), "offerName");
+            requireText(output.offerPositioning(), "offerPositioning");
+            requireText(output.entryPromise(), "entryPromise");
+            requireText(output.pricePositioning(), "pricePositioning");
             requireText(output.coreOffer(), "coreOffer");
             requireText(output.howItWorks(), "howItWorks");
+            requireText(output.valuePerception(), "valuePerception");
+            requireText(output.quickWinAsset(), "quickWinAsset");
+            requireText(output.productionFormat(), "productionFormat");
+            requireText(output.nextStageReadiness(), "nextStageReadiness");
             requireText(output.summary(), "summary");
+            requireNonEmpty(output.deliverables(), "deliverables");
+            requireNonEmpty(output.valueStack(), "valueStack");
             requireNonEmpty(output.steps(), "steps");
             return output;
         } catch (Exception ex) {

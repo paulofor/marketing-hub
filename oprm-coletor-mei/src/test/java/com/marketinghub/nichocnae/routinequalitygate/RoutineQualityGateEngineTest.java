@@ -536,6 +536,60 @@ class RoutineQualityGateEngineTest {
         assertThat(decision.qualityNotes()).contains("proximoMovimentoCodigo=TROCAR_PARA_DONO_OPERADOR");
     }
 
+    /** Deve aprovar nicho com dor prática textual quando os contadores estruturados vierem zerados. */
+    @Test
+    void shouldApproveWhenPracticalPainIsPresentInTextButCountersAreMissing() {
+        RoutineQualityGatePending pending = new RoutineQualityGatePending(
+                41L,
+                53L,
+                "Manicure e pedicure autônoma que atende em domicílio",
+                text("Rotina concreta: lixar unhas, retirar cutícula, esmaltar unhas, aplicar gel e higienizar materiais", 8),
+                text("Dores práticas de falta, remarcação, agenda instável, retrabalho na esmaltação e cobrança", 8),
+                text("Resultados desejados com agenda cheia, retorno quinzenal, recorrência e previsibilidade", 8),
+                text("Dores emocionais de insegurança, pressão, reputação e medo de perder clientes", 8),
+                "Clientes chegam por WhatsApp, Instagram e indicação, pedem orçamento, remarcam e retornam por agenda recorrente.",
+                "Canais usados: WhatsApp, Instagram, indicação de clientes do bairro e mensagens para confirmação de horário.",
+                "Evidências em fontes públicas brasileiras",
+                "unhadecoradasimples.com.br,gauchazh.clicrbs.com.br,instagram.com,sebraepr.com.br,blog.organizabot.com",
+                80,
+                17,
+                53,
+                6,
+                0,
+                0,
+                4,
+                15,
+                12,
+                6,
+                0,
+                86,
+                84,
+                72,
+                44,
+                13,
+                6,
+                11,
+                0,
+                12,
+                6,
+                95,
+                79,
+                80,
+                65,
+                27,
+                44,
+                Instant.parse("2026-06-15T00:10:00Z"));
+
+        RoutineQualityDecision decision = engine.evaluate(pending);
+
+        assertThat(decision.qualityStatus()).isEqualTo("MEI_AUDIENCE_READY");
+        assertThat(decision.readyForHypothesis()).isTrue();
+        assertThat(decision.qualityNotes())
+                .contains("dorPraticaTextual=true")
+                .contains("dominadoPorSolucao=false")
+                .contains("proximoMovimentoCodigo=MATERIALIZAR_NICHO");
+    }
+
     /** Cria uma pendência mínima da etapa sete para validar as regras do engine. */
     private RoutineQualityGatePending pending(
             String routineSummary,

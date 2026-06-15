@@ -754,3 +754,5 @@
 - Alterado o fluxo da tela de detalhe do CNAE para priorizar a lista de nichos enriquecidos já gerados pelo CNAE antes de exibir as etapas do pipeline.
 - Causa-raiz tratada: o clique no CNAE entrava direto na visão operacional do pipeline, dificultando perceber se o CNAE já tinha nichos gerados e aumentando risco de duplicidade, confusão entre CNAE e nicho e gasto desnecessário.
 - Correção aplicada: criado endpoint backend para listar nichos enriquecidos por CNAE; o frontend passou a exibir essa lista com ação de abertura do nicho e botão único para gerar um novo nicho, mostrando as etapas do pipeline apenas após esse comando.
+
+- 2026-06-15 00:00:00 (UTC-3): ajustado o fluxo administrativo CNAE → subnicho no frontend: a lista de CNAEs leva para uma tela com todos os subnichos do CNAE, o comando principal passou a criar novo subnicho com potencial de venda e, após o disparo, a navegação abre uma visão dedicada ao ciclo criado com etapas, custo e jobs restritos ao novo subnicho.

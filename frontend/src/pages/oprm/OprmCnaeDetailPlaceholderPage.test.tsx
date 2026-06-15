@@ -152,14 +152,13 @@ describe("OprmCnaeDetailPlaceholderPage", () => {
     renderPage();
 
     await userEvent.click(
-      await screen.findByRole("button", { name: "Gerar novo nicho" }),
+      await screen.findByRole("button", { name: "Criar novo subnicho" }),
     );
     expect(await screen.findByText(/status atual:/i)).toBeTruthy();
-    expect(screen.getByText("Custo total do CNAE")).toBeTruthy();
-    expect(screen.getAllByText("US$ 0,0456").length).toBeGreaterThan(0);
+    expect(screen.getByText("Custo total do subnicho")).toBeTruthy();
     expect(screen.getByText(/custo do job atual:/i)).toBeTruthy();
     expect(screen.getAllByText("US$ 0,0123").length).toBeGreaterThan(0);
-    expect(screen.getByText("Jobs executados para este CNAE")).toBeTruthy();
+    expect(screen.getByText("Jobs deste subnicho")).toBeTruthy();
     expect(
       screen.getByText(/bloqueada por fontes antigas ou sem atualidade/i),
     ).toBeTruthy();
@@ -271,7 +270,7 @@ describe("OprmCnaeDetailPlaceholderPage", () => {
     renderPage();
 
     await userEvent.click(
-      await screen.findByRole("button", { name: "Gerar novo nicho" }),
+      await screen.findByRole("button", { name: "Criar novo subnicho" }),
     );
     expect(
       await screen.findByText("Reprocessamento automático em andamento"),
@@ -325,7 +324,7 @@ describe("OprmCnaeDetailPlaceholderPage", () => {
     renderPage();
 
     await userEvent.click(
-      await screen.findByRole("button", { name: "Gerar novo nicho" }),
+      await screen.findByRole("button", { name: "Criar novo subnicho" }),
     );
     await screen.findByText(/status atual:/i);
 

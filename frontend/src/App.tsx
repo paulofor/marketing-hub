@@ -300,6 +300,10 @@ export default function App() {
                 element={<OprmCnaeDetailPlaceholderPage />}
               />
               <Route
+                path="/oprm/cnaes/:cnaeCode/subnichos/:researchCycleId"
+                element={<OprmCnaeDetailPlaceholderPage />}
+              />
+              <Route
                 path="/oprm/cnaes/:cnaeCode/pipeline/:researchCycleId/stages/:stageCode"
                 element={<OprmCnaePipelineStageDetailPage />}
               />

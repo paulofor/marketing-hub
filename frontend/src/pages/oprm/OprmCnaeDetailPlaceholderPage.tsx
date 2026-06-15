@@ -1,6 +1,6 @@
 import { Globe2, Sparkles } from "lucide-react";
 import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   useOprmCnaeScore,
   useOprmCnaeVolume,
@@ -601,16 +601,26 @@ function inferStageState(
 }
 
 export default function OprmCnaeDetailPlaceholderPage() {
-  const { cnaeCode } = useParams();
+  const { cnaeCode, researchCycleId } = useParams();
+  const navigate = useNavigate();
   const decodedCnaeCode = cnaeCode ? decodeURIComponent(cnaeCode) : "CNAE";
-  const [showPipeline, setShowPipeline] = useState(false);
+  const selectedResearchCycleId = researchCycleId
+    ? Number(researchCycleId)
+    : null;
+  const [showPipeline, setShowPipeline] = useState(
+    Boolean(selectedResearchCycleId),
+  );
   const volumeQuery = useOprmCnaeVolume(decodedCnaeCode);
   const scoreQuery = useOprmCnaeScore(decodedCnaeCode);
   const cyclesQuery = useOprmCnaePipelineCycles(decodedCnaeCode);
   const generatedNichesQuery =
     useOprmGeneratedEnrichedNichesByCnae(decodedCnaeCode);
   const startPipelineMutation = useStartOprmCnaePipeline(decodedCnaeCode);
-  const latestCycle = cyclesQuery.data?.[0];
+  const latestCycle = selectedResearchCycleId
+    ? cyclesQuery.data?.find(
+        (cycle) => cycle.researchCycleId === selectedResearchCycleId,
+      )
+    : cyclesQuery.data?.[0];
   const previousCycle = findPreviousCycle(cyclesQuery.data, latestCycle);
   const automaticAttempts = countAutomaticReprocessCycles(cyclesQuery.data);
   const automaticProcess = automaticProcessMessage(
@@ -648,17 +658,25 @@ export default function OprmCnaeDetailPlaceholderPage() {
 
   useBreadcrumbs([
     { label: "OPRM", to: "/oprm" },
-    { label: "Detalhe do nicho" },
+    {
+      label: selectedResearchCycleId
+        ? "Pipeline do subnicho"
+        : "Subnichos do CNAE",
+    },
   ]);
 
   return (
     <div className="d-flex flex-column gap-4">
       <header className="d-flex flex-column gap-2">
-        <PageTitle>Detalhe do nicho CNAE</PageTitle>
+        <PageTitle>
+          {selectedResearchCycleId
+            ? "Pipeline do subnicho"
+            : "Subnichos do CNAE"}
+        </PageTitle>
         <p className="text-secondary mb-0">
-          Use esta visão para decidir se o CNAE merece pesquisa de rotina,
-          acompanhar a execução do NichoCNAE e avançar apenas com oportunidades
-          sustentadas por sinais reais.
+          {selectedResearchCycleId
+            ? "Acompanhe somente os jobs, custos e etapas do subnicho recém-criado, sem misturar com execuções antigas do mesmo CNAE."
+            : "Confira todos os subnichos já criados para este CNAE e gere um novo apenas quando houver espaço comercial para uma oportunidade diferente."}
         </p>
       </header>
 
@@ -686,9 +704,9 @@ export default function OprmCnaeDetailPlaceholderPage() {
           </div>
           {startPipelineMutation.isSuccess ? (
             <div className="alert alert-success mb-0" role="status">
-              Pipeline iniciado para o CNAE {decodedCnaeCode}. Ciclo #
+              Novo subnicho iniciado para o CNAE {decodedCnaeCode}. Ciclo #
               {startPipelineMutation.data.researchCycleId} criado para
-              acompanhamento.
+              acompanhamento dedicado.
             </div>
           ) : null}
           {startPipelineMutation.isError ? (
@@ -772,11 +790,11 @@ export default function OprmCnaeDetailPlaceholderPage() {
         <div className="card-body d-flex flex-column gap-3">
           <div className="d-flex flex-wrap justify-content-between gap-3 align-items-start">
             <div>
-              <h2 className="h5 mb-1">Nichos gerados com este CNAE</h2>
+              <h2 className="h5 mb-1">Subnichos deste CNAE</h2>
               <p className="text-secondary mb-0">
-                Primeiro confira se já existe um nicho utilizável para evitar
-                duplicidade e gasto desnecessário; gere um novo apenas quando o
-                histórico não atender ao objetivo comercial.
+                Esta é a segunda etapa do fluxo: o usuário escolhe um subnicho
+                existente ou solicita a criação de um novo subnicho com
+                potencial de venda.
               </p>
             </div>
             <button
@@ -785,7 +803,14 @@ export default function OprmCnaeDetailPlaceholderPage() {
               disabled={startPipelineMutation.isPending}
               onClick={() =>
                 startPipelineMutation.mutate(undefined, {
-                  onSuccess: () => setShowPipeline(true),
+                  onSuccess: (result) => {
+                    setShowPipeline(true);
+                    if (result.researchCycleId) {
+                      navigate(
+                        `/oprm/cnaes/${encodeURIComponent(decodedCnaeCode)}/subnichos/${result.researchCycleId}`,
+                      );
+                    }
+                  },
                 })
               }
             >
@@ -798,19 +823,19 @@ export default function OprmCnaeDetailPlaceholderPage() {
                   Gerando...
                 </>
               ) : (
-                "Gerar novo nicho"
+                "Criar novo subnicho"
               )}
             </button>
           </div>
 
           {generatedNichesQuery.isLoading ? (
             <div className="alert alert-light border mb-0" role="status">
-              Carregando nichos gerados para o CNAE...
+              Carregando subnichos do CNAE...
             </div>
           ) : null}
           {generatedNichesQuery.isError ? (
             <div className="alert alert-warning mb-0" role="alert">
-              Não foi possível carregar os nichos gerados para este CNAE.
+              Não foi possível carregar os subnichos deste CNAE.
             </div>
           ) : null}
           {generatedNichesQuery.data?.length ? (
@@ -818,7 +843,7 @@ export default function OprmCnaeDetailPlaceholderPage() {
               <table className="table table-sm align-middle mb-0">
                 <thead>
                   <tr>
-                    <th scope="col">Nicho gerado</th>
+                    <th scope="col">Subnicho</th>
                     <th scope="col">Qualidade</th>
                     <th scope="col">Ciclo</th>
                     <th scope="col">Evidências</th>
@@ -849,9 +874,9 @@ export default function OprmCnaeDetailPlaceholderPage() {
                       <td className="text-end">
                         <Link
                           className="btn btn-outline-primary btn-sm"
-                          to={`/oprm/enriched-niches/profile/${niche.enrichedNicheProfileId}`}
+                          to={`/oprm/cnaes/${encodeURIComponent(decodedCnaeCode)}/subnichos/${niche.researchCycleId}`}
                         >
-                          Abrir
+                          Acompanhar
                         </Link>
                       </td>
                     </tr>
@@ -864,8 +889,8 @@ export default function OprmCnaeDetailPlaceholderPage() {
           !generatedNichesQuery.isError &&
           !generatedNichesQuery.data?.length ? (
             <div className="alert alert-secondary mb-0">
-              Ainda não existe nicho enriquecido gerado para este CNAE. Use
-              “Gerar novo nicho” para iniciar o pipeline.
+              Ainda não existe subnicho criado para este CNAE. Use “Criar novo
+              subnicho” para iniciar a análise.
             </div>
           ) : null}
         </div>
@@ -885,14 +910,14 @@ export default function OprmCnaeDetailPlaceholderPage() {
               <div className="d-flex flex-wrap gap-2 align-items-start justify-content-end">
                 <div className="border rounded-3 bg-light px-3 py-2 text-end">
                   <span className="d-block small text-secondary">
-                    Custo total do CNAE
+                    Custo total do subnicho
                   </span>
                   <strong className="fs-5">
-                    {formatUsd(latestCycle?.cnaeTotalCostUsd)}
+                    {formatUsd(latestCycle?.executionCostUsd)}
                   </strong>
                 </div>
                 <span className="badge text-bg-light align-self-start">
-                  Último ciclo:{" "}
+                  Ciclo selecionado:{" "}
                   {latestCycle ? `#${latestCycle.researchCycleId}` : "nenhum"}
                 </span>
               </div>
@@ -1051,14 +1076,15 @@ export default function OprmCnaeDetailPlaceholderPage() {
               <div className="card-body">
                 <div className="d-flex flex-wrap justify-content-between gap-2 mb-3">
                   <div>
-                    <h3 className="h6 mb-1">Jobs executados para este CNAE</h3>
+                    <h3 className="h6 mb-1">Jobs deste subnicho</h3>
                     <p className="small text-secondary mb-0">
-                      Histórico por execução para controlar gasto operacional
-                      antes de escalar o nicho.
+                      Histórico restrito ao ciclo do subnicho selecionado para
+                      controlar gasto operacional sem misturar execuções antigas
+                      do CNAE.
                     </p>
                   </div>
                   <strong>
-                    Total: {formatUsd(latestCycle?.cnaeTotalCostUsd)}
+                    Total: {formatUsd(latestCycle?.executionCostUsd)}
                   </strong>
                 </div>
                 <div className="table-responsive">
@@ -1075,8 +1101,8 @@ export default function OprmCnaeDetailPlaceholderPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {cyclesQuery.data && cyclesQuery.data.length > 0 ? (
-                        cyclesQuery.data.map((cycle) => (
+                      {latestCycle ? (
+                        [latestCycle].map((cycle) => (
                           <tr key={cycle.researchCycleId}>
                             <td>#{cycle.researchCycleId}</td>
                             <td>{statusLabel(cycle.status)}</td>
@@ -1093,7 +1119,7 @@ export default function OprmCnaeDetailPlaceholderPage() {
                             colSpan={5}
                             className="text-secondary text-center py-3"
                           >
-                            Nenhum job executado para este CNAE.
+                            Nenhum job executado para este subnicho.
                           </td>
                         </tr>
                       )}

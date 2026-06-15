@@ -191,6 +191,18 @@ Evitar fechamento prematuro de `import run` que destrói a totalização de mark
 - Ao navegar entre páginas, a ordenação deve permanecer estável por `Score OPRM` decrescente.
 - O texto de apoio na tela deve deixar explícito para o usuário que o ranking está ordenado por Score OPRM e paginado.
 
+## Regra obrigatória — fluxo operacional CNAE → subnicho
+
+- A experiência administrativa do OPRM deve começar pela lista paginada de CNAEs priorizados por Score OPRM.
+- Ao selecionar um CNAE, a tela deve exibir todos os subnichos/nichos enriquecidos já criados para esse CNAE antes de oferecer nova execução, reduzindo duplicidade e gasto sem aprendizado.
+- O comando manual principal dessa tela deve ser “Criar novo subnicho” e deve disparar a análise do CNAE considerando os nichos já criados para buscar uma oportunidade diferente com potencial de venda.
+- Após a criação do ciclo, a UI deve levar o usuário para uma visão dedicada ao subnicho/ciclo recém-criado, exibindo etapas, histórico de jobs apenas desse novo nicho, custo total do subnicho, custo por execução e evolução do pipeline.
+
+## Critério de efetividade — fluxo operacional CNAE → subnicho
+
+- A tela do CNAE não deve misturar histórico de custos de ciclos antigos quando o usuário estiver acompanhando um subnicho específico.
+- A visão dedicada do subnicho deve manter rastreabilidade por `researchCycleId` e permitir abrir detalhes das etapas do pipeline.
+
 ## Regra obrigatória — lista de nichos enriquecidos por score
 
 - A lista de nichos enriquecidos exibida na tela de CNAEs por Score OPRM deve priorizar os candidatos com maior `opportunityScore` no começo.

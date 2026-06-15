@@ -80,6 +80,7 @@ public class HypothesisResultBackendClient implements StageBackendPort<Hypothesi
         body.put("marketNicheId", execution.aggregateId());
         body.put("stageCode", execution.stageCode());
         body.put("modelResponse", openAiResult.modelResponse());
+        body.put("rawResponse", openAiResult.rawResponse());
         body.put("inputTokens", openAiResult.inputTokens());
         body.put("outputTokens", openAiResult.outputTokens());
         body.put("costUsd", openAiResult.costUsd());
@@ -102,6 +103,7 @@ public class HypothesisResultBackendClient implements StageBackendPort<Hypothesi
         body.put("marketNicheId", execution.aggregateId());
         body.put("stageCode", execution.stageCode());
         body.put("modelResponse", null);
+        body.put("rawResponse", null);
         body.put("inputTokens", null);
         body.put("outputTokens", null);
         body.put("costUsd", null);

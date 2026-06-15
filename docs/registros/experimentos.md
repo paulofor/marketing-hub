@@ -4481,3 +4481,19 @@
 - solicitação: esclarecer no procedimento canônico se `CAMPAIGN_ANGLE`, `AD_COPY`, `AD_IMAGE_BRIEFING` e GeraLanding pertencem ao mesmo pipeline administrativo ou a pipelines separados.
 - foi feito: adicionada seção curta definindo que a tela `/pipelines` deve tratar o fluxo como um único pipeline oficial `experiment-pipeline`, com bloco inicial do experimento e bloco/subpipeline operacional GeraLanding dentro do mesmo contrato.
 - impacto esperado: reduz ambiguidade operacional na administração de pipelines, sincronização canônica e execução das etapas obrigatórias, automáticas e manuais do experimento.
+
+## 2026-06-15 — Relatório auditável da criação de hipótese
+
+- solicitação: permitir baixar, na tela de Nova hipótese, um relatório por etapa com prompt usado, request cru enviado para OpenAI, response cru recebido da OpenAI e informação final guardada no banco.
+- causa-raiz: a tela já exibia status e custo, mas o response cru da OpenAI não era persistido no backend das etapas da hipótese, impedindo auditoria completa sem consultar logs do Worker AI.
+- foi feito: o Worker AI passou a enviar `rawResponse` no callback de conclusão, o backend passou a persistir `raw_response` e expor esse campo no detalhe auditável, e o frontend ganhou o botão de download do relatório em Markdown.
+- validação: testes unitários do backend da etapa de hipótese, testes da tela de hipótese e build do frontend executados.
+- arquivos alterados:
+  - ai-worker/src/main/java/com/marketinghub/worker/pipeline/hypothesispain/HypothesisPainBackendClient.java
+  - ai-worker/src/main/java/com/marketinghub/worker/pipeline/hypothesisresult/HypothesisResultBackendClient.java
+  - ai-worker/src/main/java/com/marketinghub/worker/pipeline/hypothesismechanism/HypothesisMechanismBackendClient.java
+  - ai-worker/src/main/java/com/marketinghub/worker/pipeline/hypothesisproof/HypothesisProofBackendClient.java
+  - ai-worker/src/main/java/com/marketinghub/worker/pipeline/hypothesisoffer/HypothesisOfferBackendClient.java
+  - backend/ads-service/src/main/java/com/marketinghub/hypothesis/pain/HypothesisPainStageExecution.java
+  - backend/ads-service/src/main/java/com/marketinghub/hypothesis/pain/service/HypothesisPainStageService.java
+  - frontend/src/pages/hypothesis/NewHypothesisPage.tsx

@@ -68,6 +68,7 @@ class HypothesisPainStageServiceTest {
                 18L,
                 "hypothesis-pain",
                 "{\"pain\":\"dor validada\"}",
+                "{\"id\":\"resp_1\"}",
                 1200,
                 300,
                 new BigDecimal("999.00000000"),

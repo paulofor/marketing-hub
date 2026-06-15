@@ -21,6 +21,7 @@ public record HypothesisPainExecutionDetailResponse(
         String openAiRequestBody,
         String openAiModel,
         String openAiJobId,
+        String rawResponse,
         String modelResponse,
         String errorMessage,
         String errorDetail,

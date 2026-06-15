@@ -589,6 +589,7 @@ components:
         openAiRequestBody: { type: string, nullable: true }
         openAiModel: { type: string, nullable: true }
         openAiJobId: { type: string, nullable: true }
+        rawResponse: { type: string, nullable: true }
         modelResponse: { type: string, nullable: true }
         errorMessage: { type: string, nullable: true }
         errorDetail: { type: string, nullable: true }
@@ -611,6 +612,7 @@ components:
         marketNicheId: { type: integer, format: int64 }
         stageCode: { type: string }
         modelResponse: { type: string, nullable: true }
+        rawResponse: { type: string, nullable: true }
         inputTokens: { type: integer, nullable: true }
         outputTokens: { type: integer, nullable: true }
         costUsd: { type: number, nullable: true }

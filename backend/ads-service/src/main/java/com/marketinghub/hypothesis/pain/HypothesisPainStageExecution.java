@@ -96,6 +96,10 @@ public class HypothesisPainStageExecution {
     private String modelResponse;
 
     @Lob
+    @Column(name = "raw_response", columnDefinition = "LONGTEXT")
+    private String rawResponse;
+
+    @Lob
     @Column(name = "provisional_html", columnDefinition = "LONGTEXT")
     private String provisionalHtml;
 

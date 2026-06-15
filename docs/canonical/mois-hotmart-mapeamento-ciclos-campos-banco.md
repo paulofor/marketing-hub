@@ -81,7 +81,7 @@ A persistência acontece via payload `references` + `rawMetadata`. O backend gra
 | `product_name` | `reference.title`, `rawMetadata.productName`, `rawMetadata.hotmartProductName` | primeiro não-vazio |
 | `product_url` | `reference.url`, `rawMetadata.productUrl` | primeiro não-vazio |
 | `producer_name` | `rawMetadata.hotmartProducer`, `rawMetadata.producerName`, `rawMetadata.producer` | primeiro não-vazio |
-| `hotmart_description` | `rawMetadata.hotmartDescription`, `rawMetadata.description` | descrição comercial da coleta; coluna ampliada para até 1000 caracteres |
+| `hotmart_description` | `rawMetadata.hotmartDescription`, `rawMetadata.description` | descrição comercial da coleta; coluna LONGTEXT para preservar descrições completas vindas da Hotmart |
 | `collected_at` | `reference.collectedAt`, `rawMetadata.collectedAt` | data/hora da coleta específica, preservando novas coletas do mesmo produto em jobs futuros |
 | `reference_id` | `productUcode` normalizado quando disponível | estável por produto dentro de cada job para comparar o mesmo produto entre coletas |
 | `sales_page_url` | `rawMetadata.salesPageUrl`, `rawMetadata.pageSalesLink`, `rawMetadata.checkoutUrl`, `reference.url` | primeiro não-vazio |
@@ -95,7 +95,7 @@ A persistência acontece via payload `references` + `rawMetadata`. O backend gra
 ## 4) Pontos de atenção operacionais
 
 1. A coluna **`sales_page_url`** é a coluna canônica para “página de vendas” no banco.
-2. Temperatura, descrição, produtor e `collected_at` devem ser persistidos em toda coleta para permitir comparar o mesmo produto em execuções futuras.
+2. Temperatura, descrição completa, produtor e `collected_at` devem ser persistidos em toda coleta para permitir comparar o mesmo produto em execuções futuras.
 3. O `reference_id` Hotmart deve ser estável por produto quando houver `ucode`, evitando perder rastreabilidade histórica entre jobs.
 4. O ciclo 2 existe para reduzir ambiguidade de URL e melhorar qualidade comercial do link final.
 5. Se `salesPageUrl` vier vazio mesmo no ciclo 2, a persistência ainda pode usar fallback (`checkoutUrl`/`reference.url`) para não quebrar o fluxo.

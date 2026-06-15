@@ -4497,3 +4497,31 @@
   - backend/ads-service/src/main/java/com/marketinghub/hypothesis/pain/HypothesisPainStageExecution.java
   - backend/ads-service/src/main/java/com/marketinghub/hypothesis/pain/service/HypothesisPainStageService.java
   - frontend/src/pages/hypothesis/NewHypothesisPage.tsx
+
+## 2026-06-15 — Oferta low-ticket no pipeline de hipótese
+
+- solicitação: ajustar o pipeline de hipótese para que a etapa Oferta entregue um produto low-ticket estruturado, pronto para alimentar futuras etapas de página de vendas, isca digital e campanha.
+- causa-raiz: a etapa Oferta gerava uma oferta digital plausível, mas ainda genérica demais para virar diretamente um produto de entrada vendável e materializável pelo Marketing Hub.
+- foi feito: atualizado o prompt e o schema da etapa `hypothesis-offer` para exigir posicionamento low-ticket, promessa de entrada, faixa/ancoragem de preço, entregáveis concretos, ativo de quick win, formato de produção e prontidão para a próxima etapa comercial.
+- prevenção: registrado no cânone de procedimento de experimento que a oferta da hipótese deve materializar um low-ticket digital, sem criar checkout, campanha, landing ou promessa exagerada nessa etapa.
+
+## 2026-06-15 — Pilha de valor para oferta low-ticket
+
+- solicitação: reforçar que o low-ticket do pipeline de hipótese deve parecer um pacote robusto, em que o cliente percebe que recebe muita coisa útil por um preço baixo.
+- causa-raiz: a estrutura anterior já exigia low-ticket, mas ainda podia gerar uma oferta enxuta demais, com poucos itens e sem contraste explícito de valor percebido.
+- foi feito: adicionados ao prompt, schema, DTO e validador os conceitos de pilha de valor e percepção de valor, exigindo vários componentes úteis, complementares e produzíveis pelo Marketing Hub.
+- prevenção: o cânone passou a exigir que a oferta low-ticket comunique pacote robusto e relação de muito por pouco, sem desconto falso, urgência artificial ou ancoragem enganosa.
+
+## 2026-06-15 — Fluxo completo automático da hipótese
+
+- solicitação: adicionar botão para gerar o fluxo completo de hipótese, avançando automaticamente de Dor para Resultado, Mecanismo, Prova e Oferta, com até 3 tentativas em caso de erro.
+- causa-raiz: a tela exigia intervenção manual etapa a etapa, reduzindo velocidade operacional e deixando o encadeamento de sucesso/falha sob responsabilidade do usuário.
+- foi feito: criado endpoint backend para iniciar/retomar o fluxo completo, orquestração automática no callback de conclusão, retry automático de etapa marcada como fluxo automático e botão no frontend para disparar o fluxo.
+- prevenção: registrado no cânone que a orquestração deve ficar no backend, enquanto a interface apenas dispara e acompanha status.
+
+## 2026-06-15 — Passagem enriquecida nicho-cnae para hipótese
+
+- solicitação: implementar a passagem explícita dos sinais do pipeline `nicho-cnae` para o pipeline de hipótese, evitando perda de contexto útil na construção de Dor → Resultado → Mecanismo → Prova → Oferta.
+- causa-raiz: o pipeline de hipótese recebia principalmente o registro resumido de `market_niche`, enquanto o perfil enriquecido guardava rotina, linguagem, gatilhos, objeções, evidências e oportunidades de mecanismo sem entrar diretamente no prompt.
+- foi feito: o backend passou a anexar o perfil enriquecido mais recente ao contrato pendente da hipótese, e o Worker AI passou a incluir os campos enriquecidos no `CASE_DATA_BLOCK` de todas as etapas da hipótese.
+- prevenção: registrado no cânone que `nicho-cnae` deve enviar sinais operacionais/comerciais não-ofertivos, sem criar oferta prematura; a hipótese segue responsável pela transformação comercial final.

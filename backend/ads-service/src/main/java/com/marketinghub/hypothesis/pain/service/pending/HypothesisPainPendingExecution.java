@@ -11,6 +11,7 @@ public record HypothesisPainPendingExecution(
         Instant executionRequestedAt,
         Instant processingStartedAt,
         HypothesisPainPendingNiche niche,
+        HypothesisPainPendingEnrichmentProfile enrichmentProfile,
         String painModelResponse,
         String resultModelResponse,
         String mechanismModelResponse,

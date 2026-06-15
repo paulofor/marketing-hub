@@ -71,6 +71,39 @@ Local canônico vigente:
 - pipeline de experimento (núcleo inicial): `ai-worker/src/main/resources/prompts/experiment`;
 - pipeline de landing no Worker AI: prompts e schemas devem ser resolvidos por configuração tipada da etapa em `openai.core.<etapa>`; o caminho físico em `resources/prompts/<dominio>` é detalhe de recurso versionado e não define namespace Java do Worker AI.
 
+### 4.2.1 Regra mandatória — oferta low-ticket da hipótese
+
+A etapa `hypothesis-offer` do pipeline de hipótese deve materializar uma oferta low-ticket digital, não uma oferta genérica. O objetivo é entregar um produto de entrada simples, vendável e aplicável rapidamente, que depois possa alimentar página de vendas, isca digital e campanha sem precisar redescobrir a oferta.
+
+Regras obrigatórias:
+- a oferta deve transformar Dor, Resultado, Mecanismo e Prova em um produto digital de baixo atrito, com promessa de entrada específica e vitória rápida plausível;
+- a resposta deve explicitar posicionamento da oferta, promessa de entrada, ancoragem/faixa de preço low-ticket, entregáveis concretos, pilha de valor, percepção de muito por pouco, formato de produção, ativo de quick win e prontidão para a próxima etapa comercial;
+- os entregáveis devem poder virar ativos produzíveis pelo Marketing Hub, como diagnóstico, roteiro, checklist, template, biblioteca, calculadora simples, prompts, plano ou mini-kit; o pacote deve parecer robusto, com vários componentes úteis e complementares por um preço baixo;
+- a etapa pode sugerir faixa de preço compatível com low-ticket, mas não deve criar checkout, desconto falso, urgência artificial, campanha de anúncios, página de vendas, headline completa de landing ou estratégia de Facebook;
+- a oferta deve preservar limites de plausibilidade: sem renda garantida, sem agenda cheia garantida, sem cura, sem automação total e sem depender de acesso interno ao negócio do cliente;
+- quando a solução ficar ampla demais, o prompt deve reduzir o escopo para o menor kit capaz de atacar a causa-raiz prioritária da dor.
+
+### 4.2.2 Regra operacional — fluxo completo da hipótese
+
+A tela de nova hipótese deve oferecer uma ação de fluxo completo para executar Dor → Resultado → Mecanismo → Prova → Oferta sem intervenção manual entre etapas. A orquestração principal deve ficar no backend, pois é ele que conhece a ordem canônica, os pré-requisitos, o status persistido e o callback de conclusão/falha de cada etapa.
+
+Regras obrigatórias:
+- o botão de fluxo completo deve iniciar a primeira etapa ainda não concluída e não duplicar execução quando já houver job ativo no nicho;
+- ao concluir uma etapa automática com sucesso, o backend deve enfileirar a próxima etapa canônica;
+- ao falhar uma etapa automática, o backend deve tentar novamente a mesma etapa até 3 tentativas totais;
+- após 3 falhas da mesma etapa, o fluxo deve parar e manter a falha auditável para investigação de causa-raiz;
+- a interface deve apenas disparar o fluxo e acompanhar os status; não deve simular a orquestração no navegador.
+
+### 4.2.3 Regra mandatória — passagem enriquecida `nicho-cnae → hipótese`
+
+Quando o nicho tiver sido materializado pelo pipeline `nicho-cnae`, o pipeline de hipótese deve receber, além do registro base de `market_niche`, o perfil enriquecido mais recente do nicho.
+
+Regras obrigatórias:
+- o backend deve incluir no contrato pendente da hipótese os sinais não-ofertivos do perfil enriquecido: rotina, dores, resultados desejados, oportunidades de mecanismo, evidências, fontes, persona operacional, padrões de linguagem, gatilhos comerciais, objeções e scores de qualidade/confiança;
+- o Worker AI deve colocar esses sinais no bloco de contexto das etapas Dor, Resultado, Mecanismo, Prova e Oferta, preservando-os como insumo estratégico;
+- o pipeline de hipótese deve usar esses sinais para aumentar especificidade, linguagem real, plausibilidade do mecanismo, redução de objeções e percepção de valor da oferta low-ticket;
+- a passagem enriquecida não autoriza o `nicho-cnae` a criar promessa, oferta, preço, checkout, landing ou campanha. O `nicho-cnae` permanece responsável por realidade operacional e evidências; a hipótese permanece responsável por transformar essa realidade em Dor → Resultado → Mecanismo → Prova → Oferta.
+
 ### 4.3 Regra de diferenciação de ângulo após experimento reprovado
 
 Ao gerar a etapa `CAMPAIGN_ANGLE`, o prompt deve receber o histórico dos experimentos reprovados por 100 acessos sem envio da mesma hipótese, quando existir. A reprovação de um experimento reprova aquela materialização de mercado (público, criativo, landing, isca e formulário), mas não reprova automaticamente a hipótese estratégica.

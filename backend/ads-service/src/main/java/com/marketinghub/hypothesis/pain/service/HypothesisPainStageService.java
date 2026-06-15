@@ -4,13 +4,16 @@ import com.marketinghub.hypothesis.pain.HypothesisPainCostCalculator;
 import com.marketinghub.hypothesis.pain.HypothesisPainStageExecution;
 import com.marketinghub.hypothesis.pain.service.detailStageExecution.HypothesisPainExecutionDetailResponse;
 import com.marketinghub.hypothesis.pain.service.listStageExecutions.HypothesisPainExecutionSummaryResponse;
+import com.marketinghub.hypothesis.pain.service.pending.HypothesisPainPendingEnrichmentProfile;
 import com.marketinghub.hypothesis.pain.service.pending.HypothesisPainPendingExecution;
 import com.marketinghub.hypothesis.pain.service.pending.HypothesisPainPendingNiche;
 import com.marketinghub.hypothesis.pain.service.recebeResposta.RecebeRespostaRequest;
 import com.marketinghub.hypothesis.pain.service.start.HypothesisPainStartResponse;
 import com.marketinghub.hypothesis.pain.service.summary.HypothesisStageFinalSummaryResponse;
 import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.niche.MarketNicheEnrichmentProfile;
 import com.marketinghub.repository.jpa.hypothesis.HypothesisPainStageExecutionRepository;
+import com.marketinghub.repository.jpa.niche.MarketNicheEnrichmentProfileRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.math.BigDecimal;
@@ -18,6 +21,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,21 +43,36 @@ public class HypothesisPainStageService {
     private static final String STATUS_PROCESSING = "PROCESSANDO";
     private static final String STATUS_COMPLETED = "CONCLUIDO";
     private static final String STATUS_FAILED = "FALHA";
+    private static final String AUTO_FLOW_MARKER = "[AUTO_HYPOTHESIS_FLOW]";
+    private static final int AUTO_FLOW_MAX_ATTEMPTS = 3;
+    private static final List<String> STAGE_SEQUENCE = List.of(
+            STAGE_CODE,
+            RESULT_STAGE_CODE,
+            MECHANISM_STAGE_CODE,
+            PROOF_STAGE_CODE,
+            OFFER_STAGE_CODE);
+    private static final List<String> ACTIVE_STATUSES = List.of(
+            STATUS_STARTED,
+            STATUS_PROCESSING,
+            STATUS_WAITING_OPENAI_DISPATCH);
     private static final Duration OPERATIONAL_LEASE_TIMEOUT = Duration.ofMinutes(45);
     private static final List<String> LEASE_GUARDED_STATUSES = List.of(
             STATUS_PROCESSING,
             STATUS_WAITING_OPENAI_DISPATCH);
 
     private final MarketNicheRepository marketNicheRepository;
+    private final MarketNicheEnrichmentProfileRepository enrichmentProfileRepository;
     private final HypothesisPainStageExecutionRepository executionRepository;
     private final HypothesisPainCostCalculator costCalculator;
 
     /** Inicializa o serviço com os repositórios canônicos e o calculador interno de custo da etapa. */
     public HypothesisPainStageService(
             MarketNicheRepository marketNicheRepository,
+            MarketNicheEnrichmentProfileRepository enrichmentProfileRepository,
             HypothesisPainStageExecutionRepository executionRepository,
             HypothesisPainCostCalculator costCalculator) {
         this.marketNicheRepository = marketNicheRepository;
+        this.enrichmentProfileRepository = enrichmentProfileRepository;
         this.executionRepository = executionRepository;
         this.costCalculator = costCalculator;
     }
@@ -88,6 +107,16 @@ public class HypothesisPainStageService {
         return startStage(marketNicheId, OFFER_STAGE_CODE, "Oferta", true, true, true, true);
     }
 
+    /** Inicia ou retoma o fluxo automático completo a partir da primeira etapa pendente do nicho. */
+    @Transactional
+    public HypothesisPainStartResponse startFullFlow(Long marketNicheId) {
+        MarketNiche niche = marketNicheRepository.findById(marketNicheId)
+                .orElseThrow(() -> new EntityNotFoundException("Market niche not found: " + marketNicheId));
+        return findActiveExecution(marketNicheId)
+                .map(execution -> new HypothesisPainStartResponse(fromDatabaseIdJob(execution.getIdJob()), execution.getStatus()))
+                .orElseGet(() -> startAutoStage(niche, nextStageCodeForFullFlow(marketNicheId), 1));
+    }
+
     /** Inicia uma nova execução manual de uma etapa do pipeline para o nicho informado. */
     private HypothesisPainStartResponse startStage(
             Long marketNicheId,
@@ -112,19 +141,48 @@ public class HypothesisPainStageService {
         if (requiresCompletedProof) {
             requireCompletedProof(marketNicheId);
         }
-        HypothesisPainStageExecution execution = HypothesisPainStageExecution.builder()
+        HypothesisPainStageExecution execution = newStageExecution(
+                niche,
+                stageCode,
+                now,
+                "manual/start",
+                "Início manual da etapa " + stageLabel + " via tela de nova hipótese.");
+        HypothesisPainStageExecution saved = executionRepository.save(execution);
+        return new HypothesisPainStartResponse(fromDatabaseIdJob(saved.getIdJob()), saved.getStatus());
+    }
+
+    /** Cria uma execução automática de etapa com metadados de tentativa no promptContent. */
+    private HypothesisPainStartResponse startAutoStage(MarketNiche niche, String stageCode, int attempt) {
+        requireCompletedPrerequisites(niche.getId(), stageCode);
+        HypothesisPainStageExecution execution = newStageExecution(
+                niche,
+                stageCode,
+                Instant.now(),
+                "auto/full-flow",
+                AUTO_FLOW_MARKER + " stage=" + stageCode + " attempt=" + attempt
+                        + " maxAttempts=" + AUTO_FLOW_MAX_ATTEMPTS);
+        HypothesisPainStageExecution saved = executionRepository.save(execution);
+        return new HypothesisPainStartResponse(fromDatabaseIdJob(saved.getIdJob()), saved.getStatus());
+    }
+
+    /** Monta a entidade de execução com os campos comuns para início manual ou automático. */
+    private HypothesisPainStageExecution newStageExecution(
+            MarketNiche niche,
+            String stageCode,
+            Instant now,
+            String promptTemplateId,
+            String promptContent) {
+        return HypothesisPainStageExecution.builder()
                 .marketNicheId(niche.getId())
                 .marketNiche(niche)
                 .stageCode(stageCode)
                 .executionRequestedAt(now)
                 .createdAt(now)
-                .promptTemplateId("manual/start")
-                .promptContent("Início manual da etapa " + stageLabel + " via tela de nova hipótese.")
+                .promptTemplateId(promptTemplateId)
+                .promptContent(promptContent)
                 .status(STATUS_STARTED)
                 .idJob(toDatabaseIdJob(UUID.randomUUID().toString()))
                 .build();
-        HypothesisPainStageExecution saved = executionRepository.save(execution);
-        return new HypothesisPainStartResponse(fromDatabaseIdJob(saved.getIdJob()), saved.getStatus());
     }
 
     /** Lista execuções da etapa Dor para o nicho informado. */
@@ -172,6 +230,37 @@ public class HypothesisPainStageService {
                         stageCode,
                         STATUS_COMPLETED);
         return executions.stream().map(this::toSummaryResponse).toList();
+    }
+
+    /** Busca qualquer execução ativa do nicho para evitar duplicidade no fluxo automático completo. */
+    private Optional<HypothesisPainStageExecution> findActiveExecution(Long marketNicheId) {
+        return STAGE_SEQUENCE.stream()
+                .flatMap(stageCode -> executionRepository.findByMarketNicheIdAndStageCodeOrderByExecutionRequestedAtDesc(
+                                marketNicheId,
+                                stageCode)
+                        .stream())
+                .filter(execution -> ACTIVE_STATUSES.contains(execution.getStatus()))
+                .findFirst();
+    }
+
+    /** Define a primeira etapa ainda não concluída para o fluxo automático completo. */
+    private String nextStageCodeForFullFlow(Long marketNicheId) {
+        if (!StringUtils.hasText(latestCompletedPainResponse(marketNicheId))) {
+            return STAGE_CODE;
+        }
+        if (!StringUtils.hasText(latestCompletedResultResponse(marketNicheId))) {
+            return RESULT_STAGE_CODE;
+        }
+        if (!StringUtils.hasText(latestCompletedMechanismResponse(marketNicheId))) {
+            return MECHANISM_STAGE_CODE;
+        }
+        if (!StringUtils.hasText(latestCompletedProofResponse(marketNicheId))) {
+            return PROOF_STAGE_CODE;
+        }
+        if (!StringUtils.hasText(latestCompletedStageResponse(marketNicheId, OFFER_STAGE_CODE))) {
+            return OFFER_STAGE_CODE;
+        }
+        throw new IllegalStateException("Todas as etapas do fluxo de hipótese já estão concluídas para o nicho: " + marketNicheId);
     }
 
     /** Retorna o detalhe completo de auditoria de uma execução pelo jobid dentro do nicho informado. */
@@ -284,6 +373,7 @@ public class HypothesisPainStageService {
                         execution.getExecutionRequestedAt(),
                         execution.getProcessingStartedAt(),
                         toPendingNiche(execution.getMarketNiche()),
+                        toPendingEnrichmentProfile(execution.getMarketNicheId()),
                         pendingPainResponse(execution),
                         pendingResultResponse(execution),
                         pendingMechanismResponse(execution),
@@ -528,6 +618,7 @@ public class HypothesisPainStageService {
             execution.setStatus(normalizedErrorMessage != null ? STATUS_FAILED : STATUS_COMPLETED);
             executionRepository.save(execution);
             costCalculator.addFlexCostDeltaToNiche(execution.getMarketNiche(), costDeltaUsd);
+            continueAutoFlowIfNeeded(execution);
         } catch (RuntimeException ex) {
             log.error(
                     "Erro ao concluir resposta da etapa do pipeline de hipótese (idJob={}, marketNicheId={}, stageCode={}, openAiJobId={}, modelResponseLength={}, errorMessage={})",
@@ -540,6 +631,66 @@ public class HypothesisPainStageService {
                     ex);
             throw ex;
         }
+    }
+
+    /** Continua o fluxo automático após sucesso ou cria nova tentativa quando a etapa falha antes do limite. */
+    private void continueAutoFlowIfNeeded(HypothesisPainStageExecution execution) {
+        if (!isAutoFlowExecution(execution)) {
+            return;
+        }
+        int attempt = autoFlowAttempt(execution);
+        if (STATUS_FAILED.equals(execution.getStatus())) {
+            retryAutoFlowStageIfAllowed(execution, attempt);
+            return;
+        }
+        startNextAutoFlowStageIfAllowed(execution);
+    }
+
+    /** Verifica se a execução pertence ao fluxo automático completo. */
+    private boolean isAutoFlowExecution(HypothesisPainStageExecution execution) {
+        return StringUtils.hasText(execution.getPromptContent())
+                && execution.getPromptContent().contains(AUTO_FLOW_MARKER);
+    }
+
+    /** Extrai a tentativa atual persistida no promptContent do fluxo automático. */
+    private int autoFlowAttempt(HypothesisPainStageExecution execution) {
+        String promptContent = execution.getPromptContent();
+        if (!StringUtils.hasText(promptContent)) {
+            return 1;
+        }
+        for (String token : promptContent.split(" ")) {
+            if (token.startsWith("attempt=")) {
+                return Integer.parseInt(token.substring("attempt=".length()));
+            }
+        }
+        return 1;
+    }
+
+    /** Reenfileira a mesma etapa automática quando ainda há tentativas disponíveis. */
+    private void retryAutoFlowStageIfAllowed(HypothesisPainStageExecution execution, int attempt) {
+        if (attempt >= AUTO_FLOW_MAX_ATTEMPTS) {
+            log.warn(
+                    "[HypothesisPipeline] Fluxo automático interrompido após {} tentativas stageCode={} marketNicheId={} idJob={}",
+                    attempt,
+                    execution.getStageCode(),
+                    execution.getMarketNicheId(),
+                    fromDatabaseIdJob(execution.getIdJob()));
+            return;
+        }
+        MarketNiche niche = marketNicheRepository.findById(execution.getMarketNicheId())
+                .orElseThrow(() -> new EntityNotFoundException("Market niche not found: " + execution.getMarketNicheId()));
+        startAutoStage(niche, execution.getStageCode(), attempt + 1);
+    }
+
+    /** Inicia a próxima etapa automática quando a etapa atual conclui com sucesso. */
+    private void startNextAutoFlowStageIfAllowed(HypothesisPainStageExecution execution) {
+        int currentIndex = STAGE_SEQUENCE.indexOf(execution.getStageCode());
+        if (currentIndex < 0 || currentIndex >= STAGE_SEQUENCE.size() - 1) {
+            return;
+        }
+        MarketNiche niche = marketNicheRepository.findById(execution.getMarketNicheId())
+                .orElseThrow(() -> new EntityNotFoundException("Market niche not found: " + execution.getMarketNicheId()));
+        startAutoStage(niche, STAGE_SEQUENCE.get(currentIndex + 1), 1);
     }
 
     /** Calcula internamente o custo flex da resposta usando o modelo salvo e os tokens recebidos. */
@@ -606,6 +757,45 @@ public class HypothesisPainStageService {
                 niche.getInterests(),
                 niche.getDemographicFilters(),
                 niche.getExtraTips());
+    }
+
+    /** Converte o perfil enriquecido mais recente do nicho para o contrato consumido pelo Worker AI. */
+    private HypothesisPainPendingEnrichmentProfile toPendingEnrichmentProfile(Long marketNicheId) {
+        if (marketNicheId == null) {
+            return null;
+        }
+        return enrichmentProfileRepository.findLatestByMarketNicheIds(List.of(marketNicheId)).stream()
+                .findFirst()
+                .map(this::toPendingEnrichmentProfile)
+                .orElse(null);
+    }
+
+    /** Converte a entidade de perfil enriquecido em DTO sem expor a entidade JPA ao Worker AI. */
+    private HypothesisPainPendingEnrichmentProfile toPendingEnrichmentProfile(MarketNicheEnrichmentProfile profile) {
+        return new HypothesisPainPendingEnrichmentProfile(
+                profile.getId(),
+                profile.getResearchCycleId(),
+                profile.getCnaeCode(),
+                profile.getCnaeDescription(),
+                profile.getSourceScore(),
+                profile.getQualityStatus(),
+                profile.getSpecificityScore(),
+                profile.getConfidenceScore(),
+                profile.getDuplicationScore(),
+                profile.getRoutineEvidenceScore(),
+                profile.getDifficultyEvidenceScore(),
+                profile.getSourceDiversityScore(),
+                profile.getSolutionLanguageRiskScore(),
+                profile.getRoutineSummary(),
+                profile.getPainsSummary(),
+                profile.getResultsSummary(),
+                profile.getMechanismOpportunitiesSummary(),
+                profile.getEvidenceSummary(),
+                profile.getSourceDomains(),
+                profile.getPersonaSummary(),
+                profile.getLanguagePatterns(),
+                profile.getCommercialTriggers(),
+                profile.getObjections());
     }
 
     /** Converte uma execução para resumo operacional. */

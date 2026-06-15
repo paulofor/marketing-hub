@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -204,5 +204,25 @@ describe("NewHypothesisPage", () => {
     expect(
       screen.getByRole("button", { name: "Iniciar construção da oferta" }),
     ).toBeDisabled();
+  });
+
+  it("starts the full hypothesis flow from the page action", async () => {
+    (axios.get as any).mockResolvedValue({ data: [] });
+    (axios.post as any).mockResolvedValue({
+      data: { jobid: "auto-flow-job", status: "INICIADO" },
+    });
+
+    renderPage();
+
+    const button = await screen.findByRole("button", {
+      name: "Gerar fluxo completo",
+    });
+    fireEvent.click(button);
+
+    await waitFor(() => {
+      expect(axios.post).toHaveBeenCalledWith(
+        "/api/niches/18/hypothesis-pipeline/full-flow/start",
+      );
+    });
   });
 });

@@ -133,6 +133,7 @@ public class HypothesisOfferBackendClient implements StageBackendPort<Hypothesis
     /** Monta os dados do prompt com as informações do nicho e contexto comercial disponível. */
     Map<String, Object> buildPromptDataFromPending(Map<String, Object> pending) {
         Map<String, Object> niche = asMap(pending.get("niche"));
+        Map<String, Object> enrichmentProfile = asMap(pending.get("enrichmentProfile"));
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("marketNicheId", pending.get("marketNicheId"));
         payload.put("nicheName", optionalText(niche.get("name")));
@@ -144,12 +145,31 @@ public class HypothesisOfferBackendClient implements StageBackendPort<Hypothesis
         payload.put("interests", optionalText(niche.get("interests")));
         payload.put("demographicFilters", optionalText(niche.get("demographicFilters")));
         payload.put("extraTips", optionalText(niche.get("extraTips")));
+        putEnrichedNicheContext(payload, enrichmentProfile);
         payload.put("painModelResponse", optionalText(pending.get("painModelResponse")));
         payload.put("resultModelResponse", optionalText(pending.get("resultModelResponse")));
         payload.put("mechanismModelResponse", optionalText(pending.get("mechanismModelResponse")));
         payload.put("proofModelResponse", optionalText(pending.get("proofModelResponse")));
         payload.put("CASE_DATA_BLOCK", buildCaseDataBlock(payload));
         return payload;
+    }
+
+    /** Copia o perfil enriquecido do OPRM para o contexto estratégico consumido pela etapa. */
+    private void putEnrichedNicheContext(Map<String, Object> payload, Map<String, Object> enrichmentProfile) {
+        payload.put("enrichedRoutineSummary", optionalText(enrichmentProfile.get("routineSummary")));
+        payload.put("enrichedPainsSummary", optionalText(enrichmentProfile.get("painsSummary")));
+        payload.put("enrichedResultsSummary", optionalText(enrichmentProfile.get("resultsSummary")));
+        payload.put("enrichedMechanismOpportunitiesSummary", optionalText(enrichmentProfile.get("mechanismOpportunitiesSummary")));
+        payload.put("enrichedEvidenceSummary", optionalText(enrichmentProfile.get("evidenceSummary")));
+        payload.put("enrichedSourceDomains", optionalText(enrichmentProfile.get("sourceDomains")));
+        payload.put("enrichedPersonaSummary", optionalText(enrichmentProfile.get("personaSummary")));
+        payload.put("enrichedLanguagePatterns", optionalText(enrichmentProfile.get("languagePatterns")));
+        payload.put("enrichedCommercialTriggers", optionalText(enrichmentProfile.get("commercialTriggers")));
+        payload.put("enrichedObjections", optionalText(enrichmentProfile.get("objections")));
+        payload.put("enrichedQualityStatus", optionalText(enrichmentProfile.get("qualityStatus")));
+        payload.put("enrichedConfidenceScore", optionalText(enrichmentProfile.get("confidenceScore")));
+        payload.put("enrichedDifficultyEvidenceScore", optionalText(enrichmentProfile.get("difficultyEvidenceScore")));
+        payload.put("enrichedSourceDiversityScore", optionalText(enrichmentProfile.get("sourceDiversityScore")));
     }
 
     /** Normaliza campos textuais opcionais do nicho para evitar nulos no contexto do prompt. */
@@ -170,12 +190,31 @@ public class HypothesisOfferBackendClient implements StageBackendPort<Hypothesis
         appendCaseData(builder, "interests", payload.get("interests"));
         appendCaseData(builder, "demographicFilters", payload.get("demographicFilters"));
         appendCaseData(builder, "extraTips", payload.get("extraTips"));
+        appendEnrichedNicheContext(builder, payload);
         appendCaseData(builder, "painModelResponse", payload.get("painModelResponse"));
         appendCaseData(builder, "resultModelResponse", payload.get("resultModelResponse"));
         appendCaseData(builder, "mechanismModelResponse", payload.get("mechanismModelResponse"));
         appendCaseData(builder, "proofModelResponse", payload.get("proofModelResponse"));
         builder.append("[CASE_DATA_END]");
         return builder.toString();
+    }
+
+    /** Acrescenta o contexto enriquecido do nicho sem misturar oferta pronta no insumo de hipótese. */
+    private void appendEnrichedNicheContext(StringBuilder builder, Map<String, Object> payload) {
+        appendCaseData(builder, "enrichedRoutineSummary", payload.get("enrichedRoutineSummary"));
+        appendCaseData(builder, "enrichedPainsSummary", payload.get("enrichedPainsSummary"));
+        appendCaseData(builder, "enrichedResultsSummary", payload.get("enrichedResultsSummary"));
+        appendCaseData(builder, "enrichedMechanismOpportunitiesSummary", payload.get("enrichedMechanismOpportunitiesSummary"));
+        appendCaseData(builder, "enrichedEvidenceSummary", payload.get("enrichedEvidenceSummary"));
+        appendCaseData(builder, "enrichedSourceDomains", payload.get("enrichedSourceDomains"));
+        appendCaseData(builder, "enrichedPersonaSummary", payload.get("enrichedPersonaSummary"));
+        appendCaseData(builder, "enrichedLanguagePatterns", payload.get("enrichedLanguagePatterns"));
+        appendCaseData(builder, "enrichedCommercialTriggers", payload.get("enrichedCommercialTriggers"));
+        appendCaseData(builder, "enrichedObjections", payload.get("enrichedObjections"));
+        appendCaseData(builder, "enrichedQualityStatus", payload.get("enrichedQualityStatus"));
+        appendCaseData(builder, "enrichedConfidenceScore", payload.get("enrichedConfidenceScore"));
+        appendCaseData(builder, "enrichedDifficultyEvidenceScore", payload.get("enrichedDifficultyEvidenceScore"));
+        appendCaseData(builder, "enrichedSourceDiversityScore", payload.get("enrichedSourceDiversityScore"));
     }
 
     /** Acrescenta uma chave do contexto no bloco CASE_DATA com renderização segura. */

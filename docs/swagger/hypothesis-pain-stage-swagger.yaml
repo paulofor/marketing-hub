@@ -81,6 +81,12 @@ paths:
       responses:
         '200':
           description: Jobs pendentes.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/HypothesisPainPendingExecution'
   /api/internal/hypothesis-pipeline/pain/stage-executions/{idJob}/running:
     post:
       summary: Marca uma execução como em processamento.
@@ -183,6 +189,12 @@ paths:
       responses:
         '200':
           description: Jobs pendentes.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/HypothesisPainPendingExecution'
   /api/internal/hypothesis-pipeline/result/stage-executions/{idJob}/running:
     post:
       summary: Marca uma execução de resultado como em processamento.
@@ -285,6 +297,12 @@ paths:
       responses:
         '200':
           description: Jobs pendentes.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/HypothesisPainPendingExecution'
   /api/internal/hypothesis-pipeline/mechanism/stage-executions/{idJob}/running:
     post:
       summary: Marca uma execução de mecanismo como em processamento.
@@ -387,6 +405,12 @@ paths:
       responses:
         '200':
           description: Jobs pendentes.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/HypothesisPainPendingExecution'
   /api/internal/hypothesis-pipeline/proof/stage-executions/{idJob}/running:
     post:
       summary: Marca uma execução de prova como em processamento.
@@ -489,6 +513,12 @@ paths:
       responses:
         '200':
           description: Jobs pendentes.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/HypothesisPainPendingExecution'
   /api/internal/hypothesis-pipeline/offer/stage-executions/{idJob}/running:
     post:
       summary: Marca uma execução de oferta como em processamento.
@@ -552,6 +582,64 @@ components:
         finalContent: { type: string, nullable: true }
         sourceTable: { type: string }
         sourceField: { type: string }
+    HypothesisPainPendingExecution:
+      type: object
+      properties:
+        marketNicheId: { type: integer, format: int64 }
+        jobid: { type: string }
+        stageCode: { type: string }
+        status: { type: string }
+        executionRequestedAt: { type: string, format: date-time }
+        processingStartedAt: { type: string, format: date-time, nullable: true }
+        niche:
+          $ref: '#/components/schemas/HypothesisPainPendingNiche'
+        enrichmentProfile:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/HypothesisPainPendingEnrichmentProfile'
+        painModelResponse: { type: string, nullable: true }
+        resultModelResponse: { type: string, nullable: true }
+        mechanismModelResponse: { type: string, nullable: true }
+        proofModelResponse: { type: string, nullable: true }
+    HypothesisPainPendingNiche:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        name: { type: string, nullable: true }
+        description: { type: string, nullable: true }
+        demandVolume: { type: string, nullable: true }
+        promises: { type: string, nullable: true }
+        offers: { type: string, nullable: true }
+        baseSegmentation: { type: string, nullable: true }
+        interests: { type: string, nullable: true }
+        demographicFilters: { type: string, nullable: true }
+        extraTips: { type: string, nullable: true }
+    HypothesisPainPendingEnrichmentProfile:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        researchCycleId: { type: integer, format: int64, nullable: true }
+        cnaeCode: { type: string, nullable: true }
+        cnaeDescription: { type: string, nullable: true }
+        sourceScore: { type: number, nullable: true }
+        qualityStatus: { type: string, nullable: true }
+        specificityScore: { type: integer, nullable: true }
+        confidenceScore: { type: integer, nullable: true }
+        duplicationScore: { type: integer, nullable: true }
+        routineEvidenceScore: { type: integer, nullable: true }
+        difficultyEvidenceScore: { type: integer, nullable: true }
+        sourceDiversityScore: { type: integer, nullable: true }
+        solutionLanguageRiskScore: { type: integer, nullable: true }
+        routineSummary: { type: string, nullable: true }
+        painsSummary: { type: string, nullable: true }
+        resultsSummary: { type: string, nullable: true }
+        mechanismOpportunitiesSummary: { type: string, nullable: true }
+        evidenceSummary: { type: string, nullable: true }
+        sourceDomains: { type: string, nullable: true }
+        personaSummary: { type: string, nullable: true }
+        languagePatterns: { type: string, nullable: true }
+        commercialTriggers: { type: string, nullable: true }
+        objections: { type: string, nullable: true }
     HypothesisPainExecutionSummaryResponse:
       type: object
       properties:

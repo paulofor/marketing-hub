@@ -3,20 +3,47 @@
   "additionalProperties": false,
   "required": [
     "offerName",
+    "offerPositioning",
+    "entryPromise",
+    "pricePositioning",
     "coreOffer",
     "howItWorks",
+    "deliverables",
+    "valueStack",
+    "valuePerception",
+    "quickWinAsset",
+    "productionFormat",
     "steps",
     "aiLeverage",
     "effortReduction",
     "whyBelievable",
     "boundaryConditions",
+    "nextStageReadiness",
     "summary",
     "evidenceSignals"
   ],
   "properties": {
     "offerName": { "type": "string", "minLength": 5, "maxLength": 120 },
+    "offerPositioning": { "type": "string", "minLength": 10, "maxLength": 400 },
+    "entryPromise": { "type": "string", "minLength": 10, "maxLength": 300 },
+    "pricePositioning": { "type": "string", "minLength": 5, "maxLength": 220 },
     "coreOffer": { "type": "string", "minLength": 10 },
     "howItWorks": { "type": "string", "minLength": 10 },
+    "deliverables": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 10,
+      "items": { "type": "string", "minLength": 10, "maxLength": 300 }
+    },
+    "valueStack": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 12,
+      "items": { "type": "string", "minLength": 10, "maxLength": 260 }
+    },
+    "valuePerception": { "type": "string", "minLength": 10, "maxLength": 500 },
+    "quickWinAsset": { "type": "string", "minLength": 10, "maxLength": 300 },
+    "productionFormat": { "type": "string", "minLength": 10, "maxLength": 300 },
     "steps": {
       "type": "array",
       "minItems": 3,
@@ -27,6 +54,7 @@
     "effortReduction": { "type": "string", "minLength": 10 },
     "whyBelievable": { "type": "string", "minLength": 10 },
     "boundaryConditions": { "type": "string", "minLength": 10 },
+    "nextStageReadiness": { "type": "string", "minLength": 10, "maxLength": 500 },
     "summary": { "type": "string", "minLength": 10, "maxLength": 500 },
     "evidenceSignals": {
       "type": "array",

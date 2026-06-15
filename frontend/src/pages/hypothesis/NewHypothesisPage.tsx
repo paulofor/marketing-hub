@@ -301,6 +301,7 @@ function stageIsCompleted(executions?: StageExecution[]) {
 
 export default function NewHypothesisPage() {
   const { nicheId } = useParams();
+  const queryClient = useQueryClient();
   const stageQueries = useQueries({
     queries: STAGES.map((stage) => ({
       queryKey: ["hypothesis-stage-executions", stage.slug, nicheId],
@@ -311,12 +312,7 @@ export default function NewHypothesisPage() {
         );
         return data;
       },
-      refetchInterval: (query: { state: { data?: StageExecution[] } }) => {
-        const items = query.state.data ?? [];
-        return items.some((item) => RUNNING_STATUSES.has(item.status))
-          ? 5000
-          : false;
-      },
+      refetchInterval: 5000,
     })),
   });
   const totalCostLoading = stageQueries.some((query) => query.isLoading);
@@ -326,6 +322,35 @@ export default function NewHypothesisPage() {
       const cost = parseCostUsd(item.costUsd);
       return cost === null ? total : total + cost;
     }, 0);
+  const hasRunningExecution = stageQueries.some((query) =>
+    (query.data ?? []).some((item) => RUNNING_STATUSES.has(item.status)),
+  );
+  const allStagesCompleted = STAGES.every((_, index) =>
+    stageIsCompleted(stageQueries[index]?.data),
+  );
+
+  const fullFlowMutation = useMutation({
+    mutationFn: async () => {
+      const { data } = await axios.post(
+        `/api/niches/${nicheId}/hypothesis-pipeline/full-flow/start`,
+      );
+      return data;
+    },
+    onSuccess: () => {
+      toast.success("Fluxo completo da hipótese iniciado");
+      STAGES.forEach((stage) => {
+        queryClient.invalidateQueries({
+          queryKey: ["hypothesis-stage-executions", stage.slug, nicheId],
+        });
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["hypothesis-stage-total-cost", nicheId],
+      });
+    },
+    onError: () => {
+      toast.error("Não foi possível iniciar o fluxo completo da hipótese");
+    },
+  });
 
   const reportMutation = useMutation({
     mutationFn: async () => {
@@ -378,6 +403,33 @@ export default function NewHypothesisPage() {
                 <strong>Custo total geral da criação da hipótese:</strong>{" "}
                 {totalCostLoading ? "Calculando..." : formatCostUsd(totalCost)}
               </p>
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                disabled={
+                  !nicheId ||
+                  fullFlowMutation.isPending ||
+                  hasRunningExecution ||
+                  allStagesCompleted
+                }
+                onClick={() => fullFlowMutation.mutate()}
+              >
+                {fullFlowMutation.isPending ? (
+                  <span className="d-inline-flex align-items-center gap-2">
+                    <span
+                      className="spinner-border spinner-border-sm"
+                      aria-hidden="true"
+                    />
+                    Iniciando fluxo...
+                  </span>
+                ) : hasRunningExecution ? (
+                  "Fluxo em execução"
+                ) : allStagesCompleted ? (
+                  "Fluxo concluído"
+                ) : (
+                  "Gerar fluxo completo"
+                )}
+              </button>
               <button
                 type="button"
                 className="btn btn-outline-primary btn-sm"

@@ -12,6 +12,7 @@ Regras obrigatórias:
 - Não prometa cura, garantia absoluta, enriquecimento garantido ou transformação irreal.
 - Não crie mecanismo, prova, preço ou oferta nesta etapa.
 - Não use markdown dentro dos campos.
+- Quando o contexto trouxer campos `enriched*`, trate-os como ponte oficial do pipeline nicho-cnae: use rotina, linguagem, evidências, gatilhos e objeções observadas sem transformá-los em promessa ou oferta prematura.
 
 Critérios de qualidade:
 - O resultado deve ser forte o suficiente para sustentar anúncio e primeira dobra de landing page.

@@ -12,15 +12,15 @@ import org.springframework.scheduling.annotation.Scheduled;
 class HotmartCollectorSchedulerTest {
 
     /**
-     * Garante que o ciclo 1 esteja agendado para 22:00 de 14 de junho de 2026 no fuso de São Paulo.
+     * Garante que o ciclo 1 esteja agendado para 14:45 de 15 de junho de 2026 no fuso de São Paulo.
      */
     @Test
-    void shouldScheduleFirstCycleAtTwentyTwoHundredOnJuneFourteenth() throws NoSuchMethodException {
+    void shouldScheduleFirstCycleAtFourteenFortyFiveOnJuneFifteenth() throws NoSuchMethodException {
         Method method = HotmartCollectorScheduler.class
-                .getDeclaredMethod("collectFirstCycleAtTwentyTwoHundredOnJuneFourteenth2026");
+                .getDeclaredMethod("collectFirstCycleAtFourteenFortyFiveOnJuneFifteenth2026");
         Scheduled scheduled = method.getAnnotation(Scheduled.class);
 
-        assertEquals("0 0 22 14 6 *", scheduled.cron());
+        assertEquals("0 45 14 15 6 *", scheduled.cron());
         assertEquals("America/Sao_Paulo", scheduled.zone());
     }
 

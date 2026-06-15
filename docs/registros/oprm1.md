@@ -741,3 +741,10 @@
 - A tela de detalhe das etapas OPRM passou a destacar request cru enviado à OpenAI e resposta crua recebida sempre que a etapa usa modelo.
 - A etapa `oprmNicheResearchSeedBuilder` passou a persistir o payload completo enviado à Responses API e o corpo completo retornado pela OpenAI, além da resposta estruturada já existente.
 - As demais etapas foram verificadas: no fluxo NichoCNAE atual, `seed` e `mei` declaram acesso ao modelo; `seed` recebeu persistência completa nesta alteração e a tela mostra alerta objetivo quando uma etapa com IA ainda não tiver payload cru persistido.
+
+## 2026-06-15 — OPRM NichoCNAE: correção do gate para não descartar nicho bom por contador incompleto
+
+- Investigado o CNAE 9602501 após reprovações sucessivas no gate de qualidade, incluindo ciclos recentes com muitos sinais, fontes brasileiras e subnicho comercialmente claro de manicure autônoma em domicílio.
+- Causa-raiz tratada: o gate exigia dor prática apenas pelos contadores estruturados; quando a síntese textual trazia falta, remarcação, agenda instável, retrabalho e cobrança, mas os contadores vinham zerados, o mix MEI/autônomo ficava falso e o nicho bom era descartado.
+- Correção aplicada: o gate agora reconhece dor prática também no texto do card, relaxa bloqueios automáticos quando o risco de solução/fonte antiga é residual e existem evidências recentes suficientes, mantendo bloqueio forte para contaminação textual ou perfil realmente dominado por solução.
+- Prevenção de recorrência: adicionado teste de regressão simulando o caso do ciclo 53, garantindo aprovação quando há rotina executora, dor vendável textual, aquisição/canais e fontes brasileiras recentes mesmo com contadores de dor prática zerados.

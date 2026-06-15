@@ -48,14 +48,20 @@ public class RoutineQualityGateEngine {
         boolean hasCommercialAcquisitionEvidence = hasAcquisitionOrChannelCounter
                 && hasUsefulCustomerBehaviorSummary
                 && hasUsefulChannelsSummary;
-        boolean hasPracticalPain = value(pending.operationalDifficultyCount()) > 0 || value(pending.painSignalCount()) > 0;
+        boolean hasPracticalPain = value(pending.operationalDifficultyCount()) > 0
+                || value(pending.painSignalCount()) > 0
+                || hasTextualPracticalPain(pending);
         boolean hasHumanOutcome = value(pending.emotionalOutcomeEvidenceCount()) > 0;
         boolean hasMinimumSignalMix = hasRoutineTask && hasCommercialAcquisitionEvidence && hasPracticalPain && hasHumanOutcome;
         boolean weakAcquisitionOrChannels = !hasCommercialAcquisitionEvidence;
         boolean weakSellablePain = sellablePainScore < MIN_SELLABLE_PAIN_SCORE;
-        boolean dominatedBySolution = effectiveSolutionRiskScore > MAX_ACCEPTABLE_SOLUTION_RISK
+        boolean dominatedBySolution = (effectiveSolutionRiskScore > MAX_ACCEPTABLE_SOLUTION_RISK
+                        && (textualSolutionRiskScore > MAX_ACCEPTABLE_SOLUTION_RISK
+                                || value(pending.solutionLanguageRiskCount()) > signalCount / 2
+                                || value(pending.profileSolutionLanguageRiskScore()) >= 70))
                 || value(pending.solutionLanguageRiskCount()) > signalCount / 2;
-        boolean outdated = outdatedRiskScore > MAX_ACCEPTABLE_OUTDATED_RISK || !hasRecentSources;
+        boolean outdated = !hasRecentSources
+                || (outdatedRiskScore > MAX_ACCEPTABLE_OUTDATED_RISK && value(pending.recentSourceCount()) < 3);
         boolean tooCorporate = corporateRiskScore > MAX_ACCEPTABLE_CORPORATE_RISK || value(pending.autonomousProfessionalFitScore()) < 50;
         boolean commerciallyPromisingNeedsExecutorRoutine = !routineRevealsExecutorTasks
                 && hasRequiredSummaries
@@ -269,6 +275,30 @@ public class RoutineQualityGateEngine {
         return clamp(matches * 12);
     }
 
+
+    /** Identifica dor prática no texto quando a extração trouxe a dor no resumo, mas não preencheu contadores estruturados. */
+    private boolean hasTextualPracticalPain(RoutineQualityGatePending pending) {
+        String text = normalize(String.join(
+                " ",
+                nullToEmpty(pending.painsSummary()),
+                nullToEmpty(pending.customerBehaviorSummary())));
+        return containsAnyTerm(text, List.of(
+                "falta",
+                "faltas",
+                "atraso",
+                "remarcacao",
+                "desmarc",
+                "retrabalho",
+                "perda de agenda",
+                "agenda instavel",
+                "agenda vazia",
+                "horario vazio",
+                "cobranca",
+                "falha no atendimento",
+                "material",
+                "no show"));
+    }
+
     /** Mede se a dor é vendável, exigindo urgência, recorrência, impacto financeiro e resultado desejado. */
     private int calculateSellablePainScore(RoutineQualityGatePending pending) {
         String text = normalize(String.join(
@@ -339,6 +369,7 @@ public class RoutineQualityGateEngine {
         notes.add("resumoCanaisUtil=" + hasUsefulChannelsSummary);
         notes.add("faltaEvidenciaAquisicaoCanaisRecorrenciaOuComportamentoClientes=" + weakAcquisitionOrChannels);
         notes.add("dorPratica=" + (value(pending.operationalDifficultyCount()) + value(pending.painSignalCount())));
+        notes.add("dorPraticaTextual=" + hasTextualPracticalPain(pending));
         notes.add("dorEmocionalSonhoOuMedo=" + value(pending.emotionalOutcomeEvidenceCount()));
         notes.add("dorVendavelScore=" + sellablePainScore);
         notes.add("dorVendavelSuficiente=" + !weakSellablePain);

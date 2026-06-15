@@ -989,4 +989,6 @@ databaseChangeLog:
 
   - include:
       file: changesets/2026-06-15-hypothesis-pipeline-raw-response.yaml
+  - include:
+      file: changesets/2026-06-15-mois-hotmart-description-longtext.yaml
       relativeToChangelogFile: true

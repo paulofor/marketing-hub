@@ -16,6 +16,7 @@ import com.marketinghub.oprm.nichocnae.enrichednichematerializer.service.detailS
 import com.marketinghub.oprm.nichocnae.enrichednichematerializer.service.diagnoseContamination.ContaminatedNicheDiagnosticItem;
 import com.marketinghub.oprm.nichocnae.enrichednichematerializer.service.diagnoseContamination.ContaminatedNicheDiagnosticResponse;
 import com.marketinghub.oprm.nichocnae.enrichednichematerializer.service.failStageExecution.FailEnrichedNicheMaterializerRequest;
+import com.marketinghub.oprm.nichocnae.enrichednichematerializer.service.generatedByCnae.GeneratedEnrichedNicheByCnaeResponse;
 import com.marketinghub.oprm.nichocnae.enrichednichematerializer.service.pending.RecordEnrichedNicheMaterializerPending;
 import com.marketinghub.oprm.nichocnae.meiaudienceprofile.OprmMeiAudienceProfile;
 import com.marketinghub.repository.jpa.niche.MarketNicheEnrichmentProfileRepository;
@@ -176,6 +177,15 @@ public class BackendEnrichedNicheMaterializerService {
     return buildDetailResponse(cycle, card, profile);
   }
 
+  /** Lista os nichos enriquecidos já gerados para o CNAE informado. */
+  @Transactional(readOnly = true)
+  public List<GeneratedEnrichedNicheByCnaeResponse> listGeneratedByCnae(String cnaeCode, int limit) {
+    int boundedLimit = Math.max(1, Math.min(limit, 100));
+    return enrichmentProfileRepository.findGeneratedByCnaeCode(cnaeCode, PageRequest.of(0, boundedLimit)).stream()
+        .map(this::toGeneratedByCnaeResponse)
+        .toList();
+  }
+
   /** Gera o documento Markdown de auditoria do pipeline completo a partir do perfil enriquecido final. */
   @Transactional(readOnly = true)
   public String buildPipelineMarkdownByProfileId(Long profileId) {
@@ -238,6 +248,22 @@ public class BackendEnrichedNicheMaterializerService {
         profile == null ? scoreOrZero(card == null ? null : card.getSourceDiversityScore()) : profile.getSourceDiversityScore(),
         profile == null ? scoreOrZero(card == null ? null : card.getSolutionLanguageRiskScore()) : profile.getSolutionLanguageRiskScore(),
         profile == null ? null : profile.getCreatedAt());
+  }
+
+  /** Converte o perfil enriquecido em resumo para a lista de nichos do CNAE. */
+  private GeneratedEnrichedNicheByCnaeResponse toGeneratedByCnaeResponse(MarketNicheEnrichmentProfile profile) {
+    return new GeneratedEnrichedNicheByCnaeResponse(
+        profile.getId(),
+        profile.getMarketNiche().getId(),
+        profile.getResearchCycleId(),
+        profile.getCnaeCode(),
+        profile.getCnaeDescription(),
+        profile.getNeutralNicheName(),
+        profile.getQualityStatus(),
+        profile.getRoutineEvidenceScore(),
+        profile.getDifficultyEvidenceScore(),
+        profile.getSourceDiversityScore(),
+        profile.getCreatedAt());
   }
 
   /** Confirma se a pendência final tem perfil MEI/autônomo do próprio ciclo antes de expor ao coletor. */

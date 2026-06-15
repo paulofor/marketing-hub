@@ -1,4 +1,5 @@
 import { Globe2, Sparkles } from "lucide-react";
+import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   useOprmCnaeScore,
@@ -13,6 +14,7 @@ import {
   type OprmQualityNotes,
   useOprmRoutineQualityGateDetail,
 } from "../../api/oprm/useOprmRoutineQualityGateDetail";
+import { useOprmGeneratedEnrichedNichesByCnae } from "../../api/oprm/useOprmGeneratedEnrichedNichesByCnae";
 import PageTitle from "../../components/PageTitle";
 import OprmModuleNavigation from "./OprmModuleNavigation";
 import { useBreadcrumbs } from "../../app/breadcrumbs";
@@ -136,7 +138,6 @@ const statusLabels: Record<string, string> = {
   GENERIC: "Genérico",
   ENRICHED_NICHE_FAILED: "Falha na materialização",
 };
-
 
 const AUTO_QUALITY_REPROCESS_TRIGGER = "AUTO_QUALITY_REPROCESS";
 const MAX_AUTO_REPROCESS_PER_CANDIDATE = 3;
@@ -263,7 +264,10 @@ function buildBusinessRecommendation(params: {
   return null;
 }
 
-function getQualityNoteText(notes: OprmQualityNotes | null | undefined, key: string) {
+function getQualityNoteText(
+  notes: OprmQualityNotes | null | undefined,
+  key: string,
+) {
   const value = notes?.[key];
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
@@ -599,9 +603,12 @@ function inferStageState(
 export default function OprmCnaeDetailPlaceholderPage() {
   const { cnaeCode } = useParams();
   const decodedCnaeCode = cnaeCode ? decodeURIComponent(cnaeCode) : "CNAE";
+  const [showPipeline, setShowPipeline] = useState(false);
   const volumeQuery = useOprmCnaeVolume(decodedCnaeCode);
   const scoreQuery = useOprmCnaeScore(decodedCnaeCode);
   const cyclesQuery = useOprmCnaePipelineCycles(decodedCnaeCode);
+  const generatedNichesQuery =
+    useOprmGeneratedEnrichedNichesByCnae(decodedCnaeCode);
   const startPipelineMutation = useStartOprmCnaePipeline(decodedCnaeCode);
   const latestCycle = cyclesQuery.data?.[0];
   const previousCycle = findPreviousCycle(cyclesQuery.data, latestCycle);
@@ -672,26 +679,6 @@ export default function OprmCnaeDetailPlaceholderPage() {
               </p>
             </div>
             <div className="d-flex align-items-start gap-2">
-              <button
-                type="button"
-                className="btn btn-primary"
-                disabled={startPipelineMutation.isPending}
-                onClick={() => startPipelineMutation.mutate()}
-              >
-                {startPipelineMutation.isPending ? (
-                  <>
-                    <span
-                      className="spinner-border spinner-border-sm me-2"
-                      aria-hidden="true"
-                    />
-                    Disparando...
-                  </>
-                ) : latestCycle && businessRecommendation ? (
-                  "Reprocessar com subnicho operacional"
-                ) : (
-                  "Disparar pipeline NichoCNAE"
-                )}
-              </button>
               <Link className="btn btn-outline-secondary" to="/oprm">
                 Voltar para CNAEs
               </Link>
@@ -785,230 +772,339 @@ export default function OprmCnaeDetailPlaceholderPage() {
         <div className="card-body d-flex flex-column gap-3">
           <div className="d-flex flex-wrap justify-content-between gap-3 align-items-start">
             <div>
-              <h2 className="h5 mb-1">Execução do pipeline NichoCNAE</h2>
+              <h2 className="h5 mb-1">Nichos gerados com este CNAE</h2>
               <p className="text-secondary mb-0">
-                Cards por fase para acompanhar onde a pesquisa está antes de
-                transformar o CNAE em nicho enriquecido.
+                Primeiro confira se já existe um nicho utilizável para evitar
+                duplicidade e gasto desnecessário; gere um novo apenas quando o
+                histórico não atender ao objetivo comercial.
               </p>
             </div>
-            <div className="d-flex flex-wrap gap-2 align-items-start justify-content-end">
-              <div className="border rounded-3 bg-light px-3 py-2 text-end">
-                <span className="d-block small text-secondary">
-                  Custo total do CNAE
-                </span>
-                <strong className="fs-5">
-                  {formatUsd(latestCycle?.cnaeTotalCostUsd)}
-                </strong>
-              </div>
-              <span className="badge text-bg-light align-self-start">
-                Último ciclo:{" "}
-                {latestCycle ? `#${latestCycle.researchCycleId}` : "nenhum"}
-              </span>
-            </div>
+            <button
+              type="button"
+              className="btn btn-primary"
+              disabled={startPipelineMutation.isPending}
+              onClick={() =>
+                startPipelineMutation.mutate(undefined, {
+                  onSuccess: () => setShowPipeline(true),
+                })
+              }
+            >
+              {startPipelineMutation.isPending ? (
+                <>
+                  <span
+                    className="spinner-border spinner-border-sm me-2"
+                    aria-hidden="true"
+                  />
+                  Gerando...
+                </>
+              ) : (
+                "Gerar novo nicho"
+              )}
+            </button>
           </div>
 
-          {latestCycle ? (
-            <div className={pipelineAlertClass(latestCycle.status)}>
-              <div>
-                Status atual: <strong>{statusLabel(latestCycle.status)}</strong>{" "}
-                · iniciado em {formatDateTime(latestCycle.startedAt)} · sinais
-                extraídos: {formatNumber(latestCycle.totalExtractedSignals)} ·
-                custo do job atual:{" "}
-                <strong>{formatUsd(latestCycle.executionCostUsd)}</strong>
-              </div>
-              {qualityBlockedMessage(latestCycle.status) ? (
-                <div className="mt-2">
-                  <p className="mb-2">
-                    {qualityBlockedMessage(latestCycle.status)} O pipeline não
-                    está em execução agora; pesquise novamente após corrigir a
-                    causa do bloqueio.
-                  </p>
-                  {qualityResultSummary ? (
-                    <p className="mb-2 small">
-                      <span className="fw-semibold">Resultado apurado:</span>{" "}
-                      {qualityResultSummary}.
-                    </p>
-                  ) : null}
-                  {qualityNextMove ? (
-                    <div className="alert alert-info border mb-2 py-2 px-3">
-                      <span className="fw-semibold d-block mb-1">
-                        Próximo movimento automático
-                      </span>
-                      <span>{qualityNextMove}.</span>
-                    </div>
-                  ) : null}
-                  {qualityRejectedSituations.length > 0 ? (
-                    <div className="alert alert-light border mb-0 py-2 px-3">
-                      <span className="fw-semibold d-block mb-1">
-                        Situações rejeitadas pelo gate
-                      </span>
-                      <ul className="mb-0 ps-3">
-                        {qualityRejectedSituations.map((situation) => (
-                          <li key={situation}>{situation}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  ) : null}
-                </div>
-              ) : null}
-              {automaticProcess ? (
-                <div className={automaticProcess.className} role="status">
-                  <span className="fw-semibold d-block mb-1">
-                    {automaticProcess.title}
-                  </span>
-                  <span>{automaticProcess.text}</span>
-                  <span className="d-block small text-secondary mt-1">
-                    Tentativas automáticas usadas: {automaticAttempts}/
-                    {MAX_AUTO_REPROCESS_PER_CANDIDATE}.
-                  </span>
-                </div>
-              ) : null}
-              {businessRecommendation ? (
-                <div className="alert alert-light border mt-3 mb-0">
-                  <span className="fw-semibold d-block">
-                    Recomendação de negócio
-                  </span>
-                  {businessRecommendation}
-                  <span className="d-block small text-secondary mt-1">
-                    Comando recomendado: Reprocessar com subnicho operacional.
-                  </span>
-                </div>
-              ) : null}
-              {latestCycle.errorMessage ? (
-                <div className="mt-2 text-danger">
-                  Falha registrada: {latestCycle.errorMessage}
-                </div>
-              ) : null}
+          {generatedNichesQuery.isLoading ? (
+            <div className="alert alert-light border mb-0" role="status">
+              Carregando nichos gerados para o CNAE...
             </div>
-          ) : (
-            <div className="alert alert-secondary mb-0">
-              Nenhum ciclo encontrado para este CNAE. Use o botão de disparo
-              quando já existir candidato pendente de NichoCNAE para esse CNAE.
+          ) : null}
+          {generatedNichesQuery.isError ? (
+            <div className="alert alert-warning mb-0" role="alert">
+              Não foi possível carregar os nichos gerados para este CNAE.
             </div>
-          )}
-
-          <div className="row g-3">
-            {pipelineStages.map((stage, index) => {
-              const state = inferStageState(index, latestCycle);
-              return (
-                <div className="col-md-4" key={stage.title}>
-                  <div
-                    className={`card h-100 ${stageCardClassName(state.className)}`}
-                  >
-                    <div className="card-body">
-                      <div className="d-flex justify-content-between gap-2 mb-2">
-                        <div className="d-flex align-items-center gap-2">
-                          <h3 className="h6 mb-0">{stage.title}</h3>
-                          {stage.usesAiModel ? (
-                            <span
-                              className="badge text-bg-primary d-inline-flex align-items-center gap-1"
-                              title="Etapa com uso direto de IA"
-                              aria-label="Etapa com uso direto de IA"
-                            >
-                              <Sparkles size={14} aria-hidden="true" />
-                              IA
-                            </span>
-                          ) : null}
-                          {stage.usesInternetResearch ? (
-                            <span
-                              className="badge text-bg-info d-inline-flex align-items-center gap-1"
-                              title="Etapa que acessa a internet para pesquisar fontes"
-                              aria-label="Etapa que acessa a internet para pesquisar fontes"
-                            >
-                              <Globe2 size={14} aria-hidden="true" />
-                              Web
-                            </span>
-                          ) : null}
-                        </div>
-                        <span className="badge text-bg-light">
-                          {state.label}
+          ) : null}
+          {generatedNichesQuery.data?.length ? (
+            <div className="table-responsive">
+              <table className="table table-sm align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th scope="col">Nicho gerado</th>
+                    <th scope="col">Qualidade</th>
+                    <th scope="col">Ciclo</th>
+                    <th scope="col">Evidências</th>
+                    <th scope="col">Gerado em</th>
+                    <th scope="col" className="text-end">
+                      Ação
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {generatedNichesQuery.data.map((niche) => (
+                    <tr key={niche.enrichedNicheProfileId}>
+                      <td>
+                        <div className="fw-semibold">{niche.nicheName}</div>
+                        <span className="small text-secondary">
+                          Nicho #{niche.marketNicheId} · Perfil #
+                          {niche.enrichedNicheProfileId}
                         </span>
-                      </div>
-                      <p className={stageDescriptionClassName(state.className)}>
-                        {stage.description}
-                      </p>
-                      {latestCycle ? (
+                      </td>
+                      <td>{niche.qualityStatus}</td>
+                      <td>#{niche.researchCycleId}</td>
+                      <td>
+                        Rotina {niche.routineEvidenceScore} · Dor{" "}
+                        {niche.difficultyEvidenceScore} · Fontes{" "}
+                        {niche.sourceDiversityScore}
+                      </td>
+                      <td>{formatDateTime(niche.materializedAt)}</td>
+                      <td className="text-end">
                         <Link
-                          className={stageDetailButtonClassName(
-                            state.className,
-                          )}
-                          to={`/oprm/cnaes/${encodeURIComponent(decodedCnaeCode)}/pipeline/${latestCycle.researchCycleId}/stages/${stage.code}`}
+                          className="btn btn-outline-primary btn-sm"
+                          to={`/oprm/enriched-niches/profile/${niche.enrichedNicheProfileId}`}
                         >
-                          Ver detalhes
+                          Abrir
                         </Link>
-                      ) : (
-                        <button
-                          type="button"
-                          className="btn btn-outline-secondary btn-sm"
-                          disabled
-                        >
-                          Ver detalhes
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="card border-0 bg-light">
-            <div className="card-body">
-              <div className="d-flex flex-wrap justify-content-between gap-2 mb-3">
-                <div>
-                  <h3 className="h6 mb-1">Jobs executados para este CNAE</h3>
-                  <p className="small text-secondary mb-0">
-                    Histórico por execução para controlar gasto operacional
-                    antes de escalar o nicho.
-                  </p>
-                </div>
-                <strong>
-                  Total: {formatUsd(latestCycle?.cnaeTotalCostUsd)}
-                </strong>
-              </div>
-              <div className="table-responsive">
-                <table className="table table-sm align-middle mb-0">
-                  <thead>
-                    <tr>
-                      <th scope="col">Job</th>
-                      <th scope="col">Status</th>
-                      <th scope="col">Início</th>
-                      <th scope="col">Fim</th>
-                      <th scope="col" className="text-end">
-                        Custo total
-                      </th>
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {cyclesQuery.data && cyclesQuery.data.length > 0 ? (
-                      cyclesQuery.data.map((cycle) => (
-                        <tr key={cycle.researchCycleId}>
-                          <td>#{cycle.researchCycleId}</td>
-                          <td>{statusLabel(cycle.status)}</td>
-                          <td>{formatDateTime(cycle.startedAt)}</td>
-                          <td>{formatDateTime(cycle.finishedAt)}</td>
-                          <td className="text-end fw-semibold">
-                            {formatUsd(cycle.executionCostUsd)}
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td
-                          colSpan={5}
-                          className="text-secondary text-center py-3"
-                        >
-                          Nenhum job executado para este CNAE.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          </div>
+          ) : null}
+          {!generatedNichesQuery.isLoading &&
+          !generatedNichesQuery.isError &&
+          !generatedNichesQuery.data?.length ? (
+            <div className="alert alert-secondary mb-0">
+              Ainda não existe nicho enriquecido gerado para este CNAE. Use
+              “Gerar novo nicho” para iniciar o pipeline.
+            </div>
+          ) : null}
         </div>
       </section>
+
+      {showPipeline ? (
+        <section className="card border-0 shadow-sm">
+          <div className="card-body d-flex flex-column gap-3">
+            <div className="d-flex flex-wrap justify-content-between gap-3 align-items-start">
+              <div>
+                <h2 className="h5 mb-1">Execução do pipeline NichoCNAE</h2>
+                <p className="text-secondary mb-0">
+                  Cards por fase para acompanhar onde a pesquisa está antes de
+                  transformar o CNAE em nicho enriquecido.
+                </p>
+              </div>
+              <div className="d-flex flex-wrap gap-2 align-items-start justify-content-end">
+                <div className="border rounded-3 bg-light px-3 py-2 text-end">
+                  <span className="d-block small text-secondary">
+                    Custo total do CNAE
+                  </span>
+                  <strong className="fs-5">
+                    {formatUsd(latestCycle?.cnaeTotalCostUsd)}
+                  </strong>
+                </div>
+                <span className="badge text-bg-light align-self-start">
+                  Último ciclo:{" "}
+                  {latestCycle ? `#${latestCycle.researchCycleId}` : "nenhum"}
+                </span>
+              </div>
+            </div>
+
+            {latestCycle ? (
+              <div className={pipelineAlertClass(latestCycle.status)}>
+                <div>
+                  Status atual:{" "}
+                  <strong>{statusLabel(latestCycle.status)}</strong> · iniciado
+                  em {formatDateTime(latestCycle.startedAt)} · sinais extraídos:{" "}
+                  {formatNumber(latestCycle.totalExtractedSignals)} · custo do
+                  job atual:{" "}
+                  <strong>{formatUsd(latestCycle.executionCostUsd)}</strong>
+                </div>
+                {qualityBlockedMessage(latestCycle.status) ? (
+                  <div className="mt-2">
+                    <p className="mb-2">
+                      {qualityBlockedMessage(latestCycle.status)} O pipeline não
+                      está em execução agora; pesquise novamente após corrigir a
+                      causa do bloqueio.
+                    </p>
+                    {qualityResultSummary ? (
+                      <p className="mb-2 small">
+                        <span className="fw-semibold">Resultado apurado:</span>{" "}
+                        {qualityResultSummary}.
+                      </p>
+                    ) : null}
+                    {qualityNextMove ? (
+                      <div className="alert alert-info border mb-2 py-2 px-3">
+                        <span className="fw-semibold d-block mb-1">
+                          Próximo movimento automático
+                        </span>
+                        <span>{qualityNextMove}.</span>
+                      </div>
+                    ) : null}
+                    {qualityRejectedSituations.length > 0 ? (
+                      <div className="alert alert-light border mb-0 py-2 px-3">
+                        <span className="fw-semibold d-block mb-1">
+                          Situações rejeitadas pelo gate
+                        </span>
+                        <ul className="mb-0 ps-3">
+                          {qualityRejectedSituations.map((situation) => (
+                            <li key={situation}>{situation}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
+                {automaticProcess ? (
+                  <div className={automaticProcess.className} role="status">
+                    <span className="fw-semibold d-block mb-1">
+                      {automaticProcess.title}
+                    </span>
+                    <span>{automaticProcess.text}</span>
+                    <span className="d-block small text-secondary mt-1">
+                      Tentativas automáticas usadas: {automaticAttempts}/
+                      {MAX_AUTO_REPROCESS_PER_CANDIDATE}.
+                    </span>
+                  </div>
+                ) : null}
+                {businessRecommendation ? (
+                  <div className="alert alert-light border mt-3 mb-0">
+                    <span className="fw-semibold d-block">
+                      Recomendação de negócio
+                    </span>
+                    {businessRecommendation}
+                    <span className="d-block small text-secondary mt-1">
+                      Comando recomendado: Reprocessar com subnicho operacional.
+                    </span>
+                  </div>
+                ) : null}
+                {latestCycle.errorMessage ? (
+                  <div className="mt-2 text-danger">
+                    Falha registrada: {latestCycle.errorMessage}
+                  </div>
+                ) : null}
+              </div>
+            ) : (
+              <div className="alert alert-secondary mb-0">
+                Nenhum ciclo encontrado para este CNAE. Use o botão de disparo
+                quando já existir candidato pendente de NichoCNAE para esse
+                CNAE.
+              </div>
+            )}
+
+            <div className="row g-3">
+              {pipelineStages.map((stage, index) => {
+                const state = inferStageState(index, latestCycle);
+                return (
+                  <div className="col-md-4" key={stage.title}>
+                    <div
+                      className={`card h-100 ${stageCardClassName(state.className)}`}
+                    >
+                      <div className="card-body">
+                        <div className="d-flex justify-content-between gap-2 mb-2">
+                          <div className="d-flex align-items-center gap-2">
+                            <h3 className="h6 mb-0">{stage.title}</h3>
+                            {stage.usesAiModel ? (
+                              <span
+                                className="badge text-bg-primary d-inline-flex align-items-center gap-1"
+                                title="Etapa com uso direto de IA"
+                                aria-label="Etapa com uso direto de IA"
+                              >
+                                <Sparkles size={14} aria-hidden="true" />
+                                IA
+                              </span>
+                            ) : null}
+                            {stage.usesInternetResearch ? (
+                              <span
+                                className="badge text-bg-info d-inline-flex align-items-center gap-1"
+                                title="Etapa que acessa a internet para pesquisar fontes"
+                                aria-label="Etapa que acessa a internet para pesquisar fontes"
+                              >
+                                <Globe2 size={14} aria-hidden="true" />
+                                Web
+                              </span>
+                            ) : null}
+                          </div>
+                          <span className="badge text-bg-light">
+                            {state.label}
+                          </span>
+                        </div>
+                        <p
+                          className={stageDescriptionClassName(state.className)}
+                        >
+                          {stage.description}
+                        </p>
+                        {latestCycle ? (
+                          <Link
+                            className={stageDetailButtonClassName(
+                              state.className,
+                            )}
+                            to={`/oprm/cnaes/${encodeURIComponent(decodedCnaeCode)}/pipeline/${latestCycle.researchCycleId}/stages/${stage.code}`}
+                          >
+                            Ver detalhes
+                          </Link>
+                        ) : (
+                          <button
+                            type="button"
+                            className="btn btn-outline-secondary btn-sm"
+                            disabled
+                          >
+                            Ver detalhes
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="card border-0 bg-light">
+              <div className="card-body">
+                <div className="d-flex flex-wrap justify-content-between gap-2 mb-3">
+                  <div>
+                    <h3 className="h6 mb-1">Jobs executados para este CNAE</h3>
+                    <p className="small text-secondary mb-0">
+                      Histórico por execução para controlar gasto operacional
+                      antes de escalar o nicho.
+                    </p>
+                  </div>
+                  <strong>
+                    Total: {formatUsd(latestCycle?.cnaeTotalCostUsd)}
+                  </strong>
+                </div>
+                <div className="table-responsive">
+                  <table className="table table-sm align-middle mb-0">
+                    <thead>
+                      <tr>
+                        <th scope="col">Job</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Início</th>
+                        <th scope="col">Fim</th>
+                        <th scope="col" className="text-end">
+                          Custo total
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {cyclesQuery.data && cyclesQuery.data.length > 0 ? (
+                        cyclesQuery.data.map((cycle) => (
+                          <tr key={cycle.researchCycleId}>
+                            <td>#{cycle.researchCycleId}</td>
+                            <td>{statusLabel(cycle.status)}</td>
+                            <td>{formatDateTime(cycle.startedAt)}</td>
+                            <td>{formatDateTime(cycle.finishedAt)}</td>
+                            <td className="text-end fw-semibold">
+                              {formatUsd(cycle.executionCostUsd)}
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td
+                            colSpan={5}
+                            className="text-secondary text-center py-3"
+                          >
+                            Nenhum job executado para este CNAE.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }

@@ -6,6 +6,7 @@ import com.marketinghub.oprm.nichocnae.enrichednichematerializer.service.complet
 import com.marketinghub.oprm.nichocnae.enrichednichematerializer.service.detailStageExecution.EnrichedNicheMaterializerDetailResponse;
 import com.marketinghub.oprm.nichocnae.enrichednichematerializer.service.diagnoseContamination.ContaminatedNicheDiagnosticResponse;
 import com.marketinghub.oprm.nichocnae.enrichednichematerializer.service.failStageExecution.FailEnrichedNicheMaterializerRequest;
+import com.marketinghub.oprm.nichocnae.enrichednichematerializer.service.generatedByCnae.GeneratedEnrichedNicheByCnaeResponse;
 import com.marketinghub.oprm.nichocnae.enrichednichematerializer.service.pending.RecordEnrichedNicheMaterializerPending;
 import java.util.List;
 import org.springframework.http.HttpHeaders;
@@ -60,6 +61,14 @@ public class BackendEnrichedNicheMaterializerController {
   @GetMapping("/api/oprm/nichocnae/enriched-niche-materializer/profiles/{profileId}")
   public ResponseEntity<EnrichedNicheMaterializerDetailResponse> detailByProfileId(@PathVariable Long profileId) {
     return ResponseEntity.ok(executionService.detailByProfileId(profileId));
+  }
+
+  /** Lista os nichos enriquecidos já materializados para um CNAE. */
+  @GetMapping("/api/oprm/nichocnae/cnaes/{cnaeCode}/enriched-niches")
+  public List<GeneratedEnrichedNicheByCnaeResponse> listGeneratedByCnae(
+      @PathVariable String cnaeCode,
+      @RequestParam(defaultValue = "50") int limit) {
+    return executionService.listGeneratedByCnae(cnaeCode, limit);
   }
 
   /** Entrega um documento Markdown baixável com auditoria de todo o pipeline processado para o perfil. */

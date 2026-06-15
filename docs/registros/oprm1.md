@@ -748,3 +748,9 @@
 - Causa-raiz tratada: o gate exigia dor prática apenas pelos contadores estruturados; quando a síntese textual trazia falta, remarcação, agenda instável, retrabalho e cobrança, mas os contadores vinham zerados, o mix MEI/autônomo ficava falso e o nicho bom era descartado.
 - Correção aplicada: o gate agora reconhece dor prática também no texto do card, relaxa bloqueios automáticos quando o risco de solução/fonte antiga é residual e existem evidências recentes suficientes, mantendo bloqueio forte para contaminação textual ou perfil realmente dominado por solução.
 - Prevenção de recorrência: adicionado teste de regressão simulando o caso do ciclo 53, garantindo aprovação quando há rotina executora, dor vendável textual, aquisição/canais e fontes brasileiras recentes mesmo com contadores de dor prática zerados.
+
+## 2026-06-15 — OPRM NichoCNAE: lista de nichos antes do pipeline
+
+- Alterado o fluxo da tela de detalhe do CNAE para priorizar a lista de nichos enriquecidos já gerados pelo CNAE antes de exibir as etapas do pipeline.
+- Causa-raiz tratada: o clique no CNAE entrava direto na visão operacional do pipeline, dificultando perceber se o CNAE já tinha nichos gerados e aumentando risco de duplicidade, confusão entre CNAE e nicho e gasto desnecessário.
+- Correção aplicada: criado endpoint backend para listar nichos enriquecidos por CNAE; o frontend passou a exibir essa lista com ação de abertura do nicho e botão único para gerar um novo nicho, mostrando as etapas do pipeline apenas após esse comando.

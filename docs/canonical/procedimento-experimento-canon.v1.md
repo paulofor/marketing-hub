@@ -94,6 +94,16 @@ Regras obrigatórias:
 - após 3 falhas da mesma etapa, o fluxo deve parar e manter a falha auditável para investigação de causa-raiz;
 - a interface deve apenas disparar o fluxo e acompanhar os status; não deve simular a orquestração no navegador.
 
+### 4.2.3 Regra mandatória — passagem enriquecida `nicho-cnae → hipótese`
+
+Quando o nicho tiver sido materializado pelo pipeline `nicho-cnae`, o pipeline de hipótese deve receber, além do registro base de `market_niche`, o perfil enriquecido mais recente do nicho.
+
+Regras obrigatórias:
+- o backend deve incluir no contrato pendente da hipótese os sinais não-ofertivos do perfil enriquecido: rotina, dores, resultados desejados, oportunidades de mecanismo, evidências, fontes, persona operacional, padrões de linguagem, gatilhos comerciais, objeções e scores de qualidade/confiança;
+- o Worker AI deve colocar esses sinais no bloco de contexto das etapas Dor, Resultado, Mecanismo, Prova e Oferta, preservando-os como insumo estratégico;
+- o pipeline de hipótese deve usar esses sinais para aumentar especificidade, linguagem real, plausibilidade do mecanismo, redução de objeções e percepção de valor da oferta low-ticket;
+- a passagem enriquecida não autoriza o `nicho-cnae` a criar promessa, oferta, preço, checkout, landing ou campanha. O `nicho-cnae` permanece responsável por realidade operacional e evidências; a hipótese permanece responsável por transformar essa realidade em Dor → Resultado → Mecanismo → Prova → Oferta.
+
 ### 4.3 Regra de diferenciação de ângulo após experimento reprovado
 
 Ao gerar a etapa `CAMPAIGN_ANGLE`, o prompt deve receber o histórico dos experimentos reprovados por 100 acessos sem envio da mesma hipótese, quando existir. A reprovação de um experimento reprova aquela materialização de mercado (público, criativo, landing, isca e formulário), mas não reprova automaticamente a hipótese estratégica.

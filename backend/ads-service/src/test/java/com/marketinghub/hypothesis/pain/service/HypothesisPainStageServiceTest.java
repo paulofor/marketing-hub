@@ -11,7 +11,9 @@ import com.marketinghub.hypothesis.pain.HypothesisPainCostCalculator;
 import com.marketinghub.hypothesis.pain.HypothesisPainStageExecution;
 import com.marketinghub.hypothesis.pain.service.recebeResposta.RecebeRespostaRequest;
 import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.niche.MarketNicheEnrichmentProfile;
 import com.marketinghub.repository.jpa.hypothesis.HypothesisPainStageExecutionRepository;
+import com.marketinghub.repository.jpa.niche.MarketNicheEnrichmentProfileRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
@@ -33,6 +35,9 @@ class HypothesisPainStageServiceTest {
     private MarketNicheRepository marketNicheRepository;
 
     @Mock
+    private MarketNicheEnrichmentProfileRepository enrichmentProfileRepository;
+
+    @Mock
     private HypothesisPainStageExecutionRepository executionRepository;
 
     @Mock
@@ -45,6 +50,7 @@ class HypothesisPainStageServiceTest {
     void setup() {
         service = new HypothesisPainStageService(
                 marketNicheRepository,
+                enrichmentProfileRepository,
                 executionRepository,
                 costCalculator);
     }
@@ -129,6 +135,63 @@ class HypothesisPainStageServiceTest {
         assertEquals(
                 "Timeout operacional: execução ficou em PROCESSANDO por mais de 45 minutos sem conclusão. Job recuperado automaticamente e devolvido para a fila de processamento.",
                 recovered.getErrorMessage());
+    }
+
+    /** Deve entregar o perfil enriquecido do nicho para preservar sinais OPRM no Worker AI. */
+    @Test
+    void listPendingIncludesLatestEnrichmentProfile() {
+        MarketNiche niche = new MarketNiche();
+        niche.setId(18L);
+        String idJob = "6bb83a22-3894-43bd-9752-374f84eb6a2c";
+        HypothesisPainStageExecution execution = HypothesisPainStageExecution.builder()
+                .idJob(idJob.getBytes(StandardCharsets.UTF_8))
+                .marketNicheId(18L)
+                .marketNiche(niche)
+                .stageCode("hypothesis-pain")
+                .status("INICIADO")
+                .executionRequestedAt(Instant.parse("2026-06-11T09:59:00Z"))
+                .build();
+        MarketNicheEnrichmentProfile profile = new MarketNicheEnrichmentProfile();
+        profile.setId(7L);
+        profile.setResearchCycleId(60L);
+        profile.setCnaeCode("9602501");
+        profile.setCnaeDescription("Cabeleireiros, manicure e pedicure");
+        profile.setSourceScore(new BigDecimal("90.00"));
+        profile.setQualityStatus("APPROVED");
+        profile.setConfidenceScore(87);
+        profile.setDifficultyEvidenceScore(91);
+        profile.setSourceDiversityScore(73);
+        profile.setRoutineSummary("Agenda, deslocamento e atendimento em domicílio.");
+        profile.setPainsSummary("Remarcações e ociosidade reduzem faturamento.");
+        profile.setResultsSummary("Agenda previsível e pacote simples de atendimento.");
+        profile.setMechanismOpportunitiesSummary("Checklists operacionais e scripts de WhatsApp.");
+        profile.setEvidenceSummary("Evidências em fontes públicas do nicho.");
+        profile.setSourceDomains("exemplo.com");
+        profile.setPersonaSummary("Manicure autônoma em domicílio.");
+        profile.setLanguagePatterns("agenda quebrada; cliente some");
+        profile.setCommercialTriggers("busca previsibilidade e redução de retrabalho");
+        profile.setObjections("medo de parecer complicado");
+
+        when(executionRepository.findTop50ByStageCodeAndStatusInAndCompletedAtIsNullAndProcessingStartedAtBeforeOrderByProcessingStartedAtAsc(
+                        any(),
+                        any(),
+                        any()))
+                .thenReturn(List.of());
+        when(executionRepository.findTop20ByStageCodeAndStatusOrderByExecutionRequestedAtAsc(
+                        "hypothesis-pain",
+                        "INICIADO"))
+                .thenReturn(List.of(execution));
+        when(enrichmentProfileRepository.findLatestByMarketNicheIds(List.of(18L)))
+                .thenReturn(List.of(profile));
+
+        var pending = service.listPending();
+
+        assertEquals(1, pending.size());
+        assertEquals(7L, pending.getFirst().enrichmentProfile().id());
+        assertEquals("Manicure autônoma em domicílio.", pending.getFirst().enrichmentProfile().personaSummary());
+        assertEquals("agenda quebrada; cliente some", pending.getFirst().enrichmentProfile().languagePatterns());
+        assertEquals("busca previsibilidade e redução de retrabalho", pending.getFirst().enrichmentProfile().commercialTriggers());
+        assertEquals("medo de parecer complicado", pending.getFirst().enrichmentProfile().objections());
     }
 
     /** Deve falhar job antigo com openai_job_id para impedir recaptura duplicada de execução ativa na OpenAI. */

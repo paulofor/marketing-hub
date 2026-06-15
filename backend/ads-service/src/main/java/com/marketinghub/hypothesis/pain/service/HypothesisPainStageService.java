@@ -4,13 +4,16 @@ import com.marketinghub.hypothesis.pain.HypothesisPainCostCalculator;
 import com.marketinghub.hypothesis.pain.HypothesisPainStageExecution;
 import com.marketinghub.hypothesis.pain.service.detailStageExecution.HypothesisPainExecutionDetailResponse;
 import com.marketinghub.hypothesis.pain.service.listStageExecutions.HypothesisPainExecutionSummaryResponse;
+import com.marketinghub.hypothesis.pain.service.pending.HypothesisPainPendingEnrichmentProfile;
 import com.marketinghub.hypothesis.pain.service.pending.HypothesisPainPendingExecution;
 import com.marketinghub.hypothesis.pain.service.pending.HypothesisPainPendingNiche;
 import com.marketinghub.hypothesis.pain.service.recebeResposta.RecebeRespostaRequest;
 import com.marketinghub.hypothesis.pain.service.start.HypothesisPainStartResponse;
 import com.marketinghub.hypothesis.pain.service.summary.HypothesisStageFinalSummaryResponse;
 import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.niche.MarketNicheEnrichmentProfile;
 import com.marketinghub.repository.jpa.hypothesis.HypothesisPainStageExecutionRepository;
+import com.marketinghub.repository.jpa.niche.MarketNicheEnrichmentProfileRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.math.BigDecimal;
@@ -58,15 +61,18 @@ public class HypothesisPainStageService {
             STATUS_WAITING_OPENAI_DISPATCH);
 
     private final MarketNicheRepository marketNicheRepository;
+    private final MarketNicheEnrichmentProfileRepository enrichmentProfileRepository;
     private final HypothesisPainStageExecutionRepository executionRepository;
     private final HypothesisPainCostCalculator costCalculator;
 
     /** Inicializa o serviço com os repositórios canônicos e o calculador interno de custo da etapa. */
     public HypothesisPainStageService(
             MarketNicheRepository marketNicheRepository,
+            MarketNicheEnrichmentProfileRepository enrichmentProfileRepository,
             HypothesisPainStageExecutionRepository executionRepository,
             HypothesisPainCostCalculator costCalculator) {
         this.marketNicheRepository = marketNicheRepository;
+        this.enrichmentProfileRepository = enrichmentProfileRepository;
         this.executionRepository = executionRepository;
         this.costCalculator = costCalculator;
     }
@@ -367,6 +373,7 @@ public class HypothesisPainStageService {
                         execution.getExecutionRequestedAt(),
                         execution.getProcessingStartedAt(),
                         toPendingNiche(execution.getMarketNiche()),
+                        toPendingEnrichmentProfile(execution.getMarketNicheId()),
                         pendingPainResponse(execution),
                         pendingResultResponse(execution),
                         pendingMechanismResponse(execution),
@@ -750,6 +757,45 @@ public class HypothesisPainStageService {
                 niche.getInterests(),
                 niche.getDemographicFilters(),
                 niche.getExtraTips());
+    }
+
+    /** Converte o perfil enriquecido mais recente do nicho para o contrato consumido pelo Worker AI. */
+    private HypothesisPainPendingEnrichmentProfile toPendingEnrichmentProfile(Long marketNicheId) {
+        if (marketNicheId == null) {
+            return null;
+        }
+        return enrichmentProfileRepository.findLatestByMarketNicheIds(List.of(marketNicheId)).stream()
+                .findFirst()
+                .map(this::toPendingEnrichmentProfile)
+                .orElse(null);
+    }
+
+    /** Converte a entidade de perfil enriquecido em DTO sem expor a entidade JPA ao Worker AI. */
+    private HypothesisPainPendingEnrichmentProfile toPendingEnrichmentProfile(MarketNicheEnrichmentProfile profile) {
+        return new HypothesisPainPendingEnrichmentProfile(
+                profile.getId(),
+                profile.getResearchCycleId(),
+                profile.getCnaeCode(),
+                profile.getCnaeDescription(),
+                profile.getSourceScore(),
+                profile.getQualityStatus(),
+                profile.getSpecificityScore(),
+                profile.getConfidenceScore(),
+                profile.getDuplicationScore(),
+                profile.getRoutineEvidenceScore(),
+                profile.getDifficultyEvidenceScore(),
+                profile.getSourceDiversityScore(),
+                profile.getSolutionLanguageRiskScore(),
+                profile.getRoutineSummary(),
+                profile.getPainsSummary(),
+                profile.getResultsSummary(),
+                profile.getMechanismOpportunitiesSummary(),
+                profile.getEvidenceSummary(),
+                profile.getSourceDomains(),
+                profile.getPersonaSummary(),
+                profile.getLanguagePatterns(),
+                profile.getCommercialTriggers(),
+                profile.getObjections());
     }
 
     /** Converte uma execução para resumo operacional. */

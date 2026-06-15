@@ -12,6 +12,7 @@ Regras obrigatórias:
 - Não prometa cura, renda garantida, resultado absoluto, automação total ou dependência de acesso interno ao negócio do cliente.
 - Não crie preço, checkout, campanha de anúncios ou página de vendas nesta etapa.
 - Não use markdown dentro dos campos.
+- Quando o contexto trouxer campos `enriched*`, trate-os como ponte oficial do pipeline nicho-cnae: use rotina, linguagem, evidências, gatilhos e objeções observadas sem transformá-los em promessa ou oferta prematura.
 
 Critérios de qualidade:
 - A prova deve ser específica, fácil de produzir e conectada à rotina real do nicho.

@@ -21,9 +21,15 @@ class HypothesisPainBackendClientTest {
         niche.put("promises", null);
         niche.put("offers", null);
         niche.put("extraTips", "Usar rotina real");
+        Map<String, Object> enrichmentProfile = new LinkedHashMap<>();
+        enrichmentProfile.put("personaSummary", "Manicure autônoma em domicílio.");
+        enrichmentProfile.put("languagePatterns", "agenda quebrada; cliente some");
+        enrichmentProfile.put("commercialTriggers", "busca previsibilidade");
+        enrichmentProfile.put("objections", "medo de parecer complicado");
         Map<String, Object> pending = new LinkedHashMap<>();
         pending.put("marketNicheId", 18L);
         pending.put("niche", niche);
+        pending.put("enrichmentProfile", enrichmentProfile);
 
         Map<String, Object> promptData = client.buildPromptDataFromPending(pending);
         HypothesisPainInput input = new HypothesisPainInput(18L, "hypothesis-pain", "job-1", promptData);
@@ -35,7 +41,11 @@ class HypothesisPainBackendClientTest {
         assertThat(promptData.get("CASE_DATA_BLOCK")).asString()
                 .contains("promises: ")
                 .contains("offers: ")
-                .contains("extraTips: Usar rotina real");
+                .contains("extraTips: Usar rotina real")
+                .contains("enrichedPersonaSummary: Manicure autônoma em domicílio.")
+                .contains("enrichedLanguagePatterns: agenda quebrada; cliente some")
+                .contains("enrichedCommercialTriggers: busca previsibilidade")
+                .contains("enrichedObjections: medo de parecer complicado");
     }
 
     /** Cria o cliente de backend apenas com dependências necessárias para montagem local do contexto. */

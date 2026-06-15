@@ -4518,3 +4518,10 @@
 - causa-raiz: a tela exigia intervenção manual etapa a etapa, reduzindo velocidade operacional e deixando o encadeamento de sucesso/falha sob responsabilidade do usuário.
 - foi feito: criado endpoint backend para iniciar/retomar o fluxo completo, orquestração automática no callback de conclusão, retry automático de etapa marcada como fluxo automático e botão no frontend para disparar o fluxo.
 - prevenção: registrado no cânone que a orquestração deve ficar no backend, enquanto a interface apenas dispara e acompanha status.
+
+## 2026-06-15 — Passagem enriquecida nicho-cnae para hipótese
+
+- solicitação: implementar a passagem explícita dos sinais do pipeline `nicho-cnae` para o pipeline de hipótese, evitando perda de contexto útil na construção de Dor → Resultado → Mecanismo → Prova → Oferta.
+- causa-raiz: o pipeline de hipótese recebia principalmente o registro resumido de `market_niche`, enquanto o perfil enriquecido guardava rotina, linguagem, gatilhos, objeções, evidências e oportunidades de mecanismo sem entrar diretamente no prompt.
+- foi feito: o backend passou a anexar o perfil enriquecido mais recente ao contrato pendente da hipótese, e o Worker AI passou a incluir os campos enriquecidos no `CASE_DATA_BLOCK` de todas as etapas da hipótese.
+- prevenção: registrado no cânone que `nicho-cnae` deve enviar sinais operacionais/comerciais não-ofertivos, sem criar oferta prematura; a hipótese segue responsável pela transformação comercial final.

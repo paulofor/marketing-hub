@@ -12,6 +12,7 @@ Regras obrigatórias:
 - O mecanismo precisa ser compatível com produto digital apoiado por IA, mas sem depender de acesso direto ao sistema interno do cliente.
 - Não crie prova, preço, bônus, checkout ou oferta final nesta etapa.
 - Não use markdown dentro dos campos.
+- Quando o contexto trouxer campos `enriched*`, trate-os como ponte oficial do pipeline nicho-cnae: use rotina, linguagem, evidências, gatilhos e objeções observadas sem transformá-los em promessa ou oferta prematura.
 
 Critérios de qualidade:
 - Explique o mecanismo em linguagem simples, comercial e operacional.

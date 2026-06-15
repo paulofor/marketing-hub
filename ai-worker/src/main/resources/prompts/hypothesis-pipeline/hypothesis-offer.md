@@ -19,6 +19,7 @@ Regras obrigatórias:
 - Não crie checkout, campanha de anúncios ou página de vendas nesta etapa.
 - Não escreva anúncios, headline de landing, copy completa de página de vendas ou estratégia de Facebook; entregue apenas a oferta estruturada que servirá de insumo futuro.
 - Não use markdown dentro dos campos.
+- Quando o contexto trouxer campos `enriched*`, trate-os como ponte oficial do pipeline nicho-cnae: use rotina, linguagem, evidências, gatilhos e objeções observadas sem transformá-los em promessa ou oferta prematura.
 
 Critérios de qualidade:
 - A oferta deve ser fácil de entender, específica e conectada à rotina real do nicho.

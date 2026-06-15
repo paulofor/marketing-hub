@@ -1602,3 +1602,12 @@ Arquivos principais:
 - Causa-raiz investigada: a coleta Hotmart de 14/06/2026 às 22:00 recebeu 400 produtos, mas 119 referências não entraram em `mois_collected_reference` porque `hotmart_description` estava limitada a `VARCHAR(1000)` e as descrições reais da Hotmart excediam esse tamanho.
 - Criado changelog Liquibase para alterar o banco para `hotmart_description LONGTEXT NULL`, preservando a descrição comercial completa e evitando perda de referências relacionais em novas coletas.
 - Atualizado o documento canônico do fluxo Hotmart para refletir que a descrição comercial deve ser persistida completa.
+
+## 2026-06-15 14:24:24 UTC-3
+- ajustado o agendamento pontual do ciclo 1 de coleta Hotmart para executar hoje, 15/06/2026, às 14:45 no timezone `America/Sao_Paulo`.
+- mantido o cron literal diretamente na anotação `@Scheduled`, conforme regra operacional de agendamentos Spring Boot.
+- atualizado o teste unitário do scheduler para prevenir divergência entre código e agendamento esperado.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - mois-hotmart-collector/AGENTS.md
+  - docs/registros/mois1.md

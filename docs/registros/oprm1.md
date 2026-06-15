@@ -756,3 +756,9 @@
 - Correção aplicada: criado endpoint backend para listar nichos enriquecidos por CNAE; o frontend passou a exibir essa lista com ação de abertura do nicho e botão único para gerar um novo nicho, mostrando as etapas do pipeline apenas após esse comando.
 
 - 2026-06-15 00:00:00 (UTC-3): ajustado o fluxo administrativo CNAE → subnicho no frontend: a lista de CNAEs leva para uma tela com todos os subnichos do CNAE, o comando principal passou a criar novo subnicho com potencial de venda e, após o disparo, a navegação abre uma visão dedicada ao ciclo criado com etapas, custo e jobs restritos ao novo subnicho.
+
+## 2026-06-15 — OPRM NichoCNAE: custo de identificação no nicho materializado
+
+- Causa-raiz tratada: a etapa final `oprmEnrichedNicheMaterializer` copiava rotina, segmentação e evidências para `market_niche`, mas não transferia o custo de identificação registrado em `oprm_niche_research_seed.cost_usd`; por isso o nicho materializado ficava com custo inicial zerado/nulo mesmo após gastar IA para identificar o subnicho.
+- Correção aplicada: a materialização final agora soma o custo USD do seed do ciclo, converte para BRL pelo serviço canônico de moeda e preenche `market_niche.cost` e `market_niche.totalCost` quando ainda estiverem vazios/zerados, sem duplicar custo em reprocessamentos.
+- Prevenção de recorrência: adicionado teste de regressão na etapa final e changelog de backfill para corrigir nichos OPRM já materializados sem custo de identificação.

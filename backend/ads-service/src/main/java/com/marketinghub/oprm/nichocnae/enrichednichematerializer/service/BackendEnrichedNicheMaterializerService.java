@@ -1,5 +1,6 @@
 package com.marketinghub.oprm.nichocnae.enrichednichematerializer.service;
 
+import com.marketinghub.finance.CurrencyConversionService;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.MarketNicheEnrichmentProfile;
 import com.marketinghub.oprm.cnae.OprmNicheCandidate;
@@ -31,6 +32,7 @@ import com.marketinghub.repository.jpa.oprm.nichocnae.OprmSourceCandidateReposit
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmSourceSnapshotRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.meiaudienceprofile.OprmMeiAudienceProfileRepository;
 import jakarta.persistence.EntityNotFoundException;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -70,6 +72,7 @@ public class BackendEnrichedNicheMaterializerService {
   private final MarketNicheEnrichmentProfileRepository enrichmentProfileRepository;
   private final OprmMeiAudienceProfileRepository meiAudienceProfileRepository;
   private final OprmEnrichedNicheMetaSignalService metaSignalService;
+  private final CurrencyConversionService currencyConversionService;
 
   /** Inicializa o serviço com os repositórios oficiais do backend usados pela etapa final. */
   public BackendEnrichedNicheMaterializerService(
@@ -84,7 +87,8 @@ public class BackendEnrichedNicheMaterializerService {
       MarketNicheRepository marketNicheRepository,
       MarketNicheEnrichmentProfileRepository enrichmentProfileRepository,
       OprmMeiAudienceProfileRepository meiAudienceProfileRepository,
-      OprmEnrichedNicheMetaSignalService metaSignalService) {
+      OprmEnrichedNicheMetaSignalService metaSignalService,
+      CurrencyConversionService currencyConversionService) {
     this.cycleRepository = cycleRepository;
     this.routineCardRepository = routineCardRepository;
     this.nicheCandidateRepository = nicheCandidateRepository;
@@ -97,6 +101,7 @@ public class BackendEnrichedNicheMaterializerService {
     this.enrichmentProfileRepository = enrichmentProfileRepository;
     this.meiAudienceProfileRepository = meiAudienceProfileRepository;
     this.metaSignalService = metaSignalService;
+    this.currencyConversionService = currencyConversionService;
   }
 
   /** Lista cartões aprovados pelo gate que ainda precisam materializar nicho e nicho enriquecido. */
@@ -129,6 +134,7 @@ public class BackendEnrichedNicheMaterializerService {
     MarketNiche marketNiche = existingMarketNicheByCnaeAndNeutralName
         .orElseGet(MarketNiche::new);
     applyRoutineCardToMarketNiche(marketNiche, card, cycle, metaSignalPackage);
+    applyIdentificationCostToMarketNiche(marketNiche, cycle);
     MarketNiche savedMarketNiche = marketNicheRepository.save(marketNiche);
     MarketNicheEnrichmentProfile profile = buildProfile(card, cycle, candidate, savedMarketNiche, request);
     MarketNicheEnrichmentProfile savedProfile = enrichmentProfileRepository.save(profile);
@@ -327,6 +333,24 @@ public class BackendEnrichedNicheMaterializerService {
     marketNiche.setDemographicFilters("Público profissional/empreendedor ligado a " + cycle.getCnaeDescription());
     applyMetaSignalsToNiche(marketNiche, metaSignalPackage);
     marketNiche.setExtraTips(buildExtraTips(card));
+  }
+
+  /** Aplica o custo de identificação do NichoCNAE ao nicho base sem duplicar reprocessamentos. */
+  private void applyIdentificationCostToMarketNiche(MarketNiche marketNiche, OprmRoutineResearchCycle cycle) {
+    BigDecimal identificationCostUsd = seedRepository.sumCostUsdByResearchCycleId(cycle.getId());
+    if (identificationCostUsd == null || identificationCostUsd.compareTo(BigDecimal.ZERO) <= 0) {
+      return;
+    }
+    BigDecimal identificationCostBrl = currencyConversionService.usdToBrl(identificationCostUsd);
+    if (identificationCostBrl == null || identificationCostBrl.compareTo(BigDecimal.ZERO) <= 0) {
+      return;
+    }
+    if (marketNiche.getCost() == null || marketNiche.getCost().compareTo(BigDecimal.ZERO) == 0) {
+      marketNiche.setCost(identificationCostBrl);
+    }
+    if (marketNiche.getTotalCost() == null || marketNiche.getTotalCost().compareTo(BigDecimal.ZERO) == 0) {
+      marketNiche.setTotalCost(identificationCostBrl);
+    }
   }
 
   /** Localiza nicho já vinculado ao mesmo CNAE e ao mesmo nome neutro, permitindo vários nichos diferentes no mesmo CNAE. */

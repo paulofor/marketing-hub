@@ -4511,3 +4511,10 @@
 - causa-raiz: a estrutura anterior já exigia low-ticket, mas ainda podia gerar uma oferta enxuta demais, com poucos itens e sem contraste explícito de valor percebido.
 - foi feito: adicionados ao prompt, schema, DTO e validador os conceitos de pilha de valor e percepção de valor, exigindo vários componentes úteis, complementares e produzíveis pelo Marketing Hub.
 - prevenção: o cânone passou a exigir que a oferta low-ticket comunique pacote robusto e relação de muito por pouco, sem desconto falso, urgência artificial ou ancoragem enganosa.
+
+## 2026-06-15 — Fluxo completo automático da hipótese
+
+- solicitação: adicionar botão para gerar o fluxo completo de hipótese, avançando automaticamente de Dor para Resultado, Mecanismo, Prova e Oferta, com até 3 tentativas em caso de erro.
+- causa-raiz: a tela exigia intervenção manual etapa a etapa, reduzindo velocidade operacional e deixando o encadeamento de sucesso/falha sob responsabilidade do usuário.
+- foi feito: criado endpoint backend para iniciar/retomar o fluxo completo, orquestração automática no callback de conclusão, retry automático de etapa marcada como fluxo automático e botão no frontend para disparar o fluxo.
+- prevenção: registrado no cânone que a orquestração deve ficar no backend, enquanto a interface apenas dispara e acompanha status.

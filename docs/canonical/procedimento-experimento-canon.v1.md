@@ -83,6 +83,17 @@ Regras obrigatórias:
 - a oferta deve preservar limites de plausibilidade: sem renda garantida, sem agenda cheia garantida, sem cura, sem automação total e sem depender de acesso interno ao negócio do cliente;
 - quando a solução ficar ampla demais, o prompt deve reduzir o escopo para o menor kit capaz de atacar a causa-raiz prioritária da dor.
 
+### 4.2.2 Regra operacional — fluxo completo da hipótese
+
+A tela de nova hipótese deve oferecer uma ação de fluxo completo para executar Dor → Resultado → Mecanismo → Prova → Oferta sem intervenção manual entre etapas. A orquestração principal deve ficar no backend, pois é ele que conhece a ordem canônica, os pré-requisitos, o status persistido e o callback de conclusão/falha de cada etapa.
+
+Regras obrigatórias:
+- o botão de fluxo completo deve iniciar a primeira etapa ainda não concluída e não duplicar execução quando já houver job ativo no nicho;
+- ao concluir uma etapa automática com sucesso, o backend deve enfileirar a próxima etapa canônica;
+- ao falhar uma etapa automática, o backend deve tentar novamente a mesma etapa até 3 tentativas totais;
+- após 3 falhas da mesma etapa, o fluxo deve parar e manter a falha auditável para investigação de causa-raiz;
+- a interface deve apenas disparar o fluxo e acompanhar os status; não deve simular a orquestração no navegador.
+
 ### 4.3 Regra de diferenciação de ângulo após experimento reprovado
 
 Ao gerar a etapa `CAMPAIGN_ANGLE`, o prompt deve receber o histórico dos experimentos reprovados por 100 acessos sem envio da mesma hipótese, quando existir. A reprovação de um experimento reprova aquela materialização de mercado (público, criativo, landing, isca e formulário), mas não reprova automaticamente a hipótese estratégica.

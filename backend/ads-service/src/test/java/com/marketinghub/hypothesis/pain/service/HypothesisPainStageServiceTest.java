@@ -559,4 +559,68 @@ class HypothesisPainStageServiceTest {
         assertEquals("model_response", summary.get(1).sourceField());
     }
 
+    /** Deve iniciar o fluxo automático completo pela primeira etapa ainda pendente. */
+    @Test
+    void startFullFlowStartsPainWhenNoStageCompleted() {
+        MarketNiche niche = new MarketNiche();
+        niche.setId(18L);
+        when(marketNicheRepository.findById(18L)).thenReturn(Optional.of(niche));
+        when(executionRepository.findByMarketNicheIdAndStageCodeOrderByExecutionRequestedAtDesc(any(), any()))
+                .thenReturn(List.of());
+        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(any(), any(), any()))
+                .thenReturn(Optional.empty());
+        when(executionRepository.save(any(HypothesisPainStageExecution.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        var response = service.startFullFlow(18L);
+
+        assertEquals("INICIADO", response.status());
+        ArgumentCaptor<HypothesisPainStageExecution> captor = ArgumentCaptor.forClass(HypothesisPainStageExecution.class);
+        verify(executionRepository).save(captor.capture());
+        assertEquals("hypothesis-pain", captor.getValue().getStageCode());
+        org.assertj.core.api.Assertions.assertThat(captor.getValue().getPromptContent()).contains("[AUTO_HYPOTHESIS_FLOW]");
+    }
+
+    /** Deve criar nova tentativa automática da mesma etapa quando uma execução automática falha antes do limite. */
+    @Test
+    void markCompletedFromResponseRetriesAutomaticStageAfterFailure() {
+        String idJob = "auto-pain-1";
+        MarketNiche niche = new MarketNiche();
+        niche.setId(18L);
+        HypothesisPainStageExecution execution = HypothesisPainStageExecution.builder()
+                .idJob(idJob.getBytes(StandardCharsets.UTF_8))
+                .marketNicheId(18L)
+                .marketNiche(niche)
+                .stageCode("hypothesis-pain")
+                .status("PROCESSANDO")
+                .openAiModel("gpt-5.5")
+                .promptContent("[AUTO_HYPOTHESIS_FLOW] stage=hypothesis-pain attempt=1 maxAttempts=3")
+                .build();
+        RecebeRespostaRequest request = new RecebeRespostaRequest(
+                18L,
+                "hypothesis-pain",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                "falha da IA",
+                "stack");
+
+        when(executionRepository.findTopByIdJobOrderByExecutionRequestedAtDesc(idJob.getBytes(StandardCharsets.UTF_8)))
+                .thenReturn(Optional.of(execution));
+        when(executionRepository.save(any(HypothesisPainStageExecution.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(marketNicheRepository.findById(18L)).thenReturn(Optional.of(niche));
+
+        service.markCompletedFromResponse(idJob, request);
+
+        ArgumentCaptor<HypothesisPainStageExecution> captor = ArgumentCaptor.forClass(HypothesisPainStageExecution.class);
+        verify(executionRepository, org.mockito.Mockito.times(2)).save(captor.capture());
+        HypothesisPainStageExecution retry = captor.getAllValues().get(1);
+        assertEquals("hypothesis-pain", retry.getStageCode());
+        org.assertj.core.api.Assertions.assertThat(retry.getPromptContent()).contains("attempt=2");
+    }
+
 }

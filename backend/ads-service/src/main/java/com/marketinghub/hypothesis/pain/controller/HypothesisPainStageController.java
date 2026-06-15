@@ -63,6 +63,12 @@ public class HypothesisPainStageController {
         return ResponseEntity.accepted().body(service.startOffer(nicheId));
     }
 
+    /** Inicia o fluxo automático completo Dor → Resultado → Mecanismo → Prova → Oferta. */
+    @PostMapping("/niches/{nicheId}/hypothesis-pipeline/full-flow/start")
+    public ResponseEntity<HypothesisPainStartResponse> startFullFlow(@PathVariable Long nicheId) {
+        return ResponseEntity.accepted().body(service.startFullFlow(nicheId));
+    }
+
     /** Lista execuções da etapa Dor para acompanhamento na tela de nova hipótese. */
     @GetMapping("/niches/{nicheId}/hypothesis-pipeline/pain/stage-executions")
     public ResponseEntity<List<HypothesisPainExecutionSummaryResponse>> listStageExecutions(

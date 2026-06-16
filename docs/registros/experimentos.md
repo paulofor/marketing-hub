@@ -4600,3 +4600,9 @@
 - causa-raiz: a liberação apagava diretamente `experiment_funnel_event`, mas eventos de analytics normalizados em `experiment_landing_analytics_event` ainda apontavam para esses registros por chave estrangeira, causando falha de integridade no banco.
 - correção aplicada: a liberação agora remove primeiro os analytics normalizados dependentes e depois zera os eventos brutos do funil; também grava `funnel_reset_at` no mesmo marco da liberação para manter as métricas pós-liberação consistentes.
 - prevenção de recorrência: adicionado teste automatizado cobrindo liberação com evento bruto e evento normalizado vinculado.
+
+## 2026-06-16 — Público editável após falha e indicador de compatibilidade Meta
+- solicitação: após falha do Experimento 39, a aba Público deve voltar a permitir correções e deixar claro quais públicos podem ser usados em campanha da Meta.
+- causa-raiz: o bloqueio da tela considerava qualquer `facebook_release_requested_at`, mesmo quando o experimento voltava para `FAILED`; além disso, a UI exibia itens aprovados no nicho sem diferenciar os que possuíam `meta_id` oficial dos que ainda não eram publicáveis na Meta.
+- correção aplicada: experimentos em `FAILED` deixam de travar a edição; a aba Público passa a exibir selo “Pronto para Meta” ou “Sem ID Meta”, bloqueando a inclusão de novos itens sem ID oficial e impedindo salvar enquanto houver seleção inválida.
+- prevenção de recorrência: o backend passou a rejeitar salvamento de seleção vinculada a elemento de targeting sem ID oficial da Meta.

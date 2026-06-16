@@ -126,7 +126,7 @@ public class MetaAdsTargetingEnrichmentService {
         return switch (backendType.trim().toUpperCase(Locale.ROOT)) {
             case "INTEREST" -> FacebookAdsService.TargetingSearchType.AD_INTEREST;
             case "JOB_TITLE" -> FacebookAdsService.TargetingSearchType.AD_WORK_POSITION;
-            case "BEHAVIOR" -> FacebookAdsService.TargetingSearchType.AD_BEHAVIOR;
+            case "BEHAVIOR" -> FacebookAdsService.TargetingSearchType.AD_TARGETING_CATEGORY_BEHAVIOR;
             default -> null;
         };
     }

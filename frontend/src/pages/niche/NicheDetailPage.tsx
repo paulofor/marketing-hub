@@ -69,10 +69,7 @@ function resolveMetaAdsStatus(
   if (!element) return "PENDING";
   const hasMetaId =
     typeof element.metaId === "string" && element.metaId.trim() !== "";
-  const hasAudienceData =
-    typeof element.metaAudienceSizeLowerBound === "number" ||
-    typeof element.metaAudienceSizeUpperBound === "number";
-  if (hasMetaId && hasAudienceData) {
+  if (hasMetaId) {
     return "READY";
   }
   return "PENDING";

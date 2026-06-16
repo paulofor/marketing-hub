@@ -29,7 +29,7 @@
 - Identificadores de instant form no formato `ai_form_*` devem ser normalizados para `form_*` antes de chamar a Graph API.
 - Não mantenha segredos no repositório; use variáveis de ambiente ou GitHub Secrets.
 - Endpoints do backend devem ser acessados com o prefixo configurado em `backend.api-prefix` (default `/api`).
-- Na sincronização de segmentações salvas manualmente no nicho, o worker deve consultar `GET /{graphVersion}/search` com `type` específico (`adinterest`, `adworkposition`, `adbehavior`) para obter `id`, `audience_size_lower_bound` e `audience_size_upper_bound`, reportando os valores ao backend em `/api/internal/targeting/elements/{id}/metaads`.
+- Na sincronização de segmentações salvas manualmente no nicho, o worker deve consultar `GET /{graphVersion}/search` com `type` específico (`adinterest`, `adworkposition`) para interesses/cargos e `type=adTargetingCategory&class=behaviors` para comportamentos, obtendo `id`, `audience_size_lower_bound` e `audience_size_upper_bound` quando disponíveis e reportando os valores ao backend em `/api/internal/targeting/elements/{id}/metaads`.
 - Na sincronização de segmentações salvas manualmente no nicho, quando a Meta não devolver ID oficial após todas as tentativas, reporte `metaIdUnavailable=true` ao backend em `/api/internal/targeting/elements/{id}/metaads` para retirar o item da fila automática e evitar repetição indefinida.
 - Na sincronização de segmentações manuais via `GET /{graphVersion}/search`, não envie o parâmetro `fields`; mantenha apenas os parâmetros obrigatórios (`type`, `q`, `limit`, `access_token` e opcionais de locale/país).
 - Alinhe a configuração de banco deste módulo com o padrão do `backend/ads-service` (host/usuário/pool Hikari) para evitar divergência entre ambientes.

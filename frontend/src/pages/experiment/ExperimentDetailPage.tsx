@@ -1763,7 +1763,6 @@ export default function ExperimentDetailPage() {
   const isFacebookWorkerReady = facebookWorker?.ready ?? false;
   const facebookAccountLabel =
     facebookWorker?.accountName ?? facebookWorker?.accountId ?? null;
-  const hasFacebookPixelRegistered = Boolean(niche?.facebookPixelId);
   const hasCreativesReady =
     readinessSummary?.hasCreatives ?? data.creativeApproved;
   const readinessCreativeCount = readinessSummary?.creativeCount ?? 0;
@@ -1917,19 +1916,10 @@ export default function ExperimentDetailPage() {
     },
     {
       id: "facebook-pixel",
-      title: "Pixel do nicho",
-      isMet: hasFacebookPixelRegistered,
-      hint: hasFacebookPixelRegistered
-        ? niche?.facebookPixelId
-          ? `Pixel ${niche.facebookPixelId} disponível para este nicho.`
-          : "Pixel disponível."
-        : "Abra o nicho para acompanhar quando o worker gerar o pixel automaticamente.",
-      action: hasFacebookPixelRegistered
-        ? undefined
-        : () => navigate(`/niches/${data.nicheId}#niche-facebook-pixel`),
-      actionLabel: hasFacebookPixelRegistered
-        ? undefined
-        : "Ver pixel do nicho",
+      title: "Pixel temporariamente desligado",
+      isMet: true,
+      hint:
+        "Publicação liberada sem pixel enquanto a estratégia de pixels por vertical/conta é reorganizada.",
     },
   ];
   const checklistGroups = [

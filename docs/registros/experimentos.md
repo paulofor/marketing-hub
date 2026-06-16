@@ -4588,3 +4588,9 @@
 - correção aplicada: o worker agora usa `systemUserAccessToken` quando existir, usa `accessToken` principal como contingência, e não exige `pixelOwnerBusinessId` para criar o pixel; o owner business passa a ser enviado somente quando configurado.
 - prevenção de recorrência: adicionado teste automatizado garantindo que uma pendência de pixel seja criada mesmo sem token de system user e sem business owner configurado.
 - impacto esperado: solicitações como a do nicho 21 deixam de ficar presas por configuração complementar ausente e passam a ser processadas no próximo ciclo do worker.
+
+## 2026-06-16 — Publicação de campanhas sem pixel temporariamente
+- solicitação: desligar temporariamente o uso de Pixel da Meta e permitir publicação de campanhas sem depender da geração de pixel.
+- causa-raiz: a Meta bloqueia a criação de novo pixel quando a conta de anúncios já possui pixel, deixando nichos pendentes e atrasando a validação comercial.
+- correção aplicada: o Facebook Ads Worker passou a manter `FACEBOOKPIXEL_ENABLED=false` por padrão, preservando a campanha sem bloquear por pixel, e a checklist do experimento passou a sinalizar o pixel como recurso temporariamente desligado.
+- impacto esperado: campanhas podem ser liberadas para vendas usando a landing aprovada, enquanto a estratégia futura de pixels por vertical/conta é definida.

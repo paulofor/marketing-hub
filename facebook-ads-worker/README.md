@@ -99,10 +99,11 @@ o valor aponta para o próprio container do worker e pode causar `Connection ref
 
 ## Pixels e eventos
 
-A sincronização de pixels e o envio de eventos agora ficam **habilitados por padrão**.
-O agendador `FacebookPixelScheduler` continua condicionado à propriedade
-`facebookpixel.enabled`, portanto basta definir o valor como `false` se for
-necessário desligar o recurso em algum ambiente com permissões restritas.
+A sincronização de pixels e o envio de eventos ficam **desabilitados por padrão** enquanto a operação
+publica campanhas sem depender de Pixel da Meta. O agendador `FacebookPixelScheduler` continua
+condicionado à propriedade `facebookpixel.enabled`; defina `FACEBOOKPIXEL_ENABLED=true` apenas
+quando a estratégia de pixels por vertical/conta estiver pronta para voltar. A publicação de campanhas
+continua liberada sem pixel, usando a landing aprovada como destino e sem bloquear vendas por rastreamento.
 Quando o job está ativo o worker consulta `/api/facebook-pixels/pending`
 e cria os pixels solicitados como pendência no banco antes de enviar os eventos de conversão.
 Para evitar que uma solicitação fique parada por falta de configuração complementar, a criação de pixel
@@ -576,6 +577,7 @@ Principais variáveis de ambiente (todas já possuem defaults no `docker-compose
 
 - `BACKEND_BASE_URL` e `BACKEND_API_PREFIX` para apontar para o backend;
 - `FACEBOOK_GRAPH_API_BASE_URL` e `FACEBOOK_GRAPH_API_VERSION` para controlar a versão da Graph API;
+- `FACEBOOKPIXEL_ENABLED` para religar explicitamente a sincronização de pixels/eventos (padrão `false`);
 - `FACEBOOKCAMPAIGN_SCHEDULER_DELAY`, `FACEBOOKPIXEL_SCHEDULER_DELAY`, `FACEBOOK_INTEREST_VALIDATION_SCHEDULER_DELAY` e `FACEBOOK_TOKEN_RENEWAL_SCHEDULER_DELAY` para ajustar as janelas dos agendadores;
 - `FACEBOOK_ADS_WORKER_PORT` caso queira expor a porta HTTP (padrão mapeia `8082:8080`).
 

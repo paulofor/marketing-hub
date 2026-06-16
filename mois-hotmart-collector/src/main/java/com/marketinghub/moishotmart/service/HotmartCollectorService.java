@@ -305,12 +305,13 @@ public class HotmartCollectorService {
     }
 
     /**
-     * Busca no backend os produtos persistidos pelo ciclo 1 para alimentar o enriquecimento do ciclo 2.
+     * Busca no backend os próximos produtos do ciclo 1 ainda não processados para alimentar o enriquecimento do ciclo 2
+     * sem repetição.
      */
     private List<HotmartProductSnapshot> fetchFirstCycleProductsFromBackend(int maxProducts) {
         List<HotmartProductSnapshot> products = new ArrayList<>();
         int boundedMax = boundedFirstCycleProductLimit(maxProducts);
-        String endpoint = backendBaseUrl + "/api/v1/mois/hotmart/products?limit=" + boundedMax;
+        String endpoint = backendBaseUrl + "/api/v1/mois/hotmart/products/cycle-2-candidates?limit=" + boundedMax;
         try {
             log.info("Ciclo 2: solicitando produtos base do backend. endpoint={}, limit={}", endpoint, boundedMax);
             HttpRequest request = HttpRequest.newBuilder()

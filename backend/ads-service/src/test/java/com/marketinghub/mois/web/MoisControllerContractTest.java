@@ -1,6 +1,7 @@
 package com.marketinghub.mois.web;
 
 import com.marketinghub.mois.dto.MoisDiscoveryDtos;
+import com.marketinghub.mois.dto.MoisHotmartProductDtos;
 import com.marketinghub.mois.dto.MoisInsightDtos;
 import com.marketinghub.mois.dto.MoisOfferDtos;
 import com.marketinghub.mois.dto.MoisWorkspaceDtos;
@@ -194,6 +195,34 @@ class MoisControllerContractTest {
         mockMvc.perform(get("/api/v1/mois/insight-reports/mois-report-001/executive-summary"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.reportId").value("mois-report-001"));
+    }
+
+    @Test
+    void shouldExposeHotmartCycleTwoCandidatesEndpointContract() throws Exception {
+        when(moisHotmartProductService.listCycleTwoCandidatesByWorkspace(eq("workspace-001"), eq(400)))
+                .thenReturn(new MoisHotmartProductDtos.HotmartCollectedProductListResponse("workspace-001", List.of(
+                        new MoisHotmartProductDtos.HotmartCollectedProductResponse(
+                                "cycle-1-job",
+                                "hotmart-new",
+                                "Produto Novo",
+                                "https://go.hotmart.com/new",
+                                "Descrição",
+                                "Produtor",
+                                null,
+                                "297.00",
+                                "BRL",
+                                "https://sales.example/new",
+                                "https://sales.example/new",
+                                91.0,
+                                Instant.parse("2026-06-15T12:00:00Z"))
+                )));
+
+        mockMvc.perform(get("/api/v1/mois/hotmart/products/cycle-2-candidates")
+                        .param("workspaceId", "workspace-001")
+                        .param("limit", "500"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.workspaceId").value("workspace-001"))
+                .andExpect(jsonPath("$.items[0].referenceId").value("hotmart-new"));
     }
 
     @Test

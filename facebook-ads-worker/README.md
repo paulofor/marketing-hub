@@ -53,6 +53,10 @@ Esses limites são usados pelo Marketing Hub como alcance inicial do sinal antes
 de montar ou escalar campanha. Após encontrar o melhor match, o worker envia os dados para o backend via
 `PATCH /api/internal/targeting/elements/{id}/metaads`, mantendo a base local
 alinhada com os identificadores e faixas de audiência retornados pela Meta.
+Quando a Meta não devolve nenhum identificador oficial após todas as tentativas,
+o worker usa o mesmo endpoint para marcar `metaIdUnavailable=true`; o backend
+remove esse elemento da fila de pendentes para evitar repetir chamadas inválidas
+e reduzir ruído nos logs.
 
 ## Testes com MockWebServer
 

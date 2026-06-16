@@ -1,0 +1,21 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-16-01-targeting-element-meta-id-unavailable
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            columnExists:
+              tableName: targeting_element
+              columnName: meta_id_unavailable
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE targeting_element
+                ADD COLUMN meta_id_unavailable BOOLEAN NOT NULL DEFAULT 0,
+                ADD COLUMN meta_id_unavailable_reason LONGTEXT NULL;

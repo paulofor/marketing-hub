@@ -79,6 +79,15 @@ public class TargetingElement {
     @Column(name = "meta_audience_size_upper_bound")
     private Long metaAudienceSizeUpperBound;
 
+    @Column(name = "meta_id_unavailable", nullable = false)
+    @Builder.Default
+    private Boolean metaIdUnavailable = false;
+
+    @Lob
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+    @Column(name = "meta_id_unavailable_reason")
+    private String metaIdUnavailableReason;
+
     @Column(precision = 10, scale = 4)
     private BigDecimal confidence;
 

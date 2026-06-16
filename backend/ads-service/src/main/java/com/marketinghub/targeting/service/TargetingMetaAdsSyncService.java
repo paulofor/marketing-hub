@@ -36,7 +36,7 @@ public class TargetingMetaAdsSyncService {
     }
 
     /**
-     * Atualiza o elemento com ID oficial, chave exibível e faixa de audiência retornados pela Meta.
+     * Atualiza o elemento com sucesso da Meta ou marca ausência definitiva de ID oficial para sair da fila.
      */
     @Transactional
     public void updateMetaAdsData(Long id, UpdateTargetingMetaAdsDataRequest request) {
@@ -56,6 +56,17 @@ public class TargetingMetaAdsSyncService {
         if (request.metaAudienceSizeUpperBound() != null) {
             element.setMetaAudienceSizeUpperBound(request.metaAudienceSizeUpperBound());
         }
+        if (Boolean.TRUE.equals(request.metaIdUnavailable())) {
+            element.setMetaId(null);
+            element.setMetaKey(null);
+            element.setMetaAudienceSizeLowerBound(null);
+            element.setMetaAudienceSizeUpperBound(null);
+            element.setMetaIdUnavailable(true);
+            element.setMetaIdUnavailableReason(normalizeReason(request.metaIdUnavailableReason()));
+        } else if (Boolean.FALSE.equals(request.metaIdUnavailable()) || StringUtils.hasText(request.metaId())) {
+            element.setMetaIdUnavailable(false);
+            element.setMetaIdUnavailableReason(null);
+        }
     }
 
     /**
@@ -68,5 +79,16 @@ public class TargetingMetaAdsSyncService {
                 element.getType(),
                 element.getTerm()
         );
+    }
+
+    /**
+     * Normaliza a justificativa operacional para impedir payloads excessivos em campos de auditoria.
+     */
+    private String normalizeReason(String reason) {
+        if (!StringUtils.hasText(reason)) {
+            return null;
+        }
+        String normalized = reason.trim();
+        return normalized.length() <= 1000 ? normalized : normalized.substring(0, 1000);
     }
 }

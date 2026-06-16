@@ -15,6 +15,12 @@ export function useUpdateNiche() {
     onSuccess: (niche) => {
       queryClient.setQueryData(["niche", niche.id], niche);
       queryClient.invalidateQueries({ queryKey: ["niches"] });
+      queryClient.invalidateQueries({
+        queryKey: ["niche-targeting-elements", String(niche.id)],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["niche-targeting-elements", niche.id],
+      });
     },
   });
 }

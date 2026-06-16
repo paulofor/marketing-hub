@@ -4617,3 +4617,9 @@
 - causa-raiz: o Facebook Ads Worker montava corretamente o ad set final com `geo_locations.countries=["BR"]`, mas a validação prévia de alcance em `/reachestimate` usava apenas interesses/cargos/comportamentos do pacote aprovado, sem localização; a Meta rejeitou a estimativa com “Falta uma localização” e o worker marcou o experimento como `FAILED` antes de criar a campanha.
 - correção aplicada: a validação prévia de alcance agora injeta Brasil como localização quando o pacote de targeting aprovado não traz `geo_locations`, alinhando a estimativa ao ad set que será publicado.
 - prevenção de recorrência: adicionado teste automatizado garantindo que o `targeting_spec` enviado para `/reachestimate` inclui `geo_locations.countries=["BR"]`.
+
+## 2026-06-16 — Correção de sincronização Meta Ads para comportamentos de nicho
+
+- Corrigida a causa-raiz que fazia comportamentos válidos da Meta, como `Small business owners`, ficarem marcados como pendentes/indisponíveis na tela de nicho.
+- O `facebook-ads-worker` passa a consultar comportamentos pelo contrato correto da Graph API: `type=adTargetingCategory&class=behaviors`.
+- A tela de nicho passa a considerar um elemento pronto quando há `metaId`, mesmo quando a Meta não retorna faixa de alcance para cargos.

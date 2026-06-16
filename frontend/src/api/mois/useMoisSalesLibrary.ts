@@ -138,6 +138,7 @@ export function useMoisSalesLibraryOpportunityRanking(
 export function useMoisSalesLibraryPageSummary(workspaceId: string) {
   return useQuery({
     queryKey: ["mois", "sales-library", "pages-summary", workspaceId],
+    refetchInterval: 30000,
     queryFn: async () => {
       const { data } = await axios.get<MoisSalesLibraryPageSummary>(
         "/api/mois/sales-library/pages/summary",

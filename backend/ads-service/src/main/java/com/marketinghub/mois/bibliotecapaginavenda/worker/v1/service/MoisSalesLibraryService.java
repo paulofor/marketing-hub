@@ -658,6 +658,26 @@ public class MoisSalesLibraryService {
                        SUM(mws.market_temperature = 'SATURATED') AS market_warmup_saturated,
                        SUM(mwj.status = 'FETCHING'
                            AND COALESCE(mwj.started_at, mwj.updated_at, mwj.created_at) < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 120 MINUTE)) AS market_warmup_stuck,
+                       SUM(COALESCE(p.html_bytes, 0) = 0) AS remaining_without_html,
+                       MAX(CASE WHEN COALESCE(p.html_bytes, 0) > 0 THEN p.last_captured_at END) AS last_captured_at,
+                       (
+                           SELECT COUNT(DISTINCT e.sales_page_id)
+                           FROM mois_sales_page_job_execution e
+                           JOIN mois_sales_page ep ON ep.id = e.sales_page_id
+                           WHERE ep.workspace_id = ?
+                             AND e.stage = 'CAPTURE'
+                             AND e.status = 'CAPTURED'
+                             AND e.finished_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 1 HOUR)
+                       ) AS captured_last_hour,
+                       (
+                           SELECT COUNT(DISTINCT e.sales_page_id)
+                           FROM mois_sales_page_job_execution e
+                           JOIN mois_sales_page ep ON ep.id = e.sales_page_id
+                           WHERE ep.workspace_id = ?
+                             AND e.stage = 'CAPTURE'
+                             AND e.status = 'CAPTURED'
+                             AND e.finished_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 6 HOUR)
+                       ) / 6.0 AS average_captures_per_hour,
                        MAX(p.updated_at) AS updated_at
                 FROM mois_sales_page p
                 LEFT JOIN (
@@ -678,7 +698,11 @@ public class MoisSalesLibraryService {
                 rs.getLong("market_warmup_failed"), rs.getLong("market_warmup_hot"),
                 rs.getLong("market_warmup_promising"), rs.getLong("market_warmup_warm"),
                 rs.getLong("market_warmup_cold"), rs.getLong("market_warmup_saturated"),
-                rs.getLong("market_warmup_stuck"), toInstant(rs.getTimestamp("updated_at"))), workspaceId);
+                rs.getLong("market_warmup_stuck"),
+                rs.getLong("capturing") > 0 || rs.getLong("captured_last_hour") > 0,
+                toInstant(rs.getTimestamp("last_captured_at")), rs.getLong("captured_last_hour"),
+                rs.getLong("remaining_without_html"), rs.getBigDecimal("average_captures_per_hour"),
+                toInstant(rs.getTimestamp("updated_at"))), workspaceId, workspaceId, workspaceId);
     }
 
     /**

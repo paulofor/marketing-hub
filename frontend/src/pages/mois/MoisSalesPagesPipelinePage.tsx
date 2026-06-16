@@ -46,6 +46,26 @@ function formatBytes(value: number) {
   return `${(value / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function formatDateTime(value?: string) {
+  if (!value) {
+    return "Sem captura registrada";
+  }
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(new Date(value));
+}
+
+function formatAverage(value?: number) {
+  if (!value) {
+    return "0,0/h";
+  }
+  return `${value.toLocaleString("pt-BR", {
+    maximumFractionDigits: 1,
+    minimumFractionDigits: 1,
+  })}/h`;
+}
+
 function getSnapshotStatusBadgeClass(status: string) {
   switch (status) {
     case "CAPTURED":
@@ -97,6 +117,11 @@ export default function MoisSalesPagesPipelinePage() {
   const analysisRunning = summary?.analysisRunning ?? 0;
   const analysisFailed = summary?.analysisFailed ?? 0;
   const pendingPages = summary?.pending ?? 0;
+  const automaticProcessingActive = summary?.automaticProcessingActive ?? false;
+  const lastCapturedAt = summary?.lastCapturedAt;
+  const capturedLastHour = summary?.capturedLastHour ?? 0;
+  const remainingWithoutHtml = summary?.remainingWithoutHtml ?? 0;
+  const averageCapturesPerHour = summary?.averageCapturesPerHour ?? 0;
   const marketWarmupEligiblePages = summary?.marketWarmupEligible ?? 0;
   const marketWarmupPending = summary?.marketWarmupPending ?? 0;
   const marketWarmupRunning = summary?.marketWarmupRunning ?? 0;
@@ -236,6 +261,69 @@ export default function MoisSalesPagesPipelinePage() {
                   <h3 className="mb-0">
                     {summaryQuery.isLoading ? "..." : (summary?.captured ?? 0)}
                   </h3>
+                </div>
+              </div>
+            </div>
+
+            <div className="border rounded-3 p-3 mt-3">
+              <div className="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-3">
+                <div>
+                  <h4 className="h6 mb-1">Processamento automático</h4>
+                  <p className="text-secondary small mb-0">
+                    Indicadores atualizados automaticamente para confirmar se a
+                    biblioteca continua tratando páginas sem ação manual.
+                  </p>
+                </div>
+                <span
+                  className={`badge ${
+                    automaticProcessingActive
+                      ? "text-bg-success"
+                      : "text-bg-secondary"
+                  }`}
+                >
+                  {automaticProcessingActive
+                    ? "Processamento automático ativo"
+                    : "Sem avanço recente"}
+                </span>
+              </div>
+              <div className="row g-3">
+                <div className="col-sm-6 col-xl-3">
+                  <div className="bg-light rounded-3 p-3 h-100">
+                    <p className="text-secondary mb-1">Última captura feita</p>
+                    <h5 className="mb-0">
+                      {summaryQuery.isLoading
+                        ? "..."
+                        : formatDateTime(lastCapturedAt)}
+                    </h5>
+                  </div>
+                </div>
+                <div className="col-sm-6 col-xl-3">
+                  <div className="bg-light rounded-3 p-3 h-100">
+                    <p className="text-secondary mb-1">
+                      Capturadas na última hora
+                    </p>
+                    <h5 className="mb-0">
+                      {summaryQuery.isLoading ? "..." : capturedLastHour}
+                    </h5>
+                  </div>
+                </div>
+                <div className="col-sm-6 col-xl-3">
+                  <div className="bg-light rounded-3 p-3 h-100">
+                    <p className="text-secondary mb-1">Ainda faltam</p>
+                    <h5 className="mb-0">
+                      {summaryQuery.isLoading ? "..." : remainingWithoutHtml}
+                    </h5>
+                  </div>
+                </div>
+                <div className="col-sm-6 col-xl-3">
+                  <div className="bg-light rounded-3 p-3 h-100">
+                    <p className="text-secondary mb-1">Velocidade média</p>
+                    <h5 className="mb-0">
+                      {summaryQuery.isLoading
+                        ? "..."
+                        : formatAverage(averageCapturesPerHour)}
+                    </h5>
+                  </div>
                 </div>
               </div>
             </div>

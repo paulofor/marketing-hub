@@ -274,6 +274,11 @@ public final class MoisSalesLibraryDtos {
             long marketWarmupCold,
             long marketWarmupSaturated,
             long marketWarmupStuck,
+            boolean automaticProcessingActive,
+            Instant lastCapturedAt,
+            long capturedLastHour,
+            long remainingWithoutHtml,
+            BigDecimal averageCapturesPerHour,
             Instant updatedAt
     ) {
     }

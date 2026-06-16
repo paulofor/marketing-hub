@@ -166,6 +166,11 @@ class MoisSalesLibraryControllerTest {
                         5L,
                         18L,
                         3L,
+                        true,
+                        Instant.parse("2026-06-04T15:50:09Z"),
+                        5L,
+                        125L,
+                        BigDecimal.valueOf(4.5),
                         Instant.parse("2026-06-04T16:00:09Z")
                 ));
 
@@ -175,6 +180,10 @@ class MoisSalesLibraryControllerTest {
                 .andExpect(jsonPath("$.total").value(145))
                 .andExpect(jsonPath("$.pending").value(4))
                 .andExpect(jsonPath("$.captured").value(20))
+                .andExpect(jsonPath("$.automaticProcessingActive").value(true))
+                .andExpect(jsonPath("$.capturedLastHour").value(5))
+                .andExpect(jsonPath("$.remainingWithoutHtml").value(125))
+                .andExpect(jsonPath("$.averageCapturesPerHour").value(4.5))
                 .andExpect(jsonPath("$.analyzed").value(105))
                 .andExpect(jsonPath("$.analysisPending").value(12))
                 .andExpect(jsonPath("$.analysisRunning").value(2))

@@ -1638,3 +1638,9 @@ Arquivos principais:
   - docs/canonical/mois-hotmart-mapeamento-ciclos-campos-banco.md
   - mois-hotmart-collector/AGENTS.md
   - docs/registros/mois1.md
+
+## 2026-06-16 — Visibilidade do processamento automático da Biblioteca Sales Pages
+
+- Adicionados indicadores operacionais na tela do pipeline de páginas de vendas para mostrar se o processamento automático está ativo, a última captura feita, páginas capturadas na última hora, páginas ainda sem HTML útil e velocidade média de avanço.
+- Expandido o resumo do backend da biblioteca MOIS com métricas de acompanhamento da etapa 1 baseadas em `mois_sales_page` e `mois_sales_page_job_execution`.
+- Atualizado o contrato Swagger e o tipo TypeScript do resumo para manter frontend, backend e documentação sincronizados.

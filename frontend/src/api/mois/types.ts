@@ -321,6 +321,11 @@ export interface MoisSalesLibraryPageSummary {
   marketWarmupCold: number;
   marketWarmupSaturated: number;
   marketWarmupStuck: number;
+  automaticProcessingActive: boolean;
+  lastCapturedAt?: string;
+  capturedLastHour: number;
+  remainingWithoutHtml: number;
+  averageCapturesPerHour: number;
   updatedAt?: string;
 }
 

@@ -97,7 +97,7 @@ public interface MarketNicheRepository extends JpaRepository<MarketNiche, Long> 
     List<MarketNiche> findAllToGenerateDetailedDescriptions();
 
     /**
-     * Lista nichos que possuem ao menos um experimento pronto para criação de pixel.
+     * Lista nichos que possuem ao menos um experimento comercialmente pronto para criação de pixel.
      */
     @Query("""
             select distinct n from MarketNiche n
@@ -108,7 +108,7 @@ public interface MarketNicheRepository extends JpaRepository<MarketNiche, Long> 
                       and e.status in :statuses
                       and e.platform = :platform
                       and e.creativeApproved = true
-                      and e.facebookReleaseRequestedAt is not null
+                      and e.followUpActionUrl is not null
               )
             """)
     List<MarketNiche> findReadyForPixel(@Param("statuses") List<ExperimentStatus> statuses,

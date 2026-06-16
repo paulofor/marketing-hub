@@ -69,14 +69,14 @@ class ExperimentRepositoryTest {
     }
 
     @Test
-    void findReadyForPixelIncludesReleasedExperimentsWithoutPixel() {
+    void findReadyForPixelIncludesCommerciallyReadyExperimentsWithoutPixel() {
         MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Pixel niche").build());
         Hypothesis hyp = hypothesisRepository.save(Hypothesis.builder()
                 .marketNiche(niche)
                 .title("Hypothesis")
                 .build());
         JourneyTemplate template = journeyTemplateRepository.save(JourneyTemplate.builder().name("Lifecycle").build());
-        java.time.Instant releaseTime = java.time.Instant.now();
+        MarketNiche nicheWithoutLanding = nicheRepository.save(MarketNiche.builder().name("Sem landing").build());
 
         repository.save(Experiment.builder()
                 .niche(niche)
@@ -86,7 +86,7 @@ class ExperimentRepositoryTest {
                 .platform(ExperimentPlatform.FACEBOOK)
                 .status(ExperimentStatus.PLANNED)
                 .creativeApproved(true)
-                .facebookReleaseRequestedAt(releaseTime)
+                .followUpActionUrl("https://example.test/landing-planned")
                 .build());
 
         repository.save(Experiment.builder()
@@ -97,13 +97,13 @@ class ExperimentRepositoryTest {
                 .platform(ExperimentPlatform.FACEBOOK)
                 .status(ExperimentStatus.RUNNING)
                 .creativeApproved(true)
-                .facebookReleaseRequestedAt(releaseTime)
+                .followUpActionUrl("https://example.test/landing-running")
                 .build());
 
         repository.save(Experiment.builder()
-                .niche(niche)
+                .niche(nicheWithoutLanding)
                 .hypothesisRef(hyp)
-                .name("Without release")
+                .name("Without landing")
                 .journeyTemplate(template)
                 .platform(ExperimentPlatform.FACEBOOK)
                 .status(ExperimentStatus.PAUSED)
@@ -120,7 +120,8 @@ class ExperimentRepositoryTest {
 
         assertThat(result)
                 .extracting(MarketNiche::getId)
-                .containsExactly(niche.getId());
+                .containsExactly(niche.getId())
+                .doesNotContain(nicheWithoutLanding.getId());
     }
 
     @Test

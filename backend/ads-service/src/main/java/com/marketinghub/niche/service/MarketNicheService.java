@@ -317,7 +317,7 @@ public class MarketNicheService {
                 .collect(Collectors.toMap(profile -> profile.getMarketNiche().getId(), Function.identity()));
     }
 
-    /** Lista nichos prontos para criação de pixel do Facebook. */
+    /** Lista nichos com experimento comercialmente pronto para criação de pixel do Facebook. */
     public List<MarketNiche> listReadyForPixel() {
         List<ExperimentStatus> statuses = List.of(
                 ExperimentStatus.PLANNED,

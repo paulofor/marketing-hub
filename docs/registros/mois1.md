@@ -1611,3 +1611,10 @@ Arquivos principais:
   - AGENTS.md
   - mois-hotmart-collector/AGENTS.md
   - docs/registros/mois1.md
+
+
+## 2026-06-16 — Reagendamento pontual do ciclo 2 Hotmart
+
+- Solicitação: agendar o ciclo 2 do Hotmart para execução hoje, 16/06/2026, às 04:10 no fuso `America/Sao_Paulo`.
+- Foi feito: atualizado o scheduler do `mois-hotmart-collector` para cron literal `0 10 4 16 6 *`, mantendo execução pontual restrita ao ano de 2026.
+- Também foi atualizado o documento canônico de mapeamento dos ciclos Hotmart para refletir o novo horário operacional.

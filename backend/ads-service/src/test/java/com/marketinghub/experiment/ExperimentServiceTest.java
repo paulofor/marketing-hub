@@ -13,7 +13,9 @@ import com.marketinghub.experiment.service.ExperimentService;
 import com.marketinghub.journey.model.JourneyTemplate;
 import com.marketinghub.repository.jpa.journey.JourneyTemplateRepository;
 import com.marketinghub.experiment.funnel.ExperimentFunnelEvent;
+import com.marketinghub.experiment.funnel.ExperimentLandingAnalyticsEvent;
 import com.marketinghub.repository.jpa.experiment.funnel.ExperimentFunnelEventRepository;
+import com.marketinghub.repository.jpa.experiment.funnel.ExperimentLandingAnalyticsEventRepository;
 import com.marketinghub.experiment.funnel.ExperimentFunnelStage;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
@@ -62,6 +64,8 @@ class ExperimentServiceTest {
     com.marketinghub.repository.jpa.leadportal.LeadPortalFlowRepository leadPortalFlowRepository;
     @Autowired
     ExperimentFunnelEventRepository experimentFunnelEventRepository;
+    @Autowired
+    ExperimentLandingAnalyticsEventRepository experimentLandingAnalyticsEventRepository;
 
     private InstagramAccount createInstagramAccount() {
         return instagramAccountRepository.save(
@@ -562,11 +566,25 @@ class ExperimentServiceTest {
                 .source("manual")
                 .occurredAt(Instant.now().minusSeconds(60))
                 .build());
+        ExperimentFunnelEvent landingEvent = experimentFunnelEventRepository.save(ExperimentFunnelEvent.builder()
+                .experiment(experiment)
+                .stage(ExperimentFunnelStage.VISUALIZACAO_FORM)
+                .source(ExperimentFunnelEventRepository.LANDING_PAGE_ANALYTICS_SOURCE)
+                .occurredAt(Instant.now().minusSeconds(30))
+                .build());
+        experimentLandingAnalyticsEventRepository.save(ExperimentLandingAnalyticsEvent.builder()
+                .experiment(experiment)
+                .funnelEvent(landingEvent)
+                .eventType("page_view")
+                .occurredAt(landingEvent.getOccurredAt())
+                .build());
 
         Experiment released = service.releaseForFacebook(experiment.getId());
 
         assertThat(released.getStatus()).isEqualTo(ExperimentStatus.PLANNED);
         assertThat(released.getFacebookReleaseRequestedAt()).isNotNull();
+        assertThat(released.getFunnelResetAt()).isNotNull();
+        assertThat(experimentLandingAnalyticsEventRepository.count()).isZero();
         assertThat(experimentFunnelEventRepository.count()).isZero();
     }
 

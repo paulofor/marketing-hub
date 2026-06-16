@@ -4606,3 +4606,9 @@
 - causa-raiz: o bloqueio da tela considerava qualquer `facebook_release_requested_at`, mesmo quando o experimento voltava para `FAILED`; além disso, a UI exibia itens aprovados no nicho sem diferenciar os que possuíam `meta_id` oficial dos que ainda não eram publicáveis na Meta.
 - correção aplicada: experimentos em `FAILED` deixam de travar a edição; a aba Público passa a exibir selo “Pronto para Meta” ou “Sem ID Meta”, bloqueando a inclusão de novos itens sem ID oficial e impedindo salvar enquanto houver seleção inválida.
 - prevenção de recorrência: o backend passou a rejeitar salvamento de seleção vinculada a elemento de targeting sem ID oficial da Meta.
+
+## 2026-06-16 — Correção da validação de alcance do Experimento 39
+- solicitação: verificar novo retry do Experimento 39 após retorno para PLANNED.
+- causa-raiz: o Facebook Ads Worker montava corretamente o ad set final com `geo_locations.countries=["BR"]`, mas a validação prévia de alcance em `/reachestimate` usava apenas interesses/cargos/comportamentos do pacote aprovado, sem localização; a Meta rejeitou a estimativa com “Falta uma localização” e o worker marcou o experimento como `FAILED` antes de criar a campanha.
+- correção aplicada: a validação prévia de alcance agora injeta Brasil como localização quando o pacote de targeting aprovado não traz `geo_locations`, alinhando a estimativa ao ad set que será publicado.
+- prevenção de recorrência: adicionado teste automatizado garantindo que o `targeting_spec` enviado para `/reachestimate` inclui `geo_locations.countries=["BR"]`.

@@ -1624,3 +1624,12 @@ Arquivos principais:
 - Alterado o fluxo do ciclo 2 Hotmart para buscar candidatos em endpoint próprio, separado da tela administrativa.
 - O novo endpoint retorna produtos do ciclo 1 mais recente ainda não processados por ciclos 2 anteriores, evitando repetir os mesmos registros em reexecuções.
 - A comparação considera `reference_id`, `product_url`, `sales_page_url` e combinação título + produtor para cobrir produtos sem `ucode` estável.
+
+## 2026-06-16 12:11:47 UTC-3
+- solicitação operacional: montar a próxima execução do ciclo 2 da ingestão Hotmart para hoje às 13:15.
+- raciocínio aplicado: manter a execução pontual no scheduler existente do `mois-hotmart-collector`, usando cron literal direto e timezone `America/Sao_Paulo`, sem alterar o contrato de ingestão nem o fluxo de persistência.
+- registro do que foi feito: reagendado o método do Ciclo 2 Hotmart para `16/06/2026 13:15 UTC-3`, atualizado o teste unitário que valida o cron e preservado o ciclo 1 sem mudança.
+- documentos lidos para tratar a situação:
+  - docs/canonical/mois-hotmart-mapeamento-ciclos-campos-banco.md
+  - mois-hotmart-collector/AGENTS.md
+  - docs/registros/mois1.md

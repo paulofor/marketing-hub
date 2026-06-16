@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+/** Expõe os contratos HTTP do módulo MOIS para coleta, persistência e consulta operacional. */
 @RestController
 @RequestMapping("/api/v1/mois")
 @RequiredArgsConstructor
@@ -256,6 +257,7 @@ public class MoisController {
         return gateway.health();
     }
 
+    /** Lista os produtos Hotmart da coleta mais recente para uso na tela administrativa. */
     @GetMapping("/hotmart/products")
     public MoisHotmartProductDtos.HotmartCollectedProductListResponse listHotmartProducts(
             @RequestParam(defaultValue = "workspace-001") String workspaceId,
@@ -266,6 +268,19 @@ public class MoisController {
         }
         int normalizedLimit = Math.max(1, Math.min(limit == null ? 24 : limit, 100));
         return moisHotmartProductService.listLatestByWorkspace(workspaceId, normalizedLimit);
+    }
+
+    /** Lista candidatos Hotmart ainda não processados pelo ciclo 2 para evitar repetição de coleta. */
+    @GetMapping("/hotmart/products/cycle-2-candidates")
+    public MoisHotmartProductDtos.HotmartCollectedProductListResponse listHotmartCycleTwoCandidates(
+            @RequestParam(defaultValue = "workspace-001") String workspaceId,
+            @RequestParam(defaultValue = "400") Integer limit
+    ) {
+        if (!StringUtils.hasText(workspaceId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "workspaceId is required");
+        }
+        int normalizedLimit = Math.max(1, Math.min(limit == null ? 400 : limit, 400));
+        return moisHotmartProductService.listCycleTwoCandidatesByWorkspace(workspaceId, normalizedLimit);
     }
 
     @GetMapping("/clickbase/products")

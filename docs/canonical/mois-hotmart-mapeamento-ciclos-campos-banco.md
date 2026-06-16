@@ -166,7 +166,8 @@ Ou seja, se a Hotmart não devolver URL de página de vendas canônica, o sistem
 
 1. O backend encontra o `latestJobId` de HOTMART para o `workspaceId`.
 2. Busca os itens desse job em `mois_collected_reference`.
-3. Mapeia:
+3. Para execução operacional do ciclo 2, o coletor usa `/api/v1/mois/hotmart/products/cycle-2-candidates`, que seleciona o ciclo 1 mais recente e remove candidatos já processados em ciclos 2 anteriores por `reference_id`, `product_url`, `sales_page_url` ou título + produtor.
+4. Mapeia:
    - `salesPageUrl = sales_page_url`
    - `pageSalesLink = sales_page_url` (mesma coluna duplicada na resposta)
 
@@ -200,7 +201,7 @@ Sequência operacional consolidada:
 
 1. Obter token JWT da Hotmart via configuração geral no backend.
 2. No ciclo 1, chamar `POST https://api-affiliation-market.hotmart.com/v2/market/search` e persistir snapshots base, percorrendo até 20 páginas de 20 itens por execução (alvo operacional padrão de 400 produtos), com requisições sempre em páginas completas de 20 itens e deduplicação por produto antes da persistência, salvo se a Hotmart retornar menos itens antes desse limite.
-3. No ciclo 2, buscar produtos já persistidos em `/api/v1/mois/hotmart/products`.
+3. No ciclo 2, buscar produtos candidatos em `/api/v1/mois/hotmart/products/cycle-2-candidates`, usando o ciclo 1 mais recente e excluindo produtos já processados por ciclos 2 anteriores.
 4. Para cada produto do ciclo 2, chamar `GET https://api-affiliation-market.hotmart.com/v1/market/product/{id}/details?userSessionId={session}`.
 5. Persistir novamente no backend para atualizar as referências com foco em `salesPageUrl`.
 

@@ -1618,3 +1618,9 @@ Arquivos principais:
 - Solicitação: agendar o ciclo 2 do Hotmart para execução hoje, 16/06/2026, às 04:10 no fuso `America/Sao_Paulo`.
 - Foi feito: atualizado o scheduler do `mois-hotmart-collector` para cron literal `0 10 4 16 6 *`, mantendo execução pontual restrita ao ano de 2026.
 - Também foi atualizado o documento canônico de mapeamento dos ciclos Hotmart para refletir o novo horário operacional.
+
+## 2026-06-16 — Hotmart ciclo 2 sem repetição
+
+- Alterado o fluxo do ciclo 2 Hotmart para buscar candidatos em endpoint próprio, separado da tela administrativa.
+- O novo endpoint retorna produtos do ciclo 1 mais recente ainda não processados por ciclos 2 anteriores, evitando repetir os mesmos registros em reexecuções.
+- A comparação considera `reference_id`, `product_url`, `sales_page_url` e combinação título + produtor para cobrir produtos sem `ucode` estável.

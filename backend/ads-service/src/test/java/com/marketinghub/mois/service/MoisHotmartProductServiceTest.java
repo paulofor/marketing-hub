@@ -64,4 +64,36 @@ class MoisHotmartProductServiceTest {
         assertEquals(Instant.parse("2026-06-13T12:00:00Z"), response.items().getFirst().collectedAt());
     }
 
+    @Test
+    void shouldListOnlyCycleTwoCandidatesNotAlreadyProcessed() throws Exception {
+        JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
+        when(jdbcTemplate.query(contains("Coleta executada via API da Hotmart"), any(org.springframework.jdbc.core.RowMapper.class), eq("workspace-001")))
+                .thenReturn(List.of("cycle-1-job"));
+        when(jdbcTemplate.query(contains("processed.id IS NULL"), any(org.springframework.jdbc.core.RowMapper.class), eq("workspace-001"), eq("workspace-001"), eq("cycle-1-job"), eq(400)))
+                .thenAnswer(invocation -> {
+                    org.springframework.jdbc.core.RowMapper<MoisHotmartProductDtos.HotmartCollectedProductResponse> mapper = invocation.getArgument(1);
+                    java.sql.ResultSet rs = mock(java.sql.ResultSet.class);
+                    when(rs.getString("job_id")).thenReturn("cycle-1-job");
+                    when(rs.getString("reference_id")).thenReturn("hotmart-new");
+                    when(rs.getString("product_name")).thenReturn("Produto Novo");
+                    when(rs.getString("product_url")).thenReturn("https://go.hotmart.com/new");
+                    when(rs.getString("hotmart_description")).thenReturn("Descrição nova");
+                    when(rs.getString("producer_name")).thenReturn("Produtor Novo");
+                    when(rs.getString("hotmart_image_url")).thenReturn("https://img.example/new.png");
+                    when(rs.getString("hotmart_price")).thenReturn("297.00");
+                    when(rs.getString("sales_page_url")).thenReturn("https://sales.example/new");
+                    when(rs.getObject("hotmart_temperature")).thenReturn(java.math.BigDecimal.valueOf(91.0));
+                    when(rs.getDouble("hotmart_temperature")).thenReturn(91.0);
+                    when(rs.getTimestamp("collected_at")).thenReturn(Timestamp.from(Instant.parse("2026-06-15T12:00:00Z")));
+                    return List.of(mapper.mapRow(rs, 0));
+                });
+
+        MoisHotmartProductService service = new MoisHotmartProductService(jdbcTemplate);
+        MoisHotmartProductDtos.HotmartCollectedProductListResponse response = service.listCycleTwoCandidatesByWorkspace("workspace-001", 400);
+
+        assertEquals(1, response.items().size());
+        assertEquals("hotmart-new", response.items().getFirst().referenceId());
+        assertEquals("https://sales.example/new", response.items().getFirst().salesPageUrl());
+    }
+
 }

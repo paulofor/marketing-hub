@@ -1,0 +1,105 @@
+openapi: 3.0.3
+info:
+  title: Marketing Hub - MOIS Hotmart Products
+  version: 0.1.0
+  description: Contratos de consulta de produtos Hotmart usados pela tela administrativa e pelo ciclo 2 sem repetição.
+servers:
+  - url: /api/v1
+paths:
+  /mois/hotmart/products:
+    get:
+      summary: Lista produtos Hotmart do job mais recente para a tela administrativa
+      tags: [MOIS, Hotmart]
+      parameters:
+        - in: query
+          name: workspaceId
+          schema:
+            type: string
+            default: workspace-001
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 24
+            maximum: 100
+      responses:
+        '200':
+          description: Produtos do job Hotmart mais recente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HotmartCollectedProductListResponse'
+  /mois/hotmart/products/cycle-2-candidates:
+    get:
+      summary: Lista produtos Hotmart do ciclo 1 ainda não processados pelo ciclo 2
+      tags: [MOIS, Hotmart]
+      parameters:
+        - in: query
+          name: workspaceId
+          schema:
+            type: string
+            default: workspace-001
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 400
+            maximum: 400
+      responses:
+        '200':
+          description: Candidatos novos para enriquecimento no ciclo 2
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HotmartCollectedProductListResponse'
+components:
+  schemas:
+    HotmartCollectedProductListResponse:
+      type: object
+      properties:
+        workspaceId:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/HotmartCollectedProduct'
+    HotmartCollectedProduct:
+      type: object
+      properties:
+        jobId:
+          type: string
+        referenceId:
+          type: string
+        title:
+          type: string
+        productUrl:
+          type: string
+        description:
+          type: string
+          nullable: true
+        producerName:
+          type: string
+          nullable: true
+        imageUrl:
+          type: string
+          nullable: true
+        price:
+          type: string
+          nullable: true
+        currency:
+          type: string
+          nullable: true
+        salesPageUrl:
+          type: string
+          nullable: true
+        pageSalesLink:
+          type: string
+          nullable: true
+        temperature:
+          type: number
+          format: double
+          nullable: true
+        collectedAt:
+          type: string
+          format: date-time
+          nullable: true

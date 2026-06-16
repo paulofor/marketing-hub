@@ -142,6 +142,10 @@ O fluxo automatizado cria toda a hierarquia necessária para veiculação:
    códigos não numéricos (por exemplo, `"SP"`) são descartados com aviso em log
    para evitar a rejeição `(#100) Invalid parameter` devolvida pela Meta. Chaves
    não textuais em `geo_locations` também são ignoradas antes do envio para a
+   API. A validação prévia de alcance (`/reachestimate`) usa a mesma regra de
+   país inteiro e injeta `geo_locations.countries = ["BR"]` quando o pacote de
+   público aprovado contém apenas interesses, cargos ou comportamentos, evitando
+   rejeição da Meta por falta de localização antes da criação da campanha.
    Graph API, garantindo que o payload use apenas campos com nomes válidos.
    Se a Meta rejeitar o `POST /adsets` com erro no formato
    `targeting[<campo>][<índice>][id]` (por exemplo, `interests` ou

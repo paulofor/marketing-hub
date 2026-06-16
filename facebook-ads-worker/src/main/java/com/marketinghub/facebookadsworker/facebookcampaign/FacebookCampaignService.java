@@ -62,7 +62,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 /**
- * Orchestrates Facebook campaign publication for released Marketing Hub experiments.
+ * Orquestra a publicação de campanhas Facebook para experimentos liberados no Marketing Hub.
  */
 @Service
 public class FacebookCampaignService {
@@ -391,7 +391,12 @@ public class FacebookCampaignService {
             } else {
                 resolvedTargeting = resolveApprovedManualTargeting(exp.id());
             }
-            validateReachBeforeCampaignCreation(exp.id(), config.adAccountId(), resolvedTargeting.targetingJson());
+            validateReachBeforeCampaignCreation(
+                exp.id(),
+                config.adAccountId(),
+                resolvedTargeting.targetingJson(),
+                FacebookAdsService.BRAZIL_COUNTRY_CODE
+            );
             creativePayloads = preloadCreativeImagesForExperiment(exp.id(), config.adAccountId(), creativePayloads);
             try {
                 campaignId = executeFacebookCallWithLogging(
@@ -867,8 +872,12 @@ public class FacebookCampaignService {
     /**
      * Valida o alcance do público na Meta antes de criar qualquer campanha do experimento.
      */
-    private void validateReachBeforeCampaignCreation(long experimentId, String adAccountId, String targetingJson) {
-        JsonNode targetingSpec = parseTargetingSpecForReachValidation(experimentId, targetingJson);
+    private void validateReachBeforeCampaignCreation(long experimentId,
+                                                     String adAccountId,
+                                                     String targetingJson,
+                                                     String targetCountry) {
+        ObjectNode targetingSpec = parseTargetingSpecForReachValidation(experimentId, targetingJson);
+        ensureGeoLocationForReachValidation(targetingSpec, targetCountry);
         JsonNode response = executeFacebookCallWithLogging(
             experimentId,
             ExperimentFacebookApiLogContext.CAMPAIGN_REACH_VALIDATION,
@@ -903,18 +912,35 @@ public class FacebookCampaignService {
     /**
      * Converte o targeting JSON aprovado em objeto validável pela Graph API.
      */
-    private JsonNode parseTargetingSpecForReachValidation(long experimentId, String targetingJson) {
+    private ObjectNode parseTargetingSpecForReachValidation(long experimentId, String targetingJson) {
         if (!StringUtils.hasText(targetingJson)) {
             throw new IllegalStateException("Targeting vazio para validação de alcance do experimento " + experimentId);
         }
         try {
-            return objectMapper.readTree(targetingJson);
+            JsonNode parsed = objectMapper.readTree(targetingJson);
+            if (!parsed.isObject()) {
+                throw new IllegalStateException("Targeting precisa ser um objeto JSON");
+            }
+            return (ObjectNode) parsed;
         } catch (Exception ex) {
             throw new IllegalStateException(
                 "Targeting inválido para validação de alcance do experimento " + experimentId + ": " + ex.getMessage(),
                 ex
             );
         }
+    }
+
+    /**
+     * Garante localização no payload de estimativa para manter o contrato mínimo exigido pela Meta.
+     */
+    private void ensureGeoLocationForReachValidation(ObjectNode targetingSpec, String targetCountry) {
+        JsonNode existingGeoLocations = targetingSpec.path("geo_locations");
+        if (existingGeoLocations.isObject() && existingGeoLocations.size() > 0) {
+            return;
+        }
+        ObjectNode geoLocations = targetingSpec.putObject("geo_locations");
+        ArrayNode countries = geoLocations.putArray("countries");
+        countries.add(StringUtils.hasText(targetCountry) ? targetCountry : FacebookAdsService.BRAZIL_COUNTRY_CODE);
     }
 
     /**

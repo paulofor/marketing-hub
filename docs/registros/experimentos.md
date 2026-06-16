@@ -4612,3 +4612,8 @@
 - causa-raiz: elementos aprovados sem `meta_id` permaneciam elegíveis em `/api/internal/targeting/elements/metaads-pending` mesmo após a Meta não retornar match, gerando os mesmos erros em ciclos agendados.
 - correção aplicada: o backend passou a registrar `metaIdUnavailable` e motivo operacional no elemento, excluindo esses registros da fila de pendentes; o worker marca essa condição quando não encontra ID após todas as tentativas.
 - impacto esperado: redução do ruído no log do worker e foco operacional na revisão manual de termos que precisam ser corrigidos antes de virar público publicável.
+## 2026-06-16 — Correção da validação de alcance do Experimento 39
+- solicitação: verificar novo retry do Experimento 39 após retorno para PLANNED.
+- causa-raiz: o Facebook Ads Worker montava corretamente o ad set final com `geo_locations.countries=["BR"]`, mas a validação prévia de alcance em `/reachestimate` usava apenas interesses/cargos/comportamentos do pacote aprovado, sem localização; a Meta rejeitou a estimativa com “Falta uma localização” e o worker marcou o experimento como `FAILED` antes de criar a campanha.
+- correção aplicada: a validação prévia de alcance agora injeta Brasil como localização quando o pacote de targeting aprovado não traz `geo_locations`, alinhando a estimativa ao ad set que será publicado.
+- prevenção de recorrência: adicionado teste automatizado garantindo que o `targeting_spec` enviado para `/reachestimate` inclui `geo_locations.countries=["BR"]`.

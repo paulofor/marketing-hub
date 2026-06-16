@@ -30,12 +30,18 @@ public class FacebookPixelController {
         this.conversionService = conversionService;
     }
 
-    @GetMapping("/niches-ready")
-    // Executa a operação listNichesReadyForPixel da integração Facebook Ads.
-    public List<NichePixelDto> listNichesReadyForPixel() {
-        return marketNicheService.listReadyForPixel().stream()
+    @GetMapping("/pending")
+    // Lista as pendências de criação de pixel solicitadas pelo usuário e prontas para o worker.
+    public List<NichePixelDto> listPendingPixelRequests() {
+        return marketNicheService.listPendingPixelRequests().stream()
                 .map(niche -> new NichePixelDto(niche.getId(), niche.getName()))
                 .toList();
+    }
+
+    @PostMapping("/niches/{nicheId}/request")
+    // Registra a solicitação manual de criação de pixel para o nicho informado.
+    public MarketNicheDto requestPixel(@PathVariable("nicheId") Long nicheId) {
+        return marketNicheMapper.toDto(marketNicheService.requestFacebookPixel(nicheId));
     }
 
     @PostMapping

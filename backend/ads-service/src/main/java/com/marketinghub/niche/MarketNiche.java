@@ -20,7 +20,7 @@ import java.time.Instant;
 import java.util.List;
 
 /**
- * Entity representing a market niche that can be tested manually or via AI.
+ * Representa um nicho de mercado usado para descoberta, experimentos e mensuração comercial.
  */
 @Entity
 @Data
@@ -51,6 +51,12 @@ public class MarketNiche {
 
     @Column(name = "facebook_pixel_created_at")
     private Instant facebookPixelCreatedAt;
+
+    @Column(name = "facebook_pixel_requested_at")
+    private Instant facebookPixelRequestedAt;
+
+    @Column(name = "facebook_pixel_request_status", length = 32)
+    private String facebookPixelRequestStatus;
 
     /** Categoria principal de interesse associada ao nicho. */
     private String interestCategory;

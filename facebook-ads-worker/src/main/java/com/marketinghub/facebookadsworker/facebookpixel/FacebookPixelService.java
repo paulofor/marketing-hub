@@ -73,11 +73,11 @@ public class FacebookPixelService {
             return;
         }
 
-        createPixelsForReadyNiches(config);
+        createPixelsForPendingRequests(config);
         sendConversions();
     }
 
-    private void createPixelsForReadyNiches(FacebookWorkerConfiguration config) {
+    private void createPixelsForPendingRequests(FacebookWorkerConfiguration config) {
         if (!StringUtils.hasText(config.adAccountId())) {
             LOGGER.warn("Facebook ad account id is not configured; skipping pixel creation");
             return;
@@ -92,7 +92,7 @@ public class FacebookPixelService {
             return;
         }
         String pixelOwnerBusinessId = config.pixelOwnerBusinessId().trim();
-        List<NichePixel> niches = fetchNichesReadyForPixel();
+        List<NichePixel> niches = fetchPendingPixelRequests();
         if (niches.isEmpty()) {
             return;
         }
@@ -149,10 +149,10 @@ public class FacebookPixelService {
         }
     }
 
-    private List<NichePixel> fetchNichesReadyForPixel() {
-        String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/facebook-pixels/niches-ready");
+    private List<NichePixel> fetchPendingPixelRequests() {
+        String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/facebook-pixels/pending");
         LOGGER.info(
-            "Requesting niches ready for pixel creation: url==>{}, params={}",
+            "Requesting pending pixel creation requests: url==>{}, params={}",
             url,
             JsonLogFormatter.wrap(Collections.emptyMap())
         );
@@ -165,16 +165,16 @@ public class FacebookPixelService {
                 .collectList()
                 .block();
             LOGGER.info(
-                "Received niches for pixel creation: url<=={}, response={}",
+                "Received pending pixel creation requests: url<=={}, response={}",
                 url,
                 JsonLogFormatter.wrap(objectMapper, niches)
             );
             return niches != null ? niches : List.of();
         } catch (WebClientRequestException ex) {
-            LOGGER.warn("Failed to fetch niches ready for pixel creation: url==>{}", url, ex);
+            LOGGER.warn("Failed to fetch pending pixel creation requests: url==>{}", url, ex);
         } catch (WebClientResponseException ex) {
             LOGGER.error(
-                "Backend responded with error when fetching niches ready for pixel creation: status={}, body={}",
+                "Backend responded with error when fetching pending pixel creation requests: status={}, body={}",
                 ex.getRawStatusCode(),
                 ex.getResponseBodyAsString(),
                 ex

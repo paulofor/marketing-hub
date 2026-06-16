@@ -67,7 +67,7 @@ Quando a Meta não retornar os limites ou o público ficar fora dessa faixa, o e
 | Criação, edição, aprovação e exclusão de registros `creative` | Módulo Experimentos | Frontend Experimentos, Worker AI |
 | Consumo de criativos aprovados para publicação Facebook | Módulo Facebook (`/api/facebook-campaigns/experiments/{experimentId}/creatives-ready`) | `facebook-ads-worker` |
 | Publicação de campanha, criação de campanha/ad set/criativos/anúncios e fallback de segmentação manual | `facebook-ads-worker` | Backend `ads-service`, Meta Marketing API |
-| Fluxo de liberação (`facebook_release_requested_at`, `status`, `market_niche.facebook_pixel_id`) | Backend `ads-service` | UI Experimentos, `facebook-ads-worker`, pixel worker |
+| Fluxo de liberação (`facebook_release_requested_at`, `status`, `market_niche.facebook_pixel_id`, `market_niche.facebook_pixel_request_status`) | Backend `ads-service` | UI Experimentos, `facebook-ads-worker`, pixel worker |
 | Geração por IA de ativos prévios (ex.: texto/imagem criativa antes da aprovação) | `ai-worker` | Backend `ads-service`, Frontend |
 | Funil de 9 etapas (`experiment_campaign_metric`, eventos do Lead Portal e checkout) | Backend `ads-service` + `lead-portal` | Frontend (aba Funil), operadores, times de mídia |
 
@@ -78,7 +78,7 @@ Quando a Meta não retornar os limites ou o público ficar fora dessa faixa, o e
 | `experiment.creative_approved`, `creative.status` | Tabelas do schema `marketinghubdb` | Ao menos um `creative` do experimento precisa estar em `READY` ou `IN_PRODUCTION` após aprovação. |
 | `experiment.follow_up_action_url` | `marketinghubdb.experiment` | Representa a landing aprovada na aba Landing; com valor preenchido, a página está publicada para uso como destino da campanha. |
 | `targeting_element` (job_title) | `marketinghubdb.targeting_element` | Para publicação manual, pelo menos **1** elemento `JOB_TITLE` com `status='APPROVED'`; quando existirem `meta_id`/`meta_key`, o `facebook-ads-worker` deve preferi-los no payload de targeting. |
-| `experiment.daily_budget`, `facebook_release_requested_at`, `funnel_reset_at`, `market_niche.facebook_pixel_id`, `status` | `marketinghubdb.experiment` | Controlam orçamento, liberação, resets e sincronismo de pixel. |
+| `experiment.daily_budget`, `facebook_release_requested_at`, `funnel_reset_at`, `market_niche.facebook_pixel_id`, `market_niche.facebook_pixel_requested_at`, `market_niche.facebook_pixel_request_status`, `status` | `marketinghubdb.experiment` | Controlam orçamento, liberação, resets e sincronismo de pixel. |
 | `experiment_campaign_metric` + eventos do Lead Portal + checkout/pagamentos | bancos do domínio de experimentos e `lead-portal` | Usados para preencher alcance, impressões, funil e custo por etapa. |
 
 ## 5. Bloqueios canônicos de publicação (diagnóstico do worker)
@@ -139,8 +139,9 @@ O cartão também lista itens operacionais que não travam o worker, mas devem s
 4. **Reprocessamentos controlados** – um novo disparo de publicação só é permitido após evidência explícita de encerramento da campanha anterior (arquivada/finalizada/erro terminal com limpeza operacional). O reprocessamento mantém o mesmo vínculo canônico de campanha do experimento e não pode duplicar campanha.
 5. **Persistência do carimbo** – `facebook_release_requested_at` permanece preenchido quando o status muda para `RUNNING` ou `PAUSED`, preservando o filtro do funil. Só muda no próximo clique autorizado de reprocessamento.
 6. **Confirmação de publicação completa** – depois que a Meta retornar sucesso para campanha, conjunto, criativo e anúncio, o `facebook-ads-worker` deve confirmar a publicação no backend por `POST /api/facebook-campaigns` enviando `status='ACTIVE'`. O backend deve persistir `facebook_ads_campaign.status='ACTIVE'` e `experiment.status='RUNNING'`; retries do mesmo `campaignId` devem apenas atualizar essa confirmação, sem recriar hierarquia.
-7. **Pixel worker** – a mesma liberação coloca o nicho na fila de criação de pixel enquanto `market_niche.facebook_pixel_id` estiver vazio. O worker consulta `/api/facebook-pixels/niches-ready` e só considera nichos com experimentos liberados (`facebook_release_requested_at` definido, `creative_approved=true`, `status IN ('PLANNED','RUNNING','PAUSED')` e plataforma Facebook). Ao registrar o pixel do nicho, todos os experimentos herdam o mesmo ID/HTML.
-8. **Execução registrada** – cada anúncio publicado referencia o valor de rastreamento (`utm_campaign`) exibido na UI junto com as conversões atribuídas.
+7. **Solicitação de pixel** – a tela do nicho registra uma pendência explícita em `market_niche.facebook_pixel_requested_at` e `market_niche.facebook_pixel_request_status='PENDING'`. O pixel deve ser criado antes da campanha usar mensuração Meta; enquanto não houver `market_niche.facebook_pixel_id`, a landing não injeta Meta Pixel.
+8. **Pixel worker** – o worker consulta `/api/facebook-pixels/pending` periodicamente e só processa pendências de nichos com experimento Facebook comercialmente pronto (`creative_approved=true`, `follow_up_action_url` preenchida, `status IN ('PLANNED','RUNNING','PAUSED')` e plataforma Facebook). Ao registrar o pixel do nicho, a pendência muda para `COMPLETED` e os experimentos passam a usar o mesmo ID/HTML.
+9. **Execução registrada** – cada anúncio publicado referencia o valor de rastreamento (`utm_campaign`) exibido na UI junto com as conversões atribuídas.
 9. **Parada manual do operador** – a UI de Experimentos pode registrar `status='USER_STOPPED'` quando a campanha for interrompida por decisão humana. Esse status encerra o ciclo operacional no Hub e **não** recoloca o experimento na fila `/api/facebook-campaigns/experiments-ready` até uma nova liberação explícita.
 10. **Upload de imagem por bytes com reuso canônico (Meta `image_hash`)** – para criativos de anúncio, o worker **não** deve fazer upload cego da mesma imagem em toda execução e **não pode depender de URL externa como caminho de publicação**. O fluxo obrigatório é:
    - baixar a imagem aprovada no próprio `facebook-ads-worker` antes de chamar a Meta;
@@ -214,6 +215,6 @@ Consequência arquitetural: a publicação de campanha passa a ser substituível
 
 - `system-governance-canon.v2.md` – precedência canônica e critérios de criação de novos cânones.
 - `ExperimentReadinessService` (backend) – cálculo dos bloqueios.
-- Endpoints: `/api/facebook-campaigns/experiments-ready`, `/api/facebook-campaigns/experiments/{experimentId}/creatives-ready`, `/api/facebook-adsets/experiments-ready`, `/api/facebook-pixels/niches-ready`, `/api/experiments/{experimentId}/funnel/diagnostics`.
+- Endpoints: `/api/facebook-campaigns/experiments-ready`, `/api/facebook-campaigns/experiments/{experimentId}/creatives-ready`, `/api/facebook-adsets/experiments-ready`, `/api/facebook-pixels/pending`, `/api/facebook-pixels/niches/{nicheId}/request`, `/api/experiments/{experimentId}/funnel/diagnostics`.
 - Metodologia de arquitetura por etapa: `docs/metodologia/gerado-5-5/arquitetura-pipeline-etapas-archunit.md`.
 - Tabelas do schema `marketinghubdb`: `experiment`, `creative`, `lead_portal_flow`, `targeting_element`, `experiment_campaign_metric`.

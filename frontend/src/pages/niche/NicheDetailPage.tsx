@@ -35,6 +35,7 @@ import { useOpenAiModels } from "../../api/openAiModel/useOpenAiModels";
 import { useDifferentiatedTechnologies } from "../../api/differentiatedTechnology/useDifferentiatedTechnologies";
 import { useInformationSourcesByNiche } from "../../api/informationSource/useInformationSourcesByNiche";
 import { useRequestMetaAdsReprocess } from "../../api/targeting/useRequestMetaAdsReprocess";
+import { useRequestFacebookPixel } from "../../api/niche/useRequestFacebookPixel";
 import { useCreateInformationSource } from "../../api/informationSource/useCreateInformationSource";
 import {
   ArrowUpRight,
@@ -201,6 +202,10 @@ export default function NicheDetailPage() {
   const facebookPixelCreatedAtLabel = data?.facebookPixelCreatedAt
     ? formatDateTime(data.facebookPixelCreatedAt)
     : null;
+  const facebookPixelRequestedAtLabel = data?.facebookPixelRequestedAt
+    ? formatDateTime(data.facebookPixelRequestedAt)
+    : null;
+  const isFacebookPixelPending = data?.facebookPixelRequestStatus === "PENDING";
   const { data: chatDialog } = useChatDialog(data?.chatDialogId);
   const { data: hypotheses } = useHypothesesByNiche(nicheId, "ALL");
   const { data: targetingElements, isFetching: isFetchingTargeting } =
@@ -315,6 +320,7 @@ export default function NicheDetailPage() {
   const createInformationSource = useCreateInformationSource(id);
   const updateNiche = useUpdateNiche();
   const requestMetaAdsReprocess = useRequestMetaAdsReprocess();
+  const requestFacebookPixel = useRequestFacebookPixel(normalizedNicheId);
   useBreadcrumbs([{ label: data?.name || "...", icon: nicheIcon }]);
 
   useEffect(() => {
@@ -372,6 +378,17 @@ export default function NicheDetailPage() {
     }
     window.setTimeout(scrollToForm, 0);
   }, [scrollToSection]);
+
+  const handleRequestFacebookPixel = useCallback(async () => {
+    try {
+      await requestFacebookPixel.mutateAsync();
+      toast.success(
+        "Solicitação de pixel registrada. O worker vai criar o pixel automaticamente.",
+      );
+    } catch (error) {
+      toast.error("Não foi possível solicitar o pixel agora.");
+    }
+  }, [requestFacebookPixel]);
 
   const list = Array.isArray(hypotheses)
     ? [...hypotheses].sort((a, b) => {
@@ -1094,8 +1111,37 @@ export default function NicheDetailPage() {
           </div>
         ) : (
           <div className="alert alert-warning mb-0">
-            Libere um experimento pronto para que o worker gere o pixel
-            automaticamente.
+            <div className="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+              <div>
+                <strong>Pixel ainda não solicitado.</strong> Solicite a criação
+                para o worker gerar o pixel e liberar o uso nos experimentos.
+                {facebookPixelRequestedAtLabel ? (
+                  <span className="d-block small mt-1">
+                    Solicitação registrada em {facebookPixelRequestedAtLabel}.
+                  </span>
+                ) : null}
+              </div>
+              <button
+                type="button"
+                className="btn btn-warning"
+                onClick={handleRequestFacebookPixel}
+                disabled={
+                  requestFacebookPixel.isPending ||
+                  isFacebookPixelPending ||
+                  !normalizedNicheId
+                }
+              >
+                {requestFacebookPixel.isPending ? (
+                  <span
+                    className="spinner-border spinner-border-sm me-2"
+                    aria-hidden="true"
+                  />
+                ) : null}
+                {isFacebookPixelPending
+                  ? "Pixel solicitado"
+                  : "Solicitar pixel"}
+              </button>
+            </div>
           </div>
         )}
       </section>

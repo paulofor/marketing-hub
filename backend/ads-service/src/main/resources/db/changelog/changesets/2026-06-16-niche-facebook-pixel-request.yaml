@@ -1,0 +1,39 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-16-01-niche-facebook-pixel-requested-at
+      author: marketinghub
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            - columnExists:
+                tableName: market_niche
+                columnName: facebook_pixel_requested_at
+      changes:
+        - addColumn:
+            tableName: market_niche
+            columns:
+              - column:
+                  name: facebook_pixel_requested_at
+                  type: TIMESTAMP
+  - changeSet:
+      id: 2026-06-16-02-niche-facebook-pixel-request-status
+      author: marketinghub
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            - columnExists:
+                tableName: market_niche
+                columnName: facebook_pixel_request_status
+      changes:
+        - addColumn:
+            tableName: market_niche
+            columns:
+              - column:
+                  name: facebook_pixel_request_status
+                  type: VARCHAR(32)

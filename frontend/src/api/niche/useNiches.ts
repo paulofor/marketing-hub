@@ -10,6 +10,8 @@ export interface MarketNiche {
   facebookPixelId?: string | null;
   facebookPixelCode?: string | null;
   facebookPixelCreatedAt?: string | null;
+  facebookPixelRequestedAt?: string | null;
+  facebookPixelRequestStatus?: string | null;
   interestList?: string[];
   roleList?: string[];
   behaviorList?: string[];

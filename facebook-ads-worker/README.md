@@ -103,8 +103,8 @@ A sincronização de pixels e o envio de eventos agora ficam **habilitados por p
 O agendador `FacebookPixelScheduler` continua condicionado à propriedade
 `facebookpixel.enabled`, portanto basta definir o valor como `false` se for
 necessário desligar o recurso em algum ambiente com permissões restritas.
-Quando o job está ativo o worker consulta `/api/facebook-pixels/experiments-ready`
-e cria o pixel antes de enviar os eventos de conversão.
+Quando o job está ativo o worker consulta `/api/facebook-pixels/pending`
+e cria os pixels solicitados como pendência no banco antes de enviar os eventos de conversão.
 
 O fluxo automatizado cria toda a hierarquia necessária para veiculação:
 

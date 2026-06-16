@@ -69,14 +69,22 @@ class ExperimentRepositoryTest {
     }
 
     @Test
-    void findReadyForPixelIncludesCommerciallyReadyExperimentsWithoutPixel() {
-        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Pixel niche").build());
+    void findPendingPixelRequestsIncludesCommerciallyReadyExperimentsWithoutPixel() {
+        MarketNiche niche = nicheRepository.save(MarketNiche.builder()
+                .name("Pixel niche")
+                .facebookPixelRequestedAt(java.time.Instant.now())
+                .facebookPixelRequestStatus("PENDING")
+                .build());
         Hypothesis hyp = hypothesisRepository.save(Hypothesis.builder()
                 .marketNiche(niche)
                 .title("Hypothesis")
                 .build());
         JourneyTemplate template = journeyTemplateRepository.save(JourneyTemplate.builder().name("Lifecycle").build());
-        MarketNiche nicheWithoutLanding = nicheRepository.save(MarketNiche.builder().name("Sem landing").build());
+        MarketNiche nicheWithoutLanding = nicheRepository.save(MarketNiche.builder()
+                .name("Sem landing")
+                .facebookPixelRequestedAt(java.time.Instant.now())
+                .facebookPixelRequestStatus("PENDING")
+                .build());
 
         repository.save(Experiment.builder()
                 .niche(niche)
@@ -113,7 +121,7 @@ class ExperimentRepositoryTest {
         entityManager.flush();
         entityManager.clear();
 
-        java.util.List<MarketNiche> result = nicheRepository.findReadyForPixel(
+        java.util.List<MarketNiche> result = nicheRepository.findPendingPixelRequests(
                 java.util.List.of(ExperimentStatus.PLANNED, ExperimentStatus.RUNNING, ExperimentStatus.PAUSED),
                 ExperimentPlatform.FACEBOOK
         );

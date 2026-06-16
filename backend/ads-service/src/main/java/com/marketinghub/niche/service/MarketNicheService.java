@@ -33,6 +33,9 @@ import org.springframework.web.server.ResponseStatusException;
  */
 @Service
 public class MarketNicheService {
+    private static final String FACEBOOK_PIXEL_REQUEST_PENDING = "PENDING";
+    private static final String FACEBOOK_PIXEL_REQUEST_COMPLETED = "COMPLETED";
+
     private final MarketNicheRepository repository;
     private final MarketNicheEnrichmentProfileRepository enrichmentProfileRepository;
     private final ChatDialogRepository chatDialogRepository;
@@ -317,14 +320,29 @@ public class MarketNicheService {
                 .collect(Collectors.toMap(profile -> profile.getMarketNiche().getId(), Function.identity()));
     }
 
-    /** Lista nichos com experimento comercialmente pronto para criação de pixel do Facebook. */
-    public List<MarketNiche> listReadyForPixel() {
+    /** Lista nichos com solicitação pendente e experimento comercialmente pronto para criação de pixel do Facebook. */
+    public List<MarketNiche> listPendingPixelRequests() {
         List<ExperimentStatus> statuses = List.of(
                 ExperimentStatus.PLANNED,
                 ExperimentStatus.RUNNING,
                 ExperimentStatus.PAUSED
         );
-        return repository.findReadyForPixel(statuses, ExperimentPlatform.FACEBOOK);
+        return repository.findPendingPixelRequests(statuses, ExperimentPlatform.FACEBOOK);
+    }
+
+    /** Registra uma pendência para o worker criar o pixel do Facebook do nicho. */
+    @Transactional
+    public MarketNiche requestFacebookPixel(Long nicheId) {
+        MarketNiche niche = repository.findById(nicheId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Market niche not found: " + nicheId));
+        if (niche.getFacebookPixelId() != null && !niche.getFacebookPixelId().isBlank()) {
+            return niche;
+        }
+        if (niche.getFacebookPixelRequestedAt() == null) {
+            niche.setFacebookPixelRequestedAt(Instant.now());
+        }
+        niche.setFacebookPixelRequestStatus(FACEBOOK_PIXEL_REQUEST_PENDING);
+        return niche;
     }
 
     /** Vincula dados do pixel do Facebook ao nicho informado. */
@@ -338,6 +356,7 @@ public class MarketNicheService {
         niche.setFacebookPixelId(pixelId.trim());
         niche.setFacebookPixelCode(pixelCode);
         niche.setFacebookPixelCreatedAt(createdAt != null ? createdAt : Instant.now());
+        niche.setFacebookPixelRequestStatus(FACEBOOK_PIXEL_REQUEST_COMPLETED);
         return niche;
     }
 }

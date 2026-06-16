@@ -479,12 +479,23 @@ paths:
             schema: { $ref: '#/components/schemas/CreateAdSetRequest' }
       responses:
         '200': { description: Ad set criado. }
-  /api/facebook-pixels/niches-ready:
+  /api/facebook-pixels/pending:
     get:
       tags: [Facebook Pixels]
-      summary: Lista nichos prontos para criação de pixel.
+      summary: Lista pendências de criação de pixel prontas para o worker.
       responses:
-        '200': { description: Nichos retornados. }
+        '200': { description: Pendências retornadas. }
+  /api/facebook-pixels/niches/{nicheId}/request:
+    post:
+      tags: [Facebook Pixels]
+      summary: Solicita criação de pixel para um nicho.
+      parameters:
+        - name: nicheId
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        '200': { description: Solicitação registrada no nicho. }
   /api/facebook-pixels:
     post:
       tags: [Facebook Pixels]

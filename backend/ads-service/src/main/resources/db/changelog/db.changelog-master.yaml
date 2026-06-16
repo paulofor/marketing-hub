@@ -999,3 +999,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-06-16-hypothesis-success-rule-longtext.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-06-16-niche-facebook-pixel-request.yaml
+      relativeToChangelogFile: true

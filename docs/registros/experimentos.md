@@ -4575,3 +4575,9 @@
 - causa-raiz: a consulta de nichos prontos para pixel exigia `facebook_release_requested_at`, que é gravado justamente na liberação final; isso criava dependência circular entre criação de pixel e liberação do experimento.
 - correção aplicada: a elegibilidade para criação de pixel passou a considerar experimento Facebook com criativo aprovado e landing de destino publicada (`follow_up_action_url`), sem exigir a liberação final já registrada.
 - impacto esperado: o nicho do Experimento 39 passa a ficar disponível para criação de pixel assim que a oferta/landing estiver pronta, permitindo concluir o fluxo comercial sem contorno manual.
+
+## 2026-06-16 — Solicitação manual de pixel por nicho
+- solicitação: adicionar na tela do nicho um botão para solicitar pixel, gravando uma pendência no banco para o Facebook Ads Worker criar periodicamente os pixels pendentes.
+- causa-raiz: a criação automática baseada apenas na landing pronta deixava ambiguidade operacional; a landing não consegue incluir o código antes de existir `facebook_pixel_id`, então a solicitação explícita torna a fila de criação auditável.
+- correção aplicada: criado endpoint `POST /api/facebook-pixels/niches/{nicheId}/request`, campos `facebook_pixel_requested_at` e `facebook_pixel_request_status` em `market_niche`, listagem de pendências em `/api/facebook-pixels/pending`, botão "Solicitar pixel" na tela do nicho e ajuste do worker para consumir somente pendências solicitadas.
+- impacto esperado: o usuário solicita o pixel no momento certo, o worker cria o pixel em lote, registra o ID/código no nicho e os experimentos posteriores usam o pixel criado sem depender de contorno manual.

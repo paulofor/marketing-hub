@@ -1,3 +1,14 @@
+## 2026-06-16 — Bloqueio de geração automática de imagem de anúncio após AD_IMAGE_BRIEFING
+
+- solicitação: impedir que o sistema gere imagem de anúncio automaticamente ao concluir a etapa `AD_IMAGE_BRIEFING`.
+- causa-raiz: o backend enfileirava criativos `PIPELINE_ADS` imediatamente ao finalizar o briefing de imagem do anúncio, mesmo quando o usuário estava operando outro fluxo, como Gera Landing.
+- foi feito: a conclusão de `AD_IMAGE_BRIEFING` agora apenas encerra a fila automática e registra que a geração de imagens de anúncio precisa de comando explícito do usuário.
+- validação: teste unitário atualizado para garantir que `creativesToGenerate` não é preenchido e `creativeGenerationMode` não muda para `PIPELINE_ADS` ao concluir `AD_IMAGE_BRIEFING`.
+- arquivos alterados:
+  - backend/ads-service/src/main/java/com/marketinghub/experiment/pipeline/service/ExperimentPipelineGenerationService.java
+  - backend/ads-service/src/test/java/com/marketinghub/experiment/pipeline/service/ExperimentPipelineGenerationServiceTest.java
+  - docs/registros/experimentos.md
+
 ## 2026-06-07 — Coluna de data de criação na lista de Testes de Nicho
 
 - solicitação: adicionar a coluna Data de criação na lista paginada de Testes de Nicho.

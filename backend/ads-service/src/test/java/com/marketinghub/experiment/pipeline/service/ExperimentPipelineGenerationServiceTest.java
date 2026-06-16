@@ -47,6 +47,7 @@ import java.math.BigDecimal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -1275,8 +1276,9 @@ class ExperimentPipelineGenerationServiceTest {
                         && saved.getStatus() == ExperimentPipelineGenerationJobStatus.PENDING));
     }
 
+    /** Garante que concluir AD_IMAGE_BRIEFING não gera imagens de anúncio automaticamente. */
     @Test
-    void completeJobQueuesPipelineCreativeImageGenerationAfterAdImageBriefing() {
+    void completeJobDoesNotQueuePipelineCreativeImageGenerationAfterAdImageBriefing() {
         Experiment experiment = new Experiment();
         experiment.setId(316L);
         experiment.setAdCopy("""
@@ -1305,8 +1307,8 @@ class ExperimentPipelineGenerationServiceTest {
                 20,
                 null));
 
-        assertEquals(1, experiment.getCreativesToGenerate());
-        assertEquals(CreativeGenerationMode.PIPELINE_ADS, experiment.getCreativeGenerationMode());
+        assertNull(experiment.getCreativesToGenerate());
+        assertEquals(CreativeGenerationMode.DEFAULT, experiment.getCreativeGenerationMode());
     }
 
     @Test

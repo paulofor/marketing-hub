@@ -25,15 +25,15 @@ class HotmartCollectorSchedulerTest {
     }
 
     /**
-     * Garante que o ciclo 2 esteja agendado para 04:10 de 16 de junho de 2026 no fuso de São Paulo.
+     * Garante que o ciclo 2 esteja agendado para 13:15 de 16 de junho de 2026 no fuso de São Paulo.
      */
     @Test
-    void shouldScheduleSecondCycleAtFourTenOnJuneSixteenth() throws NoSuchMethodException {
+    void shouldScheduleSecondCycleAtThirteenFifteenOnJuneSixteenth() throws NoSuchMethodException {
         Method method = HotmartCollectorScheduler.class
-                .getDeclaredMethod("collectSecondCycleAtFourTenOnJuneSixteenth2026");
+                .getDeclaredMethod("collectSecondCycleAtThirteenFifteenOnJuneSixteenth2026");
         Scheduled scheduled = method.getAnnotation(Scheduled.class);
 
-        assertEquals("0 10 4 16 6 *", scheduled.cron());
+        assertEquals("0 15 13 16 6 *", scheduled.cron());
         assertEquals("America/Sao_Paulo", scheduled.zone());
     }
 }

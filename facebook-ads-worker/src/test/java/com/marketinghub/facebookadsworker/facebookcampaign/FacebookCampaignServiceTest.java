@@ -531,6 +531,58 @@ class FacebookCampaignServiceTest {
         assertTrue(cleanupDelete.getPath().startsWith("/v23.0/99"));
     }
 
+
+    @Test
+    void usesExperimentStandaloneUrlAsDestinationBeforeCreativeFallback() throws Exception {
+        backend.enqueueResponse(new MockResponse().setBody("""
+                [{"id":1,"name":"Exp","dailyBudget":25.0,"followUpActionUrl":"https://oportunidadebrasil.shop/api/flows/exp-1-landing-geralanding/page","facebookPage":{"id":9,"pageId":"84","name":"Estúdio"},"instagramAccount":{"id":55,"handle":"@estudio","code":"IG-EST","name":"Estúdio"}}]
+                """)
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("""
+                {"images":{"uploaded":{"hash":"hash-preloaded"}}}
+                """)
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"10\"}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"20\"}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"30\"}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"40\"}")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("""
+                [{"id":101,"experimentId":1,"headline":"HL","primaryText":"Texto Criativo","imageUrl":"%s","description":"Desc","cta":"SHOP_NOW","destinationUrl":"","instagramUserId":"21","status":"READY"}]
+                """.formatted(imageUrl))
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("[]")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(defaultManualTargetingPackageResponse());
+        backend.enqueueResponse(new MockResponse().setBody("{}")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("{}")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("{}")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("{}")
+            .addHeader("Content-Type", "application/json"));
+
+        service.createCampaignsFromExperiments();
+
+        takeBackendRequest("experiments ready");
+        takeBackendRequest("creatives ready");
+        takeBackendRequestMatching("playbook request", request -> "/api/experiments/1/adset-playbook".equals(request.getPath()));
+        takeBackendRequestMatching("targeting package", request -> "/api/facebook-adsets/experiments/1/targeting-package".equals(request.getPath()));
+        takeFacebookRequest("facebook ad image upload");
+        takeFacebookRequest("facebook campaign");
+        takeFacebookRequest("facebook ad set");
+
+        RecordedRequest postCreative = takeFacebookRequest("facebook creative");
+        JsonNode creativePayload = objectMapper.readTree(postCreative.getBody().inputStream());
+        String destination = creativePayload.get("object_story_spec").get("link_data").get("link").asText();
+        assertTrue(destination.startsWith("https://oportunidadebrasil.shop/api/flows/exp-1-landing-geralanding/page"));
+        assertTrue(destination.contains("campaign=exp-1"));
+    }
+
     @Test
     // Verifies instant form share links are used when the journey requires a form destination.
     void usesInstantFormShareLinkWhenJourneyRequiresForm() throws Exception {

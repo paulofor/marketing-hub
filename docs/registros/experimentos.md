@@ -4617,3 +4617,13 @@
 - causa-raiz: o Facebook Ads Worker montava corretamente o ad set final com `geo_locations.countries=["BR"]`, mas a validação prévia de alcance em `/reachestimate` usava apenas interesses/cargos/comportamentos do pacote aprovado, sem localização; a Meta rejeitou a estimativa com “Falta uma localização” e o worker marcou o experimento como `FAILED` antes de criar a campanha.
 - correção aplicada: a validação prévia de alcance agora injeta Brasil como localização quando o pacote de targeting aprovado não traz `geo_locations`, alinhando a estimativa ao ad set que será publicado.
 - prevenção de recorrência: adicionado teste automatizado garantindo que o `targeting_spec` enviado para `/reachestimate` inclui `geo_locations.countries=["BR"]`.
+
+## 2026-06-16 — Reenvio de experimento PLANNED para Facebook Ads Worker
+
+- Ajustado o reenvio/liberação de experimento para Facebook Ads Worker para remover a publicação anterior persistida antes de marcar o experimento como `PLANNED`, evitando que o endpoint de fila ignore experimentos já associados a uma campanha antiga.
+- Coberto por teste de serviço garantindo limpeza do funil, métricas de landing e campanha anterior no novo ciclo de publicação.
+
+## 2026-06-16 — Destino standalone no Facebook Ads Worker
+
+- Ajustado o contrato de fila de campanhas para expor `followUpActionUrl` ao Facebook Ads Worker.
+- O worker passou a usar o link standalone da landing como destino oficial da campanha antes de qualquer fallback de criativo ou URL padrão da conta.

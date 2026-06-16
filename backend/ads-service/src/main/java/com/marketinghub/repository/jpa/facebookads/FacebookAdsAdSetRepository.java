@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -14,6 +15,12 @@ import org.springframework.data.repository.query.Param;
 public interface FacebookAdsAdSetRepository extends JpaRepository<FacebookAdsAdSet, String> {
 
     List<FacebookAdsAdSet> findByCampaignIdIn(Collection<String> campaignIds);
+
+    /**
+     * Remove conjuntos de anúncios vinculados às campanhas informadas antes de reprocessar a publicação.
+     */
+    @Modifying
+    void deleteByCampaignIdIn(Collection<String> campaignIds);
 
     @Query("""
             select distinct s from FacebookAdsAdSet s

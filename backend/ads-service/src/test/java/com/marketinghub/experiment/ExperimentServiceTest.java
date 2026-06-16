@@ -19,8 +19,14 @@ import com.marketinghub.repository.jpa.experiment.funnel.ExperimentLandingAnalyt
 import com.marketinghub.experiment.funnel.ExperimentFunnelStage;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
+import com.marketinghub.ads.FacebookAccount;
 import com.marketinghub.ads.InstagramAccount;
+import com.marketinghub.repository.jpa.ads.FacebookAccountRepository;
 import com.marketinghub.repository.jpa.ads.InstagramAccountRepository;
+import com.marketinghub.facebookads.BudgetMode;
+import com.marketinghub.facebookads.FacebookAdStatus;
+import com.marketinghub.facebookads.FacebookAdsCampaign;
+import com.marketinghub.repository.jpa.facebookads.FacebookAdsCampaignRepository;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,6 +66,10 @@ class ExperimentServiceTest {
     TargetingElementRepository targetingElementRepository;
     @Autowired
     InstagramAccountRepository instagramAccountRepository;
+    @Autowired
+    FacebookAccountRepository facebookAccountRepository;
+    @Autowired
+    FacebookAdsCampaignRepository facebookAdsCampaignRepository;
     @Autowired
     com.marketinghub.repository.jpa.leadportal.LeadPortalFlowRepository leadPortalFlowRepository;
     @Autowired
@@ -578,6 +588,21 @@ class ExperimentServiceTest {
                 .eventType("page_view")
                 .occurredAt(landingEvent.getOccurredAt())
                 .build());
+        FacebookAccount facebookAccount = facebookAccountRepository.save(FacebookAccount.builder()
+                .name("Conta Facebook")
+                .adAccountId("act_123")
+                .build());
+        FacebookAdsCampaign previousCampaign = new FacebookAdsCampaign();
+        previousCampaign.setId("campaign-previous");
+        previousCampaign.setExternalId("meta-previous");
+        previousCampaign.setAdAccountId("act_123");
+        previousCampaign.setExperiment(experiment);
+        previousCampaign.setFacebookAccount(facebookAccount);
+        previousCampaign.setName("Campanha anterior");
+        previousCampaign.setObjective("OUTCOME_LEADS");
+        previousCampaign.setStatus(FacebookAdStatus.ACTIVE);
+        previousCampaign.setBudgetMode(BudgetMode.CAMPAIGN);
+        facebookAdsCampaignRepository.save(previousCampaign);
 
         Experiment released = service.releaseForFacebook(experiment.getId());
 
@@ -586,6 +611,7 @@ class ExperimentServiceTest {
         assertThat(released.getFunnelResetAt()).isNotNull();
         assertThat(experimentLandingAnalyticsEventRepository.count()).isZero();
         assertThat(experimentFunnelEventRepository.count()).isZero();
+        assertThat(facebookAdsCampaignRepository.existsByExperimentId(experiment.getId())).isFalse();
     }
 
     @Test

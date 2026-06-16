@@ -1022,6 +1022,7 @@ public class FacebookCampaignService {
         InstantForm facebookInstantForm,
         @JsonAlias("nextStepInstantForm")
         boolean nextStepInstantForm,
+        String followUpActionUrl,
         LeadPortalFlow leadPortalFlow
     ) {
         public FacebookPage associatedPage() {
@@ -2039,6 +2040,15 @@ public class FacebookCampaignService {
                 instantFormDestination.shareLink()
             );
             return instantFormDestination.shareLink();
+        }
+        if (StringUtils.hasText(experiment.followUpActionUrl())) {
+            String destinationUrl = appendCampaignTrackingParameter(experiment.followUpActionUrl(), experiment);
+            LOGGER.info(
+                "Using experiment standalone follow-up URL as destination for experiment {}: url={}",
+                experiment.id(),
+                destinationUrl
+            );
+            return destinationUrl;
         }
         Experiment.LeadPortalFlow leadPortalFlow = experiment.leadPortalFlow();
         if (leadPortalFlow != null) {

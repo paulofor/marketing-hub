@@ -233,6 +233,7 @@ class FacebookAdsCampaignControllerTest {
                 .andExpect(jsonPath("$[0].id").value(1))
                 .andExpect(jsonPath("$[0].name").value("Exp"))
                 .andExpect(jsonPath("$[0].hypothesis").value("Hipótese"))
+                .andExpect(jsonPath("$[0].followUpActionUrl").value("https://landing.example.com/exp"))
                 .andExpect(jsonPath("$[0].kpiTargetCpl").value(10))
                 .andExpect(jsonPath("$[0].pageId").value("84"))
                 .andExpect(jsonPath("$[0].facebookPage.pageId").value("84"))

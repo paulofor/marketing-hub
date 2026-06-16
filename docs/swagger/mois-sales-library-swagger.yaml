@@ -1550,6 +1550,26 @@ components:
           type: integer
           format: int64
           description: Jobs da Etapa 3 em `FETCHING` há mais de 120 minutos, considerados presos para saneamento operacional.
+        automaticProcessingActive:
+          type: boolean
+          description: Indica avanço automático recente quando há captura em execução ou páginas capturadas na última hora.
+        lastCapturedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Data/hora da última página com HTML útil capturado.
+        capturedLastHour:
+          type: integer
+          format: int64
+          description: Total de páginas capturadas pela etapa 1 na última hora.
+        remainingWithoutHtml:
+          type: integer
+          format: int64
+          description: Total de páginas ainda sem HTML útil (`html_bytes = 0`).
+        averageCapturesPerHour:
+          type: number
+          format: double
+          description: Média de páginas capturadas por hora nas últimas 6 horas.
         updatedAt:
           type: string
           format: date-time

@@ -117,6 +117,8 @@ class MoisSalesLibraryServiceTest {
         given(jdbcTemplate.queryForObject(
                 contains("SUM(COALESCE(p.html_bytes, 0) > 0) AS captured"),
                 isA(RowMapper.class),
+                eq("workspace-001"),
+                eq("workspace-001"),
                 eq("workspace-001")))
                 .willReturn(new MoisSalesLibraryDtos.SalesLibraryPageSummaryResponse(
                         "workspace-001",
@@ -143,6 +145,11 @@ class MoisSalesLibraryServiceTest {
                         5L,
                         7L,
                         2L,
+                        true,
+                        Instant.parse("2026-06-07T05:20:13Z"),
+                        9L,
+                        94L,
+                        BigDecimal.valueOf(6.5),
                         Instant.parse("2026-06-07T05:38:13Z")
                 ));
 
@@ -151,6 +158,10 @@ class MoisSalesLibraryServiceTest {
         org.assertj.core.api.Assertions.assertThat(response.captured()).isEqualTo(327L);
         org.assertj.core.api.Assertions.assertThat(response.analysisPending()).isEqualTo(190L);
         org.assertj.core.api.Assertions.assertThat(response.marketWarmupEligible()).isEqualTo(106L);
+        org.assertj.core.api.Assertions.assertThat(response.automaticProcessingActive()).isTrue();
+        org.assertj.core.api.Assertions.assertThat(response.capturedLastHour()).isEqualTo(9L);
+        org.assertj.core.api.Assertions.assertThat(response.remainingWithoutHtml()).isEqualTo(94L);
+        org.assertj.core.api.Assertions.assertThat(response.averageCapturesPerHour()).isEqualByComparingTo("6.5");
         org.assertj.core.api.Assertions.assertThat(response.marketWarmupCompleted()).isEqualTo(70L);
         org.assertj.core.api.Assertions.assertThat(response.marketWarmupPromising()).isEqualTo(28L);
         org.assertj.core.api.Assertions.assertThat(response.marketWarmupStuck()).isEqualTo(2L);

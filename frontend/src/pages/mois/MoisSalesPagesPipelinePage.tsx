@@ -1,29 +1,17 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
 import PageTitle from "../../components/PageTitle";
 import {
-  useCaptureMoisSalesLibrarySnapshots,
   useMoisCollectedReferenceUrlSummary,
   useMoisSalesLibraryPageSummary,
   useReprocessStaleMoisSalesLibraryMarketWarmup,
 } from "../../api/mois/useMoisSalesLibrary";
-import type { MoisSalesLibrarySnapshotCaptureItem } from "../../api/mois/types";
 
 const WORKSPACE_ID = "workspace-001";
-const DEFAULT_CAPTURE_LIMIT = 5;
-
 const analysisChecklist = [
   "Jobs pendentes para análise por IA",
   "Páginas com HTML útil disponíveis como entrada",
   "Score comercial e blocos de oferta, promessa, mecanismo e prova",
   "Falhas de análise registradas no histórico operacional",
-];
-
-const htmlAcquisitionChecklist = [
-  "URLs pendentes para captura",
-  "Snapshots com HTML bruto salvo",
-  "Falhas de acesso, bloqueio ou timeout",
-  "Hash, tamanho e data da última captura",
 ];
 
 const marketWarmupChecklist = [
@@ -32,19 +20,6 @@ const marketWarmupChecklist = [
   "Score de engenharia de sucesso e riscos comerciais",
   "Recomendação comercial para priorizar, observar ou diferenciar o ângulo",
 ];
-
-function formatBytes(value: number) {
-  if (!value) {
-    return "0 B";
-  }
-  if (value < 1024) {
-    return `${value} B`;
-  }
-  if (value < 1024 * 1024) {
-    return `${(value / 1024).toFixed(1)} KB`;
-  }
-  return `${(value / (1024 * 1024)).toFixed(1)} MB`;
-}
 
 function formatDateTime(value?: string) {
   if (!value) {
@@ -66,50 +41,15 @@ function formatAverage(value?: number) {
   })}/h`;
 }
 
-function getSnapshotStatusBadgeClass(status: string) {
-  switch (status) {
-    case "CAPTURED":
-    case "DUPLICATE":
-      return "bg-success-subtle text-success-emphasis";
-    case "FAILED":
-      return "bg-danger-subtle text-danger-emphasis";
-    case "FETCHING":
-      return "bg-primary-subtle text-primary-emphasis";
-    default:
-      return "bg-secondary-subtle text-secondary-emphasis";
-  }
-}
-
-function getResultMessage(item: MoisSalesLibrarySnapshotCaptureItem) {
-  const redirectInfo = item.redirectDestinationUrl
-    ? `Destino: ${item.redirectDestinationUrl}${
-        item.redirectRootUrl ? ` · Raiz: ${item.redirectRootUrl}` : ""
-      }`
-    : "";
-  if (item.errorMessage) {
-    return [item.errorMessage, redirectInfo].filter(Boolean).join(" · ");
-  }
-  if (item.snapshotHash) {
-    return [`hash ${item.snapshotHash.slice(0, 12)}...`, redirectInfo]
-      .filter(Boolean)
-      .join(" · ");
-  }
-  return redirectInfo || "Sem detalhe adicional";
-}
-
 export default function MoisSalesPagesPipelinePage() {
-  const [forceCapture, setForceCapture] = useState(false);
   const summaryQuery = useMoisSalesLibraryPageSummary(WORKSPACE_ID);
   const collectedUrlSummaryQuery =
     useMoisCollectedReferenceUrlSummary(WORKSPACE_ID);
-  const captureMutation = useCaptureMoisSalesLibrarySnapshots(WORKSPACE_ID);
   const reprocessStaleWarmupMutation =
     useReprocessStaleMoisSalesLibraryMarketWarmup(WORKSPACE_ID);
   const summary = summaryQuery.data;
   const collectedUrlSummary = collectedUrlSummaryQuery.data;
 
-  const lastRun = captureMutation.data;
-  const isRunning = captureMutation.isPending;
   const capturedPages = summary?.captured ?? 0;
   const analyzedPages = summary?.analyzed ?? 0;
   const analysisBacklog = Math.max(capturedPages - analyzedPages, 0);
@@ -327,83 +267,6 @@ export default function MoisSalesPagesPipelinePage() {
                 </div>
               </div>
             </div>
-          </div>
-
-          <div className="border rounded-3 p-3">
-            <div className="d-flex flex-wrap align-items-center justify-content-between gap-3">
-              <div>
-                <h3 className="h6 mb-1">Executar captura agora</h3>
-                <p className="text-secondary small mb-0">
-                  O acionamento usa o backend existente e processa até{" "}
-                  {DEFAULT_CAPTURE_LIMIT} URLs sem HTML útil por execução para
-                  evitar bloqueios e timeouts longos.
-                </p>
-              </div>
-              <div className="d-flex flex-wrap align-items-center gap-3">
-                <div className="form-check form-switch mb-0">
-                  <input
-                    className="form-check-input"
-                    id="forceCapture"
-                    type="checkbox"
-                    checked={forceCapture}
-                    onChange={(event) => setForceCapture(event.target.checked)}
-                    disabled={isRunning}
-                  />
-                  <label
-                    className="form-check-label small"
-                    htmlFor="forceCapture"
-                  >
-                    Forçar URLs sem HTML (ignorar cooldown)
-                  </label>
-                </div>
-                <button
-                  className="btn btn-primary"
-                  type="button"
-                  disabled={isRunning}
-                  onClick={() =>
-                    captureMutation.mutate({
-                      limit: DEFAULT_CAPTURE_LIMIT,
-                      force: forceCapture,
-                    })
-                  }
-                >
-                  {isRunning ? (
-                    <>
-                      <span
-                        className="spinner-border spinner-border-sm me-2"
-                        aria-hidden="true"
-                      />
-                      Executando...
-                    </>
-                  ) : (
-                    "Executar etapa 1"
-                  )}
-                </button>
-              </div>
-            </div>
-            {captureMutation.isError ? (
-              <div className="alert alert-danger mt-3 mb-0">
-                Falha ao executar a captura. Verifique se o backend está
-                acessível e tente novamente.
-              </div>
-            ) : null}
-            {lastRun ? (
-              <div className="alert alert-success mt-3 mb-0">
-                Execução concluída em{" "}
-                {new Date(lastRun.capturedAt).toLocaleString()}:{" "}
-                {lastRun.processed} URL(s) processada(s), {lastRun.captured}{" "}
-                captura(s) útil(is) e {lastRun.failed} falha(s).
-              </div>
-            ) : null}
-          </div>
-
-          <div>
-            <h3 className="h6 mb-2">Informações que este card acompanha</h3>
-            <ul className="mb-0 text-secondary">
-              {htmlAcquisitionChecklist.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
           </div>
         </div>
       </section>
@@ -704,58 +567,6 @@ export default function MoisSalesPagesPipelinePage() {
           </div>
         </div>
       </section>
-
-      {lastRun ? (
-        <section className="card border-0 shadow-sm">
-          <div className="card-body table-responsive">
-            <h2 className="h5 mb-3">Resultado da última execução</h2>
-            <table className="table table-sm align-middle mb-0">
-              <thead>
-                <tr>
-                  <th>Página</th>
-                  <th>Status</th>
-                  <th>HTTP</th>
-                  <th>HTML</th>
-                  <th>Detalhe</th>
-                </tr>
-              </thead>
-              <tbody>
-                {lastRun.items.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="text-secondary">
-                      Nenhuma URL elegível encontrada para esta execução.
-                    </td>
-                  </tr>
-                ) : (
-                  lastRun.items.map((item) => (
-                    <tr
-                      key={`${item.pageId}-${item.snapshotId ?? "sem-snapshot"}`}
-                    >
-                      <td className="text-break">
-                        <Link to={`/mois/sales-pages-library/${item.pageId}`}>
-                          {item.urlCanonical}
-                        </Link>
-                      </td>
-                      <td>
-                        <span
-                          className={`badge ${getSnapshotStatusBadgeClass(item.status)}`}
-                        >
-                          {item.status}
-                        </span>
-                      </td>
-                      <td>{item.httpStatus ?? "—"}</td>
-                      <td>{formatBytes(item.rawHtmlBytes)}</td>
-                      <td className="text-secondary small text-break">
-                        {getResultMessage(item)}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      ) : null}
     </div>
   );
 }

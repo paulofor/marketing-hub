@@ -5,8 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.mcpserver.config.McpProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
+import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -44,6 +45,7 @@ public class MetaDiagnosticsService {
     /**
      * Inicializa o serviço usando um cliente HTTP padrão para documentação e Graph API.
      */
+    @Autowired
     public MetaDiagnosticsService(McpProperties properties, ObjectMapper objectMapper, JdbcTemplate jdbcTemplate) {
         this(properties, objectMapper, jdbcTemplate, new RestTemplate());
     }

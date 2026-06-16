@@ -44,6 +44,8 @@ class MetaToolsServiceTest {
                         "v22.0",
                         "system-token",
                         "system-token",
+                        "http://backend",
+                        "/api",
                         List.of("developers.facebook.com")
                 ),
                 new McpProperties.Github(

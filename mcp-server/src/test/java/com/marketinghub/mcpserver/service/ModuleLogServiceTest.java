@@ -93,6 +93,8 @@ class ModuleLogServiceTest {
                 "v23.0",
                 "",
                 "",
+                "http://backend",
+                "/api",
                 List.of("developers.facebook.com")
         );
 

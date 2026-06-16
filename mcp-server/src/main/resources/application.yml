@@ -64,6 +64,8 @@ mcp:
     graph-version: ${MCP_META_GRAPH_VERSION:v23.0}
     access-token: ${MCP_META_GRAPH_ACCESS_TOKEN:}
     debug-access-token: ${MCP_META_GRAPH_DEBUG_ACCESS_TOKEN:${MCP_META_GRAPH_ACCESS_TOKEN:}}
+    backend-base-url: ${MCP_META_BACKEND_BASE_URL:${BACKEND_BASE_URL:http://191.252.181.168}}
+    backend-api-prefix: ${MCP_META_BACKEND_API_PREFIX:${BACKEND_API_PREFIX:/api}}
     docs-allowed-hosts: ${MCP_META_DOCS_ALLOWED_HOSTS:developers.facebook.com,business.facebook.com,www.facebook.com}
   github:
     enabled: ${MCP_GITHUB_ENABLED:false}

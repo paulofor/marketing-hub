@@ -47,8 +47,8 @@ export function ExperimentAudienceTab({
 
   const availableOptions = useMemo(
     () =>
-      (elements ?? []).filter(
-        (item) => item.type === "JOB_TITLE" || item.type === "BEHAVIOR",
+      (elements ?? []).filter((item) =>
+        ["INTEREST", "JOB_TITLE", "BEHAVIOR"].includes(item.type),
       ),
     [elements],
   );
@@ -74,6 +74,7 @@ export function ExperimentAudienceTab({
 
   const grouped = useMemo(() => {
     return {
+      INTEREST: availableOptions.filter((item) => item.type === "INTEREST"),
       JOB_TITLE: availableOptions.filter((item) => item.type === "JOB_TITLE"),
       BEHAVIOR: availableOptions.filter((item) => item.type === "BEHAVIOR"),
     };
@@ -118,7 +119,7 @@ export function ExperimentAudienceTab({
         <div>
           <h5 className="card-title mb-1">Público</h5>
           <p className="text-muted mb-0 small">
-            Marque somente cargos e comportamentos já aprovados para o nicho.
+            Marque somente interesses, cargos e comportamentos já aprovados para o nicho.
           </p>
           {alterationLocked ? (
             <div className="alert alert-secondary mt-3 mb-0" role="status">
@@ -132,12 +133,12 @@ export function ExperimentAudienceTab({
           <div className="text-muted small">Carregando opções do nicho...</div>
         ) : availableOptions.length === 0 ? (
           <div className="text-muted small">
-            Nenhum cargo/comportamento aprovado foi encontrado para este nicho.
+            Nenhum interesse, cargo ou comportamento aprovado foi encontrado para este nicho.
           </div>
         ) : (
           <div className="row g-3">
-            {(["JOB_TITLE", "BEHAVIOR"] as const).map((type) => (
-              <div key={type} className="col-12 col-lg-6">
+            {(["INTEREST", "JOB_TITLE", "BEHAVIOR"] as const).map((type) => (
+              <div key={type} className="col-12 col-lg-4">
                 <div className="border rounded p-3 h-100">
                   <h6 className="mb-2">{TYPE_LABEL[type]}</h6>
                   <div className="d-flex flex-column gap-2">

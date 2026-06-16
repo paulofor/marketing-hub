@@ -4551,3 +4551,10 @@
 
 - Corrigida a causa-raiz do erro 500 ao fechar hipótese quando a etapa Prova retornava texto longo da IA: a coluna `hypothesis.success_rule` estava limitada como `TINYTEXT`, incompatível com respostas completas do framework Dor → Resultado → Mecanismo → Prova → Oferta.
 - Adicionado changelog incremental para converter `success_rule` para `LONGTEXT`, mantendo a hipótese completa disponível para criação de experimento sem truncamento.
+
+## 2026-06-16 — Exibição de interesses na aba Público do experimento
+
+- solicitação: explicar por que a aba Público do experimento exibia cargos e comportamentos, mas não exibia interesses aprovados do nicho.
+- causa-raiz: o frontend filtrava explicitamente a lista de elementos aprovados para manter apenas `JOB_TITLE` e `BEHAVIOR`, embora o endpoint do backend já retornasse também `INTEREST` para o nicho do experimento.
+- foi feito: a aba Público passou a listar interesses, cargos e comportamentos aprovados, mantendo o mesmo endpoint e o mesmo salvamento de seleção.
+- prevenção: a mensagem da tela foi atualizada para refletir todas as categorias de público disponíveis.

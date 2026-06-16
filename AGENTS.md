@@ -44,10 +44,10 @@ O Marketing Hub é uma fábrica automatizada de produtos digitais: descobre dore
   8. Identificar qual módulo chama esse endpoint.
   9. Verificar no log desse módulo se esse endpoint está sendo chamado.
   10. Verificar no log do módulo se os parâmetros enviados estão corretos.
-  11. Verificar no módulo o que é feito ao chegar essa informação.
-  12. Verificar se a ação esperada está sendo feita.
-  13. Verificar se a resposta da ação aconteceu.
-  14. Verificar se o tratamento da resposta foi feito corretamente.
+  11. Verificar no log do módulo o que é feito ao chegar essa informação.
+  12. Verificar no log se a ação esperada está sendo feita.
+  13. Verificar no log se a resposta da ação aconteceu.
+  14. Verificar no log se o tratamento da resposta foi feito corretamente.
   15. Verificar se o backend foi novamente chamado pelo módulo para registrar o resultado da ação.
   16. Verificar se o backend registrou corretamente o resultado da ação.
 - **Servidor MCP** : Chame o endpoint MCP https://mcpserverdigi.shop/mcp via JSON-RPC. Quando precisar analisar casos específicos acesse o banco de dados usando esse servidor.

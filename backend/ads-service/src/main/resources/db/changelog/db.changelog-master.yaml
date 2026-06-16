@@ -996,3 +996,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-06-15-mois-hotmart-description-longtext.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-06-16-hypothesis-success-rule-longtext.yaml
+      relativeToChangelogFile: true

@@ -17,6 +17,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
+/** Responsabilidade: representar uma hipótese comercial usada para gerar, validar e escalar experimentos de venda. */
 @Entity
 @Data
 @Builder
@@ -113,6 +114,7 @@ public class Hypothesis {
 
     /** Regra de sucesso que define se a hipótese será validada. */
     @Lob
+    @Column(name = "success_rule", columnDefinition = "LONGTEXT")
     private String successRule;
 
     @Enumerated(EnumType.STRING)

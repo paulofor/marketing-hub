@@ -1,0 +1,17 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-16-hypothesis-success-rule-longtext
+      author: marketinghub
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - columnExists:
+            tableName: hypothesis
+            columnName: success_rule
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE hypothesis MODIFY COLUMN success_rule LONGTEXT NULL;

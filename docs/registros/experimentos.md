@@ -4546,3 +4546,8 @@
 - causa-raiz: `HypothesisPainStageService` estava acumulando a orquestração da etapa Dor com a materialização/persistência da hipótese final, violando o isolamento arquitetural protegido por ArchUnit.
 - foi feito: extraído o fechamento para `HypothesisPipelineFinalizationService`, mantendo o endpoint público existente e removendo de `HypothesisPainStageService` as dependências diretas de `HypothesisRepository` e `HypothesisFrameworkMapperSupport`.
 - prevenção: o cânone de arquitetura por etapa passou a declarar que o fechamento da hipótese deve ficar fora do pacote específico da etapa Dor/Pain.
+
+## 2026-06-16 — Correção do fechamento de hipótese
+
+- Corrigida a causa-raiz do erro 500 ao fechar hipótese quando a etapa Prova retornava texto longo da IA: a coluna `hypothesis.success_rule` estava limitada como `TINYTEXT`, incompatível com respostas completas do framework Dor → Resultado → Mecanismo → Prova → Oferta.
+- Adicionado changelog incremental para converter `success_rule` para `LONGTEXT`, mantendo a hipótese completa disponível para criação de experimento sem truncamento.

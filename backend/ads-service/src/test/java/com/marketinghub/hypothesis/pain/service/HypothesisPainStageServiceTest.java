@@ -9,11 +9,11 @@ import static org.mockito.Mockito.when;
 
 import com.marketinghub.hypothesis.pain.HypothesisPainCostCalculator;
 import com.marketinghub.hypothesis.pain.HypothesisPainStageExecution;
+import com.marketinghub.hypothesis.pain.provisorio.HypothesisPainEnrichmentProfileReader;
+import com.marketinghub.hypothesis.pain.provisorio.HypothesisPainEnrichmentProfileSnapshot;
 import com.marketinghub.hypothesis.pain.service.recebeResposta.RecebeRespostaRequest;
 import com.marketinghub.niche.MarketNiche;
-import com.marketinghub.niche.MarketNicheEnrichmentProfile;
 import com.marketinghub.repository.jpa.hypothesis.HypothesisPainStageExecutionRepository;
-import com.marketinghub.repository.jpa.niche.MarketNicheEnrichmentProfileRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
@@ -35,7 +35,7 @@ class HypothesisPainStageServiceTest {
     private MarketNicheRepository marketNicheRepository;
 
     @Mock
-    private MarketNicheEnrichmentProfileRepository enrichmentProfileRepository;
+    private HypothesisPainEnrichmentProfileReader enrichmentProfileReader;
 
     @Mock
     private HypothesisPainStageExecutionRepository executionRepository;
@@ -50,7 +50,7 @@ class HypothesisPainStageServiceTest {
     void setup() {
         service = new HypothesisPainStageService(
                 marketNicheRepository,
-                enrichmentProfileRepository,
+                enrichmentProfileReader,
                 executionRepository,
                 costCalculator);
     }
@@ -151,26 +151,30 @@ class HypothesisPainStageServiceTest {
                 .status("INICIADO")
                 .executionRequestedAt(Instant.parse("2026-06-11T09:59:00Z"))
                 .build();
-        MarketNicheEnrichmentProfile profile = new MarketNicheEnrichmentProfile();
-        profile.setId(7L);
-        profile.setResearchCycleId(60L);
-        profile.setCnaeCode("9602501");
-        profile.setCnaeDescription("Cabeleireiros, manicure e pedicure");
-        profile.setSourceScore(new BigDecimal("90.00"));
-        profile.setQualityStatus("APPROVED");
-        profile.setConfidenceScore(87);
-        profile.setDifficultyEvidenceScore(91);
-        profile.setSourceDiversityScore(73);
-        profile.setRoutineSummary("Agenda, deslocamento e atendimento em domicílio.");
-        profile.setPainsSummary("Remarcações e ociosidade reduzem faturamento.");
-        profile.setResultsSummary("Agenda previsível e pacote simples de atendimento.");
-        profile.setMechanismOpportunitiesSummary("Checklists operacionais e scripts de WhatsApp.");
-        profile.setEvidenceSummary("Evidências em fontes públicas do nicho.");
-        profile.setSourceDomains("exemplo.com");
-        profile.setPersonaSummary("Manicure autônoma em domicílio.");
-        profile.setLanguagePatterns("agenda quebrada; cliente some");
-        profile.setCommercialTriggers("busca previsibilidade e redução de retrabalho");
-        profile.setObjections("medo de parecer complicado");
+        HypothesisPainEnrichmentProfileSnapshot profile = new HypothesisPainEnrichmentProfileSnapshot(
+                7L,
+                60L,
+                "9602501",
+                "Cabeleireiros, manicure e pedicure",
+                new BigDecimal("90.00"),
+                "APPROVED",
+                null,
+                87,
+                null,
+                null,
+                91,
+                73,
+                null,
+                "Agenda, deslocamento e atendimento em domicílio.",
+                "Remarcações e ociosidade reduzem faturamento.",
+                "Agenda previsível e pacote simples de atendimento.",
+                "Checklists operacionais e scripts de WhatsApp.",
+                "Evidências em fontes públicas do nicho.",
+                "exemplo.com",
+                "Manicure autônoma em domicílio.",
+                "agenda quebrada; cliente some",
+                "busca previsibilidade e redução de retrabalho",
+                "medo de parecer complicado");
 
         when(executionRepository.findTop50ByStageCodeAndStatusInAndCompletedAtIsNullAndProcessingStartedAtBeforeOrderByProcessingStartedAtAsc(
                         any(),
@@ -181,8 +185,8 @@ class HypothesisPainStageServiceTest {
                         "hypothesis-pain",
                         "INICIADO"))
                 .thenReturn(List.of(execution));
-        when(enrichmentProfileRepository.findLatestByMarketNicheIds(List.of(18L)))
-                .thenReturn(List.of(profile));
+        when(enrichmentProfileReader.findLatestByMarketNicheId(18L))
+                .thenReturn(Optional.of(profile));
 
         var pending = service.listPending();
 

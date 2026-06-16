@@ -124,6 +124,20 @@ O MOIS Worker segue as regras gerais de governança e operação de pipelines, m
 
 Esta seção consolida o fluxo ponta a ponta de **alimentação da biblioteca** (coleta de URLs de produtos vencedores, análise com OpenAI e persistência dos resultados) para remover ambiguidades operacionais entre coletores, backend e worker.
 
+### 12.0 Objetivo comercial da Biblioteca de Páginas de Vendas
+
+A Biblioteca de Páginas de Vendas **não tem como objetivo principal encontrar oportunidades de mercado**. O objetivo é identificar, registrar e reutilizar as **fórmulas comerciais que já demonstram vender com consistência no digital**, para acelerar a criação de novas ofertas e páginas com maior probabilidade de conversão.
+
+Neste contexto, “copiar” significa **replicar a fórmula estrutural vencedora**, não plagiar conteúdo literal, marca, identidade visual, promessa proprietária ou ativos de terceiros. A análise deve transformar páginas vencedoras em padrões reutilizáveis do tipo:
+
+- sequência de argumento da oferta;
+- estrutura de headline, promessa, prova, objeção e chamada para ação;
+- mecanismo de persuasão usado para afastar dor/esforço e aproximar facilidade/prazer;
+- organização visual que sustenta a leitura e a decisão de compra;
+- combinação de Dor → Resultado → Mecanismo → Prova → Oferta que parece explicar a venda consistente.
+
+Portanto, rankings, scores e pesquisas complementares da biblioteca devem responder principalmente: **“qual fórmula de venda está funcionando aqui e como podemos adaptar essa fórmula para produtos próprios do Marketing Hub?”**. Eles não devem reposicionar a biblioteca como ferramenta primária de descoberta de oportunidade de mercado; essa responsabilidade pertence aos fluxos de pesquisa de mercado, rotina, dores e validação de nicho.
+
 ### 12.1 Etapas macro (visão executiva)
 1. **Ingestão de produtos de sucesso (fontes de mercado)**
    - **Hotmart collector** seleciona produtos elegíveis, prioriza `salesPageUrl` com fallback em `detailsUrl` e envia para `POST /api/mois/sales-library/urls:ingest`.

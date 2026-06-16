@@ -15,6 +15,7 @@ import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.repository.jpa.hypothesis.HypothesisPainStageExecutionRepository;
 import com.marketinghub.repository.jpa.hypothesis.HypothesisRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
+import jakarta.persistence.Column;
 import java.math.BigDecimal;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -79,6 +80,15 @@ class HypothesisPipelineFinalizationServiceTest {
         org.assertj.core.api.Assertions.assertThat(captor.getValue().getFrameworkJson())
                 .contains("dor validada")
                 .contains("oferta low-ticket");
+    }
+
+    /** Deve manter a prova final compatível com respostas longas geradas pela IA. */
+    @Test
+    void successRuleColumnSupportsLongAiProofResponses() throws NoSuchFieldException {
+        Column column = Hypothesis.class.getDeclaredField("successRule").getAnnotation(Column.class);
+
+        assertEquals("success_rule", column.name());
+        assertEquals("LONGTEXT", column.columnDefinition());
     }
 
     /** Deve bloquear o fechamento quando alguma etapa obrigatória ainda não tem resposta concluída. */

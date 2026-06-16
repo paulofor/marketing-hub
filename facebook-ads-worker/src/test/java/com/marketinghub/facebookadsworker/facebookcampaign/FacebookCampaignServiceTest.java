@@ -28,6 +28,8 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.netty.http.client.HttpClient;
 
 import java.io.IOException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.List;
@@ -42,7 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Verifies Facebook campaign publication orchestration against backend and Meta API stubs.
+ * Valida a orquestração de publicação de campanhas Facebook contra stubs de backend e Meta API.
  */
 @Timeout(value = 15, unit = TimeUnit.SECONDS)
 class FacebookCampaignServiceTest {
@@ -420,6 +422,8 @@ class FacebookCampaignServiceTest {
         );
         RecordedRequest reachRequest = takeFacebookRequest("reach validation");
         assertTrue(reachRequest.getPath().contains("/reachestimate?"));
+        JsonNode reachTargetingSpec = targetingSpecFromReachEstimateRequest(reachRequest);
+        assertEquals("BR", reachTargetingSpec.get("geo_locations").get("countries").get(0).asText());
         RecordedRequest failedStatusRequest = takeBackendRequestMatching(
             "failed status update",
             request -> request.getPath() != null
@@ -1398,6 +1402,21 @@ class FacebookCampaignServiceTest {
         assertEquals(1, workPositions.size());
         assertEquals("1419795191647433", workPositions.get(0).get("id").asText());
         assertEquals("Certified Personal Trainer", workPositions.get(0).get("name").asText());
+    }
+
+    /**
+     * Extrai o targeting_spec enviado para a estimativa de alcance da Meta.
+     */
+    private JsonNode targetingSpecFromReachEstimateRequest(RecordedRequest request) throws IOException {
+        String path = request.getPath();
+        assertNotNull(path);
+        String prefix = "targeting_spec=";
+        int start = path.indexOf(prefix);
+        assertTrue(start >= 0);
+        int valueStart = start + prefix.length();
+        int valueEnd = path.indexOf('&', valueStart);
+        String encoded = valueEnd >= 0 ? path.substring(valueStart, valueEnd) : path.substring(valueStart);
+        return objectMapper.readTree(URLDecoder.decode(encoded, StandardCharsets.UTF_8));
     }
 
     @Test

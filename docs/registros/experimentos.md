@@ -4581,3 +4581,10 @@
 - causa-raiz: a criação automática baseada apenas na landing pronta deixava ambiguidade operacional; a landing não consegue incluir o código antes de existir `facebook_pixel_id`, então a solicitação explícita torna a fila de criação auditável.
 - correção aplicada: criado endpoint `POST /api/facebook-pixels/niches/{nicheId}/request`, campos `facebook_pixel_requested_at` e `facebook_pixel_request_status` em `market_niche`, listagem de pendências em `/api/facebook-pixels/pending`, botão "Solicitar pixel" na tela do nicho e ajuste do worker para consumir somente pendências solicitadas.
 - impacto esperado: o usuário solicita o pixel no momento certo, o worker cria o pixel em lote, registra o ID/código no nicho e os experimentos posteriores usam o pixel criado sem depender de contorno manual.
+
+## 2026-06-16 — Desbloqueio de execução de pixel solicitado
+- solicitação: corrigir situação em que o pixel do nicho 21 aparecia como solicitado há muito tempo, mas não era executado pelo Facebook Ads Worker.
+- causa-raiz: o worker bloqueava a criação de pixels quando `systemUserAccessToken` ou `pixelOwnerBusinessId` não estavam configurados, mesmo havendo `accessToken` principal válido para operar na Meta; assim a pendência permanecia registrada sem virar pixel criado.
+- correção aplicada: o worker agora usa `systemUserAccessToken` quando existir, usa `accessToken` principal como contingência, e não exige `pixelOwnerBusinessId` para criar o pixel; o owner business passa a ser enviado somente quando configurado.
+- prevenção de recorrência: adicionado teste automatizado garantindo que uma pendência de pixel seja criada mesmo sem token de system user e sem business owner configurado.
+- impacto esperado: solicitações como a do nicho 21 deixam de ficar presas por configuração complementar ausente e passam a ser processadas no próximo ciclo do worker.

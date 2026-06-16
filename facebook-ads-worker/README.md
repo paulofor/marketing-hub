@@ -105,6 +105,9 @@ O agendador `FacebookPixelScheduler` continua condicionado à propriedade
 necessário desligar o recurso em algum ambiente com permissões restritas.
 Quando o job está ativo o worker consulta `/api/facebook-pixels/pending`
 e cria os pixels solicitados como pendência no banco antes de enviar os eventos de conversão.
+Para evitar que uma solicitação fique parada por falta de configuração complementar, a criação de pixel
+usa primeiro `systemUserAccessToken`; se ele não existir, usa o `accessToken` principal já validado.
+O campo `pixelOwnerBusinessId` é enviado apenas quando estiver preenchido, sem bloquear a criação.
 
 O fluxo automatizado cria toda a hierarquia necessária para veiculação:
 

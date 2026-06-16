@@ -606,6 +606,9 @@ public class FacebookAdsService {
         return immutableResults;
     }
 
+    /**
+     * Consulta opções globais de targeting na Graph API, incluindo a classe exigida para categorias de comportamento.
+     */
     public List<FacebookTargetingSearchResult> searchGlobalTargetingOptions(TargetingSearchRequest request) {
         if (request == null || request.type() == null || request.type().graphType() == null || !hasText(request.query())) {
             return Collections.emptyList();
@@ -621,6 +624,9 @@ public class FacebookAdsService {
             .queryParam("q", normalizedQuery)
             .queryParam("limit", limit)
             .queryParam("access_token", requireAccessToken());
+        if (hasText(request.type().categoryClass())) {
+            builder.queryParam("class", request.type().categoryClass());
+        }
         if (hasText(request.locale())) {
             builder.queryParam("locale", request.locale());
         }
@@ -1524,18 +1530,35 @@ private FacebookInterest searchInterest(String interestName, String locale) {
         ANY(null),
         AD_INTEREST("adinterest"),
         AD_BEHAVIOR("adbehavior"),
+        AD_TARGETING_CATEGORY_BEHAVIOR("adTargetingCategory", "behaviors"),
         AD_WORK_POSITION("adworkposition"),
         AD_INDUSTRY("adindustry"),
         AD_WORK_EMPLOYER("adworkemployer");
 
         private final String graphType;
+        private final String categoryClass;
 
         TargetingSearchType(String graphType) {
-            this.graphType = graphType;
+            this(graphType, null);
         }
 
+        TargetingSearchType(String graphType, String categoryClass) {
+            this.graphType = graphType;
+            this.categoryClass = categoryClass;
+        }
+
+        /**
+         * Retorna o valor aceito pela Meta no parâmetro type.
+         */
         public String graphType() {
             return graphType;
+        }
+
+        /**
+         * Retorna a classe complementar exigida por categorias de targeting, quando existir.
+         */
+        public String categoryClass() {
+            return categoryClass;
         }
     }
 

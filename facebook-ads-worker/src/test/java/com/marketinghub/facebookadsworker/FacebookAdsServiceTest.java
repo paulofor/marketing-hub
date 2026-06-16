@@ -382,6 +382,34 @@ class FacebookAdsServiceTest {
         assertEquals("Certified Personal Trainer", results.get(0).name());
     }
 
+
+    @Test
+    void searchGlobalTargetingOptionsSendsBehaviorCategoryClass() throws Exception {
+        server.enqueueResponse(new MockResponse().setBody("{\"data\":[{\"id\":\"6002714898572\",\"name\":\"Small business owners\"}]}" )
+            .addHeader("Content-Type", "application/json"));
+
+        List<FacebookAdsService.FacebookTargetingSearchResult> results = service.searchGlobalTargetingOptions(
+            new FacebookAdsService.TargetingSearchRequest(
+                FacebookAdsService.TargetingSearchType.AD_TARGETING_CATEGORY_BEHAVIOR,
+                "Small business owners",
+                null,
+                "pt_BR",
+                "BR",
+                200
+            )
+        );
+
+        RecordedRequest request = takeRequest("global behavior category search request");
+        HttpUrl requestUrl = request.getRequestUrl();
+        assertNotNull(requestUrl);
+        assertEquals("/v23.0/search", requestUrl.encodedPath());
+        assertEquals("adTargetingCategory", requestUrl.queryParameter("type"));
+        assertEquals("behaviors", requestUrl.queryParameter("class"));
+        assertEquals("Small business owners", requestUrl.queryParameter("q"));
+        assertEquals(1, results.size());
+        assertEquals("6002714898572", results.get(0).id());
+    }
+
     @Test
     void createAdSetResolvesInterestNamesToIds() throws Exception {
         server.enqueueResponse(new MockResponse().setBody("{\"data\":[{\"id\":\"6003139266461\",\"name\":\"Pilates\"}]}" )

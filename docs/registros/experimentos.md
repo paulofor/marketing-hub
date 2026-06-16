@@ -4627,3 +4627,8 @@
 
 - Ajustado o contrato de fila de campanhas para expor `followUpActionUrl` ao Facebook Ads Worker.
 - O worker passou a usar o link standalone da landing como destino oficial da campanha antes de qualquer fallback de criativo ou URL padrão da conta.
+## 2026-06-16 — Correção de sincronização Meta Ads para comportamentos de nicho
+
+- Corrigida a causa-raiz que fazia comportamentos válidos da Meta, como `Small business owners`, ficarem marcados como pendentes/indisponíveis na tela de nicho.
+- O `facebook-ads-worker` passa a consultar comportamentos pelo contrato correto da Graph API: `type=adTargetingCategory&class=behaviors`.
+- A tela de nicho passa a considerar um elemento pronto quando há `metaId`, mesmo quando a Meta não retorna faixa de alcance para cargos.

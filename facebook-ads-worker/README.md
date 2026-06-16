@@ -42,8 +42,9 @@ cadastrados manualmente na tela de nicho e os sinais iniciais gerados pelo OPRM
 NichoCNAE para nichos enriquecidos (interesses, cargos e comportamentos).
 O scheduler `MetaAdsTargetingEnrichmentScheduler` busca itens pendentes no backend
 (`GET /api/internal/targeting/elements/metaads-pending`) e consulta a Graph API
-no endpoint global `/search` com o `type` correspondente (`adinterest`,
-`adworkposition` ou `adbehavior`) para capturar:
+no endpoint global `/search` com o `type` correspondente (`adinterest` para
+interesses, `adworkposition` para cargos e `adTargetingCategory` com
+`class=behaviors` para comportamentos) para capturar:
 
 - código oficial da Meta (`id`),
 - limite mínimo estimado (`audience_size_lower_bound`),

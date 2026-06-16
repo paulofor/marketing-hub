@@ -1649,3 +1649,8 @@ Arquivos principais:
 - Corrigida a causa-raiz da tela `/mois/sales-pages-library` exibir `—` na temperatura Hotmart: páginas consolidadas novas estavam sem `collected_reference_id`, embora a referência Hotmart existisse em `mois_collected_reference` com a mesma URL canônica.
 - Ajustada a consulta da biblioteca para usar a referência direta quando existir e, caso contrário, recuperar a última referência Hotmart pela URL da página/produto, preservando preço, produtor e temperatura na listagem e no detalhe.
 - Adicionado teste de regressão para garantir que a consulta mantenha o fallback por URL e não volte a depender apenas do vínculo direto.
+
+## 2026-06-16 — Remoção do acionamento manual da etapa 1
+
+- Removida da tela do pipeline da Biblioteca de Sales Pages a área de execução manual da captura da etapa 1, porque essa etapa já acontece de forma automática.
+- Mantidos os indicadores de processamento automático para o usuário acompanhar avanço, última captura, volume pendente e velocidade sem precisar acionar comandos manuais.

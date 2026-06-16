@@ -17,6 +17,9 @@ import com.marketinghub.experiment.pipeline.ads.PipelineAdCreativePlan;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.experiment.funnel.ExperimentFunnelEventRepository;
 import com.marketinghub.repository.jpa.experiment.funnel.ExperimentLandingAnalyticsEventRepository;
+import com.marketinghub.repository.jpa.facebookads.FacebookAdsAdRepository;
+import com.marketinghub.repository.jpa.facebookads.FacebookAdsAdSetRepository;
+import com.marketinghub.repository.jpa.facebookads.FacebookAdsCampaignRepository;
 import com.marketinghub.journey.model.JourneyTemplate;
 import com.marketinghub.repository.jpa.journey.JourneyTemplateRepository;
 import com.marketinghub.leadportal.LeadPortalFlow;
@@ -42,7 +45,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
 /**
- * Service layer for experiments.
+ * Orquestra as regras de negócio dos experimentos.
  */
 @Service
 public class ExperimentService {
@@ -62,6 +65,9 @@ public class ExperimentService {
     private final com.marketinghub.repository.jpa.sampleemail.SampleEmailRepository sampleEmailRepository;
     private final ExperimentFunnelEventRepository experimentFunnelEventRepository;
     private final ExperimentLandingAnalyticsEventRepository experimentLandingAnalyticsEventRepository;
+    private final FacebookAdsCampaignRepository facebookAdsCampaignRepository;
+    private final FacebookAdsAdSetRepository facebookAdsAdSetRepository;
+    private final FacebookAdsAdRepository facebookAdsAdRepository;
     private final ObjectMapper objectMapper;
 
     public ExperimentService(ExperimentRepository repository, MarketNicheRepository nicheRepository,
@@ -79,6 +85,9 @@ public class ExperimentService {
                              com.marketinghub.repository.jpa.sampleemail.SampleEmailRepository sampleEmailRepository,
                              ExperimentFunnelEventRepository experimentFunnelEventRepository,
                              ExperimentLandingAnalyticsEventRepository experimentLandingAnalyticsEventRepository,
+                             FacebookAdsCampaignRepository facebookAdsCampaignRepository,
+                             FacebookAdsAdSetRepository facebookAdsAdSetRepository,
+                             FacebookAdsAdRepository facebookAdsAdRepository,
                              ObjectMapper objectMapper) {
         this.repository = repository;
         this.nicheRepository = nicheRepository;
@@ -96,6 +105,9 @@ public class ExperimentService {
         this.sampleEmailRepository = sampleEmailRepository;
         this.experimentFunnelEventRepository = experimentFunnelEventRepository;
         this.experimentLandingAnalyticsEventRepository = experimentLandingAnalyticsEventRepository;
+        this.facebookAdsCampaignRepository = facebookAdsCampaignRepository;
+        this.facebookAdsAdSetRepository = facebookAdsAdSetRepository;
+        this.facebookAdsAdRepository = facebookAdsAdRepository;
         this.objectMapper = objectMapper;
     }
 
@@ -716,11 +728,28 @@ public class ExperimentService {
         experiment.setStatus(ExperimentStatus.PLANNED);
         experiment.setFacebookReleaseRequestedAt(Instant.now());
         experiment.setFunnelResetAt(experiment.getFacebookReleaseRequestedAt());
+        removePreviousFacebookPublication(id);
         experimentLandingAnalyticsEventRepository.deleteByExperimentId(id);
         experimentFunnelEventRepository.deleteByExperimentId(id);
         return experiment;
     }
 
+
+    /**
+     * Remove a publicação anterior do Facebook para permitir que o worker publique um novo ciclo.
+     */
+    private void removePreviousFacebookPublication(Long experimentId) {
+        List<String> campaignIds = facebookAdsCampaignRepository.findByExperimentId(experimentId)
+                .stream()
+                .map(campaign -> campaign.getId())
+                .toList();
+        if (campaignIds.isEmpty()) {
+            return;
+        }
+        facebookAdsAdRepository.deleteByAdSetCampaignIdIn(campaignIds);
+        facebookAdsAdSetRepository.deleteByCampaignIdIn(campaignIds);
+        facebookAdsCampaignRepository.deleteByExperimentId(experimentId);
+    }
 
     private void synchronizeLeadPortalFlow(Experiment experiment) {
         LeadPortalFlow flowRef = experiment.getLeadPortalFlow();

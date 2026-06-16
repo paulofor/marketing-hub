@@ -647,3 +647,7 @@ When an experiment has no ready ad set playbook spec, the campaign publication f
 Campaign publication is now routed through the generic stage pattern described in `docs/metodologia/gerado-5-5/arquitetura-pipeline-etapas-archunit.md`: `facebookadsworker.pipeline` contains the generic contracts and `facebookcampaign.publication` contains the concrete publication stage. This keeps Meta Ads publication as a plug-in stage inside the Facebook Ads Worker while preserving the existing backend/Graph API side effects.
 
 - Na publicação canônica de campanhas, imagens de criativos devem ser baixadas pelo worker e enviadas à Meta por bytes/multipart em `/adimages` para obter `image_hash`; não use fallback por `url` externa em `/adimages` nem `picture` no criativo quando houver imagem aprovada. Se o download/upload por bytes falhar, falhe a publicação e corrija a causa-raiz.
+
+### Destino standalone de landing em campanhas
+
+Quando o backend enviar `followUpActionUrl` no item de `/api/facebook-campaigns/experiments-ready`, o worker deve usar essa URL como destino oficial da campanha antes de qualquer fallback de criativo ou URL padrão da conta. Esse campo representa o link standalone publicado da landing, inclusive para landings GeraLanding expostas em `/api/flows/{slug}/page`, e deve receber apenas os parâmetros de tracking da campanha no worker.

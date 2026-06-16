@@ -60,6 +60,12 @@ public interface FacebookAdsCampaignRepository extends JpaRepository<FacebookAds
     List<FacebookAdsCampaign> findByExperimentId(Long experimentId);
 
     /**
+     * Remove campanhas persistidas para um experimento antes de reprocessar a publicação.
+     */
+    @org.springframework.data.jpa.repository.Modifying
+    void deleteByExperimentId(Long experimentId);
+
+    /**
      * Lista campanhas com solicitações de parada pendentes para o worker Facebook.
      */
     @Query("""

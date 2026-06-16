@@ -256,7 +256,13 @@ paths:
       tags: [Facebook Campaigns]
       summary: Lista experimentos liberados para publicação de campanhas.
       responses:
-        '200': { description: Experimentos prontos retornados. }
+        '200':
+          description: Experimentos prontos retornados.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/FacebookCampaignExperimentSummary' }
   /api/facebook-campaigns/experiments:
     get:
       tags: [Facebook Campaigns]
@@ -267,7 +273,13 @@ paths:
           required: false
           schema: { type: string }
       responses:
-        '200': { description: Experimentos retornados. }
+        '200':
+          description: Experimentos retornados.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/FacebookCampaignExperimentSummary' }
   /api/facebook-campaigns/metrics/sync-targets:
     get:
       tags: [Facebook Campaigns]
@@ -725,6 +737,51 @@ components:
       type: object
       additionalProperties: true
       description: IDs e status retornados pela publicação do formulário na Meta.
+    FacebookCampaignExperimentSummary:
+      type: object
+      description: Experimento exposto ao Facebook Ads Worker para publicação de campanha.
+      properties:
+        id: { type: integer, format: int64 }
+        name: { type: string }
+        hypothesis: { type: string, nullable: true }
+        followUpActionUrl:
+          type: string
+          nullable: true
+          description: Link standalone oficial da landing usado como URL de destino da campanha.
+        pageId: { type: string, nullable: true }
+        kpiTargetCpl: { type: number, nullable: true }
+        dailyBudget: { type: number, nullable: true }
+        startDate: { type: string, format: date, nullable: true }
+        endDate: { type: string, format: date, nullable: true }
+        missingConfiguration:
+          type: array
+          items: { type: string }
+        leadPortalFlow:
+          type: object
+          nullable: true
+          additionalProperties: true
+        facebookPage:
+          type: object
+          nullable: true
+          additionalProperties: true
+        instagramAccount:
+          type: object
+          nullable: true
+          additionalProperties: true
+        facebookInstantForm:
+          type: object
+          nullable: true
+          additionalProperties: true
+        nextStepInstantForm: { type: boolean }
+        leadPortalFunnel:
+          type: object
+          nullable: true
+          additionalProperties: true
+        metrics:
+          type: object
+          nullable: true
+          additionalProperties: true
+      required: [id, name, followUpActionUrl, missingConfiguration, nextStepInstantForm]
     FacebookCreativeConsumptionResponse:
       type: object
       description: Criativo aprovado do domínio Experimentos exposto apenas para consumo da publicação Facebook.

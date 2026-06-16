@@ -4618,6 +4618,15 @@
 - correção aplicada: a validação prévia de alcance agora injeta Brasil como localização quando o pacote de targeting aprovado não traz `geo_locations`, alinhando a estimativa ao ad set que será publicado.
 - prevenção de recorrência: adicionado teste automatizado garantindo que o `targeting_spec` enviado para `/reachestimate` inclui `geo_locations.countries=["BR"]`.
 
+## 2026-06-16 — Reenvio de experimento PLANNED para Facebook Ads Worker
+
+- Ajustado o reenvio/liberação de experimento para Facebook Ads Worker para remover a publicação anterior persistida antes de marcar o experimento como `PLANNED`, evitando que o endpoint de fila ignore experimentos já associados a uma campanha antiga.
+- Coberto por teste de serviço garantindo limpeza do funil, métricas de landing e campanha anterior no novo ciclo de publicação.
+
+## 2026-06-16 — Destino standalone no Facebook Ads Worker
+
+- Ajustado o contrato de fila de campanhas para expor `followUpActionUrl` ao Facebook Ads Worker.
+- O worker passou a usar o link standalone da landing como destino oficial da campanha antes de qualquer fallback de criativo ou URL padrão da conta.
 ## 2026-06-16 — Correção de sincronização Meta Ads para comportamentos de nicho
 
 - Corrigida a causa-raiz que fazia comportamentos válidos da Meta, como `Small business owners`, ficarem marcados como pendentes/indisponíveis na tela de nicho.

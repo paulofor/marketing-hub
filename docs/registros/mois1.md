@@ -1638,3 +1638,9 @@ Arquivos principais:
   - docs/canonical/mois-hotmart-mapeamento-ciclos-campos-banco.md
   - mois-hotmart-collector/AGENTS.md
   - docs/registros/mois1.md
+
+## 2026-06-16 — Temperatura Hotmart na biblioteca de sales pages
+
+- Corrigida a causa-raiz da tela `/mois/sales-pages-library` exibir `—` na temperatura Hotmart: páginas consolidadas novas estavam sem `collected_reference_id`, embora a referência Hotmart existisse em `mois_collected_reference` com a mesma URL canônica.
+- Ajustada a consulta da biblioteca para usar a referência direta quando existir e, caso contrário, recuperar a última referência Hotmart pela URL da página/produto, preservando preço, produtor e temperatura na listagem e no detalhe.
+- Adicionado teste de regressão para garantir que a consulta mantenha o fallback por URL e não volte a depender apenas do vínculo direto.

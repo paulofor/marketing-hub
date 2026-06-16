@@ -176,7 +176,8 @@ class MoisSalesLibraryServiceTest {
         verify(jdbcTemplate).query(sqlCaptor.capture(), isA(RowMapper.class), eq("workspace-001"), eq(20), eq(0));
         org.assertj.core.api.Assertions.assertThat(sqlCaptor.getValue())
                 .contains("LEFT JOIN mois_sales_page_market_warmup_summary mws")
-                .contains("cr.hotmart_temperature")
+                .contains("cr_latest.workspace_id = p.workspace_id AND cr_latest.reference_url = p.url_canonical")
+                .contains("COALESCE(cr_direct.hotmart_temperature, cr_url.hotmart_temperature) AS hotmart_temperature")
                 .contains("ORDER BY p.last_analyzed_at DESC, p.updated_at DESC, p.id DESC LIMIT ? OFFSET ?");
     }
 

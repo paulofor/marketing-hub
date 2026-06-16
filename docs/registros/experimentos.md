@@ -4538,3 +4538,4 @@
 - causa-raiz tratada: o cliente comum da OpenAI já forçava `service_tier=flex` no envio final, mas o request montado pela etapa de hipótese e persistido para auditoria ainda não carregava explicitamente esse campo, deixando a execução auditável diferente do contrato operacional esperado.
 - foi feito: o `HypothesisPainProcessor` passou a montar o payload da Responses API com `service_tier=flex` desde a origem, antes da persistência no backend e antes do envio final.
 - validação: adicionado teste unitário garantindo que o request auditável da etapa Dor da hipótese contém `service_tier=flex`.
+- 2026-06-16 02:27:20 (UTC): tela de nova hipótese passou a exigir nome para fechar o framework Dor → Resultado → Mecanismo → Prova → Oferta como hipótese BACKLOG; backend criou o endpoint /api/niches/{nicheId}/hypothesis-pipeline/finalize para consolidar as cinco etapas concluídas e disponibilizar a hipótese na criação de experimento.

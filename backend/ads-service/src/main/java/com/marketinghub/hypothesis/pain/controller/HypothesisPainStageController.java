@@ -1,5 +1,8 @@
 package com.marketinghub.hypothesis.pain.controller;
 
+import com.marketinghub.hypothesis.dto.HypothesisDto;
+import com.marketinghub.hypothesis.mapper.HypothesisMapper;
+import com.marketinghub.hypothesis.pain.service.FinalizeHypothesisRequest;
 import com.marketinghub.hypothesis.pain.service.HypothesisPainStageService;
 import com.marketinghub.hypothesis.pain.service.detailStageExecution.HypothesisPainExecutionDetailResponse;
 import com.marketinghub.hypothesis.pain.service.listStageExecutions.HypothesisPainExecutionSummaryResponse;
@@ -27,10 +30,12 @@ import org.springframework.web.bind.annotation.RestController;
 public class HypothesisPainStageController {
     private static final Logger log = LoggerFactory.getLogger(HypothesisPainStageController.class);
     private final HypothesisPainStageService service;
+    private final HypothesisMapper hypothesisMapper;
 
     /** Inicializa o controller com o serviço das etapas do pipeline de hipótese. */
-    public HypothesisPainStageController(HypothesisPainStageService service) {
+    public HypothesisPainStageController(HypothesisPainStageService service, HypothesisMapper hypothesisMapper) {
         this.service = service;
+        this.hypothesisMapper = hypothesisMapper;
     }
 
     /** Registra uma execução inicial da etapa Dor para um nicho. */
@@ -113,6 +118,14 @@ public class HypothesisPainStageController {
     @GetMapping("/niches/{nicheId}/hypothesis-pipeline/summary")
     public ResponseEntity<List<HypothesisStageFinalSummaryResponse>> finalSummary(@PathVariable Long nicheId) {
         return ResponseEntity.ok(service.listFinalSummary(nicheId));
+    }
+
+    /** Fecha o pipeline concluído como hipótese disponível no backlog para gerar experimento. */
+    @PostMapping("/niches/{nicheId}/hypothesis-pipeline/finalize")
+    public ResponseEntity<HypothesisDto> finalizeHypothesis(
+            @PathVariable Long nicheId,
+            @Valid @RequestBody FinalizeHypothesisRequest request) {
+        return ResponseEntity.status(201).body(hypothesisMapper.toDto(service.finalizeHypothesis(nicheId, request)));
     }
 
     /** Consulta detalhe auditável de uma execução da etapa Dor vinculada ao nicho. */

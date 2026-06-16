@@ -272,6 +272,9 @@ function isExperimentAlterationLocked(experiment: {
   facebookReleaseRequestedAt?: string | null;
 }) {
   const normalizedStatus = (experiment.status ?? "").trim().toUpperCase();
+  if (normalizedStatus === "FAILED") {
+    return false;
+  }
   return (
     Boolean(experiment.facebookReleaseRequestedAt) ||
     EXPERIMENT_ALTERATION_LOCK_STATUSES.has(normalizedStatus)
@@ -1918,8 +1921,7 @@ export default function ExperimentDetailPage() {
       id: "facebook-pixel",
       title: "Pixel temporariamente desligado",
       isMet: true,
-      hint:
-        "Publicação liberada sem pixel enquanto a estratégia de pixels por vertical/conta é reorganizada.",
+      hint: "Publicação liberada sem pixel enquanto a estratégia de pixels por vertical/conta é reorganizada.",
     },
   ];
   const checklistGroups = [

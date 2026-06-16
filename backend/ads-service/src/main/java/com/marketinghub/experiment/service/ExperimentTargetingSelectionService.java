@@ -24,12 +24,16 @@ import com.marketinghub.repository.jpa.targeting.TargetingRequestRepository;
 import com.marketinghub.targeting.service.TargetingResolutionJobService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 
+/**
+ * Gerencia as escolhas de público do experimento e evita seleções sem identificador oficial da Meta.
+ */
 @Service
 public class ExperimentTargetingSelectionService {
     private static final int SIMPLE_FLOW_RESOLUTION_ETA_SECONDS = 90;
@@ -61,11 +65,14 @@ public class ExperimentTargetingSelectionService {
         this.targetingResolutionSummaryMapper = targetingResolutionSummaryMapper;
     }
 
+    /**
+     * Resolve o elemento selecionado e bloqueia itens que não podem ser publicados na Meta.
+     */
     private TargetingElement resolveTargetingElement(Long targetingElementId,
                                                      Experiment experiment,
                                                      TargetingCandidateType candidateType) {
         if (targetingElementId == null) {
-            return null;
+            throw new IllegalArgumentException("Elemento de segmentação oficial da Meta é obrigatório");
         }
         TargetingElement element = targetingElementRepository.findById(targetingElementId)
                 .orElseThrow(() -> new IllegalArgumentException("Elemento de segmentação não encontrado"));
@@ -82,9 +89,15 @@ public class ExperimentTargetingSelectionService {
                 && !Objects.equals(experiment.getHypothesisRef().getId(), element.getHypothesis().getId())) {
             throw new IllegalArgumentException("Elemento vinculado a outra hipótese");
         }
+        if (!StringUtils.hasText(element.getMetaId())) {
+            throw new IllegalArgumentException("Elemento de segmentação sem ID oficial da Meta");
+        }
         return element;
     }
 
+    /**
+     * Converte o tipo salvo na seleção para o tipo canônico do elemento de targeting.
+     */
     private TargetingElementType mapCandidateType(TargetingCandidateType candidateType) {
         return switch (candidateType) {
             case INTEREST -> TargetingElementType.INTEREST;
@@ -93,6 +106,9 @@ public class ExperimentTargetingSelectionService {
         };
     }
 
+    /**
+     * Lista as escolhas de público já salvas para o experimento.
+     */
     @Transactional(readOnly = true)
     public List<ExperimentTargetingSelectionDto> list(Long experimentId) {
         return repository.findByExperimentIdOrderByCandidateTypeAscTermAsc(experimentId).stream()
@@ -106,6 +122,9 @@ public class ExperimentTargetingSelectionService {
                 .toList();
     }
 
+    /**
+     * Substitui as escolhas de público por elementos oficiais e publicáveis na Meta.
+     */
     @Transactional
     public List<ExperimentTargetingSelectionDto> save(Long experimentId, SaveExperimentTargetingSelectionsRequest request) {
         Experiment experiment = experimentRepository.findById(experimentId).orElseThrow();
@@ -117,11 +136,10 @@ public class ExperimentTargetingSelectionService {
                     continue;
                 }
                 TargetingElement linkedElement = resolveTargetingElement(item.getTargetingElementId(), experiment, item.getCandidateType());
-                String normalizedTerm = linkedElement != null ? linkedElement.getTerm() : item.getTerm().trim();
                 items.add(ExperimentTargetingSelection.builder()
                         .experiment(experiment)
                         .candidateType(item.getCandidateType())
-                        .term(normalizedTerm)
+                        .term(linkedElement.getTerm())
                         .targetingElement(linkedElement)
                         .build());
             }
@@ -137,6 +155,9 @@ public class ExperimentTargetingSelectionService {
                 .toList();
     }
 
+    /**
+     * Cria uma solicitação simples de resolução de público a partir das escolhas salvas.
+     */
     @Transactional
     public TargetingRequestDto runSimpleFlow(Long experimentId) {
         Experiment experiment = experimentRepository.findById(experimentId).orElseThrow();
@@ -171,6 +192,9 @@ public class ExperimentTargetingSelectionService {
         return targetingRequestMapper.toDetailedDto(savedRequest, SIMPLE_FLOW_RESOLUTION_ETA_SECONDS);
     }
 
+    /**
+     * Consulta o status mais recente do fluxo simples de resolução de público.
+     */
     @Transactional(readOnly = true)
     public ExperimentSimpleFlowStatusDto getSimpleFlowStatus(Long experimentId) {
         if (experimentId == null) {

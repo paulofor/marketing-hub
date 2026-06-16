@@ -1,3 +1,8 @@
+## 2026-06-16 — Objetivo comercial da Biblioteca de Páginas de Vendas
+- atualizado o cânone MOIS para deixar claro que a Biblioteca de Páginas de Vendas não tem como objetivo principal encontrar oportunidades de mercado.
+- registrado que o objetivo correto é identificar e reutilizar fórmulas comerciais que já vendem com consistência no digital, copiando a estrutura de venda vencedora sem plagiar conteúdo literal, marca, identidade visual ou ativos de terceiros.
+- alinhadas especificações complementares da biblioteca para reforçar que rankings, scores e análises devem responder qual fórmula de venda funciona e como adaptá-la para produtos próprios do Marketing Hub.
+
 ## 2026-06-11 18:20:00 UTC
 - corrigido o cálculo de custo da análise da Biblioteca de Páginas de Vendas do MOIS para não depender diretamente do pacote `com.marketinghub.openai`, preservando o isolamento arquitetural validado por ArchUnit.
 - criado serviço local no pacote `com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service` para calcular preço batch a partir dos tokens do worker.

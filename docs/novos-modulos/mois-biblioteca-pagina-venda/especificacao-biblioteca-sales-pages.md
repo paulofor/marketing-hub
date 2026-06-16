@@ -5,9 +5,11 @@
 Este módulo tem como objetivo criar uma biblioteca contínua de páginas de vendas coletadas pelo **mois-hotmart-collector**, com processamento em background para:
 
 1. armazenar snapshots rastreáveis das URLs;
-2. extrair padrões de copy, estilo visual e imagens;
-3. transformar os dados em análises estruturadas reutilizáveis pelo Marketing Hub;
+2. extrair fórmulas comerciais que estão vendendo com consistência no digital;
+3. transformar padrões de copy, estilo visual, prova, objeção, mecanismo e chamada para ação em análises estruturadas reutilizáveis pelo Marketing Hub;
 4. acelerar a criação de produtos e páginas com maior potencial de conversão.
+
+A biblioteca **não é uma ferramenta primária de descoberta de oportunidades de mercado**. Sua função é estudar páginas vencedoras para “copiar” a fórmula estrutural de venda — sequência de argumento, promessa, prova, mecanismo, CTA e organização visual — sem copiar literalmente conteúdo, marca, identidade visual ou ativos de terceiros.
 
 A definição funcional segue o eixo canônico do sistema:
 

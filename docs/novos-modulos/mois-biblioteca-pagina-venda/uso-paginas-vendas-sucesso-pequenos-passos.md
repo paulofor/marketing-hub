@@ -14,7 +14,7 @@ Em vez disso, o sistema deve evoluir em pequenos passos, aprendendo gradualmente
 4. transformar esses padrões em insumos úteis;
 5. usar esses insumos nas etapas de geração de novas páginas.
 
-O objetivo não é copiar páginas existentes, mas sim transformar referências em inteligência estruturada para apoiar a geração de:
+O objetivo é copiar **fórmulas comerciais vencedoras**, não páginas existentes de forma literal. Na prática, o sistema deve transformar referências em inteligência estruturada para apoiar a geração de:
 
 - wireframes;
 - copy;
@@ -25,9 +25,11 @@ O objetivo não é copiar páginas existentes, mas sim transformar referências 
 
 ## Princípio central
 
-> Referências devem ser usadas como inspiração estruturada, não como cópia.
+> Referências devem ser usadas para copiar a fórmula estrutural que vende, não para plagiar conteúdo, marca, identidade visual ou ativos.
 
-O sistema não deve reproduzir headlines, layouts ou visuais de páginas existentes.  
+O sistema não deve reproduzir literalmente headlines, layouts proprietários ou visuais de páginas existentes.
+
+A leitura correta da biblioteca é: identificar qual sequência de Dor → Resultado → Mecanismo → Prova → Oferta está funcionando, entender como ela reduz dor/esforço e aumenta facilidade/prazer, e adaptar essa fórmula para produtos próprios do Marketing Hub.
 Ele deve extrair padrões, estratégias e orientações reutilizáveis.
 
 A lógica recomendada é:

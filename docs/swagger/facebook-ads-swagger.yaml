@@ -838,8 +838,9 @@ components:
       type: object
       properties:
         metaId: { type: string, nullable: true }
-        metaName: { type: string, nullable: true }
-        metaType: { type: string, nullable: true }
-        status: { type: string, nullable: true }
-        errorMessage: { type: string, nullable: true }
+        metaKey: { type: string, nullable: true }
+        metaAudienceSizeLowerBound: { type: integer, format: int64, nullable: true }
+        metaAudienceSizeUpperBound: { type: integer, format: int64, nullable: true }
+        metaIdUnavailable: { type: boolean, nullable: true }
+        metaIdUnavailableReason: { type: string, nullable: true }
       additionalProperties: true

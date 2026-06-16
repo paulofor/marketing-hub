@@ -26,6 +26,9 @@ Após salvar o nicho, o backend sincroniza os itens em `targeting_element` e o *
    - `metaAudienceSizeLowerBound` (limite mínimo)
    - `metaAudienceSizeUpperBound` (limite máximo)
 4. atualiza o item em `PATCH /api/internal/targeting/elements/{id}/metaads`.
+5. quando não houver ID oficial após todas as tentativas, marca
+   `metaIdUnavailable=true` no mesmo endpoint para o backend retirar o item da
+   fila automática e evitar novas chamadas repetidas à Meta.
 
 > Resultado esperado: cada termo manual de nicho fica com **código oficial + faixa min/max** antes de ser usado no fluxo de campanha.
 

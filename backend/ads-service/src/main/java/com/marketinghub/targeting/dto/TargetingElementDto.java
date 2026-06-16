@@ -32,6 +32,8 @@ public class TargetingElementDto {
     private String metaKey;
     private Long metaAudienceSizeLowerBound;
     private Long metaAudienceSizeUpperBound;
+    private Boolean metaIdUnavailable;
+    private String metaIdUnavailableReason;
     private BigDecimal confidence;
     private Instant createdAt;
     private Instant updatedAt;

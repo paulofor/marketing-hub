@@ -4606,3 +4606,9 @@
 - causa-raiz: o bloqueio da tela considerava qualquer `facebook_release_requested_at`, mesmo quando o experimento voltava para `FAILED`; além disso, a UI exibia itens aprovados no nicho sem diferenciar os que possuíam `meta_id` oficial dos que ainda não eram publicáveis na Meta.
 - correção aplicada: experimentos em `FAILED` deixam de travar a edição; a aba Público passa a exibir selo “Pronto para Meta” ou “Sem ID Meta”, bloqueando a inclusão de novos itens sem ID oficial e impedindo salvar enquanto houver seleção inválida.
 - prevenção de recorrência: o backend passou a rejeitar salvamento de seleção vinculada a elemento de targeting sem ID oficial da Meta.
+
+## 2026-06-16 — Bloqueio de retentativas infinitas para targeting sem ID Meta
+- solicitação: impedir que o Facebook Ads Worker repita indefinidamente chamadas à Meta para termos de segmentação sem ID oficial.
+- causa-raiz: elementos aprovados sem `meta_id` permaneciam elegíveis em `/api/internal/targeting/elements/metaads-pending` mesmo após a Meta não retornar match, gerando os mesmos erros em ciclos agendados.
+- correção aplicada: o backend passou a registrar `metaIdUnavailable` e motivo operacional no elemento, excluindo esses registros da fila de pendentes; o worker marca essa condição quando não encontra ID após todas as tentativas.
+- impacto esperado: redução do ruído no log do worker e foco operacional na revisão manual de termos que precisam ser corrigidos antes de virar público publicável.

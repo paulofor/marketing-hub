@@ -131,6 +131,13 @@ public class TargetingBackendClient {
         }
     }
 
+    /**
+     * Reporta ao backend que a Meta não devolveu identificador oficial para o elemento informado.
+     */
+    public void markMetaAdsIdUnavailable(Long id, String reason) {
+        updateMetaAdsData(id, MetaAdsUpdatePayload.unavailable(reason));
+    }
+
     public record MetaAdsPendingElementPayload(
         Long id,
         Long marketNicheId,
@@ -143,8 +150,29 @@ public class TargetingBackendClient {
         @JsonProperty("metaId") String metaId,
         @JsonProperty("metaKey") String metaKey,
         @JsonProperty("metaAudienceSizeLowerBound") Long metaAudienceSizeLowerBound,
-        @JsonProperty("metaAudienceSizeUpperBound") Long metaAudienceSizeUpperBound
-    ) {}
+        @JsonProperty("metaAudienceSizeUpperBound") Long metaAudienceSizeUpperBound,
+        @JsonProperty("metaIdUnavailable") Boolean metaIdUnavailable,
+        @JsonProperty("metaIdUnavailableReason") String metaIdUnavailableReason
+    ) {
+        /**
+         * Cria payload de sucesso mantendo compatibilidade com chamadas existentes.
+         */
+        public MetaAdsUpdatePayload(
+            String metaId,
+            String metaKey,
+            Long metaAudienceSizeLowerBound,
+            Long metaAudienceSizeUpperBound
+        ) {
+            this(metaId, metaKey, metaAudienceSizeLowerBound, metaAudienceSizeUpperBound, null, null);
+        }
+
+        /**
+         * Cria payload para bloquear novas tentativas automáticas quando não há ID oficial da Meta.
+         */
+        public static MetaAdsUpdatePayload unavailable(String reason) {
+            return new MetaAdsUpdatePayload(null, null, null, null, true, reason);
+        }
+    }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record TargetingCandidateResolutionUpdate(

@@ -80,6 +80,7 @@ public interface TargetingElementRepository extends JpaRepository<TargetingEleme
                 com.marketinghub.targeting.TargetingElementType.JOB_TITLE,
                 com.marketinghub.targeting.TargetingElementType.BEHAVIOR
               )
+              and (e.metaIdUnavailable is null or e.metaIdUnavailable = false)
               and (e.metaId is null or e.metaAudienceSizeLowerBound is null or e.metaAudienceSizeUpperBound is null)
             order by e.updatedAt asc, e.id asc
             """)

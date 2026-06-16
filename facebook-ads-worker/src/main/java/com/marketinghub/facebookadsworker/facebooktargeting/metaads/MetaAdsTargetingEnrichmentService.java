@@ -53,7 +53,7 @@ public class MetaAdsTargetingEnrichmentService {
     }
 
     /**
-     * Resolve um elemento individual tentando locales úteis e persistindo o primeiro match com audiência.
+     * Resolve um elemento individual tentando locales úteis e registra sucesso ou ausência definitiva de ID oficial.
      */
     private void enrich(MetaAdsPendingElementPayload element) {
         if (element == null || element.id() == null || !StringUtils.hasText(element.term())) {
@@ -96,7 +96,11 @@ public class MetaAdsTargetingEnrichmentService {
                     selected.audienceSizeUpperBound());
             return;
         }
-        LOGGER.info("No Meta Ads match found for targeting element {} and term {}", element.id(), term);
+        backendClient.markMetaAdsIdUnavailable(
+                element.id(),
+                "Nenhum ID oficial da Meta encontrado para tipo " + searchType.graphType() + " e termo " + term
+        );
+        LOGGER.info("Targeting element {} marked as Meta Ads ID unavailable for term {}", element.id(), term);
     }
 
     /**

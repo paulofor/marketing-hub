@@ -137,6 +137,8 @@ public class TargetingElementService {
         element.setMetaKey(null);
         element.setMetaAudienceSizeLowerBound(null);
         element.setMetaAudienceSizeUpperBound(null);
+        element.setMetaIdUnavailable(false);
+        element.setMetaIdUnavailableReason(null);
         return repository.save(element);
     }
 

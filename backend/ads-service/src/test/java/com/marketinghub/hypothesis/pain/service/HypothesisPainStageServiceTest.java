@@ -7,8 +7,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.marketinghub.hypothesis.framework.HypothesisFrameworkMapperSupport;
 import com.marketinghub.hypothesis.pain.HypothesisPainCostCalculator;
 import com.marketinghub.hypothesis.pain.HypothesisPainStageExecution;
 import com.marketinghub.hypothesis.pain.provisorio.HypothesisPainEnrichmentProfileReader;
@@ -16,7 +14,6 @@ import com.marketinghub.hypothesis.pain.provisorio.HypothesisPainEnrichmentProfi
 import com.marketinghub.hypothesis.pain.service.recebeResposta.RecebeRespostaRequest;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.repository.jpa.hypothesis.HypothesisPainStageExecutionRepository;
-import com.marketinghub.repository.jpa.hypothesis.HypothesisRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
@@ -46,9 +43,6 @@ class HypothesisPainStageServiceTest {
     @Mock
     private HypothesisPainCostCalculator costCalculator;
 
-    @Mock
-    private HypothesisRepository hypothesisRepository;
-
     private HypothesisPainStageService service;
 
     /** Prepara o serviço com dependências isoladas para cada teste. */
@@ -58,9 +52,7 @@ class HypothesisPainStageServiceTest {
                 marketNicheRepository,
                 enrichmentProfileReader,
                 executionRepository,
-                costCalculator,
-                hypothesisRepository,
-                new HypothesisFrameworkMapperSupport(new ObjectMapper()));
+                costCalculator);
     }
 
     /** Deve atribuir ao nicho somente o delta de custo calculado para evitar soma duplicada em reprocessamentos. */

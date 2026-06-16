@@ -238,3 +238,14 @@ pois isso quebra o contrato semântico do consumidor, dificulta validação por 
 de estrutura em campos como `campaignAngle`. O padrão obrigatório é: detectar conteúdo JSON válido,
 converter com `ObjectMapper`/parser equivalente, manter campos textuais como texto e registrar log com
 contexto operacional quando um campo aparentemente JSON não puder ser convertido.
+
+## Pipeline de hipótese — etapa de fechamento
+
+O fechamento do pipeline de hipótese é uma etapa própria posterior a Dor → Resultado → Mecanismo → Prova → Oferta.
+Essa etapa materializa o framework validado como uma `Hypothesis` em backlog para experimento, mas não pertence à etapa
+Dor/Pain. Portanto, services de `com.marketinghub.hypothesis.pain.service` não devem criar, normalizar ou persistir a
+hipótese final; eles devem apenas orquestrar execuções auditáveis das etapas e expor os conteúdos concluídos.
+
+A responsabilidade de fechamento deve ficar em um serviço dedicado de hipótese fora do pacote específico da etapa Dor,
+com validação explícita de que todas as etapas obrigatórias foram concluídas antes de criar a hipótese. Esse limite evita
+acoplamento indevido entre uma etapa operacional e a materialização comercial final do framework.

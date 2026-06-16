@@ -23,6 +23,9 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * Orquestra a criação de pixels solicitados no backend e o envio de conversões para a Meta.
+ */
 @Service
 public class FacebookPixelService {
 
@@ -77,21 +80,25 @@ public class FacebookPixelService {
         sendConversions();
     }
 
+    // Cria pixels pendentes usando o token operacional disponível e sem bloquear quando o Business owner não foi configurado.
     private void createPixelsForPendingRequests(FacebookWorkerConfiguration config) {
         if (!StringUtils.hasText(config.adAccountId())) {
             LOGGER.warn("Facebook ad account id is not configured; skipping pixel creation");
             return;
         }
-        if (!StringUtils.hasText(config.systemUserAccessToken())) {
-            LOGGER.warn("Facebook system user access token is not configured; skipping pixel creation");
+        String pixelAccessToken = resolvePixelAccessToken(config);
+        if (!StringUtils.hasText(pixelAccessToken)) {
+            LOGGER.warn("Facebook access token is not configured; skipping pixel creation");
             return;
         }
-        String systemUserToken = config.systemUserAccessToken().trim();
-        if (!StringUtils.hasText(config.pixelOwnerBusinessId())) {
-            LOGGER.warn("Facebook pixel owner business id is not configured; skipping pixel creation");
-            return;
+        String pixelOwnerBusinessId = StringUtils.hasText(config.pixelOwnerBusinessId())
+            ? config.pixelOwnerBusinessId().trim()
+            : null;
+        if (!StringUtils.hasText(pixelOwnerBusinessId)) {
+            LOGGER.warn(
+                "Facebook pixel owner business id is not configured; creating pixel without owner_business to avoid blocking requested niches"
+            );
         }
-        String pixelOwnerBusinessId = config.pixelOwnerBusinessId().trim();
         List<NichePixel> niches = fetchPendingPixelRequests();
         if (niches.isEmpty()) {
             return;
@@ -103,9 +110,9 @@ public class FacebookPixelService {
                     config.adAccountId(),
                     pixelName,
                     pixelOwnerBusinessId,
-                    systemUserToken
+                    pixelAccessToken
                 );
-                String pixelCode = facebookAdsService.fetchPixelCode(pixelId, systemUserToken);
+                String pixelCode = facebookAdsService.fetchPixelCode(pixelId, pixelAccessToken);
                 registerPixel(niche.nicheId(), pixelId, pixelCode);
             } catch (Exception ex) {
                 LOGGER.error(
@@ -117,6 +124,14 @@ public class FacebookPixelService {
                 );
             }
         }
+    }
+
+    // Resolve o token usado nas operações de pixel priorizando o system user e usando o token principal como contingência.
+    private String resolvePixelAccessToken(FacebookWorkerConfiguration config) {
+        if (StringUtils.hasText(config.systemUserAccessToken())) {
+            return config.systemUserAccessToken().trim();
+        }
+        return StringUtils.hasText(config.accessToken()) ? config.accessToken().trim() : null;
     }
 
     private void sendConversions() {

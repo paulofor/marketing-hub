@@ -4525,3 +4525,10 @@
 - causa-raiz: o pipeline de hipótese recebia principalmente o registro resumido de `market_niche`, enquanto o perfil enriquecido guardava rotina, linguagem, gatilhos, objeções, evidências e oportunidades de mecanismo sem entrar diretamente no prompt.
 - foi feito: o backend passou a anexar o perfil enriquecido mais recente ao contrato pendente da hipótese, e o Worker AI passou a incluir os campos enriquecidos no `CASE_DATA_BLOCK` de todas as etapas da hipótese.
 - prevenção: registrado no cânone que `nicho-cnae` deve enviar sinais operacionais/comerciais não-ofertivos, sem criar oferta prematura; a hipótese segue responsável pela transformação comercial final.
+
+## 2026-06-15 — Correção de arquitetura no pipeline Hypothesis Pain
+
+- Corrigida a violação de arquitetura em `HypothesisPainStageService`, removendo a dependência direta do service de hipótese para o repository e a entidade de perfil enriquecido de nicho.
+- Criado leitor provisório da etapa Dor para isolar a consulta ao perfil enriquecido e entregar ao service apenas um snapshot desacoplado.
+- Atualizado o teste unitário da etapa para mockar o leitor provisório e preservar a entrega dos sinais OPRM ao Worker AI.
+- Validação executada: `../mvnw -Dtest=HypothesisPainStageServiceTest,ArquiteturaTest test` no módulo `backend/ads-service`.

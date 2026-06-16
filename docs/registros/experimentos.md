@@ -4532,3 +4532,9 @@
 - Criado leitor provisório da etapa Dor para isolar a consulta ao perfil enriquecido e entregar ao service apenas um snapshot desacoplado.
 - Atualizado o teste unitário da etapa para mockar o leitor provisório e preservar a entrega dos sinais OPRM ao Worker AI.
 - Validação executada: `../mvnw -Dtest=HypothesisPainStageServiceTest,ArquiteturaTest test` no módulo `backend/ads-service`.
+
+## 2026-06-16 — Modo flex auditável no pipeline de hipótese
+- solicitação: garantir que os acessos ao modelo na tela de nova hipótese usem o modo flex.
+- causa-raiz tratada: o cliente comum da OpenAI já forçava `service_tier=flex` no envio final, mas o request montado pela etapa de hipótese e persistido para auditoria ainda não carregava explicitamente esse campo, deixando a execução auditável diferente do contrato operacional esperado.
+- foi feito: o `HypothesisPainProcessor` passou a montar o payload da Responses API com `service_tier=flex` desde a origem, antes da persistência no backend e antes do envio final.
+- validação: adicionado teste unitário garantindo que o request auditável da etapa Dor da hipótese contém `service_tier=flex`.

@@ -105,7 +105,7 @@ public class HypothesisPainProcessor implements StageProcessor<HypothesisPainInp
                         "marketNicheId", context.execution().aggregateId()));
     }
 
-    /** Serializa o corpo compatível com Responses API usando schema JSON estrito. */
+    /** Serializa o corpo compatível com Responses API usando schema JSON estrito e modo flex auditável. */
     private String buildResponsesApiRequest(String prompt, String schemaJson) {
         try {
             Object schema = objectMapper.readValue(schemaJson, Object.class);
@@ -120,6 +120,7 @@ public class HypothesisPainProcessor implements StageProcessor<HypothesisPainInp
             body.put("model", properties.model());
             body.put("input", prompt);
             body.put("text", text);
+            body.put("service_tier", "flex");
             return objectMapper.writeValueAsString(body);
         } catch (JsonProcessingException ex) {
             log.error("Could not build OpenAI Responses API request for hypothesis pain. schemaName={}", properties.schemaName(), ex);

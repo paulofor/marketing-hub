@@ -534,14 +534,21 @@ public class MoisSalesLibraryService {
                 ) mwj_latest ON mwj_latest.sales_page_id = p.id
                 LEFT JOIN mois_sales_page_market_warmup_job mwj ON mwj.id = mwj_latest.latest_warmup_job_id
                 LEFT JOIN mois_sales_page_market_warmup_summary mws ON mws.job_id = mwj.id
-                LEFT JOIN mois_collected_reference cr ON cr.id = p.collected_reference_id
+                LEFT JOIN mois_collected_reference cr_direct ON cr_direct.id = p.collected_reference_id
+                LEFT JOIN (
+                    SELECT workspace_id, COALESCE(sales_page_url, product_url) AS reference_url, MAX(id) AS latest_reference_id
+                    FROM mois_collected_reference
+                    WHERE source = 'HOTMART' AND COALESCE(sales_page_url, product_url) IS NOT NULL
+                    GROUP BY workspace_id, COALESCE(sales_page_url, product_url)
+                ) cr_latest ON cr_latest.workspace_id = p.workspace_id AND cr_latest.reference_url = p.url_canonical
+                LEFT JOIN mois_collected_reference cr_url ON cr_url.id = cr_latest.latest_reference_id
                 WHERE p.workspace_id = ?
                 """ + warmupCondition;
         Long total = jdbcTemplate.queryForObject("SELECT COUNT(*) " + joins, Long.class, workspaceId);
         List<MoisSalesLibraryDtos.SalesLibraryPageResponse> items = jdbcTemplate.query("""
                 SELECT p.id, p.workspace_id, p.source, p.url_canonical, p.title, p.current_stage, p.current_status, p.capture_status,
                        COALESCE(p.analysis_status, p.current_status) AS analysis_status, p.url_final, p.http_status, p.html_sha256,
-                       p.html_bytes, p.score_total, p.product_name, cr.producer_name, cr.hotmart_price, cr.hotmart_temperature, cr.hotmart_producer,
+                       p.html_bytes, p.score_total, p.product_name, COALESCE(cr_direct.producer_name, cr_url.producer_name) AS producer_name, COALESCE(cr_direct.hotmart_price, cr_url.hotmart_price) AS hotmart_price, COALESCE(cr_direct.hotmart_temperature, cr_url.hotmart_temperature) AS hotmart_temperature, COALESCE(cr_direct.hotmart_producer, cr_url.hotmart_producer) AS hotmart_producer,
                        p.offer_summary, p.mechanism_summary, p.promise_summary, p.proof_summary,
                        p.model_name, p.input_tokens, p.output_tokens, p.model_cost_usd,
                        p.last_error_category, p.last_error_message, p.last_job_execution_id, p.last_captured_at, p.last_analyzed_at, p.updated_at,
@@ -712,7 +719,7 @@ public class MoisSalesLibraryService {
         List<MoisSalesLibraryDtos.SalesLibraryPageResponse> rows = jdbcTemplate.query("""
                 SELECT p.id, p.workspace_id, p.source, p.url_canonical, p.title, p.current_stage, p.current_status, p.capture_status,
                        COALESCE(p.analysis_status, p.current_status) AS analysis_status, p.url_final, p.http_status, p.html_sha256,
-                       p.html_bytes, p.score_total, p.product_name, cr.producer_name, cr.hotmart_price, cr.hotmart_temperature, cr.hotmart_producer,
+                       p.html_bytes, p.score_total, p.product_name, COALESCE(cr_direct.producer_name, cr_url.producer_name) AS producer_name, COALESCE(cr_direct.hotmart_price, cr_url.hotmart_price) AS hotmart_price, COALESCE(cr_direct.hotmart_temperature, cr_url.hotmart_temperature) AS hotmart_temperature, COALESCE(cr_direct.hotmart_producer, cr_url.hotmart_producer) AS hotmart_producer,
                        p.offer_summary, p.mechanism_summary, p.promise_summary, p.proof_summary,
                        p.model_name, p.input_tokens, p.output_tokens, p.model_cost_usd,
                        p.last_error_category, p.last_error_message, p.last_job_execution_id, p.last_captured_at, p.last_analyzed_at, p.updated_at,
@@ -727,7 +734,14 @@ public class MoisSalesLibraryService {
                 ) mwj_latest ON mwj_latest.sales_page_id = p.id
                 LEFT JOIN mois_sales_page_market_warmup_job mwj ON mwj.id = mwj_latest.latest_warmup_job_id
                 LEFT JOIN mois_sales_page_market_warmup_summary mws ON mws.job_id = mwj.id
-                LEFT JOIN mois_collected_reference cr ON cr.id = p.collected_reference_id
+                LEFT JOIN mois_collected_reference cr_direct ON cr_direct.id = p.collected_reference_id
+                LEFT JOIN (
+                    SELECT workspace_id, COALESCE(sales_page_url, product_url) AS reference_url, MAX(id) AS latest_reference_id
+                    FROM mois_collected_reference
+                    WHERE source = 'HOTMART' AND COALESCE(sales_page_url, product_url) IS NOT NULL
+                    GROUP BY workspace_id, COALESCE(sales_page_url, product_url)
+                ) cr_latest ON cr_latest.workspace_id = p.workspace_id AND cr_latest.reference_url = p.url_canonical
+                LEFT JOIN mois_collected_reference cr_url ON cr_url.id = cr_latest.latest_reference_id
                 WHERE p.id = ? LIMIT 1
                 """, this::mapSalesPageResponse, pageId);
         if (rows.isEmpty()) throw new IllegalArgumentException("Page not found: " + pageId);

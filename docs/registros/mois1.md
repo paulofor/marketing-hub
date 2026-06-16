@@ -1644,3 +1644,8 @@ Arquivos principais:
 - Adicionados indicadores operacionais na tela do pipeline de páginas de vendas para mostrar se o processamento automático está ativo, a última captura feita, páginas capturadas na última hora, páginas ainda sem HTML útil e velocidade média de avanço.
 - Expandido o resumo do backend da biblioteca MOIS com métricas de acompanhamento da etapa 1 baseadas em `mois_sales_page` e `mois_sales_page_job_execution`.
 - Atualizado o contrato Swagger e o tipo TypeScript do resumo para manter frontend, backend e documentação sincronizados.
+## 2026-06-16 — Temperatura Hotmart na biblioteca de sales pages
+
+- Corrigida a causa-raiz da tela `/mois/sales-pages-library` exibir `—` na temperatura Hotmart: páginas consolidadas novas estavam sem `collected_reference_id`, embora a referência Hotmart existisse em `mois_collected_reference` com a mesma URL canônica.
+- Ajustada a consulta da biblioteca para usar a referência direta quando existir e, caso contrário, recuperar a última referência Hotmart pela URL da página/produto, preservando preço, produtor e temperatura na listagem e no detalhe.
+- Adicionado teste de regressão para garantir que a consulta mantenha o fallback por URL e não volte a depender apenas do vínculo direto.

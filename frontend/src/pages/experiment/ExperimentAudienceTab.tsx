@@ -31,6 +31,10 @@ function buildKey(element: TargetingElement) {
   return `${element.type}::${element.id}`;
 }
 
+function isMetaUsable(element: TargetingElement) {
+  return Boolean(element.metaId?.trim());
+}
+
 export function ExperimentAudienceTab({
   experimentId,
   nicheId,
@@ -80,6 +84,14 @@ export function ExperimentAudienceTab({
     };
   }, [availableOptions]);
 
+  const selectedWithoutMeta = useMemo(
+    () =>
+      availableOptions.filter(
+        (item) => selected.has(buildKey(item)) && !isMetaUsable(item),
+      ),
+    [availableOptions, selected],
+  );
+
   const toggleSelection = (item: TargetingElement) => {
     if (alterationLocked) return;
     setSelected((prev) => {
@@ -119,12 +131,28 @@ export function ExperimentAudienceTab({
         <div>
           <h5 className="card-title mb-1">Público</h5>
           <p className="text-muted mb-0 small">
-            Marque somente interesses, cargos e comportamentos já aprovados para o nicho.
+            Marque somente públicos aprovados e com ID oficial da Meta. Itens
+            sem ID Meta aparecem para diagnóstico, mas não devem ser usados em
+            campanha.
           </p>
           {alterationLocked ? (
             <div className="alert alert-secondary mt-3 mb-0" role="status">
               Público bloqueado para alteração porque o experimento já foi
               liberado ou está em execução.
+            </div>
+          ) : null}
+          <div className="alert alert-info mt-3 mb-0 small" role="status">
+            <strong>Pronto para Meta</strong> significa que o item possui
+            identificador oficial da Meta e pode entrar no targeting da
+            campanha.
+            <strong className="ms-1">Sem ID Meta</strong> precisa ser resolvido
+            antes de publicar.
+          </div>
+          {selectedWithoutMeta.length > 0 ? (
+            <div className="alert alert-warning mt-3 mb-0 small" role="alert">
+              Remova {selectedWithoutMeta.length} item
+              {selectedWithoutMeta.length === 1 ? "" : "s"} sem ID Meta antes de
+              salvar o público.
             </div>
           ) : null}
         </div>
@@ -133,7 +161,8 @@ export function ExperimentAudienceTab({
           <div className="text-muted small">Carregando opções do nicho...</div>
         ) : availableOptions.length === 0 ? (
           <div className="text-muted small">
-            Nenhum interesse, cargo ou comportamento aprovado foi encontrado para este nicho.
+            Nenhum interesse, cargo ou comportamento aprovado foi encontrado
+            para este nicho.
           </div>
         ) : (
           <div className="row g-3">
@@ -144,20 +173,38 @@ export function ExperimentAudienceTab({
                   <div className="d-flex flex-column gap-2">
                     {grouped[type].map((item) => {
                       const key = buildKey(item);
+                      const itemSelected = selected.has(key);
+                      const metaUsable = isMetaUsable(item);
                       return (
                         <div className="form-check" key={key}>
                           <input
                             id={key}
                             className="form-check-input"
                             type="checkbox"
-                            checked={selected.has(key)}
+                            checked={itemSelected}
                             onChange={() => toggleSelection(item)}
                             disabled={
-                              saveSelections.isPending || alterationLocked
+                              saveSelections.isPending ||
+                              alterationLocked ||
+                              (!metaUsable && !itemSelected)
                             }
                           />
                           <label htmlFor={key} className="form-check-label">
                             {item.term}
+                            <span
+                              className={`badge ms-2 ${
+                                metaUsable
+                                  ? "text-bg-success"
+                                  : "text-bg-warning"
+                              }`}
+                            >
+                              {metaUsable ? "Pronto para Meta" : "Sem ID Meta"}
+                            </span>
+                            {metaUsable && item.metaKey ? (
+                              <span className="text-muted small ms-2">
+                                {item.metaKey}
+                              </span>
+                            ) : null}
                           </label>
                         </div>
                       );
@@ -173,7 +220,12 @@ export function ExperimentAudienceTab({
           <button
             className="btn btn-primary"
             onClick={handleSave}
-            disabled={saveSelections.isPending || isLoading || alterationLocked}
+            disabled={
+              saveSelections.isPending ||
+              isLoading ||
+              alterationLocked ||
+              selectedWithoutMeta.length > 0
+            }
           >
             {saveSelections.isPending ? (
               <span className="d-inline-flex align-items-center gap-2">

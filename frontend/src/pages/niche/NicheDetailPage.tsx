@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { toast } from "react-toastify";
 import { useNiche } from "../../api/niche/useNiche";
 import { useUpdateNiche } from "../../api/niche/useUpdateNiche";
 import { useHypothesesByNiche } from "../../api/hypothesis/useHypothesesByNiche";
@@ -774,29 +775,31 @@ export default function NicheDetailPage() {
       setBehaviorInput("");
     }
   };
+  const saveSegmentationLists = (label: string) => {
+    void toast
+      .promise(
+        updateNiche.mutateAsync({
+          ...data,
+          interestList: interestItems,
+          roleList: roleItems,
+          behaviorList: behaviorItems,
+        }),
+        {
+          pending: `Salvando ${label}...`,
+          success: `${label} salvos com sucesso.`,
+          error: `Não foi possível salvar ${label}.`,
+        },
+      )
+      .catch(() => undefined);
+  };
   const onSaveInterests = () => {
-    updateNiche.mutate({
-      ...data,
-      interestList: interestItems,
-      roleList: roleItems,
-      behaviorList: behaviorItems,
-    });
+    saveSegmentationLists("interesses");
   };
   const onSaveRoles = () => {
-    updateNiche.mutate({
-      ...data,
-      interestList: interestItems,
-      roleList: roleItems,
-      behaviorList: behaviorItems,
-    });
+    saveSegmentationLists("cargos");
   };
   const onSaveBehaviors = () => {
-    updateNiche.mutate({
-      ...data,
-      interestList: interestItems,
-      roleList: roleItems,
-      behaviorList: behaviorItems,
-    });
+    saveSegmentationLists("comportamentos");
   };
   const onRequestHypotheses = handleSubmitHypothesisRequest(
     async ({

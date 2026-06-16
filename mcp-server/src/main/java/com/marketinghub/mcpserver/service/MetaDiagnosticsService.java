@@ -6,6 +6,8 @@ import com.marketinghub.mcpserver.config.McpProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
+import org.springframework.dao.DataAccessException;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
@@ -24,24 +26,36 @@ public class MetaDiagnosticsService {
     private static final Logger LOGGER = LoggerFactory.getLogger(MetaDiagnosticsService.class);
     private static final TypeReference<Map<String, Object>> MAP_TYPE = new TypeReference<>() {
     };
+    private static final String ACTIVE_FACEBOOK_ACCESS_TOKEN_SQL = """
+            SELECT access_token
+            FROM fb_account
+            WHERE worker_enabled = 1
+              AND access_token IS NOT NULL
+              AND TRIM(access_token) <> ''
+            ORDER BY id
+            LIMIT 1
+            """;
 
     private final McpProperties properties;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
+    private final JdbcTemplate jdbcTemplate;
 
     /**
-     * Inicializa o serviço usando um cliente HTTP padrão para documentação, backend e Graph API.
+     * Inicializa o serviço usando um cliente HTTP padrão para documentação e Graph API.
      */
-    public MetaDiagnosticsService(McpProperties properties, ObjectMapper objectMapper) {
-        this(properties, objectMapper, new RestTemplate());
+    public MetaDiagnosticsService(McpProperties properties, ObjectMapper objectMapper, JdbcTemplate jdbcTemplate) {
+        this(properties, objectMapper, jdbcTemplate, new RestTemplate());
     }
 
     /**
      * Inicializa o serviço com cliente HTTP injetado para permitir testes isolados.
      */
-    MetaDiagnosticsService(McpProperties properties, ObjectMapper objectMapper, RestTemplate restTemplate) {
+    MetaDiagnosticsService(McpProperties properties, ObjectMapper objectMapper, JdbcTemplate jdbcTemplate,
+                           RestTemplate restTemplate) {
         this.properties = properties;
         this.objectMapper = objectMapper;
+        this.jdbcTemplate = jdbcTemplate;
         this.restTemplate = restTemplate;
     }
 
@@ -78,7 +92,7 @@ public class MetaDiagnosticsService {
     }
 
     /**
-     * Executa uma chamada GET na Graph API usando o token ativo do backend como fonte primária.
+     * Executa uma chamada GET na Graph API usando o token ativo no banco como fonte primária.
      */
     public Map<String, Object> graphGet(String path, Map<String, Object> query) {
         ensureEnabled();
@@ -151,65 +165,37 @@ public class MetaDiagnosticsService {
     }
 
     /**
-     * Recupera o token de acesso do mesmo endpoint usado pelo Facebook Ads Worker.
+     * Recupera o token de acesso da mesma conta habilitada para o Facebook Ads Worker.
      */
     private String resolveGraphAccessToken() {
-        String backendToken = fetchBackendWorkerAccessToken();
-        if (StringUtils.hasText(backendToken)) {
-            return backendToken.trim();
+        String databaseToken = fetchDatabaseWorkerAccessToken();
+        if (StringUtils.hasText(databaseToken)) {
+            return databaseToken.trim();
         }
         String configuredToken = properties.meta().accessToken();
         if (StringUtils.hasText(configuredToken)) {
             return configuredToken.trim();
         }
         throw new IllegalArgumentException(
-                "meta access token is not configured in backend worker-config or MCP_META_GRAPH_ACCESS_TOKEN"
+                "meta access token is not configured in fb_account or MCP_META_GRAPH_ACCESS_TOKEN"
         );
     }
 
     /**
-     * Consulta o backend para reutilizar o token ativo da conta habilitada para o worker Facebook Ads.
+     * Consulta diretamente o banco para reutilizar o token ativo da conta habilitada para o worker Facebook Ads.
      */
-    private String fetchBackendWorkerAccessToken() {
-        URI uri = backendWorkerConfigUri();
+    private String fetchDatabaseWorkerAccessToken() {
         try {
-            ResponseEntity<String> response = restTemplate.getForEntity(uri, String.class);
-            Map<String, Object> payload = parseJsonBody(response.getBody());
-            Object token = payload.get("accessToken");
-            return token instanceof String value ? value : null;
-        } catch (Exception ex) {
-            LOGGER.warn(
-                    "Falha ao buscar token Meta no backend para meta_graph_get: endpoint={}",
-                    uri,
-                    ex
-            );
+            List<String> tokens = jdbcTemplate.queryForList(ACTIVE_FACEBOOK_ACCESS_TOKEN_SQL, String.class);
+            if (tokens.isEmpty()) {
+                LOGGER.warn("Nenhum token Meta ativo encontrado no banco para meta_graph_get: tabela=fb_account");
+                return null;
+            }
+            return tokens.getFirst();
+        } catch (DataAccessException ex) {
+            LOGGER.warn("Falha ao buscar token Meta no banco para meta_graph_get: tabela=fb_account", ex);
             return null;
         }
-    }
-
-    /**
-     * Monta a URL do endpoint de configuração usado pelo sistema para publicar na Meta.
-     */
-    private URI backendWorkerConfigUri() {
-        UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(properties.meta().backendBaseUrl());
-        String apiPrefix = trimSlashes(properties.meta().backendApiPrefix());
-        if (StringUtils.hasText(apiPrefix)) {
-            builder.pathSegment(apiPrefix.split("/"));
-        }
-        return builder
-                .pathSegment("accounts", "facebook", "worker-config")
-                .build(true)
-                .toUri();
-    }
-
-    /**
-     * Remove barras excedentes para montar paths seguros com UriComponentsBuilder.
-     */
-    private String trimSlashes(String value) {
-        if (!StringUtils.hasText(value)) {
-            return "";
-        }
-        return value.trim().replaceAll("^/+", "").replaceAll("/+$", "");
     }
 
     /**

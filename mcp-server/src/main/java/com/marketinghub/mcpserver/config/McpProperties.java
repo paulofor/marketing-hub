@@ -55,8 +55,6 @@ public record McpProperties(
             @NotBlank String graphVersion,
             String accessToken,
             String debugAccessToken,
-            @NotBlank String backendBaseUrl,
-            @NotBlank String backendApiPrefix,
             @NotEmpty List<@NotBlank String> docsAllowedHosts
     ) {
     }

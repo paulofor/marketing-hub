@@ -77,10 +77,8 @@ As tools Meta podem ser ativadas/desativadas por configuração:
 - `MCP_META_ENABLED` (default `true`);
 - `MCP_META_GRAPH_BASE_URL` (default `https://graph.facebook.com`);
 - `MCP_META_GRAPH_VERSION` (default `v23.0`);
-- `MCP_META_GRAPH_ACCESS_TOKEN` (fallback opcional; o `meta_graph_get` tenta primeiro usar o token ativo do backend em `/api/accounts/facebook/worker-config`);
+- `MCP_META_GRAPH_ACCESS_TOKEN` (fallback opcional; o `meta_graph_get` tenta primeiro usar o token ativo da tabela `fb_account`);
 - `MCP_META_GRAPH_DEBUG_ACCESS_TOKEN` (token usado no `meta_graph_debug_token`, fallback para `MCP_META_GRAPH_ACCESS_TOKEN`);
-- `MCP_META_BACKEND_BASE_URL` (default `http://191.252.181.168`, origem do token ativo usado pelo sistema);
-- `MCP_META_BACKEND_API_PREFIX` (default `/api`);
 - `MCP_META_DOCS_ALLOWED_HOSTS` (lista CSV de hosts permitidos para `meta_docs_get`).
 
 Quando `MCP_META_ENABLED=false`, as tools `meta_*` continuam aparecendo em `tools/list`, mas `tools/call` retorna:

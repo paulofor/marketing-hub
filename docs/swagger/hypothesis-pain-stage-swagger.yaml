@@ -21,6 +21,27 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/HypothesisStageFinalSummaryResponse'
+  /api/niches/{nicheId}/hypothesis-pipeline/finalize:
+    post:
+      summary: Fecha o framework concluído como hipótese disponível para gerar experimento.
+      parameters:
+        - in: path
+          name: nicheId
+          required: true
+          schema: { type: integer, format: int64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FinalizeHypothesisRequest'
+      responses:
+        '201':
+          description: Hipótese criada em BACKLOG.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HypothesisDto'
   /api/niches/{nicheId}/hypothesis-pipeline/pain/start:
     post:
       summary: Inicia a construção auditável da dor do nicho.
@@ -582,6 +603,24 @@ components:
         finalContent: { type: string, nullable: true }
         sourceTable: { type: string }
         sourceField: { type: string }
+    FinalizeHypothesisRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          description: Nome final da hipótese que aparecerá na criação de experimento.
+    HypothesisDto:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        marketNicheId: { type: integer, format: int64, nullable: true }
+        title: { type: string }
+        problem: { type: string, nullable: true }
+        promise: { type: string, nullable: true }
+        mechanism: { type: string, nullable: true }
+        entrega: { type: string, nullable: true }
+        status: { type: string, example: BACKLOG }
     HypothesisPainPendingExecution:
       type: object
       properties:

@@ -1,4 +1,10 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -144,6 +150,10 @@ describe("NewHypothesisPage", () => {
     expect(screen.getByText("Etapa 4 — Prova")).toBeInTheDocument();
     expect(screen.getByText("Etapa 5 — Oferta")).toBeInTheDocument();
     expect(screen.getByText(/US\$\s*0,026345/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Nome da hipótese/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Fechar hipótese" }),
+    ).toBeDisabled();
     expect(
       screen.getByRole("link", { name: "Resumo do framework" }),
     ).toHaveAttribute("href", "/niches/18/hypothesis-pipeline/summary");
@@ -204,6 +214,39 @@ describe("NewHypothesisPage", () => {
     expect(
       screen.getByRole("button", { name: "Iniciar construção da oferta" }),
     ).toBeDisabled();
+  });
+
+  it("closes the completed pipeline as a backlog hypothesis", async () => {
+    (axios.get as any).mockResolvedValue({
+      data: [
+        {
+          jobid: "completed-job",
+          marketNicheId: 18,
+          status: "CONCLUIDO",
+          costUsd: 0.001,
+        },
+      ],
+    });
+    (axios.post as any).mockResolvedValue({
+      data: {
+        id: "hypothesis-id",
+        title: "Agenda recorrente",
+        status: "BACKLOG",
+      },
+    });
+
+    renderPage();
+
+    const input = await screen.findByLabelText(/Nome da hipótese/);
+    fireEvent.change(input, { target: { value: "Agenda recorrente" } });
+    fireEvent.click(screen.getByRole("button", { name: "Fechar hipótese" }));
+
+    await waitFor(() => {
+      expect(axios.post).toHaveBeenCalledWith(
+        "/api/niches/18/hypothesis-pipeline/finalize",
+        { name: "Agenda recorrente" },
+      );
+    });
   });
 
   it("starts the full hypothesis flow from the page action", async () => {

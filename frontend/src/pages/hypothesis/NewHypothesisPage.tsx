@@ -1,3 +1,4 @@
+import { FormEvent, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
@@ -325,6 +326,7 @@ export default function NewHypothesisPage() {
   const hasRunningExecution = stageQueries.some((query) =>
     (query.data ?? []).some((item) => RUNNING_STATUSES.has(item.status)),
   );
+  const [hypothesisName, setHypothesisName] = useState("");
   const allStagesCompleted = STAGES.every((_, index) =>
     stageIsCompleted(stageQueries[index]?.data),
   );
@@ -351,6 +353,34 @@ export default function NewHypothesisPage() {
       toast.error("Não foi possível iniciar o fluxo completo da hipótese");
     },
   });
+
+  const finalizeMutation = useMutation({
+    mutationFn: async () => {
+      const { data } = await axios.post(
+        `/api/niches/${nicheId}/hypothesis-pipeline/finalize`,
+        { name: hypothesisName.trim() },
+      );
+      return data;
+    },
+    onSuccess: () => {
+      toast.success("Hipótese fechada e disponível para gerar experimento.");
+      queryClient.invalidateQueries({
+        queryKey: ["niche-hypotheses", nicheId, "BACKLOG"],
+      });
+    },
+    onError: () => {
+      toast.error("Não foi possível fechar a hipótese.");
+    },
+  });
+
+  function handleFinalizeSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!hypothesisName.trim()) {
+      toast.error("Informe um nome para a hipótese.");
+      return;
+    }
+    finalizeMutation.mutate();
+  }
 
   const reportMutation = useMutation({
     mutationFn: async () => {
@@ -477,9 +507,59 @@ export default function NewHypothesisPage() {
         <div className="card-body">
           <p className="text-muted mb-3">
             Depois que dor, resultado, mecanismo, prova e oferta estiverem
-            claros, use a hipótese completa para avançar nos experimentos
-            seguindo Dor → Resultado → Mecanismo → Prova → Oferta.
+            claros, dê um nome para fechar a hipótese. Ela entrará no backlog e
+            ficará disponível na tela de criação de experimento.
           </p>
+          <form
+            className="row g-2 align-items-end mb-3"
+            onSubmit={handleFinalizeSubmit}
+          >
+            <div className="col-12 col-lg-8">
+              <label className="form-label" htmlFor="final-hypothesis-name">
+                Nome da hipótese <span className="text-danger">*</span>
+              </label>
+              <input
+                id="final-hypothesis-name"
+                className="form-control"
+                type="text"
+                value={hypothesisName}
+                onChange={(event) => setHypothesisName(event.target.value)}
+                placeholder="Ex.: Agenda recorrente sem retrabalho para manicure autônoma"
+                disabled={!allStagesCompleted || finalizeMutation.isPending}
+              />
+            </div>
+            <div className="col-12 col-lg-4">
+              <button
+                type="submit"
+                className="btn btn-success w-100"
+                disabled={
+                  !allStagesCompleted ||
+                  finalizeMutation.isPending ||
+                  !hypothesisName.trim()
+                }
+              >
+                {finalizeMutation.isPending ? (
+                  <span className="d-inline-flex align-items-center gap-2">
+                    <span
+                      className="spinner-border spinner-border-sm"
+                      aria-hidden="true"
+                    />
+                    Fechando...
+                  </span>
+                ) : (
+                  "Fechar hipótese"
+                )}
+              </button>
+            </div>
+            {!allStagesCompleted && (
+              <div className="col-12">
+                <small className="text-muted">
+                  Conclua todas as cinco etapas para liberar o fechamento da
+                  hipótese.
+                </small>
+              </div>
+            )}
+          </form>
           <div className="d-flex flex-wrap gap-2">
             <Link
               className="btn btn-primary"

@@ -16,6 +16,7 @@ import com.marketinghub.experiment.pipeline.ads.ExperimentPipelineAdExtractor;
 import com.marketinghub.experiment.pipeline.ads.PipelineAdCreativePlan;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.experiment.funnel.ExperimentFunnelEventRepository;
+import com.marketinghub.repository.jpa.experiment.funnel.ExperimentLandingAnalyticsEventRepository;
 import com.marketinghub.journey.model.JourneyTemplate;
 import com.marketinghub.repository.jpa.journey.JourneyTemplateRepository;
 import com.marketinghub.leadportal.LeadPortalFlow;
@@ -60,6 +61,7 @@ public class ExperimentService {
     private final ImageGenerationQualityRepository imageGenerationQualityRepository;
     private final com.marketinghub.repository.jpa.sampleemail.SampleEmailRepository sampleEmailRepository;
     private final ExperimentFunnelEventRepository experimentFunnelEventRepository;
+    private final ExperimentLandingAnalyticsEventRepository experimentLandingAnalyticsEventRepository;
     private final ObjectMapper objectMapper;
 
     public ExperimentService(ExperimentRepository repository, MarketNicheRepository nicheRepository,
@@ -75,7 +77,9 @@ public class ExperimentService {
                              ImageGenerationModelRepository imageGenerationModelRepository,
                              ImageGenerationQualityRepository imageGenerationQualityRepository,
                              com.marketinghub.repository.jpa.sampleemail.SampleEmailRepository sampleEmailRepository,
-                             ExperimentFunnelEventRepository experimentFunnelEventRepository, ObjectMapper objectMapper) {
+                             ExperimentFunnelEventRepository experimentFunnelEventRepository,
+                             ExperimentLandingAnalyticsEventRepository experimentLandingAnalyticsEventRepository,
+                             ObjectMapper objectMapper) {
         this.repository = repository;
         this.nicheRepository = nicheRepository;
         this.hypothesisRepository = hypothesisRepository;
@@ -91,6 +95,7 @@ public class ExperimentService {
         this.imageGenerationQualityRepository = imageGenerationQualityRepository;
         this.sampleEmailRepository = sampleEmailRepository;
         this.experimentFunnelEventRepository = experimentFunnelEventRepository;
+        this.experimentLandingAnalyticsEventRepository = experimentLandingAnalyticsEventRepository;
         this.objectMapper = objectMapper;
     }
 
@@ -700,7 +705,7 @@ public class ExperimentService {
     }
 
     /**
-     * Marks the experiment as released to the Facebook Ads Worker and resets the funnel.
+     * Libera o experimento para o Facebook Ads Worker e remove eventos dependentes antes de zerar o funil.
      */
     @Transactional
     public Experiment releaseForFacebook(Long id) {
@@ -710,6 +715,8 @@ public class ExperimentService {
         }
         experiment.setStatus(ExperimentStatus.PLANNED);
         experiment.setFacebookReleaseRequestedAt(Instant.now());
+        experiment.setFunnelResetAt(experiment.getFacebookReleaseRequestedAt());
+        experimentLandingAnalyticsEventRepository.deleteByExperimentId(id);
         experimentFunnelEventRepository.deleteByExperimentId(id);
         return experiment;
     }

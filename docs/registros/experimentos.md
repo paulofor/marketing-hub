@@ -4594,3 +4594,9 @@
 - causa-raiz: a Meta bloqueia a criação de novo pixel quando a conta de anúncios já possui pixel, deixando nichos pendentes e atrasando a validação comercial.
 - correção aplicada: o Facebook Ads Worker passou a manter `FACEBOOKPIXEL_ENABLED=false` por padrão, preservando a campanha sem bloquear por pixel, e a checklist do experimento passou a sinalizar o pixel como recurso temporariamente desligado.
 - impacto esperado: campanhas podem ser liberadas para vendas usando a landing aprovada, enquanto a estratégia futura de pixels por vertical/conta é definida.
+
+## 2026-06-16 — Correção da liberação do Experimento 39
+- solicitação: corrigir erro ao clicar em “Liberar para Facebook Ads Worker” no Experimento 39.
+- causa-raiz: a liberação apagava diretamente `experiment_funnel_event`, mas eventos de analytics normalizados em `experiment_landing_analytics_event` ainda apontavam para esses registros por chave estrangeira, causando falha de integridade no banco.
+- correção aplicada: a liberação agora remove primeiro os analytics normalizados dependentes e depois zera os eventos brutos do funil; também grava `funnel_reset_at` no mesmo marco da liberação para manter as métricas pós-liberação consistentes.
+- prevenção de recorrência: adicionado teste automatizado cobrindo liberação com evento bruto e evento normalizado vinculado.

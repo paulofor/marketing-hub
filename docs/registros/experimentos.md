@@ -4569,3 +4569,9 @@
 - causa-raiz: o frontend filtrava explicitamente a lista de elementos aprovados para manter apenas `JOB_TITLE` e `BEHAVIOR`, embora o endpoint do backend já retornasse também `INTEREST` para o nicho do experimento.
 - foi feito: a aba Público passou a listar interesses, cargos e comportamentos aprovados, mantendo o mesmo endpoint e o mesmo salvamento de seleção.
 - prevenção: a mensagem da tela foi atualizada para refletir todas as categorias de público disponíveis.
+
+## 2026-06-16 — Desbloqueio de criação de pixel antes da liberação final do Experimento 39
+- solicitação: corrigir ciclo em que o Experimento 39 não podia ser liberado para o Facebook por falta de pixel, mas o nicho também não aparecia para criação de pixel por ainda não ter liberação registrada.
+- causa-raiz: a consulta de nichos prontos para pixel exigia `facebook_release_requested_at`, que é gravado justamente na liberação final; isso criava dependência circular entre criação de pixel e liberação do experimento.
+- correção aplicada: a elegibilidade para criação de pixel passou a considerar experimento Facebook com criativo aprovado e landing de destino publicada (`follow_up_action_url`), sem exigir a liberação final já registrada.
+- impacto esperado: o nicho do Experimento 39 passa a ficar disponível para criação de pixel assim que a oferta/landing estiver pronta, permitindo concluir o fluxo comercial sem contorno manual.

@@ -1,9 +1,5 @@
 package com.marketinghub.hypothesis.pain.service;
 
-import com.marketinghub.hypothesis.Hypothesis;
-import com.marketinghub.hypothesis.HypothesisStatus;
-import com.marketinghub.hypothesis.dto.HypothesisFrameworkDto;
-import com.marketinghub.hypothesis.framework.HypothesisFrameworkMapperSupport;
 import com.marketinghub.hypothesis.pain.HypothesisPainCostCalculator;
 import com.marketinghub.hypothesis.pain.HypothesisPainStageExecution;
 import com.marketinghub.hypothesis.pain.provisorio.HypothesisPainEnrichmentProfileReader;
@@ -18,7 +14,6 @@ import com.marketinghub.hypothesis.pain.service.start.HypothesisPainStartRespons
 import com.marketinghub.hypothesis.pain.service.summary.HypothesisStageFinalSummaryResponse;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.repository.jpa.hypothesis.HypothesisPainStageExecutionRepository;
-import com.marketinghub.repository.jpa.hypothesis.HypothesisRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.math.BigDecimal;
@@ -69,23 +64,17 @@ public class HypothesisPainStageService {
     private final HypothesisPainEnrichmentProfileReader enrichmentProfileReader;
     private final HypothesisPainStageExecutionRepository executionRepository;
     private final HypothesisPainCostCalculator costCalculator;
-    private final HypothesisRepository hypothesisRepository;
-    private final HypothesisFrameworkMapperSupport frameworkMapperSupport;
 
     /** Inicializa o serviço com os repositórios canônicos e o calculador interno de custo da etapa. */
     public HypothesisPainStageService(
             MarketNicheRepository marketNicheRepository,
             HypothesisPainEnrichmentProfileReader enrichmentProfileReader,
             HypothesisPainStageExecutionRepository executionRepository,
-            HypothesisPainCostCalculator costCalculator,
-            HypothesisRepository hypothesisRepository,
-            HypothesisFrameworkMapperSupport frameworkMapperSupport) {
+            HypothesisPainCostCalculator costCalculator) {
         this.marketNicheRepository = marketNicheRepository;
         this.enrichmentProfileReader = enrichmentProfileReader;
         this.executionRepository = executionRepository;
         this.costCalculator = costCalculator;
-        this.hypothesisRepository = hypothesisRepository;
-        this.frameworkMapperSupport = frameworkMapperSupport;
     }
 
     /** Inicia uma nova execução manual da etapa Dor para o nicho informado. */
@@ -194,113 +183,6 @@ public class HypothesisPainStageService {
                 .status(STATUS_STARTED)
                 .idJob(toDatabaseIdJob(UUID.randomUUID().toString()))
                 .build();
-    }
-
-    /** Fecha o framework concluído em uma hipótese BACKLOG pronta para gerar experimento. */
-    @Transactional
-    public Hypothesis finalizeHypothesis(Long marketNicheId, FinalizeHypothesisRequest request) {
-        String title = normalizeHypothesisName(request.name());
-        MarketNiche niche = marketNicheRepository.findById(marketNicheId)
-                .orElseThrow(() -> new EntityNotFoundException("Market niche not found: " + marketNicheId));
-        String pain = requireCompletedStageResponse(marketNicheId, STAGE_CODE, "Dor");
-        String result = requireCompletedStageResponse(marketNicheId, RESULT_STAGE_CODE, "Resultado");
-        String mechanism = requireCompletedStageResponse(marketNicheId, MECHANISM_STAGE_CODE, "Mecanismo");
-        String proof = requireCompletedStageResponse(marketNicheId, PROOF_STAGE_CODE, "Prova");
-        String offer = requireCompletedStageResponse(marketNicheId, OFFER_STAGE_CODE, "Oferta");
-        Hypothesis hypothesis = Hypothesis.builder()
-                .marketNiche(niche)
-                .title(title)
-                .persona(niche.getName())
-                .problem(pain)
-                .promise(result)
-                .mechanism(mechanism)
-                .uniqueMechanism(mechanism)
-                .entrega(offer)
-                .successRule(proof)
-                .model(latestCompletedStageModel(marketNicheId, OFFER_STAGE_CODE))
-                .costUsd(totalCompletedCostUsd(marketNicheId))
-                .status(HypothesisStatus.BACKLOG)
-                .generatedAt(Instant.now())
-                .build();
-        frameworkMapperSupport.storeSnapshot(
-                hypothesis,
-                finalizedFramework(title, pain, result, mechanism, proof, offer),
-                null);
-        return hypothesisRepository.save(hypothesis);
-    }
-
-    /** Normaliza e valida o nome informado pelo usuário para a hipótese final. */
-    private String normalizeHypothesisName(String rawName) {
-        if (!StringUtils.hasText(rawName)) {
-            throw new IllegalStateException("Informe um nome para fechar a hipótese.");
-        }
-        return rawName.trim();
-    }
-
-    /** Exige uma resposta concluída de etapa antes de permitir fechar a hipótese. */
-    private String requireCompletedStageResponse(Long marketNicheId, String stageCode, String stageLabel) {
-        String response = latestCompletedStageResponse(marketNicheId, stageCode);
-        if (!StringUtils.hasText(response)) {
-            throw new IllegalStateException(
-                    "A etapa " + stageLabel + " precisa estar concluída antes de fechar a hipótese.");
-        }
-        return response;
-    }
-
-    /** Retorna o modelo da etapa concluída mais recente para rastreabilidade da hipótese final. */
-    private String latestCompletedStageModel(Long marketNicheId, String stageCode) {
-        return executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
-                        marketNicheId,
-                        stageCode,
-                        STATUS_COMPLETED)
-                .map(HypothesisPainStageExecution::getOpenAiModel)
-                .filter(StringUtils::hasText)
-                .orElse(null);
-    }
-
-    /** Soma o custo das execuções concluídas usadas para formar a hipótese final. */
-    private BigDecimal totalCompletedCostUsd(Long marketNicheId) {
-        return STAGE_SEQUENCE.stream()
-                .map(stageCode -> executionRepository
-                        .findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
-                                marketNicheId,
-                                stageCode,
-                                STATUS_COMPLETED))
-                .flatMap(Optional::stream)
-                .map(HypothesisPainStageExecution::getCostUsd)
-                .filter(cost -> cost != null)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-    }
-
-    /** Monta o snapshot canônico Dor → Resultado → Mecanismo → Prova → Oferta aprovado para experimento. */
-    private HypothesisFrameworkDto finalizedFramework(
-            String title,
-            String pain,
-            String result,
-            String mechanism,
-            String proof,
-            String offer) {
-        HypothesisFrameworkDto dto = new HypothesisFrameworkDto();
-        dto.getPain().setRoot(pain);
-        dto.getPain().setSummary(pain);
-        dto.getResult().setDesiredResult(result);
-        dto.getResult().setSummary(result);
-        dto.getMechanism().setCore(mechanism);
-        dto.getMechanism().setUnique(mechanism);
-        dto.getMechanism().setSummary(mechanism);
-        dto.getProof().setMessage(proof);
-        dto.getProof().setSummary(proof);
-        dto.getOffer().setName(title);
-        dto.getOffer().setCorePromise(result);
-        dto.getOffer().setDeliverables(offer);
-        dto.getOffer().setSummary(offer);
-        dto.getChecklist().setPainReady(Boolean.TRUE);
-        dto.getChecklist().setResultReady(Boolean.TRUE);
-        dto.getChecklist().setMechanismReady(Boolean.TRUE);
-        dto.getChecklist().setProofReady(Boolean.TRUE);
-        dto.getChecklist().setOfferReady(Boolean.TRUE);
-        dto.getChecklist().setApprovedForExperiment(Boolean.TRUE);
-        return dto;
     }
 
     /** Lista execuções da etapa Dor para o nicho informado. */

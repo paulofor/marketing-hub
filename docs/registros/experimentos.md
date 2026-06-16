@@ -4539,3 +4539,10 @@
 - foi feito: o `HypothesisPainProcessor` passou a montar o payload da Responses API com `service_tier=flex` desde a origem, antes da persistência no backend e antes do envio final.
 - validação: adicionado teste unitário garantindo que o request auditável da etapa Dor da hipótese contém `service_tier=flex`.
 - 2026-06-16 02:27:20 (UTC): tela de nova hipótese passou a exigir nome para fechar o framework Dor → Resultado → Mecanismo → Prova → Oferta como hipótese BACKLOG; backend criou o endpoint /api/niches/{nicheId}/hypothesis-pipeline/finalize para consolidar as cinco etapas concluídas e disponibilizar a hipótese na criação de experimento.
+
+## 2026-06-16 — Fechamento como etapa própria do pipeline de hipótese
+
+- decisão: o fechamento do framework Dor → Resultado → Mecanismo → Prova → Oferta não pertence à etapa Dor/Pain; ele é uma etapa própria posterior às cinco etapas de construção da hipótese.
+- causa-raiz: `HypothesisPainStageService` estava acumulando a orquestração da etapa Dor com a materialização/persistência da hipótese final, violando o isolamento arquitetural protegido por ArchUnit.
+- foi feito: extraído o fechamento para `HypothesisPipelineFinalizationService`, mantendo o endpoint público existente e removendo de `HypothesisPainStageService` as dependências diretas de `HypothesisRepository` e `HypothesisFrameworkMapperSupport`.
+- prevenção: o cânone de arquitetura por etapa passou a declarar que o fechamento da hipótese deve ficar fora do pacote específico da etapa Dor/Pain.

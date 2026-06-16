@@ -1,8 +1,8 @@
-package com.marketinghub.hypothesis.pain.service;
+package com.marketinghub.hypothesis.service.finalizeHypothesis;
 
 import jakarta.validation.constraints.NotBlank;
 
-/** Contrato de entrada para fechar o pipeline auditável como hipótese disponível para experimento. */
+/** Contrato de entrada da etapa de fechamento que materializa o framework validado como hipótese. */
 public record FinalizeHypothesisRequest(
         @NotBlank(message = "O nome da hipótese é obrigatório")
         String name) {

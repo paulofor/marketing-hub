@@ -18,4 +18,7 @@ public interface OprmMeiAudienceProfileRepository extends JpaRepository<OprmMeiA
 
   /** Lista perfis de público-alvo MEI/autônomo vinculados a um CNAE. */
   List<OprmMeiAudienceProfile> findByCnaeCodeOrderByCreatedAtDesc(String cnaeCode);
+
+  /** Remove perfis MEI/autônomo de um ciclo antes de reexecutar etapas do mesmo job. */
+  void deleteByResearchCycleId(Long researchCycleId);
 }

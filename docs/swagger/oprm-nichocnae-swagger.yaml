@@ -57,13 +57,19 @@ paths:
                   $ref: '#/components/schemas/RoutineResearchOrchestratorRecent'
   /api/oprm/nichocnae/routine-research-orchestrator/recent-processed/{researchCycleId}/reprocess:
     post:
-      summary: Cria imediatamente novo ciclo para reprocessar CNAE falho, fraco, genérico ou com falha na materialização final.
+      summary: Reabre o mesmo job para reexecutar etapas do CNAE falho, fraco, genérico ou com falha na materialização final.
       tags: [OPRM Nicho CNAE]
       parameters:
         - $ref: '#/components/parameters/ResearchCycleId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoutineResearchOrchestratorReprocessRequest'
       responses:
         '200':
-          description: Novo ciclo criado e nicho marcado como em pesquisa para sair de FAILED, STALLED, NEEDS_MORE_RESEARCH, NEEDS_EXECUTOR_ROUTINE_EVIDENCE, GENERIC ou ENRICHED_NICHE_FAILED.
+          description: Mesmo job reaberto e nicho marcado como em pesquisa para sair de FAILED, STALLED, NEEDS_MORE_RESEARCH, NEEDS_EXECUTOR_ROUTINE_EVIDENCE, GENERIC ou ENRICHED_NICHE_FAILED.
           content:
             application/json:
               schema:
@@ -699,6 +705,26 @@ paths:
         '404':
           description: Perfil de nicho enriquecido ou ciclo de pesquisa não encontrado.
 
+  /api/oprm/nichocnae/routine-research-cycle/stage-executions/{researchCycleId}/pipeline-markdown:
+    get:
+      summary: Baixa documento Markdown com auditoria do job OPRM, materializado ou não.
+      tags: [OPRM Nicho CNAE]
+      parameters:
+        - $ref: '#/components/parameters/ResearchCycleId'
+      responses:
+        '200':
+          description: Documento Markdown baixável com o estado atual do job, reexecuções e artefatos disponíveis.
+          headers:
+            Content-Disposition:
+              description: Nome do arquivo Markdown para download.
+              schema:
+                type: string
+          content:
+            text/markdown:
+              schema:
+                type: string
+        '404':
+          description: Ciclo de pesquisa não encontrado.
 
   /api/oprm/nichocnae/enriched-niche-materializer/profiles/{profileId}/pipeline-markdown:
     get:
@@ -803,7 +829,7 @@ components:
         triggerSource:
           type: string
           nullable: true
-          description: Origem do ciclo, incluindo AUTO_QUALITY_REPROCESS quando criado automaticamente pelo gate.
+          description: Origem da execução atual, incluindo AUTO_QUALITY_REPROCESS quando o módulo executor externo solicita reexecução de etapas do mesmo job após reprovação recuperável do gate.
         status:
           type: string
         totalQueries:
@@ -896,14 +922,15 @@ components:
           example: MEI_AUDIENCE_READY
         triggerSource:
           type: string
-          description: Origem do ciclo; `AUTO_SCORE_QUEUE` para fila automática e `MANUAL_REPROCESS` para ciclos criados pelo botão Reprocessar CNAE.
+          description: Origem da execução atual; `AUTO_SCORE_QUEUE` para fila automática inicial, `MANUAL_REPROCESS` para reexecução manual do mesmo job e `AUTO_QUALITY_REPROCESS` para reexecução automática solicitada pelo executor.
           enum:
             - AUTO_SCORE_QUEUE
             - MANUAL_REPROCESS
+            - AUTO_QUALITY_REPROCESS
           example: AUTO_SCORE_QUEUE
         cycleStatus:
           type: string
-          description: Status do ciclo; STALLED, NEEDS_MORE_RESEARCH, NEEDS_EXECUTOR_ROUTINE_EVIDENCE, GENERIC e ENRICHED_NICHE_FAILED podem abrir novo ciclo manual pelo endpoint de reprocessamento.
+          description: Status do ciclo; STALLED, NEEDS_MORE_RESEARCH, NEEDS_EXECUTOR_ROUTINE_EVIDENCE, GENERIC e ENRICHED_NICHE_FAILED podem reabrir o mesmo job pelo endpoint de reprocessamento.
           example: RUNNING
         processedAt:
           type: string
@@ -916,6 +943,16 @@ components:
           type: string
           nullable: true
           example: '500 Internal Server Error: nicheName is required'
+    RoutineResearchOrchestratorReprocessRequest:
+      type: object
+      properties:
+        triggerSource:
+          type: string
+          enum:
+            - MANUAL_REPROCESS
+            - AUTO_QUALITY_REPROCESS
+          description: Origem opcional enviada pelo módulo executor; valores não reconhecidos são normalizados como MANUAL_REPROCESS.
+          example: AUTO_QUALITY_REPROCESS
     RoutineResearchOrchestratorReprocessResult:
       type: object
       properties:
@@ -957,7 +994,7 @@ components:
           nullable: true
         message:
           type: string
-          example: Novo ciclo de pesquisa de rotina criado imediatamente para refazer pelo front-end um CNAE aprovado cuja materialização falhou.
+          example: Mesmo job reaberto para reexecutar etapas após falha de materialização.
     NicheResearchSeedBuilderPending:
       type: object
       properties:

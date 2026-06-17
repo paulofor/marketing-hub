@@ -404,7 +404,10 @@ public class BackendNicheResearchSeedBuilderService {
   private RecordNicheResearchSeedBuilderPending toPending(OprmRoutineResearchCycle cycle) {
     OprmNicheResearchSeedBuilderModel configuredModel = resolveConfiguredOpenAiModel();
     OprmNicheRoutineCard previousCard = findPreviousCheckedCard(cycle);
-    String previousNotes = previousCard == null ? null : previousCard.getQualityNotes();
+    String previousNotes = previousCard == null ? cycle.getErrorMessage() : previousCard.getQualityNotes();
+    String previousQualityStatus = previousCard == null
+        ? extractQualityNote(cycle.getErrorMessage(), "previousQualityStatus")
+        : previousCard.getQualityStatus();
     return new RecordNicheResearchSeedBuilderPending(
         cycle.getId(),
         cycle.getSourceNicheId(),
@@ -416,7 +419,7 @@ public class BackendNicheResearchSeedBuilderService {
         configuredModel == null ? null : configuredModel.code(),
         configuredModel == null ? null : configuredModel.name(),
         cycle.getTriggerSource(),
-        previousCard == null ? null : previousCard.getQualityStatus(),
+        previousQualityStatus,
         extractQualityNote(previousNotes, "proximoMovimentoCodigo"),
         extractQualityNote(previousNotes, "proximoMovimento"),
         compactLearningNotes(previousNotes),
@@ -448,8 +451,9 @@ public class BackendNicheResearchSeedBuilderService {
     }
     for (String part : notes.split(";")) {
       String trimmed = part.trim();
-      if (trimmed.startsWith(cleanKey)) {
-        return trimToNull(trimmed.substring(cleanKey.length()));
+      int keyIndex = trimmed.indexOf(cleanKey);
+      if (keyIndex >= 0) {
+        return trimToNull(trimmed.substring(keyIndex + cleanKey.length()));
       }
     }
     return null;

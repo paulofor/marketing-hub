@@ -11,4 +11,7 @@ public interface OprmExtractedSignalRepository extends JpaRepository<OprmExtract
 
   /** Verifica se um snapshot curto já teve sinais extraídos e persistidos. */
   boolean existsBySourceSnapshotId(Long sourceSnapshotId);
+
+  /** Remove sinais de um ciclo antes de reexecutar etapas do mesmo job. */
+  void deleteByResearchCycleId(Long researchCycleId);
 }

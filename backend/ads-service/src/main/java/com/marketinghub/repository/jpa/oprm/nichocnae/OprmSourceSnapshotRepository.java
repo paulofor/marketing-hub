@@ -16,4 +16,7 @@ public interface OprmSourceSnapshotRepository extends JpaRepository<OprmSourceSn
   /** Lista snapshots completos pendentes de extração de sinais na ordem operacional. */
   List<OprmSourceSnapshot> findByFetchStatusAndSignalExtractionStatusOrderByResearchCycleIdAscIdAsc(
       String fetchStatus, String signalExtractionStatus, Pageable pageable);
+
+  /** Remove snapshots de um ciclo antes de reexecutar etapas do mesmo job. */
+  void deleteByResearchCycleId(Long researchCycleId);
 }

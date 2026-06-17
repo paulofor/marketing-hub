@@ -19,4 +19,7 @@ public interface OprmNicheResearchSeedRepository extends JpaRepository<OprmNiche
     @Query(
       "select coalesce(sum(s.costUsd), 0) from OprmNicheResearchSeed s where s.researchCycleId = :researchCycleId")
     BigDecimal sumCostUsdByResearchCycleId(@Param("researchCycleId") Long researchCycleId);
+
+    /** Remove o seed de um ciclo antes de reexecutar etapas do mesmo job. */
+    void deleteByResearchCycleId(Long researchCycleId);
 }

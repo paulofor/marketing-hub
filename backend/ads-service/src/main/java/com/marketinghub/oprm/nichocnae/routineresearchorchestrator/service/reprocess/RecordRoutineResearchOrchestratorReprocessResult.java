@@ -1,6 +1,6 @@
 package com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.reprocess;
 
-/** Representa o resultado da liberação manual de um nicho CNAE para novo ciclo automático. */
+/** Representa o resultado da reabertura de um job CNAE para reexecução de etapas. */
 public record RecordRoutineResearchOrchestratorReprocessResult(
         Long researchCycleId,
         Long sourceNicheId,

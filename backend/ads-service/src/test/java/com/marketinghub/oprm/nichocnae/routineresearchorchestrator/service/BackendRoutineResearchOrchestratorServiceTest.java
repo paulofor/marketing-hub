@@ -7,11 +7,18 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.marketinghub.oprm.cnae.OprmNicheCandidate;
+import com.marketinghub.oprm.nichocnae.OprmNicheRoutineCard;
 import com.marketinghub.oprm.nichocnae.OprmRoutineResearchCycle;
 import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.pending.RecordRoutineResearchOrchestratorPending;
 import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.recent.RecordRoutineResearchOrchestratorRecent;
+import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.reprocess.RecordRoutineResearchOrchestratorReprocessRequest;
 import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.runNext.RecordRoutineResearchOrchestratorResult;
 import com.marketinghub.repository.jpa.oprm.cnae.OprmNicheCandidateRepository;
+import com.marketinghub.repository.jpa.oprm.nichocnae.OprmExtractedSignalRepository;
+import com.marketinghub.repository.jpa.oprm.nichocnae.OprmNicheResearchSeedRepository;
+import com.marketinghub.repository.jpa.oprm.nichocnae.OprmResearchQueryRepository;
+import com.marketinghub.repository.jpa.oprm.nichocnae.OprmSourceCandidateRepository;
+import com.marketinghub.repository.jpa.oprm.nichocnae.OprmSourceSnapshotRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmNicheRoutineCardRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmRoutineResearchCycleRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.meiaudienceprofile.OprmMeiAudienceProfileRepository;
@@ -37,6 +44,16 @@ class BackendRoutineResearchOrchestratorServiceTest {
     @Mock private OprmMeiAudienceProfileRepository meiAudienceProfileRepository;
 
     @Mock private OprmNicheRoutineCardRepository routineCardRepository;
+
+    @Mock private OprmNicheResearchSeedRepository seedRepository;
+
+    @Mock private OprmResearchQueryRepository researchQueryRepository;
+
+    @Mock private OprmSourceCandidateRepository sourceCandidateRepository;
+
+    @Mock private OprmSourceSnapshotRepository sourceSnapshotRepository;
+
+    @Mock private OprmExtractedSignalRepository extractedSignalRepository;
 
     @InjectMocks private BackendRoutineResearchOrchestratorService service;
 
@@ -126,7 +143,7 @@ class BackendRoutineResearchOrchestratorServiceTest {
         assertThat(result.getFirst().alreadyMaterialized()).isTrue();
     }
 
-    /** Deve criar novo ciclo imediatamente ao reprocessar um ciclo falho. */
+    /** Deve reabrir o mesmo job ao reprocessar um ciclo falho. */
     @Test
     void reprocessFailedCycleCreatesNewCycleImmediately() {
         OprmRoutineResearchCycle failedCycle = cycle(321L, 55L, "Cabeleireiros e manicures", "2026-06-03T01:00:00Z");
@@ -137,23 +154,19 @@ class BackendRoutineResearchOrchestratorServiceTest {
         when(routineResearchCycleRepository.findById(321L)).thenReturn(Optional.of(failedCycle));
         when(nicheCandidateRepository.findById(55L)).thenReturn(Optional.of(candidate));
         when(routineResearchCycleRepository.save(any(OprmRoutineResearchCycle.class)))
-                .thenAnswer(invocation -> {
-                    OprmRoutineResearchCycle newCycle = invocation.getArgument(0);
-                    newCycle.setId(322L);
-                    return newCycle;
-                });
+                .thenAnswer(invocation -> invocation.getArgument(0));
         when(nicheCandidateRepository.save(any(OprmNicheCandidate.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        var result = service.reprocessCycle(321L);
+        var result = service.reprocessCycle(321L, null);
 
-        assertThat(result.researchCycleId()).isEqualTo(322L);
+        assertThat(result.researchCycleId()).isEqualTo(321L);
         assertThat(result.sourceNicheId()).isEqualTo(55L);
         assertThat(result.previousCycleStatus()).isEqualTo("FAILED");
         assertThat(result.previousRoutineResearchStatus()).isEqualTo("RESEARCH_RUNNING");
         assertThat(result.routineResearchStatus()).isEqualTo("RESEARCH_RUNNING");
-        assertThat(result.lastRoutineResearchCycleId()).isEqualTo(322L);
-        assertThat(result.message()).contains("CNAE com falha");
+        assertThat(result.lastRoutineResearchCycleId()).isEqualTo(321L);
+        assertThat(result.message()).contains("Mesmo job reaberto");
 
         ArgumentCaptor<OprmRoutineResearchCycle> cycleCaptor =
                 ArgumentCaptor.forClass(OprmRoutineResearchCycle.class);
@@ -161,14 +174,65 @@ class BackendRoutineResearchOrchestratorServiceTest {
         assertThat(cycleCaptor.getValue().getSourceNicheId()).isEqualTo(55L);
         assertThat(cycleCaptor.getValue().getStatus()).isEqualTo("RUNNING");
         assertThat(cycleCaptor.getValue().getTriggerSource()).isEqualTo("MANUAL_REPROCESS");
+        assertThat(cycleCaptor.getValue().getErrorMessage()).contains("Reexecução de etapas do mesmo job");
+        verify(seedRepository).deleteByResearchCycleId(321L);
+        verify(researchQueryRepository).deleteByResearchCycleId(321L);
+        verify(sourceCandidateRepository).deleteByResearchCycleId(321L);
+        verify(sourceSnapshotRepository).deleteByResearchCycleId(321L);
+        verify(extractedSignalRepository).deleteByResearchCycleId(321L);
+        verify(routineCardRepository).deleteByResearchCycleId(321L);
+        verify(meiAudienceProfileRepository).deleteByResearchCycleId(321L);
 
         ArgumentCaptor<OprmNicheCandidate> candidateCaptor = ArgumentCaptor.forClass(OprmNicheCandidate.class);
         verify(nicheCandidateRepository).save(candidateCaptor.capture());
         assertThat(candidateCaptor.getValue().getRoutineResearchStatus()).isEqualTo("RESEARCH_RUNNING");
-        assertThat(candidateCaptor.getValue().getLastRoutineResearchCycleId()).isEqualTo(322L);
+        assertThat(candidateCaptor.getValue().getLastRoutineResearchCycleId()).isEqualTo(321L);
     }
 
-    /** Deve criar novo ciclo imediatamente ao reprocessar um ciclo parado sem progresso. */
+
+    /** Deve gravar origem automática e preservar o aprendizado do ciclo reprovado para a próxima busca. */
+    @Test
+    void reprocessCycleUsesExternalExecutorTriggerSourceWhenRequested() {
+        OprmRoutineResearchCycle failedCycle = cycle(321L, 55L, "Escovista em domicílio", "2026-06-03T01:00:00Z");
+        failedCycle.setStatus("SOLUTION_CONTAMINATED");
+        failedCycle.setOriginalNicheName("Cabeleireiros, manicure e pedicure");
+        failedCycle.setNeutralNicheName("Escovista em domicílio com recorrência instável");
+        failedCycle.setResearchMode("ROUTINE_REALITY_RESEARCH");
+        failedCycle.setSolutionLanguageRiskScore(new BigDecimal("35.00"));
+        failedCycle.setSourceScore(new BigDecimal("91.00"));
+        OprmNicheCandidate candidate = candidate();
+        OprmNicheRoutineCard previousCard = new OprmNicheRoutineCard();
+        previousCard.setQualityStatus("SOLUTION_CONTAMINATED");
+        previousCard.setQualityNotes("proximoMovimentoCodigo=REFAZER_BUSCA_SEM_SOLUCAO; riscoLinguagemSolucao=70");
+        when(routineResearchCycleRepository.findById(321L)).thenReturn(Optional.of(failedCycle));
+        when(nicheCandidateRepository.findById(55L)).thenReturn(Optional.of(candidate));
+        when(routineCardRepository.findFirstByResearchCycleIdOrderByIdDesc(321L)).thenReturn(Optional.of(previousCard));
+        when(routineResearchCycleRepository.save(any(OprmRoutineResearchCycle.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(nicheCandidateRepository.save(any(OprmNicheCandidate.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.reprocessCycle(
+                321L, new RecordRoutineResearchOrchestratorReprocessRequest("AUTO_QUALITY_REPROCESS"));
+
+        ArgumentCaptor<OprmRoutineResearchCycle> cycleCaptor =
+                ArgumentCaptor.forClass(OprmRoutineResearchCycle.class);
+        verify(routineResearchCycleRepository).save(cycleCaptor.capture());
+        OprmRoutineResearchCycle learningCycle = cycleCaptor.getValue();
+        assertThat(learningCycle.getId()).isEqualTo(321L);
+        assertThat(learningCycle.getTriggerSource()).isEqualTo("AUTO_QUALITY_REPROCESS");
+        assertThat(learningCycle.getNicheName()).isEqualTo("Escovista em domicílio");
+        assertThat(learningCycle.getOriginalNicheName()).isEqualTo("Cabeleireiros, manicure e pedicure");
+        assertThat(learningCycle.getNeutralNicheName()).isEqualTo("Escovista em domicílio com recorrência instável");
+        assertThat(learningCycle.getResearchMode()).isEqualTo("ROUTINE_REALITY_RESEARCH");
+        assertThat(learningCycle.getSolutionLanguageRiskScore()).isEqualByComparingTo("35.00");
+        assertThat(learningCycle.getSourceScore()).isEqualByComparingTo("91.00");
+        assertThat(learningCycle.getErrorMessage()).contains("O próximo seed deve usar o aprendizado do gate anterior");
+        assertThat(learningCycle.getErrorMessage()).contains("previousQualityStatus=SOLUTION_CONTAMINATED");
+        assertThat(learningCycle.getErrorMessage()).contains("riscoLinguagemSolucao=70");
+    }
+
+    /** Deve reabrir o mesmo job ao reprocessar um ciclo parado sem progresso. */
     @Test
     void reprocessStalledCycleCreatesNewCycleImmediately() {
         OprmRoutineResearchCycle stalledCycle = cycle(321L, 55L, "Cabeleireiros e manicures", "2026-06-03T01:00:00Z");
@@ -179,24 +243,20 @@ class BackendRoutineResearchOrchestratorServiceTest {
         when(routineResearchCycleRepository.findById(321L)).thenReturn(Optional.of(stalledCycle));
         when(nicheCandidateRepository.findById(55L)).thenReturn(Optional.of(candidate));
         when(routineResearchCycleRepository.save(any(OprmRoutineResearchCycle.class)))
-                .thenAnswer(invocation -> {
-                    OprmRoutineResearchCycle newCycle = invocation.getArgument(0);
-                    newCycle.setId(322L);
-                    return newCycle;
-                });
+                .thenAnswer(invocation -> invocation.getArgument(0));
         when(nicheCandidateRepository.save(any(OprmNicheCandidate.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        var result = service.reprocessCycle(321L);
+        var result = service.reprocessCycle(321L, null);
 
-        assertThat(result.researchCycleId()).isEqualTo(322L);
+        assertThat(result.researchCycleId()).isEqualTo(321L);
         assertThat(result.previousCycleStatus()).isEqualTo("STALLED");
         assertThat(result.previousRoutineResearchStatus()).isEqualTo("RESEARCH_STALLED");
         assertThat(result.routineResearchStatus()).isEqualTo("RESEARCH_RUNNING");
-        assertThat(result.message()).contains("pipeline parado");
+        assertThat(result.message()).contains("Mesmo job reaberto");
     }
 
-    /** Deve criar novo ciclo imediato quando a pesquisa chegou fraca e precisa de mais evidência. */
+    /** Deve reabrir o mesmo job quando a pesquisa chegou fraca e precisa de mais evidência. */
     @Test
     void reprocessNeedsMoreResearchCycleCreatesNewCycleImmediately() {
         OprmRoutineResearchCycle weakCycle = cycle(321L, 55L, "Cabeleireiros e manicures", "2026-06-03T01:00:00Z");
@@ -209,19 +269,15 @@ class BackendRoutineResearchOrchestratorServiceTest {
         when(routineResearchCycleRepository.findById(321L)).thenReturn(Optional.of(weakCycle));
         when(nicheCandidateRepository.findById(55L)).thenReturn(Optional.of(candidate));
         when(routineResearchCycleRepository.save(any(OprmRoutineResearchCycle.class)))
-                .thenAnswer(invocation -> {
-                    OprmRoutineResearchCycle newCycle = invocation.getArgument(0);
-                    newCycle.setId(322L);
-                    return newCycle;
-                });
+                .thenAnswer(invocation -> invocation.getArgument(0));
         when(nicheCandidateRepository.save(any(OprmNicheCandidate.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        var result = service.reprocessCycle(321L);
+        var result = service.reprocessCycle(321L, null);
 
-        assertThat(result.researchCycleId()).isEqualTo(322L);
+        assertThat(result.researchCycleId()).isEqualTo(321L);
         assertThat(result.previousCycleStatus()).isEqualTo("NEEDS_MORE_RESEARCH");
-        assertThat(result.message()).contains("precisava de mais pesquisa");
+        assertThat(result.message()).contains("Mesmo job reaberto");
 
         ArgumentCaptor<OprmRoutineResearchCycle> cycleCaptor =
                 ArgumentCaptor.forClass(OprmRoutineResearchCycle.class);
@@ -232,10 +288,10 @@ class BackendRoutineResearchOrchestratorServiceTest {
         ArgumentCaptor<OprmNicheCandidate> candidateCaptor = ArgumentCaptor.forClass(OprmNicheCandidate.class);
         verify(nicheCandidateRepository).save(candidateCaptor.capture());
         assertThat(candidateCaptor.getValue().getRoutineResearchStatus()).isEqualTo("RESEARCH_RUNNING");
-        assertThat(candidateCaptor.getValue().getLastRoutineResearchCycleId()).isEqualTo(322L);
+        assertThat(candidateCaptor.getValue().getLastRoutineResearchCycleId()).isEqualTo(321L);
     }
 
-    /** Deve criar novo ciclo via front-end quando o card aprovado falhou na materialização final. */
+    /** Deve reabrir o mesmo job via front-end quando o card aprovado falhou na materialização final. */
     @Test
     void reprocessEnrichedNicheFailedCycleCreatesNewCycleImmediately() {
         OprmRoutineResearchCycle failedMaterializationCycle = cycle(
@@ -248,19 +304,15 @@ class BackendRoutineResearchOrchestratorServiceTest {
         when(routineResearchCycleRepository.findById(321L)).thenReturn(Optional.of(failedMaterializationCycle));
         when(nicheCandidateRepository.findById(55L)).thenReturn(Optional.of(candidate));
         when(routineResearchCycleRepository.save(any(OprmRoutineResearchCycle.class)))
-                .thenAnswer(invocation -> {
-                    OprmRoutineResearchCycle newCycle = invocation.getArgument(0);
-                    newCycle.setId(322L);
-                    return newCycle;
-                });
+                .thenAnswer(invocation -> invocation.getArgument(0));
         when(nicheCandidateRepository.save(any(OprmNicheCandidate.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        var result = service.reprocessCycle(321L);
+        var result = service.reprocessCycle(321L, null);
 
-        assertThat(result.researchCycleId()).isEqualTo(322L);
+        assertThat(result.researchCycleId()).isEqualTo(321L);
         assertThat(result.previousCycleStatus()).isEqualTo("ENRICHED_NICHE_FAILED");
-        assertThat(result.message()).contains("refazer pelo front-end");
+        assertThat(result.message()).contains("Mesmo job reaberto");
 
         ArgumentCaptor<OprmRoutineResearchCycle> cycleCaptor =
                 ArgumentCaptor.forClass(OprmRoutineResearchCycle.class);
@@ -271,7 +323,7 @@ class BackendRoutineResearchOrchestratorServiceTest {
         ArgumentCaptor<OprmNicheCandidate> candidateCaptor = ArgumentCaptor.forClass(OprmNicheCandidate.class);
         verify(nicheCandidateRepository).save(candidateCaptor.capture());
         assertThat(candidateCaptor.getValue().getRoutineResearchStatus()).isEqualTo("RESEARCH_RUNNING");
-        assertThat(candidateCaptor.getValue().getLastRoutineResearchCycleId()).isEqualTo(322L);
+        assertThat(candidateCaptor.getValue().getLastRoutineResearchCycleId()).isEqualTo(321L);
     }
 
     /** Deve criar ciclo e marcar o candidato como em pesquisa quando existir nicho pendente. */

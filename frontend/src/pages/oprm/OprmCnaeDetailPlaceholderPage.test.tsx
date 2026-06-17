@@ -163,6 +163,11 @@ describe("OprmCnaeDetailPlaceholderPage", () => {
     expect(screen.getByText(/custo do job atual:/i)).toBeTruthy();
     expect(screen.getAllByText("US$ 0,0123").length).toBeGreaterThan(0);
     expect(screen.getByText("Jobs deste subnicho")).toBeTruthy();
+    const reportLink = screen.getByRole("link", { name: "Baixar relatório" });
+    expect(reportLink).toHaveAttribute(
+      "href",
+      "http://localhost/api/oprm/nichocnae/routine-research-cycle/stage-executions/24/pipeline-markdown",
+    );
     expect(
       screen.getByText(/bloqueada por fontes antigas ou sem atualidade/i),
     ).toBeTruthy();
@@ -584,7 +589,7 @@ describe("OprmCnaeDetailPlaceholderPage", () => {
     ).toBeTruthy();
     expect(
       screen.getByText(
-        /ciclo #48 foi criado automaticamente depois que o ciclo #47 terminou como corporativo demais/i,
+        /job #48 foi reaberto automaticamente depois de uma reprovação como corporativo demais/i,
       ),
     ).toBeTruthy();
     expect(

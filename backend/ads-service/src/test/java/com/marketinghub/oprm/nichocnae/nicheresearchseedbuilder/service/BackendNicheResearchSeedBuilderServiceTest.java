@@ -107,6 +107,35 @@ class BackendNicheResearchSeedBuilderServiceTest {
     assertThat(result.getFirst().previousLearningNotes()).contains("riscoLinguagemSolucao=70");
 	  }
 
+  /** Deve reaproveitar aprendizado preservado no próprio job reaberto quando os artefatos antigos foram limpos. */
+  @Test
+  void listPendingIncludesSameJobRerunLearningFromCycleNote() {
+    OprmRoutineResearchCycle cycle = cycle();
+    cycle.setTriggerSource("AUTO_QUALITY_REPROCESS");
+    cycle.setErrorMessage("Reexecução de etapas do mesmo job solicitada por AUTO_QUALITY_REPROCESS. "
+        + "previousQualityStatus=SOLUTION_CONTAMINATED; previousQualityNotes=status=SOLUTION_CONTAMINATED; "
+        + "proximoMovimentoCodigo=REFAZER_BUSCA_SEM_SOLUCAO; "
+        + "proximoMovimento=Reexecutar busca removendo fontes de solucao; riscoLinguagemSolucao=70");
+    when(routineResearchCycleRepository.findSeedBuilderPendingOrRetryable(
+            eq("RUNNING"),
+            eq("FAILED"),
+            eq("nicheName is required"),
+            eq("Data too long for column 'query_goal'"),
+            eq("niche-research-seed-builder/stage-executions"),
+            any(Pageable.class)))
+        .thenReturn(List.of(cycle));
+    when(routineCardRepository.findLatestCheckedCardForLearning(anyLong(), eq(1001L), any(Pageable.class)))
+        .thenReturn(List.of());
+
+    var result = service.listPending();
+
+    assertThat(result).hasSize(1);
+    assertThat(result.getFirst().previousQualityStatus()).isEqualTo("SOLUTION_CONTAMINATED");
+    assertThat(result.getFirst().previousNextMoveCode()).isEqualTo("REFAZER_BUSCA_SEM_SOLUCAO");
+    assertThat(result.getFirst().previousNextMove()).isEqualTo("Reexecutar busca removendo fontes de solucao");
+    assertThat(result.getFirst().previousLearningNotes()).contains("riscoLinguagemSolucao=70");
+  }
+
 	  /** Deve enviar subnichos já materializados no CNAE para a IA não repetir o mesmo recorte de mercado. */
 	  @Test
 	  void listPendingIncludesExistingSubnichesForSameCnae() {

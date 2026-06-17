@@ -17,6 +17,9 @@ public class RoutineQualityGateBackendClient {
     private static final String COMPLETE_PATH_PREFIX = "/api/internal/oprm/nichocnae/routine-quality-gate/stage-executions/";
     private static final String COMPLETE_PATH_SUFFIX = "/complete";
     private static final String FAIL_PATH_SUFFIX = "/fail";
+    private static final String REPROCESS_PATH_PREFIX = "/api/oprm/nichocnae/routine-research-orchestrator/recent-processed/";
+    private static final String REPROCESS_PATH_SUFFIX = "/reprocess";
+    private static final String AUTO_QUALITY_REPROCESS_TRIGGER = "AUTO_QUALITY_REPROCESS";
     private static final String CHECKED_BY = "oprmRoutineQualityGate";
 
     private final OprmMarketImportCollectorProperties collectorProperties;
@@ -72,6 +75,32 @@ public class RoutineQualityGateBackendClient {
                     pending.researchCycleId(),
                     pending.routineCardId(),
                     decision == null ? null : decision.qualityStatus(),
+                    ex);
+            throw ex;
+        }
+    }
+
+
+    /** Solicita ao backend apenas a gravação de um novo ciclo quando o coletor decidiu reprocessar a qualidade. */
+    public void reprocessAfterQualityRejection(RoutineQualityGateOutput output) {
+        String url = collectorProperties.backendBaseUrl() + REPROCESS_PATH_PREFIX + output.researchCycleId() + REPROCESS_PATH_SUFFIX;
+        try {
+            restClient.post()
+                    .uri(url)
+                    .body(new RoutineQualityReprocessRequest(AUTO_QUALITY_REPROCESS_TRIGGER))
+                    .retrieve()
+                    .toBodilessEntity();
+            log.info(
+                    "Reprocessamento automático OPRM nichocnae solicitado pelo coletor (endpoint={}, researchCycleId={}, qualityStatus={})",
+                    url,
+                    output.researchCycleId(),
+                    output.qualityStatus());
+        } catch (RestClientException ex) {
+            log.error(
+                    "Erro ao solicitar reprocessamento automático OPRM nichocnae pelo coletor (endpoint={}, researchCycleId={}, qualityStatus={})",
+                    url,
+                    output.researchCycleId(),
+                    output.qualityStatus(),
                     ex);
             throw ex;
         }

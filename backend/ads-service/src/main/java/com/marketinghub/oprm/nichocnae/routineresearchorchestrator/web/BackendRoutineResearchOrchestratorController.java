@@ -3,6 +3,7 @@ package com.marketinghub.oprm.nichocnae.routineresearchorchestrator.web;
 import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.BackendRoutineResearchOrchestratorService;
 import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.pending.RecordRoutineResearchOrchestratorPending;
 import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.recent.RecordRoutineResearchOrchestratorRecent;
+import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.reprocess.RecordRoutineResearchOrchestratorReprocessRequest;
 import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.reprocess.RecordRoutineResearchOrchestratorReprocessResult;
 import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.runNext.RecordRoutineResearchOrchestratorResult;
 import java.util.List;
@@ -10,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -38,10 +40,12 @@ public class BackendRoutineResearchOrchestratorController {
         return executionService.listRecentProcessed(limit);
     }
 
-    /** Cria imediatamente um novo ciclo para falhas, pesquisas insuficientes ou resultados genéricos. */
+    /** Reabre o mesmo job para falhas, pesquisas insuficientes ou resultados genéricos. */
     @PostMapping("/oprm/nichocnae/routine-research-orchestrator/recent-processed/{researchCycleId}/reprocess")
-    public RecordRoutineResearchOrchestratorReprocessResult reprocess(@PathVariable Long researchCycleId) {
-        return executionService.reprocessCycle(researchCycleId);
+    public RecordRoutineResearchOrchestratorReprocessResult reprocess(
+            @PathVariable Long researchCycleId,
+            @RequestBody(required = false) RecordRoutineResearchOrchestratorReprocessRequest request) {
+        return executionService.reprocessCycle(researchCycleId, request);
     }
 
     /** Executa a etapa zero para iniciar pesquisa de rotina do CNAE escolhido na tela de detalhe. */

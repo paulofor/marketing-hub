@@ -792,3 +792,4 @@
 - Corrigida a interpretação operacional do protocolo padrão módulo: ele nunca deve ser aplicado no backend principal por padrão.
 - Revertida a aplicação indevida do protocolo no `backend/ads-service`; para NichoCNAE, o módulo executor correto é o `oprm-coletor-mei`.
 - Atualizados o contrato operacional e a metodologia para separar claramente `protocolo padrão módulo` de `protocolo padrão backend`, evitando nova implementação no alvo errado.
+- Correção adicional: a documentação e o PR desse ajuste devem deixar claro que não há alteração funcional de backend quando o diff é somente de escopo/metodologia.

@@ -163,6 +163,22 @@ function findPreviousCycle(
   );
 }
 
+function findPendingCyclesBeforeEnrichedNiche(
+  cycles?: OprmRoutineResearchCycleSummary[],
+  enrichedNiches?: { researchCycleId: number }[],
+) {
+  const safeEnrichedNiches = Array.isArray(enrichedNiches)
+    ? enrichedNiches
+    : [];
+  const safeCycles = Array.isArray(cycles) ? cycles : [];
+  const materializedCycleIds = new Set(
+    safeEnrichedNiches.map((niche) => niche.researchCycleId),
+  );
+  return safeCycles.filter(
+    (cycle) => !materializedCycleIds.has(cycle.researchCycleId),
+  );
+}
+
 function automaticProcessMessage(
   latestCycle?: OprmRoutineResearchCycleSummary | null,
   previousCycle?: OprmRoutineResearchCycleSummary | null,
@@ -625,6 +641,10 @@ export default function OprmCnaeDetailPlaceholderPage() {
   const generatedNichesQuery =
     useOprmGeneratedEnrichedNichesByCnae(decodedCnaeCode);
   const startPipelineMutation = useStartOprmCnaePipeline(decodedCnaeCode);
+  const pendingCyclesBeforeEnrichedNiche = findPendingCyclesBeforeEnrichedNiche(
+    cyclesQuery.data,
+    generatedNichesQuery.data,
+  );
   const latestCycle = selectedResearchCycleId
     ? cyclesQuery.data?.find(
         (cycle) => cycle.researchCycleId === selectedResearchCycleId,
@@ -905,6 +925,88 @@ export default function OprmCnaeDetailPlaceholderPage() {
               subnicho” para iniciar a análise.
             </div>
           ) : null}
+
+          <div className="border rounded-3 p-3 bg-light">
+            <div className="d-flex flex-wrap justify-content-between gap-2 align-items-start mb-3">
+              <div>
+                <h3 className="h6 mb-1">
+                  Em processamento antes de virar subnicho
+                </h3>
+                <p className="small text-secondary mb-0">
+                  Ciclos iniciados para este CNAE que ainda não materializaram
+                  um subnicho final. Use “Acompanhar” para voltar ao ponto exato
+                  da execução mesmo depois de sair da tela.
+                </p>
+              </div>
+              <span className="badge text-bg-primary">
+                {pendingCyclesBeforeEnrichedNiche.length} em aberto
+              </span>
+            </div>
+            {cyclesQuery.isLoading || generatedNichesQuery.isLoading ? (
+              <div className="alert alert-light border mb-0" role="status">
+                Carregando processamentos em aberto...
+              </div>
+            ) : null}
+            {cyclesQuery.isError ? (
+              <div className="alert alert-warning mb-0" role="alert">
+                Não foi possível carregar os processamentos em aberto deste
+                CNAE.
+              </div>
+            ) : null}
+            {!cyclesQuery.isLoading &&
+            !generatedNichesQuery.isLoading &&
+            !cyclesQuery.isError &&
+            pendingCyclesBeforeEnrichedNiche.length ? (
+              <div className="table-responsive">
+                <table className="table table-sm align-middle mb-0">
+                  <thead>
+                    <tr>
+                      <th scope="col">Subnicho em análise</th>
+                      <th scope="col">Status</th>
+                      <th scope="col">Ciclo</th>
+                      <th scope="col">Início</th>
+                      <th scope="col" className="text-end">
+                        Ação
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pendingCyclesBeforeEnrichedNiche.map((cycle) => (
+                      <tr key={cycle.researchCycleId}>
+                        <td>
+                          <div className="fw-semibold">
+                            {cycle.neutralNicheName ?? cycle.nicheName}
+                          </div>
+                          <span className="small text-secondary">
+                            Ainda não virou subnicho materializado
+                          </span>
+                        </td>
+                        <td>{statusLabel(cycle.status)}</td>
+                        <td>#{cycle.researchCycleId}</td>
+                        <td>{formatDateTime(cycle.startedAt)}</td>
+                        <td className="text-end">
+                          <Link
+                            className="btn btn-outline-primary btn-sm"
+                            to={`/oprm/cnaes/${encodeURIComponent(decodedCnaeCode)}/subnichos/${cycle.researchCycleId}`}
+                          >
+                            Acompanhar
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : null}
+            {!cyclesQuery.isLoading &&
+            !generatedNichesQuery.isLoading &&
+            !cyclesQuery.isError &&
+            !pendingCyclesBeforeEnrichedNiche.length ? (
+              <div className="alert alert-secondary mb-0">
+                Nenhum processamento em aberto para este CNAE agora.
+              </div>
+            ) : null}
+          </div>
         </div>
       </section>
 

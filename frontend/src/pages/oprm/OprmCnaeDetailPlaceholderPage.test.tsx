@@ -255,8 +255,116 @@ describe("OprmCnaeDetailPlaceholderPage", () => {
       await screen.findByText("Subnicho identificado neste pipeline"),
     ).toBeTruthy();
     expect(
-      screen.getByText("Manicure autônoma com agenda recorrente"),
+      screen.getAllByText("Manicure autônoma com agenda recorrente").length,
+    ).toBeGreaterThan(0);
+  });
+
+  it("lista ciclos em processamento que ainda nao viraram subnicho", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = input.toString();
+
+        if (url.includes("routine-research-cycle/stage-executions")) {
+          return new Response(
+            JSON.stringify([
+              {
+                researchCycleId: 62,
+                sourceNicheId: 18,
+                cnaeCode: "9602501",
+                nicheName: "Manicure autônoma para atendimento em domicílio",
+                originalNicheName: "Cabeleireiros, manicure e pedicure",
+                neutralNicheName:
+                  "Manicure autônoma para atendimento em domicílio",
+                researchMode: "ROUTINE_REALITY_RESEARCH",
+                solutionLanguageRiskScore: 10,
+                sourceScore: 90,
+                triggerSource: "MANUAL_CNAE_DETAIL",
+                status: "RUNNING",
+                totalQueries: 4,
+                totalSourceCandidates: 8,
+                totalSourceSnapshots: 0,
+                totalExtractedSignals: 0,
+                executionCostUsd: 0.015,
+                cnaeTotalCostUsd: 0.0377,
+                startedAt: "2026-06-17T14:03:00Z",
+                finishedAt: null,
+                errorMessage: null,
+              },
+              {
+                researchCycleId: 60,
+                sourceNicheId: 18,
+                cnaeCode: "9602501",
+                nicheName: "Manicure autônoma com agenda recorrente",
+                originalNicheName: "Cabeleireiros, manicure e pedicure",
+                neutralNicheName: "Manicure autônoma com agenda recorrente",
+                researchMode: "ROUTINE_REALITY_RESEARCH",
+                solutionLanguageRiskScore: 10,
+                sourceScore: 90,
+                triggerSource: "MANUAL_CNAE_DETAIL",
+                status: "ENRICHED_NICHE_CREATED",
+                totalQueries: 12,
+                totalSourceCandidates: 20,
+                totalSourceSnapshots: 4,
+                totalExtractedSignals: 0,
+                executionCostUsd: 0.0227,
+                cnaeTotalCostUsd: 0.0377,
+                startedAt: "2026-06-15T17:03:00Z",
+                finishedAt: "2026-06-15T17:39:00Z",
+                errorMessage: null,
+              },
+            ]),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+          );
+        }
+
+        if (url.includes("enriched-niches")) {
+          return new Response(
+            JSON.stringify([
+              {
+                enrichedNicheProfileId: 60,
+                marketNicheId: 21,
+                researchCycleId: 60,
+                cnaeCode: "9602501",
+                cnaeDescription: "Cabeleireiros, manicure e pedicure",
+                nicheName: "Manicure autônoma com agenda recorrente",
+                qualityStatus: "MEI_AUDIENCE_READY",
+                routineEvidenceScore: 84,
+                difficultyEvidenceScore: 82,
+                sourceDiversityScore: 100,
+                materializedAt: "2026-06-15T17:39:00Z",
+              },
+            ]),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+          );
+        }
+
+        return new Response("{}", {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }),
+    );
+
+    renderPage();
+
+    expect(
+      await screen.findByText("Em processamento antes de virar subnicho"),
     ).toBeTruthy();
+    expect(
+      await screen.findByText((_, element) =>
+        Boolean(element?.textContent?.trim() === "1 em aberto"),
+      ),
+    ).toBeTruthy();
+    expect(
+      await screen.findByText(
+        "Manicure autônoma para atendimento em domicílio",
+      ),
+    ).toBeTruthy();
+    expect(
+      screen.getByText("Ainda não virou subnicho materializado"),
+    ).toBeTruthy();
+    expect(screen.getByText("#62")).toBeTruthy();
   });
 
   it("traduz a coluna qualidade dos subnichos gerados para portugues", async () => {

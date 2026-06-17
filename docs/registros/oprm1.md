@@ -786,3 +786,9 @@
 - Causa-raiz tratada: manter um caminho separado de pipeline competia com o fluxo atual de criação de novo nicho pelo CNAE, aumentando risco de confusão operacional, comandos duplicados e gasto sem direcionamento comercial.
 - Correção aplicada: o menu interno OPRM remove o item Pipeline, as rotas antigas de pipeline redirecionam para `/oprm` e o cânone passou a orientar que o pipeline NichoCNAE seja usado somente pelo caminho de criação de novo nicho/subnicho.
 - Prevenção de recorrência: o teste de navegação OPRM valida que o link Pipeline não aparece e que a rota obsoleta não renderiza mais a tela antiga.
+
+## 2026-06-17 — OPRM NichoCNAE: diagrama de ciclos com feedback
+
+- Documentado o desenho arquitetural proposto para o pipeline NichoCNAE com ciclos encadeados, feedback estruturado e reprocessamento orientado por plano de correção.
+- Decisão técnica sugerida: tratar o Quality Gate como produtor de diagnóstico e plano, mantendo o orquestrador como único responsável por abrir novo ciclo e evitando acoplamento direto entre etapas concretas.
+- Prevenção de recorrência: o diagrama explicita `parentCycleId`, `rootCycleId`, artefatos versionados e contratos de feedback para impedir reprocessamento cego sem aprendizado do ciclo anterior.

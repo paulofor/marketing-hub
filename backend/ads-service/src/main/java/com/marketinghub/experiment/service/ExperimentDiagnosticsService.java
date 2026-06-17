@@ -133,7 +133,8 @@ public class ExperimentDiagnosticsService {
                 step.getEndpoint(),
                 step.getStatusCode(),
                 step.getOccurredAt(),
-                StringUtils.hasText(step.getProvider()) ? step.getProvider() : "PUBLICATION_JOB_STEP"
+                StringUtils.hasText(step.getProvider()) ? step.getProvider() : "PUBLICATION_JOB_STEP",
+                step.getJobId()
         );
     }
 
@@ -149,7 +150,8 @@ public class ExperimentDiagnosticsService {
                         log.endpoint(),
                         log.statusCode(),
                         resolveOccurrence(log),
-                        resolveFailureSource(log)
+                        resolveFailureSource(log),
+                        log.jobId() == null ? null : log.jobId().toString()
                 ))
                 .orElse(null);
     }

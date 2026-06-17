@@ -23,6 +23,7 @@ export interface ExperimentDiagnostics {
     statusCode: number | null;
     occurredAt: string | null;
     source: string | null;
+    jobId: string | null;
   } | null;
 }
 

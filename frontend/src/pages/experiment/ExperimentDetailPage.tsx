@@ -2193,6 +2193,14 @@ export default function ExperimentDetailPage() {
                       {diagnostics.failureDetails.source ?? "—"}
                     </li>
                     <li>
+                      <strong>Job ID:</strong>{" "}
+                      {diagnostics.failureDetails.jobId ? (
+                        <code>{diagnostics.failureDetails.jobId}</code>
+                      ) : (
+                        "—"
+                      )}
+                    </li>
+                    <li>
                       <strong>Horário do erro:</strong>{" "}
                       {diagnostics.failureDetails.occurredAt
                         ? formatDateTimeValue(

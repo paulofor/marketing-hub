@@ -9,6 +9,7 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.marketinghub.niche.MarketNicheEnrichmentProfile;
 import com.marketinghub.oprm.nichocnae.OprmNicheResearchSeed;
 import com.marketinghub.oprm.nichocnae.OprmNicheRoutineCard;
 import com.marketinghub.oprm.nichocnae.OprmResearchQuery;
@@ -17,6 +18,7 @@ import com.marketinghub.oprm.nichocnae.nicheresearchseedbuilder.service.complete
 import com.marketinghub.oprm.nichocnae.nicheresearchseedbuilder.service.completeStageExecution.CompleteNicheResearchSeedBuilderResponse;
 import com.marketinghub.oprm.nichocnae.nicheresearchseedbuilder.service.completeStageExecution.NicheResearchQueryRequest;
 import com.marketinghub.oprm.nichocnae.nicheresearchseedbuilder.service.failStageExecution.FailNicheResearchSeedBuilderRequest;
+import com.marketinghub.repository.jpa.niche.MarketNicheEnrichmentProfileRepository;
 import com.marketinghub.repository.jpa.oprm.market.OprmMarketSizeByCnaeRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmNicheResearchSeedRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmNicheRoutineCardRepository;
@@ -43,6 +45,7 @@ class BackendNicheResearchSeedBuilderServiceTest {
   @Mock private OprmNicheResearchSeedBuilderConfigurationGateway configurationGateway;
   @Mock private OprmMarketSizeByCnaeRepository marketSizeByCnaeRepository;
   @Mock private OprmNicheRoutineCardRepository routineCardRepository;
+  @Mock private MarketNicheEnrichmentProfileRepository enrichmentProfileRepository;
 
   @InjectMocks private BackendNicheResearchSeedBuilderService service;
 
@@ -78,7 +81,7 @@ class BackendNicheResearchSeedBuilderServiceTest {
 
   /** Deve expor aprendizado do gate anterior para a etapa de seed não repetir a reprovação dominante. */
   @Test
-  void listPendingIncludesPreviousQualityGateLearning() {
+	  void listPendingIncludesPreviousQualityGateLearning() {
     OprmRoutineResearchCycle cycle = cycle();
     OprmNicheRoutineCard card = new OprmNicheRoutineCard();
     card.setQualityStatus("SOLUTION_CONTAMINATED");
@@ -103,7 +106,34 @@ class BackendNicheResearchSeedBuilderServiceTest {
     assertThat(result.getFirst().previousNextMoveCode()).isEqualTo("REFAZER_BUSCA_SEM_SOLUCAO");
     assertThat(result.getFirst().previousNextMove()).isEqualTo("Reexecutar busca removendo fontes de solucao");
     assertThat(result.getFirst().previousLearningNotes()).contains("riscoLinguagemSolucao=70");
-  }
+	  }
+
+	  /** Deve enviar subnichos já materializados no CNAE para a IA não repetir o mesmo recorte de mercado. */
+	  @Test
+	  void listPendingIncludesExistingSubnichesForSameCnae() {
+	    OprmRoutineResearchCycle cycle = cycle();
+	    MarketNicheEnrichmentProfile firstProfile = new MarketNicheEnrichmentProfile();
+	    firstProfile.setNeutralNicheName("Manicure autônoma que atende em domicílio");
+	    MarketNicheEnrichmentProfile secondProfile = new MarketNicheEnrichmentProfile();
+	    secondProfile.setNeutralNicheName("Nail designer iniciante com agenda pelo Instagram");
+	    when(routineResearchCycleRepository.findSeedBuilderPendingOrRetryable(
+	            eq("RUNNING"),
+	            eq("FAILED"),
+	            eq("nicheName is required"),
+	            eq("Data too long for column 'query_goal'"),
+	            eq("niche-research-seed-builder/stage-executions"),
+	            any(Pageable.class)))
+	        .thenReturn(List.of(cycle));
+	    when(enrichmentProfileRepository.findGeneratedByCnaeCode(eq("9602501"), any(Pageable.class)))
+	        .thenReturn(List.of(firstProfile, secondProfile));
+
+	    var result = service.listPending();
+
+	    assertThat(result.getFirst().existingSubnichesForCnae())
+	        .containsExactly(
+	            "Manicure autônoma que atende em domicílio",
+	            "Nail designer iniciante com agenda pelo Instagram");
+	  }
 
   /** Deve gravar seed, queries pendentes e total de queries no ciclo quando o payload é válido. */
   @Test

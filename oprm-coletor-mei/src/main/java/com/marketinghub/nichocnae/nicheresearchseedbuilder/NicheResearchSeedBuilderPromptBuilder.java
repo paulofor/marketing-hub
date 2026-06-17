@@ -34,13 +34,23 @@ public class NicheResearchSeedBuilderPromptBuilder {
             prompt.add("previousLearningNotes: " + safe(input.previousLearningNotes()));
             prompt.add("Use esse aprendizado como restrição obrigatória: não repita a mesma causa de reprovação; altere o subnicho, as famílias de queries e a estratégia de fontes para executar o próximo movimento indicado.");
         }
+        if (input.existingSubnichesForCnae() != null && !input.existingSubnichesForCnae().isEmpty()) {
+            prompt.add("");
+            prompt.add("Subnichos já materializados para este CNAE e proibidos nesta nova escolha:");
+            input.existingSubnichesForCnae().stream()
+                    .filter(this::hasText)
+                    .map(String::trim)
+                    .distinct()
+                    .forEach(existing -> prompt.add("- " + existing));
+            prompt.add("Atue como especialista em Marketing e Mercado: não escolha, reescreva ou aproxime semanticamente esses subnichos já existentes; busque um recorte novo de público, contexto operacional, dor urgente, capacidade de pagar e resultado observável para ampliar o portfólio do CNAE sem canibalização.");
+        }
         prompt.add("");
         prompt.add("Orientações operacionais:");
         prompt.add("1. Responda JSON válido aderente ao schema estrutural solicitado.");
         prompt.add("2. Leia CNAE, volume MEI, score OPRM, descrição e nome amplo apenas como matéria-prima; não crie nem materialize o nicho amplo.");
         prompt.add("3. Gere mentalmente 3 a 7 subnichos operacionais focados em executor MEI/autônomo, como manicure autônoma com agenda via WhatsApp, cabeleireira que atende em domicílio, profissional de beleza iniciante buscando primeiros clientes e manicure/pedicure que quer aumentar recorrência e pacotes mensais quando fizer sentido para o CNAE.");
         prompt.add("4. Pontue cada subnicho de 1 a 5 por recorrência, urgência da dor, capacidade de pagar, clareza do resultado e compatibilidade com produto digital; escolha como seed apenas o subnicho com maior potencial de venda futura.");
-        prompt.add("5. O campo seed.nicheName deve ser o subnicho específico vencedor, nunca o CNAE amplo nem uma simples variação plural/singular da descrição CNAE; use uma formulação com público, contexto operacional e dor/resultado observável.");
+        prompt.add("5. O campo seed.nicheName deve ser o subnicho específico vencedor, nunca o CNAE amplo, uma simples variação plural/singular da descrição CNAE ou um subnicho já materializado para este CNAE; use uma formulação com público, contexto operacional e dor/resultado observável.");
         prompt.add("6. Execute um pré-gate comercial antes de gerar queries profundas: só escolha o subnicho se houver sinais mínimos de recorrência, urgência da dor, capacidade de pagar, clareza do resultado, compatibilidade com produto digital e possibilidade de evidência pública.");
         prompt.add("7. Se nenhum subnicho passar no pré-gate comercial, escolha o mais promissor e deixe claro em initialAssumptions quais critérios ainda precisam ser validados nas primeiras queries, sem inventar oferta.");
         prompt.add("8. initialAssumptions deve resumir os subnichos avaliados, a pontuação comparativa e o motivo da escolha com base nos critérios comerciais, citando explicitamente recorrência, urgência da dor, capacidade de pagar, clareza do resultado e compatibilidade com produto digital, sem virar oferta.");

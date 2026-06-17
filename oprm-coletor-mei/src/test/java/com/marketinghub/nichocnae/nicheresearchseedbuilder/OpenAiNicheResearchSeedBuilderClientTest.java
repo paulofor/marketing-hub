@@ -14,6 +14,7 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -123,6 +124,7 @@ class OpenAiNicheResearchSeedBuilderClientTest {
                 null,
                 null,
                 null,
+                List.of(),
                 "RUNNING",
                 Instant.now(),
                 Instant.now());

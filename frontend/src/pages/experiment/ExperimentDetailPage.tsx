@@ -2383,11 +2383,6 @@ export default function ExperimentDetailPage() {
                           {formatDateTimeValue(campaign.createdAt)}
                         </div>
                       </div>
-                      <span
-                        className={`badge text-bg-${campaign.status === "PAUSED" ? "secondary" : "success"}`}
-                      >
-                        {campaign.status}
-                      </span>
                     </div>
                     {campaign.issues?.length ? (
                       <div
@@ -2419,11 +2414,6 @@ export default function ExperimentDetailPage() {
                                   {adSet.ads.length === 1 ? "" : "s"}
                                 </div>
                               </div>
-                              <span
-                                className={`badge text-bg-${adSet.experimentAdSetId ? "success" : "warning"}`}
-                              >
-                                {adSet.status}
-                              </span>
                             </div>
                             {adSet.issues?.length ? (
                               <ul className="text-warning small mb-0 mt-2 ps-3">
@@ -2452,11 +2442,6 @@ export default function ExperimentDetailPage() {
                                           {ad.trackingCode ?? "—"}
                                         </div>
                                       </div>
-                                      <span
-                                        className={`badge text-bg-${ad.status === "PAUSED" ? "secondary" : "success"}`}
-                                      >
-                                        {ad.status}
-                                      </span>
                                     </div>
                                     {ad.funnelStages &&
                                     ad.funnelStages.length ? (

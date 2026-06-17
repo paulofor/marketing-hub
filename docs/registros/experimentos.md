@@ -4697,3 +4697,8 @@
 
 - Ajustado o diagnóstico de falha do experimento para exibir o `jobId` do passo de publicação que originou o erro.
 - Objetivo operacional: permitir consultar diretamente a tabela `facebook_campaign_publication_job_step` e acelerar a investigação da causa-raiz no fluxo de publicação Facebook Ads.
+
+## 2026-06-17 — Remoção de status locais na execução registrada
+
+- Removidos da tela de detalhe do experimento os badges locais de status de campanha, conjunto e anúncio na seção **Execução registrada**.
+- Motivo: esses status refletem o registro interno persistido e podiam sugerir que tudo estava ativo mesmo quando a realidade operacional da Meta Ads era diferente.

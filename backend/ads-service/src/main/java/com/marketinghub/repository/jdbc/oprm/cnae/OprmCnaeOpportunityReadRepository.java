@@ -1,4 +1,4 @@
-package com.marketinghub.oprm.cnae.repository;
+package com.marketinghub.repository.jdbc.oprm.cnae;
 
 import com.marketinghub.oprm.cnae.dto.OprmCnaeOpportunityCandidateDto;
 import java.util.List;

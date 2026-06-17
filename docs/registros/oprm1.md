@@ -798,3 +798,10 @@
 - Documentado o desenho arquitetural proposto para o pipeline NichoCNAE com ciclos encadeados, feedback estruturado e reprocessamento orientado por plano de correção.
 - Decisão técnica sugerida: tratar o Quality Gate como produtor de diagnóstico e plano, mantendo o orquestrador como único responsável por abrir novo ciclo e evitando acoplamento direto entre etapas concretas.
 - Prevenção de recorrência: o diagrama explicita `parentCycleId`, `rootCycleId`, artefatos versionados e contratos de feedback para impedir reprocessamento cego sem aprendizado do ciclo anterior.
+
+## 2026-06-17 — OPRM CNAE: protocolo padrão backend
+
+- Aplicado o protocolo padrão backend no pacote `com.marketinghub.oprm.cnae` por meio de regras ArchUnit específicas para a borda HTTP, fachada de serviço e contratos de API.
+- Causa-raiz tratada: o fluxo CNAE tinha leitura JDBC dentro do pacote funcional, o que misturava contrato de negócio com acesso direto ao banco e aumentava risco de espalhamento arquitetural.
+- Correção aplicada: o gateway JDBC foi movido para o pacote canônico `com.marketinghub.repository.jdbc.oprm.cnae`, preservando o backend como única camada com acesso ao banco e mantendo o pacote funcional focado no contrato OPRM.
+- Prevenção de recorrência: a suíte de arquitetura agora valida controller único, service único, DTOs como `record` e ausência de repositories dentro de `com.marketinghub.oprm.cnae`.

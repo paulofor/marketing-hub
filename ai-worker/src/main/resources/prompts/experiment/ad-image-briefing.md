@@ -21,8 +21,11 @@ Regras fixas da etapa:
 7. O foco visual deve ser único: uma cena principal, um conflito ou resultado principal e uma hierarquia simples de texto sobreposto.
 8. Não usar dashboard, gráfico, infográfico, múltiplos cards, tela de software genérica ou composição poluída se isso não for essencial ao caso.
 9. O texto sobreposto deve ser curto, legível e coerente com a copy da variação correspondente.
-10. O briefing precisa orientar explicitamente o que incluir e o que evitar para manter a filtragem do público alvo.
-11. Não incluir campos técnicos, comentários internos, instruções de pipeline ou metadados fora do contrato final.
+10. É obrigatório que o texto sobreposto seja uma pergunta clara, completa e objetiva, capaz de filtrar imediatamente quem é verdadeiramente do nicho.
+11. Essa pergunta deve mencionar explicitamente a situação, rotina, cargo, atividade, dor ou resultado específico do nicho; se a pergunta puder servir para qualquer mercado, ela deve ser reescrita.
+12. A pergunta deve funcionar como primeiro filtro visual do anúncio: quem vive aquela realidade precisa responder mentalmente “sim, isso é sobre mim” em até 2 segundos.
+13. O briefing precisa orientar explicitamente o que incluir e o que evitar para manter a filtragem do público alvo.
+14. Não incluir campos técnicos, comentários internos, instruções de pipeline ou metadados fora do contrato final.
 
 OUTPUT_CONTRACT
 Responda em JSON válido e estritamente aderente ao artefato canônico `adImageBriefing`.
@@ -33,14 +36,16 @@ Formato obrigatório do JSON final:
 - adImageBriefing.briefings: array com exatamente 3 objetos.
 - Cada objeto deve conter exatamente: mustMatchAdVariant, visualAngle, assetType, imageTextMaxWords, visualBriefing, hierarchy, formatByPlacement, safeMargins, complianceNotes e messageMatchNotes.
 - visualAngle deve ser um dos valores permitidos pelo contrato: `dor`, `resultado` ou `prova`.
-- visualBriefing deve descrever a cena, o cliente ideal que precisa se reconhecer e os sinais visuais que filtram o público geral.
-- hierarchy deve orientar a ordem visual: foco principal, texto sobreposto curto, CTA e elemento de prova/promessa.
+- visualBriefing deve descrever a cena, o cliente ideal que precisa se reconhecer, os sinais visuais que filtram o público geral e a pergunta obrigatória que aparecerá na imagem.
+- hierarchy deve orientar a ordem visual: foco principal, pergunta sobreposta clara como primeiro filtro do nicho, CTA e elemento de prova/promessa.
 - formatByPlacement deve indicar adaptação para feed ou story vertical mantendo leitura em mobile.
 - experimentMetadata deve repetir os metadados obrigatórios recebidos no prompt base: primary_variable, variant_id, stage, control_or_treatment e asset_role.
 
 Checklist antes de responder:
 1. A imagem fala com o cliente ideal, não com público genérico?
 2. Existem sinais visuais que filtram quem é público alvo de quem não é?
-3. Cada briefing corresponde a uma variação real da copy?
-4. A cena é simples, legível e forte em mobile?
-5. O JSON final contém somente `adImageBriefing` e `experimentMetadata` na raiz?
+3. O texto sobreposto é uma pergunta clara, completa e objetiva que só faz sentido para quem é verdadeiramente do nicho?
+4. A pergunta menciona situação, rotina, cargo, atividade, dor ou resultado específico do nicho e não poderia servir para qualquer mercado?
+5. Cada briefing corresponde a uma variação real da copy?
+6. A cena é simples, legível e forte em mobile?
+7. O JSON final contém somente `adImageBriefing` e `experimentMetadata` na raiz?

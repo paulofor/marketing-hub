@@ -882,3 +882,8 @@
 - Correção aplicada: o backend reabre o mesmo ciclo, limpa os artefatos derivados das etapas reexecutáveis e mantém o mesmo identificador como unidade operacional do job, evitando duplicidade conceitual no histórico.
 - Relatório: criado download Markdown por `researchCycleId` na tela do CNAE/subnicho, disponível mesmo antes de materializar perfil enriquecido, com status, gatilho, observações de reexecução e artefatos atuais do pipeline.
 - Prevenção de recorrência: testes validam que o reprocessamento preserva o mesmo job e que o relatório por ciclo funciona sem perfil materializado.
+## 2026-06-17 — OPRM CNAE: relatório Markdown por execução
+
+- Adicionado botão “Relatório” para cada execução do NichoCNAE, permitindo baixar um arquivo `nicho-cnae<id>.md` com detalhamento etapa por etapa.
+- Causa-raiz tratada: a tela permitia acompanhar o estado do pipeline, mas não entregava uma auditoria consolidada para o usuário analisar request/response de IA, URLs pesquisadas, retornos coletados, sinais, síntese e qualidade sem navegar por várias telas.
+- Prevenção de recorrência: o relatório é gerado pelo backend a partir das tabelas canônicas da execução, mantendo a tela como consumidora da verdade do backend e evitando inferência local no frontend.

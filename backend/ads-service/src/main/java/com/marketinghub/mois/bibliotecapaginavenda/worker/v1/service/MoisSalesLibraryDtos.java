@@ -1,4 +1,4 @@
-package com.marketinghub.mois.bibliotecapaginavenda.worker.v1.dto;
+package com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;

@@ -1670,3 +1670,9 @@ Arquivos principais:
 - Corrigida a causa-raiz da falha de arquitetura em `moisSalesLibraryRepositoriesMustStayInCanonicalRepositoryPackage`: implementações JDBC concretas estavam no pacote canônico reservado a contratos/interfaces de persistência.
 - Movidas as implementações JDBC para subpacote de implementação, mantendo no pacote canônico apenas os gateways/interfaces esperados pela regra arquitetural.
 - Atualizado o teste unitário do repository de pricing para apontar para a nova localização da implementação sem alterar o contrato consumido pelos services.
+
+## 2026-06-17 — Ajuste arquitetural dos DTOs da Biblioteca de Sales Pages
+
+- Corrigida a causa-raiz da falha de arquitetura `moisSalesLibraryWebShouldOnlyDependOnServiceLayer`: o controller dependia do pacote `.dto`, mas a regra do módulo MOIS permite que a camada web dependa apenas da camada `.service` do mesmo namespace/versão.
+- Movido o agrupador de contratos HTTP `MoisSalesLibraryDtos` para a camada `.service`, mantendo os contratos como `record` e evitando novo acoplamento direto da web com camada fora do padrão validado.
+- Atualizados imports em controller, services, scheduler e testes relacionados para preservar o contrato funcional sem alterar endpoints.

@@ -1,4 +1,4 @@
-import { Globe2, Sparkles } from "lucide-react";
+import { Activity, Globe2, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
@@ -213,6 +213,15 @@ function statusLabel(status?: string | null) {
 
 function isQualityBlockedStatus(status?: string | null) {
   return Boolean(status && qualityBlockedStatuses.has(status));
+}
+
+function isCycleRunningStatus(cycle?: OprmRoutineResearchCycleSummary | null) {
+  return Boolean(
+    cycle &&
+    !cycle.finishedAt &&
+    !isCycleStoppedStatus(cycle.status) &&
+    cycle.status !== "ENRICHED_NICHE_CREATED",
+  );
 }
 
 function isCycleStoppedStatus(status?: string | null) {
@@ -925,13 +934,35 @@ export default function OprmCnaeDetailPlaceholderPage() {
 
             {latestCycle ? (
               <div className={pipelineAlertClass(latestCycle.status)}>
-                <div>
-                  Status atual:{" "}
-                  <strong>{statusLabel(latestCycle.status)}</strong> · iniciado
-                  em {formatDateTime(latestCycle.startedAt)} · sinais extraídos:{" "}
-                  {formatNumber(latestCycle.totalExtractedSignals)} · custo do
-                  job atual:{" "}
-                  <strong>{formatUsd(latestCycle.executionCostUsd)}</strong>
+                <div className="d-flex flex-wrap align-items-center gap-3">
+                  {isCycleRunningStatus(latestCycle) ? (
+                    <div
+                      className="pipeline-running-illustration"
+                      aria-label="Pipeline em execução"
+                      role="img"
+                    >
+                      <span className="pipeline-running-illustration__orbit" />
+                      <span className="pipeline-running-illustration__core">
+                        <Activity size={26} aria-hidden="true" />
+                      </span>
+                      <span className="pipeline-running-illustration__dot pipeline-running-illustration__dot--one" />
+                      <span className="pipeline-running-illustration__dot pipeline-running-illustration__dot--two" />
+                    </div>
+                  ) : null}
+                  <div>
+                    Status atual:{" "}
+                    <strong>{statusLabel(latestCycle.status)}</strong> ·
+                    iniciado em {formatDateTime(latestCycle.startedAt)} · sinais
+                    extraídos: {formatNumber(latestCycle.totalExtractedSignals)}{" "}
+                    · custo do job atual:{" "}
+                    <strong>{formatUsd(latestCycle.executionCostUsd)}</strong>
+                    {isCycleRunningStatus(latestCycle) ? (
+                      <span className="d-block small fw-semibold text-primary mt-1">
+                        Processando automaticamente. A tela acompanha o avanço
+                        pelas etapas abaixo.
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
                 {qualityBlockedMessage(latestCycle.status) ? (
                   <div className="mt-2">
@@ -1038,7 +1069,13 @@ export default function OprmCnaeDetailPlaceholderPage() {
                               </span>
                             ) : null}
                           </div>
-                          <span className="badge text-bg-light">
+                          <span className="badge text-bg-light d-inline-flex align-items-center gap-1">
+                            {state.label === "Em execução" ? (
+                              <span
+                                className="pipeline-stage-running-dot"
+                                aria-hidden="true"
+                              />
+                            ) : null}
                             {state.label}
                           </span>
                         </div>

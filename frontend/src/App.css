@@ -44,7 +44,9 @@
 .funnel-step-card {
   background: linear-gradient(135deg, #f8faff 0%, #eef3ff 100%);
   border: 1px solid rgba(88, 102, 242, 0.18);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .funnel-step-card:hover,
@@ -95,4 +97,96 @@
   border: 1px solid var(--bs-border-color);
   padding: 0.5rem;
   vertical-align: top;
+}
+
+.pipeline-running-illustration {
+  width: 4rem;
+  height: 4rem;
+  position: relative;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pipeline-running-illustration__orbit {
+  position: absolute;
+  inset: 0.2rem;
+  border: 0.18rem solid rgba(13, 110, 253, 0.18);
+  border-top-color: rgba(13, 110, 253, 0.85);
+  border-radius: 999px;
+  animation: pipeline-running-spin 1.15s linear infinite;
+}
+
+.pipeline-running-illustration__core {
+  width: 2.55rem;
+  height: 2.55rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #0d6efd;
+  background: #ffffff;
+  box-shadow: 0 0.45rem 1.25rem rgba(13, 110, 253, 0.25);
+  animation: pipeline-running-pulse 1.45s ease-in-out infinite;
+}
+
+.pipeline-running-illustration__dot,
+.pipeline-stage-running-dot {
+  border-radius: 999px;
+  background: #0d6efd;
+}
+
+.pipeline-running-illustration__dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  position: absolute;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.12);
+}
+
+.pipeline-running-illustration__dot--one {
+  top: 0.1rem;
+  right: 0.65rem;
+  animation: pipeline-running-blink 0.9s ease-in-out infinite;
+}
+
+.pipeline-running-illustration__dot--two {
+  bottom: 0.3rem;
+  left: 0.55rem;
+  animation: pipeline-running-blink 0.9s ease-in-out 0.35s infinite;
+}
+
+.pipeline-stage-running-dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  display: inline-block;
+  animation: pipeline-running-blink 0.85s ease-in-out infinite;
+}
+
+@keyframes pipeline-running-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pipeline-running-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+}
+
+@keyframes pipeline-running-blink {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
 }

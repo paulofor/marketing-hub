@@ -1,6 +1,5 @@
 package com.marketinghub.oprm.nichocnae.nicheresearchseedbuilder.service;
 
-import com.marketinghub.niche.MarketNicheEnrichmentProfile;
 import com.marketinghub.oprm.nichocnae.OprmNicheResearchSeed;
 import com.marketinghub.oprm.nichocnae.OprmNicheRoutineCard;
 import com.marketinghub.oprm.nichocnae.OprmResearchQuery;
@@ -12,7 +11,7 @@ import com.marketinghub.oprm.nichocnae.nicheresearchseedbuilder.service.complete
 import com.marketinghub.oprm.nichocnae.nicheresearchseedbuilder.service.detailStageExecution.NicheResearchSeedBuilderDetailResponse;
 import com.marketinghub.oprm.nichocnae.nicheresearchseedbuilder.service.failStageExecution.FailNicheResearchSeedBuilderRequest;
 import com.marketinghub.oprm.nichocnae.nicheresearchseedbuilder.service.pending.RecordNicheResearchSeedBuilderPending;
-import com.marketinghub.repository.jpa.niche.MarketNicheEnrichmentProfileRepository;
+import com.marketinghub.oprm.nichocnae.gateway.OprmEnrichedNicheGateway;
 import com.marketinghub.repository.jpa.oprm.market.OprmMarketSizeByCnaeRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmNicheResearchSeedRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmNicheRoutineCardRepository;
@@ -52,7 +51,7 @@ public class BackendNicheResearchSeedBuilderService {
   private final OprmNicheResearchSeedBuilderConfigurationGateway configurationGateway;
   private final OprmMarketSizeByCnaeRepository marketSizeByCnaeRepository;
   private final OprmNicheRoutineCardRepository routineCardRepository;
-  private final MarketNicheEnrichmentProfileRepository enrichmentProfileRepository;
+  private final OprmEnrichedNicheGateway enrichedNicheGateway;
 
   /** Inicializa o serviço com os repositórios canônicos da etapa dois do pipeline. */
   public BackendNicheResearchSeedBuilderService(
@@ -62,14 +61,14 @@ public class BackendNicheResearchSeedBuilderService {
       OprmNicheResearchSeedBuilderConfigurationGateway configurationGateway,
       OprmMarketSizeByCnaeRepository marketSizeByCnaeRepository,
       OprmNicheRoutineCardRepository routineCardRepository,
-      MarketNicheEnrichmentProfileRepository enrichmentProfileRepository) {
+      OprmEnrichedNicheGateway enrichedNicheGateway) {
     this.routineResearchCycleRepository = routineResearchCycleRepository;
     this.nicheResearchSeedRepository = nicheResearchSeedRepository;
     this.researchQueryRepository = researchQueryRepository;
     this.configurationGateway = configurationGateway;
     this.marketSizeByCnaeRepository = marketSizeByCnaeRepository;
     this.routineCardRepository = routineCardRepository;
-    this.enrichmentProfileRepository = enrichmentProfileRepository;
+    this.enrichedNicheGateway = enrichedNicheGateway;
   }
 
   /** Lista ciclos em execução ou falhas retryáveis que ainda precisam receber seed e queries. */
@@ -429,14 +428,7 @@ public class BackendNicheResearchSeedBuilderService {
 
   /** Lista subnichos já materializados no mesmo CNAE para impedir repetição de mercado na nova escolha. */
   private List<String> existingSubnichesForCnae(OprmRoutineResearchCycle cycle) {
-    return enrichmentProfileRepository
-        .findGeneratedByCnaeCode(cycle.getCnaeCode(), PageRequest.of(0, 50))
-        .stream()
-        .map(MarketNicheEnrichmentProfile::getNeutralNicheName)
-        .filter(StringUtils::hasText)
-        .map(String::trim)
-        .distinct()
-        .toList();
+    return enrichedNicheGateway.listNeutralNicheNamesByCnae(cycle.getCnaeCode(), 50);
   }
 
   /** Localiza o último bloqueio de qualidade do mesmo candidato para evitar repetir a causa dominante. */

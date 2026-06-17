@@ -8,8 +8,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.marketinghub.niche.MarketNiche;
-import com.marketinghub.niche.MarketNicheEnrichmentProfile;
 import com.marketinghub.oprm.cnae.OprmNicheCandidate;
 import com.marketinghub.oprm.nichocnae.OprmExtractedSignal;
 import com.marketinghub.oprm.nichocnae.OprmNicheResearchSeed;
@@ -22,8 +20,10 @@ import com.marketinghub.oprm.nichocnae.enrichednichematerializer.service.complet
 import com.marketinghub.oprm.nichocnae.enrichednichematerializer.service.completeStageExecution.CompleteEnrichedNicheMaterializerResponse;
 import com.marketinghub.oprm.nichocnae.enrichednichematerializer.service.pending.RecordEnrichedNicheMaterializerPending;
 import com.marketinghub.oprm.nichocnae.meiaudienceprofile.OprmMeiAudienceProfile;
-import com.marketinghub.repository.jpa.niche.MarketNicheEnrichmentProfileRepository;
-import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
+import com.marketinghub.oprm.nichocnae.gateway.OprmEnrichedNicheGateway;
+import com.marketinghub.oprm.nichocnae.gateway.OprmEnrichedNicheGateway.OprmEnrichedNicheMaterializationResult;
+import com.marketinghub.oprm.nichocnae.gateway.OprmEnrichedNicheGateway.OprmEnrichedNicheProfileSnapshot;
+import com.marketinghub.oprm.nichocnae.gateway.OprmEnrichedNicheGateway.OprmMarketNicheSnapshot;
 import com.marketinghub.repository.jpa.oprm.cnae.OprmNicheCandidateRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmExtractedSignalRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmNicheResearchSeedRepository;
@@ -50,8 +50,7 @@ class BackendEnrichedNicheMaterializerServiceTest {
   private final OprmSourceCandidateRepository sourceCandidateRepository = mock(OprmSourceCandidateRepository.class);
   private final OprmSourceSnapshotRepository sourceSnapshotRepository = mock(OprmSourceSnapshotRepository.class);
   private final OprmExtractedSignalRepository extractedSignalRepository = mock(OprmExtractedSignalRepository.class);
-  private final MarketNicheRepository marketNicheRepository = mock(MarketNicheRepository.class);
-  private final MarketNicheEnrichmentProfileRepository profileRepository = mock(MarketNicheEnrichmentProfileRepository.class);
+  private final OprmEnrichedNicheGateway enrichedNicheGateway = mock(OprmEnrichedNicheGateway.class);
   private final OprmMeiAudienceProfileRepository meiAudienceProfileRepository = mock(OprmMeiAudienceProfileRepository.class);
   private final OprmEnrichedNicheMetaSignalService metaSignalService = mock(OprmEnrichedNicheMetaSignalService.class);
   private final OprmCurrencyConversionService currencyConversionService = mock(OprmCurrencyConversionService.class);
@@ -59,7 +58,7 @@ class BackendEnrichedNicheMaterializerServiceTest {
       List.of("Salão de beleza"), List.of("Cabeleireiro"), List.of("Small business owners"));
   private final BackendEnrichedNicheMaterializerService service = new BackendEnrichedNicheMaterializerService(
       cycleRepository, cardRepository, candidateRepository, seedRepository, researchQueryRepository, sourceCandidateRepository,
-      sourceSnapshotRepository, extractedSignalRepository, marketNicheRepository, profileRepository, meiAudienceProfileRepository, metaSignalService,
+      sourceSnapshotRepository, extractedSignalRepository, enrichedNicheGateway, meiAudienceProfileRepository, metaSignalService,
       currencyConversionService);
 
   /** Deve publicar uma unidade de trabalho completa para o coletor materializar o nicho enriquecido. */
@@ -102,16 +101,8 @@ class BackendEnrichedNicheMaterializerServiceTest {
     when(metaSignalService.buildSignalPackage(cycle, card)).thenReturn(metaSignalPackage);
     when(seedRepository.sumCostUsdByResearchCycleId(1001L)).thenReturn(new BigDecimal("0.0473"));
     when(currencyConversionService.usdToBrl(new BigDecimal("0.0473"))).thenReturn(new BigDecimal("0.24"));
-    when(marketNicheRepository.save(any(MarketNiche.class))).thenAnswer(invocation -> {
-      MarketNiche niche = invocation.getArgument(0);
-      niche.setId(200L);
-      return niche;
-    });
-    when(profileRepository.save(any(MarketNicheEnrichmentProfile.class))).thenAnswer(invocation -> {
-      MarketNicheEnrichmentProfile profile = invocation.getArgument(0);
-      profile.setId(300L);
-      return profile;
-    });
+    when(enrichedNicheGateway.materialize(any(), any()))
+        .thenReturn(new OprmEnrichedNicheMaterializationResult(200L, 300L, Instant.now()));
 
     CompleteEnrichedNicheMaterializerResponse response = service.complete(1001L, new CompleteEnrichedNicheMaterializerRequest(
         1001L, 10L, "Persona", "Linguagem", "Gatilhos", "Objeções", "test"));
@@ -120,29 +111,8 @@ class BackendEnrichedNicheMaterializerServiceTest {
     assertThat(response.enrichedNicheProfileId()).isEqualTo(300L);
     assertThat(cycle.getStatus()).isEqualTo("ENRICHED_NICHE_CREATED");
     assertThat(candidate.getMarketNicheId()).isEqualTo(200L);
-    verify(marketNicheRepository).save(org.mockito.ArgumentMatchers.argThat(niche ->
-        "Salões pequenos".equals(niche.getName())
-            && niche.getPromises() == null
-            && niche.getOffers() == null
-            && new BigDecimal("0.24").compareTo(niche.getCost()) == 0
-            && new BigDecimal("0.24").compareTo(niche.getTotalCost()) == 0
-            && niche.getDescription().contains("Nome original recebido para auditoria: IA para salões pequenos")
-            && niche.getDescription().contains("Nome neutro pesquisado: Salões pequenos")
-            && niche.getDescription().contains("Contexto operacional e linguagem pública:")
-            && !niche.getDescription().contains("Oportunidades de mecanismo:")));
     verify(metaSignalService).buildReadableSignalSummary(metaSignalPackage);
-    verify(profileRepository).save(org.mockito.ArgumentMatchers.argThat(profile ->
-        "Salões pequenos".equals(profile.getNeutralNicheName())
-            && "IA para salões pequenos".equals(profile.getOriginalNicheName())
-            && "ROUTINE_REALITY_RESEARCH".equals(profile.getResearchMode())
-            && Integer.valueOf(87).equals(profile.getRoutineEvidenceScore())
-            && Integer.valueOf(82).equals(profile.getDifficultyEvidenceScore())
-            && Integer.valueOf(72).equals(profile.getSourceDiversityScore())
-            && Integer.valueOf(35).equals(profile.getSolutionLanguageRiskScore())
-            && profile.getMechanismOpportunitiesSummary().contains("Contexto operacional")
-            && !profile.getMechanismOpportunitiesSummary().contains("Mecanismo de agenda")
-            && "Gatilhos".equals(profile.getCommercialTriggers())
-            && "Objeções".equals(profile.getObjections())));
+    verify(enrichedNicheGateway).materialize(any(), any());
   }
 
   /** Deve permitir reprocessar o mesmo cartão criando novo perfil para o mesmo nicho existente. */
@@ -151,25 +121,15 @@ class BackendEnrichedNicheMaterializerServiceTest {
     OprmRoutineResearchCycle cycle = cycle();
     OprmNicheRoutineCard card = card();
     OprmNicheCandidate candidate = candidate();
-    MarketNiche existingNiche = new MarketNiche();
-    existingNiche.setId(200L);
-    MarketNicheEnrichmentProfile previousProfile = profile(existingNiche);
     when(cycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
     when(cardRepository.findById(10L)).thenReturn(Optional.of(card));
     when(candidateRepository.findById(77L)).thenReturn(Optional.of(candidate));
     when(meiAudienceProfileRepository.findFirstByResearchCycleIdOrderByIdDesc(1001L)).thenReturn(Optional.of(meiProfile()));
-    when(profileRepository.findMaterializedByCnaeAndNormalizedNeutralName(
-        org.mockito.ArgumentMatchers.eq("9602501"),
-        org.mockito.ArgumentMatchers.eq("salões pequenos"),
-        any(Pageable.class)))
-        .thenReturn(List.of(previousProfile));
+    when(enrichedNicheGateway.findByCnaeAndNormalizedNeutralName("9602501", "salões pequenos"))
+        .thenReturn(Optional.of(new OprmMarketNicheSnapshot(200L)));
     when(metaSignalService.buildSignalPackage(cycle, card)).thenReturn(metaSignalPackage);
-    when(marketNicheRepository.save(any(MarketNiche.class))).thenAnswer(invocation -> invocation.getArgument(0));
-    when(profileRepository.save(any(MarketNicheEnrichmentProfile.class))).thenAnswer(invocation -> {
-      MarketNicheEnrichmentProfile profile = invocation.getArgument(0);
-      profile.setId(301L);
-      return profile;
-    });
+    when(enrichedNicheGateway.materialize(any(), any()))
+        .thenReturn(new OprmEnrichedNicheMaterializationResult(200L, 301L, Instant.now()));
 
     CompleteEnrichedNicheMaterializerResponse response = service.complete(1001L, new CompleteEnrichedNicheMaterializerRequest(
         1001L, 10L, "Persona reprocessada", "Linguagem reprocessada", "Gatilhos", "Objeções", "test"));
@@ -177,11 +137,7 @@ class BackendEnrichedNicheMaterializerServiceTest {
     assertThat(response.marketNicheId()).isEqualTo(200L);
     assertThat(response.enrichedNicheProfileId()).isEqualTo(301L);
     assertThat(response.cycleStatus()).isEqualTo("ENRICHED_NICHE_UPDATED");
-    verify(profileRepository).save(org.mockito.ArgumentMatchers.argThat(profile ->
-        Long.valueOf(200L).equals(profile.getMarketNiche().getId())
-            && Long.valueOf(1001L).equals(profile.getResearchCycleId())
-            && Long.valueOf(10L).equals(profile.getSourceRoutineCardId())
-            && "Persona reprocessada".equals(profile.getPersonaSummary())));
+    verify(enrichedNicheGateway).materialize(any(), any());
   }
 
   /** Deve criar outro market_niche para subnicho diferente do mesmo CNAE, sem sobrescrever o nicho anterior do candidato. */
@@ -202,22 +158,11 @@ class BackendEnrichedNicheMaterializerServiceTest {
     when(cardRepository.findById(10L)).thenReturn(Optional.of(card));
     when(candidateRepository.findById(77L)).thenReturn(Optional.of(candidate));
     when(meiAudienceProfileRepository.findFirstByResearchCycleIdOrderByIdDesc(1001L)).thenReturn(Optional.of(profile));
-    when(profileRepository.findMaterializedByCnaeAndNormalizedNeutralName(
-        org.mockito.ArgumentMatchers.eq("9602501"),
-        org.mockito.ArgumentMatchers.eq("manicure autônoma domiciliar"),
-        any(Pageable.class)))
-        .thenReturn(List.of());
+    when(enrichedNicheGateway.findByCnaeAndNormalizedNeutralName("9602501", "manicure autônoma domiciliar"))
+        .thenReturn(Optional.empty());
     when(metaSignalService.buildSignalPackage(cycle, card)).thenReturn(metaSignalPackage);
-    when(marketNicheRepository.save(any(MarketNiche.class))).thenAnswer(invocation -> {
-      MarketNiche niche = invocation.getArgument(0);
-      niche.setId(201L);
-      return niche;
-    });
-    when(profileRepository.save(any(MarketNicheEnrichmentProfile.class))).thenAnswer(invocation -> {
-      MarketNicheEnrichmentProfile saved = invocation.getArgument(0);
-      saved.setId(301L);
-      return saved;
-    });
+    when(enrichedNicheGateway.materialize(any(), any()))
+        .thenReturn(new OprmEnrichedNicheMaterializationResult(201L, 301L, Instant.now()));
 
     CompleteEnrichedNicheMaterializerResponse response = service.complete(1001L, new CompleteEnrichedNicheMaterializerRequest(
         1001L, 10L, "Persona manicure", "Linguagem", "Gatilhos", "Objeções", "test"));
@@ -226,9 +171,7 @@ class BackendEnrichedNicheMaterializerServiceTest {
     assertThat(response.cycleStatus()).isEqualTo("ENRICHED_NICHE_CREATED");
     assertThat(response.operationalMessage()).contains("mesmo CNAE pode ter outros nichos");
     assertThat(candidate.getMarketNicheId()).isEqualTo(201L);
-    verify(marketNicheRepository, never()).findById(200L);
-    verify(marketNicheRepository).save(org.mockito.ArgumentMatchers.argThat(niche ->
-        Long.valueOf(201L).equals(niche.getId()) && "Manicure autônoma domiciliar".equals(niche.getName())));
+    verify(enrichedNicheGateway).materialize(any(), any());
   }
 
   /** Deve bloquear materialização quando o ciclo sintetizado não tem perfil MEI/autônomo aprovado. */
@@ -249,8 +192,7 @@ class BackendEnrichedNicheMaterializerServiceTest {
         .hasMessageContaining("aguardando perfil MEI/autônomo");
 
     assertThat(cycle.getStatus()).isEqualTo("ROUTINE_SYNTHESIZED");
-    verify(marketNicheRepository, never()).save(any(MarketNiche.class));
-    verify(profileRepository, never()).save(any(MarketNicheEnrichmentProfile.class));
+    verify(enrichedNicheGateway, never()).materialize(any(), any());
   }
 
   /** Deve localizar registros históricos contaminados para orientar novo ciclo neutro. */
@@ -258,7 +200,7 @@ class BackendEnrichedNicheMaterializerServiceTest {
   void shouldDiagnoseHistoricalContamination() {
     OprmRoutineResearchCycle cycle = cycle();
     when(cycleRepository.findPotentiallyContaminatedByTerm(org.mockito.ArgumentMatchers.eq("ia"), any(Pageable.class))).thenReturn(List.of(cycle));
-    when(profileRepository.findPotentiallyContaminatedByTerm(org.mockito.ArgumentMatchers.eq("ia"), any(Pageable.class))).thenReturn(List.of());
+    when(enrichedNicheGateway.findPotentiallyContaminatedByTerm("ia", 10)).thenReturn(List.of());
 
     var diagnostic = service.diagnoseHistoricalContamination(10);
 
@@ -275,10 +217,7 @@ class BackendEnrichedNicheMaterializerServiceTest {
     OprmRoutineResearchCycle cycle = cycle();
     cycle.setStatus("ENRICHED_NICHE_CREATED");
     OprmNicheRoutineCard card = card();
-    MarketNiche niche = new MarketNiche();
-    niche.setId(200L);
-    MarketNicheEnrichmentProfile profile = profile(niche);
-    when(profileRepository.findById(300L)).thenReturn(Optional.of(profile));
+    when(enrichedNicheGateway.requireProfileById(300L)).thenReturn(profileSnapshot());
     when(cycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
     when(cardRepository.findFirstByResearchCycleIdOrderByIdDesc(1001L)).thenReturn(Optional.of(card));
     when(seedRepository.findByResearchCycleId(1001L)).thenReturn(Optional.of(seed()));
@@ -373,24 +312,6 @@ class BackendEnrichedNicheMaterializerServiceTest {
   }
 
   /** Cria o perfil enriquecido final usado pelo download Markdown. */
-  private MarketNicheEnrichmentProfile profile(MarketNiche niche) {
-    MarketNicheEnrichmentProfile profile = new MarketNicheEnrichmentProfile();
-    profile.setId(300L);
-    profile.setMarketNiche(niche);
-    profile.setResearchCycleId(1001L);
-    profile.setNeutralNicheName("Salões pequenos");
-    profile.setOriginalNicheName("IA para salões pequenos");
-    profile.setCnaeCode("9602501");
-    profile.setCnaeDescription("Cabeleireiros, manicure e pedicure");
-    profile.setRoutineSummary("Rotina com agenda, atendimento e retorno de clientes.");
-    profile.setPainsSummary("Dores de falta de tempo e organização.");
-    profile.setResultsSummary("Perguntas do profissional sobre encaixes.");
-    profile.setMechanismOpportunitiesSummary("Contexto operacional e linguagem do nicho.");
-    profile.setEvidenceSummary("Evidência consolidada.");
-    profile.setSourceDomains("exemplo.com");
-    profile.setCreatedAt(Instant.parse("2026-06-05T00:00:00Z"));
-    return profile;
-  }
 
   /** Cria o seed de pesquisa operacional usado pelo documento Markdown. */
   private OprmNicheResearchSeed seed() {
@@ -455,6 +376,30 @@ class BackendEnrichedNicheMaterializerServiceTest {
     signal.setSignalText("Organizar agenda de atendimentos.");
     signal.setEvidenceExcerpt("Organiza agenda de atendimentos e retornos.");
     return signal;
+  }
+
+  /** Cria um snapshot de perfil enriquecido usado pelo documento Markdown. */
+  private OprmEnrichedNicheProfileSnapshot profileSnapshot() {
+    return new OprmEnrichedNicheProfileSnapshot(
+        300L,
+        200L,
+        1001L,
+        "Salões pequenos",
+        "9602501",
+        "Cabeleireiros",
+        "Salões pequenos",
+        "APPROVED",
+        87,
+        82,
+        72,
+        35,
+        "Rotina final",
+        "Dores finais",
+        "Resultados finais",
+        "Contexto operacional final",
+        "Evidências finais",
+        "exemplo.com",
+        Instant.parse("2026-01-01T00:00:00Z"));
   }
 
 }

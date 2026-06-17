@@ -837,3 +837,10 @@
 ## 2026-06-17 — OPRM NichoCNAE: nome do subnicho na execução
 
 - Ajustada a tela de subnichos do CNAE para destacar, durante a execução do pipeline NichoCNAE, o nome do subnicho identificado pelo backend no ciclo selecionado.
+
+## 2026-06-17 — OPRM NichoCNAE: isolamento do domínio Niche
+
+- Corrigido o acoplamento direto do OPRM NichoCNAE com entidades e repositórios do domínio `niche`.
+- Causa-raiz tratada: serviços do OPRM importavam `MarketNiche`, `MarketNicheEnrichmentProfile` e repositories de `niche`, violando a fronteira arquitetural validada pelo ArchUnit.
+- Correção aplicada: o OPRM passou a depender apenas de uma porta canônica própria (`OprmEnrichedNicheGateway`), enquanto o adaptador JPA que conhece o domínio `niche` ficou fora do pacote OPRM.
+- Prevenção de recorrência: a regra ArchUnit `oprmMustNotDependOnOtherMarketingHubPackages` foi validada junto com os testes de serviço afetados.

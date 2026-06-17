@@ -9,7 +9,6 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.marketinghub.niche.MarketNicheEnrichmentProfile;
 import com.marketinghub.oprm.nichocnae.OprmNicheResearchSeed;
 import com.marketinghub.oprm.nichocnae.OprmNicheRoutineCard;
 import com.marketinghub.oprm.nichocnae.OprmResearchQuery;
@@ -18,7 +17,7 @@ import com.marketinghub.oprm.nichocnae.nicheresearchseedbuilder.service.complete
 import com.marketinghub.oprm.nichocnae.nicheresearchseedbuilder.service.completeStageExecution.CompleteNicheResearchSeedBuilderResponse;
 import com.marketinghub.oprm.nichocnae.nicheresearchseedbuilder.service.completeStageExecution.NicheResearchQueryRequest;
 import com.marketinghub.oprm.nichocnae.nicheresearchseedbuilder.service.failStageExecution.FailNicheResearchSeedBuilderRequest;
-import com.marketinghub.repository.jpa.niche.MarketNicheEnrichmentProfileRepository;
+import com.marketinghub.oprm.nichocnae.gateway.OprmEnrichedNicheGateway;
 import com.marketinghub.repository.jpa.oprm.market.OprmMarketSizeByCnaeRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmNicheResearchSeedRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmNicheRoutineCardRepository;
@@ -45,7 +44,7 @@ class BackendNicheResearchSeedBuilderServiceTest {
   @Mock private OprmNicheResearchSeedBuilderConfigurationGateway configurationGateway;
   @Mock private OprmMarketSizeByCnaeRepository marketSizeByCnaeRepository;
   @Mock private OprmNicheRoutineCardRepository routineCardRepository;
-  @Mock private MarketNicheEnrichmentProfileRepository enrichmentProfileRepository;
+  @Mock private OprmEnrichedNicheGateway enrichedNicheGateway;
 
   @InjectMocks private BackendNicheResearchSeedBuilderService service;
 
@@ -112,10 +111,6 @@ class BackendNicheResearchSeedBuilderServiceTest {
 	  @Test
 	  void listPendingIncludesExistingSubnichesForSameCnae() {
 	    OprmRoutineResearchCycle cycle = cycle();
-	    MarketNicheEnrichmentProfile firstProfile = new MarketNicheEnrichmentProfile();
-	    firstProfile.setNeutralNicheName("Manicure autônoma que atende em domicílio");
-	    MarketNicheEnrichmentProfile secondProfile = new MarketNicheEnrichmentProfile();
-	    secondProfile.setNeutralNicheName("Nail designer iniciante com agenda pelo Instagram");
 	    when(routineResearchCycleRepository.findSeedBuilderPendingOrRetryable(
 	            eq("RUNNING"),
 	            eq("FAILED"),
@@ -124,8 +119,10 @@ class BackendNicheResearchSeedBuilderServiceTest {
 	            eq("niche-research-seed-builder/stage-executions"),
 	            any(Pageable.class)))
 	        .thenReturn(List.of(cycle));
-	    when(enrichmentProfileRepository.findGeneratedByCnaeCode(eq("9602501"), any(Pageable.class)))
-	        .thenReturn(List.of(firstProfile, secondProfile));
+	    when(enrichedNicheGateway.listNeutralNicheNamesByCnae("9602501", 50))
+	        .thenReturn(List.of(
+	            "Manicure autônoma que atende em domicílio",
+	            "Nail designer iniciante com agenda pelo Instagram"));
 
 	    var result = service.listPending();
 

@@ -844,3 +844,9 @@
 - Causa-raiz tratada: serviços do OPRM importavam `MarketNiche`, `MarketNicheEnrichmentProfile` e repositories de `niche`, violando a fronteira arquitetural validada pelo ArchUnit.
 - Correção aplicada: o OPRM passou a depender apenas de uma porta canônica própria (`OprmEnrichedNicheGateway`), enquanto o adaptador JPA que conhece o domínio `niche` ficou fora do pacote OPRM.
 - Prevenção de recorrência: a regra ArchUnit `oprmMustNotDependOnOtherMarketingHubPackages` foi validada junto com os testes de serviço afetados.
+
+## 2026-06-17 — OPRM CNAE: visibilidade de subnichos em processamento
+
+- Ajustada a tela de subnichos do CNAE para exibir os ciclos iniciados que ainda não foram materializados como subnicho final.
+- Causa-raiz tratada: o usuário conseguia iniciar um novo subnicho, sair da tela e, ao voltar, enxergava apenas subnichos já materializados, perdendo o acesso operacional a ciclos ainda em processamento.
+- Prevenção de recorrência: a tela agora cruza a verdade dos ciclos do backend com a lista de subnichos materializados e mantém uma seção fixa “Em processamento antes de virar subnicho” com ação de acompanhamento.

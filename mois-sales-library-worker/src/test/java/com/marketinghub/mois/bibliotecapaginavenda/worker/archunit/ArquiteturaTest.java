@@ -1,12 +1,12 @@
 package com.marketinghub.mois.bibliotecapaginavenda.worker.archunit;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
-import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.slices;
 
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.pipeline.StageProcessor;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
+import com.tngtech.archunit.core.domain.Dependency;
 import com.tngtech.archunit.core.domain.JavaMethod;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
@@ -33,19 +33,17 @@ class ArquiteturaTest {
 
     /** Garante que o núcleo genérico do pipeline não importe uma etapa concreta. */
     @ArchTest
-    static final ArchRule pacote_pipeline_raiz_nao_deve_depender_de_etapas = noClasses()
+    static final ArchRule pacote_pipeline_raiz_nao_deve_depender_de_etapas = classes()
             .that()
             .resideInAPackage(PIPELINE_ROOT)
-            .should()
-            .dependOnClassesThat(CLASSES_DE_ETAPA)
+            .should(notDependOnConcretePipelineStages())
             .because("[ARQUITETURA] o pacote pipeline é núcleo genérico e não pode conhecer etapas concretas");
 
     /** Garante independência plugável entre etapas concretas do pipeline. */
     @ArchTest
-    static final ArchRule etapas_nao_devem_depender_umas_das_outras = slices()
-            .matching("com.marketinghub.mois.bibliotecapaginavenda.worker.v1.pipeline.(*)..")
-            .should()
-            .notDependOnEachOther()
+    static final ArchRule etapas_nao_devem_depender_umas_das_outras = classes()
+            .that(CLASSES_DE_ETAPA)
+            .should(notDependOnAnotherConcreteStage())
             .because("[ARQUITETURA] cada pipeline.<etapa> deve ser independente das outras etapas");
 
     /** Garante que etapas concretas sejam acíclicas para permitir remoção/substituição segura. */
@@ -71,12 +69,10 @@ class ArquiteturaTest {
 
     /** Garante que tecnologias concretas de captura não vazem para o núcleo do pipeline. */
     @ArchTest
-    static final ArchRule pipeline_raiz_nao_deve_depender_de_tecnologias_concretas = noClasses()
+    static final ArchRule pipeline_raiz_nao_deve_depender_de_tecnologias_concretas = classes()
             .that()
             .resideInAPackage(PIPELINE_ROOT)
-            .should()
-            .dependOnClassesThat()
-            .resideInAnyPackage("org.jsoup..", "org.springframework.web.client..", "okhttp3..")
+            .should(notDependOnConcreteTechnologies())
             .because("[ARQUITETURA] o núcleo do pipeline deve depender de abstrações, não de tecnologias concretas");
 
     /** Valida assinatura obrigatória com 4 parâmetros para uso direto do PromptBuilder. */
@@ -96,6 +92,65 @@ class ArquiteturaTest {
             .and()
             .resideInAPackage("..mois.bibliotecapaginavenda.worker.v1.service")
             .should(haveRequiredInsertMethod());
+
+    private static ArchCondition<JavaClass> notDependOnConcretePipelineStages() {
+        return new ArchCondition<>("[ARQUITETURA] não depender de pipeline.<etapa>") {
+            @Override
+            public void check(JavaClass javaClass, ConditionEvents events) {
+                for (Dependency dependency : javaClass.getDirectDependenciesFromSelf()) {
+                    JavaClass target = dependency.getTargetClass();
+                    boolean valid = !CLASSES_DE_ETAPA.test(target);
+                    events.add(new SimpleConditionEvent(dependency, valid,
+                            "[ARQUITETURA] " + javaClass.getName() + " não pode depender da etapa concreta " + target.getName()));
+                }
+            }
+        };
+    }
+
+    private static ArchCondition<JavaClass> notDependOnAnotherConcreteStage() {
+        return new ArchCondition<>("[ARQUITETURA] não depender de outra etapa concreta") {
+            @Override
+            public void check(JavaClass javaClass, ConditionEvents events) {
+                String sourceStage = concreteStageName(javaClass);
+                for (Dependency dependency : javaClass.getDirectDependenciesFromSelf()) {
+                    JavaClass target = dependency.getTargetClass();
+                    String targetStage = concreteStageName(target);
+                    boolean valid = targetStage == null || targetStage.equals(sourceStage);
+                    events.add(new SimpleConditionEvent(dependency, valid,
+                            "[ARQUITETURA] " + javaClass.getName() + " da etapa " + sourceStage
+                                    + " não pode depender de " + target.getName() + " da etapa " + targetStage));
+                }
+            }
+        };
+    }
+
+    private static ArchCondition<JavaClass> notDependOnConcreteTechnologies() {
+        return new ArchCondition<>("[ARQUITETURA] não depender de Jsoup, RestClient ou OkHttp") {
+            @Override
+            public void check(JavaClass javaClass, ConditionEvents events) {
+                for (Dependency dependency : javaClass.getDirectDependenciesFromSelf()) {
+                    JavaClass target = dependency.getTargetClass();
+                    String targetPackage = target.getPackageName();
+                    boolean concreteTechnology = targetPackage.startsWith("org.jsoup")
+                            || targetPackage.startsWith("org.springframework.web.client")
+                            || targetPackage.startsWith("okhttp3");
+                    events.add(new SimpleConditionEvent(dependency, !concreteTechnology,
+                            "[ARQUITETURA] " + javaClass.getName() + " não pode depender da tecnologia concreta " + target.getName()));
+                }
+            }
+        };
+    }
+
+    private static String concreteStageName(JavaClass javaClass) {
+        String prefix = PIPELINE_ROOT + ".";
+        String packageName = javaClass.getPackageName();
+        if (!packageName.startsWith(prefix)) {
+            return null;
+        }
+        String suffix = packageName.substring(prefix.length());
+        int dot = suffix.indexOf('.');
+        return dot < 0 ? suffix : suffix.substring(0, dot);
+    }
 
     private static ArchCondition<com.tngtech.archunit.core.domain.JavaClass> haveRequiredRecordMethod() {
         return new ArchCondition<>("[ARQUITETURA] have method recordPromptBuilderOpenAiResult(String, String, String, String)") {

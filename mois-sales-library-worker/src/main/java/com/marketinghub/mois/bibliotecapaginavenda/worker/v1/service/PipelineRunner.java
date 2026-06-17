@@ -3,16 +3,15 @@ package com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service;
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.client.BackendClient;
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.config.WorkerProperties;
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.model.WorkerDtos.*;
-import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.openai.OpenAiSalesPageAnalyzer;
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.pipeline.PipelineWorker;
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.pipeline.htmlcapture.HtmlCaptureInput;
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.pipeline.htmlcapture.HtmlCaptureOutput;
-import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.openai.SalesPageAnalysisResult;
+import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.pipeline.pageanalysis.PageAnalysisInput;
+import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.pipeline.pageanalysis.PageAnalysisOutput;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.atomic.AtomicInteger;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Connection;
@@ -29,10 +28,9 @@ import org.springframework.stereotype.Service;
 public class PipelineRunner {
     private final BackendClient backendClient;
     private final WorkerProperties properties;
-    private final OpenAiSalesPageAnalyzer openAiSalesPageAnalyzer;
     private final PipelineWorker<HtmlCaptureInput, HtmlCaptureOutput> htmlCapturePipelineWorker;
-    private final AtomicInteger sourceCursor = new AtomicInteger(0);
-    private final AtomicInteger rawHtmlSourceCursor = new AtomicInteger(0);
+    private final PipelineWorker<PageAnalysisInput, PageAnalysisOutput> pageAnalysisPipelineWorker;
+    private final java.util.concurrent.atomic.AtomicInteger rawHtmlSourceCursor = new java.util.concurrent.atomic.AtomicInteger(0);
 
 
     /**
@@ -96,62 +94,11 @@ public class PipelineRunner {
      */
     @Scheduled(fixedDelayString = "${worker.poll-interval-ms:15000}")
     public void runCycle() {
-        String sourceForCycle = resolveSourceForCycle();
-        log.info("MOIS sales-library worker cycle started. workspaceId={}, source={}, pollIntervalMs={}, requestTimeoutMs={}",
-                properties.workspaceId(), sourceForCycle, properties.pollIntervalMs(), properties.requestTimeoutMs());
-        ClaimResponse claim = backendClient.claim(new ClaimRequest(properties.workspaceId(), sourceForCycle));
-        if (claim == null || !claim.claimed() || claim.job() == null) {
-            log.info("MOIS sales-library worker cycle finished without claimed job.");
-            return;
-        }
-
-        long jobId = claim.job().jobId();
-        try {
-            log.info("MOIS sales-library worker claimed job. jobId={}, pageId={}, urlCanonical={}",
-                    jobId, claim.job().pageId(), claim.job().urlCanonical());
-            String text = extractAnalysisText(claim.job());
-            SalesPageAnalysisResult analysis =
-                    openAiSalesPageAnalyzer.analyze(jobId, claim.job().pageId(), claim.job().urlCanonical(), text);
-            CompleteRequest completeRequest = new CompleteRequest(
-                    analysis.scoreTotal(),
-                    analysis.sectionsJson(),
-                    analysis.copyJson(),
-                    analysis.visualJson(),
-                    analysis.imageJson(),
-                    analysis.analysisNotes(),
-                    analysis.requestPayloadJson(),
-                    analysis.responsePayloadJson(),
-                    analysis.parserVersion(),
-                    analysis.promptVersion(),
-                    analysis.modelName(),
-                    analysis.inputTokens(),
-                    analysis.outputTokens(),
-                    analysis.modelCostUsd(),
-                    Instant.now());
-            log.info("MOIS sales-library enviando payload de conclusão ao backend. jobId={}, payload={}",
-                    jobId, completeRequest);
-            backendClient.complete(jobId, completeRequest);
-            log.info("MOIS library job {} completed for page {}", jobId, claim.job().pageId());
-        } catch (Exception ex) {
-            backendClient.fail(jobId, new FailRequest("PIPELINE_ERROR", ex.getMessage()));
-            log.warn("MOIS library job {} failed: {}", jobId, ex.getMessage(), ex);
-        }
+        log.info("MOIS pageanalysis pipeline cycle started. workspaceId={}, pollIntervalMs={}, requestTimeoutMs={}",
+                properties.workspaceId(), properties.pollIntervalMs(), properties.requestTimeoutMs());
+        boolean processed = pageAnalysisPipelineWorker.processNext();
+        log.info("MOIS pageanalysis pipeline cycle finished. workspaceId={}, processed={}", properties.workspaceId(), processed);
     }
-
-    /**
-     * Extrai texto para análise usando primeiro o HTML capturado na etapa 1 e apenas cai para a URL ao vivo quando o payload antigo não trouxe HTML.
-     */
-    private String extractAnalysisText(ClaimedJob job) throws java.io.IOException {
-        if (job.rawHtml() != null && !job.rawHtml().isBlank()) {
-            var doc = Jsoup.parse(job.rawHtml(), job.urlCanonical());
-            return doc.body() != null ? doc.body().text() : doc.text();
-        }
-        log.warn("MOIS sales-library worker recebeu job sem rawHtml capturado; usando fallback ao vivo. jobId={}, pageId={}, urlCanonical={}",
-                job.jobId(), job.pageId(), job.urlCanonical());
-        var doc = Jsoup.connect(job.urlCanonical()).timeout(properties.requestTimeoutMs()).get();
-        return doc.body() != null ? doc.body().text() : "";
-    }
-
 
     /**
      * Escolhe a fonte do ciclo de captura de HTML bruto, com padrão independente da etapa de análise.
@@ -163,18 +110,6 @@ public class PipelineRunner {
             return configuredSources.get(index);
         }
         return normalizeSource(properties.rawHtmlSource());
-    }
-
-    /**
-     * Escolhe a fonte de marketplace do ciclo, alternando quando houver múltiplas configuradas.
-     */
-    String resolveSourceForCycle() {
-        List<String> configuredSources = parseSources(properties.sources());
-        if (!configuredSources.isEmpty()) {
-            int index = Math.floorMod(sourceCursor.getAndIncrement(), configuredSources.size());
-            return configuredSources.get(index);
-        }
-        return normalizeSource(properties.source());
     }
 
     /**

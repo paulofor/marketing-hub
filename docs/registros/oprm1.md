@@ -798,3 +798,10 @@
 - Documentado o desenho arquitetural proposto para o pipeline NichoCNAE com ciclos encadeados, feedback estruturado e reprocessamento orientado por plano de correção.
 - Decisão técnica sugerida: tratar o Quality Gate como produtor de diagnóstico e plano, mantendo o orquestrador como único responsável por abrir novo ciclo e evitando acoplamento direto entre etapas concretas.
 - Prevenção de recorrência: o diagrama explicita `parentCycleId`, `rootCycleId`, artefatos versionados e contratos de feedback para impedir reprocessamento cego sem aprendizado do ciclo anterior.
+
+## 2026-06-17 — OPRM Opportunity: protocolo padrão módulo
+
+- Aplicado o protocolo padrão módulo no executor `oprm-coletor-mei`, dentro de `com.marketinghub.oprmcoletormei.opportunity`, criando núcleo genérico `opportunity.pipeline` e etapas concretas plugáveis `opportunity.score` e `opportunity.enrichment`.
+- Causa-raiz tratada: o fluxo CNAE de oportunidade tinha contratos e serviços úteis, mas não possuía fronteira arquitetural explícita entre núcleo genérico, etapas concretas e tecnologia/infraestrutura, permitindo recorrência de acoplamento futuro entre score e enriquecimento.
+- Prevenção de recorrência: adicionadas regras ArchUnit específicas para bloquear dependência do núcleo em etapas concretas, acoplamento direto entre etapas, processors fora do contrato `StageProcessor` e tecnologia concreta no núcleo `opportunity.pipeline`.
+- Não houve alteração no backend principal; o backend permanece como API/persistência do fluxo OPRM.

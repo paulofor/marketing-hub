@@ -168,6 +168,32 @@ class MoisSalesLibraryServiceTest {
     }
 
     /**
+     * Garante que o endpoint pending consulta páginas com HTML útil sem reservar ou alterar execução.
+     */
+    @Test
+    void shouldListPendingAnalysisWithoutClaimingJobs() {
+        given(jdbcTemplate.query(any(String.class), isA(RowMapper.class), eq("workspace-001"), eq("HOTMART"), eq(25)))
+                .willReturn(List.of());
+
+        MoisSalesLibraryDtos.SalesLibraryPendingAnalysisResponse response =
+                service.listPendingAnalysis("workspace-001", "hotmart", 25);
+
+        org.assertj.core.api.Assertions.assertThat(response.workspaceId()).isEqualTo("workspace-001");
+        org.assertj.core.api.Assertions.assertThat(response.source()).isEqualTo("HOTMART");
+        org.assertj.core.api.Assertions.assertThat(response.limit()).isEqualTo(25);
+        org.assertj.core.api.Assertions.assertThat(response.items()).isEmpty();
+        ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+        verify(jdbcTemplate).query(sqlCaptor.capture(), isA(RowMapper.class), eq("workspace-001"), eq("HOTMART"), eq(25));
+        org.assertj.core.api.Assertions.assertThat(sqlCaptor.getValue())
+                .contains("COALESCE(sp.html_bytes, 0) > 0")
+                .contains("COALESCE(sp.analysis_status, sp.current_status) NOT IN ('DONE', 'ANALYZED', 'ANULADO', 'FETCHING')")
+                .contains("COUNT(DISTINCT active_analysis.id) AS active_count")
+                .contains("HAVING active_count = COUNT(DISTINCT pending_analysis.id)")
+                .contains("LIMIT ?");
+        verify(jdbcTemplate, never()).update(contains("SET status = 'FETCHING'"), any(), any());
+    }
+
+    /**
      * Garante que a listagem de páginas prioriza as análises mais recentes.
      */
     @Test

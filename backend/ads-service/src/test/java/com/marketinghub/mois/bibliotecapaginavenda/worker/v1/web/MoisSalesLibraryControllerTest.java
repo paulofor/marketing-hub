@@ -202,6 +202,48 @@ class MoisSalesLibraryControllerTest {
     }
 
     /**
+     * Garante que o endpoint pending expõe páginas elegíveis para diagnóstico da etapa 2 sem reservar job.
+     */
+    @Test
+    void shouldExposePendingAnalysisEndpoint() throws Exception {
+        when(service.listPendingAnalysis("workspace-001", "HOTMART", 25))
+                .thenReturn(new MoisSalesLibraryDtos.SalesLibraryPendingAnalysisResponse(
+                        "workspace-001",
+                        "HOTMART",
+                        25,
+                        1,
+                        List.of(new MoisSalesLibraryDtos.SalesLibraryPendingAnalysisItem(
+                                99L,
+                                10L,
+                                "workspace-001",
+                                "HOTMART",
+                                "https://example.test/sales",
+                                "Página de vendas",
+                                2048L,
+                                "PENDING",
+                                2,
+                                Instant.parse("2026-06-17T06:12:01Z"),
+                                true
+                        ))
+                ));
+
+        mockMvc.perform(get("/api/mois/sales-library/pending")
+                        .param("workspaceId", "workspace-001")
+                        .param("source", "HOTMART")
+                        .param("limit", "25"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.workspaceId").value("workspace-001"))
+                .andExpect(jsonPath("$.source").value("HOTMART"))
+                .andExpect(jsonPath("$.limit").value(25))
+                .andExpect(jsonPath("$.totalReturned").value(1))
+                .andExpect(jsonPath("$.items[0].jobId").value(99))
+                .andExpect(jsonPath("$.items[0].pageId").value(10))
+                .andExpect(jsonPath("$.items[0].htmlBytes").value(2048))
+                .andExpect(jsonPath("$.items[0].analysisStatus").value("PENDING"))
+                .andExpect(jsonPath("$.items[0].rawHtmlAvailable").value(true));
+    }
+
+    /**
      * Garante que o histórico consolidado da Fase 4 seja exposto ao frontend.
      */
     @Test

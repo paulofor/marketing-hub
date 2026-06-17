@@ -36,6 +36,36 @@ public final class MoisSalesLibraryDtos {
     ) {
     }
 
+    /**
+     * Representa uma página já capturada e elegível para análise comercial sem reservar o job.
+     */
+    public record SalesLibraryPendingAnalysisItem(
+            Long jobId,
+            long pageId,
+            String workspaceId,
+            String source,
+            String urlCanonical,
+            String title,
+            long htmlBytes,
+            String analysisStatus,
+            int nextAttempt,
+            Instant lastCapturedAt,
+            boolean rawHtmlAvailable
+    ) {
+    }
+
+    /**
+     * Lista páginas que podem ser processadas pela etapa 2 de análise comercial.
+     */
+    public record SalesLibraryPendingAnalysisResponse(
+            String workspaceId,
+            String source,
+            int limit,
+            int totalReturned,
+            List<SalesLibraryPendingAnalysisItem> items
+    ) {
+    }
+
     public record SalesLibraryCompleteRequest(
             BigDecimal scoreTotal,
             String sectionsJson,

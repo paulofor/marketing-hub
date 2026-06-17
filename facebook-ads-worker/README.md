@@ -147,6 +147,10 @@ O fluxo automatizado cria toda a hierarquia necessária para veiculação:
    país inteiro e injeta `geo_locations.countries = ["BR"]` quando o pacote de
    público aprovado contém apenas interesses, cargos ou comportamentos, evitando
    rejeição da Meta por falta de localização antes da criação da campanha.
+   Quando a Meta retorna limites (`users_lower_bound` e `users_upper_bound`)
+   fora da faixa operacional, a publicação é bloqueada; quando a Meta simplesmente
+   não retorna esses limites, o worker registra aviso e segue como teste
+   controlado, pois ausência de estimativa não prova inviabilidade comercial.
    Graph API, garantindo que o payload use apenas campos com nomes válidos.
    Se a Meta rejeitar o `POST /adsets` com erro no formato
    `targeting[<campo>][<índice>][id]` (por exemplo, `interests` ou

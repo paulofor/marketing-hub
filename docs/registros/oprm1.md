@@ -856,3 +856,8 @@
 - Corrigida a navegação dos botões “Acompanhar” na tela de subnichos do CNAE para exibir automaticamente a visão dedicada com cards das etapas do pipeline quando a URL contém o ciclo selecionado.
 - Causa-raiz tratada: o componente era reutilizado pelo React Router entre a lista de subnichos e a rota `/subnichos/:researchCycleId`, mas o estado local que mostra o pipeline só era inicializado na primeira montagem; ao clicar em “Acompanhar”, a URL mudava e a tela permanecia na lista.
 - Prevenção de recorrência: adicionado teste de regressão cobrindo acesso direto à rota de subnicho e validando a exibição dos cards do pipeline para consulta do usuário.
+## 2026-06-17 — OPRM CNAE: custo e paginação dos subnichos em processamento
+
+- Ajustada a seção “Em processamento antes de virar subnicho” para exibir 10 ciclos por página, custo individual por ciclo e custo total no cabeçalho do card.
+- Causa-raiz tratada: a lista podia crescer sem controle visual e não mostrava o impacto financeiro dos ciclos que ainda não viraram subnicho, dificultando decisão operacional sobre continuidade ou reprocessamento.
+- Prevenção de recorrência: a tela passou a calcular a visualização paginada e o total financeiro diretamente a partir da verdade enviada pelo backend para os ciclos OPRM.

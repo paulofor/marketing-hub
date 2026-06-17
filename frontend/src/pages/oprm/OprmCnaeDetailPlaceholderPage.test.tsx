@@ -369,6 +369,8 @@ describe("OprmCnaeDetailPlaceholderPage", () => {
       screen.getByText("Ainda não virou subnicho materializado"),
     ).toBeTruthy();
     expect(screen.getByText("#62")).toBeTruthy();
+    expect(screen.getByText("Custo total US$ 0,0150")).toBeTruthy();
+    expect(screen.getByText("US$ 0,0150")).toBeTruthy();
   });
 
   it("abre os cards do pipeline ao acessar um subnicho pelo botao acompanhar", async () => {

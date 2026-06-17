@@ -787,6 +787,12 @@
 - Correção aplicada: o menu interno OPRM remove o item Pipeline, as rotas antigas de pipeline redirecionam para `/oprm` e o cânone passou a orientar que o pipeline NichoCNAE seja usado somente pelo caminho de criação de novo nicho/subnicho.
 - Prevenção de recorrência: o teste de navegação OPRM valida que o link Pipeline não aparece e que a rota obsoleta não renderiza mais a tela antiga.
 
+## 2026-06-17 06:50:00 (UTC) — OPRM NichoCNAE: correção do escopo do protocolo padrão módulo
+
+- Corrigida a interpretação operacional do protocolo padrão módulo: ele nunca deve ser aplicado no backend principal por padrão.
+- Revertida a aplicação indevida do protocolo no `backend/ads-service`; para NichoCNAE, o módulo executor correto é o `oprm-coletor-mei`.
+- Atualizados o contrato operacional e a metodologia para separar claramente `protocolo padrão módulo` de `protocolo padrão backend`, evitando nova implementação no alvo errado.
+- Correção adicional: a documentação e o PR desse ajuste devem deixar claro que não há alteração funcional de backend quando o diff é somente de escopo/metodologia.
 ## 2026-06-17 — OPRM NichoCNAE: diagrama de ciclos com feedback
 
 - Documentado o desenho arquitetural proposto para o pipeline NichoCNAE com ciclos encadeados, feedback estruturado e reprocessamento orientado por plano de correção.

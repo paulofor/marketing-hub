@@ -19,6 +19,24 @@ A ideia central é não construir um framework específico para OpenAI. A OpenAI
 
 ---
 
+
+## Escopo obrigatório: módulo executor, nunca backend por padrão
+
+O protocolo padrão módulo é uma regra para o **módulo que executa o fluxo**: workers, coletores, serviços executores ou módulos operacionais que fazem scraping, chamadas a modelos, downloads, transformações e integrações externas.
+
+Este protocolo **não deve ser aplicado no backend principal** apenas porque o backend expõe endpoints, registra estado, persiste dados ou contém contratos HTTP. Nesses casos, o backend continua sendo fonte de verdade de dados/contratos e deve receber somente os endpoints, entidades, migrations, Swagger e testes necessários para o executor operar.
+
+Regra prática obrigatória antes de implementar:
+
+1. Identificar quem executa a etapa.
+2. Se quem executa é um worker/coletor/módulo externo, aplicar o núcleo `pipeline` e as regras ArchUnit nesse módulo executor.
+3. Se o backend apenas disponibiliza fila, pending, callback, status, contrato ou persistência, **não criar** no backend `PipelineWorker`, `StageProcessor`, `StageContext`, `StageResult`, `StageArtifact` nem regras de protocolo padrão módulo.
+4. Não descrever a aplicação do protocolo padrão módulo como alteração de backend quando o diff não modificou código/contratos do backend; a comunicação do PR deve dizer explicitamente que não houve alteração de backend.
+5. Se o usuário quiser padronização arquitetural do backend, o gatilho correto é `aplique o protocolo padrão backend`, que é outro protocolo.
+
+Exemplo OPRM NichoCNAE: como a execução das etapas ocorre no `oprm-coletor-mei`, o protocolo padrão módulo deve ser aplicado no `oprm-coletor-mei`; o `backend/ads-service` deve permanecer como API/persistência/contrato do OPRM.
+
+---
 ## Conceito principal
 
 O conceito geral é:

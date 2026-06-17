@@ -811,3 +811,9 @@
 - Causa-raiz tratada: o fluxo CNAE de oportunidade tinha contratos e serviços úteis, mas não possuía fronteira arquitetural explícita entre núcleo genérico, etapas concretas e tecnologia/infraestrutura, permitindo recorrência de acoplamento futuro entre score e enriquecimento.
 - Prevenção de recorrência: adicionadas regras ArchUnit específicas para bloquear dependência do núcleo em etapas concretas, acoplamento direto entre etapas, processors fora do contrato `StageProcessor` e tecnologia concreta no núcleo `opportunity.pipeline`.
 - Não houve alteração no backend principal; o backend permanece como API/persistência do fluxo OPRM.
+
+## 2026-06-17 — OPRM CNAE: tradução da coluna Qualidade
+
+- Ajustada a tela de detalhe do CNAE para exibir a coluna Qualidade dos subnichos em português, mantendo o status técnico vindo do backend apenas como contrato interno.
+- Causa-raiz tratada: a interface mostrava códigos técnicos como `MEI_AUDIENCE_READY` e `LIGHTLY_RESEARCHED`, reduzindo clareza operacional para priorização de nichos com potencial de venda.
+- Prevenção de recorrência: a tela passou a reutilizar o mapeamento central de status já existente no módulo OPRM, evitando novas traduções divergentes no mesmo fluxo.

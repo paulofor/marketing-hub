@@ -260,6 +260,18 @@ class MoisSalesLibraryControllerTest {
     }
 
     /**
+     * Garante que o controller bloqueia dossiê solicitado antes da análise comercial.
+     */
+    @Test
+    void shouldMapMarketWarmupRequestBeforeAnalysisToHttp409() throws Exception {
+        doThrow(new IllegalStateException("Dossiê MOIS só pode ser iniciado depois da análise comercial da página."))
+                .when(marketWarmupService).requestResearch(10L);
+
+        mockMvc.perform(post("/api/mois/sales-library/pages/10/market-warmup:request"))
+                .andExpect(status().isConflict());
+    }
+
+    /**
      * Garante que a consulta pública retorna o resumo comercial rastreável da Etapa 3.
      */
     @Test

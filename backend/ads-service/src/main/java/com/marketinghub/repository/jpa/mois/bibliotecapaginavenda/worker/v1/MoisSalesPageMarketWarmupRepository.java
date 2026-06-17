@@ -30,6 +30,7 @@ public class MoisSalesPageMarketWarmupRepository implements MoisSalesPageMarketW
     public Optional<SalesPageWarmupData> findSalesPage(long pageId) {
         List<SalesPageWarmupData> rows = jdbcTemplate.query("""
                 SELECT sp.id, sp.workspace_id, sp.url_canonical, sp.title, cr.producer_name,
+                       sp.current_status, sp.analysis_status,
                        sp.offer_summary, sp.mechanism_summary, sp.promise_summary, sp.proof_summary
                 FROM mois_sales_page sp
                 LEFT JOIN mois_collected_reference cr ON cr.id = sp.collected_reference_id
@@ -98,11 +99,13 @@ public class MoisSalesPageMarketWarmupRepository implements MoisSalesPageMarketW
     public Optional<MarketWarmupClaimData> findNextPendingJob(String workspaceId) {
         List<MarketWarmupClaimData> rows = jdbcTemplate.query("""
                 SELECT j.id AS job_id, j.sales_page_id, j.workspace_id, j.status, j.created_at, j.error_category, j.error_message,
-                       sp.url_canonical, sp.title, cr.producer_name, sp.offer_summary, sp.mechanism_summary, sp.promise_summary, sp.proof_summary
+                       sp.url_canonical, sp.title, cr.producer_name, sp.current_status, sp.analysis_status,
+                       sp.offer_summary, sp.mechanism_summary, sp.promise_summary, sp.proof_summary
                 FROM mois_sales_page_market_warmup_job j
                 JOIN mois_sales_page sp ON sp.id = j.sales_page_id
                 LEFT JOIN mois_collected_reference cr ON cr.id = sp.collected_reference_id
                 WHERE j.workspace_id = ? AND j.status = 'PENDING'
+                  AND COALESCE(sp.analysis_status, sp.current_status) IN ('DONE', 'ANALYZED')
                 ORDER BY j.created_at ASC, j.id ASC
                 LIMIT 1
                 """, this::mapClaim, workspaceId);
@@ -311,7 +314,8 @@ public class MoisSalesPageMarketWarmupRepository implements MoisSalesPageMarketW
      */
     private SalesPageWarmupData mapSalesPage(ResultSet rs, int rowNum) throws SQLException {
         return new SalesPageWarmupData(rs.getLong("id"), rs.getString("workspace_id"), rs.getString("url_canonical"), rs.getString("title"),
-                rs.getString("producer_name"), rs.getString("offer_summary"), rs.getString("mechanism_summary"), rs.getString("promise_summary"), rs.getString("proof_summary"));
+                rs.getString("producer_name"), rs.getString("current_status"), rs.getString("analysis_status"),
+                rs.getString("offer_summary"), rs.getString("mechanism_summary"), rs.getString("promise_summary"), rs.getString("proof_summary"));
     }
 
     /**
@@ -331,7 +335,8 @@ public class MoisSalesPageMarketWarmupRepository implements MoisSalesPageMarketW
                 rs.getString("status"), toInstant(rs.getTimestamp("created_at")),
                 rs.getString("error_category"), rs.getString("error_message"));
         SalesPageWarmupData page = new SalesPageWarmupData(rs.getLong("sales_page_id"), rs.getString("workspace_id"), rs.getString("url_canonical"),
-                rs.getString("title"), rs.getString("producer_name"), rs.getString("offer_summary"), rs.getString("mechanism_summary"), rs.getString("promise_summary"), rs.getString("proof_summary"));
+                rs.getString("title"), rs.getString("producer_name"), rs.getString("current_status"), rs.getString("analysis_status"),
+                rs.getString("offer_summary"), rs.getString("mechanism_summary"), rs.getString("promise_summary"), rs.getString("proof_summary"));
         return new MarketWarmupClaimData(job, page);
     }
 

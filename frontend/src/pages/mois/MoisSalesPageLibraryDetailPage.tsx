@@ -107,8 +107,14 @@ export default function MoisSalesPageLibraryDetailPage() {
       pageQuery.data?.marketWarmupStatus || "",
     ),
   );
+  const isCommercialAnalysisDone = ["DONE", "ANALYZED"].includes(
+    pageQuery.data?.analysisStatus || pageQuery.data?.currentStatus || "",
+  );
   const isWarmupRequestDisabled =
-    !validPageId || requestWarmupMutation.isPending || hasActiveWarmupDossier;
+    !validPageId ||
+    requestWarmupMutation.isPending ||
+    hasActiveWarmupDossier ||
+    !isCommercialAnalysisDone;
   const hotmartPrice = cleanText(pageQuery.data?.hotmartPrice);
   const hotmartTemperature = pageQuery.data?.hotmartTemperature;
   const hotmartProducer =
@@ -262,6 +268,18 @@ export default function MoisSalesPageLibraryDetailPage() {
           Falha ao solicitar dossiê.
         </div>
       ) : null}
+      {!isCommercialAnalysisDone && !hasActiveWarmupDossier ? (
+        <div className="alert alert-warning mb-0">
+          O dossiê fica disponível somente depois que a análise comercial da
+          página estiver concluída. Esta página ainda está em{" "}
+          <strong>
+            {pageQuery.data?.analysisStatus ||
+              pageQuery.data?.currentStatus ||
+              "SEM STATUS"}
+          </strong>
+          .
+        </div>
+      ) : null}
 
       {pageQuery.isLoading ? (
         <p className="text-secondary mb-0">Carregando produto...</p>
@@ -341,9 +359,9 @@ export default function MoisSalesPageLibraryDetailPage() {
           ) : null}
           {!marketWarmupQuery.isLoading && !marketWarmupQuery.data ? (
             <div className="alert alert-warning mb-0">
-              Ainda não há dossiê de aquecimento concluído para este produto.
-              Execute a etapa de pesquisa de aquecimento para validar redes e
-              autoridade do produtor.
+              Ainda não há dossiê de aquecimento concluído para este produto. O
+              comando será liberado quando a análise comercial da página estiver
+              concluída.
             </div>
           ) : null}
 

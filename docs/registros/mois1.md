@@ -1654,3 +1654,9 @@ Arquivos principais:
 
 - Removida da tela do pipeline da Biblioteca de Sales Pages a área de execução manual da captura da etapa 1, porque essa etapa já acontece de forma automática.
 - Mantidos os indicadores de processamento automático para o usuário acompanhar avanço, última captura, volume pendente e velocidade sem precisar acionar comandos manuais.
+
+## 2026-06-17 — Bloqueio de dossiê antes da análise comercial
+
+- Corrigida a causa-raiz de produtos capturados aparecerem com dossiê pendente antes de terem análise comercial concluída.
+- O backend passa a recusar a criação de job de dossiê quando a página ainda não está em `DONE`/`ANALYZED`, e o worker deixa de reservar jobs pendentes que ainda não estejam elegíveis.
+- A tela de detalhe bloqueia o botão de iniciar dossiê até a análise comercial terminar, e a listagem informa “Dossiê: Aguardando análise” para evitar uma decisão operacional incorreta.

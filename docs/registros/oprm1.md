@@ -1,3 +1,7 @@
+## 2026-06-17 17:06:25 (UTC) — OPRM NichoCNAE: indicador animado de execução
+
+- Ajustada a tela de detalhe do CNAE/subnicho para exibir uma ilustração animada quando o pipeline NichoCNAE estiver em execução, reforçando visualmente que o backend continua processando as etapas automaticamente.
+
 ## 2026-06-14 00:00:00 (UTC) — OPRM NichoCNAE: múltiplos nichos por CNAE
 
 - Alterado o conceito de materialização para permitir mais de um `market_niche` por CNAE quando ciclos aprovados representarem subnichos diferentes.

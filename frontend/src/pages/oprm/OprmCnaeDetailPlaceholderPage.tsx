@@ -651,6 +651,9 @@ export default function OprmCnaeDetailPlaceholderPage() {
     qualityGateQuery.data?.qualityNotes,
     "proximoMovimento",
   );
+  const identifiedSubnicheName = latestCycle
+    ? (latestCycle.neutralNicheName ?? latestCycle.nicheName)?.trim()
+    : "";
   const cnaeDescription =
     volumeQuery.data?.cnaeDescription ??
     scoreQuery.data?.cnaeDescription ??
@@ -933,6 +936,14 @@ export default function OprmCnaeDetailPlaceholderPage() {
                   job atual:{" "}
                   <strong>{formatUsd(latestCycle.executionCostUsd)}</strong>
                 </div>
+                {identifiedSubnicheName ? (
+                  <div className="alert alert-light border mt-3 mb-0 py-2 px-3">
+                    <span className="small text-secondary d-block">
+                      Subnicho identificado neste pipeline
+                    </span>
+                    <strong>{identifiedSubnicheName}</strong>
+                  </div>
+                ) : null}
                 {qualityBlockedMessage(latestCycle.status) ? (
                   <div className="mt-2">
                     <p className="mb-2">

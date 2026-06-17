@@ -87,6 +87,11 @@ class ArquiteturaTest {
     private static final String SALES_VIDEO_SERVICE_PACKAGE = SALES_VIDEO_PACKAGE + ".service";
     private static final String SALES_VIDEO_DTO_PACKAGE = SALES_VIDEO_PACKAGE + ".dto";
     private static final String SALES_VIDEO_REPOSITORY_PACKAGE = "com.marketinghub.repository.jpa.salesvideo";
+    private static final Pattern FACEBOOK_ADS_STAGE_CONTROLLER_PACKAGE_PATTERN =
+            Pattern.compile("^com\\.marketinghub\\.facebookads\\.stage\\.([a-zA-Z0-9_]+)\\.controller$");
+    private static final Pattern FACEBOOK_ADS_STAGE_SERVICE_PACKAGE_PATTERN =
+            Pattern.compile("^com\\.marketinghub\\.facebookads\\.stage\\.([a-zA-Z0-9_]+)\\.service$");
+    private static final String FACEBOOK_ADS_STAGE_PACKAGE_PREFIX = "com.marketinghub.facebookads.stage.";
     private static final List<String> REQUIRED_BACKEND_SERVICE_SUBPACKAGES = List.of(
             "detailStageExecution", "listStageExecutions", "pending", "recebePrompt", "recebeResposta");
     private static final List<String> REQUIRED_EPM_SERVICE_SUBPACKAGES = List.of(
@@ -191,6 +196,22 @@ class ArquiteturaTest {
             .should(onlyApprovedPackagesDependOnFacebookAdsClasses())
             .because("[ARQUITETURA] [BACKEND][FacebookAds] somente o próprio pacote, experimento e "
                     + "repositories canônicos de experimento/Facebook Ads podem depender das classes de Facebook Ads");
+
+    @ArchTest
+    static final ArchRule facebookAdsStageControllersShouldOnlyDependOnSameStageControllerOrService =
+            classes().that().resideInAPackage("com.marketinghub.facebookads.stage.*.controller..")
+                    .should(onlyDependOnFacebookAdsControllerOrServiceWithinSameStage())
+                    .allowEmptyShould(true)
+                    .because("[ARQUITETURA] [BACKEND][FacebookAds] controller em facebookads.stage.<etapa>.controller "
+                            + "só pode acessar controller/service da mesma etapa");
+
+    @ArchTest
+    static final ArchRule facebookAdsStageServicesShouldOnlyDependOnSameStageServiceOrApprovedClasses =
+            classes().that().resideInAPackage("com.marketinghub.facebookads.stage.*.service..")
+                    .should(onlyDependOnAllowedFacebookAdsStageServiceClasses())
+                    .allowEmptyShould(true)
+                    .because("[ARQUITETURA] [BACKEND][FacebookAds] service em facebookads.stage.<etapa>.service "
+                            + "só pode acessar service/DTOs da mesma etapa e contratos aprovados de Facebook Ads");
 
     @ArchTest
     static final ArchRule moisSalesLibraryPackageMustNotDependOnOtherMarketingHubPackages = noClasses()
@@ -501,6 +522,89 @@ class ArquiteturaTest {
     }
 
     /**
+     * Garante que cada etapa nova de Facebook Ads tenha somente um controller canônico.
+     */
+    @ArchTest
+    static void facebookAdsStageControllerPackagesMustHaveSingleCanonicalController(JavaClasses importedClasses) {
+        List<String> violations = new ArrayList<>();
+        facebookAdsStageControllerPackages(importedClasses).forEach((packageName, packageClasses) -> {
+            String stage = extractFacebookAdsStage(packageName);
+            String expectedControllerName = canonicalFacebookAdsStageTypeName(stage, "Controller");
+            List<JavaClass> controllers = packageClasses.stream()
+                    .filter(javaClass -> javaClass.getSimpleName().equals(expectedControllerName))
+                    .toList();
+            if (packageClasses.size() != 1) {
+                violations.add("[ARQUITETURA] [BACKEND][FacebookAds] pacote=" + packageName
+                        + " deve conter apenas " + expectedControllerName + "; classes="
+                        + simpleNames(packageClasses));
+            }
+            if (controllers.size() != 1) {
+                violations.add("[ARQUITETURA] [BACKEND][FacebookAds] pacote=" + packageName
+                        + " deve conter exatamente uma classe canônica " + expectedControllerName
+                        + "; controllers=" + simpleNames(controllers));
+                return;
+            }
+            JavaClass controller = controllers.get(0);
+            if (!controller.isAnnotatedWith(RestController.class)) {
+                violations.add("[ARQUITETURA] [BACKEND][FacebookAds] classe=" + controller.getName()
+                        + " deve possuir @RestController");
+            }
+            if (!hasRequestMapping(controller, "/api/facebook-ads/" + stage)) {
+                violations.add("[ARQUITETURA] [BACKEND][FacebookAds] classe=" + controller.getName()
+                        + " deve possuir @RequestMapping(\"/api/facebook-ads/" + stage + "\")");
+            }
+        });
+        failWithArchitectureViolations(violations);
+    }
+
+    /**
+     * Garante que cada etapa nova de Facebook Ads tenha somente um service canônico.
+     */
+    @ArchTest
+    static void facebookAdsStageServicePackagesMustHaveSingleCanonicalService(JavaClasses importedClasses) {
+        List<String> violations = new ArrayList<>();
+        facebookAdsStageServicePackages(importedClasses).forEach((packageName, packageClasses) -> {
+            String stage = extractFacebookAdsStage(packageName);
+            String expectedServiceName = canonicalFacebookAdsStageTypeName(stage, "Service");
+            List<JavaClass> services = packageClasses.stream()
+                    .filter(javaClass -> javaClass.getSimpleName().equals(expectedServiceName))
+                    .toList();
+            if (packageClasses.size() != 1) {
+                violations.add("[ARQUITETURA] [BACKEND][FacebookAds] pacote=" + packageName
+                        + " deve conter apenas " + expectedServiceName + " na raiz; classes="
+                        + simpleNames(packageClasses));
+            }
+            if (services.size() != 1) {
+                violations.add("[ARQUITETURA] [BACKEND][FacebookAds] pacote=" + packageName
+                        + " deve conter exatamente uma classe canônica " + expectedServiceName
+                        + "; services=" + simpleNames(services));
+                return;
+            }
+            if (!services.get(0).isAnnotatedWith(Service.class)) {
+                violations.add("[ARQUITETURA] [BACKEND][FacebookAds] classe=" + services.get(0).getName()
+                        + " deve possuir @Service");
+            }
+        });
+        failWithArchitectureViolations(violations);
+    }
+
+    /**
+     * Garante que DTOs de etapas novas de Facebook Ads fiquem em subpacotes de service e sejam records.
+     */
+    @ArchTest
+    static void facebookAdsStageServiceSubpackagesMustContainOnlyRecords(JavaClasses importedClasses) {
+        List<String> violations = new ArrayList<>();
+        importedClasses.stream()
+                .filter(ArquiteturaTest::isProductionTopLevelClass)
+                .filter(ArquiteturaTest::isFacebookAdsStageServiceSubpackageClass)
+                .filter(candidate -> !candidate.reflect().isRecord())
+                .forEach(candidate -> violations.add("[ARQUITETURA] [BACKEND][FacebookAds] classe="
+                        + candidate.getName()
+                        + " está em subpacote de service de uma etapa Facebook Ads e deve ser declarada como record"));
+        failWithArchitectureViolations(violations);
+    }
+
+    /**
      * Garante que o pacote pipeline possua a borda HTTP e o service principal no padrão backend.
      */
     @ArchTest
@@ -780,6 +884,40 @@ class ArquiteturaTest {
     }
 
     /**
+     * Agrupa classes diretas de controller das etapas novas de Facebook Ads.
+     */
+    private static Map<String, List<JavaClass>> facebookAdsStageControllerPackages(JavaClasses importedClasses) {
+        Map<String, List<JavaClass>> packages = new LinkedHashMap<>();
+        importedClasses.stream()
+                .filter(ArquiteturaTest::isProductionTopLevelClass)
+                .filter(javaClass -> FACEBOOK_ADS_STAGE_CONTROLLER_PACKAGE_PATTERN
+                        .matcher(javaClass.getPackageName())
+                        .matches())
+                .sorted(Comparator.comparing(JavaClass::getName))
+                .forEach(javaClass -> packages
+                        .computeIfAbsent(javaClass.getPackageName(), ignored -> new ArrayList<>())
+                        .add(javaClass));
+        return packages;
+    }
+
+    /**
+     * Agrupa classes diretas de service das etapas novas de Facebook Ads.
+     */
+    private static Map<String, List<JavaClass>> facebookAdsStageServicePackages(JavaClasses importedClasses) {
+        Map<String, List<JavaClass>> packages = new LinkedHashMap<>();
+        importedClasses.stream()
+                .filter(ArquiteturaTest::isProductionTopLevelClass)
+                .filter(javaClass -> FACEBOOK_ADS_STAGE_SERVICE_PACKAGE_PATTERN
+                        .matcher(javaClass.getPackageName())
+                        .matches())
+                .sorted(Comparator.comparing(JavaClass::getName))
+                .forEach(javaClass -> packages
+                        .computeIfAbsent(javaClass.getPackageName(), ignored -> new ArrayList<>())
+                        .add(javaClass));
+        return packages;
+    }
+
+    /**
      * Lista classes diretas de produção em um pacote específico.
      */
     private static List<JavaClass> directPackageClasses(JavaClasses importedClasses, String packageName) {
@@ -1020,6 +1158,78 @@ class ArquiteturaTest {
                 || targetPackage.startsWith("com.marketinghub.repository.jpa.facebookads")
                 || targetPackage.startsWith("com.marketinghub.repository.jpa.hypothesis")
                 || targetPackage.startsWith("com.marketinghub.repository.jpa.targeting");
+    }
+
+    /**
+     * Garante que controllers de etapas novas de Facebook Ads dependam apenas da mesma etapa.
+     */
+    private static ArchCondition<JavaClass> onlyDependOnFacebookAdsControllerOrServiceWithinSameStage() {
+        return new ArchCondition<>(
+                "[ARQUITETURA] [BACKEND][FacebookAds] controller depends only on same-stage controller/service") {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                item.getDirectDependenciesFromSelf().forEach(dependency -> {
+                    JavaClass targetClass = dependency.getTargetClass();
+                    String targetName = targetClass.getName();
+                    if (!targetName.startsWith(FACEBOOK_ADS_STAGE_PACKAGE_PREFIX)) {
+                        return;
+                    }
+                    String sourceStage = extractFacebookAdsStage(item.getPackageName());
+                    String targetStage = extractFacebookAdsStage(targetClass.getPackageName());
+                    String targetLayer = extractFacebookAdsStageLayer(targetClass.getPackageName());
+                    boolean valid = sourceStage != null
+                            && sourceStage.equals(targetStage)
+                            && ("controller".equals(targetLayer) || "service".equals(targetLayer));
+                    if (!valid) {
+                        String message = "[ARQUITETURA] [BACKEND][FacebookAds] classe-origem=" + item.getName()
+                                + " possui import/dependência violadora: " + dependency.getDescription()
+                                + " (alvo: " + targetName + ")"
+                                + " | regra: facebookads.<etapa>.controller só pode acessar "
+                                + "facebookads.<etapa>.controller e facebookads.<etapa>.service da mesma etapa.";
+                        events.add(SimpleConditionEvent.violated(item, message));
+                    }
+                });
+            }
+        };
+    }
+
+    /**
+     * Garante que services de etapas novas de Facebook Ads usem a mesma etapa e contratos aprovados.
+     */
+    private static ArchCondition<JavaClass> onlyDependOnAllowedFacebookAdsStageServiceClasses() {
+        return new ArchCondition<>(
+                "[ARQUITETURA] [BACKEND][FacebookAds] service depends on same-stage service and approved contracts") {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                item.getDirectDependenciesFromSelf().forEach(dependency -> {
+                    JavaClass targetClass = dependency.getTargetClass();
+                    String targetName = targetClass.getName();
+                    if (!targetName.startsWith("com.marketinghub.")) {
+                        return;
+                    }
+                    if (isSameFacebookAdsStageServiceDependency(item, targetClass)
+                            || isAllowedFacebookAdsDependency(targetClass)) {
+                        return;
+                    }
+                    String message = "[ARQUITETURA] [BACKEND][FacebookAds] classe-origem=" + item.getName()
+                            + " possui import/dependência violadora: " + dependency.getDescription()
+                            + " (alvo: " + targetName + ")"
+                            + " | regra: facebookads.<etapa>.service só pode acessar service/DTOs da mesma etapa "
+                            + "e contratos internos aprovados para Facebook Ads.";
+                    events.add(SimpleConditionEvent.violated(item, message));
+                });
+            }
+        };
+    }
+
+    /**
+     * Verifica se a dependência alvo pertence à árvore service da mesma etapa Facebook Ads.
+     */
+    private static boolean isSameFacebookAdsStageServiceDependency(JavaClass sourceClass, JavaClass targetClass) {
+        String sourceStage = extractFacebookAdsStage(sourceClass.getPackageName());
+        String targetStage = extractFacebookAdsStage(targetClass.getPackageName());
+        String targetLayer = extractFacebookAdsStageLayer(targetClass.getPackageName());
+        return sourceStage != null && sourceStage.equals(targetStage) && "service".equals(targetLayer);
     }
 
     /**
@@ -1940,6 +2150,68 @@ class ArquiteturaTest {
         String remainder = packageName.substring(prefix.length());
         int idx = remainder.indexOf('.');
         return idx > 0 ? remainder.substring(0, idx) : remainder;
+    }
+
+    /**
+     * Extrai a etapa Facebook Ads no padrão facebookads.<etapa>.<camada>.
+     */
+    private static String extractFacebookAdsStage(String packageName) {
+        if (!packageName.startsWith(FACEBOOK_ADS_STAGE_PACKAGE_PREFIX)) {
+            return null;
+        }
+        String remainder = packageName.substring(FACEBOOK_ADS_STAGE_PACKAGE_PREFIX.length());
+        int idx = remainder.indexOf('.');
+        return idx > 0 ? remainder.substring(0, idx) : null;
+    }
+
+    /**
+     * Extrai a camada principal da etapa Facebook Ads (controller/service).
+     */
+    private static String extractFacebookAdsStageLayer(String packageName) {
+        String stage = extractFacebookAdsStage(packageName);
+        if (stage == null) {
+            return null;
+        }
+        String prefix = FACEBOOK_ADS_STAGE_PACKAGE_PREFIX + stage + ".";
+        if (!packageName.startsWith(prefix)) {
+            return null;
+        }
+        String remainder = packageName.substring(prefix.length());
+        int idx = remainder.indexOf('.');
+        return idx > 0 ? remainder.substring(0, idx) : remainder;
+    }
+
+    /**
+     * Verifica se a classe está em subpacote de service de etapa nova de Facebook Ads.
+     */
+    private static boolean isFacebookAdsStageServiceSubpackageClass(JavaClass javaClass) {
+        String packageName = javaClass.getPackageName();
+        String stage = extractFacebookAdsStage(packageName);
+        String layer = extractFacebookAdsStageLayer(packageName);
+        if (stage == null || !"service".equals(layer)) {
+            return false;
+        }
+        String servicePackage = FACEBOOK_ADS_STAGE_PACKAGE_PREFIX + stage + ".service";
+        return packageName.startsWith(servicePackage + ".");
+    }
+
+    /**
+     * Converte o nome do pacote de etapa em nome canônico de tipo Java.
+     */
+    private static String canonicalFacebookAdsStageTypeName(String stage, String suffix) {
+        if (stage == null || stage.isBlank()) {
+            return suffix;
+        }
+        String[] parts = stage.split("[_-]");
+        StringBuilder name = new StringBuilder();
+        for (String part : parts) {
+            if (part.isBlank()) {
+                continue;
+            }
+            name.append(part.substring(0, 1).toUpperCase())
+                    .append(part.substring(1));
+        }
+        return name.append(suffix).toString();
     }
 
     /**

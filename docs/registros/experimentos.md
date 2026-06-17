@@ -4644,3 +4644,8 @@
 
 - Decisão registrada: o padrão de rastreabilidade por `jobId`, tabela de passos e endpoint de registro do executor passa a se chamar **protocolo jobid**.
 - Quando solicitado em novos fluxos, o protocolo deve replicar o padrão aplicado na publicação de experimentos como campanhas Facebook.
+
+## 2026-06-17 — Publicação Facebook: público amplo e mensagem de alcance
+
+- Ajustada a regra canônica de publicação para usar lógica OU entre interesses, cargos e comportamentos antes da validação de alcance da Meta.
+- Melhorada a rastreabilidade de falhas de alcance para exibir ao usuário o motivo operacional quando a Meta estima público abaixo da faixa mínima.

@@ -108,6 +108,42 @@ public class ExperimentFacebookApiLogClient {
         }
     }
 
+
+    /**
+     * Registra um bloqueio operacional do worker que acontece após uma chamada válida da Meta.
+     */
+    public void logPublicationJobFailureStep(String jobId, Long experimentId, String stepName, String errorMessage) {
+        if (jobId == null || jobId.isBlank() || stepName == null || stepName.isBlank()) {
+            return;
+        }
+        PublicationJobStepRequest body = new PublicationJobStepRequest(
+            jobId,
+            experimentId,
+            stepName,
+            "FACEBOOK_WORKER",
+            null,
+            null,
+            null,
+            null,
+            null,
+            errorMessage,
+            java.time.Instant.now()
+        );
+        String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/facebook-campaigns/publication-job-steps");
+        try {
+            backendClient
+                .post()
+                .uri(url)
+                .bodyValue(body)
+                .retrieve()
+                .toBodilessEntity()
+                .block();
+        } catch (Exception ex) {
+            LOGGER.debug("Failed to register publication job failure step: jobId={}, experimentId={}, stepName={}, message={}",
+                jobId, experimentId, stepName, ex.getMessage());
+        }
+    }
+
     private JsonNode toJsonNode(String raw) {
         if (raw == null || raw.isBlank()) {
             return null;

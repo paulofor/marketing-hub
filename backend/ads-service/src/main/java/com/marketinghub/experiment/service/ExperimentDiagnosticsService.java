@@ -9,11 +9,13 @@ import com.marketinghub.experiment.dto.ExperimentPublishingArtifactDto;
 import com.marketinghub.facebookads.FacebookAdsAd;
 import com.marketinghub.facebookads.FacebookAdsAdSet;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
+import com.marketinghub.facebookads.FacebookCampaignPublicationJobStep;
 import com.marketinghub.facebookads.playbook.dto.ExperimentFacebookApiLogDto;
 import com.marketinghub.facebookads.playbook.service.ExperimentFacebookApiLogService;
 import com.marketinghub.repository.jpa.facebookads.FacebookAdsAdRepository;
 import com.marketinghub.repository.jpa.facebookads.FacebookAdsAdSetRepository;
 import com.marketinghub.repository.jpa.facebookads.FacebookAdsCampaignRepository;
+import com.marketinghub.repository.jpa.facebookads.FacebookCampaignPublicationJobStepRepository;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -34,6 +36,7 @@ public class ExperimentDiagnosticsService {
     private final FacebookAdsAdSetRepository adSetRepository;
     private final FacebookAdsAdRepository adRepository;
     private final ExperimentFacebookApiLogService facebookApiLogService;
+    private final FacebookCampaignPublicationJobStepRepository publicationJobStepRepository;
 
     /**
      * Inicializa o serviço com consultas de experimento, artefatos locais e logs da integração Meta.
@@ -42,12 +45,14 @@ public class ExperimentDiagnosticsService {
                                         FacebookAdsCampaignRepository campaignRepository,
                                         FacebookAdsAdSetRepository adSetRepository,
                                         FacebookAdsAdRepository adRepository,
-                                        ExperimentFacebookApiLogService facebookApiLogService) {
+                                        ExperimentFacebookApiLogService facebookApiLogService,
+                                        FacebookCampaignPublicationJobStepRepository publicationJobStepRepository) {
         this.experimentService = experimentService;
         this.campaignRepository = campaignRepository;
         this.adSetRepository = adSetRepository;
         this.adRepository = adRepository;
         this.facebookApiLogService = facebookApiLogService;
+        this.publicationJobStepRepository = publicationJobStepRepository;
     }
 
     /**
@@ -108,12 +113,34 @@ public class ExperimentDiagnosticsService {
     }
 
     /**
-     * Retorna detalhes de falha somente quando a chamada mais recente da Meta também falhou.
+     * Retorna detalhes da falha operacional mais recente registrada pelo job ou pela Meta.
      */
     private ExperimentFailureDetailsDto resolveFailureDetails(Long experimentId, boolean statusFailed) {
         if (!statusFailed) {
             return null;
         }
+        return publicationJobStepRepository.findTopByExperimentIdAndErrorMessageIsNotNullOrderByOccurredAtDescIdDesc(experimentId)
+                .map(this::toFailureDetails)
+                .orElseGet(() -> resolveFacebookApiFailureDetails(experimentId));
+    }
+
+    /**
+     * Converte o passo do job em detalhes legíveis para a tela do experimento.
+     */
+    private ExperimentFailureDetailsDto toFailureDetails(FacebookCampaignPublicationJobStep step) {
+        return new ExperimentFailureDetailsDto(
+                step.getErrorMessage(),
+                step.getEndpoint(),
+                step.getStatusCode(),
+                step.getOccurredAt(),
+                StringUtils.hasText(step.getProvider()) ? step.getProvider() : "PUBLICATION_JOB_STEP"
+        );
+    }
+
+    /**
+     * Busca falha HTTP ou textual mais recente registrada na integração com a Meta.
+     */
+    private ExperimentFailureDetailsDto resolveFacebookApiFailureDetails(Long experimentId) {
         return facebookApiLogService.findLogs(experimentId, 200).stream()
                 .max(Comparator.comparing(this::resolveOccurrence, Comparator.nullsLast(Comparator.naturalOrder())))
                 .filter(this::isFailureLog)

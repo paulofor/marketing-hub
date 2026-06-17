@@ -817,3 +817,10 @@
 - Ajustada a tela de detalhe do CNAE para exibir a coluna Qualidade dos subnichos em português, mantendo o status técnico vindo do backend apenas como contrato interno.
 - Causa-raiz tratada: a interface mostrava códigos técnicos como `MEI_AUDIENCE_READY` e `LIGHTLY_RESEARCHED`, reduzindo clareza operacional para priorização de nichos com potencial de venda.
 - Prevenção de recorrência: a tela passou a reutilizar o mapeamento central de status já existente no módulo OPRM, evitando novas traduções divergentes no mesmo fluxo.
+
+## 2026-06-17 — OPRM CNAE: desligamento da instância legada do coletor
+
+- Diagnosticado via MCP que os ciclos `CNAE_SCORE` continuavam sendo criados a cada 30 minutos por logs do módulo `oprm-coletor-mei` expostos no host legado `177.153.62.107:8094`, com a classe antiga `OprmCnaeOpportunityScheduler` ainda em execução.
+- Causa-raiz comprovada: o código atual já não contém os schedulers CNAE legados, mas uma instância operacional antiga do próprio módulo `oprm-coletor-mei` permaneceu ativa no host legado e continuou chamando o backend.
+- Correção aplicada no módulo/deploy: o workflow do `oprm-coletor-mei` agora publica no host canônico atual e, em seguida, derruba explicitamente qualquer container/compose legado `oprm-coletor-mei` no host antigo `177.153.62.107`.
+- Prevenção de recorrência: a desativação fica acoplada ao deploy do próprio módulo executor, evitando corrigir o sintoma no backend e garantindo que o módulo que dispara o ciclo seja desligado na origem.

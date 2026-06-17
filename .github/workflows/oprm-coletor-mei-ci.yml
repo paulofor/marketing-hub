@@ -84,6 +84,7 @@ jobs:
       packages: read
     env:
       DEPLOY_HOST: 191.252.120.96
+      LEGACY_DEPLOY_HOST: 177.153.62.107
       DEPLOY_USER: root
       REMOTE_PATH: ${{ secrets.OPRM_COLETOR_MEI_REMOTE_PATH || '/root/oprm-coletor-mei' }}
       IMAGE_REGISTRY: ghcr.io
@@ -120,6 +121,17 @@ jobs:
             && docker compose -f docker-compose.yml -f docker-compose.deploy.yml pull \
             && docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d --remove-orphans \
             && docker image prune -af"
+      - name: Stop legacy OPRM Coletor MEI on old host
+        run: |
+          ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${LEGACY_DEPLOY_HOST}" "set -euo pipefail
+            for dir in /root/oprm-coletor-mei /opt/marketinghub/oprm-coletor-mei /opt/marketinghub/containers; do
+              if [ -f \"\${dir}/docker-compose.yml\" ]; then
+                cd \"\${dir}\"
+                docker compose -f docker-compose.yml -f docker-compose.deploy.yml down --remove-orphans || docker compose -f docker-compose.yml down --remove-orphans || true
+              fi
+            done
+            docker ps -a --filter name=oprm-coletor-mei --format '{{.ID}}' | xargs -r docker rm -f
+            docker image prune -af"
       - name: Clean build artifacts from repository
         if: always()
         run: |

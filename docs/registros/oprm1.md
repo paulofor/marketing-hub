@@ -773,3 +773,9 @@
 - Causa-raiz tratada: o materializador enriquecido do OPRM dependia diretamente de `com.marketinghub.finance.CurrencyConversionService`, quebrando a regra ArchUnit de isolamento do módulo OPRM.
 - Correção aplicada: criado conversor próprio dentro do pacote OPRM para custos de identificação, preservando a mesma configuração `app.currency.usd-to-brl` e o mesmo arredondamento financeiro sem acoplar o materializador ao pacote financeiro.
 - Prevenção de recorrência: a suíte ArchUnit foi executada junto com o teste do materializador para garantir que o OPRM permaneça dependente apenas dos pacotes autorizados.
+
+## 2026-06-17 — OPRM NichoCNAE: protocolo padrão backend
+
+- Aplicado o protocolo padrão backend no pacote `com.marketinghub.oprm.nichocnae` por meio de regras ArchUnit específicas para as etapas do NichoCNAE.
+- Causa-raiz tratada: o pacote já possuía várias etapas operacionais, mas não havia uma trava arquitetural dedicada garantindo controller canônico, service backend canônico e contratos imutáveis em subpacotes de service.
+- Prevenção de recorrência: a suíte de arquitetura agora valida que cada etapa tenha um único `Backend<Etapa>Controller`, um service backend canônico e DTOs/contratos como `record`, reduzindo risco de espalhamento de contratos e endpoints no fluxo que qualifica nichos para vendas.

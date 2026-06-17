@@ -97,6 +97,11 @@ class ArquiteturaTest {
     private static final Pattern FACEBOOK_ADS_STAGE_SERVICE_PACKAGE_PATTERN =
             Pattern.compile("^com\\.marketinghub\\.facebookads\\.stage\\.([a-zA-Z0-9_]+)\\.service$");
     private static final String FACEBOOK_ADS_STAGE_PACKAGE_PREFIX = "com.marketinghub.facebookads.stage.";
+    private static final Pattern OPRM_NICHO_CNAE_STAGE_CONTROLLER_PACKAGE_PATTERN = Pattern.compile(
+            "^com\\.marketinghub\\.oprm\\.nichocnae\\.([a-zA-Z0-9_]+)\\.(web|controller)$");
+    private static final Pattern OPRM_NICHO_CNAE_STAGE_SERVICE_PACKAGE_PATTERN = Pattern.compile(
+            "^com\\.marketinghub\\.oprm\\.nichocnae\\.([a-zA-Z0-9_]+)\\.service$");
+    private static final String OPRM_NICHO_CNAE_STAGE_PACKAGE_PREFIX = "com.marketinghub.oprm.nichocnae.";
     private static final List<String> REQUIRED_BACKEND_SERVICE_SUBPACKAGES = List.of(
             "detailStageExecution", "listStageExecutions", "pending", "recebePrompt", "recebeResposta");
     private static final List<String> REQUIRED_EPM_SERVICE_SUBPACKAGES = List.of(
@@ -523,6 +528,76 @@ class ArquiteturaTest {
                                             + " está no subpacote obrigatório " + requiredSubpackage
                                             + " e deve ser declarada como record"));
                 }));
+        failWithArchitectureViolations(violations);
+    }
+
+    /**
+     * Garante que cada etapa do OPRM nicho CNAE tenha um único controller canônico anotado.
+     */
+    @ArchTest
+    static void oprmNichoCnaeStageControllerPackagesMustHaveSingleCanonicalController(JavaClasses importedClasses) {
+        List<String> violations = new ArrayList<>();
+        oprmNichoCnaeStageControllerPackages(importedClasses).forEach((packageName, packageClasses) -> {
+            List<JavaClass> controllers = packageClasses.stream()
+                    .filter(ArquiteturaTest::isBackendControllerClass)
+                    .toList();
+            if (packageClasses.size() != 1) {
+                violations.add("[ARQUITETURA] [BACKEND][OPRM][NichoCNAE] pacote=" + packageName
+                        + " deve conter apenas uma classe Backend<Etapa>Controller; classes="
+                        + simpleNames(packageClasses));
+            }
+            if (controllers.size() != 1) {
+                violations.add("[ARQUITETURA] [BACKEND][OPRM][NichoCNAE] pacote=" + packageName
+                        + " deve conter exatamente uma classe canônica Backend<Etapa>Controller; controllers="
+                        + simpleNames(controllers));
+                return;
+            }
+            JavaClass controller = controllers.get(0);
+            if (!controller.isAnnotatedWith(RestController.class)) {
+                violations.add("[ARQUITETURA] [BACKEND][OPRM][NichoCNAE] classe=" + controller.getName()
+                        + " deve possuir @RestController");
+            }
+        });
+        failWithArchitectureViolations(violations);
+    }
+
+    /**
+     * Garante que cada etapa do OPRM nicho CNAE tenha um service backend canônico anotado.
+     */
+    @ArchTest
+    static void oprmNichoCnaeStageServicePackagesMustHaveCanonicalBackendService(JavaClasses importedClasses) {
+        List<String> violations = new ArrayList<>();
+        oprmNichoCnaeStageServicePackages(importedClasses).forEach((packageName, packageClasses) -> {
+            List<JavaClass> services = packageClasses.stream()
+                    .filter(ArquiteturaTest::isCanonicalOprmNichoCnaeBackendServiceClass)
+                    .toList();
+            if (services.size() != 1) {
+                violations.add("[ARQUITETURA] [BACKEND][OPRM][NichoCNAE] pacote=" + packageName
+                        + " deve conter exatamente uma classe canônica Backend<Etapa>Service; services="
+                        + simpleNames(services));
+                return;
+            }
+            if (!services.get(0).isAnnotatedWith(Service.class)) {
+                violations.add("[ARQUITETURA] [BACKEND][OPRM][NichoCNAE] classe=" + services.get(0).getName()
+                        + " deve possuir @Service");
+            }
+        });
+        failWithArchitectureViolations(violations);
+    }
+
+    /**
+     * Garante que contratos de etapas OPRM nicho CNAE em subpacotes de service sejam records.
+     */
+    @ArchTest
+    static void oprmNichoCnaeStageServiceSubpackagesMustContainOnlyRecords(JavaClasses importedClasses) {
+        List<String> violations = new ArrayList<>();
+        importedClasses.stream()
+                .filter(ArquiteturaTest::isProductionTopLevelClass)
+                .filter(ArquiteturaTest::isOprmNichoCnaeStageServiceSubpackageClass)
+                .filter(candidate -> !candidate.reflect().isRecord())
+                .forEach(candidate -> violations.add("[ARQUITETURA] [BACKEND][OPRM][NichoCNAE] classe="
+                        + candidate.getName()
+                        + " está em subpacote de service de etapa OPRM nicho CNAE e deve ser declarada como record"));
         failWithArchitectureViolations(violations);
     }
 
@@ -981,6 +1056,60 @@ class ArquiteturaTest {
                         .computeIfAbsent(javaClass.getPackageName(), ignored -> new ArrayList<>())
                         .add(javaClass));
         return packages;
+    }
+
+    /**
+     * Agrupa classes diretas de controller/web das etapas OPRM nicho CNAE.
+     */
+    private static Map<String, List<JavaClass>> oprmNichoCnaeStageControllerPackages(JavaClasses importedClasses) {
+        Map<String, List<JavaClass>> packages = new LinkedHashMap<>();
+        importedClasses.stream()
+                .filter(ArquiteturaTest::isProductionTopLevelClass)
+                .filter(javaClass -> OPRM_NICHO_CNAE_STAGE_CONTROLLER_PACKAGE_PATTERN
+                        .matcher(javaClass.getPackageName())
+                        .matches())
+                .sorted(Comparator.comparing(JavaClass::getName))
+                .forEach(javaClass -> packages
+                        .computeIfAbsent(javaClass.getPackageName(), ignored -> new ArrayList<>())
+                        .add(javaClass));
+        return packages;
+    }
+
+    /**
+     * Agrupa classes diretas de service das etapas OPRM nicho CNAE.
+     */
+    private static Map<String, List<JavaClass>> oprmNichoCnaeStageServicePackages(JavaClasses importedClasses) {
+        Map<String, List<JavaClass>> packages = new LinkedHashMap<>();
+        importedClasses.stream()
+                .filter(ArquiteturaTest::isProductionTopLevelClass)
+                .filter(javaClass -> OPRM_NICHO_CNAE_STAGE_SERVICE_PACKAGE_PATTERN
+                        .matcher(javaClass.getPackageName())
+                        .matches())
+                .sorted(Comparator.comparing(JavaClass::getName))
+                .forEach(javaClass -> packages
+                        .computeIfAbsent(javaClass.getPackageName(), ignored -> new ArrayList<>())
+                        .add(javaClass));
+        return packages;
+    }
+
+    /**
+     * Verifica se a classe é service backend canônico da etapa OPRM nicho CNAE.
+     */
+    private static boolean isCanonicalOprmNichoCnaeBackendServiceClass(JavaClass javaClass) {
+        return isBackendServiceClass(javaClass) && !javaClass.getSimpleName().contains("StallGuard");
+    }
+
+    /**
+     * Verifica se a classe está em subpacote de service de etapa OPRM nicho CNAE.
+     */
+    private static boolean isOprmNichoCnaeStageServiceSubpackageClass(JavaClass javaClass) {
+        String packageName = javaClass.getPackageName();
+        if (!packageName.startsWith(OPRM_NICHO_CNAE_STAGE_PACKAGE_PREFIX)) {
+            return false;
+        }
+        String remainder = packageName.substring(OPRM_NICHO_CNAE_STAGE_PACKAGE_PREFIX.length());
+        String[] parts = remainder.split("\\.");
+        return parts.length >= 3 && "service".equals(parts[1]);
     }
 
     /**

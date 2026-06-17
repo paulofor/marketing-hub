@@ -850,3 +850,9 @@
 - Ajustada a tela de subnichos do CNAE para exibir os ciclos iniciados que ainda não foram materializados como subnicho final.
 - Causa-raiz tratada: o usuário conseguia iniciar um novo subnicho, sair da tela e, ao voltar, enxergava apenas subnichos já materializados, perdendo o acesso operacional a ciclos ainda em processamento.
 - Prevenção de recorrência: a tela agora cruza a verdade dos ciclos do backend com a lista de subnichos materializados e mantém uma seção fixa “Em processamento antes de virar subnicho” com ação de acompanhamento.
+
+## 2026-06-17 — OPRM CNAE: custo e paginação dos subnichos em processamento
+
+- Ajustada a seção “Em processamento antes de virar subnicho” para exibir 10 ciclos por página, custo individual por ciclo e custo total no cabeçalho do card.
+- Causa-raiz tratada: a lista podia crescer sem controle visual e não mostrava o impacto financeiro dos ciclos que ainda não viraram subnicho, dificultando decisão operacional sobre continuidade ou reprocessamento.
+- Prevenção de recorrência: a tela passou a calcular a visualização paginada e o total financeiro diretamente a partir da verdade enviada pelo backend para os ciclos OPRM.

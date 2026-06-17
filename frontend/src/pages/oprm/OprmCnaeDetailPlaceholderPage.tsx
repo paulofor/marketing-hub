@@ -1,5 +1,5 @@
 import { Activity, Globe2, Sparkles } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   useOprmCnaeScore,
@@ -141,6 +141,7 @@ const statusLabels: Record<string, string> = {
 
 const AUTO_QUALITY_REPROCESS_TRIGGER = "AUTO_QUALITY_REPROCESS";
 const MAX_AUTO_REPROCESS_PER_CANDIDATE = 3;
+const PENDING_CYCLES_PAGE_SIZE = 10;
 
 function isAutomaticReprocessCycle(
   cycle?: OprmRoutineResearchCycleSummary | null,
@@ -177,6 +178,21 @@ function findPendingCyclesBeforeEnrichedNiche(
   return safeCycles.filter(
     (cycle) => !materializedCycleIds.has(cycle.researchCycleId),
   );
+}
+
+function sumCycleCosts(cycles: OprmRoutineResearchCycleSummary[]) {
+  return cycles.reduce((total, cycle) => {
+    const cost = Number(cycle.executionCostUsd ?? 0);
+    return Number.isNaN(cost) ? total : total + cost;
+  }, 0);
+}
+
+function paginateCycles(
+  cycles: OprmRoutineResearchCycleSummary[],
+  page: number,
+) {
+  const start = (page - 1) * PENDING_CYCLES_PAGE_SIZE;
+  return cycles.slice(start, start + PENDING_CYCLES_PAGE_SIZE);
 }
 
 function automaticProcessMessage(
@@ -635,6 +651,7 @@ export default function OprmCnaeDetailPlaceholderPage() {
   const [showPipeline, setShowPipeline] = useState(
     Boolean(selectedResearchCycleId),
   );
+  const [pendingCyclesPage, setPendingCyclesPage] = useState(1);
   const volumeQuery = useOprmCnaeVolume(decodedCnaeCode);
   const scoreQuery = useOprmCnaeScore(decodedCnaeCode);
   const cyclesQuery = useOprmCnaePipelineCycles(decodedCnaeCode);
@@ -644,6 +661,17 @@ export default function OprmCnaeDetailPlaceholderPage() {
   const pendingCyclesBeforeEnrichedNiche = findPendingCyclesBeforeEnrichedNiche(
     cyclesQuery.data,
     generatedNichesQuery.data,
+  );
+  const pendingCyclesTotalCost = sumCycleCosts(pendingCyclesBeforeEnrichedNiche);
+  const pendingCyclesTotalPages = Math.max(
+    1,
+    Math.ceil(
+      pendingCyclesBeforeEnrichedNiche.length / PENDING_CYCLES_PAGE_SIZE,
+    ),
+  );
+  const visiblePendingCycles = paginateCycles(
+    pendingCyclesBeforeEnrichedNiche,
+    pendingCyclesPage,
   );
   const latestCycle = selectedResearchCycleId
     ? cyclesQuery.data?.find(
@@ -687,6 +715,12 @@ export default function OprmCnaeDetailPlaceholderPage() {
     volumeQuery.data?.cnaeDescription ??
     scoreQuery.data?.cnaeDescription ??
     "Descrição ainda não encontrada";
+
+  useEffect(() => {
+    setPendingCyclesPage((currentPage) =>
+      Math.min(currentPage, pendingCyclesTotalPages),
+    );
+  }, [pendingCyclesTotalPages]);
 
   useBreadcrumbs([
     { label: "OPRM", to: "/oprm" },
@@ -938,9 +972,14 @@ export default function OprmCnaeDetailPlaceholderPage() {
                   da execução mesmo depois de sair da tela.
                 </p>
               </div>
-              <span className="badge text-bg-primary">
-                {pendingCyclesBeforeEnrichedNiche.length} em aberto
-              </span>
+              <div className="d-flex flex-wrap gap-2 justify-content-end">
+                <span className="badge text-bg-primary">
+                  {pendingCyclesBeforeEnrichedNiche.length} em aberto
+                </span>
+                <span className="badge text-bg-dark">
+                  Custo total {formatUsd(pendingCyclesTotalCost)}
+                </span>
+              </div>
             </div>
             {cyclesQuery.isLoading || generatedNichesQuery.isLoading ? (
               <div className="alert alert-light border mb-0" role="status">
@@ -964,6 +1003,7 @@ export default function OprmCnaeDetailPlaceholderPage() {
                       <th scope="col">Subnicho em análise</th>
                       <th scope="col">Status</th>
                       <th scope="col">Ciclo</th>
+                      <th scope="col">Custo</th>
                       <th scope="col">Início</th>
                       <th scope="col" className="text-end">
                         Ação
@@ -971,7 +1011,7 @@ export default function OprmCnaeDetailPlaceholderPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {pendingCyclesBeforeEnrichedNiche.map((cycle) => (
+                    {visiblePendingCycles.map((cycle) => (
                       <tr key={cycle.researchCycleId}>
                         <td>
                           <div className="fw-semibold">
@@ -983,6 +1023,7 @@ export default function OprmCnaeDetailPlaceholderPage() {
                         </td>
                         <td>{statusLabel(cycle.status)}</td>
                         <td>#{cycle.researchCycleId}</td>
+                        <td>{formatUsd(cycle.executionCostUsd)}</td>
                         <td>{formatDateTime(cycle.startedAt)}</td>
                         <td className="text-end">
                           <Link
@@ -996,6 +1037,45 @@ export default function OprmCnaeDetailPlaceholderPage() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            ) : null}
+            {!cyclesQuery.isLoading &&
+            !generatedNichesQuery.isLoading &&
+            !cyclesQuery.isError &&
+            pendingCyclesBeforeEnrichedNiche.length > PENDING_CYCLES_PAGE_SIZE ? (
+              <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3">
+                <span className="small text-secondary">
+                  Página {pendingCyclesPage} de {pendingCyclesTotalPages} · 10
+                  por página
+                </span>
+                <div
+                  className="btn-group btn-group-sm"
+                  role="group"
+                  aria-label="Paginação dos processamentos em aberto"
+                >
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary"
+                    disabled={pendingCyclesPage === 1}
+                    onClick={() =>
+                      setPendingCyclesPage((page) => Math.max(1, page - 1))
+                    }
+                  >
+                    Anterior
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary"
+                    disabled={pendingCyclesPage === pendingCyclesTotalPages}
+                    onClick={() =>
+                      setPendingCyclesPage((page) =>
+                        Math.min(pendingCyclesTotalPages, page + 1),
+                      )
+                    }
+                  >
+                    Próxima
+                  </button>
+                </div>
               </div>
             ) : null}
             {!cyclesQuery.isLoading &&

@@ -104,6 +104,8 @@ public interface MoisSalesPageMarketWarmupGateway {
             String urlCanonical,
             String title,
             String producerName,
+            String currentStatus,
+            String analysisStatus,
             String offerSummary,
             String mechanismSummary,
             String promiseSummary,

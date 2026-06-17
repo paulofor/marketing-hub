@@ -182,6 +182,10 @@ public class MoisSalesLibraryController {
         } catch (IllegalArgumentException ex) {
             log.warn("Biblioteca de páginas de vendas não encontrou página para aquecimento. operacao=requestMarketWarmup, pageId={}, erro={}", pageId, ex.getMessage(), ex);
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage(), ex);
+        } catch (IllegalStateException ex) {
+            log.warn("Biblioteca de páginas de vendas bloqueou dossiê antes da análise comercial. operacao=requestMarketWarmup, pageId={}, erro={}",
+                    pageId, ex.getMessage(), ex);
+            throw new ResponseStatusException(HttpStatus.CONFLICT, ex.getMessage(), ex);
         }
     }
 

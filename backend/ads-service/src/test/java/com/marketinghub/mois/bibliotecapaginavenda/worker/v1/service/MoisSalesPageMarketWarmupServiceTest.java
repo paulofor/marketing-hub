@@ -74,6 +74,33 @@ class MoisSalesPageMarketWarmupServiceTest {
     }
 
     /**
+     * Garante que a pesquisa de aquecimento não nasce antes da análise comercial da página.
+     */
+    @Test
+    void requestResearchRejectsPageWithoutCommercialAnalysis() {
+        SalesPageWarmupData page = new SalesPageWarmupData(
+                10L,
+                "workspace-001",
+                "https://example.test/oferta",
+                "Oferta principal",
+                "Produtor Especialista",
+                "CAPTURED",
+                "PENDING",
+                null,
+                null,
+                null,
+                null);
+        given(gateway.findSalesPage(10L)).willReturn(Optional.of(page));
+
+        assertThatThrownBy(() -> service.requestResearch(10L))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("só pode ser iniciado depois da análise comercial");
+
+        verify(gateway, never()).findActiveJobByPage(10L);
+        verify(gateway, never()).createPendingJob(page);
+    }
+
+    /**
      * Garante que o worker recebe os dados comerciais necessários ao reservar um job pendente.
      */
     @Test
@@ -305,6 +332,8 @@ class MoisSalesPageMarketWarmupServiceTest {
                 "https://example.test/oferta",
                 "Oferta principal",
                 "Produtor Especialista",
+                "ANALYZED",
+                "ANALYZED",
                 "Oferta transforma dor em resultado",
                 "Mecanismo plausível",
                 "Promessa clara",

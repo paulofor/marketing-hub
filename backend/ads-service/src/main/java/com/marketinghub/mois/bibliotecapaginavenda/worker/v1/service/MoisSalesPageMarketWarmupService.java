@@ -14,6 +14,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -28,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class MoisSalesPageMarketWarmupService {
 
     private static final int DEFAULT_STALE_MINUTES = 120;
+    private static final List<String> ANALYZED_STATUSES = List.of("DONE", "ANALYZED");
 
     private final MoisSalesPageMarketWarmupGateway gateway;
     private final MoisSalesPageMarketWarmupScoreEngine scoreEngine = new MoisSalesPageMarketWarmupScoreEngine();
@@ -40,6 +42,7 @@ public class MoisSalesPageMarketWarmupService {
         try {
             SalesPageWarmupData page = gateway.findSalesPage(pageId)
                     .orElseThrow(() -> new IllegalArgumentException("Página MOIS não encontrada para aquecimento: " + pageId));
+            validatePageAnalyzedForWarmup(page);
             MarketWarmupJobData job = gateway.findActiveJobByPage(pageId).orElseGet(() -> gateway.createPendingJob(page));
             log.info("Pesquisa de aquecimento MOIS solicitada. modulo=MOIS, operacao=requestMarketWarmup, pageId={}, jobId={}, status={}",
                     pageId, job.jobId(), mapJobStatus(job.status()));
@@ -208,6 +211,27 @@ public class MoisSalesPageMarketWarmupService {
                     job.workspaceId(), job.pageId(), job.jobId(), index, sourceId, source.platform(), source.sourceType(), source.sourceUrl());
         }
         return sourceIds;
+    }
+
+    /**
+     * Bloqueia dossiê antes da análise comercial estar concluída para manter a fila consistente.
+     */
+    private void validatePageAnalyzedForWarmup(SalesPageWarmupData page) {
+        String effectiveStatus = page.analysisStatus() == null || page.analysisStatus().isBlank()
+                ? page.currentStatus()
+                : page.analysisStatus();
+        String normalizedStatus = effectiveStatus == null ? "" : effectiveStatus.trim().toUpperCase(Locale.ROOT);
+        if (!ANALYZED_STATUSES.contains(normalizedStatus)) {
+            throw new IllegalStateException("Dossiê MOIS só pode ser iniciado depois da análise comercial da página. pageId="
+                    + page.pageId() + ", statusAtual=" + nullSafe(page.currentStatus()) + ", statusAnalise=" + nullSafe(page.analysisStatus()));
+        }
+    }
+
+    /**
+     * Normaliza valor nulo para mensagem operacional objetiva.
+     */
+    private String nullSafe(String value) {
+        return value == null || value.isBlank() ? "SEM_STATUS" : value;
     }
 
     /**

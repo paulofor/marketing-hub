@@ -475,6 +475,18 @@ em memória e ignora execuções seguintes até que o serviço seja reiniciado. 
 ajustar as permissões, atualize manualmente o status do experimento para que ele
 volte a ser elegível e reinicie o worker para que o novo token seja utilizado.
 
+
+### Estratégia de orçamento para campanhas de experimento
+
+Campanhas de experimento usam orçamento diário no nível do ad set (`budgetMode=ADSET`)
+para preservar comparação controlada entre públicos, criativos e ofertas. A
+campanha é criada sem orçamento próprio e o worker envia
+`is_adset_budget_sharing_enabled=false` em `POST /{ad_account_id}/campaigns`,
+mantendo o controle de gasto no conjunto de anúncios e evitando falha `(#100)
+Invalid parameter` antes da criação dos ad sets. Orçamento no nível da campanha
+deve ser reservado para uma etapa futura de escala, depois que o experimento
+identificar vencedor comercial.
+
 ### Erro `(#100) Invalid parameter` ao criar o criativo
 
 O endpoint [`POST /{ad_account_id}/adcreatives`](https://developers.facebook.com/docs/marketing-api/reference/ad-creative#Creating)

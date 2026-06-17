@@ -252,7 +252,7 @@ public class FacebookCampaignService {
     }
 
     /**
-     * Publishes one released experiment to Facebook Ads using the best available targeting source.
+     * Publica um experimento liberado no Facebook Ads usando orçamento no ad set para validação controlada e a melhor fonte de targeting disponível.
      */
     private void processExperiment(Experiment exp, FacebookWorkerConfiguration config) {
         String campaignId = null;
@@ -495,7 +495,7 @@ public class FacebookCampaignService {
                 exp.name(),
                 resolvedCampaignObjective,
                 "ACTIVE",
-                "CAMPAIGN",
+                "ADSET",
                 exp.id(),
                 config.accountId(),
                 new CreateCampaignRequest.AdSet(

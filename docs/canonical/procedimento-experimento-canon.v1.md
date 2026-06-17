@@ -71,6 +71,8 @@ Local canônico vigente:
 - pipeline de experimento (núcleo inicial): `ai-worker/src/main/resources/prompts/experiment`;
 - pipeline de landing no Worker AI: prompts e schemas devem ser resolvidos por configuração tipada da etapa em `openai.core.<etapa>`; o caminho físico em `resources/prompts/<dominio>` é detalhe de recurso versionado e não define namespace Java do Worker AI.
 
+Regra mandatória para `AD_IMAGE_BRIEFING`: cada briefing de imagem de criativo deve orientar texto sobreposto em formato de pergunta clara, completa e objetiva, capaz de filtrar imediatamente pessoas verdadeiramente do nicho. A pergunta precisa mencionar situação, rotina, cargo, atividade, dor ou resultado específico do nicho; se puder servir para qualquer mercado, deve ser reescrita antes da resposta final.
+
 ### 4.2.1 Regra mandatória — oferta low-ticket da hipótese
 
 A etapa `hypothesis-offer` do pipeline de hipótese deve materializar uma oferta low-ticket digital, não uma oferta genérica. O objetivo é entregar um produto de entrada simples, vendável e aplicável rapidamente, que depois possa alimentar página de vendas, isca digital e campanha sem precisar redescobrir a oferta.

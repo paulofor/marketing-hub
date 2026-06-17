@@ -4712,3 +4712,10 @@
 
 - Ajustado o texto operacional do protocolo jobid para deixar explícito que, se o módulo/pacote já possuir uma tabela de passos compatível, ela deve ser reutilizada.
 - Decisão: evitar duplicação de tabelas e manter uma linha do tempo única por contexto operacional, criando nova tabela apenas quando não existir estrutura compatível ou houver diferença real de domínio, retenção, volume ou contrato.
+
+## 2026-06-17 — Pergunta obrigatória em criativos de anúncio
+
+- Solicitação: reforçar o prompt de imagens de criativos após observar no Experimento 39 que os criativos não comunicavam diretamente com o público desejado.
+- Causa-raiz tratada: o briefing visual exigia sinais de nicho, mas não obrigava uma pergunta textual explícita capaz de filtrar rapidamente quem realmente pertence ao nicho.
+- Correção aplicada: o prompt `ad-image-briefing` agora obriga texto sobreposto em formato de pergunta clara, completa e objetiva, mencionando situação, rotina, cargo, atividade, dor ou resultado específico do nicho.
+- Prevenção de recorrência: o cânone do procedimento de experimento passou a registrar essa regra para manter futuras alterações de prompt alinhadas ao objetivo comercial de segmentação e venda.

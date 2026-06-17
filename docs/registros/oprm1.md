@@ -779,3 +779,10 @@
 - Aplicado o protocolo padrão backend no pacote `com.marketinghub.oprm.nichocnae` por meio de regras ArchUnit específicas para as etapas do NichoCNAE.
 - Causa-raiz tratada: o pacote já possuía várias etapas operacionais, mas não havia uma trava arquitetural dedicada garantindo controller canônico, service backend canônico e contratos imutáveis em subpacotes de service.
 - Prevenção de recorrência: a suíte de arquitetura agora valida que cada etapa tenha um único `Backend<Etapa>Controller`, um service backend canônico e DTOs/contratos como `record`, reduzindo risco de espalhamento de contratos e endpoints no fluxo que qualifica nichos para vendas.
+
+## 2026-06-17 — OPRM NichoCNAE: desativação da tela administrativa de pipeline
+
+- Decisão registrada: a tela `/oprm/pipeline` ficou obsoleta e foi desativada no frontend.
+- Causa-raiz tratada: manter um caminho separado de pipeline competia com o fluxo atual de criação de novo nicho pelo CNAE, aumentando risco de confusão operacional, comandos duplicados e gasto sem direcionamento comercial.
+- Correção aplicada: o menu interno OPRM remove o item Pipeline, as rotas antigas de pipeline redirecionam para `/oprm` e o cânone passou a orientar que o pipeline NichoCNAE seja usado somente pelo caminho de criação de novo nicho/subnicho.
+- Prevenção de recorrência: o teste de navegação OPRM valida que o link Pipeline não aparece e que a rota obsoleta não renderiza mais a tela antiga.

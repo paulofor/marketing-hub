@@ -119,7 +119,7 @@ Evitar fechamento prematuro de `import run` que destrói a totalização de mark
 - Seeds, queries, fontes, sinais, sínteses e gates da fase inicial devem ser aceitos somente quando servirem à compreensão da rotina real e das dificuldades do nicho no Brasil.
 - Snapshots da etapa quatro devem persistir indicadores próprios de intenção da fonte, evidência de rotina, risco comercial e risco de linguagem de solução, mantendo política de armazenamento curto.
 - Qualquer conteúdo de solução, produto, campanha, oferta ou hipótese comercial deve pertencer a fluxo posterior, separado e rastreável, depois da conclusão da pesquisa de realidade operacional.
-- A tela `/oprm/pipeline` deve orientar o usuário de que o NichoCNAE está levantando realidade operacional no Brasil e não montando solução ou campanha nessa etapa; ciclos em `FAILED`, `NEEDS_MORE_RESEARCH` ou `GENERIC` devem oferecer ação de novo ciclo manual/reprocessamento.
+- A tela administrativa `/oprm/pipeline` está obsoleta e deve permanecer desativada no frontend; o acompanhamento e o disparo do pipeline NichoCNAE devem acontecer somente pelo caminho de criação de novo nicho/subnicho a partir do CNAE (`/oprm` e detalhe do CNAE), para evitar operação paralela sem decisão comercial clara.
 
 ## Regra obrigatória — materialização final do NichoCNAE em nicho enriquecido
 
@@ -139,7 +139,7 @@ Evitar fechamento prematuro de `import run` que destrói a totalização de mark
 - É permitido gerar múltiplos registros em `market_niche_enrichment_profile` para o mesmo `market_niche_id`, inclusive para o mesmo `routine_card_id` ou `research_cycle_id`, quando houver reprocessamento operacional; cada registro deve preservar a auditoria histórica da execução que o criou.
 - Reprocessamentos devem reaproveitar e atualizar o `market_niche` existente de forma controlada, criando novo perfil enriquecido rastreável em vez de bloquear a execução por idempotência rígida.
 - O mesmo CNAE pode gerar mais de um `market_niche` quando os ciclos aprovados representarem subnichos diferentes; a etapa final só deve atualizar um nicho existente quando encontrar materialização anterior do mesmo `cnae_code` com o mesmo `neutral_niche_name` normalizado. `market_niche_id` associado ao candidato ou ao perfil MEI/autônomo não pode, sozinho, forçar atualização de um nicho diferente.
-- A tela `/oprm/pipeline` deve exibir a etapa final e informar o `marketNicheId`, o `enrichedNicheProfileId` e o status de materialização.
+- A etapa final, o `marketNicheId`, o `enrichedNicheProfileId` e o status de materialização devem ser exibidos no fluxo de detalhe/criação de novo nicho do CNAE; a tela administrativa `/oprm/pipeline` não deve ser usada para esse acompanhamento.
 - Ciclos em `ENRICHED_NICHE_FAILED` devem oferecer ação operacional pelo próprio front-end para abrir novo ciclo rastreável; o usuário não deve ser orientado a corrigir esse caso por acesso direto ao banco de dados.
 - O contrato da etapa final deve seguir o padrão de unidade de trabalho fechada: o endpoint `pending` precisa entregar todos os dados necessários para o coletor concluir a materialização sem buscar detalhes adicionais.
 

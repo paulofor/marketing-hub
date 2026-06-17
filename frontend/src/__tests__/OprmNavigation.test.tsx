@@ -25,7 +25,7 @@ describe("OPRM navigation", () => {
     expect(
       screen.getByRole("button", { name: /ver nichos enriquecidos/i }),
     ).toBeTruthy();
-    expect(screen.getByRole("link", { name: /^pipeline$/i })).toBeTruthy();
+    expect(screen.queryByRole("link", { name: /^pipeline$/i })).toBeNull();
   });
 
   it("has menu link to /oprm", () => {
@@ -51,13 +51,11 @@ describe("OPRM navigation", () => {
     ).toBeTruthy();
   });
 
-  it("renders Pipeline page on /oprm/pipeline route", () => {
+  it("redirects obsolete /oprm/pipeline route to CNAE niche creation flow", () => {
     setup(<App />, ["/oprm/pipeline"]);
-    expect(screen.getByText(/^Pipeline NichoCNAE$/)).toBeTruthy();
-    expect(screen.getByText(/^Últimos 10 nichos processados$/)).toBeTruthy();
-    expect(screen.getByText(/^Ciclo de Pesquisa de Rotina$/)).toBeTruthy();
-    expect(screen.getByText(/^Seed de Pesquisa do Nicho$/)).toBeTruthy();
-    expect(screen.getByText(/^Gate de Qualidade$/)).toBeTruthy();
+    expect(screen.getByText(/^CNAEs por Score OPRM$/)).toBeTruthy();
+    expect(screen.queryByText(/^Pipeline NichoCNAE$/)).toBeNull();
+    expect(screen.queryByRole("link", { name: /^pipeline$/i })).toBeNull();
   });
 
   it("renders loading state on /oprm/operations route", async () => {

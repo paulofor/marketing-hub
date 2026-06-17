@@ -82,4 +82,7 @@ public interface OprmNicheRoutineCardRepository extends JpaRepository<OprmNicheR
       order by c.qualityCheckedAt asc, c.id asc
       """)
   List<OprmNicheRoutineCard> findPendingEnrichedNicheMaterialization(Pageable pageable);
+
+  /** Remove cartões de rotina de um ciclo antes de reexecutar etapas do mesmo job. */
+  void deleteByResearchCycleId(Long researchCycleId);
 }

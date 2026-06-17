@@ -12,11 +12,16 @@ import org.springframework.stereotype.Component;
 public class RoutineQualityGateProcessor implements StageProcessor<RoutineQualityGatePending, RoutineQualityGateOutput> {
     private final RoutineQualityGateEngine engine;
     private final RoutineQualityGateBackendClient backendClient;
+    private final RoutineQualityReprocessPolicy reprocessPolicy;
 
     /** Inicializa o processor com o avaliador determinístico e a borda backend da etapa sete. */
-    public RoutineQualityGateProcessor(RoutineQualityGateEngine engine, RoutineQualityGateBackendClient backendClient) {
+    public RoutineQualityGateProcessor(
+            RoutineQualityGateEngine engine,
+            RoutineQualityGateBackendClient backendClient,
+            RoutineQualityReprocessPolicy reprocessPolicy) {
         this.engine = engine;
         this.backendClient = backendClient;
+        this.reprocessPolicy = reprocessPolicy;
     }
 
     /** Avalia um cartão pendente e conclui a etapa sete no backend. */
@@ -25,6 +30,9 @@ public class RoutineQualityGateProcessor implements StageProcessor<RoutineQualit
         RoutineQualityGatePending input = context.input();
         RoutineQualityDecision decision = engine.evaluate(input);
         RoutineQualityGateOutput output = backendClient.completeStageExecution(input, decision);
+        if (reprocessPolicy.shouldReprocess(output)) {
+            backendClient.reprocessAfterQualityRejection(output);
+        }
         Map<String, Object> metrics = Map.of(
                 "routineCardId", output.routineCardId(),
                 "researchCycleId", output.researchCycleId(),

@@ -8,9 +8,15 @@ import com.marketinghub.oprm.nichocnae.RoutineResearchNicheNameNormalizer;
 import com.marketinghub.oprm.nichocnae.RoutineResearchNicheNameNormalizer.NormalizedNicheName;
 import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.pending.RecordRoutineResearchOrchestratorPending;
 import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.recent.RecordRoutineResearchOrchestratorRecent;
+import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.reprocess.RecordRoutineResearchOrchestratorReprocessRequest;
 import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.reprocess.RecordRoutineResearchOrchestratorReprocessResult;
 import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.runNext.RecordRoutineResearchOrchestratorResult;
 import com.marketinghub.repository.jpa.oprm.cnae.OprmNicheCandidateRepository;
+import com.marketinghub.repository.jpa.oprm.nichocnae.OprmExtractedSignalRepository;
+import com.marketinghub.repository.jpa.oprm.nichocnae.OprmNicheResearchSeedRepository;
+import com.marketinghub.repository.jpa.oprm.nichocnae.OprmSourceCandidateRepository;
+import com.marketinghub.repository.jpa.oprm.nichocnae.OprmSourceSnapshotRepository;
+import com.marketinghub.repository.jpa.oprm.nichocnae.OprmResearchQueryRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmNicheRoutineCardRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmRoutineResearchCycleRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.meiaudienceprofile.OprmMeiAudienceProfileRepository;
@@ -44,12 +50,18 @@ public class BackendRoutineResearchOrchestratorService {
     private static final String TRIGGER_SOURCE_AUTO_SCORE_QUEUE = "AUTO_SCORE_QUEUE";
     private static final String TRIGGER_SOURCE_MANUAL_REPROCESS = "MANUAL_REPROCESS";
     private static final String TRIGGER_SOURCE_MANUAL_CNAE_DETAIL = "MANUAL_CNAE_DETAIL";
+    private static final String TRIGGER_SOURCE_AUTO_QUALITY_REPROCESS = "AUTO_QUALITY_REPROCESS";
     private static final String RESEARCH_MODE_ROUTINE_REALITY = "ROUTINE_REALITY_RESEARCH";
 
     private final OprmNicheCandidateRepository nicheCandidateRepository;
     private final OprmRoutineResearchCycleRepository routineResearchCycleRepository;
     private final OprmMeiAudienceProfileRepository meiAudienceProfileRepository;
     private final OprmNicheRoutineCardRepository routineCardRepository;
+    private final OprmNicheResearchSeedRepository seedRepository;
+    private final OprmResearchQueryRepository researchQueryRepository;
+    private final OprmSourceCandidateRepository sourceCandidateRepository;
+    private final OprmSourceSnapshotRepository sourceSnapshotRepository;
+    private final OprmExtractedSignalRepository extractedSignalRepository;
     private final RoutineResearchNicheNameNormalizer nicheNameNormalizer = new RoutineResearchNicheNameNormalizer();
 
     /** Inicializa o serviço com os repositórios canônicos usados pela etapa zero do pipeline. */
@@ -57,11 +69,21 @@ public class BackendRoutineResearchOrchestratorService {
             OprmNicheCandidateRepository nicheCandidateRepository,
             OprmRoutineResearchCycleRepository routineResearchCycleRepository,
             OprmMeiAudienceProfileRepository meiAudienceProfileRepository,
-            OprmNicheRoutineCardRepository routineCardRepository) {
+            OprmNicheRoutineCardRepository routineCardRepository,
+            OprmNicheResearchSeedRepository seedRepository,
+            OprmResearchQueryRepository researchQueryRepository,
+            OprmSourceCandidateRepository sourceCandidateRepository,
+            OprmSourceSnapshotRepository sourceSnapshotRepository,
+            OprmExtractedSignalRepository extractedSignalRepository) {
         this.nicheCandidateRepository = nicheCandidateRepository;
         this.routineResearchCycleRepository = routineResearchCycleRepository;
         this.meiAudienceProfileRepository = meiAudienceProfileRepository;
         this.routineCardRepository = routineCardRepository;
+        this.seedRepository = seedRepository;
+        this.researchQueryRepository = researchQueryRepository;
+        this.sourceCandidateRepository = sourceCandidateRepository;
+        this.sourceSnapshotRepository = sourceSnapshotRepository;
+        this.extractedSignalRepository = extractedSignalRepository;
     }
 
     /** Lista o próximo nicho CNAE pendente que seria selecionado pela etapa zero. */
@@ -91,11 +113,12 @@ public class BackendRoutineResearchOrchestratorService {
         return recentCycles;
     }
 
-    /** Cria imediatamente um novo ciclo para tirar o usuário de ciclos falhos, fracos ou genéricos. */
+    /** Reabre o mesmo job e limpa os artefatos das etapas que serão executadas novamente com novo input. */
     @Transactional
-    public RecordRoutineResearchOrchestratorReprocessResult reprocessCycle(Long researchCycleId) {
+    public RecordRoutineResearchOrchestratorReprocessResult reprocessCycle(
+            Long researchCycleId, RecordRoutineResearchOrchestratorReprocessRequest request) {
         LOGGER.info(
-                "Criando novo ciclo para nova pesquisa pela etapa zero OPRM nichocnae (researchCycleId={})",
+                "Reabrindo o mesmo job para reexecução de etapas OPRM nichocnae (researchCycleId={})",
                 researchCycleId);
         OprmRoutineResearchCycle cycle = routineResearchCycleRepository
                 .findById(researchCycleId)
@@ -111,22 +134,26 @@ public class BackendRoutineResearchOrchestratorService {
                 .findById(cycle.getSourceNicheId())
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "Niche candidate not found: " + cycle.getSourceNicheId()));
+        String previousCycleStatus = cycle.getStatus();
         String previousRoutineResearchStatus = candidate.getRoutineResearchStatus();
+        OprmNicheRoutineCard previousQualityCard = routineCardRepository
+                .findFirstByResearchCycleIdOrderByIdDesc(cycle.getId())
+                .orElse(null);
+        String triggerSource = resolveReprocessTriggerSource(request);
         Instant now = Instant.now();
-        OprmRoutineResearchCycle newCycle = createCycle(candidate, now);
-        newCycle.setTriggerSource(TRIGGER_SOURCE_MANUAL_REPROCESS);
-        OprmRoutineResearchCycle savedCycle = routineResearchCycleRepository.save(newCycle);
+        clearArtifactsForStageRerun(cycle.getId());
+        reopenCycleForStageRerun(cycle, previousCycleStatus, previousQualityCard, triggerSource, now);
+        OprmRoutineResearchCycle savedCycle = routineResearchCycleRepository.save(cycle);
         candidate.setRoutineResearchStatus(ROUTINE_STATUS_RUNNING);
         candidate.setLastRoutineResearchCycleId(savedCycle.getId());
         candidate.setUpdatedAt(now);
         OprmNicheCandidate savedCandidate = nicheCandidateRepository.save(candidate);
         LOGGER.info(
-                "Novo ciclo criado imediatamente para reprocessamento OPRM nichocnae (previousResearchCycleId={}, newResearchCycleId={}, sourceNicheId={}, cnaeCode={}, previousCycleStatus={}, previousRoutineResearchStatus={}, routineResearchStatus={}, lastRoutineResearchCycleId={}, triggerSource={})",
-                cycle.getId(),
+                "Mesmo job reaberto para reexecução OPRM nichocnae (researchCycleId={}, sourceNicheId={}, cnaeCode={}, previousCycleStatus={}, previousRoutineResearchStatus={}, routineResearchStatus={}, lastRoutineResearchCycleId={}, triggerSource={})",
                 savedCycle.getId(),
                 savedCandidate.getId(),
                 savedCandidate.getCnaeCode(),
-                cycle.getStatus(),
+                previousCycleStatus,
                 previousRoutineResearchStatus,
                 savedCandidate.getRoutineResearchStatus(),
                 savedCandidate.getLastRoutineResearchCycleId(),
@@ -136,11 +163,66 @@ public class BackendRoutineResearchOrchestratorService {
                 savedCandidate.getId(),
                 savedCandidate.getCnaeCode(),
                 savedCandidate.getCnaeDescription(),
-                cycle.getStatus(),
+                previousCycleStatus,
                 previousRoutineResearchStatus,
                 savedCandidate.getRoutineResearchStatus(),
                 savedCandidate.getLastRoutineResearchCycleId(),
-                buildReprocessMessage(cycle.getStatus()));
+                buildReprocessMessage(previousCycleStatus));
+    }
+
+    /** Remove artefatos derivados para que as etapas do próprio job sejam executadas novamente com novo input. */
+    private void clearArtifactsForStageRerun(Long researchCycleId) {
+        meiAudienceProfileRepository.deleteByResearchCycleId(researchCycleId);
+        routineCardRepository.deleteByResearchCycleId(researchCycleId);
+        extractedSignalRepository.deleteByResearchCycleId(researchCycleId);
+        sourceSnapshotRepository.deleteByResearchCycleId(researchCycleId);
+        sourceCandidateRepository.deleteByResearchCycleId(researchCycleId);
+        researchQueryRepository.deleteByResearchCycleId(researchCycleId);
+        seedRepository.deleteByResearchCycleId(researchCycleId);
+    }
+
+    /** Atualiza o ciclo existente para que a fila volte à primeira etapa reexecutável sem criar outro job. */
+    private void reopenCycleForStageRerun(
+            OprmRoutineResearchCycle cycle,
+            String previousCycleStatus,
+            OprmNicheRoutineCard previousQualityCard,
+            String triggerSource,
+            Instant now) {
+        cycle.setTriggerSource(triggerSource);
+        cycle.setStatus(CYCLE_STATUS_RUNNING);
+        cycle.setTotalQueries(0);
+        cycle.setTotalSourceCandidates(0);
+        cycle.setTotalSourceSnapshots(0);
+        cycle.setTotalExtractedSignals(0);
+        cycle.setFinishedAt(null);
+        cycle.setErrorMessage(buildStageRerunLearningNote(previousCycleStatus, previousQualityCard, triggerSource));
+        cycle.setUpdatedAt(now);
+    }
+
+    /** Monta a nota auditável que mantém o aprendizado do gate mesmo após limpar artefatos reexecutáveis. */
+    private String buildStageRerunLearningNote(
+            String previousCycleStatus, OprmNicheRoutineCard previousQualityCard, String triggerSource) {
+        StringBuilder note = new StringBuilder()
+                .append("Reexecução de etapas do mesmo job solicitada por ")
+                .append(triggerSource)
+                .append(" após status ")
+                .append(previousCycleStatus)
+                .append(". O próximo seed deve usar o aprendizado do gate anterior.");
+        if (previousQualityCard != null) {
+            note.append(" previousQualityStatus=")
+                    .append(previousQualityCard.getQualityStatus())
+                    .append("; previousQualityNotes=")
+                    .append(previousQualityCard.getQualityNotes());
+        }
+        return note.toString();
+    }
+
+    /** Normaliza a origem solicitada pelo executor externo sem permitir valores arbitrários no histórico. */
+    private String resolveReprocessTriggerSource(RecordRoutineResearchOrchestratorReprocessRequest request) {
+        if (request != null && TRIGGER_SOURCE_AUTO_QUALITY_REPROCESS.equals(request.triggerSource())) {
+            return TRIGGER_SOURCE_AUTO_QUALITY_REPROCESS;
+        }
+        return TRIGGER_SOURCE_MANUAL_REPROCESS;
     }
 
     /** Informa se o ciclo terminal permite nova pesquisa manual para sair de falha, material fraco ou falha de materialização. */
@@ -157,30 +239,30 @@ public class BackendRoutineResearchOrchestratorService {
                 || "ENRICHED_NICHE_FAILED".equals(status);
     }
 
-    /** Monta mensagem operacional para explicar ao usuário por que o novo ciclo foi criado. */
+    /** Monta mensagem operacional para explicar ao usuário por que o mesmo job foi reaberto. */
     private String buildReprocessMessage(String previousStatus) {
         if (CYCLE_STATUS_FAILED.equals(previousStatus)) {
-            return "Novo ciclo de pesquisa de rotina criado imediatamente para reprocessar o CNAE com falha.";
+            return "Mesmo job reaberto para reexecutar as etapas de pesquisa de rotina após falha.";
         }
         if (CYCLE_STATUS_STALLED.equals(previousStatus)) {
-            return "Novo ciclo de pesquisa de rotina criado imediatamente para recuperar um pipeline parado sem progresso.";
+            return "Mesmo job reaberto para recuperar etapas paradas sem progresso.";
         }
         if (CYCLE_STATUS_NEEDS_MORE_RESEARCH.equals(previousStatus) || CYCLE_STATUS_NEEDS_MORE_MEI_RESEARCH.equals(previousStatus)) {
-            return "Novo ciclo de pesquisa de rotina criado imediatamente para aprofundar um público MEI/autônomo que precisava de mais pesquisa.";
+            return "Mesmo job reaberto para reexecutar etapas com mais foco no público MEI/autônomo.";
         }
         if (CYCLE_STATUS_OUTDATED_SOURCES.equals(previousStatus)) {
-            return "Novo ciclo de pesquisa de rotina criado imediatamente para buscar fontes brasileiras mais recentes.";
+            return "Mesmo job reaberto para reexecutar etapas buscando fontes brasileiras mais recentes.";
         }
         if (CYCLE_STATUS_TOO_CORPORATE.equals(previousStatus)) {
-            return "Novo ciclo de pesquisa de rotina criado imediatamente para focar no dono-operador MEI/autônomo, não em empresa estruturada.";
+            return "Mesmo job reaberto para reexecutar etapas com foco em dono-operador MEI/autônomo, não empresa estruturada.";
         }
         if (CYCLE_STATUS_SOLUTION_CONTAMINATED.equals(previousStatus)) {
-            return "Novo ciclo de pesquisa de rotina criado imediatamente para remover contaminação por produto, oferta ou solução.";
+            return "Mesmo job reaberto para reexecutar etapas removendo contaminação por produto, oferta ou solução.";
         }
         if ("ENRICHED_NICHE_FAILED".equals(previousStatus)) {
-            return "Novo ciclo de pesquisa de rotina criado imediatamente para refazer pelo front-end um CNAE aprovado cuja materialização falhou.";
+            return "Mesmo job reaberto para reexecutar etapas após falha de materialização.";
         }
-        return "Novo ciclo de pesquisa de rotina criado imediatamente para refazer um CNAE genérico ou sem material suficiente.";
+        return "Mesmo job reaberto para reexecutar etapas após resultado genérico ou sem material suficiente.";
     }
 
     /** Executa a etapa zero para o CNAE escolhido, encerrando ciclos abertos antes de criar uma execução nova. */

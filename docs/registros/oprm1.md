@@ -862,6 +862,26 @@
 - Causa-raiz tratada: a lista podia crescer sem controle visual e não mostrava o impacto financeiro dos ciclos que ainda não viraram subnicho, dificultando decisão operacional sobre continuidade ou reprocessamento.
 - Prevenção de recorrência: a tela passou a calcular a visualização paginada e o total financeiro diretamente a partir da verdade enviada pelo backend para os ciclos OPRM.
 
+## 2026-06-17 — OPRM NichoCNAE: controle de reprocessamento automático movido para o executor
+
+- Decisão operacional: o backend do OPRM passa a atuar apenas como camada de persistência/consulta para a reprovação do gate e para a gravação do novo ciclo; a decisão de abrir reprocessamento automático recuperável fica no módulo externo `oprm-coletor-mei`.
+- Correção aplicada: a etapa sete do backend deixou de iniciar novo ciclo ao concluir o gate; o coletor, após persistir uma reprovação recuperável, chama o backend para reabrir o mesmo job com `triggerSource=AUTO_QUALITY_REPROCESS`.
+- Causa-raiz tratada: o controle de fluxo estava no backend, contrariando a regra operacional de que rotinas/agendamentos e decisões de execução pertencem ao executor externo, enquanto o backend apenas entrega contratos/dados e recebe status/resultados.
+
+
+## 2026-06-17 — OPRM NichoCNAE: reprocessamento automático preserva aprendizado
+
+- Correção aplicada: quando o `oprm-coletor-mei` solicita `AUTO_QUALITY_REPROCESS`, o backend reabre o mesmo job preservando os campos de subnicho, nomes auditáveis, modo de pesquisa e metadados de risco/fonte do ciclo reprovado, sem voltar para o CNAE amplo do candidato.
+- Causa-raiz tratada: o controle já tinha sido movido para o executor, mas a reexecução ainda podia ser tratada como novo ciclo com dados genéricos do candidato, reduzindo a inteligência do reprocessamento e aumentando risco de repetir a mesma reprovação.
+- Prevenção de recorrência: o teste do orquestrador valida que a reexecução automática preserva o aprendizado do mesmo job, enquanto o seed continua recebendo status, próximo movimento e notas compactadas do gate para orientar a próxima busca.
+
+
+## 2026-06-17 — OPRM NichoCNAE: reexecução no mesmo job e relatório por ciclo
+
+- Decisão operacional: reprovação recuperável não deve ser tratada como novo job; o executor solicita a reexecução de etapas do mesmo `researchCycleId`, com novos dados de entrada orientados pelo aprendizado do gate anterior.
+- Correção aplicada: o backend reabre o mesmo ciclo, limpa os artefatos derivados das etapas reexecutáveis e mantém o mesmo identificador como unidade operacional do job, evitando duplicidade conceitual no histórico.
+- Relatório: criado download Markdown por `researchCycleId` na tela do CNAE/subnicho, disponível mesmo antes de materializar perfil enriquecido, com status, gatilho, observações de reexecução e artefatos atuais do pipeline.
+- Prevenção de recorrência: testes validam que o reprocessamento preserva o mesmo job e que o relatório por ciclo funciona sem perfil materializado.
 ## 2026-06-17 — OPRM CNAE: relatório Markdown por execução
 
 - Adicionado botão “Relatório” para cada execução do NichoCNAE, permitindo baixar um arquivo `nicho-cnae<id>.md` com detalhamento etapa por etapa.

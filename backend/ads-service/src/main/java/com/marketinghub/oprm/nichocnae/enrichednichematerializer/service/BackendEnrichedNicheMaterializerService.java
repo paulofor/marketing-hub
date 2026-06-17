@@ -193,14 +193,26 @@ public class BackendEnrichedNicheMaterializerService {
   @Transactional(readOnly = true)
   public String buildPipelineMarkdownByProfileId(Long profileId) {
     OprmEnrichedNicheProfileSnapshot profile = enrichedNicheGateway.requireProfileById(profileId);
-    OprmRoutineResearchCycle cycle = findCycle(profile.researchCycleId());
-    OprmNicheRoutineCard card = routineCardRepository.findFirstByResearchCycleIdOrderByIdDesc(profile.researchCycleId()).orElse(null);
-    OprmNicheResearchSeed seed = seedRepository.findByResearchCycleId(profile.researchCycleId()).orElse(null);
-    List<OprmResearchQuery> queries = researchQueryRepository.findByResearchCycleIdOrderByPriorityAscIdAsc(profile.researchCycleId());
+    return buildPipelineMarkdownForCycle(profile.researchCycleId(), profile);
+  }
+
+  /** Gera o documento Markdown de auditoria do job mesmo quando ele ainda não materializou perfil final. */
+  @Transactional(readOnly = true)
+  public String buildPipelineMarkdownByResearchCycleId(Long researchCycleId) {
+    OprmEnrichedNicheProfileSnapshot profile = enrichedNicheGateway.findLatestProfileByResearchCycleId(researchCycleId).orElse(null);
+    return buildPipelineMarkdownForCycle(researchCycleId, profile);
+  }
+
+  /** Consolida os artefatos atuais de um job OPRM para download operacional. */
+  private String buildPipelineMarkdownForCycle(Long researchCycleId, OprmEnrichedNicheProfileSnapshot profile) {
+    OprmRoutineResearchCycle cycle = findCycle(researchCycleId);
+    OprmNicheRoutineCard card = routineCardRepository.findFirstByResearchCycleIdOrderByIdDesc(researchCycleId).orElse(null);
+    OprmNicheResearchSeed seed = seedRepository.findByResearchCycleId(researchCycleId).orElse(null);
+    List<OprmResearchQuery> queries = researchQueryRepository.findByResearchCycleIdOrderByPriorityAscIdAsc(researchCycleId);
     List<OprmSourceCandidate> candidates = sourceCandidateRepository.findByResearchCycleIdOrderByResearchQueryIdAscSearchPositionAscIdAsc(
-        profile.researchCycleId());
-    List<OprmSourceSnapshot> snapshots = sourceSnapshotRepository.findByResearchCycleIdOrderByIdAsc(profile.researchCycleId());
-    List<OprmExtractedSignal> signals = extractedSignalRepository.findByResearchCycleIdOrderByIdAsc(profile.researchCycleId());
+        researchCycleId);
+    List<OprmSourceSnapshot> snapshots = sourceSnapshotRepository.findByResearchCycleIdOrderByIdAsc(researchCycleId);
+    List<OprmExtractedSignal> signals = extractedSignalRepository.findByResearchCycleIdOrderByIdAsc(researchCycleId);
     return buildPipelineMarkdown(profile, cycle, card, seed, queries, candidates, snapshots, signals);
   }
 
@@ -378,13 +390,16 @@ public class BackendEnrichedNicheMaterializerService {
       List<OprmSourceSnapshot> snapshots,
       List<OprmExtractedSignal> signals) {
     StringBuilder markdown = new StringBuilder();
-    markdown.append("# Pesquisa OPRM NichoCNAE — ").append(markdownText(profile.neutralNicheName())).append("\n\n");
-    appendKeyValue(markdown, "Perfil enriquecido", profile.profileId());
-    appendKeyValue(markdown, "Nicho", profile.marketNicheId());
-    appendKeyValue(markdown, "Ciclo de pesquisa", cycle.getId());
-    appendKeyValue(markdown, "Status final", cycle.getStatus());
-    appendKeyValue(markdown, "CNAE", profile.cnaeCode() + " - " + profile.cnaeDescription());
-    appendKeyValue(markdown, "Materializado em", profile.createdAt());
+    String reportName = profile == null ? neutralNicheName(cycle) : profile.neutralNicheName();
+    markdown.append("# Pesquisa OPRM NichoCNAE — ").append(markdownText(reportName)).append("\n\n");
+    appendKeyValue(markdown, "Job de pesquisa", cycle.getId());
+    appendKeyValue(markdown, "Perfil enriquecido", profile == null ? null : profile.profileId());
+    appendKeyValue(markdown, "Nicho", profile == null ? null : profile.marketNicheId());
+    appendKeyValue(markdown, "Status atual", cycle.getStatus());
+    appendKeyValue(markdown, "Gatilho atual", cycle.getTriggerSource());
+    appendKeyValue(markdown, "CNAE", cycle.getCnaeCode() + " - " + cycle.getCnaeDescription());
+    appendKeyValue(markdown, "Materializado em", profile == null ? null : profile.createdAt());
+    appendTextBlock(markdown, "Reexecuções e observações do job", cycle.getErrorMessage());
     markdown.append("\n");
 
     appendSection(markdown, "1. Abertura do ciclo", "O ciclo iniciou a pesquisa de rotina real do nicho, preservando o nome original apenas para auditoria e usando nome neutro para evitar contaminação por solução.");
@@ -515,21 +530,21 @@ public class BackendEnrichedNicheMaterializerService {
       List<OprmSourceSnapshot> snapshots,
       List<OprmExtractedSignal> signals) {
     appendSection(markdown, "8. Conclusão final do nicho enriquecido", "Resultado final materializado para uso nas próximas etapas, ainda sem criar hipótese, oferta ou campanha.");
-    appendKeyValue(markdown, "Status final", cycle.getStatus());
-    appendKeyValue(markdown, "Perfil enriquecido", profile.profileId());
-    appendKeyValue(markdown, "Nicho operacional", profile.marketNicheId());
-    appendKeyValue(markdown, "Fontes", profile.sourceDomains());
+    appendKeyValue(markdown, "Status atual", cycle.getStatus());
+    appendKeyValue(markdown, "Perfil enriquecido", profile == null ? null : profile.profileId());
+    appendKeyValue(markdown, "Nicho operacional", profile == null ? null : profile.marketNicheId());
+    appendKeyValue(markdown, "Fontes", profile == null ? null : profile.sourceDomains());
     appendKeyValue(markdown, "Queries processadas", queries.size());
     appendKeyValue(markdown, "Fontes candidatas processadas", candidates.size());
     appendKeyValue(markdown, "Evidências curtas processadas", snapshots.size());
     appendKeyValue(markdown, "Sinais processados", signals.size());
-    appendTextBlock(markdown, "Rotina final", profile.routineSummary());
-    appendTextBlock(markdown, "Dores finais", profile.painsSummary());
-    appendTextBlock(markdown, "Perguntas/resultados finais", profile.resultsSummary());
-    appendTextBlock(markdown, "Contexto operacional final", profile.mechanismOpportunitiesSummary());
-    appendTextBlock(markdown, "Evidências finais", profile.evidenceSummary());
+    appendTextBlock(markdown, "Rotina final", profile == null ? null : profile.routineSummary());
+    appendTextBlock(markdown, "Dores finais", profile == null ? null : profile.painsSummary());
+    appendTextBlock(markdown, "Perguntas/resultados finais", profile == null ? null : profile.resultsSummary());
+    appendTextBlock(markdown, "Contexto operacional final", profile == null ? null : profile.mechanismOpportunitiesSummary());
+    appendTextBlock(markdown, "Evidências finais", profile == null ? null : profile.evidenceSummary());
     String quality = card == null ? "sem card de qualidade localizado" : card.getQualityStatus();
-    markdown.append("\n**Decisão operacional:** o nicho foi materializado como `")
+    markdown.append("\n**Decisão operacional:** o job está em `")
         .append(markdownText(cycle.getStatus()))
         .append("` com qualidade `")
         .append(markdownText(quality))

@@ -237,6 +237,31 @@ class BackendEnrichedNicheMaterializerServiceTest {
     assertThat(markdown).contains("ENRICHED_NICHE_CREATED");
   }
 
+
+  /** Deve gerar relatório Markdown por job mesmo quando ainda não existe perfil materializado. */
+  @Test
+  void shouldBuildPipelineMarkdownByResearchCycleIdWithoutProfile() {
+    OprmRoutineResearchCycle cycle = cycle();
+    cycle.setStatus("RUNNING");
+    cycle.setTriggerSource("AUTO_QUALITY_REPROCESS");
+    cycle.setErrorMessage("Reexecução de etapas do mesmo job solicitada por AUTO_QUALITY_REPROCESS.");
+    when(enrichedNicheGateway.findLatestProfileByResearchCycleId(1001L)).thenReturn(Optional.empty());
+    when(cycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
+    when(cardRepository.findFirstByResearchCycleIdOrderByIdDesc(1001L)).thenReturn(Optional.empty());
+    when(seedRepository.findByResearchCycleId(1001L)).thenReturn(Optional.empty());
+    when(researchQueryRepository.findByResearchCycleIdOrderByPriorityAscIdAsc(1001L)).thenReturn(List.of());
+    when(sourceCandidateRepository.findByResearchCycleIdOrderByResearchQueryIdAscSearchPositionAscIdAsc(1001L)).thenReturn(List.of());
+    when(sourceSnapshotRepository.findByResearchCycleIdOrderByIdAsc(1001L)).thenReturn(List.of());
+    when(extractedSignalRepository.findByResearchCycleIdOrderByIdAsc(1001L)).thenReturn(List.of());
+
+    String markdown = service.buildPipelineMarkdownByResearchCycleId(1001L);
+
+    assertThat(markdown).contains("Job de pesquisa");
+    assertThat(markdown).contains("AUTO_QUALITY_REPROCESS");
+    assertThat(markdown).contains("Reexecução de etapas do mesmo job");
+    assertThat(markdown).contains("Seed não encontrado para este ciclo");
+  }
+
   /** Cria um cartão aprovado mínimo para testes da etapa final. */
   private OprmNicheRoutineCard card() {
     OprmNicheRoutineCard card = new OprmNicheRoutineCard();

@@ -14,4 +14,7 @@ public interface OprmResearchQueryRepository extends JpaRepository<OprmResearchQ
 
     /** Lista frases pendentes de busca para a etapa três em ordem operacional. */
     List<OprmResearchQuery> findByStatusOrderByPriorityAscIdAsc(String status, Pageable pageable);
+
+    /** Remove queries de um ciclo antes de reexecutar etapas do mesmo job. */
+    void deleteByResearchCycleId(Long researchCycleId);
 }

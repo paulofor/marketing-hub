@@ -19,6 +19,13 @@ import { useOprmGeneratedEnrichedNichesByCnae } from "../../api/oprm/useOprmGene
 import PageTitle from "../../components/PageTitle";
 import OprmModuleNavigation from "./OprmModuleNavigation";
 import { useBreadcrumbs } from "../../app/breadcrumbs";
+import { buildApiUrl } from "../../utils/buildApiUrl";
+
+function buildPipelineMarkdownDownloadUrl(researchCycleId: number) {
+  return buildApiUrl(
+    `/api/oprm/nichocnae/routine-research-cycle/stage-executions/${researchCycleId}/pipeline-markdown`,
+  );
+}
 
 const pipelineStages = [
   {
@@ -208,8 +215,8 @@ function automaticProcessMessage(
     return {
       title: "Reprocessamento automático em andamento",
       text: previousCycle
-        ? `O ciclo #${latestCycle.researchCycleId} foi criado automaticamente depois que o ciclo #${previousCycle.researchCycleId} terminou como ${statusLabel(previousCycle.status)}. O sistema reaproveitou o subnicho aprendido e as notas do gate anterior para tentar corrigir a causa sem novo clique.`
-        : `O ciclo #${latestCycle.researchCycleId} foi criado automaticamente. O sistema está reaproveitando o aprendizado do gate anterior para continuar sem novo clique.`,
+        ? `O job #${latestCycle.researchCycleId} foi reaberto automaticamente depois de uma reprovação como ${statusLabel(previousCycle.status)}. O sistema reaproveitou o subnicho aprendido e as notas do gate anterior para reexecutar etapas com novos dados de entrada, sem novo clique.`
+        : `O job #${latestCycle.researchCycleId} foi reaberto automaticamente. O sistema está reaproveitando o aprendizado do gate anterior para reexecutar etapas com novos dados de entrada, sem novo clique.`,
       className: "alert alert-primary border mt-3 mb-0",
     };
   }
@@ -220,8 +227,8 @@ function automaticProcessMessage(
         ? "Limite automático atingido"
         : "Aguardando reprocessamento automático",
       text: reachedLimit
-        ? `O sistema já usou ${automaticAttempts}/${MAX_AUTO_REPROCESS_PER_CANDIDATE} tentativas automáticas para este candidato. Revise o detalhe da etapa de qualidade antes de gastar novo ciclo manual.`
-        : `O gate indicou ${statusLabel(latestCycle.status)}. O backend deve abrir a próxima tentativa automaticamente e carregar este aprendizado para o seed do novo ciclo.`,
+        ? `O sistema já usou ${automaticAttempts}/${MAX_AUTO_REPROCESS_PER_CANDIDATE} tentativas automáticas para este candidato. Revise o detalhe da etapa de qualidade antes de gastar uma nova pesquisa manual completa.`
+        : `O gate indicou ${statusLabel(latestCycle.status)}. O executor deve reabrir o mesmo job automaticamente e carregar este aprendizado para o próximo seed.`,
       className: reachedLimit
         ? "alert alert-warning border mt-3 mb-0"
         : "alert alert-info border mt-3 mb-0",
@@ -1413,6 +1420,9 @@ export default function OprmCnaeDetailPlaceholderPage() {
                         <th scope="col" className="text-end">
                           Custo total
                         </th>
+                        <th scope="col" className="text-end">
+                          Relatório
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1426,12 +1436,25 @@ export default function OprmCnaeDetailPlaceholderPage() {
                             <td className="text-end fw-semibold">
                               {formatUsd(cycle.executionCostUsd)}
                             </td>
+                            <td className="text-end">
+                              <a
+                                className="btn btn-outline-dark btn-sm"
+                                href={buildPipelineMarkdownDownloadUrl(
+                                  cycle.researchCycleId,
+                                )}
+                                target="_blank"
+                                rel="noreferrer"
+                                download={`oprm-job-${cycle.researchCycleId}-relatorio.md`}
+                              >
+                                Baixar relatório
+                              </a>
+                            </td>
                           </tr>
                         ))
                       ) : (
                         <tr>
                           <td
-                            colSpan={5}
+                            colSpan={6}
                             className="text-secondary text-center py-3"
                           >
                             Nenhum job executado para este subnicho.

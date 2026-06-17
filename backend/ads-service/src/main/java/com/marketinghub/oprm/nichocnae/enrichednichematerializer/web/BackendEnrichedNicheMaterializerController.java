@@ -83,6 +83,19 @@ public class BackendEnrichedNicheMaterializerController {
         .body(executionService.buildPipelineMarkdownByProfileId(profileId));
   }
 
+
+  /** Entrega um documento Markdown baixável com auditoria do job de pesquisa, materializado ou não. */
+  @GetMapping(
+      value = "/api/oprm/nichocnae/routine-research-cycle/stage-executions/{researchCycleId}/pipeline-markdown",
+      produces = "text/markdown;charset=UTF-8")
+  public ResponseEntity<String> downloadPipelineMarkdownByResearchCycleId(@PathVariable Long researchCycleId) {
+    String filename = "oprm-job-" + researchCycleId + "-relatorio.md";
+    return ResponseEntity.ok()
+        .contentType(MediaType.parseMediaType("text/markdown;charset=UTF-8"))
+        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+        .body(executionService.buildPipelineMarkdownByResearchCycleId(researchCycleId));
+  }
+
   /** Diagnostica ciclos e perfis históricos com linguagem de solução para reprocessamento neutro. */
   @GetMapping("/api/oprm/nichocnae/enriched-niche-materializer/diagnostics/solution-contamination")
   public ResponseEntity<ContaminatedNicheDiagnosticResponse> diagnoseContamination(

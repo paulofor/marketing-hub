@@ -41,4 +41,7 @@ public interface OprmSourceCandidateRepository extends JpaRepository<OprmSourceC
             @Param("candidateStatus") String candidateStatus,
             @Param("cycleStatus") String cycleStatus,
             Pageable pageable);
+
+    /** Remove fontes candidatas de um ciclo antes de reexecutar etapas do mesmo job. */
+    void deleteByResearchCycleId(Long researchCycleId);
 }

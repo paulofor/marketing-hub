@@ -786,3 +786,9 @@
 - Causa-raiz tratada: manter um caminho separado de pipeline competia com o fluxo atual de criação de novo nicho pelo CNAE, aumentando risco de confusão operacional, comandos duplicados e gasto sem direcionamento comercial.
 - Correção aplicada: o menu interno OPRM remove o item Pipeline, as rotas antigas de pipeline redirecionam para `/oprm` e o cânone passou a orientar que o pipeline NichoCNAE seja usado somente pelo caminho de criação de novo nicho/subnicho.
 - Prevenção de recorrência: o teste de navegação OPRM valida que o link Pipeline não aparece e que a rota obsoleta não renderiza mais a tela antiga.
+
+## 2026-06-17 06:40:00 (UTC) — OPRM NichoCNAE: protocolo padrão módulo
+
+- Aplicado o protocolo padrão módulo no backend do NichoCNAE com núcleo genérico `pipeline` para contratos de execução, contexto, resultado e artefatos auditáveis.
+- Adicionadas proteções ArchUnit para impedir dependência do núcleo em etapas concretas, acoplamento direto entre etapas oficiais e processadores fora do contrato `NichoCnaeStageProcessor`.
+- Objetivo de negócio: manter o pipeline de descoberta CNAE plugável, auditável e evolutivo para encontrar dores reais e materializar nichos com maior potencial de venda.

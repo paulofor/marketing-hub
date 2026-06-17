@@ -9,6 +9,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
 import com.marketinghub.geralanding.presetdesign.provisorio.DesignPresetProvisionalHtmlAssembler;
 import com.marketinghub.geralanding.wireframe.provisorio.WireframeProvisionalHtmlAssembler;
+import com.marketinghub.oprm.nichocnae.pipeline.NichoCnaeStageProcessor;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
@@ -28,6 +29,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -102,6 +104,18 @@ class ArquiteturaTest {
     private static final Pattern OPRM_NICHO_CNAE_STAGE_SERVICE_PACKAGE_PATTERN = Pattern.compile(
             "^com\\.marketinghub\\.oprm\\.nichocnae\\.([a-zA-Z0-9_]+)\\.service$");
     private static final String OPRM_NICHO_CNAE_STAGE_PACKAGE_PREFIX = "com.marketinghub.oprm.nichocnae.";
+    private static final String OPRM_NICHO_CNAE_PIPELINE_CORE_PACKAGE = "com.marketinghub.oprm.nichocnae.pipeline";
+    private static final Set<String> OPRM_NICHO_CNAE_CONCRETE_STAGE_PACKAGES = Set.of(
+            "routineresearchorchestrator",
+            "routineresearchcycle",
+            "nicheresearchseedbuilder",
+            "sourcesearcher",
+            "sourcefetcher",
+            "signalextractor",
+            "routinesynthesizer",
+            "meiaudiencesegmenter",
+            "routinequalitygate",
+            "enrichednichematerializer");
     private static final List<String> REQUIRED_BACKEND_SERVICE_SUBPACKAGES = List.of(
             "detailStageExecution", "listStageExecutions", "pending", "recebePrompt", "recebeResposta");
     private static final List<String> REQUIRED_EPM_SERVICE_SUBPACKAGES = List.of(
@@ -530,6 +544,27 @@ class ArquiteturaTest {
                 }));
         failWithArchitectureViolations(violations);
     }
+
+
+    @ArchTest
+    static final ArchRule oprmNichoCnaePipelineCoreMustNotDependOnConcreteStages =
+            classes().that().resideInAPackage("com.marketinghub.oprm.nichocnae.pipeline..")
+                    .should(onlyDependOnNichoCnaePipelineCore())
+                    .because("[ARQUITETURA] [BACKEND][OPRM][NichoCNAE] o núcleo pipeline deve ser genérico e não pode depender de etapas concretas");
+
+    @ArchTest
+    static final ArchRule oprmNichoCnaeConcreteStagesMustNotDependOnEachOther =
+            classes().that().resideInAPackage("com.marketinghub.oprm.nichocnae.*..")
+                    .should(notDependOnOtherOprmNichoCnaeConcreteStages())
+                    .because("[ARQUITETURA] [BACKEND][OPRM][NichoCNAE] etapas concretas devem ser plugáveis e não podem depender diretamente de outras etapas");
+
+    @ArchTest
+    static final ArchRule oprmNichoCnaeConcreteProcessorsMustImplementStageProcessor =
+            classes().that().resideInAPackage("com.marketinghub.oprm.nichocnae.*..")
+                    .and().haveSimpleNameEndingWith("Processor")
+                    .should().beAssignableTo(NichoCnaeStageProcessor.class)
+                    .allowEmptyShould(true)
+                    .because("[ARQUITETURA] [BACKEND][OPRM][NichoCNAE] processadores concretos de etapa devem implementar NichoCnaeStageProcessor");
 
     /**
      * Garante que cada etapa do OPRM nicho CNAE tenha um único controller canônico anotado.
@@ -1110,6 +1145,87 @@ class ArquiteturaTest {
         String remainder = packageName.substring(OPRM_NICHO_CNAE_STAGE_PACKAGE_PREFIX.length());
         String[] parts = remainder.split("\\.");
         return parts.length >= 3 && "service".equals(parts[1]);
+    }
+
+
+    /**
+     * Garante que o núcleo genérico do pipeline NichoCNAE não conheça etapas concretas nem tecnologias externas.
+     */
+    private static ArchCondition<JavaClass> onlyDependOnNichoCnaePipelineCore() {
+        return new ArchCondition<>(
+                "[ARQUITETURA] [BACKEND][OPRM][NichoCNAE] pipeline core depends only on generic core contracts") {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                item.getDirectDependenciesFromSelf().forEach(dependency -> {
+                    JavaClass targetClass = dependency.getTargetClass();
+                    String targetName = targetClass.getName();
+                    if (!targetName.startsWith("com.marketinghub.")) {
+                        return;
+                    }
+                    if (targetClass.getPackageName().startsWith(OPRM_NICHO_CNAE_PIPELINE_CORE_PACKAGE)) {
+                        return;
+                    }
+                    String message = "[ARQUITETURA] [BACKEND][OPRM][NichoCNAE] classe-origem=" + item.getName()
+                            + " possui dependência do núcleo para fora do núcleo: " + dependency.getDescription()
+                            + " (alvo: " + targetName + ")"
+                            + " | regra: com.marketinghub.oprm.nichocnae.pipeline deve conter somente contratos "
+                            + "genéricos e não pode depender de etapas concretas, clients ou tecnologias externas.";
+                    events.add(SimpleConditionEvent.violated(item, message));
+                });
+            }
+        };
+    }
+
+    /**
+     * Garante que uma etapa concreta do NichoCNAE não importe outra etapa concreta.
+     */
+    private static ArchCondition<JavaClass> notDependOnOtherOprmNichoCnaeConcreteStages() {
+        return new ArchCondition<>(
+                "[ARQUITETURA] [BACKEND][OPRM][NichoCNAE] concrete stage does not depend on another concrete stage") {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                if (!isProductionTopLevelClass(item)) {
+                    return;
+                }
+                String sourceStage = extractOprmNichoCnaeStage(item.getPackageName());
+                if (!isOprmNichoCnaeConcreteStage(sourceStage)) {
+                    return;
+                }
+                item.getDirectDependenciesFromSelf().forEach(dependency -> {
+                    JavaClass targetClass = dependency.getTargetClass();
+                    String targetStage = extractOprmNichoCnaeStage(targetClass.getPackageName());
+                    if (!isOprmNichoCnaeConcreteStage(targetStage) || sourceStage.equals(targetStage)) {
+                        return;
+                    }
+                    String message = "[ARQUITETURA] [BACKEND][OPRM][NichoCNAE] classe-origem=" + item.getName()
+                            + " etapa=" + sourceStage
+                            + " depende diretamente da etapa=" + targetStage + ": " + dependency.getDescription()
+                            + " (alvo: " + targetClass.getName() + ")"
+                            + " | regra: etapas concretas devem trocar dados por contratos persistidos, artefatos "
+                            + "auditáveis ou DTOs oficiais, nunca por import direto de outra etapa.";
+                    events.add(SimpleConditionEvent.violated(item, message));
+                });
+            }
+        };
+    }
+
+    /**
+     * Verifica se o pacote extraído representa uma etapa concreta oficial do pipeline NichoCNAE.
+     */
+    private static boolean isOprmNichoCnaeConcreteStage(String stage) {
+        return stage != null && OPRM_NICHO_CNAE_CONCRETE_STAGE_PACKAGES.contains(stage);
+    }
+
+    /**
+     * Extrai a etapa concreta do pacote OPRM NichoCNAE.
+     */
+    private static String extractOprmNichoCnaeStage(String packageName) {
+        if (!packageName.startsWith(OPRM_NICHO_CNAE_STAGE_PACKAGE_PREFIX)) {
+            return null;
+        }
+        String remainder = packageName.substring(OPRM_NICHO_CNAE_STAGE_PACKAGE_PREFIX.length());
+        int idx = remainder.indexOf('.');
+        return idx > 0 ? remainder.substring(0, idx) : remainder;
     }
 
     /**

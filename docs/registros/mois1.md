@@ -1688,3 +1688,8 @@ Arquivos principais:
 - A etapa 2 de análise comercial foi isolada como etapa plugável em `pipeline.pageanalysis`, usando o núcleo genérico `PipelineWorker`, `StageProcessor`, `StageContext`, `StageResult` e `StageArtifact`.
 - As integrações OpenAI da análise comercial foram movidas para o pacote concreto da própria etapa, evitando vazamento de tecnologia para o núcleo do pipeline.
 - Ajustadas as regras ArchUnit do worker para validar núcleo sem dependência de etapas concretas, independência entre etapas, ausência de ciclos, processors por contrato e núcleo sem tecnologias concretas.
+
+## 2026-06-17 — Fuso horário São Paulo no pipeline de sales pages
+
+- Ajustada a tela `/mois/sales-pages-library/pipeline` para exibir o horário da última captura no fuso `America/Sao_Paulo`, evitando leitura operacional em UTC ou no fuso local do navegador.
+- Mantido o dado vindo do backend como fonte de verdade; o frontend apenas formata a data para o fuso usado pela operação no Brasil.

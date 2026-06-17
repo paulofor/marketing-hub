@@ -4707,3 +4707,8 @@
 
 - Atualizada a regra operacional do protocolo jobid para explicitar que a tabela de passos pode ser compartilhada por todas as etapas do mesmo pacote/fluxo.
 - Decisão: evitar uma tabela por etapa quando o contexto operacional é o mesmo, preservando rastreabilidade simples, centralizada e útil para investigação de causa-raiz.
+
+## 2026-06-17 — Reuso obrigatório de tabela de passos no protocolo jobid
+
+- Ajustado o texto operacional do protocolo jobid para deixar explícito que, se o módulo/pacote já possuir uma tabela de passos compatível, ela deve ser reutilizada.
+- Decisão: evitar duplicação de tabelas e manter uma linha do tempo única por contexto operacional, criando nova tabela apenas quando não existir estrutura compatível ou houver diferença real de domínio, retenção, volume ou contrato.

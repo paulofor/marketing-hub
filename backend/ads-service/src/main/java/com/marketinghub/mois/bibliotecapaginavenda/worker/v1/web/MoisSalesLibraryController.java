@@ -127,6 +127,18 @@ public class MoisSalesLibraryController {
     }
 
     /**
+     * Lista páginas pendentes que já têm HTML útil e podem ser processadas pela etapa 2 sem reservar job.
+     */
+    @GetMapping("/pending")
+    public MoisSalesLibraryDtos.SalesLibraryPendingAnalysisResponse listPendingAnalysis(
+            @RequestParam String workspaceId,
+            @RequestParam(defaultValue = "HOTMART") String source,
+            @RequestParam(defaultValue = "50") int limit
+    ) {
+        return service.listPendingAnalysis(workspaceId, source, limit);
+    }
+
+    /**
      * Retorna o resumo de URLs únicas disponíveis na origem bruta de referências coletadas.
      */
     @GetMapping("/collected-references/url-summary")

@@ -61,6 +61,81 @@ public class MoisSalesLibraryService {
     }
 
     /**
+     * Lista páginas com HTML útil que podem ser consumidas pela etapa 2 sem alterar status ou reservar execução.
+     */
+    public MoisSalesLibraryDtos.SalesLibraryPendingAnalysisResponse listPendingAnalysis(
+            String workspaceId,
+            String source,
+            int limit
+    ) {
+        String normalizedSource = source == null || source.isBlank() ? "HOTMART" : source.trim().toUpperCase(Locale.ROOT);
+        int normalizedLimit = Math.max(1, Math.min(limit, 200));
+        List<MoisSalesLibraryDtos.SalesLibraryPendingAnalysisItem> items = jdbcTemplate.query("""
+                SELECT sp.id AS page_id,
+                       sp.workspace_id,
+                       sp.source,
+                       sp.url_canonical,
+                       sp.title,
+                       COALESCE(sp.html_bytes, 0) AS html_bytes,
+                       COALESCE(sp.analysis_status, sp.current_status) AS analysis_status,
+                       sp.last_captured_at,
+                       pending_analysis.id AS job_id,
+                       COALESCE(MAX(all_analysis.attempt), 0) + 1 AS next_attempt,
+                       COUNT(DISTINCT cap.id) > 0 AS raw_html_available,
+                       COUNT(DISTINCT active_analysis.id) AS active_count,
+                       COUNT(DISTINCT CASE WHEN all_analysis.status IN ('DONE', 'ANALYZED') THEN all_analysis.id END) AS done_count,
+                       COUNT(DISTINCT CASE WHEN all_analysis.status = 'FAILED' THEN all_analysis.id END) AS failed_count
+                FROM mois_sales_page sp
+                LEFT JOIN mois_sales_page_job_execution pending_analysis
+                  ON pending_analysis.sales_page_id = sp.id
+                 AND pending_analysis.stage = 'ANALYSIS'
+                 AND pending_analysis.status = 'PENDING'
+                LEFT JOIN mois_sales_page_job_execution active_analysis
+                  ON active_analysis.sales_page_id = sp.id
+                 AND active_analysis.stage = 'ANALYSIS'
+                 AND active_analysis.status IN ('PENDING', 'FETCHING')
+                LEFT JOIN mois_sales_page_job_execution all_analysis
+                  ON all_analysis.sales_page_id = sp.id
+                 AND all_analysis.stage = 'ANALYSIS'
+                LEFT JOIN mois_sales_page_job_execution cap
+                  ON cap.sales_page_id = sp.id
+                 AND cap.stage = 'CAPTURE'
+                 AND cap.status IN ('CAPTURED', 'DUPLICATE')
+                 AND COALESCE(cap.raw_html_bytes, 0) > 0
+                WHERE sp.workspace_id = ?
+                  AND sp.source = ?
+                  AND COALESCE(sp.html_bytes, 0) > 0
+                  AND COALESCE(sp.analysis_status, sp.current_status) NOT IN ('DONE', 'ANALYZED', 'ANULADO', 'FETCHING')
+                GROUP BY sp.id, sp.workspace_id, sp.source, sp.url_canonical, sp.title, sp.html_bytes,
+                         COALESCE(sp.analysis_status, sp.current_status), sp.last_captured_at, pending_analysis.id
+                HAVING active_count = COUNT(DISTINCT pending_analysis.id)
+                   AND done_count = 0
+                   AND failed_count < 3
+                ORDER BY sp.last_captured_at ASC, sp.updated_at ASC, sp.id ASC
+                LIMIT ?
+                """, (rs, rowNum) -> new MoisSalesLibraryDtos.SalesLibraryPendingAnalysisItem(
+                nullableLong(rs, "job_id"),
+                rs.getLong("page_id"),
+                rs.getString("workspace_id"),
+                rs.getString("source"),
+                rs.getString("url_canonical"),
+                rs.getString("title"),
+                rs.getLong("html_bytes"),
+                rs.getString("analysis_status"),
+                rs.getInt("next_attempt"),
+                toInstant(rs.getTimestamp("last_captured_at")),
+                rs.getBoolean("raw_html_available")
+        ), workspaceId, normalizedSource, normalizedLimit);
+        return new MoisSalesLibraryDtos.SalesLibraryPendingAnalysisResponse(
+                workspaceId,
+                normalizedSource,
+                normalizedLimit,
+                items.size(),
+                items
+        );
+    }
+
+    /**
      * Reserva um job de análise pendente que já possui HTML útil capturado para servir como entrada da etapa 2.
      */
     private MoisSalesLibraryDtos.SalesLibraryClaimResponse claimPendingAnalysisJob(String workspaceId, String normalizedSource) {
@@ -1466,6 +1541,14 @@ public class MoisSalesLibraryService {
      */
     private Instant toInstant(Timestamp timestamp) {
         return timestamp == null ? null : timestamp.toInstant();
+    }
+
+    /**
+     * Lê identificadores opcionais do ResultSet preservando nulo quando a coluna SQL está vazia.
+     */
+    private Long nullableLong(ResultSet rs, String columnName) throws SQLException {
+        long value = rs.getLong(columnName);
+        return rs.wasNull() ? null : value;
     }
 
     private record IngestCounters(int persisted, int inserted, int updated, int jobsCreated, int skippedWithoutUrl) {

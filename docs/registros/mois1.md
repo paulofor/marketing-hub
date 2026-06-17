@@ -1676,3 +1676,8 @@ Arquivos principais:
 - Corrigida a causa-raiz da falha de arquitetura `moisSalesLibraryWebShouldOnlyDependOnServiceLayer`: o controller dependia do pacote `.dto`, mas a regra do módulo MOIS permite que a camada web dependa apenas da camada `.service` do mesmo namespace/versão.
 - Movido o agrupador de contratos HTTP `MoisSalesLibraryDtos` para a camada `.service`, mantendo os contratos como `record` e evitando novo acoplamento direto da web com camada fora do padrão validado.
 - Atualizados imports em controller, services, scheduler e testes relacionados para preservar o contrato funcional sem alterar endpoints.
+
+## 2026-06-17 — Endpoint pending da etapa 2 da Biblioteca de Páginas de Vendas
+- Criado endpoint backend `GET /api/mois/sales-library/pending` para listar páginas com HTML útil (`html_bytes > 0`) elegíveis para análise comercial, sem reservar job nem alterar status operacional.
+- O contrato retorna workspace, origem, limite, total retornado e itens com `pageId`, `jobId` pendente quando já existir, URL canônica, bytes de HTML, status de análise, próxima tentativa e disponibilidade de HTML bruto.
+- Atualizada a documentação Swagger da Biblioteca de Páginas de Vendas e adicionados testes de controller/service para prevenir regressão no contrato de auditoria da fila real da etapa 2.

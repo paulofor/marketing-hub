@@ -56,6 +56,7 @@ class NicheResearchSeedBuilderProcessorTest {
                 null,
                 null,
                 null,
+                List.of(),
                 "RUNNING",
                 Instant.now(),
                 Instant.now());

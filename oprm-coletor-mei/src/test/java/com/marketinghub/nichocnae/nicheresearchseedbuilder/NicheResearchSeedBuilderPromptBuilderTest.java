@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 /** Responsabilidade: validar que o prompt da etapa dois guia a IA para pesquisa de rotina sem viés de solução. */
@@ -105,6 +106,7 @@ class NicheResearchSeedBuilderPromptBuilderTest {
                 "REFAZER_BUSCA_SEM_SOLUCAO",
                 "Reexecutar busca removendo fontes de solucao",
                 "riscoLinguagemSolucao=70; dominadoPorSolucao=true",
+                List.of(),
                 "RUNNING",
                 Instant.now(),
                 Instant.now());
@@ -138,6 +140,7 @@ class NicheResearchSeedBuilderPromptBuilderTest {
                 "BUSCAR_TAREFAS_REAIS_EXECUTOR",
                 "Pesquisar relatos e tarefas concretas do executor",
                 "rotinaRevelaTarefasReaisExecutor=false; tarefasConcretasDistintas=0",
+                List.of(),
                 "RUNNING",
                 Instant.now(),
                 Instant.now());
@@ -159,6 +162,41 @@ class NicheResearchSeedBuilderPromptBuilderTest {
                 .contains("rotina real manicure atendimento em domicílio passo a passo Brasil");
     }
 
+    /** Deve proibir subnichos já materializados para o mesmo CNAE e orientar escolha de recorte novo. */
+    @Test
+    void shouldExcludeExistingSubnichesForSameCnaeFromNewChoice() {
+        NicheResearchSeedBuilderPending pending = new NicheResearchSeedBuilderPending(
+                1001L,
+                55L,
+                "9602501",
+                "Cabeleireiros, manicure e pedicure",
+                "Cabeleireiros, manicure e pedicure",
+                BigDecimal.valueOf(92),
+                125000L,
+                "gpt-5.4",
+                "gpt-5.4 (gpt-5.4)",
+                "MANUAL_REPROCESS",
+                null,
+                null,
+                null,
+                null,
+                List.of(
+                        "Manicure autônoma que atende em domicílio",
+                        "Nail designer iniciante com agenda pelo Instagram"),
+                "RUNNING",
+                Instant.now(),
+                Instant.now());
+
+        String prompt = promptBuilder.buildPrompt(pending);
+
+        assertThat(prompt)
+                .contains("Subnichos já materializados para este CNAE e proibidos nesta nova escolha")
+                .contains("- Manicure autônoma que atende em domicílio")
+                .contains("- Nail designer iniciante com agenda pelo Instagram")
+                .contains("não escolha, reescreva ou aproxime semanticamente esses subnichos já existentes")
+                .contains("ampliar o portfólio do CNAE sem canibalização");
+    }
+
 
     /** Cria uma pendência padrão para montagem determinística do prompt da etapa dois. */
     private NicheResearchSeedBuilderPending pending() {
@@ -177,6 +215,7 @@ class NicheResearchSeedBuilderPromptBuilderTest {
                 null,
                 null,
                 null,
+                List.of(),
                 "RUNNING",
                 Instant.now(),
                 Instant.now());

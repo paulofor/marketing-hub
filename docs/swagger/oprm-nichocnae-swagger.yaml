@@ -1009,6 +1009,11 @@ components:
           type: string
           nullable: true
           description: Notas compactas do gate anterior para evitar repetir a causa dominante de reprovação.
+        existingSubnichesForCnae:
+          type: array
+          description: Subnichos já materializados no mesmo CNAE que a etapa de seed deve evitar repetir ou aproximar semanticamente.
+          items:
+            type: string
         status:
           type: string
           example: RUNNING
@@ -2862,4 +2867,3 @@ components:
           type: string
           format: date-time
           nullable: true
-

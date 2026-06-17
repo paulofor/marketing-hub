@@ -1,3 +1,9 @@
+## 2026-06-17 00:00:00 (UTC) — OPRM NichoCNAE: evitar repetição de subnichos por CNAE
+
+- Causa-raiz tratada: a etapa `oprmNicheResearchSeedBuilder` já quebrava o CNAE em subnichos vendáveis, mas não recebia explicitamente os subnichos já materializados para o mesmo CNAE, permitindo repetir ou aproximar semanticamente um recorte já existente.
+- Correção aplicada: o backend passou a enviar no pending da etapa 2 a lista de subnichos já materializados para o CNAE; o coletor OPRM passou a inserir essa lista no prompt como recortes proibidos e a orientar a IA, como especialista em Marketing e Mercado, a escolher um novo subnicho com distância mercadológica, dor urgente, capacidade de pagar e resultado observável.
+- Prevenção: atualizados Swagger, cânone OPRM e testes de regressão para garantir que a etapa de seed use subnichos existentes como restrição de portfólio, evitando canibalização e repetição operacional.
+
 ## 2026-06-17 17:06:25 (UTC) — OPRM NichoCNAE: indicador animado de execução
 
 - Ajustada a tela de detalhe do CNAE/subnicho para exibir uma ilustração animada quando o pipeline NichoCNAE estiver em execução, reforçando visualmente que o backend continua processando as etapas automaticamente.

@@ -263,6 +263,17 @@ paths:
               schema:
                 type: array
                 items: { $ref: '#/components/schemas/FacebookCampaignExperimentSummary' }
+  /api/facebook-campaigns/publication-job-steps:
+    post:
+      tags: [Facebook Campaigns]
+      summary: Registra um passo do job de publicação de campanha executado pelo worker.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/FacebookCampaignPublicationJobStepRequest' }
+      responses:
+        '202': { description: Passo aceito para gravação. }
   /api/facebook-campaigns/experiments:
     get:
       tags: [Facebook Campaigns]
@@ -773,6 +784,9 @@ components:
           nullable: true
           additionalProperties: true
         nextStepInstantForm: { type: boolean }
+        publicationJobId:
+          type: string
+          description: Hash SHA-256 criado pelo backend para rastrear o job de publicação.
         leadPortalFunnel:
           type: object
           nullable: true
@@ -781,7 +795,23 @@ components:
           type: object
           nullable: true
           additionalProperties: true
-      required: [id, name, followUpActionUrl, missingConfiguration, nextStepInstantForm]
+      required: [id, name, followUpActionUrl, missingConfiguration, nextStepInstantForm, publicationJobId]
+    FacebookCampaignPublicationJobStepRequest:
+      type: object
+      description: Passo cronológico do job de publicação enviado pelo Facebook Ads Worker.
+      properties:
+        jobId: { type: string }
+        experimentId: { type: integer, format: int64, nullable: true }
+        stepName: { type: string }
+        provider: { type: string, nullable: true }
+        endpoint: { type: string, nullable: true }
+        httpMethod: { type: string, nullable: true }
+        statusCode: { type: integer, nullable: true }
+        requestPayload: { nullable: true }
+        responsePayload: { nullable: true }
+        errorMessage: { type: string, nullable: true }
+        occurredAt: { type: string, format: date-time, nullable: true }
+      required: [jobId, stepName]
     FacebookCreativeConsumptionResponse:
       type: object
       description: Criativo aprovado do domínio Experimentos exposto apenas para consumo da publicação Facebook.

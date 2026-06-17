@@ -21,6 +21,7 @@ import com.marketinghub.facebookads.FacebookAdStatus;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
 import com.marketinghub.facebookads.FacebookCampaignStopReason;
 import com.marketinghub.facebookads.service.recommendation.FacebookCampaignRecommendationService;
+import com.marketinghub.facebookads.service.publicationstep.FacebookCampaignPublicationJobStepService;
 import com.marketinghub.leadportal.service.LeadPortalMetricsService;
 import com.marketinghub.leadportal.support.LeadPortalPublicUrlResolver;
 import com.marketinghub.repository.jpa.ads.FacebookAccountRepository;
@@ -122,7 +123,8 @@ class FacebookAdsCampaignMetricsAutoStopControllerTest {
                 experimentReadinessService,
                 leadPortalPublicUrlResolver,
                 leadPortalMetricsService,
-                recommendationService
+                recommendationService,
+                org.mockito.Mockito.mock(FacebookCampaignPublicationJobStepService.class)
         );
         mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
     }

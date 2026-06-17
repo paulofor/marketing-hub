@@ -13,6 +13,7 @@
 > - formaliza a separação de ownership dos criativos: criação/edição/aprovação é do módulo Experimentos; consumo operacional é por endpoint exclusivo do módulo Facebook
 > - torna obrigatório o upload de imagens de criativo por bytes/multipart para a Meta, proibindo fallback por URL externa em campanhas
 > - adiciona validação obrigatória de alcance por `reachestimate` antes de criar a hierarquia da campanha na Meta
+> - ajusta a regra de negócio para tratar ausência de limites da Meta como alerta controlado, não como falha automática
 > - formaliza a coleta periódica de sugestões oficiais da Meta para campanhas ativas, com persistência exclusiva via backend
 
 Este documento complementa o `system-governance-canon.v2.md` e passa a ser a fonte de verdade para prontidão, liberação e telemetria de campanhas de experimento no Facebook Ads Worker.
@@ -52,12 +53,12 @@ Esse pipeline é administrativo e operacional: ele torna visível o fluxo do wor
 
 ### 2.2 Gate obrigatório de alcance
 
-Antes de qualquer criação de campanha, conjunto, imagem, criativo ou anúncio na Meta, o `facebook-ads-worker` deve validar o targeting final no endpoint `reachestimate` da Graph API. Para evitar públicos pequenos demais por interseção, interesses, cargos e comportamentos aprovados devem ser agrupados em um único grupo de segmentação ampla com lógica **OU** (`flexible_spec` único), mantendo localização e demais restrições estruturais no topo do `targeting_spec`. A publicação só pode avançar quando a resposta trouxer `users_lower_bound` e `users_upper_bound` e ambos estiverem dentro da faixa operacional canônica:
+Antes de qualquer criação de campanha, conjunto, imagem, criativo ou anúncio na Meta, o `facebook-ads-worker` deve validar o targeting final no endpoint `reachestimate` da Graph API. Para evitar públicos pequenos demais por interseção, interesses, cargos e comportamentos aprovados devem ser agrupados em um único grupo de segmentação ampla com lógica **OU** (`flexible_spec` único), mantendo localização e demais restrições estruturais no topo do `targeting_spec`. Quando a Meta retornar `users_lower_bound` e `users_upper_bound`, a publicação só pode avançar se ambos estiverem dentro da faixa operacional canônica:
 
 - mínimo: `users_lower_bound >= 200000`;
 - máximo: `users_upper_bound <= 20000000`.
 
-Quando a Meta não retornar os limites ou o público ficar fora dessa faixa, o experimento deve ser bloqueado antes da criação da campanha e registrado como falha operacional para correção de causa-raiz do público. A mensagem exibida ao usuário deve informar objetivamente o alcance estimado retornado pela Meta, o mínimo/máximo operacional e a ação recomendada: ampliar ou revisar o público antes de liberar nova tentativa.
+Quando a Meta retornar limites fora dessa faixa, o experimento deve ser bloqueado antes da criação da campanha e registrado como falha operacional para correção de causa-raiz do público. Quando a Meta não retornar os limites, isso deve ser tratado como alerta de risco, não como falha automática: campanhas de teste controlado podem seguir, com registro operacional do aviso e monitoramento obrigatório de entrega, CPM, CTR, leads e vendas nas primeiras horas. A ausência de estimativa só deve bloquear a publicação se vier acompanhada de erro explícito da Meta, segmentação inválida ou outro bloqueio canônico de prontidão.
 
 ## 3. Ownership e módulos
 

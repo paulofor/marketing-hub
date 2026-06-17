@@ -4650,6 +4650,7 @@
 - Ajustada a regra canônica de publicação para usar lógica OU entre interesses, cargos e comportamentos antes da validação de alcance da Meta.
 - Melhorada a rastreabilidade de falhas de alcance para exibir ao usuário o motivo operacional quando a Meta estima público abaixo da faixa mínima.
 
+- 2026-06-17 00:00:00 (UTC): ajustada a regra de publicação Facebook Ads para tratar ausência de limites em `reachestimate` como alerta operacional, não como falha automática. A campanha segue como teste controlado quando a Meta não retorna `users_lower_bound`/`users_upper_bound`, mas continua bloqueada quando a Meta informa público fora da faixa canônica de 200.000 a 20.000.000 pessoas ou quando houver erro explícito de segmentação.
 ## 2026-06-17 — Exibição de público quantificado pela Meta
 
 - Ajustada a aba Público do experimento para destacar os elementos que já possuem alcance quantificado pela Meta.

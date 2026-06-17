@@ -892,14 +892,19 @@ public class FacebookCampaignService {
         );
         ReachEstimateBounds bounds = extractReachEstimateBounds(response);
         if (!bounds.complete()) {
-            String message = "A Meta não retornou os limites de alcance do público. Amplie ou revise a segmentação antes de liberar a campanha novamente.";
+            String message = "A Meta não retornou os limites de alcance do público. A publicação seguirá como teste controlado porque a ausência de estimativa não prova inviabilidade comercial; monitore entrega, CPM, CTR, leads e vendas nas primeiras horas.";
             experimentFacebookApiLogClient.logPublicationJobFailureStep(
                 publicationJobId,
                 experimentId,
-                "CAMPAIGN_REACH_VALIDATION_BLOCKED",
+                "CAMPAIGN_REACH_VALIDATION_WARNING",
                 message
             );
-            throw new IllegalStateException(message + " Experimento=" + experimentId);
+            LOGGER.warn(
+                "Reach estimate bounds unavailable; continuing controlled publication: experimentId={}, response={}",
+                experimentId,
+                JsonLogFormatter.wrap(response)
+            );
+            return;
         }
         if (bounds.lowerBound() < MIN_REACH_LOWER_BOUND || bounds.upperBound() > MAX_REACH_UPPER_BOUND) {
             String message = "Público pequeno demais para publicar: a Meta estimou %d a %d pessoas, mas o mínimo operacional é %d. Revise o público usando critérios mais amplos em OU e libere novamente."

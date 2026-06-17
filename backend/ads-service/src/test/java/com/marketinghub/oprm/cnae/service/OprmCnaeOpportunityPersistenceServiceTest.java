@@ -9,7 +9,7 @@ import com.marketinghub.oprm.cnae.OprmNicheCandidate;
 import com.marketinghub.oprm.cnae.dto.OprmCnaeEnrichmentRequestDto;
 import com.marketinghub.oprm.cnae.dto.OprmNicheCandidateRequestDto;
 import com.marketinghub.oprm.cnae.dto.OprmNicheCandidateResponseDto;
-import com.marketinghub.oprm.cnae.repository.OprmCnaeOpportunityReadRepository;
+import com.marketinghub.repository.jdbc.oprm.cnae.OprmCnaeOpportunityReadRepository;
 import com.marketinghub.repository.jpa.oprm.cnae.OprmCnaeEnrichmentArtifactRepository;
 import com.marketinghub.repository.jpa.oprm.cnae.OprmCnaeOpportunityScoreRepository;
 import com.marketinghub.repository.jpa.oprm.cnae.OprmCnaeProcessingCycleRepository;

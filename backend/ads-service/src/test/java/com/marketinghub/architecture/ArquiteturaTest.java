@@ -102,6 +102,10 @@ class ArquiteturaTest {
     private static final Pattern OPRM_NICHO_CNAE_STAGE_SERVICE_PACKAGE_PATTERN = Pattern.compile(
             "^com\\.marketinghub\\.oprm\\.nichocnae\\.([a-zA-Z0-9_]+)\\.service$");
     private static final String OPRM_NICHO_CNAE_STAGE_PACKAGE_PREFIX = "com.marketinghub.oprm.nichocnae.";
+    private static final String OPRM_CNAE_PACKAGE = "com.marketinghub.oprm.cnae";
+    private static final String OPRM_CNAE_WEB_PACKAGE = OPRM_CNAE_PACKAGE + ".web";
+    private static final String OPRM_CNAE_SERVICE_PACKAGE = OPRM_CNAE_PACKAGE + ".service";
+    private static final String OPRM_CNAE_DTO_PACKAGE = OPRM_CNAE_PACKAGE + ".dto";
     private static final List<String> REQUIRED_BACKEND_SERVICE_SUBPACKAGES = List.of(
             "detailStageExecution", "listStageExecutions", "pending", "recebePrompt", "recebeResposta");
     private static final List<String> REQUIRED_EPM_SERVICE_SUBPACKAGES = List.of(
@@ -528,6 +532,94 @@ class ArquiteturaTest {
                                             + " está no subpacote obrigatório " + requiredSubpackage
                                             + " e deve ser declarada como record"));
                 }));
+        failWithArchitectureViolations(violations);
+    }
+
+
+    /**
+     * Garante que o módulo OPRM CNAE tenha uma única borda HTTP canônica.
+     */
+    @ArchTest
+    static void oprmCnaePackageMustHaveSingleCanonicalController(JavaClasses importedClasses) {
+        List<String> violations = new ArrayList<>();
+        List<JavaClass> webPackageClasses = directPackageClasses(importedClasses, OPRM_CNAE_WEB_PACKAGE);
+        List<JavaClass> controllers = webPackageClasses.stream()
+                .filter(javaClass -> javaClass.getSimpleName().equals("OprmCnaeOpportunityController"))
+                .toList();
+        if (webPackageClasses.size() != 1) {
+            violations.add("[ARQUITETURA] [BACKEND][OPRM][CNAE] pacote=" + OPRM_CNAE_WEB_PACKAGE
+                    + " deve conter apenas OprmCnaeOpportunityController; classes=" + simpleNames(webPackageClasses));
+        }
+        if (controllers.size() != 1) {
+            violations.add("[ARQUITETURA] [BACKEND][OPRM][CNAE] pacote=" + OPRM_CNAE_WEB_PACKAGE
+                    + " deve conter exatamente uma classe OprmCnaeOpportunityController; controllers="
+                    + simpleNames(controllers));
+        } else {
+            JavaClass controller = controllers.get(0);
+            if (!controller.isAnnotatedWith(RestController.class)) {
+                violations.add("[ARQUITETURA] [BACKEND][OPRM][CNAE] classe=" + controller.getName()
+                        + " deve possuir @RestController");
+            }
+            if (!hasRequestMapping(controller, "/api/oprm")) {
+                violations.add("[ARQUITETURA] [BACKEND][OPRM][CNAE] classe=" + controller.getName()
+                        + " deve possuir @RequestMapping(\"/api/oprm\")");
+            }
+        }
+        failWithArchitectureViolations(violations);
+    }
+
+    /**
+     * Garante que o módulo OPRM CNAE tenha uma única fachada de service canônica.
+     */
+    @ArchTest
+    static void oprmCnaePackageMustHaveSingleCanonicalService(JavaClasses importedClasses) {
+        List<String> violations = new ArrayList<>();
+        List<JavaClass> servicePackageClasses = directPackageClasses(importedClasses, OPRM_CNAE_SERVICE_PACKAGE);
+        List<JavaClass> services = servicePackageClasses.stream()
+                .filter(javaClass -> javaClass.getSimpleName().equals("OprmCnaeOpportunityPersistenceService"))
+                .toList();
+        if (servicePackageClasses.size() != 1) {
+            violations.add("[ARQUITETURA] [BACKEND][OPRM][CNAE] pacote=" + OPRM_CNAE_SERVICE_PACKAGE
+                    + " deve conter apenas OprmCnaeOpportunityPersistenceService na raiz; classes="
+                    + simpleNames(servicePackageClasses));
+        }
+        if (services.size() != 1) {
+            violations.add("[ARQUITETURA] [BACKEND][OPRM][CNAE] pacote=" + OPRM_CNAE_SERVICE_PACKAGE
+                    + " deve conter exatamente uma classe OprmCnaeOpportunityPersistenceService; services="
+                    + simpleNames(services));
+        } else if (!services.get(0).isAnnotatedWith(Service.class)) {
+            violations.add("[ARQUITETURA] [BACKEND][OPRM][CNAE] classe=" + services.get(0).getName()
+                    + " deve possuir @Service");
+        }
+        failWithArchitectureViolations(violations);
+    }
+
+    /**
+     * Garante que contratos HTTP do módulo OPRM CNAE permaneçam imutáveis.
+     */
+    @ArchTest
+    static void oprmCnaeDtosMustBeRecords(JavaClasses importedClasses) {
+        List<String> violations = new ArrayList<>();
+        directPackageClasses(importedClasses, OPRM_CNAE_DTO_PACKAGE).stream()
+                .filter(javaClass -> !javaClass.reflect().isRecord())
+                .forEach(javaClass -> violations.add("[ARQUITETURA] [BACKEND][OPRM][CNAE] classe="
+                        + javaClass.getName() + " deve ser declarada como record por representar contrato HTTP"));
+        failWithArchitectureViolations(violations);
+    }
+
+    /**
+     * Garante que o pacote funcional OPRM CNAE não contenha repositories ou gateways de banco.
+     */
+    @ArchTest
+    static void oprmCnaeFunctionalPackageMustNotContainRepositories(JavaClasses importedClasses) {
+        List<String> violations = new ArrayList<>();
+        importedClasses.stream()
+                .filter(ArquiteturaTest::isProductionTopLevelClass)
+                .filter(javaClass -> javaClass.getPackageName().startsWith(OPRM_CNAE_PACKAGE))
+                .filter(javaClass -> javaClass.getPackageName().contains(".repository"))
+                .forEach(javaClass -> violations.add("[ARQUITETURA] [BACKEND][OPRM][CNAE] classe="
+                        + javaClass.getName()
+                        + " não deve ficar no pacote funcional; use com.marketinghub.repository.*"));
         failWithArchitectureViolations(violations);
     }
 
@@ -1482,7 +1574,7 @@ class ArquiteturaTest {
                             + " possui import/dependência violadora: " + dependency.getDescription()
                             + " (alvo: " + targetName + ")"
                             + " | regra: OPRM só pode acessar com.marketinghub.oprm, "
-                            + "com.marketinghub.repository.jpa.oprm e, especificamente para "
+                            + "com.marketinghub.repository.jpa.oprm, com.marketinghub.repository.jdbc.oprm e, especificamente para "
                             + "BackendEnrichedNicheMaterializerService, apenas as quatro classes autorizadas de nicho.";
                     events.add(SimpleConditionEvent.violated(item, message));
                 });
@@ -1496,7 +1588,8 @@ class ArquiteturaTest {
     private static boolean isAllowedOprmDependency(JavaClass sourceClass, JavaClass targetClass) {
         String targetPackage = targetClass.getPackageName();
         if (targetPackage.startsWith("com.marketinghub.oprm")
-                || targetPackage.startsWith("com.marketinghub.repository.jpa.oprm")) {
+                || targetPackage.startsWith("com.marketinghub.repository.jpa.oprm")
+                || targetPackage.startsWith("com.marketinghub.repository.jdbc.oprm")) {
             return true;
         }
         return isEnrichedNicheMaterializerException(sourceClass, targetClass);

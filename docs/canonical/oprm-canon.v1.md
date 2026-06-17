@@ -232,8 +232,9 @@ Evitar fechamento prematuro de `import run` que destrói a totalização de mark
 ## Regra obrigatória — execução das etapas NichoCNAE dentro do próprio módulo OPRM
 
 - As etapas do pipeline OPRM NichoCNAE que precisam acessar modelo de IA devem implementar esse acesso no próprio módulo executor do OPRM, atualmente `oprm-coletor-mei`, e não no `ai-worker`.
-- O padrão arquitetural obrigatório para essas etapas é o documento `docs/metodologia/gerado-5-5/arquitetura-pipeline-etapas-archunit.md`.
-- Cada etapa concreta deve permanecer em pacote próprio, plugável e removível, dependendo apenas do núcleo genérico do pipeline, infraestrutura compartilhada permitida e contratos persistidos/DTOs oficiais.
+- O padrão arquitetural obrigatório para essas etapas é o documento `docs/metodologia/gerado-5-5/arquitetura-pipeline-etapas-archunit.md`, aplicado no módulo executor `oprm-coletor-mei`, nunca no backend principal por padrão.
+- O backend principal (`backend/ads-service`) não deve receber núcleo `pipeline`, `StageProcessor`, `StageContext`, `StageResult`, `StageArtifact` ou regras ArchUnit de protocolo padrão módulo para o NichoCNAE; seu papel é expor contratos, persistir estado, publicar pendências e receber callbacks/resultados.
+- Cada etapa concreta deve permanecer em pacote próprio no módulo executor, plugável e removível, dependendo apenas do núcleo genérico do pipeline do executor, infraestrutura compartilhada permitida e contratos persistidos/DTOs oficiais.
 - É proibido acoplar uma etapa concreta a outra etapa concreta para avançar o fluxo; o encadeamento deve ocorrer por contratos persistidos, artefatos auditáveis, endpoints do backend ou outro contrato oficial.
 - O backend principal permanece como fonte de verdade dos dados e contratos; o módulo executor OPRM deve consumir e concluir etapas por endpoints do próprio OPRM/backend, sem acesso direto ao banco.
 - Chamadas ao modelo, prompts, validações e mapeamento de resposta devem ficar encapsulados no pacote da etapa concreta que usa IA, preservando isolamento, rastreabilidade e testabilidade.

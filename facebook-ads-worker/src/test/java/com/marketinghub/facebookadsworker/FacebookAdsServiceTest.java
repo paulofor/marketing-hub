@@ -70,6 +70,7 @@ class FacebookAdsServiceTest {
         assertEquals("OUTCOME_TRAFFIC", body.get("objective").asText());
         assertEquals("PAUSED", body.get("status").asText());
         assertEquals(0, body.get("special_ad_categories").size());
+        assertFalse(body.get("is_adset_budget_sharing_enabled").asBoolean());
         assertEquals("123", id);
     }
 
@@ -83,6 +84,7 @@ class FacebookAdsServiceTest {
         JsonNode body = objectMapper.readTree(request.getBody().inputStream());
         assertEquals("Camp", body.get("name").asText());
         assertEquals("OUTCOME_LEADS", body.get("objective").asText());
+        assertFalse(body.get("is_adset_budget_sharing_enabled").asBoolean());
         assertEquals("456", id);
     }
 

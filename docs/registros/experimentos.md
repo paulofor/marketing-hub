@@ -1,3 +1,31 @@
+## 2026-06-17 — Alinhamento da estratégia de orçamento Facebook Ads por Ad Set
+
+- solicitação: ajustar o fluxo conforme a conclusão estratégica de marketing digital para campanhas do Marketing Hub.
+- causa-raiz: o sistema já operava orçamento real no Ad Set, mas reportava `budgetMode=CAMPAIGN`, criando divergência entre estratégia de validação e registro operacional.
+- foi feito: o Facebook Ads Worker passou a reportar `budgetMode=ADSET`, preservando `dailyBudget` no conjunto de anúncios e mantendo campanha sem orçamento próprio com `is_adset_budget_sharing_enabled=false`.
+- decisão canônica: experimentos usam orçamento por Ad Set para comparação controlada; orçamento de campanha fica reservado para etapa futura de escala de vencedores.
+- validação: teste de publicação de hierarquia de campanha passou a verificar `budgetMode=ADSET` e o orçamento diário no Ad Set.
+- arquivos alterados:
+  - facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java
+  - facebook-ads-worker/src/test/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignServiceTest.java
+  - facebook-ads-worker/README.md
+  - facebook-ads-worker/AGENTS.md
+  - docs/canonical/facebook-campaign-publication-canon.v1.md
+  - docs/registros/experimentos.md
+
+## 2026-06-17 — Correção de criação de campanha Meta Ads sem orçamento de campanha
+
+- solicitação: investigar novo erro 400 ao liberar o experimento 39 para o Facebook Ads Worker.
+- causa-raiz: a Graph API passou a exigir o campo `is_adset_budget_sharing_enabled` em campanhas sem orçamento no nível da campanha; o worker criava a campanha apenas com orçamento posterior no ad set.
+- foi feito: o payload de criação de campanha agora declara `is_adset_budget_sharing_enabled=false`, preservando o orçamento no conjunto de anúncios e removendo o bloqueio antes da criação dos ad sets.
+- validação: testes unitários do Facebook Ads Worker atualizados para garantir o envio do campo nas campanhas de tráfego e leads.
+- arquivos alterados:
+  - facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/FacebookAdsService.java
+  - facebook-ads-worker/src/test/java/com/marketinghub/facebookadsworker/FacebookAdsServiceTest.java
+  - facebook-ads-worker/README.md
+  - facebook-ads-worker/AGENTS.md
+  - docs/registros/experimentos.md
+
 ## 2026-06-16 — Bloqueio de geração automática de imagem de anúncio após AD_IMAGE_BRIEFING
 
 - solicitação: impedir que o sistema gere imagem de anúncio automaticamente ao concluir a etapa `AD_IMAGE_BRIEFING`.

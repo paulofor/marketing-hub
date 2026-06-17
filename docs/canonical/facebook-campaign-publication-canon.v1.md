@@ -15,6 +15,7 @@
 > - adiciona validação obrigatória de alcance por `reachestimate` antes de criar a hierarquia da campanha na Meta
 > - ajusta a regra de negócio para tratar ausência de limites da Meta como alerta controlado, não como falha automática
 > - formaliza a coleta periódica de sugestões oficiais da Meta para campanhas ativas, com persistência exclusiva via backend
+- formaliza que campanhas de experimento usam orçamento diário no nível do ad set (`budgetMode=ADSET`) e que orçamento de campanha é reservado para etapa futura de escala
 
 Este documento complementa o `system-governance-canon.v2.md` e passa a ser a fonte de verdade para prontidão, liberação e telemetria de campanhas de experimento no Facebook Ads Worker.
 
@@ -128,7 +129,7 @@ O cartão também lista itens operacionais que não travam o worker, mas devem s
 
 - **Conta do Facebook Ads conectada** – exposta pelo hook `useFacebookConfigurationStatus` e validada no backend.
 - **Página do Facebook** e **Conta do Instagram** – precisam existir no hub e permanecer válidas para evitar erros de publicação.
-- **Orçamento diário** – `experiment.daily_budget` deve estar preenchido para refletir a automação de mídia.
+- **Orçamento diário** – `experiment.daily_budget` deve estar preenchido para refletir a automação de mídia. Em campanhas de experimento, esse valor é orçamento controlado por ad set: o `facebook-ads-worker` deve reportar `budgetMode=ADSET`, enviar `daily_budget` no conjunto de anúncios e criar a campanha sem orçamento próprio com `is_adset_budget_sharing_enabled=false`. Orçamento no nível da campanha é reservado para uma etapa futura de escala de vencedores, não para a validação inicial.
 - **Formulário de captação** – quando existir link válido de formulário no fluxo do experimento, ele é tratado como publicado para operação do Marketing Hub.
 - **Importante**: o formulário usado neste checklist é o formulário interno publicado pelo **Gera Landing** no Marketing Hub, **não** o Instant Form nativo do Facebook Ads.
 

@@ -163,29 +163,41 @@ public class FacebookAdsService {
         );
     }
 
+    /**
+     * Cria uma campanha pausada de Instagram usando objetivo de tráfego quando nenhum objetivo específico é informado.
+     */
     public String createInstagramCampaign(String adAccountId, String name) {
         return createInstagramCampaign(adAccountId, name, "OUTCOME_TRAFFIC");
     }
 
+    /**
+     * Cria uma campanha pausada na Meta sem orçamento de campanha, declarando explicitamente o compartilhamento de orçamento dos ad sets.
+     */
     public String createInstagramCampaign(String adAccountId, String name, String objective) {
         String path = buildVersionedPath("/act_" + adAccountId + "/campaigns");
         String resolvedObjective = hasText(objective) ? objective : "OUTCOME_TRAFFIC";
-        Map<String, Object> body = Map.of(
-            "name", name,
-            "objective", resolvedObjective,
-            "status", "PAUSED",
-            "special_ad_categories", List.of(),
-            "access_token", requireAccessToken()
-        );
+        Map<String, Object> body = new HashMap<>();
+        body.put("name", name);
+        body.put("objective", resolvedObjective);
+        body.put("status", "PAUSED");
+        body.put("special_ad_categories", List.of());
+        body.put("is_adset_budget_sharing_enabled", false);
+        body.put("access_token", requireAccessToken());
 
         JsonNode response = executePost(path, body);
         return response.path("id").asText();
     }
 
+    /**
+     * Cria uma campanha Meta com objetivo de tráfego quando nenhum objetivo específico é informado.
+     */
     public String createCampaign(String adAccountId, String name) {
         return createCampaign(adAccountId, name, "OUTCOME_TRAFFIC");
     }
 
+    /**
+     * Cria uma campanha Meta reaproveitando o fluxo de campanha de Instagram do worker.
+     */
     public String createCampaign(String adAccountId, String name, String objective) {
         return createInstagramCampaign(adAccountId, name, objective);
     }

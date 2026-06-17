@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 
+import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.jdbc.MoisSalesLibraryPricingRepository;
 import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.util.List;

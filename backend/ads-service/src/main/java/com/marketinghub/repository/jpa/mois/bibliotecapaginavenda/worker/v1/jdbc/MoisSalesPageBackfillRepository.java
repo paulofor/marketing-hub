@@ -1,5 +1,6 @@
-package com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1;
+package com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.jdbc;
 
+import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageBackfillGateway;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;

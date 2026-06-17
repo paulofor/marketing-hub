@@ -1,5 +1,7 @@
-package com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1;
+package com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.jdbc;
 
+import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesLibraryPricingGateway;
+import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesLibraryPricingGateway.ModelPricing;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;

@@ -365,6 +365,8 @@ describe("OprmCnaeDetailPlaceholderPage", () => {
       screen.getByText("Ainda não virou subnicho materializado"),
     ).toBeTruthy();
     expect(screen.getByText("#62")).toBeTruthy();
+    expect(screen.getByText("Custo total US$ 0,0150")).toBeTruthy();
+    expect(screen.getByText("US$ 0,0150")).toBeTruthy();
   });
 
   it("traduz a coluna qualidade dos subnichos gerados para portugues", async () => {

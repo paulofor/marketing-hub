@@ -66,6 +66,16 @@ executar a etapa e devolver callbacks sem buscar complemento em outro endpoint. 
 protocolo padrão backend em qualquer módulo, a existência do endpoint `pending` por etapa deve ser tratada
 como parte da arquitetura obrigatória, e não como conveniência do worker.
 
+## Protocolo leitura escrita — proteção de pacotes backend
+
+Quando o protocolo leitura escrita for aplicado a um pacote do backend, o objetivo é proteger esse pacote para que ele continue sendo somente a borda de leitura, escrita, contrato, persistência e auditoria do domínio. O pacote protegido não deve assumir controle operacional de execução que pertença a workers, coletores ou módulos externos.
+
+A regra canônica deve ser implementada no `ArquiteturaTest` do backend com ArchUnit e deve bloquear no pacote alvo responsabilidades como agendamento com `@Scheduled`, polling, retries locais, janela/frequência de execução, workers/runners/processors operacionais, núcleo `PipelineWorker`, `StageProcessor`, `StageContext`, `StageResult`, `StageArtifact`, chamadas diretas a tecnologias de execução externa e qualquer cálculo, scraping, enriquecimento ou chamada externa que pertença ao módulo executor.
+
+O backend protegido pode manter controllers, contratos HTTP, endpoint `pending` quando aplicável, callbacks de resultado, services de leitura/escrita/validação técnica, repositories canônicos, DTOs/records, auditoria de estado e comandos administrativos explícitos. Antes de aplicar o protocolo, deve ser identificado qual módulo externo executa o fluxo, para que a mensagem de arquitetura deixe clara a separação: backend lê/escreve e publica/recebe estado; executor externo controla e realiza a execução operacional.
+
+As mensagens de falha devem iniciar com `[ARQUITETURA] ` e a regra deve priorizar `classes().that()...should(ArchCondition customizada)` com eventos detalhados via `SimpleConditionEvent`, evitando whitelist ampla ou regra genérica com risco de falso positivo/falso negativo.
+
 ## Protocolo jobid — tabela de passos por pacote
 
 Quando o protocolo jobid for aplicado a um pacote ou fluxo com múltiplas etapas, primeiro deve ser

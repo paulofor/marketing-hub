@@ -146,6 +146,7 @@ function CandidateCard({ candidate, onReprocess, audienceFormatter, isProcessing
   const variants = Array.isArray(candidate.seed_variants) ? candidate.seed_variants : [];
   const statusClass = STATUS_COLORS[candidate.status] ?? "text-bg-secondary";
   const primarySeed = candidate.seed || candidate.texto_sugerido || "-";
+  const decisionRationale = buildDecisionRationale(candidate);
 
   return (
     <div className="bg-light rounded-3 p-3 mb-2">
@@ -158,6 +159,7 @@ function CandidateCard({ candidate, onReprocess, audienceFormatter, isProcessing
             {candidate.intent_tag && <FunnelStageBadge tag={candidate.intent_tag} />}
             {candidate.origem && <span className="badge text-bg-secondary">{candidate.origem}</span>}
           </div>
+          {decisionRationale && <DecisionRationaleCard rationale={decisionRationale} />}
           {variants.length > 1 && (
             <div className="mt-2 d-flex flex-wrap gap-2">
               {variants.map((variant) => (
@@ -205,6 +207,37 @@ function CandidateCard({ candidate, onReprocess, audienceFormatter, isProcessing
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+function buildDecisionRationale(candidate: TargetingCandidate) {
+  if (candidate.status === "NO_MATCH") {
+    return candidate.rejection_reason
+      ? `Bloqueado: ${candidate.rejection_reason}`
+      : "Bloqueado: a Meta não retornou opção válida para este seed.";
+  }
+
+  if (candidate.rationale) {
+    return candidate.rationale;
+  }
+
+  if (candidate.status === "VALIDATED") {
+    return "Aprovado: existem opções validadas pela Graph API para ativação operacional.";
+  }
+
+  if (candidate.status === "PENDING_FACEBOOK_MATCH") {
+    return "Aguardando: o Facebook Ads Worker ainda precisa validar se há público acionável.";
+  }
+
+  return null;
+}
+
+function DecisionRationaleCard({ rationale }: { rationale: string }) {
+  return (
+    <div className="targeting-decision-rationale mt-2" aria-label="Motivo da decisão operacional">
+      <span className="targeting-decision-rationale__label">Motivo da decisão</span>
+      <span>{rationale}</span>
     </div>
   );
 }

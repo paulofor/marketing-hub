@@ -4719,3 +4719,8 @@
 - Causa-raiz tratada: o briefing visual exigia sinais de nicho, mas não obrigava uma pergunta textual explícita capaz de filtrar rapidamente quem realmente pertence ao nicho.
 - Correção aplicada: o prompt `ad-image-briefing` agora obriga texto sobreposto em formato de pergunta clara, completa e objetiva, mencionando situação, rotina, cargo, atividade, dor ou resultado específico do nicho.
 - Prevenção de recorrência: o cânone do procedimento de experimento passou a registrar essa regra para manter futuras alterações de prompt alinhadas ao objetivo comercial de segmentação e venda.
+
+## 2026-06-17 — Explicação operacional nas decisões de targeting
+
+- Ajustada a tela de solicitações recentes de targeting para mostrar o motivo da decisão operacional diretamente no card do candidato, usando a verdade já exposta pelo backend (`rationale` ou `rejection_reason`) e evitando que o operador interprete score/status sem causa-raiz visível.
+- O ajuste reduz ambiguidade entre candidato ranqueado, candidato pendente, candidato validado e candidato bloqueado, deixando a próxima ação mais clara para operação de campanhas.

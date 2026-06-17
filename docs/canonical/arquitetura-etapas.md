@@ -66,6 +66,15 @@ executar a etapa e devolver callbacks sem buscar complemento em outro endpoint. 
 protocolo padrão backend em qualquer módulo, a existência do endpoint `pending` por etapa deve ser tratada
 como parte da arquitetura obrigatória, e não como conveniência do worker.
 
+## Protocolo jobid — tabela de passos por pacote
+
+Quando o protocolo jobid for aplicado a um pacote ou fluxo com múltiplas etapas, a tabela de passos do
+job pode e deve ser compartilhada por todas as etapas desse pacote quando o contexto operacional for o
+mesmo. O objetivo é preservar uma linha do tempo única, simples e auditável do job, usando campos como
+`job_id`, etapa, status, payload enviado, payload recebido, endpoint/ação, erro e data-hora, sem criar uma
+tabela separada para cada etapa. Tabelas separadas só devem existir quando houver domínio, retenção,
+volume ou contrato operacional realmente diferente.
+
 
 ## Backend — pacote Facebook Ads
 

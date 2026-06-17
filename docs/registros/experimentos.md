@@ -4702,3 +4702,8 @@
 
 - Removidos da tela de detalhe do experimento os badges locais de status de campanha, conjunto e anúncio na seção **Execução registrada**.
 - Motivo: esses status refletem o registro interno persistido e podiam sugerir que tudo estava ativo mesmo quando a realidade operacional da Meta Ads era diferente.
+
+## 2026-06-17 — Observação de tabela compartilhada no protocolo jobid
+
+- Atualizada a regra operacional do protocolo jobid para explicitar que a tabela de passos pode ser compartilhada por todas as etapas do mesmo pacote/fluxo.
+- Decisão: evitar uma tabela por etapa quando o contexto operacional é o mesmo, preservando rastreabilidade simples, centralizada e útil para investigação de causa-raiz.

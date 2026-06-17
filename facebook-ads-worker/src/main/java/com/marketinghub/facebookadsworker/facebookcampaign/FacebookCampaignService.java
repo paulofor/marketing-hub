@@ -378,7 +378,7 @@ public class FacebookCampaignService {
             selectedSpec = selectPrimarySpec(readySpecs);
             if (selectedSpec != null) {
                 resolvedTargeting = new ResolvedTargeting(
-                    normalizeTargetingSpec(selectedSpec.targetingSpec()),
+                    normalizeAndBroadenTargetingSpec(selectedSpec.targetingSpec()),
                     Collections.emptyList()
                 );
                 adSetName = buildAdSetName(exp.name(), selectedSpec);
@@ -741,12 +741,13 @@ public class FacebookCampaignService {
                 "Experimento " + experimentId + " sem cargos aprovados no targeting manual; publicação bloqueada para evitar público amplo"
             );
         }
+        ObjectNode broadenedTargetingSpec = broadenTargetingSpecToOrAudience(targetingSpec);
         LOGGER.info(
             "Using backend-approved manual targeting package for experiment {}: {}",
             experimentId,
-            JsonLogFormatter.wrap(objectMapper, targetingSpec)
+            JsonLogFormatter.wrap(objectMapper, broadenedTargetingSpec)
         );
-        return new ResolvedTargeting(targetingSpec.toString(), Collections.emptyList());
+        return new ResolvedTargeting(broadenedTargetingSpec.toString(), Collections.emptyList());
     }
 
     /**
@@ -891,21 +892,25 @@ public class FacebookCampaignService {
         );
         ReachEstimateBounds bounds = extractReachEstimateBounds(response);
         if (!bounds.complete()) {
-            throw new IllegalStateException(
-                "Validação de alcance sem limites retornados pela Meta para o experimento " + experimentId
+            String message = "A Meta não retornou os limites de alcance do público. Amplie ou revise a segmentação antes de liberar a campanha novamente.";
+            experimentFacebookApiLogClient.logPublicationJobFailureStep(
+                publicationJobId,
+                experimentId,
+                "CAMPAIGN_REACH_VALIDATION_BLOCKED",
+                message
             );
+            throw new IllegalStateException(message + " Experimento=" + experimentId);
         }
         if (bounds.lowerBound() < MIN_REACH_LOWER_BOUND || bounds.upperBound() > MAX_REACH_UPPER_BOUND) {
-            throw new IllegalStateException(
-                "Público fora da faixa de alcance para publicação: experimento=%d, lower=%d, upper=%d, mínimo=%d, máximo=%d"
-                    .formatted(
-                        experimentId,
-                        bounds.lowerBound(),
-                        bounds.upperBound(),
-                        MIN_REACH_LOWER_BOUND,
-                        MAX_REACH_UPPER_BOUND
-                    )
+            String message = "Público pequeno demais para publicar: a Meta estimou %d a %d pessoas, mas o mínimo operacional é %d. Revise o público usando critérios mais amplos em OU e libere novamente."
+                .formatted(bounds.lowerBound(), bounds.upperBound(), MIN_REACH_LOWER_BOUND);
+            experimentFacebookApiLogClient.logPublicationJobFailureStep(
+                publicationJobId,
+                experimentId,
+                "CAMPAIGN_REACH_VALIDATION_BLOCKED",
+                message
             );
+            throw new IllegalStateException(message);
         }
         LOGGER.info(
             "Reach validation approved before campaign creation: experimentId={}, lowerBound={}, upperBound={}",
@@ -1219,18 +1224,91 @@ public class FacebookCampaignService {
         return experimentName + " - Ad Set";
     }
 
-    private String normalizeTargetingSpec(String raw) {
+    /**
+     * Normaliza o targeting aprovado e amplia o público colocando interesses, cargos e comportamentos em condição OU.
+     */
+    private String normalizeAndBroadenTargetingSpec(String raw) {
         if (!StringUtils.hasText(raw)) {
             return raw;
         }
         try {
             JsonNode node = objectMapper.readTree(raw);
+            if (node instanceof ObjectNode objectNode) {
+                return objectMapper.writeValueAsString(broadenTargetingSpecToOrAudience(objectNode));
+            }
             return objectMapper.writeValueAsString(node);
         } catch (Exception ex) {
             LOGGER.warn("Failed to normalize targeting spec JSON: {}", ex.getMessage());
             LOGGER.debug("Stacktrace while normalizing targeting spec JSON", ex);
             return raw;
         }
+    }
+
+    /**
+     * Move critérios detalhados para um único flexible_spec para a Meta tratar o público como OU, não como E entre campos.
+     */
+    private ObjectNode broadenTargetingSpecToOrAudience(ObjectNode source) {
+        ObjectNode broadened = source.deepCopy();
+        ObjectNode orGroup = objectMapper.createObjectNode();
+        moveArrayFieldToOrGroup(broadened, orGroup, "interests");
+        moveArrayFieldToOrGroup(broadened, orGroup, "work_positions");
+        moveArrayFieldToOrGroup(broadened, orGroup, "behaviors");
+        mergeExistingFlexibleSpecIntoOrGroup(broadened, orGroup);
+        if (orGroup.size() > 0) {
+            ArrayNode flexibleSpec = objectMapper.createArrayNode();
+            flexibleSpec.add(orGroup);
+            broadened.set("flexible_spec", flexibleSpec);
+        }
+        return broadened;
+    }
+
+    /**
+     * Move um array de segmentação do topo para o grupo OU quando houver itens úteis.
+     */
+    private void moveArrayFieldToOrGroup(ObjectNode targetingSpec, ObjectNode orGroup, String fieldName) {
+        JsonNode value = targetingSpec.get(fieldName);
+        targetingSpec.remove(fieldName);
+        if (value != null && value.isArray() && !value.isEmpty()) {
+            orGroup.set(fieldName, value);
+        }
+    }
+
+    /**
+     * Consolida flexible_spec existente em um único grupo OU para evitar estreitamento por múltiplos grupos.
+     */
+    private void mergeExistingFlexibleSpecIntoOrGroup(ObjectNode targetingSpec, ObjectNode orGroup) {
+        JsonNode existingFlexibleSpec = targetingSpec.get("flexible_spec");
+        targetingSpec.remove("flexible_spec");
+        if (existingFlexibleSpec == null || !existingFlexibleSpec.isArray()) {
+            return;
+        }
+        for (JsonNode group : existingFlexibleSpec) {
+            if (!group.isObject()) {
+                continue;
+            }
+            mergeArrayField(orGroup, group, "interests");
+            mergeArrayField(orGroup, group, "work_positions");
+            mergeArrayField(orGroup, group, "behaviors");
+        }
+    }
+
+    /**
+     * Junta arrays de uma mesma categoria preservando os objetos oficiais retornados pela Meta.
+     */
+    private void mergeArrayField(ObjectNode target, JsonNode source, String fieldName) {
+        JsonNode sourceArray = source.get(fieldName);
+        if (sourceArray == null || !sourceArray.isArray() || sourceArray.isEmpty()) {
+            return;
+        }
+        ArrayNode targetArray;
+        JsonNode existing = target.get(fieldName);
+        if (existing instanceof ArrayNode existingArray) {
+            targetArray = existingArray;
+        } else {
+            targetArray = objectMapper.createArrayNode();
+            target.set(fieldName, targetArray);
+        }
+        sourceArray.forEach(targetArray::add);
     }
 
     private <T> T executeFacebookCallWithLogging(String publicationJobId,

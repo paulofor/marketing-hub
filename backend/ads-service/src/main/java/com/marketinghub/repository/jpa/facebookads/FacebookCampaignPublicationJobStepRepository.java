@@ -12,4 +12,7 @@ public interface FacebookCampaignPublicationJobStepRepository extends JpaReposit
 
     /** Lista os passos registrados para um job em ordem cronológica. */
     List<FacebookCampaignPublicationJobStep> findByJobIdOrderByOccurredAtAscIdAsc(String jobId);
+
+    /** Busca o último passo com erro registrado para o experimento. */
+    java.util.Optional<FacebookCampaignPublicationJobStep> findTopByExperimentIdAndErrorMessageIsNotNullOrderByOccurredAtDescIdDesc(Long experimentId);
 }

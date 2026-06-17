@@ -4,13 +4,16 @@ import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.dto.ExperimentDiagnosticsDto;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
+import com.marketinghub.facebookads.FacebookCampaignPublicationJobStep;
 import com.marketinghub.facebookads.playbook.dto.ExperimentFacebookApiLogDto;
 import com.marketinghub.facebookads.playbook.service.ExperimentFacebookApiLogService;
 import com.marketinghub.repository.jpa.facebookads.FacebookAdsAdRepository;
 import com.marketinghub.repository.jpa.facebookads.FacebookAdsAdSetRepository;
 import com.marketinghub.repository.jpa.facebookads.FacebookAdsCampaignRepository;
+import com.marketinghub.repository.jpa.facebookads.FacebookCampaignPublicationJobStepRepository;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -36,6 +39,8 @@ class ExperimentDiagnosticsServiceTest {
     private FacebookAdsAdRepository adRepository;
     @Mock
     private ExperimentFacebookApiLogService facebookApiLogService;
+    @Mock
+    private FacebookCampaignPublicationJobStepRepository publicationJobStepRepository;
 
     @InjectMocks
     private ExperimentDiagnosticsService service;
@@ -59,6 +64,8 @@ class ExperimentDiagnosticsServiceTest {
         when(experimentService.get(experimentId)).thenReturn(experiment);
         when(campaignRepository.findByExperimentId(experimentId)).thenReturn(List.of(campaign));
         when(adSetRepository.findByCampaignIdIn(List.of(campaign.getId()))).thenReturn(List.of());
+        when(publicationJobStepRepository.findTopByExperimentIdAndErrorMessageIsNotNullOrderByOccurredAtDescIdDesc(experimentId))
+                .thenReturn(Optional.empty());
         when(facebookApiLogService.findLogs(experimentId, 200)).thenReturn(List.of());
 
         ExperimentDiagnosticsDto diagnostics = service.diagnose(experimentId);
@@ -80,6 +87,8 @@ class ExperimentDiagnosticsServiceTest {
 
         when(experimentService.get(experimentId)).thenReturn(experiment);
         when(campaignRepository.findByExperimentId(experimentId)).thenReturn(List.of());
+        when(publicationJobStepRepository.findTopByExperimentIdAndErrorMessageIsNotNullOrderByOccurredAtDescIdDesc(experimentId))
+                .thenReturn(Optional.empty());
         when(facebookApiLogService.findLogs(experimentId, 200)).thenReturn(List.of(
                 apiLog(1L, 400, "400 Bad Request", Instant.parse("2026-06-08T20:31:25Z")),
                 apiLog(2L, 200, null, Instant.parse("2026-06-09T03:24:53Z"))
@@ -104,6 +113,8 @@ class ExperimentDiagnosticsServiceTest {
 
         when(experimentService.get(experimentId)).thenReturn(experiment);
         when(campaignRepository.findByExperimentId(experimentId)).thenReturn(List.of());
+        when(publicationJobStepRepository.findTopByExperimentIdAndErrorMessageIsNotNullOrderByOccurredAtDescIdDesc(experimentId))
+                .thenReturn(Optional.empty());
         when(facebookApiLogService.findLogs(experimentId, 200)).thenReturn(List.of(
                 apiLog(1L, 200, null, Instant.parse("2026-06-09T03:20:00Z")),
                 apiLog(2L, 400, "400 Bad Request", Instant.parse("2026-06-09T03:24:53Z"))
@@ -114,6 +125,37 @@ class ExperimentDiagnosticsServiceTest {
         assertThat(diagnostics.failureDetails()).isNotNull();
         assertThat(diagnostics.failureDetails().message()).isEqualTo("400 Bad Request");
         assertThat(diagnostics.failureDetails().occurredAt()).isEqualTo(Instant.parse("2026-06-09T03:24:53Z"));
+    }
+
+
+    /**
+     * Mostra a falha operacional do job quando a Meta respondeu 200, mas o worker bloqueou por regra de alcance.
+     */
+    @Test
+    void shouldShowPublicationJobFailureWhenReachValidationBlockedAfterSuccessfulMetaCall() {
+        Long experimentId = 39L;
+
+        Experiment experiment = new Experiment();
+        experiment.setId(experimentId);
+        experiment.setStatus(ExperimentStatus.FAILED);
+
+        FacebookCampaignPublicationJobStep step = new FacebookCampaignPublicationJobStep();
+        step.setErrorMessage("Público pequeno demais para publicar: a Meta estimou 1.000 a 1.000 pessoas.");
+        step.setProvider("FACEBOOK_WORKER");
+        step.setStepName("CAMPAIGN_REACH_VALIDATION_BLOCKED");
+        step.setOccurredAt(Instant.parse("2026-06-17T00:54:48Z"));
+
+        when(experimentService.get(experimentId)).thenReturn(experiment);
+        when(campaignRepository.findByExperimentId(experimentId)).thenReturn(List.of());
+        when(publicationJobStepRepository.findTopByExperimentIdAndErrorMessageIsNotNullOrderByOccurredAtDescIdDesc(experimentId))
+                .thenReturn(Optional.of(step));
+
+        ExperimentDiagnosticsDto diagnostics = service.diagnose(experimentId);
+
+        assertThat(diagnostics.failureDetails()).isNotNull();
+        assertThat(diagnostics.failureDetails().message()).contains("Público pequeno demais");
+        assertThat(diagnostics.failureDetails().source()).isEqualTo("FACEBOOK_WORKER");
+        assertThat(diagnostics.failureDetails().occurredAt()).isEqualTo(Instant.parse("2026-06-17T00:54:48Z"));
     }
 
     /**

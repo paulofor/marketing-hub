@@ -40,7 +40,7 @@ As etapas oficiais expostas para operação são:
 1. `worker-configuration` — carregar configuração, token, conta de anúncios e defaults.
 2. `experiment-readiness` — selecionar experimentos liberados, prontos e sem campanha duplicada.
 3. `creative-consumption` — consumir somente criativos aprovados pelo contrato do módulo Facebook.
-4. `reach-validation` — consultar `reachestimate` da Meta com o targeting final e bloquear publicação quando o público estimado estiver fora da faixa operacional.
+4. `reach-validation` — consultar `reachestimate` da Meta com o targeting final ampliado em lógica **OU** entre interesses, cargos e comportamentos, bloqueando publicação quando o público estimado estiver fora da faixa operacional.
 5. `campaign-hierarchy-publication` — criar campanha, conjunto, imagem, criativo e anúncio na Meta.
 6. `publication-registration` — persistir IDs externos no backend e marcar rastreabilidade da publicação.
 7. `metrics-sync-target-selection` — selecionar campanhas em execução para sincronização de métricas.
@@ -52,12 +52,12 @@ Esse pipeline é administrativo e operacional: ele torna visível o fluxo do wor
 
 ### 2.2 Gate obrigatório de alcance
 
-Antes de qualquer criação de campanha, conjunto, imagem, criativo ou anúncio na Meta, o `facebook-ads-worker` deve validar o targeting final no endpoint `reachestimate` da Graph API. A publicação só pode avançar quando a resposta trouxer `users_lower_bound` e `users_upper_bound` e ambos estiverem dentro da faixa operacional canônica:
+Antes de qualquer criação de campanha, conjunto, imagem, criativo ou anúncio na Meta, o `facebook-ads-worker` deve validar o targeting final no endpoint `reachestimate` da Graph API. Para evitar públicos pequenos demais por interseção, interesses, cargos e comportamentos aprovados devem ser agrupados em um único grupo de segmentação ampla com lógica **OU** (`flexible_spec` único), mantendo localização e demais restrições estruturais no topo do `targeting_spec`. A publicação só pode avançar quando a resposta trouxer `users_lower_bound` e `users_upper_bound` e ambos estiverem dentro da faixa operacional canônica:
 
 - mínimo: `users_lower_bound >= 200000`;
 - máximo: `users_upper_bound <= 20000000`.
 
-Quando a Meta não retornar os limites ou o público ficar fora dessa faixa, o experimento deve ser bloqueado antes da criação da campanha e registrado como falha operacional para correção de causa-raiz do público.
+Quando a Meta não retornar os limites ou o público ficar fora dessa faixa, o experimento deve ser bloqueado antes da criação da campanha e registrado como falha operacional para correção de causa-raiz do público. A mensagem exibida ao usuário deve informar objetivamente o alcance estimado retornado pela Meta, o mínimo/máximo operacional e a ação recomendada: ampliar ou revisar o público antes de liberar nova tentativa.
 
 ## 3. Ownership e módulos
 

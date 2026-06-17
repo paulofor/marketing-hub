@@ -133,6 +133,11 @@ class FacebookCampaignServiceTest {
             () -> new MockResponse().setBody("{}").addHeader("Content-Type", "application/json")
         );
         backend.enqueuePriorityConditionalResponse(
+            request -> "/api/facebook-campaigns/publication-job-steps".equals(request.getPath())
+                && "POST".equals(request.getMethod()),
+            () -> new MockResponse().setBody("{}").addHeader("Content-Type", "application/json")
+        );
+        backend.enqueuePriorityConditionalResponse(
             request -> request.getPath() != null
                 && request.getPath().contains("/api/instant-forms/")
                 && request.getPath().endsWith("/publication")
@@ -361,6 +366,9 @@ class FacebookCampaignServiceTest {
         assertEquals("42", adSetPayload.get("promoted_object").get("page_id").asText());
         JsonNode targeting = adSetPayload.get("targeting");
         assertEquals("BR", targeting.get("geo_locations").get("countries").get(0).asText());
+        assertFalse(targeting.has("work_positions"));
+        assertEquals(1, targeting.get("flexible_spec").size());
+        assertEquals("1419795191647433", targeting.get("flexible_spec").get(0).get("work_positions").get(0).get("id").asText());
         assertEquals(0, targeting.get("targeting_automation").get("advantage_audience").asInt());
 
         RecordedRequest postCreative = takeFacebookRequest("facebook request");
@@ -398,7 +406,7 @@ class FacebookCampaignServiceTest {
     // Garante que a campanha não é criada quando o público fica abaixo do alcance mínimo.
     void skipsCampaignCreationWhenReachValidationIsBelowMinimum() throws Exception {
         reachEstimateResponseBody = "{\"data\":[{\"users_lower_bound\":1000,\"users_upper_bound\":50000}]}";
-        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"dailyBudget\":25.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"dailyBudget\":25.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"},\"publicationJobId\":\"job-reach-low\"}]")
             .addHeader("Content-Type", "application/json"));
         backend.enqueueResponse(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"" + imageUrl + "\",\"description\":\"Desc\",\"cta\":\"SHOP_NOW\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
             .addHeader("Content-Type", "application/json"));
@@ -424,6 +432,21 @@ class FacebookCampaignServiceTest {
         assertTrue(reachRequest.getPath().contains("/reachestimate?"));
         JsonNode reachTargetingSpec = targetingSpecFromReachEstimateRequest(reachRequest);
         assertEquals("BR", reachTargetingSpec.get("geo_locations").get("countries").get(0).asText());
+        assertFalse(reachTargetingSpec.has("work_positions"));
+        assertEquals(1, reachTargetingSpec.get("flexible_spec").size());
+        takeBackendRequestMatching(
+            "publication job reach step",
+            request -> "/api/facebook-campaigns/publication-job-steps".equals(request.getPath())
+                && "POST".equals(request.getMethod())
+        );
+        RecordedRequest failureStepRequest = takeBackendRequestMatching(
+            "publication job failure step",
+            request -> "/api/facebook-campaigns/publication-job-steps".equals(request.getPath())
+                && "POST".equals(request.getMethod())
+        );
+        JsonNode failureStepPayload = objectMapper.readTree(failureStepRequest.getBody().inputStream());
+        assertEquals("CAMPAIGN_REACH_VALIDATION_BLOCKED", failureStepPayload.get("stepName").asText());
+        assertTrue(failureStepPayload.get("errorMessage").asText().contains("Público pequeno demais"));
         RecordedRequest failedStatusRequest = takeBackendRequestMatching(
             "failed status update",
             request -> request.getPath() != null
@@ -1450,7 +1473,9 @@ class FacebookCampaignServiceTest {
         takeFacebookRequest("facebook request"); // campaign
         RecordedRequest adSetRequest = takeFacebookRequest("facebook request");
         JsonNode adSetPayload = objectMapper.readTree(adSetRequest.getBody().inputStream());
-        JsonNode workPositions = adSetPayload.get("targeting").get("work_positions");
+        JsonNode targeting = adSetPayload.get("targeting");
+        assertFalse(targeting.has("work_positions"));
+        JsonNode workPositions = targeting.get("flexible_spec").get(0).get("work_positions");
         assertEquals(1, workPositions.size());
         assertEquals("1419795191647433", workPositions.get(0).get("id").asText());
         assertEquals("Certified Personal Trainer", workPositions.get(0).get("name").asText());

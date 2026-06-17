@@ -805,3 +805,9 @@
 - Causa-raiz tratada: o fluxo CNAE tinha leitura JDBC dentro do pacote funcional, o que misturava contrato de negócio com acesso direto ao banco e aumentava risco de espalhamento arquitetural.
 - Correção aplicada: o gateway JDBC foi movido para o pacote canônico `com.marketinghub.repository.jdbc.oprm.cnae`, preservando o backend como única camada com acesso ao banco e mantendo o pacote funcional focado no contrato OPRM.
 - Prevenção de recorrência: a suíte de arquitetura agora valida controller único, service único, DTOs como `record` e ausência de repositories dentro de `com.marketinghub.oprm.cnae`.
+## 2026-06-17 — OPRM Opportunity: protocolo padrão módulo
+
+- Aplicado o protocolo padrão módulo no executor `oprm-coletor-mei`, dentro de `com.marketinghub.oprmcoletormei.opportunity`, criando núcleo genérico `opportunity.pipeline` e etapas concretas plugáveis `opportunity.score` e `opportunity.enrichment`.
+- Causa-raiz tratada: o fluxo CNAE de oportunidade tinha contratos e serviços úteis, mas não possuía fronteira arquitetural explícita entre núcleo genérico, etapas concretas e tecnologia/infraestrutura, permitindo recorrência de acoplamento futuro entre score e enriquecimento.
+- Prevenção de recorrência: adicionadas regras ArchUnit específicas para bloquear dependência do núcleo em etapas concretas, acoplamento direto entre etapas, processors fora do contrato `StageProcessor` e tecnologia concreta no núcleo `opportunity.pipeline`.
+- Não houve alteração no backend principal; o backend permanece como API/persistência do fluxo OPRM.

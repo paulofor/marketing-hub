@@ -1,4 +1,4 @@
-package com.marketinghub.mois.bibliotecapaginavenda.worker.v1.openai;
+package com.marketinghub.mois.bibliotecapaginavenda.worker.v1.pipeline.pageanalysis;
 
 import java.math.BigDecimal;
 

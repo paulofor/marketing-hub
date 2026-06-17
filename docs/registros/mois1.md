@@ -1681,3 +1681,10 @@ Arquivos principais:
 - Criado endpoint backend `GET /api/mois/sales-library/pending` para listar páginas com HTML útil (`html_bytes > 0`) elegíveis para análise comercial, sem reservar job nem alterar status operacional.
 - O contrato retorna workspace, origem, limite, total retornado e itens com `pageId`, `jobId` pendente quando já existir, URL canônica, bytes de HTML, status de análise, próxima tentativa e disponibilidade de HTML bruto.
 - Atualizada a documentação Swagger da Biblioteca de Páginas de Vendas e adicionados testes de controller/service para prevenir regressão no contrato de auditoria da fila real da etapa 2.
+
+## 2026-06-17 — Protocolo padrão módulo na Biblioteca de Sales Pages
+
+- Aplicado o protocolo padrão módulo no executor `mois-sales-library-worker`, mantendo o backend fora do escopo desta alteração.
+- A etapa 2 de análise comercial foi isolada como etapa plugável em `pipeline.pageanalysis`, usando o núcleo genérico `PipelineWorker`, `StageProcessor`, `StageContext`, `StageResult` e `StageArtifact`.
+- As integrações OpenAI da análise comercial foram movidas para o pacote concreto da própria etapa, evitando vazamento de tecnologia para o núcleo do pipeline.
+- Ajustadas as regras ArchUnit do worker para validar núcleo sem dependência de etapas concretas, independência entre etapas, ausência de ciclos, processors por contrato e núcleo sem tecnologias concretas.

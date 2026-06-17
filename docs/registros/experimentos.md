@@ -1,3 +1,7 @@
+
+## 2026-06-17 — Protocolo padrão backend exige pending por etapa
+- Atualizada a definição canônica do protocolo padrão backend para tornar obrigatório um endpoint interno `pending` por etapa operacional.
+- Registrada a referência do GeraLanding: cada etapa expõe sua própria fila `pending` com jobs aptos ao processamento e payload completo como unidade de trabalho fechada, evitando chamadas adicionais de detalhe pelo worker.
 ## 2026-06-17 — Alinhamento da estratégia de orçamento Facebook Ads por Ad Set
 
 - solicitação: ajustar o fluxo conforme a conclusão estratégica de marketing digital para campanhas do Marketing Hub.

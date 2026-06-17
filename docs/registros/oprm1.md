@@ -861,3 +861,9 @@
 - Ajustada a seção “Em processamento antes de virar subnicho” para exibir 10 ciclos por página, custo individual por ciclo e custo total no cabeçalho do card.
 - Causa-raiz tratada: a lista podia crescer sem controle visual e não mostrava o impacto financeiro dos ciclos que ainda não viraram subnicho, dificultando decisão operacional sobre continuidade ou reprocessamento.
 - Prevenção de recorrência: a tela passou a calcular a visualização paginada e o total financeiro diretamente a partir da verdade enviada pelo backend para os ciclos OPRM.
+
+## 2026-06-17 — OPRM CNAE: relatório Markdown por execução
+
+- Adicionado botão “Relatório” para cada execução do NichoCNAE, permitindo baixar um arquivo `nicho-cnae<id>.md` com detalhamento etapa por etapa.
+- Causa-raiz tratada: a tela permitia acompanhar o estado do pipeline, mas não entregava uma auditoria consolidada para o usuário analisar request/response de IA, URLs pesquisadas, retornos coletados, sinais, síntese e qualidade sem navegar por várias telas.
+- Prevenção de recorrência: o relatório é gerado pelo backend a partir das tabelas canônicas da execução, mantendo a tela como consumidora da verdade do backend e evitando inferência local no frontend.

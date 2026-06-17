@@ -1,4 +1,4 @@
-import { Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 
 import FacebookAccountsPage from "./pages/FacebookAccountsPage";
 import InstagramAccountsPage from "./pages/InstagramAccountsPage";
@@ -113,8 +113,6 @@ import OprmOccupationCatalogPage from "./pages/oprm/OprmOccupationCatalogPage";
 import OprmCnaeVolumePage from "./pages/oprm/OprmCnaeVolumePage";
 import OprmCnaeDetailPlaceholderPage from "./pages/oprm/OprmCnaeDetailPlaceholderPage";
 import OprmCnaePipelineStageDetailPage from "./pages/oprm/OprmCnaePipelineStageDetailPage";
-import OprmPipelinePage from "./pages/oprm/OprmPipelinePage";
-import OprmNicheResearchSeedBuilderDetailPage from "./pages/oprm/OprmNicheResearchSeedBuilderDetailPage";
 import OprmEnrichedNicheDetailPage from "./pages/oprm/OprmEnrichedNicheDetailPage";
 import OprmGeneralAudiencesPage from "./pages/oprm/OprmGeneralAudiencesPage";
 import OprmGeneralAudienceSeedDetailPage from "./pages/oprm/OprmGeneralAudienceSeedDetailPage";
@@ -225,15 +223,42 @@ export default function App() {
               <Route path="/experiments/:id" element={<AppLayout />}>
                 <Route index element={<ExperimentDetailPage />} />
                 <Route path="edit" element={<EditExperimentPage />} />
-                <Route path="instant-forms/:instantFormId" element={<InstantFormDetailPage />} />
-                <Route path="emails/:emailStepId" element={<ExperimentEmailDetailPage />} />
-                <Route path="adset-workflow" element={<ExperimentAdSetWorkflowPage />} />
-                <Route path="facebook-api-logs" element={<ExperimentFacebookApiLogsPage />} />
-                <Route path="pipeline-jobs" element={<ExperimentPipelineJobsPage />} />
-                <Route path="geralanding/stage-executions/:jobId" element={<ExperimentGeraLandingExecutionDetailPage />} />
-                <Route path="geralanding/stage-executions/:jobId/provisional-html" element={<ExperimentGeraLandingProvisionalHtmlPage />} />
-                <Route path="adset-workflow/jobs/:jobId" element={<ExperimentAdSetJobDetailPage />} />
-                <Route path="framework-images" element={<ExperimentFrameworkImageDetailsPage />} />
+                <Route
+                  path="instant-forms/:instantFormId"
+                  element={<InstantFormDetailPage />}
+                />
+                <Route
+                  path="emails/:emailStepId"
+                  element={<ExperimentEmailDetailPage />}
+                />
+                <Route
+                  path="adset-workflow"
+                  element={<ExperimentAdSetWorkflowPage />}
+                />
+                <Route
+                  path="facebook-api-logs"
+                  element={<ExperimentFacebookApiLogsPage />}
+                />
+                <Route
+                  path="pipeline-jobs"
+                  element={<ExperimentPipelineJobsPage />}
+                />
+                <Route
+                  path="geralanding/stage-executions/:jobId"
+                  element={<ExperimentGeraLandingExecutionDetailPage />}
+                />
+                <Route
+                  path="geralanding/stage-executions/:jobId/provisional-html"
+                  element={<ExperimentGeraLandingProvisionalHtmlPage />}
+                />
+                <Route
+                  path="adset-workflow/jobs/:jobId"
+                  element={<ExperimentAdSetJobDetailPage />}
+                />
+                <Route
+                  path="framework-images"
+                  element={<ExperimentFrameworkImageDetailsPage />}
+                />
               </Route>
               <Route path="/hypotheses" element={<HypothesisListPage />} />
               <Route path="/hypotheses/board" element={<HypothesesPage />} />
@@ -244,7 +269,10 @@ export default function App() {
                 element={<EditAiServicePage />}
               />
               <Route path="/openai-models" element={<OpenAiModelListPage />} />
-              <Route path="/openai-models/new" element={<NewOpenAiModelPage />} />
+              <Route
+                path="/openai-models/new"
+                element={<NewOpenAiModelPage />}
+              />
               <Route
                 path="/openai-models/:id/edit"
                 element={<EditOpenAiModelPage />}
@@ -253,10 +281,7 @@ export default function App() {
               <Route path="/agents/new" element={<NewAgentPage />} />
               <Route path="/agents/:id/edit" element={<EditAgentPage />} />
               <Route path="/agent-themes" element={<AgentThemePage />} />
-              <Route
-                path="/microservices"
-                element={<MicroserviceListPage />}
-              />
+              <Route path="/microservices" element={<MicroserviceListPage />} />
               <Route
                 path="/microservices/errors"
                 element={<MicroserviceExceptionListPage />}
@@ -308,22 +333,55 @@ export default function App() {
                 element={<OprmCnaePipelineStageDetailPage />}
               />
               <Route path="/mois" element={<MoisWorkspacePage />} />
-              <Route path="/mois/references/new" element={<MoisReferenceIntakePage />} />
-              <Route path="/mois/research-sources" element={<MoisResearchSourcesPage />} />
-              <Route path="/mois/auto-collection" element={<MoisAutoCollectionPage />} />
-              <Route path="/mois/automatic-collections" element={<MoisAutomaticCollectionsPage />} />
-              <Route path="/mois/automatic-collections/:jobId" element={<MoisCollectionJobDetailPage />} />
+              <Route
+                path="/mois/references/new"
+                element={<MoisReferenceIntakePage />}
+              />
+              <Route
+                path="/mois/research-sources"
+                element={<MoisResearchSourcesPage />}
+              />
+              <Route
+                path="/mois/auto-collection"
+                element={<MoisAutoCollectionPage />}
+              />
+              <Route
+                path="/mois/automatic-collections"
+                element={<MoisAutomaticCollectionsPage />}
+              />
+              <Route
+                path="/mois/automatic-collections/:jobId"
+                element={<MoisCollectionJobDetailPage />}
+              />
               <Route path="/mois/extraction" element={<MoisExtractionPage />} />
               <Route path="/mois/library" element={<MoisLibraryPage />} />
-              <Route path="/mois/sales-pages-library" element={<MoisSalesPagesLibraryPage />} />
-              <Route path="/mois/sales-pages-library/pipeline" element={<MoisSalesPagesPipelinePage />} />
-              <Route path="/mois/sales-pages-library/:pageId" element={<MoisSalesPageLibraryDetailPage />} />
+              <Route
+                path="/mois/sales-pages-library"
+                element={<MoisSalesPagesLibraryPage />}
+              />
+              <Route
+                path="/mois/sales-pages-library/pipeline"
+                element={<MoisSalesPagesPipelinePage />}
+              />
+              <Route
+                path="/mois/sales-pages-library/:pageId"
+                element={<MoisSalesPageLibraryDetailPage />}
+              />
               <Route path="/mois/comparison" element={<MoisComparisonPage />} />
               <Route path="/mois/builder" element={<MoisOfferBuilderPage />} />
               <Route path="/mds" element={<MdsWorkspacePage />} />
-              <Route path="/mds/requests/:requestId" element={<MdsRequestDetailPage />} />
-              <Route path="/mds/requests/:requestId/artifacts" element={<MdsArtifactsPage />} />
-              <Route path="/mds/reports/:requestId" element={<MdsReportPage />} />
+              <Route
+                path="/mds/requests/:requestId"
+                element={<MdsRequestDetailPage />}
+              />
+              <Route
+                path="/mds/requests/:requestId/artifacts"
+                element={<MdsArtifactsPage />}
+              />
+              <Route
+                path="/mds/reports/:requestId"
+                element={<MdsReportPage />}
+              />
               <Route path="/hotmart" element={<HotmartPage />} />
               <Route path="/clickbase" element={<ClickbasePage />} />
               <Route
@@ -342,16 +400,31 @@ export default function App() {
                 path="/oprm/feedback/:occupationSeedRef"
                 element={<OprmFeedbackPage />}
               />
+              <Route path="/oprm/operations" element={<OprmOperationsPage />} />
               <Route
-                path="/oprm/operations"
-                element={<OprmOperationsPage />}
+                path="/oprm/pipeline"
+                element={<Navigate to="/oprm" replace />}
               />
-              <Route path="/oprm/pipeline" element={<OprmPipelinePage />} />
-              <Route path="/oprm/general-audiences" element={<OprmGeneralAudiencesPage />} />
-              <Route path="/oprm/general-audiences/seeds/:seedId" element={<OprmGeneralAudienceSeedDetailPage />} />
-              <Route path="/oprm/general-audiences/subniches/:subnicheId" element={<OprmGeneralAudienceSubnicheDetailPage />} />
-              <Route path="/oprm/enriched-niches/profile/:profileId" element={<OprmEnrichedNicheDetailPage />} />
-              <Route path="/oprm/pipeline/niche-research-seed-builder/:researchCycleId" element={<OprmNicheResearchSeedBuilderDetailPage />} />
+              <Route
+                path="/oprm/general-audiences"
+                element={<OprmGeneralAudiencesPage />}
+              />
+              <Route
+                path="/oprm/general-audiences/seeds/:seedId"
+                element={<OprmGeneralAudienceSeedDetailPage />}
+              />
+              <Route
+                path="/oprm/general-audiences/subniches/:subnicheId"
+                element={<OprmGeneralAudienceSubnicheDetailPage />}
+              />
+              <Route
+                path="/oprm/enriched-niches/profile/:profileId"
+                element={<OprmEnrichedNicheDetailPage />}
+              />
+              <Route
+                path="/oprm/pipeline/niche-research-seed-builder/:researchCycleId"
+                element={<Navigate to="/oprm" replace />}
+              />
               <Route
                 path="/oprm/occupations"
                 element={<OprmOccupationCatalogPage />}
@@ -370,10 +443,7 @@ export default function App() {
               <Route path="/analytics" element={<AnalyticsDashboard />} />
               <Route path="/funnels" element={<FunnelListPage />} />
               <Route path="/funnels/new" element={<NewFunnelPage />} />
-              <Route
-                path="/funnels/:id/edit"
-                element={<EditFunnelPage />}
-              />
+              <Route path="/funnels/:id/edit" element={<EditFunnelPage />} />
               <Route
                 path="/lead-portal/metrics"
                 element={<LeadPortalExperimentMetricsPage />}
@@ -407,9 +477,18 @@ export default function App() {
               <Route path="/chat-dialogs" element={<ChatDialogListPage />} />
               <Route path="/chat-dialogs/new" element={<NewChatDialogPage />} />
               <Route path="/prompt-entities" element={<PromptEntitiesPage />} />
-              <Route path="/prompt-domains" element={<PromptDomainListPage />} />
-              <Route path="/prompt-domains/new" element={<NewPromptDomainPage />} />
-              <Route path="/prompt-domains/:id/edit" element={<EditPromptDomainPage />} />
+              <Route
+                path="/prompt-domains"
+                element={<PromptDomainListPage />}
+              />
+              <Route
+                path="/prompt-domains/new"
+                element={<NewPromptDomainPage />}
+              />
+              <Route
+                path="/prompt-domains/:id/edit"
+                element={<EditPromptDomainPage />}
+              />
               <Route
                 path="/prompt-entities/new"
                 element={<NewPromptEntityPage />}

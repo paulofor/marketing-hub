@@ -6,7 +6,6 @@ interface OprmModuleNavigationProps {
 
 const navigationItems = [
   { label: "CNAEs", to: "/oprm", end: true },
-  { label: "Pipeline", to: "/oprm/pipeline" },
   { label: "Públicos Gerais", to: "/oprm/general-audiences" },
 ];
 

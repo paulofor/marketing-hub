@@ -14,9 +14,19 @@ Antes de implementar uma correção em tema com histórico de loop:
 
 1. Identificar se o problema pertence a algum `LOOP-*` deste documento.
 2. Se pertencer, corrigir a causa-raiz sistêmica, não apenas o sintoma atual.
-3. Atualizar ou criar teste de contrato que prove que o loop foi fechado.
-4. Atualizar cânone, Swagger, tela ou Worker AI quando o contrato entre módulos mudar.
-5. Registrar no documento de tema correspondente o que foi feito e, quando necessário, atualizar este arquivo.
+3. Verificar o bloco **O que resolveu efetivamente no histórico** para não voltar a uma solução já superada.
+4. Atualizar ou criar teste de contrato que prove que o loop foi fechado.
+5. Atualizar cânone, Swagger, tela ou Worker AI quando o contrato entre módulos mudar.
+6. Registrar no documento de tema correspondente o que foi feito e, quando necessário, atualizar este arquivo.
+
+## Como ler este documento
+
+Cada loop possui dois tipos de informação:
+
+- **Correção efetiva**: aquilo que, no histórico real do projeto, reduziu ou encerrou o ciclo de retrabalho.
+- **Prevenção futura**: regra mínima para evitar que o mesmo tipo de loop volte com outro nome, outro endpoint ou outra etapa.
+
+Quando houver divergência entre tentativa antiga e correção efetiva, a correção efetiva prevalece.
 
 ## Classificação
 
@@ -27,19 +37,19 @@ Antes de implementar uma correção em tema com histórico de loop:
 
 ## Índice dos loops identificados
 
-| Loop | Severidade | Status inicial | Tema |
-| --- | --- | --- | --- |
-| `LOOP-FB-PUBLICATION` | CRÍTICO | Aberto/recorrente | Publicação Facebook Ads |
-| `LOOP-GL-PUBLICATION-LEADPORTAL` | CRÍTICO | Estabilizado com risco | GeraLanding → Lead Portal |
-| `LOOP-OPENAI-SCHEMA-CONTRACT` | ALTO | Recorrente | Prompts, schemas e Structured Outputs |
-| `LOOP-GL-ARCHITECTURE-STAGES` | ALTO | Parcialmente estabilizado | Arquitetura por etapas |
-| `LOOP-GL-AUTOMATION-CHAIN` | ALTO | Recorrente | Encadeamento automático de etapas |
-| `LOOP-QUALITY-REVIEW-VISION` | ALTO | Parcialmente estabilizado | Quality Review visual |
-| `LOOP-LANDING-ANALYTICS-FUNNEL` | CRÍTICO | Recorrente | Analytics, funil e submissão |
-| `LOOP-PIPELINE-ADMIN-CONTRACT` | MÉDIO | Estabilizado com risco | Tela `/pipelines` e contrato persistente |
-| `LOOP-HYPOTHESIS-PIPELINE` | ALTO | Em formação | Pipeline Dor → Resultado → Mecanismo → Prova → Oferta |
-| `LOOP-ARTIFACT-CONTAMINATION` | ALTO | Estabilizado com risco | Metadado técnico em artefato final |
-| `LOOP-COST-MODEL-AUDIT` | MÉDIO | Em observação | Custos OpenAI e modelo por etapa |
+| Loop | Severidade | Status inicial | Tema | Correção efetiva principal |
+| --- | --- | --- | --- | --- |
+| `LOOP-FB-PUBLICATION` | CRÍTICO | Aberto/recorrente | Publicação Facebook Ads | contrato enxuto + protocolo `jobid` + validação com payload final |
+| `LOOP-GL-PUBLICATION-LEADPORTAL` | CRÍTICO | Estabilizado com risco | GeraLanding → Lead Portal | separação `html_geralanding` puro vs `landing_page_html` publicável |
+| `LOOP-OPENAI-SCHEMA-CONTRACT` | ALTO | Recorrente | Prompts, schemas e Structured Outputs | prompt + schema + parser + consumer test por etapa |
+| `LOOP-GL-ARCHITECTURE-STAGES` | ALTO | Parcialmente estabilizado | Arquitetura por etapas | padrão por etapa backend e `openai.core.<etapa>` no Worker AI |
+| `LOOP-GL-AUTOMATION-CHAIN` | ALTO | Recorrente | Encadeamento automático de etapas | orquestração no backend após callback de sucesso |
+| `LOOP-QUALITY-REVIEW-VISION` | ALTO | Parcialmente estabilizado | Quality Review visual | screenshot renderizado mobile-first + auditoria por hash |
+| `LOOP-LANDING-ANALYTICS-FUNNEL` | CRÍTICO | Recorrente | Analytics, funil e submissão | contrato Lead Portal → backend → evento bruto + evento normalizado + UI |
+| `LOOP-PIPELINE-ADMIN-CONTRACT` | MÉDIO | Estabilizado com risco | Tela `/pipelines` e contrato persistente | registry oficial + sincronizador + definição/configuração separadas |
+| `LOOP-HYPOTHESIS-PIPELINE` | ALTO | Em formação | Pipeline Dor → Resultado → Mecanismo → Prova → Oferta | etapas completas + pré-requisitos + finalização separada + lease |
+| `LOOP-ARTIFACT-CONTAMINATION` | ALTO | Estabilizado com risco | Metadado técnico em artefato final | separação auditoria vs artefato publicável + whitelist de DTO final |
+| `LOOP-COST-MODEL-AUDIT` | MÉDIO | Em observação | Custos OpenAI e modelo por etapa | preço vindo do catálogo backend + modelo efetivo auditado por etapa |
 
 ---
 
@@ -60,6 +70,19 @@ Antes de implementar uma correção em tema com histórico de loop:
   - validações prévias não usavam exatamente o mesmo payload final que seria enviado para a Meta;
   - fluxo de retry não limpava completamente estados anteriores;
   - rastreabilidade por job só foi introduzida depois de vários erros.
+- **O que resolveu efetivamente no histórico**:
+  - tornar o `POST /api/facebook-campaigns` idempotente para o mesmo `campaignId` e bloquear nova campanha para o mesmo `experimentId`, evitando duplicidade de campanhas;
+  - retirar da fila experimentos que já possuem campanha persistida, para o worker não recolocar o mesmo experimento em publicação;
+  - criar endpoint enxuto `GET /api/facebook-adsets/experiments/{experimentId}/targeting-package`, evitando carregar `ExperimentDto` completo com HTML/copy/landing e removendo falso erro por buffer/payload grande;
+  - quando `experimentId` é informado, resolver targeting mesmo se o experimento estiver `FAILED`, permitindo retry operacional sem depender do status de fila;
+  - exigir pelo menos um público aprovado com `metaId` oficial e bloquear publicação ampla acidental;
+  - fazer upload de imagem por bytes para `/adimages` e usar `image_hash`, removendo dependência da Meta baixar URL externa;
+  - usar no `reachestimate` o mesmo targeting final do ad set, incluindo `geo_locations.countries=["BR"]`;
+  - tratar ausência de limites em `reachestimate` como alerta operacional, não falha automática, e bloquear somente erro explícito ou alcance fora da faixa canônica;
+  - registrar passos da publicação com `publicationJobId`/protocolo `jobid`, incluindo payload enviado, resposta recebida, endpoint, status e erro;
+  - usar destino standalone vindo de `followUpActionUrl` no worker;
+  - alinhar orçamento real por Ad Set, reportando `budgetMode=ADSET`;
+  - enviar `is_adset_budget_sharing_enabled=false` em campanhas sem orçamento no nível da campanha.
 - **Módulos envolvidos**:
   - `backend/ads-service`;
   - `facebook-ads-worker`;
@@ -99,6 +122,15 @@ Antes de implementar uma correção em tema com histórico de loop:
   - confusão entre HTML fonte, HTML provisório, HTML puro, HTML publicável e HTML salvo no Lead Portal;
   - coexistência de endpoints legados e novos;
   - injeção de pixel, tracking, analytics e submissão em momentos diferentes do fluxo.
+- **O que resolveu efetivamente no histórico**:
+  - marcar endpoints legados de aprovação/publicação como obsoletos e forçar uso do endpoint canônico do GeraLanding;
+  - alterar o frontend para chamar `POST /api/experiments/{id}/geralanding/landing/approve-and-publish`;
+  - simplificar o payload para o Lead Portal usando somente `slug`, `name`, `description` e `customFormHtml`, removendo `legacyPreviewHtml` e `renderMode`;
+  - retirar a validação/normalização restritiva de `CustomFormHtmlResolver` no Lead Portal quando ela bloqueava HTML publicável válido;
+  - separar definitivamente `html_geralanding` como HTML/CSS puro e `landing_page_html` como HTML publicável enriquecido com scripts, pixel, analytics e submissão;
+  - habilitar a aprovação pela fonte de verdade do backend, sem depender exclusivamente da prévia local do frontend;
+  - injetar submissão canônica idempotente quando o HTML tem controles mínimos de captura, evitando landing publicada sem envio de formulário;
+  - criar endpoint de compatibilidade no Lead Portal para receber submissão pública e encaminhar ao backend principal.
 - **Campos sensíveis**:
   - `html_geralanding`: HTML/CSS puro gerado pelo GeraLanding;
   - `landing_page_html`: HTML publicável, enriquecido com scripts/pixel/tracking/submissão;
@@ -125,6 +157,16 @@ Antes de implementar uma correção em tema com histórico de loop:
   - totalizadores zerados apesar de artefato salvo.
 - **Causa-raiz sistêmica provável**:
   - prompt, schema, parser backend, Worker AI e frontend não evoluíam como um único contrato versionado.
+- **O que resolveu efetivamente no histórico**:
+  - normalizar respostas com Markdown code fence antes do parse;
+  - extrair o primeiro objeto JSON balanceado em vez de usar substring ingênua do primeiro `{` ao último `}`;
+  - tratar JSON escapado e payload duplicado/concatenado nos consumidores;
+  - alinhar o caminho esperado pelo backend, por exemplo `landingPageImagePlanning.images[]` quando o resumo de imagens contava `images` e não `imagePlan`;
+  - remover palavras-chave incompatíveis com Structured Outputs estrito, como `allOf`, condicionais e `uniqueItems`, quando a Responses API rejeitou o schema;
+  - exigir `additionalProperties: false` nos objetos usados em schemas estritos;
+  - mover prompts relevantes para o local versionado correto no `ai-worker/src/main/resources/prompts/...`;
+  - criar validações pós-resposta para impedir estilos/classes inexistentes em `definicoes`;
+  - atualizar extratores backend e Worker AI para reconhecer JSON direto, aninhado, serializado em texto e encapsulado em Markdown quando a UI já conseguia detectar o conteúdo.
 - **Etapas mais afetadas**:
   - `landing-page-wireframe`;
   - `landing-page-copy`;
@@ -155,6 +197,15 @@ Antes de implementar uma correção em tema com histórico de loop:
   - regra ArchUnit precisa ser ajustada repetidamente.
 - **Causa-raiz sistêmica provável**:
   - o padrão por etapa foi descoberto durante a implementação, não aplicado como template fechado desde o início.
+- **O que resolveu efetivamente no histórico**:
+  - padronizar backend por etapa com `Backend<Etapa>Controller`, `Backend<Etapa>Service` e records em subpacotes por operação;
+  - expor endpoints internos específicos por etapa: `pending`, `recebe-prompt` e `recebe-resposta`;
+  - remover controllers genéricos/transversais quando eles mantinham acoplamento entre etapas;
+  - mover provisórios e assemblers para o pacote da própria etapa, como `presetdesign.provisorio`;
+  - ajustar o frontend para consumir endpoints segmentados por etapa, inclusive detalhe com `stageCode`/segmento correto;
+  - migrar etapas do Worker AI para `com.marketinghub.worker.openai.core.<etapa>`, reduzindo dependência do pacote legado `worker.geralanding`;
+  - desativar/remover implementações legadas quando a etapa passou a operar pelo core OpenAI;
+  - usar ArchUnit para proteger dependências por etapa/camada, mas ajustar regras somente quando a arquitetura efetiva já estava clara.
 - **Template mínimo por etapa backend**:
   - `Backend<Etapa>Controller`;
   - `Backend<Etapa>Service`;
@@ -188,6 +239,14 @@ Antes de implementar uma correção em tema com histórico de loop:
   - reexecução mantém artefatos antigos incompatíveis.
 - **Causa-raiz sistêmica provável**:
   - automação era tratada como comportamento local da etapa, não como contrato de estado do pipeline.
+- **O que resolveu efetivamente no histórico**:
+  - colocar o encadeamento automático no backend, no callback de conclusão bem-sucedida da etapa anterior;
+  - registrar `promptTemplateId` com origem automática, como `auto/wireframe`, `auto/copy`, `auto/image-planning` e `auto/image-generation`;
+  - criar testes explícitos garantindo que sucesso cria a próxima execução e falha não cria;
+  - separar a automação do GeraLanding da automação de criativos de anúncio;
+  - bloquear geração automática de imagem de anúncio ao concluir `AD_IMAGE_BRIEFING` quando o usuário está em outro fluxo;
+  - limpar imagens/jobs/manifesto ao reexecutar `Gera Prompt Imagem`, evitando que imagens antigas contaminem a próxima execução;
+  - ocultar ou desabilitar ações de geração em experimento já enviado/publicado, preservando apenas histórico e consulta.
 - **Encadeamentos sensíveis**:
   - Wireframe → Copy;
   - Copy → Prompt Imagem;
@@ -216,6 +275,15 @@ Antes de implementar uma correção em tema com histórico de loop:
   - prompt textual fica longo demais e compete com a evidência visual.
 - **Causa-raiz sistêmica provável**:
   - a evidência visual canônica não estava fechada desde o começo.
+- **O que resolveu efetivamente no histórico**:
+  - abandonar avaliação por imagens soltas extraídas do HTML e passar a renderizar o HTML em browser/headless;
+  - enviar screenshots renderizados para o modelo de visão, com mobile como evidência prioritária;
+  - aceitar desktop como complementar, sem impedir a revisão quando o mobile obrigatório já foi capturado;
+  - aumentar timeout de screenshot e voltar ao full-page quando recortes prejudicavam a evidência;
+  - usar modelo de visão dedicado e configuração própria de `imageDetail`;
+  - reduzir o prompt textual quando os screenshots já representam a evidência principal;
+  - calcular e persistir hashes de HTML, prompt/request e screenshots para detectar reuso de evidência e contradição entre avaliações;
+  - exibir na tela de detalhe os screenshots e dados de auditoria enviados ao modelo.
 - **Contrato recomendado**:
   - fonte única: `html_geralanding`;
   - renderização em browser/headless;
@@ -245,6 +313,17 @@ Antes de implementar uma correção em tema com histórico de loop:
   - `visitorId`, `sessionId`, device e OS entram em momentos diferentes do contrato.
 - **Causa-raiz sistêmica provável**:
   - produção, persistência, normalização e consumo de eventos evoluíram separadamente.
+- **O que resolveu efetivamente no histórico**:
+  - injetar script de analytics no Lead Portal para a landing standalone realmente chamar o backend;
+  - substituir instrumentação legada quando a landing já publicada tinha script antigo sem debug;
+  - criar rota local de compatibilidade no Lead Portal para submissão pública e encaminhamento ao backend principal;
+  - contar `landing-page-analytics` no resumo do funil, em vez de considerar apenas fontes legadas;
+  - somar submissões públicas vindas de `experiment_funnel_event` na etapa `ENVIO_FORM`, com deduplicação por `submissionId`;
+  - criar tabela normalizada `experiment_landing_analytics_event` vinculada ao evento bruto, preservando auditoria e permitindo recorrência por `visitorId`;
+  - deduplicar `page_view` por `visitorId`, `sessionId`, `eventType` e `pageUrl` em janela curta;
+  - no reset, apagar primeiro eventos normalizados e depois eventos brutos, evitando violação de FK;
+  - invalidar também a query da aba Analytics no frontend após zerar contagens;
+  - enviar `deviceType`, sistema operacional e tamanho de tela pelo script público para apoiar decisão de layout/mobile.
 - **Contratos sensíveis**:
   - `experiment_funnel_event`;
   - `experiment_landing_analytics_event`;
@@ -275,6 +354,17 @@ Antes de implementar uma correção em tema com histórico de loop:
   - modelo OpenAI configurado não aparece na etapa operacional.
 - **Causa-raiz sistêmica provável**:
   - CRUD livre foi usado para dados que são contrato oficial de execução.
+- **O que resolveu efetivamente no histórico**:
+  - criar registry oficial de pipelines/etapas no backend;
+  - expor diagnóstico de contrato na tela, mostrando divergências entre banco e cânone;
+  - bloquear exclusão e alteração estrutural de pipeline oficial;
+  - criar sincronizador seguro para etapas oficiais ausentes e correções estruturais não destrutivas;
+  - criar rebuild controlado com confirmação para remover etapas operacionais divergentes e recriar somente as canônicas;
+  - separar definição persistente (`pipeline_definition`, `pipeline_stage_definition`) de configuração operacional (`pipeline_stage_config`);
+  - preservar modelo OpenAI, descrição e status operacional durante sincronização quando houver mapeamento seguro;
+  - remover criação manual de pipeline/etapa no frontend;
+  - ajustar changelogs de posição usando faixa temporária para evitar conflito de unique key no MySQL 5.7;
+  - expor metadados de implementação e modelos por etapa para a tela de experimento/GeraLanding.
 - **Fechamento mínimo do loop**:
   - tela só edita configuração operacional;
   - definição oficial vem do registry/cânone/sincronizador;
@@ -298,6 +388,17 @@ Antes de implementar uma correção em tema com histórico de loop:
   - custo e relatório auditável entram depois da execução.
 - **Causa-raiz sistêmica provável**:
   - o pipeline foi crescendo etapa por etapa, sem matriz inicial completa do fluxo Dor → Resultado → Mecanismo → Prova → Oferta → Fechamento.
+- **O que resolveu efetivamente no histórico**:
+  - completar a sequência com a etapa Prova entre Mecanismo e Oferta;
+  - bloquear Oferta sem Prova concluída tanto na criação manual quanto na fila de pendentes;
+  - criar Worker AI específico para cada etapa que existia no backend;
+  - revalidar pré-requisitos no pending e na marcação de processamento, não apenas na tela;
+  - extrair o fechamento da hipótese para `HypothesisPipelineFinalizationService`, fora da etapa Dor;
+  - converter coluna insuficiente para armazenar resposta completa, como `success_rule` para `LONGTEXT`;
+  - criar lease operacional para jobs presos em `PROCESSANDO` ou `AGUARDANDO_RETORNO_OPENAI`;
+  - persistir `raw_response`, prompt, request cru e custo por etapa para relatório auditável;
+  - adicionar fluxo completo automático com retry controlado, mantendo a orquestração no backend;
+  - passar contexto enriquecido do nicho-cnae para todas as etapas sem criar oferta prematura fora da etapa Oferta.
 - **Fechamento mínimo do loop**:
   - cada etapa declarar pré-requisito, próximo passo, campo final, prompt, schema, worker, endpoint e relatório;
   - Oferta exige Prova concluída tanto no start quanto no pending;
@@ -319,6 +420,14 @@ Antes de implementar uma correção em tema com histórico de loop:
   - Quality Review aponta metadado visível ou aparência provisória.
 - **Causa-raiz sistêmica provável**:
   - metadados de execução foram misturados com artefatos publicáveis.
+- **O que resolveu efetivamente no histórico**:
+  - remover comentários técnicos `<!-- AUTO: ... -->` dos HTMLs provisórios/finais;
+  - impedir título técnico como `Wireframe provisório` no HTML final;
+  - separar `html_geralanding` como artefato puro de geração e `landing_page_html` como versão publicável instrumentada;
+  - formalizar no AGENTS a proibição de contaminar artefato final com metadado técnico;
+  - usar whitelist de campos do DTO final antes de enviar payload publicável;
+  - tratar auditoria, jobId, prompt, schema, request, resposta e hashes como dados de execução, não como conteúdo do cliente;
+  - fazer o Quality Review apontar metadado técnico visível como problema bloqueante.
 - **Campos/artefatos sensíveis**:
   - HTML final;
   - `html_geralanding`;
@@ -347,6 +456,15 @@ Antes de implementar uma correção em tema com histórico de loop:
   - modelo configurado em `/pipelines` não chega à execução.
 - **Causa-raiz sistêmica provável**:
   - seleção de modelo, modo de preço, catálogo de preço e cálculo de custo ficavam em fontes diferentes.
+- **O que resolveu efetivamente no histórico**:
+  - remover tabela hardcoded de preços do Worker AI;
+  - fazer o Worker AI consultar o catálogo do backend em vez de acessar banco diretamente;
+  - calcular custo pelo modelo efetivo do request e pelos preços cadastrados em `openai_model`;
+  - persistir e exibir `inputTokens`, `outputTokens` e `costUsd` por execução;
+  - expor `GET /api/pipelines/geralanding/stage-models` com modelo, preço flex, tipo de artefato e fallback aplicado;
+  - mostrar na aba GeraLanding o modelo configurado, custos flex por 1M tokens e custo acumulado;
+  - montar request auditável com `service_tier=flex` desde a origem nas etapas em que isso era necessário;
+  - no pipeline de hipótese, recalcular custo no backend com base nos tokens/modelo/preços persistidos, sem confiar cegamente no `costUsd` enviado pelo worker.
 - **Fechamento mínimo do loop**:
   - modelo por etapa vindo do pipeline/catálogo;
   - fallback default explícito por tipo de artefato;
@@ -365,6 +483,8 @@ Use este checklist quando o problema estiver em algum loop acima:
 ```md
 - O problema reabre qual LOOP-*?
 - Qual contrato está divergindo?
+- Qual correção efetiva já resolveu esse tipo de loop antes?
+- Estou repetindo uma solução antiga que já foi superada?
 - Qual módulo é dono da correção?
 - O frontend, backend, worker, Swagger e cânone estão alinhados?
 - Existe teste que reproduz a falha atual?
@@ -372,15 +492,7 @@ Use este checklist quando o problema estiver em algum loop acima:
 - O registro operacional foi atualizado no documento do tema?
 ```
 
-## Sugestão de melhoria para `AGENTS.md`
-
-Adicionar nas convenções de engenharia, logo após “Revisão obrigatória após correção de problema”:
-
-```md
-- **Consulta obrigatória de loops conhecidos**: antes de corrigir problema recorrente ou investigar falha em GeraLanding, Facebook Ads, Lead Portal, OpenAI/schema, pipelines administrativos ou pipeline de hipótese, consultar `docs/registros/loops.md`. Se o problema corresponder a um `LOOP-*`, a correção deve fechar a causa-raiz sistêmica, atualizar o teste de contrato que previne recorrência e registrar no documento de tema correspondente.
-```
-
-## Registro inicial
+## Registros deste documento
 
 ## 2026-06-17 00:01:07 UTC-3
 - solicitação: criar um arquivo de registro de loops operacionais a partir da análise de `docs/registros/experimentos.md` e revisar o `AGENTS.md` para melhoria preventiva.
@@ -389,3 +501,12 @@ Adicionar nas convenções de engenharia, logo após “Revisão obrigatória ap
 - documentos lidos para pesquisar e resolver o problema:
   - AGENTS.md
   - docs/registros/experimentos.md
+
+## 2026-06-17 00:12:41 UTC-3
+- solicitação: melhorar este arquivo identificando, para cada loop, o que resolveu efetivamente o problema no histórico real do projeto.
+- causa-raiz observada: a primeira versão registrava sintomas, causas e prevenção, mas ainda não destacava claramente quais correções concretas estabilizaram cada ciclo.
+- registro do que foi feito: adicionado o bloco **O que resolveu efetivamente no histórico** em cada `LOOP-*`, diferenciando correção efetiva de prevenção futura.
+- documentos lidos para pesquisar e resolver o problema:
+  - AGENTS.md
+  - docs/registros/experimentos.md
+  - docs/registros/loops.md

@@ -47,7 +47,7 @@ describe("ExperimentListPage", () => {
         hypothesisId: `hypothesis-${id}`,
         name: `Experimento ${id}`,
         hypothesis: `Hipótese ${id}`,
-        unitPrice: id,
+        cost: id,
         startDate: `2026-06-${String(id).padStart(2, "0")}`,
         endDate: null,
         creativeApproved: false,
@@ -96,7 +96,7 @@ describe("ExperimentListPage", () => {
     ).toBeTruthy();
     expect(screen.getByRole("columnheader", { name: "Nicho" })).toBeTruthy();
     expect(screen.getByRole("columnheader", { name: "Hipótese" })).toBeTruthy();
-    expect(screen.getByRole("columnheader", { name: "Valor" })).toBeTruthy();
+    expect(screen.getByRole("columnheader", { name: "Custo" })).toBeTruthy();
     expect(screen.getByRole("columnheader", { name: "Status" })).toBeTruthy();
     expect(
       screen.getByRole("columnheader", { name: "Botões/Ações" }),
@@ -125,7 +125,7 @@ describe("ExperimentListPage", () => {
       within(row as HTMLTableRowElement).getByText("Nicho Principal"),
     ).toBeTruthy();
     expect(
-      within(row as HTMLTableRowElement).getByText("R$ 1,00"),
+      within(row as HTMLTableRowElement).getByText("R$ 351,00"),
     ).toBeTruthy();
   });
 });

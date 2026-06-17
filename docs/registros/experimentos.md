@@ -4724,3 +4724,8 @@
 
 - Ajustada a tela de solicitações recentes de targeting para mostrar o motivo da decisão operacional diretamente no card do candidato, usando a verdade já exposta pelo backend (`rationale` ou `rejection_reason`) e evitando que o operador interprete score/status sem causa-raiz visível.
 - O ajuste reduz ambiguidade entre candidato ranqueado, candidato pendente, candidato validado e candidato bloqueado, deixando a próxima ação mais clara para operação de campanhas.
+
+## 2026-06-17 — Coluna de custo total do nicho em Testes de Nicho
+
+- Ajustada a lista de Testes de Nicho para substituir a coluna **Valor** por **Custo**.
+- A coluna agora mostra o custo total acumulado do nicho, calculado a partir dos custos dos experimentos retornados pelo backend, mantendo a tela orientada ao controle financeiro do nicho.

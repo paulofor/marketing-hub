@@ -261,7 +261,7 @@ export default function ExperimentListPage() {
               <th>Data de criação</th>
               <th>Nicho</th>
               <th>Hipótese</th>
-              <th>Valor</th>
+              <th>Custo</th>
               <th>Status</th>
               <th>Botões/Ações</th>
             </tr>
@@ -281,7 +281,7 @@ export default function ExperimentListPage() {
                   </td>
                   <td>{e.hypothesis || "—"}</td>
                   <td>
-                    {formatCurrency(e.unitPrice ?? resolveExperimentCost(e))}
+                    {formatCurrency(nicheTotalCostMap[e.nicheId] ?? 0)}
                   </td>
                   <td>{e.status}</td>
                   <td>

@@ -21,6 +21,8 @@ subpacote de `com.marketinghub.repository.jpa` deve falhar com mensagem prefixad
 Todo controller interno de backend criado para uma etapa operacional deve ficar no pacote direto
 `web`, seguir o padrão de nome `Backend<Etapa>Controller`, ser a única classe desse pacote, declarar
 `@RestController`, declarar `@RequestMapping("/api")` e possuir um método público chamado `pending`.
+Toda etapa operacional precisa expor um endpoint interno `pending` próprio, mesmo quando a etapa for
+determinística, para que o backend publique a fila canônica da etapa em um contrato uniforme e auditável.
 
 O pacote direto `service` da etapa deve conter uma classe canônica `Backend<Etapa>Service` anotada
 com `@Service`. Quando a etapa acessar modelos de IA, o pacote `service` deve possuir os subpacotes
@@ -42,7 +44,8 @@ Esse método representa o contrato mínimo da fila interna da etapa para o Worke
 - retornar apenas jobs com status `INICIADO`, salvo decisão canônica explícita em contrário;
 - retornar diretamente uma lista tipada no padrão `List<Record<Etapa>Pending>`;
 - usar um record de resposta nomeado no padrão `Record<Etapa>Pending`, onde `<Etapa>` é o mesmo sufixo do controller `Backend<Etapa>Controller`;
-- manter endpoint interno no formato `/api/internal/<dominio>/<etapa>/stage-executions/pending` quando o domínio usar processamento assíncrono por worker.
+- manter endpoint interno obrigatório no formato `/api/internal/<dominio>/<etapa>/stage-executions/pending`, ou variação canônica documentada do domínio, para toda etapa operacional processada fora do fluxo síncrono de tela;
+- documentar explicitamente quando uma etapa for 100% síncrona e não possuir consumidor assíncrono, mantendo ainda o método `pending` no controller canônico quando houver controller interno por etapa.
 
 A regra genérica obrigatória é:
 
@@ -51,6 +54,15 @@ Backend<Etapa>Controller.pending -> List<Record<Etapa>Pending>
 ```
 
 Exemplo: `BackendWireframeController.pending` deve retornar `List<RecordWireframePending>`.
+
+No GeraLanding, o `pending` é a referência prática do protocolo padrão backend: cada etapa possui um
+endpoint interno próprio, como `GET /api/internal/geralanding/wireframe/stage-executions/pending`, que
+lista jobs da etapa específica em status apto a processamento, normalmente `INICIADO`, ordenados para
+execução pelo Worker AI. O retorno não é uma tela de detalhe reduzida: é uma unidade de trabalho fechada,
+com `jobid`, dados do experimento, hipótese e artefatos anteriores necessários para montar prompt,
+executar a etapa e devolver callbacks sem buscar complemento em outro endpoint. Por isso, ao aplicar o
+protocolo padrão backend em qualquer módulo, a existência do endpoint `pending` por etapa deve ser tratada
+como parte da arquitetura obrigatória, e não como conveniência do worker.
 
 
 ## Backend — pacote Facebook Ads

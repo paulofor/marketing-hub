@@ -1694,3 +1694,7 @@ Arquivos principais:
 - Verificado via MCP que a Etapa 2 de análise comercial estava sendo disparada pelo `mois-sales-library-worker`, mas a conclusão falhava no backend ao gravar o resultado em `mois_sales_page_job_execution`.
 - Causa-raiz: o SQL de conclusão da análise usa `parser_version` e `prompt_version`, porém a tabela consolidada de histórico ainda não possuía essas colunas no schema real.
 - Correção preparada: novo changelog incremental adiciona `parser_version` e `prompt_version` em `mois_sales_page_job_execution`, com teste de contrato para impedir recorrência entre SQL do backend e Liquibase.
+## 2026-06-17 — Fuso horário São Paulo no pipeline de sales pages
+
+- Ajustada a tela `/mois/sales-pages-library/pipeline` para exibir o horário da última captura no fuso `America/Sao_Paulo`, evitando leitura operacional em UTC ou no fuso local do navegador.
+- Mantido o dado vindo do backend como fonte de verdade; o frontend apenas formata a data para o fuso usado pela operação no Brasil.

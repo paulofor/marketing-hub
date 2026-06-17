@@ -863,7 +863,7 @@ export default function OprmCnaeDetailPlaceholderPage() {
                           {niche.enrichedNicheProfileId}
                         </span>
                       </td>
-                      <td>{niche.qualityStatus}</td>
+                      <td>{statusLabel(niche.qualityStatus)}</td>
                       <td>#{niche.researchCycleId}</td>
                       <td>
                         Rotina {niche.routineEvidenceScore} · Dor{" "}

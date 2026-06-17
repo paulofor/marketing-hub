@@ -202,6 +202,69 @@ describe("OprmCnaeDetailPlaceholderPage", () => {
     expect(screen.queryByText("Em execução")).toBeNull();
   });
 
+
+  it("traduz a coluna qualidade dos subnichos gerados para portugues", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = input.toString();
+
+        if (url.includes("routine-research-cycle/stage-executions")) {
+          return new Response(JSON.stringify([]), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+
+        if (url.includes("enriched-niches")) {
+          return new Response(
+            JSON.stringify([
+              {
+                enrichedNicheProfileId: 60,
+                marketNicheId: 21,
+                researchCycleId: 60,
+                cnaeCode: "9602501",
+                cnaeDescription: "Cabeleireiros, manicure e pedicure",
+                nicheName: "Manicure autônoma com agenda recorrente",
+                qualityStatus: "MEI_AUDIENCE_READY",
+                routineEvidenceScore: 84,
+                difficultyEvidenceScore: 82,
+                sourceDiversityScore: 100,
+                materializedAt: "2026-06-15T17:39:00Z",
+              },
+              {
+                enrichedNicheProfileId: 11,
+                marketNicheId: 18,
+                researchCycleId: 11,
+                cnaeCode: "9602501",
+                cnaeDescription: "Cabeleireiros, manicure e pedicure",
+                nicheName: "Cabeleireiros, manicure e pedicure",
+                qualityStatus: "LIGHTLY_RESEARCHED",
+                routineEvidenceScore: 82,
+                difficultyEvidenceScore: 84,
+                sourceDiversityScore: 100,
+                materializedAt: "2026-06-09T00:40:00Z",
+              },
+            ]),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+          );
+        }
+
+        return new Response("{}", {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }),
+    );
+
+    renderPage();
+
+    expect(await screen.findByText("Público MEI/autônomo pronto")).toBeTruthy();
+    expect(screen.getByText("Pesquisa inicial concluída")).toBeTruthy();
+    expect(screen.queryByText("MEI_AUDIENCE_READY")).toBeNull();
+    expect(screen.queryByText("LIGHTLY_RESEARCHED")).toBeNull();
+  });
+
   it("informa quando o ciclo atual foi reprocessado automaticamente com aprendizado", async () => {
     vi.stubGlobal(
       "fetch",

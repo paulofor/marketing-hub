@@ -46,7 +46,7 @@ Esse método representa o contrato mínimo da fila interna da etapa para o Worke
 - retornar apenas jobs com status `INICIADO`, salvo decisão canônica explícita em contrário;
 - retornar diretamente uma lista tipada no padrão `List<Record<Etapa>Pending>`;
 - usar um record de resposta nomeado no padrão `Record<Etapa>Pending`, onde `<Etapa>` é o mesmo sufixo do controller `Backend<Etapa>Controller`;
-- manter endpoint interno obrigatório no formato `/api/internal/<dominio>/<etapa>/stage-executions/pending`, ou variação canônica documentada do domínio, para toda etapa operacional processada fora do fluxo síncrono de tela;
+- manter endpoint interno obrigatório no formato `/api/internal/<dominio>/<etapa>/stage-executions/pending`, ou variação canônica documentada do domínio, para toda etapa operacional processada fora do fluxo síncrono de tela; esse endpoint é o ponto inicial canônico de consumo da fila pelo executor;
 - documentar explicitamente quando uma etapa for 100% síncrona e não possuir consumidor assíncrono, mantendo ainda o método `pending` no controller canônico quando houver controller interno por etapa.
 
 A regra genérica obrigatória é:
@@ -108,8 +108,9 @@ etapa wireframe:
 3. a cada ciclo, o scheduler deve delegar o processamento ao `StageWorker`, que orquestra busca,
    montagem de prompt, chamada OpenAI, validação e callbacks;
 4. a busca de pendências deve ficar em um adapter da própria etapa que implemente `StageBackendPort`
-   e consulte exclusivamente o endpoint interno `pending` da própria etapa no backend, respeitando o
-   isolamento por módulo/etapa;
+   e consulte exclusivamente o endpoint interno `pending` da própria etapa no backend, no formato
+   `/api/internal/<dominio>/<etapa>/stage-executions/pending` ou variação canônica documentada,
+   respeitando o isolamento por módulo/etapa;
 5. o endpoint `pending` deve retornar somente itens realmente aptos ao processamento da etapa,
    preferencialmente com status `INICIADO`;
 6. o Worker AI pode aplicar um limite operacional de leitura/processamento, mas esse limite não pode

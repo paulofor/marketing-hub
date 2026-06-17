@@ -59,6 +59,7 @@ O Marketing Hub é uma fábrica automatizada de produtos digitais: descobre dore
 - **URL do BACKEND (Codex)** : para acessos executados pelo Codex, usar preferencialmente `http://191.252.181.168` (porta 80); o backend também responde nessa porta.
 - **Modelo único**: entidades residem no backend. Os demais módulos acessam o banco de dados pelo backend.
 - **Fluxo entre containers**: nada de chamadas diretas entre serviços (frontend, workers, lead-portal etc). Todo tráfego passa pelo backend principal; apenas o backend fala com o banco.
+- **Controle de avanço de pipeline (obrigatório)**: em qualquer pipeline, a decisão e o controle de passar uma execução de uma etapa para outra devem ser feitos exclusivamente no backend. Frontend e módulos de apoio (AI Worker, Facebook Ads Worker, coletores, workers e demais executores) podem executar etapas, consultar filas e reportar resultado/status ao backend, mas nunca devem orquestrar, decidir ou disparar diretamente a próxima etapa do pipeline.
 - **Escopo de controllers por módulo**: cada módulo só pode acessar os controllers do próprio módulo (ex.: MOIS usa apenas controllers do pacote MOIS; OPRM usa apenas controllers do pacote OPRM; e assim sucessivamente). É proibido um módulo consumir controllers de outro módulo diretamente.
 - **Novos endpoints**: verifique se o contrato já existe; caso contrário, defina-o no backend, atualize a documentação e adicione testes.
 - **Manual do usuário**: todos os links devem usar `target="_blank"`.

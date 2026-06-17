@@ -4683,3 +4683,8 @@
 
 - Ajustada a aba Público do experimento para destacar os elementos que já possuem alcance quantificado pela Meta.
 - A tela agora mostra os valores de alcance disponíveis ao lado de cada público e em um resumo específico, ajudando a escolher públicos com evidência objetiva antes da publicação.
+
+## 2026-06-17 — Job ID no diagnóstico de falha de publicação
+
+- Ajustado o diagnóstico de falha do experimento para exibir o `jobId` do passo de publicação que originou o erro.
+- Objetivo operacional: permitir consultar diretamente a tabela `facebook_campaign_publication_job_step` e acelerar a investigação da causa-raiz no fluxo de publicação Facebook Ads.

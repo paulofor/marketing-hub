@@ -142,6 +142,7 @@ class ExperimentDiagnosticsServiceTest {
         FacebookCampaignPublicationJobStep step = new FacebookCampaignPublicationJobStep();
         step.setErrorMessage("Público pequeno demais para publicar: a Meta estimou 1.000 a 1.000 pessoas.");
         step.setProvider("FACEBOOK_WORKER");
+        step.setJobId("fbpub-39-20260617005448");
         step.setStepName("CAMPAIGN_REACH_VALIDATION_BLOCKED");
         step.setOccurredAt(Instant.parse("2026-06-17T00:54:48Z"));
 
@@ -155,6 +156,7 @@ class ExperimentDiagnosticsServiceTest {
         assertThat(diagnostics.failureDetails()).isNotNull();
         assertThat(diagnostics.failureDetails().message()).contains("Público pequeno demais");
         assertThat(diagnostics.failureDetails().source()).isEqualTo("FACEBOOK_WORKER");
+        assertThat(diagnostics.failureDetails().jobId()).isEqualTo("fbpub-39-20260617005448");
         assertThat(diagnostics.failureDetails().occurredAt()).isEqualTo(Instant.parse("2026-06-17T00:54:48Z"));
     }
 

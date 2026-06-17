@@ -651,6 +651,11 @@ export default function OprmCnaeDetailPlaceholderPage() {
   const [showPipeline, setShowPipeline] = useState(
     Boolean(selectedResearchCycleId),
   );
+  useEffect(() => {
+    if (selectedResearchCycleId) {
+      setShowPipeline(true);
+    }
+  }, [selectedResearchCycleId]);
   const [pendingCyclesPage, setPendingCyclesPage] = useState(1);
   const volumeQuery = useOprmCnaeVolume(decodedCnaeCode);
   const scoreQuery = useOprmCnaeScore(decodedCnaeCode);

@@ -5,7 +5,7 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import OprmCnaeDetailPlaceholderPage from "./OprmCnaeDetailPlaceholderPage";
 
-function renderPage() {
+function renderPage(initialEntry = "/oprm/cnaes/9602501") {
   const client = new QueryClient({
     defaultOptions: {
       queries: {
@@ -16,10 +16,14 @@ function renderPage() {
 
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={["/oprm/cnaes/9602501"]}>
+      <MemoryRouter initialEntries={[initialEntry]}>
         <Routes>
           <Route
             path="/oprm/cnaes/:cnaeCode"
+            element={<OprmCnaeDetailPlaceholderPage />}
+          />
+          <Route
+            path="/oprm/cnaes/:cnaeCode/subnichos/:researchCycleId"
             element={<OprmCnaeDetailPlaceholderPage />}
           />
         </Routes>
@@ -365,6 +369,80 @@ describe("OprmCnaeDetailPlaceholderPage", () => {
       screen.getByText("Ainda não virou subnicho materializado"),
     ).toBeTruthy();
     expect(screen.getByText("#62")).toBeTruthy();
+  });
+
+  it("abre os cards do pipeline ao acessar um subnicho pelo botao acompanhar", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = input.toString();
+
+        if (url.includes("routine-research-cycle/stage-executions")) {
+          return new Response(
+            JSON.stringify([
+              {
+                researchCycleId: 60,
+                sourceNicheId: 18,
+                cnaeCode: "9602501",
+                nicheName: "Manicure autônoma com agenda recorrente",
+                neutralNicheName: "Manicure autônoma com agenda recorrente",
+                triggerSource: "MANUAL_CNAE_DETAIL",
+                status: "ENRICHED_NICHE_CREATED",
+                totalQueries: 12,
+                totalSourceCandidates: 20,
+                totalSourceSnapshots: 4,
+                totalExtractedSignals: 30,
+                executionCostUsd: 0.0227,
+                cnaeTotalCostUsd: 0.0377,
+                startedAt: "2026-06-15T17:03:00Z",
+                finishedAt: "2026-06-15T17:39:00Z",
+                errorMessage: null,
+              },
+            ]),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+          );
+        }
+
+        if (url.includes("enriched-niches")) {
+          return new Response(
+            JSON.stringify([
+              {
+                enrichedNicheProfileId: 60,
+                marketNicheId: 21,
+                researchCycleId: 60,
+                cnaeCode: "9602501",
+                cnaeDescription: "Cabeleireiros, manicure e pedicure",
+                nicheName: "Manicure autônoma com agenda recorrente",
+                qualityStatus: "MEI_AUDIENCE_READY",
+                routineEvidenceScore: 84,
+                difficultyEvidenceScore: 82,
+                sourceDiversityScore: 100,
+                materializedAt: "2026-06-15T17:39:00Z",
+              },
+            ]),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+          );
+        }
+
+        return new Response("{}", {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }),
+    );
+
+    renderPage("/oprm/cnaes/9602501/subnichos/60");
+
+    expect(
+      await screen.findByText("Execução do pipeline NichoCNAE"),
+    ).toBeTruthy();
+    expect(
+      await screen.findByText((_, element) =>
+        Boolean(element?.textContent?.trim() === "Ciclo selecionado: #60"),
+      ),
+    ).toBeTruthy();
+    expect(screen.getByText("1. Ciclo")).toBeTruthy();
+    expect(screen.getByText("9. Materialização")).toBeTruthy();
   });
 
   it("traduz a coluna qualidade dos subnichos gerados para portugues", async () => {

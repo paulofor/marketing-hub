@@ -1,5 +1,5 @@
 import { Activity, Globe2, Sparkles } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   useOprmCnaeScore,
@@ -635,6 +635,11 @@ export default function OprmCnaeDetailPlaceholderPage() {
   const [showPipeline, setShowPipeline] = useState(
     Boolean(selectedResearchCycleId),
   );
+  useEffect(() => {
+    if (selectedResearchCycleId) {
+      setShowPipeline(true);
+    }
+  }, [selectedResearchCycleId]);
   const volumeQuery = useOprmCnaeVolume(decodedCnaeCode);
   const scoreQuery = useOprmCnaeScore(decodedCnaeCode);
   const cyclesQuery = useOprmCnaePipelineCycles(decodedCnaeCode);

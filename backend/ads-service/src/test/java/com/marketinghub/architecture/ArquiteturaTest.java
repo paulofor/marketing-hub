@@ -62,7 +62,12 @@ class ArquiteturaTest {
             "com.marketinghub.repository.jpa.niche.MarketNicheRepository",
             "com.marketinghub.repository.jpa.niche.MarketNicheEnrichmentProfileRepository");
     private static final Pattern SALES_LIBRARY_LAYER_PATTERN = Pattern.compile(
-            "^com\\.marketinghub\\.mois\\.bibliotecapaginavenda\\.([a-zA-Z0-9_]+)\\.(v\\d+)\\.(web|service|repository)(?:\\..*)?$");
+            "^com\\.marketinghub\\.mois\\.bibliotecapaginavenda\\.([a-zA-Z0-9_]+)\\.(v\\d+)\\.(web|service|dto|repository)(?:\\..*)?$");
+    private static final String MOIS_SALES_LIBRARY_WEB_PACKAGE = MOIS_SALES_LIBRARY_PACKAGE + ".web";
+    private static final String MOIS_SALES_LIBRARY_SERVICE_PACKAGE = MOIS_SALES_LIBRARY_PACKAGE + ".service";
+    private static final String MOIS_SALES_LIBRARY_DTO_PACKAGE = MOIS_SALES_LIBRARY_PACKAGE + ".dto";
+    private static final String MOIS_SALES_LIBRARY_REPOSITORY_PACKAGE =
+            "com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1";
     private static final Pattern BACKEND_STAGE_WEB_PACKAGE_PATTERN =
             Pattern.compile("^com\\.marketinghub\\.geralanding\\.[a-zA-Z0-9_]+\\.web$");
     private static final Pattern BACKEND_STAGE_SERVICE_PACKAGE_PATTERN =
@@ -751,6 +756,101 @@ class ArquiteturaTest {
     static final ArchRule moisSalesLibraryServiceShouldOnlyDependOnRepositoryLayer =
             classes().that(classesBelongingToLayer("service")).should(onlyDependOnLayer("repository"));
 
+
+
+
+    /**
+     * Garante que a Biblioteca de Páginas de Vendas do MOIS tenha controller único e canônico.
+     */
+    @ArchTest
+    static void moisSalesLibraryPackageMustHaveSingleCanonicalController(JavaClasses importedClasses) {
+        List<String> violations = new ArrayList<>();
+        List<JavaClass> webPackageClasses = directPackageClasses(importedClasses, MOIS_SALES_LIBRARY_WEB_PACKAGE);
+        List<JavaClass> controllers = webPackageClasses.stream()
+                .filter(javaClass -> javaClass.getSimpleName().equals("MoisSalesLibraryController"))
+                .toList();
+        if (webPackageClasses.size() != 1) {
+            violations.add("[ARQUITETURA] [BACKEND][MOIS][BibliotecaPaginaVenda] pacote="
+                    + MOIS_SALES_LIBRARY_WEB_PACKAGE
+                    + " deve conter apenas MoisSalesLibraryController; classes=" + simpleNames(webPackageClasses));
+        }
+        if (controllers.size() != 1) {
+            violations.add("[ARQUITETURA] [BACKEND][MOIS][BibliotecaPaginaVenda] pacote="
+                    + MOIS_SALES_LIBRARY_WEB_PACKAGE
+                    + " deve conter exatamente uma classe MoisSalesLibraryController; controllers="
+                    + simpleNames(controllers));
+        } else {
+            JavaClass controller = controllers.get(0);
+            if (!controller.isAnnotatedWith(RestController.class)) {
+                violations.add("[ARQUITETURA] [BACKEND][MOIS][BibliotecaPaginaVenda] classe="
+                        + controller.getName() + " deve possuir @RestController");
+            }
+            if (!hasRequestMapping(controller, "/api/mois/sales-library")) {
+                violations.add("[ARQUITETURA] [BACKEND][MOIS][BibliotecaPaginaVenda] classe="
+                        + controller.getName()
+                        + " deve possuir @RequestMapping(\"/api/mois/sales-library\")");
+            }
+        }
+        failWithArchitectureViolations(violations);
+    }
+
+    /**
+     * Garante que a Biblioteca de Páginas de Vendas do MOIS possua a fachada de service canônica.
+     */
+    @ArchTest
+    static void moisSalesLibraryPackageMustHaveCanonicalServiceFacade(JavaClasses importedClasses) {
+        List<String> violations = new ArrayList<>();
+        List<JavaClass> servicePackageClasses = directPackageClasses(importedClasses, MOIS_SALES_LIBRARY_SERVICE_PACKAGE);
+        List<JavaClass> facades = servicePackageClasses.stream()
+                .filter(javaClass -> javaClass.getSimpleName().equals("MoisSalesLibraryService"))
+                .toList();
+        if (facades.size() != 1) {
+            violations.add("[ARQUITETURA] [BACKEND][MOIS][BibliotecaPaginaVenda] pacote="
+                    + MOIS_SALES_LIBRARY_SERVICE_PACKAGE
+                    + " deve conter exatamente uma fachada MoisSalesLibraryService; facades="
+                    + simpleNames(facades));
+        } else if (!facades.get(0).isAnnotatedWith(Service.class)) {
+            violations.add("[ARQUITETURA] [BACKEND][MOIS][BibliotecaPaginaVenda] classe="
+                    + facades.get(0).getName()
+                    + " deve possuir @Service para marcar a fachada canônica do módulo");
+        }
+        failWithArchitectureViolations(violations);
+    }
+
+    /**
+     * Garante que os contratos da Biblioteca de Páginas de Vendas permaneçam imutáveis.
+     */
+    @ArchTest
+    static void moisSalesLibraryDtosMustBeRecords(JavaClasses importedClasses) {
+        List<String> violations = new ArrayList<>();
+        directPackageClasses(importedClasses, MOIS_SALES_LIBRARY_DTO_PACKAGE).stream()
+                .filter(javaClass -> !javaClass.getSimpleName().equals("MoisSalesLibraryDtos"))
+                .filter(javaClass -> !javaClass.reflect().isRecord())
+                .forEach(javaClass -> violations.add("[ARQUITETURA] [BACKEND][MOIS][BibliotecaPaginaVenda] classe="
+                        + javaClass.getName()
+                        + " deve ser declarada como record quando representar contrato HTTP"));
+        failWithArchitectureViolations(violations);
+    }
+
+    /**
+     * Garante que repositories da Biblioteca de Páginas de Vendas fiquem no pacote canônico externo.
+     */
+    @ArchTest
+    static void moisSalesLibraryRepositoriesMustStayInCanonicalRepositoryPackage(JavaClasses importedClasses) {
+        List<String> violations = new ArrayList<>();
+        List<JavaClass> repositoryClasses = directPackageClasses(importedClasses, MOIS_SALES_LIBRARY_REPOSITORY_PACKAGE);
+        if (repositoryClasses.isEmpty()) {
+            violations.add("[ARQUITETURA] [BACKEND][MOIS][BibliotecaPaginaVenda] pacote="
+                    + MOIS_SALES_LIBRARY_REPOSITORY_PACKAGE
+                    + " deve conter os gateways/repositories canônicos do módulo");
+        }
+        repositoryClasses.stream()
+                .filter(javaClass -> !javaClass.isInterface())
+                .forEach(javaClass -> violations.add("[ARQUITETURA] [BACKEND][MOIS][BibliotecaPaginaVenda] classe="
+                        + javaClass.getName() + " deve permanecer como contrato/interface de persistência no pacote "
+                        + MOIS_SALES_LIBRARY_REPOSITORY_PACKAGE));
+        failWithArchitectureViolations(violations);
+    }
 
 
     @ArchTest

@@ -1664,3 +1664,9 @@ Arquivos principais:
 - Corrigida a causa-raiz de produtos capturados aparecerem com dossiê pendente antes de terem análise comercial concluída.
 - O backend passa a recusar a criação de job de dossiê quando a página ainda não está em `DONE`/`ANALYZED`, e o worker deixa de reservar jobs pendentes que ainda não estejam elegíveis.
 - A tela de detalhe bloqueia o botão de iniciar dossiê até a análise comercial terminar, e a listagem informa “Dossiê: Aguardando análise” para evitar uma decisão operacional incorreta.
+
+## 2026-06-17 — Ajuste arquitetural dos repositories da Biblioteca de Sales Pages
+
+- Corrigida a causa-raiz da falha de arquitetura em `moisSalesLibraryRepositoriesMustStayInCanonicalRepositoryPackage`: implementações JDBC concretas estavam no pacote canônico reservado a contratos/interfaces de persistência.
+- Movidas as implementações JDBC para subpacote de implementação, mantendo no pacote canônico apenas os gateways/interfaces esperados pela regra arquitetural.
+- Atualizado o teste unitário do repository de pricing para apontar para a nova localização da implementação sem alterar o contrato consumido pelos services.

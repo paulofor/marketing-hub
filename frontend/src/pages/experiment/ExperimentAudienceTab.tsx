@@ -35,6 +35,32 @@ function isMetaUsable(element: TargetingElement) {
   return Boolean(element.metaId?.trim());
 }
 
+function formatAudienceSize(value: number) {
+  return new Intl.NumberFormat("pt-BR").format(value);
+}
+
+function formatMetaAudienceRange(element: TargetingElement) {
+  const lower = element.metaAudienceSizeLowerBound;
+  const upper = element.metaAudienceSizeUpperBound;
+
+  if (typeof lower === "number" && typeof upper === "number") {
+    if (lower === upper) {
+      return `${formatAudienceSize(lower)} pessoas`;
+    }
+    return `${formatAudienceSize(lower)} a ${formatAudienceSize(upper)} pessoas`;
+  }
+
+  if (typeof lower === "number") {
+    return `a partir de ${formatAudienceSize(lower)} pessoas`;
+  }
+
+  if (typeof upper === "number") {
+    return `até ${formatAudienceSize(upper)} pessoas`;
+  }
+
+  return null;
+}
+
 export function ExperimentAudienceTab({
   experimentId,
   nicheId,
@@ -75,6 +101,11 @@ export function ExperimentAudienceTab({
     });
     setSelected(next);
   }, [savedSelections, availableOptions]);
+
+  const quantifiedMetaOptions = useMemo(
+    () => availableOptions.filter((item) => formatMetaAudienceRange(item)),
+    [availableOptions],
+  );
 
   const grouped = useMemo(() => {
     return {
@@ -155,6 +186,23 @@ export function ExperimentAudienceTab({
               salvar o público.
             </div>
           ) : null}
+          {quantifiedMetaOptions.length > 0 ? (
+            <div className="alert alert-success mt-3 mb-0 small" role="status">
+              <div className="fw-semibold mb-2">
+                Públicos com alcance quantificado pela Meta
+              </div>
+              <div className="d-flex flex-wrap gap-2">
+                {quantifiedMetaOptions.map((item) => (
+                  <span
+                    className="badge text-bg-light border"
+                    key={buildKey(item)}
+                  >
+                    {item.term}: {formatMetaAudienceRange(item)}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ) : null}
         </div>
 
         {isLoading ? (
@@ -203,6 +251,11 @@ export function ExperimentAudienceTab({
                             {metaUsable && item.metaKey ? (
                               <span className="text-muted small ms-2">
                                 {item.metaKey}
+                              </span>
+                            ) : null}
+                            {formatMetaAudienceRange(item) ? (
+                              <span className="badge text-bg-light border ms-2">
+                                Meta: {formatMetaAudienceRange(item)}
                               </span>
                             ) : null}
                           </label>

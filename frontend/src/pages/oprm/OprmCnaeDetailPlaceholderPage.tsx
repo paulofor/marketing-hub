@@ -6,6 +6,7 @@ import {
   useOprmCnaeVolume,
 } from "../../api/oprm/useOprmCnaeDetail";
 import {
+  downloadOprmCnaeCycleReport,
   type OprmRoutineResearchCycleSummary,
   useOprmCnaePipelineCycles,
   useStartOprmCnaePipeline,
@@ -657,6 +658,12 @@ export default function OprmCnaeDetailPlaceholderPage() {
     }
   }, [selectedResearchCycleId]);
   const [pendingCyclesPage, setPendingCyclesPage] = useState(1);
+  const [reportDownloadCycleId, setReportDownloadCycleId] = useState<
+    number | null
+  >(null);
+  const [reportDownloadError, setReportDownloadError] = useState<string | null>(
+    null,
+  );
   const volumeQuery = useOprmCnaeVolume(decodedCnaeCode);
   const scoreQuery = useOprmCnaeScore(decodedCnaeCode);
   const cyclesQuery = useOprmCnaePipelineCycles(decodedCnaeCode);
@@ -667,7 +674,9 @@ export default function OprmCnaeDetailPlaceholderPage() {
     cyclesQuery.data,
     generatedNichesQuery.data,
   );
-  const pendingCyclesTotalCost = sumCycleCosts(pendingCyclesBeforeEnrichedNiche);
+  const pendingCyclesTotalCost = sumCycleCosts(
+    pendingCyclesBeforeEnrichedNiche,
+  );
   const pendingCyclesTotalPages = Math.max(
     1,
     Math.ceil(
@@ -716,6 +725,22 @@ export default function OprmCnaeDetailPlaceholderPage() {
   const identifiedSubnicheName = latestCycle
     ? (latestCycle.neutralNicheName ?? latestCycle.nicheName)?.trim()
     : "";
+  const handleDownloadReport = async (cycleId: number) => {
+    setReportDownloadCycleId(cycleId);
+    setReportDownloadError(null);
+    try {
+      await downloadOprmCnaeCycleReport(cycleId);
+    } catch (error) {
+      setReportDownloadError(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível baixar o relatório da execução.",
+      );
+    } finally {
+      setReportDownloadCycleId(null);
+    }
+  };
+
   const cnaeDescription =
     volumeQuery.data?.cnaeDescription ??
     scoreQuery.data?.cnaeDescription ??
@@ -783,6 +808,11 @@ export default function OprmCnaeDetailPlaceholderPage() {
           {startPipelineMutation.isError ? (
             <div className="alert alert-warning mb-0" role="alert">
               {startPipelineMutation.error.message}
+            </div>
+          ) : null}
+          {reportDownloadError ? (
+            <div className="alert alert-warning mb-0" role="alert">
+              {reportDownloadError}
             </div>
           ) : null}
         </div>
@@ -943,12 +973,36 @@ export default function OprmCnaeDetailPlaceholderPage() {
                       </td>
                       <td>{formatDateTime(niche.materializedAt)}</td>
                       <td className="text-end">
-                        <Link
-                          className="btn btn-outline-primary btn-sm"
-                          to={`/oprm/cnaes/${encodeURIComponent(decodedCnaeCode)}/subnichos/${niche.researchCycleId}`}
-                        >
-                          Acompanhar
-                        </Link>
+                        <div className="d-inline-flex flex-wrap gap-2 justify-content-end">
+                          <button
+                            type="button"
+                            className="btn btn-outline-secondary btn-sm"
+                            disabled={
+                              reportDownloadCycleId === niche.researchCycleId
+                            }
+                            onClick={() =>
+                              void handleDownloadReport(niche.researchCycleId)
+                            }
+                          >
+                            {reportDownloadCycleId === niche.researchCycleId ? (
+                              <>
+                                <span
+                                  className="spinner-border spinner-border-sm me-1"
+                                  aria-hidden="true"
+                                />
+                                Relatório
+                              </>
+                            ) : (
+                              "Relatório"
+                            )}
+                          </button>
+                          <Link
+                            className="btn btn-outline-primary btn-sm"
+                            to={`/oprm/cnaes/${encodeURIComponent(decodedCnaeCode)}/subnichos/${niche.researchCycleId}`}
+                          >
+                            Acompanhar
+                          </Link>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -1031,12 +1085,37 @@ export default function OprmCnaeDetailPlaceholderPage() {
                         <td>{formatUsd(cycle.executionCostUsd)}</td>
                         <td>{formatDateTime(cycle.startedAt)}</td>
                         <td className="text-end">
-                          <Link
-                            className="btn btn-outline-primary btn-sm"
-                            to={`/oprm/cnaes/${encodeURIComponent(decodedCnaeCode)}/subnichos/${cycle.researchCycleId}`}
-                          >
-                            Acompanhar
-                          </Link>
+                          <div className="d-inline-flex flex-wrap gap-2 justify-content-end">
+                            <button
+                              type="button"
+                              className="btn btn-outline-secondary btn-sm"
+                              disabled={
+                                reportDownloadCycleId === cycle.researchCycleId
+                              }
+                              onClick={() =>
+                                void handleDownloadReport(cycle.researchCycleId)
+                              }
+                            >
+                              {reportDownloadCycleId ===
+                              cycle.researchCycleId ? (
+                                <>
+                                  <span
+                                    className="spinner-border spinner-border-sm me-1"
+                                    aria-hidden="true"
+                                  />
+                                  Relatório
+                                </>
+                              ) : (
+                                "Relatório"
+                              )}
+                            </button>
+                            <Link
+                              className="btn btn-outline-primary btn-sm"
+                              to={`/oprm/cnaes/${encodeURIComponent(decodedCnaeCode)}/subnichos/${cycle.researchCycleId}`}
+                            >
+                              Acompanhar
+                            </Link>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -1047,7 +1126,8 @@ export default function OprmCnaeDetailPlaceholderPage() {
             {!cyclesQuery.isLoading &&
             !generatedNichesQuery.isLoading &&
             !cyclesQuery.isError &&
-            pendingCyclesBeforeEnrichedNiche.length > PENDING_CYCLES_PAGE_SIZE ? (
+            pendingCyclesBeforeEnrichedNiche.length >
+              PENDING_CYCLES_PAGE_SIZE ? (
               <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3">
                 <span className="small text-secondary">
                   Página {pendingCyclesPage} de {pendingCyclesTotalPages} · 10

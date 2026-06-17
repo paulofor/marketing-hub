@@ -4,7 +4,11 @@ import com.marketinghub.oprm.nichocnae.routineresearchcycle.service.BackendRouti
 import com.marketinghub.oprm.nichocnae.routineresearchcycle.service.detailStageExecution.RecordBackendRoutineResearchCycleDetalheDto;
 import com.marketinghub.oprm.nichocnae.routineresearchcycle.service.listStageExecutions.RoutineResearchCycleExecutionSummaryResponse;
 import com.marketinghub.oprm.nichocnae.routineresearchcycle.service.pending.RecordRoutineResearchCyclePending;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -47,5 +51,18 @@ public class BackendRoutineResearchCycleController {
   public ResponseEntity<RecordBackendRoutineResearchCycleDetalheDto> detailStageExecution(
       @PathVariable Long researchCycleId) {
     return ResponseEntity.ok(executionService.detailStageExecution(researchCycleId));
+  }
+
+  /** Baixa um relatório Markdown com a auditoria completa da execução informada. */
+  @GetMapping(
+      value = "/oprm/nichocnae/routine-research-cycle/stage-executions/{researchCycleId}/report",
+      produces = "text/markdown")
+  public ResponseEntity<String> downloadMarkdownReport(@PathVariable Long researchCycleId) {
+    String filename = "nicho-cnae" + researchCycleId + ".md";
+    HttpHeaders headers = new HttpHeaders();
+    headers.setContentDisposition(
+        ContentDisposition.attachment().filename(filename, StandardCharsets.UTF_8).build());
+    headers.setContentType(MediaType.parseMediaType("text/markdown; charset=UTF-8"));
+    return ResponseEntity.ok().headers(headers).body(executionService.buildMarkdownReport(researchCycleId));
   }
 }

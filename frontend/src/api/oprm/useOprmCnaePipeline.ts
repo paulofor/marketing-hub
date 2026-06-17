@@ -77,6 +77,28 @@ async function startCnaePipeline(
   return (await response.json()) as OprmRoutineResearchStartResult;
 }
 
+export async function downloadOprmCnaeCycleReport(researchCycleId: number) {
+  const response = await fetch(
+    buildApiUrl(
+      `/api/oprm/nichocnae/routine-research-cycle/stage-executions/${researchCycleId}/report`,
+    ),
+  );
+  if (!response.ok) {
+    throw new Error(
+      `Não foi possível baixar o relatório da execução (status ${response.status}).`,
+    );
+  }
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `nicho-cnae${researchCycleId}.md`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
 export function useOprmCnaePipelineCycles(cnaeCode: string) {
   return useQuery({
     queryKey: ["oprm", "nichocnae", cnaeCode, "routine-cycles"],

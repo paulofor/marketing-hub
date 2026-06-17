@@ -392,14 +392,16 @@ public class FacebookCampaignService {
                 resolvedTargeting = resolveApprovedManualTargeting(exp.id());
             }
             validateReachBeforeCampaignCreation(
+                exp.publicationJobId(),
                 exp.id(),
                 config.adAccountId(),
                 resolvedTargeting.targetingJson(),
                 FacebookAdsService.BRAZIL_COUNTRY_CODE
             );
-            creativePayloads = preloadCreativeImagesForExperiment(exp.id(), config.adAccountId(), creativePayloads);
+            creativePayloads = preloadCreativeImagesForExperiment(exp.publicationJobId(), exp.id(), config.adAccountId(), creativePayloads);
             try {
                 campaignId = executeFacebookCallWithLogging(
+                    exp.publicationJobId(),
                     exp.id(),
                     ExperimentFacebookApiLogContext.CAMPAIGN_CREATION,
                     () -> facebookAdsService.createCampaign(
@@ -426,6 +428,7 @@ public class FacebookCampaignService {
                 resolvedTargeting.options()
             );
             adSetId = executeFacebookCallWithLogging(
+                exp.publicationJobId(),
                 exp.id(),
                 ExperimentFacebookApiLogContext.CAMPAIGN_AD_SET,
                 () -> facebookAdsService.createAdSet(config.adAccountId(), adSetRequest)
@@ -459,6 +462,7 @@ public class FacebookCampaignService {
                     creativeId
                 );
                 String createdAdId = executeFacebookCallWithLogging(
+                    exp.publicationJobId(),
                     exp.id(),
                     ExperimentFacebookApiLogContext.CAMPAIGN_AD,
                     () -> facebookAdsService.createAd(config.adAccountId(), adRequest)
@@ -872,13 +876,15 @@ public class FacebookCampaignService {
     /**
      * Valida o alcance do público na Meta antes de criar qualquer campanha do experimento.
      */
-    private void validateReachBeforeCampaignCreation(long experimentId,
+    private void validateReachBeforeCampaignCreation(String publicationJobId,
+                                                     long experimentId,
                                                      String adAccountId,
                                                      String targetingJson,
                                                      String targetCountry) {
         ObjectNode targetingSpec = parseTargetingSpecForReachValidation(experimentId, targetingJson);
         ensureGeoLocationForReachValidation(targetingSpec, targetCountry);
         JsonNode response = executeFacebookCallWithLogging(
+            publicationJobId,
             experimentId,
             ExperimentFacebookApiLogContext.CAMPAIGN_REACH_VALIDATION,
             () -> facebookAdsService.estimateReach(new FacebookAdsService.ReachEstimateRequest(adAccountId, targetingSpec))
@@ -1023,6 +1029,7 @@ public class FacebookCampaignService {
         @JsonAlias("nextStepInstantForm")
         boolean nextStepInstantForm,
         String followUpActionUrl,
+        String publicationJobId,
         LeadPortalFlow leadPortalFlow
     ) {
         public FacebookPage associatedPage() {
@@ -1226,17 +1233,25 @@ public class FacebookCampaignService {
         }
     }
 
-    private <T> T executeFacebookCallWithLogging(Long experimentId,
+    private <T> T executeFacebookCallWithLogging(String publicationJobId,
+                                                 Long experimentId,
                                                  ExperimentFacebookApiLogContext context,
                                                  Supplier<T> action) {
         facebookAdsService.clearLastApiCallDebugInfo();
         try {
             return action.get();
         } finally {
+            FacebookAdsService.FacebookApiCallDebugInfo debugInfo = facebookAdsService.consumeLastApiCallDebugInfo();
             experimentFacebookApiLogClient.logCall(
                 experimentId,
                 context,
-                facebookAdsService.consumeLastApiCallDebugInfo()
+                debugInfo
+            );
+            experimentFacebookApiLogClient.logPublicationJobStep(
+                publicationJobId,
+                experimentId,
+                context.name(),
+                debugInfo
             );
         }
     }
@@ -1390,7 +1405,7 @@ public class FacebookCampaignService {
         );
 
         try {
-            String creativeId = createAdCreativeWithImageDownloadRetry(adAccountId, experiment.id(), primaryRequest);
+            String creativeId = createAdCreativeWithImageDownloadRetry(adAccountId, experiment.publicationJobId(), experiment.id(), primaryRequest);
             return new AdCreativeCreation(creativeId, primaryRequest);
         } catch (FacebookPermissionException ex) {
             if (!StringUtils.hasText(instagramActorId) || !isInstagramPermissionError(ex)) {
@@ -1419,7 +1434,7 @@ public class FacebookCampaignService {
                 description
             );
 
-            String creativeId = createAdCreativeWithImageDownloadRetry(adAccountId, experiment.id(), fallbackRequest);
+            String creativeId = createAdCreativeWithImageDownloadRetry(adAccountId, experiment.publicationJobId(), experiment.id(), fallbackRequest);
             LOGGER.info(
                 "Created Facebook ad creative without Instagram user ID after permission error: experimentId={}, creativeId={}",
                 experiment.id(),
@@ -1433,6 +1448,7 @@ public class FacebookCampaignService {
      * Resolves every creative image to a Meta image_hash before campaign publication.
      */
     private List<CreativePublicationPayload> preloadCreativeImagesForExperiment(
+        String publicationJobId,
         long experimentId,
         String adAccountId,
         List<CreativePublicationPayload> creativePayloads
@@ -1451,6 +1467,7 @@ public class FacebookCampaignService {
             }
             try {
                 String uploadedImageHash = resolveOrUploadCanonicalImageHash(
+                    publicationJobId,
                     experimentId,
                     adAccountId,
                     payload.creative().id(),
@@ -1483,6 +1500,7 @@ public class FacebookCampaignService {
      * Reuses a cached canonical image_hash or uploads the downloaded image bytes to Meta.
      */
     private String resolveOrUploadCanonicalImageHash(
+        String publicationJobId,
         long experimentId,
         String adAccountId,
         Long creativeId,
@@ -1536,6 +1554,7 @@ public class FacebookCampaignService {
         }
 
         String uploadedImageHash = executeFacebookCallWithLogging(
+            publicationJobId,
             experimentId,
             ExperimentFacebookApiLogContext.CAMPAIGN_AD_CREATIVE,
             () -> uploadDownloadedAdImage(adAccountId, imageUrl, downloadedImage)
@@ -1641,6 +1660,7 @@ public class FacebookCampaignService {
      */
     private String createAdCreativeWithImageDownloadRetry(
         String adAccountId,
+        String publicationJobId,
         long experimentId,
         FacebookAdsService.AdCreativeRequest request
     ) {
@@ -1651,6 +1671,7 @@ public class FacebookCampaignService {
             try {
                 FacebookAdsService.AdCreativeRequest requestSnapshot = requestInUse;
                 return executeFacebookCallWithLogging(
+                    publicationJobId,
                     experimentId,
                     ExperimentFacebookApiLogContext.CAMPAIGN_AD_CREATIVE,
                     () -> facebookAdsService.createAdCreative(adAccountId, requestSnapshot)
@@ -1665,6 +1686,7 @@ public class FacebookCampaignService {
                     String imageUrlSnapshot = requestInUse.imageUrl();
                     try {
                         String uploadedImageHash = executeFacebookCallWithLogging(
+                            publicationJobId,
                             experimentId,
                             ExperimentFacebookApiLogContext.CAMPAIGN_AD_CREATIVE,
                             () -> {

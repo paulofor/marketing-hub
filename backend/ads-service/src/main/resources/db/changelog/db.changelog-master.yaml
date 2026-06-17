@@ -1005,3 +1005,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-06-16-targeting-element-meta-id-unavailable.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-06-17-facebook-campaign-publication-job-step.yaml
+      relativeToChangelogFile: true

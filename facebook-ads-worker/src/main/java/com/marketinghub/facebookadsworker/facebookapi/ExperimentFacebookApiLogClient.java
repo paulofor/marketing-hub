@@ -70,6 +70,44 @@ public class ExperimentFacebookApiLogClient {
         }
     }
 
+    /**
+     * Registra um passo cronológico do job de publicação de campanha no backend.
+     */
+    public void logPublicationJobStep(String jobId,
+                                      Long experimentId,
+                                      String stepName,
+                                      FacebookAdsService.FacebookApiCallDebugInfo debugInfo) {
+        if (jobId == null || jobId.isBlank() || stepName == null || stepName.isBlank() || debugInfo == null) {
+            return;
+        }
+        PublicationJobStepRequest body = new PublicationJobStepRequest(
+            jobId,
+            experimentId,
+            stepName,
+            "FACEBOOK",
+            debugInfo.endpoint(),
+            debugInfo.httpMethod(),
+            debugInfo.statusCode(),
+            toJsonNode(debugInfo.requestBody()),
+            toJsonNode(debugInfo.responseBody()),
+            debugInfo.errorMessage(),
+            debugInfo.respondedAt() != null ? debugInfo.respondedAt() : debugInfo.requestedAt()
+        );
+        String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/facebook-campaigns/publication-job-steps");
+        try {
+            backendClient
+                .post()
+                .uri(url)
+                .bodyValue(body)
+                .retrieve()
+                .toBodilessEntity()
+                .block();
+        } catch (Exception ex) {
+            LOGGER.debug("Failed to register publication job step: jobId={}, experimentId={}, stepName={}, message={}",
+                jobId, experimentId, stepName, ex.getMessage());
+        }
+    }
+
     private JsonNode toJsonNode(String raw) {
         if (raw == null || raw.isBlank()) {
             return null;
@@ -80,6 +118,20 @@ public class ExperimentFacebookApiLogClient {
             return objectMapper.getNodeFactory().textNode(raw);
         }
     }
+
+    public record PublicationJobStepRequest(
+        String jobId,
+        Long experimentId,
+        String stepName,
+        String provider,
+        String endpoint,
+        String httpMethod,
+        Integer statusCode,
+        JsonNode requestPayload,
+        JsonNode responsePayload,
+        String errorMessage,
+        java.time.Instant occurredAt
+    ) {}
 
     public record ExperimentFacebookApiLogIngestionRequest(
         ExperimentFacebookApiLogContext context,

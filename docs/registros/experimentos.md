@@ -4632,3 +4632,15 @@
 - Corrigida a causa-raiz que fazia comportamentos válidos da Meta, como `Small business owners`, ficarem marcados como pendentes/indisponíveis na tela de nicho.
 - O `facebook-ads-worker` passa a consultar comportamentos pelo contrato correto da Graph API: `type=adTargetingCategory&class=behaviors`.
 - A tela de nicho passa a considerar um elemento pronto quando há `metaId`, mesmo quando a Meta não retorna faixa de alcance para cargos.
+
+## 2026-06-17 — Rastreabilidade por job na publicação Facebook
+
+- Implementado o registro cronológico de passos da publicação de experimentos como campanhas Facebook.
+- O backend agora gera `publicationJobId` ao entregar experimentos prontos ao worker e grava o passo inicial de dispatch.
+- O Facebook Ads Worker registra cada interação com a Graph API no backend com `jobId`, endpoint, método, payload enviado, resposta recebida, status e data-hora.
+- Criada a tabela `facebook_campaign_publication_job_step` para análise operacional e investigação de causa-raiz por job.
+
+## 2026-06-17 — Nomeação do protocolo jobid
+
+- Decisão registrada: o padrão de rastreabilidade por `jobId`, tabela de passos e endpoint de registro do executor passa a se chamar **protocolo jobid**.
+- Quando solicitado em novos fluxos, o protocolo deve replicar o padrão aplicado na publicação de experimentos como campanhas Facebook.

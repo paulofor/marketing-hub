@@ -651,3 +651,7 @@ Campaign publication is now routed through the generic stage pattern described i
 ### Destino standalone de landing em campanhas
 
 Quando o backend enviar `followUpActionUrl` no item de `/api/facebook-campaigns/experiments-ready`, o worker deve usar essa URL como destino oficial da campanha antes de qualquer fallback de criativo ou URL padrão da conta. Esse campo representa o link standalone publicado da landing, inclusive para landings GeraLanding expostas em `/api/flows/{slug}/page`, e deve receber apenas os parâmetros de tracking da campanha no worker.
+
+## Rastreabilidade por job de publicação
+
+O backend agora devolve `publicationJobId` em `GET /api/facebook-campaigns/experiments-ready`. Esse valor é um hash criado no backend para rastrear a tentativa de publicação do experimento como campanha. A cada interação com a Graph API da Meta, o worker registra um passo em `POST /api/facebook-campaigns/publication-job-steps`, enviando `jobId`, `experimentId`, nome da etapa, endpoint, método HTTP, status, payload enviado e payload recebido. Isso cria uma linha do tempo por job para análise operacional sem depender apenas dos logs de aplicação.

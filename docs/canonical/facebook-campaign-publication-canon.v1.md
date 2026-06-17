@@ -218,3 +218,9 @@ Consequência arquitetural: a publicação de campanha passa a ser substituível
 - Endpoints: `/api/facebook-campaigns/experiments-ready`, `/api/facebook-campaigns/experiments/{experimentId}/creatives-ready`, `/api/facebook-adsets/experiments-ready`, `/api/facebook-pixels/pending`, `/api/facebook-pixels/niches/{nicheId}/request`, `/api/experiments/{experimentId}/funnel/diagnostics`.
 - Metodologia de arquitetura por etapa: `docs/metodologia/gerado-5-5/arquitetura-pipeline-etapas-archunit.md`.
 - Tabelas do schema `marketinghubdb`: `experiment`, `creative`, `lead_portal_flow`, `targeting_element`, `experiment_campaign_metric`.
+
+## Protocolo jobid — rastreabilidade obrigatória por job de publicação
+
+Este padrão passa a ser chamado de **protocolo jobid**. Ao disponibilizar um experimento para publicação em campanha, o backend deve gerar e expor um `publicationJobId` estável para aquela liberação. O primeiro passo do job é registrado pelo próprio backend no momento em que o experimento é entregue ao Facebook Ads Worker.
+
+A cada interação do Facebook Ads Worker com a API da Meta durante a publicação, o worker deve registrar no backend um passo do job contendo `jobId`, data-hora, etapa, endpoint, método HTTP, payload enviado, payload recebido, status e erro quando existir. A tabela `facebook_campaign_publication_job_step` é a fonte operacional para reconstruir a linha do tempo do job e investigar causa-raiz de falhas de publicação.

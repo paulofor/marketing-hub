@@ -34,6 +34,8 @@ import com.marketinghub.facebookads.FacebookAdStatus;
 import com.marketinghub.facebookads.service.recommendation.FacebookCampaignRecommendationDto;
 import com.marketinghub.facebookads.service.recommendation.FacebookCampaignRecommendationIngestionRequest;
 import com.marketinghub.facebookads.service.recommendation.FacebookCampaignRecommendationService;
+import com.marketinghub.facebookads.service.publicationstep.FacebookCampaignPublicationJobStepRequest;
+import com.marketinghub.facebookads.service.publicationstep.FacebookCampaignPublicationJobStepService;
 import com.marketinghub.facebookads.service.recommendation.FacebookCampaignRecommendationSyncTarget;
 import com.marketinghub.repository.jpa.facebookads.FacebookAdsCampaignRepository;
 import com.marketinghub.repository.jpa.creative.CreativeRepository;
@@ -46,6 +48,9 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -80,6 +85,7 @@ public class FacebookAdsCampaignController {
 
     private final LeadPortalMetricsService leadPortalMetricsService;
     private final FacebookCampaignRecommendationService recommendationService;
+    private final FacebookCampaignPublicationJobStepService publicationJobStepService;
 
     /**
      * Cria o controller com os repositórios e serviços usados pelos contratos de campanhas Facebook.
@@ -98,7 +104,8 @@ public class FacebookAdsCampaignController {
                                          com.marketinghub.experiment.service.ExperimentReadinessService experimentReadinessService,
                                          LeadPortalPublicUrlResolver leadPortalPublicUrlResolver,
                                          LeadPortalMetricsService leadPortalMetricsService,
-                                         FacebookCampaignRecommendationService recommendationService) {
+                                         FacebookCampaignRecommendationService recommendationService,
+                                         FacebookCampaignPublicationJobStepService publicationJobStepService) {
         this.experimentService = experimentService;
         this.campaignRepository = campaignRepository;
         this.accountRepository = accountRepository;
@@ -114,6 +121,7 @@ public class FacebookAdsCampaignController {
         this.leadPortalPublicUrlResolver = leadPortalPublicUrlResolver;
         this.leadPortalMetricsService = leadPortalMetricsService;
         this.recommendationService = recommendationService;
+        this.publicationJobStepService = publicationJobStepService;
     }
 
     @GetMapping("/experiments-ready")
@@ -127,8 +135,16 @@ public class FacebookAdsCampaignController {
                 .filter(experiment -> experiment.getFacebookReleaseRequestedAt() != null)
                 .filter(experiment -> !campaignRepository.existsByExperimentId(experiment.getId()))
                 .filter(experimentReadinessService::isReadyForCampaign)
+                .peek(this::registerBackendDispatchStep)
                 .map(experiment -> toSummary(experiment, leadPortalMetrics.get(experiment.getId())))
                 .toList();
+    }
+
+    @PostMapping("/publication-job-steps")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    // Registra um passo executado pelo Facebook Ads Worker na publicação de campanha.
+    public void registerPublicationJobStep(@RequestBody FacebookCampaignPublicationJobStepRequest request) {
+        publicationJobStepService.register(request);
     }
 
     @GetMapping("/experiments")
@@ -568,6 +584,7 @@ public class FacebookAdsCampaignController {
                 toInstagramAccountSummary(experiment),
                 toInstantFormSummary(experiment),
                 isNextStepInstantForm(experiment),
+                buildPublicationJobId(experiment),
                 toLeadPortalFunnelSummary(leadPortalMetrics),
                 toMetricSummary(experiment.getCampaignMetric()));
     }
@@ -683,6 +700,40 @@ public class FacebookAdsCampaignController {
         return false;
     }
 
+    // Registra o primeiro passo do job quando o backend disponibiliza o experimento ao worker.
+    private void registerBackendDispatchStep(Experiment experiment) {
+        publicationJobStepService.register(new FacebookCampaignPublicationJobStepRequest(
+                buildPublicationJobId(experiment),
+                experiment.getId(),
+                "BACKEND_DISPATCH_EXPERIMENT_READY",
+                "BACKEND",
+                "/api/facebook-campaigns/experiments-ready",
+                "GET",
+                200,
+                null,
+                objectMapper.valueToTree(Map.of("experimentId", experiment.getId())),
+                null,
+                Instant.now()));
+    }
+
+    // Cria um hash estável para rastrear a publicação liberada ao worker como job.
+    private String buildPublicationJobId(Experiment experiment) {
+        String source = "%d:%s:%s".formatted(
+                experiment.getId(),
+                experiment.getFacebookReleaseRequestedAt(),
+                experiment.getUpdatedAt());
+        try {
+            byte[] digest = MessageDigest.getInstance("SHA-256").digest(source.getBytes(StandardCharsets.UTF_8));
+            StringBuilder builder = new StringBuilder();
+            for (byte b : digest) {
+                builder.append(String.format("%02x", b));
+            }
+            return builder.toString();
+        } catch (NoSuchAlgorithmException ex) {
+            throw new IllegalStateException("SHA-256 indisponível para criar jobId de publicação", ex);
+        }
+    }
+
     public record ExperimentSummary(
             Long id,
             String name,
@@ -701,6 +752,7 @@ public class FacebookAdsCampaignController {
             InstagramAccountSummary instagramAccount,
             InstantFormSummary facebookInstantForm,
             boolean nextStepInstantForm,
+            String publicationJobId,
             LeadPortalFunnelSummary leadPortalFunnel,
             CampaignMetricSummary metrics) {}
 

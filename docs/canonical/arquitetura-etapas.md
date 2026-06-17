@@ -68,12 +68,15 @@ como parte da arquitetura obrigatória, e não como conveniência do worker.
 
 ## Protocolo jobid — tabela de passos por pacote
 
-Quando o protocolo jobid for aplicado a um pacote ou fluxo com múltiplas etapas, a tabela de passos do
-job pode e deve ser compartilhada por todas as etapas desse pacote quando o contexto operacional for o
-mesmo. O objetivo é preservar uma linha do tempo única, simples e auditável do job, usando campos como
-`job_id`, etapa, status, payload enviado, payload recebido, endpoint/ação, erro e data-hora, sem criar uma
-tabela separada para cada etapa. Tabelas separadas só devem existir quando houver domínio, retenção,
-volume ou contrato operacional realmente diferente.
+Quando o protocolo jobid for aplicado a um pacote ou fluxo com múltiplas etapas, primeiro deve ser
+verificado se o módulo/pacote já possui uma tabela de passos compatível para registrar a linha do tempo do
+job. Se essa tabela já existir e cobrir os campos operacionais necessários, ela deve ser reutilizada e não se
+deve criar uma nova tabela. A tabela de passos do job pode e deve ser compartilhada por todas as etapas
+desse pacote quando o contexto operacional for o mesmo. O objetivo é preservar uma linha do tempo única,
+simples e auditável do job, usando campos como `job_id`, etapa, status, payload enviado, payload recebido,
+endpoint/ação, erro e data-hora, sem criar uma tabela separada para cada etapa. Tabelas separadas só devem
+existir quando não houver tabela compatível existente ou quando houver domínio, retenção, volume ou contrato
+operacional realmente diferente.
 
 
 ## Backend — pacote Facebook Ads

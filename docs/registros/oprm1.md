@@ -821,3 +821,7 @@
 - Ajustada a tela de detalhe do CNAE para exibir a coluna Qualidade dos subnichos em português, mantendo o status técnico vindo do backend apenas como contrato interno.
 - Causa-raiz tratada: a interface mostrava códigos técnicos como `MEI_AUDIENCE_READY` e `LIGHTLY_RESEARCHED`, reduzindo clareza operacional para priorização de nichos com potencial de venda.
 - Prevenção de recorrência: a tela passou a reutilizar o mapeamento central de status já existente no módulo OPRM, evitando novas traduções divergentes no mesmo fluxo.
+
+## 2026-06-17 — OPRM NichoCNAE: nome do subnicho na execução
+
+- Ajustada a tela de subnichos do CNAE para destacar, durante a execução do pipeline NichoCNAE, o nome do subnicho identificado pelo backend no ciclo selecionado.

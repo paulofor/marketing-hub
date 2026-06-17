@@ -1,4 +1,9 @@
 
+## 2026-06-17 — Protocolo padrão backend: localização obrigatória dos testes
+
+- Atualizada a definição do protocolo padrão backend para explicitar que as regras/testes ArchUnit devem ficar no arquivo `backend/ads-service/src/test/java/com/marketinghub/architecture/ArquiteturaTest.java`.
+- Atualizado o cânone de arquitetura por etapa para manter a decisão como fonte primária e evitar criação de testes arquiteturais em arquivos paralelos.
+
 ## 2026-06-17 — Protocolo padrão backend exige pending por etapa
 - Atualizada a definição canônica do protocolo padrão backend para tornar obrigatório um endpoint interno `pending` por etapa operacional.
 - Registrada a referência do GeraLanding: cada etapa expõe sua própria fila `pending` com jobs aptos ao processamento e payload completo como unidade de trabalho fechada, evitando chamadas adicionais de detalhe pelo worker.

@@ -2,7 +2,9 @@
 
 Este documento consolida as regras canônicas de arquitetura por etapa que são protegidas pelos testes
 `ArquiteturaTest` do backend e do Worker AI. Toda alteração estrutural deve preservar estas regras ou alterar
-primeiro este cânone e, em seguida, sincronizar os testes de arquitetura correspondentes.
+primeiro este cânone e, em seguida, sincronizar os testes de arquitetura correspondentes. Ao aplicar o
+protocolo padrão backend, os testes/regras ArchUnit devem ficar no arquivo
+`backend/ads-service/src/test/java/com/marketinghub/architecture/ArquiteturaTest.java`.
 
 ## Regra global — persistência JPA do backend
 

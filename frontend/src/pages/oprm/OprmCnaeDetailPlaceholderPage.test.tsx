@@ -202,6 +202,62 @@ describe("OprmCnaeDetailPlaceholderPage", () => {
     expect(screen.queryByText("Em execução")).toBeNull();
   });
 
+  it("mostra o nome do subnicho identificado durante a execução do pipeline", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = input.toString();
+
+        if (url.includes("routine-research-cycle/stage-executions")) {
+          return new Response(
+            JSON.stringify([
+              {
+                researchCycleId: 61,
+                sourceNicheId: 18,
+                cnaeCode: "9602501",
+                nicheName: "Manicure autônoma com agenda recorrente",
+                originalNicheName: "Cabeleireiros, manicure e pedicure",
+                neutralNicheName: "Manicure autônoma com agenda recorrente",
+                researchMode: "ROUTINE_REALITY_RESEARCH",
+                solutionLanguageRiskScore: 10,
+                sourceScore: 90,
+                triggerSource: "MANUAL_CNAE_DETAIL",
+                status: "RUNNING",
+                totalQueries: 12,
+                totalSourceCandidates: 20,
+                totalSourceSnapshots: 4,
+                totalExtractedSignals: 0,
+                executionCostUsd: 0.0377,
+                cnaeTotalCostUsd: 0.0377,
+                startedAt: "2026-06-17T14:03:00Z",
+                finishedAt: null,
+                errorMessage: null,
+              },
+            ]),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+          );
+        }
+
+        return new Response("{}", {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }),
+    );
+
+    renderPage();
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Criar novo subnicho" }),
+    );
+
+    expect(
+      await screen.findByText("Subnicho identificado neste pipeline"),
+    ).toBeTruthy();
+    expect(
+      screen.getByText("Manicure autônoma com agenda recorrente"),
+    ).toBeTruthy();
+  });
 
   it("traduz a coluna qualidade dos subnichos gerados para portugues", async () => {
     vi.stubGlobal(

@@ -1,3 +1,7 @@
+## 2026-06-17 17:06:25 (UTC) — OPRM NichoCNAE: indicador animado de execução
+
+- Ajustada a tela de detalhe do CNAE/subnicho para exibir uma ilustração animada quando o pipeline NichoCNAE estiver em execução, reforçando visualmente que o backend continua processando as etapas automaticamente.
+
 ## 2026-06-14 00:00:00 (UTC) — OPRM NichoCNAE: múltiplos nichos por CNAE
 
 - Alterado o conceito de materialização para permitir mais de um `market_niche` por CNAE quando ciclos aprovados representarem subnichos diferentes.
@@ -824,3 +828,6 @@
 - Causa-raiz comprovada: o código atual já não contém os schedulers CNAE legados, mas uma instância operacional antiga do próprio módulo `oprm-coletor-mei` permaneceu ativa no host legado e continuou chamando o backend.
 - Correção aplicada no módulo/deploy: o workflow do `oprm-coletor-mei` agora publica no host canônico atual e, em seguida, derruba explicitamente qualquer container/compose legado `oprm-coletor-mei` no host antigo `177.153.62.107`.
 - Prevenção de recorrência: a desativação fica acoplada ao deploy do próprio módulo executor, evitando corrigir o sintoma no backend e garantindo que o módulo que dispara o ciclo seja desligado na origem.
+## 2026-06-17 — OPRM NichoCNAE: nome do subnicho na execução
+
+- Ajustada a tela de subnichos do CNAE para destacar, durante a execução do pipeline NichoCNAE, o nome do subnicho identificado pelo backend no ciclo selecionado.

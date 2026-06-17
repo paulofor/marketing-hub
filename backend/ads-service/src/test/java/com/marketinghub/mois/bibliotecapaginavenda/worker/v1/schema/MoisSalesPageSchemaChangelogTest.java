@@ -19,6 +19,8 @@ class MoisSalesPageSchemaChangelogTest {
     private static final Path JOB_EXECUTION_CHANGELOG = CHANGELOG_ROOT.resolve(
             "changesets/2026-06-04-mois-sales-page-job-execution.yaml");
     private static final Path MASTER_CHANGELOG = CHANGELOG_ROOT.resolve("db.changelog-master.yaml");
+    private static final Path JOB_ANALYSIS_VERSIONING_CHANGELOG = CHANGELOG_ROOT.resolve(
+            "changesets/2026-06-17-mois-sales-page-job-analysis-versioning.yaml");
 
     /**
      * Garante que a tabela de estado atual da página contém campos e índices canônicos da fase 1.
@@ -62,6 +64,25 @@ class MoisSalesPageSchemaChangelogTest {
                 .contains("KEY idx_mois_sales_page_job_page_created (sales_page_id, created_at)")
                 .contains("KEY idx_mois_sales_page_job_status (workspace_id, stage, status, updated_at)")
                 .contains("KEY idx_mois_sales_page_job_type_status (workspace_id, job_type, status, updated_at)");
+    }
+
+
+    /**
+     * Garante que a tabela de histórico possui as colunas versionadas usadas ao concluir a análise comercial.
+     */
+    @Test
+    void jobExecutionVersioningChangelogDefinesAnalysisVersionColumns() throws IOException {
+        String changelog = read(JOB_ANALYSIS_VERSIONING_CHANGELOG);
+        String master = read(MASTER_CHANGELOG);
+
+        assertThat(changelog)
+                .contains("tableName: mois_sales_page_job_execution")
+                .contains("columnName: parser_version")
+                .contains("ADD COLUMN parser_version VARCHAR(64) NULL")
+                .contains("ADD COLUMN prompt_version VARCHAR(64) NULL");
+        assertThat(master)
+                .contains("changesets/2026-06-17-mois-sales-page-job-analysis-versioning.yaml")
+                .contains("relativeToChangelogFile: true");
     }
 
     /**

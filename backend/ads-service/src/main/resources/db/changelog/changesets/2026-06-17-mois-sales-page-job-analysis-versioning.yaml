@@ -1,0 +1,24 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-17-mois-sales-page-job-analysis-versioning
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: mois_sales_page_job_execution
+        - not:
+            columnExists:
+              tableName: mois_sales_page_job_execution
+              columnName: parser_version
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE mois_sales_page_job_execution
+                ADD COLUMN parser_version VARCHAR(64) NULL AFTER response_payload_json,
+                ADD COLUMN prompt_version VARCHAR(64) NULL AFTER parser_version;

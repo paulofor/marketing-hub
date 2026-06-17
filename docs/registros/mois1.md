@@ -1689,6 +1689,11 @@ Arquivos principais:
 - As integrações OpenAI da análise comercial foram movidas para o pacote concreto da própria etapa, evitando vazamento de tecnologia para o núcleo do pipeline.
 - Ajustadas as regras ArchUnit do worker para validar núcleo sem dependência de etapas concretas, independência entre etapas, ausência de ciclos, processors por contrato e núcleo sem tecnologias concretas.
 
+## 2026-06-17 — Correção do bloqueio da Etapa 2 pageanalysis
+
+- Verificado via MCP que a Etapa 2 de análise comercial estava sendo disparada pelo `mois-sales-library-worker`, mas a conclusão falhava no backend ao gravar o resultado em `mois_sales_page_job_execution`.
+- Causa-raiz: o SQL de conclusão da análise usa `parser_version` e `prompt_version`, porém a tabela consolidada de histórico ainda não possuía essas colunas no schema real.
+- Correção preparada: novo changelog incremental adiciona `parser_version` e `prompt_version` em `mois_sales_page_job_execution`, com teste de contrato para impedir recorrência entre SQL do backend e Liquibase.
 ## 2026-06-17 — Fuso horário São Paulo no pipeline de sales pages
 
 - Ajustada a tela `/mois/sales-pages-library/pipeline` para exibir o horário da última captura no fuso `America/Sao_Paulo`, evitando leitura operacional em UTC ou no fuso local do navegador.

@@ -1,6 +1,6 @@
 package com.marketinghub.mois.bibliotecapaginavenda.worker.v1.web;
 
-import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.dto.MoisSalesLibraryDtos;
+import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service.MoisSalesLibraryDtos;
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service.MoisSalesLibraryService;
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service.MoisSalesLibrarySnapshotService;
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service.MoisSalesPageMarketWarmupService;

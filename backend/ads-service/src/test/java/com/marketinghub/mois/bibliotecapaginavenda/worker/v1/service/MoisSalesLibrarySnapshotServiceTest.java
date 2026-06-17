@@ -2,7 +2,7 @@ package com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.dto.MoisSalesLibraryDtos;
+import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service.MoisSalesLibraryDtos;
 import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
 import java.net.InetSocketAddress;

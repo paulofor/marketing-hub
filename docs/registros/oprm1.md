@@ -936,3 +936,10 @@
 - Adicionados índices compostos para as consultas de reinício manual do NichoCNAE por CNAE: ciclos por `cnae_code`/`finished_at`/`started_at` e candidatos por `cnae_code`/`opportunity_score`/`created_at`.
 - Causa-raiz tratada: o reinício manual precisava localizar ciclos abertos do CNAE e o melhor candidato com bloqueio pessimista sem índice alinhado ao filtro principal, aumentando varredura, tempo de transação e chance de `Lock wait timeout`.
 - Prevenção de recorrência: consultas operacionais com `FOR UPDATE` devem ter índice pelo filtro seletivo do comando para reduzir locks de faixa e tempo de espera no MySQL 5.7.
+
+## 2026-06-18 — OPRM NichoCNAE: prevenção de timeout no Liquibase de índices
+
+- Corrigido o changelog de índices do reinício manual NichoCNAE para separar cada índice em um changeset próprio e validar `indexExists` antes da criação.
+- Aumentado o `socketTimeout` JDBC do backend para 10 minutos, evitando que operações DDL legítimas de inicialização sejam interrompidas no limite anterior de 60 segundos.
+- Causa-raiz tratada: o índice em tabela operacional podia demorar mais que o timeout de leitura do conector MySQL durante o bootstrap, fechando a conexão antes do fim da DDL e impedindo a aplicação de subir.
+- Prevenção de recorrência: DDLs potencialmente longas devem ser idempotentes por índice e o timeout JDBC precisa ser compatível com migrações estruturais de banco em produção.

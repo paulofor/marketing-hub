@@ -930,3 +930,9 @@
 - Corrigido o backfill Liquibase de `current_stage_code` para atualizar somente ciclos `RUNNING`, que são os únicos necessários para reabrir as filas `pending` após a migração.
 - Causa-raiz tratada: o backfill ainda varria ciclos históricos sem necessidade operacional imediata, ampliando o conjunto de linhas candidatas e aumentando a chance de conflito com locks em tabelas operacionais durante o bootstrap do backend.
 - Prevenção de recorrência: backfills executados na inicialização devem limitar o escopo ao dado necessário para manter a operação ativa, evitando reclassificação massiva de histórico quando a aplicação precisa apenas publicar pendências executáveis.
+
+## 2026-06-18 — OPRM NichoCNAE: índices para reinício manual por CNAE
+
+- Adicionados índices compostos para as consultas de reinício manual do NichoCNAE por CNAE: ciclos por `cnae_code`/`finished_at`/`started_at` e candidatos por `cnae_code`/`opportunity_score`/`created_at`.
+- Causa-raiz tratada: o reinício manual precisava localizar ciclos abertos do CNAE e o melhor candidato com bloqueio pessimista sem índice alinhado ao filtro principal, aumentando varredura, tempo de transação e chance de `Lock wait timeout`.
+- Prevenção de recorrência: consultas operacionais com `FOR UPDATE` devem ter índice pelo filtro seletivo do comando para reduzir locks de faixa e tempo de espera no MySQL 5.7.

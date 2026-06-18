@@ -26,6 +26,8 @@ import java.util.Locale;
 import java.util.List;
 import java.util.Map;
 import java.lang.reflect.Method;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Serviço que processa experimentos com criativos pendentes e gera anúncios via IA.
@@ -42,6 +44,7 @@ public class ExperimentCreativeService {
     private static final int PRIMARY_TEXT_MAX = 125;
     private static final int MAX_HASHTAGS = 30;
     private static final Duration CREATIVE_GENERATION_TIMEOUT = Duration.ofMinutes(30);
+    private static final Set<String> MISSING_OPTIONAL_EXPERIMENT_METHODS = ConcurrentHashMap.newKeySet();
 
     public ExperimentCreativeService(ExperimentRepository experimentRepository,
                                      CreativeChatGptClient chatGptClient,
@@ -81,8 +84,8 @@ public class ExperimentCreativeService {
                         : generateWithChatGpt(exp, qty);
                 exp.setCreativesToGenerate(0);
                 setCreativeGenerationStatus(exp, "COMPLETED");
-                exp.setCreativeGenerationFinishedAt(Instant.now());
-                exp.setCreativeGenerationError(null);
+                setCreativeGenerationFinishedAt(exp, Instant.now());
+                setCreativeGenerationError(exp, null);
                 if (pipelineMode) {
                     setCreativeGenerationMode(exp, "DEFAULT");
                 }
@@ -101,8 +104,8 @@ public class ExperimentCreativeService {
      */
     private void markProcessing(Experiment experiment) {
         setCreativeGenerationStatus(experiment, "PROCESSING");
-        experiment.setCreativeGenerationStartedAt(Instant.now());
-        experiment.setCreativeGenerationError(null);
+        setCreativeGenerationStartedAt(experiment, Instant.now());
+        setCreativeGenerationError(experiment, null);
         experimentRepository.save(experiment);
     }
 
@@ -110,7 +113,7 @@ public class ExperimentCreativeService {
      * Verifica se a solicitação ficou pendente por tempo maior que o limite operacional.
      */
     private boolean hasTimedOut(Experiment experiment) {
-        Instant requestedAt = experiment.getCreativeGenerationRequestedAt();
+        Instant requestedAt = getCreativeGenerationRequestedAt(experiment);
         if (requestedAt == null) {
             requestedAt = experiment.getUpdatedAt();
         }
@@ -123,12 +126,12 @@ public class ExperimentCreativeService {
      */
     private void markTimedOut(Experiment experiment) {
         log.warn("Creative generation timed out for experiment {}. pendingCreatives={} requestedAt={} status={}",
-                experiment.getId(), experiment.getCreativesToGenerate(), experiment.getCreativeGenerationRequestedAt(),
+                experiment.getId(), experiment.getCreativesToGenerate(), getCreativeGenerationRequestedAt(experiment),
                 getCreativeGenerationStatusName(experiment));
         experiment.setCreativesToGenerate(0);
         setCreativeGenerationStatus(experiment, "TIMEOUT");
-        experiment.setCreativeGenerationFinishedAt(Instant.now());
-        experiment.setCreativeGenerationError("Geração excedeu o tempo operacional de 30 minutos; solicite nova tentativa.");
+        setCreativeGenerationFinishedAt(experiment, Instant.now());
+        setCreativeGenerationError(experiment, "Geração excedeu o tempo operacional de 30 minutos; solicite nova tentativa.");
         if (isPipelineAdsMode(experiment)) {
             setCreativeGenerationMode(experiment, "DEFAULT");
         }
@@ -145,8 +148,8 @@ public class ExperimentCreativeService {
                 classifyRootCause(exception), rootCauseMessage(exception), exception);
         experiment.setCreativesToGenerate(0);
         setCreativeGenerationStatus(experiment, "FAILED");
-        experiment.setCreativeGenerationFinishedAt(Instant.now());
-        experiment.setCreativeGenerationError(truncate(rootCauseMessage(exception), 1024));
+        setCreativeGenerationFinishedAt(experiment, Instant.now());
+        setCreativeGenerationError(experiment, truncate(rootCauseMessage(exception), 1024));
         if (pipelineMode) {
             setCreativeGenerationMode(experiment, "DEFAULT");
         }
@@ -180,6 +183,75 @@ public class ExperimentCreativeService {
             return status == null ? null : status.toString();
         } catch (ReflectiveOperationException exception) {
             return null;
+        }
+    }
+
+    /**
+     * Marca o início operacional da geração quando a versão canônica do modelo expõe esse campo.
+     */
+    private void setCreativeGenerationStartedAt(Experiment experiment, Instant startedAt) {
+        invokeOptionalExperimentSetter(experiment, "setCreativeGenerationStartedAt", Instant.class, startedAt);
+    }
+
+    /**
+     * Marca o encerramento operacional da geração quando a versão canônica do modelo expõe esse campo.
+     */
+    private void setCreativeGenerationFinishedAt(Experiment experiment, Instant finishedAt) {
+        invokeOptionalExperimentSetter(experiment, "setCreativeGenerationFinishedAt", Instant.class, finishedAt);
+    }
+
+    /**
+     * Registra a mensagem de erro operacional quando a versão canônica do modelo expõe esse campo.
+     */
+    private void setCreativeGenerationError(Experiment experiment, String error) {
+        invokeOptionalExperimentSetter(experiment, "setCreativeGenerationError", String.class, error);
+    }
+
+    /**
+     * Lê a data de solicitação quando a versão canônica do modelo expõe esse campo.
+     */
+    private Instant getCreativeGenerationRequestedAt(Experiment experiment) {
+        Object requestedAt = invokeOptionalExperimentGetter(experiment, "getCreativeGenerationRequestedAt");
+        return requestedAt instanceof Instant instant ? instant : null;
+    }
+
+    /**
+     * Invoca setters opcionais adicionados no modelo canônico sem quebrar a compilação contra pacote ainda defasado.
+     */
+    private void invokeOptionalExperimentSetter(Experiment experiment, String methodName, Class<?> valueType, Object value) {
+        try {
+            Method setter = Experiment.class.getMethod(methodName, valueType);
+            setter.invoke(experiment, value);
+        } catch (NoSuchMethodException exception) {
+            logMissingOptionalExperimentMethod(methodName);
+        } catch (ReflectiveOperationException exception) {
+            throw new IllegalStateException("Falha ao atualizar campo operacional de geração de criativos no modelo canônico do backend.", exception);
+        }
+    }
+
+    /**
+     * Invoca getters opcionais adicionados no modelo canônico sem quebrar a compilação contra pacote ainda defasado.
+     */
+    private Object invokeOptionalExperimentGetter(Experiment experiment, String methodName) {
+        try {
+            Method getter = Experiment.class.getMethod(methodName);
+            return getter.invoke(experiment);
+        } catch (NoSuchMethodException exception) {
+            logMissingOptionalExperimentMethod(methodName);
+            return null;
+        } catch (ReflectiveOperationException exception) {
+            throw new IllegalStateException("Falha ao ler campo operacional de geração de criativos no modelo canônico do backend.", exception);
+        }
+    }
+
+    /**
+     * Registra uma única vez quando o pacote ads-service usado pelo Worker AI ainda não expõe campos opcionais recentes.
+     */
+    private void logMissingOptionalExperimentMethod(String methodName) {
+        if (MISSING_OPTIONAL_EXPERIMENT_METHODS.add(methodName)) {
+            log.warn("Modelo canônico ads-service usado pelo Worker AI ainda não expõe {}. "
+                    + "A compilação permanece compatível, mas atualize/publique o ads-service para persistir esse metadado operacional.",
+                    methodName);
         }
     }
 

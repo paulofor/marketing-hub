@@ -1,0 +1,30 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-18-01-oprm-nichocnae-lock-indexes
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - createIndex:
+            tableName: oprm_routine_research_cycle
+            indexName: idx_oprm_routine_cycle_cnae_finished_started
+            columns:
+              - column:
+                  name: cnae_code
+              - column:
+                  name: finished_at
+              - column:
+                  name: started_at
+        - createIndex:
+            tableName: oprm_niche_candidate
+            indexName: idx_oprm_niche_candidate_cnae_score_created
+            columns:
+              - column:
+                  name: cnae_code
+              - column:
+                  name: opportunity_score
+              - column:
+                  name: created_at

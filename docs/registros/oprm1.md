@@ -924,3 +924,9 @@
 - Corrigido o backfill Liquibase de `current_stage_code` para substituir o `UPDATE` único com múltiplos `LEFT JOINs` por atualizações segmentadas por etapa usando `EXISTS`/`NOT EXISTS` nas tabelas de artefatos.
 - Causa-raiz tratada: o SQL anterior fazia uma junção ampla entre várias tabelas do pipeline OPRM, multiplicando linhas por ciclo e mantendo locks por tempo suficiente para estourar `Lock wait timeout` na inicialização do backend.
 - Prevenção de recorrência: backfills de bootstrap devem evitar joins amplos entre tabelas operacionais de alta cardinalidade e preferir atualizações pequenas, indexáveis e ordenadas pela etapa funcional.
+
+## 2026-06-18 — OPRM NichoCNAE: backfill de etapa atual limitado a ciclos ativos
+
+- Corrigido o backfill Liquibase de `current_stage_code` para atualizar somente ciclos `RUNNING`, que são os únicos necessários para reabrir as filas `pending` após a migração.
+- Causa-raiz tratada: o backfill ainda varria ciclos históricos sem necessidade operacional imediata, ampliando o conjunto de linhas candidatas e aumentando a chance de conflito com locks em tabelas operacionais durante o bootstrap do backend.
+- Prevenção de recorrência: backfills executados na inicialização devem limitar o escopo ao dado necessário para manter a operação ativa, evitando reclassificação massiva de histórico quando a aplicação precisa apenas publicar pendências executáveis.

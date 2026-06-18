@@ -943,3 +943,9 @@
 - Aumentado o `socketTimeout` JDBC do backend para 10 minutos, evitando que operações DDL legítimas de inicialização sejam interrompidas no limite anterior de 60 segundos.
 - Causa-raiz tratada: o índice em tabela operacional podia demorar mais que o timeout de leitura do conector MySQL durante o bootstrap, fechando a conexão antes do fim da DDL e impedindo a aplicação de subir.
 - Prevenção de recorrência: DDLs potencialmente longas devem ser idempotentes por índice e o timeout JDBC precisa ser compatível com migrações estruturais de banco em produção.
+
+## 2026-06-18 — OPRM NichoCNAE: backend deixa de bloquear fluxo por pré-gate semântico no seed
+
+- Decisão de regra aplicada: o backend não deve controlar fluxo por validação semântica do seed da etapa `niche-research-seed-builder`; decisões de qualidade, reprovação, reprocessamento e próximo movimento pertencem ao executor/gates próprios do OPRM.
+- Correção aplicada: removido o bloqueio backend que rejeitava `nicheName` igual ao nicho atual/CNAE e o pré-gate comercial determinístico antes da persistência. O backend passa a persistir o nome retornado pelo executor, aplicando fallback rastreável quando o campo vier ausente, e deixa o fluxo avançar para as etapas e gates responsáveis pela avaliação.
+- Prevenção de recorrência: testes da etapa dois agora cobrem que o backend aceita o `nicheName` retornado pelo executor e aceita seed fraco sem transformar avaliação semântica em falha técnica de backend.

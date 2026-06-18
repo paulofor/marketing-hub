@@ -19,11 +19,9 @@ import com.marketinghub.repository.jpa.oprm.nichocnae.OprmResearchQueryRepositor
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmRoutineResearchCycleRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.math.BigDecimal;
-import java.text.Normalizer;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Locale;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
@@ -44,9 +42,6 @@ public class BackendNicheResearchSeedBuilderService {
   private static final String RETRYABLE_QUERY_GOAL_LENGTH_ERROR = "Data too long for column 'query_goal'";
   private static final String COMPLETE_STAGE_PATH_FRAGMENT = "niche-research-seed-builder/stage-executions";
   private static final String DEFAULT_CREATED_BY = "AI";
-  private static final int MIN_SPECIFIC_SUBNICHE_TOKENS = 4;
-  private static final int MIN_COMMERCIAL_CRITERIA_SCORE = 4;
-  private static final int MIN_COMMERCIAL_QUERY_FAMILY_SCORE = 4;
   private final OprmRoutineResearchCycleRepository routineResearchCycleRepository;
   private final OprmNicheResearchSeedRepository nicheResearchSeedRepository;
   private final OprmResearchQueryRepository researchQueryRepository;
@@ -100,7 +95,6 @@ public class BackendNicheResearchSeedBuilderService {
       }
 
       Instant now = Instant.now();
-      validateCommercialPreGate(cycle, request);
       OprmNicheResearchSeed savedSeed = nicheResearchSeedRepository.save(createSeed(cycle, request, now));
       List<OprmResearchQuery> savedQueries = researchQueryRepository.saveAll(createQueries(
           cycle,
@@ -224,94 +218,12 @@ public class BackendNicheResearchSeedBuilderService {
     return seed;
   }
 
-  /** Resolve o subnicho vencedor e bloqueia a persistência quando a IA retornar apenas o CNAE amplo. */
+  /** Resolve o subnicho informado pelo executor sem aplicar pré-gate de fluxo no backend. */
   private String resolveWinningSubnicheName(
       OprmRoutineResearchCycle cycle, CompleteNicheResearchSeedBuilderRequest request) {
-    String selectedName = requiredText(request == null ? null : request.nicheName(), "nicheName");
-    if (isBroadCnaeName(cycle, selectedName)) {
-      throw new IllegalArgumentException(
-          "nicheName must be a specific winning subniche, not the broad CNAE name: " + selectedName);
-    }
-    return selectedName;
-  }
-
-  /** Executa o pré-gate comercial antes de criar queries profundas e gastar as próximas etapas do pipeline. */
-  private void validateCommercialPreGate(
-      OprmRoutineResearchCycle cycle, CompleteNicheResearchSeedBuilderRequest request) {
-    String selectedName = resolveWinningSubnicheName(cycle, request);
-    String assumptions = requiredText(request == null ? null : request.initialAssumptions(), "initialAssumptions");
-    String commercialText = commercialPreGateText(selectedName, request);
-    int criteriaScore = commercialCriteriaScore(assumptions);
-    int queryFamilyScore = commercialQueryFamilyScore(commercialText);
-    if (criteriaScore < MIN_COMMERCIAL_CRITERIA_SCORE || queryFamilyScore < MIN_COMMERCIAL_QUERY_FAMILY_SCORE) {
-      throw new IllegalArgumentException(
-          "Commercial pre-gate rejected seed: selected subniche must show recurrence, pain urgency, ability to pay, "
-              + "clear result, digital product compatibility and query coverage before deep research. "
-              + "criteriaScore=" + criteriaScore + ", queryFamilyScore=" + queryFamilyScore);
-    }
-  }
-
-  /** Junta campos do seed e queries para avaliar rapidamente se há foco comercial suficiente. */
-  private String commercialPreGateText(String selectedName, CompleteNicheResearchSeedBuilderRequest request) {
-    StringBuilder text = new StringBuilder();
-    appendPreGateText(text, selectedName);
-    if (request != null) {
-      appendPreGateText(text, request.businessType());
-      appendPreGateText(text, request.operationType());
-      appendPreGateText(text, request.customerType());
-      appendPreGateText(text, request.commercialObjects());
-      appendPreGateText(text, request.initialAssumptions());
-      if (request.queries() != null) {
-        request.queries().forEach(query -> {
-          appendPreGateText(text, query.queryText());
-          appendPreGateText(text, query.queryGoal());
-        });
-      }
-    }
-    return normalizeComparableText(text.toString());
-  }
-
-  /** Adiciona um campo textual opcional ao texto avaliado pelo pré-gate comercial. */
-  private void appendPreGateText(StringBuilder text, String value) {
-    if (StringUtils.hasText(value)) {
-      text.append(' ').append(value);
-    }
-  }
-
-  /** Pontua se a justificativa comparativa do seed cobre os cinco critérios comerciais obrigatórios. */
-  private int commercialCriteriaScore(String assumptions) {
-    String text = normalizeComparableText(assumptions);
-    int score = 0;
-    score += containsAny(text, "recorrencia", "recorrente", "fidelizacao", "retencao", "pacote", "mensal") ? 1 : 0;
-    score += containsAny(text, "urgencia", "urgente", "dor", "perda", "cancelamento", "agenda vazia", "retrabalho") ? 1 : 0;
-    score += containsAny(text, "capacidade de pagar", "pagar", "pagamento", "cobranca", "preco", "sinal") ? 1 : 0;
-    score += containsAny(text, "clareza do resultado", "resultado", "agenda cheia", "menos faltas", "renda", "faturamento") ? 1 : 0;
-    score += containsAny(text, "produto digital", "digital", "guia", "aula", "planilha", "checklist", "conteudo") ? 1 : 0;
-    return score;
-  }
-
-  /** Pontua se as queries cobrem famílias mínimas para validar demanda antes da pesquisa profunda. */
-  private int commercialQueryFamilyScore(String text) {
-    int score = 0;
-    score += containsAny(text, "recorrencia", "recorrente", "fidelizacao", "reativacao", "pacote", "mensal") ? 1 : 0;
-    score += containsAny(text, "dor", "falta", "remarcacao", "cliente some", "agenda vazia", "retrabalho") ? 1 : 0;
-    score += containsAny(text, "pagar", "pagamento", "cobranca", "preco", "sinal", "orcamento") ? 1 : 0;
-    score += containsAny(text, "resultado", "agenda cheia", "ganhar mais", "renda", "faturamento", "tempo") ? 1 : 0;
-    score += containsAny(text, "whatsapp", "instagram", "indicacao", "cliente", "aquisicao", "captacao") ? 1 : 0;
-    return score;
-  }
-
-  /** Verifica a presença de qualquer termo comercial já normalizado no texto avaliado. */
-  private boolean containsAny(String text, String... terms) {
-    if (!StringUtils.hasText(text)) {
-      return false;
-    }
-    for (String term : terms) {
-      if (text.contains(normalizeComparableText(term))) {
-        return true;
-      }
-    }
-    return false;
+    return textOrDefault(
+        request == null ? null : request.nicheName(),
+        textOrDefault(cycle.getNicheName(), textOrDefault(cycle.getNeutralNicheName(), cycle.getCnaeDescription())));
   }
 
   /** Atualiza o ciclo para que todas as etapas posteriores pesquisem e materializem o subnicho vencedor. */
@@ -322,38 +234,6 @@ public class BackendNicheResearchSeedBuilderService {
     }
     cycle.setNicheName(winningSubnicheName);
     cycle.setNeutralNicheName(winningSubnicheName);
-  }
-
-  /** Verifica se o nome retornado ainda representa o CNAE amplo em vez de um subnicho comercial específico. */
-  private boolean isBroadCnaeName(OprmRoutineResearchCycle cycle, String selectedName) {
-    String normalizedSelectedName = normalizeComparableText(selectedName);
-    if (!StringUtils.hasText(normalizedSelectedName)) {
-      return true;
-    }
-    if (tokenCount(normalizedSelectedName) < MIN_SPECIFIC_SUBNICHE_TOKENS) {
-      return true;
-    }
-    return normalizedSelectedName.equals(normalizeComparableText(cycle.getNicheName()))
-        || normalizedSelectedName.equals(normalizeComparableText(cycle.getNeutralNicheName()))
-        || normalizedSelectedName.equals(normalizeComparableText(cycle.getOriginalNicheName()))
-        || normalizedSelectedName.equals(normalizeComparableText(cycle.getCnaeDescription()));
-  }
-
-  /** Normaliza texto para comparar nomes ignorando acentos, caixa e pontuação. */
-  private String normalizeComparableText(String value) {
-    if (!StringUtils.hasText(value)) {
-      return "";
-    }
-    String withoutAccents = Normalizer.normalize(value, Normalizer.Form.NFD).replaceAll("\\p{M}", "");
-    return withoutAccents.toLowerCase(Locale.ROOT)
-        .replace("&", " e ")
-        .replaceAll("[^a-z0-9]+", " ")
-        .trim();
-  }
-
-  /** Conta tokens úteis depois da normalização usada na comparação com o CNAE amplo. */
-  private int tokenCount(String normalizedText) {
-    return normalizedText.isBlank() ? 0 : normalizedText.split("\\s+").length;
   }
 
   /** Cria as entidades de query com status pendente para execução pela próxima etapa do pipeline. */

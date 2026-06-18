@@ -1,7 +1,6 @@
 package com.marketinghub.oprm.nichocnae.nicheresearchseedbuilder.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -203,12 +202,12 @@ class BackendNicheResearchSeedBuilderServiceTest {
     assertThat(cycleCaptor.getValue().getOriginalNicheName()).isEqualTo("Cabeleireiros, manicures e pedicures");
   }
 
-  /** Deve bloquear resposta que tenta manter o CNAE amplo como se fosse o nicho final. */
+  /** Deve persistir o nome retornado pelo executor sem usar o backend para bloquear decisão de fluxo. */
   @Test
-  void completeRejectsBroadCnaeNameInsteadOfSpecificWinningSubniche() {
+  void completeAcceptsExecutorReturnedNicheNameWithoutBackendFlowGate() {
     OprmRoutineResearchCycle cycle = cycle();
     when(routineResearchCycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
-    when(nicheResearchSeedRepository.existsByResearchCycleId(1001L)).thenReturn(false);
+    stubSuccessfulPersistence();
     CompleteNicheResearchSeedBuilderRequest request = new CompleteNicheResearchSeedBuilderRequest(
         "Cabeleireiros, manicures e pedicures",
         "serviço local de beleza",
@@ -225,17 +224,19 @@ class BackendNicheResearchSeedBuilderServiceTest {
         "resp_seed",
         validQueryRequests());
 
-    assertThatThrownBy(() -> service.complete(1001L, request))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("specific winning subniche");
+    service.complete(1001L, request);
+
+    ArgumentCaptor<OprmRoutineResearchCycle> cycleCaptor = ArgumentCaptor.forClass(OprmRoutineResearchCycle.class);
+    verify(routineResearchCycleRepository).save(cycleCaptor.capture());
+    assertThat(cycleCaptor.getValue().getNicheName()).isEqualTo("Cabeleireiros, manicures e pedicures");
   }
 
-  /** Deve bloquear seed sem evidência comercial mínima antes de gastar busca, coleta e extração profundas. */
+  /** Deve aceitar seed fraco para o executor e o gate de qualidade decidirem o próximo movimento do fluxo. */
   @Test
-  void completeRejectsSeedWithoutCommercialPreGateCoverage() {
+  void completeAcceptsWeakSeedWithoutBackendFlowGate() {
     OprmRoutineResearchCycle cycle = cycle();
     when(routineResearchCycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
-    when(nicheResearchSeedRepository.existsByResearchCycleId(1001L)).thenReturn(false);
+    stubSuccessfulPersistence();
     CompleteNicheResearchSeedBuilderRequest request = new CompleteNicheResearchSeedBuilderRequest(
         "Manicures autônomas com agenda instável pelo WhatsApp",
         "serviço local de beleza",
@@ -252,9 +253,9 @@ class BackendNicheResearchSeedBuilderServiceTest {
         "resp_seed",
         List.of(new NicheResearchQueryRequest("rotina manicure Brasil", "ROUTINE_DISCOVERY", "web", 1)));
 
-    assertThatThrownBy(() -> service.complete(1001L, request))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("Commercial pre-gate rejected seed");
+    CompleteNicheResearchSeedBuilderResponse response = service.complete(1001L, request);
+
+    assertThat(response.totalQueries()).isEqualTo(1);
   }
 
   /** Deve reabrir automaticamente ciclo falho retryável quando a conclusão da etapa dois passa a funcionar. */
@@ -542,7 +543,7 @@ class BackendNicheResearchSeedBuilderServiceTest {
         validQueryRequests());
   }
 
-  /** Monta justificativa com cobertura dos critérios comerciais exigidos pelo pré-gate. */
+  /** Monta justificativa comercial usada nos payloads de teste sem bloquear fluxo no backend. */
   private String commercialPreGateAssumptions() {
     return "Subnichos avaliados por recorrência, urgência da dor, capacidade de pagar, clareza do resultado "
         + "e compatibilidade com produto digital. Venceu manicure autônoma com agenda instável pelo WhatsApp "

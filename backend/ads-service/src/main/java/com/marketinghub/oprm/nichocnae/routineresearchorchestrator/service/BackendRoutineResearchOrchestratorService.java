@@ -20,6 +20,7 @@ import com.marketinghub.repository.jpa.oprm.nichocnae.OprmResearchQueryRepositor
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmNicheRoutineCardRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmRoutineResearchCycleRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.meiaudienceprofile.OprmMeiAudienceProfileRepository;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
@@ -162,6 +163,7 @@ public class BackendRoutineResearchOrchestratorService {
                 .orElse(null);
         String triggerSource = resolveReprocessTriggerSource(request);
         Instant now = Instant.now();
+        preserveCurrentAiCostBeforeRerun(cycle);
         clearArtifactsForStageRerun(cycle.getId());
         reopenCycleForStageRerun(cycle, previousCycleStatus, previousQualityCard, triggerSource, now);
         OprmRoutineResearchCycle savedCycle = routineResearchCycleRepository.save(cycle);
@@ -189,6 +191,16 @@ public class BackendRoutineResearchOrchestratorService {
                 savedCandidate.getRoutineResearchStatus(),
                 savedCandidate.getLastRoutineResearchCycleId(),
                 buildReprocessMessage(previousCycleStatus));
+    }
+
+    /** Acumula o custo de IA já registrado antes de limpar os artefatos que serão reprocessados. */
+    private void preserveCurrentAiCostBeforeRerun(OprmRoutineResearchCycle cycle) {
+        BigDecimal currentSeedCost = seedRepository.sumCostUsdByResearchCycleId(cycle.getId());
+        BigDecimal preservedCost = cycle.getReprocessPreservedCostUsd() == null
+                ? BigDecimal.ZERO
+                : cycle.getReprocessPreservedCostUsd();
+        cycle.setReprocessPreservedCostUsd(
+                preservedCost.add(currentSeedCost == null ? BigDecimal.ZERO : currentSeedCost));
     }
 
     /** Remove artefatos derivados para que as etapas do próprio job sejam executadas novamente com novo input. */
@@ -445,6 +457,7 @@ public class BackendRoutineResearchOrchestratorService {
         cycle.setTotalSourceCandidates(0);
         cycle.setTotalSourceSnapshots(0);
         cycle.setTotalExtractedSignals(0);
+        cycle.setReprocessPreservedCostUsd(BigDecimal.ZERO);
         cycle.setStartedAt(now);
         cycle.setCreatedAt(now);
         cycle.setUpdatedAt(now);

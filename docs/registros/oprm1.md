@@ -912,3 +912,9 @@
 - Correção aplicada: os testes das filas OPRM NichoCNAE passaram a montar ciclos com `current_stage_code` coerente com a etapa consumida e os testes de service passaram a mockar os métodos `findPendingByStatusAndCycleStage`.
 - Causa-raiz tratada: os testes ainda refletiam a regra antiga baseada apenas em status/artefato, enquanto a implementação atual usa a etapa operacional do ciclo como fonte de verdade para expor pendências.
 - Prevenção de recorrência: as expectativas dos testes agora protegem o contrato de pending por etapa atual, evitando que workers consumam itens fora do ponto correto do pipeline.
+
+## 2026-06-18 — OPRM NichoCNAE: correção do backfill da etapa atual
+
+- Corrigido o changelog de backfill de `current_stage_code` para não usar `signal` como alias SQL, pois `SIGNAL` é palavra reservada no MySQL e bloqueava a migração do backend.
+- Causa-raiz tratada: o SQL do Liquibase estava semanticamente correto, mas não havia validado colisão de alias com palavra reservada do MySQL 5.7.
+- Prevenção de recorrência: aliases de changelogs devem usar nomes funcionais explícitos, evitando termos reservados ou ambíguos em SQL de bootstrap.

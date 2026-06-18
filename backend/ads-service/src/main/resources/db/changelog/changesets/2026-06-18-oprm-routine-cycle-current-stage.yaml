@@ -48,6 +48,7 @@ databaseChangeLog:
               UPDATE oprm_routine_research_cycle cycle
               SET cycle.current_stage_code = 'enriched-niche-materializer'
               WHERE cycle.current_stage_code IS NULL
+                AND cycle.status = 'RUNNING'
                 AND EXISTS (
                   SELECT 1
                   FROM oprm_niche_routine_card card
@@ -59,6 +60,7 @@ databaseChangeLog:
               UPDATE oprm_routine_research_cycle cycle
               SET cycle.current_stage_code = 'routine-quality-gate'
               WHERE cycle.current_stage_code IS NULL
+                AND cycle.status = 'RUNNING'
                 AND EXISTS (
                   SELECT 1
                   FROM oprm_mei_audience_profile mei_profile
@@ -74,6 +76,7 @@ databaseChangeLog:
               UPDATE oprm_routine_research_cycle cycle
               SET cycle.current_stage_code = 'mei-audience-segmenter'
               WHERE cycle.current_stage_code IS NULL
+                AND cycle.status = 'RUNNING'
                 AND EXISTS (
                   SELECT 1
                   FROM oprm_niche_routine_card card
@@ -88,6 +91,7 @@ databaseChangeLog:
               UPDATE oprm_routine_research_cycle cycle
               SET cycle.current_stage_code = 'routine-synthesizer'
               WHERE cycle.current_stage_code IS NULL
+                AND cycle.status = 'RUNNING'
                 AND EXISTS (
                   SELECT 1
                   FROM oprm_extracted_signal extracted_signal
@@ -102,6 +106,7 @@ databaseChangeLog:
               UPDATE oprm_routine_research_cycle cycle
               SET cycle.current_stage_code = 'signal-extractor'
               WHERE cycle.current_stage_code IS NULL
+                AND cycle.status = 'RUNNING'
                 AND EXISTS (
                   SELECT 1
                   FROM oprm_source_snapshot snapshot
@@ -116,6 +121,7 @@ databaseChangeLog:
               UPDATE oprm_routine_research_cycle cycle
               SET cycle.current_stage_code = 'source-fetcher'
               WHERE cycle.current_stage_code IS NULL
+                AND cycle.status = 'RUNNING'
                 AND EXISTS (
                   SELECT 1
                   FROM oprm_source_candidate candidate
@@ -130,6 +136,7 @@ databaseChangeLog:
               UPDATE oprm_routine_research_cycle cycle
               SET cycle.current_stage_code = 'source-searcher'
               WHERE cycle.current_stage_code IS NULL
+                AND cycle.status = 'RUNNING'
                 AND EXISTS (
                   SELECT 1
                   FROM oprm_research_query research_query

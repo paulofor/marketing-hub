@@ -1,4 +1,19 @@
 
+## 2026-06-18 — Pipeline de públicos de nicho até seleção no experimento
+
+- solicitação: garantir que a criação de públicos na tela de nicho siga o fluxo IA → Facebook Ads Worker → públicos Meta disponíveis para seleção no experimento.
+- causa-raiz: a resolução Meta de candidatos ficava registrada apenas em `targeting_candidate`/`targeting_option`, sem materializar automaticamente os resultados validados como `targeting_element` aprovado; além disso, o enfileiramento pós-commit dos jobs de resolução dependia de chamada interna sem transação explícita.
+- foi feito: opções validadas pelo Facebook Ads Worker agora viram `TargetingElement` aprovado com `metaId`, `metaKey` e volume Meta, disponíveis para a aba Público do experimento; o enfileiramento de resolução Meta passou a abrir transação própria após commit para garantir jobs consumíveis pelo worker.
+- validação: testes unitários de targeting atualizados para cobrir materialização do público aprovado e resumo de jobs.
+- arquivos alterados:
+  - backend/ads-service/src/main/java/com/marketinghub/targeting/service/TargetingRequestService.java
+  - backend/ads-service/src/main/java/com/marketinghub/targeting/service/TargetingResolutionJobService.java
+  - backend/ads-service/src/main/java/com/marketinghub/repository/jpa/targeting/TargetingElementRepository.java
+  - backend/ads-service/src/test/java/com/marketinghub/targeting/service/TargetingRequestServiceTest.java
+  - backend/ads-service/src/test/java/com/marketinghub/targeting/service/TargetingResolutionJobServiceTest.java
+  - docs/registros/experimentos.md
+
+
 ## 2026-06-17 — Protocolo padrão backend: localização obrigatória dos testes
 
 - Atualizada a definição do protocolo padrão backend para explicitar que as regras/testes ArchUnit devem ficar no arquivo `backend/ads-service/src/test/java/com/marketinghub/architecture/ArquiteturaTest.java`.

@@ -7,12 +7,13 @@ import com.marketinghub.targeting.TargetingRequest;
 import com.marketinghub.repository.jpa.targeting.TargetingResolutionJobRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.CollectionUtils;
 
 import java.time.Instant;
@@ -25,19 +26,31 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+/**
+ * Gerencia a fila persistida de resolução de candidatos de público pelo Facebook Ads Worker.
+ */
 @Service
 public class TargetingResolutionJobService {
     private static final Logger log = LoggerFactory.getLogger(TargetingResolutionJobService.class);
 
     private final TargetingResolutionJobRepository repository;
     private final EntityManager entityManager;
+    private final TransactionTemplate transactionTemplate;
 
+    /**
+     * Inicializa o serviço com persistência JPA e transação explícita para enfileiramento pós-commit.
+     */
     public TargetingResolutionJobService(TargetingResolutionJobRepository repository,
-                                         EntityManager entityManager) {
+                                         EntityManager entityManager,
+                                         PlatformTransactionManager transactionManager) {
         this.repository = repository;
         this.entityManager = entityManager;
+        this.transactionTemplate = new TransactionTemplate(transactionManager);
     }
 
+    /**
+     * Agenda a criação dos jobs de resolução Meta somente depois que os candidatos forem gravados.
+     */
     public void enqueueAfterCommit(TargetingRequest request, Collection<TargetingCandidate> candidates) {
         if (request == null || request.getId() == null || CollectionUtils.isEmpty(candidates)) {
             return;
@@ -50,7 +63,7 @@ public class TargetingResolutionJobService {
         if (CollectionUtils.isEmpty(candidateIds)) {
             return;
         }
-        Runnable action = () -> enqueueInternal(requestId, candidateIds);
+        Runnable action = () -> runEnqueueInNewTransaction(requestId, candidateIds);
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                 @Override
@@ -63,8 +76,22 @@ public class TargetingResolutionJobService {
         }
     }
 
-    @Transactional
-    protected void enqueueInternal(UUID requestId, Collection<Long> candidateIds) {
+    /**
+     * Executa o enfileiramento em transação própria para não depender da transação que acabou de commitar.
+     */
+    private void runEnqueueInNewTransaction(UUID requestId, Collection<Long> candidateIds) {
+        try {
+            transactionTemplate.executeWithoutResult(status -> enqueueInternal(requestId, candidateIds));
+        } catch (RuntimeException ex) {
+            log.error("Failed to enqueue targeting candidates for Meta resolution: requestId={}, candidateIds={}", requestId, candidateIds, ex);
+            throw ex;
+        }
+    }
+
+    /**
+     * Persiste ou reinicia os jobs pendentes consumidos pelo Facebook Ads Worker.
+     */
+    private void enqueueInternal(UUID requestId, Collection<Long> candidateIds) {
         if (requestId == null || CollectionUtils.isEmpty(candidateIds)) {
             return;
         }
@@ -103,6 +130,9 @@ public class TargetingResolutionJobService {
         }
     }
 
+    /**
+     * Resume a situação operacional dos jobs por solicitação de targeting.
+     */
     public Map<UUID, TargetingResolutionSummary> summarizeByRequestIds(List<UUID> requestIds) {
         if (CollectionUtils.isEmpty(requestIds)) {
             return Collections.emptyMap();
@@ -119,6 +149,9 @@ public class TargetingResolutionJobService {
         return summaries;
     }
 
+    /**
+     * Consolida contadores, última tentativa, última conclusão e último erro de uma lista de jobs.
+     */
     private TargetingResolutionSummary summarize(List<TargetingResolutionJob> jobs) {
         if (CollectionUtils.isEmpty(jobs)) {
             return TargetingResolutionSummary.empty();
@@ -160,6 +193,9 @@ public class TargetingResolutionJobService {
         return new TargetingResolutionSummary(pending, processing, succeeded, failed, lastAttempt, lastCompleted, lastError);
     }
 
+    /**
+     * Representa o resumo operacional da fila de resolução Meta para uma solicitação.
+     */
     public record TargetingResolutionSummary(
             int pending,
             int processing,

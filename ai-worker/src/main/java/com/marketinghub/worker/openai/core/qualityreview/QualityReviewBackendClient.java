@@ -85,14 +85,10 @@ public class QualityReviewBackendClient implements StageBackendPort<QualityRevie
         return new StageExecution<>(idJob, experimentId, stageCode, STATUS_STARTED, asInstant(item.get("executionRequestedAt")), input);
     }
 
-    /** Monta o contexto textual enviado ao modelo com os insumos mínimos necessários para avaliação visual e causa-raiz. */
+    /** Monta o contexto textual enxuto com somente o HTML final canônico necessário ao Quality Review. */
     private Map<String, Object> buildPromptDataFromPending(Map<String, Object> pending) {
         Map<String, Object> experiment = asMap(pending.get("experiment"));
         Map<String, Object> payload = new LinkedHashMap<>();
-        putIfPresent(payload, "experimentName", firstPresent(pending.get("experimentName"), experiment.get("name")));
-        putIfPresent(payload, "hypothesisTitle", firstPresent(pending.get("hypothesisTitle"), asMap(pending.get("hypothesis")).get("title")));
-        putIfPresent(payload, "landingPageWireframe", firstPresent(pending.get("landingPageWireframe"), experiment.get("landingPageWireframe")));
-        putIfPresent(payload, "landingPageDesignPreset", firstPresent(pending.get("landingPageDesignPreset"), experiment.get("landingPageDesignPreset")));
         putIfPresent(payload, "htmlGeraLanding", resolveHtmlGeraLanding(pending, experiment));
         return payload;
     }
@@ -106,11 +102,6 @@ public class QualityReviewBackendClient implements StageBackendPort<QualityRevie
     private String resolveHtmlGeraLanding(Map<String, Object> pending, Map<String, Object> experiment) {
         String html = asString(pending.get("htmlGeraLanding"));
         return html != null ? html : asString(experiment.get("htmlGeraLanding"));
-    }
-
-    /** Retorna o primeiro valor não nulo entre o contrato novo enxuto e o contrato legado aninhado. */
-    private Object firstPresent(Object primary, Object fallback) {
-        return primary != null ? primary : fallback;
     }
 
     /** Adiciona ao payload somente campos com valor real para preservar compatibilidade com Map.copyOf. */

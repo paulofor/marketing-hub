@@ -764,7 +764,13 @@ paths:
       operationId: listPendingGeraLandingQualityReviewExecutions
       responses:
         '200':
-          description: Jobs pendentes retornados.
+          description: Jobs pendentes retornados com payload enxuto e insumos suficientes para revisão visual.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/QualityReviewPendingStageExecution'
   /api/internal/geralanding/quality-review/stage-executions/{idJob}/recebe-prompt:
     post:
       tags: [landing-page-quality-review]
@@ -1127,6 +1133,40 @@ components:
           $ref: '#/components/schemas/PendingStageExperiment'
         hypothesis:
           $ref: '#/components/schemas/PendingStageHypothesis'
+      required:
+        - experimentId
+        - jobid
+        - stageCode
+    QualityReviewPendingStageExecution:
+      type: object
+      additionalProperties: false
+      description: Payload enxuto da fila Quality Review; evita enviar o experimento completo e preserva HTML, wireframe e preset necessários para avaliação.
+      properties:
+        experimentId:
+          type: integer
+          format: int64
+        jobid:
+          type: string
+        stageCode:
+          type: string
+        executionRequestedAt:
+          type: string
+          format: date-time
+          nullable: true
+        experimentName:
+          type: string
+          nullable: true
+        hypothesisTitle:
+          type: string
+          nullable: true
+        landingPageWireframe:
+          $ref: '#/components/schemas/JsonBackedArtifact'
+        landingPageDesignPreset:
+          $ref: '#/components/schemas/JsonBackedArtifact'
+        htmlGeraLanding:
+          type: string
+          nullable: true
+          description: HTML/CSS final puro usado para renderização dos screenshots da revisão visual.
       required:
         - experimentId
         - jobid

@@ -13,6 +13,7 @@ import com.marketinghub.targeting.TargetingOption;
 import com.marketinghub.targeting.TargetingRequest;
 import com.marketinghub.targeting.TargetingResolutionJob;
 import com.marketinghub.targeting.TargetingResolutionJobStatus;
+import com.marketinghub.targeting.dto.TargetingCandidateIngestionRequest;
 import com.marketinghub.targeting.dto.TargetingCandidateResolutionUpdateRequest;
 import com.marketinghub.targeting.mapper.TargetingResolutionSummaryMapper;
 import com.marketinghub.repository.jpa.targeting.TargetingCandidateRepository;
@@ -118,6 +119,39 @@ class TargetingRequestServiceTest {
         assertThat(savedJob.getStartedAt()).isNotNull();
         assertThat(savedJob.getFinishedAt()).isNotNull();
         assertThat(savedJob.getFinishedAt()).isAfterOrEqualTo(savedJob.getStartedAt());
+    }
+
+    /** Verifica que candidatos recebidos do AI Worker são reenfileirados para validação na Meta. */
+    @Test
+    void saveCandidatesShouldEnqueuePersistedCandidatesForMetaResolution() {
+        UUID requestId = UUID.randomUUID();
+        TargetingRequest request = TargetingRequest.builder()
+                .id(requestId)
+                .descricao("Nicho unhas")
+                .status(com.marketinghub.targeting.TargetingRequestStatus.PENDING_AI)
+                .build();
+        TargetingCandidate savedCandidate = TargetingCandidate.builder()
+                .id(105L)
+                .request(request)
+                .seed("alongamento de unhas")
+                .type(TargetingCandidateType.INTEREST)
+                .status(TargetingCandidateStatus.PENDING_FACEBOOK_MATCH)
+                .build();
+        TargetingCandidateIngestionRequest payload = new TargetingCandidateIngestionRequest();
+        TargetingCandidateIngestionRequest.CandidatePayload candidatePayload =
+                new TargetingCandidateIngestionRequest.CandidatePayload();
+        candidatePayload.setSeed("alongamento de unhas");
+        candidatePayload.setTipo(TargetingCandidateType.INTEREST);
+        payload.setCandidates(List.of(candidatePayload));
+
+        when(requestRepository.findById(requestId)).thenReturn(Optional.of(request));
+        when(candidateRepository.save(any(TargetingCandidate.class))).thenReturn(savedCandidate);
+
+        service.saveCandidates(requestId, payload);
+
+        assertThat(request.getStatus()).isEqualTo(com.marketinghub.targeting.TargetingRequestStatus.COMPLETED);
+        verify(requestRepository).save(request);
+        verify(resolutionJobService).enqueueAfterCommit(request, List.of(savedCandidate));
     }
 
 

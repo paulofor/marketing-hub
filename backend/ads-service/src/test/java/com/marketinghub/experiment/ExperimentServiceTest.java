@@ -145,6 +145,8 @@ class ExperimentServiceTest {
 
         assertThat(updated.getCreativesToGenerate()).isEqualTo(1);
         assertThat(updated.getCreativeGenerationMode()).isEqualTo(CreativeGenerationMode.PIPELINE_ADS);
+        assertThat(updated.getCreativeGenerationStatus()).isEqualTo(CreativeGenerationStatus.REQUESTED);
+        assertThat(updated.getCreativeGenerationRequestedAt()).isNotNull();
     }
 
     @Test
@@ -188,6 +190,8 @@ class ExperimentServiceTest {
 
         assertThat(updated.getCreativesToGenerate()).isEqualTo(1);
         assertThat(updated.getCreativeGenerationMode()).isEqualTo(CreativeGenerationMode.PIPELINE_ADS);
+        assertThat(updated.getCreativeGenerationStatus()).isEqualTo(CreativeGenerationStatus.REQUESTED);
+        assertThat(updated.getCreativeGenerationRequestedAt()).isNotNull();
         assertThat(updated.getFollowUpActionUrl()).isNull();
         assertThat(updated.getFacebookInstantForm()).isNull();
     }

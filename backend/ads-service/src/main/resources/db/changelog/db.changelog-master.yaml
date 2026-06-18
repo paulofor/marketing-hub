@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-06-18-experiment-creative-generation-status.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-06-18-oprm-nichocnae-lock-indexes.yaml
       relativeToChangelogFile: true
   - include:

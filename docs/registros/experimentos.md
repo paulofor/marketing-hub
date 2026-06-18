@@ -1,3 +1,19 @@
+## 2026-06-18 — Estado operacional da geração de criativos do pipeline
+
+- solicitação: destravar a geração de anúncios do pipeline quando o item fica preso em “Gerando anúncios...”.
+- causa-raiz: a tela inferia processamento apenas por `creativesToGenerate > 0` e `PIPELINE_ADS`, sem estado operacional explícito para diferenciar fila, execução, falha e timeout.
+- foi feito: o experimento passou a registrar `creativeGenerationStatus`, horários de solicitação/início/fim e erro operacional; o Worker AI marca `PROCESSING`, `COMPLETED`, `FAILED` ou `TIMEOUT` e limpa a fila quando a execução não conclui.
+- impacto na tela: o frontend passou a exibir a verdade do backend e liberar nova tentativa quando o backend registra falha recuperável ou timeout.
+- validação: testes de backend e frontend atualizados para cobrir status solicitado e falha recuperável.
+- arquivos alterados:
+  - backend/ads-service/src/main/java/com/marketinghub/experiment/Experiment.java
+  - backend/ads-service/src/main/java/com/marketinghub/experiment/CreativeGenerationStatus.java
+  - backend/ads-service/src/main/java/com/marketinghub/experiment/service/ExperimentService.java
+  - backend/ads-service/src/main/java/com/marketinghub/experiment/dto/ExperimentDto.java
+  - ai-worker/src/main/java/com/marketinghub/worker/creative/ExperimentCreativeService.java
+  - frontend/src/pages/experiment/CriativosTab.tsx
+  - docs/registros/experimentos.md
+
 
 ## 2026-06-17 — Protocolo padrão backend: localização obrigatória dos testes
 

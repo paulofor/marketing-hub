@@ -169,6 +169,28 @@ public class Experiment {
     @Builder.Default
     private CreativeGenerationMode creativeGenerationMode = CreativeGenerationMode.DEFAULT;
 
+    /** Estado operacional da última solicitação de geração de criativos. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "creative_generation_status", length = 32, nullable = false)
+    @Builder.Default
+    private CreativeGenerationStatus creativeGenerationStatus = CreativeGenerationStatus.IDLE;
+
+    /** Momento em que a geração de criativos foi solicitada. */
+    @Column(name = "creative_generation_requested_at")
+    private Instant creativeGenerationRequestedAt;
+
+    /** Momento em que o Worker AI assumiu a geração de criativos. */
+    @Column(name = "creative_generation_started_at")
+    private Instant creativeGenerationStartedAt;
+
+    /** Momento em que a geração de criativos foi concluída ou encerrada. */
+    @Column(name = "creative_generation_finished_at")
+    private Instant creativeGenerationFinishedAt;
+
+    /** Último erro operacional da geração de criativos. */
+    @Column(name = "creative_generation_error", length = 1024)
+    private String creativeGenerationError;
+
     @Column(name = "primary_variable", length = 191)
     private String primaryVariable;
 

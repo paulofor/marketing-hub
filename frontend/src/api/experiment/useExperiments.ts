@@ -121,6 +121,11 @@ export interface Experiment {
   platform: string;
   stage: ExperimentStage;
   creativeGenerationMode?: "DEFAULT" | "PIPELINE_ADS";
+  creativeGenerationStatus?: "IDLE" | "REQUESTED" | "PROCESSING" | "COMPLETED" | "FAILED" | "TIMEOUT";
+  creativeGenerationRequestedAt?: string | null;
+  creativeGenerationStartedAt?: string | null;
+  creativeGenerationFinishedAt?: string | null;
+  creativeGenerationError?: string | null;
   primaryVariable?: string | null;
   primaryMetric?: string | null;
   createdAt: string;

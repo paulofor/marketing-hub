@@ -200,6 +200,7 @@ describe("CriativosTab", () => {
           data: {
             creativesToGenerate: 2,
             creativeGenerationMode: "PIPELINE_ADS",
+            creativeGenerationStatus: "PROCESSING",
           },
         });
       }
@@ -212,6 +213,35 @@ describe("CriativosTab", () => {
       </QueryClientProvider>,
     );
     expect(await screen.findByText(/Worker AI em produção/i)).toBeInTheDocument();
+  });
+
+
+  it("shows recoverable pipeline failure from backend status", async () => {
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url.endsWith("/experiments/1/creatives")) {
+        return Promise.resolve({ data: [] });
+      }
+      if (url.endsWith("/experiments/1")) {
+        return Promise.resolve({
+          data: {
+            creativesToGenerate: 0,
+            creativeGenerationMode: "DEFAULT",
+            creativeGenerationStatus: "TIMEOUT",
+            creativeGenerationError: "Geração excedeu o tempo operacional de 30 minutos; solicite nova tentativa.",
+            adCopy: JSON.stringify({ adCopy: { primaryTextVariants: [{ primaryText: "Texto" }] } }),
+            adImageBriefing: JSON.stringify({ adImageBriefing: { briefings: [{ visualBriefing: "Imagem" }] } }),
+          },
+        });
+      }
+      return Promise.resolve({ data: [] });
+    });
+    const client = new QueryClient();
+    render(
+      <QueryClientProvider client={client}>
+        <CriativosTab experimentId="1" />
+      </QueryClientProvider>,
+    );
+    expect(await screen.findByText(/solicite nova tentativa/i)).toBeInTheDocument();
   });
 
 });

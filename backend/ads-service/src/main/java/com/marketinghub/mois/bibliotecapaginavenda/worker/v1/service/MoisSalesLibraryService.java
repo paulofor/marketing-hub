@@ -11,6 +11,7 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.HexFormat;
@@ -19,6 +20,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,6 +35,8 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Slf4j
 public class MoisSalesLibraryService {
+
+    private static final TimeZone UTC_TIME_ZONE = TimeZone.getTimeZone("UTC");
 
     private static final String JOB_STATUS_PENDING = "PENDING";
     private static final String ANALYSIS_STATUS_CANCELED = "ANULADO";
@@ -123,7 +127,7 @@ public class MoisSalesLibraryService {
                 rs.getLong("html_bytes"),
                 rs.getString("analysis_status"),
                 rs.getInt("next_attempt"),
-                toInstant(rs.getTimestamp("last_captured_at")),
+                toInstant(rs, "last_captured_at"),
                 rs.getBoolean("raw_html_available")
         ), workspaceId, normalizedSource, normalizedLimit);
         return new MoisSalesLibraryDtos.SalesLibraryPendingAnalysisResponse(
@@ -432,9 +436,9 @@ public class MoisSalesLibraryService {
                         """, (rs, rowNum) -> new MoisSalesLibraryDtos.SalesLibraryJobResponse(
                         rs.getLong("id"), rs.getLong("sales_page_id"), rs.getString("status"),
                         rs.getInt("attempt"), rs.getString("error_category"), rs.getString("error_message"),
-                        null, toInstant(rs.getTimestamp("created_at")),
-                        toInstant(rs.getTimestamp("updated_at")), toInstant(rs.getTimestamp("started_at")),
-                        toInstant(rs.getTimestamp("finished_at"))), jobId);
+                        null, toInstant(rs, "created_at"),
+                        toInstant(rs, "updated_at"), toInstant(rs, "started_at"),
+                        toInstant(rs, "finished_at")), jobId);
         if (rows.isEmpty()) {
             throw new IllegalArgumentException("Job execution not found: " + jobId);
         }
@@ -464,9 +468,9 @@ public class MoisSalesLibraryService {
                         """ + statusClause + " ORDER BY updated_at DESC, id DESC LIMIT ? OFFSET ?",
                 (rs, rowNum) -> new MoisSalesLibraryDtos.SalesLibraryJobResponse(rs.getLong("id"), rs.getLong("sales_page_id"),
                         rs.getString("status"), rs.getInt("attempt"), rs.getString("error_category"), rs.getString("error_message"),
-                        null, toInstant(rs.getTimestamp("created_at")),
-                        toInstant(rs.getTimestamp("updated_at")), toInstant(rs.getTimestamp("started_at")),
-                        toInstant(rs.getTimestamp("finished_at"))),
+                        null, toInstant(rs, "created_at"),
+                        toInstant(rs, "updated_at"), toInstant(rs, "started_at"),
+                        toInstant(rs, "finished_at")),
                 normalizedStatus == null ? new Object[]{workspaceId, normalizedPageSize, offset} : new Object[]{workspaceId, normalizedStatus, normalizedPageSize, offset});
         return new MoisSalesLibraryDtos.SalesLibraryJobPageResponse(normalizedPage, normalizedPageSize, total == null ? 0 : total, items);
     }
@@ -487,8 +491,8 @@ public class MoisSalesLibraryService {
                         """, (rs, rowNum) -> new MoisSalesLibraryDtos.SalesLibraryEntryResponse(
                         rs.getLong("id"), rs.getString("workspace_id"), rs.getString("source"), rs.getString("url_original"),
                         rs.getString("url_canonical"), rs.getString("title"), rs.getInt("ingest_count"),
-                        toInstant(rs.getTimestamp("first_seen_at")), toInstant(rs.getTimestamp("last_captured_at")),
-                        toInstant(rs.getTimestamp("updated_at"))), workspaceId, normalizedPageSize, offset);
+                        toInstant(rs, "first_seen_at"), toInstant(rs, "last_captured_at"),
+                        toInstant(rs, "updated_at")), workspaceId, normalizedPageSize, offset);
         return new MoisSalesLibraryDtos.SalesLibraryEntryPageResponse(normalizedPage, normalizedPageSize, total == null ? 0 : total, items);
     }
 
@@ -782,9 +786,9 @@ public class MoisSalesLibraryService {
                 rs.getLong("market_warmup_cold"), rs.getLong("market_warmup_saturated"),
                 rs.getLong("market_warmup_stuck"),
                 rs.getLong("capturing") > 0 || rs.getLong("captured_last_hour") > 0,
-                toInstant(rs.getTimestamp("last_captured_at")), rs.getLong("captured_last_hour"),
+                toInstant(rs, "last_captured_at"), rs.getLong("captured_last_hour"),
                 rs.getLong("remaining_without_html"), rs.getBigDecimal("average_captures_per_hour"),
-                toInstant(rs.getTimestamp("updated_at"))), workspaceId, workspaceId, workspaceId);
+                toInstant(rs, "updated_at")), workspaceId, workspaceId, workspaceId);
     }
 
     /**
@@ -839,7 +843,7 @@ public class MoisSalesLibraryService {
                 rs.getBigDecimal("score_total"), rs.getString("parser_version"), rs.getString("prompt_version"), rs.getString("model_name"), rs.getString("sections_json"),
                 rs.getString("copy_json"), rs.getString("visual_json"), rs.getString("image_json"),
                 rs.getString("error_message"), rs.getString("request_payload_json"), rs.getString("response_payload_json"),
-                toInstant(rs.getTimestamp("finished_at")), toInstant(rs.getTimestamp("updated_at"))), pageId);
+                toInstant(rs, "finished_at"), toInstant(rs, "updated_at")), pageId);
         if (rows.isEmpty()) throw new IllegalArgumentException("Analysis not found for page: " + pageId);
         return rows.get(0);
     }
@@ -861,9 +865,9 @@ public class MoisSalesLibraryService {
                 rs.getString("status"), rs.getInt("attempt"), rs.getString("input_url"), rs.getString("final_url"),
                 rs.getString("redirect_root_url"), (Integer) rs.getObject("http_status"), rs.getString("content_type"),
                 rs.getLong("raw_html_bytes"), rs.getLong("screenshot_bytes"), rs.getBigDecimal("score_total"),
-                rs.getString("error_category"), rs.getString("error_message"), toInstant(rs.getTimestamp("started_at")),
-                toInstant(rs.getTimestamp("finished_at")), toInstant(rs.getTimestamp("created_at")),
-                toInstant(rs.getTimestamp("updated_at"))), pageId);
+                rs.getString("error_category"), rs.getString("error_message"), toInstant(rs, "started_at"),
+                toInstant(rs, "finished_at"), toInstant(rs, "created_at"),
+                toInstant(rs, "updated_at")), pageId);
     }
 
 
@@ -1410,9 +1414,9 @@ public class MoisSalesLibraryService {
                 mapEnum(MoisSalesLibraryDtos.MarketWarmupEcosystemType.class, rs.getString("ecosystem_type")),
                 recommendation,
                 rs.getString("saturation_risk"),
-                toInstant(rs.getTimestamp("evidence_updated_at")),
+                toInstant(rs, "evidence_updated_at"),
                 resolveSuggestedNextAction(temperature, recommendation, nextSuggestion),
-                buildRankingEvidenceSummary(rs.getBigDecimal("page_score_total"), rs.getBigDecimal("warmup_score_total"), rs.getString("saturation_risk"), toInstant(rs.getTimestamp("evidence_updated_at")))
+                buildRankingEvidenceSummary(rs.getBigDecimal("page_score_total"), rs.getBigDecimal("warmup_score_total"), rs.getString("saturation_risk"), toInstant(rs, "evidence_updated_at"))
         );
     }
 
@@ -1484,15 +1488,15 @@ public class MoisSalesLibraryService {
                 rs.getString("last_error_category"),
                 rs.getString("last_error_message"),
                 rs.getObject("last_job_execution_id", Long.class),
-                toInstant(rs.getTimestamp("last_captured_at")),
-                toInstant(rs.getTimestamp("last_analyzed_at")),
-                toInstant(rs.getTimestamp("updated_at")),
+                toInstant(rs, "last_captured_at"),
+                toInstant(rs, "last_analyzed_at"),
+                toInstant(rs, "updated_at"),
                 rs.getBigDecimal("market_warmup_score_total"),
                 mapEnum(MoisSalesLibraryDtos.MarketWarmupTemperature.class, rs.getString("market_warmup_temperature")),
                 mapEnum(MoisSalesLibraryDtos.MarketWarmupEcosystemType.class, rs.getString("market_warmup_ecosystem_type")),
                 mapEnum(MoisSalesLibraryDtos.MarketWarmupRecommendation.class, rs.getString("market_warmup_recommendation")),
                 mapEnum(MoisSalesLibraryDtos.MarketWarmupJobStatus.class, rs.getString("market_warmup_status")),
-                toInstant(rs.getTimestamp("market_warmup_updated_at"))
+                toInstant(rs, "market_warmup_updated_at")
         );
     }
 
@@ -1534,6 +1538,17 @@ public class MoisSalesLibraryService {
      */
     private String normalizeSource(String source) {
         return source == null || source.isBlank() ? "UNKNOWN" : source.trim().toUpperCase(Locale.ROOT);
+    }
+
+    /**
+     * Lê uma coluna DATETIME gravada em UTC e converte em Instant sem depender do fuso do servidor.
+     */
+    private Instant toInstant(ResultSet rs, String columnName) throws SQLException {
+        Timestamp timestamp = rs.getTimestamp(columnName, Calendar.getInstance(UTC_TIME_ZONE));
+        if (timestamp == null) {
+            timestamp = rs.getTimestamp(columnName);
+        }
+        return toInstant(timestamp);
     }
 
     /**

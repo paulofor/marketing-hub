@@ -1698,3 +1698,9 @@ Arquivos principais:
 
 - Ajustada a tela `/mois/sales-pages-library/pipeline` para exibir o horário da última captura no fuso `America/Sao_Paulo`, evitando leitura operacional em UTC ou no fuso local do navegador.
 - Mantido o dado vindo do backend como fonte de verdade; o frontend apenas formata a data para o fuso usado pela operação no Brasil.
+
+## 2026-06-18 — Correção da causa-raiz do fuso na última captura da Biblioteca Sales Pages
+
+- Corrigida a leitura de `DATETIME` do MySQL no backend da Biblioteca de Sales Pages para interpretar os horários operacionais como UTC antes de entregar `Instant` ao frontend.
+- Causa-raiz: o JDBC podia converter `DATETIME` usando o fuso padrão do servidor, fazendo a tela exibir horário futuro em São Paulo mesmo com o Windows do usuário no fuso correto.
+- Adicionado teste de regressão no resumo operacional para impedir que a “última captura feita” volte a depender do fuso do servidor Java/MySQL.

@@ -1,12 +1,16 @@
 databaseChangeLog:
   - changeSet:
-      id: 2026-06-18-01-oprm-nichocnae-lock-indexes
+      id: 2026-06-18-01-oprm-routine-cycle-cnae-finished-started-index
       author: codex
       preConditions:
         - onFail: MARK_RAN
         - onError: HALT
         - dbms:
             type: mysql
+        - not:
+            - indexExists:
+                tableName: oprm_routine_research_cycle
+                indexName: idx_oprm_routine_cycle_cnae_finished_started
       changes:
         - createIndex:
             tableName: oprm_routine_research_cycle
@@ -18,6 +22,20 @@ databaseChangeLog:
                   name: finished_at
               - column:
                   name: started_at
+
+  - changeSet:
+      id: 2026-06-18-02-oprm-niche-candidate-cnae-score-created-index
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            - indexExists:
+                tableName: oprm_niche_candidate
+                indexName: idx_oprm_niche_candidate_cnae_score_created
+      changes:
         - createIndex:
             tableName: oprm_niche_candidate
             indexName: idx_oprm_niche_candidate_cnae_score_created

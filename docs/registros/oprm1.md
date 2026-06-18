@@ -1,3 +1,9 @@
+## 2026-06-18 02:23:30 (UTC) — OPRM NichoCNAE: endpoint de jobs por status para reprocessamento pelo executor
+
+- Causa-raiz identificada no ciclo #68: o backend marcava `NEEDS_MORE_RESEARCH` durante a triagem pré-segmentação MEI/autônomo, antes de o job chegar ao gate de qualidade que já aciona o reprocessamento automático no executor.
+- Correção aplicada: criado endpoint interno `GET /api/internal/oprm/nichocnae/routine-research-orchestrator/jobs?status=...&limit=...` para o executor OPRM buscar jobs por status recuperável, obter os dados da tentativa anterior e decidir nova tentativa com aprendizado nos prompts, mantendo o backend como leitura/escrita e o controle operacional no executor.
+- Prevenção de recorrência: adicionado teste unitário garantindo normalização de status, limite seguro e consulta filtrada por status no backend.
+
 ## 2026-06-17 00:00:00 (UTC) — OPRM NichoCNAE: evitar repetição de subnichos por CNAE
 
 - Causa-raiz tratada: a etapa `oprmNicheResearchSeedBuilder` já quebrava o CNAE em subnichos vendáveis, mas não recebia explicitamente os subnichos já materializados para o mesmo CNAE, permitindo repetir ou aproximar semanticamente um recorte já existente.

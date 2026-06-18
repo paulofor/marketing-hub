@@ -28,6 +28,8 @@ public class BackendSourceFetcherService {
   private static final Logger LOGGER = LoggerFactory.getLogger(BackendSourceFetcherService.class);
   private static final String CANDIDATE_STATUS_FOUND = "FOUND";
   private static final String CYCLE_STATUS_RUNNING = "RUNNING";
+  private static final String CURRENT_STAGE_SOURCE_FETCHER = "source-fetcher";
+  private static final String CURRENT_STAGE_SIGNAL_EXTRACTOR = "signal-extractor";
   private static final String CANDIDATE_STATUS_FETCHED = "FETCHED";
   private static final String CANDIDATE_STATUS_REJECTED = "REJECTED";
   private static final String DEFAULT_FETCH_STATUS = "COMPLETED";
@@ -35,6 +37,7 @@ public class BackendSourceFetcherService {
   private static final String DEFAULT_SOURCE_CLASSIFICATION_TYPE = "OLD_OR_UNDATED_CONTENT";
   private static final String DEFAULT_STORAGE_POLICY = "SHORT_EXCERPT_ALLOWED";
   private static final String SIGNAL_STATUS_PENDING = "PENDING";
+  private static final int MIN_SNAPSHOTS_TO_EXTRACT_SIGNALS = 5;
   private static final int MAX_PENDING = 30;
   private static final int MAX_SHORT_EXCERPT_LENGTH = 1200;
 
@@ -84,6 +87,9 @@ public class BackendSourceFetcherService {
       candidate.setUpdatedAt(now);
       sourceCandidateRepository.save(candidate);
       cycle.setTotalSourceSnapshots(countCycleSnapshots(cycle.getId(), 1));
+      if (cycle.getTotalSourceSnapshots() >= MIN_SNAPSHOTS_TO_EXTRACT_SIGNALS) {
+        cycle.setCurrentStageCode(CURRENT_STAGE_SIGNAL_EXTRACTOR);
+      }
       cycle.setUpdatedAt(now);
       routineResearchCycleRepository.save(cycle);
       return new CompleteSourceFetcherResponse(

@@ -39,6 +39,8 @@ public class BackendMeiAudienceSegmenterService {
   private static final String SEGMENTED_STATUS = "MEI_AUDIENCE_SEGMENTED";
   private static final String FAILED_STATUS = "FAILED";
   private static final String NEEDS_MORE_RESEARCH_STATUS = "NEEDS_MORE_RESEARCH";
+  private static final String CURRENT_STAGE_MEI_AUDIENCE_SEGMENTER = "mei-audience-segmenter";
+  private static final String CURRENT_STAGE_ROUTINE_QUALITY_GATE = "routine-quality-gate";
   private static final String INSUFFICIENT_OPERATIONAL_PAIN_REASON = "cartão sem evidência mínima de dor prática";
   private static final int MAX_PENDING = 10;
   private static final int MAX_SIGNALS = 120;
@@ -109,6 +111,7 @@ public class BackendMeiAudienceSegmenterService {
       UpsertMeiAudienceProfileResponse profile = profileService.upsertAudienceProfile(toProfileRequest(request));
       Instant now = Instant.now();
       cycle.setStatus(SEGMENTED_STATUS);
+      cycle.setCurrentStageCode(CURRENT_STAGE_ROUTINE_QUALITY_GATE);
       cycle.setUpdatedAt(now);
       cycle.setErrorMessage(null);
       routineResearchCycleRepository.save(cycle);
@@ -133,6 +136,7 @@ public class BackendMeiAudienceSegmenterService {
       OprmRoutineResearchCycle cycle = findCycle(researchCycleId);
       Instant now = Instant.now();
       cycle.setStatus(FAILED_STATUS);
+      cycle.setCurrentStageCode(CURRENT_STAGE_MEI_AUDIENCE_SEGMENTER);
       cycle.setErrorMessage(requiredText(request == null ? null : request.errorMessage(), "errorMessage"));
       cycle.setFinishedAt(now);
       cycle.setUpdatedAt(now);
@@ -160,6 +164,7 @@ public class BackendMeiAudienceSegmenterService {
   private void markCycleAsNeedingMoreResearch(OprmRoutineResearchCycle cycle) {
     Instant now = Instant.now();
     cycle.setStatus(NEEDS_MORE_RESEARCH_STATUS);
+    cycle.setCurrentStageCode(CURRENT_STAGE_MEI_AUDIENCE_SEGMENTER);
     cycle.setErrorMessage(INSUFFICIENT_OPERATIONAL_PAIN_REASON);
     cycle.setFinishedAt(now);
     cycle.setUpdatedAt(now);

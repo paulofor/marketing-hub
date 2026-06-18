@@ -20,7 +20,9 @@ public interface OprmNicheRoutineCardRepository extends JpaRepository<OprmNicheR
   /** Lista cartões sintetizados, segmentados como MEI/autônomo e ainda não avaliados pelo gate de qualidade. */
   @Query("""
       select c from OprmNicheRoutineCard c
+      join OprmRoutineResearchCycle cycle on cycle.id = c.researchCycleId
       where c.qualityCheckedAt is null
+        and cycle.currentStageCode = 'routine-quality-gate'
         and exists (
           select 1 from OprmMeiAudienceProfile p
           where p.researchCycleId = c.researchCycleId
@@ -34,6 +36,7 @@ public interface OprmNicheRoutineCardRepository extends JpaRepository<OprmNicheR
       select c from OprmNicheRoutineCard c
       join OprmRoutineResearchCycle cycle on cycle.id = c.researchCycleId
       where cycle.status = 'ROUTINE_SYNTHESIZED'
+        and cycle.currentStageCode = 'mei-audience-segmenter'
         and not exists (
           select 1 from OprmMeiAudienceProfile p
           where p.researchCycleId = c.researchCycleId
@@ -73,7 +76,9 @@ public interface OprmNicheRoutineCardRepository extends JpaRepository<OprmNicheR
   /** Lista cartões aprovados no gate de qualidade que ainda não alimentaram nicho e nicho enriquecido. */
   @Query("""
       select c from OprmNicheRoutineCard c
+      join OprmRoutineResearchCycle cycle on cycle.id = c.researchCycleId
       where c.readyForHypothesis = true
+        and cycle.currentStageCode = 'enriched-niche-materializer'
         and c.qualityCheckedAt is not null
         and not exists (
           select 1 from MarketNicheEnrichmentProfile p

@@ -38,6 +38,7 @@ public class BackendRoutineResearchOrchestratorService {
     private static final String ROUTINE_STATUS_PENDING = "PENDING";
     private static final String ROUTINE_STATUS_RUNNING = "RESEARCH_RUNNING";
     private static final String CYCLE_STATUS_RUNNING = "RUNNING";
+    private static final String CURRENT_STAGE_SEED_BUILDER = "niche-research-seed-builder";
     private static final String CYCLE_STATUS_FAILED = "FAILED";
     private static final String CYCLE_STATUS_NEEDS_MORE_RESEARCH = "NEEDS_MORE_RESEARCH";
     private static final String CYCLE_STATUS_NEEDS_MORE_MEI_RESEARCH = "NEEDS_MORE_MEI_RESEARCH";
@@ -210,6 +211,7 @@ public class BackendRoutineResearchOrchestratorService {
             Instant now) {
         cycle.setTriggerSource(triggerSource);
         cycle.setStatus(CYCLE_STATUS_RUNNING);
+        cycle.setCurrentStageCode(CURRENT_STAGE_SEED_BUILDER);
         cycle.setTotalQueries(0);
         cycle.setTotalSourceCandidates(0);
         cycle.setTotalSourceSnapshots(0);
@@ -437,7 +439,8 @@ public class BackendRoutineResearchOrchestratorService {
         cycle.setSolutionLanguageRiskScore(normalizedName.solutionLanguageRiskScore());
         cycle.setSourceScore(candidate.getOpportunityScore());
         cycle.setTriggerSource(TRIGGER_SOURCE_AUTO_SCORE_QUEUE);
-        cycle.setStatus(CYCLE_STATUS_RUNNING);
+            cycle.setStatus(CYCLE_STATUS_RUNNING);
+            cycle.setCurrentStageCode(CURRENT_STAGE_SEED_BUILDER);
         cycle.setTotalQueries(0);
         cycle.setTotalSourceCandidates(0);
         cycle.setTotalSourceSnapshots(0);

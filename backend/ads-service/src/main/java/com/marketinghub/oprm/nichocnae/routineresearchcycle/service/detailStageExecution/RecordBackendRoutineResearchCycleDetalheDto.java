@@ -16,6 +16,7 @@ public record RecordBackendRoutineResearchCycleDetalheDto(
     BigDecimal solutionLanguageRiskScore,
     BigDecimal sourceScore,
     String status,
+    String currentStageCode,
     Integer totalQueries,
     Integer totalSourceCandidates,
     Integer totalSourceSnapshots,

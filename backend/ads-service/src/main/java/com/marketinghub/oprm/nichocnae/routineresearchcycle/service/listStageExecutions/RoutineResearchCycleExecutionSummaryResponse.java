@@ -16,6 +16,7 @@ public record RoutineResearchCycleExecutionSummaryResponse(
     BigDecimal sourceScore,
     String triggerSource,
     String status,
+    String currentStageCode,
     Integer totalQueries,
     Integer totalSourceCandidates,
     Integer totalSourceSnapshots,

@@ -31,6 +31,8 @@ public class BackendSignalExtractorService {
   private static final String SIGNAL_STATUS_PENDING = "PENDING";
   private static final String SIGNAL_STATUS_COMPLETED = "COMPLETED";
   private static final String SIGNAL_STATUS_FAILED = "FAILED";
+  private static final String CURRENT_STAGE_SIGNAL_EXTRACTOR = "signal-extractor";
+  private static final String CURRENT_STAGE_ROUTINE_SYNTHESIZER = "routine-synthesizer";
   private static final String DEFAULT_CREATED_BY = "oprmSignalExtractor";
   private static final int MAX_PENDING = 30;
   private static final int MAX_SIGNALS_PER_SNAPSHOT = 16;
@@ -55,8 +57,8 @@ public class BackendSignalExtractorService {
   @Transactional(readOnly = true)
   public List<RecordSignalExtractorPending> listPending() {
     return sourceSnapshotRepository
-        .findByFetchStatusAndSignalExtractionStatusOrderByResearchCycleIdAscIdAsc(
-            FETCH_STATUS_COMPLETED, SIGNAL_STATUS_PENDING, PageRequest.of(0, MAX_PENDING))
+        .findPendingByStatusAndCycleStage(
+            FETCH_STATUS_COMPLETED, SIGNAL_STATUS_PENDING, CURRENT_STAGE_SIGNAL_EXTRACTOR, PageRequest.of(0, MAX_PENDING))
         .stream()
         .filter(snapshot -> !extractedSignalRepository.existsBySourceSnapshotId(snapshot.getId()))
         .map(this::toPending)
@@ -84,6 +86,10 @@ public class BackendSignalExtractorService {
       snapshot.setSignalExtractedAt(now);
       sourceSnapshotRepository.save(snapshot);
       cycle.setTotalExtractedSignals(countCycleSignals(cycle.getId(), persistedSignals.size()));
+      if (sourceSnapshotRepository.countByResearchCycleIdAndSignalExtractionStatus(
+              cycle.getId(), SIGNAL_STATUS_PENDING) == 0) {
+        cycle.setCurrentStageCode(CURRENT_STAGE_ROUTINE_SYNTHESIZER);
+      }
       cycle.setUpdatedAt(now);
       routineResearchCycleRepository.save(cycle);
       List<ExtractedSignalResponse> signalResponses = persistedSignals.stream().map(this::toSignalResponse).toList();

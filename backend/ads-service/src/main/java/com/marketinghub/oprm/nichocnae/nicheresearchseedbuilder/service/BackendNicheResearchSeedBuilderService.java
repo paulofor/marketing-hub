@@ -37,6 +37,8 @@ public class BackendNicheResearchSeedBuilderService {
   private static final Logger LOGGER = LoggerFactory.getLogger(BackendNicheResearchSeedBuilderService.class);
   private static final String CYCLE_STATUS_RUNNING = "RUNNING";
   private static final String CYCLE_STATUS_FAILED = "FAILED";
+  private static final String CURRENT_STAGE_SEED_BUILDER = "niche-research-seed-builder";
+  private static final String CURRENT_STAGE_SOURCE_SEARCHER = "source-searcher";
   private static final String QUERY_STATUS_PENDING = "PENDING";
   private static final String RETRYABLE_LEGACY_CONTRACT_ERROR = "nicheName is required";
   private static final String RETRYABLE_QUERY_GOAL_LENGTH_ERROR = "Data too long for column 'query_goal'";
@@ -109,6 +111,7 @@ public class BackendNicheResearchSeedBuilderService {
       reactivateCycleAfterSuccessfulCompletion(cycle);
       applyWinningSubnicheToCycle(cycle, savedSeed);
       cycle.setTotalQueries(savedQueries.size());
+      cycle.setCurrentStageCode(CURRENT_STAGE_SOURCE_SEARCHER);
       cycle.setUpdatedAt(now);
       routineResearchCycleRepository.save(cycle);
       return toResponse(savedSeed, savedQueries);
@@ -129,6 +132,7 @@ public class BackendNicheResearchSeedBuilderService {
       OprmRoutineResearchCycle cycle = findCycle(researchCycleId);
       Instant now = Instant.now();
       cycle.setStatus(CYCLE_STATUS_FAILED);
+      cycle.setCurrentStageCode(CURRENT_STAGE_SEED_BUILDER);
       cycle.setErrorMessage(buildFailureMessage(request));
       cycle.setFinishedAt(now);
       cycle.setUpdatedAt(now);
@@ -167,6 +171,7 @@ public class BackendNicheResearchSeedBuilderService {
   private void reactivateCycleAfterSuccessfulCompletion(OprmRoutineResearchCycle cycle) {
     if (CYCLE_STATUS_FAILED.equals(cycle.getStatus())) {
       cycle.setStatus(CYCLE_STATUS_RUNNING);
+      cycle.setCurrentStageCode(CURRENT_STAGE_SEED_BUILDER);
       cycle.setFinishedAt(null);
       cycle.setErrorMessage(null);
     }

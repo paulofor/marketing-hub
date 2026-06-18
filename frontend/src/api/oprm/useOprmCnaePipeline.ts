@@ -13,6 +13,7 @@ export interface OprmRoutineResearchCycleSummary {
   sourceScore: number | null;
   triggerSource: string | null;
   status: string;
+  currentStageCode?: string | null;
   totalQueries: number | null;
   totalSourceCandidates: number | null;
   totalSourceSnapshots: number | null;

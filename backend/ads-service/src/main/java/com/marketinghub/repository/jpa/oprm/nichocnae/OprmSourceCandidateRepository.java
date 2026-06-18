@@ -23,6 +23,7 @@ public interface OprmSourceCandidateRepository extends JpaRepository<OprmSourceC
             from OprmSourceCandidate candidate, OprmRoutineResearchCycle cycle
             where cycle.id = candidate.researchCycleId
               and cycle.status = :cycleStatus
+              and cycle.currentStageCode = :currentStageCode
               and cycle.finishedAt is null
               and candidate.status = :candidateStatus
               and candidate.selectedForFetch = false
@@ -40,7 +41,14 @@ public interface OprmSourceCandidateRepository extends JpaRepository<OprmSourceC
     List<OprmSourceCandidate> findPendingForFetchFromActiveCycles(
             @Param("candidateStatus") String candidateStatus,
             @Param("cycleStatus") String cycleStatus,
+            @Param("currentStageCode") String currentStageCode,
             Pageable pageable);
+
+    /** Mantém compatibilidade de testes e callers legados apontando para a etapa de coleta canônica. */
+    default List<OprmSourceCandidate> findPendingForFetchFromActiveCycles(
+            String candidateStatus, String cycleStatus, Pageable pageable) {
+        return findPendingForFetchFromActiveCycles(candidateStatus, cycleStatus, "source-fetcher", pageable);
+    }
 
     /** Remove fontes candidatas de um ciclo antes de reexecutar etapas do mesmo job. */
     void deleteByResearchCycleId(Long researchCycleId);

@@ -53,6 +53,7 @@ class OprmSourceCandidateRepositoryTest {
     cycle.setSourceScore(BigDecimal.valueOf(90));
     cycle.setTriggerSource("TEST");
     cycle.setStatus(status);
+    cycle.setCurrentStageCode("source-fetcher");
     cycle.setTotalQueries(1);
     cycle.setTotalSourceCandidates(1);
     cycle.setTotalSourceSnapshots(0);

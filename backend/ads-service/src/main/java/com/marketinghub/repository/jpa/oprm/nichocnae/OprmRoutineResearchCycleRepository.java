@@ -34,6 +34,9 @@ public interface OprmRoutineResearchCycleRepository extends JpaRepository<OprmRo
     /** Lista ciclos por status para filas internas do pipeline de pesquisa de rotina. */
     List<OprmRoutineResearchCycle> findByStatusOrderByStartedAtAsc(String status, Pageable pageable);
 
+    /** Lista ciclos por etapa operacional atual para publicação precisa do pending canônico. */
+    List<OprmRoutineResearchCycle> findByCurrentStageCodeOrderByStartedAtAsc(String currentStageCode, Pageable pageable);
+
     /** Conta reprocessamentos automáticos já abertos para o mesmo candidato e fonte de gatilho. */
     long countBySourceNicheIdAndTriggerSource(Long sourceNicheId, String triggerSource);
 
@@ -52,6 +55,7 @@ public interface OprmRoutineResearchCycleRepository extends JpaRepository<OprmRo
                   from OprmNicheResearchSeed seed
                   where seed.researchCycleId = cycle.id
               )
+              and cycle.currentStageCode = :currentStageCode
               and not exists (
                   select 1
                   from OprmResearchQuery researchQuery
@@ -72,12 +76,31 @@ public interface OprmRoutineResearchCycleRepository extends JpaRepository<OprmRo
             order by case when cycle.status = :failedStatus then 0 else 1 end, cycle.startedAt asc
             """)
     List<OprmRoutineResearchCycle> findSeedBuilderPendingOrRetryable(
+            @Param("currentStageCode") String currentStageCode,
             @Param("runningStatus") String runningStatus,
             @Param("failedStatus") String failedStatus,
             @Param("legacyContractErrorFragment") String legacyContractErrorFragment,
             @Param("queryGoalLengthErrorFragment") String queryGoalLengthErrorFragment,
             @Param("completePathFragment") String completePathFragment,
             Pageable pageable);
+
+    /** Mantém compatibilidade de testes e callers legados apontando para a etapa seed canônica. */
+    default List<OprmRoutineResearchCycle> findSeedBuilderPendingOrRetryable(
+            String runningStatus,
+            String failedStatus,
+            String legacyContractErrorFragment,
+            String queryGoalLengthErrorFragment,
+            String completePathFragment,
+            Pageable pageable) {
+        return findSeedBuilderPendingOrRetryable(
+                "niche-research-seed-builder",
+                runningStatus,
+                failedStatus,
+                legacyContractErrorFragment,
+                queryGoalLengthErrorFragment,
+                completePathFragment,
+                pageable);
+    }
 
     /** Lista ciclos RUNNING antigos sem qualquer contador de progresso para proteção operacional. */
     @Query("""

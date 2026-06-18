@@ -54,6 +54,9 @@ public class OprmRoutineResearchCycle {
     @Column(name = "status", nullable = false, length = 32)
     private String status;
 
+    @Column(name = "current_stage_code", length = 64)
+    private String currentStageCode;
+
     @Column(name = "total_queries", nullable = false)
     private Integer totalQueries;
 

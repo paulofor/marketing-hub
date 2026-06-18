@@ -32,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class BackendRoutineResearchCycleService {
   private static final String CYCLE_STATUS_RUNNING = "RUNNING";
+  private static final String CURRENT_STAGE_RESEARCH_CYCLE = "routine-research-cycle";
 
   private final OprmRoutineResearchCycleRepository routineResearchCycleRepository;
   private final OprmNicheResearchSeedRepository nicheResearchSeedRepository;
@@ -66,7 +67,7 @@ public class BackendRoutineResearchCycleService {
   @Transactional(readOnly = true)
   public List<RecordRoutineResearchCyclePending> listPending() {
     return routineResearchCycleRepository
-        .findByStatusOrderByStartedAtAsc(CYCLE_STATUS_RUNNING, PageRequest.of(0, 20))
+        .findByCurrentStageCodeOrderByStartedAtAsc(CURRENT_STAGE_RESEARCH_CYCLE, PageRequest.of(0, 20))
         .stream()
         .map(this::toPending)
         .toList();
@@ -187,6 +188,7 @@ public class BackendRoutineResearchCycleService {
         cycle.getSourceScore(),
         cycle.getTriggerSource(),
         cycle.getStatus(),
+        cycle.getCurrentStageCode(),
         cycle.getTotalQueries(),
         cycle.getTotalSourceCandidates(),
         cycle.getTotalSourceSnapshots(),
@@ -405,6 +407,7 @@ public class BackendRoutineResearchCycleService {
         cycle.getSolutionLanguageRiskScore(),
         cycle.getSourceScore(),
         cycle.getStatus(),
+        cycle.getCurrentStageCode(),
         cycle.getTotalQueries(),
         cycle.getTotalSourceCandidates(),
         cycle.getTotalSourceSnapshots(),

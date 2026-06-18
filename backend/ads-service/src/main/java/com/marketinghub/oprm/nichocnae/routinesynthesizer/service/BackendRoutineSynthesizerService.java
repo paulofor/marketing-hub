@@ -31,6 +31,8 @@ public class BackendRoutineSynthesizerService {
   private static final String RUNNING_STATUS = "RUNNING";
   private static final String FAILED_STATUS = "FAILED";
   private static final String SYNTHESIZED_STATUS = "ROUTINE_SYNTHESIZED";
+  private static final String CURRENT_STAGE_ROUTINE_SYNTHESIZER = "routine-synthesizer";
+  private static final String CURRENT_STAGE_MEI_AUDIENCE_SEGMENTER = "mei-audience-segmenter";
   private static final String DEFAULT_SYNTHESIZED_BY = "oprmRoutineSynthesizer";
   private static final int MAX_PENDING = 10;
   private static final int MAX_SIGNALS_PER_CYCLE = 120;
@@ -53,7 +55,9 @@ public class BackendRoutineSynthesizerService {
   /** Lista ciclos com sinais extraídos e sem cartão de rotina para processamento da etapa seis. */
   @Transactional(readOnly = true)
   public List<RecordRoutineSynthesizerPending> listPending() {
-    return routineResearchCycleRepository.findByStatusOrderByStartedAtAsc(RUNNING_STATUS, PageRequest.of(0, MAX_PENDING)).stream()
+    return routineResearchCycleRepository
+        .findByCurrentStageCodeOrderByStartedAtAsc(CURRENT_STAGE_ROUTINE_SYNTHESIZER, PageRequest.of(0, MAX_PENDING))
+        .stream()
         .filter(cycle -> !routineCardRepository.existsByResearchCycleId(cycle.getId()))
         .map(cycle -> new CycleWithSignals(cycle, extractedSignalRepository.findByResearchCycleIdOrderByIdAsc(cycle.getId())))
         .filter(item -> !item.signals().isEmpty())
@@ -99,6 +103,7 @@ public class BackendRoutineSynthesizerService {
       card.setCreatedAt(now);
       OprmNicheRoutineCard saved = routineCardRepository.save(card);
       cycle.setStatus(SYNTHESIZED_STATUS);
+      cycle.setCurrentStageCode(CURRENT_STAGE_MEI_AUDIENCE_SEGMENTER);
       cycle.setUpdatedAt(now);
       cycle.setErrorMessage(null);
       routineResearchCycleRepository.save(cycle);
@@ -121,6 +126,7 @@ public class BackendRoutineSynthesizerService {
       OprmRoutineResearchCycle cycle = findCycle(researchCycleId);
       Instant now = Instant.now();
       cycle.setStatus(FAILED_STATUS);
+      cycle.setCurrentStageCode(CURRENT_STAGE_ROUTINE_SYNTHESIZER);
       cycle.setErrorMessage(requiredText(request == null ? null : request.errorMessage(), "errorMessage"));
       cycle.setFinishedAt(now);
       cycle.setUpdatedAt(now);

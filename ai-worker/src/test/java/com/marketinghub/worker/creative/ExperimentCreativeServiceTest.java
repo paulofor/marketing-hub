@@ -3,6 +3,7 @@ package com.marketinghub.worker.creative;
 import com.marketinghub.creative.Creative;
 import com.marketinghub.creative.dto.CreateCreativeRequest;
 import com.marketinghub.experiment.CreativeGenerationMode;
+import com.marketinghub.experiment.CreativeGenerationStatus;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.creative.service.CreativeService;
 import com.marketinghub.experiment.Experiment;
@@ -86,8 +87,10 @@ class ExperimentCreativeServiceTest {
         assertThat(usedPrompt).contains("hipótese \"title\"");
         assertThat(req.getImageUrl()).isEqualTo("img");
         verify(creativeService).create(1L, req);
-        verify(experimentRepository).save(experiment);
+        verify(experimentRepository, times(2)).save(experiment);
         assertThat(experiment.getCreativesToGenerate()).isZero();
+        assertThat(experiment.getCreativeGenerationStatus()).isEqualTo(CreativeGenerationStatus.COMPLETED);
+        assertThat(experiment.getCreativeGenerationError()).isNull();
         assertThat(result.get(1L)).containsExactly(saved);
     }
 
@@ -245,7 +248,9 @@ class ExperimentCreativeServiceTest {
         assertThat(req.getImageUrl()).isNull();
         assertThat(result).doesNotContainKey(1L);
         assertThat(experiment.getCreativesToGenerate()).isZero();
-        verify(experimentRepository).save(experiment);
+        verify(experimentRepository, times(2)).save(experiment);
+        assertThat(experiment.getCreativeGenerationStatus()).isEqualTo(CreativeGenerationStatus.FAILED);
+        assertThat(experiment.getCreativeGenerationError()).contains("Image generation returned no URL");
     }
 
     /**
@@ -270,7 +275,9 @@ class ExperimentCreativeServiceTest {
         assertThat(result).doesNotContainKey(1L);
         assertThat(experiment.getCreativesToGenerate()).isZero();
         assertThat(experiment.getCreativeGenerationMode()).isEqualTo(CreativeGenerationMode.DEFAULT);
-        verify(experimentRepository).save(experiment);
+        verify(experimentRepository, times(2)).save(experiment);
+        assertThat(experiment.getCreativeGenerationStatus()).isEqualTo(CreativeGenerationStatus.FAILED);
+        assertThat(experiment.getCreativeGenerationError()).contains("Image generation returned no URL");
     }
 
 }

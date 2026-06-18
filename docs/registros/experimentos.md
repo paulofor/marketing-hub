@@ -1,3 +1,14 @@
+## 2026-06-18 — Compatibilidade de compilação do Worker AI com metadados de geração de criativos
+
+- solicitação: corrigir a nova falha de compilação do Worker AI antes de gerar PR.
+- causa-raiz: o Worker AI passou a chamar diretamente getters/setters de metadados operacionais recém-adicionados ao `Experiment`, mas a dependência `ads-service` usada na compilação do módulo pode estar publicada em versão defasada.
+- foi feito: os metadados opcionais de data/erro da geração passaram a ser acessados por reflexão tolerante, mantendo compatibilidade de compilação sem duplicar modelo local; os testes do serviço foram alinhados ao fluxo atual, que salva o experimento ao assumir processamento e ao concluir/falhar.
+- validação: o backend foi instalado localmente, a compilação do Worker AI passou e o teste focado de geração de criativos passou; a suíte completa do Worker AI ainda depende de acesso de rede ao backend em schedulers durante testes de contexto.
+- arquivos alterados:
+  - ai-worker/src/main/java/com/marketinghub/worker/creative/ExperimentCreativeService.java
+  - ai-worker/src/test/java/com/marketinghub/worker/creative/ExperimentCreativeServiceTest.java
+  - docs/registros/experimentos.md
+
 ## 2026-06-18 — Correção de compilação do Worker AI na geração de criativos
 
 - solicitação: corrigir falha de compilação por import direto de `CreativeGenerationStatus` no Worker AI.

@@ -9,6 +9,8 @@ import com.marketinghub.oprm.nichocnae.OprmSourceCandidate;
 import com.marketinghub.oprm.nichocnae.OprmSourceSnapshot;
 import com.marketinghub.oprm.nichocnae.meiaudienceprofile.OprmMeiAudienceProfile;
 import com.marketinghub.oprm.nichocnae.routineresearchcycle.service.detailStageExecution.RecordBackendRoutineResearchCycleDetalheDto;
+import com.marketinghub.oprm.nichocnae.routineresearchcycle.service.listRecentJobs.OprmNichoCnaeJobSummaryResponse;
+import com.marketinghub.oprm.nichocnae.routineresearchcycle.service.listRecentJobs.OprmNichoCnaeJobsPageResponse;
 import com.marketinghub.oprm.nichocnae.routineresearchcycle.service.listStageExecutions.RoutineResearchCycleExecutionSummaryResponse;
 import com.marketinghub.oprm.nichocnae.routineresearchcycle.service.pending.RecordRoutineResearchCyclePending;
 import com.marketinghub.repository.jpa.oprm.nichocnae.OprmExtractedSignalRepository;
@@ -24,6 +26,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -71,6 +74,23 @@ public class BackendRoutineResearchCycleService {
         .stream()
         .map(this::toPending)
         .toList();
+  }
+
+  /** Lista os jobs mais recentes do pipeline NichoCNAE para a tela administrativa paginada. */
+  @Transactional(readOnly = true)
+  public OprmNichoCnaeJobsPageResponse listRecentJobs(int page, int size) {
+    int safePage = Math.max(page, 0);
+    int safeSize = Math.min(Math.max(size, 1), 100);
+    Page<OprmRoutineResearchCycle> cycles =
+        routineResearchCycleRepository.findRecentJobs(PageRequest.of(safePage, safeSize));
+    return new OprmNichoCnaeJobsPageResponse(
+        cycles.getContent().stream().map(this::toJobSummary).toList(),
+        cycles.getNumber(),
+        cycles.getSize(),
+        cycles.getTotalElements(),
+        cycles.getTotalPages(),
+        cycles.isFirst(),
+        cycles.isLast());
   }
 
   /** Lista execuções do ciclo de pesquisa de rotina associadas ao CNAE informado. */
@@ -198,6 +218,25 @@ public class BackendRoutineResearchCycleService {
         cycle.getStartedAt(),
         cycle.getFinishedAt(),
         cycle.getErrorMessage());
+  }
+
+  /** Converte um ciclo em linha da tela de jobs recentes com links de relatório e acompanhamento. */
+  private OprmNichoCnaeJobSummaryResponse toJobSummary(OprmRoutineResearchCycle cycle) {
+    String reportUrl =
+        "/api/oprm/nichocnae/routine-research-cycle/stage-executions/" + cycle.getId() + "/report";
+    String trackingUrl =
+        "/oprm/cnaes/" + cycle.getCnaeCode() + "/subnichos/" + cycle.getId();
+    return new OprmNichoCnaeJobSummaryResponse(
+        cycle.getId(),
+        cycle.getCnaeCode(),
+        cycle.getCnaeDescription(),
+        cycle.getNeutralNicheName(),
+        cycle.getStatus(),
+        executionCostUsd(cycle.getId()),
+        cycle.getCurrentStageCode(),
+        cycle.getUpdatedAt(),
+        reportUrl,
+        trackingUrl);
   }
 
   /** Adiciona o título principal do relatório Markdown. */

@@ -4,6 +4,7 @@ import com.marketinghub.oprm.nichocnae.OprmRoutineResearchCycle;
 import jakarta.persistence.LockModeType;
 import java.time.Instant;
 import java.util.List;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
@@ -42,6 +43,14 @@ public interface OprmRoutineResearchCycleRepository extends JpaRepository<OprmRo
 
     /** Lista os ciclos de pesquisa de rotina mais recentes para acompanhamento operacional. */
     List<OprmRoutineResearchCycle> findAllByOrderByStartedAtDesc(Pageable pageable);
+
+    /** Lista ciclos recentes paginados para a tela de jobs do OPRM NichoCNAE. */
+    @Query("""
+            select cycle
+            from OprmRoutineResearchCycle cycle
+            order by cycle.startedAt desc
+            """)
+    Page<OprmRoutineResearchCycle> findRecentJobs(Pageable pageable);
 
     /** Lista ciclos de pesquisa por status para filas de diagnóstico e reprocessamento do executor. */
     List<OprmRoutineResearchCycle> findByStatusInOrderByStartedAtAsc(List<String> statuses, Pageable pageable);

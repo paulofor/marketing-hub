@@ -115,6 +115,7 @@ import OprmCnaeDetailPlaceholderPage from "./pages/oprm/OprmCnaeDetailPlaceholde
 import OprmCnaePipelineStageDetailPage from "./pages/oprm/OprmCnaePipelineStageDetailPage";
 import OprmEnrichedNicheDetailPage from "./pages/oprm/OprmEnrichedNicheDetailPage";
 import OprmGeneralAudiencesPage from "./pages/oprm/OprmGeneralAudiencesPage";
+import OprmJobsPage from "./pages/oprm/OprmJobsPage";
 import OprmGeneralAudienceSeedDetailPage from "./pages/oprm/OprmGeneralAudienceSeedDetailPage";
 import OprmGeneralAudienceSubnicheDetailPage from "./pages/oprm/OprmGeneralAudienceSubnicheDetailPage";
 import MoisWorkspacePage from "./pages/mois/MoisWorkspacePage";
@@ -401,6 +402,7 @@ export default function App() {
                 element={<OprmFeedbackPage />}
               />
               <Route path="/oprm/operations" element={<OprmOperationsPage />} />
+              <Route path="/oprm/jobs" element={<OprmJobsPage />} />
               <Route
                 path="/oprm/pipeline"
                 element={<Navigate to="/oprm" replace />}

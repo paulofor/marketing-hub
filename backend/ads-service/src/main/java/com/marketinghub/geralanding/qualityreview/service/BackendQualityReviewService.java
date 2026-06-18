@@ -7,8 +7,6 @@ import com.marketinghub.experiment.Experiment;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.geralanding.qualityreview.service.detailStageExecution.RecordBackendQualityReviewDetalheDto;
 import com.marketinghub.geralanding.qualityreview.service.listStageExecutions.GeraLandingQualityReviewExecutionSummaryResponse;
-import com.marketinghub.geralanding.qualityreview.service.pending.RecordQualityReviewExperiment;
-import com.marketinghub.geralanding.qualityreview.service.pending.RecordQualityReviewHypothesis;
 import com.marketinghub.geralanding.qualityreview.service.pending.RecordQualityReviewPending;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
@@ -94,8 +92,11 @@ public class BackendQualityReviewService {
                         fromDatabaseIdJob(execution.getIdJob()),
                         execution.getStageCode(),
                         execution.getExecutionRequestedAt(),
-                        toPendingExperiment(execution.getExperiment()),
-                        toPendingHypothesis(execution.getExperiment())))
+                        execution.getExperiment() != null ? execution.getExperiment().getName() : null,
+                        execution.getExperiment() != null ? execution.getExperiment().getHypothesisRefTitleForPending() : null,
+                        resolveQualityReviewArtifact(execution.getExperiment(), "landingPageWireframe"),
+                        resolveQualityReviewArtifact(execution.getExperiment(), "landingPageDesignPreset"),
+                        execution.getExperiment() != null ? execution.getExperiment().getHtmlGeraLanding() : null))
                 .toList();
     }
 
@@ -379,28 +380,16 @@ public class BackendQualityReviewService {
         experimentRepository.save(experiment);
     }
 
-    /** Converte o experimento da execução para os dados expostos na fila pending. */
-    private RecordQualityReviewExperiment toPendingExperiment(Experiment experiment) {
+    /** Resolve apenas os artefatos indispensáveis para manter o pending enxuto e suficiente para a revisão visual. */
+    private Object resolveQualityReviewArtifact(Experiment experiment, String fieldName) {
         if (experiment == null) {
             return null;
         }
-        return new RecordQualityReviewExperiment(
-                experiment.getId(),
-                experiment.getName(),
-                experiment.getHypothesis(),
-                enumValueToText(experiment.getStatus()),
-                enumValueToText(experiment.getStage()),
-                resolveJsonArtifact(experiment.getId(), "campaignAngle", experiment.getCampaignAngle()),
-                resolveJsonArtifact(experiment.getId(), "adCopy", experiment.getAdCopy()),
-                resolveJsonArtifact(experiment.getId(), "adImageBriefing", experiment.getAdImageBriefing()),
-                resolveJsonArtifact(experiment.getId(), "landingPageCopy", experiment.getLandingPageCopy()),
-                resolveJsonArtifact(experiment.getId(), "landingPageWireframe", experiment.getLandingPageWireframe()),
-                resolveJsonArtifact(experiment.getId(), "landingPageImagePlanning", experiment.getLandingPageImagePlanning()),
-                resolveJsonArtifact(experiment.getId(), "landingPageImageAssets", experiment.getLandingPageImageAssets()),
-                resolveJsonArtifact(experiment.getId(), "landingPageDesignPreset", experiment.getLandingPageDesignPreset()),
-                resolveJsonArtifact(experiment.getId(), "landingPageDeliverables", experiment.getLandingPageDeliverables()),
-                experiment.getHtmlGeraLanding(),
-                experiment.getLandingPageHtml());
+        return switch (fieldName) {
+            case "landingPageWireframe" -> resolveJsonArtifact(experiment.getId(), fieldName, experiment.getLandingPageWireframe());
+            case "landingPageDesignPreset" -> resolveJsonArtifact(experiment.getId(), fieldName, experiment.getLandingPageDesignPreset());
+            default -> null;
+        };
     }
 
     /** Converte artefato textual JSON para objeto estruturado quando possível. */
@@ -420,46 +409,11 @@ public class BackendQualityReviewService {
         }
     }
 
-    /** Converte a hipótese associada ao experimento para o framework exposto na fila pending. */
-    private RecordQualityReviewHypothesis toPendingHypothesis(Experiment experiment) {
-        if (experiment == null) {
-            return null;
-        }
-        return new RecordQualityReviewHypothesis(
-                experiment.getHypothesisRefIdForPending(),
-                experiment.getHypothesisRefTitleForPending(),
-                resolveFramework(experiment.getId(), experiment.getHypothesisFrameworkJsonForPending()));
-    }
-
-    /** Resolve o JSON do framework da hipótese garantindo as seções canônicas mínimas. */
-    private Map<String, Object> resolveFramework(Long experimentId, String frameworkJson) {
-        Map<String, Object> framework = new LinkedHashMap<>();
-        if (StringUtils.hasText(frameworkJson)) {
-            try {
-                framework.putAll(objectMapper.readValue(frameworkJson, FRAMEWORK_TYPE));
-            } catch (JsonProcessingException ex) {
-                log.warn("Falha ao ler framework da hipótese no pending quality-review. experimentId={}", experimentId, ex);
-            }
-        }
-        framework.putIfAbsent("pain", new LinkedHashMap<String, Object>());
-        framework.putIfAbsent("result", new LinkedHashMap<String, Object>());
-        framework.putIfAbsent("mechanism", new LinkedHashMap<String, Object>());
-        framework.putIfAbsent("proof", new LinkedHashMap<String, Object>());
-        framework.putIfAbsent("offer", new LinkedHashMap<String, Object>());
-        framework.putIfAbsent("checklist", new LinkedHashMap<String, Object>());
-        return framework;
-    }
-
     /** Busca uma execução pelo idJob textual informado no contrato interno. */
     private GeraLandingStageExecution findByIdJob(String idJob) {
         return executionRepository
                 .findTopByIdJobOrderByExecutionRequestedAtDesc(toDatabaseIdJob(idJob))
                 .orElseThrow(() -> new EntityNotFoundException("GeraLanding quality review execution not found for idJob: " + idJob));
-    }
-
-    /** Converte um enum de experimento para texto sem acoplar o serviço às classes concretas do enum. */
-    private String enumValueToText(Object value) {
-        return value != null ? String.valueOf(value) : null;
     }
 
     /** Converte o resumo persistido para o DTO público da etapa. */

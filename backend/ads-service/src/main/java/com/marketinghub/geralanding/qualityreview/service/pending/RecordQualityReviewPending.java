@@ -8,8 +8,11 @@ public record RecordQualityReviewPending(
         String jobid,
         String stageCode,
         Instant executionRequestedAt,
-        RecordQualityReviewExperiment experiment,
-        RecordQualityReviewHypothesis hypothesis
+        String experimentName,
+        String hypothesisTitle,
+        Object landingPageWireframe,
+        Object landingPageDesignPreset,
+        String htmlGeraLanding
 ) {
     /** Mantém o contrato imutável do item pendente da revisão visual. */
     public RecordQualityReviewPending {}

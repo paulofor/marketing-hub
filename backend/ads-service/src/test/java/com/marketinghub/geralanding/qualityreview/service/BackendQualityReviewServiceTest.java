@@ -54,7 +54,9 @@ class BackendQualityReviewServiceTest {
         Experiment experiment = mock(Experiment.class);
         when(experiment.getId()).thenReturn(37L);
         when(experiment.getName()).thenReturn("Experimento qualidade");
-        when(experiment.getLandingPageImageAssets()).thenReturn("{\"images\":[{\"url\":\"https://cdn.test/img.png\"}]}");
+        when(experiment.getHypothesisRefTitleForPending()).thenReturn("Hipótese qualidade");
+        when(experiment.getLandingPageWireframe()).thenReturn("{\"sectionOrder\":[{\"sectionId\":\"hero\"}]}");
+        when(experiment.getLandingPageDesignPreset()).thenReturn("{\"presetId\":\"premium\"}");
         when(experiment.getHtmlGeraLanding()).thenReturn("<html><body>Landing</body></html>");
         GeraLandingStageExecution execution = GeraLandingStageExecution.builder()
                 .experimentId(37L)
@@ -70,7 +72,11 @@ class BackendQualityReviewServiceTest {
 
         assertEquals(1, pending.size());
         assertEquals("job-quality", pending.get(0).jobid());
-        assertEquals("<html><body>Landing</body></html>", pending.get(0).experiment().htmlGeraLanding());
+        assertEquals("Experimento qualidade", pending.get(0).experimentName());
+        assertEquals("Hipótese qualidade", pending.get(0).hypothesisTitle());
+        assertEquals("<html><body>Landing</body></html>", pending.get(0).htmlGeraLanding());
+        assertTrue(pending.get(0).landingPageWireframe().toString().contains("sectionOrder"));
+        assertTrue(pending.get(0).landingPageDesignPreset().toString().contains("presetId"));
     }
 
     /** Deve persistir o diagnóstico visual no experimento quando o Worker AI conclui a resposta. */

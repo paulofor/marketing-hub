@@ -32,9 +32,9 @@ class QualityReviewBackendClientTest {
         server.shutdown();
     }
 
-    /** Deve expor somente o htmlGeraLanding para que o prompt builder gere screenshots renderizados em browser. */
+    /** Deve expor HTML, wireframe e preset para renderização visual e diagnóstico de causa-raiz. */
     @Test
-    void listPendingShouldExposeOnlyHtmlGeraLandingForScreenshotRendering() {
+    void listPendingShouldExposeLeanQualityReviewInputsForScreenshotRendering() {
         server.enqueue(new MockResponse()
                 .setHeader("Content-Type", "application/json")
                 .setBody("""
@@ -44,16 +44,11 @@ class QualityReviewBackendClientTest {
                             "jobid": "job-quality-1",
                             "stageCode": "landing-page-quality-review",
                             "executionRequestedAt": "2026-06-03T03:30:00Z",
-                            "hypothesis": {"framework": {"pain": {}}},
-                            "experiment": {
-                              "id": 36,
-                              "name": "Experimento visual",
-                              "landingPageWireframe": {"sectionOrder": [{"sectionId": "hero", "purpose": "Promessa"}]},
-                              "landingPageDesignPreset": {"presetId": "premium", "sectionPresets": [{"sectionId": "hero"}]},
-                              "htmlGeraLanding": "<!doctype html><html><body><h1>Landing final</h1></body></html>",
-                              "landingPageHtml": "<html><body>Fallback antigo</body></html>",
-                              "landingPageImageAssets": {"images": [{"sourceUrl": "https://cdn.example.com/hero.jpg"}]}
-                            }
+                            "experimentName": "Experimento visual",
+                            "hypothesisTitle": "Hipótese visual",
+                            "landingPageWireframe": {"sectionOrder": [{"sectionId": "hero", "purpose": "Promessa"}]},
+                            "landingPageDesignPreset": {"presetId": "premium", "sectionPresets": [{"sectionId": "hero"}]},
+                            "htmlGeraLanding": "<!doctype html><html><body><h1>Landing final</h1></body></html>"
                           }
                         ]
                         """));
@@ -68,14 +63,16 @@ class QualityReviewBackendClientTest {
         assertThat(pending.getFirst().input().landingHtml())
                 .isEqualTo("<!doctype html><html><body><h1>Landing final</h1></body></html>");
         assertThat(pending.getFirst().input().promptData())
-                .containsOnlyKeys("htmlGeraLanding")
+                .containsOnlyKeys("experimentName", "hypothesisTitle", "landingPageWireframe", "landingPageDesignPreset", "htmlGeraLanding")
+                .containsEntry("experimentName", "Experimento visual")
+                .containsEntry("hypothesisTitle", "Hipótese visual")
                 .containsEntry("htmlGeraLanding", "<!doctype html><html><body><h1>Landing final</h1></body></html>")
-                .doesNotContainKeys("experimentId", "experimentName", "landingPageWireframe", "landingPageDesignPreset", "landingPageHtml", "CASE_DATA_BLOCK", "landingPageImageAssets");
+                .doesNotContainKeys("experimentId", "landingPageHtml", "CASE_DATA_BLOCK", "landingPageImageAssets", "adCopy", "adImageBriefing");
     }
 
-    /** Deve ignorar landingPageHtml nulo porque o Quality Review usa somente htmlGeraLanding. */
+    /** Deve manter compatibilidade com o contrato legado aninhado quando o backend ainda enviar experiment. */
     @Test
-    void listPendingShouldIgnoreNullLegacyLandingPageHtml() {
+    void listPendingShouldReadLegacyNestedExperimentWhenLeanFieldsAreAbsent() {
         server.enqueue(new MockResponse()
                 .setHeader("Content-Type", "application/json")
                 .setBody("""

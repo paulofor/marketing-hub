@@ -1,3 +1,14 @@
+## 2026-06-18 — Correção de compilação do Worker AI na geração de criativos
+
+- solicitação: corrigir falha de compilação por import direto de `CreativeGenerationStatus` no Worker AI.
+- causa-raiz: o Worker AI compila contra a biblioteca canônica `ads-service` publicada/instalada; quando essa biblioteca ainda não expõe o enum esperado, o import direto quebra a compilação antes da atualização coordenada do pacote.
+- foi feito: o Worker AI deixou de importar diretamente o enum e passou a resolver o status pelo modelo canônico do backend em tempo de execução, mantendo a escrita dos estados operacionais sem duplicar modelo local.
+- validação: compilação do backend instalada localmente e empacotamento do Worker AI executado com sucesso; a suíte completa do Worker AI ainda apresenta falhas preexistentes de expectativa de número de salvamentos em `ExperimentCreativeServiceTest`.
+- arquivos alterados:
+  - ai-worker/src/main/java/com/marketinghub/worker/creative/ExperimentCreativeService.java
+  - docs/registros/experimentos.md
+
+
 ## 2026-06-18 — Estado operacional da geração de criativos do pipeline
 
 - solicitação: destravar a geração de anúncios do pipeline quando o item fica preso em “Gerando anúncios...”.

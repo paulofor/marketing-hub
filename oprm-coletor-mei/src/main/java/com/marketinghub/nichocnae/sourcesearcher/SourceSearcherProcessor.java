@@ -6,11 +6,14 @@ import com.marketinghub.nichocnae.pipeline.StageResult;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 /** Processa a etapa três executando queries em provedor público e persistindo fontes candidatas no backend. */
 @Component
 public class SourceSearcherProcessor implements StageProcessor<SourceSearcherPending, SourceSearcherOutput> {
+    private static final Logger log = LoggerFactory.getLogger(SourceSearcherProcessor.class);
     private static final int MAX_RESULTS_PER_QUERY = 20;
 
     private final PublicSourceSearchProvider searchProvider;
@@ -31,6 +34,14 @@ public class SourceSearcherProcessor implements StageProcessor<SourceSearcherPen
     @Override
     public StageResult<SourceSearcherOutput> process(StageContext<SourceSearcherPending> context) {
         SourceSearcherPending input = context.input();
+        long startedAt = System.nanoTime();
+        log.info(
+                "Chamando provedor de busca da etapa três OPRM nichocnae (researchQueryId={}, researchCycleId={}, provider={}, maxResults={}, queryText={})",
+                input.researchQueryId(),
+                input.researchCycleId(),
+                searchProvider.providerCode(),
+                MAX_RESULTS_PER_QUERY,
+                input.queryText());
         List<SourceSearchResult> searchResults = searchProvider.search(input.queryText(), MAX_RESULTS_PER_QUERY).stream()
                 .map(sourceIntentClassifier::classify)
                 .sorted(Comparator.comparing(SourceSearchResult::commercialPageRisk)
@@ -44,6 +55,17 @@ public class SourceSearcherProcessor implements StageProcessor<SourceSearcherPen
                         .thenComparing(Comparator.comparing(SourceSearchResult::sourceFreshnessScore).reversed())
                         .thenComparing(SourceSearchResult::searchPosition))
                 .toList();
+        long durationMs = (System.nanoTime() - startedAt) / 1_000_000;
+        log.info(
+                "Provedor de busca da etapa três OPRM nichocnae retornou resultados (researchQueryId={}, researchCycleId={}, provider={}, resultCount={}, durationMs={}, commercialRiskCount={}, outdatedRiskCount={}, structuredBusinessDriftRiskCount={})",
+                input.researchQueryId(),
+                input.researchCycleId(),
+                searchProvider.providerCode(),
+                searchResults.size(),
+                durationMs,
+                searchResults.stream().filter(SourceSearchResult::commercialPageRisk).count(),
+                searchResults.stream().filter(SourceSearchResult::outdatedSourceRisk).count(),
+                searchResults.stream().filter(SourceSearchResult::structuredBusinessDriftRisk).count());
         SourceSearcherOutput output =
                 backendClient.completeStageExecution(input, searchProvider.providerCode(), searchResults);
         Map<String, Object> metrics = Map.of(

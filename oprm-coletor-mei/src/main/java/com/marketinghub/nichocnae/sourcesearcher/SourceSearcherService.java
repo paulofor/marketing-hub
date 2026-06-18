@@ -35,9 +35,18 @@ public class SourceSearcherService {
     /** Processa as queries pendentes pela etapa três e retorna as saídas gravadas no backend. */
     public List<SourceSearcherOutput> processPending(String requestedBy) {
         List<SourceSearcherPending> pendingQueries = backendClient.listPendingQueries();
-        return pendingQueries.stream()
+        log.info(
+                "Lote da etapa três OPRM nichocnae preparado para processamento (pendingCount={}, requestedBy={})",
+                pendingQueries.size(),
+                requestedBy);
+        List<SourceSearcherOutput> outputs = pendingQueries.stream()
                 .map(pending -> processOne(pending, requestedBy))
                 .toList();
+        log.info(
+                "Lote da etapa três OPRM nichocnae processado (processedCount={}, requestedBy={})",
+                outputs.size(),
+                requestedBy);
+        return outputs;
     }
 
     /** Executa o worker genérico para uma query da etapa três e registra falha contextual no backend. */
@@ -47,9 +56,23 @@ public class SourceSearcherService {
                 pending,
                 Map.of("stage", "oprmSourceSearcher", "requestedBy", requestedBy));
         try {
+            log.info(
+                    "Iniciando query da etapa três OPRM nichocnae (researchQueryId={}, researchCycleId={}, queryText={}, requestedBy={})",
+                    pending.researchQueryId(),
+                    pending.researchCycleId(),
+                    pending.queryText(),
+                    requestedBy);
             PipelineWorker<SourceSearcherPending, SourceSearcherOutput> worker = new PipelineWorker<>(processor, artifactStore);
             StageResult<SourceSearcherOutput> result = worker.processResult(execution);
-            return result.output();
+            SourceSearcherOutput output = result.output();
+            log.info(
+                    "Query da etapa três OPRM nichocnae concluída (researchQueryId={}, researchCycleId={}, resultCount={}, cycleTotalSourceCandidates={}, requestedBy={})",
+                    output.researchQueryId(),
+                    output.researchCycleId(),
+                    output.resultCount(),
+                    output.cycleTotalSourceCandidates(),
+                    requestedBy);
+            return output;
         } catch (RuntimeException ex) {
             log.error(
                     "Erro ao executar etapa três OPRM nichocnae (researchQueryId={}, researchCycleId={}, requestedBy={})",

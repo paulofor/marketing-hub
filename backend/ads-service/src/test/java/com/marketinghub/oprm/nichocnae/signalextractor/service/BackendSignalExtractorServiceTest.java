@@ -41,8 +41,8 @@ class BackendSignalExtractorServiceTest {
   /** Deve listar snapshots coletados e ainda pendentes de extração. */
   @Test
   void listPendingUsesCompletedAndPendingFilters() {
-    when(sourceSnapshotRepository.findByFetchStatusAndSignalExtractionStatusOrderByResearchCycleIdAscIdAsc(
-            eq("COMPLETED"), eq("PENDING"), any(Pageable.class)))
+    when(sourceSnapshotRepository.findPendingByStatusAndCycleStage(
+            eq("COMPLETED"), eq("PENDING"), eq("signal-extractor"), any(Pageable.class)))
         .thenReturn(List.of(snapshot()));
     when(extractedSignalRepository.existsBySourceSnapshotId(901L)).thenReturn(false);
 

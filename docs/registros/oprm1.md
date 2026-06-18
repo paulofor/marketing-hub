@@ -906,3 +906,9 @@
 - Ajustada a tabela “CNAEs por Score OPRM” para manter somente colunas decisórias de volume, remover métricas redundantes e exibir quantidade de subnichos, custo acumulado de pesquisa e indicador visual de processamento ativo.
 - Causa-raiz tratada: a tabela misturava indicadores cadastrais pouco acionáveis com dados operacionais de pesquisa, dificultando a decisão sobre onde criar, acompanhar ou interromper novos subnichos.
 - Prevenção de recorrência: os novos campos vêm do endpoint do backend, preservando a regra de verdade da tela e evitando inferência local no frontend.
+
+## 2026-06-18 — OPRM NichoCNAE: testes alinhados ao current_stage_code
+
+- Correção aplicada: os testes das filas OPRM NichoCNAE passaram a montar ciclos com `current_stage_code` coerente com a etapa consumida e os testes de service passaram a mockar os métodos `findPendingByStatusAndCycleStage`.
+- Causa-raiz tratada: os testes ainda refletiam a regra antiga baseada apenas em status/artefato, enquanto a implementação atual usa a etapa operacional do ciclo como fonte de verdade para expor pendências.
+- Prevenção de recorrência: as expectativas dos testes agora protegem o contrato de pending por etapa atual, evitando que workers consumam itens fora do ponto correto do pipeline.

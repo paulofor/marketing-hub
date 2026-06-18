@@ -25,15 +25,20 @@ class OprmNicheRoutineCardRepositoryTest {
   /** Garante que a fila MEI/autônomo expõe somente o ciclo ativo sintetizado mais recente. */
   @Test
   void findPendingMeiAudienceSegmentationShouldReturnOnlyLatestEligibleSynthesizedCycle() {
-    OprmRoutineResearchCycle oldSynthesized = saveCycle(100L, "ROUTINE_SYNTHESIZED", "2026-06-01T10:00:00Z");
+    OprmRoutineResearchCycle oldSynthesized =
+        saveCycle(100L, "ROUTINE_SYNTHESIZED", "mei-audience-segmenter", "2026-06-01T10:00:00Z");
     OprmNicheRoutineCard oldCard = saveCard(oldSynthesized, "cartão antigo sintetizado");
-    OprmRoutineResearchCycle latestSynthesized = saveCycle(100L, "ROUTINE_SYNTHESIZED", "2026-06-02T10:00:00Z");
+    OprmRoutineResearchCycle latestSynthesized =
+        saveCycle(100L, "ROUTINE_SYNTHESIZED", "mei-audience-segmenter", "2026-06-02T10:00:00Z");
     OprmNicheRoutineCard latestCard = saveCard(latestSynthesized, "cartão recente sintetizado");
-    OprmRoutineResearchCycle failed = saveCycle(200L, "FAILED", "2026-06-03T10:00:00Z");
+    OprmRoutineResearchCycle failed =
+        saveCycle(200L, "FAILED", "mei-audience-segmenter", "2026-06-03T10:00:00Z");
     OprmNicheRoutineCard failedCard = saveCard(failed, "cartão falho");
-    OprmRoutineResearchCycle cancelled = saveCycle(300L, "CANCELLED_BY_MANUAL_RESTART", "2026-06-04T10:00:00Z");
+    OprmRoutineResearchCycle cancelled =
+        saveCycle(300L, "CANCELLED_BY_MANUAL_RESTART", "mei-audience-segmenter", "2026-06-04T10:00:00Z");
     OprmNicheRoutineCard cancelledCard = saveCard(cancelled, "cartão cancelado");
-    OprmRoutineResearchCycle segmented = saveCycle(400L, "MEI_AUDIENCE_SEGMENTED", "2026-06-05T10:00:00Z");
+    OprmRoutineResearchCycle segmented =
+        saveCycle(400L, "MEI_AUDIENCE_SEGMENTED", "routine-quality-gate", "2026-06-05T10:00:00Z");
     OprmNicheRoutineCard segmentedCard = saveCard(segmented, "cartão já segmentado");
     saveProfile(segmented, segmentedCard);
 
@@ -47,10 +52,16 @@ class OprmNicheRoutineCardRepositoryTest {
   @Test
   void findPendingRoutineQualityGateShouldIgnoreCardsWithoutMeiAudienceProfileBeforeApplyingLimit() {
     for (int index = 0; index < 12; index++) {
-      OprmRoutineResearchCycle oldCycle = saveCycle(500L + index, "ROUTINE_SYNTHESIZED", "2026-06-06T10:0" + (index % 10) + ":00Z");
+      OprmRoutineResearchCycle oldCycle =
+          saveCycle(
+              500L + index,
+              "ROUTINE_SYNTHESIZED",
+              "mei-audience-segmenter",
+              "2026-06-06T10:0" + (index % 10) + ":00Z");
       saveCard(oldCycle, "cartão antigo sem perfil " + index);
     }
-    OprmRoutineResearchCycle eligibleCycle = saveCycle(900L, "MEI_AUDIENCE_SEGMENTED", "2026-06-07T10:00:00Z");
+    OprmRoutineResearchCycle eligibleCycle =
+        saveCycle(900L, "MEI_AUDIENCE_SEGMENTED", "routine-quality-gate", "2026-06-07T10:00:00Z");
     OprmNicheRoutineCard eligibleCard = saveCard(eligibleCycle, "cartão elegível com perfil MEI");
     saveProfile(eligibleCycle, eligibleCard);
 
@@ -60,7 +71,8 @@ class OprmNicheRoutineCardRepositoryTest {
   }
 
   /** Persiste um ciclo com os campos mínimos exigidos pelo contrato JPA do NichoCNAE. */
-  private OprmRoutineResearchCycle saveCycle(Long sourceNicheId, String status, String startedAt) {
+  private OprmRoutineResearchCycle saveCycle(
+      Long sourceNicheId, String status, String currentStageCode, String startedAt) {
     Instant start = Instant.parse(startedAt);
     OprmRoutineResearchCycle cycle = new OprmRoutineResearchCycle();
     cycle.setSourceNicheId(sourceNicheId);
@@ -74,6 +86,7 @@ class OprmNicheRoutineCardRepositoryTest {
     cycle.setSourceScore(BigDecimal.valueOf(85));
     cycle.setTriggerSource("TEST");
     cycle.setStatus(status);
+    cycle.setCurrentStageCode(currentStageCode);
     cycle.setTotalQueries(1);
     cycle.setTotalSourceCandidates(1);
     cycle.setTotalSourceSnapshots(1);

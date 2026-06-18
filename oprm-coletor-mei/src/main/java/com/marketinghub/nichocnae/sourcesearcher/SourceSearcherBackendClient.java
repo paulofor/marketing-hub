@@ -32,7 +32,14 @@ public class SourceSearcherBackendClient {
         String url = collectorProperties.backendBaseUrl() + PENDING_PATH;
         try {
             SourceSearcherPending[] response = restClient.get().uri(url).retrieve().body(SourceSearcherPending[].class);
-            return response == null ? List.of() : Arrays.asList(response);
+            List<SourceSearcherPending> pendingQueries = response == null ? List.of() : Arrays.asList(response);
+            log.info(
+                    "Pendências da etapa três OPRM nichocnae carregadas (endpoint={}, pendingCount={}, firstResearchCycleId={}, firstResearchQueryId={})",
+                    url,
+                    pendingQueries.size(),
+                    pendingQueries.isEmpty() ? null : pendingQueries.get(0).researchCycleId(),
+                    pendingQueries.isEmpty() ? null : pendingQueries.get(0).researchQueryId());
+            return pendingQueries;
         } catch (RestClientException ex) {
             log.error("Erro ao listar pendências da etapa três OPRM nichocnae (endpoint={})", url, ex);
             throw ex;
@@ -48,6 +55,13 @@ public class SourceSearcherBackendClient {
                 + COMPLETE_PATH_SUFFIX;
         SourceSearcherCompletionRequest request = toCompletionRequest(pending, searchProvider, searchResults);
         try {
+            log.info(
+                    "Enviando conclusão da etapa três OPRM nichocnae ao backend (endpoint={}, researchQueryId={}, researchCycleId={}, searchProvider={}, resultCount={})",
+                    url,
+                    pending.researchQueryId(),
+                    pending.researchCycleId(),
+                    searchProvider,
+                    searchResults == null ? 0 : searchResults.size());
             SourceSearcherCompletionResponse response = restClient.post()
                     .uri(url)
                     .body(request)
@@ -56,7 +70,15 @@ public class SourceSearcherBackendClient {
             if (response == null) {
                 throw new IllegalStateException("Backend OPRM nichocnae retornou corpo vazio ao concluir etapa três.");
             }
-            return toOutput(response);
+            SourceSearcherOutput output = toOutput(response);
+            log.info(
+                    "Conclusão da etapa três OPRM nichocnae confirmada pelo backend (researchQueryId={}, researchCycleId={}, queryStatus={}, resultCount={}, cycleTotalSourceCandidates={})",
+                    output.researchQueryId(),
+                    output.researchCycleId(),
+                    output.queryStatus(),
+                    output.resultCount(),
+                    output.cycleTotalSourceCandidates());
+            return output;
         } catch (RestClientException | IllegalStateException ex) {
             log.error(
                     "Erro ao concluir etapa três OPRM nichocnae no backend (endpoint={}, researchQueryId={}, researchCycleId={}, resultCount={})",
@@ -77,6 +99,12 @@ public class SourceSearcherBackendClient {
                 + FAIL_PATH_SUFFIX;
         String message = error.getMessage() == null ? error.getClass().getSimpleName() : error.getMessage();
         try {
+            log.info(
+                    "Notificando falha da etapa três OPRM nichocnae ao backend (endpoint={}, researchQueryId={}, researchCycleId={}, errorMessage={})",
+                    url,
+                    pending.researchQueryId(),
+                    pending.researchCycleId(),
+                    message);
             restClient.post().uri(url).body(new SourceSearcherFailureRequest(message)).retrieve().toBodilessEntity();
         } catch (RestClientException ex) {
             log.error(

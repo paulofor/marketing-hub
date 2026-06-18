@@ -1,3 +1,9 @@
+## 2026-06-18 20:20:00 (UTC-3) — OPRM NichoCNAE: logs operacionais na etapa de busca pública
+
+- Diagnóstico do ciclo #74: o banco respondeu normalmente via MCP e o ciclo continuava avançando na etapa `source-searcher`, sem evidência de lentidão do MySQL; a lacuna real era baixa observabilidade para saber se o coletor estava parado antes de buscar, durante a chamada ao provedor ou ao concluir no backend.
+- Correção aplicada: adicionados logs no `oprm-coletor-mei` para registrar carregamento de pendências, início/fim do lote, início/fim de cada query, chamada ao provedor público, duração, contadores de risco e confirmação de conclusão no backend.
+- Prevenção de recorrência: a próxima execução da etapa três passa a indicar exatamente em qual ponto operacional o job parou, diferenciando fila vazia, provedor lento, falha de complete no backend ou processamento normal.
+
 ## 2026-06-18 — OPRM NichoCNAE: custo preservado em reprocessamento do mesmo job
 
 - Causa-raiz tratada: ao reabrir o mesmo `researchCycleId`, o backend limpava o seed anterior para permitir nova execução, mas junto apagava o custo de IA já consumido e a tela podia voltar o custo para zero durante o reprocessamento.

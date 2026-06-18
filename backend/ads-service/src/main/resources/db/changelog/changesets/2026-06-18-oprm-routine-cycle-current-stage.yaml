@@ -1,0 +1,71 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-18-01-oprm-routine-cycle-current-stage
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            columnExists:
+              tableName: oprm_routine_research_cycle
+              columnName: current_stage_code
+      changes:
+        - addColumn:
+            tableName: oprm_routine_research_cycle
+            columns:
+              - column:
+                  name: current_stage_code
+                  type: VARCHAR(64)
+                  remarks: Etapa operacional atual usada pelo backend para publicar o pending canônico do ciclo NichoCNAE.
+        - createIndex:
+            tableName: oprm_routine_research_cycle
+            indexName: idx_oprm_routine_cycle_current_stage
+            columns:
+              - column:
+                  name: current_stage_code
+              - column:
+                  name: status
+              - column:
+                  name: started_at
+  - changeSet:
+      id: 2026-06-18-02-oprm-routine-cycle-current-stage-backfill
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - columnExists:
+            tableName: oprm_routine_research_cycle
+            columnName: current_stage_code
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE oprm_routine_research_cycle cycle
+              LEFT JOIN oprm_niche_research_seed seed ON seed.research_cycle_id = cycle.id
+              LEFT JOIN oprm_research_query research_query ON research_query.research_cycle_id = cycle.id
+              LEFT JOIN oprm_source_candidate candidate ON candidate.research_cycle_id = cycle.id
+              LEFT JOIN oprm_source_snapshot snapshot ON snapshot.research_cycle_id = cycle.id
+              LEFT JOIN oprm_extracted_signal signal ON signal.research_cycle_id = cycle.id
+              LEFT JOIN oprm_niche_routine_card card ON card.research_cycle_id = cycle.id
+              LEFT JOIN oprm_mei_audience_profile mei_profile ON mei_profile.research_cycle_id = cycle.id
+              LEFT JOIN market_niche_enrichment_profile enrichment ON enrichment.research_cycle_id = cycle.id
+              SET cycle.current_stage_code = CASE
+                WHEN cycle.status IN ('ENRICHED_NICHE_CREATED', 'ENRICHED_NICHE_UPDATED', 'READY_FOR_HYPOTHESIS', 'COMPLETED') THEN NULL
+                WHEN enrichment.id IS NOT NULL THEN NULL
+                WHEN card.ready_for_hypothesis = 1 AND card.quality_checked_at IS NOT NULL THEN 'enriched-niche-materializer'
+                WHEN mei_profile.id IS NOT NULL AND card.quality_checked_at IS NULL THEN 'routine-quality-gate'
+                WHEN card.id IS NOT NULL AND mei_profile.id IS NULL THEN 'mei-audience-segmenter'
+                WHEN signal.id IS NOT NULL AND card.id IS NULL THEN 'routine-synthesizer'
+                WHEN snapshot.id IS NOT NULL AND signal.id IS NULL THEN 'signal-extractor'
+                WHEN candidate.id IS NOT NULL AND snapshot.id IS NULL THEN 'source-fetcher'
+                WHEN research_query.id IS NOT NULL AND candidate.id IS NULL THEN 'source-searcher'
+                WHEN seed.id IS NOT NULL AND research_query.id IS NOT NULL THEN 'source-searcher'
+                WHEN cycle.status = 'RUNNING' THEN 'niche-research-seed-builder'
+                ELSE cycle.current_stage_code
+              END
+              WHERE cycle.current_stage_code IS NULL;

@@ -82,6 +82,18 @@ const pipelineStages = [
   },
 ];
 
+const backendStageIndexByCode: Record<string, number> = {
+  "routine-research-cycle": 0,
+  "niche-research-seed-builder": 1,
+  "source-searcher": 2,
+  "source-fetcher": 3,
+  "signal-extractor": 4,
+  "routine-synthesizer": 5,
+  "mei-audience-segmenter": 6,
+  "routine-quality-gate": 7,
+  "enriched-niche-materializer": 8,
+};
+
 function formatNumber(value?: number | null) {
   if (value === null || value === undefined) {
     return "Sem dado";
@@ -559,10 +571,27 @@ function inferStageState(
   }
 
   const completedStageIndex = getCompletedStageIndex(cycle);
+  const backendCurrentStageIndex = cycle.currentStageCode
+    ? backendStageIndexByCode[cycle.currentStageCode]
+    : undefined;
   const failed = cycle.status === "FAILED" || cycle.status?.includes("FAILED");
   const failureStageIndex = failed
     ? inferFailureStageIndex(cycle.errorMessage)
     : undefined;
+
+  if (
+    backendCurrentStageIndex !== undefined &&
+    !failed &&
+    !isCycleStoppedStatus(cycle.status)
+  ) {
+    if (stageIndex < backendCurrentStageIndex) {
+      return { label: "Concluído", className: "border-success text-success" };
+    }
+    if (stageIndex === backendCurrentStageIndex) {
+      return { label: "Em execução", className: "border-primary text-primary" };
+    }
+    return { label: "Na fila", className: "border-secondary text-secondary" };
+  }
 
   if (isQualityBlockedStatus(cycle.status)) {
     if (stageIndex <= 6) {

@@ -57,6 +57,7 @@ public class BackendEnrichedNicheMaterializerService {
   private static final String ENRICHED_STATUS = "ENRICHED_NICHE_CREATED";
   private static final String ENRICHED_UPDATED_STATUS = "ENRICHED_NICHE_UPDATED";
   private static final String FAILED_STATUS = "ENRICHED_NICHE_FAILED";
+  private static final String CURRENT_STAGE_ENRICHED_NICHE_MATERIALIZER = "enriched-niche-materializer";
   private static final String HISTORICAL_RESEARCH_RECOMMENDATION = "Preferir novo ciclo neutro em vez de editar manualmente o texto antigo.";
   private static final List<String> SOLUTION_LANGUAGE_TERMS = List.of(
       "ia", "inteligência artificial", "automação", "software", "sistema", "app", "ferramenta", "curso", "template", "oferta", "landing page");
@@ -156,6 +157,7 @@ public class BackendEnrichedNicheMaterializerService {
   public void fail(Long researchCycleId, FailEnrichedNicheMaterializerRequest request) {
     OprmRoutineResearchCycle cycle = findCycle(researchCycleId);
     cycle.setStatus(FAILED_STATUS);
+    cycle.setCurrentStageCode(CURRENT_STAGE_ENRICHED_NICHE_MATERIALIZER);
     cycle.setErrorMessage(defaultText(request == null ? null : request.errorMessage(), "Falha na materialização de nicho enriquecido"));
     cycle.setFinishedAt(Instant.now());
     cycle.setUpdatedAt(Instant.now());
@@ -676,6 +678,7 @@ public class BackendEnrichedNicheMaterializerService {
       OprmRoutineResearchCycle cycle, OprmNicheCandidate candidate, Long marketNicheId, boolean existingMatchedByCnaeAndNeutralName) {
     Instant now = Instant.now();
     cycle.setStatus(existingMatchedByCnaeAndNeutralName ? ENRICHED_UPDATED_STATUS : ENRICHED_STATUS);
+    cycle.setCurrentStageCode(null);
     cycle.setFinishedAt(now);
     cycle.setUpdatedAt(now);
     cycleRepository.save(cycle);

@@ -34,6 +34,8 @@ public class BackendSourceSearcherService {
   private static final String QUERY_STATUS_PENDING = "PENDING";
   private static final String QUERY_STATUS_COMPLETED = "COMPLETED";
   private static final String QUERY_STATUS_FAILED = "FAILED";
+  private static final String CURRENT_STAGE_SOURCE_SEARCHER = "source-searcher";
+  private static final String CURRENT_STAGE_SOURCE_FETCHER = "source-fetcher";
   private static final String CANDIDATE_STATUS_FOUND = "FOUND";
   private static final String CANDIDATE_STATUS_CONTAMINATION_RISK = "CONTAMINATION_RISK";
   private static final String SOURCE_INTENT_COMMERCIAL_PAGE_RISK = "COMMERCIAL_PAGE_RISK";
@@ -58,7 +60,8 @@ public class BackendSourceSearcherService {
   /** Lista frases pendentes para execução em provedor de busca configurável. */
   @Transactional(readOnly = true)
   public List<RecordSourceSearcherPending> listPending() {
-    return researchQueryRepository.findByStatusOrderByPriorityAscIdAsc(QUERY_STATUS_PENDING, PageRequest.of(0, 20))
+    return researchQueryRepository
+        .findPendingByStatusAndCycleStage(QUERY_STATUS_PENDING, CURRENT_STAGE_SOURCE_SEARCHER, PageRequest.of(0, 20))
         .stream()
         .map(this::toPending)
         .toList();
@@ -80,6 +83,9 @@ public class BackendSourceSearcherService {
       query.setUpdatedAt(now);
       researchQueryRepository.save(query);
       cycle.setTotalSourceCandidates(countCycleCandidates(cycle.getId(), savedCandidates.size()));
+      if (researchQueryRepository.countByResearchCycleIdAndStatus(cycle.getId(), QUERY_STATUS_PENDING) == 0) {
+        cycle.setCurrentStageCode(CURRENT_STAGE_SOURCE_FETCHER);
+      }
       cycle.setUpdatedAt(now);
       routineResearchCycleRepository.save(cycle);
       return toCompleteResponse(query, cycle, savedCandidates);

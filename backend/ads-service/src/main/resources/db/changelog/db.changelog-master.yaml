@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-06-18-oprm-routine-cycle-current-stage.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-06-17-mois-sales-page-job-analysis-versioning.yaml
       relativeToChangelogFile: true
   - include:

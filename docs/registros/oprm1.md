@@ -888,6 +888,13 @@
 - Correção aplicada: o backend reabre o mesmo ciclo, limpa os artefatos derivados das etapas reexecutáveis e mantém o mesmo identificador como unidade operacional do job, evitando duplicidade conceitual no histórico.
 - Relatório: criado download Markdown por `researchCycleId` na tela do CNAE/subnicho, disponível mesmo antes de materializar perfil enriquecido, com status, gatilho, observações de reexecução e artefatos atuais do pipeline.
 - Prevenção de recorrência: testes validam que o reprocessamento preserva o mesmo job e que o relatório por ciclo funciona sem perfil materializado.
+## 2026-06-18 — OPRM NichoCNAE: etapa atual controlada no ciclo
+
+- Decisão operacional: o identificador operacional do fluxo NichoCNAE passa a ser o próprio `oprm_routine_research_cycle`, com a etapa atual registrada em `current_stage_code`.
+- Correção aplicada: o backend passou a atualizar `current_stage_code` ao concluir/falhar etapas e os endpoints `pending` passaram a usar essa coluna como fonte primária para decidir qual fila expõe cada ciclo.
+- Causa-raiz tratada: a decisão de pending estava espalhada entre status, artefatos e inferências por contadores, o que podia deixar o operador sem saber exatamente qual etapa o executor deveria consumir.
+- Prevenção de recorrência: o cânone OPRM registra que callbacks do executor devem mover o `current_stage_code`, e a tela passa a consumir essa verdade do backend para exibir a etapa em execução.
+
 ## 2026-06-17 — OPRM CNAE: relatório Markdown por execução
 
 - Adicionado botão “Relatório” para cada execução do NichoCNAE, permitindo baixar um arquivo `nicho-cnae<id>.md` com detalhamento etapa por etapa.

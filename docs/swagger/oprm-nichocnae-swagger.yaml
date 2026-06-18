@@ -876,6 +876,10 @@ components:
           description: Origem da execução atual, incluindo AUTO_QUALITY_REPROCESS quando o módulo executor externo solicita reexecução de etapas do mesmo job após reprovação recuperável do gate.
         status:
           type: string
+        currentStageCode:
+          type: string
+          nullable: true
+          description: Etapa operacional atual registrada em oprm_routine_research_cycle.current_stage_code e usada como fonte primária dos endpoints pending.
         totalQueries:
           type: integer
           nullable: true

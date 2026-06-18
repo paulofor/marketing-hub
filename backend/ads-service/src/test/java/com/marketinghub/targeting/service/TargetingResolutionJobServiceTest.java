@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.PlatformTransactionManager;
 
 import java.time.Instant;
 import java.util.List;
@@ -18,6 +19,9 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
+/**
+ * Testa os resumos operacionais da fila de resolução de públicos Meta.
+ */
 @ExtendWith(MockitoExtension.class)
 class TargetingResolutionJobServiceTest {
 
@@ -27,9 +31,13 @@ class TargetingResolutionJobServiceTest {
     @Mock
     private EntityManager entityManager;
 
+    @Mock
+    private PlatformTransactionManager transactionManager;
+
+    /** Verifica que o resumo usa a conclusão mais recente entre jobs da mesma solicitação. */
     @Test
     void summarizeByRequestIdsShouldReturnLatestFinishedAtAsLastCompletedAt() {
-        TargetingResolutionJobService service = new TargetingResolutionJobService(repository, entityManager);
+        TargetingResolutionJobService service = new TargetingResolutionJobService(repository, entityManager, transactionManager);
         UUID requestId = UUID.randomUUID();
         Instant firstFinish = Instant.parse("2026-01-01T10:00:00Z");
         Instant latestFinish = Instant.parse("2026-01-01T12:00:00Z");

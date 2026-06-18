@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -19,6 +20,11 @@ public interface TargetingElementRepository extends JpaRepository<TargetingEleme
      * Lista todos os elementos vinculados a um nicho para sincronização e revisão.
      */
     List<TargetingElement> findByNicheId(Long nicheId);
+
+    /**
+     * Busca elemento já materializado pela Meta para manter idempotência da resolução.
+     */
+    Optional<TargetingElement> findFirstByNicheIdAndTypeAndMetaId(Long nicheId, TargetingElementType type, String metaId);
 
     /**
      * Lista elementos filtrados para telas administrativas de segmentação.

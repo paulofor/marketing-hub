@@ -6,6 +6,10 @@ import com.marketinghub.targeting.TargetingCandidateStatus;
 import com.marketinghub.targeting.TargetingCandidateType;
 import com.marketinghub.targeting.TargetingOption;
 import com.marketinghub.targeting.TargetingOptionSource;
+import com.marketinghub.targeting.TargetingElement;
+import com.marketinghub.targeting.TargetingElementSource;
+import com.marketinghub.targeting.TargetingElementStatus;
+import com.marketinghub.targeting.TargetingElementType;
 import com.marketinghub.targeting.TargetingResolutionJob;
 import com.marketinghub.targeting.TargetingResolutionJobStatus;
 import com.marketinghub.targeting.TargetingRequest;
@@ -25,6 +29,7 @@ import com.marketinghub.targeting.dto.TargetingResolutionSummaryDto;
 import com.marketinghub.targeting.mapper.TargetingResolutionSummaryMapper;
 import com.marketinghub.targeting.service.TargetingResolutionJobService.TargetingResolutionSummary;
 import com.marketinghub.repository.jpa.targeting.TargetingCandidateRepository;
+import com.marketinghub.repository.jpa.targeting.TargetingElementRepository;
 import com.marketinghub.repository.jpa.targeting.TargetingResolutionJobRepository;
 import com.marketinghub.repository.jpa.targeting.TargetingRequestRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -49,6 +54,9 @@ import java.util.Locale;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
+/**
+ * Coordena solicitações de público, candidatos gerados por IA e materialização de opções Meta aprovadas.
+ */
 @Service
 public class TargetingRequestService {
     private static final Logger log = LoggerFactory.getLogger(TargetingRequestService.class);
@@ -64,14 +72,19 @@ public class TargetingRequestService {
 
     private final TargetingRequestRepository requestRepository;
     private final TargetingCandidateRepository candidateRepository;
+    private final TargetingElementRepository targetingElementRepository;
     private final TargetingResolutionJobRepository resolutionJobRepository;
     private final TargetingResolutionJobService resolutionJobService;
     private final TargetingResolutionSummaryMapper resolutionSummaryMapper;
     private final MarketNicheRepository nicheRepository;
     private final HypothesisRepository hypothesisRepository;
 
+    /**
+     * Inicializa o serviço com repositórios de solicitações, candidatos, elementos aprovados e jobs de resolução.
+     */
     public TargetingRequestService(TargetingRequestRepository requestRepository,
                                    TargetingCandidateRepository candidateRepository,
+                                   TargetingElementRepository targetingElementRepository,
                                    TargetingResolutionJobRepository resolutionJobRepository,
                                    TargetingResolutionJobService resolutionJobService,
                                    TargetingResolutionSummaryMapper resolutionSummaryMapper,
@@ -79,6 +92,7 @@ public class TargetingRequestService {
                                    HypothesisRepository hypothesisRepository) {
         this.requestRepository = requestRepository;
         this.candidateRepository = candidateRepository;
+        this.targetingElementRepository = targetingElementRepository;
         this.resolutionJobRepository = resolutionJobRepository;
         this.resolutionJobService = resolutionJobService;
         this.resolutionSummaryMapper = resolutionSummaryMapper;
@@ -246,6 +260,9 @@ public class TargetingRequestService {
         return saved;
     }
 
+    /**
+     * Aplica o retorno do Facebook Ads Worker e transforma opções validadas em públicos aprovados para experimentos.
+     */
     @Transactional
     public void applyResolution(Long candidateId, TargetingCandidateResolutionUpdateRequest payload) {
         if (payload == null || payload.getStatus() == null) {
@@ -258,8 +275,8 @@ public class TargetingRequestService {
         if (!CollectionUtils.isEmpty(candidate.getOptions())) {
             candidate.getOptions().clear();
         }
+        List<OptionPayload> optionPayloads = payload.getOptions();
         if (payload.getStatus() == TargetingCandidateStatus.VALIDATED) {
-            List<OptionPayload> optionPayloads = payload.getOptions();
             if (!CollectionUtils.isEmpty(optionPayloads)) {
                 for (OptionPayload optionPayload : optionPayloads) {
                     TargetingOption option = toOptionEntity(candidate, optionPayload);
@@ -270,10 +287,85 @@ public class TargetingRequestService {
             }
         }
         TargetingCandidate savedCandidate = candidateRepository.save(candidate);
+        materializeApprovedTargetingElements(savedCandidate, optionPayloads);
         updateResolutionJob(candidateId, payload, savedCandidate);
         log.info("Updated candidate {} with status {}", candidateId, candidate.getStatus());
     }
 
+    /**
+     * Materializa cada opção validada pela Meta como elemento aprovado disponível na aba Público do experimento.
+     */
+    private void materializeApprovedTargetingElements(TargetingCandidate candidate, List<OptionPayload> optionPayloads) {
+        if (candidate == null
+                || candidate.getStatus() != TargetingCandidateStatus.VALIDATED
+                || candidate.getRequest() == null
+                || candidate.getRequest().getNiche() == null
+                || CollectionUtils.isEmpty(optionPayloads)) {
+            return;
+        }
+        for (OptionPayload optionPayload : optionPayloads) {
+            TargetingElement element = toApprovedTargetingElement(candidate, optionPayload);
+            if (element != null) {
+                targetingElementRepository.save(element);
+            }
+        }
+    }
+
+    /**
+     * Converte uma opção Meta validada em elemento de segmentação aprovado e idempotente por nicho/tipo/metaId.
+     */
+    private TargetingElement toApprovedTargetingElement(TargetingCandidate candidate, OptionPayload payload) {
+        if (payload == null || !StringUtils.hasText(payload.getFacebookId()) || !StringUtils.hasText(payload.getName())) {
+            return null;
+        }
+        TargetingElementType elementType = toElementType(payload.getType() != null ? payload.getType() : candidate.getType());
+        if (elementType == null) {
+            return null;
+        }
+        String metaId = payload.getFacebookId().trim();
+        TargetingElement element = targetingElementRepository
+                .findFirstByNicheIdAndTypeAndMetaId(candidate.getRequest().getNiche().getId(), elementType, metaId)
+                .orElseGet(() -> TargetingElement.builder()
+                        .niche(candidate.getRequest().getNiche())
+                        .hypothesis(candidate.getRequest().getHypothesis())
+                        .type(elementType)
+                        .source(TargetingElementSource.AI)
+                        .build());
+        element.setTerm(payload.getName().trim());
+        element.setDescription(firstNonBlank(candidate.getRationale(), payload.getSearchTerm(), candidate.getSeed()));
+        element.setStatus(TargetingElementStatus.APPROVED);
+        element.setMetaId(metaId);
+        element.setMetaKey(payload.getName().trim());
+        element.setMetaIdUnavailable(false);
+        element.setMetaIdUnavailableReason(null);
+        element.setConfidence(payload.getFinalScore() != null ? payload.getFinalScore() : candidate.getScore());
+        if (payload.getAudienceSize() != null) {
+            element.setMetaAudienceSizeLowerBound(payload.getAudienceSize());
+            element.setMetaAudienceSizeUpperBound(payload.getAudienceSize());
+        }
+        if (element.getNiche() == null) {
+            element.setNiche(candidate.getRequest().getNiche());
+        }
+        return element;
+    }
+
+    /**
+     * Converte o tipo de candidato vindo do worker para o tipo canônico de elemento de público.
+     */
+    private TargetingElementType toElementType(TargetingCandidateType candidateType) {
+        if (candidateType == null) {
+            return null;
+        }
+        return switch (candidateType) {
+            case INTEREST -> TargetingElementType.INTEREST;
+            case BEHAVIOR -> TargetingElementType.BEHAVIOR;
+            case WORK_POSITION -> TargetingElementType.JOB_TITLE;
+        };
+    }
+
+    /**
+     * Atualiza o job de resolução com o resultado operacional recebido do worker.
+     */
     private void updateResolutionJob(Long candidateId,
                                      TargetingCandidateResolutionUpdateRequest payload,
                                      TargetingCandidate candidate) {

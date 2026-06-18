@@ -2,9 +2,13 @@ package com.marketinghub.targeting.service;
 
 import com.marketinghub.repository.jpa.hypothesis.HypothesisRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
+import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.targeting.TargetingCandidate;
 import com.marketinghub.targeting.TargetingCandidateStatus;
 import com.marketinghub.targeting.TargetingCandidateType;
+import com.marketinghub.targeting.TargetingElement;
+import com.marketinghub.targeting.TargetingElementStatus;
+import com.marketinghub.targeting.TargetingElementType;
 import com.marketinghub.targeting.TargetingOption;
 import com.marketinghub.targeting.TargetingRequest;
 import com.marketinghub.targeting.TargetingResolutionJob;
@@ -12,6 +16,7 @@ import com.marketinghub.targeting.TargetingResolutionJobStatus;
 import com.marketinghub.targeting.dto.TargetingCandidateResolutionUpdateRequest;
 import com.marketinghub.targeting.mapper.TargetingResolutionSummaryMapper;
 import com.marketinghub.repository.jpa.targeting.TargetingCandidateRepository;
+import com.marketinghub.repository.jpa.targeting.TargetingElementRepository;
 import com.marketinghub.repository.jpa.targeting.TargetingRequestRepository;
 import com.marketinghub.repository.jpa.targeting.TargetingResolutionJobRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,6 +38,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+/**
+ * Testa o fluxo de solicitações de targeting e materialização de públicos Meta aprovados.
+ */
 @ExtendWith(MockitoExtension.class)
 class TargetingRequestServiceTest {
 
@@ -40,6 +48,8 @@ class TargetingRequestServiceTest {
     private TargetingRequestRepository requestRepository;
     @Mock
     private TargetingCandidateRepository candidateRepository;
+    @Mock
+    private TargetingElementRepository targetingElementRepository;
     @Mock
     private TargetingResolutionJobRepository resolutionJobRepository;
     @Mock
@@ -53,11 +63,13 @@ class TargetingRequestServiceTest {
 
     private TargetingRequestService service;
 
+    /** Prepara o serviço com dependências simuladas para cada teste. */
     @BeforeEach
     void setUp() {
         service = new TargetingRequestService(
                 requestRepository,
                 candidateRepository,
+                targetingElementRepository,
                 resolutionJobRepository,
                 resolutionJobService,
                 resolutionSummaryMapper,
@@ -66,6 +78,7 @@ class TargetingRequestServiceTest {
         );
     }
 
+    /** Verifica que resolução validada conclui o job com sucesso e limpa erro anterior. */
     @Test
     void applyResolutionShouldUpdateJobAsSucceededAndClearLastError() {
         Long candidateId = 10L;
@@ -107,6 +120,61 @@ class TargetingRequestServiceTest {
         assertThat(savedJob.getFinishedAt()).isAfterOrEqualTo(savedJob.getStartedAt());
     }
 
+
+    /** Verifica que opções Meta validadas viram elementos aprovados disponíveis para experimentos. */
+    @Test
+    void applyResolutionShouldMaterializeValidatedMetaOptionsAsApprovedTargetingElements() {
+        Long candidateId = 12L;
+        MarketNiche niche = MarketNiche.builder().id(22L).name("Nicho unhas").build();
+        TargetingRequest request = TargetingRequest.builder()
+                .id(UUID.randomUUID())
+                .descricao("desc")
+                .niche(niche)
+                .build();
+        TargetingCandidate candidate = TargetingCandidate.builder()
+                .id(candidateId)
+                .request(request)
+                .seed("manicure")
+                .type(TargetingCandidateType.WORK_POSITION)
+                .status(TargetingCandidateStatus.PENDING_FACEBOOK_MATCH)
+                .rationale("Profissional do nicho")
+                .build();
+        TargetingResolutionJob job = TargetingResolutionJob.builder()
+                .candidate(candidate)
+                .request(request)
+                .status(TargetingResolutionJobStatus.PROCESSING)
+                .build();
+        TargetingCandidateResolutionUpdateRequest.OptionPayload option = option("meta-1", "Manicure");
+        option.setType(TargetingCandidateType.WORK_POSITION);
+        option.setAudienceSize(12345L);
+
+        TargetingCandidateResolutionUpdateRequest payload = new TargetingCandidateResolutionUpdateRequest();
+        payload.setStatus(TargetingCandidateStatus.VALIDATED);
+        payload.setOptions(List.of(option));
+
+        when(candidateRepository.findDetailedById(candidateId)).thenReturn(Optional.of(candidate));
+        when(candidateRepository.save(any(TargetingCandidate.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(targetingElementRepository.findFirstByNicheIdAndTypeAndMetaId(22L, TargetingElementType.JOB_TITLE, "meta-1"))
+                .thenReturn(Optional.empty());
+        when(resolutionJobRepository.findByCandidateId(candidateId)).thenReturn(Optional.of(job));
+
+        service.applyResolution(candidateId, payload);
+
+        ArgumentCaptor<TargetingElement> elementCaptor = ArgumentCaptor.forClass(TargetingElement.class);
+        verify(targetingElementRepository).save(elementCaptor.capture());
+        TargetingElement savedElement = elementCaptor.getValue();
+
+        assertThat(savedElement.getNiche()).isEqualTo(niche);
+        assertThat(savedElement.getType()).isEqualTo(TargetingElementType.JOB_TITLE);
+        assertThat(savedElement.getStatus()).isEqualTo(TargetingElementStatus.APPROVED);
+        assertThat(savedElement.getTerm()).isEqualTo("Manicure");
+        assertThat(savedElement.getMetaId()).isEqualTo("meta-1");
+        assertThat(savedElement.getMetaKey()).isEqualTo("Manicure");
+        assertThat(savedElement.getMetaAudienceSizeLowerBound()).isEqualTo(12345L);
+        assertThat(savedElement.getMetaAudienceSizeUpperBound()).isEqualTo(12345L);
+    }
+
+    /** Verifica que falha técnica mantém o candidato pendente e marca o job como falho. */
     @Test
     void applyResolutionShouldMarkJobFailedForTechnicalFailureStatus() {
         Long candidateId = 11L;
@@ -147,6 +215,7 @@ class TargetingRequestServiceTest {
         assertThat(savedJob.getStartedAt()).isEqualTo(startedAt);
     }
 
+    /** Monta uma opção Meta mínima para os testes de resolução. */
     private TargetingCandidateResolutionUpdateRequest.OptionPayload option(String facebookId, String name) {
         TargetingCandidateResolutionUpdateRequest.OptionPayload payload = new TargetingCandidateResolutionUpdateRequest.OptionPayload();
         payload.setFacebookId(facebookId);

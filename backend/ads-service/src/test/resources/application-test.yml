@@ -9,3 +9,8 @@ spring:
       ddl-auto: create-drop
   liquibase:
     enabled: false
+
+lead-portal:
+  worker:
+    processing-guard:
+      enabled: false

@@ -1,0 +1,41 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-18-targeting-resolution-job-recovery
+      author: marketinghub
+      preConditions:
+        onFail: MARK_RAN
+        onError: HALT
+        and:
+          - dbms:
+              type: mysql
+          - tableExists:
+              tableName: targeting_candidate
+          - tableExists:
+              tableName: targeting_resolution_job
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO targeting_resolution_job (
+                  candidate_id,
+                  request_id,
+                  status,
+                  attempt_count,
+                  result_count,
+                  created_at,
+                  updated_at
+              )
+              SELECT
+                  c.id,
+                  c.request_id,
+                  'PENDING',
+                  0,
+                  NULL,
+                  COALESCE(c.created_at, CURRENT_TIMESTAMP(6)),
+                  CURRENT_TIMESTAMP(6)
+              FROM targeting_candidate c
+              LEFT JOIN targeting_resolution_job j ON j.candidate_id = c.id
+              WHERE c.status = 'PENDING_FACEBOOK_MATCH'
+                AND j.id IS NULL;

@@ -1020,3 +1020,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-06-17-facebook-campaign-publication-job-step.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-06-18-targeting-resolution-job-recovery.yaml
+      relativeToChangelogFile: true

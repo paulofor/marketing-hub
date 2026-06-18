@@ -4773,6 +4773,12 @@
 - Correção aplicada: o prompt `ad-image-briefing` agora obriga texto sobreposto em formato de pergunta clara, completa e objetiva, mencionando situação, rotina, cargo, atividade, dor ou resultado específico do nicho.
 - Prevenção de recorrência: o cânone do procedimento de experimento passou a registrar essa regra para manter futuras alterações de prompt alinhadas ao objetivo comercial de segmentação e venda.
 
+## 2026-06-18 — Recuperação de candidatos de targeting sem fila Meta
+
+- causa-raiz investigada: no nicho 22 havia candidatos de targeting em `PENDING_FACEBOOK_MATCH`, mas sem registros correspondentes em `targeting_resolution_job`; com isso, o Facebook Ads Worker não tinha fila operacional para validar os candidatos na Meta e materializar públicos aprovados.
+- correção aplicada: criado changelog incremental para recriar jobs `PENDING` para todo candidato `PENDING_FACEBOOK_MATCH` sem job, usando `LEFT JOIN ... IS NULL` para manter compatibilidade com MySQL 5.7 e evitar recorrência em dados já existentes.
+- prevenção de recorrência: adicionado teste unitário garantindo que, ao receber candidatos do AI Worker, o backend conclui a solicitação e chama o enfileiramento de resolução Meta.
+
 ## 2026-06-17 — Explicação operacional nas decisões de targeting
 
 - Ajustada a tela de solicitações recentes de targeting para mostrar o motivo da decisão operacional diretamente no card do candidato, usando a verdade já exposta pelo backend (`rationale` ou `rejection_reason`) e evitando que o operador interprete score/status sem causa-raiz visível.

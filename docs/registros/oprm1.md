@@ -955,3 +955,8 @@
 - Decisão de regra aplicada: o backend não deve controlar fluxo por validação semântica do seed da etapa `niche-research-seed-builder`; decisões de qualidade, reprovação, reprocessamento e próximo movimento pertencem ao executor/gates próprios do OPRM.
 - Correção aplicada: removido o bloqueio backend que rejeitava `nicheName` igual ao nicho atual/CNAE e o pré-gate comercial determinístico antes da persistência. O backend passa a persistir o nome retornado pelo executor, aplicando fallback rastreável quando o campo vier ausente, e deixa o fluxo avançar para as etapas e gates responsáveis pela avaliação.
 - Prevenção de recorrência: testes da etapa dois agora cobrem que o backend aceita o `nicheName` retornado pelo executor e aceita seed fraco sem transformar avaliação semântica em falha técnica de backend.
+
+## 2026-06-18 — Tela de jobs OPRM NichoCNAE
+
+- Criada tela administrativa `/oprm/jobs` com botão na navegação do OPRM para listar jobs recentes do pipeline NichoCNAE com paginação, custo, última etapa, relatório e acompanhamento.
+- Backend expõe `/api/oprm/nichocnae/jobs` para a UI consultar os ciclos recentes sem acessar banco diretamente.

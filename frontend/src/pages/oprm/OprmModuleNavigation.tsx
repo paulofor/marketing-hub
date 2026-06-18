@@ -7,6 +7,7 @@ interface OprmModuleNavigationProps {
 const navigationItems = [
   { label: "CNAEs", to: "/oprm", end: true },
   { label: "Públicos Gerais", to: "/oprm/general-audiences" },
+  { label: "Jobs", to: "/oprm/jobs" },
 ];
 
 export default function OprmModuleNavigation({

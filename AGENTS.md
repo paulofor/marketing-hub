@@ -160,6 +160,7 @@ O Marketing Hub é uma fábrica automatizada de produtos digitais: descobre dore
     6. `offset`: paginação por deslocamento dentro do conjunto filtrado.
     7. `cursor`: paginação por cursor retornado em `nextCursor`.
   - Limitações conhecidas:
+    - as URLs diretas de log dos serviços podem existir na configuração do MCP, mas normalmente não são acessíveis diretamente pelo ambiente do Codex; para investigar logs reais, tente sempre pela tool `java_module_logs` do MCP Server em vez de acessar essas URLs diretas.
     - o filtro `contains` é literal (sem regex/full-text avançado);
     - a retenção/janela disponível depende do `actuator/logfile` do módulo (logs antigos podem não estar mais disponíveis);
     - para logs de GitHub Actions, a tool é `github_actions_get_run_logs` e aceita apenas `run_id` (sem `contains`, `from`, `to`).

@@ -6,7 +6,6 @@ import com.marketinghub.creative.dto.CreateCreativeRequest;
 import com.marketinghub.creative.service.CreativeService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.Experiment;
-import com.marketinghub.experiment.CreativeGenerationStatus;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.worker.creative.pipeline.ExperimentPipelineAdExtractor;
@@ -29,8 +28,7 @@ import java.util.Map;
 import java.lang.reflect.Method;
 
 /**
- * Service that loops through experiments with {@code creativesToGenerate > 0}
- * and asks ChatGPT to generate creatives for each one.
+ * Serviço que processa experimentos com criativos pendentes e gera anúncios via IA.
  */
 @Service
 public class ExperimentCreativeService {
@@ -58,9 +56,7 @@ public class ExperimentCreativeService {
     }
 
     /**
-     * Generates creatives for all configured experiments.
-     *
-     * @return map keyed by experiment id containing the generated creatives
+     * Gera criativos para os experimentos configurados e retorna os itens por experimento.
      */
     @Transactional
     public Map<Long, List<Creative>> generate() {
@@ -84,7 +80,7 @@ public class ExperimentCreativeService {
                         ? generateFromPipeline(exp, qty)
                         : generateWithChatGpt(exp, qty);
                 exp.setCreativesToGenerate(0);
-                exp.setCreativeGenerationStatus(CreativeGenerationStatus.COMPLETED);
+                setCreativeGenerationStatus(exp, "COMPLETED");
                 exp.setCreativeGenerationFinishedAt(Instant.now());
                 exp.setCreativeGenerationError(null);
                 if (pipelineMode) {
@@ -104,7 +100,7 @@ public class ExperimentCreativeService {
      * Marca a solicitação como assumida pelo Worker AI antes de iniciar chamadas externas.
      */
     private void markProcessing(Experiment experiment) {
-        experiment.setCreativeGenerationStatus(CreativeGenerationStatus.PROCESSING);
+        setCreativeGenerationStatus(experiment, "PROCESSING");
         experiment.setCreativeGenerationStartedAt(Instant.now());
         experiment.setCreativeGenerationError(null);
         experimentRepository.save(experiment);
@@ -128,9 +124,9 @@ public class ExperimentCreativeService {
     private void markTimedOut(Experiment experiment) {
         log.warn("Creative generation timed out for experiment {}. pendingCreatives={} requestedAt={} status={}",
                 experiment.getId(), experiment.getCreativesToGenerate(), experiment.getCreativeGenerationRequestedAt(),
-                experiment.getCreativeGenerationStatus());
+                getCreativeGenerationStatusName(experiment));
         experiment.setCreativesToGenerate(0);
-        experiment.setCreativeGenerationStatus(CreativeGenerationStatus.TIMEOUT);
+        setCreativeGenerationStatus(experiment, "TIMEOUT");
         experiment.setCreativeGenerationFinishedAt(Instant.now());
         experiment.setCreativeGenerationError("Geração excedeu o tempo operacional de 30 minutos; solicite nova tentativa.");
         if (isPipelineAdsMode(experiment)) {
@@ -141,14 +137,14 @@ public class ExperimentCreativeService {
 
 
     /**
-     * Clears a failed creative generation request so the UI does not stay indefinitely blocked after logging the root cause.
+     * Limpa uma solicitação com falha para liberar nova tentativa após registrar a causa-raiz.
      */
     private void handleGenerationFailure(Experiment experiment, boolean pipelineMode, Exception exception) {
         log.error("Failed to generate creatives for experiment {}. pendingCreatives={} generationMode={} rootCauseCategory={} rootCauseMessage={}",
                 experiment.getId(), experiment.getCreativesToGenerate(), pipelineMode ? "PIPELINE_ADS" : "DEFAULT",
                 classifyRootCause(exception), rootCauseMessage(exception), exception);
         experiment.setCreativesToGenerate(0);
-        experiment.setCreativeGenerationStatus(CreativeGenerationStatus.FAILED);
+        setCreativeGenerationStatus(experiment, "FAILED");
         experiment.setCreativeGenerationFinishedAt(Instant.now());
         experiment.setCreativeGenerationError(truncate(rootCauseMessage(exception), 1024));
         if (pipelineMode) {
@@ -158,6 +154,35 @@ public class ExperimentCreativeService {
         log.warn("Cleared failed creative generation request for experiment {} to avoid an indefinite UI lock; user can request generation again after fixing the root cause",
                 experiment.getId());
     }
+
+    /**
+     * Atualiza o status da geração usando o enum fornecido pelo modelo canônico do backend.
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private void setCreativeGenerationStatus(Experiment experiment, String statusName) {
+        try {
+            Method setter = Experiment.class.getMethod("setCreativeGenerationStatus", Class.forName("com.marketinghub.experiment.CreativeGenerationStatus"));
+            Class<? extends Enum> statusType = (Class<? extends Enum>) setter.getParameterTypes()[0];
+            setter.invoke(experiment, Enum.valueOf(statusType, statusName));
+        } catch (ReflectiveOperationException exception) {
+            throw new IllegalStateException("Modelo canônico do backend não expõe CreativeGenerationStatus."
+                    + " Atualize a dependência ads-service usada pelo Worker AI.", exception);
+        }
+    }
+
+    /**
+     * Lê o status da geração sem acoplar o Worker AI à versão publicada do enum do backend.
+     */
+    private String getCreativeGenerationStatusName(Experiment experiment) {
+        try {
+            Method getter = Experiment.class.getMethod("getCreativeGenerationStatus");
+            Object status = getter.invoke(experiment);
+            return status == null ? null : status.toString();
+        } catch (ReflectiveOperationException exception) {
+            return null;
+        }
+    }
+
 
     /**
      * Generates default creatives and persists the batch only when every image URL is available.

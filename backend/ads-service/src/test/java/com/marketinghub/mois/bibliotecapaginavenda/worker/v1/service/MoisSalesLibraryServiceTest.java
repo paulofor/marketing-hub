@@ -15,6 +15,7 @@ import java.sql.ResultSet;
 import java.sql.Timestamp;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Calendar;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -165,6 +166,31 @@ class MoisSalesLibraryServiceTest {
         org.assertj.core.api.Assertions.assertThat(response.marketWarmupCompleted()).isEqualTo(70L);
         org.assertj.core.api.Assertions.assertThat(response.marketWarmupPromising()).isEqualTo(28L);
         org.assertj.core.api.Assertions.assertThat(response.marketWarmupStuck()).isEqualTo(2L);
+    }
+
+    /**
+     * Garante que horários DATETIME do MySQL são lidos como UTC antes de serem exibidos no fuso de São Paulo.
+     */
+    @Test
+    void shouldReadSummaryTimestampsAsUtcDatetime() throws Exception {
+        given(jdbcTemplate.queryForObject(
+                contains("MAX(CASE WHEN COALESCE(p.html_bytes, 0) > 0 THEN p.last_captured_at END) AS last_captured_at"),
+                isA(RowMapper.class),
+                eq("workspace-001"),
+                eq("workspace-001"),
+                eq("workspace-001")))
+                .willAnswer(invocation -> {
+                    RowMapper<?> mapper = invocation.getArgument(1);
+                    ResultSet row = salesPageSummaryRow();
+                    return mapper.mapRow(row, 0);
+                });
+
+        MoisSalesLibraryDtos.SalesLibraryPageSummaryResponse response = service.summarizePages("workspace-001");
+
+        org.assertj.core.api.Assertions.assertThat(response.lastCapturedAt())
+                .isEqualTo(Instant.parse("2026-06-18T02:50:00Z"));
+        org.assertj.core.api.Assertions.assertThat(response.updatedAt())
+                .isEqualTo(Instant.parse("2026-06-18T03:05:00Z"));
     }
 
     /**
@@ -537,6 +563,45 @@ class MoisSalesLibraryServiceTest {
         given(resultSet.getString("url_canonical")).willReturn(urlCanonical);
         return resultSet;
     }
+
+    /**
+     * Monta uma linha simulada do resumo operacional com datas UTC vindas de DATETIME do MySQL.
+     */
+    private ResultSet salesPageSummaryRow() throws Exception {
+        ResultSet resultSet = org.mockito.Mockito.mock(ResultSet.class);
+        given(resultSet.getLong("total")).willReturn(403L);
+        given(resultSet.getLong("pending")).willReturn(0L);
+        given(resultSet.getLong("capturing")).willReturn(0L);
+        given(resultSet.getLong("captured")).willReturn(355L);
+        given(resultSet.getLong("analyzed")).willReturn(100L);
+        given(resultSet.getLong("analysis_pending")).willReturn(20L);
+        given(resultSet.getLong("analysis_running")).willReturn(1L);
+        given(resultSet.getLong("analysis_failed")).willReturn(2L);
+        given(resultSet.getLong("failed")).willReturn(3L);
+        given(resultSet.getLong("blocked_cooldown")).willReturn(0L);
+        given(resultSet.getLong("hotmart")).willReturn(300L);
+        given(resultSet.getLong("clickbank")).willReturn(103L);
+        given(resultSet.getLong("market_warmup_eligible")).willReturn(10L);
+        given(resultSet.getLong("market_warmup_pending")).willReturn(4L);
+        given(resultSet.getLong("market_warmup_running")).willReturn(1L);
+        given(resultSet.getLong("market_warmup_completed")).willReturn(5L);
+        given(resultSet.getLong("market_warmup_failed")).willReturn(0L);
+        given(resultSet.getLong("market_warmup_hot")).willReturn(1L);
+        given(resultSet.getLong("market_warmup_promising")).willReturn(2L);
+        given(resultSet.getLong("market_warmup_warm")).willReturn(1L);
+        given(resultSet.getLong("market_warmup_cold")).willReturn(1L);
+        given(resultSet.getLong("market_warmup_saturated")).willReturn(0L);
+        given(resultSet.getLong("market_warmup_stuck")).willReturn(0L);
+        given(resultSet.getLong("captured_last_hour")).willReturn(0L);
+        given(resultSet.getLong("remaining_without_html")).willReturn(48L);
+        given(resultSet.getBigDecimal("average_captures_per_hour")).willReturn(BigDecimal.valueOf(0.8));
+        given(resultSet.getTimestamp(eq("last_captured_at"), any(Calendar.class)))
+                .willReturn(Timestamp.from(Instant.parse("2026-06-18T02:50:00Z")));
+        given(resultSet.getTimestamp(eq("updated_at"), any(Calendar.class)))
+                .willReturn(Timestamp.from(Instant.parse("2026-06-18T03:05:00Z")));
+        return resultSet;
+    }
+
     /**
      * Monta uma linha simulada de entrada operacional de página consolidada.
      */

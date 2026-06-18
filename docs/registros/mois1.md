@@ -1704,3 +1704,9 @@ Arquivos principais:
 - Corrigida a leitura de `DATETIME` do MySQL no backend da Biblioteca de Sales Pages para interpretar os horários operacionais como UTC antes de entregar `Instant` ao frontend.
 - Causa-raiz: o JDBC podia converter `DATETIME` usando o fuso padrão do servidor, fazendo a tela exibir horário futuro em São Paulo mesmo com o Windows do usuário no fuso correto.
 - Adicionado teste de regressão no resumo operacional para impedir que a “última captura feita” volte a depender do fuso do servidor Java/MySQL.
+
+## 2026-06-18 — Correção do teste de listagem operacional da Biblioteca Sales Pages
+
+- Corrigido o mock do teste `shouldListEntriesFromOperationalSalesPageTable` para usar a mesma assinatura UTC do backend ao ler `DATETIME` de `mois_sales_page`.
+- Causa-raiz: o service passou a chamar `ResultSet#getTimestamp(String, Calendar)` para evitar dependência do fuso do servidor, mas o teste ainda simulava `ResultSet#getTimestamp(String)`.
+- A correção mantém a proteção contra regressão de fuso horário sem alterar o contrato funcional da listagem operacional.

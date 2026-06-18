@@ -614,9 +614,12 @@ class MoisSalesLibraryServiceTest {
         given(resultSet.getString("url_canonical")).willReturn("https://example.com/pagina");
         given(resultSet.getString("title")).willReturn("Página de oferta");
         given(resultSet.getInt("ingest_count")).willReturn(2);
-        given(resultSet.getTimestamp("first_seen_at")).willReturn(Timestamp.from(Instant.parse("2026-06-01T10:00:00Z")));
-        given(resultSet.getTimestamp("last_captured_at")).willReturn(Timestamp.from(Instant.parse("2026-06-02T10:00:00Z")));
-        given(resultSet.getTimestamp("updated_at")).willReturn(Timestamp.from(Instant.parse("2026-06-03T10:00:00Z")));
+        given(resultSet.getTimestamp(eq("first_seen_at"), any(Calendar.class)))
+                .willReturn(Timestamp.from(Instant.parse("2026-06-01T10:00:00Z")));
+        given(resultSet.getTimestamp(eq("last_captured_at"), any(Calendar.class)))
+                .willReturn(Timestamp.from(Instant.parse("2026-06-02T10:00:00Z")));
+        given(resultSet.getTimestamp(eq("updated_at"), any(Calendar.class)))
+                .willReturn(Timestamp.from(Instant.parse("2026-06-03T10:00:00Z")));
         return resultSet;
     }
 

@@ -4736,3 +4736,10 @@
 - causa-raiz: o registro e o cânone já definiam que o Quality Review deve usar somente `htmlGeraLanding` e screenshots renderizados, mas o prompt markdown e o `QualityReviewBackendClient` voltaram a incluir artefatos intermediários (`landingPageWireframe` e `landingPageDesignPreset`), aumentando o payload e quebrando o teste de contrato que protege o request enxuto.
 - correção aplicada: o Worker AI voltou a montar `promptData` apenas com `htmlGeraLanding`; o prompt foi ajustado para não solicitar nem renderizar JSONs intermediários; o teste do client passou a bloquear explicitamente wireframe/preset no payload textual.
 - resultado esperado: o AI Worker recebe do backend apenas o insumo necessário para renderizar a landing e enviar screenshots ao modelo de visão, reduzindo risco de estouro de tamanho do request e mantendo a revisão focada no artefato final que o usuário verá.
+
+## 2026-06-18 — Destravamento da geração de criativos do Experimento 40
+
+- Investigação: a tela do experimento 40 permanecia em “Gerando anúncios...” porque o banco ainda mantinha `creatives_to_generate=3` e `creative_generation_mode=PIPELINE_ADS`, sem registros na tabela `creative`.
+- Causa-raiz: o AI Worker estava tentando chamar o backend em `http://191.252.181.168:8000`, porta recusada no ambiente do worker, enquanto o contrato operacional do Codex/produção deve usar o backend preferencialmente na porta 80 (`http://191.252.181.168`).
+- Correção aplicada: o default do `backend.base-url` do AI Worker e do `docker-compose` foi alinhado para a porta 80, evitando que novas solicitações fiquem pendentes por falha de conexão com o backend.
+- Próximo efeito esperado: após deploy/restart do AI Worker, o scheduler volta a consumir a solicitação pendente do Experimento 40 e gerar os criativos a partir dos anúncios de pipeline já concluídos.

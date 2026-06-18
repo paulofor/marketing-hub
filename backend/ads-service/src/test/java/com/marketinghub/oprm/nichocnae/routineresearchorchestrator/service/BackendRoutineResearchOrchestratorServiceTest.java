@@ -178,6 +178,7 @@ class BackendRoutineResearchOrchestratorServiceTest {
         candidate.setLastRoutineResearchCycleId(321L);
         when(routineResearchCycleRepository.findById(321L)).thenReturn(Optional.of(failedCycle));
         when(nicheCandidateRepository.findById(55L)).thenReturn(Optional.of(candidate));
+        when(seedRepository.sumCostUsdByResearchCycleId(321L)).thenReturn(new BigDecimal("0.05610000"));
         when(routineResearchCycleRepository.save(any(OprmRoutineResearchCycle.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
         when(nicheCandidateRepository.save(any(OprmNicheCandidate.class)))
@@ -199,6 +200,7 @@ class BackendRoutineResearchOrchestratorServiceTest {
         assertThat(cycleCaptor.getValue().getSourceNicheId()).isEqualTo(55L);
         assertThat(cycleCaptor.getValue().getStatus()).isEqualTo("RUNNING");
         assertThat(cycleCaptor.getValue().getTriggerSource()).isEqualTo("MANUAL_REPROCESS");
+        assertThat(cycleCaptor.getValue().getReprocessPreservedCostUsd()).isEqualByComparingTo("0.05610000");
         assertThat(cycleCaptor.getValue().getErrorMessage()).contains("Reexecução de etapas do mesmo job");
         verify(seedRepository).deleteByResearchCycleId(321L);
         verify(researchQueryRepository).deleteByResearchCycleId(321L);
@@ -225,6 +227,7 @@ class BackendRoutineResearchOrchestratorServiceTest {
         failedCycle.setResearchMode("ROUTINE_REALITY_RESEARCH");
         failedCycle.setSolutionLanguageRiskScore(new BigDecimal("35.00"));
         failedCycle.setSourceScore(new BigDecimal("91.00"));
+        failedCycle.setReprocessPreservedCostUsd(new BigDecimal("0.05610000"));
         OprmNicheCandidate candidate = candidate();
         OprmNicheRoutineCard previousCard = new OprmNicheRoutineCard();
         previousCard.setQualityStatus("SOLUTION_CONTAMINATED");
@@ -232,6 +235,7 @@ class BackendRoutineResearchOrchestratorServiceTest {
         when(routineResearchCycleRepository.findById(321L)).thenReturn(Optional.of(failedCycle));
         when(nicheCandidateRepository.findById(55L)).thenReturn(Optional.of(candidate));
         when(routineCardRepository.findFirstByResearchCycleIdOrderByIdDesc(321L)).thenReturn(Optional.of(previousCard));
+        when(seedRepository.sumCostUsdByResearchCycleId(321L)).thenReturn(new BigDecimal("0.01000000"));
         when(routineResearchCycleRepository.save(any(OprmRoutineResearchCycle.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
         when(nicheCandidateRepository.save(any(OprmNicheCandidate.class)))
@@ -252,6 +256,7 @@ class BackendRoutineResearchOrchestratorServiceTest {
         assertThat(learningCycle.getResearchMode()).isEqualTo("ROUTINE_REALITY_RESEARCH");
         assertThat(learningCycle.getSolutionLanguageRiskScore()).isEqualByComparingTo("35.00");
         assertThat(learningCycle.getSourceScore()).isEqualByComparingTo("91.00");
+        assertThat(learningCycle.getReprocessPreservedCostUsd()).isEqualByComparingTo("0.06610000");
         assertThat(learningCycle.getErrorMessage()).contains("O próximo seed deve usar o aprendizado do gate anterior");
         assertThat(learningCycle.getErrorMessage()).contains("previousQualityStatus=SOLUTION_CONTAMINATED");
         assertThat(learningCycle.getErrorMessage()).contains("riscoLinguagemSolucao=70");

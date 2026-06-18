@@ -69,6 +69,9 @@ public class OprmRoutineResearchCycle {
     @Column(name = "total_extracted_signals", nullable = false)
     private Integer totalExtractedSignals;
 
+    @Column(name = "reprocess_preserved_cost_usd", nullable = false, precision = 12, scale = 8)
+    private BigDecimal reprocessPreservedCostUsd = BigDecimal.ZERO;
+
     @Column(name = "started_at", nullable = false)
     private Instant startedAt;
 

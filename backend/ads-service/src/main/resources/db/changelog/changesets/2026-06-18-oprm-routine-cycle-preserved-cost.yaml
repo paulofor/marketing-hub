@@ -1,0 +1,23 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-18-01-oprm-routine-cycle-preserved-cost
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            - columnExists:
+                tableName: oprm_routine_research_cycle
+                columnName: reprocess_preserved_cost_usd
+      changes:
+        - addColumn:
+            tableName: oprm_routine_research_cycle
+            columns:
+              - column:
+                  name: reprocess_preserved_cost_usd
+                  type: DECIMAL(12,8)
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false

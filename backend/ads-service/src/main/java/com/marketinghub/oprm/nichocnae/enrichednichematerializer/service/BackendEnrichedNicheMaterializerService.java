@@ -334,10 +334,11 @@ public class BackendEnrichedNicheMaterializerService {
       OprmNicheRoutineCard card,
       OprmRoutineResearchCycle cycle,
       OprmEnrichedNicheMetaSignalService.MetaSignalPackage metaSignalPackage) {
-    BigDecimal identificationCostUsd = seedRepository.sumCostUsdByResearchCycleId(cycle.getId());
-    BigDecimal identificationCostBrl = identificationCostUsd == null || identificationCostUsd.compareTo(BigDecimal.ZERO) <= 0
-        ? null
-        : currencyConversionService.usdToBrl(identificationCostUsd);
+    BigDecimal identificationCostUsd = totalIdentificationCostUsd(cycle);
+    BigDecimal identificationCostBrl =
+        identificationCostUsd == null || identificationCostUsd.compareTo(BigDecimal.ZERO) <= 0
+            ? null
+            : currencyConversionService.usdToBrl(identificationCostUsd);
     return new OprmMarketNicheDraft(
         marketNicheId,
         requiredText(neutralNicheName(cycle), "neutralNicheName"),
@@ -351,6 +352,18 @@ public class BackendEnrichedNicheMaterializerService {
         metaSignalPackage == null ? null : metaSignalService.buildReadableSignalSummary(metaSignalPackage),
         buildExtraTips(card),
         identificationCostBrl);
+  }
+
+  /** Soma o custo atual do seed com o custo preservado de tentativas anteriores do mesmo job. */
+  private BigDecimal totalIdentificationCostUsd(OprmRoutineResearchCycle cycle) {
+    BigDecimal currentSeedCost = seedRepository.sumCostUsdByResearchCycleId(cycle.getId());
+    BigDecimal preservedReprocessCost = cycle.getReprocessPreservedCostUsd();
+    return nullToZero(currentSeedCost).add(nullToZero(preservedReprocessCost));
+  }
+
+  /** Normaliza custo nulo para zero antes de somar valores auditáveis. */
+  private BigDecimal nullToZero(BigDecimal value) {
+    return value == null ? BigDecimal.ZERO : value;
   }
 
   /** Localiza nicho já vinculado ao mesmo CNAE e ao mesmo nome neutro, permitindo vários nichos diferentes no mesmo CNAE. */

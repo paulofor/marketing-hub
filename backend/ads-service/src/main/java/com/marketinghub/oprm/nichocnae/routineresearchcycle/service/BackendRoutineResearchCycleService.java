@@ -390,7 +390,15 @@ public class BackendRoutineResearchCycleService {
 
   /** Soma o custo registrado pelas etapas com telemetria de IA para uma execução do ciclo. */
   private BigDecimal executionCostUsd(Long researchCycleId) {
-    return nicheResearchSeedRepository.sumCostUsdByResearchCycleId(researchCycleId);
+    OprmRoutineResearchCycle cycle = findCycle(researchCycleId);
+    BigDecimal currentSeedCost = nicheResearchSeedRepository.sumCostUsdByResearchCycleId(researchCycleId);
+    BigDecimal preservedReprocessCost = cycle.getReprocessPreservedCostUsd();
+    return nullToZero(currentSeedCost).add(nullToZero(preservedReprocessCost));
+  }
+
+  /** Normaliza custo nulo para zero antes de somar valores auditáveis. */
+  private BigDecimal nullToZero(BigDecimal value) {
+    return value == null ? BigDecimal.ZERO : value;
   }
 
   /** Converte um ciclo em detalhe operacional completo. */

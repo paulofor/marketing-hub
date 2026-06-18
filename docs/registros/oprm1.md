@@ -1,3 +1,9 @@
+## 2026-06-18 — OPRM NichoCNAE: custo preservado em reprocessamento do mesmo job
+
+- Causa-raiz tratada: ao reabrir o mesmo `researchCycleId`, o backend limpava o seed anterior para permitir nova execução, mas junto apagava o custo de IA já consumido e a tela podia voltar o custo para zero durante o reprocessamento.
+- Correção aplicada: antes de limpar artefatos reexecutáveis, o backend acumula o custo já registrado no ciclo e as consultas de acompanhamento/materialização somam esse custo preservado com o novo custo da tentativa atual.
+- Prevenção de recorrência: teste unitário cobre que o reprocessamento preserva e acumula o custo anterior do mesmo job antes de deletar o seed.
+
 ## 2026-06-18 02:23:30 (UTC) — OPRM NichoCNAE: endpoint de jobs por status para reprocessamento pelo executor
 
 - Causa-raiz identificada no ciclo #68: o backend marcava `NEEDS_MORE_RESEARCH` durante a triagem pré-segmentação MEI/autônomo, antes de o job chegar ao gate de qualidade que já aciona o reprocessamento automático no executor.

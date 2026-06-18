@@ -918,3 +918,9 @@
 - Corrigido o changelog de backfill de `current_stage_code` para não usar `signal` como alias SQL, pois `SIGNAL` é palavra reservada no MySQL e bloqueava a migração do backend.
 - Causa-raiz tratada: o SQL do Liquibase estava semanticamente correto, mas não havia validado colisão de alias com palavra reservada do MySQL 5.7.
 - Prevenção de recorrência: aliases de changelogs devem usar nomes funcionais explícitos, evitando termos reservados ou ambíguos em SQL de bootstrap.
+
+## 2026-06-18 — OPRM NichoCNAE: backfill de etapa atual sem lock amplo
+
+- Corrigido o backfill Liquibase de `current_stage_code` para substituir o `UPDATE` único com múltiplos `LEFT JOINs` por atualizações segmentadas por etapa usando `EXISTS`/`NOT EXISTS` nas tabelas de artefatos.
+- Causa-raiz tratada: o SQL anterior fazia uma junção ampla entre várias tabelas do pipeline OPRM, multiplicando linhas por ciclo e mantendo locks por tempo suficiente para estourar `Lock wait timeout` na inicialização do backend.
+- Prevenção de recorrência: backfills de bootstrap devem evitar joins amplos entre tabelas operacionais de alta cardinalidade e preferir atualizações pequenas, indexáveis e ordenadas pela etapa funcional.

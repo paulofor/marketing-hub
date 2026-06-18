@@ -46,26 +46,102 @@ databaseChangeLog:
             stripComments: true
             sql: |
               UPDATE oprm_routine_research_cycle cycle
-              LEFT JOIN oprm_niche_research_seed seed ON seed.research_cycle_id = cycle.id
-              LEFT JOIN oprm_research_query research_query ON research_query.research_cycle_id = cycle.id
-              LEFT JOIN oprm_source_candidate candidate ON candidate.research_cycle_id = cycle.id
-              LEFT JOIN oprm_source_snapshot snapshot ON snapshot.research_cycle_id = cycle.id
-              LEFT JOIN oprm_extracted_signal extracted_signal ON extracted_signal.research_cycle_id = cycle.id
-              LEFT JOIN oprm_niche_routine_card card ON card.research_cycle_id = cycle.id
-              LEFT JOIN oprm_mei_audience_profile mei_profile ON mei_profile.research_cycle_id = cycle.id
-              LEFT JOIN market_niche_enrichment_profile enrichment ON enrichment.research_cycle_id = cycle.id
-              SET cycle.current_stage_code = CASE
-                WHEN cycle.status IN ('ENRICHED_NICHE_CREATED', 'ENRICHED_NICHE_UPDATED', 'READY_FOR_HYPOTHESIS', 'COMPLETED') THEN NULL
-                WHEN enrichment.id IS NOT NULL THEN NULL
-                WHEN card.ready_for_hypothesis = 1 AND card.quality_checked_at IS NOT NULL THEN 'enriched-niche-materializer'
-                WHEN mei_profile.id IS NOT NULL AND card.quality_checked_at IS NULL THEN 'routine-quality-gate'
-                WHEN card.id IS NOT NULL AND mei_profile.id IS NULL THEN 'mei-audience-segmenter'
-                WHEN extracted_signal.id IS NOT NULL AND card.id IS NULL THEN 'routine-synthesizer'
-                WHEN snapshot.id IS NOT NULL AND extracted_signal.id IS NULL THEN 'signal-extractor'
-                WHEN candidate.id IS NOT NULL AND snapshot.id IS NULL THEN 'source-fetcher'
-                WHEN research_query.id IS NOT NULL AND candidate.id IS NULL THEN 'source-searcher'
-                WHEN seed.id IS NOT NULL AND research_query.id IS NOT NULL THEN 'source-searcher'
-                WHEN cycle.status = 'RUNNING' THEN 'niche-research-seed-builder'
-                ELSE cycle.current_stage_code
-              END
-              WHERE cycle.current_stage_code IS NULL;
+              SET cycle.current_stage_code = 'enriched-niche-materializer'
+              WHERE cycle.current_stage_code IS NULL
+                AND EXISTS (
+                  SELECT 1
+                  FROM oprm_niche_routine_card card
+                  WHERE card.research_cycle_id = cycle.id
+                    AND card.ready_for_hypothesis = 1
+                    AND card.quality_checked_at IS NOT NULL
+                );
+
+              UPDATE oprm_routine_research_cycle cycle
+              SET cycle.current_stage_code = 'routine-quality-gate'
+              WHERE cycle.current_stage_code IS NULL
+                AND EXISTS (
+                  SELECT 1
+                  FROM oprm_mei_audience_profile mei_profile
+                  WHERE mei_profile.research_cycle_id = cycle.id
+                )
+                AND EXISTS (
+                  SELECT 1
+                  FROM oprm_niche_routine_card card
+                  WHERE card.research_cycle_id = cycle.id
+                    AND card.quality_checked_at IS NULL
+                );
+
+              UPDATE oprm_routine_research_cycle cycle
+              SET cycle.current_stage_code = 'mei-audience-segmenter'
+              WHERE cycle.current_stage_code IS NULL
+                AND EXISTS (
+                  SELECT 1
+                  FROM oprm_niche_routine_card card
+                  WHERE card.research_cycle_id = cycle.id
+                )
+                AND NOT EXISTS (
+                  SELECT 1
+                  FROM oprm_mei_audience_profile mei_profile
+                  WHERE mei_profile.research_cycle_id = cycle.id
+                );
+
+              UPDATE oprm_routine_research_cycle cycle
+              SET cycle.current_stage_code = 'routine-synthesizer'
+              WHERE cycle.current_stage_code IS NULL
+                AND EXISTS (
+                  SELECT 1
+                  FROM oprm_extracted_signal extracted_signal
+                  WHERE extracted_signal.research_cycle_id = cycle.id
+                )
+                AND NOT EXISTS (
+                  SELECT 1
+                  FROM oprm_niche_routine_card card
+                  WHERE card.research_cycle_id = cycle.id
+                );
+
+              UPDATE oprm_routine_research_cycle cycle
+              SET cycle.current_stage_code = 'signal-extractor'
+              WHERE cycle.current_stage_code IS NULL
+                AND EXISTS (
+                  SELECT 1
+                  FROM oprm_source_snapshot snapshot
+                  WHERE snapshot.research_cycle_id = cycle.id
+                )
+                AND NOT EXISTS (
+                  SELECT 1
+                  FROM oprm_extracted_signal extracted_signal
+                  WHERE extracted_signal.research_cycle_id = cycle.id
+                );
+
+              UPDATE oprm_routine_research_cycle cycle
+              SET cycle.current_stage_code = 'source-fetcher'
+              WHERE cycle.current_stage_code IS NULL
+                AND EXISTS (
+                  SELECT 1
+                  FROM oprm_source_candidate candidate
+                  WHERE candidate.research_cycle_id = cycle.id
+                )
+                AND NOT EXISTS (
+                  SELECT 1
+                  FROM oprm_source_snapshot snapshot
+                  WHERE snapshot.research_cycle_id = cycle.id
+                );
+
+              UPDATE oprm_routine_research_cycle cycle
+              SET cycle.current_stage_code = 'source-searcher'
+              WHERE cycle.current_stage_code IS NULL
+                AND EXISTS (
+                  SELECT 1
+                  FROM oprm_research_query research_query
+                  WHERE research_query.research_cycle_id = cycle.id
+                )
+                AND NOT EXISTS (
+                  SELECT 1
+                  FROM oprm_source_candidate candidate
+                  WHERE candidate.research_cycle_id = cycle.id
+                );
+
+              UPDATE oprm_routine_research_cycle cycle
+              SET cycle.current_stage_code = 'niche-research-seed-builder'
+              WHERE cycle.current_stage_code IS NULL
+                AND cycle.status = 'RUNNING';

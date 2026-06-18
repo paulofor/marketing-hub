@@ -252,9 +252,22 @@ export default function CriativosTab({
   const pipelinePairs = Math.min(pipelineVariantCount, pipelineBriefingCount);
   const pipelineAvailable = pipelinePairs > 0;
   const pendingCreativeRequests = experiment?.creativesToGenerate ?? 0;
+  const creativeGenerationStatus = experiment?.creativeGenerationStatus ?? "IDLE";
   const pipelineInProgress =
-    experiment?.creativeGenerationMode === "PIPELINE_ADS" &&
-    pendingCreativeRequests > 0;
+    creativeGenerationStatus === "REQUESTED" ||
+    creativeGenerationStatus === "PROCESSING";
+  const pipelineHasRecoverableFailure =
+    creativeGenerationStatus === "FAILED" || creativeGenerationStatus === "TIMEOUT";
+  const pipelineStatusLabel =
+    creativeGenerationStatus === "REQUESTED"
+      ? "Worker AI aguardando a fila de imagens"
+      : creativeGenerationStatus === "PROCESSING"
+        ? "Worker AI processando imagens com gpt-imagem-1.5"
+        : creativeGenerationStatus === "FAILED"
+          ? "Geração falhou; revise a causa e tente novamente"
+          : creativeGenerationStatus === "TIMEOUT"
+            ? "Geração excedeu o tempo operacional; tente novamente"
+            : "Worker AI processando imagens com gpt-imagem-1.5";
   const pipelineButtonDisabled =
     alterationLocked ||
     pipelineRequest.isPending ||
@@ -930,9 +943,20 @@ export default function CriativosTab({
                   : "Gerar anúncios do pipeline"}
               </span>
             </button>
-            {pipelineInProgress && (
-              <span className="badge text-bg-info-subtle text-info-emphasis">
-                Worker AI processando imagens com gpt-imagem-1.5
+            {(pipelineInProgress || pipelineHasRecoverableFailure) && (
+              <span
+                className={
+                  pipelineHasRecoverableFailure
+                    ? "badge text-bg-warning text-dark"
+                    : "badge text-bg-info-subtle text-info-emphasis"
+                }
+              >
+                {pipelineStatusLabel}
+              </span>
+            )}
+            {pipelineHasRecoverableFailure && experiment?.creativeGenerationError && (
+              <span className="small text-muted text-lg-end">
+                {experiment.creativeGenerationError}
               </span>
             )}
           </div>
@@ -941,6 +965,12 @@ export default function CriativosTab({
         <div className="alert alert-info mt-3">
           <strong>Worker AI em produção.</strong> Estamos finalizando os
           anúncios solicitados com os ativos do pipeline.
+        </div>
+      ) : pipelineHasRecoverableFailure ? (
+        <div className="alert alert-warning mt-3">
+          <strong>Geração de anúncios liberada para nova tentativa.</strong>{" "}
+          {experiment?.creativeGenerationError ||
+            "A solicitação anterior não foi concluída pelo Worker AI."}
         </div>
       ) : null}
 

@@ -6,6 +6,7 @@ import com.marketinghub.creative.dto.CreateCreativeRequest;
 import com.marketinghub.creative.service.CreativeService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.CreativeGenerationStatus;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.worker.creative.pipeline.ExperimentPipelineAdExtractor;
@@ -17,6 +18,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.text.Normalizer;
+import java.time.Instant;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -40,6 +43,7 @@ public class ExperimentCreativeService {
     private static final int HEADLINE_MAX = 40;
     private static final int PRIMARY_TEXT_MAX = 125;
     private static final int MAX_HASHTAGS = 30;
+    private static final Duration CREATIVE_GENERATION_TIMEOUT = Duration.ofMinutes(30);
 
     public ExperimentCreativeService(ExperimentRepository experimentRepository,
                                      CreativeChatGptClient chatGptClient,
@@ -69,12 +73,20 @@ public class ExperimentCreativeService {
                 continue;
             }
             boolean pipelineMode = isPipelineAdsMode(exp);
+            if (hasTimedOut(exp)) {
+                markTimedOut(exp);
+                continue;
+            }
             log.info("Generating {} creatives for experiment {} ({})", qty, exp.getId(), pipelineMode ? "pipeline" : "default");
             try {
+                markProcessing(exp);
                 List<Creative> saved = pipelineMode
                         ? generateFromPipeline(exp, qty)
                         : generateWithChatGpt(exp, qty);
                 exp.setCreativesToGenerate(0);
+                exp.setCreativeGenerationStatus(CreativeGenerationStatus.COMPLETED);
+                exp.setCreativeGenerationFinishedAt(Instant.now());
+                exp.setCreativeGenerationError(null);
                 if (pipelineMode) {
                     setCreativeGenerationMode(exp, "DEFAULT");
                 }
@@ -88,6 +100,45 @@ public class ExperimentCreativeService {
         return result;
     }
 
+    /**
+     * Marca a solicitação como assumida pelo Worker AI antes de iniciar chamadas externas.
+     */
+    private void markProcessing(Experiment experiment) {
+        experiment.setCreativeGenerationStatus(CreativeGenerationStatus.PROCESSING);
+        experiment.setCreativeGenerationStartedAt(Instant.now());
+        experiment.setCreativeGenerationError(null);
+        experimentRepository.save(experiment);
+    }
+
+    /**
+     * Verifica se a solicitação ficou pendente por tempo maior que o limite operacional.
+     */
+    private boolean hasTimedOut(Experiment experiment) {
+        Instant requestedAt = experiment.getCreativeGenerationRequestedAt();
+        if (requestedAt == null) {
+            requestedAt = experiment.getUpdatedAt();
+        }
+        return requestedAt != null
+                && Instant.now().minus(CREATIVE_GENERATION_TIMEOUT).isAfter(requestedAt);
+    }
+
+    /**
+     * Encerra solicitações antigas para liberar nova tentativa pela tela sem manter falso processamento.
+     */
+    private void markTimedOut(Experiment experiment) {
+        log.warn("Creative generation timed out for experiment {}. pendingCreatives={} requestedAt={} status={}",
+                experiment.getId(), experiment.getCreativesToGenerate(), experiment.getCreativeGenerationRequestedAt(),
+                experiment.getCreativeGenerationStatus());
+        experiment.setCreativesToGenerate(0);
+        experiment.setCreativeGenerationStatus(CreativeGenerationStatus.TIMEOUT);
+        experiment.setCreativeGenerationFinishedAt(Instant.now());
+        experiment.setCreativeGenerationError("Geração excedeu o tempo operacional de 30 minutos; solicite nova tentativa.");
+        if (isPipelineAdsMode(experiment)) {
+            setCreativeGenerationMode(experiment, "DEFAULT");
+        }
+        experimentRepository.save(experiment);
+    }
+
 
     /**
      * Clears a failed creative generation request so the UI does not stay indefinitely blocked after logging the root cause.
@@ -97,6 +148,9 @@ public class ExperimentCreativeService {
                 experiment.getId(), experiment.getCreativesToGenerate(), pipelineMode ? "PIPELINE_ADS" : "DEFAULT",
                 classifyRootCause(exception), rootCauseMessage(exception), exception);
         experiment.setCreativesToGenerate(0);
+        experiment.setCreativeGenerationStatus(CreativeGenerationStatus.FAILED);
+        experiment.setCreativeGenerationFinishedAt(Instant.now());
+        experiment.setCreativeGenerationError(truncate(rootCauseMessage(exception), 1024));
         if (pipelineMode) {
             setCreativeGenerationMode(experiment, "DEFAULT");
         }

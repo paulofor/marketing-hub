@@ -1,0 +1,55 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-18-experiment-creative-generation-status
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            - columnExists:
+                tableName: experiment
+                columnName: creative_generation_status
+      changes:
+        - addColumn:
+            tableName: experiment
+            columns:
+              - column:
+                  name: creative_generation_status
+                  type: varchar(32)
+                  defaultValue: IDLE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: creative_generation_requested_at
+                  type: datetime
+              - column:
+                  name: creative_generation_started_at
+                  type: datetime
+              - column:
+                  name: creative_generation_finished_at
+                  type: datetime
+              - column:
+                  name: creative_generation_error
+                  type: varchar(1024)
+  - changeSet:
+      id: 2026-06-18-experiment-creative-generation-status-backfill
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - columnExists:
+            tableName: experiment
+            columnName: creative_generation_status
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE experiment
+                 SET creative_generation_status = 'REQUESTED',
+                     creative_generation_requested_at = COALESCE(updated_at, created_at)
+               WHERE creatives_to_generate IS NOT NULL
+                 AND creatives_to_generate > 0
+                 AND creative_generation_status = 'IDLE';

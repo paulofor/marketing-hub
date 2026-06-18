@@ -605,15 +605,24 @@ public class ExperimentService {
     }
 
     /**
-     * Requests generation of new creatives by setting the pending quantity.
+     * Solicita geração de novos criativos registrando estado operacional da fila.
      */
     @Transactional
     public Experiment requestCreatives(Long id, int quantity) {
         Experiment exp = repository.findById(id).orElseThrow();
         exp.setCreativesToGenerate(quantity);
+        exp.setCreativeGenerationMode(CreativeGenerationMode.DEFAULT);
+        exp.setCreativeGenerationStatus(CreativeGenerationStatus.REQUESTED);
+        exp.setCreativeGenerationRequestedAt(java.time.Instant.now());
+        exp.setCreativeGenerationStartedAt(null);
+        exp.setCreativeGenerationFinishedAt(null);
+        exp.setCreativeGenerationError(null);
         return exp;
     }
 
+    /**
+     * Solicita geração de anúncios do pipeline com rastreio operacional explícito.
+     */
     @Transactional
     public Experiment requestPipelineCreatives(Long id) {
         Experiment exp = repository.findById(id).orElseThrow();
@@ -632,11 +641,16 @@ public class ExperimentService {
         int quantity = Math.min(3, plans.size());
         exp.setCreativesToGenerate(quantity);
         exp.setCreativeGenerationMode(CreativeGenerationMode.PIPELINE_ADS);
+        exp.setCreativeGenerationStatus(CreativeGenerationStatus.REQUESTED);
+        exp.setCreativeGenerationRequestedAt(java.time.Instant.now());
+        exp.setCreativeGenerationStartedAt(null);
+        exp.setCreativeGenerationFinishedAt(null);
+        exp.setCreativeGenerationError(null);
         return exp;
     }
 
     /**
-     * Requests generation of new instant forms by setting the pending quantity.
+     * Verifica se o pipeline possui texto e briefing de imagem antes de enfileirar anúncios.
      */
     private void ensurePipelinePrerequisites(Experiment exp) {
         if (!StringUtils.hasText(exp.getAdCopy()) || !StringUtils.hasText(exp.getAdImageBriefing())) {

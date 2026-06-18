@@ -288,7 +288,8 @@ class MoisSalesLibraryServiceTest {
                     given(row.getString("ecosystem_type")).willReturn("CREATORS_HEATED");
                     given(row.getString("recommendation")).willReturn("PRIORITIZE");
                     given(row.getString("saturation_risk")).willReturn(null);
-                    given(row.getTimestamp("evidence_updated_at")).willReturn(Timestamp.from(Instant.parse("2026-06-09T12:00:00Z")));
+                    given(row.getTimestamp(eq("evidence_updated_at"), any(Calendar.class)))
+                            .willReturn(Timestamp.from(Instant.parse("2026-06-09T12:00:00Z")));
                     given(row.getString("next_experiment_suggestion")).willReturn("Criar experimento com promessa direta.");
                     given(row.getString("opportunity_recommendation")).willReturn("Priorizar mercado.");
                     return List.of(mapper.mapRow(row, 0));

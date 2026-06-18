@@ -29,7 +29,17 @@ public interface OprmMarketSizeByCnaeRepository extends JpaRepository<OprmMarket
                 ms.totalEmpresasMei,
                 ms.totalEmpresasSimples,
                 sc.opportunityScore,
-                sc.scoreStatus
+                sc.scoreStatus,
+                (select count(distinct c2.neutralNicheName)
+                    from OprmRoutineResearchCycle c2
+                    where c2.cnaeCode = ms.id.cnaeCode),
+                (select coalesce(sum(seed.costUsd), 0)
+                    from OprmNicheResearchSeed seed
+                    where seed.cnaeCode = ms.id.cnaeCode),
+                case when (select count(c3.id)
+                    from OprmRoutineResearchCycle c3
+                    where c3.cnaeCode = ms.id.cnaeCode
+                      and c3.status = 'RUNNING') > 0 then true else false end
             )
             from OprmMarketSizeByCnae ms
             left join OprmCnpjCnaeDim c on c.cnaeCode = ms.id.cnaeCode
@@ -53,7 +63,17 @@ public interface OprmMarketSizeByCnaeRepository extends JpaRepository<OprmMarket
                 ms.totalEmpresasMei,
                 ms.totalEmpresasSimples,
                 sc.opportunityScore,
-                sc.scoreStatus
+                sc.scoreStatus,
+                (select count(distinct c2.neutralNicheName)
+                    from OprmRoutineResearchCycle c2
+                    where c2.cnaeCode = ms.id.cnaeCode),
+                (select coalesce(sum(seed.costUsd), 0)
+                    from OprmNicheResearchSeed seed
+                    where seed.cnaeCode = ms.id.cnaeCode),
+                case when (select count(c3.id)
+                    from OprmRoutineResearchCycle c3
+                    where c3.cnaeCode = ms.id.cnaeCode
+                      and c3.status = 'RUNNING') > 0 then true else false end
             )
             from OprmMarketSizeByCnae ms
             left join OprmCnpjCnaeDim c on c.cnaeCode = ms.id.cnaeCode

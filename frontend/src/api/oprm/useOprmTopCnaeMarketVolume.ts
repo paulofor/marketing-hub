@@ -12,6 +12,9 @@ export interface OprmTopCnaeMarketVolume {
   totalEmpresasSimples: number;
   opportunityScore: number | null;
   scoreStatus: string | null;
+  subnicheCount: number;
+  researchCostUsd: number | null;
+  nicheResearchRunning: boolean;
 }
 
 async function fetchTopCnaes(

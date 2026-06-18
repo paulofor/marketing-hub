@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 /**
- * DTO responsável por expor o ranking operacional de CNAEs com volume de mercado e score OPRM.
+ * DTO responsável por expor o ranking operacional de CNAEs com volume, score e indicadores de pesquisa de nicho.
  */
 public record OprmTopCnaeMarketVolumeDto(
         LocalDate snapshotDate,
@@ -16,4 +16,7 @@ public record OprmTopCnaeMarketVolumeDto(
         long totalEmpresasMei,
         long totalEmpresasSimples,
         BigDecimal opportunityScore,
-        String scoreStatus) {}
+        String scoreStatus,
+        long subnicheCount,
+        BigDecimal researchCostUsd,
+        boolean nicheResearchRunning) {}

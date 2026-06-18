@@ -17,6 +17,15 @@ function formatScore(value: number | undefined) {
     : value.toLocaleString("pt-BR", { maximumFractionDigits: 2 });
 }
 
+function formatCurrencyUsd(value: number | null | undefined) {
+  return (value ?? 0).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 4,
+    maximumFractionDigits: 4,
+  });
+}
+
 function formatDateTime(value: string | null | undefined) {
   if (!value) {
     return "-";
@@ -271,11 +280,11 @@ export default function OprmCnaeVolumePage() {
                     <>
                       <th>Score OPRM ↓</th>
                       <th>Estab. total</th>
-                      <th>Empresas</th>
-                      <th>Empresas Simples</th>
-                      <th>Estab. ativos</th>
-                      <th>Empresas MEI</th>
-                      <th>Status score</th>
+                      <th>Simples</th>
+                      <th>MEI</th>
+                      <th>Subnichos</th>
+                      <th>Custo</th>
+                      <th>Pesquisa</th>
                     </>
                   ) : (
                     <th>Status</th>
@@ -301,13 +310,28 @@ export default function OprmCnaeVolumePage() {
                           {formatScore(item.opportunityScore ?? undefined)}
                         </td>
                         <td>{formatNumber(item.totalEstabelecimentos)}</td>
-                        <td>{formatNumber(item.totalEmpresas)}</td>
                         <td>{formatNumber(item.totalEmpresasSimples)}</td>
-                        <td>
-                          {formatNumber(item.totalEstabelecimentosAtivos)}
-                        </td>
                         <td>{formatNumber(item.totalEmpresasMei)}</td>
-                        <td>{item.scoreStatus ?? "Aguardando scheduler"}</td>
+                        <td>{formatNumber(item.subnicheCount)}</td>
+                        <td>{formatCurrencyUsd(item.researchCostUsd)}</td>
+                        <td>
+                          {item.nicheResearchRunning ? (
+                            <span
+                              className="text-primary"
+                              title="Pesquisa de nicho em execução neste CNAE"
+                              aria-label="Pesquisa de nicho em execução"
+                            >
+                              🔎
+                            </span>
+                          ) : (
+                            <span
+                              className="text-secondary"
+                              aria-label="Sem pesquisa em execução"
+                            >
+                              -
+                            </span>
+                          )}
+                        </td>
                       </tr>
                     ))
                   : (cnaeCatalogQuery.data ?? [])

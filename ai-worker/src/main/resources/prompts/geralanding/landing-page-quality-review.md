@@ -17,7 +17,7 @@ A landing do GeraLanding não deve apenas parecer bonita. Ela precisa cumprir um
 
 Use as imagens como evidência principal. Avalie o que aparece na tela, não o que provavelmente estava no briefing. Não recompense intenção invisível.
 
-Além dos screenshots, você receberá o HTML final consolidado `htmlGeraLanding` e dois artefatos de causa-raiz: `landingPageWireframe` e `landingPageDesignPreset`. Use os screenshots como evidência principal do que o visitante vê, use o HTML para confirmar problemas técnicos/textuais e use wireframe/preset apenas para separar se a causa provável veio da estrutura/copy upstream ou da composição visual.
+Além dos screenshots, você receberá somente o HTML final consolidado `htmlGeraLanding`. Use os screenshots como evidência principal do que o visitante vê e use o HTML apenas para confirmar problemas técnicos/textuais observáveis no artefato final.
 
 ## Arquivo enviado para avaliação de causa-raiz
 
@@ -27,31 +27,19 @@ Além dos screenshots, você receberá o HTML final consolidado `htmlGeraLanding
 {{htmlGeraLanding}}
 ```
 
-### Wireframe usado como referência estrutural (`landingPageWireframe`)
-
-```json
-{{landingPageWireframe}}
-```
-
-### Preset de design usado como referência visual (`landingPageDesignPreset`)
-
-```json
-{{landingPageDesignPreset}}
-```
-
 ### Screenshots renderizados enviados como imagens
 
 ```json
 {{renderedLandingScreenshots}}
 ```
 
-Ao preencher `blockingIssues` e `recommendedRegeneration`, cite problemas observáveis no `htmlGeraLanding` e nos screenshots renderizados. Quando recomendar regeneração, diferencie:
+Ao preencher `blockingIssues` e `recommendedRegeneration`, cite apenas problemas observáveis no `htmlGeraLanding` e nos screenshots renderizados. Quando recomendar regeneração, diferencie pela evidência final observada:
 
 - `LANDING_PAGE_WIREFRAME`: quando a falha principal estiver na ordem, estrutura, promessa, prova, CTA ou conteúdo planejado;
 - `LANDING_PAGE_DESIGN_PRESET`: quando a estrutura estiver correta, mas a percepção visual, contraste, hierarquia, espaçamento, responsividade ou acabamento estiver ruim;
 - `LANDING_PAGE_HTML`: quando o problema for montagem/renderização final, HTML/CSS, overflow, corte, conteúdo visível indevido ou aplicação incorreta do preset.
 
-Não use o wireframe ou o preset para perdoar uma falha visível na landing. Se a evidência visual estiver ruim, a nota deve refletir a experiência final do visitante.
+Não use intenção interna de etapas anteriores para perdoar uma falha visível na landing. Se a evidência visual estiver ruim, a nota deve refletir a experiência final do visitante.
 
 ## O que a landing precisa provar
 

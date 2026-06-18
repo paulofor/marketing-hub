@@ -4729,3 +4729,10 @@
 
 - Ajustada a lista de Testes de Nicho para substituir a coluna **Valor** por **Custo**.
 - A coluna agora mostra o custo total acumulado do nicho, calculado a partir dos custos dos experimentos retornados pelo backend, mantendo a tela orientada ao controle financeiro do nicho.
+
+## 2026-06-18 — Correção do contrato enxuto do Quality Review
+
+- solicitação: investigar a falha recente do teste `QualityReviewPromptBuilderTest` considerando o histórico de request grande na etapa `landing-page-quality-review`.
+- causa-raiz: o registro e o cânone já definiam que o Quality Review deve usar somente `htmlGeraLanding` e screenshots renderizados, mas o prompt markdown e o `QualityReviewBackendClient` voltaram a incluir artefatos intermediários (`landingPageWireframe` e `landingPageDesignPreset`), aumentando o payload e quebrando o teste de contrato que protege o request enxuto.
+- correção aplicada: o Worker AI voltou a montar `promptData` apenas com `htmlGeraLanding`; o prompt foi ajustado para não solicitar nem renderizar JSONs intermediários; o teste do client passou a bloquear explicitamente wireframe/preset no payload textual.
+- resultado esperado: o AI Worker recebe do backend apenas o insumo necessário para renderizar a landing e enviar screenshots ao modelo de visão, reduzindo risco de estouro de tamanho do request e mantendo a revisão focada no artefato final que o usuário verá.

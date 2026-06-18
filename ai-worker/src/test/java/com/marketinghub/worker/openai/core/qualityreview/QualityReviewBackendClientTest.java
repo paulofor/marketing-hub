@@ -32,7 +32,7 @@ class QualityReviewBackendClientTest {
         server.shutdown();
     }
 
-    /** Deve expor HTML, wireframe e preset para renderização visual e diagnóstico de causa-raiz. */
+    /** Deve expor somente o HTML final canônico para renderização visual e prompt enxuto. */
     @Test
     void listPendingShouldExposeLeanQualityReviewInputsForScreenshotRendering() {
         server.enqueue(new MockResponse()
@@ -63,11 +63,19 @@ class QualityReviewBackendClientTest {
         assertThat(pending.getFirst().input().landingHtml())
                 .isEqualTo("<!doctype html><html><body><h1>Landing final</h1></body></html>");
         assertThat(pending.getFirst().input().promptData())
-                .containsOnlyKeys("experimentName", "hypothesisTitle", "landingPageWireframe", "landingPageDesignPreset", "htmlGeraLanding")
-                .containsEntry("experimentName", "Experimento visual")
-                .containsEntry("hypothesisTitle", "Hipótese visual")
+                .containsOnlyKeys("htmlGeraLanding")
                 .containsEntry("htmlGeraLanding", "<!doctype html><html><body><h1>Landing final</h1></body></html>")
-                .doesNotContainKeys("experimentId", "landingPageHtml", "CASE_DATA_BLOCK", "landingPageImageAssets", "adCopy", "adImageBriefing");
+                .doesNotContainKeys(
+                        "experimentName",
+                        "hypothesisTitle",
+                        "experimentId",
+                        "landingPageHtml",
+                        "landingPageWireframe",
+                        "landingPageDesignPreset",
+                        "CASE_DATA_BLOCK",
+                        "landingPageImageAssets",
+                        "adCopy",
+                        "adImageBriefing");
     }
 
     /** Deve manter compatibilidade com o contrato legado aninhado quando o backend ainda enviar experiment. */

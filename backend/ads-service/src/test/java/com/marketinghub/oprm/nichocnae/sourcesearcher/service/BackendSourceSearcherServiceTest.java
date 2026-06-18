@@ -42,7 +42,8 @@ class BackendSourceSearcherServiceTest {
   /** Deve listar queries pendentes em ordem operacional para execução pelo provedor de busca. */
   @Test
   void listPendingUsesResearchQueryPendingFilter() {
-    when(researchQueryRepository.findByStatusOrderByPriorityAscIdAsc(eq("PENDING"), any(Pageable.class)))
+    when(researchQueryRepository
+            .findPendingByStatusAndCycleStage(eq("PENDING"), eq("source-searcher"), any(Pageable.class)))
         .thenReturn(List.of(query()));
 
     var result = service.listPending();

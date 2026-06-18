@@ -55,6 +55,50 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/RoutineResearchOrchestratorRecent'
+  /api/internal/oprm/nichocnae/routine-research-orchestrator/jobs:
+    get:
+      summary: Lista jobs do pipeline NichoCNAE filtrados por status para reprocessamento pelo executor.
+      description: Endpoint interno de leitura para o executor OPRM localizar jobs recuperáveis, obter dados da tentativa anterior e decidir nova tentativa com aprendizado nos prompts.
+      tags: [OPRM Nicho CNAE]
+      parameters:
+        - name: status
+          in: query
+          required: true
+          description: Um ou mais status de ciclo. Pode ser enviado repetido ou separado por vírgula conforme conversão padrão do Spring.
+          schema:
+            type: array
+            items:
+              type: string
+              enum:
+                - FAILED
+                - STALLED
+                - NEEDS_MORE_RESEARCH
+                - NEEDS_MORE_MEI_RESEARCH
+                - OUTDATED_SOURCES
+                - TOO_CORPORATE
+                - SOLUTION_CONTAMINATED
+                - NEEDS_EXECUTOR_ROUTINE_EVIDENCE
+                - GENERIC
+                - ENRICHED_NICHE_FAILED
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+      responses:
+        '200':
+          description: Jobs encontrados em ordem operacional ascendente para o executor decidir reprocessamento.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RoutineResearchOrchestratorRecent'
+        '400':
+          description: Nenhum status informado.
   /api/oprm/nichocnae/routine-research-orchestrator/recent-processed/{researchCycleId}/reprocess:
     post:
       summary: Reabre o mesmo job para reexecutar etapas do CNAE falho, fraco, genérico ou com falha na materialização final.

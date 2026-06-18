@@ -40,6 +40,9 @@ public interface OprmRoutineResearchCycleRepository extends JpaRepository<OprmRo
     /** Lista os ciclos de pesquisa de rotina mais recentes para acompanhamento operacional. */
     List<OprmRoutineResearchCycle> findAllByOrderByStartedAtDesc(Pageable pageable);
 
+    /** Lista ciclos de pesquisa por status para filas de diagnóstico e reprocessamento do executor. */
+    List<OprmRoutineResearchCycle> findByStatusInOrderByStartedAtAsc(List<String> statuses, Pageable pageable);
+
     /** Lista ciclos aptos à etapa de seed, incluindo falhas retryáveis sem artefatos persistidos. */
     @Query("""
             select cycle

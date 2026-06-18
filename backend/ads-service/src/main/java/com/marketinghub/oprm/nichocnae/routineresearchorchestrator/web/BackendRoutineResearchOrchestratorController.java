@@ -40,6 +40,14 @@ public class BackendRoutineResearchOrchestratorController {
         return executionService.listRecentProcessed(limit);
     }
 
+    /** Lista jobs por status para o executor decidir nova tentativa usando aprendizado da tentativa anterior. */
+    @GetMapping("/internal/oprm/nichocnae/routine-research-orchestrator/jobs")
+    public List<RecordRoutineResearchOrchestratorRecent> jobsByStatus(
+            @RequestParam("status") List<String> statuses,
+            @RequestParam(defaultValue = "20") int limit) {
+        return executionService.listJobsByStatus(statuses, limit);
+    }
+
     /** Reabre o mesmo job para falhas, pesquisas insuficientes ou resultados genéricos. */
     @PostMapping("/oprm/nichocnae/routine-research-orchestrator/recent-processed/{researchCycleId}/reprocess")
     public RecordRoutineResearchOrchestratorReprocessResult reprocess(

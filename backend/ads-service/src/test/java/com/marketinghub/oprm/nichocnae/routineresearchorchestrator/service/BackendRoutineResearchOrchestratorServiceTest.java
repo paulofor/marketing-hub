@@ -108,6 +108,31 @@ class BackendRoutineResearchOrchestratorServiceTest {
         assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(10);
     }
 
+    /** Deve listar jobs filtrados por status para o executor decidir nova tentativa com aprendizado anterior. */
+    @Test
+    void listJobsByStatusReturnsFilteredCyclesForExecutorRetry() {
+        OprmRoutineResearchCycle cycle = cycle(321L, 55L, "Cabeleireiros e manicures", "2026-06-03T01:00:00Z");
+        cycle.setStatus("NEEDS_MORE_RESEARCH");
+        when(routineResearchCycleRepository.findByStatusInOrderByStartedAtAsc(
+                        org.mockito.ArgumentMatchers.eq(List.of("NEEDS_MORE_RESEARCH", "GENERIC")), any(Pageable.class)))
+                .thenReturn(List.of(cycle));
+
+        List<RecordRoutineResearchOrchestratorRecent> result =
+                service.listJobsByStatus(List.of(" needs_more_research ", "GENERIC", "generic"), 99);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst().researchCycleId()).isEqualTo(321L);
+        assertThat(result.getFirst().cycleStatus()).isEqualTo("NEEDS_MORE_RESEARCH");
+        assertThat(result.getFirst().errorMessage()).isEqualTo("nicheName is required");
+
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        verify(routineResearchCycleRepository)
+                .findByStatusInOrderByStartedAtAsc(
+                        org.mockito.ArgumentMatchers.eq(List.of("NEEDS_MORE_RESEARCH", "GENERIC")),
+                        pageableCaptor.capture());
+        assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(50);
+    }
+
     /** Deve indicar o nicho existente quando o candidato já foi materializado em MarketNiche. */
     @Test
     void listRecentProcessedReturnsExistingMarketNicheAssociation() {

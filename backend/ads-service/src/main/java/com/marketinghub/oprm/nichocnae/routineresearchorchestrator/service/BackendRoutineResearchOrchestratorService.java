@@ -22,6 +22,7 @@ import com.marketinghub.repository.jpa.oprm.nichocnae.OprmRoutineResearchCycleRe
 import com.marketinghub.repository.jpa.oprm.nichocnae.meiaudienceprofile.OprmMeiAudienceProfileRepository;
 import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
@@ -111,6 +112,25 @@ public class BackendRoutineResearchOrchestratorService {
                 .toList();
         LOGGER.info("Ciclos recentes da etapa zero OPRM nichocnae retornados (count={})", recentCycles.size());
         return recentCycles;
+    }
+
+    /** Lista jobs por status para o executor decidir reprocessamentos com aprendizado da tentativa anterior. */
+    @Transactional(readOnly = true)
+    public List<RecordRoutineResearchOrchestratorRecent> listJobsByStatus(List<String> statuses, int limit) {
+        List<String> normalizedStatuses = normalizeStatusFilter(statuses);
+        int safeLimit = Math.max(1, Math.min(limit, 50));
+        LOGGER.info(
+                "Listando jobs OPRM nichocnae por status para executor (statuses={}, requestedLimit={}, safeLimit={})",
+                normalizedStatuses,
+                limit,
+                safeLimit);
+        List<RecordRoutineResearchOrchestratorRecent> jobs = routineResearchCycleRepository
+                .findByStatusInOrderByStartedAtAsc(normalizedStatuses, PageRequest.of(0, safeLimit))
+                .stream()
+                .map(this::toRecentProcessed)
+                .toList();
+        LOGGER.info("Jobs OPRM nichocnae por status retornados para executor (count={})", jobs.size());
+        return jobs;
     }
 
     /** Reabre o mesmo job e limpa os artefatos das etapas que serão executadas novamente com novo input. */
@@ -237,6 +257,22 @@ public class BackendRoutineResearchOrchestratorService {
                 || CYCLE_STATUS_GENERIC.equals(status)
                 || CYCLE_STATUS_NEEDS_EXECUTOR_ROUTINE_EVIDENCE.equals(status)
                 || "ENRICHED_NICHE_FAILED".equals(status);
+    }
+
+    /** Normaliza o filtro de status e bloqueia consultas amplas sem status explícito. */
+    private List<String> normalizeStatusFilter(List<String> statuses) {
+        if (statuses == null || statuses.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "At least one status is required");
+        }
+        List<String> normalizedStatuses = statuses.stream()
+                .filter(status -> status != null && !status.isBlank())
+                .map(status -> status.trim().toUpperCase(Locale.ROOT))
+                .distinct()
+                .toList();
+        if (normalizedStatuses.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "At least one status is required");
+        }
+        return normalizedStatuses;
     }
 
     /** Monta mensagem operacional para explicar ao usuário por que o mesmo job foi reaberto. */

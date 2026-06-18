@@ -893,3 +893,9 @@
 - Adicionado botão “Relatório” para cada execução do NichoCNAE, permitindo baixar um arquivo `nicho-cnae<id>.md` com detalhamento etapa por etapa.
 - Causa-raiz tratada: a tela permitia acompanhar o estado do pipeline, mas não entregava uma auditoria consolidada para o usuário analisar request/response de IA, URLs pesquisadas, retornos coletados, sinais, síntese e qualidade sem navegar por várias telas.
 - Prevenção de recorrência: o relatório é gerado pelo backend a partir das tabelas canônicas da execução, mantendo a tela como consumidora da verdade do backend e evitando inferência local no frontend.
+
+## 2026-06-18 — OPRM CNAE: ranking com subnichos, custo e pesquisa em execução
+
+- Ajustada a tabela “CNAEs por Score OPRM” para manter somente colunas decisórias de volume, remover métricas redundantes e exibir quantidade de subnichos, custo acumulado de pesquisa e indicador visual de processamento ativo.
+- Causa-raiz tratada: a tabela misturava indicadores cadastrais pouco acionáveis com dados operacionais de pesquisa, dificultando a decisão sobre onde criar, acompanhar ou interromper novos subnichos.
+- Prevenção de recorrência: os novos campos vêm do endpoint do backend, preservando a regra de verdade da tela e evitando inferência local no frontend.

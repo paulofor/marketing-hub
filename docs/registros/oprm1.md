@@ -1134,3 +1134,8 @@
 
 - Ajustado o layout da tela do pipeline NichoCNAE v2 para manter os cards de jobs com o mesmo visual, mas exibidos em uma única coluna, ocupando a largura horizontal disponível da tela.
 - Causa-raiz preventiva: o grid anterior dividia os cards em duas colunas em telas largas, reduzindo o espaço útil para leitura de jobs e tabelas operacionais.
+
+## 2026-06-19 — Tradução dos nomes das etapas do pipeline NichoCNAE v2
+
+- Atualizados os rótulos exibidos no frontend para apresentar as etapas do pipeline NichoCNAE v2 em português, mantendo os códigos técnicos internos sem alteração.
+- Ajustado o teste de navegação do OPRM para validar os novos nomes visíveis ao usuário.

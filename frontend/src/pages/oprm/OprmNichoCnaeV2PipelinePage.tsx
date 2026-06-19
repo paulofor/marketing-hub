@@ -8,18 +8,18 @@ import PageTitle from "../../components/PageTitle";
 import OprmModuleNavigation from "./OprmModuleNavigation";
 
 const stageLabels: Record<string, string> = {
-  "candidate-generator": "Candidate Generator",
-  "source-safety-filter": "Source Safety Filter",
-  "adaptive-query-planner": "Adaptive Query Planner",
-  "candidate-tournament": "Candidate Tournament",
-  "source-fetcher-reranker": "Source Fetcher + Reranker",
-  "signal-extractor": "Signal Extractor",
-  "semantic-judge-entailment": "Semantic Judge + Entailment",
-  "knowledge-accumulator": "Knowledge Accumulator",
-  "reprocess-controller": "Reprocess Controller",
-  "routine-synthesizer": "Routine Synthesizer",
-  "commercial-evidence-gate": "Evidence Level Gate E0–E5",
-  "enriched-niche-materializer": "Enriched Niche Materializer",
+  "candidate-generator": "Gerador de Candidatos",
+  "source-safety-filter": "Filtro de Segurança das Fontes",
+  "adaptive-query-planner": "Planejador Adaptativo de Buscas",
+  "candidate-tournament": "Torneio de Candidatos",
+  "source-fetcher-reranker": "Coletor e Reordenador de Fontes",
+  "signal-extractor": "Extrator de Sinais",
+  "semantic-judge-entailment": "Juiz Semântico e Validação de Evidência",
+  "knowledge-accumulator": "Acumulador de Conhecimento",
+  "reprocess-controller": "Controlador de Reprocessamento",
+  "routine-synthesizer": "Sintetizador de Rotina",
+  "commercial-evidence-gate": "Gate de Nível de Evidência E0–E5",
+  "enriched-niche-materializer": "Materializador de Nicho Enriquecido",
 };
 
 function formatStage(stageCode: string | null | undefined) {
@@ -94,7 +94,7 @@ function JobsTable({
 const v2Stages = [
   {
     number: 1,
-    title: "Candidate Generator",
+    title: "Gerador de Candidatos",
     status: "Design aprovado · implementação inicial",
     purpose:
       "Gerar candidatos neutros de subnicho sem contaminar nome, dor, canal ou promessa antes da evidência.",
@@ -105,7 +105,7 @@ const v2Stages = [
   },
   {
     number: 2,
-    title: "Source Safety Filter",
+    title: "Filtro de Segurança das Fontes",
     status: "Design aprovado · implementação inicial",
     purpose:
       "Bloquear domínios inseguros, conteúdo inadequado e resultados fora do contexto antes de gastar IA.",
@@ -114,7 +114,7 @@ const v2Stages = [
   },
   {
     number: 3,
-    title: "Adaptive Query Planner",
+    title: "Planejador Adaptativo de Buscas",
     status: "Design aprovado · implementação inicial",
     purpose:
       "Planejar buscas pelos gaps reais de conhecimento, reaproveitando queries, fontes e falhas anteriores.",
@@ -125,7 +125,7 @@ const v2Stages = [
   },
   {
     number: 4,
-    title: "Candidate Tournament",
+    title: "Torneio de Candidatos",
     status: "Design",
     purpose:
       "Comparar candidatos por densidade e qualidade de evidências antes de escolher finalistas.",
@@ -135,7 +135,7 @@ const v2Stages = [
   },
   {
     number: 5,
-    title: "Source Fetcher + Reranker",
+    title: "Coletor e Reordenador de Fontes",
     status: "Design aprovado · implementação inicial",
     purpose:
       "Coletar páginas úteis e priorizar fontes diretas, independentes e alinhadas ao objetivo do gate.",
@@ -146,7 +146,7 @@ const v2Stages = [
   },
   {
     number: 6,
-    title: "Signal Extractor",
+    title: "Extrator de Sinais",
     status: "Design aprovado · implementação parcial",
     purpose:
       "Extrair claims somente quando houver trecho exato, ator correto, contexto compatível e relação sustentada.",
@@ -156,7 +156,7 @@ const v2Stages = [
   },
   {
     number: 7,
-    title: "Semantic Judge + Entailment",
+    title: "Juiz Semântico e Validação de Evidência",
     status: "Design",
     purpose:
       "Validar se o trecho realmente sustenta a afirmação sobre o executor e o contexto pesquisado.",
@@ -166,7 +166,7 @@ const v2Stages = [
   },
   {
     number: 8,
-    title: "Knowledge Accumulator",
+    title: "Acumulador de Conhecimento",
     status: "Design aprovado · implementação inicial",
     purpose:
       "Consolidar conhecimento versionado do ciclo, preservando fontes aceitas, rejeições, gaps e aprendizados.",
@@ -177,7 +177,7 @@ const v2Stages = [
   },
   {
     number: 9,
-    title: "Reprocess Controller",
+    title: "Controlador de Reprocessamento",
     status: "Design aprovado · implementação inicial",
     purpose:
       "Decidir o menor rewind necessário quando um gate falhar por qualidade, mantendo o mesmo job quando aplicável.",
@@ -188,7 +188,7 @@ const v2Stages = [
   },
   {
     number: 10,
-    title: "Routine Synthesizer",
+    title: "Sintetizador de Rotina",
     status: "Design aprovado · implementação inicial",
     purpose:
       "Sintetizar rotina, dores e resultados apenas a partir de claims aprovados e evidências rastreáveis.",
@@ -198,7 +198,7 @@ const v2Stages = [
   },
   {
     number: 11,
-    title: "Evidence Level Gate E0–E5",
+    title: "Gate de Nível de Evidência E0–E5",
     status: "Design aprovado · implementação inicial",
     purpose:
       "Separar existência da atividade, dor prática, impacto econômico e intenção de compra por nível de evidência.",
@@ -209,7 +209,7 @@ const v2Stages = [
   },
   {
     number: 12,
-    title: "Enriched Niche Materializer",
+    title: "Materializador de Nicho Enriquecido",
     status:
       "Design aprovado · implementação inicial protegida por feature flag",
     purpose:

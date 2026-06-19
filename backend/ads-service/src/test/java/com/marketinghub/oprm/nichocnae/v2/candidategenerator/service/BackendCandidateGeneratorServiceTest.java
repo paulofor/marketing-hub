@@ -74,12 +74,36 @@ class BackendCandidateGeneratorServiceTest {
 
         assertThat(result).hasSize(1);
         assertThat(result.getFirst().stageExecutionId()).isEqualTo("1001");
-        assertThat(result.getFirst().jobId()).isEqualTo("nichocnae-v2-candidate-69");
+        assertThat(result.getFirst().jobId()).isEqualTo("nichocnae-v2-candidate-69-job-1");
         assertThat(result.getFirst().cnaeCode()).isEqualTo("9602501");
         assertThat(result.getFirst().attemptNumber()).isEqualTo(1);
         assertThat(result.getFirst().technicalRetryNumber()).isZero();
         assertThat(result.getFirst().knowledgeVersion()).isEqualTo(1);
         assertThat(result.getFirst().materializationEnabled()).isFalse();
+    }
+
+
+    /** Deve gravar novo job manual para o CNAE selecionado sem executar o fluxo no backend. */
+    @Test
+    void createForCnaePersistsNewPendingJobForSelectedCnae() {
+        BackendCandidateGeneratorService service = service(true, false);
+        OprmNicheCandidate candidate = candidate(4781400L, "4781400");
+        when(nicheCandidateRepository.findManualRoutineResearchCandidateByCnaeCode(eq("4781400"), any(Pageable.class)))
+                .thenReturn(List.of(candidate));
+        when(stageExecutionRepository.countBySourceNicheIdAndStageCode(4781400L, "candidate-generator"))
+                .thenReturn(2L);
+        when(stageExecutionRepository.save(any(OprmNichoCnaeV2StageExecution.class))).thenAnswer(invocation -> {
+            OprmNichoCnaeV2StageExecution execution = invocation.getArgument(0);
+            execution.setId(1200L);
+            return execution;
+        });
+
+        var result = service.createForCnae("4781400");
+
+        assertThat(result.stageExecutionId()).isEqualTo("1200");
+        assertThat(result.jobId()).isEqualTo("nichocnae-v2-candidate-4781400-job-3");
+        assertThat(result.status()).isEqualTo("PENDING");
+        assertThat(result.cnaeCode()).isEqualTo("4781400");
     }
 
     /** Ciclo 74: deve transformar falha de infraestrutura em retry técnico sem nova tentativa cognitiva. */

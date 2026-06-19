@@ -3,6 +3,22 @@ info:
   title: OPRM NichoCNAE v2 Candidate Generator API
   version: "1.0"
 paths:
+  /api/internal/oprm/nichocnae/v2/candidate-generator/stage-executions/cnaes/{cnaeCode}:
+    post:
+      summary: Grava um novo job pendente da v2 para o CNAE selecionado, sem executar o fluxo no backend.
+      parameters:
+        - name: cnaeCode
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Job pendente gravado para consumo do executor externo OPRM.
+        "404":
+          description: Não existe candidato com score para o CNAE informado.
+        "409":
+          description: Pipeline v2 desabilitado por feature flag.
   /api/internal/oprm/nichocnae/v2/candidate-generator/stage-executions/pending:
     get:
       summary: Lista execuções pendentes da etapa candidate-generator v2

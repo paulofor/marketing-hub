@@ -6,6 +6,7 @@ import com.marketinghub.oprm.nichocnae.v2.OprmNichoCnaeV2StageExecution;
 import com.marketinghub.oprm.nichocnae.v2.OprmNichoCnaeV2StageExecutionStatus;
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.completeStageExecution.CandidateGeneratorCompletionRequest;
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.completeStageExecution.CandidateGeneratorCompletionResponse;
+import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.createStageExecution.CandidateGeneratorCreateResponse;
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.failStageExecution.CandidateGeneratorFailureRequest;
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.failStageExecution.CandidateGeneratorFailureResponse;
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.pending.CandidateGeneratorPendingResponse;
@@ -55,6 +56,32 @@ public class BackendCandidateGeneratorService {
                 .stream()
                 .map(this::toPendingResponse)
                 .toList();
+    }
+
+    /** Grava um novo job inicial da v2 para o CNAE escolhido, deixando a execução para o módulo externo. */
+    @Transactional
+    public CandidateGeneratorCreateResponse createForCnae(String cnaeCode) {
+        if (!v2Enabled) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "NichoCNAE v2 is disabled");
+        }
+        OprmNicheCandidate candidate = nicheCandidateRepository
+                .findManualRoutineResearchCandidateByCnaeCode(cnaeCode, PageRequest.of(0, 1))
+                .stream()
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "No scored NichoCNAE candidate found for CNAE: " + cnaeCode));
+        long existingExecutions = stageExecutionRepository.countBySourceNicheIdAndStageCode(candidate.getId(), STAGE_CODE);
+        OprmNichoCnaeV2StageExecution saved = stageExecutionRepository.save(createInitialExecution(candidate, existingExecutions + 1));
+        return new CandidateGeneratorCreateResponse(
+                String.valueOf(saved.getId()),
+                saved.getJobId(),
+                saved.getCnaeCode(),
+                saved.getSourceNicheId(),
+                saved.getAttemptNumber(),
+                saved.getTechnicalRetryNumber(),
+                saved.getKnowledgeVersion(),
+                saved.getMaterializationEnabled(),
+                saved.getStatus().name());
     }
 
     /** Registra conclusão da etapa persistindo a próxima etapa informada pelo executor externo. */
@@ -119,14 +146,14 @@ public class BackendCandidateGeneratorService {
                 .filter(candidate -> !stageExecutionRepository.existsBySourceNicheIdAndStageCode(
                         candidate.getId(), STAGE_CODE))
                 .findFirst()
-                .ifPresent(candidate -> stageExecutionRepository.save(createInitialExecution(candidate)));
+                .ifPresent(candidate -> stageExecutionRepository.save(createInitialExecution(candidate, 1)));
     }
 
     /** Cria a primeira execução imutável da etapa candidate-generator para o candidato priorizado. */
-    private OprmNichoCnaeV2StageExecution createInitialExecution(OprmNicheCandidate candidate) {
+    private OprmNichoCnaeV2StageExecution createInitialExecution(OprmNicheCandidate candidate, long jobSequence) {
         Instant now = Instant.now();
         OprmNichoCnaeV2StageExecution execution = new OprmNichoCnaeV2StageExecution();
-        execution.setJobId("nichocnae-v2-candidate-" + candidate.getId());
+        execution.setJobId("nichocnae-v2-candidate-" + candidate.getId() + "-job-" + jobSequence);
         execution.setSourceNicheId(candidate.getId());
         execution.setCnaeCode(candidate.getCnaeCode());
         execution.setStageCode(STAGE_CODE);

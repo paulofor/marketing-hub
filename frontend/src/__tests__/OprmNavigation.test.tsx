@@ -56,6 +56,7 @@ describe("OPRM navigation", () => {
     expect(screen.getByText(/^Pipeline NichoCNAE v2$/)).toBeTruthy();
     expect(screen.getByText(/^CNAE 9602501$/)).toBeTruthy();
     expect(screen.getByText(/^Candidate Generator$/)).toBeTruthy();
+    expect(screen.getByRole("button", { name: /iniciar novo job v2/i })).toBeTruthy();
     expect(screen.getByText(/^Knowledge Accumulator$/)).toBeTruthy();
   });
 

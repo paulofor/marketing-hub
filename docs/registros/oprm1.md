@@ -1096,3 +1096,9 @@
 - Corrigido o bootstrap dos testes do backend afetado por conflito de nome de bean Spring entre componentes legados e componentes versionados v2 da etapa `enriched-niche-materializer`.
 - Causa-raiz: classes versionadas e legadas com o mesmo nome simples (`BackendEnrichedNicheMaterializerController` e `BackendEnrichedNicheMaterializerService`) eram registradas com bean names padrão duplicados.
 - Prevenção aplicada: o controller e o service v2 passaram a declarar bean names explícitos e versionados, preservando convivência entre versões do pipeline.
+
+## 2026-06-19 12:25:00 (UTC-3) — OPRM NichoCNAE v2: botão para iniciar novo job do CNAE selecionado
+
+- Ajustada a tela do pipeline v2 para permitir iniciar um novo job do CNAE selecionado diretamente no mapa de etapas.
+- O backend apenas grava uma execução pendente da etapa `candidate-generator`; a execução e o controle do fluxo permanecem no módulo externo `oprm-coletor-mei`, que consome o endpoint `pending` canônico.
+- Prevenção de recorrência: o botão mostra carregamento durante a requisição e a mensagem da tela explicita que o job foi apenas gravado para o executor externo.

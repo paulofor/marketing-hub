@@ -193,25 +193,8 @@
 
 .oprm-v2-jobs-section {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: clamp(1rem, 2vw, 1.5rem);
-  position: relative;
-}
-
-.oprm-v2-jobs-section::before {
-  content: "";
-  position: absolute;
-  top: 0.75rem;
-  bottom: 0.75rem;
-  left: 50%;
-  width: 1px;
-  background: linear-gradient(
-    180deg,
-    transparent,
-    rgba(13, 110, 253, 0.24),
-    rgba(25, 135, 84, 0.24),
-    transparent
-  );
 }
 
 .oprm-v2-job-panel {
@@ -264,12 +247,3 @@
   box-shadow: 0 0 0 0.35rem rgba(15, 23, 42, 0.06);
 }
 
-@media (max-width: 1199.98px) {
-  .oprm-v2-jobs-section {
-    grid-template-columns: 1fr;
-  }
-
-  .oprm-v2-jobs-section::before {
-    display: none;
-  }
-}

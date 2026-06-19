@@ -1130,3 +1130,7 @@
 - O executor externo `oprm-coletor-mei` agora mantém a lógica de negócio no módulo executor: o `CandidateGeneratorProcessor` entrega candidatos neutros, URLs-semente seguras e `nextStageCode`, enquanto o `SourceSafetyFilterProcessor` rejeita contrato sem URLs como erro de validação, não como infraestrutura retryável.
 - Adicionado limite operacional no executor para retry técnico por tentativa, classificando limite excedido como `VALIDATION/TECHNICAL_RETRY_LIMIT_EXCEEDED`; o backend permanece limitado a persistir o status informado pelo executor.
 - Prevenção de recorrência: testes cobrem geração de payload útil para a etapa seguinte, rejeição de entrada inválida no filtro de segurança e classificação de contrato inválido sem novo retry técnico.
+## 2026-06-19 — Ajuste visual dos cards de jobs NichoCNAE v2
+
+- Ajustado o layout da tela do pipeline NichoCNAE v2 para manter os cards de jobs com o mesmo visual, mas exibidos em uma única coluna, ocupando a largura horizontal disponível da tela.
+- Causa-raiz preventiva: o grid anterior dividia os cards em duas colunas em telas largas, reduzindo o espaço útil para leitura de jobs e tabelas operacionais.

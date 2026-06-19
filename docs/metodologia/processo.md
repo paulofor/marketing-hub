@@ -183,3 +183,4 @@ Coisa muito interessante que vejo acontecer hoje.
 - lista na tela dos jobs ( em execução e executados )
 - ja no primeiro job etapa 2 ficou em loop infinito de retry
 - conversa com o codex sobre saida de uma etapa, entrada da outra. O modelo vai expondo dados e problemas ( talvez apenas percebidos por uma execuçaõ )
+  Prompt: "Nesse job me diga o que a etapa 1 gerou como saida, o que a etapa 2 recebeu como entrada e o que ela esta tentando com retry" com imagem da tela

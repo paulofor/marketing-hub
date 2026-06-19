@@ -1,0 +1,42 @@
+openapi: 3.0.3
+info:
+  title: OPRM NichoCNAE v2 Knowledge Accumulator API
+  version: 1.0.0
+  description: Contratos internos de leitura e escrita da etapa 8 do pipeline NichoCNAE v2. A lógica de acumulação de conhecimento, versionamento, gaps e regras de negócio fica no executor externo oprm-coletor-mei; o backend apenas persiste e expõe pendências/resultados.
+paths:
+  /api/internal/oprm/nichocnae/v2/knowledge-accumulator/stage-executions/pending:
+    get:
+      summary: Lista pendências da etapa 8 para o executor OPRM.
+      responses:
+        '200':
+          description: Pendências disponíveis.
+  /api/internal/oprm/nichocnae/v2/knowledge-accumulator/stage-executions:
+    post:
+      summary: Registra uma pendência da etapa 8 solicitada pelo executor.
+      responses:
+        '200':
+          description: Pendência gravada.
+  /api/internal/oprm/nichocnae/v2/knowledge-accumulator/stage-executions/{stageExecutionId}/complete:
+    post:
+      summary: Registra conclusão da acumulação de conhecimento executada fora do backend.
+      parameters:
+        - name: stageExecutionId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Conclusão persistida.
+  /api/internal/oprm/nichocnae/v2/knowledge-accumulator/stage-executions/{stageExecutionId}/fail:
+    post:
+      summary: Registra falha da etapa 8, separando retry técnico de reprovação funcional.
+      parameters:
+        - name: stageExecutionId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Falha persistida.

@@ -1,0 +1,169 @@
+package com.marketinghub.oprm.nichocnae.v2.knowledgeaccumulator.service;
+
+import com.marketinghub.oprm.nichocnae.v2.OprmNichoCnaeV2FailureType;
+import com.marketinghub.oprm.nichocnae.v2.OprmNichoCnaeV2StageExecution;
+import com.marketinghub.oprm.nichocnae.v2.OprmNichoCnaeV2StageExecutionStatus;
+import com.marketinghub.oprm.nichocnae.v2.knowledgeaccumulator.service.completeStageExecution.KnowledgeAccumulatorCompletionRequest;
+import com.marketinghub.oprm.nichocnae.v2.knowledgeaccumulator.service.completeStageExecution.KnowledgeAccumulatorCompletionResponse;
+import com.marketinghub.oprm.nichocnae.v2.knowledgeaccumulator.service.createStageExecution.KnowledgeAccumulatorCreateRequest;
+import com.marketinghub.oprm.nichocnae.v2.knowledgeaccumulator.service.createStageExecution.KnowledgeAccumulatorCreateResponse;
+import com.marketinghub.oprm.nichocnae.v2.knowledgeaccumulator.service.failStageExecution.KnowledgeAccumulatorFailureRequest;
+import com.marketinghub.oprm.nichocnae.v2.knowledgeaccumulator.service.failStageExecution.KnowledgeAccumulatorFailureResponse;
+import com.marketinghub.oprm.nichocnae.v2.knowledgeaccumulator.service.pending.KnowledgeAccumulatorPendingResponse;
+import com.marketinghub.repository.jpa.oprm.nichocnae.v2.OprmNichoCnaeV2StageExecutionRepository;
+import java.time.Instant;
+import java.util.List;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+
+/** Expõe contratos de leitura/escrita do backend para a etapa knowledge-accumulator do pipeline NichoCNAE v2. */
+@Service
+public class BackendKnowledgeAccumulatorService {
+    public static final String STAGE_CODE = "knowledge-accumulator";
+    private final OprmNichoCnaeV2StageExecutionRepository stageExecutionRepository;
+    private final boolean v2Enabled;
+
+    /** Inicializa o service com repositório canônico e feature flag de calibração da v2. */
+    public BackendKnowledgeAccumulatorService(
+            OprmNichoCnaeV2StageExecutionRepository stageExecutionRepository,
+            @Value("${oprm.nichocnae.v2.enabled:false}") boolean v2Enabled) {
+        this.stageExecutionRepository = stageExecutionRepository;
+        this.v2Enabled = v2Enabled;
+    }
+
+    /** Lista pendências disponíveis para consumo canônico pelo executor OPRM NichoCNAE v2. */
+    @Transactional(readOnly = true)
+    public List<KnowledgeAccumulatorPendingResponse> pending() {
+        if (!v2Enabled) {
+            return List.of();
+        }
+        return stageExecutionRepository
+                .findByStageCodeAndStatusOrderByCreatedAtAsc(
+                        STAGE_CODE, OprmNichoCnaeV2StageExecutionStatus.PENDING, PageRequest.of(0, 5))
+                .stream()
+                .map(this::toPendingResponse)
+                .toList();
+    }
+
+    /** Registra conclusão da acumulação de conhecimento usando a próxima etapa informada pelo executor externo. */
+    @Transactional
+    public KnowledgeAccumulatorCompletionResponse complete(
+            Long stageExecutionId, KnowledgeAccumulatorCompletionRequest request) {
+        OprmNichoCnaeV2StageExecution execution = findExecution(stageExecutionId);
+        execution.setStatus(OprmNichoCnaeV2StageExecutionStatus.COMPLETED);
+        execution.setOutputPayload(request == null ? null : request.outputPayload());
+        execution.setNextStageCode(request == null ? null : request.nextStageCode());
+        execution.setUpdatedAt(Instant.now());
+        OprmNichoCnaeV2StageExecution saved = stageExecutionRepository.save(execution);
+        return new KnowledgeAccumulatorCompletionResponse(
+                String.valueOf(saved.getId()),
+                saved.getStatus().name(),
+                saved.getNextStageCode(),
+                request == null ? null : request.knowledgeVersion(),
+                request == null ? null : request.validatedFactCount(),
+                request == null ? null : request.acceptedSourceCount(),
+                request == null ? null : request.rejectedSourceCount());
+    }
+
+    /** Registra falha e cria nova execução somente quando a falha for retry técnico de infraestrutura. */
+    @Transactional
+    public KnowledgeAccumulatorFailureResponse fail(Long stageExecutionId, KnowledgeAccumulatorFailureRequest request) {
+        OprmNichoCnaeV2StageExecution execution = findExecution(stageExecutionId);
+        OprmNichoCnaeV2FailureType failureType = request == null || request.failureType() == null
+                ? OprmNichoCnaeV2FailureType.VALIDATION
+                : request.failureType();
+        execution.setFailureType(failureType);
+        execution.setErrorMessage(request == null ? null : request.errorMessage());
+        execution.setInputPayload(request == null ? execution.getInputPayload() : request.inputPayload());
+        execution.setUpdatedAt(Instant.now());
+        if (failureType == OprmNichoCnaeV2FailureType.INFRASTRUCTURE) {
+            execution.setStatus(OprmNichoCnaeV2StageExecutionStatus.TECHNICAL_RETRY_SCHEDULED);
+            OprmNichoCnaeV2StageExecution retry = createTechnicalRetry(execution);
+            stageExecutionRepository.save(execution);
+            OprmNichoCnaeV2StageExecution savedRetry = stageExecutionRepository.save(retry);
+            return new KnowledgeAccumulatorFailureResponse(
+                    String.valueOf(execution.getId()),
+                    execution.getStatus().name(),
+                    String.valueOf(savedRetry.getId()),
+                    savedRetry.getAttemptNumber(),
+                    savedRetry.getTechnicalRetryNumber());
+        }
+        execution.setStatus(OprmNichoCnaeV2StageExecutionStatus.FAILED);
+        OprmNichoCnaeV2StageExecution saved = stageExecutionRepository.save(execution);
+        return new KnowledgeAccumulatorFailureResponse(
+                String.valueOf(saved.getId()),
+                saved.getStatus().name(),
+                null,
+                saved.getAttemptNumber(),
+                saved.getTechnicalRetryNumber());
+    }
+
+    /** Grava uma pendência da etapa de acumulação de conhecimento solicitada pelo executor externo. */
+    @Transactional
+    public KnowledgeAccumulatorCreateResponse create(KnowledgeAccumulatorCreateRequest request) {
+        OprmNichoCnaeV2StageExecution saved = stageExecutionRepository.save(toPendingExecution(request));
+        return new KnowledgeAccumulatorCreateResponse(
+                String.valueOf(saved.getId()), saved.getStatus().name(), saved.getStageCode());
+    }
+
+    /** Converte o contrato recebido do executor em entidade persistível, sem decidir regra operacional. */
+    private OprmNichoCnaeV2StageExecution toPendingExecution(KnowledgeAccumulatorCreateRequest request) {
+        Instant now = Instant.now();
+        OprmNichoCnaeV2StageExecution execution = new OprmNichoCnaeV2StageExecution();
+        execution.setJobId(request.jobId());
+        execution.setResearchCycleId(request.researchCycleId());
+        execution.setSourceNicheId(request.sourceNicheId());
+        execution.setCnaeCode(request.cnaeCode());
+        execution.setStageCode(STAGE_CODE);
+        execution.setAttemptNumber(request.attemptNumber());
+        execution.setTechnicalRetryNumber(0);
+        execution.setKnowledgeVersion(request.knowledgeVersion());
+        execution.setStatus(OprmNichoCnaeV2StageExecutionStatus.PENDING);
+        execution.setInputPayload(request.inputPayload());
+        execution.setMaterializationEnabled(Boolean.TRUE.equals(request.materializationEnabled()));
+        execution.setCreatedAt(now);
+        execution.setUpdatedAt(now);
+        return execution;
+    }
+
+    /** Cria uma nova linha para retry técnico preservando a tentativa cognitiva e a versão de conhecimento. */
+    private OprmNichoCnaeV2StageExecution createTechnicalRetry(OprmNichoCnaeV2StageExecution previousExecution) {
+        OprmNichoCnaeV2StageExecution retry = toPendingExecution(new KnowledgeAccumulatorCreateRequest(
+                previousExecution.getJobId(),
+                previousExecution.getResearchCycleId(),
+                previousExecution.getSourceNicheId(),
+                previousExecution.getCnaeCode(),
+                previousExecution.getAttemptNumber(),
+                previousExecution.getKnowledgeVersion(),
+                previousExecution.getMaterializationEnabled(),
+                previousExecution.getInputPayload()));
+        retry.setTechnicalRetryNumber(previousExecution.getTechnicalRetryNumber() + 1);
+        return retry;
+    }
+
+    /** Carrega a execução da etapa atual ou devolve erro HTTP claro ao executor. */
+    private OprmNichoCnaeV2StageExecution findExecution(Long stageExecutionId) {
+        return stageExecutionRepository
+                .findByIdAndStageCode(stageExecutionId, STAGE_CODE)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "NichoCNAE v2 knowledge-accumulator stage execution not found: " + stageExecutionId));
+    }
+
+    /** Converte a entidade persistida no contrato canônico de pending do executor. */
+    private KnowledgeAccumulatorPendingResponse toPendingResponse(OprmNichoCnaeV2StageExecution execution) {
+        return new KnowledgeAccumulatorPendingResponse(
+                String.valueOf(execution.getId()),
+                execution.getJobId(),
+                execution.getCnaeCode(),
+                execution.getSourceNicheId(),
+                execution.getAttemptNumber(),
+                execution.getTechnicalRetryNumber(),
+                execution.getKnowledgeVersion(),
+                execution.getInputPayload());
+    }
+}

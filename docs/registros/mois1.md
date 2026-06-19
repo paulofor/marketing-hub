@@ -1710,3 +1710,9 @@ Arquivos principais:
 - Corrigido o mock do teste `shouldListEntriesFromOperationalSalesPageTable` para usar a mesma assinatura UTC do backend ao ler `DATETIME` de `mois_sales_page`.
 - Causa-raiz: o service passou a chamar `ResultSet#getTimestamp(String, Calendar)` para evitar dependência do fuso do servidor, mas o teste ainda simulava `ResultSet#getTimestamp(String)`.
 - A correção mantém a proteção contra regressão de fuso horário sem alterar o contrato funcional da listagem operacional.
+
+## 2026-06-19 — Melhoria da pesquisa do dossiê MOIS
+
+- Corrigida a causa-raiz de dossiês fracos quando o produto possui nome ambíguo: a etapa de aquecimento agora usa uma camada de planejamento de queries com OpenAI quando houver chave configurada, preservando fallback heurístico quando a integração não estiver disponível.
+- As buscas passam a priorizar produtor, domínio da página, título/subtítulo, redes sociais, reviews, afiliados, prova social e canais de aquisição antes de concluir o dossiê.
+- Adicionados testes para impedir que produtos ambíguos voltem a gerar pesquisas genéricas por termos soltos sem domínio ou contexto comercial.

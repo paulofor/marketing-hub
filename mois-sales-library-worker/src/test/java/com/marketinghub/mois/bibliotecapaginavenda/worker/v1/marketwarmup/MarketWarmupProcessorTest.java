@@ -18,7 +18,7 @@ class MarketWarmupProcessorTest {
      */
     @Test
     void shouldBuildStructuredDossierFromPublicSearchResults() throws Exception {
-        MarketWarmupProcessor processor = new MarketWarmupProcessor(new MarketWarmupQueryBuilder(), new FakeSearchClient());
+        MarketWarmupProcessor processor = new MarketWarmupProcessor(new MarketWarmupQueryBuilder(), new FallbackQueryPlanner(), new FakeSearchClient());
         MarketWarmupClaimedJob job = new MarketWarmupClaimedJob(
                 7L,
                 70L,
@@ -48,7 +48,7 @@ class MarketWarmupProcessorTest {
      */
     @Test
     void shouldKeepOnlyProducerSocialProfileWithSimilarProductContent() throws Exception {
-        MarketWarmupProcessor processor = new MarketWarmupProcessor(new MarketWarmupQueryBuilder(), new ProducerSocialSearchClient());
+        MarketWarmupProcessor processor = new MarketWarmupProcessor(new MarketWarmupQueryBuilder(), new FallbackQueryPlanner(), new ProducerSocialSearchClient());
         MarketWarmupClaimedJob job = new MarketWarmupClaimedJob(
                 8L,
                 80L,
@@ -81,6 +81,19 @@ class MarketWarmupProcessorTest {
             return List.of(
                     new PublicSearchResult("Especialista do Sono ensina Sono Profundo", "https://www.youtube.com/watch?v=abc", "Especialista do Sono é professora especialista e faz live sobre método respiratório para dormir melhor; comentários perguntam se funciona e preço.", "<div>raw</div>"),
                     new PublicSearchResult("Review Sono Profundo vale a pena", "https://blog.example.com/review", "Depoimento de alunos mostra resultado e objeção sobre confiança no produto.", "<div>raw</div>"));
+        }
+    }
+
+    /**
+     * Mantém as queries base no teste sem depender de OpenAI.
+     */
+    private static class FallbackQueryPlanner implements MarketWarmupQueryPlanner {
+        /**
+         * Devolve as queries heurísticas sem enriquecimento externo.
+         */
+        @Override
+        public List<String> planQueries(MarketWarmupClaimedJob job, List<String> baseQueries) {
+            return baseQueries;
         }
     }
 

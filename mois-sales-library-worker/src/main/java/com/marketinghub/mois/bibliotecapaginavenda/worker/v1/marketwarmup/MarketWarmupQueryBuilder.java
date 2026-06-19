@@ -1,6 +1,7 @@
 package com.marketinghub.mois.bibliotecapaginavenda.worker.v1.marketwarmup;
 
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.model.WorkerDtos.MarketWarmupClaimedJob;
+import java.net.URI;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -21,6 +22,9 @@ public class MarketWarmupQueryBuilder {
         String mechanism = clean(job.mechanismSummary());
         String offer = clean(job.offerSummary());
         String proof = clean(job.proofSummary());
+        String domain = extractDomain(job.urlCanonical());
+        String titleWithoutSuffix = clean(title.replaceAll("(?i)\\s+-\\s+.*$", ""));
+        String titleSuffix = clean(title.replaceAll("(?i)^.*?\\s+-\\s+", ""));
         String productAndProducer = clean(title + " " + producer);
         Set<String> queries = new LinkedHashSet<>();
         if (!producer.isBlank() && !clean(title + " " + promise + " " + mechanism).isBlank()) {
@@ -33,6 +37,14 @@ public class MarketWarmupQueryBuilder {
             addIfUseful(queries, productAndProducer + " aula gratuita live whatsapp comunidade lançamento");
             addIfUseful(queries, productAndProducer + " afiliado hotmart produtor oferta bônus");
         }
+        if (!domain.isBlank()) {
+            addIfUseful(queries, exact(domain) + " Instagram YouTube TikTok depoimentos");
+            addIfUseful(queries, exact(domain) + " " + producer + " review funciona");
+        }
+        if (!titleWithoutSuffix.isBlank() && !titleSuffix.equals(titleWithoutSuffix)) {
+            addIfUseful(queries, exact(titleWithoutSuffix) + " " + exact(titleSuffix) + " Instagram YouTube TikTok");
+            addIfUseful(queries, exact(titleWithoutSuffix) + " " + titleSuffix + " depoimentos review funciona");
+        }
         if (!producer.isBlank()) {
             addIfUseful(queries, exact(producer) + " autoridade seguidores alunas método " + firstUseful(title, promise));
         }
@@ -42,7 +54,22 @@ public class MarketWarmupQueryBuilder {
         if (!clean(offer + " " + proof).isBlank()) {
             addIfUseful(queries, offer + " " + proof + " prova social depoimentos resultados");
         }
-        return queries.stream().limit(8).toList();
+        return queries.stream().limit(10).toList();
+    }
+
+    /**
+     * Extrai o domínio da página final para achar presença pública quando título e produtor são fracos.
+     */
+    private String extractDomain(String url) {
+        try {
+            String host = URI.create(clean(url)).getHost();
+            if (host == null || host.isBlank()) {
+                return "";
+            }
+            return host.replaceFirst("^www\\.", "");
+        } catch (RuntimeException ex) {
+            return "";
+        }
     }
 
     /**

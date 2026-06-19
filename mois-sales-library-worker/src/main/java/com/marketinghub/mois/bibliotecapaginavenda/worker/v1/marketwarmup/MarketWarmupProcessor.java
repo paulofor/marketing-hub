@@ -52,13 +52,15 @@ public class MarketWarmupProcessor {
             "avancada");
 
     private final MarketWarmupQueryBuilder queryBuilder;
+    private final MarketWarmupQueryPlanner queryPlanner;
     private final PublicWebSearchClient searchClient;
 
     /**
      * Processa o job reservado sem acessar banco e devolve o payload estruturado aceito pelo backend.
      */
     public MarketWarmupCompleteRequest process(MarketWarmupClaimedJob job, int searchLimit) throws IOException {
-        List<String> queries = queryBuilder.buildQueries(job);
+        List<String> baseQueries = queryBuilder.buildQueries(job);
+        List<String> queries = queryPlanner.planQueries(job, baseQueries);
         List<PublicSearchResult> rawResults = new ArrayList<>();
         for (String query : queries) {
             rawResults.addAll(searchClient.search(query, searchLimit));

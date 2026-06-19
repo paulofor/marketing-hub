@@ -28,9 +28,32 @@ class MarketWarmupQueryBuilderTest {
                 "depoimentos de alunos");
 
         assertThat(builder.buildQueries(job))
-                .hasSize(8)
+                .hasSizeGreaterThanOrEqualTo(8)
                 .anySatisfy(query -> assertThat(query).contains("\"Especialista do Sono\"").contains("Instagram YouTube TikTok"))
                 .anySatisfy(query -> assertThat(query).contains("Produto Sono Profundo"))
                 .anySatisfy(query -> assertThat(query).contains("aula gratuita"));
+    }
+
+    /**
+     * Garante que nomes ambíguos usem domínio e subtítulo para evitar resultados genéricos.
+     */
+    @Test
+    void shouldBuildSpecificQueriesForAmbiguousProductName() {
+        MarketWarmupQueryBuilder builder = new MarketWarmupQueryBuilder();
+        MarketWarmupClaimedJob job = new MarketWarmupClaimedJob(
+                5L,
+                142L,
+                "workspace-001",
+                "https://www.andreavermont.online/andreia?src=htm_page",
+                "AndreIA - Terapeuta de Bolso",
+                "Force Academy Cursos",
+                null,
+                null,
+                null,
+                null);
+
+        assertThat(builder.buildQueries(job))
+                .anySatisfy(query -> assertThat(query).contains("\"andreavermont.online\""))
+                .anySatisfy(query -> assertThat(query).contains("\"AndreIA\"").contains("\"Terapeuta de Bolso\""));
     }
 }

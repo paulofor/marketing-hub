@@ -1,5 +1,6 @@
 package com.marketinghub.mois.bibliotecapaginavenda.worker.v1.marketwarmup;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.client.BackendClient;
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.config.WorkerProperties;
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.model.WorkerDtos.MarketWarmupClaimRequest;
@@ -21,6 +22,7 @@ public class MarketWarmupRunner {
     private final BackendClient backendClient;
     private final WorkerProperties properties;
     private final MarketWarmupProcessor processor;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
      * Reserva um job pendente, coleta fontes públicas, completa o dossiê ou persiste falha operacional.
@@ -43,6 +45,7 @@ public class MarketWarmupRunner {
             log.info("MOIS market-warmup worker claimed job. jobId={}, pageId={}, urlCanonical={}",
                     jobId, claim.job().pageId(), claim.job().urlCanonical());
             MarketWarmupCompleteRequest request = processor.process(claim.job(), resolveSearchLimit());
+            log.info("MOIS market-warmup enviando payload ao backend. jobId={}, payload={}", jobId, serializePayload(request));
             backendClient.completeMarketWarmup(jobId, request);
             log.info("MOIS market-warmup worker completed job. jobId={}, pageId={}, sources={}, signals={}",
                     jobId, claim.job().pageId(), request.sources().size(), request.signals().size());
@@ -69,5 +72,18 @@ public class MarketWarmupRunner {
      */
     private String safeMessage(Exception ex) {
         return ex.getMessage() == null || ex.getMessage().isBlank() ? ex.getClass().getSimpleName() : ex.getMessage();
+    }
+
+    /**
+     * Serializa o payload final para log operacional antes do envio ao backend.
+     */
+    private String serializePayload(MarketWarmupCompleteRequest request) {
+        try {
+            return objectMapper.writeValueAsString(request);
+        } catch (Exception ex) {
+            log.warn("MOIS market-warmup falhou ao serializar payload para log. errorClass={}, errorMessage={}",
+                    ex.getClass().getName(), ex.getMessage(), ex);
+            return String.valueOf(request);
+        }
     }
 }

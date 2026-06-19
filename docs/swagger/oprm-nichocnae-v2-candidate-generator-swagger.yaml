@@ -1,0 +1,37 @@
+openapi: 3.0.3
+info:
+  title: OPRM NichoCNAE v2 Candidate Generator API
+  version: "1.0"
+paths:
+  /api/internal/oprm/nichocnae/v2/candidate-generator/stage-executions/pending:
+    get:
+      summary: Lista execuções pendentes da etapa candidate-generator v2
+      responses:
+        "200":
+          description: Pendências disponíveis para o executor OPRM
+  /api/internal/oprm/nichocnae/v2/candidate-generator/stage-executions/{stageExecutionId}/complete:
+    post:
+      summary: Registra conclusão de execução da etapa candidate-generator v2
+      parameters:
+        - name: stageExecutionId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Conclusão registrada
+  /api/internal/oprm/nichocnae/v2/candidate-generator/stage-executions/{stageExecutionId}/fail:
+    post:
+      summary: Registra falha e retry técnico da etapa candidate-generator v2
+      parameters:
+        - name: stageExecutionId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Falha registrada

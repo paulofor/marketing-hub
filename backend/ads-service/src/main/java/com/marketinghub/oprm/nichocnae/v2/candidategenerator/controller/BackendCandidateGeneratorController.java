@@ -1,9 +1,16 @@
 package com.marketinghub.oprm.nichocnae.v2.candidategenerator.controller;
 
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.BackendCandidateGeneratorService;
+import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.completeStageExecution.CandidateGeneratorCompletionRequest;
+import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.completeStageExecution.CandidateGeneratorCompletionResponse;
+import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.failStageExecution.CandidateGeneratorFailureRequest;
+import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.failStageExecution.CandidateGeneratorFailureResponse;
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.pending.CandidateGeneratorPendingResponse;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -22,5 +29,19 @@ public class BackendCandidateGeneratorController {
     @GetMapping("/pending")
     public List<CandidateGeneratorPendingResponse> pending() {
         return service.pending();
+    }
+
+    /** Registra a conclusão da execução de etapa informada pelo módulo executor OPRM. */
+    @PostMapping("/{stageExecutionId}/complete")
+    public CandidateGeneratorCompletionResponse complete(
+            @PathVariable Long stageExecutionId, @RequestBody CandidateGeneratorCompletionRequest request) {
+        return service.complete(stageExecutionId, request);
+    }
+
+    /** Registra a falha da execução de etapa informada pelo módulo executor OPRM. */
+    @PostMapping("/{stageExecutionId}/fail")
+    public CandidateGeneratorFailureResponse fail(
+            @PathVariable Long stageExecutionId, @RequestBody CandidateGeneratorFailureRequest request) {
+        return service.fail(stageExecutionId, request);
     }
 }

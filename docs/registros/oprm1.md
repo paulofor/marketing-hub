@@ -993,3 +993,26 @@
 
 - Adicionada regra operacional e canônica determinando que todo pipeline deve persistir dados suficientes para gerar relatório de execução ao usuário pelo frontend.
 - A regra reforça que logs técnicos não substituem dados funcionais persistidos de etapas, decisões, evidências, artefatos, custos, erros e próximos movimentos.
+
+## 2026-06-19 — Primeiro incremento NichoCNAE v2
+
+- Criada fundação backend da v2 para a etapa `candidate-generator`, com execução de estágio versionada por `attemptNumber`, `technicalRetryNumber` e `knowledgeVersion`.
+- Separada a classificação de falhas em `INFRASTRUCTURE`, `VALIDATION`, `QUALITY` e `MARKET_EVIDENCE`, mantendo retry técnico apenas para infraestrutura.
+- Mantida a materialização automática bloqueada por feature flag durante calibração da v2.
+- Registrados contratos internos de `pending`, `complete` e `fail` para o executor OPRM consumir e reportar a etapa inicial.
+
+## 2026-06-19 — Segundo incremento NichoCNAE v2
+
+- Fortalecida a integridade da evidência da extração de sinais do NichoCNAE: sinais agora usam trecho literal dos campos persistidos do snapshot, sem evidência recomposta artificialmente.
+- Adicionado bloqueio semântico para fontes de ator, ocupação ou contexto adjacente, registrando diagnóstico `SEMANTIC_CONTEXT_MISMATCH` em vez de promover o conteúdo a sinal positivo.
+- Backend da etapa `signal-extractor` passou a rejeitar `evidenceExcerpt` que não exista literalmente em `sourceTitle`, `snippet` ou `shortExcerpt`, e também rejeita sinais positivos vindos de contexto incompatível.
+- Adicionados testes de regressão dos ciclos 70, 72 e 75 para ator/contexto, trecho exato obrigatório e ocupação adjacente.
+
+## 2026-06-19 — Terceiro incremento NichoCNAE v2: snapshot de conhecimento e rewind seletivo
+- Implementado snapshot mínimo de conhecimento no reprocessamento de pesquisa de rotina, registrando versão, fontes aceitas, claims aceitos, fontes rejeitadas e lacunas de evidência antes de reabrir o mesmo job.
+- Ajustado o reprocessamento de ciclos com falta de evidência para voltar ao query planner (`niche-research-seed-builder`) sem apagar fontes e claims já aceitos, preservando material validado para reduzir retrabalho e melhorar rastreabilidade do relatório.
+- Adicionado teste de regressão do ciclo 72 para garantir preservação de evidência aceita, rejeição de contexto semântico contaminado e limpeza apenas dos artefatos reexecutáveis.
+
+## 2026-06-19 — Protocolo leitura escrita aplicado à v2 NichoCNAE
+- Aplicado o protocolo leitura escrita no backend da v2 do pipeline NichoCNAE, protegendo `com.marketinghub.oprm.nichocnae.v2..` para permanecer como camada de contratos, persistência, pendências e callbacks.
+- Registrado que o controle operacional de execução da v2 permanece no módulo externo `oprm-coletor-mei`, bloqueando no backend responsabilidades como agendamento, polling, workers/runners/processors e integrações externas de execução.

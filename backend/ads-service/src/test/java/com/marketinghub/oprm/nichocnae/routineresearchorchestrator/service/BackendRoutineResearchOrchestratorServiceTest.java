@@ -7,8 +7,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.marketinghub.oprm.cnae.OprmNicheCandidate;
+import com.marketinghub.oprm.nichocnae.OprmExtractedSignal;
 import com.marketinghub.oprm.nichocnae.OprmNicheRoutineCard;
 import com.marketinghub.oprm.nichocnae.OprmRoutineResearchCycle;
+import com.marketinghub.oprm.nichocnae.OprmSourceSnapshot;
 import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.pending.RecordRoutineResearchOrchestratorPending;
 import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.recent.RecordRoutineResearchOrchestratorRecent;
 import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.reprocess.RecordRoutineResearchOrchestratorReprocessRequest;
@@ -260,6 +262,53 @@ class BackendRoutineResearchOrchestratorServiceTest {
         assertThat(learningCycle.getErrorMessage()).contains("O próximo seed deve usar o aprendizado do gate anterior");
         assertThat(learningCycle.getErrorMessage()).contains("previousQualityStatus=SOLUTION_CONTAMINATED");
         assertThat(learningCycle.getErrorMessage()).contains("riscoLinguagemSolucao=70");
+    }
+
+    /** Deve preservar fontes e claims aceitos no ciclo 72 e voltar ao query planner quando faltar evidência de rotina. */
+    @Test
+    void reprocessCycle72PreservesAcceptedKnowledgeAndRewindsToQueryPlanner() {
+        OprmRoutineResearchCycle weakCycle = cycle(72L, 55L, "Escovista em domicílio", "2026-06-03T01:00:00Z");
+        weakCycle.setStatus("NEEDS_EXECUTOR_ROUTINE_EVIDENCE");
+        OprmNicheCandidate candidate = candidate();
+        OprmNicheRoutineCard previousCard = new OprmNicheRoutineCard();
+        previousCard.setQualityStatus("NEEDS_EXECUTOR_ROUTINE_EVIDENCE");
+        previousCard.setQualityNotes("faltou evidência literal da rotina do executor MEI");
+        when(routineResearchCycleRepository.findById(72L)).thenReturn(Optional.of(weakCycle));
+        when(nicheCandidateRepository.findById(55L)).thenReturn(Optional.of(candidate));
+        when(routineCardRepository.findFirstByResearchCycleIdOrderByIdDesc(72L)).thenReturn(Optional.of(previousCard));
+        when(sourceSnapshotRepository.findByResearchCycleIdOrderByIdAsc(72L))
+                .thenReturn(List.of(sourceSnapshot(701L), sourceSnapshot(702L)));
+        when(extractedSignalRepository.findByResearchCycleIdOrderByIdAsc(72L))
+                .thenReturn(List.of(
+                        signal(801L, 701L, "ROUTINE_PAIN", "agenda lotada em casa"),
+                        signal(802L, 702L, "SEMANTIC_CONTEXT_MISMATCH", "salão estruturado com equipe")));
+        when(routineResearchCycleRepository.save(any(OprmRoutineResearchCycle.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(nicheCandidateRepository.save(any(OprmNicheCandidate.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        var result = service.reprocessCycle(72L, new RecordRoutineResearchOrchestratorReprocessRequest("AUTO_QUALITY_REPROCESS"));
+
+        assertThat(result.researchCycleId()).isEqualTo(72L);
+        assertThat(result.previousCycleStatus()).isEqualTo("NEEDS_EXECUTOR_ROUTINE_EVIDENCE");
+        ArgumentCaptor<OprmRoutineResearchCycle> cycleCaptor =
+                ArgumentCaptor.forClass(OprmRoutineResearchCycle.class);
+        verify(routineResearchCycleRepository).save(cycleCaptor.capture());
+        OprmRoutineResearchCycle reopenedCycle = cycleCaptor.getValue();
+        assertThat(reopenedCycle.getStatus()).isEqualTo("RUNNING");
+        assertThat(reopenedCycle.getCurrentStageCode()).isEqualTo("niche-research-seed-builder");
+        assertThat(reopenedCycle.getErrorMessage()).contains("knowledgeVersion=cycle-72-snap-702-sig-802");
+        assertThat(reopenedCycle.getErrorMessage()).contains("rewindStage=niche-research-seed-builder");
+        assertThat(reopenedCycle.getErrorMessage()).contains("preserveAcceptedEvidence=true");
+        assertThat(reopenedCycle.getErrorMessage()).contains("evidenceGaps=[EXECUTOR_ROUTINE, PUBLIC_EVIDENCE]");
+        assertThat(reopenedCycle.getErrorMessage()).contains("preservedSourceSnapshotIds=[701]");
+        assertThat(reopenedCycle.getErrorMessage()).contains("preservedSignalIds=[801]");
+        assertThat(reopenedCycle.getErrorMessage()).contains("rejectedSourceSnapshotIds=[702]");
+        verify(sourceSnapshotRepository, never()).deleteByResearchCycleId(72L);
+        verify(extractedSignalRepository, never()).deleteByResearchCycleId(72L);
+        verify(sourceCandidateRepository).deleteByResearchCycleId(72L);
+        verify(researchQueryRepository).deleteByResearchCycleId(72L);
+        verify(seedRepository).deleteByResearchCycleId(72L);
     }
 
     /** Deve reabrir o mesmo job ao reprocessar um ciclo parado sem progresso. */
@@ -548,6 +597,46 @@ class BackendRoutineResearchOrchestratorServiceTest {
         cycle.setCreatedAt(Instant.parse(startedAt));
         cycle.setUpdatedAt(Instant.parse(startedAt));
         return cycle;
+    }
+
+
+    /** Monta um snapshot de fonte usado para simular o snapshot de conhecimento preservável. */
+    private OprmSourceSnapshot sourceSnapshot(Long id) {
+        OprmSourceSnapshot snapshot = new OprmSourceSnapshot();
+        snapshot.setId(id);
+        snapshot.setResearchCycleId(72L);
+        snapshot.setSourceCandidateId(id + 1000);
+        snapshot.setSourceUrl("https://example.com/" + id);
+        snapshot.setSourceDomain("example.com");
+        snapshot.setSourceTitle("Fonte " + id);
+        snapshot.setSourceType("FORUM");
+        snapshot.setCommercialPageRisk(false);
+        snapshot.setSolutionLanguageRisk(false);
+        snapshot.setOutdatedSourceRisk(false);
+        snapshot.setStructuredBusinessDriftRisk(false);
+        snapshot.setFetchedAt(Instant.parse("2026-06-03T01:20:00Z"));
+        snapshot.setFetchStatus("FETCHED");
+        snapshot.setStoragePolicy("SNIPPET_ONLY");
+        snapshot.setSignalExtractionStatus("EXTRACTED");
+        snapshot.setCreatedAt(Instant.parse("2026-06-03T01:20:00Z"));
+        return snapshot;
+    }
+
+    /** Monta um sinal extraído usado para classificar claims aceitos ou rejeitados no reprocessamento. */
+    private OprmExtractedSignal signal(Long id, Long sourceSnapshotId, String signalType, String evidenceExcerpt) {
+        OprmExtractedSignal signal = new OprmExtractedSignal();
+        signal.setId(id);
+        signal.setResearchCycleId(72L);
+        signal.setSourceSnapshotId(sourceSnapshotId);
+        signal.setSourceCandidateId(sourceSnapshotId + 1000);
+        signal.setSignalType(signalType);
+        signal.setSignalText("Sinal " + id);
+        signal.setEvidenceExcerpt(evidenceExcerpt);
+        signal.setSourceDomain("example.com");
+        signal.setConfidenceScore(90);
+        signal.setCreatedBy("unit-test");
+        signal.setCreatedAt(Instant.parse("2026-06-03T01:30:00Z"));
+        return signal;
     }
 
     /** Monta um candidato de nicho CNAE com score para a etapa zero do pipeline. */

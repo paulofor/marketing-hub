@@ -1,0 +1,52 @@
+openapi: 3.0.3
+info:
+  title: OPRM NichoCNAE v2 Enriched Niche Materializer API
+  version: 1.0.0
+  description: Contratos internos de leitura e escrita da etapa 12 do pipeline NichoCNAE v2. A decisão de materializar, validação E3+, montagem do nicho enriquecido e proteção por feature flag ficam no executor externo oprm-coletor-mei; o backend apenas persiste pendências e resultados.
+paths:
+  /api/internal/oprm/nichocnae/v2/enriched-niche-materializer/stage-executions/pending:
+    get:
+      summary: Lista execuções pendentes da etapa enriched-niche-materializer v2
+      responses:
+        '200':
+          description: Pendências disponíveis para o executor externo
+  /api/internal/oprm/nichocnae/v2/enriched-niche-materializer/stage-executions:
+    post:
+      summary: Grava pendência da etapa enriched-niche-materializer v2 solicitada pelo executor
+      responses:
+        '200':
+          description: Pendência persistida
+  /api/internal/oprm/nichocnae/v2/enriched-niche-materializer/stage-executions/{stageExecutionId}/complete:
+    post:
+      summary: Registra conclusão da materialização decidida pelo executor externo
+      parameters:
+        - name: stageExecutionId
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EnrichedNicheMaterializerCompletionRequest'
+      responses:
+        '200':
+          description: Conclusão persistida sem regra comercial no backend
+  /api/internal/oprm/nichocnae/v2/enriched-niche-materializer/stage-executions/{stageExecutionId}/fail:
+    post:
+      summary: Registra falha da etapa enriched-niche-materializer v2
+      responses:
+        '200':
+          description: Falha persistida e retry técnico criado quando failureType=INFRASTRUCTURE
+components:
+  schemas:
+    EnrichedNicheMaterializerCompletionRequest:
+      type: object
+      properties:
+        materializationDecision: { type: string, example: MATERIALIZE }
+        validationLevel: { type: string, example: E3_ECONOMIC_PAIN }
+        confidence: { type: number, format: double }
+        materializedNicheId: { type: integer, format: int64, nullable: true }
+        nextStageCode: { type: string, nullable: true }
+        outputPayload: { type: string, description: JSON estruturado produzido pelo executor externo }

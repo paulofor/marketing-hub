@@ -8,7 +8,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 /**
  * Inicializa o coletor OPRM MEI e inclui o submódulo nichocnae no contexto Spring.
  */
-@SpringBootApplication(scanBasePackages = {"com.marketinghub.oprmcoletormei", "com.marketinghub.nichocnae"})
+@SpringBootApplication(scanBasePackages = {"com.marketinghub.oprmcoletormei", "com.marketinghub.nichocnae", "com.marketinghub.nichocnaev2"})
 @EnableScheduling
 @ConfigurationPropertiesScan
 public class OprmColetorMeiApplication {

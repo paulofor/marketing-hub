@@ -4,7 +4,7 @@
 > - consolida o checklist de publicação do Facebook Ads Worker em formato canônico
 > - referencia fontes de verdade (tabelas `experiment`, `creative`, `lead_portal_flow`, `targeting_element` e métricas do funil)
 > - descreve o contrato de liberação, monitoramento do funil e dependências externas
-> - esclarece que para o público manual do experimento, 1 cargo (`JOB_TITLE`) aprovado já atende o mínimo operacional
+> - esclarece que para o público manual do experimento, 1 item aprovado em qualquer categoria suportada (`INTEREST`, `JOB_TITLE` ou `BEHAVIOR`) atende o mínimo operacional
 > - esclarece que o formulário de captação do experimento é do fluxo interno do Marketing Hub (não é o Instant Form nativo da Meta)
 > - adiciona invariante canônico de unicidade: um experimento não pode gerar campanhas duplicadas na mesma plataforma
 > - adiciona fluxo canônico de deduplicação de upload de imagem com reuso de `meta_image_hash`
@@ -15,7 +15,7 @@
 > - adiciona validação obrigatória de alcance por `reachestimate` antes de criar a hierarquia da campanha na Meta
 > - ajusta a regra de negócio para tratar ausência de limites da Meta como alerta controlado, não como falha automática
 > - formaliza a coleta periódica de sugestões oficiais da Meta para campanhas ativas, com persistência exclusiva via backend
-- formaliza que campanhas de experimento usam orçamento diário no nível do ad set (`budgetMode=ADSET`) e que orçamento de campanha é reservado para etapa futura de escala
+> - formaliza que campanhas de experimento usam orçamento diário no nível do ad set (`budgetMode=ADSET`) e que orçamento de campanha é reservado para etapa futura de escala
 
 Este documento complementa o `system-governance-canon.v2.md` e passa a ser a fonte de verdade para prontidão, liberação e telemetria de campanhas de experimento no Facebook Ads Worker.
 
@@ -98,7 +98,7 @@ Implementação: `ExperimentReadinessService` (backend) expõe os mesmos critér
    - O critério operacional de publicação é `experiment.follow_up_action_url` preenchido com a URL aprovada para destino da campanha.
    - O vínculo é do experimento com a própria landing aprovada; não há dependência bloqueante de `lead_portal_flow` para liberar campanha no Facebook Ads Worker.
 3. **Público completo**
-   - Para seleção manual de público, o mínimo de liberação é ter pelo menos **1 cargo (`JOB_TITLE`) aprovado** em `targeting_element`.
+   - Para seleção manual de público, o mínimo de liberação é ter pelo menos **1 item aprovado** em qualquer categoria suportada de `targeting_element`: `INTEREST`, `JOB_TITLE` ou `BEHAVIOR`.
    - Como alternativa, o playbook de ad sets finalizado também atende o requisito de público.
    - O `facebook-ads-worker` deve consumir o pacote manual por `GET /api/facebook-adsets/experiments/{experimentId}/targeting-package`, contrato enxuto contendo somente `experimentId` e `targeting`, sem `ExperimentDto`, HTML, copy, landing ou artefatos de geração.
 
@@ -115,7 +115,7 @@ Em termos práticos, o experimento só pode ser liberado para campanha quando 3 
 2. **Tem página de destino publicada?**
    - A landing precisa estar aprovada e com URL final preenchida para receber o tráfego.
 3. **Tem público definido?**
-   - Precisa haver público aprovado (no fluxo manual, no mínimo 1 cargo aprovado).
+   - Precisa haver público aprovado (no fluxo manual, no mínimo 1 item aprovado em interesse, cargo ou comportamento).
 
 Se qualquer resposta for **não**, a liberação deve ser interrompida até a pendência ser resolvida.
 
@@ -180,8 +180,8 @@ Regras obrigatórias:
 3. **Dono operacional único** – criação de campanha, ad set, criativo, anúncio, publicação de Instant Form e fallback de segmentação manual pertencem ao `facebook-ads-worker`. É proibido delegar publicação ou fallback de publicação ao `ai-worker`.
 4. **AI Worker fora da publicação** – o `ai-worker` pode gerar ativos prévios que serão aprovados e persistidos pelo backend, mas não deve ser usado como mecanismo para materializar ad set, segmentação final ou chamada à Meta durante a publicação.
 5. **Fallback manual de targeting** – quando não houver playbook de ad set válido para o experimento, o `facebook-ads-worker` deve buscar o pacote manual aprovado no backend por `/api/facebook-adsets/experiments-ready`, selecionar o item do experimento e montar localmente o `targeting` da Meta. O fallback legado por ad set persistido (`/api/adsets?experimentId=...`) não faz parte da publicação canônica e não deve ser usado.
-6. **Mínimo operacional de público** – no fallback manual, ao menos 1 `JOB_TITLE` aprovado é obrigatório. `INTEREST` e `BEHAVIOR` podem enriquecer o targeting quando aprovados, mas não são requisitos bloqueantes.
-7. **Falha fechada de público** – se existirem cargos aprovados/selecionados para o experimento, o publicador deve materializá-los como `work_positions` no targeting final. Se não conseguir obter ou montar ao menos 1 cargo aprovado, a publicação deve ser bloqueada e o experimento marcado com falha operacional; é proibido criar ad set amplo apenas com país/posicionamento.
+6. **Mínimo operacional de público** – no fallback manual, ao menos 1 item aprovado e identificável pela Meta em `INTEREST`, `JOB_TITLE` ou `BEHAVIOR` é obrigatório. Nenhuma dessas categorias é requisito isolado: qualquer item escolhido e aprovado pelo usuário já pode liberar a campanha.
+7. **Falha fechada de público** – o publicador deve materializar todos os itens aprovados/selecionados disponíveis como `interests`, `work_positions` ou `behaviors` no targeting final. Se não conseguir obter ou montar ao menos 1 item aprovado em qualquer categoria suportada, a publicação deve ser bloqueada e o experimento marcado com falha operacional; é proibido criar ad set amplo apenas com país/posicionamento.
 8. **Preferência por IDs oficiais** – ao montar `work_positions`, `interests` ou `behaviors`, o worker deve preferir `meta_id`/`meta_key` oficiais (`metaId`/`metaKey` no contrato JSON) e usar termos textuais apenas como fallback compatível com normalização local.
 9. **Rastreabilidade** – a etapa deve preservar os logs e registros já exigidos para chamadas ao backend e à Graph API, incluindo URL completa, parâmetros, payload enviado e resposta recebida quando aplicável.
 

@@ -57,6 +57,7 @@ class FacebookCampaignServiceTest {
     private WebClient.Builder webClientBuilder;
     private ExperimentFacebookApiLogClient apiLogClient;
     private String imageUrl;
+    private String manualTargetingPackageOverride;
     private String reachEstimateResponseBody;
 
     /**
@@ -220,6 +221,9 @@ class FacebookCampaignServiceTest {
      * Provides a backend-approved manual targeting package used when no ready playbook exists.
      */
     private String defaultManualTargetingPackage() {
+        if (manualTargetingPackageOverride != null) {
+            return manualTargetingPackageOverride;
+        }
         return """
             {
               "experimentId":1,
@@ -228,6 +232,24 @@ class FacebookCampaignServiceTest {
                 "jobTitles":[
                   {"id":10,"term":"Personal Trainer","metaId":"1419795191647433","metaKey":"Certified Personal Trainer"}
                 ],
+                "behaviors":[]
+              }
+            }
+            """;
+    }
+
+    /**
+     * Monta um pacote manual aprovado contendo apenas interesse para testes de publicação.
+     */
+    private String interestOnlyManualTargetingPackage() {
+        return """
+            {
+              "experimentId":1,
+              "targeting":{
+                "interests":[
+                  {"id":20,"term":"Manicure","metaId":"6003139266461","metaKey":"Manicure (cosmetics)"}
+                ],
+                "jobTitles":[],
                 "behaviors":[]
               }
             }
@@ -1542,6 +1564,69 @@ class FacebookCampaignServiceTest {
         assertEquals(1, workPositions.size());
         assertEquals("1419795191647433", workPositions.get(0).get("id").asText());
         assertEquals("Certified Personal Trainer", workPositions.get(0).get("name").asText());
+    }
+
+
+
+    /**
+     * Garante que um interesse aprovado no pacote manual já libera a publicação sem exigir cargo.
+     */
+    @Test
+    void createsCampaignUsingApprovedInterestOnlyManualTargetingPackage() throws Exception {
+        manualTargetingPackageOverride = interestOnlyManualTargetingPackage();
+        backend.enqueueResponse(
+            new MockResponse()
+                .setBody("""
+                    [{"id":1,"name":"Exp","associatedFacebookPage":{"id":9,"pageId":"84","name":"Estúdio"}}]
+                    """)
+                .addHeader("Content-Type", "application/json")
+        );
+        facebook.enqueueResponse(new MockResponse().setBody("""
+            {"images":{"uploaded":{"hash":"hash-preloaded"}}}
+            """)
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"10\"}").addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"20\"}").addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"30\"}").addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"40\"}").addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(
+            new MockResponse()
+                .setBody("""
+                    [{"id":101,"experimentId":1,"headline":"HL","primaryText":"Texto Criativo","imageUrl":"%s","description":"Desc","cta":"SHOP_NOW","destinationUrl":"https://exp.example/landing","instagramUserId":"21","status":"READY"}]
+                    """.formatted(imageUrl))
+                .addHeader("Content-Type", "application/json")
+        );
+        backend.enqueueResponse(new MockResponse().setBody("{}").addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("[]").addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("{}").addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("{}").addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("{}").addHeader("Content-Type", "application/json"));
+
+        service.createCampaignsFromExperiments();
+
+        takeBackendRequest("backend request"); // experiments-ready
+        takeBackendRequest("backend request"); // creatives fetch
+        takeBackendRequestMatching(
+            "playbook request",
+            request -> "/api/experiments/1/adset-playbook".equals(request.getPath())
+                && "GET".equals(request.getMethod())
+        );
+        takeBackendRequestMatching(
+            "manual targeting package request",
+            request -> "/api/facebook-adsets/experiments/1/targeting-package".equals(request.getPath())
+                && "GET".equals(request.getMethod())
+        );
+
+        takeFacebookRequest("facebook request"); // campaign
+        RecordedRequest adSetRequest = takeFacebookRequest("facebook request");
+        JsonNode adSetPayload = objectMapper.readTree(adSetRequest.getBody().inputStream());
+        JsonNode targeting = adSetPayload.get("targeting");
+        assertFalse(targeting.has("interests"));
+        assertFalse(targeting.has("work_positions"));
+        JsonNode interests = targeting.get("flexible_spec").get(0).get("interests");
+        assertEquals(1, interests.size());
+        assertEquals("6003139266461", interests.get(0).get("id").asText());
+        assertEquals("Manicure (cosmetics)", interests.get(0).get("name").asText());
     }
 
     /**

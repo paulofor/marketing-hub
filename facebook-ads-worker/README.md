@@ -656,7 +656,7 @@ curl "http://<host>:8082/public/runtime-logs/tail?lines=300"
 
 ## Manual targeting fallback
 
-When an experiment has no ready ad set playbook spec, the campaign publication flow resolves the backend-approved manual targeting package directly from `/api/facebook-adsets/experiments-ready`; the legacy persisted-ad-set fallback is not part of the canonical publication flow. The Facebook Ads Worker then builds the Meta `targeting` payload itself, preferring official `metaId`/`metaKey` values and requiring at least one approved `JOB_TITLE`, without delegating this publication fallback to the AI Worker.
+When an experiment has no ready ad set playbook spec, the campaign publication flow resolves the backend-approved manual targeting package directly from `/api/facebook-adsets/experiments-ready`; the legacy persisted-ad-set fallback is not part of the canonical publication flow. The Facebook Ads Worker then builds the Meta `targeting` payload itself, preferring official `metaId`/`metaKey` values and requiring at least one approved item in any supported category (`INTEREST`, `JOB_TITLE` or `BEHAVIOR`), without delegating this publication fallback to the AI Worker.
 
 ## Campaign publication as a pipeline stage
 

@@ -369,10 +369,10 @@ class FacebookAdSetExperimentServiceTest {
     }
 
     /**
-     * Garante que o pacote não é exposto quando não há cargo aprovado para evitar público amplo.
+     * Garante que interesse aprovado também libera pacote publicável sem exigir cargo.
      */
     @Test
-    void listExperimentsReadySkipsWhenApprovedJobTitleIsMissing() {
+    void listExperimentsReadyAcceptsApprovedInterestWithoutJobTitle() {
         MarketNiche niche = new MarketNiche();
         niche.setId(5L);
 
@@ -391,13 +391,29 @@ class FacebookAdSetExperimentServiceTest {
 
         when(experimentRepository.findAllReadyForAdSets(eq(ExperimentPlatform.FACEBOOK), any()))
                 .thenReturn(List.of(experiment));
+        TargetingElement interest = TargetingElement.builder()
+                .id(9L)
+                .niche(niche)
+                .hypothesis(hypothesis)
+                .type(TargetingElementType.INTEREST)
+                .term("Manicure")
+                .status(TargetingElementStatus.APPROVED)
+                .metaId("6003139266461")
+                .build();
+
         when(targetingElementRepository.findApprovedForExperiment(5L, TargetingElementType.INTEREST, hypothesisId))
-                .thenReturn(List.of());
+                .thenReturn(List.of(interest));
         when(targetingElementRepository.findApprovedForExperiment(5L, TargetingElementType.JOB_TITLE, hypothesisId))
+                .thenReturn(List.of());
+        when(targetingElementRepository.findApprovedForExperiment(5L, TargetingElementType.BEHAVIOR, hypothesisId))
                 .thenReturn(List.of());
 
         List<ExperimentReadyForAdSetDto> result = service.listExperimentsReadyForAdSets();
 
-        assertThat(result).isEmpty();
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst().getTargeting().getInterests())
+                .extracting(TargetingElementDto::getMetaId)
+                .containsExactly("6003139266461");
+        assertThat(result.getFirst().getTargeting().getJobTitles()).isEmpty();
     }
 }

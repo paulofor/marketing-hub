@@ -1,0 +1,43 @@
+openapi: 3.0.3
+info:
+  title: OPRM NichoCNAE v2 Candidate Tournament API
+  version: 1.0.0
+paths:
+  /api/internal/oprm/nichocnae/v2/candidate-tournament/stage-executions/pending:
+    get:
+      summary: Lista execuções pendentes da etapa candidate-tournament v2
+      responses:
+        '200':
+          description: Pendências entregues ao executor OPRM sem regra de negócio no backend
+  /api/internal/oprm/nichocnae/v2/candidate-tournament/stage-executions:
+    post:
+      summary: Grava pendência da etapa candidate-tournament v2 solicitada pelo executor
+      responses:
+        '200':
+          description: Pendência registrada para leitura posterior pelo executor
+  /api/internal/oprm/nichocnae/v2/candidate-tournament/stage-executions/{stageExecutionId}/complete:
+    post:
+      summary: Registra conclusão de execução da etapa candidate-tournament v2
+      parameters:
+        - name: stageExecutionId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Resultado persistido com finalistas e próxima etapa definidos pelo executor externo
+  /api/internal/oprm/nichocnae/v2/candidate-tournament/stage-executions/{stageExecutionId}/fail:
+    post:
+      summary: Registra falha e retry técnico da etapa candidate-tournament v2
+      parameters:
+        - name: stageExecutionId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Falha registrada; retry técnico só é criado para falha de infraestrutura

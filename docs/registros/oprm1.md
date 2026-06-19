@@ -1080,3 +1080,9 @@
 - A síntese usa somente claims aceitos/validados com `exactEvidenceSpan`, preserva IDs de evidência, domínio e URL, e declara gaps quando faltam rotina, dor, impacto econômico ou aquisição.
 - O backend permanece fora da lógica de síntese: sua função segue limitada a leitura/escrita/contratos, enquanto regras, controle e inteligência da etapa ficam no executor OPRM.
 - Atualizada a tela do mapa v2 para indicar implementação inicial da etapa 10.
+
+## 2026-06-19 — OPRM NichoCNAE etapa 11 E0-E5
+
+- Implementada a etapa 11 `Evidence Level Gate E0–E5` no executor `oprm-coletor-mei`, mantendo cálculo de nível, confiança, reprovação e próximo movimento fora do backend.
+- Backend ficou restrito a leitura de pendências, persistência de resultado/falha e consulta para relatório do usuário.
+- A transição do gate de qualidade aprovado agora envia o ciclo para `evidence-level-gate` antes da materialização enriquecida.

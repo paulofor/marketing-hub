@@ -70,8 +70,15 @@ public enum OprmNichoCnaePipelineSection {
             false,
             "com.marketinghub.oprm.nichocnae.routinequalitygate",
             Set.of("routinequalitygate", "oprmRoutineQualityGate")),
-    ENRICHED_NICHE_MATERIALIZER(
+    EVIDENCE_LEVEL_GATE(
             10,
+            "evidence-level-gate",
+            "Gate comercial E0-E5",
+            false,
+            "com.marketinghub.oprm.nichocnae.evidencelevelgate",
+            Set.of("evidencelevelgate", "oprmEvidenceLevelGate", "e0e5")),
+    ENRICHED_NICHE_MATERIALIZER(
+            11,
             "enriched-niche-materializer",
             "Materialização do nicho enriquecido",
             false,

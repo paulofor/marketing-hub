@@ -37,7 +37,7 @@ public class BackendRoutineQualityGateService {
   private static final String LIGHTLY_RESEARCHED_STATUS = "LIGHTLY_RESEARCHED";
   private static final String MEI_AUDIENCE_READY_STATUS = "MEI_AUDIENCE_READY";
   private static final String CURRENT_STAGE_ROUTINE_QUALITY_GATE = "routine-quality-gate";
-  private static final String CURRENT_STAGE_ENRICHED_NICHE_MATERIALIZER = "enriched-niche-materializer";
+  private static final String CURRENT_STAGE_EVIDENCE_LEVEL_GATE = "evidence-level-gate";
   private static final String NEEDS_MORE_RESEARCH_STATUS = "NEEDS_MORE_RESEARCH";
   private static final String NEEDS_MORE_MEI_RESEARCH_STATUS = "NEEDS_MORE_MEI_RESEARCH";
   private static final String OUTDATED_SOURCES_STATUS = "OUTDATED_SOURCES";
@@ -396,7 +396,7 @@ public class BackendRoutineQualityGateService {
 
   /** Retorna a próxima etapa canônica após a decisão de qualidade ou encerra fila quando o cartão foi reprovado. */
   private String nextStageAfterQuality(String qualityStatus) {
-    return isApprovedQualityStatus(qualityStatus) ? CURRENT_STAGE_ENRICHED_NICHE_MATERIALIZER : null;
+    return isApprovedQualityStatus(qualityStatus) ? CURRENT_STAGE_EVIDENCE_LEVEL_GATE : null;
   }
 
   /** Indica se o status pertence ao contrato atual ou ao legado ainda aceito para migração segura. */

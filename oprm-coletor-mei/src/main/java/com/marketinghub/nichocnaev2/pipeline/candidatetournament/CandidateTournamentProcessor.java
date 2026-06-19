@@ -38,7 +38,7 @@ public final class CandidateTournamentProcessor implements StageProcessor {
         output.put("finalistCount", finalists.size());
         output.put("rankedCandidates", ranked);
         output.put("finalists", finalists);
-        output.put("nextStageCode", finalists.isEmpty() ? "" : "source-fetcher");
+        output.put("nextStageCode", finalists.isEmpty() ? "" : "source-fetcher-reranker");
         return new StageResult(decision, output, List.of(new StageArtifact(
                 "CANDIDATE_TOURNAMENT",
                 "inline://candidate-tournament/ranking",

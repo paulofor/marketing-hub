@@ -1043,3 +1043,9 @@
 - Implementada a etapa 4 `candidate-tournament` no executor `oprm-coletor-mei`, comparando candidatos por evidências observadas, fontes independentes e penalidades de risco antes de selecionar até dois finalistas.
 - Criados contratos internos no backend apenas para leitura/escrita da etapa 4: `pending`, criação de pendência, conclusão e falha/retry técnico, mantendo lógica, controle e regra de negócio no executor externo.
 - Documentado o endpoint interno em `docs/swagger/oprm-nichocnae-v2-candidate-tournament-swagger.yaml`.
+
+## 2026-06-19 — OPRM NichoCNAE v2 etapa 5 Source Fetcher + Reranker
+
+- Implementada a etapa 5 `source-fetcher-reranker` no executor `oprm-coletor-mei`, priorizando snapshots/fontes por prova direta, independência de domínio, aderência de ator/contexto e objetivo do gate, com retorno ao `adaptive-query-planner` quando não houver fonte direta útil.
+- Criados contratos backend somente de leitura/escrita em `com.marketinghub.oprm.nichocnae.v2.sourcefetcherreranker`, preservando lógica, controle e regras comerciais no executor externo.
+- Documentado o endpoint interno em `docs/swagger/oprm-nichocnae-v2-source-fetcher-reranker-swagger.yaml` e atualizada a tela de design da v2 para indicar implementação inicial da etapa 5.

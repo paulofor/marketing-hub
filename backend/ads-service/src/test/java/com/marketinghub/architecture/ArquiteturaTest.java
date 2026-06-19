@@ -166,6 +166,14 @@ class ArquiteturaTest {
                     + OPRM_NICHO_CNAE_V2_EXECUTOR_MODULE);
 
     @ArchTest
+    static final ArchRule oprmNichoCnaeVersionsMustRemainIndependent = classes()
+            .that()
+            .resideInAPackage("com.marketinghub.oprm.nichocnae..")
+            .should(notDependOnOtherOprmNichoCnaeVersion())
+            .because("[ARQUITETURA] [BACKEND][OPRM NichoCNAE] as versões inicial e v2 devem permanecer "
+                    + "independentes; nenhuma classe de uma versão pode depender de classe da outra versão");
+
+    @ArchTest
     static final ArchRule epmMustNotDependOnOtherMarketingHubPackages = noClasses()
             .that()
             .resideInAPackage("com.marketinghub.epm..")
@@ -1709,6 +1717,50 @@ class ArquiteturaTest {
                 || targetPackage.startsWith("org.openqa.selenium")
                 || targetPackage.startsWith("software.amazon.awssdk.services.s3")
                 || targetPackage.startsWith("com.amazonaws.services.s3");
+    }
+
+    /**
+     * Bloqueia dependência direta entre a versão inicial e a versão v2 do backend OPRM NichoCNAE.
+     */
+    private static ArchCondition<JavaClass> notDependOnOtherOprmNichoCnaeVersion() {
+        return new ArchCondition<>(
+                "[ARQUITETURA] [BACKEND][OPRM NichoCNAE] não depender de outra versão NichoCNAE") {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                String sourceVersion = oprmNichoCnaeVersionOf(item);
+                if (sourceVersion == null) {
+                    return;
+                }
+                item.getDirectDependenciesFromSelf().forEach(dependency -> {
+                    JavaClass targetClass = dependency.getTargetClass();
+                    String targetVersion = oprmNichoCnaeVersionOf(targetClass);
+                    if (targetVersion == null || sourceVersion.equals(targetVersion)) {
+                        return;
+                    }
+                    String message = "[ARQUITETURA] [BACKEND][OPRM NichoCNAE] classe-origem=" + item.getName()
+                            + " pertence à versão " + sourceVersion + " mas depende da versão " + targetVersion
+                            + ": " + dependency.getDescription()
+                            + " | regra: versões NichoCNAE devem se comunicar apenas por contratos persistidos, "
+                            + "endpoints canônicos ou artefatos auditáveis, nunca por dependência direta de classe.";
+                    events.add(SimpleConditionEvent.violated(item, message));
+                });
+            }
+        };
+    }
+
+    /**
+     * Identifica a versão do pacote backend OPRM NichoCNAE.
+     */
+    private static String oprmNichoCnaeVersionOf(JavaClass javaClass) {
+        String packageName = javaClass.getPackageName();
+        if (!packageName.startsWith(OPRM_NICHO_CNAE_STAGE_PACKAGE_PREFIX)) {
+            return null;
+        }
+        if (packageName.equals(OPRM_NICHO_CNAE_V2_PACKAGE)
+                || packageName.startsWith(OPRM_NICHO_CNAE_V2_PACKAGE + ".")) {
+            return "v2";
+        }
+        return "inicial";
     }
 
     /**

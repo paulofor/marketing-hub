@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
  */
 class NichoCnaePipelineArchitectureTest {
     private static final String BASE_PACKAGE = "com.marketinghub.nichocnae";
+    private static final String V2_PACKAGE = "com.marketinghub.nichocnaev2";
     private static final String PIPELINE_PACKAGE = BASE_PACKAGE + ".pipeline";
 
     private static final DescribedPredicate<JavaClass> ARE_IN_CONCRETE_STAGE =
@@ -68,11 +69,23 @@ class NichoCnaePipelineArchitectureTest {
                 .check(importedClasses);
     }
 
+    /** Valida que a versão inicial não conhece classes da versão 2 do pipeline NichoCNAE. */
+    @Test
+    void initialVersionShouldNotDependOnVersionTwo() {
+        JavaClasses importedClasses = importNichoCnaeProductionClasses();
+
+        classes()
+                .that().resideInAPackage(BASE_PACKAGE + "..")
+                .should(notDependOnNichoCnaeVersionTwo())
+                .because("[ARQUITETURA] a versão inicial nichocnae deve permanecer independente da versão 2")
+                .check(importedClasses);
+    }
+
     /** Importa somente classes de produção do contexto nichocnae para evitar ruído de testes. */
     private JavaClasses importNichoCnaeProductionClasses() {
         return new ClassFileImporter()
                 .withImportOption(new ImportOption.DoNotIncludeTests())
-                .importPackages(BASE_PACKAGE);
+                .importPackages(BASE_PACKAGE, V2_PACKAGE);
     }
 
     /** Cria a condição explícita de dependência para evitar falso positivo em regras genéricas de pacotes. */
@@ -112,6 +125,26 @@ class NichoCnaePipelineArchitectureTest {
                         String message = "[ARQUITETURA] " + source.getName()
                                 + " pertence à etapa '" + sourceStage + "' mas depende da etapa '"
                                 + targetStage + "' via: " + dependency.getDescription();
+                        events.add(SimpleConditionEvent.violated(source, message));
+                    }
+                }
+            }
+        };
+    }
+
+    /** Cria condição explícita que bloqueia dependência direta da versão inicial para a versão 2. */
+    private ArchCondition<JavaClass> notDependOnNichoCnaeVersionTwo() {
+        return new ArchCondition<>("[ARQUITETURA] não depender de " + V2_PACKAGE) {
+            /** Verifica qualquer dependência direta da versão inicial para classes do pacote v2. */
+            @Override
+            public void check(JavaClass source, ConditionEvents events) {
+                for (Dependency dependency : source.getDirectDependenciesFromSelf()) {
+                    JavaClass target = dependency.getTargetClass();
+                    if (target.getPackageName().equals(V2_PACKAGE)
+                            || target.getPackageName().startsWith(V2_PACKAGE + ".")) {
+                        String message = "[ARQUITETURA] " + source.getName()
+                                + " pertence à versão inicial mas depende da versão 2 "
+                                + target.getName() + " via: " + dependency.getDescription();
                         events.add(SimpleConditionEvent.violated(source, message));
                     }
                 }

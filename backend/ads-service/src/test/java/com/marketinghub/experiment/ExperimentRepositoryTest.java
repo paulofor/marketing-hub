@@ -21,6 +21,9 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * Valida consultas de repositório usadas pelos fluxos comerciais de experimentos.
+ */
 @DataJpaTest
 @TestPropertySource(properties = "spring.liquibase.enabled=false")
 class ExperimentRepositoryTest {
@@ -163,6 +166,7 @@ class ExperimentRepositoryTest {
                 .type(TargetingElementType.JOB_TITLE)
                 .term("CMO")
                 .status(TargetingElementStatus.APPROVED)
+                .metaId("1419795191647433")
                 .build());
 
         entityManager.flush();
@@ -177,9 +181,10 @@ class ExperimentRepositoryTest {
         assertThat(adSetReady).extracting(Experiment::getId).contains(experiment11.getId());
     }
 
+    /** Verifica se as consultas aceitam público Meta publicável em INTEREST, sem exigir JOB_TITLE isolado. */
     @Test
-    void readyQueriesRejectExperimentWithoutApprovedJobTitle() {
-        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Niche no JT").build());
+    void readyQueriesAcceptExperimentWithOnlyApprovedInterest() {
+        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Niche Interest").build());
         Hypothesis hypothesis = hypothesisRepository.save(Hypothesis.builder()
                 .marketNiche(niche)
                 .title("Hypothesis")
@@ -187,12 +192,12 @@ class ExperimentRepositoryTest {
         JourneyTemplate template = journeyTemplateRepository.save(JourneyTemplate.builder().name("Lifecycle").build());
         InstagramAccount instagram = entityManager.merge(InstagramAccount.builder()
                 .name("IG")
-                .handle("missing-job-title")
+                .handle("interest-only")
                 .code("ig-2")
                 .build());
 
         Experiment experiment = repository.save(Experiment.builder()
-                .name("Missing JT")
+                .name("Interest only")
                 .niche(niche)
                 .hypothesisRef(hypothesis)
                 .journeyTemplate(template)
@@ -208,6 +213,7 @@ class ExperimentRepositoryTest {
                 .type(TargetingElementType.INTEREST)
                 .term("Remarketing")
                 .status(TargetingElementStatus.APPROVED)
+                .metaId("6001234567890")
                 .build());
 
         entityManager.flush();
@@ -218,7 +224,8 @@ class ExperimentRepositoryTest {
         List<Experiment> adSetReady = repository.findAllReadyForAdSets(
                 ExperimentPlatform.FACEBOOK, List.of(ExperimentStatus.PLANNED));
 
-        assertThat(campaignReady).extracting(Experiment::getId).doesNotContain(experiment.getId());
-        assertThat(adSetReady).extracting(Experiment::getId).doesNotContain(experiment.getId());
+        assertThat(campaignReady).extracting(Experiment::getId).contains(experiment.getId());
+        assertThat(adSetReady).extracting(Experiment::getId).contains(experiment.getId());
+        assertThat(repository.findForAdSetTargetingById(experiment.getId(), ExperimentPlatform.FACEBOOK)).isPresent();
     }
 }

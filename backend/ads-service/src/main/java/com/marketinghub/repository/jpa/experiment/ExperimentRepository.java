@@ -80,8 +80,14 @@ public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
               and exists (
                     select 1 from TargetingElement te
                     where te.niche = e.niche
-                      and te.type = com.marketinghub.targeting.TargetingElementType.JOB_TITLE
+                      and te.type in (
+                          com.marketinghub.targeting.TargetingElementType.INTEREST,
+                          com.marketinghub.targeting.TargetingElementType.JOB_TITLE,
+                          com.marketinghub.targeting.TargetingElementType.BEHAVIOR
+                      )
                       and te.status = com.marketinghub.targeting.TargetingElementStatus.APPROVED
+                      and te.metaId is not null
+                      and te.metaId <> ''
                       and (te.hypothesis is null or te.hypothesis = e.hypothesisRef)
               )
             """)
@@ -146,8 +152,14 @@ public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
               and exists (
                     select 1 from TargetingElement te
                     where te.niche = e.niche
-                      and te.type = com.marketinghub.targeting.TargetingElementType.JOB_TITLE
+                      and te.type in (
+                          com.marketinghub.targeting.TargetingElementType.INTEREST,
+                          com.marketinghub.targeting.TargetingElementType.JOB_TITLE,
+                          com.marketinghub.targeting.TargetingElementType.BEHAVIOR
+                      )
                       and te.status = com.marketinghub.targeting.TargetingElementStatus.APPROVED
+                      and te.metaId is not null
+                      and te.metaId <> ''
                       and (te.hypothesis is null or te.hypothesis = e.hypothesisRef)
               )
             """)
@@ -155,7 +167,7 @@ public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
                                            @Param("statuses") List<ExperimentStatus> statuses);
 
     /**
-     * Busca um experimento específico para resolver targeting de ad set sem depender do status operacional atual.
+     * Busca um experimento específico com público Meta publicável sem depender do status operacional atual.
      */
     @Query("""
             select distinct e from Experiment e
@@ -167,8 +179,14 @@ public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
               and exists (
                     select 1 from TargetingElement te
                     where te.niche = e.niche
-                      and te.type = com.marketinghub.targeting.TargetingElementType.JOB_TITLE
+                      and te.type in (
+                          com.marketinghub.targeting.TargetingElementType.INTEREST,
+                          com.marketinghub.targeting.TargetingElementType.JOB_TITLE,
+                          com.marketinghub.targeting.TargetingElementType.BEHAVIOR
+                      )
                       and te.status = com.marketinghub.targeting.TargetingElementStatus.APPROVED
+                      and te.metaId is not null
+                      and te.metaId <> ''
                       and (te.hypothesis is null or te.hypothesis = e.hypothesisRef)
               )
             """)

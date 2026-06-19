@@ -4810,3 +4810,10 @@
 - foi feito: o pacote manual de publicação passa a ser considerado válido quando houver ao menos um item aprovado e com ID oficial em qualquer categoria suportada (`INTEREST`, `JOB_TITLE` ou `BEHAVIOR`); o worker só bloqueia quando não consegue montar nenhum item publicável, mantendo a prevenção contra público amplo apenas com país/posicionamento.
 - regra canônica atualizada: `docs/canonical/facebook-campaign-publication-canon.v1.md` agora define que qualquer item aprovado em interesse, cargo ou comportamento atende o mínimo operacional de público.
 - validação: testes do backend e do `facebook-ads-worker` cobrem o cenário de publicação com interesse aprovado sem cargo.
+
+## 2026-06-19 — Correção da query de pacote de targeting Facebook
+
+- solicitação: corrigir a query que fazia o endpoint `/api/facebook-adsets/experiments/{experimentId}/targeting-package` retornar `404` para experimento com interesses aprovados.
+- causa-raiz: `ExperimentRepository.findForAdSetTargetingById`, `findAllReadyForAdSets` e `findReadyForCampaign` ainda exigiam `JOB_TITLE`, apesar do cânone de publicação aceitar qualquer item publicável em `INTEREST`, `JOB_TITLE` ou `BEHAVIOR`.
+- correção aplicada: as queries passam a aceitar qualquer uma das três categorias suportadas, desde que o elemento esteja `APPROVED` e tenha `metaId` oficial preenchido, mantendo bloqueio contra público amplo.
+- prevenção de recorrência: teste de repositório passou a cobrir experimento liberável apenas com `INTEREST` aprovado e com `metaId`, incluindo a chamada direta de pacote por experimento.

@@ -44,11 +44,19 @@ describe("OPRM navigation", () => {
 
   it("renders placeholder niche detail page on /oprm/cnaes/:cnaeCode route", () => {
     setup(<App />, ["/oprm/cnaes/9602501"]);
-    expect(screen.getByText(/^Detalhe do nicho CNAE$/)).toBeTruthy();
+    expect(screen.getByText(/^Subnichos do CNAE$/)).toBeTruthy();
     expect(screen.getByText(/^CNAE 9602501$/)).toBeTruthy();
     expect(
       screen.getByRole("link", { name: /voltar para cnaes/i }),
     ).toBeTruthy();
+  });
+
+  it("renders v2 pipeline design page for a CNAE", () => {
+    setup(<App />, ["/oprm/cnaes/9602501/pipeline-v2"]);
+    expect(screen.getByText(/^Pipeline NichoCNAE v2$/)).toBeTruthy();
+    expect(screen.getByText(/^CNAE 9602501$/)).toBeTruthy();
+    expect(screen.getByText(/^Candidate Generator$/)).toBeTruthy();
+    expect(screen.getByText(/^Knowledge Accumulator$/)).toBeTruthy();
   });
 
   it("redirects obsolete /oprm/pipeline route to CNAE niche creation flow", () => {

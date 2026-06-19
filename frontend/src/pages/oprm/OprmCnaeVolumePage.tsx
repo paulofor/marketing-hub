@@ -285,6 +285,7 @@ export default function OprmCnaeVolumePage() {
                       <th>Subnichos</th>
                       <th>Custo</th>
                       <th>Pesquisa</th>
+                      <th>Pipeline v2</th>
                     </>
                   ) : (
                     <th>Status</th>
@@ -331,6 +332,15 @@ export default function OprmCnaeVolumePage() {
                               -
                             </span>
                           )}
+                        </td>
+                        <td>
+                          <Link
+                            className="btn btn-sm btn-outline-primary text-nowrap"
+                            to={`/oprm/cnaes/${encodeURIComponent(item.cnaeCode)}/pipeline-v2`}
+                            title="Abrir design da v2 do pipeline NichoCNAE"
+                          >
+                            Ver v2
+                          </Link>
                         </td>
                       </tr>
                     ))

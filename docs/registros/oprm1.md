@@ -1016,3 +1016,9 @@
 ## 2026-06-19 — Protocolo leitura escrita aplicado à v2 NichoCNAE
 - Aplicado o protocolo leitura escrita no backend da v2 do pipeline NichoCNAE, protegendo `com.marketinghub.oprm.nichocnae.v2..` para permanecer como camada de contratos, persistência, pendências e callbacks.
 - Registrado que o controle operacional de execução da v2 permanece no módulo externo `oprm-coletor-mei`, bloqueando no backend responsabilidades como agendamento, polling, workers/runners/processors e integrações externas de execução.
+
+
+## 2026-06-19 — Design visual da pipeline NichoCNAE v2 no frontend
+- Adicionado botão por linha na tela de CNAEs por Score OPRM para abrir a visão da v2 do pipeline no contexto do CNAE selecionado.
+- Criada a tela de design `/oprm/cnaes/:cnaeCode/pipeline-v2` com cards das etapas planejadas da v2, baseada nos planos de melhoria de qualidade, reprocessamento por conhecimento e ordem de implementação OPRM.
+- A tela é informativa e não cria orquestração no frontend; as decisões de execução continuam pertencendo ao backend/executor conforme arquitetura do OPRM.

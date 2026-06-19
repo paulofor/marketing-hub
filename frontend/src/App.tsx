@@ -113,6 +113,7 @@ import OprmOccupationCatalogPage from "./pages/oprm/OprmOccupationCatalogPage";
 import OprmCnaeVolumePage from "./pages/oprm/OprmCnaeVolumePage";
 import OprmCnaeDetailPlaceholderPage from "./pages/oprm/OprmCnaeDetailPlaceholderPage";
 import OprmCnaePipelineStageDetailPage from "./pages/oprm/OprmCnaePipelineStageDetailPage";
+import OprmNichoCnaeV2PipelinePage from "./pages/oprm/OprmNichoCnaeV2PipelinePage";
 import OprmEnrichedNicheDetailPage from "./pages/oprm/OprmEnrichedNicheDetailPage";
 import OprmGeneralAudiencesPage from "./pages/oprm/OprmGeneralAudiencesPage";
 import OprmJobsPage from "./pages/oprm/OprmJobsPage";
@@ -332,6 +333,10 @@ export default function App() {
               <Route
                 path="/oprm/cnaes/:cnaeCode/pipeline/:researchCycleId/stages/:stageCode"
                 element={<OprmCnaePipelineStageDetailPage />}
+              />
+              <Route
+                path="/oprm/cnaes/:cnaeCode/pipeline-v2"
+                element={<OprmNichoCnaeV2PipelinePage />}
               />
               <Route path="/mois" element={<MoisWorkspacePage />} />
               <Route

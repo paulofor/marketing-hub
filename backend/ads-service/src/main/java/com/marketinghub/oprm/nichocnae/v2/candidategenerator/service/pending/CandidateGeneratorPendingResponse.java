@@ -5,6 +5,7 @@ public record CandidateGeneratorPendingResponse(
         String stageExecutionId,
         String jobId,
         String cnaeCode,
+        String cnaeDescription,
         Long sourceNicheId,
         Integer attemptNumber,
         Integer technicalRetryNumber,

@@ -1134,3 +1134,10 @@
 
 - Ajustado o layout da tela do pipeline NichoCNAE v2 para manter os cards de jobs com o mesmo visual, mas exibidos em uma única coluna, ocupando a largura horizontal disponível da tela.
 - Causa-raiz preventiva: o grid anterior dividia os cards em duas colunas em telas largas, reduzindo o espaço útil para leitura de jobs e tabelas operacionais.
+
+## 2026-06-19 — Candidate Generator v2 usa descrição do CNAE no contexto operacional
+
+- Ajustado o contrato `pending` da etapa `candidate-generator` para entregar `cnaeDescription` ao executor OPRM NichoCNAE v2, preservando o backend como fonte de leitura/escrita e o executor como responsável pela geração operacional.
+- O `CandidateGeneratorProcessor` passou a montar candidatos genéricos com a descrição do CNAE quando disponível; para o CNAE `7319002`, a referência operacional passa a ser `Promoção de vendas` em vez de `CNAE 7319002`.
+- Causa-raiz corrigida: o executor recebia apenas o código do CNAE no pending e, por isso, o fallback genérico contaminava o contexto de negócio com identificador técnico numérico.
+- Prevenção de recorrência: testes cobrem a propagação da descrição no pending e a ausência de `CNAE 7319002` nos candidatos quando a descrição está disponível.

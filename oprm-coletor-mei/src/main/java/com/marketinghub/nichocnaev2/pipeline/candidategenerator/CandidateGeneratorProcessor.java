@@ -12,7 +12,8 @@ public final class CandidateGeneratorProcessor implements StageProcessor {
     @Override
     public StageResult process(StageContext context) {
         String cnaeCode = String.valueOf(context.input().getOrDefault("cnaeCode", "CNAE_DESCONHECIDO"));
-        List<Map<String, Object>> candidates = candidateSetFor(cnaeCode);
+        String cnaeReference = cnaeReference(context.input(), cnaeCode);
+        List<Map<String, Object>> candidates = candidateSetFor(cnaeCode, cnaeReference);
         List<String> candidateUrls = List.of(
                 "https://sebrae.com.br/sites/PortalSebrae/ideias/como-montar-uma-loja-de-roupas",
                 "https://www.gov.br/empresas-e-negocios/pt-br/empreendedor",
@@ -30,7 +31,7 @@ public final class CandidateGeneratorProcessor implements StageProcessor {
     }
 
     /** Escolhe recortes neutros específicos quando há conhecimento seguro do CNAE; caso contrário usa recortes genéricos. */
-    private List<Map<String, Object>> candidateSetFor(String cnaeCode) {
+    private List<Map<String, Object>> candidateSetFor(String cnaeCode, String cnaeReference) {
         if ("4781400".equals(cnaeCode)) {
             return List.of(
                     neutralCandidate("C1", "RETAIL_OPERATOR", "VESTUARIO_ATENDIMENTO_LOJA", "Atendimento e venda assistida em loja de vestuário"),
@@ -39,10 +40,19 @@ public final class CandidateGeneratorProcessor implements StageProcessor {
                     neutralCandidate("C4", "RETAIL_OPERATOR", "VESTUARIO_VENDA_DIGITAL_LOCAL", "Venda digital local de artigos de vestuário"));
         }
         return List.of(
-                neutralCandidate("C1", "CNAE_OPERATOR", "ATENDIMENTO_OPERACIONAL", "Atendimento operacional do CNAE " + cnaeCode),
-                neutralCandidate("C2", "CNAE_OPERATOR", "GESTAO_DE_ROTINA", "Gestão de rotina e execução diária do CNAE " + cnaeCode),
-                neutralCandidate("C3", "CNAE_OPERATOR", "AQUISICAO_DE_CLIENTES", "Aquisição e atendimento de clientes do CNAE " + cnaeCode),
-                neutralCandidate("C4", "CNAE_OPERATOR", "OPERACAO_DIGITAL_LOCAL", "Operação digital local do CNAE " + cnaeCode));
+                neutralCandidate("C1", "CNAE_OPERATOR", "ATENDIMENTO_OPERACIONAL", "Atendimento operacional de " + cnaeReference),
+                neutralCandidate("C2", "CNAE_OPERATOR", "GESTAO_DE_ROTINA", "Gestão de rotina e execução diária de " + cnaeReference),
+                neutralCandidate("C3", "CNAE_OPERATOR", "AQUISICAO_DE_CLIENTES", "Aquisição e atendimento de clientes de " + cnaeReference),
+                neutralCandidate("C4", "CNAE_OPERATOR", "OPERACAO_DIGITAL_LOCAL", "Operação digital local de " + cnaeReference));
+    }
+
+    /** Usa a descrição do CNAE quando disponível para evitar contexto operacional genérico por código numérico. */
+    private String cnaeReference(Map<String, Object> input, String cnaeCode) {
+        Object description = input.get("cnaeDescription");
+        if (description instanceof String text && !text.isBlank()) {
+            return text.trim();
+        }
+        return "CNAE " + cnaeCode;
     }
 
     /** Monta um candidato neutro sem dor, canal ou promessa ainda não comprovados. */

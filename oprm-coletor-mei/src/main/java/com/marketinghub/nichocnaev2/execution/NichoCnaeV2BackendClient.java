@@ -106,6 +106,7 @@ public class NichoCnaeV2BackendClient {
                 text(raw.get("stageExecutionId")),
                 text(raw.get("jobId")),
                 text(raw.get("cnaeCode")),
+                text(raw.get("cnaeDescription")),
                 longValue(raw.get("researchCycleId")),
                 longValue(raw.get("sourceNicheId")),
                 intValue(raw.get("attemptNumber")),

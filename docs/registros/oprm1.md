@@ -978,3 +978,8 @@
 - Criado o esqueleto inicial do pipeline NichoCNAE v2 no executor `oprm-coletor-mei`, separando núcleo genérico de execução e etapa concreta `candidate-generator`.
 - Criado o contrato backend inicial para fila interna da etapa `candidate-generator`, com endpoint `pending` canônico para consumo pelo executor.
 - Aplicados os protocolos padrão módulo e padrão backend com testes ArchUnit para prevenir acoplamento indevido e manter controller/service/records canônicos.
+
+## 2026-06-19 — Regra de versionamento para pipelines completos
+
+- Atualizada a instrução operacional para explicitar que mudanças de pipeline inteiro devem usar número de versão no pacote do executor e do backend.
+- Regra registrada no cânone de arquitetura por etapa para preservar versões paralelas, rollout gradual, rollback seguro e plugabilidade entre etapas.

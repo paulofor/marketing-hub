@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /** Borda HTTP interna da etapa enriched-niche-materializer do pipeline NichoCNAE versão 2. */
-@RestController
+@RestController("oprmNichocnaeV2BackendEnrichedNicheMaterializerController")
 @RequestMapping("/api/internal/oprm/nichocnae/v2/enriched-niche-materializer/stage-executions")
 public class BackendEnrichedNicheMaterializerController {
     private final BackendEnrichedNicheMaterializerService service;

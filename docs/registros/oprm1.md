@@ -1090,3 +1090,9 @@
 - Implementada a etapa 12 `enriched-niche-materializer` da v2 com backend limitado a contratos de leitura/escrita (`pending`, criação, conclusão e falha) sobre execuções de estágio.
 - A decisão de materialização, validação E3+, bloqueio por feature flag e montagem do nicho enriquecido ficam no executor externo `oprm-coletor-mei`, preservando o backend sem lógica, inteligência ou regra de negócio do pipeline.
 - Atualizados Swagger e tela de design da v2 para indicar a implementação inicial protegida por feature flag.
+
+## 2026-06-19 — Correção de conflito de bean no controller NichoCNAE v2
+
+- Corrigido o bootstrap dos testes do backend afetado por conflito de nome de bean Spring entre componentes legados e componentes versionados v2 da etapa `enriched-niche-materializer`.
+- Causa-raiz: classes versionadas e legadas com o mesmo nome simples (`BackendEnrichedNicheMaterializerController` e `BackendEnrichedNicheMaterializerService`) eram registradas com bean names padrão duplicados.
+- Prevenção aplicada: o controller e o service v2 passaram a declarar bean names explícitos e versionados, preservando convivência entre versões do pipeline.

@@ -182,3 +182,4 @@ Coisa muito interessante que vejo acontecer hoje.
 - depois de tudo feito solicitei: as classes de agendamento para ir buscar itens em pending
 - lista na tela dos jobs ( em execução e executados )
 - ja no primeiro job etapa 2 ficou em loop infinito de retry
+- conversa com o codex sobre saida de uma etapa, entrada da outra. O modelo vai expondo dados e problemas ( talvez apenas percebidos por uma execuçaõ )

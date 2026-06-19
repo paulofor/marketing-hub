@@ -1,0 +1,51 @@
+openapi: 3.0.3
+info:
+  title: OPRM NichoCNAE Evidence Level Gate API
+  version: 1.0.0
+  description: Contratos de leitura e escrita da etapa 11 E0-E5. A regra comercial é executada no oprm-coletor-mei.
+paths:
+  /api/internal/oprm/nichocnae/evidence-level-gate/stage-executions/pending:
+    get:
+      summary: Lista pendências da etapa E0-E5 para o executor externo.
+      responses:
+        '200':
+          description: Lista de cartões de rotina pendentes.
+  /api/internal/oprm/nichocnae/evidence-level-gate/stage-executions/{researchCycleId}/complete:
+    post:
+      summary: Persiste o resultado E0-E5 calculado pelo executor externo.
+      parameters:
+        - in: path
+          name: researchCycleId
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Resultado persistido.
+  /api/internal/oprm/nichocnae/evidence-level-gate/stage-executions/{researchCycleId}/fail:
+    post:
+      summary: Registra falha técnica da etapa E0-E5.
+      parameters:
+        - in: path
+          name: researchCycleId
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Falha registrada.
+  /api/oprm/nichocnae/evidence-level-gate/stage-executions/{researchCycleId}:
+    get:
+      summary: Consulta o resultado E0-E5 persistido para relatório do usuário.
+      parameters:
+        - in: path
+          name: researchCycleId
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Detalhe persistido da etapa.

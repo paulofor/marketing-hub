@@ -99,6 +99,24 @@ public class OprmNicheRoutineCard {
   @Column(name = "quality_checked_at")
   private Instant qualityCheckedAt;
 
+  @Column(name = "evidence_level", length = 8)
+  private String evidenceLevel;
+
+  @Column(name = "evidence_gate_status", length = 48)
+  private String evidenceGateStatus;
+
+  @Column(name = "evidence_confidence_score")
+  private Integer evidenceConfidenceScore;
+
+  @Column(name = "evidence_gate_notes", columnDefinition = "LONGTEXT")
+  private String evidenceGateNotes;
+
+  @Column(name = "evidence_gate_checked_by", length = 64)
+  private String evidenceGateCheckedBy;
+
+  @Column(name = "evidence_gate_checked_at")
+  private Instant evidenceGateCheckedAt;
+
   @Column(name = "synthesized_by", nullable = false, length = 64)
   private String synthesizedBy;
 

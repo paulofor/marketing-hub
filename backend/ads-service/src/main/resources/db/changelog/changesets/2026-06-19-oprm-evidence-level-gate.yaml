@@ -1,0 +1,38 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-19-oprm-evidence-level-gate
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: oprm_niche_routine_card
+      changes:
+        - addColumn:
+            tableName: oprm_niche_routine_card
+            columns:
+              - column:
+                  name: evidence_level
+                  type: varchar(8)
+                  remarks: Nível de evidência comercial E0-E5 calculado pelo executor externo.
+              - column:
+                  name: evidence_gate_status
+                  type: varchar(48)
+                  remarks: Decisão da etapa Evidence Level Gate calculada pelo executor externo.
+              - column:
+                  name: evidence_confidence_score
+                  type: int
+                  remarks: Confiança explicável da etapa E0-E5 calculada pelo executor externo.
+              - column:
+                  name: evidence_gate_notes
+                  type: longtext
+                  remarks: Motivos estruturados e próximos movimentos da etapa E0-E5.
+              - column:
+                  name: evidence_gate_checked_by
+                  type: varchar(64)
+                  remarks: Identificador do executor externo que avaliou a etapa E0-E5.
+              - column:
+                  name: evidence_gate_checked_at
+                  type: datetime
+                  remarks: Momento da persistência do resultado da etapa E0-E5.

@@ -73,6 +73,19 @@ public interface OprmNicheRoutineCardRepository extends JpaRepository<OprmNicheR
       @Param("currentResearchCycleId") Long currentResearchCycleId,
       Pageable pageable);
 
+
+  /** Lista cartões aprovados no gate de qualidade que ainda aguardam classificação comercial E0-E5. */
+  @Query("""
+      select c from OprmNicheRoutineCard c
+      join OprmRoutineResearchCycle cycle on cycle.id = c.researchCycleId
+      where c.readyForHypothesis = true
+        and c.qualityCheckedAt is not null
+        and c.evidenceGateCheckedAt is null
+        and cycle.currentStageCode = 'evidence-level-gate'
+      order by c.qualityCheckedAt asc, c.id asc
+      """)
+  List<OprmNicheRoutineCard> findPendingEvidenceLevelGate(Pageable pageable);
+
   /** Lista cartões aprovados no gate de qualidade que ainda não alimentaram nicho e nicho enriquecido. */
   @Query("""
       select c from OprmNicheRoutineCard c

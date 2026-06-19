@@ -96,6 +96,89 @@ class BackendSignalExtractorServiceTest {
     verify(extractedSignalRepository, never()).save(any(OprmExtractedSignal.class));
   }
 
+
+
+  /** Ciclo 70: deve rejeitar sinal positivo cujo trecho pertence a ator ou contexto adjacente. */
+  @Test
+  void completeRejectsPositiveSignalFromAdjacentActorEvidenceForCycle70() {
+    OprmSourceSnapshot snapshot = snapshot();
+    snapshot.setShortExcerpt("Companhia aérea cancelou o voo e passageiros pediram reembolso.");
+    when(sourceSnapshotRepository.findById(901L)).thenReturn(Optional.of(snapshot));
+    when(routineResearchCycleRepository.findById(1001L)).thenReturn(Optional.of(cycle()));
+    when(extractedSignalRepository.existsBySourceSnapshotId(901L)).thenReturn(false);
+    CompleteSignalExtractorRequest request = new CompleteSignalExtractorRequest(
+        1001L,
+        301L,
+        "exemplo.com",
+        "COMPLETED",
+        "test",
+        List.of(new SignalExtractionItemRequest(
+            "OPERATIONAL_PAIN",
+            "Cancelamento usado como dor operacional do executor",
+            "Companhia aérea cancelou o voo e passageiros pediram reembolso.",
+            80)));
+
+    assertThatThrownBy(() -> service.complete(901L, request))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("signal actor/context does not match the target executor");
+    verify(extractedSignalRepository, never()).save(any(OprmExtractedSignal.class));
+  }
+
+  /** Ciclo 72: deve rejeitar evidência que não existe literalmente no snapshot persistido. */
+  @Test
+  void completeRejectsEvidenceExcerptThatIsNotExactSpanForCycle72() {
+    when(sourceSnapshotRepository.findById(901L)).thenReturn(Optional.of(snapshot()));
+    when(routineResearchCycleRepository.findById(1001L)).thenReturn(Optional.of(cycle()));
+    when(extractedSignalRepository.existsBySourceSnapshotId(901L)).thenReturn(false);
+    CompleteSignalExtractorRequest request = new CompleteSignalExtractorRequest(
+        1001L,
+        301L,
+        "exemplo.com",
+        "COMPLETED",
+        "test",
+        List.of(new SignalExtractionItemRequest(
+            "ROUTINE_TASK",
+            "Confirmar agenda pelo WhatsApp",
+            "Resumo criado pela IA que não está no snapshot literal",
+            88)));
+
+    assertThatThrownBy(() -> service.complete(901L, request))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("evidenceExcerpt must be an exact span");
+    verify(extractedSignalRepository, never()).save(any(OprmExtractedSignal.class));
+  }
+
+  /** Ciclo 75: deve permitir diagnóstico de contexto incompatível sem tratá-lo como sinal positivo. */
+  @Test
+  void completeAllowsSemanticContextMismatchDiagnosticForCycle75() {
+    OprmSourceSnapshot snapshot = snapshot();
+    snapshot.setShortExcerpt("Personal shopper ajuda consumidoras a escolher roupas em lojas.");
+    OprmRoutineResearchCycle cycle = cycle();
+    when(sourceSnapshotRepository.findById(901L)).thenReturn(Optional.of(snapshot));
+    when(routineResearchCycleRepository.findById(1001L)).thenReturn(Optional.of(cycle));
+    when(extractedSignalRepository.existsBySourceSnapshotId(901L)).thenReturn(false);
+    when(extractedSignalRepository.save(any(OprmExtractedSignal.class))).thenAnswer(invocation -> invocation.getArgument(0));
+    when(extractedSignalRepository.findByResearchCycleIdOrderByIdAsc(1001L)).thenReturn(List.of());
+    CompleteSignalExtractorRequest request = new CompleteSignalExtractorRequest(
+        1001L,
+        301L,
+        "exemplo.com",
+        "COMPLETED",
+        "test",
+        List.of(new SignalExtractionItemRequest(
+            "SEMANTIC_CONTEXT_MISMATCH",
+            "Fonte pertence a ator ou ocupação adjacente",
+            "Personal shopper ajuda consumidoras a escolher roupas em lojas.",
+            95)));
+
+    CompleteSignalExtractorResponse response = service.complete(901L, request);
+
+    assertThat(response.extractedSignalCount()).isEqualTo(1);
+    ArgumentCaptor<OprmExtractedSignal> signalCaptor = ArgumentCaptor.forClass(OprmExtractedSignal.class);
+    verify(extractedSignalRepository).save(signalCaptor.capture());
+    assertThat(signalCaptor.getValue().getSignalType()).isEqualTo("SEMANTIC_CONTEXT_MISMATCH");
+  }
+
   /** Cria um snapshot curto coletado para os testes da etapa cinco. */
   private OprmSourceSnapshot snapshot() {
     OprmSourceSnapshot snapshot = new OprmSourceSnapshot();

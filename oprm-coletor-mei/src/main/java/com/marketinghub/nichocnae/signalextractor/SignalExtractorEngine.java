@@ -16,9 +16,14 @@ public class SignalExtractorEngine {
 
     /** Analisa título, snippet e trecho curto para produzir sinais classificados da etapa cinco. */
     public List<ExtractedSignal> extract(SignalExtractorPending pending) {
-        String evidence = normalizeEvidence(pending);
-        String normalized = evidence.toLowerCase(Locale.ROOT);
+        EvidenceText evidence = EvidenceText.from(pending);
+        String normalized = evidence.normalizedText();
         Map<String, ExtractedSignal> signals = new LinkedHashMap<>();
+        if (hasActorContextMismatch(normalized)) {
+            addContextMismatchRisk(signals, evidence);
+            addSolutionRiskIfPresent(signals, normalized, evidence);
+            return signals.values().stream().limit(MAX_SIGNALS).toList();
+        }
         addIfPresent(signals, normalized, evidence, List.of("mei", "autônom", "por conta própria", "dono-operador", "profissional independente"),
                 "AUTONOMOUS_WORK_MODE", "Trabalho executado diretamente pelo MEI ou profissional autônomo", 86);
         addSpecificRoutineTaskSignals(signals, normalized, evidence);
@@ -61,15 +66,15 @@ public class SignalExtractorEngine {
         addIfPresent(signals, normalized, evidence, List.of("organizar", "controle", "processo", "minha rotina", "meus clientes", "linguagem", "apelido"),
                 "CONTEXT_MARKER", "Sinal de organização e controle observado na rotina", 74);
         addSolutionRiskIfPresent(signals, normalized, evidence);
-        if (signals.isEmpty() && StringUtils.hasText(evidence)) {
+        if (signals.isEmpty() && StringUtils.hasText(evidence.normalizedText())) {
             signals.put("LANGUAGE_MARKER|fallback", new ExtractedSignal(
-                    "LANGUAGE_MARKER", "Vocabulário público do nicho identificado para síntese", evidence, 60));
+                    "LANGUAGE_MARKER", "Vocabulário público do nicho identificado para síntese", evidence.firstExactSpan(), 60));
         }
         return signals.values().stream().limit(MAX_SIGNALS).toList();
     }
 
     /** Adiciona sinais de rotina preservando ações concretas encontradas na evidência pública. */
-    private void addSpecificRoutineTaskSignals(Map<String, ExtractedSignal> signals, String normalized, String evidence) {
+    private void addSpecificRoutineTaskSignals(Map<String, ExtractedSignal> signals, String normalized, EvidenceText evidence) {
         addRoutineTaskIfPresent(
                 signals,
                 normalized,
@@ -112,11 +117,11 @@ public class SignalExtractorEngine {
                 86);
     }
 
-    /** Adiciona uma tarefa de rotina quando existe verbo de ação e objeto concreto na evidência. */
+    /** Adiciona uma tarefa de rotina quando existe verbo de ação, objeto concreto e trecho exato na evidência. */
     private void addRoutineTaskIfPresent(
             Map<String, ExtractedSignal> signals,
             String normalized,
-            String evidence,
+            EvidenceText evidence,
             List<String> actionKeywords,
             List<String> objectKeywords,
             String signalText,
@@ -124,7 +129,11 @@ public class SignalExtractorEngine {
         if (!containsAny(normalized, actionKeywords) || !containsAny(normalized, objectKeywords)) {
             return;
         }
-        signals.putIfAbsent("ROUTINE_TASK|" + signalText, new ExtractedSignal("ROUTINE_TASK", signalText, evidence, confidenceScore));
+        String exactSpan = evidence.findExactSpan(actionKeywords, objectKeywords);
+        if (!StringUtils.hasText(exactSpan)) {
+            return;
+        }
+        signals.putIfAbsent("ROUTINE_TASK|" + signalText, new ExtractedSignal("ROUTINE_TASK", signalText, exactSpan, confidenceScore));
     }
 
     /** Verifica se algum sinal do tipo informado já foi extraído. */
@@ -137,14 +146,37 @@ public class SignalExtractorEngine {
         return keywords.stream().anyMatch(normalized::contains);
     }
 
+    /** Bloqueia fontes de ator ou ocupação adjacente antes que virem prova positiva do executor alvo. */
+    private boolean hasActorContextMismatch(String normalized) {
+        return normalized.contains("companhia aérea")
+                || normalized.contains("voo cancelado")
+                || normalized.contains("cancelamento de voo")
+                || normalized.contains("motorista de aplicativo")
+                || normalized.contains("entregador de aplicativo")
+                || normalized.contains("ifood")
+                || normalized.contains("uber")
+                || normalized.contains("degustador de grãos")
+                || normalized.contains("personal shopper")
+                || normalized.contains("revendedora plus size");
+    }
+
+    /** Registra risco auditável quando a fonte pertence a ator ou contexto incompatível. */
+    private void addContextMismatchRisk(Map<String, ExtractedSignal> signals, EvidenceText evidence) {
+        signals.putIfAbsent("SEMANTIC_CONTEXT_MISMATCH|ator-contexto", new ExtractedSignal(
+                "SEMANTIC_CONTEXT_MISMATCH",
+                "Fonte pertence a ator ou ocupação adjacente e não pode provar rotina do executor alvo",
+                evidence.firstExactSpan(),
+                95));
+    }
+
     /** Adiciona risco de solução quando a evidência contém termos explícitos de solução precoce. */
-    private void addSolutionRiskIfPresent(Map<String, ExtractedSignal> signals, String normalized, String evidence) {
+    private void addSolutionRiskIfPresent(Map<String, ExtractedSignal> signals, String normalized, EvidenceText evidence) {
         boolean present = containsSolutionLanguage(normalized);
         if (!present) {
             return;
         }
         signals.putIfAbsent("SOLUTION_LANGUAGE_RISK|Termo de solução detectado antes da aprovação da rotina", new ExtractedSignal(
-                "SOLUTION_LANGUAGE_RISK", "Termo de solução detectado antes da aprovação da rotina", evidence, 70));
+                "SOLUTION_LANGUAGE_RISK", "Termo de solução detectado antes da aprovação da rotina", evidence.findExactSpan(List.of("inteligência artificial", "automação", "sistema", "software", "ferramenta", "curso", "ia", "app")), 70));
     }
 
     /** Detecta termos de solução com cuidado para não confundir sílabas comuns como "ia" em palavras maiores. */
@@ -165,11 +197,11 @@ public class SignalExtractorEngine {
         return tokenized.contains(" " + token + " ");
     }
 
-    /** Adiciona um sinal quando o conteúdo contém algum indicador textual do grupo de palavras-chave. */
+    /** Adiciona um sinal somente quando há trecho exato contendo indicador textual do grupo de palavras-chave. */
     private void addIfPresent(
             Map<String, ExtractedSignal> signals,
             String normalized,
-            String evidence,
+            EvidenceText evidence,
             List<String> keywords,
             String signalType,
             String signalText,
@@ -178,26 +210,71 @@ public class SignalExtractorEngine {
         if (!present) {
             return;
         }
-        signals.putIfAbsent(signalType + "|" + signalText, new ExtractedSignal(signalType, signalText, evidence, confidenceScore));
-    }
-
-    /** Monta evidência curta a partir dos campos públicos permitidos, sem carregar HTML completo. */
-    private String normalizeEvidence(SignalExtractorPending pending) {
-        List<String> parts = new ArrayList<>();
-        addPart(parts, pending.sourceTitle());
-        addPart(parts, pending.snippet());
-        addPart(parts, pending.shortExcerpt());
-        String evidence = String.join(" — ", parts).replaceAll("\\s+", " ").trim();
-        if (evidence.length() > MAX_EVIDENCE_LENGTH) {
-            return evidence.substring(0, MAX_EVIDENCE_LENGTH).trim();
+        String exactSpan = evidence.findExactSpan(keywords);
+        if (!StringUtils.hasText(exactSpan)) {
+            return;
         }
-        return evidence;
+        signals.putIfAbsent(signalType + "|" + signalText, new ExtractedSignal(signalType, signalText, exactSpan, confidenceScore));
     }
 
-    /** Inclui parte textual quando ela contém conteúdo útil para extração. */
-    private void addPart(List<String> parts, String value) {
-        if (StringUtils.hasText(value)) {
-            parts.add(value.trim());
+    /** Guarda partes textuais auditáveis e localiza trechos exatos sem recompor fonte artificial. */
+    private record EvidenceText(List<String> parts) {
+        /** Monta a evidência auditável a partir dos campos públicos do snapshot. */
+        private static EvidenceText from(SignalExtractorPending pending) {
+            List<String> parts = new ArrayList<>();
+            addPart(parts, pending.sourceTitle());
+            addPart(parts, pending.snippet());
+            addPart(parts, pending.shortExcerpt());
+            return new EvidenceText(parts);
+        }
+
+        /** Normaliza as partes apenas para busca semântica interna. */
+        private String normalizedText() {
+            return String.join(" ", parts).toLowerCase(Locale.ROOT);
+        }
+
+        /** Retorna o primeiro trecho exato disponível no snapshot. */
+        private String firstExactSpan() {
+            return parts.stream().findFirst().orElse("");
+        }
+
+        /** Localiza trecho exato que contenha qualquer palavra-chave informada. */
+        private String findExactSpan(List<String> keywords) {
+            return parts.stream()
+                    .filter(part -> keywords.stream().anyMatch(keyword -> containsKeyword(part, keyword)))
+                    .findFirst()
+                    .map(EvidenceText::trimToLimit)
+                    .orElse(firstExactSpan());
+        }
+
+        /** Localiza trecho exato que contenha ação e objeto concreto ao mesmo tempo. */
+        private String findExactSpan(List<String> actionKeywords, List<String> objectKeywords) {
+            return parts.stream()
+                    .filter(part -> actionKeywords.stream().anyMatch(keyword -> containsKeyword(part, keyword)))
+                    .filter(part -> objectKeywords.stream().anyMatch(keyword -> containsKeyword(part, keyword)))
+                    .findFirst()
+                    .map(EvidenceText::trimToLimit)
+                    .orElse("");
+        }
+
+        /** Verifica palavra-chave dentro da parte textual preservada. */
+        private static boolean containsKeyword(String part, String keyword) {
+            return part.toLowerCase(Locale.ROOT).contains(keyword.toLowerCase(Locale.ROOT));
+        }
+
+        /** Inclui parte textual quando ela contém conteúdo útil para extração. */
+        private static void addPart(List<String> parts, String value) {
+            if (StringUtils.hasText(value)) {
+                parts.add(trimToLimit(value.trim().replaceAll("\\s+", " ")));
+            }
+        }
+
+        /** Limita trecho mantendo-o como substring literal do campo persistido. */
+        private static String trimToLimit(String value) {
+            if (value.length() > MAX_EVIDENCE_LENGTH) {
+                return value.substring(0, MAX_EVIDENCE_LENGTH).trim();
+            }
+            return value;
         }
     }
 }

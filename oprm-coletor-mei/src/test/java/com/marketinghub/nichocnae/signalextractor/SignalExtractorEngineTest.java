@@ -3,6 +3,7 @@ package com.marketinghub.nichocnae.signalextractor;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Instant;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 /** Responsabilidade: validar a extração determinística de sinais da etapa cinco. */
@@ -120,6 +121,50 @@ class SignalExtractorEngineTest {
                         "PRICE_INSECURITY",
                         "CLIENT_NO_SHOW_OR_CANCELLATION");
         assertThat(signals).allSatisfy(signal -> assertThat(signal.evidenceExcerpt()).doesNotContain("<html"));
+    }
+
+
+
+    /** Ciclo 70: deve bloquear prova positiva quando o trecho é de ator adjacente como companhia aérea. */
+    @Test
+    void shouldRejectAdjacentActorEvidenceForCycle70() {
+        var signals = engine.extract(pending(
+                "Cancelamento de voo por companhia aérea",
+                "Companhia aérea cancelou o voo e passageiros pediram reembolso.",
+                "Esse relato não descreve rotina do executor MEI pesquisado."));
+
+        assertThat(signals).extracting(ExtractedSignal::signalType)
+                .contains("SEMANTIC_CONTEXT_MISMATCH")
+                .doesNotContain("CLIENT_NO_SHOW_OR_CANCELLATION", "OPERATIONAL_PAIN", "ROUTINE_TASK");
+    }
+
+    /** Ciclo 72: cada sinal aprovado deve carregar trecho literal de um campo do snapshot, sem síntese recomposta. */
+    @Test
+    void shouldUseExactEvidenceSpanForCycle72() {
+        String title = "Rotina de manicure autônoma";
+        String snippet = "Antes do atendimento, esterilizar alicates e materiais.";
+        String excerpt = "A profissional precisa lixar, retirar cutícula e esmaltar unhas.";
+
+        var signals = engine.extract(pending(title, snippet, excerpt));
+
+        assertThat(signals).isNotEmpty();
+        assertThat(signals).allSatisfy(signal -> assertThat(List.of(title, snippet, excerpt))
+                .anySatisfy(part -> assertThat(part).contains(signal.evidenceExcerpt())));
+        assertThat(signals).extracting(ExtractedSignal::evidenceExcerpt)
+                .doesNotContain(title + " — " + snippet + " — " + excerpt);
+    }
+
+    /** Ciclo 75: deve bloquear ocupação homônima/adjacente antes de virar prova do nicho pesquisado. */
+    @Test
+    void shouldRejectHomonymousOrAdjacentOccupationForCycle75() {
+        var signals = engine.extract(pending(
+                "Personal shopper plus size",
+                "Personal shopper ajuda consumidoras a escolher roupas em lojas.",
+                "Revendedora plus size não descreve rotina de manicure, cabeleireiro ou executor pesquisado."));
+
+        assertThat(signals).extracting(ExtractedSignal::signalType)
+                .contains("SEMANTIC_CONTEXT_MISMATCH")
+                .doesNotContain("ROUTINE_TASK", "CUSTOMER_ACQUISITION_BEHAVIOR", "OPERATIONAL_PAIN");
     }
 
     /** Cria uma pendência mínima para validar o extrator local. */

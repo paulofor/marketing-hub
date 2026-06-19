@@ -77,6 +77,7 @@ public class BackendSignalExtractorService {
         throw new IllegalStateException("sourceSnapshot already has extracted signals: " + sourceSnapshotId);
       }
       Instant now = Instant.now();
+      request.signals().forEach(signal -> validateSignalItem(signal, snapshot));
       List<OprmExtractedSignal> persistedSignals = request.signals().stream()
           .map(signal -> createSignal(snapshot, request, signal, now))
           .map(extractedSignalRepository::save)
@@ -175,7 +176,6 @@ public class BackendSignalExtractorService {
     if (request.signals().size() > MAX_SIGNALS_PER_SNAPSHOT) {
       throw new IllegalArgumentException("signals must contain at most " + MAX_SIGNALS_PER_SNAPSHOT + " items");
     }
-    request.signals().forEach(this::validateSignalItem);
   }
 
   /** Confere se os sinais recebidos pertencem exatamente ao snapshot processado pelo worker. */
@@ -191,8 +191,8 @@ public class BackendSignalExtractorService {
     }
   }
 
-  /** Valida um sinal individual para bloquear textos vazios ou payloads grandes demais. */
-  private void validateSignalItem(SignalExtractionItemRequest signal) {
+  /** Valida um sinal individual para bloquear textos vazios, payloads grandes ou evidência fora do snapshot. */
+  private void validateSignalItem(SignalExtractionItemRequest signal, OprmSourceSnapshot snapshot) {
     if (signal == null) {
       throw new IllegalArgumentException("signal item is required");
     }
@@ -205,10 +205,50 @@ public class BackendSignalExtractorService {
     if (evidence.length() > MAX_EVIDENCE_LENGTH) {
       throw new IllegalArgumentException("evidenceExcerpt must contain at most " + MAX_EVIDENCE_LENGTH + " characters");
     }
+    if (!isExactEvidenceSpan(snapshot, evidence)) {
+      throw new IllegalArgumentException("evidenceExcerpt must be an exact span from sourceTitle, snippet or shortExcerpt");
+    }
+    if (isPositiveSignal(signal.signalType()) && hasActorContextMismatch(evidence)) {
+      throw new IllegalArgumentException("signal actor/context does not match the target executor");
+    }
     Integer confidence = signal.confidenceScore();
     if (confidence == null || confidence < 0 || confidence > 100) {
       throw new IllegalArgumentException("confidenceScore must be between 0 and 100");
     }
+  }
+
+
+  /** Confere se a evidência enviada é trecho literal de um dos campos persistidos do snapshot. */
+  private boolean isExactEvidenceSpan(OprmSourceSnapshot snapshot, String evidence) {
+    return containsExactSpan(snapshot.getSourceTitle(), evidence)
+        || containsExactSpan(snapshot.getSnippet(), evidence)
+        || containsExactSpan(snapshot.getShortExcerpt(), evidence);
+  }
+
+  /** Verifica se o campo persistido contém literalmente o trecho de evidência aprovado. */
+  private boolean containsExactSpan(String sourceText, String evidence) {
+    return StringUtils.hasText(sourceText) && sourceText.contains(evidence);
+  }
+
+  /** Identifica sinais positivos que não podem nascer de ator ou contexto adjacente. */
+  private boolean isPositiveSignal(String signalType) {
+    String normalized = signalType == null ? "" : signalType.trim().toUpperCase(java.util.Locale.ROOT);
+    return !normalized.endsWith("_RISK") && !normalized.equals("SEMANTIC_CONTEXT_MISMATCH");
+  }
+
+  /** Detecta evidências de ator ou ocupação adjacente que não provam a rotina do executor alvo. */
+  private boolean hasActorContextMismatch(String evidence) {
+    String normalized = evidence.toLowerCase(java.util.Locale.ROOT);
+    return normalized.contains("companhia aérea")
+        || normalized.contains("voo cancelado")
+        || normalized.contains("cancelamento de voo")
+        || normalized.contains("motorista de aplicativo")
+        || normalized.contains("entregador de aplicativo")
+        || normalized.contains("ifood")
+        || normalized.contains("uber")
+        || normalized.contains("degustador de grãos")
+        || normalized.contains("personal shopper")
+        || normalized.contains("revendedora plus size");
   }
 
   /** Cria uma entidade de sinal preservando somente campos contratuais e evidência curta. */

@@ -1,13 +1,17 @@
 package com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service;
 
 import com.marketinghub.oprm.cnae.OprmNicheCandidate;
+import com.marketinghub.oprm.nichocnae.OprmExtractedSignal;
 import com.marketinghub.oprm.nichocnae.OprmNicheRoutineCard;
 import com.marketinghub.oprm.nichocnae.OprmRoutineResearchCycle;
+import com.marketinghub.oprm.nichocnae.OprmSourceSnapshot;
 import com.marketinghub.oprm.nichocnae.meiaudienceprofile.OprmMeiAudienceProfile;
 import com.marketinghub.oprm.nichocnae.RoutineResearchNicheNameNormalizer;
 import com.marketinghub.oprm.nichocnae.RoutineResearchNicheNameNormalizer.NormalizedNicheName;
 import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.pending.RecordRoutineResearchOrchestratorPending;
 import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.recent.RecordRoutineResearchOrchestratorRecent;
+import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.reprocess.RecordRoutineResearchKnowledgeSnapshot;
+import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.reprocess.RecordRoutineResearchOrchestratorReprocessPlan;
 import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.reprocess.RecordRoutineResearchOrchestratorReprocessRequest;
 import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.reprocess.RecordRoutineResearchOrchestratorReprocessResult;
 import com.marketinghub.oprm.nichocnae.routineresearchorchestrator.service.runNext.RecordRoutineResearchOrchestratorResult;
@@ -22,6 +26,7 @@ import com.marketinghub.repository.jpa.oprm.nichocnae.OprmRoutineResearchCycleRe
 import com.marketinghub.repository.jpa.oprm.nichocnae.meiaudienceprofile.OprmMeiAudienceProfileRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import org.slf4j.Logger;
@@ -48,6 +53,8 @@ public class BackendRoutineResearchOrchestratorService {
     private static final String CYCLE_STATUS_SOLUTION_CONTAMINATED = "SOLUTION_CONTAMINATED";
     private static final String CYCLE_STATUS_GENERIC = "GENERIC";
     private static final String CYCLE_STATUS_NEEDS_EXECUTOR_ROUTINE_EVIDENCE = "NEEDS_EXECUTOR_ROUTINE_EVIDENCE";
+    private static final String SIGNAL_TYPE_SEMANTIC_CONTEXT_MISMATCH = "SEMANTIC_CONTEXT_MISMATCH";
+    private static final String SIGNAL_TYPE_SOLUTION_LANGUAGE_RISK = "SOLUTION_LANGUAGE_RISK";
     private static final String CYCLE_STATUS_CANCELLED_BY_MANUAL_RESTART = "CANCELLED_BY_MANUAL_RESTART";
     private static final String CYCLE_STATUS_STALLED = "STALLED";
     private static final String TRIGGER_SOURCE_AUTO_SCORE_QUEUE = "AUTO_SCORE_QUEUE";
@@ -164,8 +171,10 @@ public class BackendRoutineResearchOrchestratorService {
         String triggerSource = resolveReprocessTriggerSource(request);
         Instant now = Instant.now();
         preserveCurrentAiCostBeforeRerun(cycle);
-        clearArtifactsForStageRerun(cycle.getId());
-        reopenCycleForStageRerun(cycle, previousCycleStatus, previousQualityCard, triggerSource, now);
+        RecordRoutineResearchKnowledgeSnapshot knowledgeSnapshot = buildKnowledgeSnapshot(cycle.getId(), previousCycleStatus, previousQualityCard);
+        RecordRoutineResearchOrchestratorReprocessPlan reprocessPlan = planReprocess(cycle.getId(), previousCycleStatus, knowledgeSnapshot);
+        clearArtifactsForStageRerun(cycle.getId(), reprocessPlan);
+        reopenCycleForStageRerun(cycle, previousCycleStatus, previousQualityCard, triggerSource, now, reprocessPlan);
         OprmRoutineResearchCycle savedCycle = routineResearchCycleRepository.save(cycle);
         candidate.setRoutineResearchStatus(ROUTINE_STATUS_RUNNING);
         candidate.setLastRoutineResearchCycleId(savedCycle.getId());
@@ -204,11 +213,14 @@ public class BackendRoutineResearchOrchestratorService {
     }
 
     /** Remove artefatos derivados para que as etapas do próprio job sejam executadas novamente com novo input. */
-    private void clearArtifactsForStageRerun(Long researchCycleId) {
+    private void clearArtifactsForStageRerun(
+            Long researchCycleId, RecordRoutineResearchOrchestratorReprocessPlan reprocessPlan) {
         meiAudienceProfileRepository.deleteByResearchCycleId(researchCycleId);
         routineCardRepository.deleteByResearchCycleId(researchCycleId);
-        extractedSignalRepository.deleteByResearchCycleId(researchCycleId);
-        sourceSnapshotRepository.deleteByResearchCycleId(researchCycleId);
+        if (!reprocessPlan.preserveAcceptedEvidence()) {
+            extractedSignalRepository.deleteByResearchCycleId(researchCycleId);
+            sourceSnapshotRepository.deleteByResearchCycleId(researchCycleId);
+        }
         sourceCandidateRepository.deleteByResearchCycleId(researchCycleId);
         researchQueryRepository.deleteByResearchCycleId(researchCycleId);
         seedRepository.deleteByResearchCycleId(researchCycleId);
@@ -220,7 +232,8 @@ public class BackendRoutineResearchOrchestratorService {
             String previousCycleStatus,
             OprmNicheRoutineCard previousQualityCard,
             String triggerSource,
-            Instant now) {
+            Instant now,
+            RecordRoutineResearchOrchestratorReprocessPlan reprocessPlan) {
         cycle.setTriggerSource(triggerSource);
         cycle.setStatus(CYCLE_STATUS_RUNNING);
         cycle.setCurrentStageCode(CURRENT_STAGE_SEED_BUILDER);
@@ -229,19 +242,39 @@ public class BackendRoutineResearchOrchestratorService {
         cycle.setTotalSourceSnapshots(0);
         cycle.setTotalExtractedSignals(0);
         cycle.setFinishedAt(null);
-        cycle.setErrorMessage(buildStageRerunLearningNote(previousCycleStatus, previousQualityCard, triggerSource));
+        cycle.setErrorMessage(buildStageRerunLearningNote(previousCycleStatus, previousQualityCard, triggerSource, reprocessPlan));
         cycle.setUpdatedAt(now);
     }
 
     /** Monta a nota auditável que mantém o aprendizado do gate mesmo após limpar artefatos reexecutáveis. */
     private String buildStageRerunLearningNote(
-            String previousCycleStatus, OprmNicheRoutineCard previousQualityCard, String triggerSource) {
+            String previousCycleStatus,
+            OprmNicheRoutineCard previousQualityCard,
+            String triggerSource,
+            RecordRoutineResearchOrchestratorReprocessPlan reprocessPlan) {
         StringBuilder note = new StringBuilder()
                 .append("Reexecução de etapas do mesmo job solicitada por ")
                 .append(triggerSource)
                 .append(" após status ")
                 .append(previousCycleStatus)
-                .append(". O próximo seed deve usar o aprendizado do gate anterior.");
+                .append(". O próximo seed deve usar o aprendizado do gate anterior.")
+                .append(" knowledgeVersion=")
+                .append(reprocessPlan.knowledgeVersion())
+                .append("; rewindStage=")
+                .append(reprocessPlan.rewindStageCode())
+                .append("; preserveAcceptedEvidence=")
+                .append(reprocessPlan.preserveAcceptedEvidence())
+                .append("; evidenceGaps=")
+                .append(reprocessPlan.evidenceGaps())
+                .append("; preservedSourceSnapshotIds=")
+                .append(reprocessPlan.preservedSourceSnapshotIds())
+                .append("; preservedSignalIds=")
+                .append(reprocessPlan.preservedSignalIds())
+                .append("; rejectedSourceSnapshotIds=")
+                .append(reprocessPlan.rejectedSourceSnapshotIds())
+                .append("; reasonCode=")
+                .append(reprocessPlan.reasonCode())
+                .append(".");
         if (previousQualityCard != null) {
             note.append(" previousQualityStatus=")
                     .append(previousQualityCard.getQualityStatus())
@@ -249,6 +282,126 @@ public class BackendRoutineResearchOrchestratorService {
                     .append(previousQualityCard.getQualityNotes());
         }
         return note.toString();
+    }
+
+
+    /** Monta o snapshot de conhecimento com fontes e claims aceitos antes de reabrir o job. */
+    private RecordRoutineResearchKnowledgeSnapshot buildKnowledgeSnapshot(
+            Long researchCycleId, String previousCycleStatus, OprmNicheRoutineCard previousQualityCard) {
+        List<OprmSourceSnapshot> snapshots = sourceSnapshotRepository.findByResearchCycleIdOrderByIdAsc(researchCycleId);
+        List<OprmExtractedSignal> signals = extractedSignalRepository.findByResearchCycleIdOrderByIdAsc(researchCycleId);
+        List<Long> acceptedSignalIds = signals.stream()
+                .filter(this::isAcceptedSignal)
+                .map(OprmExtractedSignal::getId)
+                .toList();
+        List<Long> acceptedSourceSnapshotIds = signals.stream()
+                .filter(this::isAcceptedSignal)
+                .map(OprmExtractedSignal::getSourceSnapshotId)
+                .distinct()
+                .toList();
+        List<Long> rejectedSourceSnapshotIds = signals.stream()
+                .filter(this::isRejectedEvidenceSignal)
+                .map(OprmExtractedSignal::getSourceSnapshotId)
+                .distinct()
+                .toList();
+        List<String> evidenceGaps = resolveEvidenceGaps(previousCycleStatus, previousQualityCard);
+        return new RecordRoutineResearchKnowledgeSnapshot(
+                researchCycleId,
+                buildKnowledgeVersion(researchCycleId, snapshots, signals),
+                snapshots.size(),
+                signals.size(),
+                acceptedSourceSnapshotIds,
+                acceptedSignalIds,
+                rejectedSourceSnapshotIds,
+                evidenceGaps);
+    }
+
+    /** Decide a menor reexecução segura para buscar evidência faltante sem apagar fontes aceitas. */
+    private RecordRoutineResearchOrchestratorReprocessPlan planReprocess(
+            Long researchCycleId, String previousCycleStatus, RecordRoutineResearchKnowledgeSnapshot knowledgeSnapshot) {
+        boolean preserveAcceptedEvidence = shouldPreserveAcceptedEvidence(previousCycleStatus, knowledgeSnapshot);
+        return new RecordRoutineResearchOrchestratorReprocessPlan(
+                researchCycleId,
+                CURRENT_STAGE_SEED_BUILDER,
+                knowledgeSnapshot.knowledgeVersion(),
+                preserveAcceptedEvidence,
+                knowledgeSnapshot.acceptedSourceSnapshotIds(),
+                knowledgeSnapshot.acceptedSignalIds(),
+                knowledgeSnapshot.rejectedSourceSnapshotIds(),
+                knowledgeSnapshot.evidenceGaps(),
+                preserveAcceptedEvidence ? "QUERY_PLANNER_EVIDENCE_GAP" : "FULL_STAGE_RERUN");
+    }
+
+    /** Identifica sinais que representam claims aproveitáveis e auditáveis para a próxima tentativa. */
+    private boolean isAcceptedSignal(OprmExtractedSignal signal) {
+        return signal.getId() != null
+                && signal.getSourceSnapshotId() != null
+                && hasText(signal.getEvidenceExcerpt())
+                && !isRejectedEvidenceSignal(signal);
+    }
+
+    /** Identifica sinais negativos que apontam fonte/claim contaminado e não devem guiar a próxima síntese. */
+    private boolean isRejectedEvidenceSignal(OprmExtractedSignal signal) {
+        String signalType = signal.getSignalType();
+        return SIGNAL_TYPE_SEMANTIC_CONTEXT_MISMATCH.equals(signalType)
+                || SIGNAL_TYPE_SOLUTION_LANGUAGE_RISK.equals(signalType)
+                || (signalType != null && signalType.endsWith("_RISK"));
+    }
+
+    /** Define se a reprovação deve preservar evidência aceita e voltar apenas ao planejador de queries. */
+    private boolean shouldPreserveAcceptedEvidence(
+            String previousCycleStatus, RecordRoutineResearchKnowledgeSnapshot knowledgeSnapshot) {
+        return !knowledgeSnapshot.acceptedSignalIds().isEmpty()
+                && (CYCLE_STATUS_NEEDS_EXECUTOR_ROUTINE_EVIDENCE.equals(previousCycleStatus)
+                        || CYCLE_STATUS_NEEDS_MORE_RESEARCH.equals(previousCycleStatus)
+                        || CYCLE_STATUS_NEEDS_MORE_MEI_RESEARCH.equals(previousCycleStatus)
+                        || CYCLE_STATUS_GENERIC.equals(previousCycleStatus)
+                        || CYCLE_STATUS_OUTDATED_SOURCES.equals(previousCycleStatus));
+    }
+
+    /** Deriva lacunas de evidência que o query planner deve cobrir na nova tentativa. */
+    private List<String> resolveEvidenceGaps(String previousCycleStatus, OprmNicheRoutineCard previousQualityCard) {
+        List<String> gaps = new ArrayList<>();
+        if (CYCLE_STATUS_NEEDS_EXECUTOR_ROUTINE_EVIDENCE.equals(previousCycleStatus)) {
+            gaps.add("EXECUTOR_ROUTINE");
+        }
+        if (CYCLE_STATUS_NEEDS_MORE_RESEARCH.equals(previousCycleStatus)
+                || CYCLE_STATUS_NEEDS_MORE_MEI_RESEARCH.equals(previousCycleStatus)) {
+            gaps.add("MEI_AUTONOMOUS_REALITY");
+            gaps.add("ECONOMIC_IMPACT");
+        }
+        if (CYCLE_STATUS_GENERIC.equals(previousCycleStatus)) {
+            gaps.add("CONCRETE_TASKS_AND_PAIN");
+        }
+        if (CYCLE_STATUS_OUTDATED_SOURCES.equals(previousCycleStatus)) {
+            gaps.add("RECENT_BRAZILIAN_SOURCES");
+        }
+        if (previousQualityCard != null && hasText(previousQualityCard.getQualityNotes())) {
+            String notes = previousQualityCard.getQualityNotes().toLowerCase(Locale.ROOT);
+            if (notes.contains("rotina") && !gaps.contains("EXECUTOR_ROUTINE")) {
+                gaps.add("EXECUTOR_ROUTINE");
+            }
+            if (notes.contains("evid") && !gaps.contains("PUBLIC_EVIDENCE")) {
+                gaps.add("PUBLIC_EVIDENCE");
+            }
+        }
+        if (gaps.isEmpty()) {
+            gaps.add("PUBLIC_EVIDENCE");
+        }
+        return gaps.stream().distinct().toList();
+    }
+
+    /** Cria uma versão estável do snapshot para auditoria textual do reprocessamento. */
+    private String buildKnowledgeVersion(
+            Long researchCycleId, List<OprmSourceSnapshot> snapshots, List<OprmExtractedSignal> signals) {
+        Long lastSnapshotId = snapshots.isEmpty() ? 0L : snapshots.getLast().getId();
+        Long lastSignalId = signals.isEmpty() ? 0L : signals.getLast().getId();
+        return "cycle-" + researchCycleId + "-snap-" + lastSnapshotId + "-sig-" + lastSignalId;
+    }
+
+    /** Verifica se um texto possui conteúdo útil para decisão de reprocessamento. */
+    private boolean hasText(String value) {
+        return value != null && !value.isBlank();
     }
 
     /** Normaliza a origem solicitada pelo executor externo sem permitir valores arbitrários no histórico. */

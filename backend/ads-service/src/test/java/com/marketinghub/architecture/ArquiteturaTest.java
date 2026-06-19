@@ -102,6 +102,8 @@ class ArquiteturaTest {
     private static final Pattern OPRM_NICHO_CNAE_STAGE_SERVICE_PACKAGE_PATTERN = Pattern.compile(
             "^com\\.marketinghub\\.oprm\\.nichocnae\\.([a-zA-Z0-9_]+)\\.service$");
     private static final String OPRM_NICHO_CNAE_STAGE_PACKAGE_PREFIX = "com.marketinghub.oprm.nichocnae.";
+    private static final String OPRM_NICHO_CNAE_V2_PACKAGE = "com.marketinghub.oprm.nichocnae.v2";
+    private static final String OPRM_NICHO_CNAE_V2_EXECUTOR_MODULE = "oprm-coletor-mei";
     private static final String OPRM_CNAE_PACKAGE = "com.marketinghub.oprm.cnae";
     private static final String OPRM_CNAE_WEB_PACKAGE = OPRM_CNAE_PACKAGE + ".web";
     private static final String OPRM_CNAE_SERVICE_PACKAGE = OPRM_CNAE_PACKAGE + ".service";
@@ -153,6 +155,15 @@ class ArquiteturaTest {
             .resideInAPackage("com.marketinghub.oprm..")
             .should(onlyDependOnAllowedOprmMarketingHubClasses())
             .because("[ARQUITETURA][OPRM] o módulo OPRM não deve depender de outros pacotes internos do sistema");
+
+    @ArchTest
+    static final ArchRule oprmNichoCnaeV2BackendMustRemainReadWriteOnly = classes()
+            .that()
+            .resideInAPackage(OPRM_NICHO_CNAE_V2_PACKAGE + "..")
+            .should(notAssumeOperationalExecutionResponsibilityForOprmNichoCnaeV2())
+            .because("[ARQUITETURA] [BACKEND][OPRM NichoCNAE v2] o backend v2 deve ficar restrito a leitura, escrita, "
+                    + "contratos, persistência, pendências e callbacks; o controle operacional de execução pertence ao módulo "
+                    + OPRM_NICHO_CNAE_V2_EXECUTOR_MODULE);
 
     @ArchTest
     static final ArchRule epmMustNotDependOnOtherMarketingHubPackages = noClasses()
@@ -1634,6 +1645,70 @@ class ArquiteturaTest {
         String targetStage = extractFacebookAdsStage(targetClass.getPackageName());
         String targetLayer = extractFacebookAdsStageLayer(targetClass.getPackageName());
         return sourceStage != null && sourceStage.equals(targetStage) && "service".equals(targetLayer);
+    }
+
+    /**
+     * Bloqueia responsabilidades operacionais de execução no backend OPRM NichoCNAE v2.
+     */
+    private static ArchCondition<JavaClass> notAssumeOperationalExecutionResponsibilityForOprmNichoCnaeV2() {
+        return new ArchCondition<>(
+                "[ARQUITETURA] [BACKEND][OPRM NichoCNAE v2] não assume execução operacional externa") {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                if (hasForbiddenOprmNichoCnaeV2ExecutionName(item)) {
+                    String message = "[ARQUITETURA] [BACKEND][OPRM NichoCNAE v2] classe=" + item.getName()
+                            + " tem nome de worker/runner/processor/núcleo operacional. "
+                            + "O backend deve apenas ler, gravar, publicar pendências e receber callbacks; "
+                            + "a execução operacional fica no módulo " + OPRM_NICHO_CNAE_V2_EXECUTOR_MODULE + ".";
+                    events.add(SimpleConditionEvent.violated(item, message));
+                }
+                item.getDirectDependenciesFromSelf().forEach(dependency -> {
+                    JavaClass targetClass = dependency.getTargetClass();
+                    if (!isForbiddenOprmNichoCnaeV2ExecutionDependency(targetClass)) {
+                        return;
+                    }
+                    String message = "[ARQUITETURA] [BACKEND][OPRM NichoCNAE v2] classe=" + item.getName()
+                            + " depende de responsabilidade operacional bloqueada: " + dependency.getDescription()
+                            + " (alvo=" + targetClass.getName() + "). "
+                            + "Tecnologias externas, @Scheduled, polling, workers e núcleos Stage* devem ficar no módulo "
+                            + OPRM_NICHO_CNAE_V2_EXECUTOR_MODULE + "; o backend v2 permanece leitura/escrita.";
+                    events.add(SimpleConditionEvent.violated(item, message));
+                });
+            }
+        };
+    }
+
+    /**
+     * Identifica nomes de classes que indicam execução operacional em vez de contrato/persistência backend.
+     */
+    private static boolean hasForbiddenOprmNichoCnaeV2ExecutionName(JavaClass javaClass) {
+        String simpleName = javaClass.getSimpleName();
+        return simpleName.equals("PipelineWorker")
+                || simpleName.equals("StageProcessor")
+                || simpleName.equals("StageContext")
+                || simpleName.equals("StageResult")
+                || simpleName.equals("StageArtifact")
+                || simpleName.endsWith("Worker")
+                || simpleName.endsWith("Runner")
+                || simpleName.endsWith("Poller")
+                || simpleName.endsWith("Scheduler");
+    }
+
+    /**
+     * Identifica dependências que deslocariam execução operacional do executor para o backend.
+     */
+    private static boolean isForbiddenOprmNichoCnaeV2ExecutionDependency(JavaClass targetClass) {
+        String targetName = targetClass.getName();
+        String targetPackage = targetClass.getPackageName();
+        return targetName.equals("org.springframework.scheduling.annotation.Scheduled")
+                || targetName.equals("org.springframework.web.reactive.function.client.WebClient")
+                || targetPackage.startsWith("com.openai")
+                || targetPackage.startsWith("com.theokanning.openai")
+                || targetPackage.startsWith("org.jsoup")
+                || targetPackage.startsWith("com.microsoft.playwright")
+                || targetPackage.startsWith("org.openqa.selenium")
+                || targetPackage.startsWith("software.amazon.awssdk.services.s3")
+                || targetPackage.startsWith("com.amazonaws.services.s3");
     }
 
     /**

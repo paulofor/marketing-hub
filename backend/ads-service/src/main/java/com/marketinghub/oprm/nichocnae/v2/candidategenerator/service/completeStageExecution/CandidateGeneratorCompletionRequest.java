@@ -4,4 +4,10 @@ package com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.completeSt
 public record CandidateGeneratorCompletionRequest(
         String qualityStatus,
         String requestedAction,
-        String outputPayload) {}
+        String outputPayload,
+        String nextStageCode) {
+    /** Mantém compatibilidade com chamadas que ainda não enviam a próxima etapa decidida pelo executor. */
+    public CandidateGeneratorCompletionRequest(String qualityStatus, String requestedAction, String outputPayload) {
+        this(qualityStatus, requestedAction, outputPayload, null);
+    }
+}

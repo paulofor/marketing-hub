@@ -11,12 +11,13 @@ const v2Stages = [
       "Gerar candidatos neutros de subnicho sem contaminar nome, dor, canal ou promessa antes da evidência.",
     output:
       "4 a 6 candidatos comparáveis, com identidade do executor, job operacional e hipóteses separadas.",
-    businessGate: "Nenhum vencedor obrigatório quando não houver candidato viável.",
+    businessGate:
+      "Nenhum vencedor obrigatório quando não houver candidato viável.",
   },
   {
     number: 2,
     title: "Source Safety Filter",
-    status: "Design",
+    status: "Design aprovado · implementação inicial",
     purpose:
       "Bloquear domínios inseguros, conteúdo inadequado e resultados fora do contexto antes de gastar IA.",
     output: "Lista segura e deduplicada de URLs candidatas para pesquisa.",
@@ -28,8 +29,10 @@ const v2Stages = [
     status: "Design",
     purpose:
       "Planejar buscas pelos gaps reais de conhecimento, reaproveitando queries, fontes e falhas anteriores.",
-    output: "Plano de pesquisa curto, natural e orientado a lacunas de evidência.",
-    businessGate: "A pesquisa aprofunda apenas o que pode mudar a decisão comercial.",
+    output:
+      "Plano de pesquisa curto, natural e orientado a lacunas de evidência.",
+    businessGate:
+      "A pesquisa aprofunda apenas o que pode mudar a decisão comercial.",
   },
   {
     number: 4,
@@ -38,7 +41,8 @@ const v2Stages = [
     purpose:
       "Comparar candidatos por densidade e qualidade de evidências antes de escolher finalistas.",
     output: "Até dois finalistas ou decisão NO_VIABLE_SUBNICHE.",
-    businessGate: "O vencedor nasce de evidência observada, não de opinião prévia do modelo.",
+    businessGate:
+      "O vencedor nasce de evidência observada, não de opinião prévia do modelo.",
   },
   {
     number: 5,
@@ -46,8 +50,10 @@ const v2Stages = [
     status: "Design",
     purpose:
       "Coletar páginas úteis e priorizar fontes diretas, independentes e alinhadas ao objetivo do gate.",
-    output: "Snapshots rastreáveis com origem, trecho curto, metadados e custo.",
-    businessGate: "Fonte adjacente não substitui prova direta do executor específico.",
+    output:
+      "Snapshots rastreáveis com origem, trecho curto, metadados e custo.",
+    businessGate:
+      "Fonte adjacente não substitui prova direta do executor específico.",
   },
   {
     number: 6,
@@ -55,7 +61,8 @@ const v2Stages = [
     status: "Design aprovado · implementação parcial",
     purpose:
       "Extrair claims somente quando houver trecho exato, ator correto, contexto compatível e relação sustentada.",
-    output: "Claims auditáveis com trecho literal, fonte e diagnóstico semântico.",
+    output:
+      "Claims auditáveis com trecho literal, fonte e diagnóstico semântico.",
     businessGate: "Nenhum claim sem trecho exato pode avançar para síntese.",
   },
   {
@@ -64,7 +71,8 @@ const v2Stages = [
     status: "Design",
     purpose:
       "Validar se o trecho realmente sustenta a afirmação sobre o executor e o contexto pesquisado.",
-    output: "Claims aprovados, rejeitados, contraditórios ou pendentes por nível de evidência.",
+    output:
+      "Claims aprovados, rejeitados, contraditórios ou pendentes por nível de evidência.",
     businessGate: "Proximidade lexical não é prova de mercado.",
   },
   {
@@ -73,8 +81,10 @@ const v2Stages = [
     status: "Design aprovado · implementação parcial",
     purpose:
       "Consolidar conhecimento versionado do ciclo, preservando fontes aceitas, rejeições, gaps e aprendizados.",
-    output: "Snapshot de conhecimento com versão, linhagem e lacunas acionáveis.",
-    businessGate: "Reprocessar sem repetir erro, fonte rejeitada ou custo desnecessário.",
+    output:
+      "Snapshot de conhecimento com versão, linhagem e lacunas acionáveis.",
+    businessGate:
+      "Reprocessar sem repetir erro, fonte rejeitada ou custo desnecessário.",
   },
   {
     number: 9,
@@ -82,8 +92,10 @@ const v2Stages = [
     status: "Design aprovado · implementação parcial",
     purpose:
       "Decidir o menor rewind necessário quando um gate falhar por qualidade, mantendo o mesmo job quando aplicável.",
-    output: "Retry técnico ou reprocessamento cognitivo com motivo, estágio de retorno e versão de conhecimento.",
-    businessGate: "Falha técnica não vira reprovação de mercado; falta de evidência não reinicia tudo.",
+    output:
+      "Retry técnico ou reprocessamento cognitivo com motivo, estágio de retorno e versão de conhecimento.",
+    businessGate:
+      "Falha técnica não vira reprovação de mercado; falta de evidência não reinicia tudo.",
   },
   {
     number: 10,
@@ -100,8 +112,10 @@ const v2Stages = [
     status: "Design",
     purpose:
       "Separar existência da atividade, dor prática, impacto econômico e intenção de compra por nível de evidência.",
-    output: "Nível E0 a E5, confiança explicável, motivos de reprovação e próximos movimentos.",
-    businessGate: "Materialização automática só avança com evidência comercial mínima.",
+    output:
+      "Nível E0 a E5, confiança explicável, motivos de reprovação e próximos movimentos.",
+    businessGate:
+      "Materialização automática só avança com evidência comercial mínima.",
   },
   {
     number: 12,
@@ -109,7 +123,8 @@ const v2Stages = [
     status: "Bloqueado por feature flag",
     purpose:
       "Materializar o nicho enriquecido somente depois dos gates de evidência, qualidade e segurança.",
-    output: "Nicho pronto para decisão de produto: executor, dor, resultado, mecanismo plausível e fontes.",
+    output:
+      "Nicho pronto para decisão de produto: executor, dor, resultado, mecanismo plausível e fontes.",
     businessGate: "A v2 calibra antes de publicar automaticamente para vendas.",
   },
 ];
@@ -143,11 +158,14 @@ export default function OprmNichoCnaeV2PipelinePage() {
           <div className="d-flex flex-wrap justify-content-between gap-3">
             <div>
               <h2 className="h5 mb-1">
-                {decodedCnaeCode ? `CNAE ${decodedCnaeCode}` : "Visão geral da v2"}
+                {decodedCnaeCode
+                  ? `CNAE ${decodedCnaeCode}`
+                  : "Visão geral da v2"}
               </h2>
               <p className="text-secondary mb-0">
                 A tela é um mapa de produto: mostra a sequência planejada mesmo
-                quando uma etapa ainda está em design ou protegida por feature flag.
+                quando uma etapa ainda está em design ou protegida por feature
+                flag.
               </p>
             </div>
             <span className="badge text-bg-primary align-self-start">

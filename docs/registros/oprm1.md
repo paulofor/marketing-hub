@@ -1022,3 +1022,12 @@
 - Adicionado botão por linha na tela de CNAEs por Score OPRM para abrir a visão da v2 do pipeline no contexto do CNAE selecionado.
 - Criada a tela de design `/oprm/cnaes/:cnaeCode/pipeline-v2` com cards das etapas planejadas da v2, baseada nos planos de melhoria de qualidade, reprocessamento por conhecimento e ordem de implementação OPRM.
 - A tela é informativa e não cria orquestração no frontend; as decisões de execução continuam pertencendo ao backend/executor conforme arquitetura do OPRM.
+
+## 2026-06-19 — Implementação da etapa 2 Source Safety Filter da v2 NichoCNAE
+- Implementada a etapa `source-safety-filter` da v2 NichoCNAE com contratos internos de `pending`, `complete` e `fail` no backend, reaproveitando a tabela versionada de execuções de estágio.
+- Criados contratos de leitura/escrita para permitir que o executor externo solicite e consuma pendências da etapa 2 antes do planejamento adaptativo.
+- Implementado no executor `oprm-coletor-mei` o processor determinístico de segurança, canonicalização, remoção de tracking, deduplicação e hard blocklist de domínios/categorias proibidas.
+
+## 2026-06-19 — Correção leitura/escrita da etapa 2 Source Safety Filter
+- Revisada a implementação da etapa `source-safety-filter` para manter o backend como camada de leitura/escrita: a decisão de próxima etapa passou a vir no callback do executor, e o backend deixou de calcular transição por `safetyDecision`.
+- Removida a criação automática de pendência da etapa 2 dentro da conclusão do `candidate-generator`; o executor externo passa a solicitar explicitamente a gravação da pendência pelo contrato de escrita da etapa 2.

@@ -1,0 +1,43 @@
+openapi: 3.0.3
+info:
+  title: OPRM NichoCNAE v2 Source Safety Filter API
+  version: "1.0"
+paths:
+  /api/internal/oprm/nichocnae/v2/source-safety-filter/stage-executions/pending:
+    get:
+      summary: Lista execuções pendentes da etapa source-safety-filter v2
+      responses:
+        "200":
+          description: Pendências disponíveis para o executor OPRM filtrar URLs candidatas
+  /api/internal/oprm/nichocnae/v2/source-safety-filter/stage-executions:
+    post:
+      summary: Grava pendência da etapa source-safety-filter v2 solicitada pelo executor
+      responses:
+        "200":
+          description: Pendência gravada para consumo pelo endpoint pending
+  /api/internal/oprm/nichocnae/v2/source-safety-filter/stage-executions/{stageExecutionId}/complete:
+    post:
+      summary: Registra conclusão de execução da etapa source-safety-filter v2
+      parameters:
+        - name: stageExecutionId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Conclusão registrada com decisão de segurança e próxima etapa
+  /api/internal/oprm/nichocnae/v2/source-safety-filter/stage-executions/{stageExecutionId}/fail:
+    post:
+      summary: Registra falha e retry técnico da etapa source-safety-filter v2
+      parameters:
+        - name: stageExecutionId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Falha registrada

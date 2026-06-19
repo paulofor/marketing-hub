@@ -161,7 +161,7 @@ class BackendCandidateGeneratorServiceTest {
         assertThat(result.materializationEnabled()).isFalse();
     }
 
-    /** Deve resolver MEI_AUDIENCE_READY + MATERIALIZAR_NICHO para o materializer quando a calibração liberar. */
+    /** Deve apenas persistir a próxima etapa recebida do executor quando a calibração liberar. */
     @Test
     void completeRoutesMeiAudienceReadyMaterializationWhenFlagIsEnabled() {
         BackendCandidateGeneratorService service = service(true, true);
@@ -172,7 +172,7 @@ class BackendCandidateGeneratorServiceTest {
         when(stageExecutionRepository.save(any(OprmNichoCnaeV2StageExecution.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         CandidateGeneratorCompletionResponse result = service.complete(
-                91L, new CandidateGeneratorCompletionRequest("MEI_AUDIENCE_READY", "MATERIALIZAR_NICHO", "{}"));
+                91L, new CandidateGeneratorCompletionRequest("MEI_AUDIENCE_READY", "MATERIALIZAR_NICHO", "{}", "enriched-niche-materializer"));
 
         assertThat(result.status()).isEqualTo("COMPLETED");
         assertThat(result.nextStageCode()).isEqualTo("enriched-niche-materializer");

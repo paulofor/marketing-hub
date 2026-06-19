@@ -1,15 +1,15 @@
-package com.marketinghub.oprm.nichocnae.v2.candidategenerator.service;
+package com.marketinghub.oprm.nichocnae.v2.sourcesafetyfilter.service;
 
-import com.marketinghub.oprm.cnae.OprmNicheCandidate;
 import com.marketinghub.oprm.nichocnae.v2.OprmNichoCnaeV2FailureType;
 import com.marketinghub.oprm.nichocnae.v2.OprmNichoCnaeV2StageExecution;
 import com.marketinghub.oprm.nichocnae.v2.OprmNichoCnaeV2StageExecutionStatus;
-import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.completeStageExecution.CandidateGeneratorCompletionRequest;
-import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.completeStageExecution.CandidateGeneratorCompletionResponse;
-import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.failStageExecution.CandidateGeneratorFailureRequest;
-import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.failStageExecution.CandidateGeneratorFailureResponse;
-import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.pending.CandidateGeneratorPendingResponse;
-import com.marketinghub.repository.jpa.oprm.cnae.OprmNicheCandidateRepository;
+import com.marketinghub.oprm.nichocnae.v2.sourcesafetyfilter.service.completeStageExecution.SourceSafetyFilterCompletionRequest;
+import com.marketinghub.oprm.nichocnae.v2.sourcesafetyfilter.service.completeStageExecution.SourceSafetyFilterCompletionResponse;
+import com.marketinghub.oprm.nichocnae.v2.sourcesafetyfilter.service.createStageExecution.SourceSafetyFilterCreateRequest;
+import com.marketinghub.oprm.nichocnae.v2.sourcesafetyfilter.service.createStageExecution.SourceSafetyFilterCreateResponse;
+import com.marketinghub.oprm.nichocnae.v2.sourcesafetyfilter.service.failStageExecution.SourceSafetyFilterFailureRequest;
+import com.marketinghub.oprm.nichocnae.v2.sourcesafetyfilter.service.failStageExecution.SourceSafetyFilterFailureResponse;
+import com.marketinghub.oprm.nichocnae.v2.sourcesafetyfilter.service.pending.SourceSafetyFilterPendingResponse;
 import com.marketinghub.repository.jpa.oprm.nichocnae.v2.OprmNichoCnaeV2StageExecutionRepository;
 import java.time.Instant;
 import java.util.List;
@@ -20,63 +20,56 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-/** Expõe contratos de leitura/escrita do backend para a etapa candidate-generator do pipeline NichoCNAE v2. */
+/** Expõe contratos de leitura/escrita do backend para a etapa source-safety-filter do pipeline NichoCNAE v2. */
 @Service
-public class BackendCandidateGeneratorService {
-    private static final String STAGE_CODE = "candidate-generator";
-
-    private final OprmNicheCandidateRepository nicheCandidateRepository;
+public class BackendSourceSafetyFilterService {
+    public static final String STAGE_CODE = "source-safety-filter";
     private final OprmNichoCnaeV2StageExecutionRepository stageExecutionRepository;
     private final boolean v2Enabled;
-    private final boolean materializationEnabled;
 
-    /** Inicializa o service com repositórios canônicos e feature flags de calibração da v2. */
-    public BackendCandidateGeneratorService(
-            OprmNicheCandidateRepository nicheCandidateRepository,
+    /** Inicializa o service com repositório canônico e feature flag de calibração da v2. */
+    public BackendSourceSafetyFilterService(
             OprmNichoCnaeV2StageExecutionRepository stageExecutionRepository,
-            @Value("${oprm.nichocnae.v2.enabled:false}") boolean v2Enabled,
-            @Value("${oprm.nichocnae.v2.materialization-enabled:false}") boolean materializationEnabled) {
-        this.nicheCandidateRepository = nicheCandidateRepository;
+            @Value("${oprm.nichocnae.v2.enabled:false}") boolean v2Enabled) {
         this.stageExecutionRepository = stageExecutionRepository;
         this.v2Enabled = v2Enabled;
-        this.materializationEnabled = materializationEnabled;
     }
 
     /** Lista pendências disponíveis para consumo canônico pelo executor OPRM NichoCNAE v2. */
-    @Transactional
-    public List<CandidateGeneratorPendingResponse> pending() {
+    @Transactional(readOnly = true)
+    public List<SourceSafetyFilterPendingResponse> pending() {
         if (!v2Enabled) {
             return List.of();
         }
-        ensureInitialPendingExecution();
         return stageExecutionRepository
                 .findByStageCodeAndStatusOrderByCreatedAtAsc(
-                        STAGE_CODE, OprmNichoCnaeV2StageExecutionStatus.PENDING, PageRequest.of(0, 1))
+                        STAGE_CODE, OprmNichoCnaeV2StageExecutionStatus.PENDING, PageRequest.of(0, 5))
                 .stream()
                 .map(this::toPendingResponse)
                 .toList();
     }
 
-    /** Registra conclusão da etapa persistindo a próxima etapa informada pelo executor externo. */
+    /** Registra conclusão do filtro usando a próxima etapa informada pelo executor externo. */
     @Transactional
-    public CandidateGeneratorCompletionResponse complete(
-            Long stageExecutionId, CandidateGeneratorCompletionRequest request) {
+    public SourceSafetyFilterCompletionResponse complete(
+            Long stageExecutionId, SourceSafetyFilterCompletionRequest request) {
         OprmNichoCnaeV2StageExecution execution = findExecution(stageExecutionId);
         execution.setStatus(OprmNichoCnaeV2StageExecutionStatus.COMPLETED);
         execution.setOutputPayload(request == null ? null : request.outputPayload());
         execution.setNextStageCode(request == null ? null : request.nextStageCode());
         execution.setUpdatedAt(Instant.now());
         OprmNichoCnaeV2StageExecution saved = stageExecutionRepository.save(execution);
-        return new CandidateGeneratorCompletionResponse(
+        return new SourceSafetyFilterCompletionResponse(
                 String.valueOf(saved.getId()),
                 saved.getStatus().name(),
                 saved.getNextStageCode(),
-                saved.getMaterializationEnabled());
+                request == null ? null : request.allowedUrlCount(),
+                request == null ? null : request.rejectedUrlCount());
     }
 
     /** Registra falha e cria nova execução somente quando a falha for retry técnico de infraestrutura. */
     @Transactional
-    public CandidateGeneratorFailureResponse fail(Long stageExecutionId, CandidateGeneratorFailureRequest request) {
+    public SourceSafetyFilterFailureResponse fail(Long stageExecutionId, SourceSafetyFilterFailureRequest request) {
         OprmNichoCnaeV2StageExecution execution = findExecution(stageExecutionId);
         OprmNichoCnaeV2FailureType failureType = request == null || request.failureType() == null
                 ? OprmNichoCnaeV2FailureType.VALIDATION
@@ -90,7 +83,7 @@ public class BackendCandidateGeneratorService {
             OprmNichoCnaeV2StageExecution retry = createTechnicalRetry(execution);
             stageExecutionRepository.save(execution);
             OprmNichoCnaeV2StageExecution savedRetry = stageExecutionRepository.save(retry);
-            return new CandidateGeneratorFailureResponse(
+            return new SourceSafetyFilterFailureResponse(
                     String.valueOf(execution.getId()),
                     execution.getStatus().name(),
                     String.valueOf(savedRetry.getId()),
@@ -99,7 +92,7 @@ public class BackendCandidateGeneratorService {
         }
         execution.setStatus(OprmNichoCnaeV2StageExecutionStatus.FAILED);
         OprmNichoCnaeV2StageExecution saved = stageExecutionRepository.save(execution);
-        return new CandidateGeneratorFailureResponse(
+        return new SourceSafetyFilterFailureResponse(
                 String.valueOf(saved.getId()),
                 saved.getStatus().name(),
                 null,
@@ -107,34 +100,29 @@ public class BackendCandidateGeneratorService {
                 saved.getTechnicalRetryNumber());
     }
 
-    /** Garante uma pendência inicial real a partir da fila atual de candidatos, sem materialização automática. */
-    private void ensureInitialPendingExecution() {
-        if (!stageExecutionRepository
-                .findByStageCodeAndStatusOrderByCreatedAtAsc(
-                        STAGE_CODE, OprmNichoCnaeV2StageExecutionStatus.PENDING, PageRequest.of(0, 1))
-                .isEmpty()) {
-            return;
-        }
-        nicheCandidateRepository.findNextPendingRoutineResearchCandidatePreview(PageRequest.of(0, 1)).stream()
-                .filter(candidate -> !stageExecutionRepository.existsBySourceNicheIdAndStageCode(
-                        candidate.getId(), STAGE_CODE))
-                .findFirst()
-                .ifPresent(candidate -> stageExecutionRepository.save(createInitialExecution(candidate)));
+    /** Grava uma pendência da etapa de segurança solicitada pelo executor externo. */
+    @Transactional
+    public SourceSafetyFilterCreateResponse create(SourceSafetyFilterCreateRequest request) {
+        OprmNichoCnaeV2StageExecution saved = stageExecutionRepository.save(toPendingExecution(request));
+        return new SourceSafetyFilterCreateResponse(
+                String.valueOf(saved.getId()), saved.getStatus().name(), saved.getStageCode());
     }
 
-    /** Cria a primeira execução imutável da etapa candidate-generator para o candidato priorizado. */
-    private OprmNichoCnaeV2StageExecution createInitialExecution(OprmNicheCandidate candidate) {
+    /** Converte o contrato recebido do executor em entidade persistível, sem decidir regra operacional. */
+    private OprmNichoCnaeV2StageExecution toPendingExecution(SourceSafetyFilterCreateRequest request) {
         Instant now = Instant.now();
         OprmNichoCnaeV2StageExecution execution = new OprmNichoCnaeV2StageExecution();
-        execution.setJobId("nichocnae-v2-candidate-" + candidate.getId());
-        execution.setSourceNicheId(candidate.getId());
-        execution.setCnaeCode(candidate.getCnaeCode());
+        execution.setJobId(request.jobId());
+        execution.setResearchCycleId(request.researchCycleId());
+        execution.setSourceNicheId(request.sourceNicheId());
+        execution.setCnaeCode(request.cnaeCode());
         execution.setStageCode(STAGE_CODE);
-        execution.setAttemptNumber(1);
+        execution.setAttemptNumber(request.attemptNumber());
         execution.setTechnicalRetryNumber(0);
-        execution.setKnowledgeVersion(1);
+        execution.setKnowledgeVersion(request.knowledgeVersion());
         execution.setStatus(OprmNichoCnaeV2StageExecutionStatus.PENDING);
-        execution.setMaterializationEnabled(materializationEnabled);
+        execution.setInputPayload(request.inputPayload());
+        execution.setMaterializationEnabled(Boolean.TRUE.equals(request.materializationEnabled()));
         execution.setCreatedAt(now);
         execution.setUpdatedAt(now);
         return execution;
@@ -142,21 +130,17 @@ public class BackendCandidateGeneratorService {
 
     /** Cria uma nova linha para retry técnico preservando a tentativa cognitiva e a versão de conhecimento. */
     private OprmNichoCnaeV2StageExecution createTechnicalRetry(OprmNichoCnaeV2StageExecution previousExecution) {
-        Instant now = Instant.now();
-        OprmNichoCnaeV2StageExecution retry = new OprmNichoCnaeV2StageExecution();
-        retry.setJobId(previousExecution.getJobId());
-        retry.setResearchCycleId(previousExecution.getResearchCycleId());
-        retry.setSourceNicheId(previousExecution.getSourceNicheId());
-        retry.setCnaeCode(previousExecution.getCnaeCode());
-        retry.setStageCode(previousExecution.getStageCode());
-        retry.setAttemptNumber(previousExecution.getAttemptNumber());
-        retry.setTechnicalRetryNumber(previousExecution.getTechnicalRetryNumber() + 1);
-        retry.setKnowledgeVersion(previousExecution.getKnowledgeVersion());
-        retry.setStatus(OprmNichoCnaeV2StageExecutionStatus.PENDING);
+        OprmNichoCnaeV2StageExecution retry = toPendingExecution(new SourceSafetyFilterCreateRequest(
+                previousExecution.getJobId(),
+                previousExecution.getResearchCycleId(),
+                previousExecution.getSourceNicheId(),
+                previousExecution.getCnaeCode(),
+                previousExecution.getAttemptNumber(),
+                previousExecution.getKnowledgeVersion(),
+                previousExecution.getMaterializationEnabled(),
+                previousExecution.getInputPayload()));
         retry.setInputPayload(previousExecution.getInputPayload());
-        retry.setMaterializationEnabled(previousExecution.getMaterializationEnabled());
-        retry.setCreatedAt(now);
-        retry.setUpdatedAt(now);
+        retry.setTechnicalRetryNumber(previousExecution.getTechnicalRetryNumber() + 1);
         return retry;
     }
 
@@ -166,12 +150,12 @@ public class BackendCandidateGeneratorService {
                 .findByIdAndStageCode(stageExecutionId, STAGE_CODE)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
-                        "NichoCNAE v2 candidate-generator stage execution not found: " + stageExecutionId));
+                        "NichoCNAE v2 source-safety-filter stage execution not found: " + stageExecutionId));
     }
 
     /** Converte a entidade persistida no contrato canônico de pending do executor. */
-    private CandidateGeneratorPendingResponse toPendingResponse(OprmNichoCnaeV2StageExecution execution) {
-        return new CandidateGeneratorPendingResponse(
+    private SourceSafetyFilterPendingResponse toPendingResponse(OprmNichoCnaeV2StageExecution execution) {
+        return new SourceSafetyFilterPendingResponse(
                 String.valueOf(execution.getId()),
                 execution.getJobId(),
                 execution.getCnaeCode(),
@@ -179,6 +163,6 @@ public class BackendCandidateGeneratorService {
                 execution.getAttemptNumber(),
                 execution.getTechnicalRetryNumber(),
                 execution.getKnowledgeVersion(),
-                execution.getMaterializationEnabled());
+                execution.getInputPayload());
     }
 }

@@ -624,6 +624,89 @@ class ArquiteturaTest {
     }
 
     /**
+     * Garante que a etapa inicial do pipeline NichoCNAE v2 tenha controller canônico com endpoint pending.
+     */
+    @ArchTest
+    static void oprmNichoCnaeV2CandidateGeneratorMustExposeCanonicalPendingEndpoint(JavaClasses importedClasses) {
+        List<String> violations = new ArrayList<>();
+        String controllerPackage = "com.marketinghub.oprm.nichocnae.v2.candidategenerator.controller";
+        List<JavaClass> packageClasses = directPackageClasses(importedClasses, controllerPackage);
+        List<JavaClass> controllers = packageClasses.stream()
+                .filter(javaClass -> javaClass.getSimpleName().equals("BackendCandidateGeneratorController"))
+                .toList();
+        if (packageClasses.size() != 1) {
+            violations.add("[ARQUITETURA] [BACKEND][OPRM][NichoCNAE-v2] pacote=" + controllerPackage
+                    + " deve conter apenas BackendCandidateGeneratorController; classes=" + simpleNames(packageClasses));
+        }
+        if (controllers.size() != 1) {
+            violations.add("[ARQUITETURA] [BACKEND][OPRM][NichoCNAE-v2] pacote=" + controllerPackage
+                    + " deve conter exatamente uma classe BackendCandidateGeneratorController; controllers="
+                    + simpleNames(controllers));
+        } else {
+            JavaClass controller = controllers.get(0);
+            if (!controller.isAnnotatedWith(RestController.class)) {
+                violations.add("[ARQUITETURA] [BACKEND][OPRM][NichoCNAE-v2] classe=" + controller.getName()
+                        + " deve possuir @RestController");
+            }
+            if (!hasRequestMapping(controller,
+                    "/api/internal/oprm/nichocnae/v2/candidate-generator/stage-executions")) {
+                violations.add("[ARQUITETURA] [BACKEND][OPRM][NichoCNAE-v2] classe=" + controller.getName()
+                        + " deve possuir @RequestMapping do endpoint interno pending canônico");
+            }
+            boolean hasPending = controller.getMethods().stream()
+                    .anyMatch(method -> method.getName().equals("pending"));
+            if (!hasPending) {
+                violations.add("[ARQUITETURA] [BACKEND][OPRM][NichoCNAE-v2] classe=" + controller.getName()
+                        + " deve expor método pending como ponto inicial canônico do executor");
+            }
+        }
+        failWithArchitectureViolations(violations);
+    }
+
+    /**
+     * Garante que a etapa inicial do pipeline NichoCNAE v2 tenha service canônico único.
+     */
+    @ArchTest
+    static void oprmNichoCnaeV2CandidateGeneratorMustHaveCanonicalService(JavaClasses importedClasses) {
+        List<String> violations = new ArrayList<>();
+        String servicePackage = "com.marketinghub.oprm.nichocnae.v2.candidategenerator.service";
+        List<JavaClass> packageClasses = directPackageClasses(importedClasses, servicePackage);
+        List<JavaClass> services = packageClasses.stream()
+                .filter(javaClass -> javaClass.getSimpleName().equals("BackendCandidateGeneratorService"))
+                .toList();
+        if (packageClasses.size() != 1) {
+            violations.add("[ARQUITETURA] [BACKEND][OPRM][NichoCNAE-v2] pacote=" + servicePackage
+                    + " deve conter apenas BackendCandidateGeneratorService na raiz; classes="
+                    + simpleNames(packageClasses));
+        }
+        if (services.size() != 1) {
+            violations.add("[ARQUITETURA] [BACKEND][OPRM][NichoCNAE-v2] pacote=" + servicePackage
+                    + " deve conter exatamente uma classe BackendCandidateGeneratorService; services="
+                    + simpleNames(services));
+        } else if (!services.get(0).isAnnotatedWith(Service.class)) {
+            violations.add("[ARQUITETURA] [BACKEND][OPRM][NichoCNAE-v2] classe=" + services.get(0).getName()
+                    + " deve possuir @Service");
+        }
+        failWithArchitectureViolations(violations);
+    }
+
+    /**
+     * Garante que contratos de service da etapa NichoCNAE v2 sejam records imutáveis.
+     */
+    @ArchTest
+    static void oprmNichoCnaeV2CandidateGeneratorServiceContractsMustBeRecords(JavaClasses importedClasses) {
+        List<String> violations = new ArrayList<>();
+        importedClasses.stream()
+                .filter(ArquiteturaTest::isProductionTopLevelClass)
+                .filter(javaClass -> javaClass.getPackageName()
+                        .startsWith("com.marketinghub.oprm.nichocnae.v2.candidategenerator.service."))
+                .filter(javaClass -> !javaClass.reflect().isRecord())
+                .forEach(javaClass -> violations.add("[ARQUITETURA] [BACKEND][OPRM][NichoCNAE-v2] classe="
+                        + javaClass.getName() + " está em subpacote de service e deve ser record"));
+        failWithArchitectureViolations(violations);
+    }
+
+    /**
      * Garante que cada etapa do OPRM nicho CNAE tenha um único controller canônico anotado.
      */
     @ArchTest

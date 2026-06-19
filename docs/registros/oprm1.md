@@ -972,3 +972,9 @@
 
 - Criada tela administrativa `/oprm/jobs` com botão na navegação do OPRM para listar jobs recentes do pipeline NichoCNAE com paginação, custo, última etapa, relatório e acompanhamento.
 - Backend expõe `/api/oprm/nichocnae/jobs` para a UI consultar os ciclos recentes sem acessar banco diretamente.
+
+## 2026-06-19 — Bootstrap do pipeline NichoCNAE versão 2
+
+- Criado o esqueleto inicial do pipeline NichoCNAE v2 no executor `oprm-coletor-mei`, separando núcleo genérico de execução e etapa concreta `candidate-generator`.
+- Criado o contrato backend inicial para fila interna da etapa `candidate-generator`, com endpoint `pending` canônico para consumo pelo executor.
+- Aplicados os protocolos padrão módulo e padrão backend com testes ArchUnit para prevenir acoplamento indevido e manter controller/service/records canônicos.

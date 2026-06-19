@@ -1,3 +1,8 @@
+## 2026-06-19 00:00:00 (UTC) — OPRM NichoCNAE v2: separação visual entre jobs abertos e concluídos
+
+- Ajustada a tela do pipeline NichoCNAE v2 para separar visualmente os blocos de jobs abertos e concluídos com cards dedicados, trilha lateral de status e divisor elegante entre os painéis.
+- Causa-raiz tratada: os dois blocos usavam cards genéricos muito próximos, reduzindo a leitura rápida entre operação em andamento e histórico encerrado.
+
 ## 2026-06-19 00:00:00 (UTC) — OPRM NichoCNAE v2: lista de jobs por CNAE na tela
 
 - Ajustada a tela do pipeline NichoCNAE v2 para exibir, por CNAE, jobs abertos com etapa atual e jobs encerrados em histórico separado.

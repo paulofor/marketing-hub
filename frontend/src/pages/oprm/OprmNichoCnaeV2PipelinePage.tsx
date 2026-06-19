@@ -303,54 +303,70 @@ export default function OprmNichoCnaeV2PipelinePage() {
 
       {decodedCnaeCode ? (
         <section
-          className="row g-3"
+          className="oprm-v2-jobs-section"
           aria-label="Jobs do CNAE no pipeline NichoCNAE v2"
         >
-          <article className="col-12 col-xl-6">
-            <div className="card h-100 border-0 shadow-sm">
-              <div className="card-body">
-                <h2 className="h5 mb-2">Jobs abertos</h2>
-                <p className="text-secondary small">
-                  Mostra onde cada execução ainda aberta está parada agora.
-                </p>
-                {jobsQuery.isLoading ? (
-                  <p className="text-secondary mb-0">Carregando jobs...</p>
-                ) : jobsQuery.isError ? (
-                  <div className="alert alert-danger mb-0" role="alert">
-                    {jobsQuery.error.message}
-                  </div>
-                ) : (
-                  <JobsTable
-                    jobs={jobsQuery.data?.openJobs ?? []}
-                    emptyMessage="Nenhum job aberto para este CNAE."
-                    open
-                  />
-                )}
+          <article className="oprm-v2-job-panel oprm-v2-job-panel--open">
+            <div className="oprm-v2-job-panel__accent" aria-hidden="true" />
+            <div className="oprm-v2-job-panel__content">
+              <div className="d-flex align-items-start justify-content-between gap-3 mb-3">
+                <div>
+                  <span className="oprm-v2-job-panel__eyebrow">Agora</span>
+                  <h2 className="h5 mb-1">Jobs abertos</h2>
+                  <p className="text-secondary small mb-0">
+                    Mostra onde cada execução ainda aberta está parada agora.
+                  </p>
+                </div>
+                <span
+                  className="oprm-v2-job-panel__status-dot"
+                  aria-hidden="true"
+                />
               </div>
+              {jobsQuery.isLoading ? (
+                <p className="text-secondary mb-0">Carregando jobs...</p>
+              ) : jobsQuery.isError ? (
+                <div className="alert alert-danger mb-0" role="alert">
+                  {jobsQuery.error.message}
+                </div>
+              ) : (
+                <JobsTable
+                  jobs={jobsQuery.data?.openJobs ?? []}
+                  emptyMessage="Nenhum job aberto para este CNAE."
+                  open
+                />
+              )}
             </div>
           </article>
-          <article className="col-12 col-xl-6">
-            <div className="card h-100 border-0 shadow-sm">
-              <div className="card-body">
-                <h2 className="h5 mb-2">Jobs concluídos</h2>
-                <p className="text-secondary small">
-                  Histórico dos jobs encerrados para evitar repetir pesquisa sem
-                  aprendizado.
-                </p>
-                {jobsQuery.isLoading ? (
-                  <p className="text-secondary mb-0">Carregando histórico...</p>
-                ) : jobsQuery.isError ? (
-                  <div className="alert alert-danger mb-0" role="alert">
-                    {jobsQuery.error.message}
-                  </div>
-                ) : (
-                  <JobsTable
-                    jobs={jobsQuery.data?.completedJobs ?? []}
-                    emptyMessage="Nenhum job concluído para este CNAE."
-                    open={false}
-                  />
-                )}
+          <article className="oprm-v2-job-panel oprm-v2-job-panel--completed">
+            <div className="oprm-v2-job-panel__accent" aria-hidden="true" />
+            <div className="oprm-v2-job-panel__content">
+              <div className="d-flex align-items-start justify-content-between gap-3 mb-3">
+                <div>
+                  <span className="oprm-v2-job-panel__eyebrow">Histórico</span>
+                  <h2 className="h5 mb-1">Jobs concluídos</h2>
+                  <p className="text-secondary small mb-0">
+                    Histórico dos jobs encerrados para evitar repetir pesquisa
+                    sem aprendizado.
+                  </p>
+                </div>
+                <span
+                  className="oprm-v2-job-panel__status-dot"
+                  aria-hidden="true"
+                />
               </div>
+              {jobsQuery.isLoading ? (
+                <p className="text-secondary mb-0">Carregando histórico...</p>
+              ) : jobsQuery.isError ? (
+                <div className="alert alert-danger mb-0" role="alert">
+                  {jobsQuery.error.message}
+                </div>
+              ) : (
+                <JobsTable
+                  jobs={jobsQuery.data?.completedJobs ?? []}
+                  emptyMessage="Nenhum job concluído para este CNAE."
+                  open={false}
+                />
+              )}
             </div>
           </article>
         </section>

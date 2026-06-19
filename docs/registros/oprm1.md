@@ -1107,3 +1107,9 @@
 
 - Corrigida a causa-raiz do erro ao clicar em **Iniciar novo job v2**: o backend não tinha valor padrão explícito para a feature flag `oprm.nichocnae.v2.enabled`, fazendo a tela oferecer o comando enquanto o contrato de gravação bloqueava a criação com `409 Conflict`.
 - A v2 passa a ficar habilitada por padrão para criação de jobs operacionais, mantendo a materialização automática desligada por padrão até validação de qualidade.
+
+## 2026-06-19 — Agendamento de pendências NichoCNAE v2 no executor OPRM
+
+- Implementado scheduler no `oprm-coletor-mei` para consultar a cada 3 minutos os endpoints `pending` das etapas NichoCNAE v2 com contrato backend existente.
+- O executor agora carrega o pacote `com.marketinghub.nichocnaev2`, processa pendências com os processors plugáveis, registra conclusão/falha no backend e cria a próxima pendência quando a próxima etapa v2 existe no catálogo local.
+- Causa-raiz corrigida: a v2 possuía contratos `pending` no backend e processors no executor, mas não havia rotina operacional registrada no Spring para buscar e executar os jobs pendentes.

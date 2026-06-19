@@ -1055,3 +1055,9 @@
 - Implementada a etapa `commercial-evidence-gate` no executor OPRM para calcular níveis E0-E5, confiança explicável, ganho informacional, revisão humana seletiva e liberação gradual de materialização automática.
 - Criado contrato interno no backend apenas para leitura/escrita de pendências, conclusão e falhas da etapa; a lógica comercial permaneceu no executor externo.
 - Atualizada a tela do pipeline v2 para sinalizar a implementação inicial do Evidence Level Gate E0-E5.
+
+## 2026-06-19 — Reforço da etapa 7 Commercial Evidence Gate NichoCNAE v2
+
+- Reforçada a etapa `commercial-evidence-gate` no executor `oprm-coletor-mei` para impedir materialização automática quando houver menos de três domínios independentes ou evidência contraditória pendente.
+- A decisão E0-E5, confiança, gaps, contradições e próximo movimento continuam calculados exclusivamente no executor externo; o backend foi coberto por teste para atuar apenas como leitura/escrita da decisão recebida.
+- Adicionados testes de regressão para independência mínima de fontes, revisão humana por contradição e contratos backend sem regra comercial.

@@ -22,14 +22,22 @@ public final class CommercialEvidenceGateProcessor implements StageProcessor {
     /** Avalia claims aceitos e snapshot acumulado para decidir materialização, revisão humana ou nova pesquisa. */
     @Override
     public StageResult process(StageContext context) {
-        List<Map<String, Object>> claims = acceptedClaims(context.input());
-        EvidenceCounts counts = countEvidence(claims);
+        List<Map<String, Object>> allClaims = candidateClaims(context.input());
+        List<Map<String, Object>> claims = acceptedClaims(allClaims);
+        EvidenceCounts counts = countEvidence(claims, allClaims);
         String evidenceLevel = evidenceLevel(counts);
         double confidence = confidence(counts);
         double informationGain = informationGain(context.input(), evidenceLevel, counts.totalSignals());
         boolean materializationEnabled = booleanValue(context.input().get("materializationEnabled"));
-        boolean automaticMaterializationAllowed = materializationEnabled && levelRank(evidenceLevel) >= 3 && confidence >= 0.70;
-        boolean humanReviewRequired = levelRank(evidenceLevel) >= 3 && confidence < 0.70;
+        boolean hasMinimumCommercialIndependence = counts.independentDomainCount() >= 3;
+        boolean automaticMaterializationAllowed = materializationEnabled
+                && levelRank(evidenceLevel) >= 3
+                && confidence >= 0.70
+                && hasMinimumCommercialIndependence
+                && counts.contradictionSignals() == 0;
+        boolean humanReviewRequired = levelRank(evidenceLevel) >= 3
+                && !automaticMaterializationAllowed
+                && (confidence >= 0.55 || counts.contradictionSignals() > 0);
         List<String> missingEvidence = missingEvidence(counts);
         String gateDecision = gateDecision(automaticMaterializationAllowed, humanReviewRequired, evidenceLevel, informationGain);
         String nextStageCode = nextStageCode(gateDecision);
@@ -45,11 +53,14 @@ public final class CommercialEvidenceGateProcessor implements StageProcessor {
         output.put("nextStageCode", nextStageCode);
         output.put("missingEvidence", missingEvidence);
         output.put("evidenceCounts", counts.asMap());
-        output.put("commercialSeparation", Map.of(
-                "activityExists", counts.activitySignals(),
-                "recurringPain", counts.painSignals(),
-                "economicImpact", counts.economicSignals(),
-                "purchaseIntent", counts.purchaseSignals()));
+        output.put(
+                "commercialSeparation",
+                Map.of(
+                        "activityExists", counts.activitySignals(),
+                        "recurringPain", counts.painSignals(),
+                        "economicImpact", counts.economicSignals(),
+                        "purchaseIntent", counts.purchaseSignals(),
+                        "contradictions", counts.contradictionSignals()));
         return new StageResult(gateDecision, output, List.of(new StageArtifact(
                 "COMMERCIAL_EVIDENCE_GATE",
                 "inline://commercial-evidence-gate/decision",
@@ -57,11 +68,16 @@ public final class CommercialEvidenceGateProcessor implements StageProcessor {
     }
 
     /** Filtra claims aceitos e validados sem transformar rejeição em sinal positivo. */
-    private List<Map<String, Object>> acceptedClaims(Map<String, Object> input) {
+    private List<Map<String, Object>> candidateClaims(Map<String, Object> input) {
         List<Map<String, Object>> claims = mapList(input.get("claims"));
         if (claims.isEmpty()) {
             claims = mapList(input.get("validatedClaims"));
         }
+        return claims;
+    }
+
+    /** Filtra somente os claims que podem ser usados como sinal comercial positivo. */
+    private List<Map<String, Object>> acceptedClaims(List<Map<String, Object>> claims) {
         return claims.stream().filter(this::isAccepted).toList();
     }
 
@@ -76,13 +92,14 @@ public final class CommercialEvidenceGateProcessor implements StageProcessor {
     }
 
     /** Conta sinais separados de atividade, dor, impacto econômico, intenção e compra real. */
-    private EvidenceCounts countEvidence(List<Map<String, Object>> claims) {
+    private EvidenceCounts countEvidence(List<Map<String, Object>> claims, List<Map<String, Object>> allClaims) {
         int activities = 0;
         int tasks = 0;
         int pains = 0;
         int economic = 0;
         int purchase = 0;
         int offers = 0;
+        int contradictions = 0;
         List<String> domains = new ArrayList<>();
         for (Map<String, Object> claim : claims) {
             String type = text(claim.get("claimType")).toUpperCase(Locale.ROOT);
@@ -109,7 +126,17 @@ public final class CommercialEvidenceGateProcessor implements StageProcessor {
                 domains.add(domain);
             }
         }
-        return new EvidenceCounts(activities, tasks, pains, economic, purchase, offers, domains.size());
+        contradictions = (int) allClaims.stream().filter(this::isContradictory).count();
+        return new EvidenceCounts(activities, tasks, pains, economic, purchase, offers, contradictions, domains.size());
+    }
+
+    /** Identifica contradições explícitas para impedir promoção automática de evidência comercial. */
+    private boolean isContradictory(Map<String, Object> claim) {
+        String state = text(claim.get("epistemicState")).toUpperCase(Locale.ROOT);
+        String relation = text(claim.get("relationToTargetClaim")).toUpperCase(Locale.ROOT);
+        return state.equals("CONTRADICTED")
+                || relation.equals("CONTRADICTS")
+                || Boolean.TRUE.equals(claim.get("contradictsTarget"));
     }
 
     /** Define o nível E0-E5 sem misturar dor, impacto econômico e intenção de compra. */
@@ -120,7 +147,10 @@ public final class CommercialEvidenceGateProcessor implements StageProcessor {
         if (counts.purchaseSignals() > 0) {
             return "E4_PURCHASE_INTENT";
         }
-        if (counts.economicSignals() > 0 && counts.painSignals() >= 2 && counts.taskSignals() >= 3) {
+        if (counts.economicSignals() > 0
+                && counts.painSignals() >= 2
+                && counts.taskSignals() >= 3
+                && counts.independentDomainCount() >= 3) {
             return "E3_ECONOMIC_PAIN";
         }
         if (counts.painSignals() > 0 && counts.taskSignals() > 0) {
@@ -139,8 +169,9 @@ public final class CommercialEvidenceGateProcessor implements StageProcessor {
                 + (counts.economicSignals() * 0.18)
                 + (counts.purchaseSignals() * 0.20)
                 + (counts.offerSignals() * 0.24)
-                + (Math.min(counts.independentDomainCount(), 5) * 0.06);
-        return Math.round(Math.min(0.95, raw) * 100.0) / 100.0;
+                + (Math.min(counts.independentDomainCount(), 5) * 0.06)
+                - (counts.contradictionSignals() * 0.18);
+        return Math.round(Math.max(0.0, Math.min(0.95, raw)) * 100.0) / 100.0;
     }
 
     /** Calcula ganho informacional da tentativa atual em relação ao nível anterior informado no snapshot. */
@@ -168,6 +199,9 @@ public final class CommercialEvidenceGateProcessor implements StageProcessor {
         }
         if (counts.independentDomainCount() < 3) {
             missing.add("THREE_INDEPENDENT_DOMAINS");
+        }
+        if (counts.contradictionSignals() > 0) {
+            missing.add("RESOLVE_CONTRADICTORY_EVIDENCE");
         }
         return missing;
     }
@@ -241,6 +275,7 @@ public final class CommercialEvidenceGateProcessor implements StageProcessor {
             int economicSignals,
             int purchaseSignals,
             int offerSignals,
+            int contradictionSignals,
             int independentDomainCount) {
         /** Soma todos os sinais aceitos para cálculo de ganho informacional. */
         int totalSignals() {
@@ -256,6 +291,7 @@ public final class CommercialEvidenceGateProcessor implements StageProcessor {
                     "economicSignals", economicSignals,
                     "purchaseSignals", purchaseSignals,
                     "offerSignals", offerSignals,
+                    "contradictionSignals", contradictionSignals,
                     "independentDomainCount", independentDomainCount);
         }
     }

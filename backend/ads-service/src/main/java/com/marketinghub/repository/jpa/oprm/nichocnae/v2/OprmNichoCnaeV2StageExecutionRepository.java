@@ -16,6 +16,9 @@ public interface OprmNichoCnaeV2StageExecutionRepository extends JpaRepository<O
     /** Verifica se o candidato já possui execução registrada para a etapa. */
     boolean existsBySourceNicheIdAndStageCode(Long sourceNicheId, String stageCode);
 
+    /** Conta execuções já abertas para o candidato na etapa para gerar jobId estável de nova rodada manual. */
+    long countBySourceNicheIdAndStageCode(Long sourceNicheId, String stageCode);
+
     /** Localiza uma execução específica por etapa para callbacks internos do executor. */
     Optional<OprmNichoCnaeV2StageExecution> findByIdAndStageCode(Long id, String stageCode);
 }

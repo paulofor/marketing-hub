@@ -1,4 +1,5 @@
 import { Link, useParams } from "react-router-dom";
+import { useStartOprmNichoCnaeV2Job } from "../../api/oprm/useStartOprmNichoCnaeV2Job";
 import PageTitle from "../../components/PageTitle";
 import OprmModuleNavigation from "./OprmModuleNavigation";
 
@@ -133,6 +134,7 @@ const v2Stages = [
 export default function OprmNichoCnaeV2PipelinePage() {
   const { cnaeCode } = useParams();
   const decodedCnaeCode = cnaeCode ? decodeURIComponent(cnaeCode) : undefined;
+  const startJobMutation = useStartOprmNichoCnaeV2Job(decodedCnaeCode ?? "");
 
   return (
     <div className="d-flex flex-column gap-4">
@@ -169,10 +171,43 @@ export default function OprmNichoCnaeV2PipelinePage() {
                 flag.
               </p>
             </div>
-            <span className="badge text-bg-primary align-self-start">
-              v2 · qualidade antes de escala
-            </span>
+            <div className="d-flex flex-column align-items-start align-items-sm-end gap-2">
+              <span className="badge text-bg-primary align-self-start align-self-sm-end">
+                v2 · qualidade antes de escala
+              </span>
+              {decodedCnaeCode ? (
+                <button
+                  className="btn btn-primary"
+                  type="button"
+                  onClick={() => startJobMutation.mutate()}
+                  disabled={startJobMutation.isPending}
+                >
+                  {startJobMutation.isPending ? (
+                    <>
+                      <span
+                        className="spinner-border spinner-border-sm me-2"
+                        aria-hidden="true"
+                      />
+                      Iniciando job...
+                    </>
+                  ) : (
+                    "Iniciar novo job v2"
+                  )}
+                </button>
+              ) : null}
+            </div>
           </div>
+          {startJobMutation.isSuccess ? (
+            <div className="alert alert-success mt-3 mb-0" role="status">
+              Job {startJobMutation.data.jobId} gravado como pendente. O módulo
+              externo OPRM fará a execução pelo endpoint pending.
+            </div>
+          ) : null}
+          {startJobMutation.isError ? (
+            <div className="alert alert-danger mt-3 mb-0" role="alert">
+              {startJobMutation.error.message}
+            </div>
+          ) : null}
         </div>
       </section>
 

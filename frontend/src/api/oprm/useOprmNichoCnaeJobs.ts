@@ -39,6 +39,28 @@ async function fetchOprmNichoCnaeJobs(
   return (await response.json()) as OprmNichoCnaeJobsPage;
 }
 
+export async function downloadOprmNichoCnaeJobReport(jobId: number) {
+  const response = await fetch(
+    buildApiUrl(
+      `/api/oprm/nichocnae/routine-research-cycle/stage-executions/${jobId}/report`,
+    ),
+  );
+  if (!response.ok) {
+    throw new Error(
+      `Não foi possível baixar o relatório do job #${jobId} (status ${response.status}).`,
+    );
+  }
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `nicho-cnae${jobId}.md`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
 export function useOprmNichoCnaeJobs(page: number, size = 20) {
   return useQuery({
     queryKey: ["oprm", "nichocnae", "jobs", page, size],

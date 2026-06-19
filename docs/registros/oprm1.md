@@ -1,3 +1,9 @@
+## 2026-06-18 21:15:00 (UTC-3) — OPRM NichoCNAE: download de relatório sem abrir nova aba
+
+- Causa-raiz tratada: a tela de jobs recentes usava link com `target="_blank"` para baixar relatório, abrindo outra aba do navegador e expondo erro visual quando o browser tentava navegar diretamente para o endpoint de arquivo.
+- Correção aplicada: o botão de relatório agora executa o download via `fetch` no próprio frontend, cria um blob local e dispara o arquivo Markdown sem sair da tela de acompanhamento.
+- Prevenção de recorrência: adicionado teste de tela cobrindo que o botão baixa o relatório do job por blob e mantém o fluxo dentro da mesma aba.
+
 ## 2026-06-18 20:20:00 (UTC-3) — OPRM NichoCNAE: logs operacionais na etapa de busca pública
 
 - Diagnóstico do ciclo #74: o banco respondeu normalmente via MCP e o ciclo continuava avançando na etapa `source-searcher`, sem evidência de lentidão do MySQL; a lacuna real era baixa observabilidade para saber se o coletor estava parado antes de buscar, durante a chamada ao provedor ou ao concluir no backend.

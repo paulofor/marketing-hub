@@ -1,3 +1,8 @@
+## 2026-06-19 00:00:00 (UTC) — OPRM NichoCNAE v2: lista de jobs por CNAE na tela
+
+- Ajustada a tela do pipeline NichoCNAE v2 para exibir, por CNAE, jobs abertos com etapa atual e jobs encerrados em histórico separado.
+- O backend passou a expor contrato de leitura agrupado por `jobId`, mantendo a UI como apresentação da verdade persistida nas execuções de etapa v2.
+
 ## 2026-06-18 21:15:00 (UTC-3) — OPRM NichoCNAE: download de relatório sem abrir nova aba
 
 - Causa-raiz tratada: a tela de jobs recentes usava link com `target="_blank"` para baixar relatório, abrindo outra aba do navegador e expondo erro visual quando o browser tentava navegar diretamente para o endpoint de arquivo.

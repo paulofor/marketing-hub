@@ -6,6 +6,7 @@ import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.completeSta
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.createStageExecution.CandidateGeneratorCreateResponse;
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.failStageExecution.CandidateGeneratorFailureRequest;
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.failStageExecution.CandidateGeneratorFailureResponse;
+import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.listCnaeJobs.CandidateGeneratorCnaeJobsResponse;
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.pending.CandidateGeneratorPendingResponse;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -30,6 +31,12 @@ public class BackendCandidateGeneratorController {
     @PostMapping("/cnaes/{cnaeCode}")
     public CandidateGeneratorCreateResponse createForCnae(@PathVariable String cnaeCode) {
         return service.createForCnae(cnaeCode);
+    }
+
+    /** Lista jobs v2 abertos e encerrados do CNAE para acompanhamento na tela administrativa. */
+    @GetMapping("/cnaes/{cnaeCode}/jobs")
+    public CandidateGeneratorCnaeJobsResponse listJobsForCnae(@PathVariable String cnaeCode) {
+        return service.listJobsForCnae(cnaeCode);
     }
 
     /** Entrega execuções pendentes da etapa candidate-generator ao módulo executor OPRM. */

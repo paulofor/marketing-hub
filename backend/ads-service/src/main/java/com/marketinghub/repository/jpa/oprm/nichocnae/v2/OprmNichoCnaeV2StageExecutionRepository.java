@@ -19,6 +19,9 @@ public interface OprmNichoCnaeV2StageExecutionRepository extends JpaRepository<O
     /** Conta execuções já abertas para o candidato na etapa para gerar jobId estável de nova rodada manual. */
     long countBySourceNicheIdAndStageCode(Long sourceNicheId, String stageCode);
 
+    /** Lista execuções de um CNAE para montar o acompanhamento administrativo por job. */
+    List<OprmNichoCnaeV2StageExecution> findByCnaeCodeOrderByUpdatedAtDesc(String cnaeCode);
+
     /** Localiza uma execução específica por etapa para callbacks internos do executor. */
     Optional<OprmNichoCnaeV2StageExecution> findByIdAndStageCode(Long id, String stageCode);
 }

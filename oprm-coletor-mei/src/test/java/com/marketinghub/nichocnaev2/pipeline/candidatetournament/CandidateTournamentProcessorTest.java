@@ -25,7 +25,7 @@ class CandidateTournamentProcessorTest {
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> finalists = (List<Map<String, Object>>) result.output().get("finalists");
         assertThat(finalists).hasSize(2);
-        assertThat(result.output()).containsEntry("nextStageCode", "source-fetcher");
+        assertThat(result.output()).containsEntry("nextStageCode", "source-fetcher-reranker");
     }
 
     @Test

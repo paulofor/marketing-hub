@@ -38,3 +38,5 @@ local/
 /vitrines/frontend/node_modules
 /vitrines/frontend/dist
 /vitrines/backend/target
+
+/oprm-coletor-mei/target/

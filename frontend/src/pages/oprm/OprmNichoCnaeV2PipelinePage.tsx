@@ -47,7 +47,7 @@ const v2Stages = [
   {
     number: 5,
     title: "Source Fetcher + Reranker",
-    status: "Design",
+    status: "Design aprovado · implementação inicial",
     purpose:
       "Coletar páginas úteis e priorizar fontes diretas, independentes e alinhadas ao objetivo do gate.",
     output:

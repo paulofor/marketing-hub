@@ -1,0 +1,42 @@
+openapi: 3.0.3
+info:
+  title: OPRM NichoCNAE v2 Source Fetcher Reranker API
+  version: 1.0.0
+  description: Contratos internos de leitura e escrita da etapa 5 do pipeline NichoCNAE v2. A lógica de coleta, priorização e regras de negócio fica no executor externo oprm-coletor-mei.
+paths:
+  /api/internal/oprm/nichocnae/v2/source-fetcher-reranker/stage-executions/pending:
+    get:
+      summary: Lista pendências da etapa 5 para o executor OPRM.
+      responses:
+        '200':
+          description: Pendências disponíveis.
+  /api/internal/oprm/nichocnae/v2/source-fetcher-reranker/stage-executions:
+    post:
+      summary: Registra uma pendência da etapa 5 solicitada pelo executor.
+      responses:
+        '200':
+          description: Pendência gravada.
+  /api/internal/oprm/nichocnae/v2/source-fetcher-reranker/stage-executions/{stageExecutionId}/complete:
+    post:
+      summary: Registra conclusão da coleta e reranking executados fora do backend.
+      parameters:
+        - name: stageExecutionId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Conclusão persistida.
+  /api/internal/oprm/nichocnae/v2/source-fetcher-reranker/stage-executions/{stageExecutionId}/fail:
+    post:
+      summary: Registra falha da etapa 5, separando retry técnico de reprovação funcional.
+      parameters:
+        - name: stageExecutionId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Falha persistida.

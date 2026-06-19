@@ -988,3 +988,8 @@
 
 - Refinada a regra de versionamento para deixar explícito que até um pipeline criado do zero deve nascer como `v1` no pacote do executor e do backend.
 - Motivo: preservar a possibilidade de uma mudança completa futura criar `v2` sem sobrescrever ou contaminar a versão inicial.
+
+## 2026-06-19 — Persistência para relatório de execução de pipeline
+
+- Adicionada regra operacional e canônica determinando que todo pipeline deve persistir dados suficientes para gerar relatório de execução ao usuário pelo frontend.
+- A regra reforça que logs técnicos não substituem dados funcionais persistidos de etapas, decisões, evidências, artefatos, custos, erros e próximos movimentos.

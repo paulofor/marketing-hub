@@ -18,6 +18,21 @@ módulo.
 Essa regra é protegida pelo `ArquiteturaTest`: qualquer novo repository Spring Data JPA fora de um
 subpacote de `com.marketinghub.repository.jpa` deve falhar com mensagem prefixada por `[ARQUITETURA]`.
 
+## Persistência para relatório de execução
+
+Todo fluxo de pipeline deve persistir dados suficientes para gerar um relatório de execução compreensível ao
+usuário pelo frontend. A persistência funcional do relatório deve ser planejada como parte do contrato do
+pipeline, não como análise posterior de logs. O relatório precisa explicar o que foi executado, em que etapa
+o job está, quais decisões foram tomadas, quais evidências ou artefatos sustentam a decisão, quais falhas
+técnicas ocorreram e quais próximos movimentos são possíveis.
+
+No mínimo, cada pipeline deve persistir identificador do job/ciclo, versão do pipeline, etapa, status,
+horários, payloads estruturados de entrada e saída quando aplicável, artefatos auditáveis, decisões de gate,
+motivos de reprovação ou pausa, erros técnicos separados de decisões de mercado, custos quando existirem e
+referências às fontes/evidências usadas. O frontend deve consumir esses dados persistidos pelo backend para
+montar a tela de relatório, sem depender de logs técnicos, recomputação, chamadas diretas ao executor ou
+interpretação ad hoc de payloads opacos.
+
 ## Versionamento de pipelines inteiros
 
 Quando uma alteração representar a criação de um pipeline inteiro ou uma nova versão completa de pipeline,

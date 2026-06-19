@@ -1086,3 +1086,7 @@
 - Implementada a etapa 11 `Evidence Level Gate E0–E5` no executor `oprm-coletor-mei`, mantendo cálculo de nível, confiança, reprovação e próximo movimento fora do backend.
 - Backend ficou restrito a leitura de pendências, persistência de resultado/falha e consulta para relatório do usuário.
 - A transição do gate de qualidade aprovado agora envia o ciclo para `evidence-level-gate` antes da materialização enriquecida.
+## 2026-06-19 — OPRM NichoCNAE v2 etapa 12 Enriched Niche Materializer
+- Implementada a etapa 12 `enriched-niche-materializer` da v2 com backend limitado a contratos de leitura/escrita (`pending`, criação, conclusão e falha) sobre execuções de estágio.
+- A decisão de materialização, validação E3+, bloqueio por feature flag e montagem do nicho enriquecido ficam no executor externo `oprm-coletor-mei`, preservando o backend sem lógica, inteligência ou regra de negócio do pipeline.
+- Atualizados Swagger e tela de design da v2 para indicar a implementação inicial protegida por feature flag.

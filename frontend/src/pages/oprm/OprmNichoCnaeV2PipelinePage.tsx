@@ -121,9 +121,9 @@ const v2Stages = [
   {
     number: 12,
     title: "Enriched Niche Materializer",
-    status: "Bloqueado por feature flag",
+    status: "Design aprovado · implementação inicial protegida por feature flag",
     purpose:
-      "Materializar o nicho enriquecido somente depois dos gates de evidência, qualidade e segurança.",
+      "Materializar no executor externo o nicho enriquecido somente depois dos gates de evidência, qualidade e segurança.",
     output:
       "Nicho pronto para decisão de produto: executor, dor, resultado, mecanismo plausível e fontes.",
     businessGate: "A v2 calibra antes de publicar automaticamente para vendas.",

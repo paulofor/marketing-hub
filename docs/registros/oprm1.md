@@ -1061,3 +1061,9 @@
 - Reforçada a etapa `commercial-evidence-gate` no executor `oprm-coletor-mei` para impedir materialização automática quando houver menos de três domínios independentes ou evidência contraditória pendente.
 - A decisão E0-E5, confiança, gaps, contradições e próximo movimento continuam calculados exclusivamente no executor externo; o backend foi coberto por teste para atuar apenas como leitura/escrita da decisão recebida.
 - Adicionados testes de regressão para independência mínima de fontes, revisão humana por contradição e contratos backend sem regra comercial.
+
+## 2026-06-19 — NichoCNAE v2 etapa 8 Knowledge Accumulator
+
+- Implementada a etapa 8 no executor externo `oprm-coletor-mei`, consolidando snapshot versionado com fatos validados, fontes aceitas/rejeitadas, claims rejeitados, queries executadas, assinaturas de falha, lacunas de evidência e linhagem mínima.
+- Criados contratos internos no backend apenas para leitura/escrita de pendências, conclusão e falha da etapa `knowledge-accumulator`, mantendo lógica, controle, inteligência e regras de negócio no executor externo.
+- Documentado o contrato em `docs/swagger/oprm-nichocnae-v2-knowledge-accumulator-swagger.yaml` e atualizada a tela do pipeline v2 para indicar implementação inicial da etapa.

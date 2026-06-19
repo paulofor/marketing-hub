@@ -78,7 +78,7 @@ const v2Stages = [
   {
     number: 8,
     title: "Knowledge Accumulator",
-    status: "Design aprovado · implementação parcial",
+    status: "Design aprovado · implementação inicial",
     purpose:
       "Consolidar conhecimento versionado do ciclo, preservando fontes aceitas, rejeições, gaps e aprendizados.",
     output:

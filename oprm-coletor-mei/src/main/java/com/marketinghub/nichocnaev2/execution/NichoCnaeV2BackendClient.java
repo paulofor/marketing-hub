@@ -60,12 +60,17 @@ public class NichoCnaeV2BackendClient {
         restTemplate.postForObject(backendBaseUrl + nextStage.backendPath(), request, Object.class);
     }
 
-    /** Registra falha técnica com contexto suficiente para retry ou diagnóstico no backend. */
-    public void fail(NichoCnaeV2StageDefinition stage, NichoCnaeV2PendingExecution pending, RuntimeException ex) {
+    /** Registra falha classificada pelo executor externo com contexto suficiente para diagnóstico no backend. */
+    public void fail(
+            NichoCnaeV2StageDefinition stage,
+            NichoCnaeV2PendingExecution pending,
+            RuntimeException ex,
+            String failureType,
+            String reasonCode) {
         Map<String, Object> request = new LinkedHashMap<>();
-        request.put("failureType", "INFRASTRUCTURE");
-        request.put("reasonCode", "SCHEDULER_PROCESSING_ERROR");
-        request.put("errorCode", "SCHEDULER_PROCESSING_ERROR");
+        request.put("failureType", failureType);
+        request.put("reasonCode", reasonCode);
+        request.put("errorCode", reasonCode);
         request.put("errorMessage", ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage());
         request.put("inputPayload", pending.inputPayload());
         restTemplate.postForObject(

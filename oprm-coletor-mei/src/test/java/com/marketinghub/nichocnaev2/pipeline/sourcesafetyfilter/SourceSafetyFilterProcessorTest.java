@@ -1,6 +1,7 @@
 package com.marketinghub.nichocnaev2.pipeline.sourcesafetyfilter;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.marketinghub.nichocnaev2.pipeline.StageContext;
 import com.marketinghub.nichocnaev2.pipeline.StageResult;
@@ -29,6 +30,17 @@ class SourceSafetyFilterProcessorTest {
         assertThat(result.output().get("rejectedUrlCount")).isEqualTo(2);
         assertThat(result.output().toString()).contains("https://www.gov.br/mei/rotina?id=10");
         assertThat(result.output().toString()).contains("HARD_BLOCKED_DOMAIN", "DUPLICATE");
+    }
+
+    /** Deve rejeitar contrato sem URLs para evitar retry técnico da mesma entrada inválida. */
+    @Test
+    void rejectsMissingCandidateUrlsAsInvalidInputContract() {
+        SourceSafetyFilterProcessor processor = new SourceSafetyFilterProcessor();
+        StageContext context = new StageContext("job-1", "stage-2", Map.of("stage", "candidate-generator"));
+
+        assertThatThrownBy(() -> processor.process(context))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("candidateUrls ou urls");
     }
 
     /** Deve registrar hard reject global quando todas as URLs candidatas forem inseguras. */

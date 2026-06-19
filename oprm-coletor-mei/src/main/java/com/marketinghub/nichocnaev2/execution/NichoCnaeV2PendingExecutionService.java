@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class NichoCnaeV2PendingExecutionService {
     private static final Logger log = LoggerFactory.getLogger(NichoCnaeV2PendingExecutionService.class);
+    private static final int MAX_TECHNICAL_RETRIES_PER_ATTEMPT = 3;
 
     private final NichoCnaeV2BackendClient backendClient;
     private final NichoCnaeV2StageDefinitions stageDefinitions;
@@ -83,8 +84,27 @@ public class NichoCnaeV2PendingExecutionService {
                     pending.cnaeCode(),
                     pending.sourceNicheId(),
                     ex);
-            backendClient.fail(stage, pending, ex);
+            registerFailure(stage, pending, ex);
         }
+    }
+
+    /** Classifica falhas no executor para evitar retry técnico infinito em erro de contrato ou limite excedido. */
+    private void registerFailure(NichoCnaeV2StageDefinition stage, NichoCnaeV2PendingExecution pending, RuntimeException ex) {
+        String failureType = "INFRASTRUCTURE";
+        String reasonCode = "SCHEDULER_PROCESSING_ERROR";
+        if (ex instanceof IllegalArgumentException) {
+            failureType = "VALIDATION";
+            reasonCode = "INVALID_STAGE_INPUT_CONTRACT";
+        } else if (technicalRetryNumber(pending) >= MAX_TECHNICAL_RETRIES_PER_ATTEMPT) {
+            failureType = "VALIDATION";
+            reasonCode = "TECHNICAL_RETRY_LIMIT_EXCEEDED";
+        }
+        backendClient.fail(stage, pending, ex, failureType, reasonCode);
+    }
+
+    /** Normaliza o contador de retry técnico ausente para zero antes de comparar com o limite operacional. */
+    private int technicalRetryNumber(NichoCnaeV2PendingExecution pending) {
+        return pending.technicalRetryNumber() == null ? 0 : pending.technicalRetryNumber();
     }
 
     /** Monta o input do processor com JSON estruturado e metadados do pending sem JSON dentro de JSON. */

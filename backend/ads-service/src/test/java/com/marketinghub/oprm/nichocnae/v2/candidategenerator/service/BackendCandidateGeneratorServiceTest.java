@@ -106,6 +106,36 @@ class BackendCandidateGeneratorServiceTest {
         assertThat(result.cnaeCode()).isEqualTo("4781400");
     }
 
+
+    /** Deve separar jobs do CNAE entre abertos com etapa atual e encerrados pelo histórico persistido. */
+    @Test
+    void listJobsForCnaeSeparatesOpenAndCompletedJobs() {
+        BackendCandidateGeneratorService service = service(true, false);
+        OprmNichoCnaeV2StageExecution open = execution(101L, 1, 0, 1);
+        open.setJobId("job-aberto");
+        open.setCnaeCode("4781400");
+        open.setStageCode("source-safety-filter");
+        open.setStatus(OprmNichoCnaeV2StageExecutionStatus.PENDING);
+        open.setUpdatedAt(Instant.parse("2026-06-19T12:00:00Z"));
+        OprmNichoCnaeV2StageExecution completed = execution(102L, 1, 0, 1);
+        completed.setJobId("job-concluido");
+        completed.setCnaeCode("4781400");
+        completed.setStageCode("candidate-generator");
+        completed.setStatus(OprmNichoCnaeV2StageExecutionStatus.COMPLETED);
+        completed.setUpdatedAt(Instant.parse("2026-06-19T11:00:00Z"));
+        when(stageExecutionRepository.findByCnaeCodeOrderByUpdatedAtDesc("4781400"))
+                .thenReturn(List.of(open, completed));
+
+        var result = service.listJobsForCnae("4781400");
+
+        assertThat(result.openJobs()).hasSize(1);
+        assertThat(result.openJobs().getFirst().jobId()).isEqualTo("job-aberto");
+        assertThat(result.openJobs().getFirst().currentStageCode()).isEqualTo("source-safety-filter");
+        assertThat(result.completedJobs()).hasSize(1);
+        assertThat(result.completedJobs().getFirst().jobId()).isEqualTo("job-concluido");
+        assertThat(result.completedJobs().getFirst().currentStageCode()).isNull();
+    }
+
     /** Ciclo 74: deve transformar falha de infraestrutura em retry técnico sem nova tentativa cognitiva. */
     @Test
     void failCreatesTechnicalRetryForInfrastructureFailureInCycle74() {

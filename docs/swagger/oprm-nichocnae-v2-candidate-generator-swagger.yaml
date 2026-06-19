@@ -19,6 +19,19 @@ paths:
           description: Não existe candidato com score para o CNAE informado.
         "409":
           description: Pipeline v2 desabilitado por feature flag.
+  /api/internal/oprm/nichocnae/v2/candidate-generator/stage-executions/cnaes/{cnaeCode}/jobs:
+    get:
+      summary: Lista jobs v2 do CNAE separados entre abertos e encerrados
+      description: Contrato de leitura para a tela administrativa exibir jobs abertos com etapa atual e histórico de jobs concluídos/encerrados.
+      parameters:
+        - name: cnaeCode
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Listas de jobs abertas e encerradas para o CNAE informado.
   /api/internal/oprm/nichocnae/v2/candidate-generator/stage-executions/pending:
     get:
       summary: Lista execuções pendentes da etapa candidate-generator v2

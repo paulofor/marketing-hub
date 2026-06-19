@@ -1,7 +1,95 @@
 import { Link, useParams } from "react-router-dom";
+import {
+  useOprmNichoCnaeV2Jobs,
+  type OprmNichoCnaeV2JobSummary,
+} from "../../api/oprm/useOprmNichoCnaeV2Jobs";
 import { useStartOprmNichoCnaeV2Job } from "../../api/oprm/useStartOprmNichoCnaeV2Job";
 import PageTitle from "../../components/PageTitle";
 import OprmModuleNavigation from "./OprmModuleNavigation";
+
+const stageLabels: Record<string, string> = {
+  "candidate-generator": "Candidate Generator",
+  "source-safety-filter": "Source Safety Filter",
+  "adaptive-query-planner": "Adaptive Query Planner",
+  "candidate-tournament": "Candidate Tournament",
+  "source-fetcher-reranker": "Source Fetcher + Reranker",
+  "signal-extractor": "Signal Extractor",
+  "semantic-judge-entailment": "Semantic Judge + Entailment",
+  "knowledge-accumulator": "Knowledge Accumulator",
+  "reprocess-controller": "Reprocess Controller",
+  "routine-synthesizer": "Routine Synthesizer",
+  "commercial-evidence-gate": "Evidence Level Gate E0–E5",
+  "enriched-niche-materializer": "Enriched Niche Materializer",
+};
+
+function formatStage(stageCode: string | null | undefined) {
+  if (!stageCode) return "Sem etapa aberta";
+  return stageLabels[stageCode] ?? stageCode;
+}
+
+function formatDateTime(value: string | null | undefined) {
+  if (!value) return "—";
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(new Date(value));
+}
+
+function JobsTable({
+  jobs,
+  emptyMessage,
+  open,
+}: {
+  jobs: OprmNichoCnaeV2JobSummary[];
+  emptyMessage: string;
+  open: boolean;
+}) {
+  if (jobs.length === 0) {
+    return <p className="text-secondary mb-0">{emptyMessage}</p>;
+  }
+
+  return (
+    <div className="table-responsive">
+      <table className="table table-sm align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Job</th>
+            {open ? <th>Etapa atual</th> : <th>Última etapa</th>}
+            <th>Status</th>
+            <th>Tentativa</th>
+            <th>Atualizado</th>
+          </tr>
+        </thead>
+        <tbody>
+          {jobs.map((job) => (
+            <tr key={job.jobId}>
+              <td className="font-monospace small">{job.jobId}</td>
+              <td>
+                {formatStage(open ? job.currentStageCode : job.lastStageCode)}
+              </td>
+              <td>
+                <span
+                  className={
+                    open ? "badge text-bg-warning" : "badge text-bg-success"
+                  }
+                >
+                  {open ? "Aberto" : (job.lastStageStatus ?? "Concluído")}
+                </span>
+              </td>
+              <td>
+                {job.attemptNumber ?? "—"}
+                {job.technicalRetryNumber
+                  ? ` · retry ${job.technicalRetryNumber}`
+                  : ""}
+              </td>
+              <td>{formatDateTime(job.updatedAt)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
 const v2Stages = [
   {
@@ -122,7 +210,8 @@ const v2Stages = [
   {
     number: 12,
     title: "Enriched Niche Materializer",
-    status: "Design aprovado · implementação inicial protegida por feature flag",
+    status:
+      "Design aprovado · implementação inicial protegida por feature flag",
     purpose:
       "Materializar no executor externo o nicho enriquecido somente depois dos gates de evidência, qualidade e segurança.",
     output:
@@ -135,6 +224,7 @@ export default function OprmNichoCnaeV2PipelinePage() {
   const { cnaeCode } = useParams();
   const decodedCnaeCode = cnaeCode ? decodeURIComponent(cnaeCode) : undefined;
   const startJobMutation = useStartOprmNichoCnaeV2Job(decodedCnaeCode ?? "");
+  const jobsQuery = useOprmNichoCnaeV2Jobs(decodedCnaeCode ?? "");
 
   return (
     <div className="d-flex flex-column gap-4">
@@ -210,6 +300,61 @@ export default function OprmNichoCnaeV2PipelinePage() {
           ) : null}
         </div>
       </section>
+
+      {decodedCnaeCode ? (
+        <section
+          className="row g-3"
+          aria-label="Jobs do CNAE no pipeline NichoCNAE v2"
+        >
+          <article className="col-12 col-xl-6">
+            <div className="card h-100 border-0 shadow-sm">
+              <div className="card-body">
+                <h2 className="h5 mb-2">Jobs abertos</h2>
+                <p className="text-secondary small">
+                  Mostra onde cada execução ainda aberta está parada agora.
+                </p>
+                {jobsQuery.isLoading ? (
+                  <p className="text-secondary mb-0">Carregando jobs...</p>
+                ) : jobsQuery.isError ? (
+                  <div className="alert alert-danger mb-0" role="alert">
+                    {jobsQuery.error.message}
+                  </div>
+                ) : (
+                  <JobsTable
+                    jobs={jobsQuery.data?.openJobs ?? []}
+                    emptyMessage="Nenhum job aberto para este CNAE."
+                    open
+                  />
+                )}
+              </div>
+            </div>
+          </article>
+          <article className="col-12 col-xl-6">
+            <div className="card h-100 border-0 shadow-sm">
+              <div className="card-body">
+                <h2 className="h5 mb-2">Jobs concluídos</h2>
+                <p className="text-secondary small">
+                  Histórico dos jobs encerrados para evitar repetir pesquisa sem
+                  aprendizado.
+                </p>
+                {jobsQuery.isLoading ? (
+                  <p className="text-secondary mb-0">Carregando histórico...</p>
+                ) : jobsQuery.isError ? (
+                  <div className="alert alert-danger mb-0" role="alert">
+                    {jobsQuery.error.message}
+                  </div>
+                ) : (
+                  <JobsTable
+                    jobs={jobsQuery.data?.completedJobs ?? []}
+                    emptyMessage="Nenhum job concluído para este CNAE."
+                    open={false}
+                  />
+                )}
+              </div>
+            </div>
+          </article>
+        </section>
+      ) : null}
 
       <section className="row g-3" aria-label="Etapas do pipeline NichoCNAE v2">
         {v2Stages.map((stage) => (

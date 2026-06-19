@@ -9,11 +9,17 @@ import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.completeSta
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.createStageExecution.CandidateGeneratorCreateResponse;
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.failStageExecution.CandidateGeneratorFailureRequest;
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.failStageExecution.CandidateGeneratorFailureResponse;
+import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.listCnaeJobs.CandidateGeneratorCnaeJobSummary;
+import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.listCnaeJobs.CandidateGeneratorCnaeJobsResponse;
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.pending.CandidateGeneratorPendingResponse;
 import com.marketinghub.repository.jpa.oprm.cnae.OprmNicheCandidateRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.v2.OprmNichoCnaeV2StageExecutionRepository;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
@@ -84,6 +90,31 @@ public class BackendCandidateGeneratorService {
                 saved.getStatus().name());
     }
 
+
+    /** Lista jobs do CNAE agrupados em abertos e encerrados para a tela administrativa. */
+    @Transactional(readOnly = true)
+    public CandidateGeneratorCnaeJobsResponse listJobsForCnae(String cnaeCode) {
+        Map<String, List<OprmNichoCnaeV2StageExecution>> executionsByJob = new LinkedHashMap<>();
+        stageExecutionRepository.findByCnaeCodeOrderByUpdatedAtDesc(cnaeCode).forEach(execution ->
+                executionsByJob.computeIfAbsent(execution.getJobId(), ignored -> new ArrayList<>()).add(execution));
+        List<CandidateGeneratorCnaeJobSummary> openJobs = new ArrayList<>();
+        List<CandidateGeneratorCnaeJobSummary> completedJobs = new ArrayList<>();
+        executionsByJob.values().forEach(executions -> {
+            CandidateGeneratorCnaeJobSummary summary = toJobSummary(executions);
+            if (hasOpenExecution(executions)) {
+                openJobs.add(summary);
+            } else {
+                completedJobs.add(summary);
+            }
+        });
+        Comparator<CandidateGeneratorCnaeJobSummary> newestFirst = Comparator
+                .comparing(CandidateGeneratorCnaeJobSummary::updatedAt, Comparator.nullsLast(Comparator.naturalOrder()))
+                .reversed();
+        openJobs.sort(newestFirst);
+        completedJobs.sort(newestFirst);
+        return new CandidateGeneratorCnaeJobsResponse(cnaeCode, openJobs, completedJobs);
+    }
+
     /** Registra conclusão da etapa persistindo a próxima etapa informada pelo executor externo. */
     @Transactional
     public CandidateGeneratorCompletionResponse complete(
@@ -132,6 +163,44 @@ public class BackendCandidateGeneratorService {
                 null,
                 saved.getAttemptNumber(),
                 saved.getTechnicalRetryNumber());
+    }
+
+
+    /** Monta resumo de job usando a etapa aberta mais recente ou, se não existir, a última etapa atualizada. */
+    private CandidateGeneratorCnaeJobSummary toJobSummary(List<OprmNichoCnaeV2StageExecution> executions) {
+        OprmNichoCnaeV2StageExecution lastExecution = executions.stream()
+                .max(Comparator.comparing(OprmNichoCnaeV2StageExecution::getUpdatedAt, Comparator.nullsLast(Comparator.naturalOrder())))
+                .orElseThrow();
+        OprmNichoCnaeV2StageExecution currentExecution = executions.stream()
+                .filter(this::isOpenExecution)
+                .max(Comparator.comparing(OprmNichoCnaeV2StageExecution::getUpdatedAt, Comparator.nullsLast(Comparator.naturalOrder())))
+                .orElse(lastExecution);
+        String jobStatus = hasOpenExecution(executions) ? "OPEN" : "COMPLETED";
+        return new CandidateGeneratorCnaeJobSummary(
+                lastExecution.getJobId(),
+                lastExecution.getCnaeCode(),
+                jobStatus,
+                isOpenExecution(currentExecution) ? currentExecution.getStageCode() : null,
+                lastExecution.getStageCode(),
+                lastExecution.getStatus().name(),
+                currentExecution.getAttemptNumber(),
+                currentExecution.getTechnicalRetryNumber(),
+                currentExecution.getKnowledgeVersion(),
+                currentExecution.getMaterializationEnabled(),
+                executions.stream().map(OprmNichoCnaeV2StageExecution::getCreatedAt).min(Comparator.naturalOrder()).orElse(null),
+                lastExecution.getUpdatedAt());
+    }
+
+    /** Verifica se o job possui alguma etapa ainda operacionalmente aberta. */
+    private boolean hasOpenExecution(List<OprmNichoCnaeV2StageExecution> executions) {
+        return executions.stream().anyMatch(this::isOpenExecution);
+    }
+
+    /** Identifica estados que ainda exigem execução ou retry pelo módulo OPRM. */
+    private boolean isOpenExecution(OprmNichoCnaeV2StageExecution execution) {
+        return execution.getStatus() == OprmNichoCnaeV2StageExecutionStatus.PENDING
+                || execution.getStatus() == OprmNichoCnaeV2StageExecutionStatus.RUNNING
+                || execution.getStatus() == OprmNichoCnaeV2StageExecutionStatus.TECHNICAL_RETRY_SCHEDULED;
     }
 
     /** Garante uma pendência inicial real a partir da fila atual de candidatos, sem materialização automática. */

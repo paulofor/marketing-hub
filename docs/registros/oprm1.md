@@ -1031,3 +1031,9 @@
 ## 2026-06-19 — Correção leitura/escrita da etapa 2 Source Safety Filter
 - Revisada a implementação da etapa `source-safety-filter` para manter o backend como camada de leitura/escrita: a decisão de próxima etapa passou a vir no callback do executor, e o backend deixou de calcular transição por `safetyDecision`.
 - Removida a criação automática de pendência da etapa 2 dentro da conclusão do `candidate-generator`; o executor externo passa a solicitar explicitamente a gravação da pendência pelo contrato de escrita da etapa 2.
+
+## 2026-06-19 — OPRM NichoCNAE v2 etapa 3 Adaptive Query Planner
+
+- Implementada a etapa 3 `adaptive-query-planner` da v2 do pipeline NichoCNAE com backend restrito a leitura/escrita: endpoints internos de `pending`, criação de pendência, conclusão e falha técnica/cognitiva sobre a tabela genérica de execuções de etapa, sem cálculo de plano, decisão comercial ou inteligência no backend.
+- Implementado no executor externo `oprm-coletor-mei` o processor plugável da etapa 3, responsável por transformar gaps de conhecimento em plano curto de queries naturais, reutilizando memória de queries anteriores, aplicando fallback de termos, deduplicação por hash e early stopping quando não há ganho informacional.
+- Atualizada a tela de mapa do pipeline v2 para marcar a etapa 3 como `Design aprovado · implementação inicial`.

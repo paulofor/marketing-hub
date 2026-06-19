@@ -26,7 +26,7 @@ const v2Stages = [
   {
     number: 3,
     title: "Adaptive Query Planner",
-    status: "Design",
+    status: "Design aprovado · implementação inicial",
     purpose:
       "Planejar buscas pelos gaps reais de conhecimento, reaproveitando queries, fontes e falhas anteriores.",
     output:

@@ -1,0 +1,117 @@
+openapi: 3.0.3
+info:
+  title: OPRM NichoCNAE v2 Commercial Evidence Gate API
+  version: "1.0.0"
+paths:
+  /api/internal/oprm/nichocnae/v2/commercial-evidence-gate/stage-executions/pending:
+    get:
+      summary: Lista pendências do gate comercial E0-E5 para o executor OPRM
+      responses:
+        "200":
+          description: Pendências disponíveis
+  /api/internal/oprm/nichocnae/v2/commercial-evidence-gate/stage-executions:
+    post:
+      summary: Cria pendência do gate comercial E0-E5 calculado pelo executor externo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommercialEvidenceGateCreateRequest"
+      responses:
+        "200":
+          description: Pendência criada
+  /api/internal/oprm/nichocnae/v2/commercial-evidence-gate/stage-executions/{stageExecutionId}/complete:
+    post:
+      summary: Registra resultado do gate comercial decidido pelo executor externo
+      parameters:
+        - name: stageExecutionId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommercialEvidenceGateCompletionRequest"
+      responses:
+        "200":
+          description: Resultado persistido
+  /api/internal/oprm/nichocnae/v2/commercial-evidence-gate/stage-executions/{stageExecutionId}/fail:
+    post:
+      summary: Registra falha técnica ou cognitiva do gate comercial
+      parameters:
+        - name: stageExecutionId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommercialEvidenceGateFailureRequest"
+      responses:
+        "200":
+          description: Falha persistida
+components:
+  schemas:
+    CommercialEvidenceGateCreateRequest:
+      type: object
+      properties:
+        jobId:
+          type: string
+        researchCycleId:
+          type: integer
+          format: int64
+        sourceNicheId:
+          type: integer
+          format: int64
+        cnaeCode:
+          type: string
+        attemptNumber:
+          type: integer
+        knowledgeVersion:
+          type: integer
+        materializationEnabled:
+          type: boolean
+        inputPayload:
+          type: string
+    CommercialEvidenceGateCompletionRequest:
+      type: object
+      properties:
+        evidenceLevel:
+          type: string
+          enum: [E0_MODEL_HYPOTHESIS, E1_ACTIVITY_EXISTS, E2_ROUTINE_AND_PAIN, E3_ECONOMIC_PAIN, E4_PURCHASE_INTENT, E5_REAL_PURCHASE]
+        confidence:
+          type: number
+          format: double
+        automaticMaterializationAllowed:
+          type: boolean
+        humanReviewRequired:
+          type: boolean
+        informationGain:
+          type: number
+          format: double
+        gateDecision:
+          type: string
+          enum: [MATERIALIZE, HUMAN_REVIEW, NEEDS_MORE_RESEARCH, NO_PUBLIC_EVIDENCE]
+        nextStageCode:
+          type: string
+        outputPayload:
+          type: string
+    CommercialEvidenceGateFailureRequest:
+      type: object
+      properties:
+        failureType:
+          type: string
+          enum: [INFRASTRUCTURE, VALIDATION, QUALITY, MARKET_EVIDENCE]
+        errorMessage:
+          type: string
+        inputPayload:
+          type: string

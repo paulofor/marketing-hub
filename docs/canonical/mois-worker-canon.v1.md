@@ -607,7 +607,8 @@ Regra de reconstrução:
 2. Para produtos Hotmart, esses dados devem ser lidos preferencialmente de `mois_collected_reference.hotmart_price` e `mois_collected_reference.hotmart_producer`.
 3. Se o banco não possuir preço ou produtor, a UI deve mostrar lacuna operacional em vez de inferir, completar por texto genérico ou usar conclusão do modelo.
 4. O dossiê só pode avançar para novos blocos depois que o bloco factual anterior estiver persistido e auditável.
-5. Para o produto `mois_sales_page.id = 1057`, a verificação manual da página Hotmart em 2026-06-11 identificou:
+5. A pesquisa pública do dossiê deve construir queries qualificadas antes da coleta, priorizando produtor, domínio da página, título/subtítulo do produto, canais sociais, reviews, afiliados, prova social e sinais de distribuição; quando houver OpenAI configurada no worker, ela pode ser usada como camada de planejamento de queries, mantendo fallback heurístico auditável.
+6. Para o produto `mois_sales_page.id = 1057`, a verificação manual da página Hotmart em 2026-06-11 identificou:
    - preço exibido: `R$ 5.997,00`;
    - produtor exibido: `Abrantes Lima Empreendimentos LTDA`.
-6. Esses dois fatos são apenas o ponto inicial do dossiê; nenhuma conclusão de venda, autoridade, canal, mecanismo ou prova deve ser derivada deles sem etapa posterior específica.
+7. Esses dois fatos são apenas o ponto inicial do dossiê; nenhuma conclusão de venda, autoridade, canal, mecanismo ou prova deve ser derivada deles sem etapa posterior específica.

@@ -1123,3 +1123,8 @@
 - Implementado scheduler no `oprm-coletor-mei` para consultar a cada 3 minutos os endpoints `pending` das etapas NichoCNAE v2 com contrato backend existente.
 - O executor agora carrega o pacote `com.marketinghub.nichocnaev2`, processa pendências com os processors plugáveis, registra conclusão/falha no backend e cria a próxima pendência quando a próxima etapa v2 existe no catálogo local.
 - Causa-raiz corrigida: a v2 possuía contratos `pending` no backend e processors no executor, mas não havia rotina operacional registrada no Spring para buscar e executar os jobs pendentes.
+
+## 2026-06-19 — Ajuste visual dos cards de jobs NichoCNAE v2
+
+- Ajustado o layout da tela do pipeline NichoCNAE v2 para manter os cards de jobs com o mesmo visual, mas exibidos em uma única coluna, ocupando a largura horizontal disponível da tela.
+- Causa-raiz preventiva: o grid anterior dividia os cards em duas colunas em telas largas, reduzindo o espaço útil para leitura de jobs e tabelas operacionais.

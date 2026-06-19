@@ -21,7 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 /** Expõe contratos de leitura/escrita do backend para a etapa enriched-niche-materializer do pipeline NichoCNAE v2. */
-@Service
+@Service("oprmNichocnaeV2BackendEnrichedNicheMaterializerService")
 public class BackendEnrichedNicheMaterializerService {
     public static final String STAGE_CODE = "enriched-niche-materializer";
     private final OprmNichoCnaeV2StageExecutionRepository stageExecutionRepository;

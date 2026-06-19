@@ -109,7 +109,7 @@ const v2Stages = [
   {
     number: 11,
     title: "Evidence Level Gate E0–E5",
-    status: "Design",
+    status: "Design aprovado · implementação inicial",
     purpose:
       "Separar existência da atividade, dor prática, impacto econômico e intenção de compra por nível de evidência.",
     output:

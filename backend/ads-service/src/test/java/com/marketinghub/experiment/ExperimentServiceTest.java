@@ -38,6 +38,7 @@ import java.math.BigDecimal;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+/** Valida os fluxos principais do serviço de experimentos com persistência em memória. */
 @SpringBootTest(classes = com.marketinghub.ads.AdsServiceApplication.class)
 @TestPropertySource(properties = {
         "spring.datasource.url=jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE",
@@ -407,6 +408,7 @@ class ExperimentServiceTest {
                 .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
     }
 
+    /** Verifica que apenas experimentos liberados, criativos aprovados e públicos com metaId entram na fila. */
     @Test
     void listReadyForCampaignRequiresApprovals() {
         MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Niche").build());
@@ -450,6 +452,7 @@ class ExperimentServiceTest {
                 .hypothesis(hyp)
                 .type(com.marketinghub.targeting.TargetingElementType.INTEREST)
                 .status(com.marketinghub.targeting.TargetingElementStatus.APPROVED)
+                .metaId("meta-interest-1")
                 .term("Interest")
                 .build());
         targetingElementRepository.save(com.marketinghub.targeting.TargetingElement.builder()
@@ -457,6 +460,7 @@ class ExperimentServiceTest {
                 .hypothesis(hyp)
                 .type(com.marketinghub.targeting.TargetingElementType.JOB_TITLE)
                 .status(com.marketinghub.targeting.TargetingElementStatus.APPROVED)
+                .metaId("meta-job-title-1")
                 .term("CMO")
                 .build());
         targetingElementRepository.save(com.marketinghub.targeting.TargetingElement.builder()
@@ -464,6 +468,7 @@ class ExperimentServiceTest {
                 .hypothesis(hyp)
                 .type(com.marketinghub.targeting.TargetingElementType.BEHAVIOR)
                 .status(com.marketinghub.targeting.TargetingElementStatus.APPROVED)
+                .metaId("meta-behavior-1")
                 .term("Engaged")
                 .build());
 

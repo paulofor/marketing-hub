@@ -4817,3 +4817,9 @@
 - causa-raiz: `ExperimentRepository.findForAdSetTargetingById`, `findAllReadyForAdSets` e `findReadyForCampaign` ainda exigiam `JOB_TITLE`, apesar do cânone de publicação aceitar qualquer item publicável em `INTEREST`, `JOB_TITLE` ou `BEHAVIOR`.
 - correção aplicada: as queries passam a aceitar qualquer uma das três categorias suportadas, desde que o elemento esteja `APPROVED` e tenha `metaId` oficial preenchido, mantendo bloqueio contra público amplo.
 - prevenção de recorrência: teste de repositório passou a cobrir experimento liberável apenas com `INTEREST` aprovado e com `metaId`, incluindo a chamada direta de pacote por experimento.
+
+## 2026-06-19 — Teste de prontidão Facebook exige metaId oficial
+
+- Solicitação: confirmar que a prontidão para campanha Facebook precisa exigir `metaId` oficial nos públicos aprovados.
+- Causa-raiz: o teste `listReadyForCampaignRequiresApprovals` criava públicos aprovados sem `metaId`, mas a regra operacional e a query de fila já bloqueiam publicação ampla exigindo identificador oficial da Meta.
+- Correção aplicada: o teste agora cria públicos aprovados com `metaId`, mantendo o contrato de que a campanha só entra na fila quando existe pelo menos um público publicável pela Meta.

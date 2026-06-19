@@ -20,16 +20,19 @@ subpacote de `com.marketinghub.repository.jpa` deve falhar com mensagem prefixad
 
 ## Versionamento de pipelines inteiros
 
-Quando uma alteração representar uma nova versão completa de pipeline, e não apenas ajuste incremental de
-etapa, o nome dos pacotes deve carregar explicitamente o número da versão tanto no módulo executor quanto
-no backend. Essa regra existe porque alguns pipelines precisam conviver em versões paralelas durante
-validação, rollout gradual, comparação de qualidade e rollback seguro.
+Quando uma alteração representar a criação de um pipeline inteiro ou uma nova versão completa de pipeline,
+e não apenas ajuste incremental de etapa, o nome dos pacotes deve carregar explicitamente o número da versão
+tanto no módulo executor quanto no backend. Essa regra vale desde a primeira criação: um pipeline novo deve
+nascer como `v1`, porque uma mudança completa futura poderá exigir `v2` sem sobrescrever a versão inicial.
+Ela existe porque alguns pipelines precisam conviver em versões paralelas durante validação, rollout gradual,
+comparação de qualidade e rollback seguro.
 
 No módulo executor, a versão deve aparecer no pacote que contém o núcleo e as etapas do fluxo, por
-exemplo `com.marketinghub.nichocnaev2.pipeline` e
-`com.marketinghub.nichocnaev2.pipeline.<etapa>`. No backend, a versão deve aparecer antes da etapa,
-por exemplo `com.marketinghub.oprm.nichocnae.v2.<etapa>`, preservando o backend como contrato,
-persistência e publicação de pendências da versão correta.
+exemplo `com.marketinghub.nichocnaev1.pipeline`, `com.marketinghub.nichocnaev1.pipeline.<etapa>` ou,
+quando houver nova versão completa, `com.marketinghub.nichocnaev2.pipeline.<etapa>`. No backend, a versão
+deve aparecer antes da etapa, por exemplo `com.marketinghub.oprm.nichocnae.v1.<etapa>` ou
+`com.marketinghub.oprm.nichocnae.v2.<etapa>`, preservando o backend como contrato, persistência e
+publicação de pendências da versão correta.
 
 A nova versão precisa continuar plugável: núcleo genérico separado das etapas concretas, etapas concretas
 independentes entre si, dependência por contratos/artefatos/estado persistido e consumo iniciado pelo

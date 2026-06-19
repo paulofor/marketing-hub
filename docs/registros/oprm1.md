@@ -983,3 +983,8 @@
 
 - Atualizada a instrução operacional para explicitar que mudanças de pipeline inteiro devem usar número de versão no pacote do executor e do backend.
 - Regra registrada no cânone de arquitetura por etapa para preservar versões paralelas, rollout gradual, rollback seguro e plugabilidade entre etapas.
+
+## 2026-06-19 — Regra v1 obrigatória para pipeline novo
+
+- Refinada a regra de versionamento para deixar explícito que até um pipeline criado do zero deve nascer como `v1` no pacote do executor e do backend.
+- Motivo: preservar a possibilidade de uma mudança completa futura criar `v2` sem sobrescrever ou contaminar a versão inicial.

@@ -178,4 +178,4 @@ Coisa muito interessante que vejo acontecer hoje.
 - pedi para o 5.5 gerar um plano em md ( ele gerou 3 arquivos )
 - pedi ao codex criar as estruturas e aplicar os protocolos: padrao modulo, padrao backend e leitura escrita
 - pedi no codex uma lista das etapas ( baseada no documento ) depois para criar uma tela com as etapas
-- usando a tela pedia para criara etapa X usando os documentos... 
+- usando a tela pedia para criara etapa X usando os documentos... reforçando as responsabilidade do modulo ( regras ) e do backend ( leitura e escrita )

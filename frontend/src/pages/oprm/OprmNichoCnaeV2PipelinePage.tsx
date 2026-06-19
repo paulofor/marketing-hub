@@ -89,7 +89,7 @@ const v2Stages = [
   {
     number: 9,
     title: "Reprocess Controller",
-    status: "Design aprovado · implementação parcial",
+    status: "Design aprovado · implementação inicial",
     purpose:
       "Decidir o menor rewind necessário quando um gate falhar por qualidade, mantendo o mesmo job quando aplicável.",
     output:

@@ -1067,3 +1067,10 @@
 - Implementada a etapa 8 no executor externo `oprm-coletor-mei`, consolidando snapshot versionado com fatos validados, fontes aceitas/rejeitadas, claims rejeitados, queries executadas, assinaturas de falha, lacunas de evidência e linhagem mínima.
 - Criados contratos internos no backend apenas para leitura/escrita de pendências, conclusão e falha da etapa `knowledge-accumulator`, mantendo lógica, controle, inteligência e regras de negócio no executor externo.
 - Documentado o contrato em `docs/swagger/oprm-nichocnae-v2-knowledge-accumulator-swagger.yaml` e atualizada a tela do pipeline v2 para indicar implementação inicial da etapa.
+
+## 2026-06-19 — NichoCNAE v2 etapa 9 Reprocess Controller
+
+- Implementada a etapa 9 do pipeline NichoCNAE v2 no executor externo `oprm-coletor-mei`, mantendo a lógica de retry técnico, reprocessamento cognitivo, menor rewind, preservação de artefatos e limite por ganho informacional fora do backend.
+- Adicionados contratos internos no backend apenas para leitura/escrita de pendências, conclusão e falha da etapa `reprocess-controller`; o backend persiste o plano recebido do executor e não decide regra de negócio.
+- Documentado o contrato em `docs/swagger/oprm-nichocnae-v2-reprocess-controller-swagger.yaml` e atualizada a tela do mapa v2 para indicar implementação inicial da etapa 9.
+- Causa-raiz preventiva: a etapa 9 estava apenas descrita no mapa do produto; agora há processor e contratos mínimos testados para impedir que decisões de reprocessamento sejam deslocadas para o backend.

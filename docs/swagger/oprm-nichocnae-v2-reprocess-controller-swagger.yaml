@@ -1,0 +1,42 @@
+openapi: 3.0.3
+info:
+  title: OPRM NichoCNAE v2 Reprocess Controller API
+  version: 1.0.0
+  description: Contratos internos de leitura e escrita da etapa 9 do pipeline NichoCNAE v2. A lógica de retry técnico, reprocessamento cognitivo, menor rewind, preservação de artefatos e controle de ganho informacional fica no executor externo oprm-coletor-mei; o backend apenas persiste e expõe pendências/resultados.
+paths:
+  /api/internal/oprm/nichocnae/v2/reprocess-controller/stage-executions/pending:
+    get:
+      summary: Lista pendências da etapa 9 para o executor OPRM.
+      responses:
+        '200':
+          description: Pendências disponíveis.
+  /api/internal/oprm/nichocnae/v2/reprocess-controller/stage-executions:
+    post:
+      summary: Registra uma pendência da etapa 9 solicitada pelo executor.
+      responses:
+        '200':
+          description: Pendência gravada.
+  /api/internal/oprm/nichocnae/v2/reprocess-controller/stage-executions/{stageExecutionId}/complete:
+    post:
+      summary: Registra conclusão do plano de reprocessamento executado fora do backend.
+      parameters:
+        - name: stageExecutionId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Conclusão persistida.
+  /api/internal/oprm/nichocnae/v2/reprocess-controller/stage-executions/{stageExecutionId}/fail:
+    post:
+      summary: Registra falha da etapa 9, separando retry técnico de falha cognitiva.
+      parameters:
+        - name: stageExecutionId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Falha persistida.

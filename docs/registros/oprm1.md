@@ -1102,3 +1102,8 @@
 - Ajustada a tela do pipeline v2 para permitir iniciar um novo job do CNAE selecionado diretamente no mapa de etapas.
 - O backend apenas grava uma execução pendente da etapa `candidate-generator`; a execução e o controle do fluxo permanecem no módulo externo `oprm-coletor-mei`, que consome o endpoint `pending` canônico.
 - Prevenção de recorrência: o botão mostra carregamento durante a requisição e a mensagem da tela explicita que o job foi apenas gravado para o executor externo.
+
+## 2026-06-19 — Liberação operacional da v2 NichoCNAE
+
+- Corrigida a causa-raiz do erro ao clicar em **Iniciar novo job v2**: o backend não tinha valor padrão explícito para a feature flag `oprm.nichocnae.v2.enabled`, fazendo a tela oferecer o comando enquanto o contrato de gravação bloqueava a criação com `409 Conflict`.
+- A v2 passa a ficar habilitada por padrão para criação de jobs operacionais, mantendo a materialização automática desligada por padrão até validação de qualidade.

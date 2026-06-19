@@ -1074,3 +1074,9 @@
 - Adicionados contratos internos no backend apenas para leitura/escrita de pendências, conclusão e falha da etapa `reprocess-controller`; o backend persiste o plano recebido do executor e não decide regra de negócio.
 - Documentado o contrato em `docs/swagger/oprm-nichocnae-v2-reprocess-controller-swagger.yaml` e atualizada a tela do mapa v2 para indicar implementação inicial da etapa 9.
 - Causa-raiz preventiva: a etapa 9 estava apenas descrita no mapa do produto; agora há processor e contratos mínimos testados para impedir que decisões de reprocessamento sejam deslocadas para o backend.
+## 2026-06-19 — NichoCNAE v2 etapa 10 Routine Synthesizer
+
+- Implementada no executor externo `oprm-coletor-mei` a etapa 10 do pipeline NichoCNAE v2 (`RoutineSynthesizerProcessor`).
+- A síntese usa somente claims aceitos/validados com `exactEvidenceSpan`, preserva IDs de evidência, domínio e URL, e declara gaps quando faltam rotina, dor, impacto econômico ou aquisição.
+- O backend permanece fora da lógica de síntese: sua função segue limitada a leitura/escrita/contratos, enquanto regras, controle e inteligência da etapa ficam no executor OPRM.
+- Atualizada a tela do mapa v2 para indicar implementação inicial da etapa 10.

@@ -174,6 +174,7 @@ Coisa muito interessante que vejo acontecer hoje.
 - ele me retornou com uma mudança radical de fluxo com etapas diferentes e novas.
 - ou seja uma v2 do pipeline todo. Então precisamos manter o pipeline inteiro plugavel.
 
+(19-06-2026) - continuação
 - pedi para o 5.5 gerar um plano em md ( ele gerou 3 arquivos )
 - pedi ao codex criar as estruturas e aplicar os protocolos: padrao modulo, padrao backend e leitura escrita
 - pedi no codex uma lista das etapas ( baseada no documento ) depois para criar uma tela com as etapas

@@ -1037,3 +1037,9 @@
 - Implementada a etapa 3 `adaptive-query-planner` da v2 do pipeline NichoCNAE com backend restrito a leitura/escrita: endpoints internos de `pending`, criação de pendência, conclusão e falha técnica/cognitiva sobre a tabela genérica de execuções de etapa, sem cálculo de plano, decisão comercial ou inteligência no backend.
 - Implementado no executor externo `oprm-coletor-mei` o processor plugável da etapa 3, responsável por transformar gaps de conhecimento em plano curto de queries naturais, reutilizando memória de queries anteriores, aplicando fallback de termos, deduplicação por hash e early stopping quando não há ganho informacional.
 - Atualizada a tela de mapa do pipeline v2 para marcar a etapa 3 como `Design aprovado · implementação inicial`.
+
+## 2026-06-19 — OPRM NichoCNAE v2 etapa 4 Candidate Tournament
+
+- Implementada a etapa 4 `candidate-tournament` no executor `oprm-coletor-mei`, comparando candidatos por evidências observadas, fontes independentes e penalidades de risco antes de selecionar até dois finalistas.
+- Criados contratos internos no backend apenas para leitura/escrita da etapa 4: `pending`, criação de pendência, conclusão e falha/retry técnico, mantendo lógica, controle e regra de negócio no executor externo.
+- Documentado o endpoint interno em `docs/swagger/oprm-nichocnae-v2-candidate-tournament-swagger.yaml`.

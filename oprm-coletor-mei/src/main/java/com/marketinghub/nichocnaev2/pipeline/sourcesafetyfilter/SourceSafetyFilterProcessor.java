@@ -56,10 +56,14 @@ public final class SourceSafetyFilterProcessor implements StageProcessor {
         if (!(candidateUrls instanceof List<?> values)) {
             candidateUrls = input.get("urls");
         }
-        if (!(candidateUrls instanceof List<?> values)) {
-            return List.of();
+        if (!(candidateUrls instanceof List<?> values) || values.isEmpty()) {
+            throw new IllegalArgumentException("Source Safety Filter exige candidateUrls ou urls com pelo menos uma URL candidata.");
         }
-        return values.stream().filter(String.class::isInstance).map(String.class::cast).toList();
+        List<String> urls = values.stream().filter(String.class::isInstance).map(String.class::cast).toList();
+        if (urls.isEmpty()) {
+            throw new IllegalArgumentException("Source Safety Filter recebeu lista de URLs sem itens textuais válidos.");
+        }
+        return urls;
     }
 
     /** Classifica uma URL bruta usando hard blocklist local e regras determinísticas de canonicalização. */

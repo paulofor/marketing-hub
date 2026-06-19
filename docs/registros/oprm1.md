@@ -1124,6 +1124,12 @@
 - O executor agora carrega o pacote `com.marketinghub.nichocnaev2`, processa pendências com os processors plugáveis, registra conclusão/falha no backend e cria a próxima pendência quando a próxima etapa v2 existe no catálogo local.
 - Causa-raiz corrigida: a v2 possuía contratos `pending` no backend e processors no executor, mas não havia rotina operacional registrada no Spring para buscar e executar os jobs pendentes.
 
+## 2026-06-19 — Correção de loop técnico entre Candidate Generator e Source Safety Filter v2
+
+- Corrigida a causa-raiz do job `nichocnae-v2-candidate-2-job-1` entrar em retries técnicos repetidos na etapa `source-safety-filter`: a etapa `candidate-generator` emitia apenas `{"stage":"candidate-generator"}`, sem candidatos neutros nem `candidateUrls` para o filtro de segurança.
+- O executor externo `oprm-coletor-mei` agora mantém a lógica de negócio no módulo executor: o `CandidateGeneratorProcessor` entrega candidatos neutros, URLs-semente seguras e `nextStageCode`, enquanto o `SourceSafetyFilterProcessor` rejeita contrato sem URLs como erro de validação, não como infraestrutura retryável.
+- Adicionado limite operacional no executor para retry técnico por tentativa, classificando limite excedido como `VALIDATION/TECHNICAL_RETRY_LIMIT_EXCEEDED`; o backend permanece limitado a persistir o status informado pelo executor.
+- Prevenção de recorrência: testes cobrem geração de payload útil para a etapa seguinte, rejeição de entrada inválida no filtro de segurança e classificação de contrato inválido sem novo retry técnico.
 ## 2026-06-19 — Ajuste visual dos cards de jobs NichoCNAE v2
 
 - Ajustado o layout da tela do pipeline NichoCNAE v2 para manter os cards de jobs com o mesmo visual, mas exibidos em uma única coluna, ocupando a largura horizontal disponível da tela.

@@ -181,3 +181,4 @@ Coisa muito interessante que vejo acontecer hoje.
 - usando a tela pedia para criara etapa X usando os documentos... reforçando as responsabilidade do modulo ( regras ) e do backend ( leitura e escrita )
 - depois de tudo feito solicitei: as classes de agendamento para ir buscar itens em pending
 - lista na tela dos jobs ( em execução e executados )
+- ja no primeiro job etapa 2 ficou em loop infinito de retry

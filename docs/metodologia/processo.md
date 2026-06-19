@@ -167,3 +167,9 @@ Fico pensando como fazer isso no âmbito de venda de produtos, tenho que mandar 
 Estou tendo que reconstruir muita coisa no item e item, passo a passo e parece que isso esta funcioanndo mais.
 ( será que com o AI Hub isso seria viavel ? )
 
+(18-06-2026)
+
+Coisa muito interessante que vejo acontecer hoje.
+- coletei vários arquivos de execução do pipeline de cnae-nicho e mandei para o 5.5 pro
+- ele me retornou com uma mudança radical de fluxo com etapas diferentes e novas.
+- ou seja uma v2 do pipeline todo. Então precisamos manter o pipeline inteiro plugavel.

@@ -100,10 +100,11 @@ const v2Stages = [
   {
     number: 10,
     title: "Routine Synthesizer",
-    status: "Design",
+    status: "Design aprovado · implementação inicial",
     purpose:
       "Sintetizar rotina, dores e resultados apenas a partir de claims aprovados e evidências rastreáveis.",
-    output: "Rotina funcional do executor com evidências e limites explícitos.",
+    output:
+      "Rotina funcional do executor com evidências, IDs de claims, domínios e limites explícitos.",
     businessGate: "Síntese não pode inventar dor, canal ou impacto econômico.",
   },
   {

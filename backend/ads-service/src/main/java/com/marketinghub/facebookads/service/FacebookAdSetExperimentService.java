@@ -28,7 +28,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 /**
- * Builds the payload consumed by workers to generate Facebook ad sets.
+ * Monta o payload consumido pelos workers para gerar conjuntos de anúncios do Facebook.
  */
 @Service
 public class FacebookAdSetExperimentService {
@@ -154,10 +154,7 @@ public class FacebookAdSetExperimentService {
             }
             mapped.get(element.getType()).add(targetingElementMapper.toDto(element));
         }
-        if (mapped.get(TargetingElementType.JOB_TITLE).isEmpty()) {
-            return null;
-        }
-        return toTargetingPackage(mapped);
+        return hasAnyPublishableTargeting(mapped) ? toTargetingPackage(mapped) : null;
     }
 
     /**
@@ -169,12 +166,16 @@ public class FacebookAdSetExperimentService {
         Map<TargetingElementType, List<TargetingElementDto>> mapped = emptyTargetingMap();
         for (TargetingElementType type : TargetingElementType.values()) {
             List<TargetingElementDto> dtos = mapElements(nicheId, hypothesisId, type);
-            if (type == TargetingElementType.JOB_TITLE && dtos.isEmpty()) {
-                return null;
-            }
             mapped.put(type, dtos);
         }
-        return toTargetingPackage(mapped);
+        return hasAnyPublishableTargeting(mapped) ? toTargetingPackage(mapped) : null;
+    }
+
+    /**
+     * Informa se existe ao menos um item de público publicável em qualquer categoria suportada.
+     */
+    private boolean hasAnyPublishableTargeting(Map<TargetingElementType, List<TargetingElementDto>> mapped) {
+        return mapped.values().stream().anyMatch(items -> items != null && !items.isEmpty());
     }
 
     /**

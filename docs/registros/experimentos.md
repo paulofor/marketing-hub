@@ -4802,3 +4802,11 @@
 - Causa-raiz: o AI Worker estava tentando chamar o backend em `http://191.252.181.168:8000`, porta recusada no ambiente do worker, enquanto o contrato operacional do Codex/produção deve usar o backend preferencialmente na porta 80 (`http://191.252.181.168`).
 - Correção aplicada: o default do `backend.base-url` do AI Worker e do `docker-compose` foi alinhado para a porta 80, evitando que novas solicitações fiquem pendentes por falha de conexão com o backend.
 - Próximo efeito esperado: após deploy/restart do AI Worker, o scheduler volta a consumir a solicitação pendente do Experimento 40 e gerar os criativos a partir dos anúncios de pipeline já concluídos.
+
+## 2026-06-19 — Publicação Facebook: qualquer item aprovado libera público manual
+
+- solicitação: ajustar a regra de publicação para que qualquer item de público escolhido e aprovado pelo usuário libere a campanha, sem exigir obrigatoriamente cargo (`JOB_TITLE`).
+- causa-raiz: o backend e o `facebook-ads-worker` ainda exigiam ao menos um cargo aprovado no pacote manual, fazendo experimentos com interesses oficiais selecionados retornarem `404` no pacote de segmentação ou falharem antes da Meta.
+- foi feito: o pacote manual de publicação passa a ser considerado válido quando houver ao menos um item aprovado e com ID oficial em qualquer categoria suportada (`INTEREST`, `JOB_TITLE` ou `BEHAVIOR`); o worker só bloqueia quando não consegue montar nenhum item publicável, mantendo a prevenção contra público amplo apenas com país/posicionamento.
+- regra canônica atualizada: `docs/canonical/facebook-campaign-publication-canon.v1.md` agora define que qualquer item aprovado em interesse, cargo ou comportamento atende o mínimo operacional de público.
+- validação: testes do backend e do `facebook-ads-worker` cobrem o cenário de publicação com interesse aprovado sem cargo.

@@ -722,7 +722,7 @@ public class FacebookCampaignService {
     }
 
     /**
-     * Resolves the backend-approved manual targeting package and blocks publication when approved job titles are missing.
+     * Resolve o pacote manual aprovado no backend e bloqueia apenas quando não há nenhum item publicável.
      */
     private ResolvedTargeting resolveApprovedManualTargeting(long experimentId) {
         JsonNode targeting = fetchApprovedTargetingPackage(experimentId);
@@ -736,9 +736,9 @@ public class FacebookCampaignService {
         appendTargetingElements(targetingSpec, "interests", targeting.path("interests"));
         appendTargetingElements(targetingSpec, "work_positions", targeting.path("jobTitles"));
         appendTargetingElements(targetingSpec, "behaviors", targeting.path("behaviors"));
-        if (!targetingSpec.has("work_positions")) {
+        if (targetingSpec.isEmpty()) {
             throw new IllegalStateException(
-                "Experimento " + experimentId + " sem cargos aprovados no targeting manual; publicação bloqueada para evitar público amplo"
+                "Experimento " + experimentId + " sem itens aprovados no targeting manual; publicação bloqueada para evitar público amplo"
             );
         }
         ObjectNode broadenedTargetingSpec = broadenTargetingSpecToOrAudience(targetingSpec);

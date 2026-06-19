@@ -972,3 +972,24 @@
 
 - Criada tela administrativa `/oprm/jobs` com botão na navegação do OPRM para listar jobs recentes do pipeline NichoCNAE com paginação, custo, última etapa, relatório e acompanhamento.
 - Backend expõe `/api/oprm/nichocnae/jobs` para a UI consultar os ciclos recentes sem acessar banco diretamente.
+
+## 2026-06-19 — Bootstrap do pipeline NichoCNAE versão 2
+
+- Criado o esqueleto inicial do pipeline NichoCNAE v2 no executor `oprm-coletor-mei`, separando núcleo genérico de execução e etapa concreta `candidate-generator`.
+- Criado o contrato backend inicial para fila interna da etapa `candidate-generator`, com endpoint `pending` canônico para consumo pelo executor.
+- Aplicados os protocolos padrão módulo e padrão backend com testes ArchUnit para prevenir acoplamento indevido e manter controller/service/records canônicos.
+
+## 2026-06-19 — Regra de versionamento para pipelines completos
+
+- Atualizada a instrução operacional para explicitar que mudanças de pipeline inteiro devem usar número de versão no pacote do executor e do backend.
+- Regra registrada no cânone de arquitetura por etapa para preservar versões paralelas, rollout gradual, rollback seguro e plugabilidade entre etapas.
+
+## 2026-06-19 — Regra v1 obrigatória para pipeline novo
+
+- Refinada a regra de versionamento para deixar explícito que até um pipeline criado do zero deve nascer como `v1` no pacote do executor e do backend.
+- Motivo: preservar a possibilidade de uma mudança completa futura criar `v2` sem sobrescrever ou contaminar a versão inicial.
+
+## 2026-06-19 — Persistência para relatório de execução de pipeline
+
+- Adicionada regra operacional e canônica determinando que todo pipeline deve persistir dados suficientes para gerar relatório de execução ao usuário pelo frontend.
+- A regra reforça que logs técnicos não substituem dados funcionais persistidos de etapas, decisões, evidências, artefatos, custos, erros e próximos movimentos.

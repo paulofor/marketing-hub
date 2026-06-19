@@ -18,6 +18,43 @@ módulo.
 Essa regra é protegida pelo `ArquiteturaTest`: qualquer novo repository Spring Data JPA fora de um
 subpacote de `com.marketinghub.repository.jpa` deve falhar com mensagem prefixada por `[ARQUITETURA]`.
 
+## Persistência para relatório de execução
+
+Todo fluxo de pipeline deve persistir dados suficientes para gerar um relatório de execução compreensível ao
+usuário pelo frontend. A persistência funcional do relatório deve ser planejada como parte do contrato do
+pipeline, não como análise posterior de logs. O relatório precisa explicar o que foi executado, em que etapa
+o job está, quais decisões foram tomadas, quais evidências ou artefatos sustentam a decisão, quais falhas
+técnicas ocorreram e quais próximos movimentos são possíveis.
+
+No mínimo, cada pipeline deve persistir identificador do job/ciclo, versão do pipeline, etapa, status,
+horários, payloads estruturados de entrada e saída quando aplicável, artefatos auditáveis, decisões de gate,
+motivos de reprovação ou pausa, erros técnicos separados de decisões de mercado, custos quando existirem e
+referências às fontes/evidências usadas. O frontend deve consumir esses dados persistidos pelo backend para
+montar a tela de relatório, sem depender de logs técnicos, recomputação, chamadas diretas ao executor ou
+interpretação ad hoc de payloads opacos.
+
+## Versionamento de pipelines inteiros
+
+Quando uma alteração representar a criação de um pipeline inteiro ou uma nova versão completa de pipeline,
+e não apenas ajuste incremental de etapa, o nome dos pacotes deve carregar explicitamente o número da versão
+tanto no módulo executor quanto no backend. Essa regra vale desde a primeira criação: um pipeline novo deve
+nascer como `v1`, porque uma mudança completa futura poderá exigir `v2` sem sobrescrever a versão inicial.
+Ela existe porque alguns pipelines precisam conviver em versões paralelas durante validação, rollout gradual,
+comparação de qualidade e rollback seguro.
+
+No módulo executor, a versão deve aparecer no pacote que contém o núcleo e as etapas do fluxo, por
+exemplo `com.marketinghub.nichocnaev1.pipeline`, `com.marketinghub.nichocnaev1.pipeline.<etapa>` ou,
+quando houver nova versão completa, `com.marketinghub.nichocnaev2.pipeline.<etapa>`. No backend, a versão
+deve aparecer antes da etapa, por exemplo `com.marketinghub.oprm.nichocnae.v1.<etapa>` ou
+`com.marketinghub.oprm.nichocnae.v2.<etapa>`, preservando o backend como contrato, persistência e
+publicação de pendências da versão correta.
+
+A nova versão precisa continuar plugável: núcleo genérico separado das etapas concretas, etapas concretas
+independentes entre si, dependência por contratos/artefatos/estado persistido e consumo iniciado pelo
+endpoint `pending` da etapa. É proibido que a versão nova seja implementada por acoplamento direto entre
+etapas concretas ou por sobrescrita silenciosa do pacote de uma versão anterior quando a mudança for
+estrutural.
+
 ## Backend por etapa
 
 Todo controller interno de backend criado para uma etapa operacional deve ficar no pacote direto

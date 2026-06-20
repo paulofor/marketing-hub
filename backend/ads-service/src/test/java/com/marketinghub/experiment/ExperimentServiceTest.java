@@ -251,6 +251,95 @@ class ExperimentServiceTest {
         assertThat(exp.getPlatform()).isEqualTo(ExperimentPlatform.FACEBOOK);
     }
 
+
+    /** Garante que a criação persiste o contrato de promessa única com objetivo Leads. */
+    @Test
+    void createPersistsSinglePromiseContract() {
+        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Contrato promessa").build());
+        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("Promessa").build());
+        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(niche)
+                .title("Hipótese promessa")
+                .premiseAngle(angle)
+                .promise("Promessa")
+                .problem("Problema")
+                .persona("Persona")
+                .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
+                .kpiTargetCpl(new BigDecimal("1"))
+                .build());
+        metricPresetRepository.save(MetricPreset.builder()
+                .id("LEAN_PROMISE")
+                .name("Lean Promessa")
+                .sampleSize(150)
+                .stopLossFactor(new BigDecimal("2"))
+                .defaultMdePp(new BigDecimal("12"))
+                .build());
+        CreateExperimentRequest req = new CreateExperimentRequest();
+        applyStageDefaults(req);
+        req.setMarketNicheId(niche.getId());
+        req.setHypothesisId(hyp.getId());
+        req.setName("Exp promessa");
+        req.setHypothesis("Teste");
+        req.setSinglePain("  cliente desmarca horário  ");
+        req.setFreeReward("  3 mensagens prontas  ");
+        req.setFunnelPromise("Receber as 3 mensagens");
+        req.setPrimaryCta("Receber as 3 mensagens");
+        req.setKpiTargetCpl(new BigDecimal("45"));
+        req.setMetricPresetId("LEAN_PROMISE");
+        req.setJourneyTemplateId(createJourneyTemplate().getId());
+        req.setInstagramAccountId(createInstagramAccount().getId());
+        req.setLeadPortalFlowId(createLeadPortalFlow(niche));
+
+        Experiment exp = service.create(req);
+
+        assertThat(exp.getSinglePain()).isEqualTo("cliente desmarca horário");
+        assertThat(exp.getFreeReward()).isEqualTo("3 mensagens prontas");
+        assertThat(exp.getFunnelPromise()).isEqualTo("Receber as 3 mensagens");
+        assertThat(exp.getPrimaryCta()).isEqualTo("Receber as 3 mensagens");
+        assertThat(exp.getCampaignObjective()).isEqualTo(ExperimentCampaignObjective.LEADS);
+    }
+
+    /** Garante que recompensa gratuita não pode nascer com objetivo Tráfego. */
+    @Test
+    void createRejectsTrafficObjectiveWithFreeReward() {
+        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Contrato tráfego").build());
+        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("Tráfego").build());
+        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(niche)
+                .title("Hipótese tráfego")
+                .premiseAngle(angle)
+                .promise("Promessa")
+                .problem("Problema")
+                .persona("Persona")
+                .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
+                .kpiTargetCpl(new BigDecimal("1"))
+                .build());
+        metricPresetRepository.save(MetricPreset.builder()
+                .id("LEAN_TRAFFIC_BLOCK")
+                .name("Lean Bloqueio Tráfego")
+                .sampleSize(150)
+                .stopLossFactor(new BigDecimal("2"))
+                .defaultMdePp(new BigDecimal("12"))
+                .build());
+        CreateExperimentRequest req = new CreateExperimentRequest();
+        applyStageDefaults(req);
+        req.setMarketNicheId(niche.getId());
+        req.setHypothesisId(hyp.getId());
+        req.setName("Exp tráfego");
+        req.setHypothesis("Teste");
+        req.setFreeReward("3 mensagens prontas");
+        req.setCampaignObjective(ExperimentCampaignObjective.TRAFFIC);
+        req.setKpiTargetCpl(new BigDecimal("45"));
+        req.setMetricPresetId("LEAN_TRAFFIC_BLOCK");
+        req.setJourneyTemplateId(createJourneyTemplate().getId());
+        req.setInstagramAccountId(createInstagramAccount().getId());
+        req.setLeadPortalFlowId(createLeadPortalFlow(niche));
+
+        assertThatThrownBy(() -> service.create(req))
+                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+                .hasMessageContaining("campaignObjective must be LEADS");
+    }
+
     @Test
     void createAllowsSampleSizeBelowOneHundred() {
         MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste").build());

@@ -164,6 +164,11 @@ public class CopyBackendClient implements StageBackendPort<CopyInput, CopyOutput
         Object offer = framework.getOrDefault("offer", Map.of());
         String nicheName = firstText(experiment.get("nicheName"), experiment.get("niche"), experiment.get("name"));
 
+        payload.put("singlePain", experiment.get("singlePain"));
+        payload.put("freeReward", experiment.get("freeReward"));
+        payload.put("funnelPromise", experiment.get("funnelPromise"));
+        payload.put("primaryCta", experiment.get("primaryCta"));
+        payload.put("campaignObjective", experiment.get("campaignObjective"));
         payload.put("campaignAngle", campaignAngle);
         payload.put("adCopy", adCopy);
         payload.put("adImageBriefing", adImageBriefing);
@@ -183,6 +188,11 @@ public class CopyBackendClient implements StageBackendPort<CopyInput, CopyOutput
     private String buildCaseDataBlock(Map<String, Object> payload) {
         StringBuilder builder = new StringBuilder("[CASE_DATA_BEGIN]\n");
         appendCaseData(builder, "NICHE_NAME", payload.get("NICHE_NAME"));
+        appendCaseData(builder, "singlePain", payload.get("singlePain"));
+        appendCaseData(builder, "freeReward", payload.get("freeReward"));
+        appendCaseData(builder, "funnelPromise", payload.get("funnelPromise"));
+        appendCaseData(builder, "primaryCta", payload.get("primaryCta"));
+        appendCaseData(builder, "campaignObjective", payload.get("campaignObjective"));
         appendCaseData(builder, "PAIN_JSON", payload.get("PAIN_JSON"));
         appendCaseData(builder, "RESULT_JSON", payload.get("RESULT_JSON"));
         appendCaseData(builder, "MECHANISM_JSON", payload.get("MECHANISM_JSON"));

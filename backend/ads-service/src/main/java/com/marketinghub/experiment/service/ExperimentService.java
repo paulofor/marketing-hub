@@ -237,7 +237,7 @@ public class ExperimentService {
     private record ImageGenerationSelection(ImageGenerationModel model, ImageGenerationQuality quality) { }
 
     /**
-     * Creates and stores a new experiment.
+     * Cria e persiste um novo experimento com o contrato comercial inicial.
      */
     @Transactional
     public Experiment create(Long nicheId, CreateExperimentRequest request) {
@@ -293,6 +293,12 @@ public class ExperimentService {
                 .niche(niche)
                 .name(request.getName())
                 .hypothesis(request.getHypothesis())
+                .singlePain(normalizeExperimentPromiseField(request.getSinglePain()))
+                .freeReward(normalizeExperimentPromiseField(request.getFreeReward()))
+                .funnelPromise(normalizeExperimentPromiseField(request.getFunnelPromise()))
+                .primaryCta(normalizeExperimentPromiseField(request.getPrimaryCta()))
+                .campaignObjective(resolveCampaignObjective(
+                        request.getCampaignObjective(), request.getFreeReward()))
                 .hypothesisRef(hyp)
                 .kpiTargetCpl(request.getKpiTargetCpl())
                 .metricPreset(preset)
@@ -373,6 +379,9 @@ public class ExperimentService {
     }
 
 
+    /**
+     * Duplica um experimento preservando seu contrato comercial e configurações operacionais.
+     */
     @Transactional
     public Experiment duplicate(Long id) {
         Experiment original = repository.findById(id).orElseThrow();
@@ -380,6 +389,11 @@ public class ExperimentService {
                 .niche(original.getNiche())
                 .name(original.getName() + " copy")
                 .hypothesis(original.getHypothesis())
+                .singlePain(original.getSinglePain())
+                .freeReward(original.getFreeReward())
+                .funnelPromise(original.getFunnelPromise())
+                .primaryCta(original.getPrimaryCta())
+                .campaignObjective(original.getCampaignObjective())
                 .hypothesisRef(original.getHypothesisRef())
                 .kpiTargetCpl(original.getKpiTargetCpl())
                 .metricPreset(original.getMetricPreset())
@@ -445,7 +459,7 @@ public class ExperimentService {
     }
 
     /**
-     * Updates mutable fields of an experiment.
+     * Atualiza os campos mutáveis do experimento preservando o contrato comercial quando ausente no payload.
      */
     @Transactional
     public Experiment update(Long id, UpdateExperimentRequest request) {
@@ -482,6 +496,25 @@ public class ExperimentService {
 
         exp.setName(request.getName());
         exp.setHypothesis(request.getHypothesis());
+        if (request.isSinglePainPresent()) {
+            exp.setSinglePain(normalizeExperimentPromiseField(request.getSinglePain()));
+        }
+        if (request.isFreeRewardPresent()) {
+            exp.setFreeReward(normalizeExperimentPromiseField(request.getFreeReward()));
+        }
+        if (request.isFunnelPromisePresent()) {
+            exp.setFunnelPromise(normalizeExperimentPromiseField(request.getFunnelPromise()));
+        }
+        if (request.isPrimaryCtaPresent()) {
+            exp.setPrimaryCta(normalizeExperimentPromiseField(request.getPrimaryCta()));
+        }
+        if (request.isCampaignObjectivePresent()) {
+            exp.setCampaignObjective(resolveCampaignObjective(
+                    request.getCampaignObjective(),
+                    request.isFreeRewardPresent() ? request.getFreeReward() : exp.getFreeReward()));
+        } else if (request.isFreeRewardPresent()) {
+            exp.setCampaignObjective(resolveCampaignObjective(exp.getCampaignObjective(), request.getFreeReward()));
+        }
         exp.setKpiTargetCpl(request.getKpiTargetCpl());
         exp.setMetricPreset(preset);
         exp.setStage(resolvedStage);
@@ -855,6 +888,32 @@ public class ExperimentService {
             return null;
         }
         return prompt.trim();
+    }
+
+    /**
+     * Normaliza campos textuais da promessa única do experimento.
+     */
+    private String normalizeExperimentPromiseField(String value) {
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        return value.trim();
+    }
+
+    /**
+     * Resolve o objetivo de campanha, mantendo Leads como padrão para recompensa gratuita.
+     */
+    private ExperimentCampaignObjective resolveCampaignObjective(
+            ExperimentCampaignObjective requestedObjective, String freeReward) {
+        ExperimentCampaignObjective objective = requestedObjective != null
+                ? requestedObjective
+                : ExperimentCampaignObjective.LEADS;
+        if (StringUtils.hasText(freeReward) && objective != ExperimentCampaignObjective.LEADS) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "campaignObjective must be LEADS when freeReward is present");
+        }
+        return objective;
     }
 
     private int normalizeImagesPerPackage(Integer imagesPerPackage) {

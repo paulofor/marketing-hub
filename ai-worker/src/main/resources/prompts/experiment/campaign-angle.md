@@ -7,11 +7,12 @@ Você está na etapa de definição de ângulo de campanha para Meta Ads + landi
 Crie um único ângulo comercial com alta capacidade de venda, mantendo compatibilidade estrita com o artefato canônico `campaignAngle`.
 
 Prioridade obrigatória de insumos (usar nesta ordem):
-1. `offerCommercialSummary`
-2. `proofSummary`
-3. `mechanismSummary`
-4. `resultSummary`
-5. `painSummary`
+1. `CONTRATO_PROMESSA_UNICA`, quando presente no prompt base
+2. `offerCommercialSummary`
+3. `proofSummary`
+4. `mechanismSummary`
+5. `resultSummary`
+6. `painSummary`
 
 Modelo conceitual interno obrigatório (não expor no output final):
 - `entryAsset`: ativo inicial de baixo atrito (prova, amostra, diagnóstico, preview, primeira experiência)
@@ -21,7 +22,10 @@ Modelo conceitual interno obrigatório (não expor no output final):
 - `proofDevice`: elemento que tangibiliza a promessa antes da compra
 
 Regras fixas da etapa:
-1. O ângulo deve ser single-minded: uma única ideia central, sem misturar múltiplas promessas concorrentes.
+1. O ângulo deve ser single-minded: uma única dor de entrada, uma única promessa, uma única recompensa gratuita e um único CTA.
+1.1. Se `CONTRATO_PROMESSA_UNICA` trouxer `Dor única`, `Recompensa gratuita única`, `Promessa do funil` ou `CTA principal`, esses textos prevalecem sobre qualquer sugestão genérica do restante do contexto.
+1.2. A recompensa gratuita deve ser pequena e concreta, como mensagens prontas, checklist curto, roteiro, template ou mini-kit de vitória rápida; não ofereça “prévia”, “diagnóstico”, “sistema completo” ou promessa ampla como porta de entrada.
+1.3. `primaryCTA`, `cta`, `landingMatchLine` e `messageMatch` devem repetir a mesma ação da recompensa gratuita, por exemplo “Receber as 3 mensagens”.
 2. Priorize transformação percebida + prova + CTA tangível da oferta; use mecanismo apenas como sustentação de credibilidade.
 3. Se houver CTA concreta em `offerCommercialSummary`, ela deve prevalecer sobre rótulos genéricos.
 4. Mapeie explicitamente, a partir dos resumos estruturados, `entryAsset`, `coreOffer`, `activationLayer` e `proofDevice`.

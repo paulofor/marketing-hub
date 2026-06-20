@@ -140,6 +140,11 @@ public class DeliverablesBackendClient implements StageBackendPort<DeliverablesI
         payload.put("experimentId", pending.get("experimentId"));
         payload.put("experimentName", experiment.get("name"));
         payload.put("hypothesisTitle", hypothesis.get("title"));
+        payload.put("singlePain", experiment.get("singlePain"));
+        payload.put("freeReward", experiment.get("freeReward"));
+        payload.put("funnelPromise", experiment.get("funnelPromise"));
+        payload.put("primaryCta", experiment.get("primaryCta"));
+        payload.put("campaignObjective", experiment.get("campaignObjective"));
         payload.put("campaignAngle", normalizeJsonArtifact(experiment.get("campaignAngle")));
         payload.put("adCopy", normalizeJsonArtifact(experiment.get("adCopy")));
         payload.put("adImageBriefing", normalizeJsonArtifact(experiment.get("adImageBriefing")));
@@ -164,6 +169,11 @@ public class DeliverablesBackendClient implements StageBackendPort<DeliverablesI
         appendCaseData(builder, "experimentId", payload.get("experimentId"));
         appendCaseData(builder, "experimentName", payload.get("experimentName"));
         appendCaseData(builder, "hypothesisTitle", payload.get("hypothesisTitle"));
+        appendCaseData(builder, "singlePain", payload.get("singlePain"));
+        appendCaseData(builder, "freeReward", payload.get("freeReward"));
+        appendCaseData(builder, "funnelPromise", payload.get("funnelPromise"));
+        appendCaseData(builder, "primaryCta", payload.get("primaryCta"));
+        appendCaseData(builder, "campaignObjective", payload.get("campaignObjective"));
         appendCaseData(builder, "PAIN_JSON", payload.get("PAIN_JSON"));
         appendCaseData(builder, "RESULT_JSON", payload.get("RESULT_JSON"));
         appendCaseData(builder, "MECHANISM_JSON", payload.get("MECHANISM_JSON"));

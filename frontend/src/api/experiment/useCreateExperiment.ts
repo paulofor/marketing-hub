@@ -1,12 +1,21 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
-import type { Experiment, ExperimentStage } from "./useExperiments";
+import type {
+  Experiment,
+  ExperimentCampaignObjective,
+  ExperimentStage,
+} from "./useExperiments";
 
 export interface CreateExperiment {
   nicheId: number;
   hypothesisId?: string;
   name: string;
   hypothesis: string;
+  singlePain?: string;
+  freeReward?: string;
+  funnelPromise?: string;
+  primaryCta?: string;
+  campaignObjective?: ExperimentCampaignObjective;
   stage: ExperimentStage;
   primaryVariable?: string;
   primaryMetric?: string;
@@ -42,10 +51,13 @@ export function useCreateExperiment() {
   return useMutation({
     mutationFn: async (data: CreateExperiment) => {
       const { nicheId, ...payload } = data;
-      const { data: experiment } = await axios.post<Experiment>(`/api/experiments`, {
-        ...payload,
-        marketNicheId: nicheId,
-      });
+      const { data: experiment } = await axios.post<Experiment>(
+        `/api/experiments`,
+        {
+          ...payload,
+          marketNicheId: nicheId,
+        },
+      );
       return experiment;
     },
     onSuccess: () => {

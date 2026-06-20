@@ -5,17 +5,33 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.Nulls;
 import com.marketinghub.experiment.ExperimentStage;
+import com.marketinghub.experiment.ExperimentCampaignObjective;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import lombok.Data;
 
 /**
- * Request body for updating an experiment.
+ * Recebe os dados mutáveis de um experimento comercial.
  */
 @Data
 public class UpdateExperimentRequest {
     private String name;
     private String hypothesis;
+    private String singlePain;
+    @JsonIgnore
+    private boolean singlePainPresent;
+    private String freeReward;
+    @JsonIgnore
+    private boolean freeRewardPresent;
+    private String funnelPromise;
+    @JsonIgnore
+    private boolean funnelPromisePresent;
+    private String primaryCta;
+    @JsonIgnore
+    private boolean primaryCtaPresent;
+    private ExperimentCampaignObjective campaignObjective;
+    @JsonIgnore
+    private boolean campaignObjectivePresent;
     private ExperimentStage stage;
     private String primaryVariable;
     private String primaryMetric;
@@ -89,6 +105,41 @@ public class UpdateExperimentRequest {
     private String creativeImagePrompt;
     @JsonIgnore
     private boolean creativeImagePromptPresent;
+
+    /** Registra a presença da dor única no payload de atualização. */
+    @JsonSetter(value = "singlePain", nulls = Nulls.SET)
+    public void setSinglePain(String singlePain) {
+        this.singlePain = singlePain;
+        this.singlePainPresent = true;
+    }
+
+    /** Registra a presença da recompensa gratuita no payload de atualização. */
+    @JsonSetter(value = "freeReward", nulls = Nulls.SET)
+    public void setFreeReward(String freeReward) {
+        this.freeReward = freeReward;
+        this.freeRewardPresent = true;
+    }
+
+    /** Registra a presença da promessa do funil no payload de atualização. */
+    @JsonSetter(value = "funnelPromise", nulls = Nulls.SET)
+    public void setFunnelPromise(String funnelPromise) {
+        this.funnelPromise = funnelPromise;
+        this.funnelPromisePresent = true;
+    }
+
+    /** Registra a presença do CTA principal no payload de atualização. */
+    @JsonSetter(value = "primaryCta", nulls = Nulls.SET)
+    public void setPrimaryCta(String primaryCta) {
+        this.primaryCta = primaryCta;
+        this.primaryCtaPresent = true;
+    }
+
+    /** Registra a presença do objetivo de campanha no payload de atualização. */
+    @JsonSetter(value = "campaignObjective", nulls = Nulls.SET)
+    public void setCampaignObjective(ExperimentCampaignObjective campaignObjective) {
+        this.campaignObjective = campaignObjective;
+        this.campaignObjectivePresent = true;
+    }
 
 
     @JsonSetter(value = "facebookPageId", nulls = Nulls.SET)

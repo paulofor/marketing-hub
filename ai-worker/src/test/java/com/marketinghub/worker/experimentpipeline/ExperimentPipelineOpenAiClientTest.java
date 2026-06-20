@@ -69,6 +69,9 @@ class ExperimentPipelineOpenAiClientTest {
         assertThat(userPrompt).contains("CASE_DATA");
         assertThat(userPrompt).contains("[CASE_DATA_BEGIN]");
         assertThat(userPrompt).contains("OUTPUT_CONTRACT");
+        assertThat(userPrompt).contains("CONTRATO_PROMESSA_UNICA");
+        assertThat(userPrompt).contains("uma única dor de entrada, uma única promessa, uma única recompensa gratuita e um único CTA");
+        assertThat(userPrompt).contains("Receber as 3 mensagens");
         assertThat(userPrompt).contains("- visualAngle");
         assertThat(userPrompt).doesNotContain("- primaryPain:");
         assertThat(userPrompt).doesNotContain("- primaryPromise:");
@@ -117,6 +120,8 @@ class ExperimentPipelineOpenAiClientTest {
         assertThat(userPrompt).startsWith("Você cria ativos de campanha para o Marketing Hub.");
         assertThat(userPrompt).contains("Prompt de anuncio");
         assertThat(userPrompt).contains(readPromptTemplateBody("prompts/experiment/ad-copy.md"));
+        assertThat(userPrompt).contains("CONTRATO_PROMESSA_UNICA");
+        assertThat(userPrompt).contains("Todas as variações devem convidar para a mesma recompensa gratuita");
         assertThat(userPrompt).doesNotContain("template_id:");
         assertThat(userPrompt).doesNotContain("proofSummary,");
     }

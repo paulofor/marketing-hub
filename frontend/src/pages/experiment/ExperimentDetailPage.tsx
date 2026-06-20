@@ -1992,6 +1992,29 @@ export default function ExperimentDetailPage() {
       value: data.primaryMetric || "—",
     },
     {
+      label: "Dor única",
+      value: data.singlePain || "—",
+    },
+    {
+      label: "Recompensa gratuita",
+      value: data.freeReward || "—",
+    },
+    {
+      label: "Promessa do funil",
+      value: data.funnelPromise || "—",
+    },
+    {
+      label: "CTA principal",
+      value: data.primaryCta || "—",
+    },
+    {
+      label: "Objetivo da campanha",
+      value:
+        data.campaignObjective === "LEADS"
+          ? "Leads"
+          : data.campaignObjective || "—",
+    },
+    {
       label: "Página do Facebook",
       value: experimentPage
         ? `${experimentPage.name} (${experimentPage.pageId})`

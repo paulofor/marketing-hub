@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.ai.generation.service.AiWorkerGenerationService;
 import com.marketinghub.experiment.service.generatepromise.GenerateExperimentPromiseOptionsRequest;
+import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.openai.OpenAiBatchClient;
 import com.marketinghub.openai.OpenAiResponse;
@@ -17,9 +18,12 @@ import com.marketinghub.openai.service.OpenAiPricingService;
 import com.marketinghub.repository.jpa.hypothesis.HypothesisRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import java.math.BigDecimal;
+import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
@@ -53,11 +57,38 @@ class ExperimentPromiseGenerationServiceTest {
                 .hasMessageContaining("Selecione um nicho");
     }
 
+    /** Deve bloquear geração sem hipótese porque a IA precisa do pipeline completo da hipótese. */
+    @Test
+    void shouldRejectRequestWithoutHypothesis() {
+        assertThatThrownBy(() -> service.generate(new GenerateExperimentPromiseOptionsRequest(
+                7L, null, null, null, null, null, null)))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Selecione uma hipótese");
+    }
+
     /** Deve retornar exatamente três opções completas e registrar a geração para auditoria. */
     @Test
     void shouldGenerateThreePromiseOptions() {
-        MarketNiche niche = MarketNiche.builder().id(7L).name("Salões de beleza").build();
+        UUID hypothesisId = UUID.randomUUID();
+        MarketNiche niche = MarketNiche.builder()
+                .id(7L)
+                .name("Salões de beleza")
+                .description("Nicho de profissionais locais")
+                .promises("Promessa validada")
+                .offers("Oferta validada")
+                .build();
+        Hypothesis hypothesis = Hypothesis.builder()
+                .id(hypothesisId)
+                .title("Hipótese de agenda")
+                .problem("Clientes somem depois do atendimento")
+                .promise("Agenda mais previsível")
+                .mechanism("Régua de manutenção")
+                .uniqueMechanism("Fluxo de manutenção guiada")
+                .entrega("Mensagens prontas")
+                .frameworkJson("{\"pain\":\"clientes somem\"}")
+                .build();
         when(nicheRepository.findById(7L)).thenReturn(Optional.of(niche));
+        when(hypothesisRepository.findById(hypothesisId)).thenReturn(Optional.of(hypothesis));
         when(openAiBatchClient.executeSingle(any(), anyString())).thenReturn(new OpenAiResponse(
                 "resp-1",
                 "{\"options\":["
@@ -71,10 +102,14 @@ class ExperimentPromiseGenerationServiceTest {
         when(pricingService.estimateStandardCost(anyString(), any())).thenReturn(BigDecimal.ZERO);
 
         var response = service.generate(new GenerateExperimentPromiseOptionsRequest(
-                7L, null, "Hipótese", null, null, null, null));
+                7L, hypothesisId, null, null, null, null, null));
 
         assertThat(response.options()).hasSize(3);
         assertThat(response.options().getFirst().singlePain()).isEqualTo("Agenda vazia");
         verify(generationService).recordGeneration(any());
+        ArgumentCaptor<Map<String, Object>> requestCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(openAiBatchClient).executeSingle(requestCaptor.capture(), anyString());
+        String prompt = requestCaptor.getValue().get("input").toString();
+        assertThat(prompt).contains("Nicho selecionado", "Promessa validada", "Hipótese selecionada", "Fluxo de manutenção guiada", "Framework");
     }
 }

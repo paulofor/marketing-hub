@@ -12,8 +12,7 @@ export interface PromiseOption {
 
 interface GeneratePromiseOptionsPayload {
   nicheId: number;
-  hypothesisId?: string;
-  hypothesis?: string;
+  hypothesisId: string;
   currentSinglePain?: string;
   currentFreeReward?: string;
   currentFunnelPromise?: string;

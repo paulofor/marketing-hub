@@ -1172,3 +1172,8 @@
 - A tela do pipeline v2 passa a mostrar quando um job foi encerrado sem subnicho viável (`NO_VIABLE_SUBNICHE`) em vez de apresentar apenas `COMPLETED`, reduzindo interpretação falsa de que houve nicho materializado.
 - Causa-raiz corrigida: a tela recebia apenas status técnico de execução aberta/encerrada, mas não recebia a decisão de negócio persistida no `outputPayload` da última etapa nem o custo contabilizado nos payloads.
 - Prevenção de recorrência: teste unitário do backend cobre agregação de decisão `NO_VIABLE_SUBNICHE`, explicação com contagens e custo de IA no job/CNAE.
+
+## 2026-06-20 — Ícones de IA e Web nos cards do pipeline NichoCNAE v2
+
+- Ajustada a tela do pipeline NichoCNAE v2 para sinalizar, em cada card de etapa, quando a etapa usa IA e/ou acessa a Web.
+- Causa-raiz preventiva: antes, o usuário precisava inferir pelo texto se haveria consumo de IA ou pesquisa externa, aumentando risco de leitura operacional errada sobre custo e dependência de fontes.

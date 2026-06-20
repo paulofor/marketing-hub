@@ -1,3 +1,4 @@
+import { Bot, Globe2 } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import {
   useOprmNichoCnaeV2Jobs,
@@ -187,7 +188,16 @@ function JobsTable({
   );
 }
 
-const v2Stages = [
+const v2Stages: Array<{
+  number: number;
+  title: string;
+  status: string;
+  purpose: string;
+  output: string;
+  businessGate: string;
+  usesAi: boolean;
+  usesWeb: boolean;
+}> = [
   {
     number: 1,
     title: "Gerador de Candidatos",
@@ -198,6 +208,8 @@ const v2Stages = [
       "4 a 6 candidatos comparáveis, com identidade do executor, job operacional e hipóteses separadas.",
     businessGate:
       "Nenhum vencedor obrigatório quando não houver candidato viável.",
+    usesAi: true,
+    usesWeb: false,
   },
   {
     number: 2,
@@ -207,6 +219,8 @@ const v2Stages = [
       "Bloquear domínios inseguros, conteúdo inadequado e resultados fora do contexto antes de gastar IA.",
     output: "Lista segura e deduplicada de URLs candidatas para pesquisa.",
     businessGate: "Conteúdo inseguro ou contaminado não entra no pipeline.",
+    usesAi: false,
+    usesWeb: true,
   },
   {
     number: 3,
@@ -218,6 +232,8 @@ const v2Stages = [
       "Plano de pesquisa curto, natural e orientado a lacunas de evidência.",
     businessGate:
       "A pesquisa aprofunda apenas o que pode mudar a decisão comercial.",
+    usesAi: true,
+    usesWeb: true,
   },
   {
     number: 4,
@@ -228,6 +244,8 @@ const v2Stages = [
     output: "Até dois finalistas ou decisão NO_VIABLE_SUBNICHE.",
     businessGate:
       "O vencedor nasce de evidência observada, não de opinião prévia do modelo.",
+    usesAi: true,
+    usesWeb: false,
   },
   {
     number: 5,
@@ -239,6 +257,8 @@ const v2Stages = [
       "Snapshots rastreáveis com origem, trecho curto, metadados e custo.",
     businessGate:
       "Fonte adjacente não substitui prova direta do executor específico.",
+    usesAi: true,
+    usesWeb: true,
   },
   {
     number: 6,
@@ -249,6 +269,8 @@ const v2Stages = [
     output:
       "Claims auditáveis com trecho literal, fonte e diagnóstico semântico.",
     businessGate: "Nenhum claim sem trecho exato pode avançar para síntese.",
+    usesAi: true,
+    usesWeb: false,
   },
   {
     number: 7,
@@ -259,6 +281,8 @@ const v2Stages = [
     output:
       "Claims aprovados, rejeitados, contraditórios ou pendentes por nível de evidência.",
     businessGate: "Proximidade lexical não é prova de mercado.",
+    usesAi: true,
+    usesWeb: false,
   },
   {
     number: 8,
@@ -270,6 +294,8 @@ const v2Stages = [
       "Snapshot de conhecimento com versão, linhagem e lacunas acionáveis.",
     businessGate:
       "Reprocessar sem repetir erro, fonte rejeitada ou custo desnecessário.",
+    usesAi: false,
+    usesWeb: false,
   },
   {
     number: 9,
@@ -281,6 +307,8 @@ const v2Stages = [
       "Retry técnico ou reprocessamento cognitivo com motivo, estágio de retorno e versão de conhecimento.",
     businessGate:
       "Falha técnica não vira reprovação de mercado; falta de evidência não reinicia tudo.",
+    usesAi: false,
+    usesWeb: false,
   },
   {
     number: 10,
@@ -291,6 +319,8 @@ const v2Stages = [
     output:
       "Rotina funcional do executor com evidências, IDs de claims, domínios e limites explícitos.",
     businessGate: "Síntese não pode inventar dor, canal ou impacto econômico.",
+    usesAi: true,
+    usesWeb: false,
   },
   {
     number: 11,
@@ -302,6 +332,8 @@ const v2Stages = [
       "Nível E0 a E5, confiança explicável, motivos de reprovação e próximos movimentos.",
     businessGate:
       "Materialização automática só avança com evidência comercial mínima.",
+    usesAi: true,
+    usesWeb: false,
   },
   {
     number: 12,
@@ -313,6 +345,8 @@ const v2Stages = [
     output:
       "Nicho pronto para decisão de produto: executor, dor, resultado, mecanismo plausível e fontes.",
     businessGate: "A v2 calibra antes de publicar automaticamente para vendas.",
+    usesAi: false,
+    usesWeb: false,
   },
 ];
 
@@ -492,6 +526,23 @@ export default function OprmNichoCnaeV2PipelinePage() {
                     <span className="small text-primary fw-semibold">
                       {stage.status}
                     </span>
+                  </div>
+                  <div
+                    className="d-flex flex-wrap justify-content-end align-content-start gap-2"
+                    aria-label="Recursos usados pela etapa"
+                  >
+                    {stage.usesAi ? (
+                      <span className="badge rounded-pill text-bg-primary d-inline-flex align-items-center gap-1">
+                        <Bot size={14} aria-hidden="true" />
+                        IA
+                      </span>
+                    ) : null}
+                    {stage.usesWeb ? (
+                      <span className="badge rounded-pill text-bg-info d-inline-flex align-items-center gap-1">
+                        <Globe2 size={14} aria-hidden="true" />
+                        Web
+                      </span>
+                    ) : null}
                   </div>
                 </div>
                 <p className="mb-0">{stage.purpose}</p>

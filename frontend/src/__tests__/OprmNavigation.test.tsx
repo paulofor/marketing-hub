@@ -62,6 +62,8 @@ describe("OPRM navigation", () => {
       screen.getByRole("button", { name: /iniciar novo job v2/i }),
     ).toBeTruthy();
     expect(screen.getByText(/^Acumulador de Conhecimento$/)).toBeTruthy();
+    expect(screen.getAllByText(/^IA$/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/^Web$/).length).toBeGreaterThan(0);
   });
 
   it("translates v2 job stage names returned in English", () => {

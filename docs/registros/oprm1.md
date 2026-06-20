@@ -1,3 +1,8 @@
+## 2026-06-20 11:45:00 (UTC-3) — OPRM NichoCNAE v2: leitura operacional dos jobs simplificada
+
+- Ajustada a tela do pipeline NichoCNAE v2 para trocar a tabela técnica de jobs por cards de acompanhamento com etapa, situação em linguagem humana, resumo do motivo e próximo passo operacional.
+- Causa-raiz tratada: a tela exibia identificadores longos e stack trace bruto como decisão principal, impedindo o usuário de entender rapidamente onde o job parou e o que precisa acontecer para avançar.
+
 ## 2026-06-19 00:00:00 (UTC) — OPRM NichoCNAE v2: separação visual entre jobs abertos e concluídos
 
 - Ajustada a tela do pipeline NichoCNAE v2 para separar visualmente os blocos de jobs abertos e concluídos com cards dedicados, trilha lateral de status e divisor elegante entre os painéis.

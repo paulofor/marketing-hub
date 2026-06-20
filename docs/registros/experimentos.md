@@ -4914,3 +4914,10 @@
 - Adicionado fluxo para a tela de novo experimento gerar 3 opções de contrato de promessa única com IA.
 - O backend passa a expor endpoint próprio de experimentos para gerar opções com dor única, recompensa gratuita, promessa do funil e CTA principal.
 - O frontend permite escolher uma das opções geradas e preencher automaticamente o formulário antes de salvar o experimento.
+
+## 2026-06-20 — IA de promessa exige nicho e hipótese completos
+
+- Solicitação: a opção de gerar com IA na criação de experimento só deve ficar habilitada após escolha de nicho e hipótese, e a geração precisa receber todos os detalhes do nicho e do pipeline de hipótese.
+- Causa-raiz: a tela permitia acionar a IA apenas com nicho e o backend aceitava hipótese ausente, usando pouco contexto estratégico para montar dor, recompensa, promessa e CTA.
+- Correção aplicada: o frontend bloqueia o botão até existir nicho e hipótese selecionados; o backend valida a hipótese como obrigatória e monta o prompt com detalhes do nicho e campos centrais da hipótese, incluindo framework/pipeline quando disponível.
+- Prevenção de recorrência: teste unitário do serviço passou a validar bloqueio sem hipótese e presença do contexto de nicho e hipótese no prompt enviado à IA.

@@ -104,6 +104,7 @@ export default function NewExperimentPage() {
   const showNicheSelect = nicheIdParam === "";
   const showHypSelect = hypothesisIdParam === "";
   const workerRequests = { instantForms: 0, emails: 0 };
+  const canGeneratePromiseOptions = Boolean(form.nicheId && form.hypothesisId);
 
   useEffect(() => {
     if (selectedHypothesis?.title) {
@@ -142,14 +143,13 @@ export default function NewExperimentPage() {
   }, [autoSampleSize, autoMde, form.dailyBudget]);
 
   const handleGeneratePromiseOptions = async () => {
-    if (!form.nicheId) {
-      alert("Selecione um nicho antes de gerar com IA");
+    if (!canGeneratePromiseOptions) {
+      alert("Selecione o nicho e a hipótese antes de gerar com IA");
       return;
     }
     const options = await generatePromiseOptions.mutateAsync({
       nicheId: Number(form.nicheId),
-      hypothesisId: form.hypothesisId || undefined,
-      hypothesis: form.hypothesis || undefined,
+      hypothesisId: form.hypothesisId,
       currentSinglePain: form.singlePain || undefined,
       currentFreeReward: form.freeReward || undefined,
       currentFunnelPromise: form.funnelPromise || undefined,
@@ -378,7 +378,14 @@ export default function NewExperimentPage() {
             <button
               type="button"
               className="btn btn-outline-primary btn-sm"
-              disabled={generatePromiseOptions.isPending}
+              disabled={
+                !canGeneratePromiseOptions || generatePromiseOptions.isPending
+              }
+              title={
+                canGeneratePromiseOptions
+                  ? "Gerar opções com os detalhes do nicho e da hipótese"
+                  : "Selecione o nicho e a hipótese antes de gerar com IA"
+              }
               onClick={handleGeneratePromiseOptions}
             >
               {generatePromiseOptions.isPending ? (
@@ -389,8 +396,10 @@ export default function NewExperimentPage() {
                   />
                   Gerando...
                 </span>
-              ) : (
+              ) : canGeneratePromiseOptions ? (
                 "Gerar 3 opções com IA"
+              ) : (
+                "Selecione nicho e hipótese"
               )}
             </button>
           </div>

@@ -60,6 +60,9 @@ public class ExperimentPromiseGenerationService {
         if (request == null || request.nicheId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Selecione um nicho antes de gerar com IA.");
         }
+        if (request.hypothesisId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Selecione uma hipótese antes de gerar com IA.");
+        }
         MarketNiche niche = nicheRepository.findById(request.nicheId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Nicho não encontrado"));
         Hypothesis hypothesis = resolveHypothesis(request.hypothesisId());
@@ -85,11 +88,8 @@ public class ExperimentPromiseGenerationService {
         }
     }
 
-    /** Localiza a hipótese opcional usada como contexto da geração. */
+    /** Localiza a hipótese obrigatória usada como contexto da geração. */
     private Hypothesis resolveHypothesis(UUID hypothesisId) {
-        if (hypothesisId == null) {
-            return null;
-        }
         return hypothesisRepository.findById(hypothesisId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Hipótese não encontrada"));
     }
@@ -126,23 +126,63 @@ public class ExperimentPromiseGenerationService {
     private String buildPrompt(GenerateExperimentPromiseOptionsRequest request, MarketNiche niche, Hypothesis hypothesis) {
         StringBuilder sb = new StringBuilder();
         sb.append("Gere exatamente 3 opções diferentes de contrato de promessa única para um novo experimento.\n");
-        sb.append("Nicho: ").append(niche.getName()).append('\n');
-        appendIfPresent(sb, "Descrição do nicho", niche.getDescription());
-        if (hypothesis != null) {
-            appendIfPresent(sb, "Hipótese selecionada", hypothesis.getTitle());
-            appendIfPresent(sb, "Problema da hipótese", hypothesis.getProblem());
-            appendIfPresent(sb, "Promessa da hipótese", hypothesis.getPromise());
-            appendIfPresent(sb, "Mecanismo", hypothesis.getMechanism());
-            appendIfPresent(sb, "Entrega", hypothesis.getEntrega());
-        } else {
-            appendIfPresent(sb, "Hipótese digitada", request.hypothesis());
-        }
+        appendNicheDetails(sb, niche);
+        appendHypothesisPipelineDetails(sb, hypothesis);
         appendIfPresent(sb, "Dor atual digitada", request.currentSinglePain());
         appendIfPresent(sb, "Recompensa atual digitada", request.currentFreeReward());
         appendIfPresent(sb, "Promessa atual digitada", request.currentFunnelPromise());
         appendIfPresent(sb, "CTA atual digitado", request.currentPrimaryCta());
         sb.append("\nAs três opções devem ser distintas: uma direta, uma emocional e uma operacional/prática.");
         return sb.toString();
+    }
+
+    /** Adiciona ao prompt os detalhes disponíveis do nicho selecionado. */
+    private void appendNicheDetails(StringBuilder sb, MarketNiche niche) {
+        sb.append("Nicho selecionado:\n");
+        appendIfPresent(sb, "- Nome", niche.getName());
+        appendIfPresent(sb, "- Descrição", niche.getDescription());
+        appendIfPresent(sb, "- Categoria de interesse", niche.getInterestCategory());
+        appendIfPresent(sb, "- Categoria de cargo", niche.getRoleCategory());
+        appendIfPresent(sb, "- Segmentação base", niche.getBaseSegmentation());
+        appendIfPresent(sb, "- Interesses", niche.getInterests());
+        appendIfPresent(sb, "- Filtros demográficos", niche.getDemographicFilters());
+        appendIfPresent(sb, "- Dicas extras", niche.getExtraTips());
+        appendIfPresent(sb, "- Promessas validadas", niche.getPromises());
+        appendIfPresent(sb, "- Ofertas validadas", niche.getOffers());
+        appendIfPresent(sb, "- Volume de demanda", niche.getDemandVolume());
+        appendListIfPresent(sb, "- Lista curada de interesses", niche.getInterestList());
+        appendListIfPresent(sb, "- Lista curada de cargos", niche.getRoleList());
+        appendListIfPresent(sb, "- Lista curada de comportamentos", niche.getBehaviorList());
+    }
+
+    /** Adiciona ao prompt o pipeline completo conhecido da hipótese selecionada. */
+    private void appendHypothesisPipelineDetails(StringBuilder sb, Hypothesis hypothesis) {
+        sb.append("\nHipótese selecionada e pipeline de hipótese:\n");
+        appendIfPresent(sb, "- Título", hypothesis.getTitle());
+        appendIfPresent(sb, "- Persona", hypothesis.getPersona());
+        appendIfPresent(sb, "- Problema/dor", hypothesis.getProblem());
+        appendIfPresent(sb, "- Promessa/resultado", hypothesis.getPromise());
+        appendIfPresent(sb, "- Mecanismo", hypothesis.getMechanism());
+        appendIfPresent(sb, "- Mecanismo único", hypothesis.getUniqueMechanism());
+        appendIfPresent(sb, "- Entrega/oferta", hypothesis.getEntrega());
+        appendIfPresent(sb, "- Regra de sucesso", hypothesis.getSuccessRule());
+        appendIfPresent(sb, "- Framework Dor Resultado Mecanismo Prova Oferta", hypothesis.getFrameworkJson());
+        if (hypothesis.getOfferType() != null) {
+            appendIfPresent(sb, "- Tipo de oferta", hypothesis.getOfferType().name());
+        }
+        if (hypothesis.getPrice() != null) {
+            appendIfPresent(sb, "- Preço", hypothesis.getPrice().toPlainString());
+        }
+        if (hypothesis.getKpiTargetCpl() != null) {
+            appendIfPresent(sb, "- KPI alvo CPL", hypothesis.getKpiTargetCpl().toPlainString());
+        }
+    }
+
+    /** Adiciona listas ao prompt apenas quando houver itens úteis. */
+    private void appendListIfPresent(StringBuilder sb, String label, List<String> values) {
+        if (values != null && !values.isEmpty()) {
+            sb.append(label).append(": ").append(String.join(", ", values)).append('\n');
+        }
     }
 
     /** Adiciona ao prompt apenas campos com conteúdo útil. */

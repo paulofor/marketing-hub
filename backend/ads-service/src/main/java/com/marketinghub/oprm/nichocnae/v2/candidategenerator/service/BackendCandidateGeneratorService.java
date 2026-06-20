@@ -267,10 +267,15 @@ public class BackendCandidateGeneratorService {
 
     /** Converte a entidade persistida no contrato canônico de pending do executor. */
     private CandidateGeneratorPendingResponse toPendingResponse(OprmNichoCnaeV2StageExecution execution) {
+        String cnaeDescription = nicheCandidateRepository
+                .findById(execution.getSourceNicheId())
+                .map(OprmNicheCandidate::getCnaeDescription)
+                .orElse(null);
         return new CandidateGeneratorPendingResponse(
                 String.valueOf(execution.getId()),
                 execution.getJobId(),
                 execution.getCnaeCode(),
+                cnaeDescription,
                 execution.getSourceNicheId(),
                 execution.getAttemptNumber(),
                 execution.getTechnicalRetryNumber(),

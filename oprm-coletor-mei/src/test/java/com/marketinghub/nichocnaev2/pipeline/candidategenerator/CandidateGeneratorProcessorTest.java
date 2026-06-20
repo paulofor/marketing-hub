@@ -15,12 +15,18 @@ class CandidateGeneratorProcessorTest {
     void generatesNeutralCandidatesAndCandidateUrlsForSafetyFilter() {
         CandidateGeneratorProcessor processor = new CandidateGeneratorProcessor();
 
-        StageResult result = processor.process(new StageContext("job-1", "stage-1", Map.of("cnaeCode", "4781400")));
+        StageResult result = processor.process(new StageContext(
+                "job-1",
+                "stage-1",
+                Map.of("cnaeCode", "7319002", "cnaeDescription", "Promoção de vendas")));
 
         assertThat(result.status()).isEqualTo("BOOTSTRAPPED");
         assertThat(result.output().get("nextStageCode")).isEqualTo("source-safety-filter");
         assertThat((List<?>) result.output().get("candidateUrls")).hasSizeGreaterThanOrEqualTo(3);
         assertThat((List<?>) result.output().get("candidates")).hasSizeBetween(4, 6);
         assertThat(String.valueOf(result.output().get("candidates"))).contains("painHypotheses=[]", "priorConfidence=LOW");
+        assertThat(String.valueOf(result.output().get("candidates")))
+                .contains("Promoção de vendas")
+                .doesNotContain("CNAE 7319002");
     }
 }

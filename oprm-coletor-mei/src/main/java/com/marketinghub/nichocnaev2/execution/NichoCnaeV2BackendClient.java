@@ -3,6 +3,8 @@ package com.marketinghub.nichocnaev2.execution;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -71,12 +73,49 @@ public class NichoCnaeV2BackendClient {
         request.put("failureType", failureType);
         request.put("reasonCode", reasonCode);
         request.put("errorCode", reasonCode);
-        request.put("errorMessage", ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage());
+        request.put("errorMessage", detailedErrorMessage(stage, pending, ex, reasonCode));
         request.put("inputPayload", pending.inputPayload());
         restTemplate.postForObject(
                 backendBaseUrl + stage.backendPath() + "/" + pending.stageExecutionId() + "/fail",
                 request,
                 Object.class);
+    }
+
+    /** Monta erro persistível com ponto de falha e stack trace para não perder a origem de NPE ou falhas similares. */
+    static String detailedErrorMessage(
+            NichoCnaeV2StageDefinition stage, NichoCnaeV2PendingExecution pending, RuntimeException ex, String reasonCode) {
+        StringWriter stackTrace = new StringWriter();
+        ex.printStackTrace(new PrintWriter(stackTrace));
+        StackTraceElement failurePoint = firstApplicationFrame(ex);
+        String message = ex.getMessage() == null || ex.getMessage().isBlank()
+                ? ex.getClass().getSimpleName()
+                : ex.getClass().getSimpleName() + ": " + ex.getMessage();
+        return "reasonCode="
+                + reasonCode
+                + "; stage="
+                + stage.stageCode()
+                + "; stageExecutionId="
+                + pending.stageExecutionId()
+                + "; jobId="
+                + pending.jobId()
+                + "; cnaeCode="
+                + pending.cnaeCode()
+                + "; exception="
+                + message
+                + "; failurePoint="
+                + failurePoint
+                + "\n"
+                + stackTrace;
+    }
+
+    /** Localiza o primeiro frame da aplicação para apontar rapidamente onde a falha nasceu. */
+    private static StackTraceElement firstApplicationFrame(RuntimeException ex) {
+        for (StackTraceElement frame : ex.getStackTrace()) {
+            if (frame.getClassName().startsWith("com.marketinghub.")) {
+                return frame;
+            }
+        }
+        return ex.getStackTrace().length == 0 ? null : ex.getStackTrace()[0];
     }
 
     /** Serializa payload estruturado para armazenamento funcional no backend. */

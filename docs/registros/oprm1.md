@@ -1141,3 +1141,14 @@
 - O `CandidateGeneratorProcessor` passou a montar candidatos genéricos com a descrição do CNAE quando disponível; para o CNAE `7319002`, a referência operacional passa a ser `Promoção de vendas` em vez de `CNAE 7319002`.
 - Causa-raiz corrigida: o executor recebia apenas o código do CNAE no pending e, por isso, o fallback genérico contaminava o contexto de negócio com identificador técnico numérico.
 - Prevenção de recorrência: testes cobrem a propagação da descrição no pending e a ausência de `CNAE 7319002` nos candidatos quando a descrição está disponível.
+
+## 2026-06-20 — NichoCNAE v2 preserva ponto de falha em callbacks de erro do executor
+
+- Ajustado o tratamento comum de falha do executor `oprm-coletor-mei` para enviar ao backend `errorMessage` com `reasonCode`, etapa, `stageExecutionId`, `jobId`, `cnaeCode`, classe da exception, primeiro frame de aplicação e stack trace completo.
+- Causa-raiz corrigida: exceptions sem mensagem, como `NullPointerException`, eram persistidas apenas como `NullPointerException`, fazendo o sistema perder o ponto exato que gerou o erro.
+- Como o callback comum `NichoCnaeV2BackendClient.fail(...)` atende todas as etapas v2, a preservação do ponto de falha passa a valer para `candidate-generator`, `source-safety-filter`, `adaptive-query-planner`, `candidate-tournament`, `source-fetcher-reranker`, `knowledge-accumulator`, `commercial-evidence-gate`, `reprocess-controller` e `enriched-niche-materializer`.
+- Prevenção de recorrência: adicionado teste unitário cobrindo uma NPE sem mensagem e verificando a persistência do primeiro frame de aplicação junto com o stack trace.
+## 2026-06-19 — Tradução dos nomes das etapas do pipeline NichoCNAE v2
+
+- Atualizados os rótulos exibidos no frontend para apresentar as etapas do pipeline NichoCNAE v2 em português, mantendo os códigos técnicos internos sem alteração.
+- Ajustado o teste de navegação do OPRM para validar os novos nomes visíveis ao usuário.

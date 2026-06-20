@@ -1,0 +1,44 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "options": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "singlePain": {
+            "type": "string",
+            "minLength": 10,
+            "description": "Dor única, concreta e específica do público."
+          },
+          "freeReward": {
+            "type": "string",
+            "minLength": 10,
+            "description": "Recompensa gratuita simples e útil que será entregue ao lead."
+          },
+          "funnelPromise": {
+            "type": "string",
+            "minLength": 10,
+            "description": "Promessa plausível do funil, alinhada à dor e à recompensa."
+          },
+          "primaryCta": {
+            "type": "string",
+            "minLength": 5,
+            "description": "CTA principal claro, orientado ao recebimento da recompensa."
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 10,
+            "description": "Motivo objetivo da opção e conexão com nicho/hipótese."
+          }
+        },
+        "required": ["singlePain", "freeReward", "funnelPromise", "primaryCta", "reason"]
+      }
+    }
+  },
+  "required": ["options"]
+}

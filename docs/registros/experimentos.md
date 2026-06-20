@@ -4952,3 +4952,8 @@
 - Problema: a tela de novo experimento podia ficar em “Aguardando IA” indefinidamente porque o backend registrava a solicitação em `experiment_promise_generation_request`, mas o AI Worker não tinha consumidor periódico para buscar, assumir, processar e concluir essa fila.
 - Correção: adicionado consumidor no AI Worker para buscar solicitações pendentes, chamar a OpenAI, concluir com três opções ou registrar falha para liberar a tela do estado de espera.
 - Prevenção: o contrato de resposta passou a expor o prompt persistido ao worker, evitando processamento sem contexto comercial.
+
+## 2026-06-20 — Prompt e schema externos para promessa única
+- Ajuste: a chamada OpenAI da geração de contrato de promessa única passou a usar prompt markdown e schema JSON em arquivos do AI Worker, seguindo o padrão do GeraLanding.
+- Contexto comercial: o backend passou a incluir descrição rica ativa do nicho e o snapshot completo do pipeline de hipótese no prompt persistido para o worker.
+- Prevenção: a saída da OpenAI agora é validada por schema JSON estrito, reduzindo retorno fora do contrato esperado pela tela.

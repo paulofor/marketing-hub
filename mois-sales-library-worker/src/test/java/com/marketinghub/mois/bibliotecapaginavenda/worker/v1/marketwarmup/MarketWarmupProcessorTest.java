@@ -1,6 +1,7 @@
 package com.marketinghub.mois.bibliotecapaginavenda.worker.v1.marketwarmup;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.model.WorkerDtos.MarketWarmupClaimedJob;
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.model.WorkerDtos.MarketWarmupPlatform;
@@ -70,6 +71,29 @@ class MarketWarmupProcessorTest {
     }
 
     /**
+     * Garante que resultados genéricos por palavra solta do título não sejam persistidos como dossiê vazio.
+     */
+    @Test
+    void shouldRejectGenericWebResultsThatDoNotMatchProductAnchors() {
+        MarketWarmupProcessor processor = new MarketWarmupProcessor(new MarketWarmupQueryBuilder(), new FallbackQueryPlanner(), new GenericSearchClient());
+        MarketWarmupClaimedJob job = new MarketWarmupClaimedJob(
+                9L,
+                90L,
+                "workspace-001",
+                "https://hotmart.com/pt-br/marketplace/produtos/protocolo-iodo",
+                "A REVOLUÇÃO DO IODO",
+                "Fernanda Geribello Anders",
+                null,
+                null,
+                null,
+                null);
+
+        assertThatThrownBy(() -> processor.process(job, 4))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Busca pública não retornou fontes rastreáveis");
+    }
+
+    /**
      * Simula uma fonte pública sem dependência de rede para manter o teste determinístico.
      */
     private static class FakeSearchClient implements PublicWebSearchClient {
@@ -110,6 +134,21 @@ class MarketWarmupProcessorTest {
                     new PublicSearchResult("Thiago Bechara dos Santos | Peptídeos", "https://www.instagram.com/thiagobechara.peptideos", "Conteúdo sobre certificação avançada em peptídeos, protocolo seguro, prescrição clínica e depoimentos de profissionais.", "<div>raw</div>"),
                     new PublicSearchResult("Thiago Bechara dos Santos músico", "https://www.instagram.com/thiagobechara.musica", "Agenda de shows, violão e bastidores de música autoral.", "<div>raw</div>"),
                     new PublicSearchResult("Thiago Peptídeos", "https://www.youtube.com/@outrothiagopeptideos", "Canal sobre peptídeos sem relação com Thiago Bechara dos Santos.", "<div>raw</div>"));
+        }
+    }
+
+    /**
+     * Simula resultados públicos genéricos que mencionam apenas uma palavra ampla do título.
+     */
+    private static class GenericSearchClient implements PublicWebSearchClient {
+        /**
+         * Retorna fontes sem produtor e sem semelhança suficiente com o produto.
+         */
+        @Override
+        public List<PublicSearchResult> search(String query, int limit) throws IOException {
+            return List.of(
+                    new PublicSearchResult("Revolução Francesa: resumo", "https://www.todamateria.com.br/revolucao-francesa/", "Texto escolar sobre a Revolução Francesa.", "<div>raw</div>"),
+                    new PublicSearchResult("O que é revolução", "https://www.dicio.com.br/revolucao/", "Significado de revolução no dicionário.", "<div>raw</div>"));
         }
     }
 }

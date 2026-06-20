@@ -38,7 +38,9 @@ public class MoisSalesPageMarketWarmupRepository implements MoisSalesPageMarketW
     @Override
     public Optional<SalesPageWarmupData> findSalesPage(long pageId) {
         List<SalesPageWarmupData> rows = jdbcTemplate.query("""
-                SELECT sp.id, sp.workspace_id, sp.url_canonical, sp.title, cr.producer_name,
+                SELECT sp.id, sp.workspace_id, sp.url_canonical,
+                       COALESCE(NULLIF(sp.product_name, ''), NULLIF(cr.product_name, ''), sp.title) AS title,
+                       COALESCE(NULLIF(cr.hotmart_producer, ''), NULLIF(cr.producer_name, '')) AS producer_name,
                        sp.current_status, sp.analysis_status,
                        sp.offer_summary, sp.mechanism_summary, sp.promise_summary, sp.proof_summary
                 FROM mois_sales_page sp
@@ -108,7 +110,10 @@ public class MoisSalesPageMarketWarmupRepository implements MoisSalesPageMarketW
     public Optional<MarketWarmupClaimData> findNextPendingJob(String workspaceId) {
         List<MarketWarmupClaimData> rows = jdbcTemplate.query("""
                 SELECT j.id AS job_id, j.sales_page_id, j.workspace_id, j.status, j.created_at, j.error_category, j.error_message,
-                       sp.url_canonical, sp.title, cr.producer_name, sp.current_status, sp.analysis_status,
+                       sp.url_canonical,
+                       COALESCE(NULLIF(sp.product_name, ''), NULLIF(cr.product_name, ''), sp.title) AS title,
+                       COALESCE(NULLIF(cr.hotmart_producer, ''), NULLIF(cr.producer_name, '')) AS producer_name,
+                       sp.current_status, sp.analysis_status,
                        sp.offer_summary, sp.mechanism_summary, sp.promise_summary, sp.proof_summary
                 FROM mois_sales_page_market_warmup_job j
                 JOIN mois_sales_page sp ON sp.id = j.sales_page_id

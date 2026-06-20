@@ -1160,3 +1160,10 @@
 - 2026-06-20 03:10:00 (UTC): corrigida a causa-raiz da etapa 2 `source-safety-filter` do pipeline NichoCNAE v2 falhar no job `nichocnae-v2-candidate-2-job-2`: o executor adicionava metadados opcionais nulos ao `StageContext`, e o `Map.copyOf` interrompia a etapa com `NullPointerException` antes do filtro processar as URLs candidatas. O contexto genérico agora remove valores nulos antes de congelar o mapa e há teste de regressão cobrindo pending com `cnaeDescription`/`researchCycleId` ausentes.
 - 2026-06-20 03:35:00 (UTC): documentado em `docs/canonical/oprm-nichocnae-v2-pending-executor.md` o contrato mínimo de `pending` que cada etapa do executor OPRM NichoCNAE v2 precisa receber, incluindo envelope comum, payload funcional por etapa e lacunas atuais de etapas referenciadas ainda sem contrato completo (`source-searcher`, `signal-extractor` e `routine-synthesizer`).
 - 2026-06-20 03:45:00 (UTC): revisado o backend NichoCNAE v2 contra o contrato do executor e ajustados os endpoints `pending` para devolver envelope comum mais completo ao worker (`researchCycleId`, `cnaeDescription` e `materializationEnabled`, além dos identificadores já existentes). Também foi documentado o Swagger da etapa `adaptive-query-planner` e atualizadas as descrições dos pendings v2.
+
+## 2026-06-20 — NichoCNAE v2 mostra decisão final e custo de IA por job/CNAE
+
+- Ajustado o contrato de jobs do CNAE na v2 para expor decisão funcional final, motivo de encerramento, sinal de uso de IA e soma de custo de IA em USD por job e agregado do CNAE.
+- A tela do pipeline v2 passa a mostrar quando um job foi encerrado sem subnicho viável (`NO_VIABLE_SUBNICHE`) em vez de apresentar apenas `COMPLETED`, reduzindo interpretação falsa de que houve nicho materializado.
+- Causa-raiz corrigida: a tela recebia apenas status técnico de execução aberta/encerrada, mas não recebia a decisão de negócio persistida no `outputPayload` da última etapa nem o custo contabilizado nos payloads.
+- Prevenção de recorrência: teste unitário do backend cobre agregação de decisão `NO_VIABLE_SUBNICHE`, explicação com contagens e custo de IA no job/CNAE.

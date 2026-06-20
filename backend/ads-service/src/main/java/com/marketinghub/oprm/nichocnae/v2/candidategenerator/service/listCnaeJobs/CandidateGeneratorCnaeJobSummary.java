@@ -1,5 +1,6 @@
 package com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.listCnaeJobs;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 
 /** Representa o resumo administrativo de um job v2 agrupado por jobId. */
@@ -14,5 +15,10 @@ public record CandidateGeneratorCnaeJobSummary(
         Integer technicalRetryNumber,
         Integer knowledgeVersion,
         Boolean materializationEnabled,
+        String finalDecision,
+        String finalDecisionLabel,
+        String finalDecisionReason,
+        Boolean usedAi,
+        BigDecimal aiCostUsd,
         Instant createdAt,
         Instant updatedAt) {}

@@ -302,3 +302,11 @@ Existe processor no executor, mas a etapa ainda não está cadastrada na lista c
 6. A próxima etapa receberá todo o contexto necessário sem consultar logs técnicos?
 7. O contrato permite reprocessamento sem perder aprendizado?
 8. O backend continua apenas lendo/escrevendo estado, sem executar regra operacional da etapa?
+
+## Regra de relatório ao usuário e custo de IA por job/CNAE
+
+Todo resumo administrativo de jobs da v2 deve expor a decisão funcional final persistida pela última etapa, e não apenas o status técnico `COMPLETED`/`FAILED`. Quando uma etapa encerrar o fluxo sem próxima etapa, o backend deve retornar um rótulo e motivo de negócio suficientes para a tela explicar o encerramento ao usuário, por exemplo `NO_VIABLE_SUBNICHE` como "Encerrado sem subnicho viável" com contagens de candidatos e finalistas.
+
+Quando houver uso de IA em qualquer etapa do job, o custo deve ser contabilizado no resumo do próprio job e também agregado no resumo do CNAE. A fonte canônica imediata para essa contabilização é o `outputPayload` estruturado persistido pela própria etapa que consumiu IA, com campos explícitos de custo ou uso de IA; contratos novos devem preferir campos numéricos em USD (`aiCostUsd`, `totalAiCostUsd` ou equivalente canônico) e evitar JSON dentro de JSON. O backend não deve somar custo carregado em `inputPayload`, porque esse payload pode conter a saída de etapa anterior e causaria dupla contagem.
+
+A tela administrativa deve mostrar esses valores recebidos do backend, sem inferir estado de negócio localmente: decisão final, motivo, se houve IA e custo acumulado por job/CNAE.

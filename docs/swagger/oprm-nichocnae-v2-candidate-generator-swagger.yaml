@@ -32,6 +32,33 @@ paths:
       responses:
         "200":
           description: Listas de jobs abertas e encerradas para o CNAE informado.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - cnaeCode
+                  - cnaeAiCostUsd
+                  - cnaeUsedAi
+                  - openJobs
+                  - completedJobs
+                properties:
+                  cnaeCode:
+                    type: string
+                  cnaeAiCostUsd:
+                    type: number
+                    description: Soma dos custos de IA em USD registrados nos outputPayloads dos jobs listados para o CNAE.
+                  cnaeUsedAi:
+                    type: boolean
+                    description: Indica se algum job listado do CNAE registrou custo ou sinal explícito de uso de IA.
+                  openJobs:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/CandidateGeneratorCnaeJobSummary"
+                  completedJobs:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/CandidateGeneratorCnaeJobSummary"
   /api/internal/oprm/nichocnae/v2/candidate-generator/stage-executions/pending:
     get:
       summary: Lista execuções pendentes da etapa candidate-generator v2
@@ -64,3 +91,70 @@ paths:
       responses:
         "200":
           description: Falha registrada
+components:
+  schemas:
+    CandidateGeneratorCnaeJobSummary:
+      type: object
+      required:
+        - jobId
+        - cnaeCode
+        - status
+        - lastStageStatus
+        - materializationEnabled
+        - usedAi
+        - aiCostUsd
+      properties:
+        jobId:
+          type: string
+        cnaeCode:
+          type: string
+        status:
+          type: string
+          enum:
+            - OPEN
+            - COMPLETED
+        currentStageCode:
+          type: string
+          nullable: true
+        lastStageCode:
+          type: string
+          nullable: true
+        lastStageStatus:
+          type: string
+        attemptNumber:
+          type: integer
+          nullable: true
+        technicalRetryNumber:
+          type: integer
+          nullable: true
+        knowledgeVersion:
+          type: integer
+          nullable: true
+        materializationEnabled:
+          type: boolean
+        finalDecision:
+          type: string
+          nullable: true
+          description: Decisão funcional persistida na última etapa, como NO_VIABLE_SUBNICHE.
+        finalDecisionLabel:
+          type: string
+          nullable: true
+          description: Rótulo de negócio para explicar a conclusão ou bloqueio ao usuário.
+        finalDecisionReason:
+          type: string
+          nullable: true
+          description: Motivo curto da decisão final, preservando contagens relevantes.
+        usedAi:
+          type: boolean
+          description: Indica se o job registrou custo ou sinal explícito de uso de IA.
+        aiCostUsd:
+          type: number
+          description: Soma dos custos de IA em USD encontrados nos outputPayloads persistidos do job.
+        createdAt:
+          type: string
+          format: date-time
+          nullable: true
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true

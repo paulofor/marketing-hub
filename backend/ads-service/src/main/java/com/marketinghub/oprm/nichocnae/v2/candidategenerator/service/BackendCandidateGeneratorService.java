@@ -1,5 +1,8 @@
 package com.marketinghub.oprm.nichocnae.v2.candidategenerator.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.oprm.cnae.OprmNicheCandidate;
 import com.marketinghub.oprm.nichocnae.v2.OprmNichoCnaeV2FailureType;
 import com.marketinghub.oprm.nichocnae.v2.OprmNichoCnaeV2StageExecution;
@@ -14,12 +17,14 @@ import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.listCnaeJob
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.pending.CandidateGeneratorPendingResponse;
 import com.marketinghub.repository.jpa.oprm.cnae.OprmNicheCandidateRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.v2.OprmNichoCnaeV2StageExecutionRepository;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
@@ -31,6 +36,23 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class BackendCandidateGeneratorService {
     private static final String STAGE_CODE = "candidate-generator";
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final TypeReference<Map<String, Object>> MAP_TYPE = new TypeReference<>() {};
+    private static final List<String> DECISION_KEYS = List.of(
+            "tournamentDecision",
+            "gateDecision",
+            "materializationDecision",
+            "sourceFetchDecision",
+            "planDecision",
+            "safetyDecision",
+            "qualityStatus",
+            "decision");
+    private static final List<String> COST_KEYS = List.of(
+            "aiCostUsd",
+            "totalAiCostUsd",
+            "estimatedAiCostUsd",
+            "costUsd",
+            "estimatedCostUsd");
 
     private final OprmNicheCandidateRepository nicheCandidateRepository;
     private final OprmNichoCnaeV2StageExecutionRepository stageExecutionRepository;
@@ -112,7 +134,12 @@ public class BackendCandidateGeneratorService {
                 .reversed();
         openJobs.sort(newestFirst);
         completedJobs.sort(newestFirst);
-        return new CandidateGeneratorCnaeJobsResponse(cnaeCode, openJobs, completedJobs);
+        BigDecimal cnaeAiCostUsd = executionsByJob.values().stream()
+                .map(this::sumAiCostUsd)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        boolean cnaeUsedAi = cnaeAiCostUsd.compareTo(BigDecimal.ZERO) > 0
+                || executionsByJob.values().stream().flatMap(List::stream).anyMatch(this::hasAiUsageSignal);
+        return new CandidateGeneratorCnaeJobsResponse(cnaeCode, cnaeAiCostUsd, cnaeUsedAi, openJobs, completedJobs);
     }
 
     /** Registra conclusão da etapa persistindo a próxima etapa informada pelo executor externo. */
@@ -176,6 +203,10 @@ public class BackendCandidateGeneratorService {
                 .max(Comparator.comparing(OprmNichoCnaeV2StageExecution::getUpdatedAt, Comparator.nullsLast(Comparator.naturalOrder())))
                 .orElse(lastExecution);
         String jobStatus = hasOpenExecution(executions) ? "OPEN" : "COMPLETED";
+        Map<String, Object> lastOutput = parsePayload(lastExecution.getOutputPayload());
+        String finalDecision = decisionFrom(lastOutput, lastExecution);
+        BigDecimal aiCostUsd = sumAiCostUsd(executions);
+        boolean usedAi = aiCostUsd.compareTo(BigDecimal.ZERO) > 0 || executions.stream().anyMatch(this::hasAiUsageSignal);
         return new CandidateGeneratorCnaeJobSummary(
                 lastExecution.getJobId(),
                 lastExecution.getCnaeCode(),
@@ -187,8 +218,157 @@ public class BackendCandidateGeneratorService {
                 currentExecution.getTechnicalRetryNumber(),
                 currentExecution.getKnowledgeVersion(),
                 currentExecution.getMaterializationEnabled(),
+                finalDecision,
+                labelForDecision(finalDecision, lastExecution),
+                reasonForDecision(finalDecision, lastOutput, lastExecution),
+                usedAi,
+                aiCostUsd,
                 executions.stream().map(OprmNichoCnaeV2StageExecution::getCreatedAt).min(Comparator.naturalOrder()).orElse(null),
                 lastExecution.getUpdatedAt());
+    }
+
+    /** Extrai a decisão funcional persistida no output da última etapa para evitar conclusão sem explicação ao usuário. */
+    private String decisionFrom(Map<String, Object> output, OprmNichoCnaeV2StageExecution lastExecution) {
+        return DECISION_KEYS.stream()
+                .map(output::get)
+                .filter(Objects::nonNull)
+                .map(String::valueOf)
+                .filter(value -> !value.isBlank())
+                .findFirst()
+                .orElseGet(() -> lastExecution.getFailureType() == null
+                        ? lastExecution.getStatus().name()
+                        : lastExecution.getFailureType().name());
+    }
+
+    /** Traduz decisões funcionais críticas em rótulos claros de negócio para a tela administrativa. */
+    private String labelForDecision(String decision, OprmNichoCnaeV2StageExecution lastExecution) {
+        if ("NO_VIABLE_SUBNICHE".equals(decision)) {
+            return "Encerrado sem subnicho viável";
+        }
+        if ("FINALISTS_SELECTED".equals(decision)) {
+            return "Finalistas selecionados";
+        }
+        if (lastExecution.getStatus() == OprmNichoCnaeV2StageExecutionStatus.FAILED) {
+            return "Falha encerrada";
+        }
+        return decision;
+    }
+
+    /** Monta uma explicação curta da decisão final usando contagens estruturadas persistidas pelo executor. */
+    private String reasonForDecision(
+            String decision, Map<String, Object> output, OprmNichoCnaeV2StageExecution lastExecution) {
+        if ("NO_VIABLE_SUBNICHE".equals(decision)) {
+            return "O torneio terminou sem finalistas viáveis; candidatos="
+                    + numberText(output.get("candidateCount"))
+                    + ", finalistas="
+                    + numberText(output.get("finalistCount"))
+                    + ".";
+        }
+        if (lastExecution.getStatus() == OprmNichoCnaeV2StageExecutionStatus.FAILED) {
+            return lastExecution.getErrorMessage();
+        }
+        return null;
+    }
+
+    /** Soma custo de IA em dólares registrado na saída própria de cada etapa do job. */
+    private BigDecimal sumAiCostUsd(List<OprmNichoCnaeV2StageExecution> executions) {
+        return executions.stream()
+                .map(execution -> costFromPayload(execution.getOutputPayload()))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    /** Verifica se há sinal de uso de IA mesmo quando o custo registrado for zero ou ausente. */
+    private boolean hasAiUsageSignal(OprmNichoCnaeV2StageExecution execution) {
+        return hasAiUsageSignal(parsePayload(execution.getOutputPayload()));
+    }
+
+    /** Detecta chaves explícitas de IA em payload estruturado para classificar o job corretamente. */
+    private boolean hasAiUsageSignal(Map<String, Object> payload) {
+        return Boolean.TRUE.equals(payload.get("usedAi"))
+                || Boolean.TRUE.equals(payload.get("aiUsed"))
+                || payload.containsKey("model")
+                || payload.containsKey("openAiModel")
+                || payload.containsKey("aiUsage")
+                || payload.containsKey("tokenUsage");
+    }
+
+    /** Extrai custos conhecidos de um payload JSON sem falhar a tela quando o contrato antigo não tem custo. */
+    private BigDecimal costFromPayload(String payload) {
+        return costFromMap(parsePayload(payload));
+    }
+
+    /** Soma custos por chaves canônicas de custo de IA, incluindo objetos e listas aninhadas. */
+    private BigDecimal costFromMap(Map<String, Object> payload) {
+        BigDecimal total = BigDecimal.ZERO;
+        for (Map.Entry<String, Object> entry : payload.entrySet()) {
+            Object value = entry.getValue();
+            if (COST_KEYS.contains(entry.getKey())) {
+                total = total.add(decimal(value));
+            } else if (value instanceof Map<?, ?> nested) {
+                total = total.add(costFromMap(toStringKeyMap(nested)));
+            } else if (value instanceof List<?> items) {
+                total = total.add(costFromList(items));
+            }
+        }
+        return total;
+    }
+
+    /** Soma custos encontrados dentro de listas estruturadas do payload. */
+    private BigDecimal costFromList(List<?> items) {
+        BigDecimal total = BigDecimal.ZERO;
+        for (Object item : items) {
+            if (item instanceof Map<?, ?> nested) {
+                total = total.add(costFromMap(toStringKeyMap(nested)));
+            } else if (item instanceof List<?> nestedItems) {
+                total = total.add(costFromList(nestedItems));
+            }
+        }
+        return total;
+    }
+
+    /** Converte mapas vindos do Jackson para chaves textuais sem acoplar o contrato a DTO específico. */
+    private Map<String, Object> toStringKeyMap(Map<?, ?> source) {
+        Map<String, Object> converted = new LinkedHashMap<>();
+        source.forEach((key, value) -> converted.put(String.valueOf(key), value));
+        return converted;
+    }
+
+    /** Normaliza números de custo de IA vindos como número ou texto decimal. */
+    private BigDecimal decimal(Object value) {
+        if (value instanceof BigDecimal decimal) {
+            return decimal;
+        }
+        if (value instanceof Number number) {
+            return BigDecimal.valueOf(number.doubleValue());
+        }
+        if (value != null && !String.valueOf(value).isBlank()) {
+            try {
+                return new BigDecimal(String.valueOf(value));
+            } catch (NumberFormatException ignored) {
+                return BigDecimal.ZERO;
+            }
+        }
+        return BigDecimal.ZERO;
+    }
+
+    /** Lê payload JSON estruturado sem impedir o acompanhamento do job quando o payload estiver ausente ou legado. */
+    private Map<String, Object> parsePayload(String payload) {
+        if (payload == null || payload.isBlank()) {
+            return Map.of();
+        }
+        try {
+            return OBJECT_MAPPER.readValue(payload, MAP_TYPE);
+        } catch (JsonProcessingException ignored) {
+            return Map.of();
+        }
+    }
+
+    /** Formata contagens funcionais ausentes como zero para manter a explicação objetiva ao usuário. */
+    private String numberText(Object value) {
+        if (value instanceof Number number) {
+            return String.valueOf(number.intValue());
+        }
+        return value == null || String.valueOf(value).isBlank() ? "0" : String.valueOf(value);
     }
 
     /** Verifica se o job possui alguma etapa ainda operacionalmente aberta. */

@@ -124,18 +124,28 @@ class BackendCandidateGeneratorServiceTest {
         completed.setCnaeCode("4781400");
         completed.setStageCode("candidate-generator");
         completed.setStatus(OprmNichoCnaeV2StageExecutionStatus.COMPLETED);
+        completed.setOutputPayload(
+                "{\"tournamentDecision\":\"NO_VIABLE_SUBNICHE\",\"candidateCount\":0,\"finalistCount\":0,\"aiCostUsd\":0.015}");
         completed.setUpdatedAt(Instant.parse("2026-06-19T11:00:00Z"));
         when(stageExecutionRepository.findByCnaeCodeOrderByUpdatedAtDesc("4781400"))
                 .thenReturn(List.of(open, completed));
 
         var result = service.listJobsForCnae("4781400");
 
+        assertThat(result.cnaeUsedAi()).isTrue();
+        assertThat(result.cnaeAiCostUsd()).isEqualByComparingTo(new BigDecimal("0.015"));
         assertThat(result.openJobs()).hasSize(1);
         assertThat(result.openJobs().getFirst().jobId()).isEqualTo("job-aberto");
         assertThat(result.openJobs().getFirst().currentStageCode()).isEqualTo("source-safety-filter");
         assertThat(result.completedJobs()).hasSize(1);
         assertThat(result.completedJobs().getFirst().jobId()).isEqualTo("job-concluido");
         assertThat(result.completedJobs().getFirst().currentStageCode()).isNull();
+        assertThat(result.completedJobs().getFirst().finalDecision()).isEqualTo("NO_VIABLE_SUBNICHE");
+        assertThat(result.completedJobs().getFirst().finalDecisionLabel()).isEqualTo("Encerrado sem subnicho viável");
+        assertThat(result.completedJobs().getFirst().finalDecisionReason())
+                .isEqualTo("O torneio terminou sem finalistas viáveis; candidatos=0, finalistas=0.");
+        assertThat(result.completedJobs().getFirst().usedAi()).isTrue();
+        assertThat(result.completedJobs().getFirst().aiCostUsd()).isEqualByComparingTo(new BigDecimal("0.015"));
     }
 
     /** Ciclo 74: deve transformar falha de infraestrutura em retry técnico sem nova tentativa cognitiva. */

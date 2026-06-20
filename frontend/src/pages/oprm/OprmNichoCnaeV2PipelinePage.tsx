@@ -53,6 +53,25 @@ function formatDateTime(value: string | null | undefined) {
   }).format(new Date(value));
 }
 
+function formatAiCost(value: number | string | null | undefined) {
+  const numericValue = Number(value ?? 0);
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 4,
+    maximumFractionDigits: 6,
+  }).format(Number.isFinite(numericValue) ? numericValue : 0);
+}
+
+function decisionBadgeClass(job: OprmNichoCnaeV2JobSummary, open: boolean) {
+  if (open) return "badge text-bg-warning";
+  if (job.finalDecision === "NO_VIABLE_SUBNICHE") {
+    return "badge text-bg-secondary";
+  }
+  if (job.lastStageStatus === "FAILED") return "badge text-bg-danger";
+  return "badge text-bg-success";
+}
+
 function JobsTable({
   jobs,
   emptyMessage,
@@ -74,6 +93,8 @@ function JobsTable({
             <th>Job</th>
             {open ? <th>Etapa atual</th> : <th>Última etapa</th>}
             <th>Status</th>
+            <th>Decisão</th>
+            <th>Custo IA</th>
             <th>Tentativa</th>
             <th>Atualizado</th>
           </tr>
@@ -87,12 +108,28 @@ function JobsTable({
               </td>
               <td>
                 <span
-                  className={
-                    open ? "badge text-bg-warning" : "badge text-bg-success"
-                  }
+                  className={decisionBadgeClass(job, open)}
                 >
                   {open ? "Aberto" : (job.lastStageStatus ?? "Concluído")}
                 </span>
+              </td>
+              <td>
+                <div className="fw-semibold">
+                  {job.finalDecisionLabel ?? job.finalDecision ?? "—"}
+                </div>
+                {job.finalDecisionReason ? (
+                  <div className="text-secondary small">
+                    {job.finalDecisionReason}
+                  </div>
+                ) : null}
+              </td>
+              <td>
+                <span className="fw-semibold">
+                  {formatAiCost(job.aiCostUsd)}
+                </span>
+                <div className="text-secondary small">
+                  {job.usedAi ? "IA usada no job" : "Sem IA contabilizada"}
+                </div>
               </td>
               <td>
                 {job.attemptNumber ?? "—"}
@@ -243,6 +280,7 @@ export default function OprmNichoCnaeV2PipelinePage() {
   const decodedCnaeCode = cnaeCode ? decodeURIComponent(cnaeCode) : undefined;
   const startJobMutation = useStartOprmNichoCnaeV2Job(decodedCnaeCode ?? "");
   const jobsQuery = useOprmNichoCnaeV2Jobs(decodedCnaeCode ?? "");
+  const cnaeAiCostUsd = jobsQuery.data?.cnaeAiCostUsd ?? 0;
 
   return (
     <div className="d-flex flex-column gap-4">
@@ -314,6 +352,15 @@ export default function OprmNichoCnaeV2PipelinePage() {
           {startJobMutation.isError ? (
             <div className="alert alert-danger mt-3 mb-0" role="alert">
               {startJobMutation.error.message}
+            </div>
+          ) : null}
+          {decodedCnaeCode && jobsQuery.data ? (
+            <div className="alert alert-info mt-3 mb-0" role="status">
+              <strong>Custo de IA contabilizado no CNAE:</strong>{" "}
+              {formatAiCost(cnaeAiCostUsd)}.{" "}
+              {jobsQuery.data.cnaeUsedAi
+                ? "Há sinal de uso de IA em pelo menos um job deste CNAE."
+                : "Nenhum uso de IA foi registrado nos jobs listados deste CNAE."}
             </div>
           ) : null}
         </div>

@@ -12,12 +12,19 @@ export interface OprmNichoCnaeV2JobSummary {
   technicalRetryNumber: number | null;
   knowledgeVersion: number | null;
   materializationEnabled: boolean | null;
+  finalDecision: string | null;
+  finalDecisionLabel: string | null;
+  finalDecisionReason: string | null;
+  usedAi: boolean | null;
+  aiCostUsd: number | string | null;
   createdAt: string | null;
   updatedAt: string | null;
 }
 
 export interface OprmNichoCnaeV2JobsResponse {
   cnaeCode: string;
+  cnaeAiCostUsd: number | string | null;
+  cnaeUsedAi: boolean | null;
   openJobs: OprmNichoCnaeV2JobSummary[];
   completedJobs: OprmNichoCnaeV2JobSummary[];
 }

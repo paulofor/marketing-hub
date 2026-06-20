@@ -55,9 +55,11 @@ describe("OPRM navigation", () => {
     setup(<App />, ["/oprm/cnaes/9602501/pipeline-v2"]);
     expect(screen.getByText(/^Pipeline NichoCNAE v2$/)).toBeTruthy();
     expect(screen.getByText(/^CNAE 9602501$/)).toBeTruthy();
-    expect(screen.getByText(/^Candidate Generator$/)).toBeTruthy();
-    expect(screen.getByRole("button", { name: /iniciar novo job v2/i })).toBeTruthy();
-    expect(screen.getByText(/^Knowledge Accumulator$/)).toBeTruthy();
+    expect(screen.getByText(/^Gerador de Candidatos$/)).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: /iniciar novo job v2/i }),
+    ).toBeTruthy();
+    expect(screen.getByText(/^Acumulador de Conhecimento$/)).toBeTruthy();
   });
 
   it("redirects obsolete /oprm/pipeline route to CNAE niche creation flow", () => {

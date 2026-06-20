@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useCreateExperiment } from "../../api/experiment/useCreateExperiment";
-import { useGeneratePromiseOptions } from "../../api/experiment/useGeneratePromiseOptions";
+import {
+  useGeneratePromiseOptions,
+  usePromiseOptionsRequest,
+} from "../../api/experiment/useGeneratePromiseOptions";
 import type { PromiseOption } from "../../api/experiment/useGeneratePromiseOptions";
 import { useImageGenerationModels } from "../../api/ai/useImageGenerationModels";
 import { useNiches } from "../../api/niche/useNiches";
@@ -83,6 +86,9 @@ export default function NewExperimentPage() {
   });
   const [autoSampleSize, setAutoSampleSize] = useState(true);
   const [promiseOptions, setPromiseOptions] = useState<PromiseOption[]>([]);
+  const [promiseRequestId, setPromiseRequestId] = useState<
+    number | undefined
+  >();
   const [autoMde, setAutoMde] = useState(true);
   const { data: hypotheses } = useHypothesesByNiche(form.nicheId);
   const { data: selectedHypothesis } = useHypothesis(
@@ -105,12 +111,24 @@ export default function NewExperimentPage() {
   const showHypSelect = hypothesisIdParam === "";
   const workerRequests = { instantForms: 0, emails: 0 };
   const canGeneratePromiseOptions = Boolean(form.nicheId && form.hypothesisId);
+  const promiseOptionsRequest = usePromiseOptionsRequest(promiseRequestId);
+  const promiseRequestStatus = promiseOptionsRequest.data?.status;
+  const isWaitingPromiseOptions = Boolean(
+    promiseRequestId &&
+    !["COMPLETED", "FAILED"].includes(promiseRequestStatus ?? ""),
+  );
 
   useEffect(() => {
     if (selectedHypothesis?.title) {
       setForm((f) => ({ ...f, hypothesis: selectedHypothesis.title }));
     }
   }, [selectedHypothesis]);
+
+  useEffect(() => {
+    if (promiseOptionsRequest.data?.status === "COMPLETED") {
+      setPromiseOptions(promiseOptionsRequest.data.options ?? []);
+    }
+  }, [promiseOptionsRequest.data]);
 
   useEffect(() => {
     if ((!autoSampleSize && !autoMde) || !form.dailyBudget.trim()) {
@@ -147,6 +165,7 @@ export default function NewExperimentPage() {
       alert("Selecione o nicho e a hipótese antes de gerar com IA");
       return;
     }
+    setPromiseOptions([]);
     const response = await generatePromiseOptions.mutateAsync({
       nicheId: Number(form.nicheId),
       hypothesisId: form.hypothesisId,
@@ -155,6 +174,7 @@ export default function NewExperimentPage() {
       currentFunnelPromise: form.funnelPromise || undefined,
       currentPrimaryCta: form.primaryCta || undefined,
     });
+    setPromiseRequestId(response.requestId);
     setPromiseOptions(response.options ?? []);
   };
 
@@ -379,7 +399,9 @@ export default function NewExperimentPage() {
               type="button"
               className="btn btn-outline-primary btn-sm"
               disabled={
-                !canGeneratePromiseOptions || generatePromiseOptions.isPending
+                !canGeneratePromiseOptions ||
+                generatePromiseOptions.isPending ||
+                isWaitingPromiseOptions
               }
               title={
                 canGeneratePromiseOptions
@@ -388,21 +410,34 @@ export default function NewExperimentPage() {
               }
               onClick={handleGeneratePromiseOptions}
             >
-              {generatePromiseOptions.isPending ? (
+              {generatePromiseOptions.isPending || isWaitingPromiseOptions ? (
                 <span className="d-inline-flex align-items-center gap-1">
                   <span
                     className="spinner-border spinner-border-sm"
                     aria-hidden="true"
                   />
-                  Gerando...
+                  Aguardando IA...
                 </span>
               ) : canGeneratePromiseOptions ? (
-                "Gerar 3 opções com IA"
+                "Solicitar por IA"
               ) : (
                 "Selecione nicho e hipótese"
               )}
             </button>
           </div>
+          {isWaitingPromiseOptions && (
+            <div className="alert alert-warning py-2 mb-3" role="status">
+              Aguardando o processamento do AI Worker e a resposta final da
+              OpenAI. As opções aparecerão aqui automaticamente quando a
+              solicitação for concluída.
+            </div>
+          )}
+          {promiseRequestStatus === "FAILED" && (
+            <div className="alert alert-danger py-2 mb-3" role="alert">
+              A IA não conseguiu concluir esta solicitação. Tente solicitar
+              novamente.
+            </div>
+          )}
           {promiseOptions.length > 0 && (
             <div className="row g-2 mb-3">
               {promiseOptions.map((option, index) => (

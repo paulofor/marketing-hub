@@ -157,6 +157,12 @@ public class ExperimentController {
         return promiseGenerationService.generate(request);
     }
 
+    /** Consulta o status e o resultado de uma solicitação de promessa feita pela tela. */
+    @GetMapping("/promise-contract-options/stage-executions/{requestId}")
+    public GenerateExperimentPromiseOptionsResponse getPromiseOptions(@PathVariable Long requestId) {
+        return promiseGenerationService.get(requestId);
+    }
+
     /** Lista solicitações pendentes para consumo canônico do AI Worker pelo método pending. */
     @GetMapping("/promise-contract-options/stage-executions/pending")
     public java.util.List<GenerateExperimentPromiseOptionsResponse> pendingPromiseOptions(

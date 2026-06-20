@@ -38,7 +38,9 @@ public final class CandidateTournamentProcessor implements StageProcessor {
         output.put("finalistCount", finalists.size());
         output.put("rankedCandidates", ranked);
         output.put("finalists", finalists);
-        output.put("nextStageCode", finalists.isEmpty() ? "" : "source-fetcher-reranker");
+        output.put("gateDecision", decision);
+        output.put("reasonCode", finalists.isEmpty() ? "NO_VIABLE_SUBNICHE" : "FINALISTS_SELECTED");
+        output.put("nextStageCode", finalists.isEmpty() ? "reprocess-controller" : "source-fetcher-reranker");
         return new StageResult(decision, output, List.of(new StageArtifact(
                 "CANDIDATE_TOURNAMENT",
                 "inline://candidate-tournament/ranking",

@@ -41,6 +41,8 @@ class CandidateTournamentProcessorTest {
 
         assertThat(result.status()).isEqualTo("NO_VIABLE_SUBNICHE");
         assertThat(result.output()).containsEntry("finalistCount", 0);
-        assertThat(result.output()).containsEntry("nextStageCode", "");
+        assertThat(result.output()).containsEntry("gateDecision", "NO_VIABLE_SUBNICHE");
+        assertThat(result.output()).containsEntry("reasonCode", "NO_VIABLE_SUBNICHE");
+        assertThat(result.output()).containsEntry("nextStageCode", "reprocess-controller");
     }
 }

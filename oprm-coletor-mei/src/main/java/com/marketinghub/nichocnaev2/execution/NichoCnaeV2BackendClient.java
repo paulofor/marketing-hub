@@ -49,14 +49,19 @@ public class NichoCnaeV2BackendClient {
     }
 
     /** Registra no backend a próxima etapa pendente quando o contrato da etapa informar avanço operacional. */
-    public void createNextStage(NichoCnaeV2StageDefinition nextStage, NichoCnaeV2PendingExecution pending, String inputPayload) {
+    public void createNextStage(
+            NichoCnaeV2StageDefinition nextStage,
+            NichoCnaeV2PendingExecution pending,
+            String inputPayload,
+            Integer attemptNumber,
+            Integer knowledgeVersion) {
         Map<String, Object> request = new LinkedHashMap<>();
         request.put("jobId", pending.jobId());
         request.put("researchCycleId", pending.researchCycleId());
         request.put("sourceNicheId", pending.sourceNicheId());
         request.put("cnaeCode", pending.cnaeCode());
-        request.put("attemptNumber", pending.attemptNumber());
-        request.put("knowledgeVersion", pending.knowledgeVersion());
+        request.put("attemptNumber", attemptNumber == null ? pending.attemptNumber() : attemptNumber);
+        request.put("knowledgeVersion", knowledgeVersion == null ? pending.knowledgeVersion() : knowledgeVersion);
         request.put("materializationEnabled", pending.materializationEnabled());
         request.put("inputPayload", inputPayload);
         restTemplate.postForObject(backendBaseUrl + nextStage.backendPath(), request, Object.class);

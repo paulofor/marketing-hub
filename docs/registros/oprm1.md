@@ -1177,3 +1177,10 @@
 
 - Ajustada a tela do pipeline NichoCNAE v2 para sinalizar, em cada card de etapa, quando a etapa usa IA e/ou acessa a Web.
 - Causa-raiz preventiva: antes, o usuário precisava inferir pelo texto se haveria consumo de IA ou pesquisa externa, aumentando risco de leitura operacional errada sobre custo e dependência de fontes.
+
+## 2026-06-20 — NichoCNAE v2 reprocessa torneio sem finalistas viáveis
+
+- Ajustado o fluxo do executor OPRM NichoCNAE v2 para que `NO_VIABLE_SUBNICHE` no `candidate-tournament` não encerre o job imediatamente: a etapa agora encaminha para `reprocess-controller` com decisão e motivo explícitos.
+- O controlador de reprocessamento passa a reconhecer a decisão do torneio e devolver a menor etapa necessária (`candidate-tournament`) com nova tentativa cognitiva e nova versão de conhecimento.
+- Causa-raiz corrigida: o torneio sem finalistas emitia `nextStageCode` vazio, então o executor não criava a etapa de reprocessamento prevista na documentação operacional.
+- Prevenção de recorrência: testes cobrem o encaminhamento do torneio para reprocessamento, a leitura de `NO_VIABLE_SUBNICHE` pelo controlador e a propagação de tentativa/versão para a próxima pendência.

@@ -50,7 +50,25 @@ class ReprocessControllerProcessorTest {
         assertThat(plan).containsEntry("executionMode", "COGNITIVE_REPROCESS");
         assertThat(plan).containsEntry("rewindToStage", "adaptive-query-planner");
         assertThat(plan).containsEntry("knowledgeVersionTo", 5);
+        assertThat(result.output()).containsEntry("attemptNumber", 2);
+        assertThat(result.output()).containsEntry("knowledgeVersionTo", 5);
         assertThat((List<String>) plan.get("newEvidenceGaps")).contains("CONCRETE_EXECUTOR_TASKS");
+    }
+
+    /** Garante que ausência de finalista no torneio volta ao próprio torneio com nova tentativa cognitiva. */
+    @Test
+    void shouldReprocessNoViableTournamentDecisionToCandidateTournament() {
+        ReprocessControllerProcessor processor = new ReprocessControllerProcessor();
+        StageResult result = processor.process(new StageContext("job-81", "stage-9", Map.of(
+                "tournamentDecision", "NO_VIABLE_SUBNICHE",
+                "attemptNumber", 1,
+                "knowledgeVersion", 1,
+                "informationGain", 0.20)));
+
+        assertThat(result.status()).isEqualTo("COGNITIVE_REPROCESS_PLANNED");
+        assertThat(result.output()).containsEntry("nextStageCode", "candidate-tournament");
+        assertThat(result.output()).containsEntry("attemptNumber", 2);
+        assertThat(result.output()).containsEntry("knowledgeVersionTo", 2);
     }
 
     /** Garante encerramento seguro quando não há ganho informacional após o limite de tentativas. */

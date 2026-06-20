@@ -1,6 +1,8 @@
 import { Link, useParams } from "react-router-dom";
+import CollapsibleJsonViewer from "../../components/CollapsibleJsonViewer";
 import PageTitle from "../../components/PageTitle";
 import {
+  useMoisSalesLibraryPageAnalysis,
   useMoisSalesLibraryMarketWarmup,
   useMoisSalesLibraryMarketWarmupSearchAttempts,
   useMoisSalesLibraryMarketWarmupSources,
@@ -84,6 +86,7 @@ export default function MoisSalesPageLibraryDetailPage() {
     ? numericPageId
     : undefined;
   const pageQuery = useMoisSalesLibraryPage(validPageId);
+  const analysisQuery = useMoisSalesLibraryPageAnalysis(validPageId);
   const executionsQuery = useMoisSalesLibraryPageExecutions(validPageId);
   const marketWarmupQuery = useMoisSalesLibraryMarketWarmup(validPageId);
   const marketWarmupSearchAttemptsQuery =
@@ -338,6 +341,111 @@ export default function MoisSalesPageLibraryDetailPage() {
               próximo passo é corrigir a coleta para preencher preço,
               temperatura e produtor diretamente da página de venda.
             </div>
+          ) : null}
+        </div>
+      </section>
+
+      <section className="card border-0 shadow-sm">
+        <div className="card-body d-flex flex-column gap-3">
+          <div>
+            <h2 className="h5 mb-1">Análise da página de vendas</h2>
+            <p className="text-secondary mb-0">
+              Esta visão mostra a análise comercial feita pelo modelo sobre a
+              página capturada, usando somente dados retornados pelo backend.
+            </p>
+          </div>
+
+          {analysisQuery.isLoading ? (
+            <p className="text-secondary mb-0">
+              Carregando análise da página de vendas...
+            </p>
+          ) : null}
+          {analysisQuery.isError ? (
+            <div className="alert alert-warning mb-0">
+              Ainda não há análise comercial detalhada registrada para esta
+              página.
+            </div>
+          ) : null}
+          {analysisQuery.data ? (
+            <>
+              <div className="row g-3">
+                <div className="col-md-3">
+                  <div className="border rounded p-3 h-100 bg-light-subtle">
+                    <div className="text-secondary small">Score comercial</div>
+                    <strong className="fs-5">
+                      {analysisQuery.data.scoreTotal ?? "—"}
+                    </strong>
+                  </div>
+                </div>
+                <div className="col-md-3">
+                  <div className="border rounded p-3 h-100 bg-light-subtle">
+                    <div className="text-secondary small">Status</div>
+                    <strong className="fs-5">{analysisQuery.data.status}</strong>
+                  </div>
+                </div>
+                <div className="col-md-3">
+                  <div className="border rounded p-3 h-100 bg-light-subtle">
+                    <div className="text-secondary small">Modelo</div>
+                    <strong className="fs-5">
+                      {displayText(analysisQuery.data.modelName)}
+                    </strong>
+                  </div>
+                </div>
+                <div className="col-md-3">
+                  <div className="border rounded p-3 h-100 bg-light-subtle">
+                    <div className="text-secondary small">Analisado em</div>
+                    <strong className="fs-6">
+                      {formatDate(analysisQuery.data.analyzedAt)}
+                    </strong>
+                  </div>
+                </div>
+              </div>
+
+              {analysisQuery.data.analysisNotes ? (
+                <div className="alert alert-info mb-0">
+                  {analysisQuery.data.analysisNotes}
+                </div>
+              ) : null}
+
+              <div className="row g-3">
+                <div className="col-lg-6">
+                  <div className="border rounded p-3 h-100">
+                    <h3 className="h6 mb-2">Seções identificadas</h3>
+                    <CollapsibleJsonViewer
+                      content={analysisQuery.data.sectionsJson}
+                      initiallyCollapsed
+                    />
+                  </div>
+                </div>
+                <div className="col-lg-6">
+                  <div className="border rounded p-3 h-100">
+                    <h3 className="h6 mb-2">Copy e persuasão</h3>
+                    <CollapsibleJsonViewer
+                      content={analysisQuery.data.copyJson}
+                      initiallyCollapsed
+                    />
+                  </div>
+                </div>
+                <div className="col-lg-6">
+                  <div className="border rounded p-3 h-100">
+                    <h3 className="h6 mb-2">Visual e confiança</h3>
+                    <CollapsibleJsonViewer
+                      content={analysisQuery.data.visualJson}
+                      initiallyCollapsed
+                    />
+                  </div>
+                </div>
+                <div className="col-lg-6">
+                  <div className="border rounded p-3 h-100">
+                    <h3 className="h6 mb-2">Imagens e provas</h3>
+                    <CollapsibleJsonViewer
+                      content={analysisQuery.data.imageJson}
+                      initiallyCollapsed
+                    />
+                  </div>
+                </div>
+              </div>
+            </>
           ) : null}
         </div>
       </section>

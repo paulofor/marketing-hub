@@ -1737,3 +1737,9 @@ Arquivos principais:
 - A tela de detalhe do produto passa a mostrar as tentativas de pesquisa pública feitas pelo worker do dossiê, incluindo query executada, quantidade de resultados lidos, resultados aproveitados, descartados e exemplo retornado.
 - O backend passa a persistir tentativas de busca em tabela própria e expor endpoint dedicado, para que o frontend mostre a verdade operacional persistida em vez de depender de logs técnicos.
 - O worker passa a reportar as tentativas ao concluir ou falhar o dossiê, explicando quando os resultados encontrados eram genéricos ou sem ligação comprovável com produto/produtor.
+
+## 2026-06-20 — Exibição da análise comercial no detalhe da Biblioteca Sales Pages
+
+- Diagnosticado que o produto 401 possuía análise comercial persistida (`scoreTotal=78`, status `DONE` e JSONs de seções/copy/visual/imagens), mas a tela de detalhe não renderizava essa informação.
+- Corrigida a causa-raiz no frontend MOIS: a rota `/mois/sales-pages-library/:pageId` agora consulta o endpoint de análise da página e exibe score, status, modelo, data, notas e blocos colapsáveis dos JSONs comerciais retornados pelo backend.
+- Mantida a regra de verdade da tela: a interface apenas apresenta os dados do contrato existente do backend, sem inferir conteúdo localmente.

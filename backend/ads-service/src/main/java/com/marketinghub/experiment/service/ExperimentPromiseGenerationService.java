@@ -72,7 +72,7 @@ public class ExperimentPromiseGenerationService {
                 .currentPrimaryCta(trimToNull(request.currentPrimaryCta()))
                 .build();
         ExperimentPromiseGenerationRequest saved = requestRepository.save(entity);
-        return new GenerateExperimentPromiseOptionsResponse(saved.getId(), saved.getStatus().name(), List.of());
+        return new GenerateExperimentPromiseOptionsResponse(saved.getId(), saved.getStatus().name(), saved.getPrompt(), List.of());
     }
 
     /** Retorna a solicitação mais recente ainda útil para retomada da criação do teste pela tela. */
@@ -235,7 +235,7 @@ public class ExperimentPromiseGenerationService {
 
     /** Converte a entidade persistida para contrato de API. */
     private GenerateExperimentPromiseOptionsResponse toResponse(ExperimentPromiseGenerationRequest entity) {
-        return new GenerateExperimentPromiseOptionsResponse(entity.getId(), entity.getStatus().name(), readOptions(entity.getOptionsJson()));
+        return new GenerateExperimentPromiseOptionsResponse(entity.getId(), entity.getStatus().name(), entity.getPrompt(), readOptions(entity.getOptionsJson()));
     }
 
     /** Serializa as opções recebidas do AI Worker para auditoria persistida. */

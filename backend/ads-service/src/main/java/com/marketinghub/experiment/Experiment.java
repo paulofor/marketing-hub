@@ -20,7 +20,7 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 /**
- * Experiment grouping ad sets and creatives.
+ * Representa um experimento comercial com contexto, ativos, métricas e regras de publicação.
  */
 @Entity
 @Table(uniqueConstraints = @UniqueConstraint(columnNames = {"niche_id", "name"}))
@@ -42,6 +42,28 @@ public class Experiment {
 
     @Column(length = 255)
     private String hypothesis;
+
+    /** Dor única que o experimento deve validar no funil. */
+    @Column(name = "single_pain", length = 512)
+    private String singlePain;
+
+    /** Recompensa gratuita única prometida ao lead. */
+    @Column(name = "free_reward", length = 512)
+    private String freeReward;
+
+    /** Promessa central que deve ser repetida em anúncio, landing, formulário e entrega. */
+    @Column(name = "funnel_promise", length = 512)
+    private String funnelPromise;
+
+    /** CTA principal do experimento, como “Receber as 3 mensagens”. */
+    @Column(name = "primary_cta", length = 191)
+    private String primaryCta;
+
+    /** Objetivo de campanha exigido para publicação do experimento. */
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(name = "campaign_objective", length = 32, nullable = false)
+    private ExperimentCampaignObjective campaignObjective = ExperimentCampaignObjective.LEADS;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "facebook_page_id")

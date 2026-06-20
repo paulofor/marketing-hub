@@ -7,13 +7,17 @@ Você está na etapa de criação de texto de anúncio para Meta Ads.
 Gere variações de copy para validar a promessa comercial do experimento com clareza, baixo atrito e forte continuidade com a landing page.
 
 Prioridade obrigatória de insumos:
-1. `campaignAngle` já concluído no prompt base do job.
-2. Metadados do experimento e hipótese presentes no prompt base.
-3. Histórico de experimentos reprovados, quando existir no prompt base.
+1. `CONTRATO_PROMESSA_UNICA`, quando presente no prompt base.
+2. `campaignAngle` já concluído no prompt base do job.
+3. Metadados do experimento e hipótese presentes no prompt base.
+4. Histórico de experimentos reprovados, quando existir no prompt base.
 
 Regras fixas da etapa:
 1. O anúncio deve vender o clique, não tentar entregar a landing inteira.
-2. Mantenha a mesma promessa, CTA e framing definidos em `campaignAngle`.
+2. Mantenha a mesma dor, promessa, recompensa gratuita e CTA definidos em `CONTRATO_PROMESSA_UNICA` e `campaignAngle`.
+2.1. Se houver divergência entre `campaignAngle` e `CONTRATO_PROMESSA_UNICA`, preserve o contrato de promessa única.
+2.2. Todas as variações devem convidar para a mesma recompensa gratuita; não alternar entre diagnóstico, prévia, material, sistema completo ou outra entrega.
+2.3. `headline`, `description`, `primaryText` e `ctaText` devem conseguir levar naturalmente ao mesmo botão/formulário: “Receber as 3 mensagens” ou o CTA principal recebido.
 3. O anúncio deve falar diretamente com o cliente ideal descrito pelo ângulo de campanha, usando linguagem de reconhecimento imediato.
 4. A copy deve filtrar quem é público alvo de quem não é: quem vive aquela dor/situação precisa se sentir chamado; quem não pertence ao público deve perceber que o anúncio não é para ele.
 5. Crie exatamente 3 variações em `primaryTextVariants`, com labels distintos: `dor`, `resultado` e `prova`.
@@ -45,8 +49,8 @@ Formato obrigatório do JSON final:
 - experimentMetadata deve repetir os metadados obrigatórios recebidos no prompt base: primary_variable, variant_id, stage, control_or_treatment e asset_role.
 
 Checklist antes de responder:
-1. As 3 variações mantêm a mesma promessa central do campaignAngle?
-2. A CTA é a mesma ação esperada para a landing?
+1. As 3 variações mantêm a mesma promessa central do contrato de promessa única/campaignAngle?
+2. A CTA é a mesma ação esperada para a landing e para a entrega gratuita?
 3. A copy evita promessa absoluta e promessa individual?
 4. A copy evita consultoria/call/acompanhamento se não fizer parte do produto?
 5. O JSON final contém somente `adCopy` e `experimentMetadata` na raiz?

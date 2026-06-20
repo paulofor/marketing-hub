@@ -1078,6 +1078,22 @@ components:
           type: string
         hypothesis:
           type: string
+        singlePain:
+          type: string
+          description: Dor única validada pelo experimento.
+        freeReward:
+          type: string
+          description: Recompensa gratuita única prometida ao lead.
+        funnelPromise:
+          type: string
+          description: Promessa repetida em anúncio, botão, formulário e entrega.
+        primaryCta:
+          type: string
+          description: CTA principal do funil.
+        campaignObjective:
+          type: string
+          enum: [LEADS, TRAFFIC]
+          description: Objetivo operacional de campanha; use LEADS quando houver recompensa gratuita.
         kpiTarget:
           type: number
         metricPresetId:
@@ -1104,6 +1120,17 @@ components:
           type: string
         hypothesis:
           type: string
+        singlePain:
+          type: string
+        freeReward:
+          type: string
+        funnelPromise:
+          type: string
+        primaryCta:
+          type: string
+        campaignObjective:
+          type: string
+          enum: [LEADS, TRAFFIC]
         status:
           type: string
         journeyTemplateId:

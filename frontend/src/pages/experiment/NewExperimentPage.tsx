@@ -36,6 +36,10 @@ type FormState = {
   stage: string;
   primaryVariable: string;
   primaryMetric: string;
+  singlePain: string;
+  freeReward: string;
+  funnelPromise: string;
+  primaryCta: string;
 };
 
 export default function NewExperimentPage() {
@@ -68,6 +72,11 @@ export default function NewExperimentPage() {
     stage: "AD",
     primaryVariable: "",
     primaryMetric: "",
+    singlePain: "",
+    freeReward:
+      "3 mensagens prontas para confirmar horário, pedir sinal e reagendar sem climão",
+    funnelPromise: "Receber as 3 mensagens",
+    primaryCta: "Receber as 3 mensagens",
   });
   const [autoSampleSize, setAutoSampleSize] = useState(true);
   const [autoMde, setAutoMde] = useState(true);
@@ -76,9 +85,7 @@ export default function NewExperimentPage() {
     form.nicheId,
     form.hypothesisId,
   );
-  const selectedNiche = niches?.find(
-    (n) => n.id === Number(form.nicheId),
-  );
+  const selectedNiche = niches?.find((n) => n.id === Number(form.nicheId));
   const { data: imageModels } = useImageGenerationModels();
   const { data: journeyTemplates, isLoading: isLoadingJourneyTemplates } =
     useJourneyTemplates({ size: 200 });
@@ -130,7 +137,6 @@ export default function NewExperimentPage() {
     });
   }, [autoSampleSize, autoMde, form.dailyBudget]);
 
-
   const submit = async () => {
     try {
       if (noInstagramAccounts) {
@@ -150,13 +156,37 @@ export default function NewExperimentPage() {
         );
         return;
       }
+      if (!form.singlePain.trim()) {
+        alert("Informe uma única dor do experimento");
+        return;
+      }
+      if (!form.freeReward.trim()) {
+        alert("Informe uma única recompensa gratuita");
+        return;
+      }
+      if (!form.funnelPromise.trim()) {
+        alert("Informe a promessa única do funil");
+        return;
+      }
+      if (!form.primaryCta.trim()) {
+        alert("Informe o CTA principal");
+        return;
+      }
       const parsedDailyBudget = Number(form.dailyBudget);
-      if (!form.dailyBudget || Number.isNaN(parsedDailyBudget) || parsedDailyBudget <= 0) {
+      if (
+        !form.dailyBudget ||
+        Number.isNaN(parsedDailyBudget) ||
+        parsedDailyBudget <= 0
+      ) {
         alert("Informe um orçamento diário válido");
         return;
       }
       const parsedUnitPrice = Number(form.unitPrice);
-      if (!form.unitPrice || Number.isNaN(parsedUnitPrice) || parsedUnitPrice <= 0) {
+      if (
+        !form.unitPrice ||
+        Number.isNaN(parsedUnitPrice) ||
+        parsedUnitPrice <= 0
+      ) {
         alert("Informe um preço unitário válido");
         return;
       }
@@ -166,6 +196,11 @@ export default function NewExperimentPage() {
         name: form.name,
         hypothesis: form.hypothesis,
         stage: "AD",
+        singlePain: form.singlePain.trim(),
+        freeReward: form.freeReward.trim(),
+        funnelPromise: form.funnelPromise.trim(),
+        primaryCta: form.primaryCta.trim(),
+        campaignObjective: "LEADS",
         kpiTarget: Number(form.kpiTarget),
         metricPresetId: form.metricPresetId || undefined,
         sampleSize: form.sampleSize ? Number(form.sampleSize) : undefined,
@@ -175,7 +210,9 @@ export default function NewExperimentPage() {
         startDate: form.startDate || undefined,
         endDate: form.endDate || undefined,
         instantFormsToGenerate:
-          workerRequests.instantForms > 0 ? workerRequests.instantForms : undefined,
+          workerRequests.instantForms > 0
+            ? workerRequests.instantForms
+            : undefined,
         emailsToGenerate:
           workerRequests.emails > 0 ? workerRequests.emails : undefined,
         journeyTemplateId: defaultJourneyTemplateId,
@@ -213,6 +250,11 @@ export default function NewExperimentPage() {
         stage: "AD",
         primaryVariable: "",
         primaryMetric: "",
+        singlePain: "",
+        freeReward:
+          "3 mensagens prontas para confirmar horário, pedir sinal e reagendar sem climão",
+        funnelPromise: "Receber as 3 mensagens",
+        primaryCta: "Receber as 3 mensagens",
       });
       setAutoSampleSize(true);
       setAutoMde(true);
@@ -285,15 +327,71 @@ export default function NewExperimentPage() {
           )}
         </>
       )}
-      {form.hypothesis && (
-        <h2 className="h5 mb-2">{form.hypothesis}</h2>
-      )}
+      {form.hypothesis && <h2 className="h5 mb-2">{form.hypothesis}</h2>}
       <input
         className="form-control mb-2"
         placeholder="Nome"
         value={form.name}
         onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
       />
+      <div className="card border-primary mb-3">
+        <div className="card-body">
+          <h2 className="h6">Contrato de promessa única</h2>
+          <p className="text-muted small mb-3">
+            Use uma dor, uma recompensa gratuita e um CTA iguais no anúncio,
+            botão, formulário e entrega.
+          </p>
+          <label className="form-label" htmlFor="singlePain">
+            Dor única <span className="text-danger">*</span>
+          </label>
+          <input
+            id="singlePain"
+            className="form-control mb-2"
+            placeholder="Ex.: Clientes desmarcam horário em cima da hora"
+            value={form.singlePain}
+            onChange={(e) =>
+              setForm((prev) => ({ ...prev, singlePain: e.target.value }))
+            }
+          />
+          <label className="form-label" htmlFor="freeReward">
+            Recompensa gratuita única <span className="text-danger">*</span>
+          </label>
+          <input
+            id="freeReward"
+            className="form-control mb-2"
+            value={form.freeReward}
+            onChange={(e) =>
+              setForm((prev) => ({ ...prev, freeReward: e.target.value }))
+            }
+          />
+          <label className="form-label" htmlFor="funnelPromise">
+            Promessa do funil <span className="text-danger">*</span>
+          </label>
+          <input
+            id="funnelPromise"
+            className="form-control mb-2"
+            value={form.funnelPromise}
+            onChange={(e) =>
+              setForm((prev) => ({ ...prev, funnelPromise: e.target.value }))
+            }
+          />
+          <label className="form-label" htmlFor="primaryCta">
+            CTA principal <span className="text-danger">*</span>
+          </label>
+          <input
+            id="primaryCta"
+            className="form-control mb-2"
+            value={form.primaryCta}
+            onChange={(e) =>
+              setForm((prev) => ({ ...prev, primaryCta: e.target.value }))
+            }
+          />
+          <div className="alert alert-info py-2 mb-0">
+            Objetivo da campanha fixo: <strong>Leads</strong>. Não use Tráfego
+            nem otimização para cliques neste fluxo.
+          </div>
+        </div>
+      </div>
       <label className="form-label" htmlFor="dailyBudget">
         Orçamento diário <span className="text-danger">*</span>
       </label>
@@ -388,12 +486,13 @@ export default function NewExperimentPage() {
           ))}
       </select>
       <div className="form-text mb-2">
-        Essa conta será usada como identidade do Instagram nas campanhas geradas.
+        Essa conta será usada como identidade do Instagram nas campanhas
+        geradas.
       </div>
       {noInstagramAccounts && (
         <div className="alert alert-warning" role="alert">
-          Nenhuma conta do Instagram está cadastrada. Cadastre uma conta antes de
-          criar novos experimentos.
+          Nenhuma conta do Instagram está cadastrada. Cadastre uma conta antes
+          de criar novos experimentos.
           <div className="mt-2">
             <a
               className="btn btn-outline-primary btn-sm"
@@ -446,14 +545,18 @@ export default function NewExperimentPage() {
         placeholder="Data de Início"
         type="date"
         value={form.startDate}
-        onChange={(e) => setForm((prev) => ({ ...prev, startDate: e.target.value }))}
+        onChange={(e) =>
+          setForm((prev) => ({ ...prev, startDate: e.target.value }))
+        }
       />
       <input
         className="form-control mb-2"
         placeholder="Data de Término"
         type="date"
         value={form.endDate}
-        onChange={(e) => setForm((prev) => ({ ...prev, endDate: e.target.value }))}
+        onChange={(e) =>
+          setForm((prev) => ({ ...prev, endDate: e.target.value }))
+        }
       />
       <button
         className="btn btn-primary d-flex align-items-center gap-2"

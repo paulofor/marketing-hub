@@ -117,14 +117,19 @@ O campo `pixelOwnerBusinessId` é enviado apenas quando estiver preenchido, sem 
 
 O fluxo automatizado cria toda a hierarquia necessária para veiculação:
 
-1. **Campanha** (`POST /campaigns`) com objetivo `OUTCOME_TRAFFIC` quando o
-   destino é um site e `OUTCOME_LEADS` quando o criativo direciona para um
-   formulário de leads, sempre com status inicial `PAUSED` e
+1. **Campanha** (`POST /campaigns`) com objetivo `OUTCOME_LEADS` quando o
+   experimento trouxer `campaignObjective=LEADS`, `freeReward` ou criativo
+   direcionado para formulário de leads; use `OUTCOME_TRAFFIC` apenas para
+   experimentos sem contrato de recompensa gratuita e sem objetivo Leads. A
+   campanha sempre nasce com status inicial `PAUSED` e
    `special_ad_categories = []`, conforme documentado na
    [Marketing API](https://developers.facebook.com/docs/marketing-api/reference/ad-campaign-group#Creating) para contas que
    não se enquadram em categorias especiais.
 2. **Conjunto de anúncios** (`POST /adsets`) atrelado à campanha, também em
-   `PAUSED`, com destino herdado da conta (por exemplo, `WEBSITE`). Antes de
+   `PAUSED`; quando o contrato exigir Leads, o worker força
+   `optimization_goal=LEAD_GENERATION` e nunca usa `LINK_CLICKS`. O destino
+   continua `ON_AD` para Instant Form e pode permanecer `WEBSITE` para landing
+   própria de captura. Antes de
    chamar a Graph API o worker consulta primeiro o playbook (`GET
    /api/experiments/{id}/adset-playbook`) e, sem playbook válido, usa o pacote
    manual aprovado (`GET /api/facebook-adsets/experiments-ready`). O fallback
@@ -239,7 +244,9 @@ que o formulário já foi criado manualmente diretamente na Meta. O
 `FacebookCampaignService` apenas publica rascunhos existentes (`publishInstantForm`)
 e reutiliza o identificador resolvido ao montar criativos com
 `call_to_action.value.lead_gen_form_id`, mantendo o destino `ON_AD` e o objetivo
-`OUTCOME_LEADS` conforme as regras mais recentes da Graph API. Identificadores
+`OUTCOME_LEADS` conforme as regras mais recentes da Graph API. A mesma política
+de Leads também vale para experimentos com recompensa gratuita (`freeReward`),
+mesmo quando a captura usa landing própria em vez de Instant Form. Identificadores
 temporários no formato `ai_form_*` são normalizados para o padrão `form_*`
 antes da publicação, e o share link é reconstruído com o identificador final
 quando disponível.

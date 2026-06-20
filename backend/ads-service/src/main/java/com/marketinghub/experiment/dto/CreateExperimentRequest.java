@@ -4,11 +4,12 @@ import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.math.BigDecimal;
 import com.marketinghub.experiment.ExperimentStage;
+import com.marketinghub.experiment.ExperimentCampaignObjective;
 import java.time.LocalDate;
 import lombok.Data;
 
 /**
- * Request body for creating an experiment.
+ * Recebe os dados necessários para criar um experimento comercial.
  */
 @Data
 public class CreateExperimentRequest {
@@ -16,6 +17,11 @@ public class CreateExperimentRequest {
     private java.util.UUID hypothesisId;
     private String name;
     private String hypothesis;
+    private String singlePain;
+    private String freeReward;
+    private String funnelPromise;
+    private String primaryCta;
+    private ExperimentCampaignObjective campaignObjective;
     private ExperimentStage stage;
     private String primaryVariable;
     private String primaryMetric;

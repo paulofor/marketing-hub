@@ -1,3 +1,88 @@
+## 2026-06-20 — Experimentos: etapa 5 campanha Meta Leads sem cliques
+
+- solicitação: executar a etapa 5 da melhoria de experimentos, garantindo que a publicação Meta Ads use campanha de Leads para recompensa gratuita.
+- foi feito: o backend passou a expor `singlePain`, `freeReward`, `funnelPromise`, `primaryCta` e `campaignObjective` no contrato `/api/facebook-campaigns/experiments-ready`; o `facebook-ads-worker` usa esse contrato para criar `OUTCOME_LEADS` e `LEAD_GENERATION` quando houver `campaignObjective=LEADS` ou `freeReward`.
+- regra operacional: experimentos com recompensa gratuita não caem mais em `OUTCOME_TRAFFIC` nem `LINK_CLICKS`, mesmo quando o destino é uma landing própria em `WEBSITE`.
+- prevenção de recorrência: adicionado teste de publicação de campanha garantindo `OUTCOME_LEADS` + `LEAD_GENERATION` para contrato de promessa única com recompensa gratuita.
+- documentação: README do `facebook-ads-worker` atualizado para refletir a política de Leads.
+- arquivos alterados:
+  - backend/ads-service/src/main/java/com/marketinghub/facebookads/controller/FacebookAdsCampaignController.java
+  - facebook-ads-worker/src/main/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignService.java
+  - facebook-ads-worker/src/test/java/com/marketinghub/facebookadsworker/facebookcampaign/FacebookCampaignServiceTest.java
+  - facebook-ads-worker/README.md
+  - docs/swagger/facebook-ads-swagger.yaml
+  - docs/registros/experimentos.md
+
+## 2026-06-20 — Experimentos: etapa 4 tela com contrato de promessa única
+
+- solicitação: executar a etapa 4 da melhoria de experimentos, levando o contrato de promessa única para a interface do usuário.
+- foi feito: a criação e edição de experimentos passaram a solicitar dor única, recompensa gratuita única, promessa do funil e CTA principal, com orientação explícita para campanha de Leads e bloqueio conceitual de Tráfego/cliques.
+- integração: os tipos do frontend foram alinhados ao contrato do backend (`singlePain`, `freeReward`, `funnelPromise`, `primaryCta`, `campaignObjective`) e a visão geral do experimento passou a exibir a verdade persistida pelo backend.
+- prevenção de recorrência: a tela força o usuário a preencher uma única promessa/recompensa antes de salvar e mantém o objetivo enviado como `LEADS`.
+- validação: build do frontend executado com sucesso; teste focado de campanha Facebook passou; teste legado `NicheFlow` continuou falhando por não encontrar dado mockado `Fitness`, comportamento não relacionado à alteração.
+- arquivos alterados:
+  - frontend/src/api/experiment/useExperiments.ts
+  - frontend/src/api/experiment/useCreateExperiment.ts
+  - frontend/src/api/experiment/useUpdateExperiment.ts
+  - frontend/src/pages/experiment/NewExperimentPage.tsx
+  - frontend/src/pages/experiment/EditExperimentPage.tsx
+  - frontend/src/pages/experiment/ExperimentDetailPage.tsx
+  - docs/registros/experimentos.md
+
+## 2026-06-20 — Experimentos: etapa 3 Worker AI com promessa única
+
+- solicitação: executar a etapa 3 da melhoria de experimentos, alinhando o Worker AI ao contrato de promessa única.
+- foi feito: prompts de `campaign-angle`, `ad-copy`, `landing-page-copy` e `landing-page-deliverables` passaram a priorizar uma única dor, uma única recompensa gratuita, uma única promessa e um único CTA.
+- integração: o backend passou a enviar o contrato de promessa única nos prompts do pipeline e nas filas pending de copy/deliverables do GeraLanding; o Worker AI inclui esses campos no `CASE_DATA_BLOCK` da copy e dos deliverables.
+- prevenção de recorrência: os prompts bloqueiam a troca da recompensa por termos genéricos como prévia, diagnóstico, material, amostra genérica ou sistema completo quando `freeReward`/`primaryCta` estiverem definidos.
+- validação: atualizados testes do Worker AI para garantir que o contrato chega ao prompt e que os templates carregam as novas regras.
+- arquivos alterados:
+  - backend/ads-service/src/main/java/com/marketinghub/experiment/pipeline/service/ExperimentPipelineGenerationService.java
+  - backend/ads-service/src/main/java/com/marketinghub/geralanding/copy/service/pending/RecordCopyExperiment.java
+  - backend/ads-service/src/main/java/com/marketinghub/geralanding/copy/service/GeraLandingCopyStageExecutionService.java
+  - backend/ads-service/src/main/java/com/marketinghub/geralanding/deliverables/service/pending/RecordDeliverablesExperiment.java
+  - backend/ads-service/src/main/java/com/marketinghub/geralanding/deliverables/service/GeraLandingDeliverablesStageExecutionService.java
+  - ai-worker/src/main/java/com/marketinghub/worker/openai/core/copy/CopyBackendClient.java
+  - ai-worker/src/main/java/com/marketinghub/worker/pipeline/deliverables/DeliverablesBackendClient.java
+  - ai-worker/src/main/java/com/marketinghub/worker/geralanding/deliverables/GeraLandingDeliverablesBackendClient.java
+  - ai-worker/src/main/resources/prompts/experiment/campaign-angle.md
+  - ai-worker/src/main/resources/prompts/experiment/ad-copy.md
+  - ai-worker/src/main/resources/prompts/geralanding/landing-page-copy.md
+  - ai-worker/src/main/resources/prompts/geralanding/landing-page-deliverables.md
+  - ai-worker/src/test/java/com/marketinghub/worker/openai/core/copy/CopyBackendClientTest.java
+  - ai-worker/src/test/java/com/marketinghub/worker/experimentpipeline/ExperimentPipelineOpenAiClientTest.java
+  - docs/registros/experimentos.md
+
+## 2026-06-20 — Experimentos: etapa 2 backend do contrato de promessa única
+
+- solicitação: executar a etapa 2 da melhoria de experimentos, materializando no backend os campos do contrato de promessa única.
+- foi feito: o modelo `Experiment` passou a persistir dor única, recompensa gratuita, promessa do funil, CTA principal e objetivo de campanha; criação, atualização e duplicação de experimento preservam esses campos.
+- regra operacional: quando existe recompensa gratuita, o backend exige `campaignObjective=LEADS`, impedindo configuração de Tráfego para esse fluxo.
+- documentação: Swagger geral atualizado para expor os novos campos em criação e resposta de experimento.
+- validação: adicionados testes de serviço para persistência do contrato e bloqueio de objetivo Tráfego com recompensa gratuita.
+- arquivos alterados:
+  - backend/ads-service/src/main/java/com/marketinghub/experiment/Experiment.java
+  - backend/ads-service/src/main/java/com/marketinghub/experiment/ExperimentCampaignObjective.java
+  - backend/ads-service/src/main/java/com/marketinghub/experiment/dto/CreateExperimentRequest.java
+  - backend/ads-service/src/main/java/com/marketinghub/experiment/dto/UpdateExperimentRequest.java
+  - backend/ads-service/src/main/java/com/marketinghub/experiment/dto/ExperimentDto.java
+  - backend/ads-service/src/main/java/com/marketinghub/experiment/service/ExperimentService.java
+  - backend/ads-service/src/main/resources/db/changelog/changesets/2026-06-20-experiment-single-promise-fields.yaml
+  - backend/ads-service/src/main/resources/db/changelog/db.changelog-master.yaml
+  - backend/ads-service/src/test/java/com/marketinghub/experiment/ExperimentServiceTest.java
+  - docs/swagger/openapi.yaml
+  - docs/registros/experimentos.md
+
+## 2026-06-20 — Experimentos: regra canônica de promessa única
+
+- solicitação: executar a etapa 1 da melhoria de experimentos, registrando no cânone a regra de uma única dor, uma única promessa e uma única recompensa gratuita.
+- decisão registrada: experimentos de captação por recompensa gratuita devem manter a mesma promessa em anúncio, botão, formulário, landing e entrega, com CTA único como “Receber as 3 mensagens”.
+- regra operacional: campanhas desse fluxo devem usar objetivo Leads e otimização compatível com geração de lead/formulário, bloqueando objetivo Tráfego ou otimização por clique para essa validação.
+- objetivo de negócio: reduzir ambiguidade na leitura do experimento e permitir decidir com mais segurança se o problema está na dor/promessa de entrada, na recompensa gratuita, na oferta/prova ou na qualificação do lead.
+- arquivos alterados:
+  - docs/canonical/procedimento-experimento-canon.v1.md
+  - docs/registros/experimentos.md
+
 ## 2026-06-18 — Compatibilidade de compilação do Worker AI com metadados de geração de criativos
 
 - solicitação: corrigir a nova falha de compilação do Worker AI antes de gerar PR.

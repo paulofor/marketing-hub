@@ -755,6 +755,27 @@ components:
         id: { type: integer, format: int64 }
         name: { type: string }
         hypothesis: { type: string, nullable: true }
+        singlePain:
+          type: string
+          nullable: true
+          description: Dor única do contrato comercial do experimento.
+        freeReward:
+          type: string
+          nullable: true
+          description: Recompensa gratuita única; quando presente, o worker deve publicar campanha de Leads.
+        funnelPromise:
+          type: string
+          nullable: true
+          description: Promessa que deve se repetir em anúncio, landing, formulário e entrega.
+        primaryCta:
+          type: string
+          nullable: true
+          description: CTA principal do funil, como Receber as 3 mensagens.
+        campaignObjective:
+          type: string
+          nullable: true
+          enum: [LEADS, TRAFFIC]
+          description: Objetivo operacional persistido no experimento.
         followUpActionUrl:
           type: string
           nullable: true

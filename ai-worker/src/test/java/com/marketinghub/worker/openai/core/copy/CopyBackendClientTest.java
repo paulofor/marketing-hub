@@ -47,6 +47,11 @@ class CopyBackendClientTest {
                 "executionRequestedAt", "2026-05-30T10:00:00Z",
                 "experiment", Map.of(
                         "nicheName", "Produtores digitais",
+                        "singlePain", "clientes desmarcam horário",
+                        "freeReward", "3 mensagens prontas",
+                        "funnelPromise", "Receber as 3 mensagens",
+                        "primaryCta", "Receber as 3 mensagens",
+                        "campaignObjective", "LEADS",
                         "campaignAngle", "{\"promise\":\"menos esforço para vender\"}",
                         "adCopy", "{\"headline\":\"Venda com IA\"}",
                         "adImageBriefing", "{\"visual\":\"dashboard simples\"}",
@@ -71,12 +76,16 @@ class CopyBackendClientTest {
         assertThat(execution.stageCode()).isEqualTo("landing-page-copy");
         assertThat(execution.aggregateId()).isEqualTo(12L);
         assertThat(execution.input().promptData())
-                .containsKeys("landingPageWireframe", "campaignAngle", "adCopy", "adImageBriefing", "CASE_DATA_BLOCK");
+                .containsKeys("landingPageWireframe", "campaignAngle", "adCopy", "adImageBriefing", "singlePain", "freeReward", "funnelPromise", "primaryCta", "campaignObjective", "CASE_DATA_BLOCK");
         assertThat(execution.input().promptData().get("landingPageWireframe").toString())
                 .contains("pagina");
         assertThat((String) execution.input().promptData().get("CASE_DATA_BLOCK"))
                 .contains("[CASE_DATA_BEGIN]")
                 .contains("Produtores digitais")
+                .contains("clientes desmarcam horário")
+                .contains("3 mensagens prontas")
+                .contains("Receber as 3 mensagens")
+                .contains("LEADS")
                 .contains("menos esforço para vender")
                 .contains("roteiro guiado")
                 .contains("[CASE_DATA_END]");

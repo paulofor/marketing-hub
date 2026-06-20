@@ -365,11 +365,12 @@ public class FacebookCampaignService {
                     exp.id()
                 );
             }
+            boolean leadCampaignRequired = requiresLeadCampaign(exp) || hasLeadFormDestination;
             String resolvedDestinationType = hasLeadFormDestination ? "ON_AD" : config.adSetDestinationType();
-            String resolvedOptimizationGoal = hasLeadFormDestination
+            String resolvedOptimizationGoal = leadCampaignRequired
                 ? "LEAD_GENERATION"
                 : config.adSetOptimizationGoal();
-            String resolvedCampaignObjective = hasLeadFormDestination ? "OUTCOME_LEADS" : "OUTCOME_TRAFFIC";
+            String resolvedCampaignObjective = leadCampaignRequired ? "OUTCOME_LEADS" : "OUTCOME_TRAFFIC";
 
             AdSetPlaybookSpec selectedSpec = null;
             ResolvedTargeting resolvedTargeting;
@@ -1026,9 +1027,24 @@ public class FacebookCampaignService {
 
     private record FacebookCampaignStopResultPayload(boolean success, String message) {}
 
+    /** Indica se o contrato comercial do experimento exige campanha otimizada para Leads. */
+    private boolean requiresLeadCampaign(Experiment experiment) {
+        if (experiment == null) {
+            return false;
+        }
+        return (StringUtils.hasText(experiment.campaignObjective())
+                && "LEADS".equalsIgnoreCase(experiment.campaignObjective().trim()))
+            || StringUtils.hasText(experiment.freeReward());
+    }
+
     public record Experiment(
         long id,
         String name,
+        String singlePain,
+        String freeReward,
+        String funnelPromise,
+        String primaryCta,
+        String campaignObjective,
         String pageId,
         BigDecimal dailyBudget,
         @JsonAlias({ "page", "associatedFacebookPage", "facebookPageAssociation" })

@@ -1,10 +1,19 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
-import type { Experiment, ExperimentStage } from "./useExperiments";
+import type {
+  Experiment,
+  ExperimentCampaignObjective,
+  ExperimentStage,
+} from "./useExperiments";
 
 export interface UpdateExperiment {
   name: string;
   hypothesis: string;
+  singlePain?: string;
+  freeReward?: string;
+  funnelPromise?: string;
+  primaryCta?: string;
+  campaignObjective?: ExperimentCampaignObjective;
   stage?: ExperimentStage;
   primaryVariable?: string;
   primaryMetric?: string;

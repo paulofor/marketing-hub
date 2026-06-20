@@ -1032,3 +1032,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-06-18-targeting-resolution-job-recovery.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-06-20-experiment-single-promise-fields.yaml
+      relativeToChangelogFile: true

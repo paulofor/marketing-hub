@@ -1,0 +1,47 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-20-experiment-single-promise-fields
+      author: marketinghub
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: experiment
+      changes:
+        - addColumn:
+            tableName: experiment
+            columns:
+              - column:
+                  name: single_pain
+                  type: varchar(512)
+              - column:
+                  name: free_reward
+                  type: varchar(512)
+              - column:
+                  name: funnel_promise
+                  type: varchar(512)
+              - column:
+                  name: primary_cta
+                  type: varchar(191)
+              - column:
+                  name: campaign_objective
+                  type: varchar(32)
+                  defaultValue: LEADS
+                  constraints:
+                    nullable: false
+      rollback:
+        - dropColumn:
+            tableName: experiment
+            columns:
+              - column:
+                  name: campaign_objective
+              - column:
+                  name: primary_cta
+              - column:
+                  name: funnel_promise
+              - column:
+                  name: free_reward
+              - column:
+                  name: single_pain

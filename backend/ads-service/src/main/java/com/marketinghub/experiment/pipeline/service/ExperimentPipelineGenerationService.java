@@ -1001,6 +1001,7 @@ public class ExperimentPipelineGenerationService {
             appendIfPresent(sb, "Problema", experiment.getHypothesisRef().getProblem());
             appendIfPresent(sb, "Promessa", experiment.getHypothesisRef().getPromise());
         }
+        appendSinglePromiseContract(sb, experiment);
         sb.append("Metadados obrigatórios do experimento:\n");
         sb.append("- primary_variable: ").append(nonBlank(experiment.getPrimaryVariable())).append("\n");
         sb.append("- variant_id: variant-").append(experiment.getId()).append("\n");
@@ -2570,6 +2571,29 @@ public class ExperimentPipelineGenerationService {
             return null;
         }
         return (inputTokens != null ? inputTokens : 0) + (outputTokens != null ? outputTokens : 0);
+    }
+
+    /** Acrescenta o contrato de promessa única do experimento ao prompt do pipeline. */
+    private void appendSinglePromiseContract(StringBuilder sb, Experiment experiment) {
+        if (experiment == null) {
+            return;
+        }
+        if (!StringUtils.hasText(experiment.getSinglePain())
+                && !StringUtils.hasText(experiment.getFreeReward())
+                && !StringUtils.hasText(experiment.getFunnelPromise())
+                && !StringUtils.hasText(experiment.getPrimaryCta())
+                && experiment.getCampaignObjective() == null) {
+            return;
+        }
+        sb.append("CONTRATO_PROMESSA_UNICA (prioridade máxima para anúncio, landing, formulário e entrega):\n");
+        appendIfPresent(sb, "Dor única", experiment.getSinglePain());
+        appendIfPresent(sb, "Recompensa gratuita única", experiment.getFreeReward());
+        appendIfPresent(sb, "Promessa do funil", experiment.getFunnelPromise());
+        appendIfPresent(sb, "CTA principal", experiment.getPrimaryCta());
+        appendIfPresent(sb, "Objetivo da campanha",
+                experiment.getCampaignObjective() != null ? experiment.getCampaignObjective().name() : null);
+        sb.append("Regra: repetir a mesma promessa e o mesmo CTA do anúncio à entrega; ")
+                .append("se houver recompensa gratuita, não criar prévia, diagnóstico ou sistema completo.\n");
     }
 
     private String nonBlank(String value) {

@@ -39,9 +39,7 @@ export function formatStage(stageCode: string | null | undefined) {
   if (!normalizedStageCode) return "Sem etapa aberta";
   const slugStageCode = normalizedStageCode.replace(/[_\s]+/g, "-");
   return (
-    stageLabels[normalizedStageCode] ??
-    stageLabels[slugStageCode] ??
-    stageCode
+    stageLabels[normalizedStageCode] ?? stageLabels[slugStageCode] ?? stageCode
   );
 }
 
@@ -61,6 +59,49 @@ function formatAiCost(value: number | string | null | undefined) {
     minimumFractionDigits: 4,
     maximumFractionDigits: 6,
   }).format(Number.isFinite(numericValue) ? numericValue : 0);
+}
+
+function formatJobId(jobId: string) {
+  const parts = jobId.split("-");
+  const lastPart = parts[parts.length - 1];
+  if (lastPart?.startsWith("job")) {
+    return lastPart.toUpperCase();
+  }
+  return jobId;
+}
+
+function explainStatus(job: OprmNichoCnaeV2JobSummary, open: boolean) {
+  if (open) return "Aguardando processamento";
+  if (job.lastStageStatus === "FAILED") return "Falhou e parou";
+  if (job.finalDecision === "NO_VIABLE_SUBNICHE") return "Sem subnicho viável";
+  return job.finalDecisionLabel ?? job.finalDecision ?? "Concluído";
+}
+
+function simplifyDecisionReason(reason: string | null | undefined) {
+  if (!reason) return null;
+  const reasonCode = reason.match(/reasonCode=([^;]+)/)?.[1];
+  const exception =
+    reason.match(/exception=([^;]+)/)?.[1] ??
+    reason.match(/^([A-Za-z]+Exception)/)?.[1];
+  if (reasonCode === "TECHNICAL_RETRY_LIMIT_EXCEEDED") {
+    return "O sistema tentou novamente, mas atingiu o limite técnico desta etapa.";
+  }
+  if (exception === "NullPointerException") {
+    return "Erro técnico interno ao preparar os dados da etapa.";
+  }
+  const firstSentence = reason.split(/[.;]/)[0]?.trim();
+  return firstSentence || reason;
+}
+
+function getOperatorNextAction(job: OprmNichoCnaeV2JobSummary, open: boolean) {
+  if (open) return "Aguardar o executor continuar este job.";
+  if (job.lastStageStatus === "FAILED") {
+    return "Corrigir a falha técnica antes de iniciar novo job.";
+  }
+  if (job.finalDecision === "NO_VIABLE_SUBNICHE") {
+    return "Usar o histórico como aprendizado e pesquisar outro recorte.";
+  }
+  return "Verificar se o nicho gerado já pode avançar para produto.";
 }
 
 function decisionBadgeClass(job: OprmNichoCnaeV2JobSummary, open: boolean) {
@@ -86,62 +127,62 @@ function JobsTable({
   }
 
   return (
-    <div className="table-responsive">
-      <table className="table table-sm align-middle mb-0">
-        <thead>
-          <tr>
-            <th>Job</th>
-            {open ? <th>Etapa atual</th> : <th>Última etapa</th>}
-            <th>Status</th>
-            <th>Decisão</th>
-            <th>Custo IA</th>
-            <th>Tentativa</th>
-            <th>Atualizado</th>
-          </tr>
-        </thead>
-        <tbody>
-          {jobs.map((job) => (
-            <tr key={job.jobId}>
-              <td className="font-monospace small">{job.jobId}</td>
-              <td>
-                {formatStage(open ? job.currentStageCode : job.lastStageCode)}
-              </td>
-              <td>
-                <span
-                  className={decisionBadgeClass(job, open)}
-                >
-                  {open ? "Aberto" : (job.lastStageStatus ?? "Concluído")}
-                </span>
-              </td>
-              <td>
-                <div className="fw-semibold">
-                  {job.finalDecisionLabel ?? job.finalDecision ?? "—"}
+    <div className="oprm-v2-job-list">
+      {jobs.map((job) => {
+        const stageName = formatStage(
+          open ? job.currentStageCode : job.lastStageCode,
+        );
+        const simplifiedReason = simplifyDecisionReason(
+          job.finalDecisionReason,
+        );
+        return (
+          <article className="oprm-v2-job-card" key={job.jobId}>
+            <div className="oprm-v2-job-card__header">
+              <div>
+                <div className="oprm-v2-job-card__label">Job</div>
+                <div className="oprm-v2-job-card__title">
+                  {formatJobId(job.jobId)}
                 </div>
-                {job.finalDecisionReason ? (
-                  <div className="text-secondary small">
-                    {job.finalDecisionReason}
-                  </div>
+                <div className="oprm-v2-job-card__meta" title={job.jobId}>
+                  Código completo: {job.jobId}
+                </div>
+              </div>
+              <span className={decisionBadgeClass(job, open)}>
+                {explainStatus(job, open)}
+              </span>
+            </div>
+
+            <div className="oprm-v2-job-card__body">
+              <div className="oprm-v2-job-card__main">
+                <div className="oprm-v2-job-card__label">
+                  {open ? "Onde está parado" : "Última etapa"}
+                </div>
+                <div className="oprm-v2-job-card__stage">{stageName}</div>
+                {simplifiedReason ? (
+                  <p className="oprm-v2-job-card__reason mb-0">
+                    {simplifiedReason}
+                  </p>
                 ) : null}
-              </td>
-              <td>
-                <span className="fw-semibold">
-                  {formatAiCost(job.aiCostUsd)}
-                </span>
-                <div className="text-secondary small">
-                  {job.usedAi ? "IA usada no job" : "Sem IA contabilizada"}
-                </div>
-              </td>
-              <td>
-                {job.attemptNumber ?? "—"}
+              </div>
+              <div className="oprm-v2-job-card__action">
+                <div className="oprm-v2-job-card__label">Próximo passo</div>
+                <div>{getOperatorNextAction(job, open)}</div>
+              </div>
+            </div>
+
+            <div className="oprm-v2-job-card__footer">
+              <span>IA: {formatAiCost(job.aiCostUsd)}</span>
+              <span>
+                Tentativa: {job.attemptNumber ?? "—"}
                 {job.technicalRetryNumber
                   ? ` · retry ${job.technicalRetryNumber}`
                   : ""}
-              </td>
-              <td>{formatDateTime(job.updatedAt)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+              </span>
+              <span>Atualizado: {formatDateTime(job.updatedAt)}</span>
+            </div>
+          </article>
+        );
+      })}
     </div>
   );
 }

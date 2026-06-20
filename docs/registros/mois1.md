@@ -1716,3 +1716,13 @@ Arquivos principais:
 - Corrigida a causa-raiz de dossiês fracos quando o produto possui nome ambíguo: a etapa de aquecimento agora usa uma camada de planejamento de queries com OpenAI quando houver chave configurada, preservando fallback heurístico quando a integração não estiver disponível.
 - As buscas passam a priorizar produtor, domínio da página, título/subtítulo, redes sociais, reviews, afiliados, prova social e canais de aquisição antes de concluir o dossiê.
 - Adicionados testes para impedir que produtos ambíguos voltem a gerar pesquisas genéricas por termos soltos sem domínio ou contexto comercial.
+
+## 2026-06-20 — Correção de dossiê MOIS com fontes genéricas
+- diagnosticado o dossiê vazio/sem informação do produto 262: o backend entregava ao worker apenas `producer_name` legado e título fraco quando existiam fatos Hotmart mais específicos, e o worker aceitava resultados web genéricos por palavras soltas do título como "revolução".
+- corrigida a causa-raiz em duas camadas: o claim do dossiê passa a priorizar `product_name` e `hotmart_producer`, e o worker bloqueia fontes públicas que não contenham âncora mínima de produtor ou semelhança suficiente com o produto.
+- adicionado teste de regressão para impedir que resultados genéricos como dicionário/história sejam persistidos como dossiê comercial.
+
+Arquivos principais:
+- `backend/ads-service/src/main/java/com/marketinghub/repository/jpa/mois/bibliotecapaginavenda/worker/v1/jdbc/MoisSalesPageMarketWarmupRepository.java`
+- `mois-sales-library-worker/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/marketwarmup/MarketWarmupProcessor.java`
+- `mois-sales-library-worker/src/test/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/marketwarmup/MarketWarmupProcessorTest.java`

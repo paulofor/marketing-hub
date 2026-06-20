@@ -88,22 +88,30 @@ public class MarketWarmupProcessor {
         productTokens.addAll(meaningfulTokens(job.promiseSummary()));
         productTokens.addAll(meaningfulTokens(job.mechanismSummary()));
         productTokens.addAll(meaningfulTokens(job.offerSummary()));
+        List<String> requiredProducerTokens = producerTokens.isEmpty() ? List.of() : List.of(producerTokens.getFirst());
         List<PublicSearchResult> qualified = new ArrayList<>();
         for (PublicSearchResult result : results) {
             MarketWarmupPlatform platform = detectPlatform(result.url());
-            if (!isProducerSocialPlatform(platform)) {
+            String text = normalizedComparableText(result.title() + " " + result.snippet() + " " + result.url());
+            if (!isProducerSocialPlatform(platform) && containsQualifiedCommercialContext(text, requiredProducerTokens, productTokens)) {
                 qualified.add(result);
                 continue;
             }
-            String text = normalizedComparableText(result.title() + " " + result.snippet() + " " + result.url());
             if (containsAllTokens(text, producerTokens) && containsEnoughProductSimilarity(text, productTokens)) {
                 qualified.add(result);
             } else {
-                log.info("MOIS market-warmup producer social source ignored. jobId={}, pageId={}, platform={}, url={}",
+                log.info("MOIS market-warmup source ignored because it does not match the product dossier anchors. jobId={}, pageId={}, platform={}, url={}",
                         job.jobId(), job.pageId(), platform, result.url());
             }
         }
         return qualified;
+    }
+
+    /**
+     * Exige contexto comercial mínimo em fontes web para impedir que palavras genéricas do título virem dossiê falso.
+     */
+    private boolean containsQualifiedCommercialContext(String text, List<String> producerTokens, Set<String> productTokens) {
+        return containsAllTokens(text, producerTokens) || containsEnoughProductSimilarity(text, productTokens);
     }
 
     /**

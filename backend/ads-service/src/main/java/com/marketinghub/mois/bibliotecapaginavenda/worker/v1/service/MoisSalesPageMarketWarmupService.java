@@ -4,6 +4,7 @@ import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service.MoisSalesLi
 import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageMarketWarmupGateway;
 import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageMarketWarmupGateway.MarketWarmupClaimData;
 import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageMarketWarmupGateway.MarketWarmupJobData;
+import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageMarketWarmupGateway.MarketWarmupSearchAttemptData;
 import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageMarketWarmupGateway.MarketWarmupSignalData;
 import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageMarketWarmupGateway.MarketWarmupSignalReadData;
 import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageMarketWarmupGateway.MarketWarmupSourceData;
@@ -64,6 +65,22 @@ public class MoisSalesPageMarketWarmupService {
             return mapSummary(summary);
         } catch (RuntimeException ex) {
             log.error("Falha ao consultar resumo de aquecimento MOIS. modulo=MOIS, operacao=getMarketWarmupSummary, pageId={}, erroClasse={}, erro={}",
+                    pageId, ex.getClass().getName(), ex.getMessage(), ex);
+            throw ex;
+        }
+    }
+
+    /**
+     * Lista as tentativas de busca pública do job de aquecimento mais recente da página.
+     */
+    public MoisSalesLibraryDtos.MarketWarmupSearchAttemptListResponse listSearchAttempts(long pageId) {
+        try {
+            MarketWarmupJobData job = gateway.findLatestJobByPage(pageId)
+                    .orElseThrow(() -> new IllegalArgumentException("Pesquisa de aquecimento não encontrada para página: " + pageId));
+            return new MoisSalesLibraryDtos.MarketWarmupSearchAttemptListResponse(pageId, job.jobId(),
+                    gateway.listSearchAttempts(job.jobId()).stream().map(this::mapSearchAttempt).toList());
+        } catch (RuntimeException ex) {
+            log.error("Falha ao listar tentativas de busca do aquecimento MOIS. modulo=MOIS, operacao=listMarketWarmupSearchAttempts, pageId={}, erroClasse={}, erro={}",
                     pageId, ex.getClass().getName(), ex.getMessage(), ex);
             throw ex;
         }
@@ -145,6 +162,7 @@ public class MoisSalesPageMarketWarmupService {
             log.info("Iniciando conclusão do job de aquecimento MOIS. modulo=MOIS, operacao=completeMarketWarmupJob, workspaceId={}, pageId={}, jobId={}, fontesRecebidas={}, sinaisRecebidos={}",
                     job.workspaceId(), job.pageId(), jobId, request.sources().size(), request.signals().size());
             gateway.deleteJobDetails(jobId);
+            persistSearchAttempts(job, request.searchAttempts());
             List<Long> sourceIds = persistSources(job, request.sources());
             persistSignals(job, sourceIds, request.signals());
             MarketWarmupSummaryWriteData summary = mapSummaryWrite(scoreEngine.calculate(request));
@@ -165,10 +183,14 @@ public class MoisSalesPageMarketWarmupService {
     @Transactional
     public void failJob(long jobId, MoisSalesLibraryDtos.MarketWarmupFailRequest request) {
         try {
+            MarketWarmupJobData job = gateway.findJob(jobId)
+                    .orElseThrow(() -> new IllegalStateException("Job de aquecimento não encontrado ou não pode falhar: " + jobId));
             boolean failed = gateway.markJobFailed(jobId, request.errorCategory(), request.errorMessage());
             if (!failed) {
                 throw new IllegalStateException("Job de aquecimento não encontrado ou não pode falhar: " + jobId);
             }
+            gateway.deleteJobDetails(jobId);
+            persistSearchAttempts(job, request.searchAttempts());
             log.info("Job de aquecimento MOIS marcado como falho. modulo=MOIS, operacao=failMarketWarmupJob, jobId={}, errorCategory={}, errorMessage={}",
                     jobId, request.errorCategory(), request.errorMessage());
         } catch (RuntimeException ex) {
@@ -195,6 +217,18 @@ public class MoisSalesPageMarketWarmupService {
             log.error("Falha ao reprocessar jobs de aquecimento MOIS presos. modulo=MOIS, operacao=reprocessStaleMarketWarmupJobs, workspaceId={}, staleMinutes={}, erroClasse={}, erro={}",
                     request.workspaceId(), staleMinutes, ex.getClass().getName(), ex.getMessage(), ex);
             throw ex;
+        }
+    }
+
+    /**
+     * Persiste as tentativas de busca pública reportadas pelo worker para explicar falhas e descartes.
+     */
+    private void persistSearchAttempts(MarketWarmupJobData job, List<MoisSalesLibraryDtos.MarketWarmupSearchAttemptCompleteItem> attempts) {
+        if (attempts == null || attempts.isEmpty()) {
+            return;
+        }
+        for (MoisSalesLibraryDtos.MarketWarmupSearchAttemptCompleteItem attempt : attempts) {
+            gateway.insertSearchAttempt(job.jobId(), job.pageId(), job.workspaceId(), mapSearchAttemptWrite(attempt));
         }
     }
 
@@ -258,6 +292,15 @@ public class MoisSalesPageMarketWarmupService {
     }
 
     /**
+     * Converte uma tentativa de busca persistida em contrato de leitura da API.
+     */
+    private MoisSalesLibraryDtos.MarketWarmupSearchAttemptResponse mapSearchAttempt(MarketWarmupSearchAttemptData attempt) {
+        return new MoisSalesLibraryDtos.MarketWarmupSearchAttemptResponse(
+                attempt.attemptId(), attempt.jobId(), attempt.pageId(), attempt.queryText(), attempt.resultCount(), attempt.qualifiedCount(),
+                attempt.rejectedCount(), attempt.status(), attempt.rejectionReason(), attempt.sampleResultTitle(), attempt.sampleResultUrl(), attempt.createdAt());
+    }
+
+    /**
      * Converte uma fonte persistida em contrato de leitura da API.
      */
     private MoisSalesLibraryDtos.MarketWarmupSourceResponse mapSource(MarketWarmupSourceData source) {
@@ -274,6 +317,14 @@ public class MoisSalesPageMarketWarmupService {
         return new MoisSalesLibraryDtos.MarketWarmupSignalResponse(
                 signal.signalId(), signal.jobId(), signal.sourceId(), signal.pageId(), mapSignalType(signal.signalType()), signal.signalStrength(),
                 signal.signalText(), signal.businessInterpretation(), signal.createdAt());
+    }
+
+    /**
+     * Converte uma tentativa de busca recebida da API em dados desacoplados de persistência.
+     */
+    private MarketWarmupSearchAttemptData mapSearchAttemptWrite(MoisSalesLibraryDtos.MarketWarmupSearchAttemptCompleteItem attempt) {
+        return new MarketWarmupSearchAttemptData(null, null, null, attempt.queryText(), attempt.resultCount(), attempt.qualifiedCount(),
+                attempt.rejectedCount(), attempt.status(), attempt.rejectionReason(), attempt.sampleResultTitle(), attempt.sampleResultUrl(), null);
     }
 
     /**

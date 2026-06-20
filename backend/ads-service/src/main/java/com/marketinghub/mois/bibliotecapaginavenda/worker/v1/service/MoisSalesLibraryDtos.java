@@ -693,6 +693,35 @@ public final class MoisSalesLibraryDtos {
     }
 
     /**
+     * Representa uma tentativa de busca pública executada pelo worker de dossiê.
+     */
+    public record MarketWarmupSearchAttemptResponse(
+            long attemptId,
+            long jobId,
+            long pageId,
+            String queryText,
+            int resultCount,
+            int qualifiedCount,
+            int rejectedCount,
+            String status,
+            String rejectionReason,
+            String sampleResultTitle,
+            String sampleResultUrl,
+            Instant createdAt
+    ) {
+    }
+
+    /**
+     * Representa a lista de tentativas de busca pública retornada para auditoria do dossiê.
+     */
+    public record MarketWarmupSearchAttemptListResponse(
+            long pageId,
+            long jobId,
+            List<MarketWarmupSearchAttemptResponse> items
+    ) {
+    }
+
+    /**
      * Representa uma fonte pública usada para justificar o aquecimento do mercado.
      */
     public record MarketWarmupSourceResponse(
@@ -865,6 +894,7 @@ public final class MoisSalesLibraryDtos {
      * Representa o payload final do worker sem JSON serializado em campos textuais funcionais.
      */
     public record MarketWarmupCompleteRequest(
+            List<@Valid MarketWarmupSearchAttemptCompleteItem> searchAttempts,
             @NotEmpty List<@Valid MarketWarmupSourceCompleteItem> sources,
             @NotEmpty List<@Valid MarketWarmupSignalCompleteItem> signals,
             @NotNull @Valid MarketWarmupSummaryCompleteItem summary,
@@ -873,11 +903,27 @@ public final class MoisSalesLibraryDtos {
     }
 
     /**
+     * Representa uma tentativa de busca reportada pelo worker para auditoria da tela.
+     */
+    public record MarketWarmupSearchAttemptCompleteItem(
+            @NotBlank String queryText,
+            int resultCount,
+            int qualifiedCount,
+            int rejectedCount,
+            @NotBlank String status,
+            String rejectionReason,
+            String sampleResultTitle,
+            String sampleResultUrl
+    ) {
+    }
+
+    /**
      * Representa a falha operacional de uma pesquisa de aquecimento pelo worker.
      */
     public record MarketWarmupFailRequest(
             @NotBlank String errorCategory,
-            @NotBlank String errorMessage
+            @NotBlank String errorMessage,
+            List<@Valid MarketWarmupSearchAttemptCompleteItem> searchAttempts
     ) {
     }
 

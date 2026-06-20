@@ -1,0 +1,46 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-20-mois-market-warmup-search-attempt-01
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: mois_sales_page_market_warmup_job
+        - tableExists:
+            tableName: mois_sales_page
+        - not:
+            tableExists:
+              tableName: mois_sales_page_market_warmup_search_attempt
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE mois_sales_page_market_warmup_search_attempt (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                job_id BIGINT NOT NULL,
+                sales_page_id BIGINT NOT NULL,
+                workspace_id VARCHAR(120) NOT NULL,
+                query_text VARCHAR(512) NOT NULL,
+                result_count INT NOT NULL DEFAULT 0,
+                qualified_count INT NOT NULL DEFAULT 0,
+                rejected_count INT NOT NULL DEFAULT 0,
+                status VARCHAR(40) NOT NULL,
+                rejection_reason VARCHAR(500) NULL,
+                sample_result_title VARCHAR(512) NULL,
+                sample_result_url VARCHAR(1024) NULL,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                KEY idx_mois_market_warmup_attempt_job (job_id, id),
+                KEY idx_mois_market_warmup_attempt_page (sales_page_id, created_at),
+                KEY idx_mois_market_warmup_attempt_status (workspace_id, status, created_at),
+                CONSTRAINT fk_mois_market_warmup_attempt_job
+                  FOREIGN KEY (job_id) REFERENCES mois_sales_page_market_warmup_job(id)
+                  ON DELETE CASCADE,
+                CONSTRAINT fk_mois_market_warmup_attempt_page
+                  FOREIGN KEY (sales_page_id) REFERENCES mois_sales_page(id)
+                  ON DELETE CASCADE
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

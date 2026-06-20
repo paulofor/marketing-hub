@@ -477,6 +477,27 @@ export interface MoisMarketWarmupSummary {
   updatedAt: string;
 }
 
+export interface MoisMarketWarmupSearchAttempt {
+  attemptId: number;
+  jobId: number;
+  pageId: number;
+  queryText: string;
+  resultCount: number;
+  qualifiedCount: number;
+  rejectedCount: number;
+  status: string;
+  rejectionReason?: string;
+  sampleResultTitle?: string;
+  sampleResultUrl?: string;
+  createdAt: string;
+}
+
+export interface MoisMarketWarmupSearchAttemptListResponse {
+  pageId: number;
+  jobId: number;
+  items: MoisMarketWarmupSearchAttempt[];
+}
+
 export interface MoisMarketWarmupSource {
   sourceId: number;
   jobId: number;

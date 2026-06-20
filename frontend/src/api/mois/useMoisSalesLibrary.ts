@@ -5,6 +5,7 @@ import type {
   MoisMarketWarmupOpportunityRankingResponse,
   MoisMarketWarmupReprocessStaleResponse,
   MoisMarketWarmupRequestResponse,
+  MoisMarketWarmupSearchAttemptListResponse,
   MoisMarketWarmupSignalListResponse,
   MoisMarketWarmupSourceListResponse,
   MoisMarketWarmupSummary,
@@ -344,6 +345,28 @@ export function useMoisSalesLibraryMarketWarmup(pageId?: number) {
   });
 }
 
+export function useMoisSalesLibraryMarketWarmupSearchAttempts(
+  pageId?: number,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: [
+      "mois",
+      "sales-library",
+      "market-warmup",
+      pageId,
+      "search-attempts",
+    ],
+    enabled: Boolean(pageId) && enabled,
+    queryFn: async () => {
+      const { data } = await axios.get<MoisMarketWarmupSearchAttemptListResponse>(
+        `/api/mois/sales-library/pages/${pageId}/market-warmup/search-attempts`,
+      );
+      return data;
+    },
+  });
+}
+
 export function useMoisSalesLibraryMarketWarmupSources(
   pageId?: number,
   enabled = true,
@@ -414,6 +437,15 @@ export function useRequestMoisSalesLibraryMarketWarmup(workspaceId: string) {
       });
       void queryClient.invalidateQueries({
         queryKey: ["mois", "sales-library", "market-warmup", pageId, "sources"],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: [
+          "mois",
+          "sales-library",
+          "market-warmup",
+          pageId,
+          "search-attempts",
+        ],
       });
       void queryClient.invalidateQueries({
         queryKey: ["mois", "sales-library", "market-warmup", pageId, "signals"],

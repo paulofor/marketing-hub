@@ -132,6 +132,7 @@ class MoisSalesPageMarketWarmupServiceTest {
         given(gateway.insertSource(99L, 10L, "workspace-001", sourceData(source))).willReturn(501L);
 
         service.completeJob(99L, new MoisSalesLibraryDtos.MarketWarmupCompleteRequest(
+                List.of(),
                 List.of(source), List.of(signal), summary, Instant.parse("2026-06-10T10:00:00Z")));
 
         verify(gateway).deleteJobDetails(99L);
@@ -167,6 +168,7 @@ class MoisSalesPageMarketWarmupServiceTest {
         given(gateway.insertSource(99L, 10L, "workspace-001", sourceData(source))).willReturn(501L);
 
         assertThatThrownBy(() -> service.completeJob(99L, new MoisSalesLibraryDtos.MarketWarmupCompleteRequest(
+                List.of(),
                 List.of(source), List.of(signal), sampleSummary(), Instant.parse("2026-06-10T10:00:00Z"))))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Índice de fonte inválido");
@@ -232,6 +234,7 @@ class MoisSalesPageMarketWarmupServiceTest {
         MoisSalesPageMarketWarmupScoreEngine engine = new MoisSalesPageMarketWarmupScoreEngine();
 
         MoisSalesLibraryDtos.MarketWarmupSummaryCompleteItem summary = engine.calculate(new MoisSalesLibraryDtos.MarketWarmupCompleteRequest(
+                List.of(),
                 List.of(
                         warmupSource(MoisSalesLibraryDtos.MarketWarmupSourceType.CREATOR_CONTENT, BigDecimal.TEN, BigDecimal.TEN),
                         warmupSource(MoisSalesLibraryDtos.MarketWarmupSourceType.SPECIALIST_CONTENT, BigDecimal.valueOf(9), BigDecimal.valueOf(9)),
@@ -260,6 +263,7 @@ class MoisSalesPageMarketWarmupServiceTest {
         MoisSalesPageMarketWarmupScoreEngine engine = new MoisSalesPageMarketWarmupScoreEngine();
 
         MoisSalesLibraryDtos.MarketWarmupSummaryCompleteItem summary = engine.calculate(new MoisSalesLibraryDtos.MarketWarmupCompleteRequest(
+                List.of(),
                 List.of(
                         warmupSource(MoisSalesLibraryDtos.MarketWarmupSourceType.CREATOR_CONTENT, BigDecimal.valueOf(8), BigDecimal.valueOf(7)),
                         warmupSource(MoisSalesLibraryDtos.MarketWarmupSourceType.SPECIALIST_CONTENT, BigDecimal.valueOf(8), BigDecimal.valueOf(7)),
@@ -287,6 +291,7 @@ class MoisSalesPageMarketWarmupServiceTest {
         MoisSalesPageMarketWarmupScoreEngine engine = new MoisSalesPageMarketWarmupScoreEngine();
 
         MoisSalesLibraryDtos.MarketWarmupSummaryCompleteItem summary = engine.calculate(new MoisSalesLibraryDtos.MarketWarmupCompleteRequest(
+                List.of(),
                 List.of(warmupSource(MoisSalesLibraryDtos.MarketWarmupSourceType.SEARCH_RESULT, BigDecimal.valueOf(2), BigDecimal.valueOf(1))),
                 List.of(warmupSignal(MoisSalesLibraryDtos.MarketWarmupSignalType.CONTENT_RECENCY, BigDecimal.valueOf(2))),
                 sampleSummary(),
@@ -306,6 +311,7 @@ class MoisSalesPageMarketWarmupServiceTest {
         MoisSalesPageMarketWarmupScoreEngine engine = new MoisSalesPageMarketWarmupScoreEngine();
 
         MoisSalesLibraryDtos.MarketWarmupSummaryCompleteItem summary = engine.calculate(new MoisSalesLibraryDtos.MarketWarmupCompleteRequest(
+                List.of(),
                 List.of(
                         warmupSource(MoisSalesLibraryDtos.MarketWarmupSourceType.COMPETITOR_OFFER, BigDecimal.TEN, BigDecimal.TEN),
                         warmupSource(MoisSalesLibraryDtos.MarketWarmupSourceType.AFFILIATE_PROMOTION, BigDecimal.TEN, BigDecimal.TEN),

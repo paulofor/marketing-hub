@@ -215,6 +215,20 @@ public class MoisSalesLibraryController {
     }
 
     /**
+     * Lista as tentativas de busca pública feitas pelo worker para explicar o que foi pesquisado.
+     */
+    @GetMapping("/pages/{pageId}/market-warmup/search-attempts")
+    public MoisSalesLibraryDtos.MarketWarmupSearchAttemptListResponse listMarketWarmupSearchAttempts(@PathVariable long pageId) {
+        try {
+            return marketWarmupService.listSearchAttempts(pageId);
+        } catch (IllegalArgumentException ex) {
+            log.warn("Biblioteca de páginas de vendas não encontrou tentativas de busca de aquecimento. operacao=listMarketWarmupSearchAttempts, pageId={}, erro={}",
+                    pageId, ex.getMessage(), ex);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage(), ex);
+        }
+    }
+
+    /**
      * Lista as fontes públicas usadas para justificar a pesquisa de aquecimento da página.
      */
     @GetMapping("/pages/{pageId}/market-warmup/sources")

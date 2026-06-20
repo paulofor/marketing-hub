@@ -994,6 +994,9 @@ databaseChangeLog:
       file: changesets/2026-06-09-mois-sales-page-market-warmup.yaml
       relativeToChangelogFile: true
   - include:
+      file: changesets/2026-06-20-mois-market-warmup-search-attempt.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-06-10-oprm-general-audience-landing-confirmation.yaml
       relativeToChangelogFile: true
   - include:

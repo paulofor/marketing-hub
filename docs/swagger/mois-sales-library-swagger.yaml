@@ -456,6 +456,22 @@ paths:
                 $ref: '#/components/schemas/MarketWarmupSummaryResponse'
         '404':
           $ref: '#/components/responses/MarketWarmupNotFound'
+  /pages/{pageId}/market-warmup/search-attempts:
+    get:
+      summary: Lista tentativas de busca pública do dossiê
+      description: Retorna as queries executadas pelo worker, quantos resultados foram lidos e por que não viraram fonte qualificada.
+      tags: [MOIS Sales Library]
+      parameters:
+        - $ref: '#/components/parameters/PageId'
+      responses:
+        '200':
+          description: Tentativas de busca pública da investigação
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MarketWarmupSearchAttemptListResponse'
+        '404':
+          $ref: '#/components/responses/MarketWarmupNotFound'
   /pages/{pageId}/market-warmup/sources:
     get:
       summary: Lista fontes públicas da investigação de sucesso
@@ -776,6 +792,53 @@ components:
         updatedAt:
           type: string
           format: date-time
+    MarketWarmupSearchAttemptResponse:
+      type: object
+      properties:
+        attemptId:
+          type: integer
+          format: int64
+        jobId:
+          type: integer
+          format: int64
+        pageId:
+          type: integer
+          format: int64
+        queryText:
+          type: string
+        resultCount:
+          type: integer
+        qualifiedCount:
+          type: integer
+        rejectedCount:
+          type: integer
+        status:
+          type: string
+        rejectionReason:
+          type: string
+          nullable: true
+        sampleResultTitle:
+          type: string
+          nullable: true
+        sampleResultUrl:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+    MarketWarmupSearchAttemptListResponse:
+      type: object
+      properties:
+        pageId:
+          type: integer
+          format: int64
+        jobId:
+          type: integer
+          format: int64
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/MarketWarmupSearchAttemptResponse'
     MarketWarmupSourceResponse:
       type: object
       properties:

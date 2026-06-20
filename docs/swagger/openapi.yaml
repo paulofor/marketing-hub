@@ -128,6 +128,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GenerateExperimentPromiseOptionsResponse'
+  /api/experiments/promise-contract-options/stage-executions/latest:
+    get:
+      tags: [Experiments]
+      summary: Recuperar a solicitação de promessa mais recente para retomada da criação do teste
+      responses:
+        '200':
+          description: Solicitação retomável encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExperimentPromiseOptionsDraftResponse'
+        '204':
+          description: Nenhuma solicitação retomável encontrada
   /api/experiments/promise-contract-options/stage-executions/{requestId}:
     get:
       tags: [Experiments]
@@ -146,6 +159,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GenerateExperimentPromiseOptionsResponse'
+  /api/experiments/promise-contract-options/stage-executions/{requestId}/dismiss:
+    post:
+      tags: [Experiments]
+      summary: Descartar solicitação retomável após criação do teste
+      parameters:
+        - in: path
+          name: requestId
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Solicitação descartada
   /api/experiments/promise-contract-options/stage-executions/pending:
     get:
       tags: [Experiments]
@@ -1153,12 +1180,38 @@ components:
           format: int64
         status:
           type: string
-          enum: [PENDING, PROCESSING, COMPLETED, FAILED]
+          enum: [PENDING, PROCESSING, COMPLETED, FAILED, DISMISSED]
         options:
           type: array
           description: Vazio enquanto a solicitação estiver pendente; preenchido após conclusão pelo AI Worker.
           items:
             $ref: '#/components/schemas/ExperimentPromiseOption'
+    ExperimentPromiseOptionsDraftResponse:
+      allOf:
+        - $ref: '#/components/schemas/GenerateExperimentPromiseOptionsResponse'
+        - type: object
+          required:
+            - nicheId
+            - hypothesisId
+          properties:
+            nicheId:
+              type: integer
+              format: int64
+            hypothesisId:
+              type: string
+              format: uuid
+            currentSinglePain:
+              type: string
+              nullable: true
+            currentFreeReward:
+              type: string
+              nullable: true
+            currentFunnelPromise:
+              type: string
+              nullable: true
+            currentPrimaryCta:
+              type: string
+              nullable: true
     ExperimentPromiseOption:
       type: object
       required:

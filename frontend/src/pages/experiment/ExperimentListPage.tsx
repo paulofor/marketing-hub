@@ -3,6 +3,7 @@ import { useExperiments } from "../../api/experiment/useExperiments";
 import { useNiches } from "../../api/niche/useNiches";
 import { useUpdateExperimentStatus } from "../../api/experiment/useUpdateExperimentStatus";
 import { useCloseExperimentPipelineJobs } from "../../api/experiment/useCloseExperimentPipelineJobs";
+import { useLatestPromiseOptionsDraft } from "../../api/experiment/useGeneratePromiseOptions";
 import PageTitle from "../../components/PageTitle";
 import experimentIcon from "../../assets/icons/experiment-icon.svg";
 import { useEffect, useMemo, useState } from "react";
@@ -11,7 +12,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 
 const PAGE_SIZE = 25;
-const NEW_EXPERIMENT_DRAFT_KEY = "marketingHub.newExperimentDraft.v1";
 
 function parseDate(date?: string | null) {
   if (!date) return 0;
@@ -58,6 +58,7 @@ export default function ExperimentListPage() {
   const updateStatus = useUpdateExperimentStatus();
   const closePipelineJobs = useCloseExperimentPipelineJobs();
   const queryClient = useQueryClient();
+  const latestPromiseOptionsDraft = useLatestPromiseOptionsDraft();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [niche, setNiche] = useState("");
@@ -68,17 +69,6 @@ export default function ExperimentListPage() {
   const [retryingExperimentId, setRetryingExperimentId] = useState<
     string | null
   >(null);
-  const [hasNewExperimentDraft, setHasNewExperimentDraft] = useState(false);
-  useEffect(() => {
-    try {
-      setHasNewExperimentDraft(
-        Boolean(window.localStorage.getItem(NEW_EXPERIMENT_DRAFT_KEY)),
-      );
-    } catch {
-      setHasNewExperimentDraft(false);
-    }
-  }, []);
-
   const retryRelease = useMutation({
     mutationFn: async (experimentId: string) => {
       const { data } = await axios.post(
@@ -216,7 +206,7 @@ export default function ExperimentListPage() {
         <Link className="btn btn-primary" to="/experiments/new">
           Novo Teste
         </Link>
-        {hasNewExperimentDraft && (
+        {latestPromiseOptionsDraft.data && (
           <Link className="btn btn-outline-primary" to="/experiments/new">
             Continuar teste em criação
           </Link>

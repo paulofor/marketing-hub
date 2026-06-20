@@ -25,6 +25,15 @@ export interface GeneratePromiseOptionsResponse {
   options: PromiseOption[];
 }
 
+export interface PromiseOptionsDraftResponse extends GeneratePromiseOptionsResponse {
+  nicheId: number;
+  hypothesisId: string;
+  currentSinglePain?: string | null;
+  currentFreeReward?: string | null;
+  currentFunnelPromise?: string | null;
+  currentPrimaryCta?: string | null;
+}
+
 export function useGeneratePromiseOptions() {
   return useMutation({
     mutationFn: async (payload: GeneratePromiseOptionsPayload) => {
@@ -56,6 +65,28 @@ export function usePromiseOptionsRequest(requestId?: number) {
     refetchInterval: (query) => {
       const status = query.state.data?.status;
       return status && ["COMPLETED", "FAILED"].includes(status) ? false : 3000;
+    },
+  });
+}
+
+export function useLatestPromiseOptionsDraft() {
+  return useQuery({
+    queryKey: ["experiment-promise-options-latest-draft"],
+    queryFn: async () => {
+      const { data, status } = await axios.get<
+        PromiseOptionsDraftResponse | ""
+      >("/api/experiments/promise-contract-options/stage-executions/latest");
+      return status === 204 || data === "" ? null : data;
+    },
+  });
+}
+
+export function useDismissPromiseOptionsRequest() {
+  return useMutation({
+    mutationFn: async (requestId: number) => {
+      await axios.post(
+        `/api/experiments/promise-contract-options/stage-executions/${requestId}/dismiss`,
+      );
     },
   });
 }

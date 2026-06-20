@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useCreateExperiment } from "../../api/experiment/useCreateExperiment";
 import {
+  useDismissPromiseOptionsRequest,
   useGeneratePromiseOptions,
+  useLatestPromiseOptionsDraft,
   usePromiseOptionsRequest,
 } from "../../api/experiment/useGeneratePromiseOptions";
 import type { PromiseOption } from "../../api/experiment/useGeneratePromiseOptions";
@@ -16,8 +18,6 @@ import { useJourneyTemplates } from "../../api/journey/useJourneyTemplates";
 import PageTitle from "../../components/PageTitle";
 import experimentIcon from "../../assets/icons/experiment-icon.svg";
 import { getStatisticsDefaultsForBudget } from "./statisticsDefaults";
-
-const NEW_EXPERIMENT_DRAFT_KEY = "marketingHub.newExperimentDraft.v1";
 
 type FormState = {
   nicheId: string;
@@ -49,76 +49,50 @@ type FormState = {
   primaryCta: string;
 };
 
-type PersistedDraft = {
-  form: FormState;
-  promiseRequestId?: number;
-  promiseOptions: PromiseOption[];
-};
-
-function readPersistedDraft() {
-  try {
-    const raw = window.localStorage.getItem(NEW_EXPERIMENT_DRAFT_KEY);
-    return raw ? (JSON.parse(raw) as PersistedDraft) : null;
-  } catch {
-    return null;
-  }
-}
-
-function clearPersistedDraft() {
-  try {
-    window.localStorage.removeItem(NEW_EXPERIMENT_DRAFT_KEY);
-  } catch {
-    // Sem ação: a tela continua funcional mesmo sem armazenamento local.
-  }
-}
-
 export default function NewExperimentPage() {
   const [params] = useSearchParams();
   const nicheIdParam = params.get("nicheId") ?? "";
   const hypothesisIdParam = params.get("hypothesisId") ?? "";
-  const persistedDraft = readPersistedDraft();
   const create = useCreateExperiment();
   const generatePromiseOptions = useGeneratePromiseOptions();
+  const dismissPromiseOptionsRequest = useDismissPromiseOptionsRequest();
+  const latestPromiseOptionsDraft = useLatestPromiseOptionsDraft();
   const { data: niches } = useNiches();
-  const [form, setForm] = useState<FormState>(
-    persistedDraft?.form ?? {
-      nicheId: nicheIdParam,
-      name: "",
-      hypothesisId: hypothesisIdParam,
-      hypothesis: "",
-      kpiTarget: "",
-      metricPresetId: "",
-      sampleSize: "",
-      mde: "",
-      dailyBudget: "",
-      unitPrice: "",
-      startDate: "",
-      endDate: "",
-      journeyTemplateId: "",
-      facebookPageId: "",
-      instagramAccountId: "",
-      imageModelId: "",
-      imageModelQualityId: "",
-      imagesPerPackage: "20",
-      openImagesPerPackage: "",
-      compressedImagesPerPackage: "",
-      stage: "AD",
-      primaryVariable: "",
-      primaryMetric: "",
-      singlePain: "",
-      freeReward:
-        "3 mensagens prontas para confirmar horário, pedir sinal e reagendar sem climão",
-      funnelPromise: "Receber as 3 mensagens",
-      primaryCta: "Receber as 3 mensagens",
-    },
-  );
+  const [form, setForm] = useState<FormState>({
+    nicheId: nicheIdParam,
+    name: "",
+    hypothesisId: hypothesisIdParam,
+    hypothesis: "",
+    kpiTarget: "",
+    metricPresetId: "",
+    sampleSize: "",
+    mde: "",
+    dailyBudget: "",
+    unitPrice: "",
+    startDate: "",
+    endDate: "",
+    journeyTemplateId: "",
+    facebookPageId: "",
+    instagramAccountId: "",
+    imageModelId: "",
+    imageModelQualityId: "",
+    imagesPerPackage: "20",
+    openImagesPerPackage: "",
+    compressedImagesPerPackage: "",
+    stage: "AD",
+    primaryVariable: "",
+    primaryMetric: "",
+    singlePain: "",
+    freeReward:
+      "3 mensagens prontas para confirmar horário, pedir sinal e reagendar sem climão",
+    funnelPromise: "Receber as 3 mensagens",
+    primaryCta: "Receber as 3 mensagens",
+  });
   const [autoSampleSize, setAutoSampleSize] = useState(true);
-  const [promiseOptions, setPromiseOptions] = useState<PromiseOption[]>(
-    persistedDraft?.promiseOptions ?? [],
-  );
-  const [promiseRequestId, setPromiseRequestId] = useState<number | undefined>(
-    persistedDraft?.promiseRequestId,
-  );
+  const [promiseOptions, setPromiseOptions] = useState<PromiseOption[]>([]);
+  const [promiseRequestId, setPromiseRequestId] = useState<
+    number | undefined
+  >();
   const [autoMde, setAutoMde] = useState(true);
   const { data: hypotheses } = useHypothesesByNiche(form.nicheId);
   const { data: selectedHypothesis } = useHypothesis(
@@ -149,31 +123,37 @@ export default function NewExperimentPage() {
   );
 
   useEffect(() => {
-    const hasDraftContent = Boolean(
+    const draft = latestPromiseOptionsDraft.data;
+    if (
+      !draft ||
+      nicheIdParam ||
+      hypothesisIdParam ||
       form.nicheId ||
       form.hypothesisId ||
-      form.name.trim() ||
-      form.hypothesis.trim() ||
-      form.singlePain.trim() ||
-      form.dailyBudget.trim() ||
-      form.unitPrice.trim() ||
-      promiseRequestId ||
-      promiseOptions.length > 0,
-    );
-
-    try {
-      if (!hasDraftContent) {
-        window.localStorage.removeItem(NEW_EXPERIMENT_DRAFT_KEY);
-        return;
-      }
-      window.localStorage.setItem(
-        NEW_EXPERIMENT_DRAFT_KEY,
-        JSON.stringify({ form, promiseRequestId, promiseOptions }),
-      );
-    } catch {
-      // Sem ação: o rascunho não bloqueia a criação do teste.
+      promiseRequestId
+    ) {
+      return;
     }
-  }, [form, promiseRequestId, promiseOptions]);
+
+    setForm((prev) => ({
+      ...prev,
+      nicheId: String(draft.nicheId),
+      hypothesisId: draft.hypothesisId,
+      singlePain: draft.currentSinglePain ?? prev.singlePain,
+      freeReward: draft.currentFreeReward ?? prev.freeReward,
+      funnelPromise: draft.currentFunnelPromise ?? prev.funnelPromise,
+      primaryCta: draft.currentPrimaryCta ?? prev.primaryCta,
+    }));
+    setPromiseRequestId(draft.requestId);
+    setPromiseOptions(draft.options ?? []);
+  }, [
+    latestPromiseOptionsDraft.data,
+    nicheIdParam,
+    hypothesisIdParam,
+    form.nicheId,
+    form.hypothesisId,
+    promiseRequestId,
+  ]);
 
   useEffect(() => {
     if (selectedHypothesis?.title) {
@@ -334,7 +314,11 @@ export default function NewExperimentPage() {
         openImagesPerPackage: undefined,
         compressedImagesPerPackage: undefined,
       });
-      clearPersistedDraft();
+      if (promiseRequestId) {
+        dismissPromiseOptionsRequest.mutateAsync(promiseRequestId).catch(() => {
+          // Sem bloqueio: o teste já foi salvo e a retomada antiga será sobrescrita pela próxima solicitação.
+        });
+      }
       setForm({
         nicheId: nicheIdParam,
         hypothesisId: hypothesisIdParam,

@@ -14,6 +14,7 @@ import com.marketinghub.oprm.nichocnae.v2.candidatetournament.service.completeSt
 import com.marketinghub.oprm.nichocnae.v2.candidatetournament.service.createStageExecution.CandidateTournamentCreateRequest;
 import com.marketinghub.oprm.nichocnae.v2.candidatetournament.service.failStageExecution.CandidateTournamentFailureRequest;
 import com.marketinghub.oprm.nichocnae.v2.candidatetournament.service.pending.CandidateTournamentPendingResponse;
+import com.marketinghub.repository.jpa.oprm.cnae.OprmNicheCandidateRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.v2.OprmNichoCnaeV2StageExecutionRepository;
 import java.time.Instant;
 import java.util.List;
@@ -28,6 +29,7 @@ import org.springframework.data.domain.Pageable;
 @ExtendWith(MockitoExtension.class)
 class BackendCandidateTournamentServiceTest {
     @Mock private OprmNichoCnaeV2StageExecutionRepository stageExecutionRepository;
+    @Mock private OprmNicheCandidateRepository nicheCandidateRepository;
 
     /** Deve manter a etapa 4 sem pendências quando a feature flag da v2 estiver desligada. */
     @Test
@@ -124,7 +126,7 @@ class BackendCandidateTournamentServiceTest {
 
     /** Cria o service testável com flag explícita para a v2. */
     private BackendCandidateTournamentService service(boolean v2Enabled) {
-        return new BackendCandidateTournamentService(stageExecutionRepository, v2Enabled);
+        return new BackendCandidateTournamentService(stageExecutionRepository, nicheCandidateRepository, v2Enabled);
     }
 
     /** Monta execução persistida mínima da etapa candidate-tournament. */

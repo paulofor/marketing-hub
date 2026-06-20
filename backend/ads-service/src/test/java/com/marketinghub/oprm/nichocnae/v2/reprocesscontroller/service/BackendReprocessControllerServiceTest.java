@@ -14,6 +14,7 @@ import com.marketinghub.oprm.nichocnae.v2.reprocesscontroller.service.completeSt
 import com.marketinghub.oprm.nichocnae.v2.reprocesscontroller.service.createStageExecution.ReprocessControllerCreateRequest;
 import com.marketinghub.oprm.nichocnae.v2.reprocesscontroller.service.failStageExecution.ReprocessControllerFailureRequest;
 import com.marketinghub.oprm.nichocnae.v2.reprocesscontroller.service.pending.ReprocessControllerPendingResponse;
+import com.marketinghub.repository.jpa.oprm.cnae.OprmNicheCandidateRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.v2.OprmNichoCnaeV2StageExecutionRepository;
 import java.time.Instant;
 import java.util.List;
@@ -28,6 +29,7 @@ import org.springframework.data.domain.Pageable;
 @ExtendWith(MockitoExtension.class)
 class BackendReprocessControllerServiceTest {
     @Mock private OprmNichoCnaeV2StageExecutionRepository stageExecutionRepository;
+    @Mock private OprmNicheCandidateRepository nicheCandidateRepository;
 
     /** Deve manter a etapa 9 sem pendências quando a feature flag da v2 estiver desligada. */
     @Test
@@ -118,7 +120,7 @@ class BackendReprocessControllerServiceTest {
 
     /** Cria o service testável com flag explícita para a v2. */
     private BackendReprocessControllerService service(boolean v2Enabled) {
-        return new BackendReprocessControllerService(stageExecutionRepository, v2Enabled);
+        return new BackendReprocessControllerService(stageExecutionRepository, nicheCandidateRepository, v2Enabled);
     }
 
     /** Monta execução persistida mínima da etapa reprocess-controller. */

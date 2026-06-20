@@ -9,7 +9,7 @@ paths:
       summary: Lista pendências da etapa 8 para o executor OPRM.
       responses:
         '200':
-          description: Pendências disponíveis.
+          description: Pendências disponíveis para o executor OPRM com envelope comum completo (stageExecutionId, jobId, researchCycleId, sourceNicheId, cnaeCode, cnaeDescription, attemptNumber, technicalRetryNumber, knowledgeVersion, materializationEnabled e inputPayload).
   /api/internal/oprm/nichocnae/v2/knowledge-accumulator/stage-executions:
     post:
       summary: Registra uma pendência da etapa 8 solicitada pelo executor.

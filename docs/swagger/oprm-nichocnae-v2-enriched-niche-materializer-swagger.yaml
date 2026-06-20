@@ -9,7 +9,7 @@ paths:
       summary: Lista execuções pendentes da etapa enriched-niche-materializer v2
       responses:
         '200':
-          description: Pendências disponíveis para o executor externo
+          description: Pendências disponíveis para o executor OPRM com envelope comum completo (stageExecutionId, jobId, researchCycleId, sourceNicheId, cnaeCode, cnaeDescription, attemptNumber, technicalRetryNumber, knowledgeVersion, materializationEnabled e inputPayload).
   /api/internal/oprm/nichocnae/v2/enriched-niche-materializer/stage-executions:
     post:
       summary: Grava pendência da etapa enriched-niche-materializer v2 solicitada pelo executor

@@ -10,6 +10,7 @@ import com.marketinghub.oprm.nichocnae.v2.reprocesscontroller.service.createStag
 import com.marketinghub.oprm.nichocnae.v2.reprocesscontroller.service.failStageExecution.ReprocessControllerFailureRequest;
 import com.marketinghub.oprm.nichocnae.v2.reprocesscontroller.service.failStageExecution.ReprocessControllerFailureResponse;
 import com.marketinghub.oprm.nichocnae.v2.reprocesscontroller.service.pending.ReprocessControllerPendingResponse;
+import com.marketinghub.repository.jpa.oprm.cnae.OprmNicheCandidateRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.v2.OprmNichoCnaeV2StageExecutionRepository;
 import java.time.Instant;
 import java.util.List;
@@ -25,11 +26,16 @@ import org.springframework.web.server.ResponseStatusException;
 public class BackendReprocessControllerService {
     public static final String STAGE_CODE = "reprocess-controller";
     private final OprmNichoCnaeV2StageExecutionRepository stageExecutionRepository;
+    private final OprmNicheCandidateRepository nicheCandidateRepository;
     private final boolean v2Enabled;
 
     /** Inicializa o service com repositório canônico e feature flag de calibração da v2. */
-    public BackendReprocessControllerService(OprmNichoCnaeV2StageExecutionRepository stageExecutionRepository, @Value("${oprm.nichocnae.v2.enabled:false}") boolean v2Enabled) {
+    public BackendReprocessControllerService(
+            OprmNichoCnaeV2StageExecutionRepository stageExecutionRepository,
+            OprmNicheCandidateRepository nicheCandidateRepository,
+            @Value("${oprm.nichocnae.v2.enabled:false}") boolean v2Enabled) {
         this.stageExecutionRepository = stageExecutionRepository;
+        this.nicheCandidateRepository = nicheCandidateRepository;
         this.v2Enabled = v2Enabled;
     }
 
@@ -112,8 +118,31 @@ public class BackendReprocessControllerService {
         return stageExecutionRepository.findByIdAndStageCode(stageExecutionId, STAGE_CODE).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "NichoCNAE v2 reprocess-controller stage execution not found: " + stageExecutionId));
     }
 
+    /** Busca a descrição canônica do CNAE pelo candidato de origem para compor o envelope do pending. */
+    private String cnaeDescription(OprmNichoCnaeV2StageExecution execution) {
+        Long sourceNicheId = execution.getSourceNicheId();
+        if (sourceNicheId == null) {
+            return null;
+        }
+        return nicheCandidateRepository
+                .findById(sourceNicheId)
+                .map(candidate -> candidate.getCnaeDescription())
+                .orElse(null);
+    }
+
     /** Converte a entidade persistida no contrato canônico de pending do executor. */
     private ReprocessControllerPendingResponse toPendingResponse(OprmNichoCnaeV2StageExecution execution) {
-        return new ReprocessControllerPendingResponse(String.valueOf(execution.getId()), execution.getJobId(), execution.getCnaeCode(), execution.getSourceNicheId(), execution.getAttemptNumber(), execution.getTechnicalRetryNumber(), execution.getKnowledgeVersion(), execution.getInputPayload());
+        return new ReprocessControllerPendingResponse(
+                String.valueOf(execution.getId()),
+                execution.getJobId(),
+                execution.getCnaeCode(),
+                cnaeDescription(execution),
+                execution.getResearchCycleId(),
+                execution.getSourceNicheId(),
+                execution.getAttemptNumber(),
+                execution.getTechnicalRetryNumber(),
+                execution.getKnowledgeVersion(),
+                execution.getMaterializationEnabled(),
+                execution.getInputPayload());
     }
 }

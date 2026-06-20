@@ -5,8 +5,11 @@ public record CandidateTournamentPendingResponse(
         String stageExecutionId,
         String jobId,
         String cnaeCode,
+        String cnaeDescription,
+        Long researchCycleId,
         Long sourceNicheId,
         Integer attemptNumber,
         Integer technicalRetryNumber,
         Integer knowledgeVersion,
+        Boolean materializationEnabled,
         String inputPayload) {}

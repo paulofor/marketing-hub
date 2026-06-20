@@ -10,6 +10,7 @@ import com.marketinghub.oprm.nichocnae.v2.sourcefetcherreranker.service.createSt
 import com.marketinghub.oprm.nichocnae.v2.sourcefetcherreranker.service.failStageExecution.SourceFetcherRerankerFailureRequest;
 import com.marketinghub.oprm.nichocnae.v2.sourcefetcherreranker.service.failStageExecution.SourceFetcherRerankerFailureResponse;
 import com.marketinghub.oprm.nichocnae.v2.sourcefetcherreranker.service.pending.SourceFetcherRerankerPendingResponse;
+import com.marketinghub.repository.jpa.oprm.cnae.OprmNicheCandidateRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.v2.OprmNichoCnaeV2StageExecutionRepository;
 import java.time.Instant;
 import java.util.List;
@@ -25,13 +26,16 @@ import org.springframework.web.server.ResponseStatusException;
 public class BackendSourceFetcherRerankerService {
     public static final String STAGE_CODE = "source-fetcher-reranker";
     private final OprmNichoCnaeV2StageExecutionRepository stageExecutionRepository;
+    private final OprmNicheCandidateRepository nicheCandidateRepository;
     private final boolean v2Enabled;
 
     /** Inicializa o service com repositório canônico e feature flag de calibração da v2. */
     public BackendSourceFetcherRerankerService(
             OprmNichoCnaeV2StageExecutionRepository stageExecutionRepository,
+            OprmNicheCandidateRepository nicheCandidateRepository,
             @Value("${oprm.nichocnae.v2.enabled:false}") boolean v2Enabled) {
         this.stageExecutionRepository = stageExecutionRepository;
+        this.nicheCandidateRepository = nicheCandidateRepository;
         this.v2Enabled = v2Enabled;
     }
 
@@ -154,16 +158,31 @@ public class BackendSourceFetcherRerankerService {
                         "NichoCNAE v2 source-fetcher-reranker stage execution not found: " + stageExecutionId));
     }
 
+    /** Busca a descrição canônica do CNAE pelo candidato de origem para compor o envelope do pending. */
+    private String cnaeDescription(OprmNichoCnaeV2StageExecution execution) {
+        Long sourceNicheId = execution.getSourceNicheId();
+        if (sourceNicheId == null) {
+            return null;
+        }
+        return nicheCandidateRepository
+                .findById(sourceNicheId)
+                .map(candidate -> candidate.getCnaeDescription())
+                .orElse(null);
+    }
+
     /** Converte a entidade persistida no contrato canônico de pending do executor. */
     private SourceFetcherRerankerPendingResponse toPendingResponse(OprmNichoCnaeV2StageExecution execution) {
         return new SourceFetcherRerankerPendingResponse(
                 String.valueOf(execution.getId()),
                 execution.getJobId(),
                 execution.getCnaeCode(),
+                cnaeDescription(execution),
+                execution.getResearchCycleId(),
                 execution.getSourceNicheId(),
                 execution.getAttemptNumber(),
                 execution.getTechnicalRetryNumber(),
                 execution.getKnowledgeVersion(),
+                execution.getMaterializationEnabled(),
                 execution.getInputPayload());
     }
 }

@@ -46,4 +46,37 @@ class NichoCnaeV2PendingExecutionServiceTest {
                 eq("VALIDATION"),
                 eq("INVALID_STAGE_INPUT_CONTRACT"));
     }
+
+    /** Deve executar a etapa 2 mesmo quando metadados opcionais do pending chegarem nulos. */
+    @Test
+    void processesSourceSafetyFilterWhenOptionalPendingMetadataIsNull() {
+        NichoCnaeV2BackendClient backendClient = mock(NichoCnaeV2BackendClient.class);
+        NichoCnaeV2StageDefinitions stageDefinitions = new NichoCnaeV2StageDefinitions();
+        NichoCnaeV2PendingExecutionService service = new NichoCnaeV2PendingExecutionService(backendClient, stageDefinitions);
+        NichoCnaeV2PendingExecution pending = new NichoCnaeV2PendingExecution(
+                "98",
+                "nichocnae-v2-candidate-2-job-2",
+                "4781400",
+                null,
+                null,
+                2L,
+                1,
+                0,
+                1,
+                false,
+                "{\"candidateUrls\":[\"https://www.gov.br/empresas-e-negocios/pt-br/empreendedor\"]}",
+                Map.of());
+        when(backendClient.listPending(any())).thenAnswer(invocation -> {
+            NichoCnaeV2StageDefinition stage = invocation.getArgument(0);
+            return "source-safety-filter".equals(stage.stageCode()) ? List.of(pending) : List.of();
+        });
+        when(backendClient.parseInput(pending.inputPayload()))
+                .thenReturn(Map.of("candidateUrls", List.of("https://www.gov.br/empresas-e-negocios/pt-br/empreendedor")));
+        when(backendClient.toJson(any())).thenReturn("{\"stage\":\"source-safety-filter\"}");
+
+        service.processAllPending();
+
+        verify(backendClient).complete(any(NichoCnaeV2StageDefinition.class), eq(pending), any());
+        verify(backendClient).createNextStage(any(NichoCnaeV2StageDefinition.class), eq(pending), any());
+    }
 }

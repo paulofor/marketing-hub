@@ -6,6 +6,7 @@ public record CandidateGeneratorPendingResponse(
         String jobId,
         String cnaeCode,
         String cnaeDescription,
+        Long researchCycleId,
         Long sourceNicheId,
         Integer attemptNumber,
         Integer technicalRetryNumber,

@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useCreateExperiment } from "../../api/experiment/useCreateExperiment";
+import { useGeneratePromiseOptions } from "../../api/experiment/useGeneratePromiseOptions";
+import type { PromiseOption } from "../../api/experiment/useGeneratePromiseOptions";
 import { useImageGenerationModels } from "../../api/ai/useImageGenerationModels";
 import { useNiches } from "../../api/niche/useNiches";
 import { useHypothesesByNiche } from "../../api/hypothesis/useHypothesesByNiche";
@@ -47,6 +49,7 @@ export default function NewExperimentPage() {
   const nicheIdParam = params.get("nicheId") ?? "";
   const hypothesisIdParam = params.get("hypothesisId") ?? "";
   const create = useCreateExperiment();
+  const generatePromiseOptions = useGeneratePromiseOptions();
   const { data: niches } = useNiches();
   const [form, setForm] = useState<FormState>({
     nicheId: nicheIdParam,
@@ -79,6 +82,7 @@ export default function NewExperimentPage() {
     primaryCta: "Receber as 3 mensagens",
   });
   const [autoSampleSize, setAutoSampleSize] = useState(true);
+  const [promiseOptions, setPromiseOptions] = useState<PromiseOption[]>([]);
   const [autoMde, setAutoMde] = useState(true);
   const { data: hypotheses } = useHypothesesByNiche(form.nicheId);
   const { data: selectedHypothesis } = useHypothesis(
@@ -136,6 +140,33 @@ export default function NewExperimentPage() {
       return changed ? next : prev;
     });
   }, [autoSampleSize, autoMde, form.dailyBudget]);
+
+  const handleGeneratePromiseOptions = async () => {
+    if (!form.nicheId) {
+      alert("Selecione um nicho antes de gerar com IA");
+      return;
+    }
+    const options = await generatePromiseOptions.mutateAsync({
+      nicheId: Number(form.nicheId),
+      hypothesisId: form.hypothesisId || undefined,
+      hypothesis: form.hypothesis || undefined,
+      currentSinglePain: form.singlePain || undefined,
+      currentFreeReward: form.freeReward || undefined,
+      currentFunnelPromise: form.funnelPromise || undefined,
+      currentPrimaryCta: form.primaryCta || undefined,
+    });
+    setPromiseOptions(options);
+  };
+
+  const applyPromiseOption = (option: PromiseOption) => {
+    setForm((prev) => ({
+      ...prev,
+      singlePain: option.singlePain,
+      freeReward: option.freeReward,
+      funnelPromise: option.funnelPromise,
+      primaryCta: option.primaryCta,
+    }));
+  };
 
   const submit = async () => {
     try {
@@ -336,11 +367,71 @@ export default function NewExperimentPage() {
       />
       <div className="card border-primary mb-3">
         <div className="card-body">
-          <h2 className="h6">Contrato de promessa única</h2>
-          <p className="text-muted small mb-3">
-            Use uma dor, uma recompensa gratuita e um CTA iguais no anúncio,
-            botão, formulário e entrega.
-          </p>
+          <div className="d-flex flex-column flex-md-row align-items-md-start justify-content-between gap-2 mb-3">
+            <div>
+              <h2 className="h6">Contrato de promessa única</h2>
+              <p className="text-muted small mb-0">
+                Use uma dor, uma recompensa gratuita e um CTA iguais no anúncio,
+                botão, formulário e entrega.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="btn btn-outline-primary btn-sm"
+              disabled={generatePromiseOptions.isPending}
+              onClick={handleGeneratePromiseOptions}
+            >
+              {generatePromiseOptions.isPending ? (
+                <span className="d-inline-flex align-items-center gap-1">
+                  <span
+                    className="spinner-border spinner-border-sm"
+                    aria-hidden="true"
+                  />
+                  Gerando...
+                </span>
+              ) : (
+                "Gerar 3 opções com IA"
+              )}
+            </button>
+          </div>
+          {promiseOptions.length > 0 && (
+            <div className="row g-2 mb-3">
+              {promiseOptions.map((option, index) => (
+                <div
+                  className="col-12 col-lg-4"
+                  key={`${option.singlePain}-${index}`}
+                >
+                  <div className="card h-100 border-info">
+                    <div className="card-body p-3">
+                      <h3 className="h6">Opção {index + 1}</h3>
+                      <p className="small mb-1">
+                        <strong>Dor:</strong> {option.singlePain}
+                      </p>
+                      <p className="small mb-1">
+                        <strong>Recompensa:</strong> {option.freeReward}
+                      </p>
+                      <p className="small mb-1">
+                        <strong>Promessa:</strong> {option.funnelPromise}
+                      </p>
+                      <p className="small mb-1">
+                        <strong>CTA:</strong> {option.primaryCta}
+                      </p>
+                      {option.reason && (
+                        <p className="text-muted small mb-2">{option.reason}</p>
+                      )}
+                      <button
+                        type="button"
+                        className="btn btn-primary btn-sm"
+                        onClick={() => applyPromiseOption(option)}
+                      >
+                        Usar esta opção
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
           <label className="form-label" htmlFor="singlePain">
             Dor única <span className="text-danger">*</span>
           </label>

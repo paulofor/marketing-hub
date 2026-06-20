@@ -19,7 +19,18 @@ class NichoCnaeV2PendingExecutionServiceTest {
         NichoCnaeV2StageDefinitions stageDefinitions = new NichoCnaeV2StageDefinitions();
         NichoCnaeV2PendingExecutionService service = new NichoCnaeV2PendingExecutionService(backendClient, stageDefinitions);
         NichoCnaeV2PendingExecution pending = new NichoCnaeV2PendingExecution(
-                "54", "job-1", "4781400", 1L, 2L, 1, 26, 1, false, "{\"stage\":\"candidate-generator\"}", Map.of());
+                "54",
+                "job-1",
+                "4781400",
+                "Comércio varejista de artigos do vestuário e acessórios",
+                1L,
+                2L,
+                1,
+                26,
+                1,
+                false,
+                "{\"stage\":\"candidate-generator\"}",
+                Map.of());
         when(backendClient.listPending(any())).thenAnswer(invocation -> {
             NichoCnaeV2StageDefinition stage = invocation.getArgument(0);
             return "source-safety-filter".equals(stage.stageCode()) ? List.of(pending) : List.of();

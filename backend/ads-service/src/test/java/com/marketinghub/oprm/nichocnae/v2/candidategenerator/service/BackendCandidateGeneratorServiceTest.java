@@ -61,6 +61,7 @@ class BackendCandidateGeneratorServiceTest {
                         .toList());
         when(nicheCandidateRepository.findNextPendingRoutineResearchCandidatePreview(any(Pageable.class)))
                 .thenReturn(List.of(candidate));
+        when(nicheCandidateRepository.findById(69L)).thenReturn(Optional.of(candidate));
         when(stageExecutionRepository.existsBySourceNicheIdAndStageCode(69L, "candidate-generator"))
                 .thenReturn(false);
         when(stageExecutionRepository.save(any(OprmNichoCnaeV2StageExecution.class))).thenAnswer(invocation -> {
@@ -76,6 +77,7 @@ class BackendCandidateGeneratorServiceTest {
         assertThat(result.getFirst().stageExecutionId()).isEqualTo("1001");
         assertThat(result.getFirst().jobId()).isEqualTo("nichocnae-v2-candidate-69-job-1");
         assertThat(result.getFirst().cnaeCode()).isEqualTo("9602501");
+        assertThat(result.getFirst().cnaeDescription()).isEqualTo("Serviços de beleza");
         assertThat(result.getFirst().attemptNumber()).isEqualTo(1);
         assertThat(result.getFirst().technicalRetryNumber()).isZero();
         assertThat(result.getFirst().knowledgeVersion()).isEqualTo(1);

@@ -7,6 +7,7 @@ public record NichoCnaeV2PendingExecution(
         String stageExecutionId,
         String jobId,
         String cnaeCode,
+        String cnaeDescription,
         Long researchCycleId,
         Long sourceNicheId,
         Integer attemptNumber,

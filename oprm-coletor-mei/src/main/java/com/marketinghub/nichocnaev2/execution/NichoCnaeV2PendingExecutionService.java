@@ -113,6 +113,7 @@ public class NichoCnaeV2PendingExecutionService {
         input.putIfAbsent("stageExecutionId", pending.stageExecutionId());
         input.putIfAbsent("jobId", pending.jobId());
         input.putIfAbsent("cnaeCode", pending.cnaeCode());
+        input.putIfAbsent("cnaeDescription", pending.cnaeDescription());
         input.putIfAbsent("sourceNicheId", pending.sourceNicheId());
         input.putIfAbsent("attemptNumber", pending.attemptNumber());
         input.putIfAbsent("technicalRetryNumber", pending.technicalRetryNumber());

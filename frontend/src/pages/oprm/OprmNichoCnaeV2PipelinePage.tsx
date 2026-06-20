@@ -9,22 +9,40 @@ import OprmModuleNavigation from "./OprmModuleNavigation";
 
 const stageLabels: Record<string, string> = {
   "candidate-generator": "Gerador de Candidatos",
+  "candidate generator": "Gerador de Candidatos",
   "source-safety-filter": "Filtro de Segurança das Fontes",
+  "source safety filter": "Filtro de Segurança das Fontes",
   "adaptive-query-planner": "Planejador Adaptativo de Buscas",
+  "adaptive query planner": "Planejador Adaptativo de Buscas",
   "candidate-tournament": "Torneio de Candidatos",
+  "candidate tournament": "Torneio de Candidatos",
   "source-fetcher-reranker": "Coletor e Reordenador de Fontes",
+  "source fetcher reranker": "Coletor e Reordenador de Fontes",
   "signal-extractor": "Extrator de Sinais",
+  "signal extractor": "Extrator de Sinais",
   "semantic-judge-entailment": "Juiz Semântico e Validação de Evidência",
+  "semantic judge entailment": "Juiz Semântico e Validação de Evidência",
   "knowledge-accumulator": "Acumulador de Conhecimento",
+  "knowledge accumulator": "Acumulador de Conhecimento",
   "reprocess-controller": "Controlador de Reprocessamento",
+  "reprocess controller": "Controlador de Reprocessamento",
   "routine-synthesizer": "Sintetizador de Rotina",
+  "routine synthesizer": "Sintetizador de Rotina",
   "commercial-evidence-gate": "Gate de Nível de Evidência E0–E5",
+  "commercial evidence gate": "Gate de Nível de Evidência E0–E5",
   "enriched-niche-materializer": "Materializador de Nicho Enriquecido",
+  "enriched niche materializer": "Materializador de Nicho Enriquecido",
 };
 
-function formatStage(stageCode: string | null | undefined) {
-  if (!stageCode) return "Sem etapa aberta";
-  return stageLabels[stageCode] ?? stageCode;
+export function formatStage(stageCode: string | null | undefined) {
+  const normalizedStageCode = stageCode?.trim().toLowerCase();
+  if (!normalizedStageCode) return "Sem etapa aberta";
+  const slugStageCode = normalizedStageCode.replace(/[_\s]+/g, "-");
+  return (
+    stageLabels[normalizedStageCode] ??
+    stageLabels[slugStageCode] ??
+    stageCode
+  );
 }
 
 function formatDateTime(value: string | null | undefined) {

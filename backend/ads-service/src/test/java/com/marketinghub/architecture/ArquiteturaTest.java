@@ -140,6 +140,15 @@ class ArquiteturaTest {
             FRAMEWORK_IMAGE_GENERATION_JOB_REPOSITORY_CLASS,
             GERALANDING_STAGE_EXECUTION_REPOSITORY_CLASS);
 
+
+    @ArchTest
+    static final ArchRule experimentPromiseGenerationMustNotAccessOpenAiDirectly = classes()
+            .that()
+            .haveSimpleName("ExperimentPromiseGenerationService")
+            .should(notDependOnOpenAiRuntime())
+            .because("[ARQUITETURA] [BACKEND][Experimentos] o backend não pode acessar OpenAI diretamente; "
+                    + "deve apenas persistir solicitações e expor pending para o AI Worker executar a etapa");
+
     @ArchTest
     static final ArchRule moisMustNotDependOnOtherMarketingHubPackages = noClasses()
             .that()
@@ -2761,4 +2770,20 @@ class ArquiteturaTest {
      * Representa a estrutura do pacote da biblioteca de páginas de venda do MOIS.
      */
     private record SalesLibraryPackageInfo(String namespace, String version, String layer) {}
+    /** Bloqueia uso de clientes/runtime OpenAI em pacotes de negócio do backend. */
+    private static ArchCondition<JavaClass> notDependOnOpenAiRuntime() {
+        return new ArchCondition<>("[ARQUITETURA] não depender do runtime OpenAI no backend") {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                item.getDirectDependenciesFromSelf().stream()
+                        .filter(dependency -> dependency.getTargetClass().getName().startsWith("com.marketinghub.openai"))
+                        .forEach(dependency -> events.add(SimpleConditionEvent.violated(
+                                item,
+                                "[ARQUITETURA] " + item.getName()
+                                        + " depende de " + dependency.getTargetClass().getName()
+                                        + "; o backend deve registrar a solicitação no banco e o AI Worker deve consumir via pending")));
+            }
+        };
+    }
+
 }

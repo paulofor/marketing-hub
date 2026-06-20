@@ -3,22 +3,18 @@ package com.marketinghub.experiment.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.marketinghub.ai.generation.service.AiWorkerGenerationService;
+import com.marketinghub.experiment.promise.ExperimentPromiseGenerationRequest;
+import com.marketinghub.experiment.promise.ExperimentPromiseGenerationRequestStatus;
 import com.marketinghub.experiment.service.generatepromise.GenerateExperimentPromiseOptionsRequest;
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.niche.MarketNiche;
-import com.marketinghub.openai.OpenAiBatchClient;
-import com.marketinghub.openai.OpenAiResponse;
-import com.marketinghub.openai.service.OpenAiPricingService;
+import com.marketinghub.repository.jpa.experiment.ExperimentPromiseGenerationRequestRepository;
 import com.marketinghub.repository.jpa.hypothesis.HypothesisRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
-import java.math.BigDecimal;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -30,7 +26,7 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.server.ResponseStatusException;
 
-/** Responsabilidade: validar a geração de opções de promessa única para experimentos. */
+/** Responsabilidade: validar o registro assíncrono de opções de promessa única para experimentos. */
 @ExtendWith(MockitoExtension.class)
 class ExperimentPromiseGenerationServiceTest {
     @Mock
@@ -38,13 +34,9 @@ class ExperimentPromiseGenerationServiceTest {
     @Mock
     private HypothesisRepository hypothesisRepository;
     @Mock
-    private OpenAiBatchClient openAiBatchClient;
+    private ExperimentPromiseGenerationRequestRepository requestRepository;
     @Spy
     private ObjectMapper objectMapper = new ObjectMapper();
-    @Mock
-    private AiWorkerGenerationService generationService;
-    @Mock
-    private OpenAiPricingService pricingService;
     @InjectMocks
     private ExperimentPromiseGenerationService service;
 
@@ -66,9 +58,9 @@ class ExperimentPromiseGenerationServiceTest {
                 .hasMessageContaining("Selecione uma hipótese");
     }
 
-    /** Deve retornar exatamente três opções completas e registrar a geração para auditoria. */
+    /** Deve registrar solicitação pendente sem acessar OpenAI diretamente pelo backend. */
     @Test
-    void shouldGenerateThreePromiseOptions() {
+    void shouldRegisterPendingPromiseOptionsRequest() {
         UUID hypothesisId = UUID.randomUUID();
         MarketNiche niche = MarketNiche.builder()
                 .id(7L)
@@ -89,27 +81,24 @@ class ExperimentPromiseGenerationServiceTest {
                 .build();
         when(nicheRepository.findById(7L)).thenReturn(Optional.of(niche));
         when(hypothesisRepository.findById(hypothesisId)).thenReturn(Optional.of(hypothesis));
-        when(openAiBatchClient.executeSingle(any(), anyString())).thenReturn(new OpenAiResponse(
-                "resp-1",
-                "{\"options\":["
-                        + "{\"singlePain\":\"Agenda vazia\",\"freeReward\":\"Checklist de reagendamento\",\"funnelPromise\":\"Receber o checklist\",\"primaryCta\":\"Receber checklist\",\"reason\":\"Direta\"},"
-                        + "{\"singlePain\":\"Clientes somem\",\"freeReward\":\"3 mensagens prontas\",\"funnelPromise\":\"Receber as mensagens\",\"primaryCta\":\"Quero as mensagens\",\"reason\":\"Emocional\"},"
-                        + "{\"singlePain\":\"Faltas no horário\",\"freeReward\":\"Roteiro de confirmação\",\"funnelPromise\":\"Receber o roteiro\",\"primaryCta\":\"Usar roteiro\",\"reason\":\"Operacional\"}]} ",
-                null,
-                new OpenAiResponse.OpenAiUsage(10, 20, null, null, 30),
-                null,
-                "completed"));
-        when(pricingService.estimateStandardCost(anyString(), any())).thenReturn(BigDecimal.ZERO);
+        when(requestRepository.save(any())).thenAnswer(invocation -> {
+            ExperimentPromiseGenerationRequest saved = invocation.getArgument(0);
+            saved.setId(123L);
+            return saved;
+        });
 
         var response = service.generate(new GenerateExperimentPromiseOptionsRequest(
                 7L, hypothesisId, null, null, null, null, null));
 
-        assertThat(response.options()).hasSize(3);
-        assertThat(response.options().getFirst().singlePain()).isEqualTo("Agenda vazia");
-        verify(generationService).recordGeneration(any());
-        ArgumentCaptor<Map<String, Object>> requestCaptor = ArgumentCaptor.forClass(Map.class);
-        verify(openAiBatchClient).executeSingle(requestCaptor.capture(), anyString());
-        String prompt = requestCaptor.getValue().get("input").toString();
-        assertThat(prompt).contains("Nicho selecionado", "Promessa validada", "Hipótese selecionada", "Fluxo de manutenção guiada", "Framework");
+        assertThat(response.requestId()).isEqualTo(123L);
+        assertThat(response.status()).isEqualTo(ExperimentPromiseGenerationRequestStatus.PENDING.name());
+        assertThat(response.options()).isEmpty();
+        ArgumentCaptor<ExperimentPromiseGenerationRequest> requestCaptor = ArgumentCaptor.forClass(
+                ExperimentPromiseGenerationRequest.class);
+        verify(requestRepository).save(requestCaptor.capture());
+        ExperimentPromiseGenerationRequest persisted = requestCaptor.getValue();
+        assertThat(persisted.getPrompt())
+                .contains("Nicho selecionado", "Promessa validada", "Hipótese selecionada", "Fluxo de manutenção guiada");
+        assertThat(persisted.getStatus()).isEqualTo(ExperimentPromiseGenerationRequestStatus.PENDING);
     }
 }

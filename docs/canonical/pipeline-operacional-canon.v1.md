@@ -17,6 +17,7 @@ Todo pipeline deve preservar o eixo central do Marketing Hub:
 3. **A tela deve orientar o usuário pelo fluxo, não expor complexidade técnica.** Informações técnicas ficam disponíveis apenas quando ajudam diagnóstico, configuração segura ou suporte.
 4. **O usuário deve ver estado, causa e próxima ação.** Toda etapa precisa comunicar se está pronta, em execução, concluída, bloqueada ou com erro, e qual ação destrava o avanço.
 5. **O backend é a fonte de verdade.** Frontend, workers e módulos auxiliares consomem e gravam estado por endpoints do backend; nenhum módulo acessa banco diretamente fora do backend principal.
+5.1. **Backend não executa OpenAI.** Em etapas que usam IA, o backend não chama OpenAI nem espera resposta de modelo em requisição de tela. Ele registra a solicitação, persiste estado/auditoria, publica pendências por `pending` e recebe callbacks de execução do AI Worker.
 6. **Artefatos finais não podem ser contaminados por metadados técnicos.** Comentários operacionais, flags internas, placeholders e textos de debug devem ficar fora do conteúdo publicado.
 7. **Automação deve reduzir esforço, não esconder falhas.** Encadeamentos automáticos são obrigatórios quando a próxima etapa depende apenas de sucesso da etapa anterior; bloqueios devem mostrar causa-raiz e ação recomendada.
 
@@ -126,7 +127,7 @@ com.marketinghub.worker.openai.core.<etapa>
 
 Cada etapa deve possuir configuração própria, adapter de backend, construtor de prompt, validador de resposta e handler de aplicação. O core genérico não deve depender de etapas concretas.
 
-O worker não acessa banco. Ele busca pendências no backend, monta prompt, chama OpenAI, valida resposta e devolve o resultado ao backend.
+O worker não acessa banco. Ele busca pendências no backend pelo endpoint `pending`, faz `claim` quando o contrato da etapa exigir reserva explícita, monta prompt, chama OpenAI, valida resposta e devolve o resultado ao backend. O backend não pode substituir o worker fazendo chamada direta à OpenAI para “atalhar” uma tela ou reduzir latência; se a UI precisar de resposta rápida, o contrato deve continuar assíncrono e mostrar estado de solicitação/processamento.
 
 ### 6.3 Persistência
 
@@ -138,6 +139,20 @@ A persistência deve separar:
 4. **artefato consolidado**: o estado atual usado pelo domínio.
 
 Nunca misturar resposta bruta, artefato funcional e metadado técnico no mesmo campo final publicável.
+
+
+### 6.4 Contrato mínimo para etapas de IA
+
+Toda etapa ou ação administrativa que precise de IA deve seguir este contrato mínimo:
+
+1. **Start/solicitação no backend:** a tela ou serviço chama o backend, e o backend grava uma execução `PENDING` com contexto suficiente para auditoria e relatório.
+2. **Pending canônico:** o backend expõe `GET .../stage-executions/pending` ou variação canônica documentada para o AI Worker buscar trabalho.
+3. **Claim/status:** o worker registra que assumiu a execução antes de chamar OpenAI quando houver risco de concorrência.
+4. **Execução no worker:** somente o worker monta ou finaliza o payload runtime, chama OpenAI, controla timeout/retry operacional e valida resposta bruta.
+5. **Callback de resultado:** o worker devolve resposta estruturada, payload bruto, uso/custo quando houver e erro funcional/técnico ao backend.
+6. **Consolidação no backend:** o backend valida o contrato de domínio, persiste artefato/auditoria e decide a próxima transição do pipeline.
+
+É proibido criar endpoint de backend que, ao receber uma ação de tela, chame OpenAI de forma síncrona e retorne a resposta do modelo diretamente ao frontend.
 
 ## 7. Encadeamento de etapas
 

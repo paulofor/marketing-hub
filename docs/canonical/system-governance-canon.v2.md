@@ -41,6 +41,7 @@
 15. **Liquibase MySQL 5.7 sem auto-subconsulta em tabela-alvo.** Changelogs que executam `UPDATE` ou `DELETE` não podem consultar a mesma tabela-alvo em subconsultas usadas no `WHERE` ou `SET` para validar idempotência/conflito, porque o MySQL 5.7 pode bloquear a migração com erro 1093 (`You can't specify target table ... for update in FROM clause`). A regra canônica é modelar essas validações com `LEFT JOIN ... IS NULL`, tabela derivada materializada em nível seguro ou comandos separados, revisando explicitamente cada changelog antes do PR.
 16. **Comentários Java em português.** Comentários escritos dentro de classes Java devem estar em português, incluindo a responsabilidade básica da classe, a explicação breve de métodos e comentários internos necessários para esclarecer decisões de implementação.
 17. **Rotinas agendadas pertencem ao módulo executor.** Ajustes de execução operacional de rotinas — cron, polling, frequência, janela de execução, pausa/retomada, retries locais e decisão de quando rodar — devem residir no módulo que executa a rotina. O backend principal entrega contratos/dados, expõe pendências e recebe status/resultados; ele não deve virar orquestrador de agendamento de módulos externos. Exceção: quando houver solicitação explícita de tela administrativa, o backend pode persistir e expor a configuração/comando usado pela UI, mantendo a execução agendada no módulo executor.
+18. **Backend principal não executa OpenAI.** O backend (`backend/ads-service`) não deve chamar APIs da OpenAI, criar batches, fazer polling de resposta de modelo ou manter clientes runtime de IA em fluxos de negócio. Quando uma ação precisar de IA, o backend deve apenas persistir a solicitação/execução, expor endpoint canônico `pending`, receber `claim`/status/resultado do módulo executor e consolidar o artefato. A chamada à OpenAI, retry operacional, timeout, prompt final enviado e validação primária da resposta pertencem ao AI Worker ou ao worker executor responsável pela etapa.
 
 ## 3.1 Regra global de exclusividade de artefatos (todo o sistema)
 
@@ -100,6 +101,8 @@ Regra prática:
 | Matriz de conversão visual e confiança (hierarquia, prova, acessibilidade, sinais legais) | cânone de experimentos + backend validador | ai-worker, LHM, frontend |
 | Projeções de UI | frontend | usuário final |
 | Fatos externos e resultados assíncronos | workers / integrações | backend / domínio |
+| Execução runtime de IA/OpenAI | AI Worker ou worker executor da etapa | backend / domínio, frontend |
+| Solicitações, pendências e resultados persistidos de IA | backend / domínio correspondente | AI Worker, frontend, relatórios |
 | Governança global do sistema | `system-governance-canon` + ADRs relevantes | todo o projeto |
 
 ### 7.1 Regra arquitetural mandatória para MOIS

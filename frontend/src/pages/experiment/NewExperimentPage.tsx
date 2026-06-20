@@ -147,7 +147,7 @@ export default function NewExperimentPage() {
       alert("Selecione o nicho e a hipótese antes de gerar com IA");
       return;
     }
-    const options = await generatePromiseOptions.mutateAsync({
+    const response = await generatePromiseOptions.mutateAsync({
       nicheId: Number(form.nicheId),
       hypothesisId: form.hypothesisId,
       currentSinglePain: form.singlePain || undefined,
@@ -155,7 +155,7 @@ export default function NewExperimentPage() {
       currentFunnelPromise: form.funnelPromise || undefined,
       currentPrimaryCta: form.primaryCta || undefined,
     });
-    setPromiseOptions(options);
+    setPromiseOptions(response.options ?? []);
   };
 
   const applyPromiseOption = (option: PromiseOption) => {

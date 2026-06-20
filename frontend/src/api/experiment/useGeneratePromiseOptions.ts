@@ -20,6 +20,8 @@ interface GeneratePromiseOptionsPayload {
 }
 
 interface GeneratePromiseOptionsResponse {
+  requestId: number;
+  status: string;
   options: PromiseOption[];
 }
 
@@ -30,10 +32,10 @@ export function useGeneratePromiseOptions() {
         "/api/experiments/promise-contract-options/generate",
         payload,
       );
-      return data.options;
+      return data;
     },
     onSuccess: () => {
-      toast.success("IA gerou 3 opções de promessa");
+      toast.success("Solicitação registrada. O AI Worker vai gerar as opções.");
     },
     onError: () => {
       toast.error("Não foi possível gerar opções com IA");

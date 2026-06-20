@@ -14,6 +14,7 @@ import com.marketinghub.oprm.nichocnae.v2.commercialevidencegate.service.complet
 import com.marketinghub.oprm.nichocnae.v2.commercialevidencegate.service.createStageExecution.CommercialEvidenceGateCreateRequest;
 import com.marketinghub.oprm.nichocnae.v2.commercialevidencegate.service.failStageExecution.CommercialEvidenceGateFailureRequest;
 import com.marketinghub.oprm.nichocnae.v2.commercialevidencegate.service.pending.CommercialEvidenceGatePendingResponse;
+import com.marketinghub.repository.jpa.oprm.cnae.OprmNicheCandidateRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.v2.OprmNichoCnaeV2StageExecutionRepository;
 import java.time.Instant;
 import java.util.List;
@@ -28,6 +29,7 @@ import org.springframework.data.domain.Pageable;
 @ExtendWith(MockitoExtension.class)
 class BackendCommercialEvidenceGateServiceTest {
     @Mock private OprmNichoCnaeV2StageExecutionRepository stageExecutionRepository;
+    @Mock private OprmNicheCandidateRepository nicheCandidateRepository;
 
     /** Deve manter a etapa 7 sem pendências quando a feature flag da v2 estiver desligada. */
     @Test
@@ -121,7 +123,7 @@ class BackendCommercialEvidenceGateServiceTest {
 
     /** Cria o service testável com flag explícita para a v2. */
     private BackendCommercialEvidenceGateService service(boolean v2Enabled) {
-        return new BackendCommercialEvidenceGateService(stageExecutionRepository, v2Enabled);
+        return new BackendCommercialEvidenceGateService(stageExecutionRepository, nicheCandidateRepository, v2Enabled);
     }
 
     /** Monta execução persistida mínima da etapa commercial-evidence-gate. */

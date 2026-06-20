@@ -8,7 +8,7 @@ paths:
       summary: Lista pendências do gate comercial E0-E5 para o executor OPRM
       responses:
         "200":
-          description: Pendências disponíveis
+          description: Pendências disponíveis para o executor OPRM com envelope comum completo (stageExecutionId, jobId, researchCycleId, sourceNicheId, cnaeCode, cnaeDescription, attemptNumber, technicalRetryNumber, knowledgeVersion, materializationEnabled e inputPayload).
   /api/internal/oprm/nichocnae/v2/commercial-evidence-gate/stage-executions:
     post:
       summary: Cria pendência do gate comercial E0-E5 calculado pelo executor externo

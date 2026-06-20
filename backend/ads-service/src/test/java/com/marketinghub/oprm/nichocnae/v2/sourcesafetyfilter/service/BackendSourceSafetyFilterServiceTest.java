@@ -14,6 +14,7 @@ import com.marketinghub.oprm.nichocnae.v2.sourcesafetyfilter.service.completeSta
 import com.marketinghub.oprm.nichocnae.v2.sourcesafetyfilter.service.createStageExecution.SourceSafetyFilterCreateRequest;
 import com.marketinghub.oprm.nichocnae.v2.sourcesafetyfilter.service.failStageExecution.SourceSafetyFilterFailureRequest;
 import com.marketinghub.oprm.nichocnae.v2.sourcesafetyfilter.service.pending.SourceSafetyFilterPendingResponse;
+import com.marketinghub.repository.jpa.oprm.cnae.OprmNicheCandidateRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.v2.OprmNichoCnaeV2StageExecutionRepository;
 import java.time.Instant;
 import java.util.List;
@@ -28,6 +29,7 @@ import org.springframework.data.domain.Pageable;
 @ExtendWith(MockitoExtension.class)
 class BackendSourceSafetyFilterServiceTest {
     @Mock private OprmNichoCnaeV2StageExecutionRepository stageExecutionRepository;
+    @Mock private OprmNicheCandidateRepository nicheCandidateRepository;
 
     /** Deve manter a etapa 2 sem pendências quando a feature flag da v2 estiver desligada. */
     @Test
@@ -124,7 +126,7 @@ class BackendSourceSafetyFilterServiceTest {
 
     /** Cria o service testável com flag explícita para a v2. */
     private BackendSourceSafetyFilterService service(boolean v2Enabled) {
-        return new BackendSourceSafetyFilterService(stageExecutionRepository, v2Enabled);
+        return new BackendSourceSafetyFilterService(stageExecutionRepository, nicheCandidateRepository, v2Enabled);
     }
 
     /** Monta execução persistida mínima da etapa source-safety-filter. */

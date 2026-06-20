@@ -14,6 +14,7 @@ import com.marketinghub.oprm.nichocnae.v2.adaptivequeryplanner.service.completeS
 import com.marketinghub.oprm.nichocnae.v2.adaptivequeryplanner.service.createStageExecution.AdaptiveQueryPlannerCreateRequest;
 import com.marketinghub.oprm.nichocnae.v2.adaptivequeryplanner.service.failStageExecution.AdaptiveQueryPlannerFailureRequest;
 import com.marketinghub.oprm.nichocnae.v2.adaptivequeryplanner.service.pending.AdaptiveQueryPlannerPendingResponse;
+import com.marketinghub.repository.jpa.oprm.cnae.OprmNicheCandidateRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.v2.OprmNichoCnaeV2StageExecutionRepository;
 import java.time.Instant;
 import java.util.List;
@@ -28,6 +29,7 @@ import org.springframework.data.domain.Pageable;
 @ExtendWith(MockitoExtension.class)
 class BackendAdaptiveQueryPlannerServiceTest {
     @Mock private OprmNichoCnaeV2StageExecutionRepository stageExecutionRepository;
+    @Mock private OprmNicheCandidateRepository nicheCandidateRepository;
 
     /** Deve manter a etapa 3 sem pendências quando a feature flag da v2 estiver desligada. */
     @Test
@@ -124,7 +126,7 @@ class BackendAdaptiveQueryPlannerServiceTest {
 
     /** Cria o service testável com flag explícita para a v2. */
     private BackendAdaptiveQueryPlannerService service(boolean v2Enabled) {
-        return new BackendAdaptiveQueryPlannerService(stageExecutionRepository, v2Enabled);
+        return new BackendAdaptiveQueryPlannerService(stageExecutionRepository, nicheCandidateRepository, v2Enabled);
     }
 
     /** Monta execução persistida mínima da etapa adaptive-query-planner. */

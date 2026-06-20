@@ -8,7 +8,7 @@ paths:
       summary: Lista execuções pendentes da etapa candidate-tournament v2
       responses:
         '200':
-          description: Pendências entregues ao executor OPRM sem regra de negócio no backend
+          description: Pendências disponíveis para o executor OPRM com envelope comum completo (stageExecutionId, jobId, researchCycleId, sourceNicheId, cnaeCode, cnaeDescription, attemptNumber, technicalRetryNumber, knowledgeVersion, materializationEnabled e inputPayload).
   /api/internal/oprm/nichocnae/v2/candidate-tournament/stage-executions:
     post:
       summary: Grava pendência da etapa candidate-tournament v2 solicitada pelo executor

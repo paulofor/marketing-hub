@@ -1,0 +1,43 @@
+openapi: 3.0.3
+info:
+  title: OPRM NichoCNAE v2 Adaptive Query Planner API
+  version: "1.0"
+paths:
+  /api/internal/oprm/nichocnae/v2/adaptive-query-planner/stage-executions/pending:
+    get:
+      summary: Lista execuções pendentes da etapa adaptive-query-planner v2
+      responses:
+        "200":
+          description: Pendências disponíveis para o executor OPRM planejar pesquisas adaptativas com envelope comum completo (stageExecutionId, jobId, researchCycleId, sourceNicheId, cnaeCode, cnaeDescription, attemptNumber, technicalRetryNumber, knowledgeVersion, materializationEnabled e inputPayload).
+  /api/internal/oprm/nichocnae/v2/adaptive-query-planner/stage-executions:
+    post:
+      summary: Grava pendência da etapa adaptive-query-planner v2 solicitada pelo executor
+      responses:
+        "200":
+          description: Pendência gravada para consumo pelo endpoint pending.
+  /api/internal/oprm/nichocnae/v2/adaptive-query-planner/stage-executions/{stageExecutionId}/complete:
+    post:
+      summary: Registra conclusão de execução da etapa adaptive-query-planner v2
+      parameters:
+        - name: stageExecutionId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Conclusão registrada com decisão de planejamento e próxima etapa.
+  /api/internal/oprm/nichocnae/v2/adaptive-query-planner/stage-executions/{stageExecutionId}/fail:
+    post:
+      summary: Registra falha e retry técnico da etapa adaptive-query-planner v2
+      parameters:
+        - name: stageExecutionId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Falha registrada.

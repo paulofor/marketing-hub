@@ -276,6 +276,7 @@ public class BackendCandidateGeneratorService {
                 execution.getJobId(),
                 execution.getCnaeCode(),
                 cnaeDescription,
+                execution.getResearchCycleId(),
                 execution.getSourceNicheId(),
                 execution.getAttemptNumber(),
                 execution.getTechnicalRetryNumber(),

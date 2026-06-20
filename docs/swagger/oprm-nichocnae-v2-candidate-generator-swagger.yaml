@@ -37,7 +37,7 @@ paths:
       summary: Lista execuções pendentes da etapa candidate-generator v2
       responses:
         "200":
-          description: Pendências disponíveis para o executor OPRM
+          description: Pendências disponíveis para o executor OPRM com envelope comum completo (stageExecutionId, jobId, researchCycleId, sourceNicheId, cnaeCode, cnaeDescription, attemptNumber, technicalRetryNumber, knowledgeVersion e materializationEnabled).
   /api/internal/oprm/nichocnae/v2/candidate-generator/stage-executions/{stageExecutionId}/complete:
     post:
       summary: Registra conclusão de execução da etapa candidate-generator v2

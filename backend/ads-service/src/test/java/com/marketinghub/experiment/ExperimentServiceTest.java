@@ -249,53 +249,6 @@ class ExperimentServiceTest {
         var exp = service.create(req);
         assertThat(exp.getId()).isNotNull();
         assertThat(exp.getPlatform()).isEqualTo(ExperimentPlatform.FACEBOOK);
-        assertThat(exp.getCaptureDestinationType()).isEqualTo(ExperimentCaptureDestinationType.LANDING_PAGE);
-    }
-
-    @Test
-    void updateCaptureDestinationType() {
-        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Destino captura").build());
-        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("AC").build());
-        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
-                .marketNiche(niche)
-                .title("HC")
-                .premiseAngle(angle)
-                .promise("Promessa")
-                .problem("Problema")
-                .persona("Persona")
-                .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
-                .kpiTargetCpl(new BigDecimal("1"))
-                .build());
-        metricPresetRepository.save(MetricPreset.builder()
-                .id("LEAN_DESTINATION")
-                .name("Lean Destino")
-                .sampleSize(150)
-                .stopLossFactor(new BigDecimal("2"))
-                .defaultMdePp(new BigDecimal("12"))
-                .build());
-        CreateExperimentRequest createRequest = new CreateExperimentRequest();
-        applyStageDefaults(createRequest);
-        createRequest.setMarketNicheId(niche.getId());
-        createRequest.setHypothesisId(hyp.getId());
-        createRequest.setName("Exp destino");
-        createRequest.setHypothesis("Teste");
-        createRequest.setKpiTargetCpl(new BigDecimal("45"));
-        createRequest.setMetricPresetId("LEAN_DESTINATION");
-        createRequest.setJourneyTemplateId(createJourneyTemplate().getId());
-        createRequest.setInstagramAccountId(createInstagramAccount().getId());
-        Experiment exp = service.create(createRequest);
-
-        UpdateExperimentRequest updateRequest = new UpdateExperimentRequest();
-        applyStageDefaults(updateRequest);
-        updateRequest.setName(exp.getName());
-        updateRequest.setHypothesis(exp.getHypothesis());
-        updateRequest.setKpiTargetCpl(exp.getKpiTargetCpl());
-        updateRequest.setMetricPresetId("LEAN_DESTINATION");
-        updateRequest.setCaptureDestinationType(ExperimentCaptureDestinationType.META_INSTANT_FORM);
-
-        Experiment updated = service.update(exp.getId(), updateRequest);
-
-        assertThat(updated.getCaptureDestinationType()).isEqualTo(ExperimentCaptureDestinationType.META_INSTANT_FORM);
     }
 
     @Test

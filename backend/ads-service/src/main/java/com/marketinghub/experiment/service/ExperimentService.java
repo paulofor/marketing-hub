@@ -332,7 +332,6 @@ public class ExperimentService {
                 .imageGenerationModel(imageSelection.model())
                 .imageGenerationQuality(imageSelection.quality())
                 .followUpActionUrl(followUpActionUrl)
-                .captureDestinationType(resolveCaptureDestinationType(request.getCaptureDestinationType()))
                 .creativeTextPrompt(normalizePrompt(request.getCreativeTextPrompt()))
                 .creativeImagePrompt(normalizePrompt(request.getCreativeImagePrompt()))
                 .build();
@@ -556,9 +555,6 @@ public class ExperimentService {
             String followUpActionUrl = normalizeFollowUpActionUrl(request.getFollowUpActionUrl());
             exp.setFollowUpActionUrl(followUpActionUrl);
         }
-        if (request.isCaptureDestinationTypePresent()) {
-            exp.setCaptureDestinationType(resolveCaptureDestinationType(request.getCaptureDestinationType()));
-        }
         if (request.isLeadPortalFlowModelPresent()) {
             exp.setLeadPortalFlowModel(request.getLeadPortalFlowModel());
         }
@@ -669,11 +665,6 @@ public class ExperimentService {
         Experiment exp = repository.findById(id).orElseThrow();
         exp.setInstantFormsToGenerate(quantity);
         return exp;
-    }
-
-    /** Resolve o destino de captura padrão quando a requisição não informa valor explícito. */
-    private ExperimentCaptureDestinationType resolveCaptureDestinationType(ExperimentCaptureDestinationType destinationType) {
-        return destinationType != null ? destinationType : ExperimentCaptureDestinationType.LANDING_PAGE;
     }
 
     /**

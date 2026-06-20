@@ -1095,10 +1095,6 @@ components:
         journeyTemplateId:
           type: integer
           format: int64
-        captureDestinationType:
-          type: string
-          enum: [LANDING_PAGE, META_INSTANT_FORM]
-          description: Destino oficial de captura da campanha do experimento.
     Experiment:
       type: object
       properties:
@@ -1110,10 +1106,6 @@ components:
           type: string
         status:
           type: string
-        captureDestinationType:
-          type: string
-          enum: [LANDING_PAGE, META_INSTANT_FORM]
-          description: Destino oficial de captura da campanha do experimento.
         journeyTemplateId:
           type: integer
         journeyTemplateName:

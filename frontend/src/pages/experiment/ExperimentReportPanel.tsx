@@ -27,17 +27,6 @@ const statusVariants: Record<ExperimentReportStatus, string> = {
   FAILED: "danger",
 };
 
-const captureDestinationLabels: Record<string, string> = {
-  LANDING_PAGE: "Landing Page / Lead Portal",
-  META_INSTANT_FORM: "Meta Instant Form",
-};
-
-function formatCaptureDestination(value?: string | null) {
-  return value
-    ? (captureDestinationLabels[value] ?? value)
-    : "Landing Page / Lead Portal";
-}
-
 export default function ExperimentReportPanel({
   experimentId,
 }: ExperimentReportPanelProps) {
@@ -202,11 +191,6 @@ function ReportMaterialPreview({
     );
   }
 
-  const captureDestinationType =
-    material.experiment?.captureDestinationType ?? "LANDING_PAGE";
-  const isMetaInstantFormDestination =
-    captureDestinationType === "META_INSTANT_FORM";
-
   const creativeImages = [
     ...(material.creatives ?? [])
       .filter((creative) => Boolean(creative.imageUrl))
@@ -245,10 +229,6 @@ function ReportMaterialPreview({
                   {formatCurrency(material.experiment.dailyBudget)}
                 </li>
               ) : null}
-              <li>
-                <strong>Destino de captura:</strong>{" "}
-                {formatCaptureDestination(captureDestinationType)}
-              </li>
               {material.experiment?.startDate ? (
                 <li>
                   <strong>Janela:</strong> {material.experiment.startDate} —{" "}
@@ -266,32 +246,18 @@ function ReportMaterialPreview({
                 {(material.creatives ?? []).length} criativo(s) aprovados com
                 headline e imagem.
               </li>
-              {isMetaInstantFormDestination ? (
-                <li>
-                  Captura nativa via Meta Instant Form; analytics de landing não
-                  se aplica como fonte primária.
-                </li>
-              ) : (
-                <>
-                  <li>
-                    {(material.landingPages ?? []).length} landing page(s)
-                    monitoradas.
-                  </li>
-                  <li>
-                    {(material.leadPortalFlows ?? []).length} fluxo(s) do portal
-                    do lead com perguntas e estilo visual.
-                  </li>
-                </>
-              )}
+              <li>
+                {(material.landingPages ?? []).length} landing page(s)
+                monitoradas.
+              </li>
+              <li>
+                {(material.leadPortalFlows ?? []).length} fluxo(s) do portal do
+                lead com perguntas e estilo visual.
+              </li>
             </ul>
             {material.instantForm ? (
               <div className="text-muted small">
-                Instant form: {material.instantForm.name} ·{" "}
-                {material.instantForm.facebookFormId ??
-                  material.instantForm.shareLink ??
-                  "sem ID Meta"}
-                {material.instantForm.approved ? " · aprovado" : " · pendente"}
-                {material.instantForm.published ? " · publicado" : ""}
+                Instant form: {material.instantForm.name}
               </div>
             ) : null}
           </div>

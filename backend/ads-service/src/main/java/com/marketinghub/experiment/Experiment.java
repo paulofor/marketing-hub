@@ -19,7 +19,9 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
 
-/** Representa um experimento comercial com seus destinos, artefatos e métricas. */
+/**
+ * Experiment grouping ad sets and creatives.
+ */
 @Entity
 @Table(uniqueConstraints = @UniqueConstraint(columnNames = {"niche_id", "name"}))
 @Data
@@ -57,12 +59,6 @@ public class Experiment {
 
     @Column(name = "follow_up_action_url", length = 512)
     private String followUpActionUrl;
-
-    /** Destino oficial que a campanha deve usar para capturar o lead. */
-    @Builder.Default
-    @Enumerated(EnumType.STRING)
-    @Column(name = "capture_destination_type", nullable = false, length = 32)
-    private ExperimentCaptureDestinationType captureDestinationType = ExperimentCaptureDestinationType.LANDING_PAGE;
 
     @Column(name = "lead_portal_flow_model", length = 191)
     private String leadPortalFlowModel;

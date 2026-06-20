@@ -2,7 +2,6 @@ package com.marketinghub.experiment.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.marketinghub.ads.dto.FacebookInstantFormDto;
-import com.marketinghub.experiment.ExperimentCaptureDestinationType;
 import com.marketinghub.experiment.ExperimentPlatform;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.ExperimentStage;
@@ -13,7 +12,9 @@ import java.time.Instant;
 import java.time.LocalDate;
 import lombok.Data;
 
-/** DTO que expõe os dados consolidados de um experimento. */
+/**
+ * DTO for Experiment.
+ */
 @Data
 public class ExperimentDto {
     private Long id;
@@ -24,7 +25,6 @@ public class ExperimentDto {
     private FacebookPageDto facebookPage;
     private FacebookInstantFormDto facebookInstantForm;
     private String followUpActionUrl;
-    private ExperimentCaptureDestinationType captureDestinationType;
     private String leadPortalFlowModel;
     private boolean schemaFirstLeadPortalEnabled;
     private String creativeTextPrompt;

@@ -3,8 +3,6 @@ package com.marketinghub.experiment.service;
 import com.marketinghub.creative.CreativeStatus;
 import com.marketinghub.repository.jpa.creative.CreativeRepository;
 import com.marketinghub.experiment.Experiment;
-import com.marketinghub.experiment.ExperimentCaptureDestinationType;
-import com.marketinghub.ads.FacebookInstantForm;
 import com.marketinghub.experiment.dto.ExperimentReadinessIssueDto;
 import com.marketinghub.experiment.dto.ExperimentReadinessIssueType;
 import com.marketinghub.experiment.dto.ExperimentReadinessSummaryDto;
@@ -38,20 +36,14 @@ public class ExperimentReadinessService {
         this.targetingElementRepository = targetingElementRepository;
     }
 
-    /** Resume os bloqueios operacionais que impedem a liberação do experimento para campanha. */
     @Transactional(readOnly = true)
     public ExperimentReadinessSummaryDto summarize(Long experimentId) {
         Experiment experiment = experimentService.get(experimentId);
         long creativeCount = creativeRepository.countByExperimentId(experimentId);
         boolean hasCreatives = hasApprovedCreative(experiment);
 
-        ExperimentCaptureDestinationType captureDestinationType = resolveCaptureDestinationType(experiment);
-        boolean requiresLandingDestination = captureDestinationType == ExperimentCaptureDestinationType.LANDING_PAGE;
-        boolean requiresInstantFormDestination = captureDestinationType == ExperimentCaptureDestinationType.META_INSTANT_FORM;
         long leadPortalFlowCount = hasReadyLeadPortalFlow(experiment) ? 1L : 0L;
         boolean hasLeadPortalFlow = leadPortalFlowCount > 0;
-        long instantFormCount = hasReadyInstantForm(experiment) ? 1L : 0L;
-        boolean hasInstantForm = instantFormCount > 0;
 
         List<String> missingConfiguration = computeMissingConfiguration(experiment);
         List<TargetingElementType> missingTypes = mapMissingTargetingTypes(missingConfiguration);
@@ -67,21 +59,12 @@ public class ExperimentReadinessService {
                     List.of()
             ));
         }
-        if (requiresLandingDestination && !hasApprovedLandingDestination(experiment)) {
+        if (!hasLeadPortalFlow) {
             issues.add(new ExperimentReadinessIssueDto(
                     ExperimentReadinessIssueType.LEAD_PORTAL_FLOW,
-                    "Sem landing publicada",
-                    "A opção Landing Page exige uma URL final de landing consolidada no experimento.",
-                    "Aprove uma landing para definir a URL de destino da campanha.",
-                    List.of()
-            ));
-        }
-        if (requiresInstantFormDestination && !hasInstantForm) {
-            issues.add(new ExperimentReadinessIssueDto(
-                    ExperimentReadinessIssueType.INSTANT_FORM,
-                    "Sem Instant Form publicável",
-                    "A opção Meta Instant Form exige um formulário aprovado, vinculado à página e com identificador ou link da Meta.",
-                    "Acesse a aba Instant Forms, selecione um formulário aprovado e confirme se ele possui ID ou link da Meta.",
+                    "Sem fluxo do portal do lead",
+                    "Ainda não há um fluxo do portal vinculado a este experimento.",
+                    "Solicite a geração de um fluxo ou associe um existente na aba Portal do Lead.",
                     List.of()
             ));
         }
@@ -98,36 +81,25 @@ public class ExperimentReadinessService {
         return new ExperimentReadinessSummaryDto(
                 hasCreatives,
                 creativeCount,
-                captureDestinationType,
                 hasLeadPortalFlow,
                 leadPortalFlowCount,
-                hasInstantForm,
-                instantFormCount,
                 hasCompleteTargeting,
                 List.copyOf(missingTypes),
                 List.copyOf(issues)
         );
     }
 
-    /** Indica se o experimento já atende ao mínimo para entrar na fila de campanha. */
     public boolean isReadyForCampaign(Experiment experiment) {
         return computeMissingConfiguration(experiment).isEmpty();
     }
 
-    /** Calcula as chaves de configuração ausentes usadas pela fila de publicação. */
     public List<String> computeMissingConfiguration(Experiment experiment) {
         List<String> missing = new ArrayList<>();
         if (!hasApprovedCreative(experiment)) {
             missing.add("creativeApproval");
         }
-        ExperimentCaptureDestinationType captureDestinationType = resolveCaptureDestinationType(experiment);
-        if (captureDestinationType == ExperimentCaptureDestinationType.LANDING_PAGE
-                && !hasApprovedLandingDestination(experiment)) {
+        if (!hasApprovedLandingDestination(experiment)) {
             missing.add("landingDestination");
-        }
-        if (captureDestinationType == ExperimentCaptureDestinationType.META_INSTANT_FORM
-                && !hasReadyInstantForm(experiment)) {
-            missing.add("instantFormDestination");
         }
         return List.copyOf(missing);
     }
@@ -170,35 +142,10 @@ public class ExperimentReadinessService {
                 && creativeRepository.existsByExperimentIdAndStatus(experiment.getId(), CreativeStatus.READY);
     }
 
-    /** Verifica se existe fluxo do portal aprovado para uso como destino Landing Page. */
     private boolean hasReadyLeadPortalFlow(Experiment experiment) {
         return experiment != null
                 && experiment.getLeadPortalFlow() != null
                 && experiment.getLeadPortalFlow().isApproved();
-    }
-
-    /** Verifica se existe Instant Form aprovado e endereçável pela Meta para publicação on-ad. */
-    private boolean hasReadyInstantForm(Experiment experiment) {
-        if (experiment == null || experiment.getFacebookInstantForm() == null) {
-            return false;
-        }
-        FacebookInstantForm form = experiment.getFacebookInstantForm();
-        return form.isApproved()
-                && form.getPage() != null
-                && (hasText(form.getFormId()) || hasText(form.getShareLink()));
-    }
-
-    /** Resolve o destino de captura persistido, preservando Landing Page como padrão compatível. */
-    private ExperimentCaptureDestinationType resolveCaptureDestinationType(Experiment experiment) {
-        if (experiment == null || experiment.getCaptureDestinationType() == null) {
-            return ExperimentCaptureDestinationType.LANDING_PAGE;
-        }
-        return experiment.getCaptureDestinationType();
-    }
-
-    /** Indica se o texto possui conteúdo útil para validação de destino. */
-    private boolean hasText(String value) {
-        return value != null && !value.isBlank();
     }
 
     private boolean hasSelectedTargeting(Long experimentId) {

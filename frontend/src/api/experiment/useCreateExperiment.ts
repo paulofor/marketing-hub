@@ -1,10 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
-import type {
-  Experiment,
-  ExperimentCaptureDestinationType,
-  ExperimentStage,
-} from "./useExperiments";
+import type { Experiment, ExperimentStage } from "./useExperiments";
 
 export interface CreateExperiment {
   nicheId: number;
@@ -33,7 +29,6 @@ export interface CreateExperiment {
   journeyTemplateId?: number;
   facebookPageId?: number;
   facebookInstantFormId?: number;
-  captureDestinationType?: ExperimentCaptureDestinationType;
   instagramAccountId: number;
   imageModelId?: number;
   imageModelQualityId?: number;
@@ -47,13 +42,10 @@ export function useCreateExperiment() {
   return useMutation({
     mutationFn: async (data: CreateExperiment) => {
       const { nicheId, ...payload } = data;
-      const { data: experiment } = await axios.post<Experiment>(
-        `/api/experiments`,
-        {
-          ...payload,
-          marketNicheId: nicheId,
-        },
-      );
+      const { data: experiment } = await axios.post<Experiment>(`/api/experiments`, {
+        ...payload,
+        marketNicheId: nicheId,
+      });
       return experiment;
     },
     onSuccess: () => {

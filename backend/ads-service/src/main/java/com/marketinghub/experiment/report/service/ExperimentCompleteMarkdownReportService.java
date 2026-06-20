@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentCampaignMetric;
-import com.marketinghub.experiment.ExperimentCaptureDestinationType;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsDto;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsSectionDto;
@@ -82,7 +81,7 @@ public class ExperimentCompleteMarkdownReportService {
         appendCampaignMetrics(markdown, experiment.getCampaignMetric());
         appendGeraLandingExecutions(markdown, geraLandingExecutions);
         appendFacebookCampaigns(markdown, facebookCampaigns);
-        appendLandingAnalytics(markdown, experiment, material.getLandingAnalytics());
+        appendLandingAnalytics(markdown, material.getLandingAnalytics());
         appendMaterialSnapshot(markdown, material);
         return markdown.toString();
     }
@@ -117,8 +116,7 @@ public class ExperimentCompleteMarkdownReportService {
         markdown.append("- Gerado em: ").append(Instant.now()).append("\n");
         markdown.append("- Status final: ").append(value(experiment.getStatus())).append("\n");
         markdown.append("- Plataforma: ").append(value(experiment.getPlatform())).append("\n");
-        markdown.append("- Etapa: ").append(value(experiment.getStage())).append("\n");
-        markdown.append("- Destino de captura: ").append(value(resolveCaptureDestinationType(experiment))).append("\n\n");
+        markdown.append("- Etapa: ").append(value(experiment.getStage())).append("\n\n");
     }
 
     /**
@@ -148,7 +146,6 @@ public class ExperimentCompleteMarkdownReportService {
 
         markdown.append("### Parâmetros do experimento\n\n");
         appendJsonBlock(markdown, "experiment_parameters", mapOf(
-                "captureDestinationType", resolveCaptureDestinationType(experiment),
                 "primaryVariable", experiment.getPrimaryVariable(),
                 "primaryMetric", experiment.getPrimaryMetric(),
                 "startDate", experiment.getStartDate(),
@@ -379,13 +376,8 @@ public class ExperimentCompleteMarkdownReportService {
     /**
      * Adiciona os dados de analytics da landing com tempos de página, sessões e trechos mais vistos.
      */
-    private void appendLandingAnalytics(StringBuilder markdown, Experiment experiment, ExperimentLandingAnalyticsDto analytics) {
-        markdown.append("## 7. Telemetria do destino de captura\n\n");
-        if (resolveCaptureDestinationType(experiment) == ExperimentCaptureDestinationType.META_INSTANT_FORM) {
-            markdown.append("Destino de captura: Meta Instant Form. Analytics comportamental da landing não se aplica a este experimento; use as métricas de campanha/leads da Meta e o snapshot do Instant Form.\n\n");
-            return;
-        }
-        markdown.append("### Analytics da landing — tempos em página e trechos\n\n");
+    private void appendLandingAnalytics(StringBuilder markdown, ExperimentLandingAnalyticsDto analytics) {
+        markdown.append("## 7. Analytics da landing — tempos em página e trechos\n\n");
         if (analytics == null || analytics.totalEvents() == 0) {
             markdown.append("Nenhum evento de analytics da landing encontrado para este experimento.\n\n");
             return;
@@ -432,15 +424,6 @@ public class ExperimentCompleteMarkdownReportService {
                         "events", section.events()
                 ))
                 .toList();
-    }
-
-
-    /** Resolve o destino de captura usado no relatório completo. */
-    private ExperimentCaptureDestinationType resolveCaptureDestinationType(Experiment experiment) {
-        if (experiment == null || experiment.getCaptureDestinationType() == null) {
-            return ExperimentCaptureDestinationType.LANDING_PAGE;
-        }
-        return experiment.getCaptureDestinationType();
     }
 
     /**

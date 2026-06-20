@@ -539,9 +539,6 @@ databaseChangeLog:
       file: V2026_05_20__link_experiment_to_fb_page.sql
       relativeToChangelogFile: true
   - include:
-      file: V2026_06_20__add_capture_destination_to_experiment.sql
-      relativeToChangelogFile: true
-  - include:
       file: V2026_06_01__extend_instagram_account.sql
       relativeToChangelogFile: true
   - include:

@@ -105,9 +105,6 @@ public class ExperimentReportMaterialService {
                 .status(experiment.getStatus() != null ? experiment.getStatus().name() : null)
                 .platform(experiment.getPlatform() != null ? experiment.getPlatform().name() : null)
                 .stage(experiment.getStage() != null ? experiment.getStage().name() : null)
-                .captureDestinationType(experiment.getCaptureDestinationType() != null
-                        ? experiment.getCaptureDestinationType().name()
-                        : null)
                 .primaryVariable(experiment.getPrimaryVariable())
                 .primaryMetric(experiment.getPrimaryMetric())
                 .startDate(experiment.getStartDate())
@@ -161,12 +158,9 @@ public class ExperimentReportMaterialService {
                 .id(instantForm.getId())
                 .name(instantForm.getName())
                 .status(instantForm.getStatus())
-                .facebookFormId(instantForm.getFormId())
                 .shareLink(instantForm.getShareLink())
                 .followUpActionUrl(instantForm.getFollowUpActionUrl())
                 .privacyPolicyUrl(instantForm.getPrivacyPolicyUrl())
-                .approved(instantForm.isApproved())
-                .published(instantForm.isPublished())
                 .build();
     }
 

@@ -3,12 +3,13 @@ package com.marketinghub.experiment.dto;
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.math.BigDecimal;
-import com.marketinghub.experiment.ExperimentCaptureDestinationType;
 import com.marketinghub.experiment.ExperimentStage;
 import java.time.LocalDate;
 import lombok.Data;
 
-/** Corpo da requisição para criar um experimento. */
+/**
+ * Request body for creating an experiment.
+ */
 @Data
 public class CreateExperimentRequest {
     private Long marketNicheId;
@@ -48,7 +49,6 @@ public class CreateExperimentRequest {
     private Long facebookInstantFormId;
     private Long instagramAccountId;
     private String followUpActionUrl;
-    private ExperimentCaptureDestinationType captureDestinationType;
     private String leadPortalFlowModel;
     private Boolean schemaFirstLeadPortalEnabled;
     private Long leadPortalFlowId;

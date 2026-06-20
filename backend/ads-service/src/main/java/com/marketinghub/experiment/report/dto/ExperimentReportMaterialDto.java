@@ -50,7 +50,6 @@ public class ExperimentReportMaterialDto {
         private String status;
         private String platform;
         private String stage;
-        private String captureDestinationType;
         private String primaryVariable;
         private String primaryMetric;
         private LocalDate startDate;
@@ -175,11 +174,8 @@ public class ExperimentReportMaterialDto {
         private Long id;
         private String name;
         private String status;
-        private String facebookFormId;
         private String shareLink;
         private String followUpActionUrl;
         private String privacyPolicyUrl;
-        private boolean approved;
-        private boolean published;
     }
 }

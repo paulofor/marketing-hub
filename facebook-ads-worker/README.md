@@ -671,9 +671,3 @@ Quando o backend enviar `followUpActionUrl` no item de `/api/facebook-campaigns/
 ## Rastreabilidade por job de publicação
 
 O backend agora devolve `publicationJobId` em `GET /api/facebook-campaigns/experiments-ready`. Esse valor é um hash criado no backend para rastrear a tentativa de publicação do experimento como campanha. A cada interação com a Graph API da Meta, o worker registra um passo em `POST /api/facebook-campaigns/publication-job-steps`, enviando `jobId`, `experimentId`, nome da etapa, endpoint, método HTTP, status, payload enviado e payload recebido. Isso cria uma linha do tempo por job para análise operacional sem depender apenas dos logs de aplicação.
-
-## Destino de captura do experimento
-
-- A publicação respeita `experiment.captureDestinationType` vindo do backend.
-- `LANDING_PAGE` (ou valor ausente) usa URL externa da landing/Lead Portal e ignora Instant Forms vinculados apenas como metadado.
-- `META_INSTANT_FORM` publica campanha on-ad com `destination_type=ON_AD`, `optimization_goal=LEAD_GENERATION` e `lead_gen_form_id`; nesse modo o criativo não envia `link` externo.

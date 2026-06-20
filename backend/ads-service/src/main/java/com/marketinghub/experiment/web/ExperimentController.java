@@ -13,6 +13,8 @@ import com.marketinghub.experiment.service.ExperimentReadinessService;
 import com.marketinghub.experiment.service.ExperimentPromiseGenerationService;
 import com.marketinghub.experiment.service.generatepromise.GenerateExperimentPromiseOptionsRequest;
 import com.marketinghub.experiment.service.generatepromise.GenerateExperimentPromiseOptionsResponse;
+import com.marketinghub.experiment.service.generatepromise.latestdraft.ExperimentPromiseOptionsDraftResponse;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -157,6 +159,14 @@ public class ExperimentController {
         return promiseGenerationService.generate(request);
     }
 
+    /** Retorna a solicitação de promessa mais recente para retomada sem depender do navegador. */
+    @GetMapping("/promise-contract-options/stage-executions/latest")
+    public ResponseEntity<ExperimentPromiseOptionsDraftResponse> latestPromiseOptionsDraft() {
+        return promiseGenerationService.latestDraft()
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.noContent().build());
+    }
+
     /** Consulta o status e o resultado de uma solicitação de promessa feita pela tela. */
     @GetMapping("/promise-contract-options/stage-executions/{requestId}")
     public GenerateExperimentPromiseOptionsResponse getPromiseOptions(@PathVariable Long requestId) {
@@ -184,6 +194,12 @@ public class ExperimentController {
             @PathVariable Long requestId,
             @RequestBody GenerateExperimentPromiseOptionsResponse response) {
         return promiseGenerationService.complete(requestId, response);
+    }
+
+    /** Descarta uma solicitação retomável após a criação do teste. */
+    @PostMapping("/promise-contract-options/stage-executions/{requestId}/dismiss")
+    public void dismissPromiseOptions(@PathVariable Long requestId) {
+        promiseGenerationService.dismiss(requestId);
     }
 
     /** Registra falha informada pelo AI Worker ao processar a solicitação. */

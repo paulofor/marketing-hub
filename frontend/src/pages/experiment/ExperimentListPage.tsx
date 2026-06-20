@@ -3,6 +3,7 @@ import { useExperiments } from "../../api/experiment/useExperiments";
 import { useNiches } from "../../api/niche/useNiches";
 import { useUpdateExperimentStatus } from "../../api/experiment/useUpdateExperimentStatus";
 import { useCloseExperimentPipelineJobs } from "../../api/experiment/useCloseExperimentPipelineJobs";
+import { useLatestPromiseOptionsDraft } from "../../api/experiment/useGeneratePromiseOptions";
 import PageTitle from "../../components/PageTitle";
 import experimentIcon from "../../assets/icons/experiment-icon.svg";
 import { useEffect, useMemo, useState } from "react";
@@ -57,6 +58,7 @@ export default function ExperimentListPage() {
   const updateStatus = useUpdateExperimentStatus();
   const closePipelineJobs = useCloseExperimentPipelineJobs();
   const queryClient = useQueryClient();
+  const latestPromiseOptionsDraft = useLatestPromiseOptionsDraft();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [niche, setNiche] = useState("");
@@ -200,9 +202,16 @@ export default function ExperimentListPage() {
   return (
     <div>
       <PageTitle icon={experimentIcon}>Testes de Nicho</PageTitle>
-      <Link className="btn btn-primary mb-3" to="/experiments/new">
-        Novo Teste
-      </Link>
+      <div className="d-flex flex-wrap gap-2 mb-3">
+        <Link className="btn btn-primary" to="/experiments/new">
+          Novo Teste
+        </Link>
+        {latestPromiseOptionsDraft.data && (
+          <Link className="btn btn-outline-primary" to="/experiments/new">
+            Continuar teste em criação
+          </Link>
+        )}
+      </div>
       <div className="row g-2 mb-3">
         <div className="col">
           <input
@@ -280,9 +289,7 @@ export default function ExperimentListPage() {
                     {nicheNameById.get(e.nicheId) || `Nicho #${e.nicheId}`}
                   </td>
                   <td>{e.hypothesis || "—"}</td>
-                  <td>
-                    {formatCurrency(nicheTotalCostMap[e.nicheId] ?? 0)}
-                  </td>
+                  <td>{formatCurrency(nicheTotalCostMap[e.nicheId] ?? 0)}</td>
                   <td>{e.status}</td>
                   <td>
                     <Link

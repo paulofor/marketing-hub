@@ -7,6 +7,7 @@ import com.marketinghub.experiment.promise.ExperimentPromiseGenerationRequestSta
 import com.marketinghub.experiment.service.generatepromise.ExperimentPromiseOptionDto;
 import com.marketinghub.experiment.service.generatepromise.GenerateExperimentPromiseOptionsRequest;
 import com.marketinghub.experiment.service.generatepromise.GenerateExperimentPromiseOptionsResponse;
+import com.marketinghub.experiment.service.generatepromise.latestdraft.ExperimentPromiseOptionsDraftResponse;
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.repository.jpa.experiment.ExperimentPromiseGenerationRequestRepository;
@@ -14,6 +15,7 @@ import com.marketinghub.repository.jpa.hypothesis.HypothesisRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
@@ -73,6 +75,16 @@ public class ExperimentPromiseGenerationService {
         return new GenerateExperimentPromiseOptionsResponse(saved.getId(), saved.getStatus().name(), List.of());
     }
 
+    /** Retorna a solicitação mais recente ainda útil para retomada da criação do teste pela tela. */
+    @Transactional(readOnly = true)
+    public Optional<ExperimentPromiseOptionsDraftResponse> latestDraft() {
+        return requestRepository.findFirstByStatusInOrderByCreatedAtDesc(List.of(
+                        ExperimentPromiseGenerationRequestStatus.PENDING,
+                        ExperimentPromiseGenerationRequestStatus.PROCESSING,
+                        ExperimentPromiseGenerationRequestStatus.COMPLETED))
+                .map(this::toDraftResponse);
+    }
+
     /** Consulta uma solicitação específica para a tela acompanhar até a resposta final do AI Worker. */
     @Transactional(readOnly = true)
     public GenerateExperimentPromiseOptionsResponse get(Long id) {
@@ -120,6 +132,15 @@ public class ExperimentPromiseGenerationService {
         entity.setFinishedAt(Instant.now());
         entity.setErrorMessage(null);
         return toResponse(entity);
+    }
+
+    /** Descarta uma solicitação retomável depois que o teste foi salvo ou o usuário decidiu não continuar. */
+    @Transactional
+    public void dismiss(Long id) {
+        ExperimentPromiseGenerationRequest entity = requestRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Solicitação não encontrada"));
+        entity.setStatus(ExperimentPromiseGenerationRequestStatus.DISMISSED);
+        entity.setFinishedAt(Instant.now());
     }
 
     /** Marca a solicitação como falha quando o AI Worker não consegue gerar as opções. */
@@ -196,6 +217,20 @@ public class ExperimentPromiseGenerationService {
         if (values != null && !values.isEmpty()) {
             sb.append(label).append(": ").append(String.join(", ", values)).append("\n");
         }
+    }
+
+    /** Converte a entidade persistida para o contrato de rascunho retomável pela tela. */
+    private ExperimentPromiseOptionsDraftResponse toDraftResponse(ExperimentPromiseGenerationRequest entity) {
+        return new ExperimentPromiseOptionsDraftResponse(
+                entity.getId(),
+                entity.getStatus().name(),
+                entity.getNiche().getId(),
+                entity.getHypothesis().getId(),
+                entity.getCurrentSinglePain(),
+                entity.getCurrentFreeReward(),
+                entity.getCurrentFunnelPromise(),
+                entity.getCurrentPrimaryCta(),
+                readOptions(entity.getOptionsJson()));
     }
 
     /** Converte a entidade persistida para contrato de API. */

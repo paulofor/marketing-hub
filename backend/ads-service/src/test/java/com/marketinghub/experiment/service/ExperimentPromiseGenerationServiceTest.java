@@ -15,6 +15,7 @@ import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.repository.jpa.experiment.ExperimentPromiseGenerationRequestRepository;
 import com.marketinghub.repository.jpa.hypothesis.HypothesisRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -116,4 +117,56 @@ class ExperimentPromiseGenerationServiceTest {
         assertThat(response.status()).isEqualTo(ExperimentPromiseGenerationRequestStatus.PROCESSING.name());
         assertThat(response.options()).isEmpty();
     }
+
+    /** Deve retornar o rascunho mais recente pelo backend, sem depender de armazenamento no navegador. */
+    @Test
+    void shouldGetLatestDraftFromBackend() {
+        UUID hypothesisId = UUID.randomUUID();
+        MarketNiche niche = MarketNiche.builder()
+                .id(7L)
+                .name("Manicure")
+                .build();
+        Hypothesis hypothesis = Hypothesis.builder()
+                .id(hypothesisId)
+                .title("Agenda irregular")
+                .build();
+        ExperimentPromiseGenerationRequest request = ExperimentPromiseGenerationRequest.builder()
+                .niche(niche)
+                .hypothesis(hypothesis)
+                .status(ExperimentPromiseGenerationRequestStatus.PROCESSING)
+                .currentSinglePain("agenda quebra")
+                .currentFreeReward("mensagens prontas")
+                .currentFunnelPromise("organizar agenda")
+                .currentPrimaryCta("receber mensagens")
+                .build();
+        request.setId(789L);
+        when(requestRepository.findFirstByStatusInOrderByCreatedAtDesc(List.of(
+                ExperimentPromiseGenerationRequestStatus.PENDING,
+                ExperimentPromiseGenerationRequestStatus.PROCESSING,
+                ExperimentPromiseGenerationRequestStatus.COMPLETED))).thenReturn(Optional.of(request));
+
+        var response = service.latestDraft();
+
+        assertThat(response).isPresent();
+        assertThat(response.get().requestId()).isEqualTo(789L);
+        assertThat(response.get().nicheId()).isEqualTo(7L);
+        assertThat(response.get().hypothesisId()).isEqualTo(hypothesisId);
+        assertThat(response.get().currentSinglePain()).isEqualTo("agenda quebra");
+    }
+
+    /** Deve descartar o rascunho retomável para não manter atalho antigo após salvar o teste. */
+    @Test
+    void shouldDismissDraftAfterExperimentCreation() {
+        ExperimentPromiseGenerationRequest request = ExperimentPromiseGenerationRequest.builder()
+                .status(ExperimentPromiseGenerationRequestStatus.COMPLETED)
+                .build();
+        request.setId(987L);
+        when(requestRepository.findById(987L)).thenReturn(Optional.of(request));
+
+        service.dismiss(987L);
+
+        assertThat(request.getStatus()).isEqualTo(ExperimentPromiseGenerationRequestStatus.DISMISSED);
+        assertThat(request.getFinishedAt()).isNotNull();
+    }
+
 }

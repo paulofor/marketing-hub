@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useCreateExperiment } from "../../api/experiment/useCreateExperiment";
 import {
+  useDismissPromiseOptionsRequest,
   useGeneratePromiseOptions,
+  useLatestPromiseOptionsDraft,
   usePromiseOptionsRequest,
 } from "../../api/experiment/useGeneratePromiseOptions";
 import type { PromiseOption } from "../../api/experiment/useGeneratePromiseOptions";
@@ -53,6 +55,8 @@ export default function NewExperimentPage() {
   const hypothesisIdParam = params.get("hypothesisId") ?? "";
   const create = useCreateExperiment();
   const generatePromiseOptions = useGeneratePromiseOptions();
+  const dismissPromiseOptionsRequest = useDismissPromiseOptionsRequest();
+  const latestPromiseOptionsDraft = useLatestPromiseOptionsDraft();
   const { data: niches } = useNiches();
   const [form, setForm] = useState<FormState>({
     nicheId: nicheIdParam,
@@ -117,6 +121,39 @@ export default function NewExperimentPage() {
     promiseRequestId &&
     !["COMPLETED", "FAILED"].includes(promiseRequestStatus ?? ""),
   );
+
+  useEffect(() => {
+    const draft = latestPromiseOptionsDraft.data;
+    if (
+      !draft ||
+      nicheIdParam ||
+      hypothesisIdParam ||
+      form.nicheId ||
+      form.hypothesisId ||
+      promiseRequestId
+    ) {
+      return;
+    }
+
+    setForm((prev) => ({
+      ...prev,
+      nicheId: String(draft.nicheId),
+      hypothesisId: draft.hypothesisId,
+      singlePain: draft.currentSinglePain ?? prev.singlePain,
+      freeReward: draft.currentFreeReward ?? prev.freeReward,
+      funnelPromise: draft.currentFunnelPromise ?? prev.funnelPromise,
+      primaryCta: draft.currentPrimaryCta ?? prev.primaryCta,
+    }));
+    setPromiseRequestId(draft.requestId);
+    setPromiseOptions(draft.options ?? []);
+  }, [
+    latestPromiseOptionsDraft.data,
+    nicheIdParam,
+    hypothesisIdParam,
+    form.nicheId,
+    form.hypothesisId,
+    promiseRequestId,
+  ]);
 
   useEffect(() => {
     if (selectedHypothesis?.title) {
@@ -277,6 +314,11 @@ export default function NewExperimentPage() {
         openImagesPerPackage: undefined,
         compressedImagesPerPackage: undefined,
       });
+      if (promiseRequestId) {
+        dismissPromiseOptionsRequest.mutateAsync(promiseRequestId).catch(() => {
+          // Sem bloqueio: o teste já foi salvo e a retomada antiga será sobrescrita pela próxima solicitação.
+        });
+      }
       setForm({
         nicheId: nicheIdParam,
         hypothesisId: hypothesisIdParam,
@@ -321,6 +363,11 @@ export default function NewExperimentPage() {
       <PageTitle icon={experimentIcon}>
         {selectedNiche?.name || "Novo Teste de Nicho"}
       </PageTitle>
+      <div className="mb-3">
+        <Link className="btn btn-outline-secondary btn-sm" to="/experiments">
+          Voltar para Testes de Nicho
+        </Link>
+      </div>
       {showNicheSelect && (
         <select
           className="form-select mb-2"

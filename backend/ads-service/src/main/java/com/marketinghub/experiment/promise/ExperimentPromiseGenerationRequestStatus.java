@@ -5,5 +5,6 @@ public enum ExperimentPromiseGenerationRequestStatus {
     PENDING,
     PROCESSING,
     COMPLETED,
-    FAILED
+    FAILED,
+    DISMISSED
 }

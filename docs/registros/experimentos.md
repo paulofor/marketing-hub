@@ -4941,3 +4941,9 @@
 - Causa-raiz: o frontend tratava a solicitação assíncrona como se a resposta pudesse vir imediatamente, deixando a tela sem acompanhamento claro após registrar o pedido ao AI Worker.
 - Correção aplicada: a tela passa a registrar a solicitação, consultar o status pelo backend e manter aviso de aguardando até o retorno final; o backend expõe consulta por `requestId` para a tela mostrar a verdade persistida.
 - Prevenção de recorrência: o fluxo agora depende do status persistido no backend, evitando inferência local sobre conclusão de processamento da IA.
+
+## 2026-06-20 — Retorno simples ao teste em criação com IA
+
+- solicitação: permitir que o usuário volte de forma simples ao fluxo `/experiments/new` quando tiver solicitado geração por IA e saído da tela antes de concluir o novo Teste de Nicho.
+- causa-raiz: a tela mantinha o `requestId` da geração por IA e os dados preenchidos apenas em estado local do React; ao sair da rota, o estado era perdido visualmente e a lista não oferecia um atalho claro para retomar o rascunho.
+- ajuste de revisão: removido o rascunho em `localStorage` do navegador. A retomada agora consulta o backend pelo endpoint `/api/experiments/promise-contract-options/stage-executions/latest`, recuperando a solicitação de IA mais recente persistida no banco; a lista de Testes de Nicho exibe **Continuar teste em criação** quando o backend retorna uma solicitação retomável; ao salvar o teste, a solicitação é descartada com status `DISMISSED` para não manter atalho antigo; a tela de criação também mantém o botão **Voltar para Testes de Nicho**.

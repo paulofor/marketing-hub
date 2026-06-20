@@ -1,7 +1,8 @@
 import { render, screen, cleanup } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { formatStage } from "../pages/oprm/OprmNichoCnaeV2PipelinePage";
 import React from "react";
 import App from "../App";
 
@@ -16,6 +17,7 @@ function setup(ui: React.ReactNode, initialEntries: string[]) {
 
 afterEach(() => {
   cleanup();
+  vi.restoreAllMocks();
 });
 
 describe("OPRM navigation", () => {
@@ -60,6 +62,13 @@ describe("OPRM navigation", () => {
       screen.getByRole("button", { name: /iniciar novo job v2/i }),
     ).toBeTruthy();
     expect(screen.getByText(/^Acumulador de Conhecimento$/)).toBeTruthy();
+  });
+
+  it("translates v2 job stage names returned in English", () => {
+    expect(formatStage("Source Safety Filter")).toBe(
+      "Filtro de Segurança das Fontes",
+    );
+    expect(formatStage("Candidate Generator")).toBe("Gerador de Candidatos");
   });
 
   it("redirects obsolete /oprm/pipeline route to CNAE niche creation flow", () => {

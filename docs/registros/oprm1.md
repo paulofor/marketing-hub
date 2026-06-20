@@ -1152,3 +1152,8 @@
 
 - Atualizados os rótulos exibidos no frontend para apresentar as etapas do pipeline NichoCNAE v2 em português, mantendo os códigos técnicos internos sem alteração.
 - Ajustado o teste de navegação do OPRM para validar os novos nomes visíveis ao usuário.
+
+## 2026-06-20 — Tradução dos nomes das etapas na tela NichoCNAE v2
+
+- Ajustada a tela `/oprm/cnaes/:cnaeCode/pipeline-v2` para exibir em português os nomes das etapas da v2 também quando o backend retorna nomes operacionais em inglês nos jobs abertos/concluídos.
+- Incluído teste de frontend garantindo que `Source Safety Filter` seja apresentado como `Filtro de Segurança das Fontes`, evitando recorrência de rótulo técnico exposto ao usuário.

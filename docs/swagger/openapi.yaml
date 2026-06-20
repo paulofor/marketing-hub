@@ -111,6 +111,23 @@ paths:
       responses:
         '201':
           description: Experimento criado
+  /api/experiments/promise-contract-options/generate:
+    post:
+      tags: [Experiments]
+      summary: Gerar 3 opções de contrato de promessa única com IA
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateExperimentPromiseOptionsRequest'
+      responses:
+        '200':
+          description: Opções de contrato geradas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerateExperimentPromiseOptionsResponse'
   /api/experiments/{id}/duplicate:
     post:
       tags: [Experiments]
@@ -1065,6 +1082,57 @@ components:
         createdAt:
           type: string
           format: date-time
+    GenerateExperimentPromiseOptionsRequest:
+      type: object
+      required:
+        - nicheId
+      properties:
+        nicheId:
+          type: integer
+          format: int64
+        hypothesisId:
+          type: string
+          format: uuid
+        hypothesis:
+          type: string
+        currentSinglePain:
+          type: string
+        currentFreeReward:
+          type: string
+        currentFunnelPromise:
+          type: string
+        currentPrimaryCta:
+          type: string
+    GenerateExperimentPromiseOptionsResponse:
+      type: object
+      required:
+        - options
+      properties:
+        options:
+          type: array
+          minItems: 3
+          maxItems: 3
+          items:
+            $ref: '#/components/schemas/ExperimentPromiseOption'
+    ExperimentPromiseOption:
+      type: object
+      required:
+        - singlePain
+        - freeReward
+        - funnelPromise
+        - primaryCta
+        - reason
+      properties:
+        singlePain:
+          type: string
+        freeReward:
+          type: string
+        funnelPromise:
+          type: string
+        primaryCta:
+          type: string
+        reason:
+          type: string
     CreateExperimentRequest:
       type: object
       required:

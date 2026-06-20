@@ -4908,3 +4908,9 @@
 - Solicitação: confirmar que a prontidão para campanha Facebook precisa exigir `metaId` oficial nos públicos aprovados.
 - Causa-raiz: o teste `listReadyForCampaignRequiresApprovals` criava públicos aprovados sem `metaId`, mas a regra operacional e a query de fila já bloqueiam publicação ampla exigindo identificador oficial da Meta.
 - Correção aplicada: o teste agora cria públicos aprovados com `metaId`, mantendo o contrato de que a campanha só entra na fila quando existe pelo menos um público publicável pela Meta.
+
+## 2026-06-20 — Geração de contrato de promessa única com IA
+
+- Adicionado fluxo para a tela de novo experimento gerar 3 opções de contrato de promessa única com IA.
+- O backend passa a expor endpoint próprio de experimentos para gerar opções com dor única, recompensa gratuita, promessa do funil e CTA principal.
+- O frontend permite escolher uma das opções geradas e preencher automaticamente o formulário antes de salvar o experimento.

@@ -128,6 +128,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GenerateExperimentPromiseOptionsResponse'
+  /api/experiments/promise-contract-options/stage-executions/{requestId}:
+    get:
+      tags: [Experiments]
+      summary: Consultar status e resultado de uma solicitação de promessa
+      parameters:
+        - in: path
+          name: requestId
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Status atual da solicitação
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerateExperimentPromiseOptionsResponse'
   /api/experiments/promise-contract-options/stage-executions/pending:
     get:
       tags: [Experiments]

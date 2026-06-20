@@ -101,4 +101,19 @@ class ExperimentPromiseGenerationServiceTest {
                 .contains("Nicho selecionado", "Promessa validada", "Hipótese selecionada", "Fluxo de manutenção guiada");
         assertThat(persisted.getStatus()).isEqualTo(ExperimentPromiseGenerationRequestStatus.PENDING);
     }
+    /** Deve retornar o status persistido para a tela acompanhar a solicitação até a conclusão. */
+    @Test
+    void shouldGetPersistedPromiseOptionsRequestStatus() {
+        ExperimentPromiseGenerationRequest request = ExperimentPromiseGenerationRequest.builder()
+                .status(ExperimentPromiseGenerationRequestStatus.PROCESSING)
+                .build();
+        request.setId(456L);
+        when(requestRepository.findById(456L)).thenReturn(Optional.of(request));
+
+        var response = service.get(456L);
+
+        assertThat(response.requestId()).isEqualTo(456L);
+        assertThat(response.status()).isEqualTo(ExperimentPromiseGenerationRequestStatus.PROCESSING.name());
+        assertThat(response.options()).isEmpty();
+    }
 }

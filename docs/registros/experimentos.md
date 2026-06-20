@@ -4934,3 +4934,10 @@
 - Atualizados os documentos canônicos para deixar explícito que o backend principal não executa OpenAI em fluxos de negócio.
 - Registrada a regra de que ações com IA devem ser persistidas pelo backend e consumidas pelo AI Worker ou worker executor via endpoint `pending`, com callback de resultado para consolidação no domínio.
 - Causa-raiz documental tratada: a regra estava aplicada no código/ArquiteturaTest, mas ainda não estava clara nos cânones globais de governança, pipeline operacional e persistência de informações tratadas por IA.
+
+## 2026-06-20 — Tela aguarda resposta final da IA na promessa única
+
+- Solicitação: manter na criação de experimento apenas a ação de solicitar por IA e exibir uma mensagem de aguardando até o fim do processamento e resposta da OpenAI.
+- Causa-raiz: o frontend tratava a solicitação assíncrona como se a resposta pudesse vir imediatamente, deixando a tela sem acompanhamento claro após registrar o pedido ao AI Worker.
+- Correção aplicada: a tela passa a registrar a solicitação, consultar o status pelo backend e manter aviso de aguardando até o retorno final; o backend expõe consulta por `requestId` para a tela mostrar a verdade persistida.
+- Prevenção de recorrência: o fluxo agora depende do status persistido no backend, evitando inferência local sobre conclusão de processamento da IA.

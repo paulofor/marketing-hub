@@ -73,6 +73,14 @@ public class ExperimentPromiseGenerationService {
         return new GenerateExperimentPromiseOptionsResponse(saved.getId(), saved.getStatus().name(), List.of());
     }
 
+    /** Consulta uma solicitação específica para a tela acompanhar até a resposta final do AI Worker. */
+    @Transactional(readOnly = true)
+    public GenerateExperimentPromiseOptionsResponse get(Long id) {
+        ExperimentPromiseGenerationRequest entity = requestRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Solicitação não encontrada"));
+        return toResponse(entity);
+    }
+
     /** Lista solicitações pendentes para o AI Worker consumir pelo endpoint pending. */
     @Transactional(readOnly = true)
     public List<GenerateExperimentPromiseOptionsResponse> listPending(int limit) {

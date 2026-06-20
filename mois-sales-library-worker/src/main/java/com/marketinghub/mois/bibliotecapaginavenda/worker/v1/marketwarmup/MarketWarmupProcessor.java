@@ -5,6 +5,7 @@ import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.model.WorkerDtos.Ma
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.model.WorkerDtos.MarketWarmupEcosystemType;
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.model.WorkerDtos.MarketWarmupPlatform;
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.model.WorkerDtos.MarketWarmupRecommendation;
+import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.model.WorkerDtos.MarketWarmupSearchAttemptCompleteItem;
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.model.WorkerDtos.MarketWarmupSignalCompleteItem;
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.model.WorkerDtos.MarketWarmupSignalType;
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.model.WorkerDtos.MarketWarmupSourceCompleteItem;
@@ -62,20 +63,37 @@ public class MarketWarmupProcessor {
         List<String> baseQueries = queryBuilder.buildQueries(job);
         List<String> queries = queryPlanner.planQueries(job, baseQueries);
         List<PublicSearchResult> rawResults = new ArrayList<>();
+        List<MarketWarmupSearchAttemptCompleteItem> searchAttempts = new ArrayList<>();
         for (String query : queries) {
-            rawResults.addAll(searchClient.search(query, searchLimit));
+            List<PublicSearchResult> queryResults = searchClient.search(query, searchLimit);
+            rawResults.addAll(queryResults);
+            searchAttempts.add(buildSearchAttempt(job, query, queryResults));
         }
         List<PublicSearchResult> deduplicatedResults = deduplicate(rawResults).stream().limit(searchLimit * 2L).toList();
         List<PublicSearchResult> qualifiedResults = keepOnlyQualifiedProducerSocialResults(job, deduplicatedResults);
         if (qualifiedResults.isEmpty()) {
-            throw new IllegalStateException("Busca pública não retornou fontes rastreáveis para montar o dossiê");
+            throw new MarketWarmupNoQualifiedSourcesException("Busca pública não retornou fontes rastreáveis para montar o dossiê", searchAttempts);
         }
         List<MarketWarmupSourceCompleteItem> sources = buildSources(qualifiedResults);
         List<MarketWarmupSignalCompleteItem> signals = buildSignals(qualifiedResults);
         MarketWarmupSummaryCompleteItem summary = buildSummary(job, sources, signals);
         log.info("MOIS market-warmup dossier built. jobId={}, pageId={}, queries={}, sources={}, signals={}, score={}",
                 job.jobId(), job.pageId(), queries.size(), sources.size(), signals.size(), summary.scoreTotal());
-        return new MarketWarmupCompleteRequest(sources, signals, summary, Instant.now());
+        return new MarketWarmupCompleteRequest(searchAttempts, sources, signals, summary, Instant.now());
+    }
+
+    /**
+     * Resume uma tentativa de busca para a tela explicar o que foi pesquisado e por que não virou fonte.
+     */
+    private MarketWarmupSearchAttemptCompleteItem buildSearchAttempt(MarketWarmupClaimedJob job, String query, List<PublicSearchResult> results) {
+        List<PublicSearchResult> qualified = keepOnlyQualifiedProducerSocialResults(job, results);
+        PublicSearchResult sample = results.isEmpty() ? null : results.getFirst();
+        String status = qualified.isEmpty() ? "NO_QUALIFIED_SOURCE" : "QUALIFIED_SOURCE_FOUND";
+        String reason = qualified.isEmpty()
+                ? "A busca retornou resultados genéricos ou sem ligação comprovável com produto/produtor."
+                : "A busca retornou fonte compatível com as âncoras do dossiê.";
+        return new MarketWarmupSearchAttemptCompleteItem(query, results.size(), qualified.size(), Math.max(0, results.size() - qualified.size()),
+                status, reason, sample == null ? null : sample.title(), sample == null ? null : sample.url());
     }
 
     /**

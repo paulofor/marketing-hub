@@ -50,7 +50,7 @@ public class MarketWarmupRunner {
             log.info("MOIS market-warmup worker completed job. jobId={}, pageId={}, sources={}, signals={}",
                     jobId, claim.job().pageId(), request.sources().size(), request.signals().size());
         } catch (Exception ex) {
-            backendClient.failMarketWarmup(jobId, new MarketWarmupFailRequest("PUBLIC_SEARCH_ERROR", safeMessage(ex)));
+            backendClient.failMarketWarmup(jobId, new MarketWarmupFailRequest("PUBLIC_SEARCH_ERROR", safeMessage(ex), searchAttempts(ex)));
             log.warn("MOIS market-warmup worker failed job. jobId={}, pageId={}, errorClass={}, errorMessage={}",
                     jobId, claim.job().pageId(), ex.getClass().getName(), ex.getMessage(), ex);
         }
@@ -65,6 +65,16 @@ public class MarketWarmupRunner {
             return 6;
         }
         return Math.min(configuredLimit, 20);
+    }
+
+    /**
+     * Extrai tentativas de busca estruturadas quando a falha ocorreu por falta de fonte qualificada.
+     */
+    private java.util.List<com.marketinghub.mois.bibliotecapaginavenda.worker.v1.model.WorkerDtos.MarketWarmupSearchAttemptCompleteItem> searchAttempts(Exception ex) {
+        if (ex instanceof MarketWarmupNoQualifiedSourcesException noQualifiedSourcesException) {
+            return noQualifiedSourcesException.searchAttempts();
+        }
+        return java.util.List.of();
     }
 
     /**

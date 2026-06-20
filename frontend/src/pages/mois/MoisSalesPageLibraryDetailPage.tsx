@@ -2,6 +2,7 @@ import { Link, useParams } from "react-router-dom";
 import PageTitle from "../../components/PageTitle";
 import {
   useMoisSalesLibraryMarketWarmup,
+  useMoisSalesLibraryMarketWarmupSearchAttempts,
   useMoisSalesLibraryMarketWarmupSources,
   useMoisSalesLibraryPage,
   useRequestMoisSalesLibraryMarketWarmup,
@@ -85,6 +86,11 @@ export default function MoisSalesPageLibraryDetailPage() {
   const pageQuery = useMoisSalesLibraryPage(validPageId);
   const executionsQuery = useMoisSalesLibraryPageExecutions(validPageId);
   const marketWarmupQuery = useMoisSalesLibraryMarketWarmup(validPageId);
+  const marketWarmupSearchAttemptsQuery =
+    useMoisSalesLibraryMarketWarmupSearchAttempts(
+      validPageId,
+      Boolean(pageQuery.data?.marketWarmupStatus),
+    );
   const marketWarmupSourcesQuery = useMoisSalesLibraryMarketWarmupSources(
     validPageId,
     Boolean(marketWarmupQuery.data),
@@ -362,6 +368,54 @@ export default function MoisSalesPageLibraryDetailPage() {
               Ainda não há dossiê de aquecimento concluído para este produto. O
               comando será liberado quando a análise comercial da página estiver
               concluída.
+            </div>
+          ) : null}
+
+          {marketWarmupSearchAttemptsQuery.data?.items.length ? (
+            <div className="border rounded p-3 bg-light-subtle">
+              <h3 className="h6 mb-2">Tentativas de pesquisa realizadas</h3>
+              <p className="small text-secondary mb-3">
+                Estas são as buscas que o worker fez e o motivo de elas terem
+                ou não virado fonte do dossiê.
+              </p>
+              <div className="d-flex flex-column gap-2">
+                {marketWarmupSearchAttemptsQuery.data.items.map((attempt) => (
+                  <div key={attempt.attemptId} className="border rounded p-2 bg-white">
+                    <div className="d-flex flex-wrap justify-content-between gap-2">
+                      <strong>{attempt.queryText}</strong>
+                      <span
+                        className={
+                          attempt.qualifiedCount > 0
+                            ? "badge text-bg-success"
+                            : "badge text-bg-warning"
+                        }
+                      >
+                        {attempt.qualifiedCount > 0
+                          ? "gerou fonte"
+                          : "sem fonte útil"}
+                      </span>
+                    </div>
+                    <div className="small text-secondary mt-1">
+                      Resultados lidos: {attempt.resultCount} • aproveitados: {attempt.qualifiedCount} • descartados: {attempt.rejectedCount}
+                    </div>
+                    {attempt.rejectionReason ? (
+                      <div className="small text-secondary mt-1">
+                        {attempt.rejectionReason}
+                      </div>
+                    ) : null}
+                    {attempt.sampleResultUrl ? (
+                      <a
+                        className="small"
+                        href={attempt.sampleResultUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Exemplo retornado: {attempt.sampleResultTitle || attempt.sampleResultUrl}
+                      </a>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
             </div>
           ) : null}
 

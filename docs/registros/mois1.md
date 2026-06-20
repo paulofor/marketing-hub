@@ -1726,3 +1726,14 @@ Arquivos principais:
 - `backend/ads-service/src/main/java/com/marketinghub/repository/jpa/mois/bibliotecapaginavenda/worker/v1/jdbc/MoisSalesPageMarketWarmupRepository.java`
 - `mois-sales-library-worker/src/main/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/marketwarmup/MarketWarmupProcessor.java`
 - `mois-sales-library-worker/src/test/java/com/marketinghub/mois/bibliotecapaginavenda/worker/v1/marketwarmup/MarketWarmupProcessorTest.java`
+
+## 2026-06-20 — Acompanhamento do dossiê MOIS do produto 379
+
+- Diagnosticado que o dossiê do produto 379 (`Mentoria Fluxo`) entrou na fila, foi processado pelo worker e falhou por `PUBLIC_SEARCH_ERROR`, sem fontes públicas rastreáveis persistidas.
+- Corrigida a causa-raiz provável: páginas consolidadas sem `collected_reference_id` agora recuperam nome do produto e produtor Hotmart por correspondência de URL no momento de criar/reservar o dossiê, evitando que o worker pesquise com âncoras fracas ou incompletas.
+
+## 2026-06-20 — Transparência das tentativas do dossiê MOIS
+
+- A tela de detalhe do produto passa a mostrar as tentativas de pesquisa pública feitas pelo worker do dossiê, incluindo query executada, quantidade de resultados lidos, resultados aproveitados, descartados e exemplo retornado.
+- O backend passa a persistir tentativas de busca em tabela própria e expor endpoint dedicado, para que o frontend mostre a verdade operacional persistida em vez de depender de logs técnicos.
+- O worker passa a reportar as tentativas ao concluir ou falhar o dossiê, explicando quando os resultados encontrados eram genéricos ou sem ligação comprovável com produto/produtor.

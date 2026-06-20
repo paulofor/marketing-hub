@@ -46,9 +46,14 @@ public interface MoisSalesPageMarketWarmupGateway {
     Optional<MarketWarmupJobData> findJob(long jobId);
 
     /**
-     * Remove fontes, sinais e resumo anteriores do job antes da gravação final idempotente.
+     * Remove tentativas, fontes, sinais e resumo anteriores do job antes da gravação final idempotente.
      */
     void deleteJobDetails(long jobId);
+
+    /**
+     * Insere uma tentativa de busca pública feita pelo worker para explicar o dossiê ao usuário.
+     */
+    void insertSearchAttempt(long jobId, long pageId, String workspaceId, MarketWarmupSearchAttemptData attempt);
 
     /**
      * Insere uma fonte pública rastreável coletada pelo worker.
@@ -84,6 +89,11 @@ public interface MoisSalesPageMarketWarmupGateway {
      * Busca o resumo mais recente da página com os dados do job associado.
      */
     Optional<MarketWarmupSummaryData> findLatestSummaryByPage(long pageId);
+
+    /**
+     * Lista tentativas de busca pública do job de aquecimento mais recente da página.
+     */
+    List<MarketWarmupSearchAttemptData> listSearchAttempts(long jobId);
 
     /**
      * Lista fontes públicas de um job de aquecimento.
@@ -133,6 +143,25 @@ public interface MoisSalesPageMarketWarmupGateway {
     record MarketWarmupClaimData(
             MarketWarmupJobData job,
             SalesPageWarmupData page
+    ) {
+    }
+
+    /**
+     * Representa uma tentativa de busca pública feita para explicar o que não gerou fonte qualificada.
+     */
+    record MarketWarmupSearchAttemptData(
+            Long attemptId,
+            Long jobId,
+            Long pageId,
+            String queryText,
+            int resultCount,
+            int qualifiedCount,
+            int rejectedCount,
+            String status,
+            String rejectionReason,
+            String sampleResultTitle,
+            String sampleResultUrl,
+            Instant createdAt
     ) {
     }
 

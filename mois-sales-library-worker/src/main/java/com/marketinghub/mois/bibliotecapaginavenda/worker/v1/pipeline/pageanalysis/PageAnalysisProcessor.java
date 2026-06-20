@@ -49,12 +49,50 @@ public class PageAnalysisProcessor implements StageProcessor<PageAnalysisInput, 
         PageAnalysisInput input = context.input();
         if (input.rawHtml() != null && !input.rawHtml().isBlank()) {
             var doc = Jsoup.parse(input.rawHtml(), input.urlCanonical());
-            return doc.body() != null ? doc.body().text() : doc.text();
+            String bodyText = doc.body() != null ? doc.body().text() : doc.text();
+            return bodyText + "\n\n" + summarizeImagesForAnalysis(input.rawHtml(), input.urlCanonical());
         }
         log.warn("MOIS pageanalysis recebeu job sem rawHtml capturado; usando fallback ao vivo. jobId={}, pageId={}, urlCanonical={}",
                 context.execution().idJob(), input.pageId(), input.urlCanonical());
         var doc = Jsoup.connect(input.urlCanonical()).timeout(properties.requestTimeoutMs()).get();
-        return doc.body() != null ? doc.body().text() : "";
+        String bodyText = doc.body() != null ? doc.body().text() : "";
+        return bodyText + "\n\n" + summarizeImagesForAnalysis(doc.html(), input.urlCanonical());
+    }
+
+    /** Resume evidências visuais do HTML para evitar que a análise trate página carregada de imagens como página sem imagem. */
+    String summarizeImagesForAnalysis(String rawHtml, String baseUrl) {
+        var doc = Jsoup.parse(rawHtml == null ? "" : rawHtml, baseUrl);
+        var images = doc.select("img");
+        long proofLikeImages = images.stream()
+                .filter(img -> {
+                    String evidence = (img.attr("alt") + " " + img.attr("src") + " " + img.attr("class") + " " + (img.parent() == null ? "" : img.parent().text())).toLowerCase();
+                    return evidence.contains("depo") || evidence.contains("antes") || evidence.contains("after")
+                            || evidence.contains("before") || evidence.contains("resultado") || evidence.contains("print")
+                            || evidence.contains("prova") || evidence.contains("whatsapp") || evidence.contains("instagram");
+                })
+                .count();
+        String samples = images.stream()
+                .limit(12)
+                .map(img -> {
+                    String alt = img.attr("alt").isBlank() ? "sem alt" : img.attr("alt");
+                    String src = img.attr("src").isBlank() ? img.attr("data-src") : img.attr("src");
+                    String parentText = img.parent() == null ? "" : img.parent().text();
+                    return "- alt='" + truncateForSummary(alt, 80) + "', src='" + truncateForSummary(src, 100)
+                            + "', contexto='" + truncateForSummary(parentText, 140) + "'";
+                })
+                .reduce("", (left, right) -> left + "\n" + right);
+        return "Resumo visual extraído do HTML: total_img=" + images.size()
+                + "; imagens_com_sinais_de_prova=" + proofLikeImages
+                + "; amostras=" + samples;
+    }
+
+    /** Limita textos usados no resumo visual para manter o prompt objetivo e barato. */
+    private String truncateForSummary(String value, int maxLength) {
+        String normalized = value == null ? "" : value.replaceAll("\\s+", " ").trim();
+        if (normalized.length() <= maxLength) {
+            return normalized;
+        }
+        return normalized.substring(0, maxLength) + "...";
     }
 
     /** Registra artefato lógico para o texto extraído do HTML capturado. */

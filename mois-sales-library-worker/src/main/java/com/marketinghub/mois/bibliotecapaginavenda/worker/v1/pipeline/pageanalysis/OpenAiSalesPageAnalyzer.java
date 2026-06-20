@@ -68,8 +68,11 @@ public class OpenAiSalesPageAnalyzer {
      * Monta a linha JSONL enviada ao endpoint Batch da OpenAI.
      */
     private String buildBatchLine(long pageId, String canonicalUrl, String htmlBodyText) {
-        String prompt = "Analise a página de vendas e devolva JSON válido com os campos: score_total (0-100), sections_json (objeto), copy_json (objeto), visual_json (objeto), image_json (objeto), analysis_notes (texto curto). URL: "
-                + canonicalUrl + "\nConteúdo: " + htmlBodyText;
+        String prompt = "Analise a página de vendas e devolva JSON válido com os campos: score_total (0-100), sections_json (objeto), copy_json (objeto), visual_json (objeto), image_json (objeto), analysis_notes (texto curto). "
+                + "No campo image_json, avalie o fluxo visual real: densidade de imagens, repetição de depoimentos/antes-e-depois, excesso de provas visuais, risco de poluição visual e impacto na clareza da oferta. "
+                + "Se total_img ou imagens_com_sinais_de_prova indicar página carregada de imagens, não recomende adicionar mais imagens; recomende reduzir, agrupar, hierarquizar ou substituir por prova mais limpa. "
+                + "O campo recommended_images deve ser usado apenas para lacunas reais e deve priorizar no máximo 3 imagens essenciais ao fluxo Dor → Resultado → Mecanismo → Prova → Oferta. URL: "
+                + canonicalUrl + "\nConteúdo e resumo visual: " + htmlBodyText;
         try {
             return objectMapper.writeValueAsString(Map.of(
                     "custom_id", "page-" + pageId,

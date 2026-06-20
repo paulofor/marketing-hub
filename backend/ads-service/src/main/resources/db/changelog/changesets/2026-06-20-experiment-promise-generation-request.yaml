@@ -1,0 +1,111 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-20-experiment-promise-generation-request
+      author: marketinghub
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: experiment_promise_generation_request
+      changes:
+        - createTable:
+            tableName: experiment_promise_generation_request
+            columns:
+              - column:
+                  name: id
+                  type: bigint
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: niche_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: hypothesis_id
+                  type: binary(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(32)
+                  defaultValue: PENDING
+                  constraints:
+                    nullable: false
+              - column:
+                  name: model
+                  type: varchar(191)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: worker_id
+                  type: varchar(191)
+              - column:
+                  name: current_single_pain
+                  type: varchar(512)
+              - column:
+                  name: current_free_reward
+                  type: varchar(512)
+              - column:
+                  name: current_funnel_promise
+                  type: varchar(512)
+              - column:
+                  name: current_primary_cta
+                  type: varchar(191)
+              - column:
+                  name: prompt
+                  type: longtext
+                  constraints:
+                    nullable: false
+              - column:
+                  name: options_json
+                  type: longtext
+              - column:
+                  name: error_message
+                  type: text
+              - column:
+                  name: started_at
+                  type: datetime(6)
+              - column:
+                  name: finished_at
+                  type: datetime(6)
+              - column:
+                  name: created_at
+                  type: datetime(6)
+                  defaultValueComputed: CURRENT_TIMESTAMP(6)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: datetime(6)
+                  defaultValueComputed: CURRENT_TIMESTAMP(6)
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: experiment_promise_generation_request
+            baseColumnNames: niche_id
+            referencedTableName: market_niche
+            referencedColumnNames: id
+            constraintName: fk_exp_promise_request_niche
+        - addForeignKeyConstraint:
+            baseTableName: experiment_promise_generation_request
+            baseColumnNames: hypothesis_id
+            referencedTableName: hypothesis
+            referencedColumnNames: id
+            constraintName: fk_exp_promise_request_hypothesis
+        - createIndex:
+            tableName: experiment_promise_generation_request
+            indexName: idx_exp_promise_request_status_created
+            columns:
+              - column:
+                  name: status
+              - column:
+                  name: created_at
+      rollback:
+        - dropTable:
+            tableName: experiment_promise_generation_request

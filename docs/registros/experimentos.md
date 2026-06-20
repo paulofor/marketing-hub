@@ -4921,3 +4921,16 @@
 - Causa-raiz: a tela permitia acionar a IA apenas com nicho e o backend aceitava hipótese ausente, usando pouco contexto estratégico para montar dor, recompensa, promessa e CTA.
 - Correção aplicada: o frontend bloqueia o botão até existir nicho e hipótese selecionados; o backend valida a hipótese como obrigatória e monta o prompt com detalhes do nicho e campos centrais da hipótese, incluindo framework/pipeline quando disponível.
 - Prevenção de recorrência: teste unitário do serviço passou a validar bloqueio sem hipótese e presença do contexto de nicho e hipótese no prompt enviado à IA.
+
+## 2026-06-20 — Solicitação assíncrona de opções de promessa pelo AI Worker
+
+- Corrigido o fluxo de geração de opções de contrato de promessa única para remover acesso direto do backend à OpenAI.
+- O backend agora apenas registra a solicitação em banco, preserva o prompt e expõe a fila pendente para consumo pelo AI Worker via endpoint `pending`.
+- Adicionada proteção no `ArquiteturaTest` para impedir regressão nesse serviço: a geração de promessa de experimento não pode depender do runtime OpenAI no backend.
+- Causa-raiz tratada: botão de tela usava processamento síncrono de IA no backend, gerando timeout e violando a separação backend/worker.
+
+## 2026-06-20 — Cânone explícito para IA via worker
+
+- Atualizados os documentos canônicos para deixar explícito que o backend principal não executa OpenAI em fluxos de negócio.
+- Registrada a regra de que ações com IA devem ser persistidas pelo backend e consumidas pelo AI Worker ou worker executor via endpoint `pending`, com callback de resultado para consolidação no domínio.
+- Causa-raiz documental tratada: a regra estava aplicada no código/ArquiteturaTest, mas ainda não estava clara nos cânones globais de governança, pipeline operacional e persistência de informações tratadas por IA.

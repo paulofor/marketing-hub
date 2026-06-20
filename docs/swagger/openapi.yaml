@@ -114,7 +114,7 @@ paths:
   /api/experiments/promise-contract-options/generate:
     post:
       tags: [Experiments]
-      summary: Gerar 3 opções de contrato de promessa única com IA
+      summary: Registrar solicitação de 3 opções de contrato de promessa única para o AI Worker
       requestBody:
         required: true
         content:
@@ -123,11 +123,30 @@ paths:
               $ref: '#/components/schemas/GenerateExperimentPromiseOptionsRequest'
       responses:
         '200':
-          description: Opções de contrato geradas
+          description: Solicitação registrada para processamento assíncrono
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/GenerateExperimentPromiseOptionsResponse'
+  /api/experiments/promise-contract-options/stage-executions/pending:
+    get:
+      tags: [Experiments]
+      summary: Listar solicitações pendentes de promessa para o AI Worker
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: Solicitações pendentes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GenerateExperimentPromiseOptionsResponse'
   /api/experiments/{id}/duplicate:
     post:
       tags: [Experiments]
@@ -1086,6 +1105,7 @@ components:
       type: object
       required:
         - nicheId
+        - hypothesisId
       properties:
         nicheId:
           type: integer
@@ -1106,12 +1126,19 @@ components:
     GenerateExperimentPromiseOptionsResponse:
       type: object
       required:
+        - requestId
+        - status
         - options
       properties:
+        requestId:
+          type: integer
+          format: int64
+        status:
+          type: string
+          enum: [PENDING, PROCESSING, COMPLETED, FAILED]
         options:
           type: array
-          minItems: 3
-          maxItems: 3
+          description: Vazio enquanto a solicitação estiver pendente; preenchido após conclusão pelo AI Worker.
           items:
             $ref: '#/components/schemas/ExperimentPromiseOption'
     ExperimentPromiseOption:

@@ -150,11 +150,42 @@ public class ExperimentController {
         return mapper.toDto(service.releaseForFacebook(id));
     }
 
-    /** Gera três opções de contrato de promessa única para o formulário de novo experimento. */
+    /** Registra uma solicitação para o AI Worker gerar três opções de contrato de promessa única. */
     @PostMapping("/promise-contract-options/generate")
     public GenerateExperimentPromiseOptionsResponse generatePromiseOptions(
             @RequestBody GenerateExperimentPromiseOptionsRequest request) {
         return promiseGenerationService.generate(request);
+    }
+
+    /** Lista solicitações pendentes para consumo canônico do AI Worker pelo método pending. */
+    @GetMapping("/promise-contract-options/stage-executions/pending")
+    public java.util.List<GenerateExperimentPromiseOptionsResponse> pendingPromiseOptions(
+            @RequestParam(value = "limit", defaultValue = "10") Integer limit) {
+        return promiseGenerationService.listPending(limit != null ? limit : 10);
+    }
+
+    /** Marca uma solicitação pendente como assumida pelo AI Worker. */
+    @PostMapping("/promise-contract-options/stage-executions/{requestId}/claim")
+    public GenerateExperimentPromiseOptionsResponse claimPromiseOptions(
+            @PathVariable Long requestId,
+            @RequestParam(value = "workerId", required = false) String workerId) {
+        return promiseGenerationService.claim(requestId, workerId);
+    }
+
+    /** Recebe as opções geradas pelo AI Worker e conclui a solicitação. */
+    @PostMapping("/promise-contract-options/stage-executions/{requestId}/complete")
+    public GenerateExperimentPromiseOptionsResponse completePromiseOptions(
+            @PathVariable Long requestId,
+            @RequestBody GenerateExperimentPromiseOptionsResponse response) {
+        return promiseGenerationService.complete(requestId, response);
+    }
+
+    /** Registra falha informada pelo AI Worker ao processar a solicitação. */
+    @PostMapping("/promise-contract-options/stage-executions/{requestId}/fail")
+    public void failPromiseOptions(
+            @PathVariable Long requestId,
+            @RequestBody(required = false) String errorMessage) {
+        promiseGenerationService.fail(requestId, errorMessage);
     }
 
 }

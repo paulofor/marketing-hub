@@ -22,6 +22,22 @@ O modelo canônico das informações tratadas por IA é composto por cinco grupo
 3. **Artefatos consolidados do experimento**: tabela `experiment`.
 4. **Jobs de geração do pipeline do experimento e imagens derivadas**: tabelas `experiment_pipeline_generation_job` e `framework_image_generation_job`.
 5. **Registro genérico de geração por worker**: tabela `ai_worker_generation`, usada quando a geração não pertence a uma fila especializada.
+6. **Solicitações especializadas de IA por domínio**: tabelas próprias de fila/execução, como `experiment_promise_generation_request`, usadas quando o backend precisa registrar uma solicitação e o AI Worker precisa consumir via `pending`.
+
+
+## 2.1 Regra canônica de execução OpenAI
+
+O backend principal é dono da persistência, contrato, auditoria, endpoints `pending` e consolidação de resultados, mas **não é executor runtime de OpenAI**. Nenhuma tabela deste cânone autoriza o backend a chamar OpenAI diretamente.
+
+Quando uma informação precisar ser tratada por modelo de IA:
+
+1. o backend grava uma solicitação ou execução com status inicial (`PENDING` ou equivalente);
+2. o AI Worker, ou worker executor da etapa, busca a pendência pelo endpoint canônico `pending`;
+3. o worker chama OpenAI, controla timeout/retry e coleta payload bruto, tokens e custo;
+4. o worker chama o callback do backend com resultado, erro e metadados;
+5. o backend persiste a resposta e consolida o artefato funcional do domínio.
+
+Portanto, campos como `prompt`, `model`, `raw_response`, `request_body_json`, `openai_job_id`, `input_tokens`, `output_tokens` e `cost_usd` são campos de auditoria/persistência e não indicam permissão para o backend executar a integração OpenAI.
 
 ## 3. Diagrama entidade-relacionamento canônico
 
@@ -490,3 +506,19 @@ A tabela `openai_model` mantém o catálogo financeiro dos modelos OpenAI usado 
 - `docs/data-model.md`
 - `docs/canonical/procedimento-experimento-canon.v1.md`
 - `docs/canonical/geralanding-arquitetura-canon.v1.md`
+
+## 7. Solicitações especializadas de IA por domínio
+
+Fluxos que precisam de fila própria devem criar tabela especializada em vez de reutilizar chamadas síncronas ou respostas efêmeras de tela. O padrão mínimo é:
+
+| Campo conceitual | Regra |
+| --- | --- |
+| Identificador da solicitação | Chave primária estável para a UI, worker e auditoria. |
+| Contexto de domínio | IDs como `experiment_id`, `hypothesis_id`, `niche_id`, `job_id` ou equivalentes necessários. |
+| `status` | Deve permitir pelo menos fila, processamento, conclusão e falha. |
+| `prompt`/entrada estruturada | Deve preservar o contexto usado pelo worker para montar ou enviar a solicitação à IA. |
+| Resultado bruto e/ou estruturado | Deve ser persistido para relatório, diagnóstico e reprocessamento. |
+| Erro | Deve preservar falha funcional/técnica reportada pelo worker. |
+| Timestamps | Deve permitir explicar quando entrou na fila, quando iniciou e quando terminou. |
+
+Para opções de promessa de experimento, a tabela canônica especializada é `experiment_promise_generation_request`: o backend registra a solicitação e o AI Worker consome via `pending`, sem chamada OpenAI no backend.

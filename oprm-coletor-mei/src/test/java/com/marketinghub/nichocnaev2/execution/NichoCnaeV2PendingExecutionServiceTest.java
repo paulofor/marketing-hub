@@ -77,6 +77,40 @@ class NichoCnaeV2PendingExecutionServiceTest {
         service.processAllPending();
 
         verify(backendClient).complete(any(NichoCnaeV2StageDefinition.class), eq(pending), any());
-        verify(backendClient).createNextStage(any(NichoCnaeV2StageDefinition.class), eq(pending), any());
+        verify(backendClient).createNextStage(any(NichoCnaeV2StageDefinition.class), eq(pending), any(), eq(null), eq(null));
     }
+    /** Deve propagar tentativa e versão calculadas pelo controlador de reprocessamento para a próxima pendência. */
+    @Test
+    void propagatesReprocessAttemptAndKnowledgeVersionToNextStage() {
+        NichoCnaeV2BackendClient backendClient = mock(NichoCnaeV2BackendClient.class);
+        NichoCnaeV2StageDefinitions stageDefinitions = new NichoCnaeV2StageDefinitions();
+        NichoCnaeV2PendingExecutionService service = new NichoCnaeV2PendingExecutionService(backendClient, stageDefinitions);
+        NichoCnaeV2PendingExecution pending = new NichoCnaeV2PendingExecution(
+                "109",
+                "nichocnae-v2-candidate-2-job-4",
+                "4781400",
+                "Comércio varejista de artigos do vestuário e acessórios",
+                4L,
+                2L,
+                1,
+                0,
+                1,
+                false,
+                "{\"tournamentDecision\":\"NO_VIABLE_SUBNICHE\",\"informationGain\":0.2}",
+                Map.of());
+        when(backendClient.listPending(any())).thenAnswer(invocation -> {
+            NichoCnaeV2StageDefinition stage = invocation.getArgument(0);
+            return "reprocess-controller".equals(stage.stageCode()) ? List.of(pending) : List.of();
+        });
+        when(backendClient.parseInput(pending.inputPayload()))
+                .thenReturn(Map.of("tournamentDecision", "NO_VIABLE_SUBNICHE", "informationGain", 0.2));
+        when(backendClient.toJson(any())).thenReturn("{\"stage\":\"reprocess-controller\"}");
+
+        service.processAllPending();
+
+        verify(backendClient).complete(any(NichoCnaeV2StageDefinition.class), eq(pending), any());
+        verify(backendClient).createNextStage(
+                any(NichoCnaeV2StageDefinition.class), eq(pending), any(), eq(2), eq(2));
+    }
+
 }

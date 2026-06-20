@@ -215,6 +215,19 @@ public class NichoCnaeV2PendingExecutionService {
                     pending.stageExecutionId());
             return;
         }
-        backendClient.createNextStage(nextStage.get(), pending, outputPayload);
+        backendClient.createNextStage(
+                nextStage.get(),
+                pending,
+                outputPayload,
+                integer(result.output().get("attemptNumber")),
+                integer(result.output().get("knowledgeVersionTo")));
+    }
+
+    /** Converte metadado opcional da etapa para inteiro sem quebrar avanço quando ausente. */
+    private Integer integer(Object value) {
+        if (value instanceof Number number) {
+            return number.intValue();
+        }
+        return value == null || String.valueOf(value).isBlank() ? null : Integer.valueOf(String.valueOf(value));
     }
 }

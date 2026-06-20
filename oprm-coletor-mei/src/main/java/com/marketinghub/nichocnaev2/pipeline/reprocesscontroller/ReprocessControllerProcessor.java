@@ -19,7 +19,7 @@ public final class ReprocessControllerProcessor implements StageProcessor {
         Map<String, Object> input = context.input();
         String failureType = text(input.get("failureType")).toUpperCase(Locale.ROOT);
         String reasonCode = text(input.get("reasonCode")).toUpperCase(Locale.ROOT);
-        String gateDecision = text(input.get("gateDecision")).toUpperCase(Locale.ROOT);
+        String gateDecision = text(input.getOrDefault("gateDecision", input.get("tournamentDecision"))).toUpperCase(Locale.ROOT);
         int attemptNumber = integer(input.get("attemptNumber"), 1);
         int technicalRetryNumber = integer(input.get("technicalRetryNumber"), 0);
         int knowledgeVersion = integer(input.get("knowledgeVersion"), 1);
@@ -72,6 +72,10 @@ public final class ReprocessControllerProcessor implements StageProcessor {
         output.put("stage", "reprocess-controller");
         output.put("reprocessPlan", plan);
         output.put("executionMode", plan.get("executionMode"));
+        output.put("rewindToStage", plan.get("rewindToStage"));
+        output.put("attemptNumber", plan.get("attemptNumber"));
+        output.put("technicalRetryNumber", plan.get("technicalRetryNumber"));
+        output.put("knowledgeVersionTo", plan.getOrDefault("knowledgeVersionTo", plan.get("knowledgeVersion")));
         output.put("nextStageCode", plan.get("nextStageCode"));
         return new StageResult(status, output, List.of(new StageArtifact("REPROCESS_PLAN", "inline://reprocess-controller/plan", description)));
     }

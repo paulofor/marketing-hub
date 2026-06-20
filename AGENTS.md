@@ -25,6 +25,7 @@ O Marketing Hub é uma fábrica automatizada de produtos digitais: descobre dore
 - **Consulta obrigatória de loops conhecidos**: antes de corrigir problema recorrente ou investigar falha em GeraLanding, Facebook Ads, Lead Portal, OpenAI/schema, pipelines administrativos ou pipeline de hipótese, consultar `docs/registros/loops.md`. Se o problema corresponder a um `LOOP-*`, a correção deve fechar a causa-raiz sistêmica, atualizar ou criar teste de contrato que previna recorrência e registrar no documento de tema correspondente.
 - **Regra Número 3** : Seja SIMPLES, OBJETIVO e EFICAZ.
 - **Respostas ao usuário nesta interação**: ao responder o usuário, priorize um nível mais alto, conceitual, objetivo e orientado ao negócio; baseie as respostas principalmente na análise do código, do banco de dados e dos logs, e só depois complemente com a documentação quando necessário; reduza detalhes técnicos, comandos e implementação interna ao mínimo necessário para sustentar a decisão ou o próximo passo.
+- **Tamanho das respostas ao usuário**: manter respostas simples, objetivas e no tamanho aproximado da resposta anterior validada pelo usuário nesta conversa; usar seções curtas, bullets e apenas os detalhes necessários para sustentar a conclusão, decisão ou próximo passo.
 - invesgtigação da causa raiz
 - Se for um erro na tela:
 - 1. Pesquisar o dado da tela de qual endpoint ele vem

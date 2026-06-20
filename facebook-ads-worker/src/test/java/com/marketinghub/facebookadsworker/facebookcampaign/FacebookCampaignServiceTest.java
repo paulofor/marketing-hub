@@ -700,7 +700,7 @@ class FacebookCampaignServiceTest {
             + "\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},"
             + "\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"},"
             + "\"facebookInstantForm\":{\"id\":33,\"facebookFormId\":\"987654321\",\"name\":\"Lead\",\"status\":\"DRAFT\",\"approved\":true,\"published\":false},"
-            + "\"nextStepInstantForm\":true}]" )
+            + "\"captureDestinationType\":\"META_INSTANT_FORM\",\"nextStepInstantForm\":true}]" )
             .addHeader("Content-Type", "application/json"));
         facebook.enqueueResponse(new MockResponse().setBody("{\"status\":\"DRAFT\"}")
             .addHeader("Content-Type", "application/json"));
@@ -760,7 +760,7 @@ class FacebookCampaignServiceTest {
         RecordedRequest creativeRequest = takeFacebookRequest("facebook request");
         JsonNode creativePayload = objectMapper.readTree(creativeRequest.getBody().inputStream());
         JsonNode linkData = creativePayload.get("object_story_spec").get("link_data");
-        assertEquals("https://www.facebook.com/ads/leadgen/?id=987654321", linkData.get("link").asText());
+        assertFalse(linkData.has("link"));
         JsonNode cta = linkData.get("call_to_action");
         assertNotNull(cta);
         JsonNode ctaValue = cta.get("value");
@@ -798,7 +798,7 @@ class FacebookCampaignServiceTest {
             + "\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},"
             + "\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"},"
             + "\"facebookInstantForm\":{\"id\":33,\"facebookFormId\":\"ai_form_3_1_token\",\"name\":\"Lead\",\"status\":\"DRAFT\",\"approved\":true,\"published\":false},"
-            + "\"nextStepInstantForm\":true}]" )
+            + "\"captureDestinationType\":\"META_INSTANT_FORM\",\"nextStepInstantForm\":true}]" )
             .addHeader("Content-Type", "application/json"));
         facebook.enqueueResponse(new MockResponse().setBody("{\"status\":\"DRAFT\"}")
             .addHeader("Content-Type", "application/json"));
@@ -851,7 +851,7 @@ class FacebookCampaignServiceTest {
         RecordedRequest creativeRequest = takeFacebookRequest("facebook request");
         JsonNode creativePayload = objectMapper.readTree(creativeRequest.getBody().inputStream());
         JsonNode linkData = creativePayload.get("object_story_spec").get("link_data");
-        assertEquals("https://www.facebook.com/ads/leadgen/?id=form_3_1_token", linkData.get("link").asText());
+        assertFalse(linkData.has("link"));
         assertEquals("form_3_1_token", linkData.get("call_to_action").get("value").get("lead_gen_form_id").asText());
 
         takeBackendRequest("backend request"); // experiments-ready
@@ -881,7 +881,7 @@ class FacebookCampaignServiceTest {
                   "facebookPage":{"id":9,"pageId":"84","name":"Estúdio"},
                   "instagramAccount":{"id":55,"handle":"@estudio","code":"IG-EST","name":"Estúdio"},
                   "facebookInstantForm":{"id":33,"facebookFormId":null,"name":"Lead","status":"DRAFT","approved":true,"published":false,"shareLink":"https://www.facebook.com/ads/leadgen/?id=2468"},
-                  "nextStepInstantForm":true}]
+                  "captureDestinationType":"META_INSTANT_FORM","nextStepInstantForm":true}]
                 """
             )
             .addHeader("Content-Type", "application/json"));
@@ -938,7 +938,7 @@ class FacebookCampaignServiceTest {
         RecordedRequest creativeRequest = takeFacebookRequest("facebook request");
         JsonNode creativePayload = objectMapper.readTree(creativeRequest.getBody().inputStream());
         JsonNode linkData = creativePayload.get("object_story_spec").get("link_data");
-        assertEquals("https://www.facebook.com/ads/leadgen/?id=2468", linkData.get("link").asText());
+        assertFalse(linkData.has("link"));
         assertEquals("2468", linkData.get("call_to_action").get("value").get("lead_gen_form_id").asText());
 
         takeBackendRequest("backend request"); // experiments-ready
@@ -983,7 +983,7 @@ class FacebookCampaignServiceTest {
             "150",
             "BR"
         ));
-        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"captureDestinationType\":\"META_INSTANT_FORM\",\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
             .addHeader("Content-Type", "application/json"));
         facebook.enqueueResponse(new MockResponse().setBody("{\"images\":{\"uploaded\":{\"hash\":\"hash-preloaded\"}}}")
             .addHeader("Content-Type", "application/json"));

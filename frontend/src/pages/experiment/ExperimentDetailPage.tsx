@@ -3,7 +3,11 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { useExperiment } from "../../api/experiment/useExperiment";
-import type { ExperimentStage } from "../../api/experiment/useExperiments";
+import type {
+  Experiment,
+  ExperimentCaptureDestinationType,
+  ExperimentStage,
+} from "../../api/experiment/useExperiments";
 import { useExperimentDiagnostics } from "../../api/experiment/useExperimentDiagnostics";
 import { useMetricPresets } from "../../api/experiment/useMetricPresets";
 import { useNiche } from "../../api/niche/useNiche";
@@ -43,6 +47,7 @@ import {
   type GeraLandingStageModel,
 } from "../../api/pipeline/useGeraLandingStageModels";
 import { useExperimentCompleteMarkdownReport } from "../../api/experiment/useExperimentCompleteMarkdownReport";
+import { useUpdateExperiment } from "../../api/experiment/useUpdateExperiment";
 
 function formatPipelineStageModel(stageModel?: GeraLandingStageModel) {
   const name = stageModel?.openAiModelName?.trim();
@@ -111,6 +116,79 @@ type PipelineContentCard = {
   description: string;
   rawValue?: string | null;
 };
+
+const captureDestinationOptions: Array<{
+  value: ExperimentCaptureDestinationType;
+  label: string;
+  description: string;
+}> = [
+  {
+    value: "LANDING_PAGE",
+    label: "Landing Page do Marketing Hub",
+    description:
+      "Usa Gera Landing, Lead Portal e analytics comportamental antes do envio.",
+  },
+  {
+    value: "META_INSTANT_FORM",
+    label: "Instant Form da Meta",
+    description:
+      "Envia o anúncio direto para o formulário nativo da Meta, reduzindo atrito.",
+  },
+];
+
+function getCaptureDestinationLabel(
+  value?: ExperimentCaptureDestinationType | null,
+) {
+  return (
+    captureDestinationOptions.find((option) => option.value === value)?.label ??
+    "Landing Page do Marketing Hub"
+  );
+}
+
+function buildExperimentUpdatePayload(
+  experiment: Experiment,
+  captureDestinationType: ExperimentCaptureDestinationType,
+) {
+  return {
+    name: experiment.name,
+    hypothesis: experiment.hypothesis,
+    stage: experiment.stage,
+    primaryVariable: experiment.primaryVariable ?? undefined,
+    primaryMetric: experiment.primaryMetric ?? undefined,
+    kpiTarget: Number(experiment.kpiTarget ?? experiment.kpiTargetCpl),
+    metricPresetId: experiment.metricPresetId ?? undefined,
+    sampleSize: experiment.sampleSize ?? undefined,
+    mde: experiment.mdePercent ?? undefined,
+    dailyBudget: experiment.dailyBudget ?? undefined,
+    unitPrice: experiment.unitPrice ?? undefined,
+    cost: experiment.cost ?? undefined,
+    expense: experiment.expense ?? undefined,
+    startDate: experiment.startDate ?? undefined,
+    endDate: experiment.endDate ?? undefined,
+    creativesToGenerate: experiment.creativesToGenerate ?? undefined,
+    instantFormsToGenerate: experiment.instantFormsToGenerate ?? undefined,
+    emailsToGenerate: experiment.emailsToGenerate ?? undefined,
+    deliverablesToGenerate: experiment.deliverablesToGenerate ?? undefined,
+    leadPortalFlowsToGenerate:
+      experiment.leadPortalFlowsToGenerate ?? undefined,
+    imagesPerPackage: experiment.imagesPerPackage ?? undefined,
+    openImagesPerPackage: experiment.openImagesPerPackage ?? null,
+    compressedImagesPerPackage: experiment.compressedImagesPerPackage ?? null,
+    journeyTemplateId: experiment.journeyTemplateId ?? undefined,
+    facebookPageId: experiment.facebookPage?.id ?? null,
+    facebookInstantFormId: experiment.facebookInstantForm?.id ?? null,
+    instagramAccountId: experiment.instagramAccount?.id ?? null,
+    followUpActionUrl: experiment.followUpActionUrl ?? null,
+    schemaFirstLeadPortalEnabled:
+      experiment.schemaFirstLeadPortalEnabled ?? false,
+    creativeTextPrompt: experiment.creativeTextPrompt ?? null,
+    creativeImagePrompt: experiment.creativeImagePrompt ?? null,
+    leadPortalFlowId: experiment.leadPortalFlowId ?? null,
+    imageModelId: experiment.imageModelId ?? null,
+    imageModelQualityId: experiment.imageModelQualityId ?? null,
+    captureDestinationType,
+  };
+}
 
 const formatPipelineJson = (rawValue?: string | null) => {
   if (!rawValue || rawValue.trim().length === 0) {
@@ -303,9 +381,13 @@ export default function ExperimentDetailPage() {
   const tabsSectionRef = useRef<HTMLDivElement | null>(null);
   const { data: facebookConfig, isLoading: isLoadingFacebookConfig } =
     useFacebookConfigurationStatus();
+  const updateExperiment = useUpdateExperiment(expId);
   const { data: facebookCampaigns, isLoading: isLoadingFacebookCampaigns } =
     useExperimentFacebookCampaigns(expId);
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  const [captureDestinationFeedback, setCaptureDestinationFeedback] = useState<
+    string | null
+  >(null);
   const [copiedCardKey, setCopiedCardKey] = useState<string | null>(null);
   const [copyingCardKey, setCopyingCardKey] = useState<string | null>(null);
   const [downloadingCardKey, setDownloadingCardKey] = useState<string | null>(
@@ -1769,6 +1851,12 @@ export default function ExperimentDetailPage() {
   const hasCreativesReady =
     readinessSummary?.hasCreatives ?? data.creativeApproved;
   const readinessCreativeCount = readinessSummary?.creativeCount ?? 0;
+  const readinessCaptureDestination =
+    readinessSummary?.captureDestinationType ??
+    data.captureDestinationType ??
+    "LANDING_PAGE";
+  const hasInstantFormReady = readinessSummary?.hasInstantForm ?? false;
+  const instantFormCount = readinessSummary?.instantFormCount ?? 0;
   const hasDailyBudget = data.dailyBudget != null && data.dailyBudget > 0;
   const openLandingActions = () => {
     setTab("landing");
@@ -1796,17 +1884,36 @@ export default function ExperimentDetailPage() {
       action: hasCreativesReady ? undefined : () => setTab("creatives"),
       actionLabel: hasCreativesReady ? undefined : "Ir para Criativos",
     },
-    {
-      id: "landing-destination",
-      title: "Landing criada e aprovada",
-      isMet: Boolean(data.followUpActionUrl),
-      isLoading: isLoadingReadiness,
-      hint: data.followUpActionUrl
-        ? `Landing aprovada e URL de destino ativa: ${data.followUpActionUrl}.`
-        : "Aprove uma landing na aba Landing para definir a URL de destino da campanha.",
-      action: data.followUpActionUrl ? undefined : openLandingActions,
-      actionLabel: data.followUpActionUrl ? undefined : "Ir para Landing",
-    },
+    readinessCaptureDestination === "META_INSTANT_FORM"
+      ? {
+          id: "instant-form-destination",
+          title: "Meta Instant Form aprovado e publicável",
+          isMet: hasInstantFormReady,
+          isLoading: isLoadingReadiness,
+          hint: hasInstantFormReady
+            ? `${instantFormCount || 1} Instant Form pronto para captura nativa na Meta.`
+            : "Selecione um Instant Form aprovado, vinculado à página e com ID ou link da Meta.",
+          action: data.facebookInstantForm?.id
+            ? () =>
+                navigate(
+                  `/experiments/${data.id}/instant-forms/${data.facebookInstantForm?.id}`,
+                )
+            : undefined,
+          actionLabel: data.facebookInstantForm?.id
+            ? "Abrir Instant Form"
+            : undefined,
+        }
+      : {
+          id: "landing-destination",
+          title: "Landing criada e aprovada",
+          isMet: Boolean(data.followUpActionUrl),
+          isLoading: isLoadingReadiness,
+          hint: data.followUpActionUrl
+            ? `Landing aprovada e URL de destino ativa: ${data.followUpActionUrl}.`
+            : "Aprove uma landing na aba Landing para definir a URL de destino da campanha.",
+          action: data.followUpActionUrl ? undefined : openLandingActions,
+          actionLabel: data.followUpActionUrl ? undefined : "Ir para Landing",
+        },
   ];
 
   const isReadyForFacebook = blockingChecklist.every((c) => c.isMet);
@@ -1966,6 +2073,35 @@ export default function ExperimentDetailPage() {
     FAILED: "Com erro",
   };
 
+  const selectedCaptureDestination =
+    data.captureDestinationType ?? "LANDING_PAGE";
+
+  const handleCaptureDestinationChange = async (
+    captureDestinationType: ExperimentCaptureDestinationType,
+  ) => {
+    if (captureDestinationType === selectedCaptureDestination) {
+      return;
+    }
+    const kpiTargetValue = data.kpiTarget ?? data.kpiTargetCpl;
+    if (kpiTargetValue == null || data.metricPresetId == null) {
+      setCaptureDestinationFeedback(
+        "Defina o KPI e o preset de métricas antes de alterar o destino da campanha.",
+      );
+      return;
+    }
+    setCaptureDestinationFeedback(null);
+    try {
+      await updateExperiment.mutateAsync(
+        buildExperimentUpdatePayload(data, captureDestinationType),
+      );
+      setCaptureDestinationFeedback("Destino da campanha atualizado.");
+    } catch {
+      setCaptureDestinationFeedback(
+        "Não foi possível atualizar o destino da campanha.",
+      );
+    }
+  };
+
   const rows = [
     {
       label: "Nicho",
@@ -2004,6 +2140,10 @@ export default function ExperimentDetailPage() {
         : "—",
     },
     { label: "Preset de Métricas", value: preset?.name || "—" },
+    {
+      label: "Destino da campanha",
+      value: getCaptureDestinationLabel(selectedCaptureDestination),
+    },
     {
       label: "Sample size",
       value: data.sampleSize ?? preset?.sampleSize ?? "—",
@@ -2500,6 +2640,75 @@ export default function ExperimentDetailPage() {
           </div>
         </div>
       </div>
+      <div className="card mt-4">
+        <div className="card-body">
+          <div className="d-flex justify-content-between gap-3 flex-wrap">
+            <div>
+              <h2 className="h5 mb-1">Destino da campanha</h2>
+              <p className="text-muted mb-0">
+                Escolha se este experimento captura leads pela landing do
+                Marketing Hub ou por um Instant Form nativo da Meta.
+              </p>
+            </div>
+            <span className="badge text-bg-light align-self-start">
+              {getCaptureDestinationLabel(selectedCaptureDestination)}
+            </span>
+          </div>
+          <div className="row g-3 mt-1">
+            {captureDestinationOptions.map((option) => {
+              const inputId = `capture-destination-${option.value}`;
+              return (
+                <div className="col-md-6" key={option.value}>
+                  <label
+                    className={`border rounded p-3 d-block h-100 ${
+                      selectedCaptureDestination === option.value
+                        ? "border-primary bg-primary-subtle"
+                        : "bg-body"
+                    }`}
+                    htmlFor={inputId}
+                  >
+                    <div className="form-check">
+                      <input
+                        id={inputId}
+                        className="form-check-input"
+                        type="radio"
+                        name="captureDestinationType"
+                        value={option.value}
+                        checked={selectedCaptureDestination === option.value}
+                        disabled={
+                          alterationLocked || updateExperiment.isPending
+                        }
+                        onChange={() =>
+                          handleCaptureDestinationChange(option.value)
+                        }
+                      />
+                      <span className="form-check-label fw-semibold">
+                        {option.label}
+                      </span>
+                    </div>
+                    <p className="text-muted small mb-0 mt-2">
+                      {option.description}
+                    </p>
+                  </label>
+                </div>
+              );
+            })}
+          </div>
+          {updateExperiment.isPending ? (
+            <div className="text-muted small mt-3" role="status">
+              <span
+                className="spinner-border spinner-border-sm me-2"
+                role="status"
+                aria-hidden="true"
+              />
+              Salvando destino da campanha...
+            </div>
+          ) : captureDestinationFeedback ? (
+            <div className="form-text mt-3">{captureDestinationFeedback}</div>
+          ) : null}
+        </div>
+      </div>
+
       <div ref={tabsSectionRef}>
         <Tabs.Root value={tab} onValueChange={setTab} className="mt-3">
           <Tabs.List className="nav nav-tabs">

@@ -16,6 +16,9 @@ export interface InstagramAccountSummary {
 }
 
 export type ExperimentStage = "AD" | "LANDING" | "SAMPLE" | "SALES";
+export type ExperimentCaptureDestinationType =
+  | "LANDING_PAGE"
+  | "META_INSTANT_FORM";
 
 export interface FacebookInstantFormSummary {
   id: number;
@@ -31,6 +34,7 @@ export interface FacebookInstantFormSummary {
   createdTime?: string | null;
   updatedTime?: string | null;
   followUpActionUrl?: string | null;
+  captureDestinationType?: ExperimentCaptureDestinationType | null;
   privacyPolicyUrl?: string | null;
   model?: string | null;
   prompt?: string | null;
@@ -68,6 +72,7 @@ export interface Experiment {
   facebookPixelCreatedAt?: string | null;
   facebookReleaseRequestedAt?: string | null;
   followUpActionUrl?: string | null;
+  captureDestinationType?: ExperimentCaptureDestinationType | null;
   leadPortalFlowModel?: string | null;
   schemaFirstLeadPortalEnabled?: boolean;
   creativeTextPrompt?: string | null;
@@ -121,7 +126,13 @@ export interface Experiment {
   platform: string;
   stage: ExperimentStage;
   creativeGenerationMode?: "DEFAULT" | "PIPELINE_ADS";
-  creativeGenerationStatus?: "IDLE" | "REQUESTED" | "PROCESSING" | "COMPLETED" | "FAILED" | "TIMEOUT";
+  creativeGenerationStatus?:
+    | "IDLE"
+    | "REQUESTED"
+    | "PROCESSING"
+    | "COMPLETED"
+    | "FAILED"
+    | "TIMEOUT";
   creativeGenerationRequestedAt?: string | null;
   creativeGenerationStartedAt?: string | null;
   creativeGenerationFinishedAt?: string | null;

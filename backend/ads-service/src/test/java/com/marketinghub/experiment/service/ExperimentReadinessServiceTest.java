@@ -1,8 +1,11 @@
 package com.marketinghub.experiment.service;
 
+import com.marketinghub.ads.FacebookInstantForm;
+import com.marketinghub.ads.FacebookPage;
 import com.marketinghub.repository.jpa.creative.CreativeRepository;
 import com.marketinghub.creative.CreativeStatus;
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.ExperimentCaptureDestinationType;
 import com.marketinghub.experiment.dto.ExperimentReadinessIssueDto;
 import com.marketinghub.experiment.dto.ExperimentReadinessIssueType;
 import com.marketinghub.experiment.dto.ExperimentReadinessSummaryDto;
@@ -70,6 +73,7 @@ class ExperimentReadinessServiceTest {
         LeadPortalFlow flow = new LeadPortalFlow();
         flow.setApproved(true);
         experiment.setLeadPortalFlow(flow);
+        experiment.setFollowUpActionUrl("https://example.com/landing/8");
 
         when(experimentService.get(experimentId)).thenReturn(experiment);
         when(creativeRepository.countByExperimentId(experimentId)).thenReturn(2L);
@@ -90,6 +94,7 @@ class ExperimentReadinessServiceTest {
         LeadPortalFlow flow = new LeadPortalFlow();
         flow.setApproved(true);
         experiment.setLeadPortalFlow(flow);
+        experiment.setFollowUpActionUrl("https://example.com/landing/11");
 
         when(experimentService.get(experimentId)).thenReturn(experiment);
         when(creativeRepository.countByExperimentId(experimentId)).thenReturn(1L);
@@ -109,6 +114,7 @@ class ExperimentReadinessServiceTest {
         LeadPortalFlow flow = new LeadPortalFlow();
         flow.setApproved(true);
         experiment.setLeadPortalFlow(flow);
+        experiment.setFollowUpActionUrl("https://example.com/landing/15");
 
         when(experimentService.get(experimentId)).thenReturn(experiment);
         when(creativeRepository.countByExperimentId(experimentId)).thenReturn(1L);
@@ -142,7 +148,56 @@ class ExperimentReadinessServiceTest {
         assertThat(service.computeMissingConfiguration(experiment)).isEmpty();
         assertThat(service.isReadyForCampaign(experiment)).isTrue();
     }
+    @Test
+    void shouldRequireInstantFormWhenCaptureDestinationIsMetaInstantForm() {
+        Experiment experiment = buildExperiment(22L, 32L);
+        experiment.setCaptureDestinationType(ExperimentCaptureDestinationType.META_INSTANT_FORM);
+        experiment.setFollowUpActionUrl("https://example.com/landing/22");
 
+        when(creativeRepository.existsByExperimentIdAndStatus(22L, CreativeStatus.READY)).thenReturn(true);
+
+        assertThat(service.computeMissingConfiguration(experiment))
+                .containsExactly("instantFormDestination");
+    }
+
+    @Test
+    void shouldBeReadyForCampaignWhenMetaInstantFormIsApprovedAndAddressable() {
+        Experiment experiment = buildExperiment(23L, 33L);
+        experiment.setCaptureDestinationType(ExperimentCaptureDestinationType.META_INSTANT_FORM);
+        experiment.setFacebookInstantForm(FacebookInstantForm.builder()
+                .approved(true)
+                .formId("123456789")
+                .page(FacebookPage.builder().id(1L).pageId("84").name("Página").build())
+                .build());
+
+        when(creativeRepository.existsByExperimentIdAndStatus(23L, CreativeStatus.READY)).thenReturn(true);
+
+        assertThat(service.computeMissingConfiguration(experiment)).isEmpty();
+        assertThat(service.isReadyForCampaign(experiment)).isTrue();
+    }
+
+    @Test
+    void shouldSummarizeInstantFormReadinessForMetaDestination() {
+        Long experimentId = 24L;
+        Experiment experiment = buildExperiment(experimentId, 34L);
+        experiment.setCaptureDestinationType(ExperimentCaptureDestinationType.META_INSTANT_FORM);
+        experiment.setFacebookInstantForm(FacebookInstantForm.builder()
+                .approved(true)
+                .shareLink("https://www.facebook.com/ads/leadgen/?id=2468")
+                .page(FacebookPage.builder().id(2L).pageId("84").name("Página").build())
+                .build());
+
+        when(experimentService.get(experimentId)).thenReturn(experiment);
+        when(creativeRepository.countByExperimentId(experimentId)).thenReturn(1L);
+        when(creativeRepository.existsByExperimentIdAndStatus(experimentId, CreativeStatus.READY)).thenReturn(true);
+
+        ExperimentReadinessSummaryDto summary = service.summarize(experimentId);
+
+        assertThat(summary.captureDestinationType()).isEqualTo(ExperimentCaptureDestinationType.META_INSTANT_FORM);
+        assertThat(summary.hasInstantForm()).isTrue();
+        assertThat(summary.instantFormCount()).isEqualTo(1L);
+        assertThat(summary.issues()).isEmpty();
+    }
 
 
     private Experiment buildExperiment(Long experimentId, Long nicheId) {

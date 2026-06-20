@@ -11,6 +11,7 @@ import { useJourneyTemplates } from "../../api/journey/useJourneyTemplates";
 import PageTitle from "../../components/PageTitle";
 import experimentIcon from "../../assets/icons/experiment-icon.svg";
 import { getStatisticsDefaultsForBudget } from "./statisticsDefaults";
+import type { ExperimentCaptureDestinationType } from "../../api/experiment/useExperiments";
 
 type FormState = {
   nicheId: string;
@@ -36,6 +37,7 @@ type FormState = {
   stage: string;
   primaryVariable: string;
   primaryMetric: string;
+  captureDestinationType: ExperimentCaptureDestinationType;
 };
 
 export default function NewExperimentPage() {
@@ -68,6 +70,7 @@ export default function NewExperimentPage() {
     stage: "AD",
     primaryVariable: "",
     primaryMetric: "",
+    captureDestinationType: "LANDING_PAGE",
   });
   const [autoSampleSize, setAutoSampleSize] = useState(true);
   const [autoMde, setAutoMde] = useState(true);
@@ -76,9 +79,7 @@ export default function NewExperimentPage() {
     form.nicheId,
     form.hypothesisId,
   );
-  const selectedNiche = niches?.find(
-    (n) => n.id === Number(form.nicheId),
-  );
+  const selectedNiche = niches?.find((n) => n.id === Number(form.nicheId));
   const { data: imageModels } = useImageGenerationModels();
   const { data: journeyTemplates, isLoading: isLoadingJourneyTemplates } =
     useJourneyTemplates({ size: 200 });
@@ -130,7 +131,6 @@ export default function NewExperimentPage() {
     });
   }, [autoSampleSize, autoMde, form.dailyBudget]);
 
-
   const submit = async () => {
     try {
       if (noInstagramAccounts) {
@@ -151,12 +151,20 @@ export default function NewExperimentPage() {
         return;
       }
       const parsedDailyBudget = Number(form.dailyBudget);
-      if (!form.dailyBudget || Number.isNaN(parsedDailyBudget) || parsedDailyBudget <= 0) {
+      if (
+        !form.dailyBudget ||
+        Number.isNaN(parsedDailyBudget) ||
+        parsedDailyBudget <= 0
+      ) {
         alert("Informe um orçamento diário válido");
         return;
       }
       const parsedUnitPrice = Number(form.unitPrice);
-      if (!form.unitPrice || Number.isNaN(parsedUnitPrice) || parsedUnitPrice <= 0) {
+      if (
+        !form.unitPrice ||
+        Number.isNaN(parsedUnitPrice) ||
+        parsedUnitPrice <= 0
+      ) {
         alert("Informe um preço unitário válido");
         return;
       }
@@ -175,7 +183,9 @@ export default function NewExperimentPage() {
         startDate: form.startDate || undefined,
         endDate: form.endDate || undefined,
         instantFormsToGenerate:
-          workerRequests.instantForms > 0 ? workerRequests.instantForms : undefined,
+          workerRequests.instantForms > 0
+            ? workerRequests.instantForms
+            : undefined,
         emailsToGenerate:
           workerRequests.emails > 0 ? workerRequests.emails : undefined,
         journeyTemplateId: defaultJourneyTemplateId,
@@ -188,6 +198,7 @@ export default function NewExperimentPage() {
         imagesPerPackage: 20,
         openImagesPerPackage: undefined,
         compressedImagesPerPackage: undefined,
+        captureDestinationType: form.captureDestinationType,
       });
       setForm({
         nicheId: nicheIdParam,
@@ -213,6 +224,7 @@ export default function NewExperimentPage() {
         stage: "AD",
         primaryVariable: "",
         primaryMetric: "",
+        captureDestinationType: "LANDING_PAGE",
       });
       setAutoSampleSize(true);
       setAutoMde(true);
@@ -285,9 +297,7 @@ export default function NewExperimentPage() {
           )}
         </>
       )}
-      {form.hypothesis && (
-        <h2 className="h5 mb-2">{form.hypothesis}</h2>
-      )}
+      {form.hypothesis && <h2 className="h5 mb-2">{form.hypothesis}</h2>}
       <input
         className="form-control mb-2"
         placeholder="Nome"
@@ -388,12 +398,13 @@ export default function NewExperimentPage() {
           ))}
       </select>
       <div className="form-text mb-2">
-        Essa conta será usada como identidade do Instagram nas campanhas geradas.
+        Essa conta será usada como identidade do Instagram nas campanhas
+        geradas.
       </div>
       {noInstagramAccounts && (
         <div className="alert alert-warning" role="alert">
-          Nenhuma conta do Instagram está cadastrada. Cadastre uma conta antes de
-          criar novos experimentos.
+          Nenhuma conta do Instagram está cadastrada. Cadastre uma conta antes
+          de criar novos experimentos.
           <div className="mt-2">
             <a
               className="btn btn-outline-primary btn-sm"
@@ -418,6 +429,28 @@ export default function NewExperimentPage() {
           </div>
         </div>
       )}
+      <label className="form-label" htmlFor="captureDestinationType">
+        Destino da campanha <span className="text-danger">*</span>
+      </label>
+      <select
+        id="captureDestinationType"
+        className="form-select mb-2"
+        value={form.captureDestinationType}
+        onChange={(e) =>
+          setForm((prev) => ({
+            ...prev,
+            captureDestinationType: e.target
+              .value as ExperimentCaptureDestinationType,
+          }))
+        }
+      >
+        <option value="LANDING_PAGE">Landing Page do Marketing Hub</option>
+        <option value="META_INSTANT_FORM">Instant Form da Meta</option>
+      </select>
+      <div className="form-text mb-3">
+        A landing mede mais intenção; o Instant Form reduz atrito dentro da
+        Meta.
+      </div>
       <label className="form-label" htmlFor="facebookPage">
         Página do Facebook
       </label>
@@ -446,14 +479,18 @@ export default function NewExperimentPage() {
         placeholder="Data de Início"
         type="date"
         value={form.startDate}
-        onChange={(e) => setForm((prev) => ({ ...prev, startDate: e.target.value }))}
+        onChange={(e) =>
+          setForm((prev) => ({ ...prev, startDate: e.target.value }))
+        }
       />
       <input
         className="form-control mb-2"
         placeholder="Data de Término"
         type="date"
         value={form.endDate}
-        onChange={(e) => setForm((prev) => ({ ...prev, endDate: e.target.value }))}
+        onChange={(e) =>
+          setForm((prev) => ({ ...prev, endDate: e.target.value }))
+        }
       />
       <button
         className="btn btn-primary d-flex align-items-center gap-2"

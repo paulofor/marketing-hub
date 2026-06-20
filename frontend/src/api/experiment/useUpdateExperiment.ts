@@ -1,6 +1,10 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
-import type { Experiment, ExperimentStage } from "./useExperiments";
+import type {
+  Experiment,
+  ExperimentCaptureDestinationType,
+  ExperimentStage,
+} from "./useExperiments";
 
 export interface UpdateExperiment {
   name: string;
@@ -31,6 +35,7 @@ export interface UpdateExperiment {
   facebookInstantFormId?: number | null;
   instagramAccountId?: number | null;
   followUpActionUrl?: string | null;
+  captureDestinationType?: ExperimentCaptureDestinationType | null;
   schemaFirstLeadPortalEnabled?: boolean;
   creativeTextPrompt?: string | null;
   creativeImagePrompt?: string | null;

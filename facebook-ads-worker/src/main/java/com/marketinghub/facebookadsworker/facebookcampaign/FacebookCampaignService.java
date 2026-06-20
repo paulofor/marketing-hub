@@ -288,7 +288,7 @@ public class FacebookCampaignService {
             InstantFormResolution instantFormResolution = null;
             InstantFormDestination instantFormDestination = null;
             InstantFormPublicationUpdateRequest instantFormUpdate = null;
-            if (exp.nextStepInstantForm()) {
+            if (usesMetaInstantFormDestination(exp)) {
                 instantFormResolution = ensureInstantFormDestination(exp);
                 if (instantFormResolution != null) {
                     instantFormDestination = instantFormResolution.destination();
@@ -1038,6 +1038,7 @@ public class FacebookCampaignService {
         InstantForm facebookInstantForm,
         @JsonAlias("nextStepInstantForm")
         boolean nextStepInstantForm,
+        String captureDestinationType,
         String followUpActionUrl,
         String publicationJobId,
         LeadPortalFlow leadPortalFlow
@@ -1940,6 +1941,7 @@ public class FacebookCampaignService {
         }
     }
 
+    /** Garante que o destino on-ad tenha um Instant Form publicado ou endereçável antes da campanha. */
     private InstantFormResolution ensureInstantFormDestination(Experiment experiment) {
         Experiment.InstantForm form = experiment.facebookInstantForm();
         if (form == null) {
@@ -2132,19 +2134,19 @@ public class FacebookCampaignService {
         }
     }
 
+    /** Resolve URL externa apenas para experimentos cujo destino canônico é Landing Page. */
     private String resolveDestinationUrl(
         Experiment experiment,
         Creative creative,
         FacebookWorkerConfiguration config,
         InstantFormDestination instantFormDestination
     ) {
-        if (instantFormDestination != null && StringUtils.hasText(instantFormDestination.shareLink())) {
+        if (usesMetaInstantFormDestination(experiment)) {
             LOGGER.info(
-                "Using instant form share link as destination URL for experiment {}: link={}",
-                experiment.id(),
-                instantFormDestination.shareLink()
+                "Experiment {} uses Meta Instant Form destination; external link will not be sent in the ad creative",
+                experiment.id()
             );
-            return instantFormDestination.shareLink();
+            return null;
         }
         if (StringUtils.hasText(experiment.followUpActionUrl())) {
             String destinationUrl = appendCampaignTrackingParameter(experiment.followUpActionUrl(), experiment);
@@ -2178,12 +2180,16 @@ public class FacebookCampaignService {
     }
 
 
+    /** Resolve lead_gen_form_id somente quando o destino canônico do experimento é Meta Instant Form. */
     private String resolveLeadGenFormId(
         Experiment experiment,
         Creative creative,
         FacebookWorkerConfiguration config,
         InstantFormDestination instantFormDestination
     ) {
+        if (!usesMetaInstantFormDestination(experiment)) {
+            return null;
+        }
         if (instantFormDestination != null && StringUtils.hasText(instantFormDestination.formId())) {
             LOGGER.info(
                 "Using instant form ID as lead generation destination for experiment {}: formId={}",
@@ -2193,6 +2199,12 @@ public class FacebookCampaignService {
             return instantFormDestination.formId();
         }
         return coalesce(creative.leadGenFormId(), config.defaultLeadGenFormId());
+    }
+
+    /** Identifica se o experimento deve publicar campanha de lead nativo na Meta. */
+    private boolean usesMetaInstantFormDestination(Experiment experiment) {
+        return experiment != null
+            && "META_INSTANT_FORM".equalsIgnoreCase(experiment.captureDestinationType());
     }
 
     private void logAutomaticRenewalOutcome(FacebookAccessTokenManager.RenewalAttemptResult renewalResult) {

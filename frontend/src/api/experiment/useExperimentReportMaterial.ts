@@ -1,6 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
-import type { ExperimentCampaignMetric } from "./useExperiments";
+import type {
+  ExperimentCampaignMetric,
+  ExperimentCaptureDestinationType,
+} from "./useExperiments";
 import type { ExperimentFunnelStageSummary } from "./useExperimentFunnel";
 import type { ExperimentLandingAnalytics } from "./useExperimentLandingAnalytics";
 
@@ -23,6 +26,7 @@ export interface ExperimentReportExperimentSnapshot {
   name: string;
   status?: string | null;
   platform?: string | null;
+  captureDestinationType?: ExperimentCaptureDestinationType | null;
   startDate?: string | null;
   endDate?: string | null;
   dailyBudget?: number | null;
@@ -112,9 +116,12 @@ export interface ExperimentReportInstantFormSnapshot {
   id: number;
   name: string;
   status?: string | null;
+  facebookFormId?: string | null;
   shareLink?: string | null;
   followUpActionUrl?: string | null;
   privacyPolicyUrl?: string | null;
+  approved: boolean;
+  published: boolean;
 }
 
 export function useExperimentReportMaterial(experimentId?: string) {

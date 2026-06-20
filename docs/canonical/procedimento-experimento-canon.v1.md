@@ -263,6 +263,26 @@ Após os artefatos de base:
 
 ## 7. Aba Landing: visualização, aprovação e URL de campanha
 
+### 7.0 Destino canônico de captura do experimento
+
+Todo experimento deve declarar explicitamente o destino oficial de captura da campanha no campo `captureDestinationType`.
+
+Valores vigentes:
+
+- `LANDING_PAGE`: usa o fluxo atual de Gera Landing, publicação no Lead Portal, URL pública e analytics comportamental da landing.
+- `META_INSTANT_FORM`: usa um Instant Form nativo da Meta como destino da campanha, reduzindo atrito e dispensando a landing como ponto inicial de captura.
+
+O frontend deve exibir essa decisão como uma opção simples de negócio na tela do experimento e nas telas de criação/edição. A existência simultânea de `leadPortalFlow` e `facebookInstantForm` no experimento não deve ser usada como inferência local de destino: o campo `captureDestinationType` é a fonte de verdade para a escolha operacional.
+
+A prontidão e a liberação para campanha devem respeitar esse destino:
+
+- `LANDING_PAGE`: exige criativo aprovado e URL final da landing/Lead Portal consolidada em `followUpActionUrl`.
+- `META_INSTANT_FORM`: exige criativo aprovado e `facebookInstantForm` aprovado, vinculado à página e com `formId` ou `shareLink` da Meta. Nessa opção, a falta de landing não deve bloquear a liberação.
+
+O checklist exibido ao usuário deve trocar o bloqueio de destino conforme `captureDestinationType`, sem inferência local no frontend.
+
+O relatório do experimento também deve carregar esse destino como dado explícito. Para `LANDING_PAGE`, o relatório pode destacar analytics comportamental da landing e fluxos do Lead Portal. Para `META_INSTANT_FORM`, o relatório deve indicar que a captura ocorreu no formulário nativo da Meta, exibir o Instant Form vinculado e tratar analytics de landing como não aplicável, usando métricas de campanha/leads da Meta como fonte principal de leitura.
+
 Com a landing gerada:
 1. o usuário acessa a aba **Landing** no experimento;
 2. faz visualização e aprovação/publicação;

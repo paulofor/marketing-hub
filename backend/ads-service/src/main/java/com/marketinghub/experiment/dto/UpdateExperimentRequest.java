@@ -4,14 +4,13 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.Nulls;
+import com.marketinghub.experiment.ExperimentCaptureDestinationType;
 import com.marketinghub.experiment.ExperimentStage;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import lombok.Data;
 
-/**
- * Request body for updating an experiment.
- */
+/** Corpo da requisição para atualizar um experimento. */
 @Data
 public class UpdateExperimentRequest {
     private String name;
@@ -66,6 +65,9 @@ public class UpdateExperimentRequest {
     private String followUpActionUrl;
     @JsonIgnore
     private boolean followUpActionUrlPresent;
+    private ExperimentCaptureDestinationType captureDestinationType;
+    @JsonIgnore
+    private boolean captureDestinationTypePresent;
     private String leadPortalFlowModel;
     @JsonIgnore
     private boolean leadPortalFlowModelPresent;
@@ -119,6 +121,12 @@ public class UpdateExperimentRequest {
     public void setFollowUpActionUrl(String followUpActionUrl) {
         this.followUpActionUrl = followUpActionUrl;
         this.followUpActionUrlPresent = true;
+    }
+
+    @JsonSetter(value = "captureDestinationType", nulls = Nulls.SET)
+    public void setCaptureDestinationType(ExperimentCaptureDestinationType captureDestinationType) {
+        this.captureDestinationType = captureDestinationType;
+        this.captureDestinationTypePresent = true;
     }
 
     @JsonSetter(value = "leadPortalFlowModel", nulls = Nulls.SET)

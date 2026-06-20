@@ -2027,6 +2027,7 @@ private FacebookInterest searchInterest(String interestName, String locale) {
     public record FacebookInterest(String id, String name) {}
     private record FacebookTargetingCategory(String id, String name) {}
 
+    /** Cria um criativo na Meta preservando destinos on-ad sem link externo quando há lead_gen_form_id. */
     public String createAdCreative(String adAccountId, AdCreativeRequest request) {
         Objects.requireNonNull(request, "request");
 
@@ -2034,8 +2035,6 @@ private FacebookInterest searchInterest(String interestName, String locale) {
         String resolvedLink = null;
         if (hasText(request.websiteUrl())) {
             resolvedLink = request.websiteUrl().trim();
-        } else if (hasLeadGenForm) {
-            resolvedLink = InstantFormPublicationHelper.buildInstantFormShareLink(request.leadGenFormId());
         }
         boolean hasWebsiteUrl = hasText(resolvedLink);
 

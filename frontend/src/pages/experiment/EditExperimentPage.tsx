@@ -3,7 +3,10 @@ import type { ChangeEvent } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate, useParams } from "react-router-dom";
 import { useExperiment } from "../../api/experiment/useExperiment";
-import type { ExperimentStage } from "../../api/experiment/useExperiments";
+import type {
+  ExperimentCaptureDestinationType,
+  ExperimentStage,
+} from "../../api/experiment/useExperiments";
 import { useImageGenerationModels } from "../../api/ai/useImageGenerationModels";
 import {
   useUpdateExperiment,
@@ -37,6 +40,7 @@ interface FormData {
   stage: ExperimentStage;
   primaryVariable: string;
   primaryMetric: string;
+  captureDestinationType: ExperimentCaptureDestinationType;
 }
 
 function toDateInputValue(value?: string | null) {
@@ -89,6 +93,7 @@ export default function EditExperimentPage() {
       stage: "AD" as ExperimentStage,
       primaryVariable: "",
       primaryMetric: "",
+      captureDestinationType: "LANDING_PAGE",
     },
   });
   const { data: facebookPages, isLoading: isLoadingFacebookPages } =
@@ -125,9 +130,7 @@ export default function EditExperimentPage() {
           ? String(data.imageModelQualityId)
           : "",
         imagesPerPackage:
-          data.imagesPerPackage != null
-            ? String(data.imagesPerPackage)
-            : "20",
+          data.imagesPerPackage != null ? String(data.imagesPerPackage) : "20",
         openImagesPerPackage:
           data.openImagesPerPackage != null
             ? String(data.openImagesPerPackage)
@@ -139,6 +142,7 @@ export default function EditExperimentPage() {
         stage: data.stage ?? "AD",
         primaryVariable: data.primaryVariable ?? "",
         primaryMetric: data.primaryMetric ?? "",
+        captureDestinationType: data.captureDestinationType ?? "LANDING_PAGE",
       });
     }
   }, [data, reset]);
@@ -154,12 +158,19 @@ export default function EditExperimentPage() {
   const stageEntries = playbook ?? [];
   const stageSelectOptions =
     stageEntries.length > 0
-      ? stageEntries.map((entry) => ({ value: entry.stage, label: entry.title }))
-      : (Object.entries(experimentStageLabels) as [ExperimentStage, string][]).map(([value, label]) => ({
+      ? stageEntries.map((entry) => ({
+          value: entry.stage,
+          label: entry.title,
+        }))
+      : (
+          Object.entries(experimentStageLabels) as [ExperimentStage, string][]
+        ).map(([value, label]) => ({
           value,
           label,
         }));
-  const selectedStageEntry = stageEntries.find((entry) => entry.stage === stageValue);
+  const selectedStageEntry = stageEntries.find(
+    (entry) => entry.stage === stageValue,
+  );
   useEffect(() => {
     if (!selectedStageEntry) {
       return;
@@ -170,10 +181,14 @@ export default function EditExperimentPage() {
       return;
     }
     if (!hasVariable && selectedStageEntry.variables.length > 0) {
-      setValue("primaryVariable", selectedStageEntry.variables[0].label, { shouldDirty: true });
+      setValue("primaryVariable", selectedStageEntry.variables[0].label, {
+        shouldDirty: true,
+      });
     }
     if (!hasMetric && selectedStageEntry.defaultPrimaryMetric) {
-      setValue("primaryMetric", selectedStageEntry.defaultPrimaryMetric, { shouldDirty: true });
+      setValue("primaryMetric", selectedStageEntry.defaultPrimaryMetric, {
+        shouldDirty: true,
+      });
     }
   }, [selectedStageEntry, primaryVariableValue, primaryMetricValue, setValue]);
   const metricSuggestions = selectedStageEntry
@@ -188,9 +203,7 @@ export default function EditExperimentPage() {
     ? Number(selectedJourneyTemplateId)
     : undefined;
   const facebookPageOptions = useMemo(() => {
-    const options = Array.isArray(facebookPages)
-      ? [...facebookPages]
-      : [];
+    const options = Array.isArray(facebookPages) ? [...facebookPages] : [];
     const experimentPage = data?.facebookPage;
     if (!experimentPage) {
       return options;
@@ -278,7 +291,9 @@ export default function EditExperimentPage() {
     : undefined;
   const selectedImageQuality =
     parsedImageQualityId !== undefined && !Number.isNaN(parsedImageQualityId)
-      ? availableImageQualities.find((quality) => quality.id === parsedImageQualityId)
+      ? availableImageQualities.find(
+          (quality) => quality.id === parsedImageQualityId,
+        )
       : undefined;
   const usdFormatter = useMemo(
     () =>
@@ -301,14 +316,15 @@ export default function EditExperimentPage() {
     );
   }, [selectedImageQuality?.prices]);
 
-  const selectedQualityPriceLabel = preferredQualityPrice?.unitPriceUsd != null
-    ? (() => {
-        const label = usdFormatter.format(preferredQualityPrice.unitPriceUsd);
-        return preferredQualityPrice.sizeLabel
-          ? `${label} · ${preferredQualityPrice.sizeLabel}`
-          : label;
-      })()
-    : undefined;
+  const selectedQualityPriceLabel =
+    preferredQualityPrice?.unitPriceUsd != null
+      ? (() => {
+          const label = usdFormatter.format(preferredQualityPrice.unitPriceUsd);
+          return preferredQualityPrice.sizeLabel
+            ? `${label} · ${preferredQualityPrice.sizeLabel}`
+            : label;
+        })()
+      : undefined;
 
   const parsedImagesPerPackage = Number(imagesPerPackageValue);
 
@@ -326,7 +342,10 @@ export default function EditExperimentPage() {
     setValue("primaryMetric", "", { shouldDirty: true });
   };
 
-  const handleApplyVariableSuggestion = (label: string, metric?: string | null) => {
+  const handleApplyVariableSuggestion = (
+    label: string,
+    metric?: string | null,
+  ) => {
     setValue("primaryVariable", label, { shouldDirty: true });
     if (metric) {
       setValue("primaryMetric", metric, { shouldDirty: true });
@@ -370,12 +389,20 @@ export default function EditExperimentPage() {
         return;
       }
       const parsedDailyBudget = Number(values.dailyBudget);
-      if (!values.dailyBudget || Number.isNaN(parsedDailyBudget) || parsedDailyBudget <= 0) {
+      if (
+        !values.dailyBudget ||
+        Number.isNaN(parsedDailyBudget) ||
+        parsedDailyBudget <= 0
+      ) {
         alert("Informe um orçamento diário válido");
         return;
       }
       const parsedUnitPrice = Number(values.unitPrice);
-      if (!values.unitPrice || Number.isNaN(parsedUnitPrice) || parsedUnitPrice <= 0) {
+      if (
+        !values.unitPrice ||
+        Number.isNaN(parsedUnitPrice) ||
+        parsedUnitPrice <= 0
+      ) {
         alert("Informe um preço unitário válido");
         return;
       }
@@ -404,7 +431,9 @@ export default function EditExperimentPage() {
       }
       let parsedCompressedImagesPerPackage: number | undefined;
       if (values.compressedImagesPerPackage !== "") {
-        parsedCompressedImagesPerPackage = Number(values.compressedImagesPerPackage);
+        parsedCompressedImagesPerPackage = Number(
+          values.compressedImagesPerPackage,
+        );
         if (
           Number.isNaN(parsedCompressedImagesPerPackage) ||
           parsedCompressedImagesPerPackage < 0 ||
@@ -422,6 +451,7 @@ export default function EditExperimentPage() {
         stage: values.stage,
         primaryVariable: values.primaryVariable.trim(),
         primaryMetric: values.primaryMetric.trim(),
+        captureDestinationType: values.captureDestinationType,
         kpiTarget: Number(values.kpiTarget),
         dailyBudget: parsedDailyBudget,
         unitPrice: parsedUnitPrice,
@@ -435,7 +465,9 @@ export default function EditExperimentPage() {
         emailsToGenerate: data.emailsToGenerate ?? undefined,
         imagesPerPackage: parsedImagesPerPackage,
         openImagesPerPackage:
-          values.openImagesPerPackage === "" ? null : parsedOpenImagesPerPackage,
+          values.openImagesPerPackage === ""
+            ? null
+            : parsedOpenImagesPerPackage,
         compressedImagesPerPackage:
           values.compressedImagesPerPackage === ""
             ? null
@@ -448,7 +480,9 @@ export default function EditExperimentPage() {
       }
       if (dirtyFields.imageModelQualityId) {
         const qualityValue = values.imageModelQualityId.trim();
-        payload.imageModelQualityId = qualityValue ? Number(qualityValue) : null;
+        payload.imageModelQualityId = qualityValue
+          ? Number(qualityValue)
+          : null;
       }
 
       if (dirtyFields.journeyTemplateId) {
@@ -458,9 +492,7 @@ export default function EditExperimentPage() {
 
       if (dirtyFields.facebookPageId) {
         const selectedPageId = values.facebookPageId.trim();
-        payload.facebookPageId = selectedPageId
-          ? Number(selectedPageId)
-          : null;
+        payload.facebookPageId = selectedPageId ? Number(selectedPageId) : null;
       }
 
       await update.mutateAsync(payload);
@@ -556,7 +588,8 @@ export default function EditExperimentPage() {
             />
             {selectedStageEntry ? (
               <div className="form-text">
-                Sugestão do playbook: <strong>{selectedStageEntry.defaultPrimaryMetric}</strong>
+                Sugestão do playbook:{" "}
+                <strong>{selectedStageEntry.defaultPrimaryMetric}</strong>
               </div>
             ) : (
               <div className="form-text">
@@ -565,7 +598,7 @@ export default function EditExperimentPage() {
             )}
             {selectedStageEntry?.guardrailMetrics?.length ? (
               <div className="text-muted small mb-2">
-                Guardrails: {selectedStageEntry.guardrailMetrics.join(" · " )}
+                Guardrails: {selectedStageEntry.guardrailMetrics.join(" · ")}
               </div>
             ) : null}
             {metricSuggestions.length > 0 ? (
@@ -713,10 +746,13 @@ export default function EditExperimentPage() {
               ))}
             </select>
             {selectedQualityPriceLabel ? (
-              <p className="form-text">Custo estimado: {selectedQualityPriceLabel}</p>
+              <p className="form-text">
+                Custo estimado: {selectedQualityPriceLabel}
+              </p>
             ) : null}
             <label className="form-label" htmlFor="imagesPerPackage">
-              Quantidade de imagens por pacote <span className="text-danger">*</span>
+              Quantidade de imagens por pacote{" "}
+              <span className="text-danger">*</span>
             </label>
             <input
               id="imagesPerPackage"
@@ -728,7 +764,8 @@ export default function EditExperimentPage() {
             />
             {estimatedPackageCost != null ? (
               <div className="form-text mb-2">
-                Custo estimado por pacote: {usdFormatter.format(estimatedPackageCost)}
+                Custo estimado por pacote:{" "}
+                {usdFormatter.format(estimatedPackageCost)}
               </div>
             ) : null}
             <label className="form-label" htmlFor="openImagesPerPackage">
@@ -799,8 +836,8 @@ export default function EditExperimentPage() {
             </select>
             {noInstagramAccounts && (
               <div className="alert alert-warning" role="alert">
-                Nenhuma conta do Instagram está cadastrada. Cadastre uma conta antes
-                de editar o experimento.
+                Nenhuma conta do Instagram está cadastrada. Cadastre uma conta
+                antes de editar o experimento.
                 <div className="mt-2">
                   <a
                     className="btn btn-outline-primary btn-sm"
@@ -811,6 +848,24 @@ export default function EditExperimentPage() {
                 </div>
               </div>
             )}
+            <label className="form-label" htmlFor="captureDestinationType">
+              Destino da campanha <span className="text-danger">*</span>
+            </label>
+            <select
+              id="captureDestinationType"
+              className="form-select mb-2"
+              {...register("captureDestinationType")}
+            >
+              <option value="LANDING_PAGE">
+                Landing Page do Marketing Hub
+              </option>
+              <option value="META_INSTANT_FORM">Instant Form da Meta</option>
+            </select>
+            <div className="form-text mb-3">
+              A landing mede mais intenção; o Instant Form reduz atrito dentro
+              da Meta.
+            </div>
+
             <label className="form-label" htmlFor="facebookPageId">
               Página do Facebook
             </label>

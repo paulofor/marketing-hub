@@ -213,7 +213,19 @@ Consequência arquitetural: a publicação de campanha passa a ser substituível
 - **Marketing API (Meta Ads)** – única fonte autorizada para gastos e sincronização de pixels. Integrações devem seguir o contrato público (vide link acima) e evitar campos não documentados.
 - **Lead Portal / Domínio** – `oportunidadebrasil.shop` (A record → `191.252.120.96`) hospeda os fluxos usados pelos experimentos. Uma liberação não deve ocorrer se o fluxo associado estiver indisponível nesse domínio.
 
-## 10. Referências cruzadas
+## 10. Procedimento canônico para teste de Meta Instant Form
+
+Este procedimento existe para validar, sem alterar a arquitetura principal do funil, se o token operacional da Meta continua apto a criar e gerenciar formulários instantâneos da página usada pelo Marketing Hub.
+
+1. **Escopo do teste** – o teste deve ser feito em uma página controlada pelo Marketing Hub e com nome explicitamente descartável, usando o padrão `TESTE_API_MARKETING_HUB_INSTANT_FORM_FAKE_<YYYYMMDD>`.
+2. **Endpoint da Meta** – a criação usa a Marketing/Graph API no edge `/{pageId}/leadgen_forms`, com método `POST`.
+3. **Campos mínimos validados** – o payload deve enviar `name`, `locale`, `questions`, `privacy_policy` e `follow_up_action_url`. Para teste mínimo, use perguntas padrão `FULL_NAME` e `EMAIL`, política de privacidade do domínio operacional e URL de acompanhamento publicada.
+4. **Evidência de sucesso** – a criação só deve ser considerada validada quando a Meta retornar o `id` do formulário e uma consulta posterior em `/{pageId}/leadgen_forms` listar o formulário com `status=ACTIVE` ou status operacional equivalente aceito pela Meta.
+5. **Cuidados obrigatórios** – nunca registrar token em documento, log de PR ou mensagem ao usuário; ao copiar respostas da Graph API, remover qualquer `access_token` que apareça em URLs de paginação.
+6. **Uso em campanha real** – a existência do teste não muda o padrão de publicação: o Facebook Ads Worker continua sendo o dono operacional de publicação/reuso do `lead_gen_form_id`, enquanto o backend mantém aprovação, publicação e sincronização do formulário. Quando `experiment.captureDestinationType=META_INSTANT_FORM`, a publicação deve usar `destination_type=ON_AD`, `optimization_goal=LEAD_GENERATION`, objetivo de leads e `call_to_action.value.lead_gen_form_id`, sem enviar `link` externo no criativo. Quando `captureDestinationType=LANDING_PAGE` ou ausente, o worker deve publicar com URL de landing/Lead Portal e ignorar formulários presentes apenas como metadado. O relatório pós-execução deve refletir o mesmo destino: Instant Form usa métricas/leads Meta e snapshot do formulário; Landing Page usa métricas Meta combinadas com analytics comportamental da landing.
+7. **Validação de 2026-06-20** – foi criado na página `485863027935937` o formulário descartável `TESTE_API_MARKETING_HUB_INSTANT_FORM_FAKE_20260620`; a Meta retornou o identificador `2487034981799094` e a listagem posterior do edge `leadgen_forms` retornou o formulário como `ACTIVE` com `leads_count=0`.
+
+## 11. Referências cruzadas
 
 - `system-governance-canon.v2.md` – precedência canônica e critérios de criação de novos cânones.
 - `ExperimentReadinessService` (backend) – cálculo dos bloqueios.

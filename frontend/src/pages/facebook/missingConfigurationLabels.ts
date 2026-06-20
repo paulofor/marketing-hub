@@ -5,7 +5,14 @@ export interface MissingConfigurationInfo {
 
 const missingConfigurationInfo: Record<string, MissingConfigurationInfo> = {
   creativeApproval: { label: "Aprovar pelo menos um criativo" },
-  landingDestination: { label: "Aprovar a landing para definir URL de destino" },
+  landingDestination: {
+    label: "Aprovar a landing para definir URL de destino",
+  },
+  instantFormDestination: {
+    label: "Selecionar um Meta Instant Form aprovado e publicável",
+    helperText:
+      "Quando o destino de captura é Meta Instant Form, a campanha só pode ser liberada se houver um formulário aprovado, vinculado à página e com ID ou link da Meta.",
+  },
   kpiTargetCpl: { label: "Definir o KPI alvo (CPL)" },
   stopLossCpl: { label: "Definir o stop-loss de CPL" },
   sampleSize: { label: "Informar o tamanho da amostra" },
@@ -25,7 +32,9 @@ const missingConfigurationInfo: Record<string, MissingConfigurationInfo> = {
   },
 };
 
-export function getMissingConfigurationInfo(key: string): MissingConfigurationInfo {
+export function getMissingConfigurationInfo(
+  key: string,
+): MissingConfigurationInfo {
   return missingConfigurationInfo[key] || { label: "Revise o experimento" };
 }
 

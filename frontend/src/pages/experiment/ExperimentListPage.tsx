@@ -11,6 +11,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 
 const PAGE_SIZE = 25;
+const NEW_EXPERIMENT_DRAFT_KEY = "marketingHub.newExperimentDraft.v1";
 
 function parseDate(date?: string | null) {
   if (!date) return 0;
@@ -67,6 +68,17 @@ export default function ExperimentListPage() {
   const [retryingExperimentId, setRetryingExperimentId] = useState<
     string | null
   >(null);
+  const [hasNewExperimentDraft, setHasNewExperimentDraft] = useState(false);
+  useEffect(() => {
+    try {
+      setHasNewExperimentDraft(
+        Boolean(window.localStorage.getItem(NEW_EXPERIMENT_DRAFT_KEY)),
+      );
+    } catch {
+      setHasNewExperimentDraft(false);
+    }
+  }, []);
+
   const retryRelease = useMutation({
     mutationFn: async (experimentId: string) => {
       const { data } = await axios.post(
@@ -200,9 +212,16 @@ export default function ExperimentListPage() {
   return (
     <div>
       <PageTitle icon={experimentIcon}>Testes de Nicho</PageTitle>
-      <Link className="btn btn-primary mb-3" to="/experiments/new">
-        Novo Teste
-      </Link>
+      <div className="d-flex flex-wrap gap-2 mb-3">
+        <Link className="btn btn-primary" to="/experiments/new">
+          Novo Teste
+        </Link>
+        {hasNewExperimentDraft && (
+          <Link className="btn btn-outline-primary" to="/experiments/new">
+            Continuar teste em criação
+          </Link>
+        )}
+      </div>
       <div className="row g-2 mb-3">
         <div className="col">
           <input
@@ -280,9 +299,7 @@ export default function ExperimentListPage() {
                     {nicheNameById.get(e.nicheId) || `Nicho #${e.nicheId}`}
                   </td>
                   <td>{e.hypothesis || "—"}</td>
-                  <td>
-                    {formatCurrency(nicheTotalCostMap[e.nicheId] ?? 0)}
-                  </td>
+                  <td>{formatCurrency(nicheTotalCostMap[e.nicheId] ?? 0)}</td>
                   <td>{e.status}</td>
                   <td>
                     <Link

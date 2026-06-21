@@ -171,6 +171,39 @@ class BackendCandidateGeneratorServiceTest {
         assertThat(result.completedJobs().getFirst().aiCostUsd()).isEqualByComparingTo(new BigDecimal("0.015"));
     }
 
+    /** Deve detalhar cronologicamente as etapas do job para relatório de fracasso. */
+    @Test
+    void detailJobReturnsStageTimelineForFailureReport() {
+        BackendCandidateGeneratorService service = service(true, false);
+        OprmNichoCnaeV2StageExecution first = execution(201L, 1, 0, 1);
+        first.setJobId("job-fracasso");
+        first.setCnaeCode("4781400");
+        first.setStageCode("candidate-generator");
+        first.setStatus(OprmNichoCnaeV2StageExecutionStatus.COMPLETED);
+        first.setOutputPayload("{\"candidateCount\":4}");
+        first.setNextStageCode("candidate-tournament");
+        first.setUpdatedAt(Instant.parse("2026-06-21T10:00:00Z"));
+        OprmNichoCnaeV2StageExecution last = execution(202L, 1, 0, 1);
+        last.setJobId("job-fracasso");
+        last.setCnaeCode("4781400");
+        last.setStageCode("candidate-tournament");
+        last.setStatus(OprmNichoCnaeV2StageExecutionStatus.COMPLETED);
+        last.setOutputPayload(
+                "{\"tournamentDecision\":\"NO_VIABLE_SUBNICHE\",\"candidateCount\":4,\"finalistCount\":0}");
+        last.setUpdatedAt(Instant.parse("2026-06-21T10:05:00Z"));
+        when(stageExecutionRepository.findByJobIdOrderByCreatedAtAsc("job-fracasso")).thenReturn(List.of(first, last));
+
+        var result = service.detailJob("job-fracasso");
+
+        assertThat(result.jobId()).isEqualTo("job-fracasso");
+        assertThat(result.outcomeStatus()).isEqualTo("FAILURE");
+        assertThat(result.finalDecision()).isEqualTo("NO_VIABLE_SUBNICHE");
+        assertThat(result.stages()).hasSize(2);
+        assertThat(result.stages().getFirst().stageCode()).isEqualTo("candidate-generator");
+        assertThat(result.stages().getFirst().outputPayload()).contains("candidateCount");
+        assertThat(result.stages().get(1).stageCode()).isEqualTo("candidate-tournament");
+    }
+
     /** Deve manter a decisão real do torneio quando o reprocessamento encerra o job sem ganho de informação. */
     @Test
     void listJobsForCnaeExplainsNoViableSubnicheAfterReprocessControllerEnd() {

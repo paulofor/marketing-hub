@@ -1236,3 +1236,9 @@
 - Nova regra operacional: o backend passa a bloquear a criação manual de outro job NichoCNAE v2 quando o mesmo CNAE já possui execução aberta (`PENDING`, `RUNNING` ou `TECHNICAL_RETRY_SCHEDULED`).
 - Limpeza: criado changelog para encerrar como falha operacional os jobs presos do CNAE `4781400` anteriores a `2026-06-21 00:00:00`, liberando a tela para uma nova execução controlada.
 - Causa-raiz tratada: a criação manual só contava execuções por candidato/etapa e não verificava jobs abertos por CNAE, permitindo dois jobs simultâneos para o mesmo mercado.
+
+## 2026-06-21 — Relatório de fracasso do job NichoCNAE v2
+
+- Adicionada tela de detalhe do job a partir dos casos de fracasso da tabela do pipeline v2, mostrando cada etapa persistida, entrada resumida, saída resumida, falha registrada e próxima etapa.
+- O backend expõe o histórico cronológico por `jobId`, mantendo a tela fiel ao dado persistido e sem inferir localmente o caminho do pipeline.
+- Causa-raiz tratada: a tabela indicava fracasso, mas não oferecia rastreabilidade operacional suficiente para o usuário entender até onde o job avançou antes de decidir novo recorte ou correção.

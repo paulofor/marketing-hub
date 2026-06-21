@@ -59,6 +59,25 @@ paths:
                     type: array
                     items:
                       $ref: "#/components/schemas/CandidateGeneratorCnaeJobSummary"
+  /api/internal/oprm/nichocnae/v2/candidate-generator/stage-executions/jobs/{jobId}:
+    get:
+      summary: Detalha as etapas persistidas de um job v2
+      description: Contrato de leitura para a tela administrativa mostrar cada etapa executada até o ponto de fracasso ou sucesso.
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Histórico cronológico das etapas do job informado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CandidateGeneratorJobDetailResponse"
+        "404":
+          description: Job não encontrado.
   /api/internal/oprm/nichocnae/v2/candidate-generator/stage-executions/pending:
     get:
       summary: Lista execuções pendentes da etapa candidate-generator v2
@@ -178,3 +197,85 @@ components:
           type: string
           format: date-time
           nullable: true
+
+    CandidateGeneratorJobDetailResponse:
+      type: object
+      required:
+        - jobId
+        - cnaeCode
+        - status
+        - stages
+      properties:
+        jobId:
+          type: string
+        cnaeCode:
+          type: string
+        status:
+          type: string
+        finalDecision:
+          type: string
+          nullable: true
+        finalDecisionLabel:
+          type: string
+          nullable: true
+        finalDecisionReason:
+          type: string
+          nullable: true
+        outcomeStatus:
+          type: string
+          nullable: true
+        outcomeMessage:
+          type: string
+          nullable: true
+        stages:
+          type: array
+          items:
+            $ref: "#/components/schemas/CandidateGeneratorJobStageStep"
+    CandidateGeneratorJobStageStep:
+      type: object
+      required:
+        - stageExecutionId
+        - stageCode
+        - status
+        - createdAt
+        - updatedAt
+      properties:
+        stageExecutionId:
+          type: string
+        stageCode:
+          type: string
+        status:
+          type: string
+        failureType:
+          type: string
+          nullable: true
+        attemptNumber:
+          type: integer
+          nullable: true
+        technicalRetryNumber:
+          type: integer
+          nullable: true
+        knowledgeVersion:
+          type: integer
+          nullable: true
+        materializationEnabled:
+          type: boolean
+          nullable: true
+        inputPayload:
+          type: string
+          nullable: true
+        outputPayload:
+          type: string
+          nullable: true
+        errorMessage:
+          type: string
+          nullable: true
+        nextStageCode:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time

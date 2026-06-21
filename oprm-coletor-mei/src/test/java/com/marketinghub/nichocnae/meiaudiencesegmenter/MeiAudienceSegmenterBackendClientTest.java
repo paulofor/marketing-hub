@@ -23,7 +23,7 @@ class MeiAudienceSegmenterBackendClientTest {
         MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
         String message = "Falha ao segmentar público MEI/autônomo com OpenAI; tipo=TooManyRequests; "
                 + "causaRaiz=429 Too Many Requests; researchCycleId=1001; routineCardId=2002; "
-                + "modeloOpenAI=gpt-5.4; endpoint=https://api.openai.com/v1/responses; httpStatus=429; "
+                + "modeloOpenAI=gpt-5.2; endpoint=https://api.openai.com/v1/responses; httpStatus=429; "
                 + "httpBody={error={message=rate limit reached}}";
         server.expect(once(), requestTo(URI.create(
                         "http://backend.test/api/internal/oprm/nichocnae/mei-audience-segmenter/stage-executions/1001/fail")))
@@ -47,7 +47,7 @@ class MeiAudienceSegmenterBackendClientTest {
                 "Cabeleireiros",
                 "Serviços de beleza",
                 "Beleza MEI",
-                "gpt-5.4",
+                "gpt-5.2",
                 "Modelo configurado",
                 "Rotina",
                 "Comportamento",

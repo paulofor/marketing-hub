@@ -86,7 +86,7 @@ class MeiAudienceSegmenterOperationalGuardTest {
                 "",
                 "gpt-test",
                 "OPRM_MEI_AUDIENCE_SEGMENTER_OPENAI_API_KEY",
-                "OPENAI_API_KEY");
+                "OPENAI_API_KEY", "flex");
     }
 
     /** Cria uma pendência mínima para testar a barreira operacional. */

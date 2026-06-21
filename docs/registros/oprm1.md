@@ -1,3 +1,10 @@
+
+## 2026-06-21 — OPRM OpenAI em modo Flex com GPT-5.2
+
+- Decisão operacional aplicada: acessos OpenAI das etapas OPRM NichoCNAE com IA devem usar modo Flex (`service_tier=flex`) e modelo `gpt-5.2`.
+- Correção de causa-raiz: o fallback local do coletor ainda permitia modelos antigos e a segmentação MEI não enviava `service_tier` no corpo da Responses API; agora seed e segmentação MEI têm fallback `gpt-5.2` e payload Flex auditável.
+- Prevenção de recorrência: changelog incremental reconfigura as etapas OpenAI do pipeline OPRM para `gpt-5.2` quando o modelo existir no catálogo, mantendo a tela administrativa e o executor alinhados.
+
 ## 2026-06-20 11:45:00 (UTC-3) — OPRM NichoCNAE v2: leitura operacional dos jobs simplificada
 
 - Ajustada a tela do pipeline NichoCNAE v2 para trocar a tabela técnica de jobs por cards de acompanhamento com etapa, situação em linguagem humana, resumo do motivo e próximo passo operacional.

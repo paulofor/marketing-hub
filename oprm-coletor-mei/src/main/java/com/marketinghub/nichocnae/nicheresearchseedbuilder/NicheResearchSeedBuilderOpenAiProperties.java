@@ -16,7 +16,7 @@ public record NicheResearchSeedBuilderOpenAiProperties(
         baseUrl = baseUrl == null || baseUrl.isBlank() ? "https://api.openai.com/v1" : baseUrl;
         apiKey = apiKey == null ? "" : apiKey;
         apiKeyFile = apiKeyFile == null ? "" : apiKeyFile;
-        model = model == null || model.isBlank() ? "gpt-4.1-mini" : model;
+        model = model == null || model.isBlank() ? "gpt-5.2" : model;
         serviceTier = serviceTier == null || serviceTier.isBlank() ? "flex" : serviceTier;
     }
 }

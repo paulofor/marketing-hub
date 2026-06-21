@@ -43,7 +43,7 @@ class NicheResearchSeedBuilderBackendClientTest {
                         1200,
                         800,
                         "resp_seed",
-                        "gpt-5.4"));
+                        "gpt-5.2"));
 
         assertThat(request.nicheName()).isEqualTo("Cabeleireiros MEI e profissionais autônomos");
         assertThat(request.businessType()).isEqualTo("Serviços de beleza");
@@ -53,7 +53,7 @@ class NicheResearchSeedBuilderBackendClientTest {
         assertThat(request.initialAssumptions()).isEqualTo("clientes sofrem com agenda vazia");
         assertThat(request.confidenceLevel()).isEqualTo("HIGH");
         assertThat(request.createdBy()).isEqualTo("AI");
-        assertThat(request.model()).isEqualTo("gpt-5.4");
+        assertThat(request.model()).isEqualTo("gpt-5.2");
         assertThat(request.rawOpenAiRequest()).isEqualTo("{\"input\":true}");
         assertThat(request.rawOpenAiResponse()).isEqualTo("{\"id\":\"resp_seed\"}");
         assertThat(request.inputTokens()).isEqualTo(1200);
@@ -93,7 +93,7 @@ class NicheResearchSeedBuilderBackendClientTest {
                 "HIGH",
                 "AI",
                 null,
-                "gpt-5.4",
+                "gpt-5.2",
                 "{\"seed\":true}",
                 "{\"input\":true}",
                 "{\"id\":\"resp_seed\"}",

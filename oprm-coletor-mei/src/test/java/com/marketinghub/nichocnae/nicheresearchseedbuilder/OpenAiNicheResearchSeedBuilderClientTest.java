@@ -55,11 +55,11 @@ class OpenAiNicheResearchSeedBuilderClientTest {
     @Test
     void shouldResolveModelFromPendingStageConfiguration() {
         OpenAiNicheResearchSeedBuilderClient client = clientWithProperties(new NicheResearchSeedBuilderOpenAiProperties(
-                "https://api.openai.com/v1", "direct-key", "", "gpt-4.1-mini", "flex"));
+                "https://api.openai.com/v1", "direct-key", "", "gpt-5.2", "flex"));
 
         String model = client.resolveModel(pending());
 
-        assertThat(model).isEqualTo("gpt-5.4");
+        assertThat(model).isEqualTo("gpt-5.2");
     }
 
     /** Confirma que a requisição da etapa dois usa Flex Processing por padrão para reduzir custo operacional. */
@@ -117,8 +117,8 @@ class OpenAiNicheResearchSeedBuilderClientTest {
                 "Cabeleireiros, manicure e pedicure",
                 BigDecimal.valueOf(92),
                 125000L,
-                "gpt-5.4",
-                "gpt-5.4 (gpt-5.4)",
+                "gpt-5.2",
+                "gpt-5.2 (gpt-5.2)",
                 "AUTO_SCORE_QUEUE",
                 null,
                 null,

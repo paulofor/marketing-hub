@@ -215,6 +215,7 @@ public class OpenAiMeiAudienceSegmenterClient {
         body.put("model", model);
         body.put("input", prompt);
         body.put("text", text);
+        body.put("service_tier", properties.serviceTier());
         return body;
     }
 

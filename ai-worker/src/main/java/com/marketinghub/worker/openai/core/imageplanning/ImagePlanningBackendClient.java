@@ -1,5 +1,6 @@
 package com.marketinghub.worker.openai.core.imageplanning;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.worker.openai.core.model.OpenAiDispatch;
 import com.marketinghub.worker.openai.core.model.OpenAiResult;
@@ -168,6 +169,11 @@ public class ImagePlanningBackendClient implements StageBackendPort<ImagePlannin
         Map<String, Object> framework = asMap(hypothesis.get("framework"));
 
         Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("singlePain", experiment.get("singlePain"));
+        payload.put("freeReward", experiment.get("freeReward"));
+        payload.put("funnelPromise", experiment.get("funnelPromise"));
+        payload.put("primaryCta", experiment.get("primaryCta"));
+        payload.put("campaignObjective", experiment.get("campaignObjective"));
         payload.put("campaignAngle", normalizeJsonArtifact(experiment.get("campaignAngle")));
         payload.put("adCopy", normalizeJsonArtifact(experiment.get("adCopy")));
         payload.put("adImageBriefing", normalizeJsonArtifact(experiment.get("adImageBriefing")));
@@ -176,6 +182,7 @@ public class ImagePlanningBackendClient implements StageBackendPort<ImagePlannin
         payload.put("NICHE_NAME", firstText(experiment.get("nicheName"), experiment.get("niche"), experiment.get("name")));
         payload.put("PAIN_JSON", framework.getOrDefault("pain", Map.of()));
         payload.put("RESULT_JSON", framework.getOrDefault("result", Map.of()));
+        payload.put("CASE_DATA_BLOCK", buildCaseDataBlock(payload));
 
         return payload;
     }
@@ -188,6 +195,44 @@ public class ImagePlanningBackendClient implements StageBackendPort<ImagePlannin
             }
         }
         return null;
+
+    /** Monta o bloco textual de contexto comercial usado pelo prompt de imageplanning. */
+    private String buildCaseDataBlock(Map<String, Object> payload) {
+        StringBuilder builder = new StringBuilder("[CASE_DATA_BEGIN]\n");
+        appendCaseData(builder, "NICHE_NAME", payload.get("NICHE_NAME"));
+        appendCaseData(builder, "singlePain", payload.get("singlePain"));
+        appendCaseData(builder, "freeReward", payload.get("freeReward"));
+        appendCaseData(builder, "funnelPromise", payload.get("funnelPromise"));
+        appendCaseData(builder, "primaryCta", payload.get("primaryCta"));
+        appendCaseData(builder, "campaignObjective", payload.get("campaignObjective"));
+        appendCaseData(builder, "PAIN_JSON", payload.get("PAIN_JSON"));
+        appendCaseData(builder, "RESULT_JSON", payload.get("RESULT_JSON"));
+        appendCaseData(builder, "campaignAngle", payload.get("campaignAngle"));
+        appendCaseData(builder, "adCopy", payload.get("adCopy"));
+        appendCaseData(builder, "adImageBriefing", payload.get("adImageBriefing"));
+        appendCaseData(builder, "landingPageCopy", payload.get("landingPageCopy"));
+        builder.append("[CASE_DATA_END]");
+        return builder.toString();
+    }
+
+    /** Acrescenta uma chave do contexto no bloco CASE_DATA com renderização segura. */
+    private void appendCaseData(StringBuilder builder, String key, Object value) {
+        builder.append(key).append(": ").append(toJsonOrText(value).trim()).append('\n');
+    }
+
+    /** Renderiza valores estruturados como JSON e preserva textos simples. */
+    private String toJsonOrText(Object value) {
+        if (value == null) {
+            return "";
+        }
+        if (value instanceof String text) {
+            return text;
+        }
+        try {
+            return objectMapper.writeValueAsString(value);
+        } catch (JsonProcessingException ex) {
+            return String.valueOf(value);
+        }
     }
 
     /** Normaliza artefatos que podem chegar como JSON textual, objeto estruturado ou valor simples. */

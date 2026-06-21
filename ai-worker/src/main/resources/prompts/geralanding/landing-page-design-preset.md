@@ -30,6 +30,13 @@ Dor: {{PAIN_JSON}}
 
 Resultado: {{RESULT_JSON}}
 
+Contrato de promessa única:
+- Dor única: {dados-singlePain}
+- Recompensa gratuita única: {dados-freeReward}
+- Promessa do funil: {dados-funnelPromise}
+- CTA principal: {dados-primaryCta}
+- Objetivo da campanha: {dados-campaignObjective}
+
 {prompt-regras-globais}
 
 Ângulo da campanha:
@@ -74,6 +81,8 @@ Aplique estas correções como prioridade máxima sobre escolhas estéticas gen�
 7. **Aparência final, não rascunho**: rejeite qualquer combinação que dependa de poucos tokens genéricos (`rowInline`, `radiusMd`, `shadowMd`, `ctaPrimaryBg`) sem dimensões, espaçamento, alinhamento e estado base completos.
 
 # Regras obrigatórias
+
+0. Se houver contrato de promessa única no contexto, a direção visual deve destacar a mesma dor, recompensa gratuita, promessa e CTA já escolhidos, sem reposicionar outro ativo como oferta principal.
 
 1. Responda somente JSON válido.
 2. Não crie, remova ou renomeie seções e elementos.

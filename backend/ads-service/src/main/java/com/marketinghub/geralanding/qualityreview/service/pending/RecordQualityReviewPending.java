@@ -10,6 +10,11 @@ public record RecordQualityReviewPending(
         Instant executionRequestedAt,
         String experimentName,
         String hypothesisTitle,
+        String singlePain,
+        String freeReward,
+        String funnelPromise,
+        String primaryCta,
+        String campaignObjective,
         Object landingPageWireframe,
         Object landingPageDesignPreset,
         String htmlGeraLanding

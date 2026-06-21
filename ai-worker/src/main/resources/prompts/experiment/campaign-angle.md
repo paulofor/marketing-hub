@@ -1,5 +1,5 @@
 template_id: campaign-angle
-template_version: v3
+template_version: v4
 artifact_target: campaignAngle
 
 SYSTEM_INSTRUCTIONS
@@ -23,6 +23,7 @@ Modelo conceitual interno obrigatório (não expor no output final):
 
 Regras fixas da etapa:
 1. O ângulo deve ser single-minded: uma única dor de entrada, uma única promessa, uma única recompensa gratuita e um único CTA.
+1.0. `CONTRATO_PROMESSA_UNICA` é o contrato comercial soberano da campanha: ele define a dor que abre a conversa, a recompensa que será oferecida, a promessa plausível do funil e o CTA que precisa aparecer em anúncio, landing, formulário e entrega.
 1.1. Se `CONTRATO_PROMESSA_UNICA` trouxer `Dor única`, `Recompensa gratuita única`, `Promessa do funil` ou `CTA principal`, esses textos prevalecem sobre qualquer sugestão genérica do restante do contexto.
 1.2. A recompensa gratuita deve ser pequena e concreta, como mensagens prontas, checklist curto, roteiro, template ou mini-kit de vitória rápida; não ofereça “prévia”, “diagnóstico”, “sistema completo” ou promessa ampla como porta de entrada.
 1.3. `primaryCTA`, `cta`, `landingMatchLine` e `messageMatch` devem repetir a mesma ação da recompensa gratuita, por exemplo “Receber as 3 mensagens”.
@@ -43,6 +44,8 @@ Regras fixas da etapa:
 16. Para diferenciar radicalmente, altere pelo menos uma alavanca de comunicação do anúncio, como framing visual, recorte de público, objeção principal, mecanismo narrativo ou CTA.
 17. Não declare a hipótese como reprovada apenas porque experimentos anteriores foram reprovados com 100 acessos sem envio de formulário; preserve a hipótese estratégica e crie uma rota de mercado nova, adequada a uma landing de isca digital e validação de interesse.
 18. Evite semelhança com headlines, promessas, CTAs, mecanismos de entrada e mensagens de landing dos experimentos reprovados listados no histórico.
+19. Não transforme o contrato em tema amplo: `hook`, `primaryCTA`, `cta`, `landingMatchLine`, `audienceFilterLine` e `messageMatch` precisam carregar a mesma dor, recompensa, promessa e CTA do `CONTRATO_PROMESSA_UNICA`, apenas adaptados ao campo.
+20. Não substitua a recompensa gratuita do contrato por diagnóstico, prévia, sistema completo, consultoria, aula, oferta paga ou outro ativo que pareça mais conveniente.
 
 CASE_DATA
 {{CASE_DATA_BLOCK}}

@@ -28,6 +28,13 @@ Critérios de qualidade:
 Contexto estratégico e artefatos disponíveis:
 {{CASE_DATA_BLOCK}}
 
+Campos diretos do contrato de promessa única:
+- Dor única: {{singlePain}}
+- Recompensa gratuita única: {{freeReward}}
+- Promessa do funil: {{funnelPromise}}
+- CTA principal: {{primaryCta}}
+- Objetivo da campanha: {{campaignObjective}}
+
 Artefatos complementares:
 - Wireframe da landing:
 {{landingPageWireframe}}

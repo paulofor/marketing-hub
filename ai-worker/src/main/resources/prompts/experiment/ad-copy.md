@@ -1,5 +1,5 @@
 template_id: ad-copy
-template_version: v1
+template_version: v2
 artifact_target: adCopy
 
 SYSTEM_INSTRUCTIONS
@@ -14,10 +14,11 @@ Prioridade obrigatória de insumos:
 
 Regras fixas da etapa:
 1. O anúncio deve vender o clique, não tentar entregar a landing inteira.
-2. Mantenha a mesma dor, promessa, recompensa gratuita e CTA definidos em `CONTRATO_PROMESSA_UNICA` e `campaignAngle`.
+2. Mantenha a mesma dor, promessa, recompensa gratuita e CTA definidos em `CONTRATO_PROMESSA_UNICA` e `campaignAngle`; o contrato é a fonte comercial soberana quando houver conflito.
 2.1. Se houver divergência entre `campaignAngle` e `CONTRATO_PROMESSA_UNICA`, preserve o contrato de promessa única.
 2.2. Todas as variações devem convidar para a mesma recompensa gratuita; não alternar entre diagnóstico, prévia, material, sistema completo ou outra entrega.
 2.3. `headline`, `description`, `primaryText` e `ctaText` devem conseguir levar naturalmente ao mesmo botão/formulário: “Receber as 3 mensagens” ou o CTA principal recebido.
+2.4. Nenhuma variação pode testar uma promessa/recompensa diferente; a etapa testa ângulos de abertura da mesma promessa única, não novas ofertas.
 3. O anúncio deve falar diretamente com o cliente ideal descrito pelo ângulo de campanha, usando linguagem de reconhecimento imediato.
 4. A copy deve filtrar quem é público alvo de quem não é: quem vive aquela dor/situação precisa se sentir chamado; quem não pertence ao público deve perceber que o anúncio não é para ele.
 5. Crie exatamente 3 variações em `primaryTextVariants`, com labels distintos: `dor`, `resultado` e `prova`.

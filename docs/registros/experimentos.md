@@ -4981,3 +4981,17 @@
 - Causa-raiz: o client criava `StageExecution` antes de validar o contrato mínimo obrigatório; como `StageExecution` rejeita `idJob` nulo, qualquer payload pendente vindo com variação de nome (`idJob`) ou sem identificador quebrava a fila antes do filtro.
 - Correção aplicada: o client passou a aceitar `jobid` e `idJob`, validar `experimentId`, `idJob` e `stageCode` antes de criar a execução e ignorar payload incompleto com log de diagnóstico.
 - Prevenção de recorrência: adicionados testes cobrindo a variação `idJob` do backend e payload pendente incompleto sem gerar `NullPointerException`.
+## 2026-06-21 — Prompts das etapas respeitam contrato de promessa única
+- Solicitação: ajustar as etapas de Ângulo da Campanha, Texto do Anúncio e Gera Prompt Imagens para considerar o novo contrato de promessa única.
+- Ajuste aplicado: os prompts do AI Worker agora tratam o contrato como fonte comercial soberana para dor única, recompensa gratuita, promessa do funil e CTA, preservando a mesma entrega em anúncio, landing e imagens.
+- Prevenção: as instruções passaram a bloquear troca da recompensa por diagnóstico, prévia genérica, consultoria, sistema completo ou outro ativo fora do contrato escolhido.
+
+## 2026-06-21 — Pending de Gera Prompt Imagens recebe promessa única
+- Solicitação: verificar se os dados do contrato de promessa única chegam ao prompt no momento da execução.
+- Causa-raiz encontrada: o prompt base do pipeline já incluía o contrato e as etapas de copy/deliverables já montavam `CASE_DATA`, mas o pending dedicado de Gera Prompt Imagens ainda não expunha `singlePain`, `freeReward`, `funnelPromise`, `primaryCta` e `campaignObjective`.
+- Correção aplicada: o pending de image planning e o builder do AI Worker passam a enviar esses campos e o `CASE_DATA_BLOCK` para o prompt executado.
+
+## 2026-06-21 — Todos os prompts GeraLanding usam promessa única
+- Solicitação: verificar se todos os prompts da etapa GeraLanding usam o contrato de promessa única.
+- Causa-raiz encontrada: Copy, Deliverables e Image Planning já estavam alinhados, mas Wireframe, Design Preset e Quality Review ainda não declaravam explicitamente o contrato; além disso, os pendings dessas etapas não carregavam os campos do contrato.
+- Correção aplicada: todos os prompts GeraLanding passam a receber e respeitar `singlePain`, `freeReward`, `funnelPromise`, `primaryCta` e `campaignObjective`, com propagação nos pendings do backend e nos builders do AI Worker.

@@ -5001,3 +5001,8 @@
 - Causa-raiz: o método auxiliar `firstNonNull` ficou sem a chave de fechamento antes do método `buildCaseDataBlock`, deixando a classe Java com estrutura inválida.
 - Correção aplicada: fechado corretamente o método `firstNonNull`, preservando o contrato de montagem do contexto comercial do prompt.
 - Prevenção de recorrência: a compilação do módulo foi tentada para validar a sintaxe; a validação completa ficou bloqueada por dependência privada do `ads-service` no GitHub Packages sem autenticação no ambiente.
+
+## 2026-06-21 — Tela de novo experimento passa a tratar isca e produto de entrada
+- Solicitação: trocar a visão de recompensa por isca e produto, mantendo padrão de oferta impactante que reduza dor, facilite a vida do cliente e gere desejo intenso pelo produto.
+- Correção aplicada: a tela de novo experimento passou a exibir isca digital e produto de entrada nas opções geradas por IA; o contrato do AI Worker e o schema exigem `productOffer`; o cânone foi atualizado para tratar o experimento como entrada comercial com isca + low-ticket.
+- Prevenção: o prompt agora obriga a IA a conectar isca e produto low-ticket sem hype, promessa absoluta ou página de vendas, preservando plausibilidade e foco em venda.

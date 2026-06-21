@@ -266,6 +266,11 @@ public class ImagePlanningBackendClient implements StageBackendPort<ImagePlannin
         }
     }
 
+    /** Retorna texto vazio quando o backend não entrega um campo textual opcional. */
+    private String emptyWhenNull(Object value) {
+        return value != null ? value.toString() : "";
+    }
+
     /** Normaliza artefatos que podem chegar como JSON textual, objeto estruturado ou valor simples. */
     private Object normalizeJsonArtifact(Object value) {
         if (value instanceof String text) {

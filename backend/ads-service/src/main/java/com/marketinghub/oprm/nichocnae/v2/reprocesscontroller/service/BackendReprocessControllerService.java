@@ -10,7 +10,7 @@ import com.marketinghub.oprm.nichocnae.v2.reprocesscontroller.service.createStag
 import com.marketinghub.oprm.nichocnae.v2.reprocesscontroller.service.failStageExecution.ReprocessControllerFailureRequest;
 import com.marketinghub.oprm.nichocnae.v2.reprocesscontroller.service.failStageExecution.ReprocessControllerFailureResponse;
 import com.marketinghub.oprm.nichocnae.v2.reprocesscontroller.service.pending.ReprocessControllerPendingResponse;
-import com.marketinghub.oprm.nichocnae.v2.service.openaiinteraction.OpenAiInteractionAuditService;
+import com.marketinghub.oprm.nichocnae.v2.service.OpenAiInteractionAuditService;
 import com.marketinghub.repository.jpa.oprm.cnae.OprmNicheCandidateRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.v2.OprmNichoCnaeV2StageExecutionRepository;
 import java.time.Instant;

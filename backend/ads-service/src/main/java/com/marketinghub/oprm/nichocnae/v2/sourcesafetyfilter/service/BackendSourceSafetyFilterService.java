@@ -10,7 +10,7 @@ import com.marketinghub.oprm.nichocnae.v2.sourcesafetyfilter.service.createStage
 import com.marketinghub.oprm.nichocnae.v2.sourcesafetyfilter.service.failStageExecution.SourceSafetyFilterFailureRequest;
 import com.marketinghub.oprm.nichocnae.v2.sourcesafetyfilter.service.failStageExecution.SourceSafetyFilterFailureResponse;
 import com.marketinghub.oprm.nichocnae.v2.sourcesafetyfilter.service.pending.SourceSafetyFilterPendingResponse;
-import com.marketinghub.oprm.nichocnae.v2.service.openaiinteraction.OpenAiInteractionAuditService;
+import com.marketinghub.oprm.nichocnae.v2.service.OpenAiInteractionAuditService;
 import com.marketinghub.repository.jpa.oprm.cnae.OprmNicheCandidateRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.v2.OprmNichoCnaeV2StageExecutionRepository;
 import java.time.Instant;

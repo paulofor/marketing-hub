@@ -1200,3 +1200,9 @@
 - Os callbacks de conclusão das etapas backend da v2 passam a aceitar `openAiInteractions`, permitindo que o executor informe todas as chamadas OpenAI realizadas pela etapa sem depender de JSON solto no `outputPayload`.
 - A tela/listagem de jobs passa a priorizar o custo auditado na tabela própria e mantém fallback para custos legados dentro do `outputPayload`, evitando perda de histórico durante transição.
 - Causa-raiz tratada: custo e auditoria de IA estavam inferidos por payload funcional, o que podia esconder gasto real quando uma etapa esquecesse de incluir chaves de custo no JSON de saída.
+
+## 2026-06-21 — Correção de arquitetura da auditoria OpenAI NichoCNAE v2
+
+- Corrigida a violação ArchUnit que colocava `OpenAiInteractionAuditService` dentro de subpacote de contratos do `service`.
+- A causa-raiz era mistura entre contrato DTO, que deve permanecer como `record` no subpacote de operação, e classe de serviço Spring, que não deve ocupar subpacote reservado a contratos.
+- Prevenção de recorrência: a auditoria continua centralizada no service canônico compartilhado, enquanto o subpacote `openaiinteraction` fica restrito ao record de entrada.

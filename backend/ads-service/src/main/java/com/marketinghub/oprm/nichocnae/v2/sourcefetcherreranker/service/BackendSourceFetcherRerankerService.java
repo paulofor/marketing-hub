@@ -10,7 +10,7 @@ import com.marketinghub.oprm.nichocnae.v2.sourcefetcherreranker.service.createSt
 import com.marketinghub.oprm.nichocnae.v2.sourcefetcherreranker.service.failStageExecution.SourceFetcherRerankerFailureRequest;
 import com.marketinghub.oprm.nichocnae.v2.sourcefetcherreranker.service.failStageExecution.SourceFetcherRerankerFailureResponse;
 import com.marketinghub.oprm.nichocnae.v2.sourcefetcherreranker.service.pending.SourceFetcherRerankerPendingResponse;
-import com.marketinghub.oprm.nichocnae.v2.service.openaiinteraction.OpenAiInteractionAuditService;
+import com.marketinghub.oprm.nichocnae.v2.service.OpenAiInteractionAuditService;
 import com.marketinghub.repository.jpa.oprm.cnae.OprmNicheCandidateRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.v2.OprmNichoCnaeV2StageExecutionRepository;
 import java.time.Instant;

@@ -1,7 +1,8 @@
-package com.marketinghub.oprm.nichocnae.v2.service.openaiinteraction;
+package com.marketinghub.oprm.nichocnae.v2.service;
 
 import com.marketinghub.oprm.nichocnae.v2.OprmNichoCnaeV2OpenAiInteraction;
 import com.marketinghub.oprm.nichocnae.v2.OprmNichoCnaeV2StageExecution;
+import com.marketinghub.oprm.nichocnae.v2.service.openaiinteraction.OpenAiInteractionAuditRequest;
 import com.marketinghub.repository.jpa.oprm.nichocnae.v2.OprmNichoCnaeV2OpenAiInteractionRepository;
 import java.time.Instant;
 import java.util.List;

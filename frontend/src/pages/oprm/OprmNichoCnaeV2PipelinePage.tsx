@@ -133,72 +133,82 @@ function JobsTable({
   }
 
   return (
-    <div className="oprm-v2-job-list">
-      {jobs.map((job) => {
-        const stageName = formatStage(
-          open ? job.currentStageCode : job.lastStageCode,
-        );
-        const simplifiedReason = simplifyDecisionReason(
-          job.finalDecisionReason,
-        );
-        return (
-          <article className="oprm-v2-job-card" key={job.jobId}>
-            <div className="oprm-v2-job-card__header">
-              <div>
-                <div className="oprm-v2-job-card__label">Job</div>
-                <div className="oprm-v2-job-card__title">
-                  {formatJobId(job.jobId)}
-                </div>
-                <div className="oprm-v2-job-card__meta" title={job.jobId}>
-                  Código completo: {job.jobId}
-                </div>
-              </div>
-              <span className={decisionBadgeClass(job, open)}>
-                {explainStatus(job, open)}
-              </span>
-            </div>
-
-            <div className="oprm-v2-job-card__body">
-              <div className="oprm-v2-job-card__main">
-                <div className="oprm-v2-job-card__label">
-                  {open ? "Onde está parado" : "Última etapa"}
-                </div>
-                <div className="oprm-v2-job-card__stage">{stageName}</div>
-                {simplifiedReason ? (
-                  <p className="oprm-v2-job-card__reason mb-0">
-                    {simplifiedReason}
-                  </p>
-                ) : null}
-              </div>
-              <div className="oprm-v2-job-card__action">
-                <div className="oprm-v2-job-card__label">
-                  Resultado e próximo passo
-                </div>
-                <div>{getOperatorNextAction(job, open)}</div>
-                {!open && job.actionLabel && job.actionUrl ? (
-                  <Link
-                    className="btn btn-sm btn-primary mt-3"
-                    to={job.actionUrl}
+    <div className="oprm-v2-job-table-wrap">
+      <table className="table table-sm align-middle mb-0 oprm-v2-job-table">
+        <thead>
+          <tr>
+            <th scope="col">Job</th>
+            <th scope="col">Status</th>
+            <th scope="col">Etapa</th>
+            <th scope="col">Motivo</th>
+            <th scope="col">Próximo passo</th>
+            <th scope="col">IA</th>
+            <th scope="col">Tent.</th>
+            <th scope="col">Atualizado</th>
+          </tr>
+        </thead>
+        <tbody>
+          {jobs.map((job) => {
+            const stageName = formatStage(
+              open ? job.currentStageCode : job.lastStageCode,
+            );
+            const simplifiedReason = simplifyDecisionReason(
+              job.finalDecisionReason,
+            );
+            const nextAction = getOperatorNextAction(job, open);
+            return (
+              <tr key={job.jobId}>
+                <th scope="row">
+                  <div className="oprm-v2-job-table__job" title={job.jobId}>
+                    {formatJobId(job.jobId)}
+                  </div>
+                </th>
+                <td>
+                  <span className={decisionBadgeClass(job, open)}>
+                    {explainStatus(job, open)}
+                  </span>
+                </td>
+                <td>
+                  <span className="oprm-v2-job-table__stage" title={stageName}>
+                    {stageName}
+                  </span>
+                </td>
+                <td>
+                  <span
+                    className="oprm-v2-job-table__text"
+                    title={simplifiedReason ?? "Sem motivo informado"}
                   >
-                    {job.actionLabel}
-                  </Link>
-                ) : null}
-              </div>
-            </div>
-
-            <div className="oprm-v2-job-card__footer">
-              <span>IA: {formatAiCost(job.aiCostUsd)}</span>
-              <span>
-                Tentativa: {job.attemptNumber ?? "—"}
-                {job.technicalRetryNumber
-                  ? ` · retry ${job.technicalRetryNumber}`
-                  : ""}
-              </span>
-              <span>Atualizado: {formatDateTime(job.updatedAt)}</span>
-            </div>
-          </article>
-        );
-      })}
+                    {simplifiedReason ?? "—"}
+                  </span>
+                </td>
+                <td>
+                  <div className="d-flex flex-column align-items-start gap-1">
+                    <span className="oprm-v2-job-table__text" title={nextAction}>
+                      {nextAction}
+                    </span>
+                    {!open && job.actionLabel && job.actionUrl ? (
+                      <Link
+                        className="btn btn-sm btn-primary py-0 px-2"
+                        to={job.actionUrl}
+                      >
+                        {job.actionLabel}
+                      </Link>
+                    ) : null}
+                  </div>
+                </td>
+                <td className="text-nowrap">{formatAiCost(job.aiCostUsd)}</td>
+                <td className="text-nowrap">
+                  {job.attemptNumber ?? "—"}
+                  {job.technicalRetryNumber
+                    ? ` · r${job.technicalRetryNumber}`
+                    : ""}
+                </td>
+                <td className="text-nowrap">{formatDateTime(job.updatedAt)}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }

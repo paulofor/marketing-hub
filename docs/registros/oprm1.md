@@ -1225,3 +1225,8 @@
 - O executor `oprm-coletor-mei` agora monta o payload da próxima etapa preservando o contexto funcional de entrada, removendo apenas o `nextStageCode` antigo e sobrepondo a saída nova da etapa concluída.
 - O `candidate-tournament` passa a tratar ausência total de candidatos como erro de contrato de entrada, não como fracasso comercial, e aceita `rankedCandidates` em reprocessamentos para não perder histórico do torneio.
 - Prevenção de recorrência: adicionados testes cobrindo preservação de candidatos ao criar a próxima pendência, bloqueio de torneio sem candidatos e reprocessamento a partir de candidatos ranqueados.
+
+## 2026-06-21 — Tabela de jobs no pipeline NichoCNAE v2
+
+- Ajustada a tela do pipeline NichoCNAE v2 para apresentar jobs abertos e concluídos em tabela compacta, com textos longos limitados e detalhes completos preservados no tooltip.
+- Causa-raiz tratada: os cards deixavam cada job alto demais e dificultavam comparar rapidamente status, etapa, motivo, custo e atualização.

@@ -10,6 +10,7 @@ import com.marketinghub.oprm.nichocnae.v2.reprocesscontroller.service.createStag
 import com.marketinghub.oprm.nichocnae.v2.reprocesscontroller.service.failStageExecution.ReprocessControllerFailureRequest;
 import com.marketinghub.oprm.nichocnae.v2.reprocesscontroller.service.failStageExecution.ReprocessControllerFailureResponse;
 import com.marketinghub.oprm.nichocnae.v2.reprocesscontroller.service.pending.ReprocessControllerPendingResponse;
+import com.marketinghub.oprm.nichocnae.v2.service.openaiinteraction.OpenAiInteractionAuditService;
 import com.marketinghub.repository.jpa.oprm.cnae.OprmNicheCandidateRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.v2.OprmNichoCnaeV2StageExecutionRepository;
 import java.time.Instant;
@@ -26,19 +27,30 @@ import org.springframework.web.server.ResponseStatusException;
 public class BackendReprocessControllerService {
     public static final String STAGE_CODE = "reprocess-controller";
     private final OprmNichoCnaeV2StageExecutionRepository stageExecutionRepository;
+    private final OpenAiInteractionAuditService openAiInteractionAuditService;
     private final OprmNicheCandidateRepository nicheCandidateRepository;
     private final boolean v2Enabled;
 
     /** Inicializa o service com repositório canônico e feature flag de calibração da v2. */
     public BackendReprocessControllerService(
             OprmNichoCnaeV2StageExecutionRepository stageExecutionRepository,
+            OpenAiInteractionAuditService openAiInteractionAuditService,
             OprmNicheCandidateRepository nicheCandidateRepository,
             @Value("${oprm.nichocnae.v2.enabled:false}") boolean v2Enabled) {
         this.stageExecutionRepository = stageExecutionRepository;
+        this.openAiInteractionAuditService = openAiInteractionAuditService;
         this.nicheCandidateRepository = nicheCandidateRepository;
         this.v2Enabled = v2Enabled;
     }
 
+
+    /** Mantém compatibilidade com testes unitários que não exercem auditoria OpenAI. */
+    public BackendReprocessControllerService(
+            OprmNichoCnaeV2StageExecutionRepository stageExecutionRepository,
+            OprmNicheCandidateRepository nicheCandidateRepository,
+            boolean v2Enabled) {
+        this(stageExecutionRepository, null, nicheCandidateRepository, v2Enabled);
+    }
     /** Lista pendências disponíveis para consumo canônico pelo executor OPRM NichoCNAE v2. */
     @Transactional(readOnly = true)
     public List<ReprocessControllerPendingResponse> pending() {
@@ -62,6 +74,9 @@ public class BackendReprocessControllerService {
         execution.setNextStageCode(request == null ? null : request.nextStageCode());
         execution.setUpdatedAt(Instant.now());
         OprmNichoCnaeV2StageExecution saved = stageExecutionRepository.save(execution);
+        if (openAiInteractionAuditService != null) {
+            openAiInteractionAuditService.record(saved, request == null ? null : request.openAiInteractions());
+        }
         return new ReprocessControllerCompletionResponse(String.valueOf(saved.getId()), saved.getStatus().name(), request == null ? null : request.executionMode(), request == null ? null : request.rewindToStage(), request == null ? null : request.knowledgeVersionTo(), saved.getNextStageCode());
     }
 

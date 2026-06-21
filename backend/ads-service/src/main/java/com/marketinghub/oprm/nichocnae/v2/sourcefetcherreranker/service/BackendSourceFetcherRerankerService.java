@@ -10,6 +10,7 @@ import com.marketinghub.oprm.nichocnae.v2.sourcefetcherreranker.service.createSt
 import com.marketinghub.oprm.nichocnae.v2.sourcefetcherreranker.service.failStageExecution.SourceFetcherRerankerFailureRequest;
 import com.marketinghub.oprm.nichocnae.v2.sourcefetcherreranker.service.failStageExecution.SourceFetcherRerankerFailureResponse;
 import com.marketinghub.oprm.nichocnae.v2.sourcefetcherreranker.service.pending.SourceFetcherRerankerPendingResponse;
+import com.marketinghub.oprm.nichocnae.v2.service.openaiinteraction.OpenAiInteractionAuditService;
 import com.marketinghub.repository.jpa.oprm.cnae.OprmNicheCandidateRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.v2.OprmNichoCnaeV2StageExecutionRepository;
 import java.time.Instant;
@@ -26,19 +27,30 @@ import org.springframework.web.server.ResponseStatusException;
 public class BackendSourceFetcherRerankerService {
     public static final String STAGE_CODE = "source-fetcher-reranker";
     private final OprmNichoCnaeV2StageExecutionRepository stageExecutionRepository;
+    private final OpenAiInteractionAuditService openAiInteractionAuditService;
     private final OprmNicheCandidateRepository nicheCandidateRepository;
     private final boolean v2Enabled;
 
     /** Inicializa o service com repositório canônico e feature flag de calibração da v2. */
     public BackendSourceFetcherRerankerService(
             OprmNichoCnaeV2StageExecutionRepository stageExecutionRepository,
+            OpenAiInteractionAuditService openAiInteractionAuditService,
             OprmNicheCandidateRepository nicheCandidateRepository,
             @Value("${oprm.nichocnae.v2.enabled:false}") boolean v2Enabled) {
         this.stageExecutionRepository = stageExecutionRepository;
+        this.openAiInteractionAuditService = openAiInteractionAuditService;
         this.nicheCandidateRepository = nicheCandidateRepository;
         this.v2Enabled = v2Enabled;
     }
 
+
+    /** Mantém compatibilidade com testes unitários que não exercem auditoria OpenAI. */
+    public BackendSourceFetcherRerankerService(
+            OprmNichoCnaeV2StageExecutionRepository stageExecutionRepository,
+            OprmNicheCandidateRepository nicheCandidateRepository,
+            boolean v2Enabled) {
+        this(stageExecutionRepository, null, nicheCandidateRepository, v2Enabled);
+    }
     /** Lista pendências disponíveis para consumo canônico pelo executor OPRM NichoCNAE v2. */
     @Transactional(readOnly = true)
     public List<SourceFetcherRerankerPendingResponse> pending() {
@@ -63,6 +75,9 @@ public class BackendSourceFetcherRerankerService {
         execution.setNextStageCode(request == null ? null : request.nextStageCode());
         execution.setUpdatedAt(Instant.now());
         OprmNichoCnaeV2StageExecution saved = stageExecutionRepository.save(execution);
+        if (openAiInteractionAuditService != null) {
+            openAiInteractionAuditService.record(saved, request == null ? null : request.openAiInteractions());
+        }
         return new SourceFetcherRerankerCompletionResponse(
                 String.valueOf(saved.getId()),
                 saved.getStatus().name(),

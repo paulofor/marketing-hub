@@ -22,6 +22,13 @@ public final class CandidateTournamentProcessor implements StageProcessor {
         if (candidates.isEmpty()) {
             candidates = mapList(context.input().get("candidateEvidence"));
         }
+        if (candidates.isEmpty()) {
+            candidates = mapList(context.input().get("rankedCandidates"));
+        }
+        if (candidates.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Candidate Tournament exige candidates, candidateEvidence ou rankedCandidates com pelo menos um candidato.");
+        }
         List<Map<String, Object>> ranked = candidates.stream()
                 .map(this::scoreCandidate)
                 .sorted(Comparator.comparingDouble(this::scoreOf).reversed())

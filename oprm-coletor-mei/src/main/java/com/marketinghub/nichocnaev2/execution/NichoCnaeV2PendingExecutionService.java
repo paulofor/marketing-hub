@@ -67,7 +67,7 @@ public class NichoCnaeV2PendingExecutionService {
             String outputPayload = backendClient.toJson(result.output());
             Map<String, Object> completion = completionRequest(stage.stageCode(), result, outputPayload);
             backendClient.complete(stage, pending, completion);
-            createNextStageIfNeeded(stage, pending, result, outputPayload);
+            createNextStageIfNeeded(stage, pending, input, result);
             log.info(
                     "Pendência NichoCNAE v2 concluída (stage={}, stageExecutionId={}, jobId={}, status={}, nextStageCode={})",
                     stage.stageCode(),
@@ -191,8 +191,8 @@ public class NichoCnaeV2PendingExecutionService {
     private void createNextStageIfNeeded(
             NichoCnaeV2StageDefinition currentStage,
             NichoCnaeV2PendingExecution pending,
-            StageResult result,
-            String outputPayload) {
+            Map<String, Object> input,
+            StageResult result) {
         String nextStageCode = String.valueOf(result.output().getOrDefault("nextStageCode", "")).trim();
         if (nextStageCode.isBlank() && "candidate-generator".equals(currentStage.stageCode())) {
             nextStageCode = "source-safety-filter";
@@ -215,12 +215,22 @@ public class NichoCnaeV2PendingExecutionService {
                     pending.stageExecutionId());
             return;
         }
+        String nextStageInputPayload = backendClient.toJson(nextStageInputPayload(input, result, nextStageCode));
         backendClient.createNextStage(
                 nextStage.get(),
                 pending,
-                outputPayload,
+                nextStageInputPayload,
                 integer(result.output().get("attemptNumber")),
                 integer(result.output().get("knowledgeVersionTo")));
+    }
+
+    /** Preserva o contexto funcional acumulado e sobrepõe apenas a saída nova da etapa concluída. */
+    private Map<String, Object> nextStageInputPayload(Map<String, Object> input, StageResult result, String nextStageCode) {
+        Map<String, Object> payload = new LinkedHashMap<>(input);
+        payload.remove("nextStageCode");
+        payload.putAll(result.output());
+        payload.put("nextStageCode", nextStageCode);
+        return payload;
     }
 
     /** Converte metadado opcional da etapa para inteiro sem quebrar avanço quando ausente. */

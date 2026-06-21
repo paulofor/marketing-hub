@@ -1218,3 +1218,10 @@
 - Removido o `OpenAiInteractionAuditService` para alinhar o backend ao padrão de leitura/escrita usado em GeraLanding: cada service canônico de etapa apenas persiste a auditoria recebida do executor no callback de conclusão.
 - A causa-raiz era a criação de um service auxiliar compartilhado no backend para uma responsabilidade que não deveria virar controle operacional nem nova camada de orquestração; a execução OpenAI permanece no executor OPRM.
 - Prevenção de recorrência: o teste da etapa `candidate-generator` agora cobre a gravação da auditoria OpenAI no próprio service canônico, sem depender de classe auxiliar fora da etapa.
+
+## 2026-06-21 — NichoCNAE v2 preserva candidatos entre etapas do executor
+
+- Corrigida a causa-raiz dos jobs NichoCNAE v2 encerrarem com `candidatos=0`: o executor criava a próxima pendência usando somente o output da etapa atual, apagando candidatos e contexto acumulado gerados nas etapas anteriores.
+- O executor `oprm-coletor-mei` agora monta o payload da próxima etapa preservando o contexto funcional de entrada, removendo apenas o `nextStageCode` antigo e sobrepondo a saída nova da etapa concluída.
+- O `candidate-tournament` passa a tratar ausência total de candidatos como erro de contrato de entrada, não como fracasso comercial, e aceita `rankedCandidates` em reprocessamentos para não perder histórico do torneio.
+- Prevenção de recorrência: adicionados testes cobrindo preservação de candidatos ao criar a próxima pendência, bloqueio de torneio sem candidatos e reprocessamento a partir de candidatos ranqueados.

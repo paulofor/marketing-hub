@@ -1,5 +1,6 @@
 package com.marketinghub.nichocnaev2.execution;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -8,6 +9,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.List;
 import java.util.Map;
+import org.mockito.ArgumentCaptor;
 import org.junit.jupiter.api.Test;
 
 /** Valida a classificação operacional de falhas feita no executor NichoCNAE v2. */
@@ -79,6 +81,50 @@ class NichoCnaeV2PendingExecutionServiceTest {
         verify(backendClient).complete(any(NichoCnaeV2StageDefinition.class), eq(pending), any());
         verify(backendClient).createNextStage(any(NichoCnaeV2StageDefinition.class), eq(pending), any(), eq(null), eq(null));
     }
+
+    /** Deve preservar candidatos e trocar apenas o próximo estágio ao criar a pendência seguinte. */
+    @Test
+    void preservesAccumulatedContextWhenCreatingNextStage() {
+        NichoCnaeV2BackendClient backendClient = mock(NichoCnaeV2BackendClient.class);
+        NichoCnaeV2StageDefinitions stageDefinitions = new NichoCnaeV2StageDefinitions();
+        NichoCnaeV2PendingExecutionService service = new NichoCnaeV2PendingExecutionService(backendClient, stageDefinitions);
+        NichoCnaeV2PendingExecution pending = new NichoCnaeV2PendingExecution(
+                "133",
+                "nichocnae-v2-candidate-2-job-7",
+                "4781400",
+                "Comércio varejista de artigos do vestuário e acessórios",
+                null,
+                2L,
+                1,
+                0,
+                1,
+                false,
+                "{\"nextStageCode\":\"source-safety-filter\"}",
+                Map.of());
+        Map<String, Object> input = Map.of(
+                "nextStageCode", "source-safety-filter",
+                "candidateUrls", List.of("https://www.gov.br/empresas-e-negocios/pt-br/empreendedor"),
+                "candidateCount", 1,
+                "candidates", List.of(Map.of("candidateId", "C1", "job", "VESTUARIO_ATENDIMENTO_LOJA")));
+        when(backendClient.listPending(any())).thenAnswer(invocation -> {
+            NichoCnaeV2StageDefinition stage = invocation.getArgument(0);
+            return "source-safety-filter".equals(stage.stageCode()) ? List.of(pending) : List.of();
+        });
+        when(backendClient.parseInput(pending.inputPayload())).thenReturn(input);
+        when(backendClient.toJson(any())).thenAnswer(invocation -> invocation.getArgument(0).toString());
+
+        service.processAllPending();
+
+        ArgumentCaptor<String> payloadCaptor = ArgumentCaptor.forClass(String.class);
+        verify(backendClient).createNextStage(
+                any(NichoCnaeV2StageDefinition.class), eq(pending), payloadCaptor.capture(), eq(null), eq(null));
+        assertThat(payloadCaptor.getValue())
+                .contains("candidates")
+                .contains("candidateCount=1")
+                .contains("nextStageCode=adaptive-query-planner")
+                .doesNotContain("nextStageCode=source-safety-filter");
+    }
+
     /** Deve propagar tentativa e versão calculadas pelo controlador de reprocessamento para a próxima pendência. */
     @Test
     void propagatesReprocessAttemptAndKnowledgeVersionToNextStage() {

@@ -1,0 +1,35 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-21-sync-experiment-creative-approved
+      author: marketinghub
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: experiment
+        - tableExists:
+            tableName: creative
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE experiment e
+              LEFT JOIN (
+                SELECT experiment_id, COUNT(*) AS ready_count
+                FROM creative
+                WHERE status = 'READY'
+                GROUP BY experiment_id
+              ) ready_creatives ON ready_creatives.experiment_id = e.id
+              SET e.creative_approved = CASE
+                WHEN COALESCE(ready_creatives.ready_count, 0) > 0 THEN TRUE
+                ELSE FALSE
+              END;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              SELECT 1;

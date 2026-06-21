@@ -134,12 +134,12 @@ public class ExperimentReadinessService {
                 experiment.getHypothesisRef() != null ? experiment.getHypothesisRef().getId() : null).isEmpty();
     }
 
+    /** Verifica a aprovação real dos criativos pela fonte canônica: registros READY. */
     private boolean hasApprovedCreative(Experiment experiment) {
         if (experiment == null || experiment.getId() == null) {
             return false;
         }
-        return experiment.isCreativeApproved()
-                && creativeRepository.existsByExperimentIdAndStatus(experiment.getId(), CreativeStatus.READY);
+        return creativeRepository.existsByExperimentIdAndStatus(experiment.getId(), CreativeStatus.READY);
     }
 
     private boolean hasReadyLeadPortalFlow(Experiment experiment) {

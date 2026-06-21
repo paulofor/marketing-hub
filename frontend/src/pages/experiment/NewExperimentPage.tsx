@@ -83,10 +83,9 @@ export default function NewExperimentPage() {
     primaryVariable: "",
     primaryMetric: "",
     singlePain: "",
-    freeReward:
-      "3 mensagens prontas para confirmar horário, pedir sinal e reagendar sem climão",
-    funnelPromise: "Receber as 3 mensagens",
-    primaryCta: "Receber as 3 mensagens",
+    freeReward: "",
+    funnelPromise: "",
+    primaryCta: "",
   });
   const [autoSampleSize, setAutoSampleSize] = useState(true);
   const [promiseOptions, setPromiseOptions] = useState<PromiseOption[]>([]);
@@ -139,10 +138,6 @@ export default function NewExperimentPage() {
       ...prev,
       nicheId: String(draft.nicheId),
       hypothesisId: draft.hypothesisId,
-      singlePain: draft.currentSinglePain ?? prev.singlePain,
-      freeReward: draft.currentFreeReward ?? prev.freeReward,
-      funnelPromise: draft.currentFunnelPromise ?? prev.funnelPromise,
-      primaryCta: draft.currentPrimaryCta ?? prev.primaryCta,
     }));
     setPromiseRequestId(draft.requestId);
     setPromiseOptions(draft.options ?? []);
@@ -206,10 +201,6 @@ export default function NewExperimentPage() {
     const response = await generatePromiseOptions.mutateAsync({
       nicheId: Number(form.nicheId),
       hypothesisId: form.hypothesisId,
-      currentSinglePain: form.singlePain || undefined,
-      currentFreeReward: form.freeReward || undefined,
-      currentFunnelPromise: form.funnelPromise || undefined,
-      currentPrimaryCta: form.primaryCta || undefined,
     });
     setPromiseRequestId(response.requestId);
     setPromiseOptions(response.options ?? []);
@@ -344,10 +335,9 @@ export default function NewExperimentPage() {
         primaryVariable: "",
         primaryMetric: "",
         singlePain: "",
-        freeReward:
-          "3 mensagens prontas para confirmar horário, pedir sinal e reagendar sem climão",
-        funnelPromise: "Receber as 3 mensagens",
-        primaryCta: "Receber as 3 mensagens",
+        freeReward: "",
+        funnelPromise: "",
+        primaryCta: "",
       });
       setAutoSampleSize(true);
       setAutoMde(true);
@@ -523,51 +513,33 @@ export default function NewExperimentPage() {
               ))}
             </div>
           )}
-          <label className="form-label" htmlFor="singlePain">
-            Dor única <span className="text-danger">*</span>
-          </label>
-          <input
-            id="singlePain"
-            className="form-control mb-2"
-            placeholder="Ex.: Clientes desmarcam horário em cima da hora"
-            value={form.singlePain}
-            onChange={(e) =>
-              setForm((prev) => ({ ...prev, singlePain: e.target.value }))
-            }
-          />
-          <label className="form-label" htmlFor="freeReward">
-            Recompensa gratuita única <span className="text-danger">*</span>
-          </label>
-          <input
-            id="freeReward"
-            className="form-control mb-2"
-            value={form.freeReward}
-            onChange={(e) =>
-              setForm((prev) => ({ ...prev, freeReward: e.target.value }))
-            }
-          />
-          <label className="form-label" htmlFor="funnelPromise">
-            Promessa do funil <span className="text-danger">*</span>
-          </label>
-          <input
-            id="funnelPromise"
-            className="form-control mb-2"
-            value={form.funnelPromise}
-            onChange={(e) =>
-              setForm((prev) => ({ ...prev, funnelPromise: e.target.value }))
-            }
-          />
-          <label className="form-label" htmlFor="primaryCta">
-            CTA principal <span className="text-danger">*</span>
-          </label>
-          <input
-            id="primaryCta"
-            className="form-control mb-2"
-            value={form.primaryCta}
-            onChange={(e) =>
-              setForm((prev) => ({ ...prev, primaryCta: e.target.value }))
-            }
-          />
+          {form.singlePain &&
+          form.freeReward &&
+          form.funnelPromise &&
+          form.primaryCta ? (
+            <div className="alert alert-success py-2 mb-3" role="status">
+              <div className="fw-semibold mb-1">
+                Contrato selecionado pela IA
+              </div>
+              <div className="small">
+                <strong>Dor:</strong> {form.singlePain}
+              </div>
+              <div className="small">
+                <strong>Recompensa:</strong> {form.freeReward}
+              </div>
+              <div className="small">
+                <strong>Promessa:</strong> {form.funnelPromise}
+              </div>
+              <div className="small">
+                <strong>CTA:</strong> {form.primaryCta}
+              </div>
+            </div>
+          ) : (
+            <div className="alert alert-secondary py-2 mb-3" role="status">
+              Solicite as opções por IA e escolha uma delas para fixar a dor, a
+              recompensa, a promessa e o CTA do experimento.
+            </div>
+          )}
           <div className="alert alert-info py-2 mb-0">
             Objetivo da campanha fixo: <strong>Leads</strong>. Não use Tráfego
             nem otimização para cliques neste fluxo.

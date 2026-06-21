@@ -1,0 +1,104 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-21-01-oprm-nichocnae-v2-openai-interaction
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            - tableExists:
+                tableName: oprm_nichocnae_v2_openai_interaction
+      changes:
+        - createTable:
+            tableName: oprm_nichocnae_v2_openai_interaction
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_oprm_nichocnae_v2_openai_interaction
+                    nullable: false
+              - column:
+                  name: stage_execution_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: job_id
+                  type: VARCHAR(96)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: stage_code
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: attempt_number
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: technical_retry_number
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: model
+                  type: VARCHAR(128)
+              - column:
+                  name: service_tier
+                  type: VARCHAR(32)
+              - column:
+                  name: input_tokens
+                  type: INT
+              - column:
+                  name: output_tokens
+                  type: INT
+              - column:
+                  name: total_tokens
+                  type: INT
+              - column:
+                  name: cost_usd
+                  type: DECIMAL(12,6)
+              - column:
+                  name: openai_response_id
+                  type: VARCHAR(128)
+              - column:
+                  name: raw_request
+                  type: LONGTEXT
+              - column:
+                  name: raw_response
+                  type: LONGTEXT
+              - column:
+                  name: status
+                  type: VARCHAR(40)
+              - column:
+                  name: error_message
+                  type: LONGTEXT
+              - column:
+                  name: created_at
+                  type: DATETIME(6)
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: oprm_nichocnae_v2_openai_interaction
+            baseColumnNames: stage_execution_id
+            constraintName: fk_oprm_nichocnae_v2_openai_interaction_stage
+            referencedTableName: oprm_nichocnae_v2_stage_execution
+            referencedColumnNames: id
+        - createIndex:
+            tableName: oprm_nichocnae_v2_openai_interaction
+            indexName: idx_oprm_nichocnae_v2_openai_job
+            columns:
+              - column:
+                  name: job_id
+        - createIndex:
+            tableName: oprm_nichocnae_v2_openai_interaction
+            indexName: idx_oprm_nichocnae_v2_openai_stage_execution
+            columns:
+              - column:
+                  name: stage_execution_id

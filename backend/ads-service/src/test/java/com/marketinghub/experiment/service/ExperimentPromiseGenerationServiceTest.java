@@ -73,12 +73,13 @@ class ExperimentPromiseGenerationServiceTest {
         Hypothesis hypothesis = Hypothesis.builder()
                 .id(hypothesisId)
                 .title("Hipótese de agenda")
-                .problem("Clientes somem depois do atendimento")
+                .problem("{\"summary\":\"Clientes somem depois do atendimento\",\"evidenceSignals\":[\"evidência extensa que não deve entrar no prompt\"]}")
                 .promise("Agenda mais previsível")
                 .mechanism("Régua de manutenção")
                 .uniqueMechanism("Fluxo de manutenção guiada")
                 .entrega("Mensagens prontas")
                 .frameworkJson("{\"pain\":\"clientes somem\"}")
+                .prompt("Prompt bruto antigo que não deve entrar")
                 .build();
         when(nicheRepository.findById(7L)).thenReturn(Optional.of(niche));
         when(hypothesisRepository.findById(hypothesisId)).thenReturn(Optional.of(hypothesis));
@@ -89,7 +90,7 @@ class ExperimentPromiseGenerationServiceTest {
         });
 
         var response = service.generate(new GenerateExperimentPromiseOptionsRequest(
-                7L, hypothesisId, null, null, null, null, null));
+                7L, hypothesisId, "dor digitada", "recompensa digitada", "promessa digitada", "cta digitado", null));
 
         assertThat(response.requestId()).isEqualTo(123L);
         assertThat(response.status()).isEqualTo(ExperimentPromiseGenerationRequestStatus.PENDING.name());
@@ -99,9 +100,12 @@ class ExperimentPromiseGenerationServiceTest {
         verify(requestRepository).save(requestCaptor.capture());
         ExperimentPromiseGenerationRequest persisted = requestCaptor.getValue();
         assertThat(persisted.getPrompt())
-                .contains("Nicho selecionado", "Promessa validada", "Hipótese selecionada", "Fluxo de manutenção guiada");
+                .contains("Nicho selecionado", "Hipótese selecionada", "Clientes somem depois do atendimento")
+                .doesNotContain("evidência extensa", "Prompt bruto antigo", "dor digitada", "recompensa digitada");
+        assertThat(persisted.getPrompt().length()).isLessThan(8_000);
         assertThat(persisted.getStatus()).isEqualTo(ExperimentPromiseGenerationRequestStatus.PENDING);
     }
+
     /** Deve retornar o status persistido para a tela acompanhar a solicitação até a conclusão. */
     @Test
     void shouldGetPersistedPromiseOptionsRequestStatus() {

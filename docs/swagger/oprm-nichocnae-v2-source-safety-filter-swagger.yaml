@@ -27,7 +27,7 @@ paths:
             format: int64
       responses:
         "200":
-          description: Conclusão registrada com decisão de segurança e próxima etapa
+          description: Conclusão registrada; callbacks de etapas que usam OpenAI podem enviar openAiInteractions com modelo, service tier, tokens, custo, request e response brutos para auditoria. com decisão de segurança e próxima etapa
   /api/internal/oprm/nichocnae/v2/source-safety-filter/stage-executions/{stageExecutionId}/fail:
     post:
       summary: Registra falha e retry técnico da etapa source-safety-filter v2

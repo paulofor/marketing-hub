@@ -101,6 +101,47 @@ class PresetDesignBackendClientTest {
                 .contains("LANDING_PAGE_DESIGN_PRESET");
     }
 
+
+    /** Deve montar dados do prompt sem NullPointerException quando o backend omite contexto opcional. */
+    @Test
+    void listPendingShouldTolerateMissingOptionalPromptContext() throws Exception {
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "application/json")
+                .setBody("""
+                        [
+                          {
+                            "experimentId": 12,
+                            "jobid": "job-ia-1",
+                            "stageCode": "landing-page-design-preset",
+                            "executionRequestedAt": "2026-05-29T10:00:00Z",
+                            "experiment": {"id": 12, "name": "Experimento Design"}
+                          }
+                        ]
+                        """));
+        PresetDesignBackendClient client = new PresetDesignBackendClient(
+                WebClient.builder(),
+                new PresetDesignWorkerProperties(
+                        true,
+                        5,
+                        server.url("/").toString(),
+                        "/api",
+                        "prompts/geralanding/landing-page-design-preset.md",
+                        "prompts/geralanding/landing-page-design-preset-schema.json",
+                        "experiment_pipeline_landing_page_design_preset",
+                        "gpt-5.5",
+                        Duration.ofSeconds(5)),
+                objectMapper);
+
+        List<StageExecution<PresetDesignInput>> pending = client.listPending(5);
+
+        assertThat(pending).hasSize(1);
+        assertThat(pending.getFirst().input().promptData())
+                .containsEntry("landingPageQualityReview", Map.of())
+                .containsEntry("PAIN_JSON", Map.of())
+                .containsEntry("RESULT_JSON", Map.of());
+    }
+
     /** Deve enviar prompt, schema e request cru no callback recebe-prompt. */
     @Test
     void markDispatchedShouldSendPromptSchemaAndRawRequestToRecebePrompt() throws Exception {

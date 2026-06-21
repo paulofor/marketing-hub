@@ -225,6 +225,9 @@ export function useUpdateMoisSalesLibraryPageStatus(workspaceId: string) {
         queryKey: ["mois", "sales-library", "pages", workspaceId],
       });
       void queryClient.invalidateQueries({
+        queryKey: ["mois", "sales-library", "page", variables.pageId],
+      });
+      void queryClient.invalidateQueries({
         queryKey: ["mois", "sales-library", "analysis", variables.pageId],
       });
       void queryClient.invalidateQueries({
@@ -359,9 +362,10 @@ export function useMoisSalesLibraryMarketWarmupSearchAttempts(
     ],
     enabled: Boolean(pageId) && enabled,
     queryFn: async () => {
-      const { data } = await axios.get<MoisMarketWarmupSearchAttemptListResponse>(
-        `/api/mois/sales-library/pages/${pageId}/market-warmup/search-attempts`,
-      );
+      const { data } =
+        await axios.get<MoisMarketWarmupSearchAttemptListResponse>(
+          `/api/mois/sales-library/pages/${pageId}/market-warmup/search-attempts`,
+        );
       return data;
     },
   });

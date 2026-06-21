@@ -144,8 +144,48 @@ class BackendCandidateGeneratorServiceTest {
         assertThat(result.completedJobs().getFirst().finalDecisionLabel()).isEqualTo("Encerrado sem subnicho viável");
         assertThat(result.completedJobs().getFirst().finalDecisionReason())
                 .isEqualTo("O torneio terminou sem finalistas viáveis; candidatos=0, finalistas=0.");
+        assertThat(result.completedJobs().getFirst().outcomeStatus()).isEqualTo("FAILURE");
+        assertThat(result.completedJobs().getFirst().outcomeMessage()).contains("Fracasso controlado");
+        assertThat(result.completedJobs().getFirst().actionLabel()).isEqualTo("Pesquisar outro recorte");
+        assertThat(result.completedJobs().getFirst().actionUrl()).isEqualTo("/oprm/cnaes/4781400");
         assertThat(result.completedJobs().getFirst().usedAi()).isTrue();
         assertThat(result.completedJobs().getFirst().aiCostUsd()).isEqualByComparingTo(new BigDecimal("0.015"));
+    }
+
+    /** Deve manter a decisão real do torneio quando o reprocessamento encerra o job sem ganho de informação. */
+    @Test
+    void listJobsForCnaeExplainsNoViableSubnicheAfterReprocessControllerEnd() {
+        BackendCandidateGeneratorService service = service(true, false);
+        OprmNichoCnaeV2StageExecution tournament = execution(121L, 3, 0, 3);
+        tournament.setJobId("job-reprocessado");
+        tournament.setCnaeCode("4781400");
+        tournament.setStageCode("candidate-tournament");
+        tournament.setStatus(OprmNichoCnaeV2StageExecutionStatus.COMPLETED);
+        tournament.setOutputPayload(
+                "{\"tournamentDecision\":\"NO_VIABLE_SUBNICHE\",\"candidateCount\":0,\"finalistCount\":0}");
+        tournament.setUpdatedAt(Instant.parse("2026-06-20T23:44:53Z"));
+        OprmNichoCnaeV2StageExecution reprocessEnd = execution(122L, 3, 0, 3);
+        reprocessEnd.setJobId("job-reprocessado");
+        reprocessEnd.setCnaeCode("4781400");
+        reprocessEnd.setStageCode("reprocess-controller");
+        reprocessEnd.setStatus(OprmNichoCnaeV2StageExecutionStatus.COMPLETED);
+        reprocessEnd.setOutputPayload(
+                "{\"executionMode\":\"STOP_NO_INFORMATION_GAIN\",\"nextStageCode\":\"end\"}");
+        reprocessEnd.setUpdatedAt(Instant.parse("2026-06-20T23:44:54Z"));
+        when(stageExecutionRepository.findByCnaeCodeOrderByUpdatedAtDesc("4781400"))
+                .thenReturn(List.of(reprocessEnd, tournament));
+
+        var result = service.listJobsForCnae("4781400");
+
+        assertThat(result.completedJobs()).hasSize(1);
+        assertThat(result.completedJobs().getFirst().finalDecision()).isEqualTo("NO_VIABLE_SUBNICHE");
+        assertThat(result.completedJobs().getFirst().finalDecisionLabel()).isEqualTo("Encerrado sem subnicho viável");
+        assertThat(result.completedJobs().getFirst().finalDecisionReason())
+                .isEqualTo("O torneio terminou sem finalistas viáveis; candidatos=0, finalistas=0.");
+        assertThat(result.completedJobs().getFirst().outcomeStatus()).isEqualTo("FAILURE");
+        assertThat(result.completedJobs().getFirst().outcomeMessage())
+                .contains("este job terminou sem subnicho viável");
+        assertThat(result.completedJobs().getFirst().actionLabel()).isEqualTo("Pesquisar outro recorte");
     }
 
     /** Ciclo 74: deve transformar falha de infraestrutura em retry técnico sem nova tentativa cognitiva. */

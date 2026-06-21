@@ -144,6 +144,26 @@ components:
           type: string
           nullable: true
           description: Motivo curto da decisão final, preservando contagens relevantes.
+        outcomeStatus:
+          type: string
+          nullable: true
+          enum:
+            - SUCCESS
+            - FAILURE
+            - IN_PROGRESS
+          description: Classificação simples para a UI exibir sucesso, fracasso ou andamento sem inferência local.
+        outcomeMessage:
+          type: string
+          nullable: true
+          description: Mensagem principal de negócio explicando o que aconteceu e o que fazer.
+        actionLabel:
+          type: string
+          nullable: true
+          description: Texto do comando principal recomendado para o usuário.
+        actionUrl:
+          type: string
+          nullable: true
+          description: URL interna do comando principal para visualizar o nicho, materializar ou pesquisar outro recorte.
         usedAi:
           type: boolean
           description: Indica se o job registrou custo ou sinal explícito de uso de IA.

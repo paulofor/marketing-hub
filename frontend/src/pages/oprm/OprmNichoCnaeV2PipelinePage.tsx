@@ -73,6 +73,8 @@ function formatJobId(jobId: string) {
 
 function explainStatus(job: OprmNichoCnaeV2JobSummary, open: boolean) {
   if (open) return "Aguardando processamento";
+  if (job.outcomeStatus === "FAILURE") return "Fracasso";
+  if (job.outcomeStatus === "SUCCESS") return "Sucesso";
   if (job.lastStageStatus === "FAILED") return "Falhou e parou";
   if (job.finalDecision === "NO_VIABLE_SUBNICHE") return "Sem subnicho viável";
   return job.finalDecisionLabel ?? job.finalDecision ?? "Concluído";
@@ -96,6 +98,7 @@ function simplifyDecisionReason(reason: string | null | undefined) {
 
 function getOperatorNextAction(job: OprmNichoCnaeV2JobSummary, open: boolean) {
   if (open) return "Aguardar o executor continuar este job.";
+  if (job.outcomeMessage) return job.outcomeMessage;
   if (job.lastStageStatus === "FAILED") {
     return "Corrigir a falha técnica antes de iniciar novo job.";
   }
@@ -107,6 +110,8 @@ function getOperatorNextAction(job: OprmNichoCnaeV2JobSummary, open: boolean) {
 
 function decisionBadgeClass(job: OprmNichoCnaeV2JobSummary, open: boolean) {
   if (open) return "badge text-bg-warning";
+  if (job.outcomeStatus === "FAILURE") return "badge text-bg-danger";
+  if (job.outcomeStatus === "SUCCESS") return "badge text-bg-success";
   if (job.finalDecision === "NO_VIABLE_SUBNICHE") {
     return "badge text-bg-secondary";
   }
@@ -166,8 +171,18 @@ function JobsTable({
                 ) : null}
               </div>
               <div className="oprm-v2-job-card__action">
-                <div className="oprm-v2-job-card__label">Próximo passo</div>
+                <div className="oprm-v2-job-card__label">
+                  Resultado e próximo passo
+                </div>
                 <div>{getOperatorNextAction(job, open)}</div>
+                {!open && job.actionLabel && job.actionUrl ? (
+                  <Link
+                    className="btn btn-sm btn-primary mt-3"
+                    to={job.actionUrl}
+                  >
+                    {job.actionLabel}
+                  </Link>
+                ) : null}
               </div>
             </div>
 
@@ -485,8 +500,9 @@ export default function OprmNichoCnaeV2PipelinePage() {
                   <span className="oprm-v2-job-panel__eyebrow">Histórico</span>
                   <h2 className="h5 mb-1">Jobs concluídos</h2>
                   <p className="text-secondary small mb-0">
-                    Histórico dos jobs encerrados para evitar repetir pesquisa
-                    sem aprendizado.
+                    Histórico dos jobs encerrados com mensagem clara de sucesso
+                    ou fracasso e o comando para visualizar ou materializar o
+                    nicho.
                   </p>
                 </div>
                 <span

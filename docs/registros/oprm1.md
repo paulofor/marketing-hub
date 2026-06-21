@@ -1184,3 +1184,5 @@
 - O controlador de reprocessamento passa a reconhecer a decisão do torneio e devolver a menor etapa necessária (`candidate-tournament`) com nova tentativa cognitiva e nova versão de conhecimento.
 - Causa-raiz corrigida: o torneio sem finalistas emitia `nextStageCode` vazio, então o executor não criava a etapa de reprocessamento prevista na documentação operacional.
 - Prevenção de recorrência: testes cobrem o encaminhamento do torneio para reprocessamento, a leitura de `NO_VIABLE_SUBNICHE` pelo controlador e a propagação de tentativa/versão para a próxima pendência.
+
+- 2026-06-20 00:00:00 (UTC): ajustada a tela e o contrato de jobs OPRM NichoCNAE v2 para exibir mensagem clara de sucesso ou fracasso no job concluído e CTA do backend para visualizar nicho materializado, abrir o CNAE para materialização ou pesquisar outro recorte, evitando que o usuário fique sem próximo passo.

@@ -1,6 +1,7 @@
 package com.marketinghub.oprm.nichocnae.v2.candidategenerator.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -89,12 +90,12 @@ class BackendCandidateGeneratorServiceTest {
         assertThat(result.getFirst().materializationEnabled()).isFalse();
     }
 
-
     /** Deve gravar novo job manual para o CNAE selecionado sem executar o fluxo no backend. */
     @Test
     void createForCnaePersistsNewPendingJobForSelectedCnae() {
         BackendCandidateGeneratorService service = service(true, false);
         OprmNicheCandidate candidate = candidate(4781400L, "4781400");
+        when(stageExecutionRepository.countByCnaeCodeAndStatusIn(eq("4781400"), any())).thenReturn(0L);
         when(nicheCandidateRepository.findManualRoutineResearchCandidateByCnaeCode(eq("4781400"), any(Pageable.class)))
                 .thenReturn(List.of(candidate));
         when(stageExecutionRepository.countBySourceNicheIdAndStageCode(4781400L, "candidate-generator"))
@@ -113,6 +114,19 @@ class BackendCandidateGeneratorServiceTest {
         assertThat(result.cnaeCode()).isEqualTo("4781400");
     }
 
+    /** Deve impedir novo job manual quando já existe execução aberta para o mesmo CNAE. */
+    @Test
+    void createForCnaeBlocksParallelOpenJobForSameCnae() {
+        BackendCandidateGeneratorService service = service(true, false);
+        when(stageExecutionRepository.countByCnaeCodeAndStatusIn(eq("4781400"), any())).thenReturn(1L);
+
+        assertThatThrownBy(() -> service.createForCnae("4781400"))
+                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+                .hasMessageContaining("Já existe job NichoCNAE v2 aberto para este CNAE");
+
+        verify(nicheCandidateRepository, never()).findManualRoutineResearchCandidateByCnaeCode(any(), any(Pageable.class));
+        verify(stageExecutionRepository, never()).save(any(OprmNichoCnaeV2StageExecution.class));
+    }
 
     /** Deve separar jobs do CNAE entre abertos com etapa atual e encerrados pelo histórico persistido. */
     @Test

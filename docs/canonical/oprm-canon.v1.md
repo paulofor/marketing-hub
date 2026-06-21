@@ -329,3 +329,10 @@ Evitar fechamento prematuro de `import run` que destrói a totalização de mark
 
 - As notas do gate devem conter pelo menos um código estável de próximo movimento e uma descrição legível para operação.
 - Testes unitários devem cobrir que reprovações por solução, fonte antiga, desvio corporativo, definição fraca de público executor, aquisição/canais observáveis insuficientes e rotina genérica recebem movimentos diferentes e coerentes com a causa-raiz.
+
+## Regra de concorrência NichoCNAE v2 por CNAE
+
+- Para cada CNAE, pode existir no máximo um job NichoCNAE v2 operacionalmente aberto ao mesmo tempo.
+- Estados considerados abertos: `PENDING`, `RUNNING` e `TECHNICAL_RETRY_SCHEDULED` em `oprm_nichocnae_v2_stage_execution`.
+- O backend deve bloquear a criação manual de novo job v2 quando já existir job aberto para o mesmo `cnae_code`, evitando concorrência, custo duplicado de IA e confusão na tela administrativa.
+- Jobs antigos presos em estado aberto devem ser encerrados como falha operacional auditável antes de liberar uma nova execução para o CNAE.

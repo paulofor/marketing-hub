@@ -1230,3 +1230,9 @@
 
 - Ajustada a tela do pipeline NichoCNAE v2 para apresentar jobs abertos e concluídos em tabela compacta, com textos longos limitados e detalhes completos preservados no tooltip.
 - Causa-raiz tratada: os cards deixavam cada job alto demais e dificultavam comparar rapidamente status, etapa, motivo, custo e atualização.
+
+## 2026-06-21 — NichoCNAE v2: um job aberto por CNAE
+
+- Nova regra operacional: o backend passa a bloquear a criação manual de outro job NichoCNAE v2 quando o mesmo CNAE já possui execução aberta (`PENDING`, `RUNNING` ou `TECHNICAL_RETRY_SCHEDULED`).
+- Limpeza: criado changelog para encerrar como falha operacional os jobs presos do CNAE `4781400` anteriores a `2026-06-21 00:00:00`, liberando a tela para uma nova execução controlada.
+- Causa-raiz tratada: a criação manual só contava execuções por candidato/etapa e não verificava jobs abertos por CNAE, permitindo dois jobs simultâneos para o mesmo mercado.

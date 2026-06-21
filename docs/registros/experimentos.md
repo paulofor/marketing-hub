@@ -4980,3 +4980,8 @@
 - Solicitação: ajustar as etapas de Ângulo da Campanha, Texto do Anúncio e Gera Prompt Imagens para considerar o novo contrato de promessa única.
 - Ajuste aplicado: os prompts do AI Worker agora tratam o contrato como fonte comercial soberana para dor única, recompensa gratuita, promessa do funil e CTA, preservando a mesma entrega em anúncio, landing e imagens.
 - Prevenção: as instruções passaram a bloquear troca da recompensa por diagnóstico, prévia genérica, consultoria, sistema completo ou outro ativo fora do contrato escolhido.
+
+## 2026-06-21 — Pending de Gera Prompt Imagens recebe promessa única
+- Solicitação: verificar se os dados do contrato de promessa única chegam ao prompt no momento da execução.
+- Causa-raiz encontrada: o prompt base do pipeline já incluía o contrato e as etapas de copy/deliverables já montavam `CASE_DATA`, mas o pending dedicado de Gera Prompt Imagens ainda não expunha `singlePain`, `freeReward`, `funnelPromise`, `primaryCta` e `campaignObjective`.
+- Correção aplicada: o pending de image planning e o builder do AI Worker passam a enviar esses campos e o `CASE_DATA_BLOCK` para o prompt executado.

@@ -27,6 +27,12 @@ Objetivo:
 
 ## Contexto disponível
 - Contrato de promessa única: quando `CONTRATO_PROMESSA_UNICA`, `singlePain`, `freeReward`, `funnelPromise`, `primaryCta` ou `campaignObjective` aparecerem no contexto, trate esses campos como fonte de verdade comercial para dor, recompensa, promessa e CTA.
+- Dor única do contrato: {dados-singlePain}
+- Recompensa gratuita única: {dados-freeReward}
+- Promessa do funil: {dados-funnelPromise}
+- CTA principal: {dados-primaryCta}
+- Objetivo da campanha: {dados-campaignObjective}
+- Bloco completo de contexto: {{CASE_DATA_BLOCK}}
 - NICHO: {{NICHE_NAME}}
 - Ângulo de campanha: {dados-campaignAngle}
 - Copy do anúncio: {dados-adCopy}

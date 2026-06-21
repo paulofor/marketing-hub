@@ -1,0 +1,27 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-21-01-oprm-nichocnae-v2-clear-stale-open-jobs
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: oprm_nichocnae_v2_stage_execution
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE oprm_nichocnae_v2_stage_execution
+              SET status = 'FAILED',
+                  failure_type = 'INFRASTRUCTURE',
+                  error_message = CONCAT(
+                    'Limpeza operacional em 2026-06-21: job aberto ficou preso e foi encerrado para liberar a regra de um job simultâneo por CNAE. Erro anterior: ',
+                    COALESCE(error_message, 'sem erro registrado')
+                  ),
+                  updated_at = CURRENT_TIMESTAMP(6)
+              WHERE cnae_code = '4781400'
+                AND status IN ('PENDING', 'RUNNING', 'TECHNICAL_RETRY_SCHEDULED')
+                AND updated_at < '2026-06-21 00:00:00';

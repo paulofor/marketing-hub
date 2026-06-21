@@ -52,6 +52,10 @@ public class BackendCandidateGeneratorService {
             "safetyDecision",
             "qualityStatus",
             "decision");
+    private static final List<OprmNichoCnaeV2StageExecutionStatus> OPEN_STATUSES = List.of(
+            OprmNichoCnaeV2StageExecutionStatus.PENDING,
+            OprmNichoCnaeV2StageExecutionStatus.RUNNING,
+            OprmNichoCnaeV2StageExecutionStatus.TECHNICAL_RETRY_SCHEDULED);
     private static final List<String> COST_KEYS = List.of(
             "aiCostUsd",
             "totalAiCostUsd",
@@ -85,7 +89,6 @@ public class BackendCandidateGeneratorService {
         this.materializationEnabled = materializationEnabled;
     }
 
-
     /** Mantém compatibilidade com testes unitários que não exercem auditoria OpenAI. */
     public BackendCandidateGeneratorService(
             OprmNicheCandidateRepository nicheCandidateRepository,
@@ -94,6 +97,7 @@ public class BackendCandidateGeneratorService {
             boolean materializationEnabled) {
         this(nicheCandidateRepository, stageExecutionRepository, null, v2Enabled, materializationEnabled);
     }
+
     /** Lista pendências disponíveis para consumo canônico pelo executor OPRM NichoCNAE v2. */
     @Transactional
     public List<CandidateGeneratorPendingResponse> pending() {
@@ -114,6 +118,11 @@ public class BackendCandidateGeneratorService {
     public CandidateGeneratorCreateResponse createForCnae(String cnaeCode) {
         if (!v2Enabled) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "NichoCNAE v2 is disabled");
+        }
+        if (stageExecutionRepository.countByCnaeCodeAndStatusIn(cnaeCode, OPEN_STATUSES) > 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Já existe job NichoCNAE v2 aberto para este CNAE. Encerre ou aguarde o job atual antes de iniciar outro.");
         }
         OprmNicheCandidate candidate = nicheCandidateRepository
                 .findManualRoutineResearchCandidateByCnaeCode(cnaeCode, PageRequest.of(0, 1))

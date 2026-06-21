@@ -1754,3 +1754,9 @@ Arquivos principais:
 - Registrada no cânone MOIS a regra de que a análise da Biblioteca Sales Pages é diagnóstico de sucesso de produtos vencedores, não geração de sugestões.
 - Ajustado o worker para proibir sugestões, recomendações, próximos passos e chaves do tipo `recommended*` em todos os campos da resposta do modelo.
 - Ajustado o prompt da análise para avaliar excesso, repetição e poluição visual, evitando recomendar mais imagens quando o problema comercial é organizar melhor o fluxo Dor → Resultado → Mecanismo → Prova → Oferta.
+
+## 2026-06-21 — Status atual no detalhe da Biblioteca Sales Pages
+
+- Corrigida a falta de confirmação visual após o comando **Voltar para pendente** na rota `/mois/sales-pages-library/:pageId`.
+- A tela agora exibe um bloco explícito de **Status atual da solicitação**, com status geral, captura e análise comercial vindos do backend, além da confirmação retornada pelo endpoint de atualização manual.
+- Ajustada a invalidação do cache do detalhe da página para recarregar a verdade atualizada do backend depois da mudança de status.

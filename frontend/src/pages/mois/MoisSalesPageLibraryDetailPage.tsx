@@ -42,6 +42,43 @@ function formatDate(value?: string) {
     : date.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
 }
 
+function labelStatus(value?: string) {
+  const labels: Record<string, string> = {
+    PENDING: "Pendente",
+    FETCHING: "Em captura",
+    CAPTURING: "Em captura",
+    CAPTURED: "Capturada",
+    ANALYZING: "Em análise",
+    ANALYZED: "Analisada",
+    DONE: "Concluída",
+    FAILED: "Falhou",
+    ANULADO: "Anulada",
+    BLOCKED_COOLDOWN: "Aguardando nova tentativa",
+  };
+  return value ? labels[value] || value : "—";
+}
+
+function getStatusBadgeClass(value?: string) {
+  switch (value) {
+    case "DONE":
+    case "ANALYZED":
+    case "CAPTURED":
+      return "text-bg-success";
+    case "FAILED":
+    case "ANULADO":
+      return "text-bg-danger";
+    case "FETCHING":
+    case "CAPTURING":
+    case "ANALYZING":
+      return "text-bg-primary";
+    case "PENDING":
+    case "BLOCKED_COOLDOWN":
+      return "text-bg-warning";
+    default:
+      return "text-bg-secondary";
+  }
+}
+
 type HistoryItem = {
   key: string;
   stage: string;
@@ -124,6 +161,9 @@ export default function MoisSalesPageLibraryDetailPage() {
     requestWarmupMutation.isPending ||
     hasActiveWarmupDossier ||
     !isCommercialAnalysisDone;
+  const currentStatus = pageQuery.data?.currentStatus;
+  const analysisStatus = pageQuery.data?.analysisStatus;
+  const captureStatus = pageQuery.data?.captureStatus;
   const hotmartPrice = cleanText(pageQuery.data?.hotmartPrice);
   const hotmartTemperature = pageQuery.data?.hotmartTemperature;
   const hotmartProducer =
@@ -261,6 +301,54 @@ export default function MoisSalesPageLibraryDetailPage() {
         </button>
       </div>
 
+      <section className="card border-0 shadow-sm">
+        <div className="card-body d-flex flex-column gap-3">
+          <div className="d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <div>
+              <h2 className="h5 mb-1">Status atual da solicitação</h2>
+              <p className="text-secondary mb-0">
+                A tela mostra o status confirmado pelo backend para esta página.
+              </p>
+            </div>
+            <span
+              className={`badge fs-6 ${getStatusBadgeClass(currentStatus)}`}
+            >
+              {labelStatus(currentStatus)}
+            </span>
+          </div>
+          <div className="row g-3">
+            <div className="col-md-4">
+              <div className="border rounded p-3 h-100 bg-light-subtle">
+                <div className="text-secondary small">Status geral</div>
+                <strong>{labelStatus(currentStatus)}</strong>
+              </div>
+            </div>
+            <div className="col-md-4">
+              <div className="border rounded p-3 h-100 bg-light-subtle">
+                <div className="text-secondary small">Captura</div>
+                <strong>{labelStatus(captureStatus)}</strong>
+              </div>
+            </div>
+            <div className="col-md-4">
+              <div className="border rounded p-3 h-100 bg-light-subtle">
+                <div className="text-secondary small">Análise comercial</div>
+                <strong>{labelStatus(analysisStatus)}</strong>
+              </div>
+            </div>
+          </div>
+          {updateStatusMutation.isSuccess ? (
+            <div className="alert alert-success mb-0">
+              Solicitação registrada pelo backend: status{" "}
+              <strong>{labelStatus(updateStatusMutation.data.status)}</strong>
+              {updateStatusMutation.data.jobId
+                ? ` • job ${updateStatusMutation.data.jobId}`
+                : ""}
+              .
+            </div>
+          ) : null}
+        </div>
+      </section>
+
       {updateStatusMutation.isError ? (
         <div className="alert alert-danger mb-0">
           Falha ao atualizar status da página.
@@ -380,7 +468,9 @@ export default function MoisSalesPageLibraryDetailPage() {
                 <div className="col-md-3">
                   <div className="border rounded p-3 h-100 bg-light-subtle">
                     <div className="text-secondary small">Status</div>
-                    <strong className="fs-5">{analysisQuery.data.status}</strong>
+                    <strong className="fs-5">
+                      {analysisQuery.data.status}
+                    </strong>
                   </div>
                 </div>
                 <div className="col-md-3">
@@ -483,12 +573,15 @@ export default function MoisSalesPageLibraryDetailPage() {
             <div className="border rounded p-3 bg-light-subtle">
               <h3 className="h6 mb-2">Tentativas de pesquisa realizadas</h3>
               <p className="small text-secondary mb-3">
-                Estas são as buscas que o worker fez e o motivo de elas terem
-                ou não virado fonte do dossiê.
+                Estas são as buscas que o worker fez e o motivo de elas terem ou
+                não virado fonte do dossiê.
               </p>
               <div className="d-flex flex-column gap-2">
                 {marketWarmupSearchAttemptsQuery.data.items.map((attempt) => (
-                  <div key={attempt.attemptId} className="border rounded p-2 bg-white">
+                  <div
+                    key={attempt.attemptId}
+                    className="border rounded p-2 bg-white"
+                  >
                     <div className="d-flex flex-wrap justify-content-between gap-2">
                       <strong>{attempt.queryText}</strong>
                       <span
@@ -504,7 +597,9 @@ export default function MoisSalesPageLibraryDetailPage() {
                       </span>
                     </div>
                     <div className="small text-secondary mt-1">
-                      Resultados lidos: {attempt.resultCount} • aproveitados: {attempt.qualifiedCount} • descartados: {attempt.rejectedCount}
+                      Resultados lidos: {attempt.resultCount} • aproveitados:{" "}
+                      {attempt.qualifiedCount} • descartados:{" "}
+                      {attempt.rejectedCount}
                     </div>
                     {attempt.rejectionReason ? (
                       <div className="small text-secondary mt-1">
@@ -518,7 +613,8 @@ export default function MoisSalesPageLibraryDetailPage() {
                         target="_blank"
                         rel="noreferrer"
                       >
-                        Exemplo retornado: {attempt.sampleResultTitle || attempt.sampleResultUrl}
+                        Exemplo retornado:{" "}
+                        {attempt.sampleResultTitle || attempt.sampleResultUrl}
                       </a>
                     ) : null}
                   </div>

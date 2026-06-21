@@ -4995,3 +4995,9 @@
 - Solicitação: verificar se todos os prompts da etapa GeraLanding usam o contrato de promessa única.
 - Causa-raiz encontrada: Copy, Deliverables e Image Planning já estavam alinhados, mas Wireframe, Design Preset e Quality Review ainda não declaravam explicitamente o contrato; além disso, os pendings dessas etapas não carregavam os campos do contrato.
 - Correção aplicada: todos os prompts GeraLanding passam a receber e respeitar `singlePain`, `freeReward`, `funnelPromise`, `primaryCta` e `campaignObjective`, com propagação nos pendings do backend e nos builders do AI Worker.
+
+## 2026-06-21 — Correção de compilação no Image Planning
+- Problema: o build do AI Worker falhava com `illegal start of expression` em `ImagePlanningBackendClient`.
+- Causa-raiz: o método auxiliar `firstNonNull` ficou sem a chave de fechamento antes do método `buildCaseDataBlock`, deixando a classe Java com estrutura inválida.
+- Correção aplicada: fechado corretamente o método `firstNonNull`, preservando o contrato de montagem do contexto comercial do prompt.
+- Prevenção de recorrência: a compilação do módulo foi tentada para validar a sintaxe; a validação completa ficou bloqueada por dependência privada do `ads-service` no GitHub Packages sem autenticação no ambiente.

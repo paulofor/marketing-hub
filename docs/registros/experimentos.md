@@ -4957,3 +4957,10 @@
 - Ajuste: a chamada OpenAI da geração de contrato de promessa única passou a usar prompt markdown e schema JSON em arquivos do AI Worker, seguindo o padrão do GeraLanding.
 - Contexto comercial: o backend passou a incluir descrição rica ativa do nicho e o snapshot completo do pipeline de hipótese no prompt persistido para o worker.
 - Prevenção: a saída da OpenAI agora é validada por schema JSON estrito, reduzindo retorno fora do contrato esperado pela tela.
+
+## 2026-06-21 — Contrato de promessa única sem campos manuais
+
+- Solicitação: retirar da tela de novo experimento os campos editáveis de dor, recompensa, promessa e CTA, porque o contrato deve vir da opção gerada pela IA.
+- Causa-raiz: a tela enviava campos manuais mesmo quando nada era digitado e o backend montava um prompt excessivamente grande com JSONs e evidências brutas do nicho/hipótese, aumentando risco de falha no AI Worker/OpenAI.
+- Correção aplicada: o frontend agora só permite escolher uma opção gerada pela IA e exibe o contrato selecionado em modo leitura; o backend monta um contexto comercial enxuto para a fila do AI Worker, sem campos digitados pelo usuário, prompt original, snapshot completo ou evidências brutas.
+- Prevenção de recorrência: teste unitário passou a validar que o prompt persistido é compacto e não inclui campos manuais nem blocos brutos desnecessários.

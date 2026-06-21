@@ -916,6 +916,9 @@ databaseChangeLog:
       file: changesets/2030-09-17-add-gpt-image-1-5.yaml
       relativeToChangelogFile: true
   - include:
+      file: changesets/2030-09-18-add-gpt-image-2.yaml
+      relativeToChangelogFile: true
+  - include:
       file: V2036_11_20__experiment_creative_prompts.yaml
       relativeToChangelogFile: true
   - include:

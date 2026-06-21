@@ -4,6 +4,7 @@ package com.marketinghub.experiment.service.generatepromise;
 public record ExperimentPromiseOptionDto(
         String singlePain,
         String freeReward,
+        String productOffer,
         String funnelPromise,
         String primaryCta,
         String reason) {}

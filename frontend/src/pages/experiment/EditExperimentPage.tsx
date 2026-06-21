@@ -399,7 +399,7 @@ export default function EditExperimentPage() {
         return;
       }
       if (!values.freeReward.trim()) {
-        alert("Informe uma única recompensa gratuita");
+        alert("Informe uma única isca digital");
         return;
       }
       if (!values.funnelPromise.trim()) {
@@ -646,7 +646,7 @@ export default function EditExperimentPage() {
                 <h2 className="h6">Contrato de promessa única</h2>
                 <p className="text-muted small mb-3">
                   Anúncio, botão, formulário e entrega devem repetir a mesma
-                  dor, recompensa e CTA.
+                  dor, isca digital e CTA.
                 </p>
                 <label className="form-label" htmlFor="singlePain">
                   Dor única <span className="text-danger">*</span>
@@ -658,8 +658,7 @@ export default function EditExperimentPage() {
                   {...register("singlePain")}
                 />
                 <label className="form-label" htmlFor="freeReward">
-                  Recompensa gratuita única{" "}
-                  <span className="text-danger">*</span>
+                  Isca digital única <span className="text-danger">*</span>
                 </label>
                 <input
                   id="freeReward"

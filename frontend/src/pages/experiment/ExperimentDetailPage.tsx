@@ -1996,7 +1996,7 @@ export default function ExperimentDetailPage() {
       value: data.singlePain || "—",
     },
     {
-      label: "Recompensa gratuita",
+      label: "Isca digital",
       value: data.freeReward || "—",
     },
     {

@@ -15,6 +15,10 @@ export interface OprmNichoCnaeV2JobSummary {
   finalDecision: string | null;
   finalDecisionLabel: string | null;
   finalDecisionReason: string | null;
+  outcomeStatus: "SUCCESS" | "FAILURE" | "IN_PROGRESS" | string | null;
+  outcomeMessage: string | null;
+  actionLabel: string | null;
+  actionUrl: string | null;
   usedAi: boolean | null;
   aiCostUsd: number | string | null;
   createdAt: string | null;

@@ -25,6 +25,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
@@ -53,6 +54,11 @@ public class BackendCandidateGeneratorService {
             "estimatedAiCostUsd",
             "costUsd",
             "estimatedCostUsd");
+    private static final List<String> MARKET_NICHE_ID_KEYS = List.of(
+            "marketNicheId",
+            "market_niche_id",
+            "existingMarketNicheId",
+            "createdMarketNicheId");
 
     private final OprmNicheCandidateRepository nicheCandidateRepository;
     private final OprmNichoCnaeV2StageExecutionRepository stageExecutionRepository;
@@ -111,7 +117,6 @@ public class BackendCandidateGeneratorService {
                 saved.getMaterializationEnabled(),
                 saved.getStatus().name());
     }
-
 
     /** Lista jobs do CNAE agrupados em abertos e encerrados para a tela administrativa. */
     @Transactional(readOnly = true)
@@ -192,7 +197,6 @@ public class BackendCandidateGeneratorService {
                 saved.getTechnicalRetryNumber());
     }
 
-
     /** Monta resumo de job usando a etapa aberta mais recente ou, se não existir, a última etapa atualizada. */
     private CandidateGeneratorCnaeJobSummary toJobSummary(List<OprmNichoCnaeV2StageExecution> executions) {
         OprmNichoCnaeV2StageExecution lastExecution = executions.stream()
@@ -204,7 +208,9 @@ public class BackendCandidateGeneratorService {
                 .orElse(lastExecution);
         String jobStatus = hasOpenExecution(executions) ? "OPEN" : "COMPLETED";
         Map<String, Object> lastOutput = parsePayload(lastExecution.getOutputPayload());
-        String finalDecision = decisionFrom(lastOutput, lastExecution);
+        String finalDecision = decisionFrom(lastOutput, lastExecution, executions);
+        String finalDecisionReason = reasonForDecision(finalDecision, lastOutput, lastExecution, executions);
+        String marketNicheId = marketNicheIdFrom(executions);
         BigDecimal aiCostUsd = sumAiCostUsd(executions);
         boolean usedAi = aiCostUsd.compareTo(BigDecimal.ZERO) > 0 || executions.stream().anyMatch(this::hasAiUsageSignal);
         return new CandidateGeneratorCnaeJobSummary(
@@ -220,7 +226,11 @@ public class BackendCandidateGeneratorService {
                 currentExecution.getMaterializationEnabled(),
                 finalDecision,
                 labelForDecision(finalDecision, lastExecution),
-                reasonForDecision(finalDecision, lastOutput, lastExecution),
+                finalDecisionReason,
+                outcomeStatus(finalDecision, lastExecution),
+                outcomeMessage(finalDecision, finalDecisionReason, marketNicheId, lastExecution),
+                actionLabel(finalDecision, marketNicheId, lastExecution),
+                actionUrl(finalDecision, lastExecution.getCnaeCode(), marketNicheId),
                 usedAi,
                 aiCostUsd,
                 executions.stream().map(OprmNichoCnaeV2StageExecution::getCreatedAt).min(Comparator.naturalOrder()).orElse(null),
@@ -228,16 +238,34 @@ public class BackendCandidateGeneratorService {
     }
 
     /** Extrai a decisão funcional persistida no output da última etapa para evitar conclusão sem explicação ao usuário. */
-    private String decisionFrom(Map<String, Object> output, OprmNichoCnaeV2StageExecution lastExecution) {
+    private String decisionFrom(
+            Map<String, Object> output,
+            OprmNichoCnaeV2StageExecution lastExecution,
+            List<OprmNichoCnaeV2StageExecution> executions) {
         return DECISION_KEYS.stream()
                 .map(output::get)
                 .filter(Objects::nonNull)
                 .map(String::valueOf)
                 .filter(value -> !value.isBlank())
                 .findFirst()
+                .or(() -> previousDecisionFrom(executions))
                 .orElseGet(() -> lastExecution.getFailureType() == null
                         ? lastExecution.getStatus().name()
                         : lastExecution.getFailureType().name());
+    }
+
+    /** Reaproveita a última decisão funcional anterior quando a etapa final apenas encerra o reprocessamento. */
+    private Optional<String> previousDecisionFrom(List<OprmNichoCnaeV2StageExecution> executions) {
+        return executions.stream()
+                .sorted(Comparator.comparing(OprmNichoCnaeV2StageExecution::getUpdatedAt, Comparator.nullsLast(Comparator.naturalOrder()))
+                        .reversed())
+                .map(execution -> parsePayload(execution.getOutputPayload()))
+                .flatMap(output -> DECISION_KEYS.stream()
+                        .map(output::get)
+                        .filter(Objects::nonNull)
+                        .map(String::valueOf)
+                        .filter(value -> !value.isBlank()))
+                .findFirst();
     }
 
     /** Traduz decisões funcionais críticas em rótulos claros de negócio para a tela administrativa. */
@@ -256,18 +284,104 @@ public class BackendCandidateGeneratorService {
 
     /** Monta uma explicação curta da decisão final usando contagens estruturadas persistidas pelo executor. */
     private String reasonForDecision(
-            String decision, Map<String, Object> output, OprmNichoCnaeV2StageExecution lastExecution) {
+            String decision,
+            Map<String, Object> output,
+            OprmNichoCnaeV2StageExecution lastExecution,
+            List<OprmNichoCnaeV2StageExecution> executions) {
         if ("NO_VIABLE_SUBNICHE".equals(decision)) {
+            Map<String, Object> decisionOutput = output.containsKey("candidateCount")
+                    ? output
+                    : latestOutputWithKey(executions, "candidateCount");
             return "O torneio terminou sem finalistas viáveis; candidatos="
-                    + numberText(output.get("candidateCount"))
+                    + numberText(decisionOutput.get("candidateCount"))
                     + ", finalistas="
-                    + numberText(output.get("finalistCount"))
+                    + numberText(decisionOutput.get("finalistCount"))
                     + ".";
         }
         if (lastExecution.getStatus() == OprmNichoCnaeV2StageExecutionStatus.FAILED) {
             return lastExecution.getErrorMessage();
         }
         return null;
+    }
+
+    /** Localiza o output mais recente que contém a chave necessária para explicar a decisão ao usuário. */
+    private Map<String, Object> latestOutputWithKey(List<OprmNichoCnaeV2StageExecution> executions, String key) {
+        return executions.stream()
+                .sorted(Comparator.comparing(OprmNichoCnaeV2StageExecution::getUpdatedAt, Comparator.nullsLast(Comparator.naturalOrder()))
+                        .reversed())
+                .map(execution -> parsePayload(execution.getOutputPayload()))
+                .filter(output -> output.containsKey(key))
+                .findFirst()
+                .orElse(Map.of());
+    }
+
+    /** Classifica o resultado final em linguagem simples para a tela administrativa. */
+    private String outcomeStatus(String decision, OprmNichoCnaeV2StageExecution lastExecution) {
+        if (lastExecution.getStatus() == OprmNichoCnaeV2StageExecutionStatus.FAILED
+                || "NO_VIABLE_SUBNICHE".equals(decision)) {
+            return "FAILURE";
+        }
+        if (lastExecution.getStatus() == OprmNichoCnaeV2StageExecutionStatus.COMPLETED) {
+            return "SUCCESS";
+        }
+        return "IN_PROGRESS";
+    }
+
+    /** Monta a mensagem principal do card para deixar claro se houve sucesso, fracasso ou ação pendente. */
+    private String outcomeMessage(
+            String decision, String reason, String marketNicheId, OprmNichoCnaeV2StageExecution lastExecution) {
+        if (lastExecution.getStatus() == OprmNichoCnaeV2StageExecutionStatus.FAILED) {
+            return "Falha técnica: corrija o erro antes de iniciar outro job.";
+        }
+        if ("NO_VIABLE_SUBNICHE".equals(decision)) {
+            return "Fracasso controlado: este job terminou sem subnicho viável. " + reason;
+        }
+        if (marketNicheId != null) {
+            return "Sucesso: o nicho foi materializado e já pode ser visualizado.";
+        }
+        if (Boolean.TRUE.equals(lastExecution.getMaterializationEnabled())) {
+            return "Sucesso parcial: o job encontrou avanço possível, mas o nicho ainda precisa ser materializado.";
+        }
+        return "Sucesso operacional: o job terminou, mas a materialização automática está desativada para calibração.";
+    }
+
+    /** Define o texto do comando principal associado ao resultado do job. */
+    private String actionLabel(String decision, String marketNicheId, OprmNichoCnaeV2StageExecution lastExecution) {
+        if (marketNicheId != null) {
+            return "Visualizar novo nicho";
+        }
+        if ("NO_VIABLE_SUBNICHE".equals(decision)) {
+            return "Pesquisar outro recorte";
+        }
+        if (lastExecution.getStatus() == OprmNichoCnaeV2StageExecutionStatus.COMPLETED) {
+            return "Abrir CNAE para materializar";
+        }
+        return null;
+    }
+
+    /** Define a URL interna do comando principal sem deixar a tela inferir regra de negócio. */
+    private String actionUrl(String decision, String cnaeCode, String marketNicheId) {
+        if (marketNicheId != null) {
+            return "/niches/" + marketNicheId;
+        }
+        if ("NO_VIABLE_SUBNICHE".equals(decision)) {
+            return "/oprm/cnaes/" + cnaeCode;
+        }
+        return "/oprm/cnaes/" + cnaeCode;
+    }
+
+    /** Extrai o ID de nicho materializado quando alguma etapa persistiu esse identificador no payload. */
+    private String marketNicheIdFrom(List<OprmNichoCnaeV2StageExecution> executions) {
+        return executions.stream()
+                .sorted(Comparator.comparing(OprmNichoCnaeV2StageExecution::getUpdatedAt, Comparator.nullsLast(Comparator.naturalOrder()))
+                        .reversed())
+                .map(execution -> parsePayload(execution.getOutputPayload()))
+                .flatMap(output -> MARKET_NICHE_ID_KEYS.stream().map(output::get))
+                .filter(Objects::nonNull)
+                .map(String::valueOf)
+                .filter(value -> !value.isBlank())
+                .findFirst()
+                .orElse(null);
     }
 
     /** Soma custo de IA em dólares registrado na saída própria de cada etapa do job. */

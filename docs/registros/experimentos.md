@@ -4975,3 +4975,8 @@
 - Causa-raiz: o frontend calculava um mapa de custo agregado por nicho e usava esse total dentro de cada linha da tabela.
 - Correção aplicada: cada linha da tabela passou a exibir o custo recebido do próprio experimento pelo backend, mantendo o total do nicho apenas no filtro de nichos.
 - Prevenção de recorrência: teste de tela passou a validar que dois experimentos do mesmo nicho exibem custos individuais diferentes e não o total agregado do nicho.
+
+## 2026-06-21 — Prompts das etapas respeitam contrato de promessa única
+- Solicitação: ajustar as etapas de Ângulo da Campanha, Texto do Anúncio e Gera Prompt Imagens para considerar o novo contrato de promessa única.
+- Ajuste aplicado: os prompts do AI Worker agora tratam o contrato como fonte comercial soberana para dor única, recompensa gratuita, promessa do funil e CTA, preservando a mesma entrega em anúncio, landing e imagens.
+- Prevenção: as instruções passaram a bloquear troca da recompensa por diagnóstico, prévia genérica, consultoria, sistema completo ou outro ativo fora do contrato escolhido.

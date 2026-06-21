@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
@@ -70,6 +71,7 @@ public class BackendCandidateGeneratorService {
     private final boolean materializationEnabled;
 
     /** Inicializa o service com repositórios canônicos e feature flags de calibração da v2. */
+    @Autowired
     public BackendCandidateGeneratorService(
             OprmNicheCandidateRepository nicheCandidateRepository,
             OprmNichoCnaeV2StageExecutionRepository stageExecutionRepository,

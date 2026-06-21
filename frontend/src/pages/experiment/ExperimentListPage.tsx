@@ -289,7 +289,7 @@ export default function ExperimentListPage() {
                     {nicheNameById.get(e.nicheId) || `Nicho #${e.nicheId}`}
                   </td>
                   <td>{e.hypothesis || "—"}</td>
-                  <td>{formatCurrency(nicheTotalCostMap[e.nicheId] ?? 0)}</td>
+                  <td>{formatCurrency(resolveExperimentCost(e))}</td>
                   <td>{e.status}</td>
                   <td>
                     <Link

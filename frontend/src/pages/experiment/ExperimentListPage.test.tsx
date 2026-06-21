@@ -125,7 +125,84 @@ describe("ExperimentListPage", () => {
       within(row as HTMLTableRowElement).getByText("Nicho Principal"),
     ).toBeTruthy();
     expect(
-      within(row as HTMLTableRowElement).getByText("R$ 351,00"),
+      within(row as HTMLTableRowElement).getByText("R$ 1,00"),
     ).toBeTruthy();
   });
+
+  it("shows the individual backend cost for each experiment instead of the niche total", async () => {
+    const experiments = [
+      {
+        id: "2",
+        nicheId: 10,
+        hypothesisId: "hypothesis-2",
+        name: "Experimento 2",
+        hypothesis: "Hipótese 2",
+        cost: 33.18,
+        startDate: "2026-06-02",
+        endDate: null,
+        creativeApproved: false,
+        status: "PLANNED",
+        platform: "FACEBOOK",
+        stage: "AD",
+        createdAt: "2026-06-02T00:00:00Z",
+        updatedAt: "2026-06-02T00:00:00Z",
+      },
+      {
+        id: "1",
+        nicheId: 10,
+        hypothesisId: "hypothesis-1",
+        name: "Experimento 1",
+        hypothesis: "Hipótese 1",
+        cost: 66.63,
+        startDate: "2026-06-01",
+        endDate: null,
+        creativeApproved: false,
+        status: "PLANNED",
+        platform: "FACEBOOK",
+        stage: "AD",
+        createdAt: "2026-06-01T00:00:00Z",
+        updatedAt: "2026-06-01T00:00:00Z",
+      },
+    ];
+
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/experiments")
+        return Promise.resolve({ data: experiments });
+      if (url === "/api/niches") {
+        return Promise.resolve({
+          data: [
+            {
+              id: 10,
+              name: "Nicho Principal",
+              description: "",
+              demandVolume: "",
+              promises: "",
+              offers: "",
+              baseSegmentation: "",
+              interests: "",
+              demographicFilters: "",
+              extraTips: "",
+            },
+          ],
+        });
+      }
+      return Promise.resolve({ data: [] });
+    });
+
+    renderPage();
+
+    const row2 = (await screen.findByText("Experimento 2")).closest("tr");
+    const row1 = screen.getByText("Experimento 1").closest("tr");
+
+    expect(row2).not.toBeNull();
+    expect(row1).not.toBeNull();
+    expect(
+      within(row2 as HTMLTableRowElement).getByText("R$ 33,18"),
+    ).toBeTruthy();
+    expect(
+      within(row1 as HTMLTableRowElement).getByText("R$ 66,63"),
+    ).toBeTruthy();
+    expect(screen.queryByText("R$ 99,81")).toBeNull();
+  });
+
 });

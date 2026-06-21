@@ -195,6 +195,7 @@ public class ImagePlanningBackendClient implements StageBackendPort<ImagePlannin
             }
         }
         return null;
+    }
 
     /** Monta o bloco textual de contexto comercial usado pelo prompt de imageplanning. */
     private String buildCaseDataBlock(Map<String, Object> payload) {

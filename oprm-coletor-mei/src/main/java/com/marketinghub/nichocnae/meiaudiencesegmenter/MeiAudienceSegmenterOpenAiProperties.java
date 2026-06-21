@@ -10,19 +10,21 @@ public record MeiAudienceSegmenterOpenAiProperties(
         String apiKeyFile,
         String model,
         String expectedApiKeyVariable,
-        String fallbackApiKeyVariable) {
+        String fallbackApiKeyVariable,
+        String serviceTier) {
 
     /** Normaliza valores padrão seguros para chamada síncrona da Responses API. */
     public MeiAudienceSegmenterOpenAiProperties {
         baseUrl = baseUrl == null || baseUrl.isBlank() ? "https://api.openai.com/v1" : baseUrl;
         apiKey = apiKey == null ? "" : apiKey;
         apiKeyFile = apiKeyFile == null ? "" : apiKeyFile;
-        model = model == null || model.isBlank() ? "gpt-4.1-mini" : model;
+        model = model == null || model.isBlank() ? "gpt-5.2" : model;
         expectedApiKeyVariable = expectedApiKeyVariable == null || expectedApiKeyVariable.isBlank()
                 ? "OPRM_MEI_AUDIENCE_SEGMENTER_OPENAI_API_KEY"
                 : expectedApiKeyVariable;
         fallbackApiKeyVariable = fallbackApiKeyVariable == null || fallbackApiKeyVariable.isBlank()
                 ? "OPENAI_API_KEY"
                 : fallbackApiKeyVariable;
+        serviceTier = serviceTier == null || serviceTier.isBlank() ? "flex" : serviceTier;
     }
 }

@@ -1,0 +1,38 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-21-01-oprm-openai-gpt52-operational-config
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: openai_model
+        - tableExists:
+            tableName: pipeline_stage_config
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE pipeline_stage_config psc
+              INNER JOIN pipeline_stage_definition psd ON psd.id = psc.pipeline_stage_definition_id
+              INNER JOIN pipeline_definition pd ON pd.id = psd.pipeline_definition_id
+              INNER JOIN openai_model om ON om.code = 'gpt-5.2'
+              SET psc.openai_model_id = om.id,
+                  psc.updated_by = 'liquibase-oprm-openai-gpt52',
+                  psc.updated_at = NOW()
+              WHERE pd.code = 'oprm-nicho-cnae-pipeline'
+                AND pd.canonical_version = 'oprm-nichocnae-canon.v1'
+                AND psd.canonical_code IN ('NICHE_RESEARCH_SEED_BUILDER', 'MEI_AUDIENCE_SEGMENTER')
+                AND (psc.openai_model_id IS NULL OR psc.openai_model_id <> om.id);
+
+              UPDATE pipeline_stage ps
+              INNER JOIN pipeline p ON p.id = ps.pipeline_id
+              INNER JOIN openai_model om ON om.code = 'gpt-5.2'
+              SET ps.openai_model_id = om.id,
+                  ps.updated_at = NOW()
+              WHERE p.code = 'oprm-nicho-cnae-pipeline'
+                AND ps.code IN ('niche-research-seed-builder', 'mei-audience-segmenter')
+                AND (ps.openai_model_id IS NULL OR ps.openai_model_id <> om.id);

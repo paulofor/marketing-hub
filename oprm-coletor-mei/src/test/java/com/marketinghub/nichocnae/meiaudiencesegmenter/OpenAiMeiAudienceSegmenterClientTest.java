@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.client.ExpectedCount.once;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.jsonPath;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
@@ -26,17 +27,17 @@ class OpenAiMeiAudienceSegmenterClientTest {
     /** Garante que o modelo configurado no pipeline e enviado pelo backend tem prioridade sobre o fallback local. */
     @Test
     void shouldUsePipelineConfiguredModelBeforeLocalFallback() {
-        OpenAiMeiAudienceSegmenterClient client = client("gpt-4.1-mini");
+        OpenAiMeiAudienceSegmenterClient client = client("gpt-5.2");
 
-        assertThat(client.resolveModel(pending("gpt-5.4"))).isEqualTo("gpt-5.4");
+        assertThat(client.resolveModel(pending("gpt-5.2"))).isEqualTo("gpt-5.2");
     }
 
     /** Garante que a etapa continua operável com fallback local quando o backend ainda não enviar modelo. */
     @Test
     void shouldUseLocalFallbackWhenPendingHasNoConfiguredModel() {
-        OpenAiMeiAudienceSegmenterClient client = client("gpt-4.1-mini");
+        OpenAiMeiAudienceSegmenterClient client = client("gpt-5.2");
 
-        assertThat(client.resolveModel(pending(null))).isEqualTo("gpt-4.1-mini");
+        assertThat(client.resolveModel(pending(null))).isEqualTo("gpt-5.2");
     }
 
     /** Garante que falha HTTP da OpenAI vira mensagem operacional persistível com causa-raiz e contexto do ciclo. */
@@ -50,14 +51,14 @@ class OpenAiMeiAudienceSegmenterClientTest {
         MeiAudienceSegmenterPromptBuilder promptBuilder = mock(MeiAudienceSegmenterPromptBuilder.class);
         MeiAudienceSegmenterSchema schema = mock(MeiAudienceSegmenterSchema.class);
         MeiAudienceSegmenterValidator validator = mock(MeiAudienceSegmenterValidator.class);
-        MeiAudienceSegmenterPending pending = pending("gpt-5.4");
+        MeiAudienceSegmenterPending pending = pending("gpt-5.2");
         when(promptBuilder.buildPrompt(pending)).thenReturn("prompt segmentação");
         when(schema.buildSchema()).thenReturn(Map.of("type", "object"));
         OpenAiMeiAudienceSegmenterClient client = new OpenAiMeiAudienceSegmenterClient(
                 builder.build(),
                 new ObjectMapper(),
-                new MeiAudienceSegmenterOpenAiProperties("https://api.openai.com/v1", "key", "", "gpt-4.1-mini",
-                        "OPRM_MEI_AUDIENCE_SEGMENTER_OPENAI_API_KEY", "OPENAI_API_KEY"),
+                new MeiAudienceSegmenterOpenAiProperties("https://api.openai.com/v1", "key", "", "gpt-5.2",
+                        "OPRM_MEI_AUDIENCE_SEGMENTER_OPENAI_API_KEY", "OPENAI_API_KEY", "flex"),
                 promptBuilder,
                 schema,
                 validator);
@@ -67,7 +68,7 @@ class OpenAiMeiAudienceSegmenterClientTest {
                 .hasMessageContaining("tipo=TooManyRequests")
                 .hasMessageContaining("researchCycleId=1001")
                 .hasMessageContaining("routineCardId=2002")
-                .hasMessageContaining("modeloOpenAI=gpt-5.4")
+                .hasMessageContaining("modeloOpenAI=gpt-5.2")
                 .hasMessageContaining("endpoint=https://api.openai.com/v1/responses")
                 .hasMessageContaining("httpStatus=429")
                 .hasMessageContaining("rate limit reached for organization");
@@ -81,11 +82,13 @@ class OpenAiMeiAudienceSegmenterClientTest {
         RestClient.Builder builder = RestClient.builder();
         MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
         server.expect(once(), requestTo(URI.create("https://api.openai.com/v1/responses")))
+                .andExpect(jsonPath("$.model").value("gpt-5.2"))
+                .andExpect(jsonPath("$.service_tier").value("flex"))
                 .andRespond(withSuccess(openAiResponse("Profissionais com software de agenda"), MediaType.APPLICATION_JSON));
         server.expect(once(), requestTo(URI.create("https://api.openai.com/v1/responses")))
                 .andRespond(withSuccess(openAiResponse("Profissionais com agenda instável"), MediaType.APPLICATION_JSON));
         MeiAudienceSegmenterPromptBuilder promptBuilder = mock(MeiAudienceSegmenterPromptBuilder.class);
-        MeiAudienceSegmenterPending pending = pending("gpt-5.4");
+        MeiAudienceSegmenterPending pending = pending("gpt-5.2");
         when(promptBuilder.buildPrompt(pending)).thenReturn("prompt original");
         when(promptBuilder.buildCorrectivePrompt(pending, "software")).thenReturn("prompt corretivo");
         MeiAudienceSegmenterSchema schema = mock(MeiAudienceSegmenterSchema.class);
@@ -93,8 +96,8 @@ class OpenAiMeiAudienceSegmenterClientTest {
         OpenAiMeiAudienceSegmenterClient client = new OpenAiMeiAudienceSegmenterClient(
                 builder.build(),
                 new ObjectMapper(),
-                new MeiAudienceSegmenterOpenAiProperties("https://api.openai.com/v1", "key", "", "gpt-4.1-mini",
-                        "OPRM_MEI_AUDIENCE_SEGMENTER_OPENAI_API_KEY", "OPENAI_API_KEY"),
+                new MeiAudienceSegmenterOpenAiProperties("https://api.openai.com/v1", "key", "", "gpt-5.2",
+                        "OPRM_MEI_AUDIENCE_SEGMENTER_OPENAI_API_KEY", "OPENAI_API_KEY", "flex"),
                 promptBuilder,
                 schema,
                 new MeiAudienceSegmenterValidator());
@@ -111,7 +114,7 @@ class OpenAiMeiAudienceSegmenterClientTest {
                 mock(RestClient.class),
                 new ObjectMapper(),
                 new MeiAudienceSegmenterOpenAiProperties("https://api.openai.com/v1", "key", "", fallbackModel,
-                        "OPRM_MEI_AUDIENCE_SEGMENTER_OPENAI_API_KEY", "OPENAI_API_KEY"),
+                        "OPRM_MEI_AUDIENCE_SEGMENTER_OPENAI_API_KEY", "OPENAI_API_KEY", "flex"),
                 mock(MeiAudienceSegmenterPromptBuilder.class),
                 mock(MeiAudienceSegmenterSchema.class),
                 mock(MeiAudienceSegmenterValidator.class));

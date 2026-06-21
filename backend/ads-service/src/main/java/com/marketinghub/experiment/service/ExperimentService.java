@@ -10,10 +10,12 @@ import com.marketinghub.repository.jpa.ads.FacebookPageRepository;
 import com.marketinghub.ads.InstagramAccount;
 import com.marketinghub.repository.jpa.ads.InstagramAccountRepository;
 import com.marketinghub.experiment.*;
+import com.marketinghub.finance.CurrencyConversionService;
 import com.marketinghub.experiment.dto.CreateExperimentRequest;
 import com.marketinghub.experiment.dto.UpdateExperimentRequest;
 import com.marketinghub.experiment.pipeline.ads.ExperimentPipelineAdExtractor;
 import com.marketinghub.experiment.pipeline.ads.PipelineAdCreativePlan;
+import com.marketinghub.repository.jpa.experiment.ExperimentPromiseGenerationRequestRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.experiment.funnel.ExperimentFunnelEventRepository;
 import com.marketinghub.repository.jpa.experiment.funnel.ExperimentLandingAnalyticsEventRepository;
@@ -34,6 +36,7 @@ import com.marketinghub.repository.jpa.imagegeneration.ImageGenerationModelRepos
 import com.marketinghub.repository.jpa.imagegeneration.ImageGenerationQualityRepository;
 import com.marketinghub.sampleemail.SampleEmail;
 import jakarta.persistence.EntityManager;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
@@ -50,6 +53,7 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class ExperimentService {
     private final ExperimentRepository repository;
+    private final ExperimentPromiseGenerationRequestRepository promiseGenerationRequestRepository;
     private final MarketNicheRepository nicheRepository;
     private final com.marketinghub.repository.jpa.hypothesis.HypothesisRepository hypothesisRepository;
     private final MetricPresetService metricPresetService;
@@ -69,8 +73,11 @@ public class ExperimentService {
     private final FacebookAdsAdSetRepository facebookAdsAdSetRepository;
     private final FacebookAdsAdRepository facebookAdsAdRepository;
     private final ObjectMapper objectMapper;
+    private final CurrencyConversionService currencyConversionService;
 
-    public ExperimentService(ExperimentRepository repository, MarketNicheRepository nicheRepository,
+    public ExperimentService(ExperimentRepository repository,
+                             ExperimentPromiseGenerationRequestRepository promiseGenerationRequestRepository,
+                             MarketNicheRepository nicheRepository,
                              com.marketinghub.repository.jpa.hypothesis.HypothesisRepository hypothesisRepository,
                              MetricPresetService metricPresetService,
                              EntityManager entityManager,
@@ -88,8 +95,10 @@ public class ExperimentService {
                              FacebookAdsCampaignRepository facebookAdsCampaignRepository,
                              FacebookAdsAdSetRepository facebookAdsAdSetRepository,
                              FacebookAdsAdRepository facebookAdsAdRepository,
-                             ObjectMapper objectMapper) {
+                             ObjectMapper objectMapper,
+                             CurrencyConversionService currencyConversionService) {
         this.repository = repository;
+        this.promiseGenerationRequestRepository = promiseGenerationRequestRepository;
         this.nicheRepository = nicheRepository;
         this.hypothesisRepository = hypothesisRepository;
         this.metricPresetService = metricPresetService;
@@ -109,6 +118,7 @@ public class ExperimentService {
         this.facebookAdsAdSetRepository = facebookAdsAdSetRepository;
         this.facebookAdsAdRepository = facebookAdsAdRepository;
         this.objectMapper = objectMapper;
+        this.currencyConversionService = currencyConversionService;
     }
 
     /**
@@ -289,6 +299,8 @@ public class ExperimentService {
                 normalizeOptionalImagesPerPackage(request.getOpenImagesPerPackage(), "openImagesPerPackage");
         Integer compressedImagesPerPackage =
                 normalizeOptionalImagesPerPackage(request.getCompressedImagesPerPackage(), "compressedImagesPerPackage");
+        BigDecimal promiseGenerationCost = completedPromiseGenerationCostBrl(request.getPromiseGenerationRequestIds());
+        BigDecimal initialTotalCost = addNullable(request.getCost(), promiseGenerationCost);
         Experiment exp = Experiment.builder()
                 .niche(niche)
                 .name(request.getName())
@@ -310,7 +322,7 @@ public class ExperimentService {
                 .dailyBudget(request.getDailyBudget())
                 .unitPrice(unitPrice)
                 .cost(request.getCost())
-                .totalCost(request.getCost())
+                .totalCost(initialTotalCost)
                 .expense(request.getExpense())
                 .startDate(request.getStartDate())
                 .endDate(request.getEndDate())
@@ -344,6 +356,30 @@ public class ExperimentService {
         Experiment savedExperiment = repository.save(exp);
         synchronizeLeadPortalFlow(savedExperiment);
         return savedExperiment;
+    }
+
+    /** Soma em reais o custo das solicitações de promessa usadas para criar o experimento. */
+    private BigDecimal completedPromiseGenerationCostBrl(List<Long> requestIds) {
+        if (requestIds == null || requestIds.isEmpty()) {
+            return null;
+        }
+        BigDecimal costUsd = promiseGenerationRequestRepository.sumCompletedCostUsdByIdIn(requestIds);
+        return currencyConversionService.usdToBrl(costUsd);
+    }
+
+    /** Soma dois valores opcionais de custo preservando nulo quando não há custo. */
+    private BigDecimal addNullable(BigDecimal first, BigDecimal second) {
+        BigDecimal total = BigDecimal.ZERO;
+        boolean hasValue = false;
+        if (first != null) {
+            total = total.add(first);
+            hasValue = true;
+        }
+        if (second != null) {
+            total = total.add(second);
+            hasValue = true;
+        }
+        return hasValue ? total : null;
     }
 
     @Transactional

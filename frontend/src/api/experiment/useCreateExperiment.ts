@@ -44,6 +44,7 @@ export interface CreateExperiment {
   schemaFirstLeadPortalEnabled?: boolean;
   creativeTextPrompt?: string;
   creativeImagePrompt?: string;
+  promiseGenerationRequestIds?: number[];
 }
 
 export function useCreateExperiment() {

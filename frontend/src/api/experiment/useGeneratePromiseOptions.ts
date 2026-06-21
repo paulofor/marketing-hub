@@ -23,6 +23,9 @@ export interface GeneratePromiseOptionsResponse {
   requestId: number;
   status: string;
   options: PromiseOption[];
+  inputTokens?: number | null;
+  outputTokens?: number | null;
+  costUsd?: number | null;
 }
 
 export interface PromiseOptionsDraftResponse extends GeneratePromiseOptionsResponse {

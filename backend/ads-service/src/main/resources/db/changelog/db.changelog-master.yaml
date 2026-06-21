@@ -1,6 +1,11 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-06-21-experiment-promise-generation-cost.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-06-21-oprm-openai-flex-gpt52.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-06-21-oprm-nichocnae-v2-openai-interaction.yaml
       relativeToChangelogFile: true
   - include:

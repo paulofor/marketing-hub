@@ -11,6 +11,7 @@ import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,7 +61,7 @@ public class ImagePlanningBackendClient implements StageBackendPort<ImagePlannin
 
         return payload.stream()
                 .map(this::toStageExecution)
-                .filter(item -> item.aggregateId() != null && item.idJob() != null)
+                .filter(Objects::nonNull)
                 .limit(effectiveLimit)
                 .toList();
     }
@@ -127,11 +128,22 @@ public class ImagePlanningBackendClient implements StageBackendPort<ImagePlannin
                 .block(properties.timeout());
     }
 
-    /** Converte o payload pendente do backend para o modelo interno de execução da etapa. */
+    /** Converte o payload pendente do backend para o modelo interno de execução da etapa, ignorando contratos incompletos. */
     private StageExecution<ImagePlanningInput> toStageExecution(Map<String, Object> item) {
         Long experimentId = asLong(item.get("experimentId"));
         String stageCode = asString(item.get("stageCode"));
-        String idJob = asString(item.get("jobid"));
+        String idJob = asString(firstNonNull(item.get("jobid"), item.get("idJob")));
+
+        if (experimentId == null || idJob == null || stageCode == null) {
+            log.warn(
+                    "Ignoring incomplete image planning pending payload. experimentId={}, idJob={}, stageCode={}, keys={}",
+                    experimentId,
+                    idJob,
+                    stageCode,
+                    item.keySet()
+            );
+            return null;
+        }
 
         ImagePlanningInput input = new ImagePlanningInput(
                 experimentId,
@@ -175,6 +187,14 @@ public class ImagePlanningBackendClient implements StageBackendPort<ImagePlannin
         return payload;
     }
 
+    /** Retorna o primeiro valor não nulo entre as opções informadas. */
+    private Object firstNonNull(Object... values) {
+        for (Object value : values) {
+            if (value != null) {
+                return value;
+            }
+        }
+        return null;
 
     /** Monta o bloco textual de contexto comercial usado pelo prompt de imageplanning. */
     private String buildCaseDataBlock(Map<String, Object> payload) {

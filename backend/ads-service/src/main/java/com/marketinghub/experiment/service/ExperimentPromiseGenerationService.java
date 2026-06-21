@@ -1,6 +1,7 @@
 package com.marketinghub.experiment.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.promise.ExperimentPromiseGenerationRequest;
 import com.marketinghub.experiment.promise.ExperimentPromiseGenerationRequestStatus;
@@ -59,7 +60,7 @@ public class ExperimentPromiseGenerationService {
         MarketNiche niche = nicheRepository.findById(request.nicheId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Nicho não encontrado"));
         Hypothesis hypothesis = resolveHypothesis(request.hypothesisId());
-        String prompt = buildPrompt(request, niche, hypothesis);
+        String prompt = buildPrompt(niche, hypothesis);
         ExperimentPromiseGenerationRequest entity = ExperimentPromiseGenerationRequest.builder()
                 .niche(niche)
                 .hypothesis(hypothesis)
@@ -159,75 +160,114 @@ public class ExperimentPromiseGenerationService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Hipótese não encontrada"));
     }
 
-    /** Monta o contexto funcional do nicho, hipótese e campos já digitados na tela. */
-    private String buildPrompt(GenerateExperimentPromiseOptionsRequest request, MarketNiche niche, Hypothesis hypothesis) {
+    /** Monta um contexto comercial enxuto para evitar prompts grandes demais na geração de promessa. */
+    private String buildPrompt(MarketNiche niche, Hypothesis hypothesis) {
         StringBuilder sb = new StringBuilder();
-        sb.append("Contexto para gerar exatamente 3 opções diferentes de contrato de promessa única para um novo experimento.\n");
-        appendNicheDetails(sb, niche);
-        appendRichNicheDescription(sb, niche);
-        appendHypothesisPipelineDetails(sb, hypothesis);
-        appendIfPresent(sb, "Dor atual digitada", request.currentSinglePain());
-        appendIfPresent(sb, "Recompensa atual digitada", request.currentFreeReward());
-        appendIfPresent(sb, "Promessa atual digitada", request.currentFunnelPromise());
-        appendIfPresent(sb, "CTA atual digitado", request.currentPrimaryCta());
-        sb.append("\nAs três opções devem ser distintas: uma direta, uma emocional e uma operacional/prática.");
+        sb.append(
+                "Contexto enxuto para gerar exatamente 3 opções diferentes de contrato de promessa única para um novo experimento.\n");
+        appendCompactNicheDetails(sb, niche);
+        appendCompactHypothesisDetails(sb, hypothesis);
+        sb.append("\nRegras da resposta:\n");
+        sb.append("- Gere uma opção direta, uma emocional e uma operacional/prática.\n");
+        sb.append(
+                "- Cada opção deve conter uma dor única, uma recompensa gratuita concreta, uma promessa plausível e um CTA claro.\n");
+        sb.append("- Não use campos digitados pelo usuário; a tela escolhe uma opção gerada pela IA.\n");
         return sb.toString();
     }
 
-    /** Adiciona ao prompt os detalhes disponíveis do nicho selecionado. */
-    private void appendNicheDetails(StringBuilder sb, MarketNiche niche) {
+    /** Adiciona ao prompt apenas os sinais de nicho necessários para gerar promessa comercial. */
+    private void appendCompactNicheDetails(StringBuilder sb, MarketNiche niche) {
         sb.append("Nicho selecionado:\n");
-        appendIfPresent(sb, "- Nome", niche.getName());
-        appendIfPresent(sb, "- Descrição", niche.getDescription());
-        appendIfPresent(sb, "- Categoria de interesse", niche.getInterestCategory());
-        appendIfPresent(sb, "- Categoria de cargo", niche.getRoleCategory());
-        appendIfPresent(sb, "- Segmentação base", niche.getBaseSegmentation());
-        appendIfPresent(sb, "- Interesses", niche.getInterests());
-        appendIfPresent(sb, "- Filtros demográficos", niche.getDemographicFilters());
-        appendIfPresent(sb, "- Dicas extras", niche.getExtraTips());
-        appendIfPresent(sb, "- Promessas validadas", niche.getPromises());
-        appendIfPresent(sb, "- Ofertas validadas", niche.getOffers());
-        appendIfPresent(sb, "- Volume de demanda", niche.getDemandVolume());
-        appendIfPresent(sb, "- Modelo de hipóteses do nicho", niche.getHypothesisModel());
-        appendListIfPresent(sb, "- Lista curada de interesses", niche.getInterestList());
-        appendListIfPresent(sb, "- Lista curada de cargos", niche.getRoleList());
-        appendListIfPresent(sb, "- Lista curada de comportamentos", niche.getBehaviorList());
+        appendIfPresent(sb, "- Nome", compact(niche.getName(), 300));
+        appendIfPresent(sb, "- Descrição", compact(niche.getDescription(), 500));
+        appendIfPresent(sb, "- Segmentação base", compact(niche.getBaseSegmentation(), 500));
+        appendIfPresent(sb, "- Volume de demanda", compact(niche.getDemandVolume(), 300));
+        appendListIfPresent(sb, "- Interesses principais", niche.getInterestList());
+        appendListIfPresent(sb, "- Cargos principais", niche.getRoleList());
+        appendRichNicheSummary(sb, niche);
     }
 
-    /** Adiciona a descrição rica ativa do nicho quando ela já foi gerada pelo pipeline de IA. */
-    private void appendRichNicheDescription(StringBuilder sb, MarketNiche niche) {
+    /** Adiciona ao prompt um resumo da descrição rica sem incluir prompts ou evidências brutas. */
+    private void appendRichNicheSummary(StringBuilder sb, MarketNiche niche) {
         if (niche.getHypothesisDetailedDescription() == null) {
             return;
         }
         var description = niche.getHypothesisDetailedDescription();
-        sb.append("\nDescrição rica ativa do nicho:\n");
-        appendIfPresent(sb, "- Título da descrição rica", description.getTitle());
-        appendIfPresent(sb, "- Descrição rica", description.getDescription());
-        appendIfPresent(sb, "- Dores detalhadas", description.getPains());
-        appendIfPresent(sb, "- Desejos detalhados", description.getDesires());
-        appendIfPresent(sb, "- Necessidades detalhadas", description.getNeeds());
-        appendIfPresent(sb, "- Prompt que gerou a descrição rica", description.getPrompt());
-        appendIfPresent(sb, "- Modelo da descrição rica", description.getModel());
+        sb.append("\nResumo do nicho:\n");
+        appendIfPresent(sb, "- Dores", compact(description.getPains(), 900));
+        appendIfPresent(sb, "- Desejos", compact(description.getDesires(), 700));
+        appendIfPresent(sb, "- Necessidades", compact(description.getNeeds(), 700));
     }
 
-    /** Adiciona ao prompt o pipeline completo conhecido da hipótese selecionada. */
-    private void appendHypothesisPipelineDetails(StringBuilder sb, Hypothesis hypothesis) {
-        sb.append("\nHipótese selecionada e pipeline de hipótese:\n");
-        appendIfPresent(sb, "- Título", hypothesis.getTitle());
-        appendIfPresent(sb, "- Persona", hypothesis.getPersona());
-        appendIfPresent(sb, "- Dor", hypothesis.getProblem());
-        appendIfPresent(sb, "- Promessa", hypothesis.getPromise());
-        appendIfPresent(sb, "- Mecanismo", hypothesis.getMechanism());
-        appendIfPresent(sb, "- Mecanismo único", hypothesis.getUniqueMechanism());
-        appendIfPresent(sb, "- Entrega", hypothesis.getEntrega());
-        appendIfPresent(sb, "- Regra de sucesso", hypothesis.getSuccessRule());
-        appendIfPresent(sb, "- Tipo de oferta", hypothesis.getOfferType() != null ? hypothesis.getOfferType().name() : null);
+    /** Adiciona ao prompt os campos decisivos da hipótese sem carregar JSON completo ou prompt original. */
+    private void appendCompactHypothesisDetails(StringBuilder sb, Hypothesis hypothesis) {
+        sb.append("\nHipótese selecionada:\n");
+        appendIfPresent(sb, "- Título", compact(hypothesis.getTitle(), 300));
+        appendIfPresent(sb, "- Persona", compact(hypothesis.getPersona(), 500));
+        appendStructuredText(sb, "- Dor", hypothesis.getProblem(), 1200);
+        appendStructuredText(sb, "- Promessa", hypothesis.getPromise(), 900);
+        appendStructuredText(
+                sb, "- Mecanismo", firstText(hypothesis.getMechanism(), hypothesis.getUniqueMechanism()), 1000);
+        appendStructuredText(sb, "- Entrega", hypothesis.getEntrega(), 1200);
+        appendStructuredText(sb, "- Prova", hypothesis.getSuccessRule(), 900);
+        appendIfPresent(
+                sb, "- Tipo de oferta", hypothesis.getOfferType() != null ? hypothesis.getOfferType().name() : null);
         appendIfPresent(sb, "- Preço", hypothesis.getPrice() != null ? hypothesis.getPrice().toPlainString() : null);
-        appendIfPresent(sb, "- Meta de CPL", hypothesis.getKpiTargetCpl() != null ? hypothesis.getKpiTargetCpl().toPlainString() : null);
-        appendIfPresent(sb, "- Status", hypothesis.getStatus() != null ? hypothesis.getStatus().name() : null);
-        appendIfPresent(sb, "- Modelo da hipótese", hypothesis.getModel());
-        appendIfPresent(sb, "- Prompt que gerou a hipótese", hypothesis.getPrompt());
-        appendIfPresent(sb, "- Snapshot JSON do framework de hipótese", hypothesis.getFrameworkJson());
+    }
+
+    /** Adiciona texto estruturado priorizando summaries quando o campo estiver em JSON. */
+    private void appendStructuredText(StringBuilder sb, String label, String value, int maxLength) {
+        if (!StringUtils.hasText(value)) {
+            return;
+        }
+        appendIfPresent(sb, label, compact(extractUsefulText(value), maxLength));
+    }
+
+    /** Extrai o resumo funcional de JSONs de pipeline, evitando enviar evidências brutas para a IA. */
+    private String extractUsefulText(String value) {
+        String trimmed = value.trim();
+        if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) {
+            return trimmed;
+        }
+        try {
+            JsonNode root = objectMapper.readTree(trimmed);
+            StringBuilder sb = new StringBuilder();
+            appendJsonField(sb, root, "summary");
+            appendJsonField(sb, root, "surface");
+            appendJsonField(sb, root, "root");
+            appendJsonField(sb, root, "entryPromise");
+            appendJsonField(sb, root, "coreOffer");
+            appendJsonField(sb, root, "proofMessage");
+            appendJsonField(sb, root, "mechanism");
+            return sb.length() > 0 ? sb.toString().trim() : trimmed;
+        } catch (JsonProcessingException ex) {
+            return trimmed;
+        }
+    }
+
+    /** Copia um campo textual de JSON para o resumo enviado ao modelo. */
+    private void appendJsonField(StringBuilder sb, JsonNode root, String fieldName) {
+        JsonNode node = root.path(fieldName);
+        if (node.isTextual() && StringUtils.hasText(node.asText())) {
+            sb.append(fieldName).append(": ").append(node.asText().trim()).append("\n");
+        }
+    }
+
+    /** Retorna o primeiro texto preenchido entre duas opções equivalentes. */
+    private String firstText(String first, String second) {
+        return StringUtils.hasText(first) ? first : second;
+    }
+
+    /** Limita textos longos preservando o começo do contexto de negócio. */
+    private String compact(String value, int maxLength) {
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        String normalized = value.trim().replaceAll("\\s+", " ");
+        if (normalized.length() <= maxLength) {
+            return normalized;
+        }
+        return normalized.substring(0, maxLength).trim() + "...";
     }
 
     /** Adiciona texto ao prompt quando o valor existe. */

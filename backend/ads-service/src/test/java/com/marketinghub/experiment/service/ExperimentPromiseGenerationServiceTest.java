@@ -100,7 +100,7 @@ class ExperimentPromiseGenerationServiceTest {
         verify(requestRepository).save(requestCaptor.capture());
         ExperimentPromiseGenerationRequest persisted = requestCaptor.getValue();
         assertThat(persisted.getPrompt())
-                .contains("Nicho selecionado", "Hipótese selecionada", "Clientes somem depois do atendimento")
+                .contains("Nicho selecionado", "Hipótese selecionada", "Clientes somem depois do atendimento", "produto low-ticket irresistível")
                 .doesNotContain("evidência extensa", "Prompt bruto antigo", "dor digitada", "recompensa digitada");
         assertThat(persisted.getPrompt().length()).isLessThan(8_000);
         assertThat(persisted.getStatus()).isEqualTo(ExperimentPromiseGenerationRequestStatus.PENDING);

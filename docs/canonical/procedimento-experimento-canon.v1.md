@@ -64,20 +64,21 @@ Códigos operacionais oficiais a exibir e sincronizar:
 
 A transição entre o bloco inicial e o GeraLanding ocorre quando `AD_IMAGE_BRIEFING` conclui com sucesso e o experimento já possui ângulo, copy e briefing de imagem suficientes para gerar a landing. A partir desse ponto, o usuário ou a rotina operacional autorizada inicia `landing-page-wireframe`; depois disso, o backend mantém o encadeamento automático documentado neste cânone para copy, planejamento de imagem, geração de imagem e preset de design. Aprovação/publicação da landing e decisões de liberação para campanha continuam sendo passos manuais de controle operacional, pois impactam diretamente o que será exposto ao público e medido como experimento comercial.
 
-### 4.1.2 Regra mandatória — promessa única e recompensa gratuita única
+### 4.1.2 Regra mandatória — entrada comercial com isca e produto
 
-Todo experimento de captação por recompensa gratuita deve testar uma única hipótese comercial de entrada, composta por **uma dor principal**, **uma promessa principal**, **uma recompensa gratuita principal** e **um CTA principal**. O objetivo é impedir que anúncio, landing, formulário e entrega validem mensagens diferentes e tornem o resultado inconclusivo.
+Todo experimento de captação por isca digital deve testar uma única hipótese comercial de entrada, composta por **uma dor principal**, **uma isca digital principal**, **um produto low-ticket de entrada**, **uma promessa principal** e **um CTA principal**. O objetivo é impedir que anúncio, landing, formulário, entrega e próxima oferta validem mensagens diferentes e tornem o resultado inconclusivo.
 
 Regras obrigatórias:
 - o experimento deve escolher apenas uma dor de entrada; quando houver várias dores plausíveis, deve prevalecer a mais urgente, concreta, reconhecível rapidamente pelo público e diretamente ligada à intenção comercial do nicho;
-- a recompensa gratuita deve ser simples, concreta e imediatamente aplicável, como mensagens prontas, checklist curto, roteiro, template ou mini-kit de vitória rápida; não deve ser apresentada como “prévia”, “diagnóstico”, “sistema completo” ou promessa ampla demais para o primeiro contato;
-- a promessa do anúncio, do botão, do formulário e da entrega deve repetir a mesma ideia central da recompensa gratuita. Exemplo canônico de CTA: “Receber as 3 mensagens”;
-- a copy não deve misturar múltiplas recompensas, múltiplas dores ou múltiplos CTAs no mesmo experimento;
-- a landing deve funcionar como confirmação da recompensa gratuita e validação de interesse, não como página de venda completa nem como explicação extensa do produto final;
-- experimentos que capturam lead por recompensa gratuita devem ser configurados para objetivo de campanha **Leads** e otimização compatível com geração de lead/formulário, não para objetivo **Tráfego** nem otimização por clique;
-- antes da publicação, o conjunto de ativos deve ser considerado inconsistente se a dor, a recompensa, a promessa ou o CTA divergirem entre anúncio, botão, formulário, landing e entrega.
+- a isca digital deve ser simples, concreta e imediatamente aplicável, como mensagens prontas, checklist curto, roteiro, template ou mini-kit de vitória rápida; não deve ser apresentada como “prévia”, “diagnóstico”, “sistema completo” ou promessa ampla demais para o primeiro contato;
+- o produto low-ticket de entrada deve ser explicitado junto da isca, com transformação percebida como muito necessária, redução clara de dor/esforço, aumento de facilidade e sensação de alívio, controle e felicidade, mantendo plausibilidade e sem prometer resultado absoluto;
+- a promessa do anúncio, do botão, do formulário e da entrega deve repetir a mesma ideia central da isca digital. Exemplo canônico de CTA: “Receber as 3 mensagens”;
+- a copy não deve misturar múltiplas iscas, múltiplas dores ou múltiplos CTAs no mesmo experimento;
+- a landing deve funcionar como confirmação da isca digital e validação de interesse, não como página de venda completa nem como explicação extensa do produto final;
+- experimentos que capturam lead por isca digital devem ser configurados para objetivo de campanha **Leads** e otimização compatível com geração de lead/formulário, não para objetivo **Tráfego** nem otimização por clique;
+- antes da publicação, o conjunto de ativos deve ser considerado inconsistente se a dor, a isca, a promessa ou o CTA divergirem entre anúncio, botão, formulário, landing e entrega.
 
-A interpretação do resultado do experimento deve partir dessa unidade: se não houver leads, a dor ou a promessa/recompensa de entrada devem ser revisadas; se houver leads baratos, mas sem avanço comercial, a oferta, prova ou qualificação devem ser melhoradas.
+A interpretação do resultado do experimento deve partir dessa unidade: se não houver leads, a dor ou a promessa/isca de entrada devem ser revisadas; se houver leads baratos, mas sem avanço comercial, a oferta, prova ou qualificação devem ser melhoradas.
 
 ### 4.2 Prompts dessas etapas
 Os prompts do pipeline ficam versionados no repositório, em `resources` do Worker AI.

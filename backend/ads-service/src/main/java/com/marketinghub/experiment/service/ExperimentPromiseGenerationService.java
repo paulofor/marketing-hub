@@ -175,13 +175,15 @@ public class ExperimentPromiseGenerationService {
     private String buildPrompt(MarketNiche niche, Hypothesis hypothesis) {
         StringBuilder sb = new StringBuilder();
         sb.append(
-                "Contexto enxuto para gerar exatamente 3 opções diferentes de contrato de promessa única para um novo experimento.\n");
+                "Contexto enxuto para gerar exatamente 3 opções diferentes de contrato de entrada comercial para um novo experimento.\n");
         appendCompactNicheDetails(sb, niche);
         appendCompactHypothesisDetails(sb, hypothesis);
         sb.append("\nRegras da resposta:\n");
         sb.append("- Gere uma opção direta, uma emocional e uma operacional/prática.\n");
         sb.append(
-                "- Cada opção deve conter uma dor única, uma recompensa gratuita concreta, uma promessa plausível e um CTA claro.\n");
+                "- Cada opção deve conter uma dor única, uma isca digital concreta, um produto low-ticket irresistível, uma promessa plausível e um CTA claro.\n");
+        sb.append("- A isca deve abrir desejo pelo produto pago sem virar página de vendas.\n");
+        sb.append("- O produto deve parecer altamente necessário: reduzir dor/esforço, facilitar a rotina e aumentar a sensação de alívio, controle e felicidade, sem prometer garantia absoluta.\n");
         sb.append("- Não use campos digitados pelo usuário; a tela escolhe uma opção gerada pela IA.\n");
         return sb.toString();
     }

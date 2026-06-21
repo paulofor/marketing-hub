@@ -18,17 +18,22 @@
           "freeReward": {
             "type": "string",
             "minLength": 10,
-            "description": "Recompensa gratuita simples e útil que será entregue ao lead."
+            "description": "Isca digital simples, desejável e útil que será entregue ao lead."
+          },
+          "productOffer": {
+            "type": "string",
+            "minLength": 10,
+            "description": "Produto low-ticket de entrada que a isca prepara para vender, com transformação desejável e aplicável."
           },
           "funnelPromise": {
             "type": "string",
             "minLength": 10,
-            "description": "Promessa plausível do funil, alinhada à dor e à recompensa."
+            "description": "Promessa plausível do funil, alinhada à dor, à isca e ao produto de entrada."
           },
           "primaryCta": {
             "type": "string",
             "minLength": 5,
-            "description": "CTA principal claro, orientado ao recebimento da recompensa."
+            "description": "CTA principal claro, orientado ao recebimento da isca digital."
           },
           "reason": {
             "type": "string",
@@ -36,9 +41,18 @@
             "description": "Motivo objetivo da opção e conexão com nicho/hipótese."
           }
         },
-        "required": ["singlePain", "freeReward", "funnelPromise", "primaryCta", "reason"]
+        "required": [
+          "singlePain",
+          "freeReward",
+          "productOffer",
+          "funnelPromise",
+          "primaryCta",
+          "reason"
+        ]
       }
     }
   },
-  "required": ["options"]
+  "required": [
+    "options"
+  ]
 }

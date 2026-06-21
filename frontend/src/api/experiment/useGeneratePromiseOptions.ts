@@ -5,6 +5,7 @@ import { toast } from "react-toastify";
 export interface PromiseOption {
   singlePain: string;
   freeReward: string;
+  productOffer: string;
   funnelPromise: string;
   primaryCta: string;
   reason: string;

@@ -89,6 +89,7 @@ export default function NewExperimentPage() {
   });
   const [autoSampleSize, setAutoSampleSize] = useState(true);
   const [promiseOptions, setPromiseOptions] = useState<PromiseOption[]>([]);
+  const [selectedProductOffer, setSelectedProductOffer] = useState("");
   const [promiseRequestId, setPromiseRequestId] = useState<
     number | undefined
   >();
@@ -200,6 +201,7 @@ export default function NewExperimentPage() {
       return;
     }
     setPromiseOptions([]);
+    setSelectedProductOffer("");
     setForm((prev) => ({
       ...prev,
       singlePain: "",
@@ -224,6 +226,7 @@ export default function NewExperimentPage() {
       funnelPromise: option.funnelPromise,
       primaryCta: option.primaryCta,
     }));
+    setSelectedProductOffer(option.productOffer || "");
   };
 
   const submit = async () => {
@@ -250,7 +253,7 @@ export default function NewExperimentPage() {
         return;
       }
       if (!form.freeReward.trim()) {
-        alert("Informe uma única recompensa gratuita");
+        alert("Informe uma única isca digital");
         return;
       }
       if (!form.funnelPromise.trim()) {
@@ -438,10 +441,10 @@ export default function NewExperimentPage() {
         <div className="card-body">
           <div className="d-flex flex-column flex-md-row align-items-md-start justify-content-between gap-2 mb-3">
             <div>
-              <h2 className="h6">Contrato de promessa única</h2>
+              <h2 className="h6">Contrato de entrada comercial</h2>
               <p className="text-muted small mb-0">
-                Use uma dor, uma recompensa gratuita e um CTA iguais no anúncio,
-                botão, formulário e entrega.
+                Use uma dor, uma isca digital, um produto de entrada e um CTA
+                coerentes para transformar interesse em venda.
               </p>
             </div>
             <button
@@ -501,7 +504,12 @@ export default function NewExperimentPage() {
                         <strong>Dor:</strong> {option.singlePain}
                       </p>
                       <p className="small mb-1">
-                        <strong>Recompensa:</strong> {option.freeReward}
+                        <strong>Isca digital:</strong> {option.freeReward}
+                      </p>
+                      <p className="small mb-1">
+                        <strong>Produto de entrada:</strong>{" "}
+                        {option.productOffer ||
+                          "Oferta low-ticket alinhada à isca"}
                       </p>
                       <p className="small mb-1">
                         <strong>Promessa:</strong> {option.funnelPromise}
@@ -537,8 +545,13 @@ export default function NewExperimentPage() {
                 <strong>Dor:</strong> {form.singlePain}
               </div>
               <div className="small">
-                <strong>Recompensa:</strong> {form.freeReward}
+                <strong>Isca digital:</strong> {form.freeReward}
               </div>
+              {selectedProductOffer && (
+                <div className="small">
+                  <strong>Produto de entrada:</strong> {selectedProductOffer}
+                </div>
+              )}
               <div className="small">
                 <strong>Promessa:</strong> {form.funnelPromise}
               </div>
@@ -549,7 +562,8 @@ export default function NewExperimentPage() {
           ) : (
             <div className="alert alert-secondary py-2 mb-3" role="status">
               Solicite as opções por IA e escolha uma delas para fixar a dor, a
-              recompensa, a promessa e o CTA do experimento.
+              isca digital, o produto de entrada, a promessa e o CTA do
+              experimento.
             </div>
           )}
           <div className="alert alert-info py-2 mb-0">

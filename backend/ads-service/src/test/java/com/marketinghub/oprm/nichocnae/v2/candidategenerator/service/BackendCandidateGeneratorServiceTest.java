@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 
 import com.marketinghub.oprm.cnae.OprmNicheCandidate;
 import com.marketinghub.oprm.nichocnae.v2.OprmNichoCnaeV2FailureType;
+import com.marketinghub.oprm.nichocnae.v2.OprmNichoCnaeV2OpenAiInteraction;
 import com.marketinghub.oprm.nichocnae.v2.OprmNichoCnaeV2StageExecution;
 import com.marketinghub.oprm.nichocnae.v2.OprmNichoCnaeV2StageExecutionStatus;
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.completeStageExecution.CandidateGeneratorCompletionRequest;
@@ -16,7 +17,9 @@ import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.completeSta
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.failStageExecution.CandidateGeneratorFailureRequest;
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.failStageExecution.CandidateGeneratorFailureResponse;
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.pending.CandidateGeneratorPendingResponse;
+import com.marketinghub.oprm.nichocnae.v2.service.openaiinteraction.OpenAiInteractionAuditRequest;
 import com.marketinghub.repository.jpa.oprm.cnae.OprmNicheCandidateRepository;
+import com.marketinghub.repository.jpa.oprm.nichocnae.v2.OprmNichoCnaeV2OpenAiInteractionRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.v2.OprmNichoCnaeV2StageExecutionRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -36,6 +39,8 @@ class BackendCandidateGeneratorServiceTest {
     @Mock private OprmNicheCandidateRepository nicheCandidateRepository;
 
     @Mock private OprmNichoCnaeV2StageExecutionRepository stageExecutionRepository;
+
+    @Mock private OprmNichoCnaeV2OpenAiInteractionRepository openAiInteractionRepository;
 
     /** Deve manter a v2 sem pendências quando a feature flag estiver desligada durante calibração. */
     @Test
@@ -285,10 +290,55 @@ class BackendCandidateGeneratorServiceTest {
         assertThat(result.materializationEnabled()).isTrue();
     }
 
+    /** Deve gravar auditoria OpenAI no próprio service canônico sem delegar a service auxiliar. */
+    @Test
+    void completePersistsOpenAiAuditInCanonicalService() {
+        BackendCandidateGeneratorService service = new BackendCandidateGeneratorService(
+                nicheCandidateRepository, stageExecutionRepository, openAiInteractionRepository, true, true);
+        OprmNichoCnaeV2StageExecution execution = execution(92L, 1, 0, 1);
+        when(stageExecutionRepository.findByIdAndStageCode(92L, "candidate-generator"))
+                .thenReturn(Optional.of(execution));
+        when(stageExecutionRepository.save(any(OprmNichoCnaeV2StageExecution.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(openAiInteractionRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.complete(
+                92L,
+                new CandidateGeneratorCompletionRequest(
+                        "MEI_AUDIENCE_READY",
+                        "MATERIALIZAR_NICHO",
+                        "{}",
+                        "enriched-niche-materializer",
+                        List.of(new OpenAiInteractionAuditRequest(
+                                "gpt-4.1-mini",
+                                "flex",
+                                100,
+                                40,
+                                140,
+                                new BigDecimal("0.001234"),
+                                "resp_123",
+                                "{\"request\":true}",
+                                "{\"response\":true}",
+                                "completed",
+                                null))));
+
+        ArgumentCaptor<Iterable<OprmNichoCnaeV2OpenAiInteraction>> captor = ArgumentCaptor.forClass(Iterable.class);
+        verify(openAiInteractionRepository).saveAll(captor.capture());
+        OprmNichoCnaeV2OpenAiInteraction saved = captor.getValue().iterator().next();
+        assertThat(saved.getStageExecutionId()).isEqualTo(92L);
+        assertThat(saved.getJobId()).isEqualTo("nichocnae-v2-candidate-92");
+        assertThat(saved.getStageCode()).isEqualTo("candidate-generator");
+        assertThat(saved.getServiceTier()).isEqualTo("flex");
+        assertThat(saved.getTotalTokens()).isEqualTo(140);
+        assertThat(saved.getCostUsd()).isEqualByComparingTo("0.001234");
+        assertThat(saved.getRawRequest()).contains("request");
+        assertThat(saved.getRawResponse()).contains("response");
+    }
+
     /** Cria o service testável com flags explícitas para a v2. */
     private BackendCandidateGeneratorService service(boolean v2Enabled, boolean materializationEnabled) {
         return new BackendCandidateGeneratorService(
-                nicheCandidateRepository, stageExecutionRepository, v2Enabled, materializationEnabled);
+                nicheCandidateRepository, stageExecutionRepository, openAiInteractionRepository, v2Enabled, materializationEnabled);
     }
 
     /** Monta candidato de nicho mínimo para geração de pendência da v2. */

@@ -4969,3 +4969,9 @@
 - Solicitação: ao pedir nova IA na tela de novo experimento, remover as 3 opções atuais e gerar 3 novas, contabilizando o custo de IA no nicho, na hipótese e no experimento criado.
 - Foi feito: a tela limpa a opção selecionada e as sugestões antigas antes de registrar nova solicitação; o AI Worker envia tokens/custo da OpenAI; o backend persiste o custo da solicitação, soma no nicho e na hipótese ao concluir e inclui as solicitações usadas no custo inicial do experimento.
 - Prevenção: a telemetria de custo fica no contrato persistido da fila `experiment_promise_generation_request`, evitando opções geradas sem custo auditável.
+
+## 2026-06-21 — Custo individual na lista de Testes de Nicho
+- Problema: a coluna **Custo** da lista de experimentos repetia o total do nicho para todos os experimentos do mesmo nicho, dando a impressão de custo duplicado por hipótese/nicho.
+- Causa-raiz: o frontend calculava um mapa de custo agregado por nicho e usava esse total dentro de cada linha da tabela.
+- Correção aplicada: cada linha da tabela passou a exibir o custo recebido do próprio experimento pelo backend, mantendo o total do nicho apenas no filtro de nichos.
+- Prevenção de recorrência: teste de tela passou a validar que dois experimentos do mesmo nicho exibem custos individuais diferentes e não o total agregado do nicho.

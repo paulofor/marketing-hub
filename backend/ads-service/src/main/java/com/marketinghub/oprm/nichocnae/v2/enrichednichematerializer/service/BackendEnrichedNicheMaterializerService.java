@@ -10,7 +10,7 @@ import com.marketinghub.oprm.nichocnae.v2.enrichednichematerializer.service.crea
 import com.marketinghub.oprm.nichocnae.v2.enrichednichematerializer.service.failStageExecution.EnrichedNicheMaterializerFailureRequest;
 import com.marketinghub.oprm.nichocnae.v2.enrichednichematerializer.service.failStageExecution.EnrichedNicheMaterializerFailureResponse;
 import com.marketinghub.oprm.nichocnae.v2.enrichednichematerializer.service.pending.EnrichedNicheMaterializerPendingResponse;
-import com.marketinghub.oprm.nichocnae.v2.service.openaiinteraction.OpenAiInteractionAuditService;
+import com.marketinghub.oprm.nichocnae.v2.service.OpenAiInteractionAuditService;
 import com.marketinghub.repository.jpa.oprm.cnae.OprmNicheCandidateRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.v2.OprmNichoCnaeV2StageExecutionRepository;
 import java.time.Instant;

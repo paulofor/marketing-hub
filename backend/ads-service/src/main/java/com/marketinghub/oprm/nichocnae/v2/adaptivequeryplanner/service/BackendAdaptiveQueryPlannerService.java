@@ -10,7 +10,7 @@ import com.marketinghub.oprm.nichocnae.v2.adaptivequeryplanner.service.createSta
 import com.marketinghub.oprm.nichocnae.v2.adaptivequeryplanner.service.failStageExecution.AdaptiveQueryPlannerFailureRequest;
 import com.marketinghub.oprm.nichocnae.v2.adaptivequeryplanner.service.failStageExecution.AdaptiveQueryPlannerFailureResponse;
 import com.marketinghub.oprm.nichocnae.v2.adaptivequeryplanner.service.pending.AdaptiveQueryPlannerPendingResponse;
-import com.marketinghub.oprm.nichocnae.v2.service.openaiinteraction.OpenAiInteractionAuditService;
+import com.marketinghub.oprm.nichocnae.v2.service.OpenAiInteractionAuditService;
 import com.marketinghub.repository.jpa.oprm.cnae.OprmNicheCandidateRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.v2.OprmNichoCnaeV2StageExecutionRepository;
 import java.time.Instant;

@@ -10,7 +10,7 @@ import com.marketinghub.oprm.nichocnae.v2.commercialevidencegate.service.createS
 import com.marketinghub.oprm.nichocnae.v2.commercialevidencegate.service.failStageExecution.CommercialEvidenceGateFailureRequest;
 import com.marketinghub.oprm.nichocnae.v2.commercialevidencegate.service.failStageExecution.CommercialEvidenceGateFailureResponse;
 import com.marketinghub.oprm.nichocnae.v2.commercialevidencegate.service.pending.CommercialEvidenceGatePendingResponse;
-import com.marketinghub.oprm.nichocnae.v2.service.openaiinteraction.OpenAiInteractionAuditService;
+import com.marketinghub.oprm.nichocnae.v2.service.OpenAiInteractionAuditService;
 import com.marketinghub.repository.jpa.oprm.cnae.OprmNicheCandidateRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.v2.OprmNichoCnaeV2StageExecutionRepository;
 import java.time.Instant;

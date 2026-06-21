@@ -10,7 +10,7 @@ import com.marketinghub.oprm.nichocnae.v2.candidatetournament.service.createStag
 import com.marketinghub.oprm.nichocnae.v2.candidatetournament.service.failStageExecution.CandidateTournamentFailureRequest;
 import com.marketinghub.oprm.nichocnae.v2.candidatetournament.service.failStageExecution.CandidateTournamentFailureResponse;
 import com.marketinghub.oprm.nichocnae.v2.candidatetournament.service.pending.CandidateTournamentPendingResponse;
-import com.marketinghub.oprm.nichocnae.v2.service.openaiinteraction.OpenAiInteractionAuditService;
+import com.marketinghub.oprm.nichocnae.v2.service.OpenAiInteractionAuditService;
 import com.marketinghub.repository.jpa.oprm.cnae.OprmNicheCandidateRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.v2.OprmNichoCnaeV2StageExecutionRepository;
 import java.time.Instant;

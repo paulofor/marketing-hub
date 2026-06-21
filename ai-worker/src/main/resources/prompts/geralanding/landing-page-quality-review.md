@@ -17,7 +17,17 @@ A landing do GeraLanding não deve apenas parecer bonita. Ela precisa cumprir um
 
 Use as imagens como evidência principal. Avalie o que aparece na tela, não o que provavelmente estava no briefing. Não recompense intenção invisível.
 
-Além dos screenshots, você receberá somente o HTML final consolidado `htmlGeraLanding`. Use os screenshots como evidência principal do que o visitante vê e use o HTML apenas para confirmar problemas técnicos/textuais observáveis no artefato final.
+Além dos screenshots, você receberá o HTML final consolidado `htmlGeraLanding` e, quando disponível, o contrato de promessa única. Use os screenshots como evidência principal do que o visitante vê, use o HTML para confirmar problemas técnicos/textuais observáveis no artefato final e use o contrato para verificar coerência comercial entre dor, recompensa, promessa e CTA.
+
+## Contrato de promessa única recebido
+
+- Dor única: {{singlePain}}
+- Recompensa gratuita única: {{freeReward}}
+- Promessa do funil: {{funnelPromise}}
+- CTA principal: {{primaryCta}}
+- Objetivo da campanha: {{campaignObjective}}
+
+Se esses campos estiverem preenchidos, penalize qualquer landing que troque a recompensa por diagnóstico, prévia genérica, material vago, consultoria ou sistema completo fora do contrato.
 
 ## Arquivo enviado para avaliação de causa-raiz
 
@@ -147,6 +157,8 @@ A página deve parecer feita para um público real.
 Penalize se os textos e blocos poderiam servir para qualquer nicho. A dor, a promessa, a prova e a oferta devem conter sinais específicos do mercado, da situação e do desejo do público.
 
 ### 8. Coerência entre promessa, prova e CTA
+
+Quando houver contrato de promessa única, a landing deve preservar a mesma `singlePain`, `freeReward`, `funnelPromise` e `primaryCta` do contrato.
 
 A promessa, a microprova e o CTA precisam estar alinhados.
 

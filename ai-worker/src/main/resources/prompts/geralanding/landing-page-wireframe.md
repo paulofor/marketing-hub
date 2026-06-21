@@ -30,6 +30,13 @@ Dor: {{PAIN_JSON}}
 
 Resultado: {{RESULT_JSON}}
 
+Contrato de promessa única:
+- Dor única: {dados-singlePain}
+- Recompensa gratuita única: {dados-freeReward}
+- Promessa do funil: {dados-funnelPromise}
+- CTA principal: {dados-primaryCta}
+- Objetivo da campanha: {dados-campaignObjective}
+
 {{prompt-regras-globais}}
 
 Ângulo da Campanha que vai ser publicada:
@@ -53,6 +60,9 @@ Gerar somente o wireframe estrutural da landing em JSON válido, aderente ao sch
 O wireframe define seções, hierarquia, elementos, intenção comercial, assets esperados, formulário e navegação. O acabamento visual responsivo final é responsabilidade da etapa `landing-page-design-preset`.
 
 # Contrato obrigatório
+
+- Se houver contrato de promessa única no contexto, o wireframe deve estruturar hero, prova, entregáveis, formulário e CTAs para a mesma dor, recompensa gratuita, promessa e CTA.
+- O wireframe não pode trocar a recompensa gratuita por diagnóstico, prévia genérica, amostra vaga, consultoria, sistema completo ou outro ativo fora do contrato.
 
 - Entregar somente JSON válido com raiz obrigatória: `definicoes` e `pagina`.
 - `definicoes` deve conter exatamente: `estrutura`, `posicao`, `layout`, `mistas`.

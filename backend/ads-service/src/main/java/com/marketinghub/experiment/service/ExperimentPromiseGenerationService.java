@@ -72,7 +72,7 @@ public class ExperimentPromiseGenerationService {
                 .currentPrimaryCta(trimToNull(request.currentPrimaryCta()))
                 .build();
         ExperimentPromiseGenerationRequest saved = requestRepository.save(entity);
-        return new GenerateExperimentPromiseOptionsResponse(saved.getId(), saved.getStatus().name(), List.of());
+        return new GenerateExperimentPromiseOptionsResponse(saved.getId(), saved.getStatus().name(), saved.getPrompt(), List.of());
     }
 
     /** Retorna a solicitação mais recente ainda útil para retomada da criação do teste pela tela. */
@@ -162,8 +162,9 @@ public class ExperimentPromiseGenerationService {
     /** Monta o contexto funcional do nicho, hipótese e campos já digitados na tela. */
     private String buildPrompt(GenerateExperimentPromiseOptionsRequest request, MarketNiche niche, Hypothesis hypothesis) {
         StringBuilder sb = new StringBuilder();
-        sb.append("Gere exatamente 3 opções diferentes de contrato de promessa única para um novo experimento.\n");
+        sb.append("Contexto para gerar exatamente 3 opções diferentes de contrato de promessa única para um novo experimento.\n");
         appendNicheDetails(sb, niche);
+        appendRichNicheDescription(sb, niche);
         appendHypothesisPipelineDetails(sb, hypothesis);
         appendIfPresent(sb, "Dor atual digitada", request.currentSinglePain());
         appendIfPresent(sb, "Recompensa atual digitada", request.currentFreeReward());
@@ -187,9 +188,26 @@ public class ExperimentPromiseGenerationService {
         appendIfPresent(sb, "- Promessas validadas", niche.getPromises());
         appendIfPresent(sb, "- Ofertas validadas", niche.getOffers());
         appendIfPresent(sb, "- Volume de demanda", niche.getDemandVolume());
+        appendIfPresent(sb, "- Modelo de hipóteses do nicho", niche.getHypothesisModel());
         appendListIfPresent(sb, "- Lista curada de interesses", niche.getInterestList());
         appendListIfPresent(sb, "- Lista curada de cargos", niche.getRoleList());
         appendListIfPresent(sb, "- Lista curada de comportamentos", niche.getBehaviorList());
+    }
+
+    /** Adiciona a descrição rica ativa do nicho quando ela já foi gerada pelo pipeline de IA. */
+    private void appendRichNicheDescription(StringBuilder sb, MarketNiche niche) {
+        if (niche.getHypothesisDetailedDescription() == null) {
+            return;
+        }
+        var description = niche.getHypothesisDetailedDescription();
+        sb.append("\nDescrição rica ativa do nicho:\n");
+        appendIfPresent(sb, "- Título da descrição rica", description.getTitle());
+        appendIfPresent(sb, "- Descrição rica", description.getDescription());
+        appendIfPresent(sb, "- Dores detalhadas", description.getPains());
+        appendIfPresent(sb, "- Desejos detalhados", description.getDesires());
+        appendIfPresent(sb, "- Necessidades detalhadas", description.getNeeds());
+        appendIfPresent(sb, "- Prompt que gerou a descrição rica", description.getPrompt());
+        appendIfPresent(sb, "- Modelo da descrição rica", description.getModel());
     }
 
     /** Adiciona ao prompt o pipeline completo conhecido da hipótese selecionada. */
@@ -203,6 +221,13 @@ public class ExperimentPromiseGenerationService {
         appendIfPresent(sb, "- Mecanismo único", hypothesis.getUniqueMechanism());
         appendIfPresent(sb, "- Entrega", hypothesis.getEntrega());
         appendIfPresent(sb, "- Regra de sucesso", hypothesis.getSuccessRule());
+        appendIfPresent(sb, "- Tipo de oferta", hypothesis.getOfferType() != null ? hypothesis.getOfferType().name() : null);
+        appendIfPresent(sb, "- Preço", hypothesis.getPrice() != null ? hypothesis.getPrice().toPlainString() : null);
+        appendIfPresent(sb, "- Meta de CPL", hypothesis.getKpiTargetCpl() != null ? hypothesis.getKpiTargetCpl().toPlainString() : null);
+        appendIfPresent(sb, "- Status", hypothesis.getStatus() != null ? hypothesis.getStatus().name() : null);
+        appendIfPresent(sb, "- Modelo da hipótese", hypothesis.getModel());
+        appendIfPresent(sb, "- Prompt que gerou a hipótese", hypothesis.getPrompt());
+        appendIfPresent(sb, "- Snapshot JSON do framework de hipótese", hypothesis.getFrameworkJson());
     }
 
     /** Adiciona texto ao prompt quando o valor existe. */
@@ -235,7 +260,7 @@ public class ExperimentPromiseGenerationService {
 
     /** Converte a entidade persistida para contrato de API. */
     private GenerateExperimentPromiseOptionsResponse toResponse(ExperimentPromiseGenerationRequest entity) {
-        return new GenerateExperimentPromiseOptionsResponse(entity.getId(), entity.getStatus().name(), readOptions(entity.getOptionsJson()));
+        return new GenerateExperimentPromiseOptionsResponse(entity.getId(), entity.getStatus().name(), entity.getPrompt(), readOptions(entity.getOptionsJson()));
     }
 
     /** Serializa as opções recebidas do AI Worker para auditoria persistida. */

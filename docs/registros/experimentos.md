@@ -4947,3 +4947,13 @@
 - solicitação: permitir que o usuário volte de forma simples ao fluxo `/experiments/new` quando tiver solicitado geração por IA e saído da tela antes de concluir o novo Teste de Nicho.
 - causa-raiz: a tela mantinha o `requestId` da geração por IA e os dados preenchidos apenas em estado local do React; ao sair da rota, o estado era perdido visualmente e a lista não oferecia um atalho claro para retomar o rascunho.
 - ajuste de revisão: removido o rascunho em `localStorage` do navegador. A retomada agora consulta o backend pelo endpoint `/api/experiments/promise-contract-options/stage-executions/latest`, recuperando a solicitação de IA mais recente persistida no banco; a lista de Testes de Nicho exibe **Continuar teste em criação** quando o backend retorna uma solicitação retomável; ao salvar o teste, a solicitação é descartada com status `DISMISSED` para não manter atalho antigo; a tela de criação também mantém o botão **Voltar para Testes de Nicho**.
+
+## 2026-06-20 — Correção da fila de contrato de promessa única
+- Problema: a tela de novo experimento podia ficar em “Aguardando IA” indefinidamente porque o backend registrava a solicitação em `experiment_promise_generation_request`, mas o AI Worker não tinha consumidor periódico para buscar, assumir, processar e concluir essa fila.
+- Correção: adicionado consumidor no AI Worker para buscar solicitações pendentes, chamar a OpenAI, concluir com três opções ou registrar falha para liberar a tela do estado de espera.
+- Prevenção: o contrato de resposta passou a expor o prompt persistido ao worker, evitando processamento sem contexto comercial.
+
+## 2026-06-20 — Prompt e schema externos para promessa única
+- Ajuste: a chamada OpenAI da geração de contrato de promessa única passou a usar prompt markdown e schema JSON em arquivos do AI Worker, seguindo o padrão do GeraLanding.
+- Contexto comercial: o backend passou a incluir descrição rica ativa do nicho e o snapshot completo do pipeline de hipótese no prompt persistido para o worker.
+- Prevenção: a saída da OpenAI agora é validada por schema JSON estrito, reduzindo retorno fora do contrato esperado pela tela.

@@ -17,11 +17,15 @@
 - Para etapas que chamam OpenAI de forma assíncrona por fila/callback, use o núcleo `com.marketinghub.worker.openai.core` como arquitetura primária.
 
 
-## Regra obrigatória de logs em integrações OpenAI
-- Sempre que o Worker AI executar uma requisição para a OpenAI, registrar log com:
-  - envio para a OpenAI contendo **request cru** + **jobId do Marketing Hub**;
-  - resposta da OpenAI contendo **resposta crua** + **jobId do Marketing Hub**;
-  - envio para o backend contendo **payload enviado** + **jobId do Marketing Hub**.
+## Regra obrigatória de prompt/schema para modelos de IA
+- Sempre que o AI Worker usar um modelo de IA para gerar, revisar, classificar, enriquecer ou transformar dados, o prompt operacional deve ficar em arquivo markdown versionado em `src/main/resources/prompts/...` e o contrato de saída deve ficar em arquivo `*-schema.json` no mesmo contexto do prompt, seguindo o padrão do GeraLanding.
+- É proibido manter prompt longo, instruções comerciais completas, exemplos de resposta ou schema JSON hardcoded dentro de classes Java. A classe deve carregar os arquivos do classpath, resolver placeholders com dados vindos do backend, montar a request para a OpenAI e validar a resposta pelo schema.
+- Quando a geração depender de nicho, hipótese, experimento ou pipeline, use o contexto rico persistido e exposto pelo backend; o AI Worker não deve consultar banco diretamente nem reconstruir contexto a partir de atalhos.
+
+## Regra obrigatória de auditoria e Flex em integrações com modelos de IA
+- Sempre que o Worker AI executar uma requisição para qualquer modelo de IA, registrar de forma auditável o **request cru enviado ao modelo** e o **response bruto recebido do modelo**, sempre vinculados ao job/execução/entidade do Marketing Hub e incluindo modelo, status, erro, tokens/custo quando disponíveis.
+- Sempre que o provedor for OpenAI, a request deve usar modo Flex por padrão, enviando `service_tier: "flex"` no payload da Responses API/Chat Completions. Exceções só podem ocorrer quando houver justificativa funcional explícita e registrada no próprio fluxo.
+- Sempre que o Worker AI enviar resultado ao backend, registrar também o payload enviado ao backend com o jobId/identificador operacional correspondente.
 
 ## Regra de isolamento por etapa no OpenAI core (obrigatória)
 - Toda etapa assíncrona baseada em OpenAI deve ficar no pacote específico da própria etapa dentro de `com.marketinghub.worker.openai.core.<etapa>`.

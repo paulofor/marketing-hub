@@ -17,6 +17,11 @@
 - Para etapas que chamam OpenAI de forma assíncrona por fila/callback, use o núcleo `com.marketinghub.worker.openai.core` como arquitetura primária.
 
 
+## Regra obrigatória de prompt/schema para modelos de IA
+- Sempre que o AI Worker usar um modelo de IA para gerar, revisar, classificar, enriquecer ou transformar dados, o prompt operacional deve ficar em arquivo markdown versionado em `src/main/resources/prompts/...` e o contrato de saída deve ficar em arquivo `*-schema.json` no mesmo contexto do prompt, seguindo o padrão do GeraLanding.
+- É proibido manter prompt longo, instruções comerciais completas, exemplos de resposta ou schema JSON hardcoded dentro de classes Java. A classe deve carregar os arquivos do classpath, resolver placeholders com dados vindos do backend, montar a request para a OpenAI e validar a resposta pelo schema.
+- Quando a geração depender de nicho, hipótese, experimento ou pipeline, use o contexto rico persistido e exposto pelo backend; o AI Worker não deve consultar banco diretamente nem reconstruir contexto a partir de atalhos.
+
 ## Regra obrigatória de logs em integrações OpenAI
 - Sempre que o Worker AI executar uma requisição para a OpenAI, registrar log com:
   - envio para a OpenAI contendo **request cru** + **jobId do Marketing Hub**;

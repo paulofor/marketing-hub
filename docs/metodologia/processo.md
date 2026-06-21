@@ -187,4 +187,4 @@ Coisa muito interessante que vejo acontecer hoje.
 - Existem um desencontro entre o que o worker precisa trabalhar e o que o backend oferece. Propus um documento para o modulo dizer o que precisa em cada etapa.
 
 (21-06-2026) - continuação
-- mesmo com tudo que foi escrito nos documentos na hora da execução vi que o reaproveitamento de aprendizagem não estava acontecendo, parece que o modelo precisa ter exemplos da pratica para pode realmente seguir o que foi planejado de forma correta.
+- mesmo com tudo que foi escrito nos documentos na hora da execução vi que o reaproveitamento de aprendizagem não estava acontecendo, parece que o modelo precisa ter exemplos da pratica para pode realmente seguir o que foi planejado de forma correta. Parece que agora ele esta focando em um problema mais especifico que aconteceu ( ex: 'falta de candidatos' )

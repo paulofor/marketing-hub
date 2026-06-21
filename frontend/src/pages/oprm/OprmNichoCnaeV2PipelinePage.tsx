@@ -183,9 +183,20 @@ function JobsTable({
                 </td>
                 <td>
                   <div className="d-flex flex-column align-items-start gap-1">
-                    <span className="oprm-v2-job-table__text" title={nextAction}>
+                    <span
+                      className="oprm-v2-job-table__text"
+                      title={nextAction}
+                    >
                       {nextAction}
                     </span>
+                    {!open && job.outcomeStatus === "FAILURE" ? (
+                      <Link
+                        className="btn btn-sm btn-outline-danger py-0 px-2"
+                        to={`/oprm/cnaes/${encodeURIComponent(job.cnaeCode)}/pipeline-v2/jobs/${encodeURIComponent(job.jobId)}`}
+                      >
+                        Ver etapas até o fracasso
+                      </Link>
+                    ) : null}
                     {!open && job.actionLabel && job.actionUrl ? (
                       <Link
                         className="btn btn-sm btn-primary py-0 px-2"

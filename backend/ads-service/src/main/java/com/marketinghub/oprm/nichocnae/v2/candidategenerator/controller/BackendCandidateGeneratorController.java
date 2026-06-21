@@ -4,6 +4,7 @@ import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.BackendCand
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.completeStageExecution.CandidateGeneratorCompletionRequest;
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.completeStageExecution.CandidateGeneratorCompletionResponse;
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.createStageExecution.CandidateGeneratorCreateResponse;
+import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.detailJob.CandidateGeneratorJobDetailResponse;
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.failStageExecution.CandidateGeneratorFailureRequest;
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.failStageExecution.CandidateGeneratorFailureResponse;
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.listCnaeJobs.CandidateGeneratorCnaeJobsResponse;
@@ -37,6 +38,12 @@ public class BackendCandidateGeneratorController {
     @GetMapping("/cnaes/{cnaeCode}/jobs")
     public CandidateGeneratorCnaeJobsResponse listJobsForCnae(@PathVariable String cnaeCode) {
         return service.listJobsForCnae(cnaeCode);
+    }
+
+    /** Detalha as etapas persistidas de um job para explicar até onde ele avançou. */
+    @GetMapping("/jobs/{jobId}")
+    public CandidateGeneratorJobDetailResponse detailJob(@PathVariable String jobId) {
+        return service.detailJob(jobId);
     }
 
     /** Entrega execuções pendentes da etapa candidate-generator ao módulo executor OPRM. */

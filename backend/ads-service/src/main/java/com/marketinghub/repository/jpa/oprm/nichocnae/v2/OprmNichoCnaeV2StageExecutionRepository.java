@@ -25,6 +25,9 @@ public interface OprmNichoCnaeV2StageExecutionRepository extends JpaRepository<O
     /** Conta execuções por CNAE e estados informados para impedir dois jobs simultâneos no mesmo mercado. */
     long countByCnaeCodeAndStatusIn(String cnaeCode, List<OprmNichoCnaeV2StageExecutionStatus> statuses);
 
+    /** Lista as etapas de um job em ordem cronológica para relatório de falha ou sucesso. */
+    List<OprmNichoCnaeV2StageExecution> findByJobIdOrderByCreatedAtAsc(String jobId);
+
     /** Localiza uma execução específica por etapa para callbacks internos do executor. */
     Optional<OprmNichoCnaeV2StageExecution> findByIdAndStageCode(Long id, String stageCode);
 }

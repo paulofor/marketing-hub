@@ -11,6 +11,8 @@ import com.marketinghub.oprm.nichocnae.v2.OprmNichoCnaeV2StageExecutionStatus;
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.completeStageExecution.CandidateGeneratorCompletionRequest;
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.completeStageExecution.CandidateGeneratorCompletionResponse;
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.createStageExecution.CandidateGeneratorCreateResponse;
+import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.detailJob.CandidateGeneratorJobDetailResponse;
+import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.detailJob.CandidateGeneratorJobStageStep;
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.failStageExecution.CandidateGeneratorFailureRequest;
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.failStageExecution.CandidateGeneratorFailureResponse;
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.listCnaeJobs.CandidateGeneratorCnaeJobSummary;
@@ -174,6 +176,26 @@ public class BackendCandidateGeneratorService {
         return new CandidateGeneratorCnaeJobsResponse(cnaeCode, cnaeAiCostUsd, cnaeUsedAi, openJobs, completedJobs);
     }
 
+    /** Detalha as etapas persistidas de um job para a tela explicar o caminho até o fracasso ou sucesso. */
+    @Transactional(readOnly = true)
+    public CandidateGeneratorJobDetailResponse detailJob(String jobId) {
+        List<OprmNichoCnaeV2StageExecution> executions = stageExecutionRepository.findByJobIdOrderByCreatedAtAsc(jobId);
+        if (executions.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "NichoCNAE v2 job not found: " + jobId);
+        }
+        CandidateGeneratorCnaeJobSummary summary = toJobSummary(executions);
+        return new CandidateGeneratorJobDetailResponse(
+                summary.jobId(),
+                summary.cnaeCode(),
+                summary.status(),
+                summary.finalDecision(),
+                summary.finalDecisionLabel(),
+                summary.finalDecisionReason(),
+                summary.outcomeStatus(),
+                summary.outcomeMessage(),
+                executions.stream().map(this::toJobStageStep).toList());
+    }
+
     /** Registra conclusão da etapa persistindo a próxima etapa informada pelo executor externo. */
     @Transactional
     public CandidateGeneratorCompletionResponse complete(
@@ -223,6 +245,25 @@ public class BackendCandidateGeneratorService {
                 null,
                 saved.getAttemptNumber(),
                 saved.getTechnicalRetryNumber());
+    }
+
+    /** Converte uma execução persistida em item de linha cronológico do relatório de job. */
+    private CandidateGeneratorJobStageStep toJobStageStep(OprmNichoCnaeV2StageExecution execution) {
+        return new CandidateGeneratorJobStageStep(
+                String.valueOf(execution.getId()),
+                execution.getStageCode(),
+                execution.getStatus().name(),
+                execution.getFailureType() == null ? null : execution.getFailureType().name(),
+                execution.getAttemptNumber(),
+                execution.getTechnicalRetryNumber(),
+                execution.getKnowledgeVersion(),
+                execution.getMaterializationEnabled(),
+                execution.getInputPayload(),
+                execution.getOutputPayload(),
+                execution.getErrorMessage(),
+                execution.getNextStageCode(),
+                execution.getCreatedAt(),
+                execution.getUpdatedAt());
     }
 
     /** Monta resumo de job usando a etapa aberta mais recente ou, se não existir, a última etapa atualizada. */

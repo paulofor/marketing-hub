@@ -5004,10 +5004,6 @@
 
 ## 2026-06-21 — Correção de NullPointer nos dados de prompt do GeraLanding core
 - Problema: o teste `PresetDesignBackendClientTest.listPendingShouldIncludeQualityReviewDiagnosticInPromptData` falhava com `NullPointerException` ao montar o `promptData` da etapa Design Preset.
-- Causa-raiz: os clients de etapas do Worker AI colocavam valores nulos vindos do backend em `promptData`, mas os records de entrada usam `Map.copyOf`, que rejeita valores nulos.
-- Correção aplicada: Design Preset e Image Planning agora normalizam campos opcionais ausentes para texto vazio ou mapa vazio antes de criar a execução, preservando o diagnóstico do Quality Review e evitando quebra da fila por contexto incompleto.
-- Prevenção de recorrência: adicionado teste cobrindo pending de Design Preset sem contexto opcional, além da execução dos testes do AI Worker.
-## 2026-06-21 — Tela de novo experimento passa a tratar isca e produto de entrada
-- Solicitação: trocar a visão de recompensa por isca e produto, mantendo padrão de oferta impactante que reduza dor, facilite a vida do cliente e gere desejo intenso pelo produto.
-- Correção aplicada: a tela de novo experimento passou a exibir isca digital e produto de entrada nas opções geradas por IA; o contrato do AI Worker e o schema exigem `productOffer`; o cânone foi atualizado para tratar o experimento como entrada comercial com isca + low-ticket.
-- Prevenção: o prompt agora obriga a IA a conectar isca e produto low-ticket sem hype, promessa absoluta ou página de vendas, preservando plausibilidade e foco em venda.
+- Causa-raiz: os clients de etapas do Worker AI colocavam valores nulos vindos do backend em `promptData`, mas os records de entrada usam `Map.copyOf`, que rejeita valores nulos; além disso, campos comerciais obrigatórios não devem ser mascarados como vazios.
+- Correção aplicada: Design Preset e Image Planning agora preservam os campos comerciais recebidos e ignoram payload pendente sem `singlePain`, `freeReward`, `funnelPromise`, `primaryCta` ou `campaignObjective`, registrando diagnóstico em log em vez de enviar prompt vazio para IA. Artefatos opcionais continuam normalizados como mapa vazio quando ausentes.
+- Prevenção de recorrência: adicionados testes cobrindo pending válido com contrato comercial preenchido e pending inválido sem contrato comercial obrigatório.

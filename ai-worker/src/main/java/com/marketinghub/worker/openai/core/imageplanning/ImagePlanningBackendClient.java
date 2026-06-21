@@ -145,11 +145,23 @@ public class ImagePlanningBackendClient implements StageBackendPort<ImagePlannin
             return null;
         }
 
+        Map<String, Object> promptData = buildPromptDataFromPending(item);
+        if (!hasRequiredPromptContext(promptData)) {
+            log.warn(
+                    "Ignoring incomplete image planning pending payload. experimentId={}, idJob={}, stageCode={}, missingFields={}",
+                    experimentId,
+                    idJob,
+                    stageCode,
+                    missingPromptFields(promptData)
+            );
+            return null;
+        }
+
         ImagePlanningInput input = new ImagePlanningInput(
                 experimentId,
                 stageCode,
                 idJob,
-                buildPromptDataFromPending(item)
+                promptData
         );
 
         return new StageExecution<>(
@@ -187,9 +199,22 @@ public class ImagePlanningBackendClient implements StageBackendPort<ImagePlannin
         return payload;
     }
 
-    /** Substitui valores nulos por texto vazio para impedir nulos em contratos de prompt. */
-    private Object emptyWhenNull(Object value) {
-        return value != null ? value : "";
+    /** Verifica se o contrato comercial obrigatório do prompt foi entregue pelo backend. */
+    private boolean hasRequiredPromptContext(Map<String, Object> promptData) {
+        return missingPromptFields(promptData).isEmpty();
+    }
+
+    /** Lista campos comerciais ausentes para diagnosticar contratos incompletos sem mascarar o problema. */
+    private List<String> missingPromptFields(Map<String, Object> promptData) {
+        return List.of("singlePain", "freeReward", "funnelPromise", "primaryCta", "campaignObjective")
+                .stream()
+                .filter(field -> !hasText(promptData.get(field)))
+                .toList();
+    }
+
+    /** Indica se o valor textual obrigatório está preenchido. */
+    private boolean hasText(Object value) {
+        return value != null && !value.toString().isBlank();
     }
 
     /** Retorna o primeiro valor não nulo entre as opções informadas. */

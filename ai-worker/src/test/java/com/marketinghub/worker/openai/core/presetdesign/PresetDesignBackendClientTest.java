@@ -57,6 +57,11 @@ class PresetDesignBackendClientTest {
                             "experiment": {
                               "id": 12,
                               "name": "Experimento Design",
+                              "singlePain": "CTA invisível reduz conversão",
+                              "freeReward": "checklist de contraste",
+                              "funnelPromise": "corrigir a dobra principal",
+                              "primaryCta": "Quero revisar minha página",
+                              "campaignObjective": "LEADS",
                               "landingPageWireframe": {"pagina": {"head": {}}},
                               "landingPageDesignPreset": {
                                 "definicoes": {"desktop": [{"nome": "ctaAntigo", "css": "color:#999"}]},
@@ -102,9 +107,62 @@ class PresetDesignBackendClientTest {
     }
 
 
-    /** Deve montar dados do prompt sem NullPointerException quando o backend omite contexto opcional. */
+    /** Deve montar dados do prompt quando apenas o contexto opcional do framework não é enviado. */
     @Test
-    void listPendingShouldTolerateMissingOptionalPromptContext() throws Exception {
+    void listPendingShouldTolerateMissingOptionalFrameworkContext() throws Exception {
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "application/json")
+                .setBody("""
+                        [
+                          {
+                            "experimentId": 12,
+                            "jobid": "job-ia-1",
+                            "stageCode": "landing-page-design-preset",
+                            "executionRequestedAt": "2026-05-29T10:00:00Z",
+                            "experiment": {
+                              "id": 12,
+                              "name": "Experimento Design",
+                              "singlePain": "CTA invisível reduz conversão",
+                              "freeReward": "checklist de contraste",
+                              "funnelPromise": "corrigir a dobra principal",
+                              "primaryCta": "Quero revisar minha página",
+                              "campaignObjective": "LEADS"
+                            }
+                          }
+                        ]
+                        """));
+        PresetDesignBackendClient client = new PresetDesignBackendClient(
+                WebClient.builder(),
+                new PresetDesignWorkerProperties(
+                        true,
+                        5,
+                        server.url("/").toString(),
+                        "/api",
+                        "prompts/geralanding/landing-page-design-preset.md",
+                        "prompts/geralanding/landing-page-design-preset-schema.json",
+                        "experiment_pipeline_landing_page_design_preset",
+                        "gpt-5.5",
+                        Duration.ofSeconds(5)),
+                objectMapper);
+
+        List<StageExecution<PresetDesignInput>> pending = client.listPending(5);
+
+        assertThat(pending).hasSize(1);
+        assertThat(pending.getFirst().input().promptData())
+                .containsEntry("singlePain", "CTA invisível reduz conversão")
+                .containsEntry("freeReward", "checklist de contraste")
+                .containsEntry("funnelPromise", "corrigir a dobra principal")
+                .containsEntry("primaryCta", "Quero revisar minha página")
+                .containsEntry("campaignObjective", "LEADS")
+                .containsEntry("landingPageQualityReview", Map.of())
+                .containsEntry("PAIN_JSON", Map.of())
+                .containsEntry("RESULT_JSON", Map.of());
+    }
+
+    /** Deve ignorar pending sem contrato comercial obrigatório em vez de enviar prompt vazio para IA. */
+    @Test
+    void listPendingShouldIgnorePayloadWithoutRequiredCommercialContext() throws Exception {
         server.enqueue(new MockResponse()
                 .setResponseCode(200)
                 .setHeader("Content-Type", "application/json")
@@ -135,11 +193,7 @@ class PresetDesignBackendClientTest {
 
         List<StageExecution<PresetDesignInput>> pending = client.listPending(5);
 
-        assertThat(pending).hasSize(1);
-        assertThat(pending.getFirst().input().promptData())
-                .containsEntry("landingPageQualityReview", Map.of())
-                .containsEntry("PAIN_JSON", Map.of())
-                .containsEntry("RESULT_JSON", Map.of());
+        assertThat(pending).isEmpty();
     }
 
     /** Deve enviar prompt, schema e request cru no callback recebe-prompt. */

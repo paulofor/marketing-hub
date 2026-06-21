@@ -67,9 +67,12 @@ public class OpenAiSalesPageAnalyzer {
     /**
      * Monta a linha JSONL enviada ao endpoint Batch da OpenAI.
      */
-    private String buildBatchLine(long pageId, String canonicalUrl, String htmlBodyText) {
-        String prompt = "Analise a página de vendas e devolva JSON válido com os campos: score_total (0-100), sections_json (objeto), copy_json (objeto), visual_json (objeto), image_json (objeto), analysis_notes (texto curto). URL: "
-                + canonicalUrl + "\nConteúdo: " + htmlBodyText;
+    String buildBatchLine(long pageId, String canonicalUrl, String htmlBodyText) {
+        String prompt = "Analise a página de vendas para identificar por que este produto alcançou sucesso e devolva JSON válido com os campos: score_total (0-100), sections_json (objeto), copy_json (objeto), visual_json (objeto), image_json (objeto), analysis_notes (texto curto). "
+                + "A análise é diagnóstico de sucesso, não consultoria de melhoria: não inclua sugestões, recomendações, próximos passos, itens a adicionar/remover, nem chaves como recommended, suggestions, melhorias ou lacunas em nenhum campo. "
+                + "No campo image_json, explique somente a função persuasiva das imagens existentes no fluxo real: densidade visual, repetição de depoimentos/antes-e-depois, provas visuais, risco assumido de poluição visual e como isso sustenta ou prejudica a clareza da oferta já vencedora. "
+                + "Use o eixo Dor → Resultado → Mecanismo → Prova → Oferta apenas para explicar a fórmula observada que parece ter levado à venda, nunca para propor mudanças. URL: "
+                + canonicalUrl + "\nConteúdo e resumo visual: " + htmlBodyText;
         try {
             return objectMapper.writeValueAsString(Map.of(
                     "custom_id", "page-" + pageId,

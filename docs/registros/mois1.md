@@ -1743,3 +1743,13 @@ Arquivos principais:
 - Diagnosticado que o produto 401 possuía análise comercial persistida (`scoreTotal=78`, status `DONE` e JSONs de seções/copy/visual/imagens), mas a tela de detalhe não renderizava essa informação.
 - Corrigida a causa-raiz no frontend MOIS: a rota `/mois/sales-pages-library/:pageId` agora consulta o endpoint de análise da página e exibe score, status, modelo, data, notas e blocos colapsáveis dos JSONs comerciais retornados pelo backend.
 - Mantida a regra de verdade da tela: a interface apenas apresenta os dados do contrato existente do backend, sem inferir conteúdo localmente.
+
+## 2026-06-20 — Correção do diagnóstico visual da Biblioteca Sales Pages
+
+- Corrigida a causa-raiz da análise comercial tratar páginas carregadas de imagens como se não tivessem evidência visual: o worker agora envia ao modelo um resumo objetivo de densidade de imagens e sinais de prova/depoimento extraídos do HTML.
+- Ajustado o prompt da análise para avaliar excesso, repetição e poluição visual como explicação do sucesso observado, sem transformar a saída em lista de sugestões.
+
+## 2026-06-20 — Cânone da análise sem sugestões na Biblioteca Sales Pages
+
+- Registrada no cânone MOIS a regra de que a análise da Biblioteca Sales Pages é diagnóstico de sucesso de produtos vencedores, não geração de sugestões.
+- Ajustado o worker para proibir sugestões, recomendações, próximos passos e chaves do tipo `recommended*` em todos os campos da resposta do modelo.

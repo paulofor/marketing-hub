@@ -156,6 +156,11 @@ public class PresetDesignBackendClient implements StageBackendPort<PresetDesignI
         Map<String, Object> framework = asMap(hypothesis.get("framework"));
 
         Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("singlePain", experiment.get("singlePain"));
+        payload.put("freeReward", experiment.get("freeReward"));
+        payload.put("funnelPromise", experiment.get("funnelPromise"));
+        payload.put("primaryCta", experiment.get("primaryCta"));
+        payload.put("campaignObjective", experiment.get("campaignObjective"));
         payload.put("campaignAngle", normalizeJsonArtifact(experiment.get("campaignAngle")));
         payload.put("adCopy", normalizeJsonArtifact(experiment.get("adCopy")));
         payload.put("adImageBriefing", normalizeJsonArtifact(experiment.get("adImageBriefing")));

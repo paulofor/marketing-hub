@@ -94,10 +94,22 @@ public class BackendQualityReviewService {
                         execution.getExecutionRequestedAt(),
                         execution.getExperiment() != null ? execution.getExperiment().getName() : null,
                         execution.getExperiment() != null ? execution.getExperiment().getHypothesisRefTitleForPending() : null,
+                        execution.getExperiment() != null ? execution.getExperiment().getSinglePain() : null,
+                        execution.getExperiment() != null ? execution.getExperiment().getFreeReward() : null,
+                        execution.getExperiment() != null ? execution.getExperiment().getFunnelPromise() : null,
+                        execution.getExperiment() != null ? execution.getExperiment().getPrimaryCta() : null,
+                        campaignObjectiveText(execution.getExperiment()),
                         resolveQualityReviewArtifact(execution.getExperiment(), "landingPageWireframe"),
                         resolveQualityReviewArtifact(execution.getExperiment(), "landingPageDesignPreset"),
                         execution.getExperiment() != null ? execution.getExperiment().getHtmlGeraLanding() : null))
                 .toList();
+    }
+
+
+    /** Converte o objetivo da campanha para texto sem acoplar a revisão ao enum de experimento. */
+    private String campaignObjectiveText(Experiment experiment) {
+        Object objective = experiment != null ? experiment.getCampaignObjective() : null;
+        return objective != null ? String.valueOf(objective) : null;
     }
 
     /** Marca a execução como enviada à OpenAI após receber prompt, schema e request visual cru. */

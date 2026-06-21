@@ -89,8 +89,19 @@ public class QualityReviewBackendClient implements StageBackendPort<QualityRevie
     private Map<String, Object> buildPromptDataFromPending(Map<String, Object> pending) {
         Map<String, Object> experiment = asMap(pending.get("experiment"));
         Map<String, Object> payload = new LinkedHashMap<>();
+        putIfPresent(payload, "singlePain", firstPresent(pending.get("singlePain"), experiment.get("singlePain")));
+        putIfPresent(payload, "freeReward", firstPresent(pending.get("freeReward"), experiment.get("freeReward")));
+        putIfPresent(payload, "funnelPromise", firstPresent(pending.get("funnelPromise"), experiment.get("funnelPromise")));
+        putIfPresent(payload, "primaryCta", firstPresent(pending.get("primaryCta"), experiment.get("primaryCta")));
+        putIfPresent(payload, "campaignObjective", firstPresent(pending.get("campaignObjective"), experiment.get("campaignObjective")));
         putIfPresent(payload, "htmlGeraLanding", resolveHtmlGeraLanding(pending, experiment));
         return payload;
+    }
+
+
+    /** Retorna o primeiro valor não nulo entre origem principal e fallback. */
+    private Object firstPresent(Object primary, Object fallback) {
+        return primary != null ? primary : fallback;
     }
 
     /** Resolve exclusivamente o htmlGeraLanding usado como fonte visual canônica do Quality Review. */

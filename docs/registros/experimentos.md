@@ -4985,3 +4985,8 @@
 - Solicitação: verificar se os dados do contrato de promessa única chegam ao prompt no momento da execução.
 - Causa-raiz encontrada: o prompt base do pipeline já incluía o contrato e as etapas de copy/deliverables já montavam `CASE_DATA`, mas o pending dedicado de Gera Prompt Imagens ainda não expunha `singlePain`, `freeReward`, `funnelPromise`, `primaryCta` e `campaignObjective`.
 - Correção aplicada: o pending de image planning e o builder do AI Worker passam a enviar esses campos e o `CASE_DATA_BLOCK` para o prompt executado.
+
+## 2026-06-21 — Todos os prompts GeraLanding usam promessa única
+- Solicitação: verificar se todos os prompts da etapa GeraLanding usam o contrato de promessa única.
+- Causa-raiz encontrada: Copy, Deliverables e Image Planning já estavam alinhados, mas Wireframe, Design Preset e Quality Review ainda não declaravam explicitamente o contrato; além disso, os pendings dessas etapas não carregavam os campos do contrato.
+- Correção aplicada: todos os prompts GeraLanding passam a receber e respeitar `singlePain`, `freeReward`, `funnelPromise`, `primaryCta` e `campaignObjective`, com propagação nos pendings do backend e nos builders do AI Worker.

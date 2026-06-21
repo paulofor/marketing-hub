@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.oprm.cnae.OprmNicheCandidate;
 import com.marketinghub.oprm.nichocnae.v2.OprmNichoCnaeV2FailureType;
+import com.marketinghub.oprm.nichocnae.v2.OprmNichoCnaeV2OpenAiInteraction;
 import com.marketinghub.oprm.nichocnae.v2.OprmNichoCnaeV2StageExecution;
 import com.marketinghub.oprm.nichocnae.v2.OprmNichoCnaeV2StageExecutionStatus;
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.completeStageExecution.CandidateGeneratorCompletionRequest;
@@ -15,7 +16,7 @@ import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.failStageEx
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.listCnaeJobs.CandidateGeneratorCnaeJobSummary;
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.listCnaeJobs.CandidateGeneratorCnaeJobsResponse;
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.pending.CandidateGeneratorPendingResponse;
-import com.marketinghub.oprm.nichocnae.v2.service.OpenAiInteractionAuditService;
+import com.marketinghub.oprm.nichocnae.v2.service.openaiinteraction.OpenAiInteractionAuditRequest;
 import com.marketinghub.repository.jpa.oprm.cnae.OprmNicheCandidateRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.v2.OprmNichoCnaeV2OpenAiInteractionRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.v2.OprmNichoCnaeV2StageExecutionRepository;
@@ -64,7 +65,6 @@ public class BackendCandidateGeneratorService {
 
     private final OprmNicheCandidateRepository nicheCandidateRepository;
     private final OprmNichoCnaeV2StageExecutionRepository stageExecutionRepository;
-    private final OpenAiInteractionAuditService openAiInteractionAuditService;
     private final OprmNichoCnaeV2OpenAiInteractionRepository openAiInteractionRepository;
     private final boolean v2Enabled;
     private final boolean materializationEnabled;
@@ -73,13 +73,11 @@ public class BackendCandidateGeneratorService {
     public BackendCandidateGeneratorService(
             OprmNicheCandidateRepository nicheCandidateRepository,
             OprmNichoCnaeV2StageExecutionRepository stageExecutionRepository,
-            OpenAiInteractionAuditService openAiInteractionAuditService,
             OprmNichoCnaeV2OpenAiInteractionRepository openAiInteractionRepository,
             @Value("${oprm.nichocnae.v2.enabled:false}") boolean v2Enabled,
             @Value("${oprm.nichocnae.v2.materialization-enabled:false}") boolean materializationEnabled) {
         this.nicheCandidateRepository = nicheCandidateRepository;
         this.stageExecutionRepository = stageExecutionRepository;
-        this.openAiInteractionAuditService = openAiInteractionAuditService;
         this.openAiInteractionRepository = openAiInteractionRepository;
         this.v2Enabled = v2Enabled;
         this.materializationEnabled = materializationEnabled;
@@ -92,7 +90,7 @@ public class BackendCandidateGeneratorService {
             OprmNichoCnaeV2StageExecutionRepository stageExecutionRepository,
             boolean v2Enabled,
             boolean materializationEnabled) {
-        this(nicheCandidateRepository, stageExecutionRepository, null, null, v2Enabled, materializationEnabled);
+        this(nicheCandidateRepository, stageExecutionRepository, null, v2Enabled, materializationEnabled);
     }
     /** Lista pendências disponíveis para consumo canônico pelo executor OPRM NichoCNAE v2. */
     @Transactional
@@ -175,9 +173,7 @@ public class BackendCandidateGeneratorService {
         execution.setNextStageCode(request == null ? null : request.nextStageCode());
         execution.setUpdatedAt(Instant.now());
         OprmNichoCnaeV2StageExecution saved = stageExecutionRepository.save(execution);
-        if (openAiInteractionAuditService != null) {
-            openAiInteractionAuditService.record(saved, request == null ? null : request.openAiInteractions());
-        }
+        recordOpenAiInteractions(saved, request == null ? null : request.openAiInteractions());
         return new CandidateGeneratorCompletionResponse(
                 String.valueOf(saved.getId()),
                 saved.getStatus().name(),
@@ -608,5 +604,41 @@ public class BackendCandidateGeneratorService {
                 execution.getTechnicalRetryNumber(),
                 execution.getKnowledgeVersion(),
                 execution.getMaterializationEnabled());
+    }
+
+    /** Registra no banco as interações OpenAI informadas pelo executor externo. */
+    private void recordOpenAiInteractions(
+            OprmNichoCnaeV2StageExecution execution, List<OpenAiInteractionAuditRequest> requests) {
+        if (openAiInteractionRepository == null || execution == null || requests == null || requests.isEmpty()) {
+            return;
+        }
+        Instant now = Instant.now();
+        openAiInteractionRepository.saveAll(requests.stream()
+                .map(request -> toOpenAiInteraction(execution, request, now))
+                .toList());
+    }
+
+    /** Converte o contrato de auditoria recebido do executor em entidade persistível do backend. */
+    private OprmNichoCnaeV2OpenAiInteraction toOpenAiInteraction(
+            OprmNichoCnaeV2StageExecution execution, OpenAiInteractionAuditRequest request, Instant now) {
+        OprmNichoCnaeV2OpenAiInteraction entity = new OprmNichoCnaeV2OpenAiInteraction();
+        entity.setStageExecutionId(execution.getId());
+        entity.setJobId(execution.getJobId());
+        entity.setStageCode(execution.getStageCode());
+        entity.setAttemptNumber(execution.getAttemptNumber());
+        entity.setTechnicalRetryNumber(execution.getTechnicalRetryNumber());
+        entity.setModel(request.model());
+        entity.setServiceTier(request.serviceTier());
+        entity.setInputTokens(request.inputTokens());
+        entity.setOutputTokens(request.outputTokens());
+        entity.setTotalTokens(request.totalTokens());
+        entity.setCostUsd(request.costUsd());
+        entity.setOpenAiResponseId(request.openAiResponseId());
+        entity.setRawRequest(request.rawRequest());
+        entity.setRawResponse(request.rawResponse());
+        entity.setStatus(request.status());
+        entity.setErrorMessage(request.errorMessage());
+        entity.setCreatedAt(now);
+        return entity;
     }
 }

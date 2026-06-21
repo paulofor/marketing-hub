@@ -1,6 +1,7 @@
 package com.marketinghub.oprm.nichocnae.v2.enrichednichematerializer.service;
 
 import com.marketinghub.oprm.nichocnae.v2.OprmNichoCnaeV2FailureType;
+import com.marketinghub.oprm.nichocnae.v2.OprmNichoCnaeV2OpenAiInteraction;
 import com.marketinghub.oprm.nichocnae.v2.OprmNichoCnaeV2StageExecution;
 import com.marketinghub.oprm.nichocnae.v2.OprmNichoCnaeV2StageExecutionStatus;
 import com.marketinghub.oprm.nichocnae.v2.enrichednichematerializer.service.completeStageExecution.EnrichedNicheMaterializerCompletionRequest;
@@ -10,8 +11,9 @@ import com.marketinghub.oprm.nichocnae.v2.enrichednichematerializer.service.crea
 import com.marketinghub.oprm.nichocnae.v2.enrichednichematerializer.service.failStageExecution.EnrichedNicheMaterializerFailureRequest;
 import com.marketinghub.oprm.nichocnae.v2.enrichednichematerializer.service.failStageExecution.EnrichedNicheMaterializerFailureResponse;
 import com.marketinghub.oprm.nichocnae.v2.enrichednichematerializer.service.pending.EnrichedNicheMaterializerPendingResponse;
-import com.marketinghub.oprm.nichocnae.v2.service.OpenAiInteractionAuditService;
+import com.marketinghub.oprm.nichocnae.v2.service.openaiinteraction.OpenAiInteractionAuditRequest;
 import com.marketinghub.repository.jpa.oprm.cnae.OprmNicheCandidateRepository;
+import com.marketinghub.repository.jpa.oprm.nichocnae.v2.OprmNichoCnaeV2OpenAiInteractionRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.v2.OprmNichoCnaeV2StageExecutionRepository;
 import java.time.Instant;
 import java.util.List;
@@ -27,18 +29,18 @@ import org.springframework.web.server.ResponseStatusException;
 public class BackendEnrichedNicheMaterializerService {
     public static final String STAGE_CODE = "enriched-niche-materializer";
     private final OprmNichoCnaeV2StageExecutionRepository stageExecutionRepository;
-    private final OpenAiInteractionAuditService openAiInteractionAuditService;
+    private final OprmNichoCnaeV2OpenAiInteractionRepository openAiInteractionRepository;
     private final OprmNicheCandidateRepository nicheCandidateRepository;
     private final boolean v2Enabled;
 
     /** Inicializa o service com repositório canônico e feature flag de calibração da v2. */
     public BackendEnrichedNicheMaterializerService(
             OprmNichoCnaeV2StageExecutionRepository stageExecutionRepository,
-            OpenAiInteractionAuditService openAiInteractionAuditService,
+            OprmNichoCnaeV2OpenAiInteractionRepository openAiInteractionRepository,
             OprmNicheCandidateRepository nicheCandidateRepository,
             @Value("${oprm.nichocnae.v2.enabled:false}") boolean v2Enabled) {
         this.stageExecutionRepository = stageExecutionRepository;
-        this.openAiInteractionAuditService = openAiInteractionAuditService;
+        this.openAiInteractionRepository = openAiInteractionRepository;
         this.nicheCandidateRepository = nicheCandidateRepository;
         this.v2Enabled = v2Enabled;
     }
@@ -75,9 +77,7 @@ public class BackendEnrichedNicheMaterializerService {
         execution.setNextStageCode(request == null ? null : request.nextStageCode());
         execution.setUpdatedAt(Instant.now());
         OprmNichoCnaeV2StageExecution saved = stageExecutionRepository.save(execution);
-        if (openAiInteractionAuditService != null) {
-            openAiInteractionAuditService.record(saved, request == null ? null : request.openAiInteractions());
-        }
+        recordOpenAiInteractions(saved, request == null ? null : request.openAiInteractions());
         return new EnrichedNicheMaterializerCompletionResponse(
                 String.valueOf(saved.getId()),
                 saved.getStatus().name(),
@@ -184,5 +184,41 @@ public class BackendEnrichedNicheMaterializerService {
                 execution.getKnowledgeVersion(),
                 execution.getMaterializationEnabled(),
                 execution.getInputPayload());
+    }
+
+    /** Registra no banco as interações OpenAI informadas pelo executor externo. */
+    private void recordOpenAiInteractions(
+            OprmNichoCnaeV2StageExecution execution, List<OpenAiInteractionAuditRequest> requests) {
+        if (openAiInteractionRepository == null || execution == null || requests == null || requests.isEmpty()) {
+            return;
+        }
+        Instant now = Instant.now();
+        openAiInteractionRepository.saveAll(requests.stream()
+                .map(request -> toOpenAiInteraction(execution, request, now))
+                .toList());
+    }
+
+    /** Converte o contrato de auditoria recebido do executor em entidade persistível do backend. */
+    private OprmNichoCnaeV2OpenAiInteraction toOpenAiInteraction(
+            OprmNichoCnaeV2StageExecution execution, OpenAiInteractionAuditRequest request, Instant now) {
+        OprmNichoCnaeV2OpenAiInteraction entity = new OprmNichoCnaeV2OpenAiInteraction();
+        entity.setStageExecutionId(execution.getId());
+        entity.setJobId(execution.getJobId());
+        entity.setStageCode(execution.getStageCode());
+        entity.setAttemptNumber(execution.getAttemptNumber());
+        entity.setTechnicalRetryNumber(execution.getTechnicalRetryNumber());
+        entity.setModel(request.model());
+        entity.setServiceTier(request.serviceTier());
+        entity.setInputTokens(request.inputTokens());
+        entity.setOutputTokens(request.outputTokens());
+        entity.setTotalTokens(request.totalTokens());
+        entity.setCostUsd(request.costUsd());
+        entity.setOpenAiResponseId(request.openAiResponseId());
+        entity.setRawRequest(request.rawRequest());
+        entity.setRawResponse(request.rawResponse());
+        entity.setStatus(request.status());
+        entity.setErrorMessage(request.errorMessage());
+        entity.setCreatedAt(now);
+        return entity;
     }
 }

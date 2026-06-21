@@ -1205,4 +1205,10 @@
 
 - Corrigida a violação ArchUnit que colocava `OpenAiInteractionAuditService` dentro de subpacote de contratos do `service`.
 - A causa-raiz era mistura entre contrato DTO, que deve permanecer como `record` no subpacote de operação, e classe de serviço Spring, que não deve ocupar subpacote reservado a contratos.
-- Prevenção de recorrência: a auditoria continua centralizada no service canônico compartilhado, enquanto o subpacote `openaiinteraction` fica restrito ao record de entrada.
+- Prevenção de recorrência: o subpacote `openaiinteraction` fica restrito ao record de entrada, e a persistência da auditoria deve permanecer nos services canônicos de etapa, sem service auxiliar compartilhado no backend.
+
+## 2026-06-21 — Auditoria OpenAI sem service auxiliar no backend NichoCNAE v2
+
+- Removido o `OpenAiInteractionAuditService` para alinhar o backend ao padrão de leitura/escrita usado em GeraLanding: cada service canônico de etapa apenas persiste a auditoria recebida do executor no callback de conclusão.
+- A causa-raiz era a criação de um service auxiliar compartilhado no backend para uma responsabilidade que não deveria virar controle operacional nem nova camada de orquestração; a execução OpenAI permanece no executor OPRM.
+- Prevenção de recorrência: o teste da etapa `candidate-generator` agora cobre a gravação da auditoria OpenAI no próprio service canônico, sem depender de classe auxiliar fora da etapa.

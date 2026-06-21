@@ -1,0 +1,149 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2030-09-18-add-gpt-image-2
+      author: ai-hub
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: MARK_RAN
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO image_generation_model (code, display_name, provider, api_model, description)
+              SELECT 'gpt-image-2', 'GPT Image 2', 'OPENAI', 'gpt-image-2',
+                     'Modelo GPT Image 2 para geração de imagens em materiais de marketing.'
+              WHERE NOT EXISTS (
+                  SELECT 1 FROM image_generation_model WHERE code = 'gpt-image-2'
+              );
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO image_generation_quality (model_id, code, display_name, api_quality, is_default, position)
+              SELECT m.id, 'low', 'Low', 'standard', 0, 10
+              FROM image_generation_model m
+              WHERE m.code = 'gpt-image-2'
+              ON DUPLICATE KEY UPDATE
+                  display_name = VALUES(display_name),
+                  api_quality = VALUES(api_quality),
+                  is_default = VALUES(is_default),
+                  position = VALUES(position);
+
+              INSERT INTO image_generation_quality (model_id, code, display_name, api_quality, is_default, position)
+              SELECT m.id, 'medium', 'Medium', 'standard', 1, 20
+              FROM image_generation_model m
+              WHERE m.code = 'gpt-image-2'
+              ON DUPLICATE KEY UPDATE
+                  display_name = VALUES(display_name),
+                  api_quality = VALUES(api_quality),
+                  is_default = VALUES(is_default),
+                  position = VALUES(position);
+
+              INSERT INTO image_generation_quality (model_id, code, display_name, api_quality, is_default, position)
+              SELECT m.id, 'high', 'High', 'hd', 0, 30
+              FROM image_generation_model m
+              WHERE m.code = 'gpt-image-2'
+              ON DUPLICATE KEY UPDATE
+                  display_name = VALUES(display_name),
+                  api_quality = VALUES(api_quality),
+                  is_default = VALUES(is_default),
+                  position = VALUES(position);
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO image_generation_price (quality_id, orientation, width, height, size_label, unit_price_usd, preferred)
+              SELECT q.id, 'SQUARE', 1024, 1024, '1024x1024', 0.01000, 1
+              FROM image_generation_quality q
+              JOIN image_generation_model m ON m.id = q.model_id
+              WHERE m.code = 'gpt-image-2' AND q.code = 'low'
+              ON DUPLICATE KEY UPDATE
+                  unit_price_usd = VALUES(unit_price_usd),
+                  size_label = VALUES(size_label),
+                  preferred = VALUES(preferred);
+
+              INSERT INTO image_generation_price (quality_id, orientation, width, height, size_label, unit_price_usd, preferred)
+              SELECT q.id, 'PORTRAIT', 1024, 1536, '1024x1536', 0.01500, 0
+              FROM image_generation_quality q
+              JOIN image_generation_model m ON m.id = q.model_id
+              WHERE m.code = 'gpt-image-2' AND q.code = 'low'
+              ON DUPLICATE KEY UPDATE
+                  unit_price_usd = VALUES(unit_price_usd),
+                  size_label = VALUES(size_label),
+                  preferred = VALUES(preferred);
+
+              INSERT INTO image_generation_price (quality_id, orientation, width, height, size_label, unit_price_usd, preferred)
+              SELECT q.id, 'LANDSCAPE', 1536, 1024, '1536x1024', 0.01500, 0
+              FROM image_generation_quality q
+              JOIN image_generation_model m ON m.id = q.model_id
+              WHERE m.code = 'gpt-image-2' AND q.code = 'low'
+              ON DUPLICATE KEY UPDATE
+                  unit_price_usd = VALUES(unit_price_usd),
+                  size_label = VALUES(size_label),
+                  preferred = VALUES(preferred);
+
+              INSERT INTO image_generation_price (quality_id, orientation, width, height, size_label, unit_price_usd, preferred)
+              SELECT q.id, 'SQUARE', 1024, 1024, '1024x1024', 0.04000, 1
+              FROM image_generation_quality q
+              JOIN image_generation_model m ON m.id = q.model_id
+              WHERE m.code = 'gpt-image-2' AND q.code = 'medium'
+              ON DUPLICATE KEY UPDATE
+                  unit_price_usd = VALUES(unit_price_usd),
+                  size_label = VALUES(size_label),
+                  preferred = VALUES(preferred);
+
+              INSERT INTO image_generation_price (quality_id, orientation, width, height, size_label, unit_price_usd, preferred)
+              SELECT q.id, 'PORTRAIT', 1024, 1536, '1024x1536', 0.06000, 0
+              FROM image_generation_quality q
+              JOIN image_generation_model m ON m.id = q.model_id
+              WHERE m.code = 'gpt-image-2' AND q.code = 'medium'
+              ON DUPLICATE KEY UPDATE
+                  unit_price_usd = VALUES(unit_price_usd),
+                  size_label = VALUES(size_label),
+                  preferred = VALUES(preferred);
+
+              INSERT INTO image_generation_price (quality_id, orientation, width, height, size_label, unit_price_usd, preferred)
+              SELECT q.id, 'LANDSCAPE', 1536, 1024, '1536x1024', 0.06000, 0
+              FROM image_generation_quality q
+              JOIN image_generation_model m ON m.id = q.model_id
+              WHERE m.code = 'gpt-image-2' AND q.code = 'medium'
+              ON DUPLICATE KEY UPDATE
+                  unit_price_usd = VALUES(unit_price_usd),
+                  size_label = VALUES(size_label),
+                  preferred = VALUES(preferred);
+
+              INSERT INTO image_generation_price (quality_id, orientation, width, height, size_label, unit_price_usd, preferred)
+              SELECT q.id, 'SQUARE', 1024, 1024, '1024x1024', 0.17000, 1
+              FROM image_generation_quality q
+              JOIN image_generation_model m ON m.id = q.model_id
+              WHERE m.code = 'gpt-image-2' AND q.code = 'high'
+              ON DUPLICATE KEY UPDATE
+                  unit_price_usd = VALUES(unit_price_usd),
+                  size_label = VALUES(size_label),
+                  preferred = VALUES(preferred);
+
+              INSERT INTO image_generation_price (quality_id, orientation, width, height, size_label, unit_price_usd, preferred)
+              SELECT q.id, 'PORTRAIT', 1024, 1536, '1024x1536', 0.25500, 0
+              FROM image_generation_quality q
+              JOIN image_generation_model m ON m.id = q.model_id
+              WHERE m.code = 'gpt-image-2' AND q.code = 'high'
+              ON DUPLICATE KEY UPDATE
+                  unit_price_usd = VALUES(unit_price_usd),
+                  size_label = VALUES(size_label),
+                  preferred = VALUES(preferred);
+
+              INSERT INTO image_generation_price (quality_id, orientation, width, height, size_label, unit_price_usd, preferred)
+              SELECT q.id, 'LANDSCAPE', 1536, 1024, '1536x1024', 0.25500, 0
+              FROM image_generation_quality q
+              JOIN image_generation_model m ON m.id = q.model_id
+              WHERE m.code = 'gpt-image-2' AND q.code = 'high'
+              ON DUPLICATE KEY UPDATE
+                  unit_price_usd = VALUES(unit_price_usd),
+                  size_label = VALUES(size_label),
+                  preferred = VALUES(preferred);

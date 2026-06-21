@@ -5013,3 +5013,8 @@
 - Causa-raiz: o ajuste anterior passou a normalizar campos textuais opcionais para evitar nulos no `promptData`, porém não incluiu o método auxiliar nas duas etapas.
 - Correção aplicada: adicionado o helper local nas etapas Image Planning e Design Preset, preservando o isolamento por etapa do core OpenAI.
 - Prevenção de recorrência: compilação do backend foi instalada localmente e o AI Worker foi compilado antes do PR; testes do AI Worker também foram executados.
+
+## 2026-06-21 — Modelo GPT Image 2 na criação de experimento
+- Solicitação: incluir a opção GPT Image 2 na lista de modelo de geração de imagem da tela de novo experimento.
+- Correção aplicada: criado changelog incremental para cadastrar o modelo `gpt-image-2`, suas qualidades e preços base no catálogo consumido pelo endpoint `/api/image-generation/models`.
+- Prevenção de recorrência: o changelog foi incluído no master com `relativeToChangelogFile: true`, mantendo a lista da tela orientada pela verdade persistida no backend.

@@ -4975,3 +4975,9 @@
 - Causa-raiz: o frontend calculava um mapa de custo agregado por nicho e usava esse total dentro de cada linha da tabela.
 - Correção aplicada: cada linha da tabela passou a exibir o custo recebido do próprio experimento pelo backend, mantendo o total do nicho apenas no filtro de nichos.
 - Prevenção de recorrência: teste de tela passou a validar que dois experimentos do mesmo nicho exibem custos individuais diferentes e não o total agregado do nicho.
+
+## 2026-06-21 — Correção de NullPointer na fila de image planning
+- Problema: o teste `ImagePlanningBackendClientTest.listPendingShouldBuildImagePlanningPromptDataWithWireframe` apontou `NullPointerException` ao converter pendências da etapa `landing-page-image-planning` no Worker AI.
+- Causa-raiz: o client criava `StageExecution` antes de validar o contrato mínimo obrigatório; como `StageExecution` rejeita `idJob` nulo, qualquer payload pendente vindo com variação de nome (`idJob`) ou sem identificador quebrava a fila antes do filtro.
+- Correção aplicada: o client passou a aceitar `jobid` e `idJob`, validar `experimentId`, `idJob` e `stageCode` antes de criar a execução e ignorar payload incompleto com log de diagnóstico.
+- Prevenção de recorrência: adicionados testes cobrindo a variação `idJob` do backend e payload pendente incompleto sem gerar `NullPointerException`.

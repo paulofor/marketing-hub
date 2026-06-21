@@ -75,6 +75,48 @@ class ImagePlanningBackendClientTest {
                 .isEqualTo("Produtores digitais");
     }
 
+    /** Deve aceitar a variação idJob do contrato pendente sem quebrar a montagem da execução. */
+    @Test
+    void listPendingShouldAcceptIdJobAliasFromBackend() throws Exception {
+        Map<String, Object> pendingExecution = Map.of(
+                "experimentId", 22,
+                "stageCode", "landing-page-image-planning",
+                "idJob", "job-image-alias",
+                "executionRequestedAt", "2026-05-31T10:00:00Z",
+                "experiment", Map.of("nicheName", "Produtores digitais"),
+                "hypothesis", Map.of("framework", Map.of()));
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "application/json")
+                .setBody(objectMapper.writeValueAsString(List.of(pendingExecution))));
+        ImagePlanningBackendClient client = newClient();
+
+        List<StageExecution<ImagePlanningInput>> result = client.listPending(5);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst().idJob()).isEqualTo("job-image-alias");
+    }
+
+    /** Deve ignorar payload pendente incompleto para evitar NullPointerException no contrato interno. */
+    @Test
+    void listPendingShouldIgnoreIncompletePendingPayload() throws Exception {
+        Map<String, Object> pendingExecution = Map.of(
+                "experimentId", 22,
+                "stageCode", "landing-page-image-planning",
+                "executionRequestedAt", "2026-05-31T10:00:00Z",
+                "experiment", Map.of("nicheName", "Produtores digitais"),
+                "hypothesis", Map.of("framework", Map.of()));
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "application/json")
+                .setBody(objectMapper.writeValueAsString(List.of(pendingExecution))));
+        ImagePlanningBackendClient client = newClient();
+
+        List<StageExecution<ImagePlanningInput>> result = client.listPending(5);
+
+        assertThat(result).isEmpty();
+    }
+
     /** Deve enviar prompt, schema e request cru no callback recebe-prompt da etapa image planning. */
     @Test
     void markDispatchedShouldSendPromptSchemaAndRawRequestToRecebePrompt() throws Exception {

@@ -31,6 +31,8 @@ Sempre que uma informação for tratada por modelo de IA, o prompt operacional e
 
 É proibido manter prompt longo, instruções comerciais completas, exemplos de resposta ou schema JSON hardcoded dentro de classes de serviço, clients ou controllers. O backend pode persistir/expor o contexto rico necessário ao worker, mas a execução do modelo deve usar prompt/schema versionados no executor.
 
+Toda chamada a modelo de IA deve persistir ou registrar de forma auditável o request enviado e o response bruto recebido, vinculados ao job/execução/entidade de negócio. Para OpenAI, a requisição deve usar modo Flex por padrão (`service_tier: "flex"`), salvo exceção funcional explícita e registrada.
+
 ## 2.1 Regra canônica de execução OpenAI
 
 O backend principal é dono da persistência, contrato, auditoria, endpoints `pending` e consolidação de resultados, mas **não é executor runtime de OpenAI**. Nenhuma tabela deste cânone autoriza o backend a chamar OpenAI diretamente.

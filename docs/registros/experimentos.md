@@ -5002,6 +5002,11 @@
 - Correção aplicada: fechado corretamente o método `firstNonNull`, preservando o contrato de montagem do contexto comercial do prompt.
 - Prevenção de recorrência: a compilação do módulo foi tentada para validar a sintaxe; a validação completa ficou bloqueada por dependência privada do `ads-service` no GitHub Packages sem autenticação no ambiente.
 
+## 2026-06-21 — Correção de NullPointer nos dados de prompt do GeraLanding core
+- Problema: o teste `PresetDesignBackendClientTest.listPendingShouldIncludeQualityReviewDiagnosticInPromptData` falhava com `NullPointerException` ao montar o `promptData` da etapa Design Preset.
+- Causa-raiz: os clients de etapas do Worker AI colocavam valores nulos vindos do backend em `promptData`, mas os records de entrada usam `Map.copyOf`, que rejeita valores nulos.
+- Correção aplicada: Design Preset e Image Planning agora normalizam campos opcionais ausentes para texto vazio ou mapa vazio antes de criar a execução, preservando o diagnóstico do Quality Review e evitando quebra da fila por contexto incompleto.
+- Prevenção de recorrência: adicionado teste cobrindo pending de Design Preset sem contexto opcional, além da execução dos testes do AI Worker.
 ## 2026-06-21 — Tela de novo experimento passa a tratar isca e produto de entrada
 - Solicitação: trocar a visão de recompensa por isca e produto, mantendo padrão de oferta impactante que reduza dor, facilite a vida do cliente e gere desejo intenso pelo produto.
 - Correção aplicada: a tela de novo experimento passou a exibir isca digital e produto de entrada nas opções geradas por IA; o contrato do AI Worker e o schema exigem `productOffer`; o cânone foi atualizado para tratar o experimento como entrada comercial com isca + low-ticket.

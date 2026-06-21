@@ -169,22 +169,27 @@ public class ImagePlanningBackendClient implements StageBackendPort<ImagePlannin
         Map<String, Object> framework = asMap(hypothesis.get("framework"));
 
         Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("singlePain", experiment.get("singlePain"));
-        payload.put("freeReward", experiment.get("freeReward"));
-        payload.put("funnelPromise", experiment.get("funnelPromise"));
-        payload.put("primaryCta", experiment.get("primaryCta"));
-        payload.put("campaignObjective", experiment.get("campaignObjective"));
+        payload.put("singlePain", emptyWhenNull(experiment.get("singlePain")));
+        payload.put("freeReward", emptyWhenNull(experiment.get("freeReward")));
+        payload.put("funnelPromise", emptyWhenNull(experiment.get("funnelPromise")));
+        payload.put("primaryCta", emptyWhenNull(experiment.get("primaryCta")));
+        payload.put("campaignObjective", emptyWhenNull(experiment.get("campaignObjective")));
         payload.put("campaignAngle", normalizeJsonArtifact(experiment.get("campaignAngle")));
         payload.put("adCopy", normalizeJsonArtifact(experiment.get("adCopy")));
         payload.put("adImageBriefing", normalizeJsonArtifact(experiment.get("adImageBriefing")));
         payload.put("landingPageCopy", normalizeJsonArtifact(experiment.get("landingPageCopy")));
         payload.put("landingPageWireframe", normalizeJsonArtifact(experiment.get("landingPageWireframe")));
         payload.put("NICHE_NAME", firstText(experiment.get("nicheName"), experiment.get("niche"), experiment.get("name")));
-        payload.put("PAIN_JSON", framework.getOrDefault("pain", Map.of()));
-        payload.put("RESULT_JSON", framework.getOrDefault("result", Map.of()));
+        payload.put("PAIN_JSON", normalizeJsonArtifact(framework.get("pain")));
+        payload.put("RESULT_JSON", normalizeJsonArtifact(framework.get("result")));
         payload.put("CASE_DATA_BLOCK", buildCaseDataBlock(payload));
 
         return payload;
+    }
+
+    /** Substitui valores nulos por texto vazio para impedir nulos em contratos de prompt. */
+    private Object emptyWhenNull(Object value) {
+        return value != null ? value : "";
     }
 
     /** Retorna o primeiro valor não nulo entre as opções informadas. */

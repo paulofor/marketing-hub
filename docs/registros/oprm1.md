@@ -1242,3 +1242,4 @@
 - Adicionada tela de detalhe do job a partir dos casos de fracasso da tabela do pipeline v2, mostrando cada etapa persistida, entrada resumida, saída resumida, falha registrada e próxima etapa.
 - O backend expõe o histórico cronológico por `jobId`, mantendo a tela fiel ao dado persistido e sem inferir localmente o caminho do pipeline.
 - Causa-raiz tratada: a tabela indicava fracasso, mas não oferecia rastreabilidade operacional suficiente para o usuário entender até onde o job avançou antes de decidir novo recorte ou correção.
+- 2026-06-21 21:30:33 (UTC): ajustada a tela de detalhe do job OPRM NichoCNAE v2 para revelar o conteúdo completo dos payloads de entrada e saída em JSON/texto por etapa, mantendo resumo inicial e expandindo sob demanda para facilitar diagnóstico de decisões do pipeline.

@@ -148,8 +148,10 @@ Portanto, rankings, scores e pesquisas complementares da biblioteca devem respon
    - O backend só entrega no `claim` (`jobs:claim`) páginas com HTML útil já capturado (`html_bytes > 0`) e refileira automaticamente páginas capturadas sem análise ativa/concluída, respeitando limite operacional de tentativas para falhas.
    - O worker muda job para `FETCHING`, usa prioritariamente o HTML bruto capturado na etapa 1, extrai texto (`body.text()`) e inicia análise OpenAI. O acesso ao vivo da `urlCanonical` é apenas fallback para compatibilidade com payload antigo sem HTML capturado.
 4. **Prompt + schema de saída usados no worker**
-   - O worker monta o prompt com `urlCanonical` + texto extraído (`body.text()`) e versão de parser/prompt para rastreabilidade da análise.
+   - O worker monta o prompt com `urlCanonical` + texto extraído (`body.text()`) + resumo visual objetivo do HTML (`total_img`, sinais de prova/depoimento e amostras de imagem), além de versão de parser/prompt para rastreabilidade da análise.
    - O worker envia instrução para análise comercial e exige resposta em JSON via `/v1/responses` com `text.format.type=json_object`.
+   - O objetivo da análise é **identificar por que produtos/páginas que já alcançaram sucesso vendem**, extraindo a fórmula observada de Dor → Resultado → Mecanismo → Prova → Oferta.
+   - A saída não deve conter sugestões, recomendações, próximos passos, lacunas, itens a adicionar/remover ou chaves do tipo `recommended*`/`suggestions` em nenhum campo; cada item deve ser diagnóstico do que já existe na página vencedora.
    - Campos obrigatórios esperados no JSON de saída: `score_total`, `sections_json`, `copy_json`, `visual_json`, `image_json`, `analysis_notes`.
 5. **Receber resultado OpenAI e persistir no banco**
    - Em sucesso: worker chama `jobs/{jobId}:complete`; backend atualiza `mois_sales_page_job_execution` e consolida `mois_sales_page` como `DONE`.

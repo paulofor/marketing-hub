@@ -67,11 +67,11 @@ public class OpenAiSalesPageAnalyzer {
     /**
      * Monta a linha JSONL enviada ao endpoint Batch da OpenAI.
      */
-    private String buildBatchLine(long pageId, String canonicalUrl, String htmlBodyText) {
-        String prompt = "Analise a página de vendas e devolva JSON válido com os campos: score_total (0-100), sections_json (objeto), copy_json (objeto), visual_json (objeto), image_json (objeto), analysis_notes (texto curto). "
-                + "No campo image_json, avalie o fluxo visual real: densidade de imagens, repetição de depoimentos/antes-e-depois, excesso de provas visuais, risco de poluição visual e impacto na clareza da oferta. "
-                + "Se total_img ou imagens_com_sinais_de_prova indicar página carregada de imagens, não recomende adicionar mais imagens; recomende reduzir, agrupar, hierarquizar ou substituir por prova mais limpa. "
-                + "O campo recommended_images deve ser usado apenas para lacunas reais e deve priorizar no máximo 3 imagens essenciais ao fluxo Dor → Resultado → Mecanismo → Prova → Oferta. URL: "
+    String buildBatchLine(long pageId, String canonicalUrl, String htmlBodyText) {
+        String prompt = "Analise a página de vendas para identificar por que este produto alcançou sucesso e devolva JSON válido com os campos: score_total (0-100), sections_json (objeto), copy_json (objeto), visual_json (objeto), image_json (objeto), analysis_notes (texto curto). "
+                + "A análise é diagnóstico de sucesso, não consultoria de melhoria: não inclua sugestões, recomendações, próximos passos, itens a adicionar/remover, nem chaves como recommended, suggestions, melhorias ou lacunas em nenhum campo. "
+                + "No campo image_json, explique somente a função persuasiva das imagens existentes no fluxo real: densidade visual, repetição de depoimentos/antes-e-depois, provas visuais, risco assumido de poluição visual e como isso sustenta ou prejudica a clareza da oferta já vencedora. "
+                + "Use o eixo Dor → Resultado → Mecanismo → Prova → Oferta apenas para explicar a fórmula observada que parece ter levado à venda, nunca para propor mudanças. URL: "
                 + canonicalUrl + "\nConteúdo e resumo visual: " + htmlBodyText;
         try {
             return objectMapper.writeValueAsString(Map.of(

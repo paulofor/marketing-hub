@@ -92,6 +92,7 @@ export default function NewExperimentPage() {
   const [promiseRequestId, setPromiseRequestId] = useState<
     number | undefined
   >();
+  const [promiseRequestIds, setPromiseRequestIds] = useState<number[]>([]);
   const [autoMde, setAutoMde] = useState(true);
   const { data: hypotheses } = useHypothesesByNiche(form.nicheId);
   const { data: selectedHypothesis } = useHypothesis(
@@ -140,6 +141,7 @@ export default function NewExperimentPage() {
       hypothesisId: draft.hypothesisId,
     }));
     setPromiseRequestId(draft.requestId);
+    setPromiseRequestIds([draft.requestId]);
     setPromiseOptions(draft.options ?? []);
   }, [
     latestPromiseOptionsDraft.data,
@@ -198,11 +200,19 @@ export default function NewExperimentPage() {
       return;
     }
     setPromiseOptions([]);
+    setForm((prev) => ({
+      ...prev,
+      singlePain: "",
+      freeReward: "",
+      funnelPromise: "",
+      primaryCta: "",
+    }));
     const response = await generatePromiseOptions.mutateAsync({
       nicheId: Number(form.nicheId),
       hypothesisId: form.hypothesisId,
     });
     setPromiseRequestId(response.requestId);
+    setPromiseRequestIds((prev) => [...prev, response.requestId]);
     setPromiseOptions(response.options ?? []);
   };
 
@@ -301,6 +311,7 @@ export default function NewExperimentPage() {
         instagramAccountId: Number(form.instagramAccountId),
         imageModelId: form.imageModelId ? Number(form.imageModelId) : undefined,
         imageModelQualityId: undefined,
+        promiseGenerationRequestIds: promiseRequestIds,
         imagesPerPackage: 20,
         openImagesPerPackage: undefined,
         compressedImagesPerPackage: undefined,
@@ -339,6 +350,7 @@ export default function NewExperimentPage() {
         funnelPromise: "",
         primaryCta: "",
       });
+      setPromiseRequestIds([]);
       setAutoSampleSize(true);
       setAutoMde(true);
       alert("Teste salvo!");

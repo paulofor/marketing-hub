@@ -4964,3 +4964,8 @@
 - Causa-raiz: a tela enviava campos manuais mesmo quando nada era digitado e o backend montava um prompt excessivamente grande com JSONs e evidências brutas do nicho/hipótese, aumentando risco de falha no AI Worker/OpenAI.
 - Correção aplicada: o frontend agora só permite escolher uma opção gerada pela IA e exibe o contrato selecionado em modo leitura; o backend monta um contexto comercial enxuto para a fila do AI Worker, sem campos digitados pelo usuário, prompt original, snapshot completo ou evidências brutas.
 - Prevenção de recorrência: teste unitário passou a validar que o prompt persistido é compacto e não inclui campos manuais nem blocos brutos desnecessários.
+
+## 2026-06-21 — Regeneração de promessa única substitui opções e contabiliza custo
+- Solicitação: ao pedir nova IA na tela de novo experimento, remover as 3 opções atuais e gerar 3 novas, contabilizando o custo de IA no nicho, na hipótese e no experimento criado.
+- Foi feito: a tela limpa a opção selecionada e as sugestões antigas antes de registrar nova solicitação; o AI Worker envia tokens/custo da OpenAI; o backend persiste o custo da solicitação, soma no nicho e na hipótese ao concluir e inclui as solicitações usadas no custo inicial do experimento.
+- Prevenção: a telemetria de custo fica no contrato persistido da fila `experiment_promise_generation_request`, evitando opções geradas sem custo auditável.

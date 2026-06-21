@@ -3,11 +3,13 @@ package com.marketinghub.worker.experimentpromise;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.worker.openai.OpenAiCostEstimator;
 import com.marketinghub.worker.openai.OpenAiRequestUtils;
 import com.marketinghub.worker.openai.OpenAiResponse;
 import com.marketinghub.worker.openai.core.exception.StageWorkerException;
 import com.marketinghub.worker.openai.core.prompt.PromptTemplateResolver;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -57,7 +59,7 @@ public class ExperimentPromiseOpenAiClient {
     }
 
     /** Gera exatamente três opções comerciais para a solicitação assumida. */
-    public List<ExperimentPromiseOptionDto> generate(ExperimentPromiseOptionsResponse request) {
+    public ExperimentPromiseOptionsResponse generate(ExperimentPromiseOptionsResponse request) {
         Map<String, Object> payload = buildPayload(request);
         log.info("Enviando request de promessa para OpenAI; requestId={} payload={}", request.requestId(), toJsonOrText(payload));
         OpenAiResponse response = webClient.post()
@@ -71,7 +73,16 @@ public class ExperimentPromiseOpenAiClient {
         if (content == null || content.isBlank()) {
             throw new IllegalStateException("OpenAI não retornou conteúdo para opções de promessa");
         }
-        return parseOptions(content);
+        List<ExperimentPromiseOptionDto> options = parseOptions(content);
+        BigDecimal costUsd = OpenAiCostEstimator.estimateUsd(model, response.usage());
+        return new ExperimentPromiseOptionsResponse(
+                request.requestId(),
+                "COMPLETED",
+                request.prompt(),
+                options,
+                response.usage() != null ? response.usage().effectiveInputTokens() : null,
+                response.usage() != null ? response.usage().effectiveOutputTokens() : null,
+                costUsd);
     }
 
     /** Monta o payload da Responses API com prompt markdown e schema JSON do classpath. */
@@ -93,6 +104,7 @@ public class ExperimentPromiseOpenAiClient {
         payload.put("model", model);
         payload.put("input", prompt);
         payload.put("text", text);
+        payload.put("service_tier", "flex");
         if (OpenAiRequestUtils.supportsTemperature(model)) {
             payload.put("temperature", 0.4);
         }

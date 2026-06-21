@@ -6,6 +6,7 @@ import java.math.BigDecimal;
 import com.marketinghub.experiment.ExperimentStage;
 import com.marketinghub.experiment.ExperimentCampaignObjective;
 import java.time.LocalDate;
+import java.util.List;
 import lombok.Data;
 
 /**
@@ -62,4 +63,5 @@ public class CreateExperimentRequest {
     private Long imageModelQualityId;
     private String creativeTextPrompt;
     private String creativeImagePrompt;
+    private List<Long> promiseGenerationRequestIds;
 }

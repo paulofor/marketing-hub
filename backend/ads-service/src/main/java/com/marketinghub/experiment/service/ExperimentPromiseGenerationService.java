@@ -2,6 +2,7 @@ package com.marketinghub.experiment.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.marketinghub.cost.CostAttributionService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.promise.ExperimentPromiseGenerationRequest;
 import com.marketinghub.experiment.promise.ExperimentPromiseGenerationRequestStatus;
@@ -14,6 +15,7 @@ import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.repository.jpa.experiment.ExperimentPromiseGenerationRequestRepository;
 import com.marketinghub.repository.jpa.hypothesis.HypothesisRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -36,16 +38,19 @@ public class ExperimentPromiseGenerationService {
     private final HypothesisRepository hypothesisRepository;
     private final ExperimentPromiseGenerationRequestRepository requestRepository;
     private final ObjectMapper objectMapper;
+    private final CostAttributionService costAttributionService;
 
     /** Inicializa o serviço com repositórios e serializador usados para registrar a solicitação. */
     public ExperimentPromiseGenerationService(MarketNicheRepository nicheRepository,
                                               HypothesisRepository hypothesisRepository,
                                               ExperimentPromiseGenerationRequestRepository requestRepository,
-                                              ObjectMapper objectMapper) {
+                                              ObjectMapper objectMapper,
+                                              CostAttributionService costAttributionService) {
         this.nicheRepository = nicheRepository;
         this.hypothesisRepository = hypothesisRepository;
         this.requestRepository = requestRepository;
         this.objectMapper = objectMapper;
+        this.costAttributionService = costAttributionService;
     }
 
     /** Registra uma solicitação pendente para o AI Worker gerar três opções de promessa. */
@@ -73,7 +78,7 @@ public class ExperimentPromiseGenerationService {
                 .currentPrimaryCta(trimToNull(request.currentPrimaryCta()))
                 .build();
         ExperimentPromiseGenerationRequest saved = requestRepository.save(entity);
-        return new GenerateExperimentPromiseOptionsResponse(saved.getId(), saved.getStatus().name(), saved.getPrompt(), List.of());
+        return new GenerateExperimentPromiseOptionsResponse(saved.getId(), saved.getStatus().name(), saved.getPrompt(), List.of(), null, null, null);
     }
 
     /** Retorna a solicitação mais recente ainda útil para retomada da criação do teste pela tela. */
@@ -128,10 +133,16 @@ public class ExperimentPromiseGenerationService {
         if (options == null || options.size() != 3) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe exatamente três opções geradas.");
         }
+        BigDecimal previousCostUsd = entity.getCostUsd();
         entity.setOptionsJson(writeOptions(options));
+        entity.setInputTokens(response.inputTokens());
+        entity.setOutputTokens(response.outputTokens());
+        entity.setCostUsd(normalizeCostUsd(response.costUsd()));
         entity.setStatus(ExperimentPromiseGenerationRequestStatus.COMPLETED);
         entity.setFinishedAt(Instant.now());
         entity.setErrorMessage(null);
+        costAttributionService.addUsdCostToHypothesisHierarchy(
+                entity.getHypothesis(), subtractCostUsd(entity.getCostUsd(), previousCostUsd));
         return toResponse(entity);
     }
 
@@ -295,12 +306,15 @@ public class ExperimentPromiseGenerationService {
                 entity.getCurrentFreeReward(),
                 entity.getCurrentFunnelPromise(),
                 entity.getCurrentPrimaryCta(),
-                readOptions(entity.getOptionsJson()));
+                readOptions(entity.getOptionsJson()),
+                entity.getInputTokens(),
+                entity.getOutputTokens(),
+                entity.getCostUsd());
     }
 
     /** Converte a entidade persistida para contrato de API. */
     private GenerateExperimentPromiseOptionsResponse toResponse(ExperimentPromiseGenerationRequest entity) {
-        return new GenerateExperimentPromiseOptionsResponse(entity.getId(), entity.getStatus().name(), entity.getPrompt(), readOptions(entity.getOptionsJson()));
+        return new GenerateExperimentPromiseOptionsResponse(entity.getId(), entity.getStatus().name(), entity.getPrompt(), readOptions(entity.getOptionsJson()), entity.getInputTokens(), entity.getOutputTokens(), entity.getCostUsd());
     }
 
     /** Serializa as opções recebidas do AI Worker para auditoria persistida. */
@@ -324,6 +338,19 @@ public class ExperimentPromiseGenerationService {
             log.error("Falha ao ler opções de promessa persistidas; operation=experiment-promise-options-read", ex);
             return List.of();
         }
+    }
+
+    /** Calcula apenas o delta novo para não duplicar custo em uma conclusão repetida. */
+    private BigDecimal subtractCostUsd(BigDecimal current, BigDecimal previous) {
+        if (current == null) {
+            return null;
+        }
+        return previous == null ? current : current.subtract(previous);
+    }
+
+    /** Normaliza custo informado pelo worker antes de acumular nos totais. */
+    private BigDecimal normalizeCostUsd(BigDecimal costUsd) {
+        return costUsd != null && costUsd.compareTo(BigDecimal.ZERO) > 0 ? costUsd : null;
     }
 
     /** Normaliza textos opcionais antes da persistência. */

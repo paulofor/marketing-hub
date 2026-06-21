@@ -27,8 +27,8 @@ public class ExperimentPromiseWorkerService {
             Long requestId = pending.requestId();
             try {
                 ExperimentPromiseOptionsResponse claimed = backendClient.claim(requestId, WORKER_ID);
-                List<ExperimentPromiseOptionDto> options = openAiClient.generate(claimed);
-                backendClient.complete(requestId, new ExperimentPromiseOptionsResponse(requestId, "COMPLETED", claimed.prompt(), options));
+                ExperimentPromiseOptionsResponse response = openAiClient.generate(claimed);
+                backendClient.complete(requestId, response);
                 log.info("Solicitação de promessa concluída; requestId={}", requestId);
             } catch (Exception ex) {
                 log.error("Falha ao processar promessa; operation=experiment-promise requestId={}", requestId, ex);

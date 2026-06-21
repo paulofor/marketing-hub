@@ -5001,3 +5001,9 @@
 - Causa-raiz: o método auxiliar `firstNonNull` ficou sem a chave de fechamento antes do método `buildCaseDataBlock`, deixando a classe Java com estrutura inválida.
 - Correção aplicada: fechado corretamente o método `firstNonNull`, preservando o contrato de montagem do contexto comercial do prompt.
 - Prevenção de recorrência: a compilação do módulo foi tentada para validar a sintaxe; a validação completa ficou bloqueada por dependência privada do `ads-service` no GitHub Packages sem autenticação no ambiente.
+
+## 2026-06-21 — Correção de NullPointer nos dados de prompt do GeraLanding core
+- Problema: o teste `PresetDesignBackendClientTest.listPendingShouldIncludeQualityReviewDiagnosticInPromptData` falhava com `NullPointerException` ao montar o `promptData` da etapa Design Preset.
+- Causa-raiz: os clients de etapas do Worker AI colocavam valores nulos vindos do backend em `promptData`, mas os records de entrada usam `Map.copyOf`, que rejeita valores nulos; além disso, campos comerciais obrigatórios não devem ser mascarados como vazios.
+- Correção aplicada: Design Preset e Image Planning agora preservam os campos comerciais recebidos e ignoram payload pendente sem `singlePain`, `freeReward`, `funnelPromise`, `primaryCta` ou `campaignObjective`, registrando diagnóstico em log em vez de enviar prompt vazio para IA. Artefatos opcionais continuam normalizados como mapa vazio quando ausentes.
+- Prevenção de recorrência: adicionados testes cobrindo pending válido com contrato comercial preenchido e pending inválido sem contrato comercial obrigatório.

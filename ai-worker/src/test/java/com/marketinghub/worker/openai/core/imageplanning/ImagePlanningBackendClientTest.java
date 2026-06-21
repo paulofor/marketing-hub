@@ -47,6 +47,11 @@ class ImagePlanningBackendClientTest {
                 "executionRequestedAt", "2026-05-31T10:00:00Z",
                 "experiment", Map.of(
                         "nicheName", "Produtores digitais",
+                        "singlePain", "perde tempo editando imagens",
+                        "freeReward", "pacote de prompts visuais",
+                        "funnelPromise", "gerar imagens coerentes",
+                        "primaryCta", "Quero os prompts",
+                        "campaignObjective", "LEADS",
                         "campaignAngle", "{\"promise\":\"menos esforço para vender\"}",
                         "adCopy", "{\"headline\":\"Venda com IA\"}",
                         "adImageBriefing", "{\"visual\":\"dashboard simples\"}",
@@ -83,7 +88,13 @@ class ImagePlanningBackendClientTest {
                 "stageCode", "landing-page-image-planning",
                 "idJob", "job-image-alias",
                 "executionRequestedAt", "2026-05-31T10:00:00Z",
-                "experiment", Map.of("nicheName", "Produtores digitais"),
+                "experiment", Map.of(
+                        "nicheName", "Produtores digitais",
+                        "singlePain", "perde tempo editando imagens",
+                        "freeReward", "pacote de prompts visuais",
+                        "funnelPromise", "gerar imagens coerentes",
+                        "primaryCta", "Quero os prompts",
+                        "campaignObjective", "LEADS"),
                 "hypothesis", Map.of("framework", Map.of()));
         server.enqueue(new MockResponse()
                 .setResponseCode(200)

@@ -5007,3 +5007,9 @@
 - Causa-raiz: os clients de etapas do Worker AI colocavam valores nulos vindos do backend em `promptData`, mas os records de entrada usam `Map.copyOf`, que rejeita valores nulos; além disso, campos comerciais obrigatórios não devem ser mascarados como vazios.
 - Correção aplicada: Design Preset e Image Planning agora preservam os campos comerciais recebidos e ignoram payload pendente sem `singlePain`, `freeReward`, `funnelPromise`, `primaryCta` ou `campaignObjective`, registrando diagnóstico em log em vez de enviar prompt vazio para IA. Artefatos opcionais continuam normalizados como mapa vazio quando ausentes.
 - Prevenção de recorrência: adicionados testes cobrindo pending válido com contrato comercial preenchido e pending inválido sem contrato comercial obrigatório.
+
+## 2026-06-21 — Correção de compilação dos clients GeraLanding core
+- Problema: o build do AI Worker falhava porque `ImagePlanningBackendClient` e `PresetDesignBackendClient` chamavam `emptyWhenNull`, mas o helper não existia nas classes.
+- Causa-raiz: o ajuste anterior passou a normalizar campos textuais opcionais para evitar nulos no `promptData`, porém não incluiu o método auxiliar nas duas etapas.
+- Correção aplicada: adicionado o helper local nas etapas Image Planning e Design Preset, preservando o isolamento por etapa do core OpenAI.
+- Prevenção de recorrência: compilação do backend foi instalada localmente e o AI Worker foi compilado antes do PR; testes do AI Worker também foram executados.

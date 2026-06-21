@@ -20,16 +20,60 @@ function statusBadgeClass(status: string) {
   return "badge text-bg-secondary";
 }
 
+function parsePayload(payload: string | null | undefined) {
+  if (!payload) return null;
+  try {
+    return JSON.parse(payload) as unknown;
+  } catch {
+    return null;
+  }
+}
+
+function formatPayload(payload: string | null | undefined) {
+  const parsed = parsePayload(payload);
+  if (parsed === null) return payload ?? "";
+  return JSON.stringify(parsed, null, 2);
+}
+
 function summarizePayload(payload: string | null | undefined) {
   if (!payload) return "Sem payload registrado.";
-  try {
-    const parsed = JSON.parse(payload) as Record<string, unknown>;
+  const parsed = parsePayload(payload);
+  if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
     const keys = Object.keys(parsed).slice(0, 6);
-    if (keys.length === 0) return "Payload vazio.";
-    return `Dados registrados: ${keys.join(", ")}${Object.keys(parsed).length > keys.length ? "..." : ""}.`;
-  } catch {
-    return payload.length > 180 ? `${payload.slice(0, 180)}...` : payload;
+    if (keys.length === 0) return "Payload JSON vazio.";
+    return `JSON registrado com campos: ${keys.join(", ")}${Object.keys(parsed).length > keys.length ? "..." : ""}.`;
   }
+  if (Array.isArray(parsed))
+    return `JSON registrado com ${parsed.length} item(ns).`;
+  return "Conteúdo registrado em texto.";
+}
+
+function PayloadViewer({
+  label,
+  payload,
+}: {
+  label: string;
+  payload: string | null | undefined;
+}) {
+  if (!payload) return <span>Sem payload registrado.</span>;
+
+  const parsed = parsePayload(payload);
+  const contentType = parsed === null ? "texto" : "JSON";
+
+  return (
+    <details className="border rounded bg-light-subtle p-2">
+      <summary className="fw-semibold">
+        {summarizePayload(payload)} Clique para ver o conteúdo {contentType} de{" "}
+        {label}.
+      </summary>
+      <pre
+        className="mt-2 mb-0 small bg-white border rounded p-3 overflow-auto"
+        style={{ maxHeight: "26rem", whiteSpace: "pre-wrap" }}
+      >
+        {formatPayload(payload)}
+      </pre>
+    </details>
+  );
 }
 
 export default function OprmNichoCnaeV2JobDetailPage() {
@@ -143,13 +187,19 @@ export default function OprmNichoCnaeV2JobDetailPage() {
                       O que entrou
                     </dt>
                     <dd className="col-md-9 mb-0">
-                      {summarizePayload(stage.inputPayload)}
+                      <PayloadViewer
+                        label="entrada"
+                        payload={stage.inputPayload}
+                      />
                     </dd>
                     <dt className="col-md-3 text-secondary fw-normal">
                       O que foi feito
                     </dt>
                     <dd className="col-md-9 mb-0">
-                      {summarizePayload(stage.outputPayload)}
+                      <PayloadViewer
+                        label="saída"
+                        payload={stage.outputPayload}
+                      />
                     </dd>
                     <dt className="col-md-3 text-secondary fw-normal">
                       Falha registrada

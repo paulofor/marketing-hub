@@ -1186,3 +1186,10 @@
 - Prevenção de recorrência: testes cobrem o encaminhamento do torneio para reprocessamento, a leitura de `NO_VIABLE_SUBNICHE` pelo controlador e a propagação de tentativa/versão para a próxima pendência.
 
 - 2026-06-20 00:00:00 (UTC): ajustada a tela e o contrato de jobs OPRM NichoCNAE v2 para exibir mensagem clara de sucesso ou fracasso no job concluído e CTA do backend para visualizar nicho materializado, abrir o CNAE para materialização ou pesquisar outro recorte, evitando que o usuário fique sem próximo passo.
+
+## 2026-06-21 — Auditoria OpenAI do pipeline NichoCNAE v2
+
+- Implementada tabela própria `oprm_nichocnae_v2_openai_interaction` para registrar, por execução de etapa v2, modelo, service tier, tokens, custo, request bruto, response bruto, status, erro e vínculo com `jobId`/`stageCode`.
+- Os callbacks de conclusão das etapas backend da v2 passam a aceitar `openAiInteractions`, permitindo que o executor informe todas as chamadas OpenAI realizadas pela etapa sem depender de JSON solto no `outputPayload`.
+- A tela/listagem de jobs passa a priorizar o custo auditado na tabela própria e mantém fallback para custos legados dentro do `outputPayload`, evitando perda de histórico durante transição.
+- Causa-raiz tratada: custo e auditoria de IA estavam inferidos por payload funcional, o que podia esconder gasto real quando uma etapa esquecesse de incluir chaves de custo no JSON de saída.

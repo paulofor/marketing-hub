@@ -15,7 +15,9 @@ import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.failStageEx
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.listCnaeJobs.CandidateGeneratorCnaeJobSummary;
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.listCnaeJobs.CandidateGeneratorCnaeJobsResponse;
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.pending.CandidateGeneratorPendingResponse;
+import com.marketinghub.oprm.nichocnae.v2.service.openaiinteraction.OpenAiInteractionAuditService;
 import com.marketinghub.repository.jpa.oprm.cnae.OprmNicheCandidateRepository;
+import com.marketinghub.repository.jpa.oprm.nichocnae.v2.OprmNichoCnaeV2OpenAiInteractionRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.v2.OprmNichoCnaeV2StageExecutionRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -62,6 +64,8 @@ public class BackendCandidateGeneratorService {
 
     private final OprmNicheCandidateRepository nicheCandidateRepository;
     private final OprmNichoCnaeV2StageExecutionRepository stageExecutionRepository;
+    private final OpenAiInteractionAuditService openAiInteractionAuditService;
+    private final OprmNichoCnaeV2OpenAiInteractionRepository openAiInteractionRepository;
     private final boolean v2Enabled;
     private final boolean materializationEnabled;
 
@@ -69,14 +73,27 @@ public class BackendCandidateGeneratorService {
     public BackendCandidateGeneratorService(
             OprmNicheCandidateRepository nicheCandidateRepository,
             OprmNichoCnaeV2StageExecutionRepository stageExecutionRepository,
+            OpenAiInteractionAuditService openAiInteractionAuditService,
+            OprmNichoCnaeV2OpenAiInteractionRepository openAiInteractionRepository,
             @Value("${oprm.nichocnae.v2.enabled:false}") boolean v2Enabled,
             @Value("${oprm.nichocnae.v2.materialization-enabled:false}") boolean materializationEnabled) {
         this.nicheCandidateRepository = nicheCandidateRepository;
         this.stageExecutionRepository = stageExecutionRepository;
+        this.openAiInteractionAuditService = openAiInteractionAuditService;
+        this.openAiInteractionRepository = openAiInteractionRepository;
         this.v2Enabled = v2Enabled;
         this.materializationEnabled = materializationEnabled;
     }
 
+
+    /** Mantém compatibilidade com testes unitários que não exercem auditoria OpenAI. */
+    public BackendCandidateGeneratorService(
+            OprmNicheCandidateRepository nicheCandidateRepository,
+            OprmNichoCnaeV2StageExecutionRepository stageExecutionRepository,
+            boolean v2Enabled,
+            boolean materializationEnabled) {
+        this(nicheCandidateRepository, stageExecutionRepository, null, null, v2Enabled, materializationEnabled);
+    }
     /** Lista pendências disponíveis para consumo canônico pelo executor OPRM NichoCNAE v2. */
     @Transactional
     public List<CandidateGeneratorPendingResponse> pending() {
@@ -140,9 +157,10 @@ public class BackendCandidateGeneratorService {
         openJobs.sort(newestFirst);
         completedJobs.sort(newestFirst);
         BigDecimal cnaeAiCostUsd = executionsByJob.values().stream()
-                .map(this::sumAiCostUsd)
+                .map(executions -> sumAiCostUsd(executions.getFirst().getJobId(), executions))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         boolean cnaeUsedAi = cnaeAiCostUsd.compareTo(BigDecimal.ZERO) > 0
+                || executionsByJob.keySet().stream().anyMatch(this::hasAuditedOpenAiInteraction)
                 || executionsByJob.values().stream().flatMap(List::stream).anyMatch(this::hasAiUsageSignal);
         return new CandidateGeneratorCnaeJobsResponse(cnaeCode, cnaeAiCostUsd, cnaeUsedAi, openJobs, completedJobs);
     }
@@ -157,6 +175,9 @@ public class BackendCandidateGeneratorService {
         execution.setNextStageCode(request == null ? null : request.nextStageCode());
         execution.setUpdatedAt(Instant.now());
         OprmNichoCnaeV2StageExecution saved = stageExecutionRepository.save(execution);
+        if (openAiInteractionAuditService != null) {
+            openAiInteractionAuditService.record(saved, request == null ? null : request.openAiInteractions());
+        }
         return new CandidateGeneratorCompletionResponse(
                 String.valueOf(saved.getId()),
                 saved.getStatus().name(),
@@ -211,8 +232,10 @@ public class BackendCandidateGeneratorService {
         String finalDecision = decisionFrom(lastOutput, lastExecution, executions);
         String finalDecisionReason = reasonForDecision(finalDecision, lastOutput, lastExecution, executions);
         String marketNicheId = marketNicheIdFrom(executions);
-        BigDecimal aiCostUsd = sumAiCostUsd(executions);
-        boolean usedAi = aiCostUsd.compareTo(BigDecimal.ZERO) > 0 || executions.stream().anyMatch(this::hasAiUsageSignal);
+        BigDecimal aiCostUsd = sumAiCostUsd(lastExecution.getJobId(), executions);
+        boolean usedAi = aiCostUsd.compareTo(BigDecimal.ZERO) > 0
+                || hasAuditedOpenAiInteraction(lastExecution.getJobId())
+                || executions.stream().anyMatch(this::hasAiUsageSignal);
         return new CandidateGeneratorCnaeJobSummary(
                 lastExecution.getJobId(),
                 lastExecution.getCnaeCode(),
@@ -385,7 +408,11 @@ public class BackendCandidateGeneratorService {
     }
 
     /** Soma custo de IA em dólares registrado na saída própria de cada etapa do job. */
-    private BigDecimal sumAiCostUsd(List<OprmNichoCnaeV2StageExecution> executions) {
+    private BigDecimal sumAiCostUsd(String jobId, List<OprmNichoCnaeV2StageExecution> executions) {
+        BigDecimal auditedCost = openAiInteractionRepository == null ? BigDecimal.ZERO : openAiInteractionRepository.sumCostUsdByJobId(jobId);
+        if (auditedCost != null && auditedCost.compareTo(BigDecimal.ZERO) > 0) {
+            return auditedCost;
+        }
         return executions.stream()
                 .map(execution -> costFromPayload(execution.getOutputPayload()))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -394,6 +421,11 @@ public class BackendCandidateGeneratorService {
     /** Verifica se há sinal de uso de IA mesmo quando o custo registrado for zero ou ausente. */
     private boolean hasAiUsageSignal(OprmNichoCnaeV2StageExecution execution) {
         return hasAiUsageSignal(parsePayload(execution.getOutputPayload()));
+    }
+
+    /** Verifica se o job possui interação OpenAI auditada em tabela própria. */
+    private boolean hasAuditedOpenAiInteraction(String jobId) {
+        return openAiInteractionRepository != null && openAiInteractionRepository.existsByJobId(jobId);
     }
 
     /** Detecta chaves explícitas de IA em payload estruturado para classificar o job corretamente. */

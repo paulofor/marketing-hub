@@ -17,6 +17,7 @@ import com.marketinghub.repository.jpa.oprm.nichocnae.v2.OprmNichoCnaeV2OpenAiIn
 import com.marketinghub.repository.jpa.oprm.nichocnae.v2.OprmNichoCnaeV2StageExecutionRepository;
 import java.time.Instant;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
@@ -34,6 +35,7 @@ public class BackendKnowledgeAccumulatorService {
     private final boolean v2Enabled;
 
     /** Inicializa o service com repositório canônico e feature flag de calibração da v2. */
+    @Autowired
     public BackendKnowledgeAccumulatorService(
             OprmNichoCnaeV2StageExecutionRepository stageExecutionRepository,
             OprmNichoCnaeV2OpenAiInteractionRepository openAiInteractionRepository,

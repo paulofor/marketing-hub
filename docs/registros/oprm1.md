@@ -1,4 +1,10 @@
 
+## 2026-06-21 — OPRM NichoCNAE v2: bootstrap do backend corrigido
+
+- Causa-raiz tratada: services de etapas OPRM NichoCNAE v2 tinham múltiplos construtores e o Spring podia tentar instanciá-los pelo construtor vazio inexistente durante testes `@SpringBootTest`, derrubando o contexto completo do backend.
+- Correção aplicada: marcado explicitamente o construtor canônico de injeção do Spring, preservando o construtor auxiliar usado por teste unitário e evitando falha em testes de outros módulos.
+- Prevenção de recorrência: a regra do backend sobre múltiplos construtores em beans Spring foi aplicada às etapas OPRM v2 afetadas.
+
 ## 2026-06-21 — OPRM OpenAI em modo Flex com GPT-5.2
 
 - Decisão operacional aplicada: acessos OpenAI das etapas OPRM NichoCNAE com IA devem usar modo Flex (`service_tier=flex`) e modelo `gpt-5.2`.

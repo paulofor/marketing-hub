@@ -4958,6 +4958,13 @@
 - Contexto comercial: o backend passou a incluir descrição rica ativa do nicho e o snapshot completo do pipeline de hipótese no prompt persistido para o worker.
 - Prevenção: a saída da OpenAI agora é validada por schema JSON estrito, reduzindo retorno fora do contrato esperado pela tela.
 
+## 2026-06-21 — Unificação da aprovação de criativos para prontidão de campanha
+
+- Problema: o experimento 42 possuía criativos `READY`, mas continuava bloqueado porque o campo consolidado `experiment.creative_approved` estava falso.
+- Causa-raiz: a prontidão de publicação exigia duas fontes para a mesma decisão, o flag do experimento e a existência de criativo `READY`, permitindo divergência entre caminhos de aprovação.
+- Correção aplicada: a prontidão de campanha passa a usar como fonte canônica a existência de criativo `READY`; um changelog incremental sincroniza `experiment.creative_approved` com os criativos existentes para corrigir dados legados.
+- Prevenção de recorrência: teste unitário cobre o caso de flag legado desatualizado com criativo `READY`, garantindo que a campanha não fique bloqueada por estado duplicado.
+
 ## 2026-06-21 — Contrato de promessa única sem campos manuais
 
 - Solicitação: retirar da tela de novo experimento os campos editáveis de dor, recompensa, promessa e CTA, porque o contrato deve vir da opção gerada pela IA.

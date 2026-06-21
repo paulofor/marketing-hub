@@ -67,6 +67,7 @@ class ExperimentReadinessServiceTest {
     void shouldReturnNoIssuesWhenEverythingIsReady() {
         Long experimentId = 8L;
         Experiment experiment = buildExperiment(experimentId, 18L);
+        experiment.setCreativeApproved(false);
         LeadPortalFlow flow = new LeadPortalFlow();
         flow.setApproved(true);
         experiment.setLeadPortalFlow(flow);
@@ -81,6 +82,19 @@ class ExperimentReadinessServiceTest {
         assertThat(summary.hasCompleteTargeting()).isTrue();
         assertThat(summary.missingTargetingTypes()).isEmpty();
         assertThat(summary.issues()).isEmpty();
+    }
+
+    @Test
+    void shouldUseReadyCreativeAsApprovalSourceEvenWhenExperimentFlagIsStale() {
+        Long experimentId = 22L;
+        Experiment experiment = buildExperiment(experimentId, 32L);
+        experiment.setCreativeApproved(false);
+        experiment.setFollowUpActionUrl("https://example.com/landing/22");
+
+        when(creativeRepository.existsByExperimentIdAndStatus(experimentId, CreativeStatus.READY)).thenReturn(true);
+
+        assertThat(service.computeMissingConfiguration(experiment)).isEmpty();
+        assertThat(service.isReadyForCampaign(experiment)).isTrue();
     }
 
     @Test

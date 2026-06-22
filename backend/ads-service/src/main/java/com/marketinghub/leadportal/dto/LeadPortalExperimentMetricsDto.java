@@ -10,6 +10,7 @@ public record LeadPortalExperimentMetricsDto(
         Long experimentId,
         String experimentName,
         long leadsAccessed,
+        long technicalAccessesFiltered,
         long leadsWithImage,
         List<LeadPortalExperimentUserDto> uniqueLeads,
         long sampleEmailsGenerated,

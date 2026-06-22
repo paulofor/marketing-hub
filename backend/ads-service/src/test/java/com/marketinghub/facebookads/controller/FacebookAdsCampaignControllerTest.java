@@ -216,6 +216,7 @@ class FacebookAdsCampaignControllerTest {
                         exp.getId(),
                         exp.getName(),
                         25L,
+                        0L,
                         5L,
                         List.of(new LeadPortalExperimentUserDto("Lead 1", "lead@example.com", null, false)),
                         0L,

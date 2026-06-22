@@ -1,30 +1,25 @@
 package com.marketinghub.mois.bibliotecapaginavenda.worker.v1.pipeline.pageanalysis;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.nio.charset.StandardCharsets;
-import java.time.Instant;
+import java.math.BigDecimal;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
 
 /**
- * Executa a análise comercial de páginas de venda via OpenAI Batch e normaliza o JSON retornado.
+ * Executa a análise comercial de páginas de venda via OpenAI Responses em modo Flex e normaliza o JSON retornado.
  */
 @Component
 @Slf4j
 public class OpenAiSalesPageAnalyzer {
-
-    private static final Set<String> TERMINAL_BATCH_STATUSES = Set.of("completed", "failed", "expired", "cancelled");
 
     private final RestClient restClient;
     private final OpenAiProperties properties;
@@ -35,39 +30,33 @@ public class OpenAiSalesPageAnalyzer {
      */
     public OpenAiSalesPageAnalyzer(RestClient.Builder builder, OpenAiProperties properties) {
         this.properties = properties;
-        this.restClient = builder.baseUrl(properties.normalizedBaseUrl())
+        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(Duration.ofSeconds(30));
+        requestFactory.setReadTimeout(Duration.ofMillis(properties.normalizedRequestTimeoutMs()));
+        this.restClient = builder.requestFactory(requestFactory).baseUrl(properties.normalizedBaseUrl())
                 .defaultHeader("Authorization", "Bearer " + properties.resolvedApiKey())
                 .defaultHeader("OpenAI-Beta", "reasoning=1")
                 .build();
     }
 
     /**
-     * Envia o texto capturado da página para análise comercial e retorna o diagnóstico estruturado.
+     * Envia o texto capturado da página para análise comercial em modo Flex e retorna o diagnóstico estruturado.
      */
     public SalesPageAnalysisResult analyze(long jobId, long pageId, String canonicalUrl, String htmlBodyText) {
         if (!StringUtils.hasText(properties.resolvedApiKey())) {
             throw new IllegalStateException("OpenAI api key não configurada para análise de sales page");
         }
-        String payloadLine = buildBatchLine(pageId, canonicalUrl, htmlBodyText);
-        log.info("MOIS sales-library enviando request cru para OpenAI. jobId={}, requestPayload={}", jobId, payloadLine);
-        String inputFileId = uploadInputFile(payloadLine);
-        BatchInfo batch = createBatch(inputFileId);
-        BatchInfo completed = awaitBatch(batch);
-        if (!"completed".equalsIgnoreCase(completed.status())) {
-            throw new IllegalStateException(buildBatchTerminalErrorMessage(completed));
-        }
-        if (!StringUtils.hasText(completed.outputFileId())) {
-            throw new IllegalStateException(buildBatchMissingOutputMessage(completed));
-        }
-        String output = downloadOutput(completed.outputFileId());
-        log.info("MOIS sales-library recebeu resposta crua da OpenAI. jobId={}, rawResponse={}", jobId, output);
-        return parseBatchOutput(output, payloadLine);
+        String requestPayload = buildResponsesRequestPayload(pageId, canonicalUrl, htmlBodyText);
+        log.info("MOIS sales-library enviando request cru para OpenAI. jobId={}, requestPayload={}", jobId, requestPayload);
+        String responsePayload = executeFlexResponsesRequest(requestPayload);
+        log.info("MOIS sales-library recebeu resposta crua da OpenAI. jobId={}, rawResponse={}", jobId, responsePayload);
+        return parseResponsesOutput(responsePayload, requestPayload);
     }
 
     /**
-     * Monta a linha JSONL enviada ao endpoint Batch da OpenAI.
+     * Monta o JSON enviado diretamente ao endpoint Responses da OpenAI em modo Flex.
      */
-    String buildBatchLine(long pageId, String canonicalUrl, String htmlBodyText) {
+    String buildResponsesRequestPayload(long pageId, String canonicalUrl, String htmlBodyText) {
         String prompt = "Analise a página de vendas para identificar por que este produto alcançou sucesso e devolva JSON válido com os campos: score_total (0-100), sections_json (objeto), copy_json (objeto), visual_json (objeto), image_json (objeto), analysis_notes (texto curto). "
                 + "A análise é diagnóstico de sucesso, não consultoria de melhoria: não inclua sugestões, recomendações, próximos passos, itens a adicionar/remover, nem chaves como recommended, suggestions, melhorias ou lacunas em nenhum campo. "
                 + "No campo image_json, explique somente a função persuasiva das imagens existentes no fluxo real: densidade visual, repetição de depoimentos/antes-e-depois, provas visuais, risco assumido de poluição visual e como isso sustenta ou prejudica a clareza da oferta já vencedora. "
@@ -75,152 +64,101 @@ public class OpenAiSalesPageAnalyzer {
                 + canonicalUrl + "\nConteúdo e resumo visual: " + htmlBodyText;
         try {
             return objectMapper.writeValueAsString(Map.of(
-                    "custom_id", "page-" + pageId,
-                    "method", "POST",
-                    "url", "/v1/responses",
-                    "body", Map.of(
-                            "model", properties.normalizedModel(),
-                            "input", List.of(
-                                    Map.of("role", "system", "content", "Você analisa páginas de venda e responde exclusivamente em JSON válido sem markdown."),
-                                    Map.of("role", "user", "content", prompt)
-                            ),
-                            "text", Map.of(
-                                    "format", Map.of("type", "json_object")
-                            )
+                    "model", properties.normalizedModel(),
+                    "service_tier", "flex",
+                    "metadata", Map.of("page_id", Long.toString(pageId)),
+                    "input", List.of(
+                            Map.of("role", "system", "content", "Você analisa páginas de venda e responde exclusivamente em JSON válido sem markdown."),
+                            Map.of("role", "user", "content", prompt)
+                    ),
+                    "text", Map.of(
+                            "format", Map.of("type", "json_object")
                     )
             ));
         } catch (JsonProcessingException e) {
-            throw new IllegalStateException("Falha ao serializar linha batch", e);
+            throw new IllegalStateException("Falha ao serializar request Responses Flex", e);
         }
     }
 
     /**
-     * Faz upload do arquivo JSONL de entrada da análise para a OpenAI.
+     * Executa a chamada síncrona ao endpoint Responses usando service_tier flex.
      */
-    private String uploadInputFile(String line) {
-        MultiValueMap<String, Object> multipart = new LinkedMultiValueMap<>();
-        multipart.add("purpose", "batch");
-        multipart.add("file", new org.springframework.core.io.ByteArrayResource((line + "\n").getBytes(StandardCharsets.UTF_8)) {
-            /**
-             * Retorna o nome do arquivo enviado no multipart.
-             */
-            @Override
-            public String getFilename() {
-                return "sales-page-analysis.jsonl";
-            }
-        });
-        FileUploadResponse response = restClient.post().uri("/files").contentType(MediaType.MULTIPART_FORM_DATA)
-                .body(multipart).retrieve().body(FileUploadResponse.class);
-        if (response == null || !StringUtils.hasText(response.id())) {
-            throw new IllegalStateException("Upload do arquivo batch falhou");
-        }
-        return response.id();
-    }
-
-    /**
-     * Cria o batch OpenAI para processar a linha JSONL enviada.
-     */
-    private BatchInfo createBatch(String inputFileId) {
-        BatchInfo response = restClient.post().uri("/batches")
+    private String executeFlexResponsesRequest(String requestPayload) {
+        String response = restClient.post().uri("/responses")
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(Map.of("input_file_id", inputFileId, "endpoint", "/v1/responses", "completion_window", "24h"))
-                .retrieve().body(BatchInfo.class);
-        if (response == null || !StringUtils.hasText(response.id())) {
-            throw new IllegalStateException("Criação do batch falhou");
+                .body(requestPayload)
+                .retrieve()
+                .body(String.class);
+        if (!StringUtils.hasText(response)) {
+            throw new IllegalStateException("OpenAI Responses Flex retornou corpo vazio");
         }
         return response;
     }
 
     /**
-     * Aguarda o batch alcançar um status terminal dentro do timeout configurado.
+     * Interpreta o JSON de saída da OpenAI e devolve o resultado estruturado da análise.
      */
-    private BatchInfo awaitBatch(BatchInfo batch) {
-        Instant start = Instant.now();
-        BatchInfo current = batch;
-        while (!TERMINAL_BATCH_STATUSES.contains(current.status())) {
-            if (Instant.now().toEpochMilli() - start.toEpochMilli() > properties.normalizedBatchTimeoutMs()) {
-                throw new IllegalStateException("Timeout aguardando batch " + current.id());
-            }
-            try {
-                Thread.sleep(properties.normalizedBatchPollIntervalMs());
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new IllegalStateException(e);
-            }
-            current = restClient.get().uri("/batches/{id}", current.id()).retrieve().body(BatchInfo.class);
-            if (current == null || !StringUtils.hasText(current.status())) {
-                throw new IllegalStateException("Batch status inválido");
-            }
-        }
-        return current;
-    }
-
-    /**
-     * Baixa o arquivo de saída do batch concluído.
-     */
-    private String downloadOutput(String outputFileId) {
-        return restClient.get().uri("/files/{id}/content", outputFileId).retrieve().body(String.class);
-    }
-
-    /**
-     * Baixa o arquivo de erros do batch quando a OpenAI informa um error_file_id.
-     */
-    private String downloadErrorJsonl(BatchInfo batch) {
-        if (batch == null || !StringUtils.hasText(batch.errorFileId())) {
-            return "";
-        }
+    private SalesPageAnalysisResult parseResponsesOutput(String responsePayloadJson, String requestPayloadJson) {
         try {
-            String content = restClient.get().uri("/files/{id}/content", batch.errorFileId()).retrieve().body(String.class);
-            return content == null ? "" : content;
-        } catch (Exception ex) {
-            log.error("Falha ao baixar error_file_id da OpenAI. batchId={}, errorFileId={}", batch.id(), batch.errorFileId(), ex);
-            return "";
-        }
-    }
-
-    /**
-     * Interpreta o JSONL de saída da OpenAI e devolve o resultado estruturado da análise.
-     */
-    private SalesPageAnalysisResult parseBatchOutput(String outputJsonl, String requestPayloadJson) {
-        try {
-            String line = outputJsonl.lines().filter(StringUtils::hasText).findFirst().orElseThrow();
-            JsonNode root = objectMapper.readTree(line);
-            JsonNode statusCodeNode = root.path("response").path("status_code");
-            if (statusCodeNode.isInt() && statusCodeNode.asInt() >= 400) {
-                throw new IllegalStateException(buildBatchErrorMessage(root));
+            JsonNode root = objectMapper.readTree(responsePayloadJson);
+            JsonNode error = root.path("error");
+            if (!error.isMissingNode() && !error.isNull()) {
+                throw new IllegalStateException(buildResponsesErrorMessage(root));
             }
-            JsonNode lineError = root.path("error");
-            if (!lineError.isMissingNode() && !lineError.isNull()) {
-                throw new IllegalStateException("OpenAI batch retornou erro de linha: " + lineError.toString());
-            }
-            JsonNode outputText = root.path("response").path("body").path("output").get(0).path("content").get(0).path("text");
-            if (outputText.isMissingNode() || outputText.isNull()) {
-                outputText = root.path("response").path("body").path("output_text");
+            JsonNode outputText = findOutputText(root);
+            if (outputText.isMissingNode() || outputText.isNull() || !StringUtils.hasText(outputText.asText())) {
+                throw new IllegalStateException("OpenAI Responses Flex não retornou texto de saída");
             }
             JsonNode parsed = objectMapper.readTree(outputText.asText());
-            JsonNode usage = root.path("response").path("body").path("usage");
+            JsonNode usage = root.path("usage");
             Integer inputTokens = nullableInt(usage.path("input_tokens"));
             Integer outputTokens = nullableInt(usage.path("output_tokens"));
             return new SalesPageAnalysisResult(
-                    parsed.path("score_total").decimalValue(),
+                    parsed.path("score_total").isNumber() ? parsed.path("score_total").decimalValue() : BigDecimal.ZERO,
                     objectMapper.writeValueAsString(parsed.path("sections_json")),
                     objectMapper.writeValueAsString(parsed.path("copy_json")),
                     objectMapper.writeValueAsString(parsed.path("visual_json")),
                     objectMapper.writeValueAsString(parsed.path("image_json")),
-                    parsed.path("analysis_notes").asText("Análise gerada via OpenAI batch"),
+                    parsed.path("analysis_notes").asText("Análise gerada via OpenAI Responses Flex"),
                     requestPayloadJson,
-                    outputJsonl,
+                    responsePayloadJson,
                     "html-v1",
-                    "openai-batch-v1",
+                    "openai-flex-v1",
                     properties.normalizedModel(),
                     inputTokens,
                     outputTokens,
                     null
             );
         } catch (Exception e) {
-            log.error("Falha parse output batch OpenAI. output={}", outputJsonl, e);
-            throw new IllegalStateException("Falha ao interpretar output do batch OpenAI", e);
+            log.error("Falha parse output Responses Flex OpenAI. output={}", responsePayloadJson, e);
+            throw new IllegalStateException("Falha ao interpretar output do Responses Flex OpenAI", e);
         }
+    }
+
+    /**
+     * Localiza o texto final tanto no campo consolidado quanto na estrutura detalhada do Responses.
+     */
+    private JsonNode findOutputText(JsonNode root) {
+        JsonNode outputText = root.path("output_text");
+        if (!outputText.isMissingNode() && !outputText.isNull() && StringUtils.hasText(outputText.asText())) {
+            return outputText;
+        }
+        JsonNode output = root.path("output");
+        if (output.isArray()) {
+            for (JsonNode item : output) {
+                JsonNode content = item.path("content");
+                if (!content.isArray()) {
+                    continue;
+                }
+                for (JsonNode contentItem : content) {
+                    JsonNode text = contentItem.path("text");
+                    if (!text.isMissingNode() && !text.isNull() && StringUtils.hasText(text.asText())) {
+                        return text;
+                    }
+                }
+            }
+        }
+        return outputText;
     }
 
     /**
@@ -234,52 +172,15 @@ public class OpenAiSalesPageAnalyzer {
     }
 
     /**
-     * Constrói mensagem legível para erro retornado em uma linha do batch.
+     * Constrói mensagem legível para erro retornado pelo endpoint Responses.
      */
-    private String buildBatchErrorMessage(JsonNode root) {
-        int status = root.path("response").path("status_code").asInt(0);
-        String requestId = root.path("response").path("request_id").asText("");
-        JsonNode error = root.path("response").path("body").path("error");
+    private String buildResponsesErrorMessage(JsonNode root) {
+        JsonNode error = root.path("error");
         String upstreamMessage = error.path("message").asText("");
         String upstreamType = error.path("type").asText("");
         String upstreamCode = error.path("code").asText("");
-        return "OpenAI batch retornou erro HTTP " + status
-                + " (requestId=" + requestId + ", type=" + upstreamType + ", code=" + upstreamCode + "): "
+        return "OpenAI Responses Flex retornou erro"
+                + " (type=" + upstreamType + ", code=" + upstreamCode + "): "
                 + upstreamMessage;
     }
-
-    /**
-     * Constrói mensagem de falha quando o batch termina sem status de sucesso.
-     */
-    private String buildBatchTerminalErrorMessage(BatchInfo completed) {
-        String errorJsonl = downloadErrorJsonl(completed);
-        String trimmedJsonl = errorJsonl.isBlank() ? "" : "\nerror_jsonl=" + errorJsonl.trim();
-        return "Batch da OpenAI finalizou sem sucesso"
-                + " (batchId=" + completed.id()
-                + ", status=" + completed.status()
-                + ", outputFileId=" + completed.outputFileId()
-                + ", errorFileId=" + completed.errorFileId()
-                + ")"
-                + trimmedJsonl;
-    }
-
-    /**
-     * Constrói mensagem de falha quando o batch completa sem arquivo de saída.
-     */
-    private String buildBatchMissingOutputMessage(BatchInfo completed) {
-        String errorJsonl = downloadErrorJsonl(completed);
-        String trimmedJsonl = errorJsonl.isBlank() ? "" : "\nerror_jsonl=" + errorJsonl.trim();
-        return "Batch da OpenAI completou sem output_file_id"
-                + " (batchId=" + completed.id()
-                + ", status=" + completed.status()
-                + ", errorFileId=" + completed.errorFileId()
-                + ")"
-                + trimmedJsonl;
-    }
-
-    private record FileUploadResponse(String id) {}
-    private record BatchInfo(String id,
-                             String status,
-                             @JsonProperty("output_file_id") String outputFileId,
-                             @JsonProperty("error_file_id") String errorFileId) {}
 }

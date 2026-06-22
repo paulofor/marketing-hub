@@ -1765,3 +1765,10 @@ Arquivos principais:
 
 - Incluído no contrato do backend o campo de formato vendido do produto, classificado a partir dos textos persistidos da página/Hotmart para diferenciar curso em vídeo, e-book/PDF, consultoria/mentoria, comunidade/assinatura ou software/ferramenta.
 - Atualizada a tela de detalhe `/mois/sales-pages-library/:pageId` para exibir o card **O que está sendo vendido** no dossiê do produto, mantendo a regra de verdade da tela: o frontend apenas apresenta o dado retornado pelo backend.
+
+
+## 2026-06-22 — Análise comercial da Biblioteca Sales Pages em OpenAI Flex
+
+- Alterada a integração OpenAI da etapa de análise comercial do `mois-sales-library-worker` para usar Responses API com `service_tier: "flex"`, removendo o fluxo operacional de criação/polling da Batch API.
+- Atualizado o cânone MOIS para refletir que a análise comercial usa Responses Flex, timeout canônico de 15 minutos e payload auditado com `service_tier: "flex"`.
+- Ajustado o teste de contrato do analisador para impedir regressão para payload sem modo Flex.

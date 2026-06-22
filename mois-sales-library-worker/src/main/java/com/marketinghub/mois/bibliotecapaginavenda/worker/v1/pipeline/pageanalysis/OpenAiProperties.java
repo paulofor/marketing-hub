@@ -10,8 +10,7 @@ public record OpenAiProperties(
         String apiKey,
         String baseUrl,
         String model,
-        long batchPollIntervalMs,
-        long batchTimeoutMs,
+        long requestTimeoutMs,
         String apiKeyFile
 ) {
     private static final Logger LOGGER = Logger.getLogger(OpenAiProperties.class.getName());
@@ -45,13 +44,8 @@ public record OpenAiProperties(
         return (model == null || model.isBlank()) ? "gpt-5.2" : model.trim();
     }
 
-    /** Normaliza o intervalo de consulta do Batch da OpenAI. */
-    public long normalizedBatchPollIntervalMs() {
-        return batchPollIntervalMs <= 0 ? 2000 : batchPollIntervalMs;
-    }
-
-    /** Normaliza o timeout máximo do Batch da OpenAI. */
-    public long normalizedBatchTimeoutMs() {
-        return batchTimeoutMs <= 0 ? 300000 : batchTimeoutMs;
+    /** Normaliza o timeout máximo da chamada Responses Flex da OpenAI. */
+    public long normalizedRequestTimeoutMs() {
+        return requestTimeoutMs <= 0 ? 900000 : requestTimeoutMs;
     }
 }

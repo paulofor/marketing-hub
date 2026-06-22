@@ -1267,3 +1267,17 @@
 
 - A tela `/oprm/cnaes/:cnaeCode/pipeline-v2` passou a mostrar quando um job aberto está em ciclo operacional, usando campos explícitos do backend (`loopDetected`, `loopLabel`, `loopReason` e `repeatedStageCount`) em vez de inferência local no frontend.
 - O backend do OPRM NichoCNAE v2 agora classifica jobs abertos com repetição de etapas no histórico como “Em ciclo de pesquisa”, deixando claro ao usuário que o executor está repetindo pesquisa/reclassificação antes de decidir.
+
+## 2026-06-22 — Redefinição do fluxo anti-ciclo NichoCNAE v2
+
+- Registradas no cânone OPRM as premissas de negócio de que o CNAE é público amplo, o fluxo existe para descobrir subnicho operacional abordável e a pesquisa na internet deve entender a realidade concreta antes de qualquer oferta.
+- Definida regra anti-ciclo para NichoCNAE v2: repetição sem ganho novo de evidência deve virar falha controlada ou troca de recorte, não pesquisa infinita.
+- O uso de IA fica permitido como apoio em pontos de alto impacto, com orçamento por job/subnicho, histórico compacto no prompt e auditoria obrigatória de modelo, tokens, custo, request e response.
+- Causa-raiz tratada: o pipeline podia confundir ausência de evidência nova com necessidade de continuar replanejando, prendendo jobs em circuito entre etapas sem avanço comercial real.
+
+## 2026-06-22 — Execução da trava anti-ciclo NichoCNAE v2
+
+- Implementada no executor `oprm-coletor-mei` a trava anti-ciclo do NichoCNAE v2: antes de criar a próxima pendência, o job soma visitas por etapa e sequência sem ganho de informação.
+- Quando etapas de pesquisa repetem circuito sem nova evidência, fonte, query ou finalista útil, o executor registra falha controlada `MARKET_EVIDENCE` com `RESEARCH_LOOP_WITHOUT_INFORMATION_GAIN` em vez de abrir nova pendência.
+- Causa-raiz tratada: a continuidade era decidida apenas pelo `nextStageCode` da etapa atual, sem orçamento de repetição por job/subnicho.
+- Prevenção de recorrência: teste unitário cobre o caso de `source-fetcher-reranker` tentando voltar para `adaptive-query-planner` após repetição sem ganho.

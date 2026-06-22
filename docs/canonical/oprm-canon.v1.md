@@ -55,6 +55,9 @@ Evitar fechamento prematuro de `import run` que destrói a totalização de mark
 ## Regra obrigatória — pesquisa inicial NichoCNAE de realidade operacional
 
 - A pesquisa inicial do pipeline OPRM NichoCNAE deve operar sempre no modo `ROUTINE_REALITY_RESEARCH`.
+- O CNAE deve ser tratado como público amplo demais para oferta e comunicação de alta assertividade; ele é apenas ponto de partida estatístico, fonte de volume e trilha de auditoria.
+- O objetivo primário do fluxo NichoCNAE é transformar o CNAE amplo em um subnicho operacional abordável, com pessoa executora, situação de trabalho, rotina, linguagem e contexto de compra suficientemente claros para alimentar uma oferta futura.
+- A pesquisa na internet existe para entender a realidade concreta desse subnicho antes de qualquer tese de produto: tarefas, canais, aquisição de clientes, preço/cobrança, dúvidas, dificuldades, vocabulário, recorrência, evidências públicas e sinais de vida operacional no Brasil.
 - O objetivo desse modo é definir um nicho/subnicho operacional suficientemente claro a partir do CNAE, com recorte de público executor, contexto de atuação, rotina observável, canais de aquisição/atendimento, recorrência e sinais públicos mínimos que sirvam como insumo para a próxima fase.
 - A pesquisa deve parar na definição qualificada do nicho e na descrição realista da rotina/contexto operacional; ela não deve aprofundar tese de dor, hipótese, mecanismo, produto, campanha, oferta, promessa comercial, landing page ou tese de experimento. Dor, mecanismo e demais aspectos comerciais serão tratados em pipeline posterior próprio.
 - Termos de solução, como IA, automação, sistema, app, software, ferramenta, curso ou marketing digital, não podem direcionar a pesquisa inicial quando vierem apenas de enquadramento comercial do nome do candidato.
@@ -84,6 +87,17 @@ Evitar fechamento prematuro de `import run` que destrói a totalização de mark
 - Quando o mesmo job for reaberto após reprovação do gate de qualidade, a etapa `oprmNicheResearchSeedBuilder` deve receber automaticamente o status anterior, `proximoMovimentoCodigo`, `proximoMovimento` e notas compactas do gate anterior para mudar subnicho, queries e estratégia de fontes, evitando repetir a mesma causa dominante de reprovação.
 - A etapa `oprmNicheResearchSeedBuilder` deve rejeitar objetivos e termos que direcionem busca por produto, oferta, campanha ou solução quando não fizerem parte literal da descrição CNAE.
 - A etapa `oprmSourceFetcher` deve propagar para o snapshot curto a classificação da fonte definida na busca: `sourceIntent`, `routineEvidenceScore`, `commercialPageRisk` e `solutionLanguageRisk`, sem armazenar HTML completo.
+
+## Regra obrigatória — anti-ciclo e uso controlado de IA no NichoCNAE v2
+
+- O pipeline NichoCNAE v2 não deve repetir indefinidamente o mesmo circuito de etapas quando não houver ganho novo de conhecimento sobre o subnicho; repetição sem nova evidência é falha controlada, não pesquisa em andamento.
+- Cada job deve manter um orçamento operacional por subnicho, incluindo limite de voltas por etapa, limite de pesquisas sem fontes novas, limite de replanejamentos de query, limite de chamadas de IA e custo máximo em dólar antes de encerrar com decisão auditável.
+- O avanço entre etapas deve ser orientado por progresso mensurável: novo subnicho candidato, nova fonte pública útil, nova evidência de rotina, novo sinal de aquisição/cobrança/recorrência, ou eliminação objetiva de um caminho ruim. Sem um desses ganhos, a próxima ação deve ser trocar recorte, concluir como sem evidência suficiente ou pedir decisão humana.
+- A IA pode ser usada como ferramenta de decisão e síntese, mas não como motor livre de tentativa infinita. Chamadas de IA devem acontecer somente em pontos de alto impacto: escolher/renomear subnicho, planejar queries quando a busca determinística travar, sintetizar evidências, decidir próximo movimento após reprovação e resumir aprendizado para a tela.
+- Antes de qualquer nova chamada de IA por reprocessamento, o executor deve enviar ao prompt o histórico compacto do job: etapas já repetidas, fontes rejeitadas, queries já testadas, causa dominante da reprovação e orçamento restante. A resposta deve obrigatoriamente escolher entre mudar recorte, mudar estratégia de fonte, encerrar sem evidência ou pedir intervenção humana.
+- Quando o job repetir o mesmo trio ou circuito de etapas sem avanço funcional, o executor deve registrar `CONTROLLED_FAILURE` com motivo de negócio claro, custo acumulado, evidências tentadas e recomendação objetiva para nova tentativa em outro subnicho, em vez de manter o job aberto.
+- A UI deve mostrar a situação em linguagem de negócio: “pesquisa sem ganho novo”, “sem fonte pública suficiente”, “subnicho amplo demais”, “recorte precisa mudar” ou “limite de custo atingido”, evitando que o usuário interprete ciclo técnico como progresso real.
+- O uso de IA deve continuar auditado por job/etapa com modelo, service tier, tokens, custo, request e response bruto; jobs sem registro na tabela de auditoria OpenAI devem ser apresentados como execução sem gasto de IA.
 
 ## Regra obrigatória — público-alvo MEI/autônomo no NichoCNAE
 

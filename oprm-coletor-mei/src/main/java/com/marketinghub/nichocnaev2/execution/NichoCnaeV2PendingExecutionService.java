@@ -16,6 +16,8 @@ import org.springframework.stereotype.Service;
 public class NichoCnaeV2PendingExecutionService {
     private static final Logger log = LoggerFactory.getLogger(NichoCnaeV2PendingExecutionService.class);
     private static final int MAX_TECHNICAL_RETRIES_PER_ATTEMPT = 3;
+    private static final int MAX_STAGE_VISITS_PER_JOB = 3;
+    private static final int MAX_NO_INFORMATION_GAIN_STREAK = 3;
 
     private final NichoCnaeV2BackendClient backendClient;
     private final NichoCnaeV2StageDefinitions stageDefinitions;
@@ -64,6 +66,10 @@ public class NichoCnaeV2PendingExecutionService {
             Map<String, Object> input = inputFor(pending);
             StageResult result = new PipelineWorker(stage.processor())
                     .run(new StageContext(pending.jobId(), pending.stageExecutionId(), input));
+            if (shouldStopBecauseOfResearchLoop(stage, pending, input, result)) {
+                registerControlledResearchLoop(stage, pending, input, result);
+                return;
+            }
             String outputPayload = backendClient.toJson(result.output());
             Map<String, Object> completion = completionRequest(stage.stageCode(), result, outputPayload);
             backendClient.complete(stage, pending, completion);
@@ -100,6 +106,33 @@ public class NichoCnaeV2PendingExecutionService {
             reasonCode = "TECHNICAL_RETRY_LIMIT_EXCEEDED";
         }
         backendClient.fail(stage, pending, ex, failureType, reasonCode);
+    }
+
+    /** Registra falha controlada quando o job repete pesquisa sem ganho novo de evidência útil. */
+    private void registerControlledResearchLoop(
+            NichoCnaeV2StageDefinition stage,
+            NichoCnaeV2PendingExecution pending,
+            Map<String, Object> input,
+            StageResult result) {
+        Map<String, Object> diagnosticPayload = nextStageInputPayload(input, result, text(result.output().get("nextStageCode")));
+        String message = "Job NichoCNAE v2 encerrado por ciclo de pesquisa sem ganho novo: stage="
+                + stage.stageCode()
+                + "; jobId="
+                + pending.jobId()
+                + "; cnaeCode="
+                + pending.cnaeCode()
+                + "; stageVisitCounts="
+                + diagnosticPayload.get("stageVisitCounts")
+                + "; noInformationGainStreak="
+                + diagnosticPayload.get("noInformationGainStreak")
+                + "; nextRecommendedAction=trocar recorte de subnicho ou iniciar nova pesquisa manual com hipótese de público mais específica";
+        log.warn(message);
+        backendClient.fail(
+                stage,
+                pending,
+                new ControlledResearchLoopException(message),
+                "MARKET_EVIDENCE",
+                "RESEARCH_LOOP_WITHOUT_INFORMATION_GAIN");
     }
 
     /** Normaliza o contador de retry técnico ausente para zero antes de comparar com o limite operacional. */
@@ -230,7 +263,99 @@ public class NichoCnaeV2PendingExecutionService {
         payload.remove("nextStageCode");
         payload.putAll(result.output());
         payload.put("nextStageCode", nextStageCode);
+        payload.put("stageVisitCounts", updatedStageVisitCounts(input, result));
+        payload.put("noInformationGainStreak", updatedNoInformationGainStreak(input, result));
         return payload;
+    }
+
+    /** Decide se a próxima pendência criaria um ciclo operacional sem aprendizado suficiente para continuar. */
+    private boolean shouldStopBecauseOfResearchLoop(
+            NichoCnaeV2StageDefinition stage,
+            NichoCnaeV2PendingExecution pending,
+            Map<String, Object> input,
+            StageResult result) {
+        String nextStageCode = text(result.output().get("nextStageCode"));
+        if (nextStageCode.isBlank()) {
+            return false;
+        }
+        Map<String, Integer> visitCounts = updatedStageVisitCounts(input, result);
+        int currentStageVisits = visitCounts.getOrDefault(stage.stageCode(), 0);
+        int noInformationGainStreak = updatedNoInformationGainStreak(input, result);
+        boolean stageRepeatedTooMuch = currentStageVisits >= MAX_STAGE_VISITS_PER_JOB && noInformationGain(result);
+        boolean noGainTooLong = noInformationGainStreak >= MAX_NO_INFORMATION_GAIN_STREAK;
+        boolean loopingBetweenResearchStages = isResearchLoopStage(stage.stageCode()) && isResearchLoopStage(nextStageCode);
+        if (loopingBetweenResearchStages && (stageRepeatedTooMuch || noGainTooLong)) {
+            log.warn(
+                    "Ciclo de pesquisa NichoCNAE v2 detectado antes de criar próxima etapa (stage={}, nextStage={}, jobId={}, cnaeCode={}, visits={}, noGainStreak={})",
+                    stage.stageCode(),
+                    nextStageCode,
+                    pending.jobId(),
+                    pending.cnaeCode(),
+                    currentStageVisits,
+                    noInformationGainStreak);
+            return true;
+        }
+        return false;
+    }
+
+    /** Atualiza o contador de visitas por etapa preservado no payload funcional do job. */
+    private Map<String, Integer> updatedStageVisitCounts(Map<String, Object> input, StageResult result) {
+        Map<String, Integer> visitCounts = intMap(input.get("stageVisitCounts"));
+        String currentStage = text(result.output().get("stage"));
+        if (!currentStage.isBlank()) {
+            visitCounts.put(currentStage, visitCounts.getOrDefault(currentStage, 0) + 1);
+        }
+        return visitCounts;
+    }
+
+    /** Atualiza a sequência de etapas que não acrescentaram evidência, fonte ou query nova ao job. */
+    private int updatedNoInformationGainStreak(Map<String, Object> input, StageResult result) {
+        int current = integer(input.get("noInformationGainStreak")) == null ? 0 : integer(input.get("noInformationGainStreak"));
+        return noInformationGain(result) ? current + 1 : 0;
+    }
+
+    /** Identifica decisões que representam ausência objetiva de avanço de pesquisa. */
+    private boolean noInformationGain(StageResult result) {
+        Map<String, Object> output = result.output();
+        String status = text(result.status()).toUpperCase();
+        String decision = text(output.getOrDefault(
+                        "planDecision",
+                        output.getOrDefault("sourceFetchDecision", output.getOrDefault("tournamentDecision", ""))))
+                .toUpperCase();
+        Integer plannedQueryCount = integer(output.get("plannedQueryCount"));
+        Integer selectedSourceCount = integer(output.get("selectedSourceCount"));
+        Integer finalistCount = integer(output.get("finalistCount"));
+        return status.contains("NO_RESEARCH_GAIN")
+                || status.contains("NO_FETCHABLE_DIRECT_SOURCE")
+                || status.contains("NO_VIABLE_SUBNICHE")
+                || decision.contains("NO_RESEARCH_GAIN")
+                || decision.contains("NO_FETCHABLE_DIRECT_SOURCE")
+                || decision.contains("NO_VIABLE_SUBNICHE")
+                || Integer.valueOf(0).equals(plannedQueryCount)
+                || Integer.valueOf(0).equals(selectedSourceCount)
+                || Integer.valueOf(0).equals(finalistCount);
+    }
+
+    /** Limita a trava aos estágios que historicamente podem formar circuito de replanejamento de pesquisa. */
+    private boolean isResearchLoopStage(String stageCode) {
+        return "adaptive-query-planner".equals(stageCode)
+                || "candidate-tournament".equals(stageCode)
+                || "source-fetcher-reranker".equals(stageCode)
+                || "reprocess-controller".equals(stageCode);
+    }
+
+    /** Converte mapa livre do payload em contadores inteiros usados pela trava anti-ciclo. */
+    private Map<String, Integer> intMap(Object value) {
+        Map<String, Integer> converted = new LinkedHashMap<>();
+        if (value instanceof Map<?, ?> map) {
+            map.forEach((key, val) -> {
+                Integer parsed = integer(val);
+                if (parsed != null) {
+                    converted.put(String.valueOf(key), parsed);
+                }
+            });
+        }
+        return converted;
     }
 
     /** Converte metadado opcional da etapa para inteiro sem quebrar avanço quando ausente. */
@@ -239,5 +364,18 @@ public class NichoCnaeV2PendingExecutionService {
             return number.intValue();
         }
         return value == null || String.valueOf(value).isBlank() ? null : Integer.valueOf(String.valueOf(value));
+    }
+
+    /** Extrai texto normalizado de campos livres do payload sem quebrar valores ausentes. */
+    private String text(Object value) {
+        return value == null ? "" : String.valueOf(value).trim();
+    }
+
+    /** Exceção operacional usada para registrar falha controlada por ciclo de pesquisa sem ganho novo. */
+    private static final class ControlledResearchLoopException extends RuntimeException {
+        /** Inicializa a exceção com mensagem de negócio persistível no backend. */
+        private ControlledResearchLoopException(String message) {
+            super(message);
+        }
     }
 }

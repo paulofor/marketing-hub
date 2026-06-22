@@ -354,8 +354,17 @@ public class ExperimentService {
                 .creativeImagePrompt(normalizePrompt(request.getCreativeImagePrompt()))
                 .build();
         Experiment savedExperiment = repository.save(exp);
+        dismissPromiseGenerationDrafts(request.getPromiseGenerationRequestIds());
         synchronizeLeadPortalFlow(savedExperiment);
         return savedExperiment;
+    }
+
+    /** Descarta rascunhos de promessa usados para criar o experimento e evita retomada de teste já salvo. */
+    private void dismissPromiseGenerationDrafts(List<Long> requestIds) {
+        if (requestIds == null || requestIds.isEmpty()) {
+            return;
+        }
+        promiseGenerationRequestRepository.dismissByIdIn(requestIds);
     }
 
     /** Soma em reais o custo das solicitações de promessa usadas para criar o experimento. */
@@ -413,7 +422,6 @@ public class ExperimentService {
                 .filter(exp -> exp.getFacebookReleaseRequestedAt() != null)
                 .toList();
     }
-
 
     /**
      * Duplica um experimento preservando seu contrato comercial e configurações operacionais.
@@ -474,7 +482,6 @@ public class ExperimentService {
                 .build();
         return repository.save(copy);
     }
-
 
     /**
      * Updates the status of an experiment.
@@ -816,7 +823,6 @@ public class ExperimentService {
         experimentFunnelEventRepository.deleteByExperimentId(id);
         return experiment;
     }
-
 
     /**
      * Remove a publicação anterior do Facebook para permitir que o worker publique um novo ciclo.

@@ -7,12 +7,15 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.cost.CostAttributionService;
+import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.promise.ExperimentPromiseGenerationRequest;
 import com.marketinghub.experiment.promise.ExperimentPromiseGenerationRequestStatus;
 import com.marketinghub.experiment.service.generatepromise.GenerateExperimentPromiseOptionsRequest;
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.repository.jpa.experiment.ExperimentPromiseGenerationRequestRepository;
+import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.hypothesis.HypothesisRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import java.util.List;
@@ -36,6 +39,10 @@ class ExperimentPromiseGenerationServiceTest {
     private HypothesisRepository hypothesisRepository;
     @Mock
     private ExperimentPromiseGenerationRequestRepository requestRepository;
+    @Mock
+    private ExperimentRepository experimentRepository;
+    @Mock
+    private CostAttributionService costAttributionService;
     @Spy
     private ObjectMapper objectMapper = new ObjectMapper();
     @InjectMocks
@@ -144,10 +151,11 @@ class ExperimentPromiseGenerationServiceTest {
                 .currentPrimaryCta("receber mensagens")
                 .build();
         request.setId(789L);
-        when(requestRepository.findFirstByStatusInOrderByCreatedAtDesc(List.of(
+        when(requestRepository.findTop10ByStatusInOrderByCreatedAtDesc(List.of(
                 ExperimentPromiseGenerationRequestStatus.PENDING,
                 ExperimentPromiseGenerationRequestStatus.PROCESSING,
-                ExperimentPromiseGenerationRequestStatus.COMPLETED))).thenReturn(Optional.of(request));
+                ExperimentPromiseGenerationRequestStatus.COMPLETED))).thenReturn(List.of(request));
+        when(experimentRepository.existsByHypothesisRefAndStatusNot(hypothesis, ExperimentStatus.PLANNED)).thenReturn(false);
 
         var response = service.latestDraft();
 
@@ -156,6 +164,32 @@ class ExperimentPromiseGenerationServiceTest {
         assertThat(response.get().nicheId()).isEqualTo(7L);
         assertThat(response.get().hypothesisId()).isEqualTo(hypothesisId);
         assertThat(response.get().currentSinglePain()).isEqualTo("agenda quebra");
+    }
+
+
+    /** Deve ocultar rascunho quando a hipótese já possui teste fora da criação. */
+    @Test
+    void shouldIgnoreDraftWhenHypothesisAlreadyHasRunningExperiment() {
+        UUID hypothesisId = UUID.randomUUID();
+        Hypothesis hypothesis = Hypothesis.builder()
+                .id(hypothesisId)
+                .title("Agenda irregular")
+                .build();
+        ExperimentPromiseGenerationRequest request = ExperimentPromiseGenerationRequest.builder()
+                .niche(MarketNiche.builder().id(7L).name("Manicure").build())
+                .hypothesis(hypothesis)
+                .status(ExperimentPromiseGenerationRequestStatus.COMPLETED)
+                .build();
+        request.setId(790L);
+        when(requestRepository.findTop10ByStatusInOrderByCreatedAtDesc(List.of(
+                ExperimentPromiseGenerationRequestStatus.PENDING,
+                ExperimentPromiseGenerationRequestStatus.PROCESSING,
+                ExperimentPromiseGenerationRequestStatus.COMPLETED))).thenReturn(List.of(request));
+        when(experimentRepository.existsByHypothesisRefAndStatusNot(hypothesis, ExperimentStatus.PLANNED)).thenReturn(true);
+
+        var response = service.latestDraft();
+
+        assertThat(response).isEmpty();
     }
 
     /** Deve descartar o rascunho retomável para não manter atalho antigo após salvar o teste. */

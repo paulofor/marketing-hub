@@ -42,9 +42,26 @@ public class LeadPortalMetricsService {
         String accessSql = """
                 SELECT e.id AS experiment_id,
                        e.name AS experiment_name,
-                       COUNT(DISTINCT COALESCE(fa.visitor_id,
-                                                CONCAT('ip:', fa.client_ip),
-                                                CONCAT('access:', fa.id))) AS unique_accesses
+                       COUNT(DISTINCT CASE
+                           WHEN fa.id IS NOT NULL AND NOT (
+                               LOWER(COALESCE(fa.user_agent, '')) LIKE '%facebookexternalhit%'
+                               OR LOWER(COALESCE(fa.user_agent, '')) LIKE '%meta-externalads%'
+                               OR LOWER(COALESCE(fa.user_agent, '')) LIKE '%facebot%'
+                           ) THEN COALESCE(fa.visitor_id,
+                                           CONCAT('ip:', fa.client_ip),
+                                           CONCAT('access:', fa.id))
+                           ELSE NULL
+                       END) AS unique_accesses,
+                       COUNT(DISTINCT CASE
+                           WHEN fa.id IS NOT NULL AND (
+                               LOWER(COALESCE(fa.user_agent, '')) LIKE '%facebookexternalhit%'
+                               OR LOWER(COALESCE(fa.user_agent, '')) LIKE '%meta-externalads%'
+                               OR LOWER(COALESCE(fa.user_agent, '')) LIKE '%facebot%'
+                           ) THEN COALESCE(fa.visitor_id,
+                                           CONCAT('ip:', fa.client_ip),
+                                           CONCAT('access:', fa.id))
+                           ELSE NULL
+                       END) AS technical_accesses_filtered
                 FROM experiment e
                 JOIN lead_portal_flow lpf ON lpf.id = e.lead_portal_flow_id
                 LEFT JOIN flow_access fa ON fa.flow_slug = lpf.slug
@@ -59,7 +76,9 @@ public class LeadPortalMetricsService {
                     experiments.computeIfAbsent(
                             experimentId, id -> new ExperimentMetricsAccumulator(id, experimentName));
 
-            accumulator.setLeadsAccessed(rs.getLong("unique_accesses"));
+            long uniqueAccesses = rs.getLong("unique_accesses");
+            long technicalAccessesFiltered = rs.getLong("technical_accesses_filtered");
+            accumulator.setAccessCounts(uniqueAccesses, technicalAccessesFiltered);
         });
     }
 
@@ -298,6 +317,7 @@ public class LeadPortalMetricsService {
         private final long experimentId;
         private final String experimentName;
         private long leadsAccessed;
+        private long technicalAccessesFiltered;
         private final Map<String, LeadPortalExperimentUserDto> uniqueUsers = new LinkedHashMap<>();
         private long sampleEmailCount;
         private Long selectedSampleEmailId;
@@ -314,8 +334,12 @@ public class LeadPortalMetricsService {
             this.experimentName = experimentName;
         }
 
-        void setLeadsAccessed(long leadsAccessed) {
+        /**
+         * Atualiza as contagens de acessos humanos e acessos técnicos filtrados.
+         */
+        void setAccessCounts(long leadsAccessed, long technicalAccessesFiltered) {
             this.leadsAccessed = leadsAccessed;
+            this.technicalAccessesFiltered = technicalAccessesFiltered;
         }
 
         void setSampleEmailCount(long sampleEmailCount) {
@@ -360,6 +384,7 @@ public class LeadPortalMetricsService {
                     experimentId,
                     experimentName,
                     leadsAccessed,
+                    technicalAccessesFiltered,
                     leadsWithImage,
                     leads,
                     sampleEmailCount,

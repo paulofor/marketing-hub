@@ -47,7 +47,8 @@ export default function LeadPortalExperimentMetricsPage() {
                 <thead>
                   <tr>
                     <th>Experimento</th>
-                    <th>Leads que acessaram</th>
+                    <th>Acessos válidos</th>
+                    <th>Acessos técnicos filtrados</th>
                     <th>Leads que enviaram imagem</th>
                     <th>Conversão para imagem</th>
                     <th>E-mails de amostra gerados</th>
@@ -67,6 +68,7 @@ export default function LeadPortalExperimentMetricsPage() {
                       <tr key={row.experimentId}>
                         <td className="fw-semibold">{row.experimentName}</td>
                         <td>{row.leadsAccessed}</td>
+                        <td>{row.technicalAccessesFiltered}</td>
                         <td>{row.leadsWithImage}</td>
                         <td>
                           {conversion.toLocaleString("pt-BR", {

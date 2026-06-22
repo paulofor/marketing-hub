@@ -12,6 +12,7 @@ export interface LeadPortalExperimentMetrics {
   experimentId: number;
   experimentName: string;
   leadsAccessed: number;
+  technicalAccessesFiltered: number;
   leadsWithImage: number;
   uniqueLeads: LeadPortalExperimentLead[];
   sampleEmailsGenerated: number;

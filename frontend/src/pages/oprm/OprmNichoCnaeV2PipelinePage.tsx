@@ -73,6 +73,7 @@ function formatJobId(jobId: string) {
 }
 
 function explainStatus(job: OprmNichoCnaeV2JobSummary, open: boolean) {
+  if (open && job.loopDetected) return job.loopLabel ?? "Em ciclo";
   if (open) return "Aguardando processamento";
   if (job.outcomeStatus === "FAILURE") return "Fracasso";
   if (job.outcomeStatus === "SUCCESS") return "Sucesso";
@@ -98,6 +99,9 @@ function simplifyDecisionReason(reason: string | null | undefined) {
 }
 
 function getOperatorNextAction(job: OprmNichoCnaeV2JobSummary, open: boolean) {
+  if (open && job.loopDetected) {
+    return "Acompanhar o ciclo; cancelar apenas se estiver preso por tempo excessivo.";
+  }
   if (open) return "Aguardar o executor continuar este job.";
   if (job.outcomeMessage) return job.outcomeMessage;
   if (job.lastStageStatus === "FAILED") {
@@ -110,6 +114,7 @@ function getOperatorNextAction(job: OprmNichoCnaeV2JobSummary, open: boolean) {
 }
 
 function decisionBadgeClass(job: OprmNichoCnaeV2JobSummary, open: boolean) {
+  if (open && job.loopDetected) return "badge text-bg-info";
   if (open) return "badge text-bg-warning";
   if (job.outcomeStatus === "FAILURE") return "badge text-bg-danger";
   if (job.outcomeStatus === "SUCCESS") return "badge text-bg-success";
@@ -157,9 +162,9 @@ function JobsTable({
             const stageName = formatStage(
               open ? job.currentStageCode : job.lastStageCode,
             );
-            const simplifiedReason = simplifyDecisionReason(
-              job.finalDecisionReason,
-            );
+            const simplifiedReason = job.loopDetected
+              ? (job.loopReason ?? "Job aberto repetindo etapas de pesquisa.")
+              : simplifyDecisionReason(job.finalDecisionReason);
             const nextAction = getOperatorNextAction(job, open);
             return (
               <tr key={job.jobId}>
@@ -177,6 +182,14 @@ function JobsTable({
                   <span className="oprm-v2-job-table__stage" title={stageName}>
                     {stageName}
                   </span>
+                  {open && job.loopDetected ? (
+                    <div className="small text-info fw-semibold mt-1">
+                      Ciclo detectado
+                      {job.repeatedStageCount
+                        ? ` · ${job.repeatedStageCount} etapas repetidas`
+                        : ""}
+                    </div>
+                  ) : null}
                 </td>
                 <td>
                   <span

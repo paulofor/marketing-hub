@@ -143,6 +143,7 @@ components:
         - materializationEnabled
         - usedAi
         - aiCostUsd
+        - loopDetected
       properties:
         jobId:
           type: string
@@ -210,6 +211,21 @@ components:
         aiCostUsd:
           type: number
           description: Soma dos custos de IA em USD encontrados nos outputPayloads persistidos do job.
+        loopDetected:
+          type: boolean
+          description: Indica que o backend detectou repetição de etapas em job aberto, sinalizando ciclo operacional.
+        loopLabel:
+          type: string
+          nullable: true
+          description: Rótulo operacional para a UI exibir quando o job está em ciclo.
+        loopReason:
+          type: string
+          nullable: true
+          description: Explicação persistida pelo backend sobre a repetição de etapas do job aberto.
+        repeatedStageCount:
+          type: integer
+          nullable: true
+          description: Quantidade de etapas que aparecem mais de uma vez no histórico do job.
         createdAt:
           type: string
           format: date-time

@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
@@ -333,8 +334,42 @@ public class BackendCandidateGeneratorService {
                 actionUrl(finalDecision, lastExecution.getCnaeCode(), marketNicheId),
                 usedAi,
                 aiCostUsd,
+                loopDetected(executions),
+                loopLabel(executions),
+                loopReason(executions),
+                repeatedStageCount(executions),
                 executions.stream().map(OprmNichoCnaeV2StageExecution::getCreatedAt).min(Comparator.naturalOrder()).orElse(null),
                 lastExecution.getUpdatedAt());
+    }
+
+
+    /** Detecta quando um job aberto está repetindo etapas de pesquisa/reclassificação em vez de avançar linearmente. */
+    private boolean loopDetected(List<OprmNichoCnaeV2StageExecution> executions) {
+        return hasOpenExecution(executions) && repeatedStageCount(executions) >= 2;
+    }
+
+    /** Define o rótulo operacional do ciclo para a tela exibir a verdade persistida pelo backend. */
+    private String loopLabel(List<OprmNichoCnaeV2StageExecution> executions) {
+        return loopDetected(executions) ? "Em ciclo de pesquisa" : null;
+    }
+
+    /** Explica por que o job foi classificado como ciclo, sem depender de heurística no front-end. */
+    private String loopReason(List<OprmNichoCnaeV2StageExecution> executions) {
+        int repeatedStages = repeatedStageCount(executions);
+        if (!hasOpenExecution(executions) || repeatedStages < 2) {
+            return null;
+        }
+        return "O job repetiu "
+                + repeatedStages
+                + " etapas no histórico recente e ainda está aberto; o executor está buscando novas evidências antes de decidir.";
+    }
+
+    /** Conta quantas etapas aparecem mais de uma vez no mesmo job para sinalizar loop operacional. */
+    private int repeatedStageCount(List<OprmNichoCnaeV2StageExecution> executions) {
+        Map<String, Long> stageOccurrences = executions.stream()
+                .collect(Collectors.groupingBy(
+                        OprmNichoCnaeV2StageExecution::getStageCode, LinkedHashMap::new, Collectors.counting()));
+        return (int) stageOccurrences.values().stream().filter(count -> count > 1).count();
     }
 
     /** Extrai a decisão funcional persistida no output da última etapa para evitar conclusão sem explicação ao usuário. */

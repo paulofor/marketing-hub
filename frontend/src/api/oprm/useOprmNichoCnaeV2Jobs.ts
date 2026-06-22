@@ -21,6 +21,10 @@ export interface OprmNichoCnaeV2JobSummary {
   actionUrl: string | null;
   usedAi: boolean | null;
   aiCostUsd: number | string | null;
+  loopDetected: boolean | null;
+  loopLabel: string | null;
+  loopReason: string | null;
+  repeatedStageCount: number | null;
   createdAt: string | null;
   updatedAt: string | null;
 }

@@ -24,5 +24,9 @@ public record CandidateGeneratorCnaeJobSummary(
         String actionUrl,
         Boolean usedAi,
         BigDecimal aiCostUsd,
+        Boolean loopDetected,
+        String loopLabel,
+        String loopReason,
+        Integer repeatedStageCount,
         Instant createdAt,
         Instant updatedAt) {}

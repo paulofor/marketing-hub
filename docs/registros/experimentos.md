@@ -5053,3 +5053,10 @@
 
 - Ajustada a tela de funil do experimento para formatar o campo `Último evento` explicitamente no fuso operacional `America/Sao_Paulo`, exibindo o cabeçalho como horário de Brasília e evitando interpretação pelo fuso local do navegador.
 - Adicionado teste de regressão no frontend para garantir que datas do funil sejam apresentadas no fuso operacional do Brasil.
+
+## 2026-06-22 — Retomada de teste em criação não abre experimento em execução
+
+- Problema: o botão `Continuar teste em criação` podia reutilizar uma solicitação antiga de promessa de um experimento que já havia saído da criação e entrado em execução.
+- Causa-raiz: a retomada buscava o último rascunho por status da geração de promessa, sem confirmar se a hipótese daquele rascunho já possuía experimento fora do status `PLANNED`; além disso, a limpeza do rascunho dependia de chamada posterior do frontend.
+- Correção aplicada: o backend agora filtra o rascunho retomável pela verdade dos experimentos persistidos e descarta, no próprio fluxo transacional de criação do experimento, as solicitações de promessa usadas no teste salvo.
+- Prevenção de recorrência: adicionado teste de serviço garantindo que rascunho com experimento já em execução/histórico não é exposto para a tela continuar criação.

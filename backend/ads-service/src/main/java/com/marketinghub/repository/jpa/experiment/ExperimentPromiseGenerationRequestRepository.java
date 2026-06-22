@@ -5,9 +5,9 @@ import com.marketinghub.experiment.promise.ExperimentPromiseGenerationRequestSta
 import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -18,9 +18,19 @@ public interface ExperimentPromiseGenerationRequestRepository extends JpaReposit
             ExperimentPromiseGenerationRequestStatus status,
             Pageable pageable);
 
-    /** Busca a solicitação mais recente em status retomável para a tela recuperar pelo backend. */
-    Optional<ExperimentPromiseGenerationRequest> findFirstByStatusInOrderByCreatedAtDesc(
+    /** Busca as solicitações recentes em status retomável para a tela recuperar pelo backend. */
+    List<ExperimentPromiseGenerationRequest> findTop10ByStatusInOrderByCreatedAtDesc(
             Collection<ExperimentPromiseGenerationRequestStatus> statuses);
+
+    /** Descarta em lote solicitações já usadas na criação de um experimento. */
+    @Modifying
+    @Query("""
+            update ExperimentPromiseGenerationRequest r
+            set r.status = com.marketinghub.experiment.promise.ExperimentPromiseGenerationRequestStatus.DISMISSED,
+                r.finishedAt = CURRENT_TIMESTAMP
+            where r.id in :ids
+            """)
+    int dismissByIdIn(@Param("ids") Collection<Long> ids);
 
     /** Soma o custo em dólar de solicitações concluídas para compor o custo inicial do experimento criado. */
     @Query("""

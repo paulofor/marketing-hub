@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.marketinghub.cost.CostAttributionService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.promise.ExperimentPromiseGenerationRequest;
 import com.marketinghub.experiment.promise.ExperimentPromiseGenerationRequestStatus;
 import com.marketinghub.experiment.service.generatepromise.ExperimentPromiseOptionDto;
@@ -13,6 +14,7 @@ import com.marketinghub.experiment.service.generatepromise.latestdraft.Experimen
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.repository.jpa.experiment.ExperimentPromiseGenerationRequestRepository;
+import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.hypothesis.HypothesisRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import java.math.BigDecimal;
@@ -37,6 +39,7 @@ public class ExperimentPromiseGenerationService {
     private final MarketNicheRepository nicheRepository;
     private final HypothesisRepository hypothesisRepository;
     private final ExperimentPromiseGenerationRequestRepository requestRepository;
+    private final ExperimentRepository experimentRepository;
     private final ObjectMapper objectMapper;
     private final CostAttributionService costAttributionService;
 
@@ -44,11 +47,13 @@ public class ExperimentPromiseGenerationService {
     public ExperimentPromiseGenerationService(MarketNicheRepository nicheRepository,
                                               HypothesisRepository hypothesisRepository,
                                               ExperimentPromiseGenerationRequestRepository requestRepository,
+                                              ExperimentRepository experimentRepository,
                                               ObjectMapper objectMapper,
                                               CostAttributionService costAttributionService) {
         this.nicheRepository = nicheRepository;
         this.hypothesisRepository = hypothesisRepository;
         this.requestRepository = requestRepository;
+        this.experimentRepository = experimentRepository;
         this.objectMapper = objectMapper;
         this.costAttributionService = costAttributionService;
     }
@@ -84,11 +89,23 @@ public class ExperimentPromiseGenerationService {
     /** Retorna a solicitação mais recente ainda útil para retomada da criação do teste pela tela. */
     @Transactional(readOnly = true)
     public Optional<ExperimentPromiseOptionsDraftResponse> latestDraft() {
-        return requestRepository.findFirstByStatusInOrderByCreatedAtDesc(List.of(
-                        ExperimentPromiseGenerationRequestStatus.PENDING,
-                        ExperimentPromiseGenerationRequestStatus.PROCESSING,
-                        ExperimentPromiseGenerationRequestStatus.COMPLETED))
+        return requestRepository.findTop10ByStatusInOrderByCreatedAtDesc(resumableStatuses()).stream()
+                .filter(this::isStillCreationDraft)
+                .findFirst()
                 .map(this::toDraftResponse);
+    }
+
+    /** Lista os status que ainda podem representar um teste em criação na tela. */
+    private List<ExperimentPromiseGenerationRequestStatus> resumableStatuses() {
+        return List.of(
+                ExperimentPromiseGenerationRequestStatus.PENDING,
+                ExperimentPromiseGenerationRequestStatus.PROCESSING,
+                ExperimentPromiseGenerationRequestStatus.COMPLETED);
+    }
+
+    /** Confirma no backend se o rascunho ainda não virou experimento em execução ou histórico. */
+    private boolean isStillCreationDraft(ExperimentPromiseGenerationRequest entity) {
+        return !experimentRepository.existsByHypothesisRefAndStatusNot(entity.getHypothesis(), ExperimentStatus.PLANNED);
     }
 
     /** Consulta uma solicitação específica para a tela acompanhar até a resposta final do AI Worker. */

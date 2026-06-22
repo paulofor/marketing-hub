@@ -171,6 +171,48 @@ class BackendCandidateGeneratorServiceTest {
         assertThat(result.completedJobs().getFirst().aiCostUsd()).isEqualByComparingTo(new BigDecimal("0.015"));
     }
 
+
+    /** Deve expor na resposta do backend quando job aberto repete etapas e está em ciclo operacional. */
+    @Test
+    void listJobsForCnaeShowsOpenJobLoopDetectedByBackend() {
+        BackendCandidateGeneratorService service = service(true, false);
+        OprmNichoCnaeV2StageExecution firstPlanner = execution(401L, 1, 0, 1);
+        firstPlanner.setJobId("job-em-ciclo");
+        firstPlanner.setCnaeCode("4781400");
+        firstPlanner.setStageCode("adaptive-query-planner");
+        firstPlanner.setStatus(OprmNichoCnaeV2StageExecutionStatus.COMPLETED);
+        firstPlanner.setUpdatedAt(Instant.parse("2026-06-22T12:00:00Z"));
+        OprmNichoCnaeV2StageExecution firstTournament = execution(402L, 1, 0, 1);
+        firstTournament.setJobId("job-em-ciclo");
+        firstTournament.setCnaeCode("4781400");
+        firstTournament.setStageCode("candidate-tournament");
+        firstTournament.setStatus(OprmNichoCnaeV2StageExecutionStatus.COMPLETED);
+        firstTournament.setUpdatedAt(Instant.parse("2026-06-22T12:01:00Z"));
+        OprmNichoCnaeV2StageExecution secondPlanner = execution(403L, 1, 0, 1);
+        secondPlanner.setJobId("job-em-ciclo");
+        secondPlanner.setCnaeCode("4781400");
+        secondPlanner.setStageCode("adaptive-query-planner");
+        secondPlanner.setStatus(OprmNichoCnaeV2StageExecutionStatus.COMPLETED);
+        secondPlanner.setUpdatedAt(Instant.parse("2026-06-22T12:02:00Z"));
+        OprmNichoCnaeV2StageExecution openTournament = execution(404L, 1, 0, 1);
+        openTournament.setJobId("job-em-ciclo");
+        openTournament.setCnaeCode("4781400");
+        openTournament.setStageCode("candidate-tournament");
+        openTournament.setStatus(OprmNichoCnaeV2StageExecutionStatus.PENDING);
+        openTournament.setUpdatedAt(Instant.parse("2026-06-22T12:03:00Z"));
+        when(stageExecutionRepository.findByCnaeCodeOrderByUpdatedAtDesc("4781400"))
+                .thenReturn(List.of(openTournament, secondPlanner, firstTournament, firstPlanner));
+
+        var result = service.listJobsForCnae("4781400");
+
+        assertThat(result.openJobs()).hasSize(1);
+        var job = result.openJobs().getFirst();
+        assertThat(job.loopDetected()).isTrue();
+        assertThat(job.loopLabel()).isEqualTo("Em ciclo de pesquisa");
+        assertThat(job.loopReason()).contains("O job repetiu 2 etapas");
+        assertThat(job.repeatedStageCount()).isEqualTo(2);
+    }
+
     /** Deve detalhar cronologicamente as etapas do job para relatório de fracasso. */
     @Test
     void detailJobReturnsStageTimelineForFailureReport() {

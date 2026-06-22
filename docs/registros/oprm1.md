@@ -1257,3 +1257,8 @@
 - Causa-raiz tratada: o fluxo estava aplicando critério conservador de viabilidade/dor cedo demais, encerrando jobs com `finalistas=0` mesmo quando ainda havia recortes operacionais que poderiam alimentar nova pesquisa.
 - Prevenção de recorrência: testes da v2 agora cobrem geração de pelo menos 10 candidatos e seleção de até três finalistas por clareza operacional.
 - 2026-06-22 00:00:00 (UTC): adicionada opção administrativa para cancelar jobs abertos/presos do OPRM NichoCNAE v2 na tela `/oprm/cnaes/:cnaeCode/pipeline-v2`. A correção fecha a causa-raiz operacional do bloqueio por `409 Conflict`: o backend agora possui contrato explícito de cancelamento por `jobId`, marca execuções abertas como `CANCELED`, preserva histórico/auditoria e libera o CNAE para iniciar novo job v2 sem apagar dados.
+
+## 2026-06-22 — Observabilidade de ciclo em jobs abertos NichoCNAE v2
+
+- A tela `/oprm/cnaes/:cnaeCode/pipeline-v2` passou a mostrar quando um job aberto está em ciclo operacional, usando campos explícitos do backend (`loopDetected`, `loopLabel`, `loopReason` e `repeatedStageCount`) em vez de inferência local no frontend.
+- O backend do OPRM NichoCNAE v2 agora classifica jobs abertos com repetição de etapas no histórico como “Em ciclo de pesquisa”, deixando claro ao usuário que o executor está repetindo pesquisa/reclassificação antes de decidir.

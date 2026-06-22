@@ -1,0 +1,19 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-22-01-oprm-nichocnae-v2-status-varchar
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: oprm_nichocnae_v2_stage_execution
+        - columnExists:
+            tableName: oprm_nichocnae_v2_stage_execution
+            columnName: status
+      changes:
+        - modifyDataType:
+            tableName: oprm_nichocnae_v2_stage_execution
+            columnName: status
+            newDataType: VARCHAR(40)

@@ -1,3 +1,8 @@
+## 2026-06-22 — OPRM NichoCNAE v2: cancelamento manual de job
+
+- Corrigida a causa-raiz do erro ao cancelar job v2: em produção a coluna `oprm_nichocnae_v2_stage_execution.status` ainda estava como `ENUM` sem o valor `CANCELED`, enquanto o backend já usa status flexível por enum Java.
+- Criado changelog incremental para converter a coluna `status` para `VARCHAR(40)`, permitindo o cancelamento manual e futuras evoluções de status sem truncamento pelo MySQL.
+
 
 ## 2026-06-21 — OPRM NichoCNAE v2: bootstrap do backend corrigido
 

@@ -86,10 +86,22 @@ describe("OprmNichoCnaeV2JobDetailPage", () => {
     await userEvent.click(
       screen.getByText(/campos: candidates, candidateCount/),
     );
+    expect(screen.getByText("objeto com 2 campo(s)")).toBeInTheDocument();
 
+    await userEvent.click(screen.getByText("objeto com 2 campo(s)"));
     expect(
-      screen.getByText(/"name": "ajustes de roupa plus size"/),
+      screen.getByText("candidates: array com 1 item(ns)"),
     ).toBeInTheDocument();
-    expect(screen.getByText(/"candidateCount": 1/)).toBeInTheDocument();
+
+    await userEvent.click(screen.getByText("candidates: array com 1 item(ns)"));
+    expect(screen.getByText("0: objeto com 1 campo(s)")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByText("0: objeto com 1 campo(s)"));
+    expect(screen.getByText("name:")).toBeInTheDocument();
+    expect(
+      screen.getByText('"ajustes de roupa plus size"'),
+    ).toBeInTheDocument();
+    expect(screen.getByText("candidateCount:")).toBeInTheDocument();
+    expect(screen.getByText("1")).toBeInTheDocument();
   });
 });

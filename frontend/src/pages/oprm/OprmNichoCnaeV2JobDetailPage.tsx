@@ -29,12 +29,6 @@ function parsePayload(payload: string | null | undefined) {
   }
 }
 
-function formatPayload(payload: string | null | undefined) {
-  const parsed = parsePayload(payload);
-  if (parsed === null) return payload ?? "";
-  return JSON.stringify(parsed, null, 2);
-}
-
 function summarizePayload(payload: string | null | undefined) {
   if (!payload) return "Sem payload registrado.";
   const parsed = parsePayload(payload);
@@ -46,6 +40,58 @@ function summarizePayload(payload: string | null | undefined) {
   if (Array.isArray(parsed))
     return `JSON registrado com ${parsed.length} item(ns).`;
   return "Conteúdo registrado em texto.";
+}
+
+function JsonValueViewer({
+  name,
+  value,
+  level = 0,
+}: {
+  name?: string;
+  value: unknown;
+  level?: number;
+}) {
+  const isArray = Array.isArray(value);
+  const isObject = value !== null && typeof value === "object" && !isArray;
+
+  if (!isArray && !isObject) {
+    return (
+      <div className="font-monospace small">
+        {name ? <span className="text-primary">{name}: </span> : null}
+        <span>{JSON.stringify(value)}</span>
+      </div>
+    );
+  }
+
+  const entries = isArray
+    ? value.map((item, index) => [String(index), item] as const)
+    : Object.entries(value as Record<string, unknown>);
+  const summary = isArray
+    ? `${name ? `${name}: ` : ""}array com ${entries.length} item(ns)`
+    : `${name ? `${name}: ` : ""}objeto com ${entries.length} campo(s)`;
+
+  return (
+    <details
+      className="font-monospace small"
+      style={{ marginLeft: level ? "1rem" : 0 }}
+    >
+      <summary className="json-tree-summary">{summary}</summary>
+      <div className="border-start ps-2 ms-1 mt-1 d-flex flex-column gap-1">
+        {entries.length === 0 ? (
+          <span className="text-secondary">Sem campos internos.</span>
+        ) : (
+          entries.map(([entryName, entryValue]) => (
+            <JsonValueViewer
+              key={entryName}
+              name={entryName}
+              value={entryValue}
+              level={level + 1}
+            />
+          ))
+        )}
+      </div>
+    </details>
+  );
 }
 
 function PayloadViewer({
@@ -66,12 +112,16 @@ function PayloadViewer({
         {summarizePayload(payload)} Clique para ver o conteúdo {contentType} de{" "}
         {label}.
       </summary>
-      <pre
-        className="mt-2 mb-0 small bg-white border rounded p-3 overflow-auto"
+      <div
+        className="mt-2 mb-0 bg-white border rounded p-3 overflow-auto"
         style={{ maxHeight: "26rem", whiteSpace: "pre-wrap" }}
       >
-        {formatPayload(payload)}
-      </pre>
+        {parsed === null ? (
+          <pre className="mb-0 small">{payload}</pre>
+        ) : (
+          <JsonValueViewer value={parsed} />
+        )}
+      </div>
     </details>
   );
 }

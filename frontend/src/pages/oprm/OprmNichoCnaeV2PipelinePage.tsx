@@ -4,6 +4,7 @@ import {
   useOprmNichoCnaeV2Jobs,
   type OprmNichoCnaeV2JobSummary,
 } from "../../api/oprm/useOprmNichoCnaeV2Jobs";
+import { useCancelOprmNichoCnaeV2Job } from "../../api/oprm/useCancelOprmNichoCnaeV2Job";
 import { useStartOprmNichoCnaeV2Job } from "../../api/oprm/useStartOprmNichoCnaeV2Job";
 import PageTitle from "../../components/PageTitle";
 import OprmModuleNavigation from "./OprmModuleNavigation";
@@ -123,10 +124,14 @@ function JobsTable({
   jobs,
   emptyMessage,
   open,
+  cancelingJobId,
+  onCancelJob,
 }: {
   jobs: OprmNichoCnaeV2JobSummary[];
   emptyMessage: string;
   open: boolean;
+  cancelingJobId?: string | null;
+  onCancelJob?: (jobId: string) => void;
 }) {
   if (jobs.length === 0) {
     return <p className="text-secondary mb-0">{emptyMessage}</p>;
@@ -196,6 +201,26 @@ function JobsTable({
                       >
                         Ver etapas até o fracasso
                       </Link>
+                    ) : null}
+                    {open && onCancelJob ? (
+                      <button
+                        className="btn btn-sm btn-outline-danger py-0 px-2"
+                        type="button"
+                        onClick={() => onCancelJob(job.jobId)}
+                        disabled={cancelingJobId === job.jobId}
+                      >
+                        {cancelingJobId === job.jobId ? (
+                          <>
+                            <span
+                              className="spinner-border spinner-border-sm me-1"
+                              aria-hidden="true"
+                            />
+                            Cancelando...
+                          </>
+                        ) : (
+                          "Cancelar job preso"
+                        )}
+                      </button>
                     ) : null}
                     {!open && job.actionLabel && job.actionUrl ? (
                       <Link
@@ -390,6 +415,7 @@ export default function OprmNichoCnaeV2PipelinePage() {
   const { cnaeCode } = useParams();
   const decodedCnaeCode = cnaeCode ? decodeURIComponent(cnaeCode) : undefined;
   const startJobMutation = useStartOprmNichoCnaeV2Job(decodedCnaeCode ?? "");
+  const cancelJobMutation = useCancelOprmNichoCnaeV2Job(decodedCnaeCode ?? "");
   const jobsQuery = useOprmNichoCnaeV2Jobs(decodedCnaeCode ?? "");
   const cnaeAiCostUsd = jobsQuery.data?.cnaeAiCostUsd ?? 0;
 
@@ -465,6 +491,16 @@ export default function OprmNichoCnaeV2PipelinePage() {
               {startJobMutation.error.message}
             </div>
           ) : null}
+          {cancelJobMutation.isSuccess ? (
+            <div className="alert alert-success mt-3 mb-0" role="status">
+              {cancelJobMutation.data.message}
+            </div>
+          ) : null}
+          {cancelJobMutation.isError ? (
+            <div className="alert alert-danger mt-3 mb-0" role="alert">
+              {cancelJobMutation.error.message}
+            </div>
+          ) : null}
           {decodedCnaeCode && jobsQuery.data ? (
             <div className="alert alert-info mt-3 mb-0" role="status">
               <strong>Custo de IA contabilizado no CNAE:</strong>{" "}
@@ -509,6 +545,8 @@ export default function OprmNichoCnaeV2PipelinePage() {
                   jobs={jobsQuery.data?.openJobs ?? []}
                   emptyMessage="Nenhum job aberto para este CNAE."
                   open
+                  cancelingJobId={cancelJobMutation.variables ?? null}
+                  onCancelJob={(jobId) => cancelJobMutation.mutate(jobId)}
                 />
               )}
             </div>

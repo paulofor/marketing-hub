@@ -382,6 +382,31 @@ class BackendCandidateGeneratorServiceTest {
         assertThat(saved.getRawResponse()).contains("response");
     }
 
+
+    /** Deve cancelar job aberto preso e liberar o CNAE para nova execução manual. */
+    @Test
+    void cancelJobMarksOpenExecutionsAsCanceled() {
+        BackendCandidateGeneratorService service = service(true, false);
+        OprmNichoCnaeV2StageExecution open = execution(301L, 1, 2, 1);
+        open.setJobId("job-preso");
+        open.setCnaeCode("7319002");
+        open.setStageCode("source-safety-filter");
+        open.setStatus(OprmNichoCnaeV2StageExecutionStatus.TECHNICAL_RETRY_SCHEDULED);
+        when(stageExecutionRepository.findByJobIdOrderByCreatedAtAsc("job-preso")).thenReturn(List.of(open));
+        when(stageExecutionRepository.findByJobIdAndStatusIn(eq("job-preso"), any())).thenReturn(List.of(open));
+        when(stageExecutionRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var result = service.cancelJob("job-preso");
+
+        assertThat(result.jobId()).isEqualTo("job-preso");
+        assertThat(result.cnaeCode()).isEqualTo("7319002");
+        assertThat(result.canceledExecutions()).isEqualTo(1);
+        assertThat(result.status()).isEqualTo("CANCELED");
+        assertThat(open.getStatus()).isEqualTo(OprmNichoCnaeV2StageExecutionStatus.CANCELED);
+        assertThat(open.getErrorMessage()).contains("Cancelado manualmente");
+        verify(stageExecutionRepository).saveAll(List.of(open));
+    }
+
     /** Cria o service testável com flags explícitas para a v2. */
     private BackendCandidateGeneratorService service(boolean v2Enabled, boolean materializationEnabled) {
         return new BackendCandidateGeneratorService(

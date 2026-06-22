@@ -1,6 +1,7 @@
 package com.marketinghub.oprm.nichocnae.v2.candidategenerator.controller;
 
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.BackendCandidateGeneratorService;
+import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.cancelJob.CandidateGeneratorCancelJobResponse;
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.completeStageExecution.CandidateGeneratorCompletionRequest;
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.completeStageExecution.CandidateGeneratorCompletionResponse;
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.createStageExecution.CandidateGeneratorCreateResponse;
@@ -44,6 +45,12 @@ public class BackendCandidateGeneratorController {
     @GetMapping("/jobs/{jobId}")
     public CandidateGeneratorJobDetailResponse detailJob(@PathVariable String jobId) {
         return service.detailJob(jobId);
+    }
+
+    /** Cancela manualmente um job preso para liberar o CNAE para nova tentativa. */
+    @PostMapping("/jobs/{jobId}/cancel")
+    public CandidateGeneratorCancelJobResponse cancelJob(@PathVariable String jobId) {
+        return service.cancelJob(jobId);
     }
 
     /** Entrega execuções pendentes da etapa candidate-generator ao módulo executor OPRM. */

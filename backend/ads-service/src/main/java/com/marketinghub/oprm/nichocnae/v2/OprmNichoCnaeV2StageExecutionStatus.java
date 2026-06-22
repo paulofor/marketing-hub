@@ -6,5 +6,6 @@ public enum OprmNichoCnaeV2StageExecutionStatus {
     RUNNING,
     COMPLETED,
     TECHNICAL_RETRY_SCHEDULED,
-    FAILED
+    FAILED,
+    CANCELED
 }

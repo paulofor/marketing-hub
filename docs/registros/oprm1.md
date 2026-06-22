@@ -1281,3 +1281,10 @@
 - Quando etapas de pesquisa repetem circuito sem nova evidência, fonte, query ou finalista útil, o executor registra falha controlada `MARKET_EVIDENCE` com `RESEARCH_LOOP_WITHOUT_INFORMATION_GAIN` em vez de abrir nova pendência.
 - Causa-raiz tratada: a continuidade era decidida apenas pelo `nextStageCode` da etapa atual, sem orçamento de repetição por job/subnicho.
 - Prevenção de recorrência: teste unitário cobre o caso de `source-fetcher-reranker` tentando voltar para `adaptive-query-planner` após repetição sem ganho.
+
+## 2026-06-22 — NichoCNAE v2 focado em MEI/autônomo
+
+- Ajustado o `candidate-generator` do executor `oprm-coletor-mei` para gerar candidatos centrados em MEI/autônomo/dono-operador brasileiro desde a primeira etapa, sem especializar por CNAE específico e evitando recortes genéricos de empresa estruturada quando o job nasce do levantamento MEI.
+- Atualizado o cânone OPRM e o contrato do executor v2 para declarar que este fluxo foca MEI/autônomo/dono-operador, tratando o CNAE como ponto de partida de segmentação e não como público final.
+- Causa-raiz tratada: os jobs recentes do CNAE 4781400 usavam um CNAE com alto volume MEI, mas os candidatos gerados descreviam operação genérica de loja de vestuário, reduzindo a chance de encontrar evidência direta da rotina real do microempreendedor.
+- Prevenção de recorrência: teste unitário valida que qualquer CNAE mantém o padrão genérico MEI/autônomo/dono-operador, preserva a descrição do CNAE apenas como contexto e não volta para especializações por atividade como `MEI_MODA_WHATSAPP_INSTAGRAM` nem operadores genéricos como `RETAIL_OPERATOR` ou `STORE_ASSISTANT`.

@@ -56,11 +56,12 @@ O backend deve devolver esses mesmos identificadores no envelope do `pending`, m
 
 ### Payload funcional esperado
 
-A etapa inicial pode receber `inputPayload` vazio, desde que o envelope entregue `cnaeCode` e `cnaeDescription`. O executor deve gerar:
+A etapa inicial pode receber `inputPayload` vazio, desde que o envelope entregue `cnaeCode` e `cnaeDescription`. Quando o job nasce do levantamento MEI, este fluxo v2 deve focar MEI/autônomo/dono-operador brasileiro, tratando o CNAE como ponto de partida e não como público final. O executor deve gerar:
 
-- `candidates`: candidatos neutros de subnicho/job operacional, preferencialmente entre 8 e 12 recortes para CNAEs amplos.
+- `candidates`: candidatos de subnicho/job operacional centrados em MEI/autônomo/dono-operador, preferencialmente entre 8 e 12 recortes para CNAEs amplos.
 - `candidateUrls`: URLs iniciais para validação de segurança.
 - `candidateCount`.
+- `audienceFocus = MEI_AUTONOMO_DONO_OPERADOR`.
 - `nextStageCode = source-safety-filter`.
 
 ## Etapa 2 — `source-safety-filter`

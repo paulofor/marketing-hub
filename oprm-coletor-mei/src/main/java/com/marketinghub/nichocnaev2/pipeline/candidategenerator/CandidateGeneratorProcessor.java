@@ -6,17 +6,19 @@ import com.marketinghub.nichocnaev2.pipeline.StageResult;
 import java.util.List;
 import java.util.Map;
 
-/** Executa a etapa plugável que cria candidatos neutros para pesquisa NichoCNAE versão 2. */
+/** Executa a etapa plugável que cria candidatos MEI/autônomo para pesquisa NichoCNAE versão 2. */
 public final class CandidateGeneratorProcessor implements StageProcessor {
-    /** Produz candidatos neutros e fontes-semente seguras sem escolher vencedor nem declarar dor validada. */
+    /** Produz candidatos MEI/autônomo e fontes-semente seguras sem escolher vencedor nem declarar dor validada. */
     @Override
     public StageResult process(StageContext context) {
         String cnaeCode = String.valueOf(context.input().getOrDefault("cnaeCode", "CNAE_DESCONHECIDO"));
         String cnaeReference = cnaeReference(context.input(), cnaeCode);
         List<Map<String, Object>> candidates = candidateSetFor(cnaeCode, cnaeReference);
         List<String> candidateUrls = List.of(
-                "https://sebrae.com.br/sites/PortalSebrae/ideias/como-montar-uma-loja-de-roupas",
                 "https://www.gov.br/empresas-e-negocios/pt-br/empreendedor",
+                "https://www.gov.br/empresas-e-negocios/pt-br/empreendedor/quero-ser-mei",
+                "https://sebrae.com.br/sites/PortalSebrae/mei",
+                "https://sebrae.com.br/sites/PortalSebrae/ideias/como-montar-uma-loja-de-roupas",
                 "https://www.gov.br/receitafederal/pt-br/assuntos/orientacao-tributaria/cadastros/cnpj/classificacao-nacional-de-atividades-economicas-2013-cnae",
                 "https://sebrae.com.br/sites/PortalSebrae/ufs/sp/artigos/gestao-de-estoque-no-varejo");
         return new StageResult(
@@ -26,36 +28,37 @@ public final class CandidateGeneratorProcessor implements StageProcessor {
                         "candidateCount", candidates.size(),
                         "candidates", candidates,
                         "candidateUrls", candidateUrls,
-                        "nextStageCode", "source-safety-filter"),
+                        "nextStageCode", "source-safety-filter",
+                        "audienceFocus", "MEI_AUTONOMO_DONO_OPERADOR"),
                 List.of());
     }
 
-    /** Escolhe recortes neutros específicos quando há conhecimento seguro do CNAE; caso contrário usa recortes genéricos. */
+    /** Escolhe recortes MEI/autônomo específicos quando há conhecimento seguro do CNAE; caso contrário usa recortes MEI genéricos. */
     private List<Map<String, Object>> candidateSetFor(String cnaeCode, String cnaeReference) {
         if ("4781400".equals(cnaeCode)) {
             return List.of(
-                    neutralCandidate("C1", "RETAIL_OPERATOR", "VESTUARIO_ATENDIMENTO_LOJA", "Atendimento e venda assistida em loja de vestuário"),
-                    neutralCandidate("C2", "RETAIL_OPERATOR", "VESTUARIO_ESTOQUE_GRADE", "Organização de estoque, grade e reposição de peças"),
-                    neutralCandidate("C3", "RETAIL_OPERATOR", "VESTUARIO_TROCAS_AJUSTES", "Trocas, ajustes e atendimento pós-venda de vestuário"),
-                    neutralCandidate("C4", "RETAIL_OPERATOR", "VESTUARIO_VENDA_DIGITAL_LOCAL", "Venda digital local de artigos de vestuário"),
-                    neutralCandidate("C5", "OWNER_OPERATOR", "VESTUARIO_COMPRAS_FORNECEDORES", "Compra de coleções, negociação com fornecedores e composição de grade"),
-                    neutralCandidate("C6", "OWNER_OPERATOR", "VESTUARIO_PRECIFICACAO_MARGEM", "Precificação, margem, promoções e giro de estoque em loja de vestuário"),
-                    neutralCandidate("C7", "STORE_ASSISTANT", "VESTUARIO_VISUAL_MERCHANDISING", "Exposição de peças, vitrine, provador e organização visual da loja"),
-                    neutralCandidate("C8", "OWNER_OPERATOR", "VESTUARIO_CLIENTES_RECORRENTES", "Relacionamento com clientes recorrentes, indicação e recompra local"),
-                    neutralCandidate("C9", "RETAIL_OPERATOR", "VESTUARIO_DATAS_SAZONAIS", "Planejamento de vendas em datas sazonais, coleções e liquidações"),
-                    neutralCandidate("C10", "RETAIL_OPERATOR", "VESTUARIO_POS_VENDA_WHATSAPP", "Pós-venda, dúvidas de tamanho, reservas e atendimento por WhatsApp"));
+                    meiCandidate("C1", "MEI_OWNER_OPERATOR", "MEI_MODA_WHATSAPP_INSTAGRAM", "MEI de moda que vende roupas pelo WhatsApp e Instagram enquanto atende clientes diretamente"),
+                    meiCandidate("C2", "MEI_OWNER_OPERATOR", "MEI_BRECHO_REVENDA_MODA", "Dona de brechó ou revenda de moda que compra, precifica, fotografa e vende as peças por conta própria"),
+                    meiCandidate("C3", "MEI_OWNER_OPERATOR", "MEI_SACOLEIRA_REVENDEDORA", "Sacoleira ou revendedora MEI que organiza pronta-entrega, encomendas, cobrança e entrega local"),
+                    meiCandidate("C4", "MEI_OWNER_OPERATOR", "MEI_LOJA_PEQUENA_DONA_ATENDE", "Microloja de roupa em que a própria dona atende, vende, repõe estoque e cobra clientes"),
+                    meiCandidate("C5", "AUTONOMO_OWNER_OPERATOR", "AUTONOMO_AJUSTES_COSTURA_VESTUARIO", "Costureira ou profissional autônoma de ajustes vinculada à venda e pós-venda de vestuário"),
+                    meiCandidate("C6", "MEI_OWNER_OPERATOR", "MEI_MODA_INFANTIL_TROCAS", "MEI de moda infantil lidando com tamanho, troca, encomenda, reserva e retorno de clientes"),
+                    meiCandidate("C7", "MEI_OWNER_OPERATOR", "MEI_MODA_EVANGELICA_NICHO", "MEI que vende moda de nicho local com atendimento direto, indicação e recompra"),
+                    meiCandidate("C8", "MEI_OWNER_OPERATOR", "MEI_ESTOQUE_PARADO_GIRO", "Dona-operadora MEI com estoque parado, necessidade de giro, promoção e controle de grade"),
+                    meiCandidate("C9", "MEI_OWNER_OPERATOR", "MEI_FEIRA_BAZAR_MODA", "MEI que vende roupas em feira, bazar ou ponto temporário e precisa atrair clientes recorrentes"),
+                    meiCandidate("C10", "MEI_OWNER_OPERATOR", "MEI_POS_VENDA_CLIENTELA_LOCAL", "MEI de vestuário que depende de clientela local, indicação, pós-venda e atendimento por mensagem"));
         }
         return List.of(
-                neutralCandidate("C1", "CNAE_OPERATOR", "ATENDIMENTO_OPERACIONAL", "Atendimento operacional de " + cnaeReference),
-                neutralCandidate("C2", "CNAE_OPERATOR", "GESTAO_DE_ROTINA", "Gestão de rotina e execução diária de " + cnaeReference),
-                neutralCandidate("C3", "CNAE_OPERATOR", "AQUISICAO_DE_CLIENTES", "Aquisição e atendimento de clientes de " + cnaeReference),
-                neutralCandidate("C4", "CNAE_OPERATOR", "OPERACAO_DIGITAL_LOCAL", "Operação digital local de " + cnaeReference),
-                neutralCandidate("C5", "OWNER_OPERATOR", "PRECIFICACAO_COBRANCA", "Precificação, cobrança e negociação de " + cnaeReference),
-                neutralCandidate("C6", "OWNER_OPERATOR", "AGENDA_RECURRENCIA", "Agenda, recorrência e retorno de clientes de " + cnaeReference),
-                neutralCandidate("C7", "CNAE_OPERATOR", "INSUMOS_FORNECEDORES", "Compra de insumos, fornecedores e preparação para executar " + cnaeReference),
-                neutralCandidate("C8", "CNAE_OPERATOR", "POS_VENDA_RETRABALHO", "Pós-venda, retrabalho e atendimento de dúvidas em " + cnaeReference),
-                neutralCandidate("C9", "OWNER_OPERATOR", "SAZONALIDADE_DEMANDA", "Sazonalidade, picos de demanda e planejamento semanal de " + cnaeReference),
-                neutralCandidate("C10", "CNAE_OPERATOR", "LINGUAGEM_DUVIDAS_CLIENTES", "Dúvidas frequentes, linguagem do cliente e rotina de comunicação em " + cnaeReference));
+                meiCandidate("C1", "MEI_OWNER_OPERATOR", "MEI_ATENDIMENTO_DIRETO", "MEI/autônomo que atende clientes diretamente em " + cnaeReference),
+                meiCandidate("C2", "MEI_OWNER_OPERATOR", "MEI_ROTINA_EXECUCAO", "Dono-operador que executa pessoalmente a rotina diária de " + cnaeReference),
+                meiCandidate("C3", "MEI_OWNER_OPERATOR", "MEI_AQUISICAO_CLIENTES", "MEI/autônomo que precisa conseguir clientes, responder mensagens e manter agenda em " + cnaeReference),
+                meiCandidate("C4", "MEI_OWNER_OPERATOR", "MEI_OPERACAO_DIGITAL_LOCAL", "MEI/autônomo que usa WhatsApp, Instagram ou indicação local para operar " + cnaeReference),
+                meiCandidate("C5", "MEI_OWNER_OPERATOR", "MEI_PRECO_COBRANCA", "Dono-operador que define preço, cobra, negocia e lida com inadimplência em " + cnaeReference),
+                meiCandidate("C6", "MEI_OWNER_OPERATOR", "MEI_AGENDA_RECORRENCIA", "MEI/autônomo que depende de agenda, retorno, recorrência e fidelização em " + cnaeReference),
+                meiCandidate("C7", "MEI_OWNER_OPERATOR", "MEI_INSUMOS_FORNECEDORES", "MEI/autônomo que compra insumos, prepara entrega e negocia fornecedores para " + cnaeReference),
+                meiCandidate("C8", "MEI_OWNER_OPERATOR", "MEI_POS_VENDA_RETRABALHO", "Dono-operador que resolve pós-venda, retrabalho e dúvidas de clientes em " + cnaeReference),
+                meiCandidate("C9", "MEI_OWNER_OPERATOR", "MEI_SAZONALIDADE_DEMANDA", "MEI/autônomo que enfrenta sazonalidade, picos de demanda e semanas sem cliente em " + cnaeReference),
+                meiCandidate("C10", "MEI_OWNER_OPERATOR", "MEI_LINGUAGEM_CLIENTES", "MEI/autônomo que usa linguagem simples com clientes e responde dúvidas recorrentes em " + cnaeReference));
     }
 
     /** Usa a descrição do CNAE quando disponível para evitar contexto operacional genérico por código numérico. */
@@ -67,13 +70,16 @@ public final class CandidateGeneratorProcessor implements StageProcessor {
         return "CNAE " + cnaeCode;
     }
 
-    /** Monta um candidato neutro sem dor, canal ou promessa ainda não comprovados. */
-    private Map<String, Object> neutralCandidate(String candidateId, String operator, String job, String operationalContext) {
+    /** Monta um candidato focado em MEI/autônomo sem dor ou promessa ainda não comprovadas. */
+    private Map<String, Object> meiCandidate(String candidateId, String operator, String job, String operationalContext) {
         return Map.of(
                 "candidateId", candidateId,
                 "operator", operator,
                 "job", job,
                 "buyerTypes", List.of("B2C"),
+                "audienceFocus", "MEI_AUTONOMO_DONO_OPERADOR",
+                "workerMode", "EXECUTA_PESSOALMENTE_O_TRABALHO",
+                "evidenceFocus", List.of("rotina", "aquisição de clientes", "atendimento", "cobrança", "linguagem real"),
                 "operationalContext", operationalContext,
                 "painHypotheses", List.of(),
                 "priorConfidence", "LOW");

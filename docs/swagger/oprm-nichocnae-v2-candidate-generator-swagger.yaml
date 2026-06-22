@@ -78,6 +78,27 @@ paths:
                 $ref: "#/components/schemas/CandidateGeneratorJobDetailResponse"
         "404":
           description: Job não encontrado.
+  /api/internal/oprm/nichocnae/v2/candidate-generator/stage-executions/jobs/{jobId}/cancel:
+    post:
+      summary: Cancela manualmente um job v2 aberto que ficou preso
+      description: Marca as execuções abertas do job como CANCELED para liberar o CNAE a iniciar nova execução v2, preservando histórico e auditoria.
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Job cancelado e CNAE liberado para nova tentativa.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CandidateGeneratorCancelJobResponse"
+        "404":
+          description: Job não encontrado.
+        "409":
+          description: Job já encerrado e sem execuções abertas para cancelar.
   /api/internal/oprm/nichocnae/v2/candidate-generator/stage-executions/pending:
     get:
       summary: Lista execuções pendentes da etapa candidate-generator v2
@@ -197,6 +218,32 @@ components:
           type: string
           format: date-time
           nullable: true
+
+    CandidateGeneratorCancelJobResponse:
+      type: object
+      required:
+        - jobId
+        - cnaeCode
+        - canceledExecutions
+        - status
+        - message
+        - updatedAt
+      properties:
+        jobId:
+          type: string
+        cnaeCode:
+          type: string
+        canceledExecutions:
+          type: integer
+        status:
+          type: string
+          enum:
+            - CANCELED
+        message:
+          type: string
+        updatedAt:
+          type: string
+          format: date-time
 
     CandidateGeneratorJobDetailResponse:
       type: object

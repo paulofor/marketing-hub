@@ -8,6 +8,7 @@ import com.marketinghub.oprm.nichocnae.v2.OprmNichoCnaeV2FailureType;
 import com.marketinghub.oprm.nichocnae.v2.OprmNichoCnaeV2OpenAiInteraction;
 import com.marketinghub.oprm.nichocnae.v2.OprmNichoCnaeV2StageExecution;
 import com.marketinghub.oprm.nichocnae.v2.OprmNichoCnaeV2StageExecutionStatus;
+import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.cancelJob.CandidateGeneratorCancelJobResponse;
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.completeStageExecution.CandidateGeneratorCompletionRequest;
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.completeStageExecution.CandidateGeneratorCompletionResponse;
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.createStageExecution.CandidateGeneratorCreateResponse;
@@ -174,6 +175,34 @@ public class BackendCandidateGeneratorService {
                 || executionsByJob.keySet().stream().anyMatch(this::hasAuditedOpenAiInteraction)
                 || executionsByJob.values().stream().flatMap(List::stream).anyMatch(this::hasAiUsageSignal);
         return new CandidateGeneratorCnaeJobsResponse(cnaeCode, cnaeAiCostUsd, cnaeUsedAi, openJobs, completedJobs);
+    }
+
+    /** Cancela manualmente execuções abertas de um job preso para liberar novo ciclo do CNAE. */
+    @Transactional
+    public CandidateGeneratorCancelJobResponse cancelJob(String jobId) {
+        List<OprmNichoCnaeV2StageExecution> executions = stageExecutionRepository.findByJobIdOrderByCreatedAtAsc(jobId);
+        if (executions.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "NichoCNAE v2 job not found: " + jobId);
+        }
+        List<OprmNichoCnaeV2StageExecution> openExecutions = stageExecutionRepository.findByJobIdAndStatusIn(jobId, OPEN_STATUSES);
+        if (openExecutions.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Este job NichoCNAE v2 não está aberto e não precisa ser cancelado.");
+        }
+        Instant now = Instant.now();
+        openExecutions.forEach(execution -> {
+            execution.setStatus(OprmNichoCnaeV2StageExecutionStatus.CANCELED);
+            execution.setErrorMessage("Cancelado manualmente pelo usuário para liberar novo job do CNAE.");
+            execution.setUpdatedAt(now);
+        });
+        stageExecutionRepository.saveAll(openExecutions);
+        String cnaeCode = executions.getFirst().getCnaeCode();
+        return new CandidateGeneratorCancelJobResponse(
+                jobId,
+                cnaeCode,
+                openExecutions.size(),
+                OprmNichoCnaeV2StageExecutionStatus.CANCELED.name(),
+                "Job cancelado. O CNAE está liberado para iniciar uma nova execução v2.",
+                now);
     }
 
     /** Detalha as etapas persistidas de um job para a tela explicar o caminho até o fracasso ou sucesso. */
@@ -347,6 +376,9 @@ public class BackendCandidateGeneratorService {
         if ("FINALISTS_SELECTED".equals(decision)) {
             return "Finalistas selecionados";
         }
+        if (lastExecution.getStatus() == OprmNichoCnaeV2StageExecutionStatus.CANCELED) {
+            return "Cancelado pelo usuário";
+        }
         if (lastExecution.getStatus() == OprmNichoCnaeV2StageExecutionStatus.FAILED) {
             return "Falha encerrada";
         }
@@ -369,6 +401,9 @@ public class BackendCandidateGeneratorService {
                     + numberText(decisionOutput.get("finalistCount"))
                     + ".";
         }
+        if (lastExecution.getStatus() == OprmNichoCnaeV2StageExecutionStatus.CANCELED) {
+            return lastExecution.getErrorMessage();
+        }
         if (lastExecution.getStatus() == OprmNichoCnaeV2StageExecutionStatus.FAILED) {
             return lastExecution.getErrorMessage();
         }
@@ -389,6 +424,7 @@ public class BackendCandidateGeneratorService {
     /** Classifica o resultado final em linguagem simples para a tela administrativa. */
     private String outcomeStatus(String decision, OprmNichoCnaeV2StageExecution lastExecution) {
         if (lastExecution.getStatus() == OprmNichoCnaeV2StageExecutionStatus.FAILED
+                || lastExecution.getStatus() == OprmNichoCnaeV2StageExecutionStatus.CANCELED
                 || "NO_VIABLE_SUBNICHE".equals(decision)) {
             return "FAILURE";
         }
@@ -401,6 +437,9 @@ public class BackendCandidateGeneratorService {
     /** Monta a mensagem principal do card para deixar claro se houve sucesso, fracasso ou ação pendente. */
     private String outcomeMessage(
             String decision, String reason, String marketNicheId, OprmNichoCnaeV2StageExecution lastExecution) {
+        if (lastExecution.getStatus() == OprmNichoCnaeV2StageExecutionStatus.CANCELED) {
+            return "Cancelado pelo usuário: o CNAE está liberado para uma nova tentativa.";
+        }
         if (lastExecution.getStatus() == OprmNichoCnaeV2StageExecutionStatus.FAILED) {
             return "Falha técnica: corrija o erro antes de iniciar outro job.";
         }

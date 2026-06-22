@@ -28,6 +28,10 @@ public interface OprmNichoCnaeV2StageExecutionRepository extends JpaRepository<O
     /** Lista as etapas de um job em ordem cronológica para relatório de falha ou sucesso. */
     List<OprmNichoCnaeV2StageExecution> findByJobIdOrderByCreatedAtAsc(String jobId);
 
+    /** Lista execuções abertas de um job para encerramento manual seguro pela tela administrativa. */
+    List<OprmNichoCnaeV2StageExecution> findByJobIdAndStatusIn(
+            String jobId, List<OprmNichoCnaeV2StageExecutionStatus> statuses);
+
     /** Localiza uma execução específica por etapa para callbacks internos do executor. */
     Optional<OprmNichoCnaeV2StageExecution> findByIdAndStageCode(Long id, String stageCode);
 }

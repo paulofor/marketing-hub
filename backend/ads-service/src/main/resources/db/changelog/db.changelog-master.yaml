@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-06-22-oprm-nichocnae-v2-status-varchar.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-06-22-experiment-standby-status.yaml
       relativeToChangelogFile: true
   - include:

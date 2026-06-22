@@ -43,7 +43,7 @@ O worker processa de forma assíncrona jobs `PENDING` da biblioteca de páginas 
 - `visual_json`: sinais visuais relevantes;
 - `image_json`: dados de imagem relevantes;
 - `analysis_notes`: observações adicionais;
-- `request_payload_json`: payload literal enviado ao modelo (JSONL da requisição batch) para auditoria;
+- `request_payload_json`: payload literal enviado ao modelo via Responses Flex para auditoria;
 - `parser_version`, `prompt_version`, `model_name`: rastreabilidade técnica.
 
 ## 6. Regras de fonte (source)
@@ -62,12 +62,12 @@ O worker seleciona a fonte por ciclo com a seguinte ordem canônica:
 
 ### 7.2 OpenAI
 - `openai.model` → `${OPENAI_MODEL:gpt-5.2}`
-- `openai.batch-poll-interval-ms` → `${OPENAI_BATCH_POLL_INTERVAL_MS:2000}`
-- `openai.batch-timeout-ms` → `${OPENAI_BATCH_TIMEOUT_MS:1800000}`
+- `openai.request-timeout-ms` → `${OPENAI_REQUEST_TIMEOUT_MS:900000}`
 - Para payload de `/v1/responses`, o formato estruturado deve usar `text.format` (não usar `response_format`).
+- Toda análise comercial OpenAI do MOIS Sales Library deve enviar `service_tier: "flex"` no payload auditado.
 
-## 8. Regra canônica de timeout OpenAI Batch (MOIS Worker)
-Para integrações batch com OpenAI no contexto do MOIS Worker, o timeout canônico é de **30 minutos** (`1800000 ms` / `PT30M`), e não deve ser reduzido sem versionamento explícito deste cânone.
+## 8. Regra canônica de processamento OpenAI Flex (MOIS Worker)
+Para análises comerciais OpenAI no contexto do MOIS Worker, o modo canônico é **Responses API com `service_tier: "flex"`**, sem criação de Batch API. O timeout canônico da chamada síncrona Flex é de **15 minutos** (`900000 ms` / `PT15M`), alinhado ao caráter assíncrono/baixo custo da etapa.
 
 
 ## 8.1 Taxonomia canônica de status (monitoramento de fetching)
@@ -79,7 +79,7 @@ Para acompanhamento operacional na tela de Biblioteca de Páginas de Vendas, o s
 2. `FETCHING`
    - Worker em coleta/parsing da página de origem.
 3. `ANALYZING`
-   - Conteúdo já coletado e enviado para processamento OpenAI (batch em andamento).
+   - Conteúdo já coletado e enviado para processamento OpenAI Flex.
 4. `RETRY_WAIT`
    - Falha transitória detectada; job aguardando nova tentativa automática.
 5. `DONE`
@@ -89,14 +89,14 @@ Para acompanhamento operacional na tela de Biblioteca de Páginas de Vendas, o s
 
 ### 8.1.2 Regras mínimas de exibição na UI
 - Exibir badge por status e tooltip com definição operacional curta.
-- Exibir coluna `Último evento` com motivo objetivo da etapa atual (ex.: `batch.status=running`, `connect timeout`, `output_file_id ausente`).
+- Exibir coluna `Último evento` com motivo objetivo da etapa atual (ex.: `openai.flex=running`, `connect timeout`, `responses output ausente`).
 - Exibir coluna `Tempo em etapa` (`agora - updatedAt`) para detectar stuck jobs em `FETCHING`/`ANALYZING`.
 - Exibir `Tentativas` + `Próxima tentativa em` quando status for `RETRY_WAIT`.
 - Exibir CTA de diagnóstico (link para detalhe do job) quando status for `FAILED`.
 
 ### 8.1.3 Critérios de transição
 - `PENDING -> FETCHING`: claim confirmado pelo backend.
-- `FETCHING -> ANALYZING`: coleta concluída e requisição batch enviada com sucesso.
+- `FETCHING -> ANALYZING`: coleta concluída e requisição Responses Flex enviada com sucesso.
 - `ANALYZING -> DONE`: output válido persistido em `:complete`.
 - `ANALYZING -> RETRY_WAIT`: timeout/intermitência recuperável com orçamento de retry restante.
 - `FETCHING|ANALYZING|RETRY_WAIT -> FAILED`: erro terminal de contrato, parsing irrecuperável ou retries esgotados.
@@ -105,11 +105,10 @@ Para acompanhamento operacional na tela de Biblioteca de Páginas de Vendas, o s
 - O worker **não acessa banco diretamente**; todo tráfego de dados passa pelo backend principal.
 - Transições de estado devem ocorrer exclusivamente pelos endpoints do backend MOIS.
 - Falhas devem ser registradas com contexto e stack trace para diagnóstico de causa-raiz.
-- Erros de contrato/integração OpenAI retornados no output do batch (ex.: `response.status_code >= 400` com `response.body.error`) são falhas terminais e devem:
-  1. obter e processar também o arquivo `error_file_id` (JSONL) do batch para diagnóstico completo da causa-raiz;
-  2. converter os detalhes relevantes do erro em mensagem legível com `status`, `requestId`, `type`, `code` e `message`;
-  3. enviar a falha ao endpoint `jobs/{jobId}:fail` para persistência;
-  4. manter os detalhes disponíveis para exibição ao usuário na tela de jobs (`errorMessage`).
+- Erros de contrato/integração OpenAI retornados pelo Responses Flex são falhas terminais e devem:
+  1. converter os detalhes relevantes do erro em mensagem legível com `type`, `code` e `message`;
+  2. enviar a falha ao endpoint `jobs/{jobId}:fail` para persistência;
+  3. manter os detalhes disponíveis para exibição ao usuário na tela de jobs (`errorMessage`).
 
 ## 10. Substituição documental
 Este documento é o único cânone ativo para o worker do MOIS.
@@ -166,7 +165,7 @@ sequenceDiagram
     participant API as Backend MOIS (/api/mois/sales-library)
     participant WK as MOIS Sales Library Worker
     participant PR as Prompt Builder (Worker)
-    participant OAI as OpenAI Batch (/v1/responses)
+    participant OAI as OpenAI Responses Flex (/v1/responses)
     participant DB as MySQL 5.7
 
     %% Banco destacado com cor própria
@@ -201,7 +200,7 @@ sequenceDiagram
     Note over WK,OAI: 4) Prompt/schema de análise
     WK->>PR: Monta prompt com urlCanonical + body.text()
     PR-->>WK: prompt final + promptVersion + parserVersion
-    WK->>OAI: Batch line -> /v1/responses<br/>model + input + text.format.type=json_object
+    WK->>OAI: POST /v1/responses<br/>model + service_tier=flex + input + text.format.type=json_object
     OAI-->>WK: output JSON (score_total, sections_json, ...)
     WK->>WK: Parse do output e validação dos campos obrigatórios
     end
@@ -549,7 +548,7 @@ Critérios de aceite da Fase 5:
 
 A partir de 2026-06-04, a Biblioteca de Páginas de Vendas considera concluída a troca operacional para o modelo de duas tabelas. O estado atual da operação deve ser lido e escrito somente em `mois_sales_page`, e o histórico/auditoria de execuções deve ser lido e escrito somente em `mois_sales_page_job_execution`.
 
-A partir de 2026-06-11, toda análise OpenAI concluída de página de venda deve registrar no backend o modelo usado, tokens de entrada, tokens de saída e custo USD calculado em modo batch. O estado consolidado da página em `mois_sales_page` deve expor esse custo para decisão comercial, e o histórico em `mois_sales_page_job_execution` deve manter a auditoria da execução que gerou o valor.
+A partir de 2026-06-11, toda análise OpenAI concluída de página de venda deve registrar no backend o modelo usado, tokens de entrada, tokens de saída e custo USD calculado em modo flex. O estado consolidado da página em `mois_sales_page` deve expor esse custo para decisão comercial, e o histórico em `mois_sales_page_job_execution` deve manter a auditoria da execução que gerou o valor.
 
 Tabelas legadas congeladas:
 

@@ -10,12 +10,12 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/** Compara candidatos por densidade e qualidade de evidências antes de escolher finalistas do NichoCNAE v2. */
+/** Compara candidatos por clareza operacional e evidências antes de escolher recortes para pesquisa NichoCNAE v2. */
 public final class CandidateTournamentProcessor implements StageProcessor {
-    private static final int MAX_FINALISTS = 2;
-    private static final double MIN_VIABLE_SCORE = 3.0;
+    private static final int MAX_FINALISTS = 3;
+    private static final double MIN_DISCOVERY_SCORE = 1.2;
 
-    /** Seleciona até dois finalistas usando somente sinais observados recebidos no snapshot de entrada. */
+    /** Seleciona até três recortes operacionais sem exigir validação profunda de dor nesta fase. */
     @Override
     public StageResult process(StageContext context) {
         List<Map<String, Object>> candidates = mapList(context.input().get("candidates"));
@@ -34,7 +34,7 @@ public final class CandidateTournamentProcessor implements StageProcessor {
                 .sorted(Comparator.comparingDouble(this::scoreOf).reversed())
                 .toList();
         List<Map<String, Object>> finalists = ranked.stream()
-                .filter(candidate -> scoreOf(candidate) >= MIN_VIABLE_SCORE)
+                .filter(candidate -> scoreOf(candidate) >= MIN_DISCOVERY_SCORE)
                 .limit(MAX_FINALISTS)
                 .toList();
         String decision = finalists.isEmpty() ? "NO_VIABLE_SUBNICHE" : "FINALISTS_SELECTED";
@@ -54,31 +54,59 @@ public final class CandidateTournamentProcessor implements StageProcessor {
                 "Ranking auditável baseado em evidências observadas, sem opinião prévia do modelo.")));
     }
 
-    /** Calcula score comercial conservador a partir de evidências diretas, independentes e riscos observados. */
+    /** Calcula score de descoberta priorizando clareza de executor, trabalho e contexto antes de dor validada. */
     private Map<String, Object> scoreCandidate(Map<String, Object> candidate) {
         Map<String, Object> scored = new LinkedHashMap<>(candidate);
         int directEvidenceCount = number(candidate, "directEvidenceCount", "acceptedClaimCount", "evidenceCount");
         int independentSourceCount = number(candidate, "independentSourceCount", "sourceCount");
         int rejectedSourceCount = number(candidate, "rejectedSourceCount", "unsafeSourceCount");
         int contradictionCount = number(candidate, "contradictionCount");
-        double densityScore = Math.min(2.0, directEvidenceCount * 0.7);
-        double independenceScore = Math.min(2.0, independentSourceCount * 0.8);
+        double operationalClarityScore = operationalClarityScore(candidate);
+        double evidenceScore = Math.min(1.4, directEvidenceCount * 0.35) + Math.min(1.0, independentSourceCount * 0.35);
         double riskPenalty = (rejectedSourceCount * 0.4) + (contradictionCount * 0.8);
-        double tournamentScore = Math.max(0.0, densityScore + independenceScore - riskPenalty);
+        double tournamentScore = Math.max(0.0, operationalClarityScore + evidenceScore - riskPenalty);
         scored.put("tournamentScore", tournamentScore);
         scored.put(
                 "tournamentRationale",
-                rationale(directEvidenceCount, independentSourceCount, rejectedSourceCount, contradictionCount));
+                rationale(operationalClarityScore, directEvidenceCount, independentSourceCount, rejectedSourceCount, contradictionCount));
         return scored;
     }
 
     /** Monta justificativa curta para auditoria da decisão do torneio. */
     private String rationale(
-            int directEvidenceCount, int independentSourceCount, int rejectedSourceCount, int contradictionCount) {
-        return "evidenciasDiretas=" + directEvidenceCount
+            double operationalClarityScore,
+            int directEvidenceCount,
+            int independentSourceCount,
+            int rejectedSourceCount,
+            int contradictionCount) {
+        return "clarezaOperacional=" + operationalClarityScore
+                + "; evidenciasDiretas=" + directEvidenceCount
                 + "; fontesIndependentes=" + independentSourceCount
                 + "; fontesRejeitadas=" + rejectedSourceCount
                 + "; contradicoes=" + contradictionCount;
+    }
+
+    /** Calcula se o candidato já identifica executor, trabalho e contexto operacional suficientes para pesquisar. */
+    private double operationalClarityScore(Map<String, Object> candidate) {
+        double score = 0.0;
+        if (!text(candidate.get("operator")).isBlank() || !text(candidate.get("executor")).isBlank()) {
+            score += 0.45;
+        }
+        if (!text(candidate.get("job")).isBlank() || !text(candidate.get("operationalJob")).isBlank()) {
+            score += 0.45;
+        }
+        if (!text(candidate.get("operationalContext")).isBlank() || !text(candidate.get("context")).isBlank()) {
+            score += 0.55;
+        }
+        if (!mapList(candidate.get("routineTasks")).isEmpty() || !text(candidate.get("dailyRoutine")).isBlank()) {
+            score += 0.35;
+        }
+        return score;
+    }
+
+    /** Extrai texto simples de valores opcionais do contrato. */
+    private String text(Object value) {
+        return value == null ? "" : String.valueOf(value).trim();
     }
 
     /** Extrai o primeiro número inteiro disponível entre aliases de contrato. */

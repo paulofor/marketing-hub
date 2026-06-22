@@ -115,7 +115,7 @@ class FacebookAdsServiceTest {
         assertEquals("1500", body.get("daily_budget").asText());
         assertEquals("IMPRESSIONS", body.get("billing_event").asText());
         assertEquals("LINK_CLICKS", body.get("optimization_goal").asText());
-        assertEquals("PAUSED", body.get("status").asText());
+        assertEquals("ACTIVE", body.get("status").asText());
         assertEquals("WEBSITE", body.get("destination_type").asText());
         assertEquals("LOWEST_COST_WITHOUT_CAP", body.get("bid_strategy").asText());
         assertFalse(body.has("bid_amount"));
@@ -725,7 +725,7 @@ class FacebookAdsServiceTest {
         assertEquals("Camp - Ad", body.get("name").asText());
         assertEquals("adset", body.get("adset_id").asText());
         assertEquals("creative", body.get("creative").get("creative_id").asText());
-        assertEquals("PAUSED", body.get("status").asText());
+        assertEquals("ACTIVE", body.get("status").asText());
         assertEquals("444", id);
     }
 

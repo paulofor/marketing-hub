@@ -54,7 +54,7 @@ public class ExperimentFunnelService {
     private final ExperimentLandingAnalyticsEventRepository landingAnalyticsEventRepository;
     private final LeadRepository leadRepository;
     private final JdbcTemplate jdbcTemplate;
-    private final ExperimentFunnelAutoStopService autoStopService;
+    private final ExperimentFunnelStandbyService standbyService;
 
     static final String FLOW_SCOPE_CONDITION = """
             (
@@ -339,7 +339,7 @@ public class ExperimentFunnelService {
                 .occurredAt(occurredAt)
                 .build();
         eventRepository.save(event);
-        autoStopService.standbyOnFirstValidFormSubmission(experiment);
+        standbyService.standbyOnFirstValidFormSubmission(experiment);
         return true;
     }
 

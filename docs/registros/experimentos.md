@@ -5043,3 +5043,8 @@
 - causa-raiz identificada: a métrica de acessos do Lead Portal contava registros de `flow_access` sem distinguir visitante humano de crawler técnico da Meta, especialmente `facebookexternalhit` e `meta-externalads`, inflando o funil antes de haver tráfego comercial real.
 - correção aplicada: o backend passou a calcular acessos válidos do funil excluindo user agents técnicos da Meta e a expor a quantidade de acessos técnicos filtrados; a tela de métricas do Lead Portal passou a mostrar acessos válidos e acessos técnicos filtrados separadamente.
 - prevenção de recorrência: adicionado teste de contrato no backend garantindo que a consulta de métricas mantém o filtro explícito para crawlers da Meta antes de alimentar o funil comercial.
+## 2026-06-22 — Correção de ciclo no funil de experimento
+- Problema: testes com `@SpringBootTest` falhavam ao subir o contexto por dependência circular entre `ExperimentFunnelAutoStopService`, `ExperimentFunnelDiagnosticService` e `ExperimentFunnelService`.
+- Causa-raiz: a mesma classe de parada automática concentrava diagnóstico estatístico e standby por submissão, fazendo o serviço de funil depender de volta da cadeia que já dependia dele para sumarizar métricas.
+- Correção aplicada: extraído `ExperimentFunnelStandbyService` para concentrar standby e solicitação de pausa de campanhas, removendo a dependência direta de `ExperimentFunnelService` para `ExperimentFunnelAutoStopService`.
+- Prevenção de recorrência: testes de controller, funil e parada automática foram executados juntos para validar que o contexto Spring volta a subir sem referência circular.

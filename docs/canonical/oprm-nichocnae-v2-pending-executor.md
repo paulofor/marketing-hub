@@ -58,7 +58,7 @@ O backend deve devolver esses mesmos identificadores no envelope do `pending`, m
 
 A etapa inicial pode receber `inputPayload` vazio, desde que o envelope entregue `cnaeCode` e `cnaeDescription`. O executor deve gerar:
 
-- `candidates`: candidatos neutros de subnicho/job operacional.
+- `candidates`: candidatos neutros de subnicho/job operacional, preferencialmente entre 8 e 12 recortes para CNAEs amplos.
 - `candidateUrls`: URLs iniciais para validação de segurança.
 - `candidateCount`.
 - `nextStageCode = source-safety-filter`.
@@ -117,15 +117,16 @@ A etapa inicial pode receber `inputPayload` vazio, desde que o envelope entregue
 | --- | --- | --- |
 | Envelope comum completo | Sim | Necessário para explicar por que um candidato venceu ou foi eliminado. |
 | `inputPayload.candidates` ou `inputPayload.candidateEvidence` | Sim | Lista de candidatos com evidências e penalidades. |
-| `inputPayload.directEvidenceCount`, `acceptedClaimCount` ou `evidenceCount` por candidato | Recomendado | Alimenta score do torneio. |
-| `inputPayload.independentSourceCount` ou `sourceCount` por candidato | Recomendado | Mede força de prova independente. |
+| `inputPayload.operator`/`executor`, `job`/`operationalJob` e `operationalContext` por candidato | Sim | Sustenta seleção por clareza operacional antes de validar dor. |
+| `inputPayload.directEvidenceCount`, `acceptedClaimCount` ou `evidenceCount` por candidato | Recomendado | Complementa o score do torneio sem ser obrigatório para descoberta inicial. |
+| `inputPayload.independentSourceCount` ou `sourceCount` por candidato | Recomendado | Mede força de prova independente quando já existir evidência. |
 | `inputPayload.rejectedSourceCount` ou `unsafeSourceCount` por candidato | Recomendado | Penaliza risco de fonte. |
 | `inputPayload.contradictionCount` por candidato | Recomendado | Penaliza contradições abertas. |
 
 ### Saída que deve ser preservada para a próxima etapa
 
 - `rankedCandidates`.
-- `finalists`.
+- `finalists`, com até três recortes operacionais para pesquisa posterior.
 - `candidateCount`.
 - `finalistCount`.
 - `tournamentDecision`.

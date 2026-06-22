@@ -23,7 +23,7 @@ class CandidateGeneratorProcessorTest {
         assertThat(result.status()).isEqualTo("BOOTSTRAPPED");
         assertThat(result.output().get("nextStageCode")).isEqualTo("source-safety-filter");
         assertThat((List<?>) result.output().get("candidateUrls")).hasSizeGreaterThanOrEqualTo(3);
-        assertThat((List<?>) result.output().get("candidates")).hasSizeBetween(4, 6);
+        assertThat((List<?>) result.output().get("candidates")).hasSizeGreaterThanOrEqualTo(10);
         assertThat(String.valueOf(result.output().get("candidates"))).contains("painHypotheses=[]", "priorConfidence=LOW");
         assertThat(String.valueOf(result.output().get("candidates")))
                 .contains("Promoção de vendas")

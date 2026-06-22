@@ -11,26 +11,26 @@ import org.junit.jupiter.api.Test;
 
 class CandidateTournamentProcessorTest {
     @Test
-    void shouldSelectUpToTwoFinalistsFromObservedEvidence() {
+    void shouldSelectUpToThreeOperationalFinalistsFromDiscoverySignals() {
         CandidateTournamentProcessor processor = new CandidateTournamentProcessor();
 
         StageResult result = processor.process(new StageContext(
                 "job-80",
                 "stage-4",
                 Map.of("candidates", List.of(
-                        Map.of("candidateId", "a", "directEvidenceCount", 4, "independentSourceCount", 3),
-                        Map.of("candidateId", "b", "directEvidenceCount", 3, "independentSourceCount", 2),
-                        Map.of("candidateId", "c", "directEvidenceCount", 1, "independentSourceCount", 1)))));
+                        Map.of("candidateId", "a", "operator", "OWNER_OPERATOR", "job", "ATENDIMENTO", "operationalContext", "Atendimento local", "directEvidenceCount", 1),
+                        Map.of("candidateId", "b", "operator", "OWNER_OPERATOR", "job", "ESTOQUE", "operationalContext", "Reposição de peças", "independentSourceCount", 1),
+                        Map.of("candidateId", "c", "operator", "STORE_ASSISTANT", "job", "VITRINE", "operationalContext", "Exposição visual")))));
 
         assertThat(result.status()).isEqualTo("FINALISTS_SELECTED");
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> finalists = (List<Map<String, Object>>) result.output().get("finalists");
-        assertThat(finalists).hasSize(2);
+        assertThat(finalists).hasSize(3);
         assertThat(result.output()).containsEntry("nextStageCode", "source-fetcher-reranker");
     }
 
     @Test
-    void shouldAllowNoViableSubnicheWhenEvidenceIsWeak() {
+    void shouldAllowNoViableSubnicheWhenOperationalClarityIsMissing() {
         CandidateTournamentProcessor processor = new CandidateTournamentProcessor();
 
         StageResult result = processor.process(new StageContext(
@@ -64,7 +64,7 @@ class CandidateTournamentProcessorTest {
                 "job-83",
                 "stage-4",
                 Map.of("rankedCandidates", List.of(
-                        Map.of("candidateId", "a", "directEvidenceCount", 4, "independentSourceCount", 3)))));
+                        Map.of("candidateId", "a", "operator", "OWNER_OPERATOR", "job", "ATENDIMENTO", "operationalContext", "Atendimento local")))));
 
         assertThat(result.status()).isEqualTo("FINALISTS_SELECTED");
         assertThat(result.output()).containsEntry("candidateCount", 1);

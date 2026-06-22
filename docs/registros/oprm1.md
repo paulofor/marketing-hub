@@ -1249,3 +1249,10 @@
 - Ajustada a tela de detalhe do job OPRM NichoCNAE v2 para apresentar payloads JSON como árvore expansível por clique, permitindo abrir objetos e arrays internos conforme a investigação avança.
 - Causa-raiz tratada: o JSON completo era exibido como texto único rolável, dificultando a análise de payloads grandes e a navegação por candidatos, evidências e campos internos.
 - Prevenção de recorrência: teste de frontend cobre a abertura progressiva do JSON interno até campos aninhados.
+
+## 2026-06-22 — NichoCNAE v2: descoberta operacional antes da dor
+
+- Ajustado o executor `oprm-coletor-mei` para gerar mais candidatos neutros no `candidate-generator`, reduzindo a chance de um CNAE amplo encerrar com poucos recortes testados.
+- O `candidate-tournament` passou a priorizar clareza operacional do executor, trabalho e contexto, sem exigir dor validada nesta fase; dor, urgência e mecanismo continuam reservados para pipeline posterior.
+- Causa-raiz tratada: o fluxo estava aplicando critério conservador de viabilidade/dor cedo demais, encerrando jobs com `finalistas=0` mesmo quando ainda havia recortes operacionais que poderiam alimentar nova pesquisa.
+- Prevenção de recorrência: testes da v2 agora cobrem geração de pelo menos 10 candidatos e seleção de até três finalistas por clareza operacional.

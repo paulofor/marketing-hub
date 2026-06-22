@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -159,4 +160,48 @@ class NichoCnaeV2PendingExecutionServiceTest {
                 any(NichoCnaeV2StageDefinition.class), eq(pending), any(), eq(2), eq(2));
     }
 
+    /** Deve encerrar como falha de evidência quando o job repete pesquisa sem ganho novo. */
+    @Test
+    void failsControlledResearchLoopBeforeCreatingAnotherPendingStage() {
+        NichoCnaeV2BackendClient backendClient = mock(NichoCnaeV2BackendClient.class);
+        NichoCnaeV2StageDefinitions stageDefinitions = new NichoCnaeV2StageDefinitions();
+        NichoCnaeV2PendingExecutionService service = new NichoCnaeV2PendingExecutionService(backendClient, stageDefinitions);
+        NichoCnaeV2PendingExecution pending = new NichoCnaeV2PendingExecution(
+                "211",
+                "nichocnae-v2-candidate-3-job-3",
+                "7319002",
+                "Outras atividades profissionais, científicas e técnicas",
+                9L,
+                3L,
+                1,
+                0,
+                1,
+                false,
+                "{\"sourceCandidates\":[],\"stageVisitCounts\":{\"source-fetcher-reranker\":2},\"noInformationGainStreak\":2}",
+                Map.of());
+        when(backendClient.listPending(any())).thenAnswer(invocation -> {
+            NichoCnaeV2StageDefinition stage = invocation.getArgument(0);
+            return "source-fetcher-reranker".equals(stage.stageCode()) ? List.of(pending) : List.of();
+        });
+        when(backendClient.parseInput(pending.inputPayload()))
+                .thenReturn(Map.of(
+                        "sourceCandidates",
+                        List.of(),
+                        "stageVisitCounts",
+                        Map.of("source-fetcher-reranker", 2),
+                        "noInformationGainStreak",
+                        2));
+
+        service.processAllPending();
+
+        verify(backendClient).fail(
+                any(NichoCnaeV2StageDefinition.class),
+                eq(pending),
+                any(RuntimeException.class),
+                eq("MARKET_EVIDENCE"),
+                eq("RESEARCH_LOOP_WITHOUT_INFORMATION_GAIN"));
+        verify(backendClient, never()).complete(any(NichoCnaeV2StageDefinition.class), eq(pending), any());
+        verify(backendClient, never())
+                .createNextStage(any(NichoCnaeV2StageDefinition.class), eq(pending), any(), any(), any());
+    }
 }

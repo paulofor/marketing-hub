@@ -15,7 +15,6 @@ import com.marketinghub.repository.jpa.facebookads.FacebookAdsCampaignRepository
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -39,13 +38,17 @@ class ExperimentFunnelAutoStopServiceTest {
     @Mock
     private ExperimentCampaignMetricRepository campaignMetricRepository;
 
-    @InjectMocks
     private ExperimentFunnelAutoStopService service;
 
     private Experiment experiment;
 
     @BeforeEach
     void setUp() {
+        service = new ExperimentFunnelAutoStopService(
+                diagnosticService,
+                new ExperimentFunnelStandbyService(campaignRepository),
+                campaignMetricRepository
+        );
         experiment = new Experiment();
         experiment.setId(99L);
         experiment.setStatus(ExperimentStatus.RUNNING);

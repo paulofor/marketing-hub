@@ -5036,3 +5036,9 @@
 - Solicitação: incluir a opção GPT Image 2 na lista de modelo de geração de imagem da tela de novo experimento.
 - Correção aplicada: criado changelog incremental para cadastrar o modelo `gpt-image-2`, suas qualidades e preços base no catálogo consumido pelo endpoint `/api/image-generation/models`.
 - Prevenção de recorrência: o changelog foi incluído no master com `relativeToChangelogFile: true`, mantendo a lista da tela orientada pela verdade persistida no backend.
+
+## 2026-06-22 — Correção de ciclo no funil de experimento
+- Problema: testes com `@SpringBootTest` falhavam ao subir o contexto por dependência circular entre `ExperimentFunnelAutoStopService`, `ExperimentFunnelDiagnosticService` e `ExperimentFunnelService`.
+- Causa-raiz: a mesma classe de parada automática concentrava diagnóstico estatístico e standby por submissão, fazendo o serviço de funil depender de volta da cadeia que já dependia dele para sumarizar métricas.
+- Correção aplicada: extraído `ExperimentFunnelStandbyService` para concentrar standby e solicitação de pausa de campanhas, removendo a dependência direta de `ExperimentFunnelService` para `ExperimentFunnelAutoStopService`.
+- Prevenção de recorrência: testes de controller, funil e parada automática foram executados juntos para validar que o contexto Spring volta a subir sem referência circular.

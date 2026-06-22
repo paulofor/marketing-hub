@@ -7,10 +7,8 @@ import com.marketinghub.experiment.funnel.dto.ExperimentFunnelDiagnosticsRespons
 import com.marketinghub.experiment.funnel.dto.ExperimentFunnelStageDiagnosticDto;
 import com.marketinghub.experiment.funnel.dto.FunnelDiagnosticStatus;
 import com.marketinghub.experiment.funnel.dto.FunnelThresholdCheckDto;
-import com.marketinghub.facebookads.FacebookAdsCampaign;
 import com.marketinghub.facebookads.FacebookCampaignStopReason;
 import com.marketinghub.repository.jpa.experiment.ExperimentCampaignMetricRepository;
-import com.marketinghub.repository.jpa.facebookads.FacebookAdsCampaignRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -18,7 +16,6 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.List;
 import java.util.Objects;
 
 /**
@@ -34,17 +31,17 @@ public class ExperimentFunnelAutoStopService {
     private static final long LOW_IMPRESSIONS_MINIMUM = 100L;
 
     private final ExperimentFunnelDiagnosticService diagnosticService;
-    private final FacebookAdsCampaignRepository campaignRepository;
+    private final ExperimentFunnelStandbyService standbyService;
     private final ExperimentCampaignMetricRepository campaignMetricRepository;
 
     /**
      * Cria o serviço com diagnóstico de funil, campanhas e métricas para registrar pausas automáticas.
      */
     public ExperimentFunnelAutoStopService(ExperimentFunnelDiagnosticService diagnosticService,
-                                           FacebookAdsCampaignRepository campaignRepository,
+                                           ExperimentFunnelStandbyService standbyService,
                                            ExperimentCampaignMetricRepository campaignMetricRepository) {
         this.diagnosticService = diagnosticService;
-        this.campaignRepository = campaignRepository;
+        this.standbyService = standbyService;
         this.campaignMetricRepository = campaignMetricRepository;
     }
 
@@ -178,25 +175,12 @@ public class ExperimentFunnelAutoStopService {
     }
 
     /**
-     * Coloca o experimento em standby no primeiro envio válido e solicita pausa das campanhas Meta vinculadas.
+     * Coloca o experimento em standby no primeiro envio válido usando o serviço sem dependência circular.
      *
      * @return {@code true} quando o standby foi aplicado, {@code false} caso o experimento não esteja elegível.
      */
     public boolean standbyOnFirstValidFormSubmission(Experiment experiment) {
-        if (experiment == null || experiment.getStatus() != ExperimentStatus.RUNNING) {
-            return false;
-        }
-        LOGGER.info(
-                "Standby triggered for experiment {} after first valid form submission.",
-                experiment.getId()
-        );
-        experiment.setStatus(ExperimentStatus.STANDBY);
-        requestFacebookCampaignStops(
-                experiment.getId(),
-                FacebookCampaignStopReason.FIRST_FORM_SUBMISSION_STANDBY,
-                "primeiro envio válido de formulário no regime inicial de validação"
-        );
-        return true;
+        return standbyService.standbyOnFirstValidFormSubmission(experiment);
     }
 
     /**
@@ -216,39 +200,7 @@ public class ExperimentFunnelAutoStopService {
                                                      FacebookCampaignStopReason stopReason,
                                                      String businessReason) {
         experiment.setStatus(ExperimentStatus.INVALIDATED);
-        requestFacebookCampaignStops(experiment.getId(), stopReason, businessReason);
+        standbyService.requestFacebookCampaignStops(experiment.getId(), stopReason, businessReason);
     }
 
-    /**
-     * Registra a solicitação de pausa para as campanhas Facebook ainda não finalizadas.
-     */
-    private void requestFacebookCampaignStops(Long experimentId,
-                                              FacebookCampaignStopReason stopReason,
-                                              String businessReason) {
-        List<FacebookAdsCampaign> campaigns = campaignRepository.findByExperimentId(experimentId);
-        if (campaigns == null || campaigns.isEmpty()) {
-            LOGGER.info(
-                    "Experiment {} has no Facebook campaigns registered; status updated but no stop request was necessary.",
-                    experimentId
-            );
-            return;
-        }
-        Instant now = Instant.now();
-        campaigns.stream()
-                .filter(campaign -> campaign.getStopCompletedAt() == null)
-                .forEach(campaign -> {
-                    if (campaign.getStopRequestedAt() == null) {
-                        campaign.setStopRequestedAt(now);
-                    }
-                    campaign.setStopReason(stopReason);
-                    campaign.setStopLastError(null);
-                    LOGGER.info(
-                            "Stop request registered for campaign {} from experiment {}: reason={}, businessReason={}",
-                            campaign.getId(),
-                            experimentId,
-                            stopReason,
-                            businessReason
-                    );
-                });
-    }
 }

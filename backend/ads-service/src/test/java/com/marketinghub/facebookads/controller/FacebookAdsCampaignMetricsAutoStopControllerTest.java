@@ -9,6 +9,7 @@ import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.funnel.ExperimentFunnelAutoStopService;
 import com.marketinghub.experiment.funnel.ExperimentFunnelDiagnosticService;
 import com.marketinghub.experiment.funnel.ExperimentFunnelStage;
+import com.marketinghub.experiment.funnel.ExperimentFunnelStandbyService;
 import com.marketinghub.experiment.funnel.dto.ExperimentFunnelDiagnosticsResponseDto;
 import com.marketinghub.experiment.funnel.dto.ExperimentFunnelStageDiagnosticDto;
 import com.marketinghub.experiment.funnel.dto.FunnelDiagnosticReasonCode;
@@ -105,7 +106,7 @@ class FacebookAdsCampaignMetricsAutoStopControllerTest {
         objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
         ExperimentFunnelAutoStopService autoStopService = new ExperimentFunnelAutoStopService(
                 diagnosticService,
-                campaignRepository,
+                new ExperimentFunnelStandbyService(campaignRepository),
                 campaignMetricRepository
         );
         FacebookAdsCampaignController controller = new FacebookAdsCampaignController(

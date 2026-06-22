@@ -118,6 +118,37 @@ class ExperimentFunnelAutoStopServiceTest {
         assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.RUNNING);
     }
 
+    /**
+     * Garante standby e pausa da campanha no primeiro envio válido do formulário.
+     */
+    @Test
+    void putsRunningExperimentInStandbyAfterFirstValidFormSubmission() {
+        FacebookAdsCampaign campaign = new FacebookAdsCampaign();
+        campaign.setId("camp-first-submission");
+        when(campaignRepository.findByExperimentId(99L)).thenReturn(List.of(campaign));
+
+        boolean stopped = service.standbyOnFirstValidFormSubmission(experiment);
+
+        assertThat(stopped).isTrue();
+        assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.STANDBY);
+        assertThat(campaign.getStopReason()).isEqualTo(FacebookCampaignStopReason.FIRST_FORM_SUBMISSION_STANDBY);
+        assertThat(campaign.getStopRequestedAt()).isNotNull();
+        assertThat(campaign.getStopLastError()).isNull();
+    }
+
+    /**
+     * Garante que submissões duplicadas ou tardias não alterem experimento já pausado ou finalizado.
+     */
+    @Test
+    void doesNotStandbyExperimentWhenStatusIsNotRunning() {
+        experiment.setStatus(ExperimentStatus.STANDBY);
+
+        boolean stopped = service.standbyOnFirstValidFormSubmission(experiment);
+
+        assertThat(stopped).isFalse();
+        assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.STANDBY);
+    }
+
     @Test
     void stopsExperimentWhenThreePercentThresholdFails() {
         ExperimentFunnelStageDiagnosticDto stage = new ExperimentFunnelStageDiagnosticDto(

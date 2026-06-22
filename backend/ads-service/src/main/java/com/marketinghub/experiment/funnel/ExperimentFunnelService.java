@@ -54,6 +54,7 @@ public class ExperimentFunnelService {
     private final ExperimentLandingAnalyticsEventRepository landingAnalyticsEventRepository;
     private final LeadRepository leadRepository;
     private final JdbcTemplate jdbcTemplate;
+    private final ExperimentFunnelAutoStopService autoStopService;
 
     static final String FLOW_SCOPE_CONDITION = """
             (
@@ -305,7 +306,7 @@ public class ExperimentFunnelService {
     }
 
     /**
-     * Registra de forma idempotente o envio do formulário recebido pelo Lead Portal.
+     * Registra de forma idempotente o envio do formulário recebido pelo Lead Portal e aciona standby no primeiro envio válido.
      */
     @Transactional
     public boolean registerFormSubmission(String flowSlug, RegisterLeadPortalSubmissionRequest request) {
@@ -338,6 +339,7 @@ public class ExperimentFunnelService {
                 .occurredAt(occurredAt)
                 .build();
         eventRepository.save(event);
+        autoStopService.standbyOnFirstValidFormSubmission(experiment);
         return true;
     }
 

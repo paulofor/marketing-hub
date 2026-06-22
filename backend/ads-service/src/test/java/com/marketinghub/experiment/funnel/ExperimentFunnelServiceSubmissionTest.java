@@ -46,6 +46,9 @@ class ExperimentFunnelServiceSubmissionTest {
     @Mock
     private JdbcTemplate jdbcTemplate;
 
+    @Mock
+    private ExperimentFunnelAutoStopService autoStopService;
+
     @InjectMocks
     private ExperimentFunnelService service;
 
@@ -74,6 +77,7 @@ class ExperimentFunnelServiceSubmissionTest {
         assertEquals("submissionId=submission-123", saved.getPayload());
         assertEquals(submittedAt, saved.getOccurredAt());
         assertEquals("ad-xyz", saved.getCampaignCode());
+        verify(autoStopService).standbyOnFirstValidFormSubmission(experiment);
     }
 
     /**

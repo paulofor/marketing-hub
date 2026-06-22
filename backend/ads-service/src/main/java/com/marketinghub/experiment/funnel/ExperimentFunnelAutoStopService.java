@@ -178,6 +178,28 @@ public class ExperimentFunnelAutoStopService {
     }
 
     /**
+     * Coloca o experimento em standby no primeiro envio válido e solicita pausa das campanhas Meta vinculadas.
+     *
+     * @return {@code true} quando o standby foi aplicado, {@code false} caso o experimento não esteja elegível.
+     */
+    public boolean standbyOnFirstValidFormSubmission(Experiment experiment) {
+        if (experiment == null || experiment.getStatus() != ExperimentStatus.RUNNING) {
+            return false;
+        }
+        LOGGER.info(
+                "Standby triggered for experiment {} after first valid form submission.",
+                experiment.getId()
+        );
+        experiment.setStatus(ExperimentStatus.STANDBY);
+        requestFacebookCampaignStops(
+                experiment.getId(),
+                FacebookCampaignStopReason.FIRST_FORM_SUBMISSION_STANDBY,
+                "primeiro envio válido de formulário no regime inicial de validação"
+        );
+        return true;
+    }
+
+    /**
      * Confirma se a checagem estatística representa falha na regra dos 3%.
      */
     private boolean isThreePercentFailure(FunnelThresholdCheckDto check) {

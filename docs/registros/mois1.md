@@ -1760,3 +1760,8 @@ Arquivos principais:
 - Corrigida a falta de confirmação visual após o comando **Voltar para pendente** na rota `/mois/sales-pages-library/:pageId`.
 - A tela agora exibe um bloco explícito de **Status atual da solicitação**, com status geral, captura e análise comercial vindos do backend, além da confirmação retornada pelo endpoint de atualização manual.
 - Ajustada a invalidação do cache do detalhe da página para recarregar a verdade atualizada do backend depois da mudança de status.
+
+## 2026-06-22 — Formato vendido no dossiê da Biblioteca Sales Pages
+
+- Incluído no contrato do backend o campo de formato vendido do produto, classificado a partir dos textos persistidos da página/Hotmart para diferenciar curso em vídeo, e-book/PDF, consultoria/mentoria, comunidade/assinatura ou software/ferramenta.
+- Atualizada a tela de detalhe `/mois/sales-pages-library/:pageId` para exibir o card **O que está sendo vendido** no dossiê do produto, mantendo a regra de verdade da tela: o frontend apenas apresenta o dado retornado pelo backend.

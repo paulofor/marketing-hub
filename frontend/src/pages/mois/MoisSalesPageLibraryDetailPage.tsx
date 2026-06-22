@@ -169,6 +169,7 @@ export default function MoisSalesPageLibraryDetailPage() {
   const hotmartProducer =
     cleanText(pageQuery.data?.hotmartProducer) ||
     cleanText(pageQuery.data?.producerName);
+  const soldProductFormat = cleanText(pageQuery.data?.soldProductFormat);
 
   const producerSocialSources = (marketWarmupSourcesQuery.data?.items ?? [])
     .filter(
@@ -398,13 +399,13 @@ export default function MoisSalesPageLibraryDetailPage() {
           </div>
 
           <div className="row g-3">
-            <div className="col-md-4">
+            <div className="col-md-3">
               <div className="border rounded p-3 h-100 bg-light-subtle">
                 <div className="text-secondary small">Preço Hotmart</div>
                 <strong className="fs-5">{displayText(hotmartPrice)}</strong>
               </div>
             </div>
-            <div className="col-md-4">
+            <div className="col-md-3">
               <div className="border rounded p-3 h-100 bg-light-subtle">
                 <div className="text-secondary small">Temperatura Hotmart</div>
                 <strong className="fs-5">
@@ -415,19 +416,36 @@ export default function MoisSalesPageLibraryDetailPage() {
                 </div>
               </div>
             </div>
-            <div className="col-md-4">
+            <div className="col-md-3">
               <div className="border rounded p-3 h-100 bg-light-subtle">
                 <div className="text-secondary small">Produtor Hotmart</div>
                 <strong className="fs-5">{displayText(hotmartProducer)}</strong>
               </div>
             </div>
+            <div className="col-md-3">
+              <div className="border rounded p-3 h-100 bg-light-subtle">
+                <div className="text-secondary small">
+                  O que está sendo vendido
+                </div>
+                <strong className="fs-5">
+                  {displayText(soldProductFormat)}
+                </strong>
+                <div className="small text-secondary">
+                  Formato identificado pelo backend
+                </div>
+              </div>
+            </div>
           </div>
 
-          {!hotmartPrice || hotmartTemperature == null || !hotmartProducer ? (
+          {!hotmartPrice ||
+          hotmartTemperature == null ||
+          !hotmartProducer ||
+          !soldProductFormat ? (
             <div className="alert alert-warning mb-0">
               O banco ainda não possui todos os fatos básicos do dossiê. O
               próximo passo é corrigir a coleta para preencher preço,
-              temperatura e produtor diretamente da página de venda.
+              temperatura, produtor e formato vendido diretamente da página de
+              venda.
             </div>
           ) : null}
         </div>

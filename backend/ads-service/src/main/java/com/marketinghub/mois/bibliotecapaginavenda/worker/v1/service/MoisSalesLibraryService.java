@@ -627,7 +627,7 @@ public class MoisSalesLibraryService {
         List<MoisSalesLibraryDtos.SalesLibraryPageResponse> items = jdbcTemplate.query("""
                 SELECT p.id, p.workspace_id, p.source, p.url_canonical, p.title, p.current_stage, p.current_status, p.capture_status,
                        COALESCE(p.analysis_status, p.current_status) AS analysis_status, p.url_final, p.http_status, p.html_sha256,
-                       p.html_bytes, p.score_total, p.product_name, COALESCE(cr_direct.producer_name, cr_url.producer_name) AS producer_name, COALESCE(cr_direct.hotmart_price, cr_url.hotmart_price) AS hotmart_price, COALESCE(cr_direct.hotmart_temperature, cr_url.hotmart_temperature) AS hotmart_temperature, COALESCE(cr_direct.hotmart_producer, cr_url.hotmart_producer) AS hotmart_producer,
+                       p.html_bytes, p.score_total, p.product_name, COALESCE(cr_direct.producer_name, cr_url.producer_name) AS producer_name, COALESCE(cr_direct.hotmart_price, cr_url.hotmart_price) AS hotmart_price, COALESCE(cr_direct.hotmart_temperature, cr_url.hotmart_temperature) AS hotmart_temperature, COALESCE(cr_direct.hotmart_producer, cr_url.hotmart_producer) AS hotmart_producer, COALESCE(cr_direct.hotmart_description, cr_url.hotmart_description) AS hotmart_description,
                        p.offer_summary, p.mechanism_summary, p.promise_summary, p.proof_summary,
                        p.model_name, p.input_tokens, p.output_tokens, p.model_cost_usd,
                        p.last_error_category, p.last_error_message, p.last_job_execution_id, p.last_captured_at, p.last_analyzed_at, p.updated_at,
@@ -798,7 +798,7 @@ public class MoisSalesLibraryService {
         List<MoisSalesLibraryDtos.SalesLibraryPageResponse> rows = jdbcTemplate.query("""
                 SELECT p.id, p.workspace_id, p.source, p.url_canonical, p.title, p.current_stage, p.current_status, p.capture_status,
                        COALESCE(p.analysis_status, p.current_status) AS analysis_status, p.url_final, p.http_status, p.html_sha256,
-                       p.html_bytes, p.score_total, p.product_name, COALESCE(cr_direct.producer_name, cr_url.producer_name) AS producer_name, COALESCE(cr_direct.hotmart_price, cr_url.hotmart_price) AS hotmart_price, COALESCE(cr_direct.hotmart_temperature, cr_url.hotmart_temperature) AS hotmart_temperature, COALESCE(cr_direct.hotmart_producer, cr_url.hotmart_producer) AS hotmart_producer,
+                       p.html_bytes, p.score_total, p.product_name, COALESCE(cr_direct.producer_name, cr_url.producer_name) AS producer_name, COALESCE(cr_direct.hotmart_price, cr_url.hotmart_price) AS hotmart_price, COALESCE(cr_direct.hotmart_temperature, cr_url.hotmart_temperature) AS hotmart_temperature, COALESCE(cr_direct.hotmart_producer, cr_url.hotmart_producer) AS hotmart_producer, COALESCE(cr_direct.hotmart_description, cr_url.hotmart_description) AS hotmart_description,
                        p.offer_summary, p.mechanism_summary, p.promise_summary, p.proof_summary,
                        p.model_name, p.input_tokens, p.output_tokens, p.model_cost_usd,
                        p.last_error_category, p.last_error_message, p.last_job_execution_id, p.last_captured_at, p.last_analyzed_at, p.updated_at,
@@ -1468,6 +1468,13 @@ public class MoisSalesLibraryService {
                 rs.getString("hotmart_price"),
                 rs.getBigDecimal("hotmart_temperature"),
                 rs.getString("hotmart_producer"),
+                classifySoldProductFormat(
+                        rs.getString("title"),
+                        rs.getString("product_name"),
+                        rs.getString("hotmart_description"),
+                        rs.getString("offer_summary"),
+                        rs.getString("promise_summary")
+                ),
                 rs.getString("current_stage"),
                 rs.getString("current_status"),
                 rs.getString("capture_status"),
@@ -1498,6 +1505,58 @@ public class MoisSalesLibraryService {
                 mapEnum(MoisSalesLibraryDtos.MarketWarmupJobStatus.class, rs.getString("market_warmup_status")),
                 toInstant(rs, "market_warmup_updated_at")
         );
+    }
+
+    /**
+     * Classifica o formato vendido usando apenas textos persistidos da página e da referência Hotmart.
+     */
+    private String classifySoldProductFormat(
+            String title,
+            String productName,
+            String hotmartDescription,
+            String offerSummary,
+            String promiseSummary
+    ) {
+        String text = String.join(
+                " ",
+                title == null ? "" : title,
+                productName == null ? "" : productName,
+                hotmartDescription == null ? "" : hotmartDescription,
+                offerSummary == null ? "" : offerSummary,
+                promiseSummary == null ? "" : promiseSummary
+        ).toLowerCase(Locale.ROOT);
+        if (text.isBlank()) {
+            return null;
+        }
+        if (text.contains("consultoria")
+                || text.contains("mentoria")
+                || text.contains("sessão individual")
+                || text.contains("sessao individual")) {
+            return "Consultoria / mentoria";
+        }
+        if (text.contains("ebook")
+                || text.contains("e-book")
+                || text.contains("livro digital")
+                || text.contains("pdf")) {
+            return "E-book / material em PDF";
+        }
+        if (text.contains("curso")
+                || text.contains("aula")
+                || text.contains("videoaula")
+                || text.contains("vídeo aula")
+                || text.contains("video aula")) {
+            return "Curso em vídeo";
+        }
+        if (text.contains("comunidade") || text.contains("assinatura") || text.contains("membros")) {
+            return "Comunidade / assinatura";
+        }
+        if (text.contains("software")
+                || text.contains("sistema")
+                || text.contains("ferramenta")
+                || text.contains("app")) {
+            return "Software / ferramenta";
+        }
+        return "Formato não identificado";
     }
 
 

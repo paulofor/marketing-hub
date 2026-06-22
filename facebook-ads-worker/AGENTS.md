@@ -45,6 +45,7 @@
   foi removido da publicação canônica e não deve ser reintroduzido.
 - Na criação de campanhas, não delegue materialização de targeting ao `ai-worker`; o `facebook-ads-worker` monta o targeting
   da Meta localmente a partir do playbook ou do pacote manual aprovado.
+- Na criação de campanhas, manter somente a campanha em `PAUSED`; os ad sets e anúncios devem nascer `ACTIVE` para ficarem prontos para veiculação assim que a campanha for ativada manualmente.
 - Campanhas de experimento devem registrar `budgetMode=ADSET`, enviar o orçamento diário apenas no ad set e criar a campanha sem orçamento próprio com `is_adset_budget_sharing_enabled=false`; orçamento de campanha fica reservado para etapa futura de escala de vencedores.
 - Em caso de erro de permissão do Facebook, o worker bloqueia o experimento em memória até que o serviço seja reiniciado.
 - Ao publicar instant forms aprove os rascunhos com `facebookFormId` nulo e reporte o identificador definitivo recebido da Meta

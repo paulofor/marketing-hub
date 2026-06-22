@@ -125,8 +125,8 @@ O fluxo automatizado cria toda a hierarquia necessária para veiculação:
    `special_ad_categories = []`, conforme documentado na
    [Marketing API](https://developers.facebook.com/docs/marketing-api/reference/ad-campaign-group#Creating) para contas que
    não se enquadram em categorias especiais.
-2. **Conjunto de anúncios** (`POST /adsets`) atrelado à campanha, também em
-   `PAUSED`; quando o contrato exigir Leads, o worker força
+2. **Conjunto de anúncios** (`POST /adsets`) atrelado à campanha, criado em
+   `ACTIVE`; quando o contrato exigir Leads, o worker força
    `optimization_goal=LEAD_GENERATION` e nunca usa `LINK_CLICKS`. O destino
    continua `ON_AD` para Instant Form e pode permanecer `WEBSITE` para landing
    própria de captura. Antes de
@@ -206,8 +206,8 @@ O fluxo automatizado cria toda a hierarquia necessária para veiculação:
    `image_hash`, mantendo retentativas de criação até 3 tentativas totais antes
    de marcar a publicação como falha definitiva.
 6. **Anúncio** (`POST /ads`) que referencia o conjunto e o criativo recém
-   criados, mantido pausado até que o time operacional revise os detalhes no
-   Gerenciador de Anúncios.
+   criados, já em `ACTIVE`, deixando somente a campanha pausada para ativação
+   manual pelo time operacional no Gerenciador de Anúncios.
 
 As chamadas ao backend utilizam o prefixo `/api`. O worker consome
 `/api/facebook-campaigns/experiments-ready`, tratando respostas `404` como

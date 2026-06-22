@@ -285,7 +285,7 @@ public class FacebookAdsService {
         body.put("daily_budget", request.dailyBudget());
         body.put("billing_event", request.billingEvent());
         body.put("optimization_goal", request.optimizationGoal());
-        body.put("status", "PAUSED");
+        body.put("status", "ACTIVE");
         body.put("destination_type", request.destinationType());
         body.put("targeting", targeting);
         String bidStrategy = request.bidStrategy();
@@ -2143,7 +2143,7 @@ private FacebookInterest searchInterest(String interestName, String locale) {
         body.put("name", request.name());
         body.put("adset_id", request.adSetId());
         body.put("creative", Map.of("creative_id", request.creativeId()));
-        body.put("status", "PAUSED");
+        body.put("status", "ACTIVE");
         body.put("access_token", requireAccessToken());
 
         String path = buildVersionedPath("/act_" + adAccountId + "/ads");

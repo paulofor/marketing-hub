@@ -3,6 +3,7 @@ package com.marketinghub.repository.jpa.experiment;
 import com.marketinghub.experiment.promise.ExperimentPromiseGenerationRequest;
 import com.marketinghub.experiment.promise.ExperimentPromiseGenerationRequestStatus;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import org.springframework.data.domain.Pageable;
@@ -22,15 +23,15 @@ public interface ExperimentPromiseGenerationRequestRepository extends JpaReposit
     List<ExperimentPromiseGenerationRequest> findTop10ByStatusInOrderByCreatedAtDesc(
             Collection<ExperimentPromiseGenerationRequestStatus> statuses);
 
-    /** Descarta em lote solicitações já usadas na criação de um experimento. */
+    /** Descarta em lote solicitações já usadas na criação de um experimento registrando o instante informado. */
     @Modifying
     @Query("""
             update ExperimentPromiseGenerationRequest r
             set r.status = com.marketinghub.experiment.promise.ExperimentPromiseGenerationRequestStatus.DISMISSED,
-                r.finishedAt = CURRENT_TIMESTAMP
+                r.finishedAt = :finishedAt
             where r.id in :ids
             """)
-    int dismissByIdIn(@Param("ids") Collection<Long> ids);
+    int dismissByIdIn(@Param("ids") Collection<Long> ids, @Param("finishedAt") Instant finishedAt);
 
     /** Soma o custo em dólar de solicitações concluídas para compor o custo inicial do experimento criado. */
     @Query("""

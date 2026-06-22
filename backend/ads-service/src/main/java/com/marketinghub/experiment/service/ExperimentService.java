@@ -364,7 +364,7 @@ public class ExperimentService {
         if (requestIds == null || requestIds.isEmpty()) {
             return;
         }
-        promiseGenerationRequestRepository.dismissByIdIn(requestIds);
+        promiseGenerationRequestRepository.dismissByIdIn(requestIds, Instant.now());
     }
 
     /** Soma em reais o custo das solicitações de promessa usadas para criar o experimento. */

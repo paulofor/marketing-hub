@@ -5060,3 +5060,10 @@
 - Causa-raiz: a retomada buscava o último rascunho por status da geração de promessa, sem confirmar se a hipótese daquele rascunho já possuía experimento fora do status `PLANNED`; além disso, a limpeza do rascunho dependia de chamada posterior do frontend.
 - Correção aplicada: o backend agora filtra o rascunho retomável pela verdade dos experimentos persistidos e descarta, no próprio fluxo transacional de criação do experimento, as solicitações de promessa usadas no teste salvo.
 - Prevenção de recorrência: adicionado teste de serviço garantindo que rascunho com experimento já em execução/histórico não é exposto para a tela continuar criação.
+
+## 2026-06-22 — Correção de bootstrap dos testes de controllers
+
+- Problema: testes com `@SpringBootTest` de contas e campanhas falhavam ao subir o contexto com erro genérico de `ApplicationContext failure threshold`.
+- Causa-raiz: a query JPQL `dismissByIdIn` atribuía `CURRENT_TIMESTAMP` diretamente a um campo `Instant`; no Hibernate 6 isso valida como `java.sql.Timestamp` e bloqueia a criação do repository antes dos testes iniciarem.
+- Correção aplicada: o backend passou a calcular o instante em Java (`Instant.now()`) e enviar esse valor tipado como parâmetro da query de descarte de rascunhos de promessa.
+- Prevenção de recorrência: executados os testes dos controllers afetados para confirmar que o contexto Spring volta a subir e que a falha de bootstrap não mascara os testes reais.

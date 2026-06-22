@@ -31,9 +31,9 @@ class CandidateGeneratorProcessorTest {
                 .doesNotContain("CNAE 7319002");
     }
 
-    /** Deve especializar o CNAE de vestuário em recortes de MEI dono-operador, não varejo genérico. */
+    /** Deve manter o mesmo padrão MEI/autônomo para todos os CNAEs, sem especialização por atividade. */
     @Test
-    void specializesFashionRetailAsMeiOwnerOperator() {
+    void keepsGenericMeiOwnerOperatorPatternForAnyCnae() {
         CandidateGeneratorProcessor processor = new CandidateGeneratorProcessor();
 
         StageResult result = processor.process(new StageContext(
@@ -43,8 +43,9 @@ class CandidateGeneratorProcessorTest {
 
         String candidates = String.valueOf(result.output().get("candidates"));
         assertThat(candidates)
-                .contains("MEI_MODA_WHATSAPP_INSTAGRAM", "MEI_BRECHO_REVENDA_MODA", "MEI_SACOLEIRA_REVENDEDORA")
+                .contains("MEI_ATENDIMENTO_DIRETO", "MEI_ROTINA_EXECUCAO", "MEI_AQUISICAO_CLIENTES")
                 .contains("MEI_AUTONOMO_DONO_OPERADOR")
-                .doesNotContain("RETAIL_OPERATOR", "STORE_ASSISTANT");
+                .contains("Comércio varejista de artigos do vestuário e acessórios")
+                .doesNotContain("MEI_MODA_WHATSAPP_INSTAGRAM", "RETAIL_OPERATOR", "STORE_ASSISTANT");
     }
 }

@@ -13,14 +13,12 @@ public final class CandidateGeneratorProcessor implements StageProcessor {
     public StageResult process(StageContext context) {
         String cnaeCode = String.valueOf(context.input().getOrDefault("cnaeCode", "CNAE_DESCONHECIDO"));
         String cnaeReference = cnaeReference(context.input(), cnaeCode);
-        List<Map<String, Object>> candidates = candidateSetFor(cnaeCode, cnaeReference);
+        List<Map<String, Object>> candidates = candidateSetFor(cnaeReference);
         List<String> candidateUrls = List.of(
                 "https://www.gov.br/empresas-e-negocios/pt-br/empreendedor",
                 "https://www.gov.br/empresas-e-negocios/pt-br/empreendedor/quero-ser-mei",
                 "https://sebrae.com.br/sites/PortalSebrae/mei",
-                "https://sebrae.com.br/sites/PortalSebrae/ideias/como-montar-uma-loja-de-roupas",
-                "https://www.gov.br/receitafederal/pt-br/assuntos/orientacao-tributaria/cadastros/cnpj/classificacao-nacional-de-atividades-economicas-2013-cnae",
-                "https://sebrae.com.br/sites/PortalSebrae/ufs/sp/artigos/gestao-de-estoque-no-varejo");
+                "https://www.gov.br/receitafederal/pt-br/assuntos/orientacao-tributaria/cadastros/cnpj/classificacao-nacional-de-atividades-economicas-2013-cnae");
         return new StageResult(
                 "BOOTSTRAPPED",
                 Map.of(
@@ -33,21 +31,8 @@ public final class CandidateGeneratorProcessor implements StageProcessor {
                 List.of());
     }
 
-    /** Escolhe recortes MEI/autônomo específicos quando há conhecimento seguro do CNAE; caso contrário usa recortes MEI genéricos. */
-    private List<Map<String, Object>> candidateSetFor(String cnaeCode, String cnaeReference) {
-        if ("4781400".equals(cnaeCode)) {
-            return List.of(
-                    meiCandidate("C1", "MEI_OWNER_OPERATOR", "MEI_MODA_WHATSAPP_INSTAGRAM", "MEI de moda que vende roupas pelo WhatsApp e Instagram enquanto atende clientes diretamente"),
-                    meiCandidate("C2", "MEI_OWNER_OPERATOR", "MEI_BRECHO_REVENDA_MODA", "Dona de brechó ou revenda de moda que compra, precifica, fotografa e vende as peças por conta própria"),
-                    meiCandidate("C3", "MEI_OWNER_OPERATOR", "MEI_SACOLEIRA_REVENDEDORA", "Sacoleira ou revendedora MEI que organiza pronta-entrega, encomendas, cobrança e entrega local"),
-                    meiCandidate("C4", "MEI_OWNER_OPERATOR", "MEI_LOJA_PEQUENA_DONA_ATENDE", "Microloja de roupa em que a própria dona atende, vende, repõe estoque e cobra clientes"),
-                    meiCandidate("C5", "AUTONOMO_OWNER_OPERATOR", "AUTONOMO_AJUSTES_COSTURA_VESTUARIO", "Costureira ou profissional autônoma de ajustes vinculada à venda e pós-venda de vestuário"),
-                    meiCandidate("C6", "MEI_OWNER_OPERATOR", "MEI_MODA_INFANTIL_TROCAS", "MEI de moda infantil lidando com tamanho, troca, encomenda, reserva e retorno de clientes"),
-                    meiCandidate("C7", "MEI_OWNER_OPERATOR", "MEI_MODA_EVANGELICA_NICHO", "MEI que vende moda de nicho local com atendimento direto, indicação e recompra"),
-                    meiCandidate("C8", "MEI_OWNER_OPERATOR", "MEI_ESTOQUE_PARADO_GIRO", "Dona-operadora MEI com estoque parado, necessidade de giro, promoção e controle de grade"),
-                    meiCandidate("C9", "MEI_OWNER_OPERATOR", "MEI_FEIRA_BAZAR_MODA", "MEI que vende roupas em feira, bazar ou ponto temporário e precisa atrair clientes recorrentes"),
-                    meiCandidate("C10", "MEI_OWNER_OPERATOR", "MEI_POS_VENDA_CLIENTELA_LOCAL", "MEI de vestuário que depende de clientela local, indicação, pós-venda e atendimento por mensagem"));
-        }
+    /** Escolhe recortes MEI/autônomo aplicáveis a qualquer CNAE sem especializar por atividade. */
+    private List<Map<String, Object>> candidateSetFor(String cnaeReference) {
         return List.of(
                 meiCandidate("C1", "MEI_OWNER_OPERATOR", "MEI_ATENDIMENTO_DIRETO", "MEI/autônomo que atende clientes diretamente em " + cnaeReference),
                 meiCandidate("C2", "MEI_OWNER_OPERATOR", "MEI_ROTINA_EXECUCAO", "Dono-operador que executa pessoalmente a rotina diária de " + cnaeReference),

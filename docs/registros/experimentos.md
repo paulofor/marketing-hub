@@ -1,3 +1,14 @@
+## 2026-06-22 — Experimentos: implementação do standby no primeiro envio
+
+- foi feito: o backend passou a aplicar `STANDBY` no primeiro envio válido do formulário público de um experimento em execução.
+- foi feito: ao aplicar o standby, o backend registra solicitação de pausa das campanhas Meta vinculadas com motivo `FIRST_FORM_SUBMISSION_STANDBY`, consumível pelo Facebook Ads Worker pela fila existente de stop requests.
+- prevenção de recorrência: adicionados testes unitários cobrindo o registro de submissão pública, a transição para `STANDBY` e a solicitação de pausa da campanha.
+
+## 2026-06-22 — Experimentos: regra transitória de standby no primeiro envio
+
+- decisão registrada: enquanto o sistema ainda não possui volume recorrente de envios de formulário, o primeiro envio válido passa a colocar o experimento em `STANDBY` operacional e deve pausar/desativar a exposição paga no Meta Ads.
+- objetivo de negócio: evitar gasto adicional em mídia no momento inicial, preservar o lead recebido e permitir análise manual da qualidade do sinal antes de escalar ou construir o produto completo.
+- limite da regra: o primeiro envio é apenas sinal inicial; não substitui validação estatística posterior por volume de leads qualificados nem autoriza escala automática.
 ## 2026-06-20 — Experimentos: etapa 5 campanha Meta Leads sem cliques
 
 - solicitação: executar a etapa 5 da melhoria de experimentos, garantindo que a publicação Meta Ads use campanha de Leads para recompensa gratuita.

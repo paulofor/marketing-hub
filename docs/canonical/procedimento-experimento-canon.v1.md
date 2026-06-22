@@ -80,6 +80,18 @@ Regras obrigatórias:
 
 A interpretação do resultado do experimento deve partir dessa unidade: se não houver leads, a dor ou a promessa/isca de entrada devem ser revisadas; se houver leads baratos, mas sem avanço comercial, a oferta, prova ou qualificação devem ser melhoradas.
 
+### 4.1.3 Regra transitória — validação inicial por primeiro envio
+
+Enquanto o sistema ainda estiver na fase inicial sem volume recorrente de formulários enviados, o primeiro envio válido do formulário deve ser tratado como sinal comercial suficiente para colocar o experimento em `STANDBY` operacional e pausar imediatamente a exposição paga no Meta Ads. Essa regra não valida estatisticamente o produto nem autoriza escala; ela apenas evita gasto adicional enquanto o time confirma manualmente a qualidade do lead, a coerência da promessa, a entrega mínima prometida e a necessidade de gerar ou ajustar o produto de entrada.
+
+Regras obrigatórias:
+- o evento considerado deve ser um envio real e válido do formulário, com dados mínimos úteis e sem duplicidade operacional evidente;
+- ao detectar o primeiro envio válido, o backend deve registrar a decisão do experimento como `STANDBY` ou estado equivalente de pausa operacional auditável;
+- a campanha, conjunto de anúncios ou anúncio correspondente no Meta Ads deve ser desativado/pausado pelo fluxo oficial de integração, evitando novos gastos até decisão humana ou regra posterior de retomada;
+- o lead não pode ficar sem resposta: deve receber a entrega mínima prometida, uma comunicação de recebimento ou um encaminhamento claro compatível com a promessa feita na landing;
+- o status `STANDBY` por primeiro envio não substitui a validação estatística de 30+ envios qualificados, nem a regra de reprovação por 100 acessos sem envio;
+- a tela administrativa deve deixar claro que o experimento parou por sinal inicial, não por validação completa.
+
 ### 4.2 Prompts dessas etapas
 Os prompts do pipeline ficam versionados no repositório, em `resources` do Worker AI.
 

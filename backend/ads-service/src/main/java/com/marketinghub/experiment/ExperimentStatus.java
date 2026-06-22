@@ -1,12 +1,13 @@
 package com.marketinghub.experiment;
 
 /**
- * Current status of an experiment.
+ * Estados operacionais de um experimento comercial.
  */
 public enum ExperimentStatus {
     PLANNED,
     RUNNING,
     PAUSED,
+    STANDBY,
     USER_STOPPED,
     VALIDATED,
     INVALIDATED,

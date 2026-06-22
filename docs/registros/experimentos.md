@@ -5048,3 +5048,8 @@
 - Causa-raiz: a mesma classe de parada automática concentrava diagnóstico estatístico e standby por submissão, fazendo o serviço de funil depender de volta da cadeia que já dependia dele para sumarizar métricas.
 - Correção aplicada: extraído `ExperimentFunnelStandbyService` para concentrar standby e solicitação de pausa de campanhas, removendo a dependência direta de `ExperimentFunnelService` para `ExperimentFunnelAutoStopService`.
 - Prevenção de recorrência: testes de controller, funil e parada automática foram executados juntos para validar que o contexto Spring volta a subir sem referência circular.
+
+## 2026-06-22 — Horário de Brasília no funil do experimento
+
+- Ajustada a tela de funil do experimento para formatar o campo `Último evento` explicitamente no fuso operacional `America/Sao_Paulo`, exibindo o cabeçalho como horário de Brasília e evitando interpretação pelo fuso local do navegador.
+- Adicionado teste de regressão no frontend para garantir que datas do funil sejam apresentadas no fuso operacional do Brasil.

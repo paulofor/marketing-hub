@@ -1243,3 +1243,9 @@
 - O backend expõe o histórico cronológico por `jobId`, mantendo a tela fiel ao dado persistido e sem inferir localmente o caminho do pipeline.
 - Causa-raiz tratada: a tabela indicava fracasso, mas não oferecia rastreabilidade operacional suficiente para o usuário entender até onde o job avançou antes de decidir novo recorte ou correção.
 - 2026-06-21 21:30:33 (UTC): ajustada a tela de detalhe do job OPRM NichoCNAE v2 para revelar o conteúdo completo dos payloads de entrada e saída em JSON/texto por etapa, mantendo resumo inicial e expandindo sob demanda para facilitar diagnóstico de decisões do pipeline.
+
+## 2026-06-22 — JSON expansível no detalhe do job NichoCNAE v2
+
+- Ajustada a tela de detalhe do job OPRM NichoCNAE v2 para apresentar payloads JSON como árvore expansível por clique, permitindo abrir objetos e arrays internos conforme a investigação avança.
+- Causa-raiz tratada: o JSON completo era exibido como texto único rolável, dificultando a análise de payloads grandes e a navegação por candidatos, evidências e campos internos.
+- Prevenção de recorrência: teste de frontend cobre a abertura progressiva do JSON interno até campos aninhados.

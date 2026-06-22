@@ -176,6 +176,17 @@ describe("ExperimentFunnelTab", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("formats funnel dates using Brazil operational timezone", () => {
+    renderWithClient(
+      <ExperimentFunnelTab experimentId="42" totalSpend={100} />,
+    );
+
+    expect(
+      screen.getByText("Último evento (horário de Brasília)"),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/10\/03\/2024, 09:00/)).toBeInTheDocument();
+  });
+
   it("shows the cost per conversion for each stage", () => {
     renderWithClient(
       <ExperimentFunnelTab experimentId="42" totalSpend={100} />,

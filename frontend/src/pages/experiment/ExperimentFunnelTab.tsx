@@ -31,13 +31,20 @@ interface ExperimentFunnelTabProps {
   alterationLocked?: boolean;
 }
 
+const BRAZIL_OPERATIONAL_TIME_ZONE = "America/Sao_Paulo";
+
 function formatDate(value?: string | null) {
   if (!value) return "—";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "—";
   return date.toLocaleString("pt-BR", {
-    dateStyle: "short",
-    timeStyle: "short",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: BRAZIL_OPERATIONAL_TIME_ZONE,
+    timeZoneName: "short",
   });
 }
 
@@ -338,7 +345,7 @@ export default function ExperimentFunnelTab({
                   <th>% vs. etapa anterior</th>
                   <th>Custo por conv.</th>
                   <th>Únicos</th>
-                  <th>Último evento</th>
+                  <th>Último evento (horário de Brasília)</th>
                 </tr>
               </thead>
               <tbody>

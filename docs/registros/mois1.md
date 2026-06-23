@@ -1772,3 +1772,9 @@ Arquivos principais:
 - Alterada a integração OpenAI da etapa de análise comercial do `mois-sales-library-worker` para usar Responses API com `service_tier: "flex"`, removendo o fluxo operacional de criação/polling da Batch API.
 - Atualizado o cânone MOIS para refletir que a análise comercial usa Responses Flex, timeout canônico de 15 minutos e payload auditado com `service_tier: "flex"`.
 - Ajustado o teste de contrato do analisador para impedir regressão para payload sem modo Flex.
+
+## 2026-06-23 — Regra de exibição da análise mais recente na Biblioteca Sales Pages
+
+- Revisada a decisão sobre retentativas de análise comercial: a tela deve refletir somente a execução mais recente da página, mesmo quando a tentativa mais recente falhar.
+- Removida a preservação automática de análise anterior concluída no status consolidado, porque ela misturava execução antiga com tentativa nova e poderia esconder erro operacional atual.
+- Mantida a leitura da causa operacional no histórico de execuções, preservando transparência para reprocessar quando a chamada OpenAI falhar.

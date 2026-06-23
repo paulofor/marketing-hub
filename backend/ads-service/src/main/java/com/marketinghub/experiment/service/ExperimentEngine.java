@@ -36,6 +36,9 @@ public class ExperimentEngine {
             if (funnelAutoStopService.stopIfAdInterestStatisticallyLow(exp)) {
                 continue;
             }
+            if (funnelAutoStopService.stopIfLowFormEntryAndNoSubmissionAfterSpend(exp)) {
+                continue;
+            }
             if (funnelAutoStopService.stopIfFormSubmissionZeroConversions(exp)) {
                 continue;
             }

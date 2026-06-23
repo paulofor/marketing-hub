@@ -16,6 +16,8 @@ import com.marketinghub.repository.jpa.prompt.PromptAttributeDescriptionReposito
 import com.marketinghub.cost.CostAttributionService;
 import com.marketinghub.finance.CurrencyConversionService;
 import java.math.BigDecimal;
+import java.text.Normalizer;
+import java.util.Locale;
 import java.util.UUID;
 import java.time.Instant;
 import java.util.HashSet;
@@ -28,6 +30,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+/** Responsabilidade: aplicar as regras de criação, edição e status das hipóteses comerciais. */
 @Service
 public class HypothesisService {
     private final HypothesisRepository repository;
@@ -76,16 +79,47 @@ public class HypothesisService {
         return em.getReference(Angle.class, id);
     }
 
+    /** Valida os campos comerciais obrigatórios para criar uma hipótese. */
     private void validate(CreateHypothesisRequest req) {
-        if (req.getTitle() == null || req.getTitle().isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "title required");
-        }
         if (req.getProblem() == null || req.getProblem().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "problem required");
         }
         if (req.getPersona() == null || req.getPersona().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "persona required");
         }
+    }
+
+    /** Monta o título automático da hipótese com sigla do nicho e numeração sequencial. */
+    private String buildAutomaticHypothesisTitle(MarketNiche niche) {
+        String acronym = nicheAcronym(niche);
+        long nextNumber = repository.countByMarketNicheId(niche != null ? niche.getId() : null) + 1;
+        return "%s-H%03d".formatted(acronym, nextNumber);
+    }
+
+    /** Gera uma sigla estável a partir do nome do nicho ou usa GER quando o nicho ainda não foi informado. */
+    private String nicheAcronym(MarketNiche niche) {
+        if (niche == null || niche.getName() == null || niche.getName().isBlank()) {
+            return "GER";
+        }
+        String normalized = Normalizer.normalize(niche.getName(), Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .toUpperCase(Locale.ROOT);
+        StringBuilder acronym = new StringBuilder();
+        for (String word : normalized.split("[^A-Z0-9]+")) {
+            if (!word.isBlank()) {
+                acronym.append(word.charAt(0));
+            }
+            if (acronym.length() == 4) {
+                break;
+            }
+        }
+        if (acronym.isEmpty()) {
+            return "GER";
+        }
+        while (acronym.length() < 3) {
+            acronym.append('X');
+        }
+        return acronym.toString();
     }
 
     private BigDecimal resolveTotalCostDelta(CreateHypothesisRequest req) {
@@ -130,12 +164,15 @@ public class HypothesisService {
         return pack;
     }
 
+    /** Cria uma hipótese usando identificação automática por sigla do nicho e sequência numérica. */
     @Transactional
     public Hypothesis create(CreateHypothesisRequest req) {
         validate(req);
+        MarketNiche niche = attachNiche(req.getMarketNicheId());
+        String automaticTitle = buildAutomaticHypothesisTitle(niche);
         Hypothesis h = Hypothesis.builder()
-                .marketNiche(attachNiche(req.getMarketNicheId()))
-                .title(req.getTitle())
+                .marketNiche(niche)
+                .title(automaticTitle)
                 .premiseAngle(attachAngle(req.getPremiseAngleId()))
                 .promise(req.getPromise())
                 .problem(req.getProblem())

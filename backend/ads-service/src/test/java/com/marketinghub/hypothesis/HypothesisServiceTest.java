@@ -43,7 +43,7 @@ class HypothesisServiceTest {
     @Test
     void createValidHypothesis() {
         CreateHypothesisRequest req = new CreateHypothesisRequest();
-        req.setTitle("Teste");
+        req.setTitle("Teste ignorado");
         req.setProblem("Problema");
         req.setPersona("Persona");
         Hypothesis h = service.create(req);
@@ -51,6 +51,7 @@ class HypothesisServiceTest {
         assertThat(h.getStatus()).isEqualTo(HypothesisStatus.BACKLOG);
         assertThat(h.getGeneratedAt()).isNotNull();
         assertThat(h.getImageFilterTitle()).isNull();
+        assertThat(h.getTitle()).isEqualTo("GER-H001");
     }
 
     @Test
@@ -61,15 +62,6 @@ class HypothesisServiceTest {
         req.setPersona("Persona");
         Hypothesis h = service.create(req);
         assertThat(h.getPremiseAngle()).isNull();
-    }
-
-    @Test
-    void validateTitle() {
-        CreateHypothesisRequest req = new CreateHypothesisRequest();
-        req.setTitle("   ");
-        req.setProblem("Problema");
-        assertThatThrownBy(() -> service.create(req))
-                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class);
     }
 
     @Test
@@ -112,6 +104,7 @@ class HypothesisServiceTest {
                 .toList();
 
         assertThat(list).hasSize(2);
+        assertThat(list).extracting(Hypothesis::getTitle).contains("NXX-H001", "NXX-H002");
     }
 
     @Test
@@ -146,7 +139,7 @@ class HypothesisServiceTest {
         PromptAttribute attr = attributeRepository.save(PromptAttribute.builder().entity(entity).name("title").build());
         PromptAttributeDescription desc = descriptionRepository.save(PromptAttributeDescription.builder().attribute(attr).description("d").build());
         CreateHypothesisRequest req = new CreateHypothesisRequest();
-        req.setTitle("Teste");
+        req.setTitle("Teste ignorado");
         req.setProblem("Problema");
         req.setPersona("Persona");
         req.setPromptAttributeDescriptionIds(java.util.List.of(desc.getId()));

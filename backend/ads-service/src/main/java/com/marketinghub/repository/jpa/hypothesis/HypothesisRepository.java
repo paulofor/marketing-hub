@@ -19,6 +19,7 @@ public interface HypothesisRepository extends JpaRepository<Hypothesis, UUID> {
     List<Hypothesis> findByMarketNicheId(Long marketNicheId);
     List<Hypothesis> findByMarketNicheIdAndStatus(Long marketNicheId, HypothesisStatus status);
     List<Hypothesis> findByStatus(HypothesisStatus status);
+    long countByMarketNicheId(Long marketNicheId);
 
     @Modifying
     @Query("""

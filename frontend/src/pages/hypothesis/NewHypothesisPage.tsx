@@ -326,7 +326,6 @@ export default function NewHypothesisPage() {
   const hasRunningExecution = stageQueries.some((query) =>
     (query.data ?? []).some((item) => RUNNING_STATUSES.has(item.status)),
   );
-  const [hypothesisName, setHypothesisName] = useState("");
   const allStagesCompleted = STAGES.every((_, index) =>
     stageIsCompleted(stageQueries[index]?.data),
   );
@@ -358,7 +357,7 @@ export default function NewHypothesisPage() {
     mutationFn: async () => {
       const { data } = await axios.post(
         `/api/niches/${nicheId}/hypothesis-pipeline/finalize`,
-        { name: hypothesisName.trim() },
+        { name: "" },
       );
       return data;
     },
@@ -375,10 +374,6 @@ export default function NewHypothesisPage() {
 
   function handleFinalizeSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!hypothesisName.trim()) {
-      toast.error("Informe um nome para a hipótese.");
-      return;
-    }
     finalizeMutation.mutate();
   }
 
@@ -515,18 +510,9 @@ export default function NewHypothesisPage() {
             onSubmit={handleFinalizeSubmit}
           >
             <div className="col-12 col-lg-8">
-              <label className="form-label" htmlFor="final-hypothesis-name">
-                Nome da hipótese <span className="text-danger">*</span>
-              </label>
-              <input
-                id="final-hypothesis-name"
-                className="form-control"
-                type="text"
-                value={hypothesisName}
-                onChange={(event) => setHypothesisName(event.target.value)}
-                placeholder="Ex.: Agenda recorrente sem retrabalho para manicure autônoma"
-                disabled={!allStagesCompleted || finalizeMutation.isPending}
-              />
+              <div className="alert alert-info mb-0">
+                O backend vai nomear automaticamente com a sigla do nicho e a próxima numeração da hipótese.
+              </div>
             </div>
             <div className="col-12 col-lg-4">
               <button
@@ -534,8 +520,7 @@ export default function NewHypothesisPage() {
                 className="btn btn-success w-100"
                 disabled={
                   !allStagesCompleted ||
-                  finalizeMutation.isPending ||
-                  !hypothesisName.trim()
+                  finalizeMutation.isPending
                 }
               >
                 {finalizeMutation.isPending ? (

@@ -11,8 +11,10 @@ import com.marketinghub.repository.jpa.hypothesis.HypothesisRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.math.BigDecimal;
+import java.text.Normalizer;
 import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -54,9 +56,9 @@ public class HypothesisPipelineFinalizationService {
     /** Fecha o framework concluído em uma hipótese BACKLOG pronta para gerar experimento. */
     @Transactional
     public Hypothesis finalizeHypothesis(Long marketNicheId, FinalizeHypothesisRequest request) {
-        String title = normalizeHypothesisName(request.name());
         MarketNiche niche = marketNicheRepository.findById(marketNicheId)
                 .orElseThrow(() -> new EntityNotFoundException("Market niche not found: " + marketNicheId));
+        String title = buildAutomaticHypothesisTitle(niche);
         String pain = requireCompletedStageResponse(marketNicheId, STAGE_CODE, "Dor");
         String result = requireCompletedStageResponse(marketNicheId, RESULT_STAGE_CODE, "Resultado");
         String mechanism = requireCompletedStageResponse(marketNicheId, MECHANISM_STAGE_CODE, "Mecanismo");
@@ -84,12 +86,36 @@ public class HypothesisPipelineFinalizationService {
         return hypothesisRepository.save(hypothesis);
     }
 
-    /** Normaliza e valida o nome informado pelo usuário para a hipótese final. */
-    private String normalizeHypothesisName(String rawName) {
-        if (!StringUtils.hasText(rawName)) {
-            throw new IllegalStateException("Informe um nome para fechar a hipótese.");
+    /** Monta o título automático da hipótese fechada com sigla do nicho e numeração sequencial. */
+    private String buildAutomaticHypothesisTitle(MarketNiche niche) {
+        long nextNumber = hypothesisRepository.countByMarketNicheId(niche.getId()) + 1;
+        return "%s-H%03d".formatted(nicheAcronym(niche), nextNumber);
+    }
+
+    /** Gera uma sigla estável a partir do nome do nicho para identificar hipóteses. */
+    private String nicheAcronym(MarketNiche niche) {
+        if (niche == null || !StringUtils.hasText(niche.getName())) {
+            return "GER";
         }
-        return rawName.trim();
+        String normalized = Normalizer.normalize(niche.getName(), Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .toUpperCase(Locale.ROOT);
+        StringBuilder acronym = new StringBuilder();
+        for (String word : normalized.split("[^A-Z0-9]+")) {
+            if (!word.isBlank()) {
+                acronym.append(word.charAt(0));
+            }
+            if (acronym.length() == 4) {
+                break;
+            }
+        }
+        if (acronym.isEmpty()) {
+            return "GER";
+        }
+        while (acronym.length() < 3) {
+            acronym.append('X');
+        }
+        return acronym.toString();
     }
 
     /** Exige uma resposta concluída de etapa antes de permitir fechar a hipótese. */

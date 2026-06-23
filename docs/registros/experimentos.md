@@ -1,3 +1,17 @@
+
+## 2026-06-23 — Nome automático para hipóteses e experimentos
+
+- solicitação: parar de exigir que o usuário escolha nome de hipótese e nome de experimento.
+- decisão aplicada: o backend passa a gerar identificadores por sigla do nicho e sequência numérica (`<SIGLA>-H001` para hipótese e `<SIGLA>-E001` para experimento).
+- impacto esperado: menos esforço operacional para o usuário, nomes consistentes por nicho e tela de criação mais simples.
+- arquivos principais alterados:
+  - `backend/ads-service/src/main/java/com/marketinghub/hypothesis/service/HypothesisService.java`
+  - `backend/ads-service/src/main/java/com/marketinghub/hypothesis/service/finalizeHypothesis/HypothesisPipelineFinalizationService.java`
+  - `backend/ads-service/src/main/java/com/marketinghub/experiment/service/ExperimentService.java`
+  - `frontend/src/pages/hypothesis/NewHypothesisModal.tsx`
+  - `frontend/src/pages/hypothesis/NewHypothesisPage.tsx`
+  - `frontend/src/pages/experiment/NewExperimentPage.tsx`
+
 ## 2026-06-22 — Experimentos: implementação do standby no primeiro envio
 
 - foi feito: o backend passou a aplicar `STANDBY` no primeiro envio válido do formulário público de um experimento em execução.

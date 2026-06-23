@@ -1315,3 +1315,8 @@
 - Ajustado o comando de sucesso parcial do histórico NichoCNAE v2 para abrir o relatório do job, e não a tela legada do CNAE.
 - Causa-raiz tratada: o backend enviava o usuário para a página geral do CNAE quando a materialização automática estava desativada, misturando resultado v2 novo com subnichos/processamentos antigos.
 - Prevenção de recorrência: teste unitário valida que job v2 concluído sem nicho materializado direciona para o relatório do próprio job.
+
+## 2026-06-23 — Confirmação manual de nicho no relatório NichoCNAE v2
+
+- Adicionado ponto de confirmação no relatório do job NichoCNAE v2 para o usuário definir nome único do nicho, visualizar o custo atual de IA do job e confirmar a criação do `MarketNiche`.
+- Backend passa a impedir repetição de nome de nicho e grava o vínculo do candidato CNAE com o nicho confirmado para uso nas próximas etapas do Marketing Hub.

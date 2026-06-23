@@ -27,6 +27,10 @@ export interface OprmNichoCnaeV2JobDetailResponse {
   finalDecisionReason: string | null;
   outcomeStatus: "SUCCESS" | "FAILURE" | "IN_PROGRESS" | string | null;
   outcomeMessage: string | null;
+  proposedNicheName: string | null;
+  marketNicheId: number | null;
+  aiCostUsd: number | null;
+  canConfirmNiche: boolean | null;
   stages: OprmNichoCnaeV2JobStageStep[];
 }
 

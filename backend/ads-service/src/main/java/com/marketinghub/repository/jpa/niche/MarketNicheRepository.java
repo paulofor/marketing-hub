@@ -127,4 +127,9 @@ public interface MarketNicheRepository extends JpaRepository<MarketNiche, Long> 
             """)
     void incrementTotalCost(@Param("id") Long id, @Param("delta") BigDecimal delta);
 
+    /**
+     * Verifica se já existe nicho com o mesmo nome, ignorando caixa, para impedir duplicidade comercial.
+     */
+    boolean existsByNameIgnoreCase(String name);
+
 }

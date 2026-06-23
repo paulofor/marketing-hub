@@ -1,4 +1,6 @@
+import { FormEvent, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { useOprmNichoCnaeV2ConfirmNiche } from "../../api/oprm/useOprmNichoCnaeV2ConfirmNiche";
 import { useOprmNichoCnaeV2JobDetail } from "../../api/oprm/useOprmNichoCnaeV2JobDetail";
 import PageTitle from "../../components/PageTitle";
 import OprmModuleNavigation from "./OprmModuleNavigation";
@@ -131,6 +133,20 @@ export default function OprmNichoCnaeV2JobDetailPage() {
   const decodedCnaeCode = cnaeCode ? decodeURIComponent(cnaeCode) : undefined;
   const decodedJobId = jobId ? decodeURIComponent(jobId) : undefined;
   const jobQuery = useOprmNichoCnaeV2JobDetail(decodedJobId);
+  const confirmNiche = useOprmNichoCnaeV2ConfirmNiche(decodedJobId);
+  const [nicheName, setNicheName] = useState("");
+
+  useEffect(() => {
+    if (jobQuery.data?.proposedNicheName) {
+      setNicheName(jobQuery.data.proposedNicheName);
+    }
+  }, [jobQuery.data?.proposedNicheName]);
+
+  function handleConfirmNiche(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!nicheName.trim()) return;
+    confirmNiche.mutate(nicheName.trim());
+  }
 
   return (
     <div className="d-flex flex-column gap-4">
@@ -198,6 +214,94 @@ export default function OprmNichoCnaeV2JobDetailPage() {
                     jobQuery.data.status}
                 </span>
               </div>
+            </div>
+          </section>
+
+
+
+          <section className="card border-0 shadow-sm">
+            <div className="card-body">
+              <div className="d-flex flex-wrap justify-content-between gap-3 mb-3">
+                <div>
+                  <span className="text-secondary small text-uppercase fw-semibold">
+                    Confirmação comercial
+                  </span>
+                  <h3 className="h5 mb-1">Transformar em nicho do Marketing Hub</h3>
+                  <p className="text-secondary mb-0">
+                    Defina um nome único, confira o custo atual de IA e confirme
+                    para liberar este nicho nas próximas etapas do sistema.
+                  </p>
+                </div>
+                {jobQuery.data.marketNicheId ? (
+                  <span className="badge text-bg-success align-self-start">
+                    Nicho confirmado #{jobQuery.data.marketNicheId}
+                  </span>
+                ) : null}
+              </div>
+
+              <form className="row g-3 align-items-end" onSubmit={handleConfirmNiche}>
+                <div className="col-lg-6">
+                  <label className="form-label fw-semibold" htmlFor="nicheName">
+                    Nome do nicho <span className="text-danger">*</span>
+                  </label>
+                  <input
+                    className="form-control"
+                    id="nicheName"
+                    value={nicheName}
+                    onChange={(event) => setNicheName(event.target.value)}
+                    disabled={!jobQuery.data.canConfirmNiche || confirmNiche.isPending}
+                    placeholder="Ex.: Rotina financeira para MEIs de beleza"
+                  />
+                  <div className="form-text">
+                    Não pode repetir o nome de outro nicho já existente.
+                  </div>
+                </div>
+                <div className="col-lg-3">
+                  <label className="form-label fw-semibold">Custo IA atual</label>
+                  <div className="form-control bg-light">
+                    {new Intl.NumberFormat("pt-BR", {
+                      style: "currency",
+                      currency: "USD",
+                    }).format(Number(jobQuery.data.aiCostUsd ?? 0))}
+                  </div>
+                </div>
+                <div className="col-lg-3 d-grid">
+                  <button
+                    className="btn btn-primary"
+                    type="submit"
+                    disabled={
+                      !jobQuery.data.canConfirmNiche ||
+                      confirmNiche.isPending ||
+                      !nicheName.trim()
+                    }
+                  >
+                    {confirmNiche.isPending ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2" aria-hidden="true" />
+                        Confirmando...
+                      </>
+                    ) : (
+                      "Confirmar nicho"
+                    )}
+                  </button>
+                </div>
+              </form>
+              {!jobQuery.data.canConfirmNiche && !jobQuery.data.marketNicheId ? (
+                <p className="text-secondary small mt-3 mb-0">
+                  A confirmação fica disponível quando o backend concluir o job
+                  com sucesso e ainda não existir nicho materializado.
+                </p>
+              ) : null}
+              {confirmNiche.isError ? (
+                <div className="alert alert-danger mt-3 mb-0" role="alert">
+                  {confirmNiche.error.message}
+                </div>
+              ) : null}
+              {confirmNiche.isSuccess ? (
+                <div className="alert alert-success mt-3 mb-0" role="alert">
+                  {confirmNiche.data.message}
+                </div>
+              ) : null}
             </div>
           </section>
 

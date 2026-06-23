@@ -31,7 +31,8 @@ public interface HypothesisPainStageExecutionRepository extends JpaRepository<Hy
             List<String> statuses,
             Instant threshold);
 
-    /** Lista todas as execuções de uma etapa dentro de um nicho para totalização de custo. */
+    /** Lista todas as execuções de uma etapa dentro de um nicho com hipótese carregada para totalização e contexto. */
+    @EntityGraph(attributePaths = {"hypothesis"})
     List<HypothesisPainStageExecution> findByMarketNicheIdAndStageCodeOrderByExecutionRequestedAtDesc(Long marketNicheId, String stageCode);
 
     /** Lista as últimas vinte execuções de uma etapa dentro de um nicho excluindo um status operacional. */

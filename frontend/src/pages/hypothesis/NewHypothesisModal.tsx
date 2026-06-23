@@ -7,10 +7,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 
 const schema = z
   .object({
-    title: z
-      .string()
-      .min(8, "mínimo 8 caracteres")
-      .max(120, "máx. 120 caracteres"),
     promise: z.string().min(1, "obrigatório").max(140, "máx. 140"),
     problem: z.string().min(1, "obrigatório"),
     persona: z.string().min(1, "obrigatório"),
@@ -53,7 +49,6 @@ export default function NewHypothesisModal({
 
   const onSubmit = handleSubmit(async (values) => {
     const body: any = {
-      title: values.title,
       promise: values.promise,
       problem: values.problem,
       persona: values.persona,
@@ -89,20 +84,9 @@ export default function NewHypothesisModal({
                 />
               </div>
               <div className="modal-body">
-                <label className="form-label" htmlFor="title">
-                  Título
-                </label>
-               <input
-                  id="title"
-                  {...register("title")}
-                  className={`form-control mb-2 ${errors.title ? "is-invalid" : ""}`}
-                  aria-describedby="title-error"
-                />
-                {errors.title && (
-                  <div id="title-error" className="invalid-feedback d-block">
-                    {errors.title.message}
-                  </div>
-                )}
+                <div className="alert alert-info py-2 mb-3">
+                  O nome será gerado automaticamente pelo backend com a sigla do nicho e a próxima numeração.
+                </div>
 
                 <label className="form-label" htmlFor="promise">
                   Promessa

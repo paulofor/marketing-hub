@@ -25,6 +25,7 @@ public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
     Optional<Experiment> findById(Long id);
     List<Experiment> findByNicheId(Long nicheId);
     boolean existsByNicheAndName(MarketNiche niche, String name);
+    long countByNicheId(Long nicheId);
     /** Verifica se a hipótese já possui experimento que saiu da criação e entrou em execução/histórico. */
     boolean existsByHypothesisRefAndStatusNot(Hypothesis hypothesisRef, ExperimentStatus status);
     List<Experiment> findByStatus(ExperimentStatus status);

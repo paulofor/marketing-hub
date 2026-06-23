@@ -249,6 +249,7 @@ class ExperimentServiceTest {
         var exp = service.create(req);
         assertThat(exp.getId()).isNotNull();
         assertThat(exp.getPlatform()).isEqualTo(ExperimentPlatform.FACEBOOK);
+        assertThat(exp.getName()).isEqualTo("TXX-E001");
     }
 
 

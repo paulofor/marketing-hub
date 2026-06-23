@@ -37,8 +37,10 @@ import com.marketinghub.repository.jpa.imagegeneration.ImageGenerationQualityRep
 import com.marketinghub.sampleemail.SampleEmail;
 import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
+import java.text.Normalizer;
 import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;
@@ -246,6 +248,38 @@ public class ExperimentService {
 
     private record ImageGenerationSelection(ImageGenerationModel model, ImageGenerationQuality quality) { }
 
+    /** Monta o nome automático do experimento com sigla do nicho e numeração sequencial. */
+    private String buildAutomaticExperimentName(MarketNiche niche) {
+        long nextNumber = repository.countByNicheId(niche.getId()) + 1;
+        return "%s-E%03d".formatted(nicheAcronym(niche), nextNumber);
+    }
+
+    /** Gera uma sigla estável a partir do nome do nicho para identificar experimentos. */
+    private String nicheAcronym(MarketNiche niche) {
+        if (niche == null || niche.getName() == null || niche.getName().isBlank()) {
+            return "GER";
+        }
+        String normalized = Normalizer.normalize(niche.getName(), Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .toUpperCase(Locale.ROOT);
+        StringBuilder acronym = new StringBuilder();
+        for (String word : normalized.split("[^A-Z0-9]+")) {
+            if (!word.isBlank()) {
+                acronym.append(word.charAt(0));
+            }
+            if (acronym.length() == 4) {
+                break;
+            }
+        }
+        if (acronym.isEmpty()) {
+            return "GER";
+        }
+        while (acronym.length() < 3) {
+            acronym.append('X');
+        }
+        return acronym.toString();
+    }
+
     /**
      * Cria e persiste um novo experimento com o contrato comercial inicial.
      */
@@ -263,8 +297,9 @@ public class ExperimentService {
                 request.getStartDate().isAfter(request.getEndDate())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "startDate must be before endDate");
         }
-        if (repository.existsByNicheAndName(niche, request.getName())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "name already exists for niche");
+        String automaticName = buildAutomaticExperimentName(niche);
+        if (repository.existsByNicheAndName(niche, automaticName)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "automatic name already exists for niche");
         }
         String normalizedPrimaryVariable = normalizeOptionalPrimaryDescriptor(request.getPrimaryVariable());
         String normalizedPrimaryMetric = normalizeOptionalPrimaryDescriptor(request.getPrimaryMetric());
@@ -303,7 +338,7 @@ public class ExperimentService {
         BigDecimal initialTotalCost = addNullable(request.getCost(), promiseGenerationCost);
         Experiment exp = Experiment.builder()
                 .niche(niche)
-                .name(request.getName())
+                .name(automaticName)
                 .hypothesis(request.getHypothesis())
                 .singlePain(normalizeExperimentPromiseField(request.getSinglePain()))
                 .freeReward(normalizeExperimentPromiseField(request.getFreeReward()))

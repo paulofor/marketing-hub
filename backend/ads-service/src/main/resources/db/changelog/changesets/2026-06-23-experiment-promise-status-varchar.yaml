@@ -1,0 +1,30 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-23-experiment-promise-status-varchar
+      author: marketinghub
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: experiment_promise_generation_request
+        - columnExists:
+            tableName: experiment_promise_generation_request
+            columnName: status
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE experiment_promise_generation_request
+                MODIFY status VARCHAR(32) NOT NULL DEFAULT 'PENDING';
+      rollback:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE experiment_promise_generation_request
+                MODIFY status VARCHAR(32) NOT NULL DEFAULT 'PENDING';

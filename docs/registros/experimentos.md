@@ -5088,3 +5088,9 @@
 - Causa-raiz: a implementação do analytics da landing evoluiu, mas o contrato textual do teste não foi atualizado junto.
 - Correção aplicada: o teste de regressão passou a validar o contrato atual de persistência first-party em `localStorage` e `sessionStorage`, mantendo as proteções contra metadados técnicos no HTML final.
 - Prevenção de recorrência: a validação agora acompanha os trechos efetivamente emitidos pelo controller, evitando falha por expectativa legada sem reduzir a cobertura do analytics público.
+
+## 2026-06-23 — Correção do salvamento de experimento com promessa única
+- Problema: ao salvar um experimento criado a partir da promessa única gerada por IA, o backend falhava ao descartar a solicitação usada com status `DISMISSED`.
+- Causa-raiz: o schema real da coluna `experiment_promise_generation_request.status` ainda podia estar restrito a um tipo/enum antigo que não aceitava `DISMISSED`, apesar do contrato Java já prever esse status.
+- Correção aplicada: criado changelog incremental para normalizar a coluna `status` como `VARCHAR(32) NOT NULL DEFAULT 'PENDING'`, permitindo todos os estados operacionais atuais sem truncamento.
+- Prevenção de recorrência: o descarte do rascunho passa a depender de uma coluna textual compatível com evolução de estados da fila, evitando novo bloqueio ao adicionar status legítimos.

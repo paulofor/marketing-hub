@@ -1,8 +1,12 @@
+## 2026-06-23 — OPRM NichoCNAE v2: download de relatório do job concluído
+
+- Ajustada a tela do pipeline por CNAE para permitir baixar, em cada job concluído, um relatório Markdown com etapas executadas, entradas, saídas, processamento, falhas e próximos passos persistidos pelo backend.
+- Causa-raiz tratada: o histórico mostrava apenas resumo e ações de visualização/materialização, sem uma forma direta de levar o relatório completo para análise operacional ou compartilhamento.
+
 ## 2026-06-22 — OPRM NichoCNAE v2: cancelamento manual de job
 
 - Corrigida a causa-raiz do erro ao cancelar job v2: em produção a coluna `oprm_nichocnae_v2_stage_execution.status` ainda estava como `ENUM` sem o valor `CANCELED`, enquanto o backend já usa status flexível por enum Java.
 - Criado changelog incremental para converter a coluna `status` para `VARCHAR(40)`, permitindo o cancelamento manual e futuras evoluções de status sem truncamento pelo MySQL.
-
 
 ## 2026-06-21 — OPRM NichoCNAE v2: bootstrap do backend corrigido
 
@@ -107,8 +111,9 @@
 # Registros — OPRM
 
 - 2026-06-11 21:26:05 (UTC-3): atualizado o fluxo OPRM NichoCNAE para tratar aquisição de clientes como realidade operacional obrigatória do MEI/autônomo, reforçando no prompt e no cânone a busca por evidências de captação, canais, indicação, redes sociais, WhatsApp, orçamento, agenda vazia, retorno, fidelização, cancelamento, reativação e recorrência, sem permitir solução, campanha ou oferta.
-> Orientação: todos os registros deste documento devem sempre incluir **data e hora no fuso UTC-3**.
-> Este documento segue política de **append-only** (não pode ter nenhuma linha apagada; apenas inserções).
+
+  > Orientação: todos os registros deste documento devem sempre incluir **data e hora no fuso UTC-3**.
+  > Este documento segue política de **append-only** (não pode ter nenhuma linha apagada; apenas inserções).
 
 - 2026-05-11 14:25:00 (UTC-3): implementação inicial do plano de importação de CNAEs no backend: criado catálogo `oprm_niche_catalog` via Liquibase, endpoint `POST /api/niches/catalog:ingest` com validações de payload e regra de idempotência por `cnaeCode` normalizado, mantendo backend como único ponto de persistência. Resultado esperado: habilitar carga inicial de todos os CNAEs para suportar mapeamento ocupação↔CNAE e ranking de nichos.
 - 2026-05-11 15:05:00 (UTC-3): ajuste de arquitetura solicitado: removida regra de negócio de normalização/deduplicação/upsert do backend na ingestão de catálogo CNAE. O backend passou a atuar apenas como camada de persistência do lote recebido (saveAll), mantendo validações de contrato no DTO e constraints de banco. A lógica de negócio deve permanecer no módulo OPRM/coletor.
@@ -392,6 +397,7 @@
 - 2026-06-05 00:00:00 (UTC): executada a fase 5 do plano de ajuste do pipeline NichoCNAE sem viés. A etapa 6 passou a sintetizar cartão focado em rotina observada, dificuldades, perguntas, contexto operacional, linguagem, evidências e alertas de contaminação por solução; a etapa 7 passou a aprovar pela suficiência de rotina/dificuldade/perguntas-fontes e a bloquear domínio de linguagem de IA/software, persistindo scores próprios de evidência de rotina, dificuldade, diversidade de fontes e risco de solução.
 
 ## 2026-06-05 — Correção de include Liquibase para scores de qualidade da rotina OPRM
+
 - Ajustado o changelog master do backend para resolver o changeset `2026-06-05-oprm-routine-quality-scores.yaml` de forma relativa ao arquivo master, evitando falha de bootstrap quando o Liquibase não encontra `changesets/...` no search path configurado.
 - 2026-06-06 00:00:00 (UTC): executada a fase 6 do plano de ajuste NichoCNAE sem viés: materialização passou a usar nome neutro no `market_niche`, preservar nome original apenas na descrição de auditoria, não preencher campos comerciais de promessa/oferta/gatilhos/objeções na etapa inicial de rotina, expor diagnóstico de registros históricos com linguagem de solução e ampliar a tela `/oprm/pipeline` com nome original, nome neutro, modo de pesquisa, mix de objetivos/fontes, risco de linguagem de solução e motivo do gate.
 - 2026-06-06 03:29:11 (UTC): reforçada a etapa 7 `oprmRoutineQualityGate` do pipeline NichoCNAE para bloquear aprovação quando houver linguagem textual de solução no cartão mesmo sem contador persistido e para exigir evidências auditáveis com múltiplas fontes, mantendo aprovação baseada apenas em rotina, dificuldades, perguntas/linguagem e baixo risco de contaminação.
@@ -525,6 +531,7 @@
 - Atualizado o materializador de nicho enriquecido para preencher gatilhos comportamentais e objeções prováveis a partir de evidências do cartão aprovado, usando dores, resultados, comportamento do cliente, canais e linguagem pública sem criar produto, promessa, campanha ou landing page.
 - Causa-raiz tratada: os campos `commercialTriggers` e `objections` permaneciam nulos porque a etapa final preservava somente contexto operacional, deixando sinais comerciais observáveis sem registro mesmo quando havia evidência suficiente.
 - Prevenção de recorrência: adicionados testes para garantir preenchimento determinístico em perfis aprovados e ausência de linguagem técnica/de solução nos campos comerciais sintetizados.
+
 ## 2026-06-12 — OPRM Rotina: apresentação por blocos de valor
 
 - A tela de rotina do OPRM passou a organizar as tarefas e sinais em blocos de valor: antes do atendimento, durante o atendimento, depois do atendimento, administração entre clientes, aquisição/fidelização, dores e riscos observados e oportunidades de produto.
@@ -598,6 +605,7 @@
 - Ajustada a fila da etapa MEI/autônomo para expor somente cartões do ciclo mais recente realmente elegível em `ROUTINE_SYNTHESIZED`, sem puxar ciclos falhos, cancelados por reinício manual, já segmentados ou antigos substituídos por execução mais nova.
 - Causa-raiz tratada: a consulta anterior olhava apenas a ausência de perfil MEI/autônomo e podia reenfileirar cartões históricos ou descartados, consumindo IA em ciclos que não faziam mais parte do fluxo ativo de venda.
 - Prevenção de recorrência: adicionada revalidação no serviço da fila e teste de regressão garantindo que somente o ciclo `ROUTINE_SYNTHESIZED` mais recente aparece para processamento.
+
 ## 2026-06-12 — Correção do modelo e telemetria OpenAI da etapa seed NichoCNAE
 
 - causa-raiz: a tela `/pipelines` gravava o modelo da etapa `niche-research-seed-builder` no pipeline operacional, mas o coletor OPRM usava apenas a propriedade local `gpt-4.1-mini`; além disso, o contrato de conclusão da etapa descartava `usage` da OpenAI, impedindo cálculo e exibição de tokens/custo.
@@ -620,7 +628,9 @@
 - Ajustada a tela de detalhe do CNAE para inferir conclusão das etapas do pipeline pelos contadores reais do ciclo: queries, fontes candidatas, snapshots coletados e sinais extraídos.
 - Causa-raiz tratada: o status `FAILED` do ciclo pai era exibido como falha do card inicial, escondendo a etapa operacional provável da quebra e obrigando o usuário a abrir detalhes técnicos.
 - Prevenção de recorrência: a mensagem de erro do ciclo agora aparece junto ao status atual e direciona a falha provável para o card compatível, incluindo `mei-audience-segmenter` como falha da etapa 7. MEI.
+
 ## 2026-06-12 — OPRM MEI: barreira operacional para chave OpenAI da segmentação
+
 ## 2026-06-12 — OPRM MEI: chave OpenAI da etapa de segmentação de audiência
 
 - Configurado o ambiente Docker do `oprm-coletor-mei` para expor explicitamente `OPRM_MEI_AUDIENCE_SEGMENTER_OPENAI_API_KEY_FILE` apontando para o segredo OpenAI montado em `/run/secrets/openai_api_key`.
@@ -684,6 +694,7 @@
 
 - Origem comprovada: a etapa `meiaudiencesegmenter` encapsulava falhas da OpenAI com uma mensagem genérica, fazendo o backend persistir apenas `Falha ao segmentar público MEI/autônomo com OpenAI.` e removendo contexto operacional essencial.
 - Correção escolhida: a mensagem de falha agora inclui tipo da exceção, causa-raiz, `researchCycleId`, `routineCardId`, modelo OpenAI, endpoint chamado e, em falhas HTTP, status e corpo resumido da resposta. Também foi adicionado teste cobrindo o envio dessa mensagem ao endpoint de falha do backend.
+
 ## 2026-06-13 — OPRM CNAE: remoção definitiva dos schedulers automáticos
 
 - Removidas as classes `OprmCnaeOpportunityScheduler` e `OprmCnaeEnrichmentScheduler` do `oprm-coletor-mei`, eliminando a possibilidade de religar os ciclos CNAE_SCORE e CNAE_ENRICHMENT por variável de ambiente.
@@ -696,20 +707,24 @@
 - Atualizada a tela de detalhe do CNAE e a tela de pipeline OPRM para transformar falhas por contaminação de solução ou ausência de evidência de dor em uma recomendação operacional objetiva.
 - A interface agora orienta reprocessamento com foco em rotina/público, informa quando não há dor operacional suficiente e sugere subnicho operacional quando existe evidência de rotina.
 - O comando principal para esses casos foi padronizado como **Reprocessar com subnicho operacional**.
+
 ## 2026-06-13 — OPRM NichoCNAE quebra CNAE amplo em subnichos vendáveis
 
 - 2026-06-13 00:00:00 (UTC): adicionada etapa complementar dentro do `oprmNicheResearchSeedBuilder` para ler CNAE, descrição, score OPRM e volume MEI antes de gerar o seed; o prompt agora exige gerar mentalmente 3 a 7 subnichos operacionais focados em MEI/autônomo, pontuar recorrência, urgência da dor, capacidade de pagar, clareza do resultado e compatibilidade com produto digital, e rodar as próximas pesquisas apenas sobre o subnicho vencedor. O backend passou a enviar o volume MEI mais recente do CNAE para o coletor, preservando o pipeline profundo no seed mais promissor.
+
 ## 2026-06-13 — Seed OPRM com queries comerciais-operacionais
 
 - Solicitação: ajustar a etapa `oprmNicheResearchSeedBuilder` para gerar buscas mais comerciais e operacionais, evitando dependência excessiva de CBO, tabelas salariais e páginas institucionais.
 - Causa-raiz: o prompt anterior ainda priorizava rotina ocupacional, procedimentos, CBO e guias profissionais como primeiras buscas, o que tendia a capturar descrições oficiais da profissão em vez de sinais de venda, agenda, cobrança, materiais, retrabalho e relatos reais do autônomo.
 - Correção aplicada: o prompt da etapa 2 passou a exigir cinco famílias de queries — aquisição por WhatsApp/Instagram/indicação; agenda/faltas/remarcações/clientes que somem; precificação/cobrança/pacotes/recorrência; materiais/tempo/retrabalho; relatos reais em fóruns/vídeos/comentários/perguntas frequentes — e rebaixou CBO/tabelas salariais/páginas institucionais para apoio secundário.
 - Defesa backend: o fallback de query padrão também passou a usar foco comercial-operacional para não voltar ao padrão ocupacional quando o modelo retornar lista vazia.
+
 ## 2026-06-13 — OPRM NichoCNAE: bloqueio de segmentação MEI sem dor prática
 
 - Causa-raiz corrigida: a fila da etapa `mei-audience-segmenter` podia expor cartões sintetizados com pontuação zero ou texto explícito de ausência de evidência, permitindo avanço sem dor operacional concreta.
 - Correção aplicada: antes de expor a pendência, o backend valida pontuações e textos essenciais do `oprm_niche_routine_card`; cartões sem evidência mínima bloqueiam o ciclo como `NEEDS_MORE_RESEARCH` com o motivo “cartão sem evidência mínima de dor prática”.
 - Prevenção de recorrência: o cânone OPRM passou a exigir esse gate antes da segmentação MEI/autônomo e o teste unitário cobre cartão vazio que não entra na fila.
+
 ## 2026-06-13 — OPRM MEI: bloqueio de incentivo indireto na segmentação
 
 - Causa-raiz tratada: a etapa `mei-audience-segmenter` já bloqueava parte da linguagem de solução, mas o prompt e a pré-validação não reforçavam explicitamente todos os termos de contaminação indireta, como software, IA, automação e ferramenta, antes do envio ao backend.
@@ -727,7 +742,6 @@
 - Diagnosticado que o ciclo #39 do CNAE 9602501 estava com status `MEI_AUDIENCE_SEGMENTED`, cartão de rotina e perfil MEI/autônomo criados, mas sem pendência retornada para a etapa de qualidade.
 - Causa-raiz corrigida no backend: a fila do gate de qualidade aplicava limite antes de filtrar cartões com perfil MEI/autônomo, permitindo que cartões antigos sem perfil ocupassem a página e escondessem o ciclo elegível atual.
 - Ajustada a consulta do repositório para filtrar no banco apenas cartões não avaliados que já possuem perfil MEI/autônomo, prevenindo nova parada silenciosa do pipeline na etapa de qualidade.
-
 
 ## 2026-06-14 — OPRM NichoCNAE: CNAE como fonte inicial e subnicho vencedor
 
@@ -786,6 +800,7 @@
 - Causa-raiz tratada: reprocessamentos podiam repetir o mesmo tipo de erro — solução contaminada, fontes antigas, desvio corporativo, aquisição/canais fracos ou dor vendável fraca — porque o novo seed não recebia a causa dominante da reprovação anterior como restrição operacional.
 - Correção aplicada: o backend passa a expor no pending da etapa `niche-research-seed-builder` o `previousQualityStatus`, `previousNextMoveCode`, `previousNextMove` e notas compactas do gate anterior; o prompt do coletor transforma esse aprendizado em instrução obrigatória para alterar subnicho, famílias de queries e estratégia de fontes.
 - Prevenção de recorrência: adicionados testes no backend e no coletor para garantir que a etapa de seed receba e use o aprendizado automático antes da nova pesquisa profunda.
+
 ## 2026-06-14 — OPRM NichoCNAE: busca Google para fontes recentes
 
 - Adicionado provedor `GOOGLE_CUSTOM_SEARCH_RECENT` na etapa `oprmSourceSearcher`, configurável por variáveis `OPRM_NICHO_CNAE_SOURCE_SEARCHER_GOOGLE_*`, para priorizar fontes brasileiras recentes com `dateRestrict` padrão de 24 meses antes do fallback DuckDuckGo.
@@ -829,6 +844,7 @@
 - Decisão registrada: a fase OPRM NichoCNAE deve produzir o insumo qualificado para a próxima fase, focando definição de nicho/subnicho, público executor, contexto operacional, rotina, canais observáveis, recorrência e evidências públicas.
 - Ajuste canônico: dor, mecanismo, hipótese, oferta e demais aspectos comerciais profundos foram explicitamente deslocados para pipeline posterior próprio; o gate desta fase deve medir qualidade de definição do nicho, não validação profunda de dor vendável.
 - Prevenção de recorrência: a documentação canônica agora orienta pré-gate, gate e próximos movimentos por critérios de definição de nicho, evitando que execuções sejam bloqueadas por tentarem resolver uma etapa que pertence ao pipeline seguinte.
+
 ## 2026-06-15 — OPRM NichoCNAE: custo de identificação no nicho materializado
 
 - Causa-raiz tratada: a etapa final `oprmEnrichedNicheMaterializer` copiava rotina, segmentação e evidências para `market_niche`, mas não transferia o custo de identificação registrado em `oprm_niche_research_seed.cost_usd`; por isso o nicho materializado ficava com custo inicial zerado/nulo mesmo após gastar IA para identificar o subnicho.
@@ -860,6 +876,7 @@
 - Revertida a aplicação indevida do protocolo no `backend/ads-service`; para NichoCNAE, o módulo executor correto é o `oprm-coletor-mei`.
 - Atualizados o contrato operacional e a metodologia para separar claramente `protocolo padrão módulo` de `protocolo padrão backend`, evitando nova implementação no alvo errado.
 - Correção adicional: a documentação e o PR desse ajuste devem deixar claro que não há alteração funcional de backend quando o diff é somente de escopo/metodologia.
+
 ## 2026-06-17 — OPRM NichoCNAE: diagrama de ciclos com feedback
 
 - Documentado o desenho arquitetural proposto para o pipeline NichoCNAE com ciclos encadeados, feedback estruturado e reprocessamento orientado por plano de correção.
@@ -872,6 +889,7 @@
 - Causa-raiz tratada: o fluxo CNAE tinha leitura JDBC dentro do pacote funcional, o que misturava contrato de negócio com acesso direto ao banco e aumentava risco de espalhamento arquitetural.
 - Correção aplicada: o gateway JDBC foi movido para o pacote canônico `com.marketinghub.repository.jdbc.oprm.cnae`, preservando o backend como única camada com acesso ao banco e mantendo o pacote funcional focado no contrato OPRM.
 - Prevenção de recorrência: a suíte de arquitetura agora valida controller único, service único, DTOs como `record` e ausência de repositories dentro de `com.marketinghub.oprm.cnae`.
+
 ## 2026-06-17 — OPRM Opportunity: protocolo padrão módulo
 
 - Aplicado o protocolo padrão módulo no executor `oprm-coletor-mei`, dentro de `com.marketinghub.oprmcoletormei.opportunity`, criando núcleo genérico `opportunity.pipeline` e etapas concretas plugáveis `opportunity.score` e `opportunity.enrichment`.
@@ -891,6 +909,7 @@
 - Causa-raiz comprovada: o código atual já não contém os schedulers CNAE legados, mas uma instância operacional antiga do próprio módulo `oprm-coletor-mei` permaneceu ativa no host legado e continuou chamando o backend.
 - Correção aplicada no módulo/deploy: o workflow do `oprm-coletor-mei` agora publica no host canônico atual e, em seguida, derruba explicitamente qualquer container/compose legado `oprm-coletor-mei` no host antigo `177.153.62.107`.
 - Prevenção de recorrência: a desativação fica acoplada ao deploy do próprio módulo executor, evitando corrigir o sintoma no backend e garantindo que o módulo que dispara o ciclo seja desligado na origem.
+
 ## 2026-06-17 — OPRM NichoCNAE: nome do subnicho na execução
 
 - Ajustada a tela de subnichos do CNAE para destacar, durante a execução do pipeline NichoCNAE, o nome do subnicho identificado pelo backend no ciclo selecionado.
@@ -913,6 +932,7 @@
 - Corrigida a navegação dos botões “Acompanhar” na tela de subnichos do CNAE para exibir automaticamente a visão dedicada com cards das etapas do pipeline quando a URL contém o ciclo selecionado.
 - Causa-raiz tratada: o componente era reutilizado pelo React Router entre a lista de subnichos e a rota `/subnichos/:researchCycleId`, mas o estado local que mostra o pipeline só era inicializado na primeira montagem; ao clicar em “Acompanhar”, a URL mudava e a tela permanecia na lista.
 - Prevenção de recorrência: adicionado teste de regressão cobrindo acesso direto à rota de subnicho e validando a exibição dos cards do pipeline para consulta do usuário.
+
 ## 2026-06-17 — OPRM CNAE: custo e paginação dos subnichos em processamento
 
 - Ajustada a seção “Em processamento antes de virar subnicho” para exibir 10 ciclos por página, custo individual por ciclo e custo total no cabeçalho do card.
@@ -925,13 +945,11 @@
 - Correção aplicada: a etapa sete do backend deixou de iniciar novo ciclo ao concluir o gate; o coletor, após persistir uma reprovação recuperável, chama o backend para reabrir o mesmo job com `triggerSource=AUTO_QUALITY_REPROCESS`.
 - Causa-raiz tratada: o controle de fluxo estava no backend, contrariando a regra operacional de que rotinas/agendamentos e decisões de execução pertencem ao executor externo, enquanto o backend apenas entrega contratos/dados e recebe status/resultados.
 
-
 ## 2026-06-17 — OPRM NichoCNAE: reprocessamento automático preserva aprendizado
 
 - Correção aplicada: quando o `oprm-coletor-mei` solicita `AUTO_QUALITY_REPROCESS`, o backend reabre o mesmo job preservando os campos de subnicho, nomes auditáveis, modo de pesquisa e metadados de risco/fonte do ciclo reprovado, sem voltar para o CNAE amplo do candidato.
 - Causa-raiz tratada: o controle já tinha sido movido para o executor, mas a reexecução ainda podia ser tratada como novo ciclo com dados genéricos do candidato, reduzindo a inteligência do reprocessamento e aumentando risco de repetir a mesma reprovação.
 - Prevenção de recorrência: o teste do orquestrador valida que a reexecução automática preserva o aprendizado do mesmo job, enquanto o seed continua recebendo status, próximo movimento e notas compactadas do gate para orientar a próxima busca.
-
 
 ## 2026-06-17 — OPRM NichoCNAE: reexecução no mesmo job e relatório por ciclo
 
@@ -939,6 +957,7 @@
 - Correção aplicada: o backend reabre o mesmo ciclo, limpa os artefatos derivados das etapas reexecutáveis e mantém o mesmo identificador como unidade operacional do job, evitando duplicidade conceitual no histórico.
 - Relatório: criado download Markdown por `researchCycleId` na tela do CNAE/subnicho, disponível mesmo antes de materializar perfil enriquecido, com status, gatilho, observações de reexecução e artefatos atuais do pipeline.
 - Prevenção de recorrência: testes validam que o reprocessamento preserva o mesmo job e que o relatório por ciclo funciona sem perfil materializado.
+
 ## 2026-06-18 — OPRM NichoCNAE: etapa atual controlada no ciclo
 
 - Decisão operacional: o identificador operacional do fluxo NichoCNAE passa a ser o próprio `oprm_routine_research_cycle`, com a etapa atual registrada em `current_stage_code`.
@@ -1042,26 +1061,30 @@
 - Adicionados testes de regressão dos ciclos 70, 72 e 75 para ator/contexto, trecho exato obrigatório e ocupação adjacente.
 
 ## 2026-06-19 — Terceiro incremento NichoCNAE v2: snapshot de conhecimento e rewind seletivo
+
 - Implementado snapshot mínimo de conhecimento no reprocessamento de pesquisa de rotina, registrando versão, fontes aceitas, claims aceitos, fontes rejeitadas e lacunas de evidência antes de reabrir o mesmo job.
 - Ajustado o reprocessamento de ciclos com falta de evidência para voltar ao query planner (`niche-research-seed-builder`) sem apagar fontes e claims já aceitos, preservando material validado para reduzir retrabalho e melhorar rastreabilidade do relatório.
 - Adicionado teste de regressão do ciclo 72 para garantir preservação de evidência aceita, rejeição de contexto semântico contaminado e limpeza apenas dos artefatos reexecutáveis.
 
 ## 2026-06-19 — Protocolo leitura escrita aplicado à v2 NichoCNAE
+
 - Aplicado o protocolo leitura escrita no backend da v2 do pipeline NichoCNAE, protegendo `com.marketinghub.oprm.nichocnae.v2..` para permanecer como camada de contratos, persistência, pendências e callbacks.
 - Registrado que o controle operacional de execução da v2 permanece no módulo externo `oprm-coletor-mei`, bloqueando no backend responsabilidades como agendamento, polling, workers/runners/processors e integrações externas de execução.
 
-
 ## 2026-06-19 — Design visual da pipeline NichoCNAE v2 no frontend
+
 - Adicionado botão por linha na tela de CNAEs por Score OPRM para abrir a visão da v2 do pipeline no contexto do CNAE selecionado.
 - Criada a tela de design `/oprm/cnaes/:cnaeCode/pipeline-v2` com cards das etapas planejadas da v2, baseada nos planos de melhoria de qualidade, reprocessamento por conhecimento e ordem de implementação OPRM.
 - A tela é informativa e não cria orquestração no frontend; as decisões de execução continuam pertencendo ao backend/executor conforme arquitetura do OPRM.
 
 ## 2026-06-19 — Implementação da etapa 2 Source Safety Filter da v2 NichoCNAE
+
 - Implementada a etapa `source-safety-filter` da v2 NichoCNAE com contratos internos de `pending`, `complete` e `fail` no backend, reaproveitando a tabela versionada de execuções de estágio.
 - Criados contratos de leitura/escrita para permitir que o executor externo solicite e consuma pendências da etapa 2 antes do planejamento adaptativo.
 - Implementado no executor `oprm-coletor-mei` o processor determinístico de segurança, canonicalização, remoção de tracking, deduplicação e hard blocklist de domínios/categorias proibidas.
 
 ## 2026-06-19 — Correção leitura/escrita da etapa 2 Source Safety Filter
+
 - Revisada a implementação da etapa `source-safety-filter` para manter o backend como camada de leitura/escrita: a decisão de próxima etapa passou a vir no callback do executor, e o backend deixou de calcular transição por `safetyDecision`.
 - Removida a criação automática de pendência da etapa 2 dentro da conclusão do `candidate-generator`; o executor externo passa a solicitar explicitamente a gravação da pendência pelo contrato de escrita da etapa 2.
 
@@ -1107,6 +1130,7 @@
 - Adicionados contratos internos no backend apenas para leitura/escrita de pendências, conclusão e falha da etapa `reprocess-controller`; o backend persiste o plano recebido do executor e não decide regra de negócio.
 - Documentado o contrato em `docs/swagger/oprm-nichocnae-v2-reprocess-controller-swagger.yaml` e atualizada a tela do mapa v2 para indicar implementação inicial da etapa 9.
 - Causa-raiz preventiva: a etapa 9 estava apenas descrita no mapa do produto; agora há processor e contratos mínimos testados para impedir que decisões de reprocessamento sejam deslocadas para o backend.
+
 ## 2026-06-19 — NichoCNAE v2 etapa 10 Routine Synthesizer
 
 - Implementada no executor externo `oprm-coletor-mei` a etapa 10 do pipeline NichoCNAE v2 (`RoutineSynthesizerProcessor`).
@@ -1119,7 +1143,9 @@
 - Implementada a etapa 11 `Evidence Level Gate E0–E5` no executor `oprm-coletor-mei`, mantendo cálculo de nível, confiança, reprovação e próximo movimento fora do backend.
 - Backend ficou restrito a leitura de pendências, persistência de resultado/falha e consulta para relatório do usuário.
 - A transição do gate de qualidade aprovado agora envia o ciclo para `evidence-level-gate` antes da materialização enriquecida.
+
 ## 2026-06-19 — OPRM NichoCNAE v2 etapa 12 Enriched Niche Materializer
+
 - Implementada a etapa 12 `enriched-niche-materializer` da v2 com backend limitado a contratos de leitura/escrita (`pending`, criação, conclusão e falha) sobre execuções de estágio.
 - A decisão de materialização, validação E3+, bloqueio por feature flag e montagem do nicho enriquecido ficam no executor externo `oprm-coletor-mei`, preservando o backend sem lógica, inteligência ou regra de negócio do pipeline.
 - Atualizados Swagger e tela de design da v2 para indicar a implementação inicial protegida por feature flag.
@@ -1153,6 +1179,7 @@
 - O executor externo `oprm-coletor-mei` agora mantém a lógica de negócio no módulo executor: o `CandidateGeneratorProcessor` entrega candidatos neutros, URLs-semente seguras e `nextStageCode`, enquanto o `SourceSafetyFilterProcessor` rejeita contrato sem URLs como erro de validação, não como infraestrutura retryável.
 - Adicionado limite operacional no executor para retry técnico por tentativa, classificando limite excedido como `VALIDATION/TECHNICAL_RETRY_LIMIT_EXCEEDED`; o backend permanece limitado a persistir o status informado pelo executor.
 - Prevenção de recorrência: testes cobrem geração de payload útil para a etapa seguinte, rejeição de entrada inválida no filtro de segurança e classificação de contrato inválido sem novo retry técnico.
+
 ## 2026-06-19 — Ajuste visual dos cards de jobs NichoCNAE v2
 
 - Ajustado o layout da tela do pipeline NichoCNAE v2 para manter os cards de jobs com o mesmo visual, mas exibidos em uma única coluna, ocupando a largura horizontal disponível da tela.
@@ -1171,6 +1198,7 @@
 - Causa-raiz corrigida: exceptions sem mensagem, como `NullPointerException`, eram persistidas apenas como `NullPointerException`, fazendo o sistema perder o ponto exato que gerou o erro.
 - Como o callback comum `NichoCnaeV2BackendClient.fail(...)` atende todas as etapas v2, a preservação do ponto de falha passa a valer para `candidate-generator`, `source-safety-filter`, `adaptive-query-planner`, `candidate-tournament`, `source-fetcher-reranker`, `knowledge-accumulator`, `commercial-evidence-gate`, `reprocess-controller` e `enriched-niche-materializer`.
 - Prevenção de recorrência: adicionado teste unitário cobrindo uma NPE sem mensagem e verificando a persistência do primeiro frame de aplicação junto com o stack trace.
+
 ## 2026-06-19 — Tradução dos nomes das etapas do pipeline NichoCNAE v2
 
 - Atualizados os rótulos exibidos no frontend para apresentar as etapas do pipeline NichoCNAE v2 em português, mantendo os códigos técnicos internos sem alteração.
@@ -1308,7 +1336,6 @@
 - O `candidate-generator` e o `routine-synthesizer` agora registram `commercialBoundary=NAO_GERAR_DOR_RESULTADO_OFERTA` e papéis de insumo para o pipeline de hipótese.
 - Causa-raiz tratada: o fluxo ainda carregava etapas e campos que empurravam o NichoCNAE para validação/oferta, apesar de a divulgação por Instagram exigir primeiro um pacote amplo de público, rotina e linguagem.
 - Prevenção de recorrência: adicionado teste garantindo que o catálogo v2 não registra etapas comerciais/materialização.
-
 
 ## 2026-06-23 — Direcionamento do resultado NichoCNAE v2
 

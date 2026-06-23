@@ -13,6 +13,7 @@ export interface OprmTopCnaeMarketVolume {
   opportunityScore: number | null;
   scoreStatus: string | null;
   subnicheCount: number;
+  pendingMaterializationCount: number;
   researchCostUsd: number | null;
   nicheResearchRunning: boolean;
 }

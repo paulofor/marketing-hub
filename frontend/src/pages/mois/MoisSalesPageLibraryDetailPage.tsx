@@ -151,20 +151,25 @@ export default function MoisSalesPageLibraryDetailPage() {
   const nextItem =
     currentIndex >= 0 ? pagesQuery.data?.items[currentIndex + 1] : undefined;
   const isMutating = updateStatusMutation.isPending;
-  const hasActiveWarmupDossier = Boolean(
-    marketWarmupQuery.data ||
-    ["PENDING", "FETCHING", "DONE"].includes(
-      pageQuery.data?.marketWarmupStatus || "",
-    ),
-  );
+  const warmupStatus =
+    pageQuery.data?.marketWarmupStatus || marketWarmupQuery.data?.status || "";
+  const hasWarmupDossier = Boolean(marketWarmupQuery.data || warmupStatus);
+  const hasActiveWarmupDossier = ["PENDING", "FETCHING"].includes(warmupStatus);
   const isCommercialAnalysisDone = ["DONE", "ANALYZED"].includes(
     pageQuery.data?.analysisStatus || pageQuery.data?.currentStatus || "",
   );
+  const warmupRequestBlockReason = hasActiveWarmupDossier
+    ? "Esta página já possui dossiê em fila ou em processamento; aguarde o backend concluir antes de reprocessar."
+    : !isCommercialAnalysisDone
+      ? "O dossiê só pode iniciar depois que a análise comercial da página estiver concluída."
+      : undefined;
+  const warmupRequestButtonLabel = hasWarmupDossier
+    ? "Reprocessar dossiê"
+    : "Iniciar dossiê";
   const isWarmupRequestDisabled =
     !validPageId ||
     requestWarmupMutation.isPending ||
-    hasActiveWarmupDossier ||
-    !isCommercialAnalysisDone;
+    Boolean(warmupRequestBlockReason);
   const currentStatus = pageQuery.data?.currentStatus;
   const analysisStatus = pageQuery.data?.analysisStatus;
   const captureStatus = pageQuery.data?.captureStatus;
@@ -268,6 +273,7 @@ export default function MoisSalesPageLibraryDetailPage() {
           type="button"
           className="btn btn-outline-primary"
           disabled={isWarmupRequestDisabled}
+          title={warmupRequestBlockReason}
           onClick={() =>
             validPageId && requestWarmupMutation.mutate(validPageId)
           }
@@ -281,7 +287,7 @@ export default function MoisSalesPageLibraryDetailPage() {
           ) : null}
           {requestWarmupMutation.isPending
             ? "Solicitando dossiê..."
-            : "Iniciar dossiê"}
+            : warmupRequestButtonLabel}
         </button>
         <button
           type="button"
@@ -362,7 +368,8 @@ export default function MoisSalesPageLibraryDetailPage() {
 
       {requestWarmupMutation.isSuccess ? (
         <div className="alert alert-success mb-0">
-          Dossiê enviado para fila.
+          Dossiê enviado para fila. A tela sempre mostrará o dossiê mais
+          recente retornado pelo backend.
         </div>
       ) : null}
       {requestWarmupMutation.isError ? (
@@ -370,16 +377,36 @@ export default function MoisSalesPageLibraryDetailPage() {
           Falha ao solicitar dossiê.
         </div>
       ) : null}
-      {!isCommercialAnalysisDone && !hasActiveWarmupDossier ? (
+      {hasWarmupDossier && !hasActiveWarmupDossier ? (
+        <div className="alert alert-info mb-0">
+          Já existe um dossiê para esta página
+          {warmupStatus ? ` com status ${labelStatus(warmupStatus)}` : ""}.
+          Você pode usar o resultado exibido abaixo ou clicar em
+          <strong> Reprocessar dossiê</strong> para criar uma nova fila. A tela
+          passará a mostrar o dossiê mais recente retornado pelo backend.
+        </div>
+      ) : null}
+
+      {warmupRequestBlockReason ? (
         <div className="alert alert-warning mb-0">
-          O dossiê fica disponível somente depois que a análise comercial da
-          página estiver concluída. Esta página ainda está em{" "}
-          <strong>
-            {pageQuery.data?.analysisStatus ||
-              pageQuery.data?.currentStatus ||
-              "SEM STATUS"}
-          </strong>
-          .
+          {hasActiveWarmupDossier ? (
+            <>
+              Esta página já possui dossiê em fila ou em processamento
+              {warmupStatus ? ` com status ${labelStatus(warmupStatus)}` : ""}
+              . Aguarde a conclusão para reprocessar.
+            </>
+          ) : (
+            <>
+              O dossiê fica disponível somente depois que a análise comercial da
+              página estiver concluída. Esta página ainda está em{" "}
+              <strong>
+                {pageQuery.data?.analysisStatus ||
+                  pageQuery.data?.currentStatus ||
+                  "SEM STATUS"}
+              </strong>
+              .
+            </>
+          )}
         </div>
       ) : null}
 

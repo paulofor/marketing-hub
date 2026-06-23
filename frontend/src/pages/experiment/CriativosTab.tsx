@@ -252,12 +252,14 @@ export default function CriativosTab({
   const pipelinePairs = Math.min(pipelineVariantCount, pipelineBriefingCount);
   const pipelineAvailable = pipelinePairs > 0;
   const pendingCreativeRequests = experiment?.creativesToGenerate ?? 0;
-  const creativeGenerationStatus = experiment?.creativeGenerationStatus ?? "IDLE";
+  const creativeGenerationStatus =
+    experiment?.creativeGenerationStatus ?? "IDLE";
   const pipelineInProgress =
     creativeGenerationStatus === "REQUESTED" ||
     creativeGenerationStatus === "PROCESSING";
   const pipelineHasRecoverableFailure =
-    creativeGenerationStatus === "FAILED" || creativeGenerationStatus === "TIMEOUT";
+    creativeGenerationStatus === "FAILED" ||
+    creativeGenerationStatus === "TIMEOUT";
   const pipelineStatusLabel =
     creativeGenerationStatus === "REQUESTED"
       ? "Worker AI aguardando a fila de imagens"
@@ -660,8 +662,16 @@ export default function CriativosTab({
                 onClick={() => approve(c)}
                 disabled={isProcessing || alterationLocked}
               >
-                <CheckCircle2 size={ICON_SIZE} />
-                <span>Aprovar</span>
+                {isProcessing ? (
+                  <span
+                    className="spinner-border spinner-border-sm"
+                    role="status"
+                    aria-hidden
+                  />
+                ) : (
+                  <CheckCircle2 size={ICON_SIZE} />
+                )}
+                <span>{isProcessing ? "Aprovando..." : "Aprovar"}</span>
               </button>
             )}
             <button
@@ -918,8 +928,8 @@ export default function CriativosTab({
             <p className="mb-0 small text-muted">
               Encontramos {pipelinePairs}{" "}
               {pipelinePairs === 1 ? "variação" : "variações"} com texto e
-              briefing estruturados. O Worker AI usará o modelo gpt-image-2
-              para gerar as imagens alinhadas ao experimento.
+              briefing estruturados. O Worker AI usará o modelo gpt-image-2 para
+              gerar as imagens alinhadas ao experimento.
             </p>
           </div>
           <div className="d-flex flex-column align-items-lg-end gap-2 w-100 w-lg-auto">
@@ -954,11 +964,12 @@ export default function CriativosTab({
                 {pipelineStatusLabel}
               </span>
             )}
-            {pipelineHasRecoverableFailure && experiment?.creativeGenerationError && (
-              <span className="small text-muted text-lg-end">
-                {experiment.creativeGenerationError}
-              </span>
-            )}
+            {pipelineHasRecoverableFailure &&
+              experiment?.creativeGenerationError && (
+                <span className="small text-muted text-lg-end">
+                  {experiment.creativeGenerationError}
+                </span>
+              )}
           </div>
         </div>
       ) : pipelineInProgress ? (

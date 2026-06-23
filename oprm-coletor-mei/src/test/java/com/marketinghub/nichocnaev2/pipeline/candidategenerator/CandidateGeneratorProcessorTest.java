@@ -24,16 +24,21 @@ class CandidateGeneratorProcessorTest {
         assertThat(result.output().get("nextStageCode")).isEqualTo("source-safety-filter");
         assertThat((List<?>) result.output().get("candidateUrls")).hasSizeGreaterThanOrEqualTo(3);
         assertThat((List<?>) result.output().get("candidates")).hasSizeGreaterThanOrEqualTo(10);
-        assertThat(result.output().get("audienceFocus")).isEqualTo("MEI_AUTONOMO_DONO_OPERADOR");
-        assertThat(String.valueOf(result.output().get("candidates"))).contains("painHypotheses=[]", "priorConfidence=LOW");
+        assertThat(result.output().get("audienceFocus")).isEqualTo("INSTAGRAM_BROAD_MEI_AUTONOMO");
+        assertThat(result.output().get("distributionChannel")).isEqualTo("INSTAGRAM");
+        assertThat(result.output().get("hypothesisPipelineInputRole")).isEqualTo("AUDIENCE_ROUTINE_LANGUAGE_INPUT");
+        assertThat(result.output().get("commercialBoundary")).isEqualTo("NAO_GERAR_DOR_RESULTADO_OFERTA");
         assertThat(String.valueOf(result.output().get("candidates")))
-                .contains("Promoção de vendas", "MEI_AUTONOMO_DONO_OPERADOR", "EXECUTA_PESSOALMENTE_O_TRABALHO")
+                .contains("priorConfidence=LOW", "AUDIENCE_ROUTINE_LANGUAGE_INPUT")
+                .doesNotContain("painHypotheses");
+        assertThat(String.valueOf(result.output().get("candidates")))
+                .contains("Promoção de vendas", "INSTAGRAM_BROAD_MEI_AUTONOMO", "CRIATIVO_FILTRA_PUBLICO_AMPLO")
                 .doesNotContain("CNAE 7319002");
     }
 
-    /** Deve manter o mesmo padrão MEI/autônomo para todos os CNAEs, sem especialização por atividade. */
+    /** Deve manter padrão amplo para Instagram em todos os CNAEs, sem especialização estreita por atividade. */
     @Test
-    void keepsGenericMeiOwnerOperatorPatternForAnyCnae() {
+    void keepsBroadInstagramPatternForAnyCnae() {
         CandidateGeneratorProcessor processor = new CandidateGeneratorProcessor();
 
         StageResult result = processor.process(new StageContext(
@@ -43,8 +48,8 @@ class CandidateGeneratorProcessorTest {
 
         String candidates = String.valueOf(result.output().get("candidates"));
         assertThat(candidates)
-                .contains("MEI_ATENDIMENTO_DIRETO", "MEI_ROTINA_EXECUCAO", "MEI_AQUISICAO_CLIENTES")
-                .contains("MEI_AUTONOMO_DONO_OPERADOR")
+                .contains("RENDA_COM_TRABALHO_PROPRIO", "CLIENTES_PELO_WHATSAPP", "AGENDA_VAZIA_OU_OSCILANTE")
+                .contains("INSTAGRAM_BROAD_MEI_AUTONOMO", "BROAD_AUDIENCE_CREATIVE_FILTER")
                 .contains("Comércio varejista de artigos do vestuário e acessórios")
                 .doesNotContain("MEI_MODA_WHATSAPP_INSTAGRAM", "RETAIL_OPERATOR", "STORE_ASSISTANT");
     }

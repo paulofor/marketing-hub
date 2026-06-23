@@ -48,13 +48,15 @@ public final class RoutineSynthesizerProcessor implements StageProcessor {
         output.put("practicalPainCount", practicalPains.size());
         output.put("economicSignalCount", economicSignals.size());
         output.put("evidenceLimits", evidenceLimits);
-        output.put("nextStageCode", "commercial-evidence-gate");
+        output.put("hypothesisPipelineInputRole", "ROUTINE_CLAIMS_INPUT");
+        output.put("commercialBoundary", "NAO_GERAR_DOR_RESULTADO_OFERTA");
+        output.put("readyForHypothesisPipeline", evidenceLimits.isEmpty());
 
         String status = evidenceLimits.isEmpty() ? "ROUTINE_SYNTHESIS_READY" : "ROUTINE_SYNTHESIS_WITH_GAPS";
         return new StageResult(status, output, List.of(new StageArtifact(
                 "ROUTINE_SYNTHESIS",
                 "inline://routine-synthesizer/synthesis",
-                "Síntese de rotina, dores e sinais comerciais baseada exclusivamente em claims aceitos com trecho exato.")));
+                "Síntese de rotina e sinais comportamentais para insumo do pipeline posterior de hipótese.")));
     }
 
     /** Filtra claims validados com trecho exato antes de qualquer síntese funcional. */

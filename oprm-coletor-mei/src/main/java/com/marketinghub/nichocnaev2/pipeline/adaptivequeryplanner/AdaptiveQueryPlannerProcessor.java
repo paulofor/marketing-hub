@@ -25,8 +25,11 @@ public final class AdaptiveQueryPlannerProcessor implements StageProcessor {
         if (gaps.isEmpty()) {
             gaps = textList(input.get("gaps"));
         }
-        String audience = firstText(input, "audience", "targetAudience", "neutralCandidateName");
-        String jobContext = firstText(input, "jobContext", "operationalJob", "context");
+        if (gaps.isEmpty()) {
+            gaps = instagramDiscoveryGaps(input);
+        }
+        String audience = firstText(input, "audience", "targetAudience", "neutralCandidateName", "audienceFocus");
+        String jobContext = firstText(input, "jobContext", "operationalJob", "context", "operationalContext", "cnaeDescription");
         Set<String> previousQueryHashes = new LinkedHashSet<>(textList(input.get("previousQueryHashes")));
         List<Map<String, Object>> plannedQueries = new ArrayList<>();
         int skipped = 0;
@@ -66,10 +69,23 @@ public final class AdaptiveQueryPlannerProcessor implements StageProcessor {
         String compactContext = jobContext.isBlank() ? compactAudience : jobContext;
         String compactGap = normalizeGap(gap);
         return List.of(
-                compactAudience + " " + compactGap,
-                compactContext + " " + compactGap,
-                compactAudience + " relatos " + compactGap,
-                compactAudience + " rotina " + compactGap);
+                compactAudience + " " + compactGap + " instagram",
+                compactContext + " " + compactGap + " whatsapp",
+                compactAudience + " relatos " + compactGap + " autonomo",
+                compactAudience + " rotina " + compactGap + " mei");
+    }
+
+    /** Cria lacunas amplas quando a entrada ainda não trouxe gaps, evitando parar antes de testar público de Instagram. */
+    private List<String> instagramDiscoveryGaps(Map<String, Object> input) {
+        if (!mapList(input.get("candidates")).isEmpty() || !mapList(input.get("finalists")).isEmpty()) {
+            return List.of(
+                    "conseguir clientes pelo instagram",
+                    "whatsapp agenda vazia",
+                    "cobrar preço justo",
+                    "ganhar dinheiro como autonomo",
+                    "medo de ficar sem cliente");
+        }
+        return List.of();
     }
 
     /** Normaliza o gap para produzir termos curtos, pesquisáveis e sem linguagem de oferta. */
@@ -106,6 +122,22 @@ public final class AdaptiveQueryPlannerProcessor implements StageProcessor {
                 .filter(item -> item != null && !String.valueOf(item).isBlank())
                 .map(String::valueOf)
                 .toList();
+    }
+
+    /** Lê listas de mapas para reconhecer contratos de candidatos sem depender de DTO específico. */
+    private List<Map<String, Object>> mapList(Object value) {
+        if (!(value instanceof List<?> items)) {
+            return List.of();
+        }
+        List<Map<String, Object>> mapped = new ArrayList<>();
+        for (Object item : items) {
+            if (item instanceof Map<?, ?> map) {
+                Map<String, Object> copy = new LinkedHashMap<>();
+                map.forEach((key, val) -> copy.put(String.valueOf(key), val));
+                mapped.add(copy);
+            }
+        }
+        return mapped;
     }
 
     /** Retorna o primeiro campo textual não vazio entre aliases de contrato. */

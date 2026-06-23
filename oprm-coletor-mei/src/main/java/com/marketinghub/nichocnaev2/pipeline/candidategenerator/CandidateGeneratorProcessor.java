@@ -21,29 +21,35 @@ public final class CandidateGeneratorProcessor implements StageProcessor {
                 "https://www.gov.br/receitafederal/pt-br/assuntos/orientacao-tributaria/cadastros/cnpj/classificacao-nacional-de-atividades-economicas-2013-cnae");
         return new StageResult(
                 "BOOTSTRAPPED",
-                Map.of(
-                        "stage", "candidate-generator",
-                        "candidateCount", candidates.size(),
-                        "candidates", candidates,
-                        "candidateUrls", candidateUrls,
-                        "nextStageCode", "source-safety-filter",
-                        "audienceFocus", "MEI_AUTONOMO_DONO_OPERADOR"),
+                Map.ofEntries(
+                        Map.entry("stage", "candidate-generator"),
+                        Map.entry("candidateCount", candidates.size()),
+                        Map.entry("candidates", candidates),
+                        Map.entry("candidateUrls", candidateUrls),
+                        Map.entry("nextStageCode", "source-safety-filter"),
+                        Map.entry("audienceFocus", "INSTAGRAM_BROAD_MEI_AUTONOMO"),
+                        Map.entry("distributionChannel", "INSTAGRAM"),
+                        Map.entry("discoveryStrategy", "BROAD_CREATIVE_FIRST"),
+                        Map.entry("hypothesisPipelineInputRole", "AUDIENCE_ROUTINE_LANGUAGE_INPUT"),
+                        Map.entry("commercialBoundary", "NAO_GERAR_DOR_RESULTADO_OFERTA"),
+                        Map.entry("instagramAudiencePrinciple",
+                                "público amplo por desejo reconhecível; o criativo filtra a pessoa certa")),
                 List.of());
     }
 
-    /** Escolhe recortes MEI/autônomo aplicáveis a qualquer CNAE sem especializar por atividade. */
+    /** Escolhe recortes amplos para Instagram, mantendo o CNAE como contexto e não como público estreito. */
     private List<Map<String, Object>> candidateSetFor(String cnaeReference) {
         return List.of(
-                meiCandidate("C1", "MEI_OWNER_OPERATOR", "MEI_ATENDIMENTO_DIRETO", "MEI/autônomo que atende clientes diretamente em " + cnaeReference),
-                meiCandidate("C2", "MEI_OWNER_OPERATOR", "MEI_ROTINA_EXECUCAO", "Dono-operador que executa pessoalmente a rotina diária de " + cnaeReference),
-                meiCandidate("C3", "MEI_OWNER_OPERATOR", "MEI_AQUISICAO_CLIENTES", "MEI/autônomo que precisa conseguir clientes, responder mensagens e manter agenda em " + cnaeReference),
-                meiCandidate("C4", "MEI_OWNER_OPERATOR", "MEI_OPERACAO_DIGITAL_LOCAL", "MEI/autônomo que usa WhatsApp, Instagram ou indicação local para operar " + cnaeReference),
-                meiCandidate("C5", "MEI_OWNER_OPERATOR", "MEI_PRECO_COBRANCA", "Dono-operador que define preço, cobra, negocia e lida com inadimplência em " + cnaeReference),
-                meiCandidate("C6", "MEI_OWNER_OPERATOR", "MEI_AGENDA_RECORRENCIA", "MEI/autônomo que depende de agenda, retorno, recorrência e fidelização em " + cnaeReference),
-                meiCandidate("C7", "MEI_OWNER_OPERATOR", "MEI_INSUMOS_FORNECEDORES", "MEI/autônomo que compra insumos, prepara entrega e negocia fornecedores para " + cnaeReference),
-                meiCandidate("C8", "MEI_OWNER_OPERATOR", "MEI_POS_VENDA_RETRABALHO", "Dono-operador que resolve pós-venda, retrabalho e dúvidas de clientes em " + cnaeReference),
-                meiCandidate("C9", "MEI_OWNER_OPERATOR", "MEI_SAZONALIDADE_DEMANDA", "MEI/autônomo que enfrenta sazonalidade, picos de demanda e semanas sem cliente em " + cnaeReference),
-                meiCandidate("C10", "MEI_OWNER_OPERATOR", "MEI_LINGUAGEM_CLIENTES", "MEI/autônomo que usa linguagem simples com clientes e responde dúvidas recorrentes em " + cnaeReference));
+                instagramCandidate("C1", "RENDA_COM_TRABALHO_PROPRIO", "Pessoa que quer ganhar dinheiro trabalhando por conta própria usando habilidade, veículo, ferramenta ou atendimento local", cnaeReference),
+                instagramCandidate("C2", "CLIENTES_PELO_WHATSAPP", "Autônomo que depende de WhatsApp, Instagram, indicação e resposta rápida para conseguir clientes", cnaeReference),
+                instagramCandidate("C3", "AGENDA_VAZIA_OU_OSCILANTE", "Prestador local que sofre com dias sem cliente, agenda irregular, cancelamentos e falta de recorrência", cnaeReference),
+                instagramCandidate("C4", "PRECO_COBRANCA_LUCRO", "Autônomo que sente insegurança para cobrar, montar preço, negociar pacote e proteger lucro", cnaeReference),
+                instagramCandidate("C5", "PROFISSIONALIZAR_ATENDIMENTO", "Pessoa que executa o serviço e quer parecer mais profissional no atendimento, orçamento e pós-venda", cnaeReference),
+                instagramCandidate("C6", "SAIR_DA_DEPENDENCIA_DE_PLATAFORMA", "Trabalhador que quer depender menos de aplicativo, plataforma, intermediário ou indicação ocasional", cnaeReference),
+                instagramCandidate("C7", "ORGANIZAR_ROTINA_AUTONOMA", "MEI/autônomo sobrecarregado que precisa organizar rotina, mensagens, agenda, cobrança e retorno", cnaeReference),
+                instagramCandidate("C8", "TRANSFORMAR_RECURSO_EM_RENDA", "Pessoa que tem carro, ferramenta, conhecimento ou tempo disponível e quer transformar isso em renda local", cnaeReference),
+                instagramCandidate("C9", "MEDO_DE_NAO_TER_CLIENTE", "Autônomo com medo de não ter cliente suficiente no mês e precisar achar demanda de forma previsível", cnaeReference),
+                instagramCandidate("C10", "COMECOU_AGORA_SOZINHO", "Quem começou ou quer começar sozinho como MEI/autônomo e precisa de primeiros clientes e rotina simples", cnaeReference));
     }
 
     /** Usa a descrição do CNAE quando disponível para evitar contexto operacional genérico por código numérico. */
@@ -55,18 +61,28 @@ public final class CandidateGeneratorProcessor implements StageProcessor {
         return "CNAE " + cnaeCode;
     }
 
-    /** Monta um candidato focado em MEI/autônomo sem dor ou promessa ainda não comprovadas. */
-    private Map<String, Object> meiCandidate(String candidateId, String operator, String job, String operationalContext) {
-        return Map.of(
-                "candidateId", candidateId,
-                "operator", operator,
-                "job", job,
-                "buyerTypes", List.of("B2C"),
-                "audienceFocus", "MEI_AUTONOMO_DONO_OPERADOR",
-                "workerMode", "EXECUTA_PESSOALMENTE_O_TRABALHO",
-                "evidenceFocus", List.of("rotina", "aquisição de clientes", "atendimento", "cobrança", "linguagem real"),
-                "operationalContext", operationalContext,
-                "painHypotheses", List.of(),
-                "priorConfidence", "LOW");
+    /** Monta um candidato amplo para Instagram sem transformar o CNAE em segmentação estreita. */
+    private Map<String, Object> instagramCandidate(
+            String candidateId, String job, String broadAudienceContext, String cnaeReference) {
+        return Map.ofEntries(
+                Map.entry("candidateId", candidateId),
+                Map.entry("operator", "BROAD_MEI_AUTONOMO_INSTAGRAM"),
+                Map.entry("job", job),
+                Map.entry("buyerTypes", List.of("B2C")),
+                Map.entry("audienceFocus", "INSTAGRAM_BROAD_MEI_AUTONOMO"),
+                Map.entry("workerMode", "CRIATIVO_FILTRA_PUBLICO_AMPLO"),
+                Map.entry("distributionChannel", "INSTAGRAM"),
+                Map.entry("targetingMode", "BROAD_AUDIENCE_CREATIVE_FILTER"),
+                Map.entry("hypothesisPipelineInputRole", "AUDIENCE_ROUTINE_LANGUAGE_INPUT"),
+                Map.entry("commercialBoundary", "NAO_GERAR_DOR_RESULTADO_OFERTA"),
+                Map.entry("cnaeReference", cnaeReference),
+                Map.entry("evidenceFocus", List.of(
+                        "desejo reconhecível no feed",
+                        "sinal amplo de aquisição de clientes",
+                        "rotina autônoma",
+                        "cobrança e preço",
+                        "linguagem simples de Instagram")),
+                Map.entry("operationalContext", broadAudienceContext),
+                Map.entry("priorConfidence", "LOW"));
     }
 }

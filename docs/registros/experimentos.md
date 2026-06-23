@@ -5143,3 +5143,9 @@
 - Causa-raiz: o fluxo de targeting ainda usava `gpt-4.1` como padrão e montava instruções diretamente na classe Java, sem reforçar a separação entre geração de seeds pela IA e validação oficial posterior na API da Meta.
 - Alteração: o AI Worker passa a usar `gpt-5.5`, inclui `service_tier: flex` no payload da Responses API e carrega prompt versionado que instrui o modelo a gerar seeds compatíveis com Targeting Search/Meta Ads; a validação de existência oficial continua sendo feita pelo Facebook Ads Worker na API da Meta.
 - Impacto esperado: os candidatos iniciais devem chegar mais próximos da taxonomia real da Meta, reduzindo retrabalho e acelerando a liberação de público para campanhas de experimento.
+
+## 2026-06-23 — Alinhamento dos testes de hipótese ao código automático
+- Problema: dois testes do AI Worker ainda esperavam o título textual retornado pela IA, mas o contrato canônico atual determina identificação automática da hipótese pelo backend.
+- Causa-raiz: a regra de nomeação automática (`<SIGLA>-H001`) evoluiu no backend e os testes de integração do worker ficaram com expectativa legada.
+- Correção aplicada: os testes passaram a validar o identificador automático gerado para o nicho, preservando a checagem dos demais campos funcionais da hipótese.
+- Prevenção de recorrência: a cobertura agora confirma o contrato canônico de criação de hipótese e reduz risco de reintroduzir nomes manuais vindos da IA.

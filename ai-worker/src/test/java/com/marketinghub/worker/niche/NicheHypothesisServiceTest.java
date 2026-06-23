@@ -189,11 +189,11 @@ class NicheHypothesisServiceTest {
         List<Hypothesis> hyps = result.get(niche.getId());
         assertThat(hyps).hasSize(2);
         Hypothesis first = hyps.get(0);
-        assertThat(first.getTitle()).isEqualTo("H1");
+        assertThat(first.getTitle()).isEqualTo("SXX-H001");
         assertThat(first.getMarketNiche().getId()).isEqualTo(niche.getId());
         assertThat(first.getModel()).isEqualTo(model);
         assertThat(first.getPrompt()).isNotBlank();
-        // Access the field via reflection since older ads-service builds may lack the getter
+        // Acessa o campo por reflexão porque builds antigos do ads-service podem não ter o getter
         assertThat(org.springframework.test.util.ReflectionTestUtils.getField(first, "generatedAt"))
                 .isNotNull();
         assertThat(first.getPromptAttributeDescriptions()).extracting(PromptAttributeDescription::getId).contains(desc.getId());

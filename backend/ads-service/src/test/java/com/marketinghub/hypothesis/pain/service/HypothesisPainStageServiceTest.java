@@ -7,12 +7,15 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.marketinghub.hypothesis.Hypothesis;
+import com.marketinghub.hypothesis.HypothesisStatus;
 import com.marketinghub.hypothesis.pain.HypothesisPainCostCalculator;
 import com.marketinghub.hypothesis.pain.HypothesisPainStageExecution;
 import com.marketinghub.hypothesis.pain.provisorio.HypothesisPainEnrichmentProfileReader;
 import com.marketinghub.hypothesis.pain.provisorio.HypothesisPainEnrichmentProfileSnapshot;
 import com.marketinghub.hypothesis.pain.service.recebeResposta.RecebeRespostaRequest;
 import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.repository.jpa.hypothesis.HypothesisRepository;
 import com.marketinghub.repository.jpa.hypothesis.HypothesisPainStageExecutionRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import java.math.BigDecimal;
@@ -41,6 +44,9 @@ class HypothesisPainStageServiceTest {
     private HypothesisPainStageExecutionRepository executionRepository;
 
     @Mock
+    private HypothesisRepository hypothesisRepository;
+
+    @Mock
     private HypothesisPainCostCalculator costCalculator;
 
     private HypothesisPainStageService service;
@@ -52,6 +58,7 @@ class HypothesisPainStageServiceTest {
                 marketNicheRepository,
                 enrichmentProfileReader,
                 executionRepository,
+                hypothesisRepository,
                 costCalculator);
     }
 
@@ -196,6 +203,52 @@ class HypothesisPainStageServiceTest {
         assertEquals("agenda quebrada; cliente some", pending.getFirst().enrichmentProfile().languagePatterns());
         assertEquals("busca previsibilidade e redução de retrabalho", pending.getFirst().enrichmentProfile().commercialTriggers());
         assertEquals("medo de parecer complicado", pending.getFirst().enrichmentProfile().objections());
+    }
+
+    /** Deve entregar as hipóteses já criadas do nicho para impedir repetição na próxima geração. */
+    @Test
+    void listPendingIncludesExistingHypothesesForSameNiche() {
+        MarketNiche niche = new MarketNiche();
+        niche.setId(18L);
+        String idJob = "5bb83a22-3894-43bd-9752-374f84eb6a2c";
+        HypothesisPainStageExecution execution = HypothesisPainStageExecution.builder()
+                .idJob(idJob.getBytes(StandardCharsets.UTF_8))
+                .marketNicheId(18L)
+                .marketNiche(niche)
+                .stageCode("hypothesis-pain")
+                .status("INICIADO")
+                .executionRequestedAt(Instant.parse("2026-06-11T09:59:00Z"))
+                .build();
+        Hypothesis existing = Hypothesis.builder()
+                .id(java.util.UUID.fromString("11111111-1111-1111-1111-111111111111"))
+                .title("CPM-H001")
+                .problem("Agenda quebrada por remarcações.")
+                .promise("Agenda previsível em 7 dias.")
+                .persona("Manicure autônoma em domicílio")
+                .mechanism("Roteiro de confirmação por WhatsApp")
+                .uniqueMechanism("Checklist de pré-atendimento")
+                .entrega("Template operacional")
+                .status(HypothesisStatus.BACKLOG)
+                .build();
+
+        when(executionRepository.findTop50ByStageCodeAndStatusInAndCompletedAtIsNullAndProcessingStartedAtBeforeOrderByProcessingStartedAtAsc(
+                        any(),
+                        any(),
+                        any()))
+                .thenReturn(List.of());
+        when(executionRepository.findTop20ByStageCodeAndStatusOrderByExecutionRequestedAtAsc(
+                        "hypothesis-pain",
+                        "INICIADO"))
+                .thenReturn(List.of(execution));
+        when(hypothesisRepository.findByMarketNicheId(18L)).thenReturn(List.of(existing));
+
+        var pending = service.listPending();
+
+        assertEquals(1, pending.size());
+        assertEquals(1, pending.getFirst().existingHypotheses().size());
+        assertEquals("CPM-H001", pending.getFirst().existingHypotheses().getFirst().title());
+        assertEquals("Agenda quebrada por remarcações.", pending.getFirst().existingHypotheses().getFirst().problem());
+        assertEquals("BACKLOG", pending.getFirst().existingHypotheses().getFirst().status());
     }
 
     /** Deve falhar job antigo com openai_job_id para impedir recaptura duplicada de execução ativa na OpenAI. */

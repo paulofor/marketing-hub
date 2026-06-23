@@ -26,10 +26,16 @@ class HypothesisPainBackendClientTest {
         enrichmentProfile.put("languagePatterns", "agenda quebrada; cliente some");
         enrichmentProfile.put("commercialTriggers", "busca previsibilidade");
         enrichmentProfile.put("objections", "medo de parecer complicado");
+        Map<String, Object> existingHypothesis = new LinkedHashMap<>();
+        existingHypothesis.put("title", "CPM-H001");
+        existingHypothesis.put("problem", "Agenda quebrada por remarcações.");
+        existingHypothesis.put("promise", "Agenda previsível em 7 dias.");
+        existingHypothesis.put("persona", "Manicure autônoma em domicílio");
         Map<String, Object> pending = new LinkedHashMap<>();
         pending.put("marketNicheId", 18L);
         pending.put("niche", niche);
         pending.put("enrichmentProfile", enrichmentProfile);
+        pending.put("existingHypotheses", java.util.List.of(existingHypothesis));
 
         Map<String, Object> promptData = client.buildPromptDataFromPending(pending);
         HypothesisPainInput input = new HypothesisPainInput(18L, "hypothesis-pain", "job-1", promptData);
@@ -42,6 +48,7 @@ class HypothesisPainBackendClientTest {
                 .contains("promises: ")
                 .contains("offers: ")
                 .contains("extraTips: Usar rotina real")
+                .contains("existingHypothesesSummary: 1) código: CPM-H001; dor: Agenda quebrada por remarcações.; promessa: Agenda previsível em 7 dias.; persona: Manicure autônoma em domicílio;")
                 .contains("enrichedPersonaSummary: Manicure autônoma em domicílio.")
                 .contains("enrichedLanguagePatterns: agenda quebrada; cliente some")
                 .contains("enrichedCommercialTriggers: busca previsibilidade")

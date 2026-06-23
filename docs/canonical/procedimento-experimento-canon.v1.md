@@ -146,6 +146,16 @@ Regras obrigatórias:
 - o pipeline de hipótese deve usar esses sinais para aumentar especificidade, linguagem real, plausibilidade do mecanismo, redução de objeções e percepção de valor da oferta low-ticket;
 - a passagem enriquecida não autoriza o `nicho-cnae` a criar promessa, oferta, preço, checkout, landing ou campanha. O `nicho-cnae` permanece responsável por realidade operacional e evidências; a hipótese permanece responsável por transformar essa realidade em Dor → Resultado → Mecanismo → Prova → Oferta.
 
+### 4.2.4 Regra mandatória — não repetir hipóteses no mesmo nicho
+
+Quando uma nova hipótese for solicitada para um nicho, o backend deve obter as demais hipóteses já geradas para esse mesmo `market_niche_id` e incluí-las no contrato pendente entregue ao Worker AI.
+
+Regras obrigatórias:
+- o contrato pendente deve enviar um resumo das hipóteses anteriores do nicho, incluindo no mínimo código/título, dor, promessa, persona, mecanismo, entrega e status quando existirem;
+- o Worker AI deve inserir esse resumo no prompt da etapa Dor como histórico de diferenciação;
+- a nova hipótese não deve repetir a mesma dor de entrada, persona, promessa implícita ou mecanismo potencial já usado no mesmo nicho;
+- se o histórico estiver vazio, o prompt deve declarar explicitamente que não há hipótese anterior registrada para o nicho.
+
 ### 4.3 Regra de diferenciação de ângulo após experimento reprovado
 
 Ao gerar a etapa `CAMPAIGN_ANGLE`, o prompt deve receber o histórico dos experimentos reprovados por 100 acessos sem envio da mesma hipótese, quando existir. A reprovação de um experimento reprova aquela materialização de mercado (público, criativo, landing, isca e formulário), mas não reprova automaticamente a hipótese estratégica.

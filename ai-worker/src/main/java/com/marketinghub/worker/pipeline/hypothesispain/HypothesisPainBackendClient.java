@@ -144,9 +144,40 @@ public class HypothesisPainBackendClient implements StageBackendPort<HypothesisP
         payload.put("interests", optionalText(niche.get("interests")));
         payload.put("demographicFilters", optionalText(niche.get("demographicFilters")));
         payload.put("extraTips", optionalText(niche.get("extraTips")));
+        payload.put("existingHypothesesSummary", summarizeExistingHypotheses(asList(pending.get("existingHypotheses"))));
         putEnrichedNicheContext(payload, enrichmentProfile);
         payload.put("CASE_DATA_BLOCK", buildCaseDataBlock(payload));
         return payload;
+    }
+
+    /** Resume hipóteses já existentes para orientar o modelo a criar uma dor diferente no mesmo nicho. */
+    private String summarizeExistingHypotheses(List<Object> existingHypotheses) {
+        if (existingHypotheses.isEmpty()) {
+            return "Nenhuma hipótese anterior registrada para este nicho.";
+        }
+        StringBuilder builder = new StringBuilder();
+        int index = 1;
+        for (Object item : existingHypotheses) {
+            Map<String, Object> hypothesis = asMap(item);
+            builder.append(index++).append(") ");
+            appendSummaryField(builder, "código", hypothesis.get("title"));
+            appendSummaryField(builder, "dor", hypothesis.get("problem"));
+            appendSummaryField(builder, "promessa", hypothesis.get("promise"));
+            appendSummaryField(builder, "persona", hypothesis.get("persona"));
+            appendSummaryField(builder, "mecanismo", hypothesis.get("mechanism"));
+            appendSummaryField(builder, "entrega", hypothesis.get("entrega"));
+            appendSummaryField(builder, "status", hypothesis.get("status"));
+            builder.append('\n');
+        }
+        return builder.toString().trim();
+    }
+
+    /** Acrescenta um campo textual ao resumo quando houver conteúdo útil. */
+    private void appendSummaryField(StringBuilder builder, String label, Object value) {
+        String text = optionalText(value).trim();
+        if (!text.isEmpty()) {
+            builder.append(label).append(": ").append(text).append("; ");
+        }
     }
 
     /** Copia o perfil enriquecido do OPRM para o contexto estratégico consumido pela etapa. */
@@ -185,6 +216,7 @@ public class HypothesisPainBackendClient implements StageBackendPort<HypothesisP
         appendCaseData(builder, "interests", payload.get("interests"));
         appendCaseData(builder, "demographicFilters", payload.get("demographicFilters"));
         appendCaseData(builder, "extraTips", payload.get("extraTips"));
+        appendCaseData(builder, "existingHypothesesSummary", payload.get("existingHypothesesSummary"));
         appendEnrichedNicheContext(builder, payload);
         builder.append("[CASE_DATA_END]");
         return builder.toString();
@@ -249,6 +281,14 @@ public class HypothesisPainBackendClient implements StageBackendPort<HypothesisP
             return converted;
         }
         return Map.of();
+    }
+
+    /** Normaliza listas vindas do payload pendente para leitura segura do contrato. */
+    private List<Object> asList(Object value) {
+        if (value instanceof List<?> list) {
+            return list.stream().map(item -> (Object) item).toList();
+        }
+        return List.of();
     }
 
     /** Converte um valor genérico para Long quando possível. */

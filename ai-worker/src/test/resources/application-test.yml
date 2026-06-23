@@ -10,10 +10,13 @@ spring:
     username: sa
     password:
   jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
       ddl-auto: create-drop
     properties:
       hibernate:
+        boot:
+          allow_jdbc_metadata_access: true
         globally_quoted_identifiers: false
   liquibase:
     enabled: false

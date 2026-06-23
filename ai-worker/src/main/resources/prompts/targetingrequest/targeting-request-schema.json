@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["candidates"],
+  "properties": {
+    "candidates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["seed", "tipo", "rationale", "score", "intent_tag", "idioma_hint"],
+        "properties": {
+          "seed": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "tipo": { "type": "string", "enum": ["interest", "behavior", "work_position"] },
+          "rationale": { "type": "string" },
+          "score": { "type": "number", "minimum": 0, "maximum": 1 },
+          "intent_tag": { "type": "string" },
+          "idioma_hint": { "type": "string" },
+          "constraints": {
+            "type": "object",
+            "properties": {
+              "country": { "type": "string" }
+            },
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

@@ -16,6 +16,7 @@
 > - ajusta a regra de negócio para tratar ausência de limites da Meta como alerta controlado, não como falha automática
 > - formaliza a coleta periódica de sugestões oficiais da Meta para campanhas ativas, com persistência exclusiva via backend
 > - formaliza que campanhas de experimento usam orçamento diário no nível do ad set (`budgetMode=ADSET`) e que orçamento de campanha é reservado para etapa futura de escala
+> - formaliza que solicitações de targeting por IA devem usar GPT-5.5 em modo Flex e gerar seeds orientados à taxonomia Meta Ads, mantendo a validação oficial de existência no Facebook Ads Worker
 
 Este documento complementa o `system-governance-canon.v2.md` e passa a ser a fonte de verdade para prontidão, liberação e telemetria de campanhas de experimento no Facebook Ads Worker.
 
@@ -60,6 +61,16 @@ Antes de qualquer criação de campanha, conjunto, imagem, criativo ou anúncio 
 - máximo: `users_upper_bound <= 20000000`.
 
 Quando a Meta retornar limites fora dessa faixa, o experimento deve ser bloqueado antes da criação da campanha e registrado como falha operacional para correção de causa-raiz do público. Quando a Meta não retornar os limites, isso deve ser tratado como alerta de risco, não como falha automática: campanhas de teste controlado podem seguir, com registro operacional do aviso e monitoramento obrigatório de entrega, CPM, CTR, leads e vendas nas primeiras horas. A ausência de estimativa só deve bloquear a publicação se vier acompanhada de erro explícito da Meta, segmentação inválida ou outro bloqueio canônico de prontidão.
+
+
+### 2.3 Solicitações de targeting por IA
+
+As solicitações de targeting feitas pelo usuário no contexto de nichos, hipóteses ou experimentos devem seguir estas regras operacionais:
+
+- O `ai-worker` deve gerar apenas seeds/candidatos iniciais de público, usando GPT-5.5 e `service_tier: flex` nas chamadas OpenAI.
+- O prompt operacional deve orientar o modelo a preferir termos com maior chance de existir na taxonomia oficial do Meta Ads, como interesses pesquisáveis por `adinterest`/`adTargetingCategory`, cargos compatíveis com `adworkposition` e comportamentos/categorias amplas compatíveis com `adTargetingCategory`.
+- A IA não é fonte de verdade para existência oficial de targeting na Meta. A confirmação de ID, key e alcance pertence ao fluxo do Facebook Ads Worker, que deve consultar a Marketing API/Targeting Search e persistir o resultado no backend.
+- A tela de experimento só deve tratar um item como pronto para campanha quando o backend expuser o elemento aprovado e resolvido com identificador oficial da Meta quando aplicável.
 
 ## 3. Ownership e módulos
 

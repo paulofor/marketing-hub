@@ -5131,3 +5131,9 @@
 - causa-raiz confirmada: o AI Worker não subia; o Spring/Hibernate tentava montar `entityManagerFactory` usando metadados JDBC, mas sem conexão/metadados disponíveis não conseguia determinar o dialect e abortava o bootstrap antes dos schedulers do GeraLanding rodarem.
 - foi feito: o AI Worker passou a declarar explicitamente o dialect MySQL e desabilitar acesso a metadados JDBC no bootstrap, além de não falhar a inicialização do Hikari quando a conexão inicial não estiver disponível.
 - impacto esperado: o worker volta a subir e os schedulers baseados em API do backend, incluindo `landing-page-design-preset`, conseguem consumir a fila pendente sem depender de descoberta inicial de metadados do banco.
+
+## 2026-06-23 — Targeting de experimento com GPT-5.5, Flex e orientação Meta Ads
+- Pedido: ajustar as solicitações de targeting para usar GPT-5.5, modo Flex e orientar a geração para itens com maior chance de existir no Meta Ads.
+- Causa-raiz: o fluxo de targeting ainda usava `gpt-4.1` como padrão e montava instruções diretamente na classe Java, sem reforçar a separação entre geração de seeds pela IA e validação oficial posterior na API da Meta.
+- Alteração: o AI Worker passa a usar `gpt-5.5`, inclui `service_tier: flex` no payload da Responses API e carrega prompt versionado que instrui o modelo a gerar seeds compatíveis com Targeting Search/Meta Ads; a validação de existência oficial continua sendo feita pelo Facebook Ads Worker na API da Meta.
+- Impacto esperado: os candidatos iniciais devem chegar mais próximos da taxonomia real da Meta, reduzindo retrabalho e acelerando a liberação de público para campanhas de experimento.

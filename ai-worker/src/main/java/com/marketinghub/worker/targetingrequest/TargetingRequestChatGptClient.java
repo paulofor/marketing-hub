@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -19,6 +20,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -33,11 +35,16 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
+/**
+ * Cliente responsável por gerar candidatos iniciais de targeting via OpenAI para posterior validação oficial na Meta.
+ */
 @Component
 public class TargetingRequestChatGptClient {
     private static final Logger log = LoggerFactory.getLogger(TargetingRequestChatGptClient.class);
     private static final String DOMAIN = "TARGETING_REQUEST";
     private static final String RESPONSES_ENDPOINT = "/v1/responses";
+    private static final String SERVICE_TIER_FLEX = "flex";
+    private static final String PROMPT_PATH = "prompts/targetingrequest/targeting-request-v1.md";
     private static final String COMPLETION_WINDOW = "24h";
     private static final int MAX_SEED_WORDS = 4;
     private static final Pattern MULTIPLE_SPACES = Pattern.compile("\\s+");
@@ -58,7 +65,7 @@ public class TargetingRequestChatGptClient {
                                          AiGenerationRecorder generationRecorder,
                                          @Value("${openai.api-key:}") String apiKey,
                                          @Value("${openai.base-url:https://api.openai.com/v1}") String baseUrl,
-                                         @Value("${openai.targeting-request-model:gpt-4.1}") String targetingModel,
+                                         @Value("${openai.targeting-request-model:gpt-5.5}") String targetingModel,
                                          @Value("${openai.batch-timeout:PT5M}") Duration batchTimeout,
                                          @Value("${openai.batch-poll-interval:PT0.5S}") Duration batchPollInterval) {
         WebClient.Builder clientBuilder = builder
@@ -75,6 +82,9 @@ public class TargetingRequestChatGptClient {
         this.batchPollInterval = batchPollInterval != null ? batchPollInterval : Duration.ofMillis(500);
     }
 
+    /**
+     * Gera candidatos de targeting a partir da solicitação recebida do backend.
+     */
     public List<TargetingCandidateSuggestion> generateCandidates(TargetingRequestDto request) {
         if (request == null) {
             return List.of();
@@ -106,6 +116,9 @@ public class TargetingRequestChatGptClient {
         }
     }
 
+    /**
+     * Monta o contexto de batch com payload Responses API em modo flex.
+     */
     private RequestContext buildContext(TargetingRequestDto request, String prompt) {
         List<Map<String, Object>> input = List.of(
                 OpenAiRequestUtils.message("system", "Você é um planejador de mídia especialista em Meta Ads."),
@@ -114,6 +127,7 @@ public class TargetingRequestChatGptClient {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("model", targetingModel);
         payload.put("input", input);
+        payload.put("service_tier", SERVICE_TIER_FLEX);
         if (OpenAiRequestUtils.supportsTemperature(targetingModel)) {
             payload.put("temperature", 0.4);
         }
@@ -123,6 +137,9 @@ public class TargetingRequestChatGptClient {
         return new RequestContext(customId, request, prompt, payload, targetingModel);
     }
 
+    /**
+     * Executa o lote OpenAI e converte o arquivo de saída em respostas por customId.
+     */
     private Map<String, OpenAiResponse> executeBatchRequests(Map<String, RequestContext> contexts) {
         if (contexts.isEmpty()) {
             return Map.of();
@@ -137,6 +154,9 @@ public class TargetingRequestChatGptClient {
         return parseBatchOutput(content);
     }
 
+    /**
+     * Envia o arquivo JSONL com as solicitações de targeting para a OpenAI.
+     */
     private String uploadBatchFile(Map<String, RequestContext> contexts) {
         StringBuilder sb = new StringBuilder();
         contexts.forEach((customId, ctx) -> {
@@ -175,6 +195,9 @@ public class TargetingRequestChatGptClient {
         return file.id();
     }
 
+    /**
+     * Cria o batch da OpenAI para processar as solicitações de targeting.
+     */
     private OpenAiBatch createBatch(String inputFileId) {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("input_file_id", inputFileId);
@@ -192,6 +215,9 @@ public class TargetingRequestChatGptClient {
         return batch;
     }
 
+    /**
+     * Aguarda a conclusão do batch da OpenAI dentro do timeout configurado.
+     */
     private OpenAiBatch awaitCompletion(OpenAiBatch initial) {
         OpenAiBatch current = initial;
         Instant deadline = Instant.now().plus(batchTimeout);
@@ -220,6 +246,9 @@ public class TargetingRequestChatGptClient {
         return current;
     }
 
+    /**
+     * Verifica se o batch chegou a um estado terminal conhecido.
+     */
     private boolean isTerminal(OpenAiBatch batch) {
         if (batch == null || !StringUtils.hasText(batch.status())) {
             return false;
@@ -227,6 +256,9 @@ public class TargetingRequestChatGptClient {
         return TERMINAL_BATCH_STATUSES.contains(batch.status().toLowerCase());
     }
 
+    /**
+     * Baixa o arquivo de saída produzido pelo batch da OpenAI.
+     */
     private String downloadFile(String fileId) {
         return webClient.get()
                 .uri("/files/{id}/content", fileId)
@@ -235,6 +267,9 @@ public class TargetingRequestChatGptClient {
                 .block();
     }
 
+    /**
+     * Converte cada linha JSONL retornada pelo batch em resposta estruturada.
+     */
     private Map<String, OpenAiResponse> parseBatchOutput(String content) {
         Map<String, OpenAiResponse> responses = new LinkedHashMap<>();
         if (!StringUtils.hasText(content)) {
@@ -265,18 +300,33 @@ public class TargetingRequestChatGptClient {
         return responses;
     }
 
+    /**
+     * Carrega o prompt versionado e injeta os dados operacionais da solicitação.
+     */
     private String buildPrompt(TargetingRequestDto request) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("Com base na descrição abaixo, gere candidatos de targeting do Facebook seguindo o fluxo seed-first.\n");
-        sb.append("Cada candidato deve conter: seed (1 a 4 palavras, sem localidade), tipo (interest|behavior|work_position), rationale, score (0-1), intent_tag e idioma_hint.\n");
-        sb.append("Remova qualquer menção geográfica do seed; restrições de país devem ir em constraints.country.\n");
-        sb.append("Use o idioma preferencial ").append(request.localeOrDefault()).append(" e país alvo ").append(request.countryOrDefault()).append(".\n");
-        sb.append("Evite termos proibidos pela Meta ou qualquer PII. \n");
-        sb.append("Retorne JSON puro no formato {\"candidates\":[{...}]} sem comentários ou markdown.\n");
-        sb.append("Descrição: ").append(request.descricao());
-        return sb.toString();
+        String template = loadPromptTemplate();
+        return template
+                .replace("{{locale}}", request.localeOrDefault())
+                .replace("{{country}}", request.countryOrDefault())
+                .replace("{{descricao}}", request.descricao() != null ? request.descricao() : "");
     }
 
+    /**
+     * Lê o prompt de targeting do classpath para evitar instruções longas hardcoded.
+     */
+    private String loadPromptTemplate() {
+        ClassPathResource resource = new ClassPathResource(PROMPT_PATH);
+        try {
+            return resource.getContentAsString(StandardCharsets.UTF_8);
+        } catch (IOException ex) {
+            log.error("Falha ao carregar prompt de targeting no caminho {}", PROMPT_PATH, ex);
+            throw new IllegalStateException("Não foi possível carregar o prompt de targeting", ex);
+        }
+    }
+
+    /**
+     * Interpreta o JSON retornado pela OpenAI e monta sugestões normalizadas.
+     */
     private List<TargetingCandidateSuggestion> parseContent(String content) throws Exception {
         String sanitizedContent = sanitizeContent(content);
         ObjectMapper lenientMapper = objectMapper.copy()
@@ -325,6 +375,9 @@ public class TargetingRequestChatGptClient {
         return result;
     }
 
+    /**
+     * Remove cercas de markdown para permitir leitura do JSON retornado.
+     */
     private String sanitizeContent(String content) {
         if (content == null) {
             return "";
@@ -340,12 +393,18 @@ public class TargetingRequestChatGptClient {
         return trimmed;
     }
 
+    /**
+     * Lê campo textual de um nó JSON quando ele existe.
+     */
     private String readText(JsonNode node, String field) {
         if (node == null) return null;
         JsonNode value = node.get(field);
         return value != null && value.isTextual() ? value.asText() : null;
     }
 
+    /**
+     * Lê campo decimal de um nó JSON aceitando número ou texto numérico.
+     */
     private BigDecimal readDecimal(JsonNode node, String field) {
         if (node == null || !node.has(field)) return null;
         JsonNode value = node.get(field);
@@ -361,6 +420,9 @@ public class TargetingRequestChatGptClient {
         return null;
     }
 
+    /**
+     * Normaliza o seed removendo localidade, sufixos e excesso de palavras.
+     */
     private String sanitizeSeed(String raw) {
         if (!StringUtils.hasText(raw)) {
             return null;
@@ -377,6 +439,9 @@ public class TargetingRequestChatGptClient {
         return limitWords(collapsed, MAX_SEED_WORDS);
     }
 
+    /**
+     * Limita um texto à quantidade máxima de palavras permitida para seed.
+     */
     private String limitWords(String value, int maxWords) {
         String[] tokens = MULTIPLE_SPACES.matcher(value).replaceAll(" ").trim().split(" ");
         if (tokens.length <= maxWords) {
@@ -385,6 +450,9 @@ public class TargetingRequestChatGptClient {
         return String.join(" ", Arrays.copyOf(tokens, maxWords));
     }
 
+    /**
+     * Retorna o primeiro texto preenchido entre os valores recebidos.
+     */
     private String firstNonBlank(String... values) {
         if (values == null) {
             return null;

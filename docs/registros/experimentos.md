@@ -1,3 +1,8 @@
+## 2026-06-23 — Correção do teste de fechamento automático de hipótese
+
+- foi feito: o teste de finalização do pipeline de hipótese foi alinhado à regra vigente de nome automático por sigla do nicho e sequência (`<SIGLA>-H001`).
+- causa-raiz: a mudança para nome automático já estava aplicada no serviço, mas a asserção do teste ainda esperava o nome manual legado enviado no request.
+- prevenção de recorrência: o contrato Swagger passou a marcar `name` como campo legado opcional, deixando explícito que o backend decide o nome final.
 
 ## 2026-06-23 — Nome automático para hipóteses e experimentos
 

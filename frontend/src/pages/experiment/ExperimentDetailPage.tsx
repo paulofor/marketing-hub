@@ -1770,8 +1770,8 @@ export default function ExperimentDetailPage() {
     readinessSummary?.hasCreatives ?? data.creativeApproved;
   const readinessCreativeCount = readinessSummary?.creativeCount ?? 0;
   const hasDailyBudget = data.dailyBudget != null && data.dailyBudget > 0;
-  const openLandingActions = () => {
-    setTab("landing");
+  const openExperimentTab = (targetTab: string) => {
+    setTab(targetTab);
     window.requestAnimationFrame(() => {
       tabsSectionRef.current?.scrollIntoView({
         behavior: "smooth",
@@ -1779,6 +1779,7 @@ export default function ExperimentDetailPage() {
       });
     });
   };
+  const openLandingActions = () => openExperimentTab("landing");
 
   const blockingChecklist: ChecklistItem[] = [
     {
@@ -1947,6 +1948,90 @@ export default function ExperimentDetailPage() {
       items: operationalChecklist,
     },
   ].filter((group) => group.items.length > 0);
+
+  const hasExperimentPipelineContent = Boolean(
+    data.campaignAngle ||
+    data.adCopy ||
+    data.adImageBriefing ||
+    data.creativeTextPrompt ||
+    data.creativeImagePrompt,
+  );
+  const hasGeraLandingPipelineContent = Boolean(
+    data.landingPageWireframe ||
+    data.landingPageCopy ||
+    data.landingPageImagePlanning ||
+    data.landingPageDesignPreset ||
+    data.landingPageDeliverables ||
+    data.landingPageHtml ||
+    data.htmlGeraLanding,
+  );
+  const hasAtLeastThreeApprovedCreatives = readinessCreativeCount >= 3;
+  const hasAudienceSelection = readinessSummary?.hasCompleteTargeting ?? false;
+  const mainExperimentChecklist = [
+    {
+      id: "experiment-pipeline",
+      title: "Pipeline de experimento",
+      detail: "Aba Estrutura de conteúdo",
+      isMet: hasExperimentPipelineContent,
+      isLoading: false,
+      actionLabel: "Abrir estrutura",
+      action: () => openExperimentTab("content-structure"),
+    },
+    {
+      id: "geralanding-pipeline",
+      title: "Pipeline GeraLanding",
+      detail: "Aba Gera landing",
+      isMet: hasGeraLandingPipelineContent,
+      isLoading:
+        isLoadingPendingGeraLandingExecutions ||
+        isLoadingCompletedGeraLandingExecutions ||
+        isLoadingPendingGeraLandingCopyExecutions ||
+        isLoadingCompletedGeraLandingCopyExecutions ||
+        isLoadingPendingGeraLandingDesignPresetExecutions ||
+        isLoadingCompletedGeraLandingDesignPresetExecutions ||
+        isLoadingPendingGeraLandingImagePromptsExecutions ||
+        isLoadingCompletedGeraLandingImagePromptsExecutions ||
+        isLoadingPendingGeraLandingImageGenerationExecutions ||
+        isLoadingCompletedGeraLandingImageGenerationExecutions ||
+        isLoadingPendingGeraLandingQualityReviewExecutions ||
+        isLoadingCompletedGeraLandingQualityReviewExecutions ||
+        isLoadingPendingGeraLandingDeliverablesExecutions ||
+        isLoadingCompletedGeraLandingDeliverablesExecutions,
+      actionLabel: "Abrir GeraLanding",
+      action: () => openExperimentTab("gera-landing"),
+    },
+    {
+      id: "approved-creatives",
+      title: "Aprovação de criativos",
+      detail: `${readinessCreativeCount}/3 criativos aprovados`,
+      isMet: hasAtLeastThreeApprovedCreatives,
+      isLoading: isLoadingReadiness,
+      actionLabel: "Abrir criativos",
+      action: () => openExperimentTab("creatives"),
+    },
+    {
+      id: "audience-selection",
+      title: "Escolha de público",
+      detail: hasAudienceSelection
+        ? "Público completo selecionado"
+        : "Selecione interesses, comportamentos e dados demográficos",
+      isMet: hasAudienceSelection,
+      isLoading: isLoadingReadiness,
+      actionLabel: "Abrir público",
+      action: () => openExperimentTab("publico"),
+    },
+    {
+      id: "landing-approval",
+      title: "Aprovação da landing",
+      detail: data.followUpActionUrl
+        ? "Landing aprovada com URL ativa"
+        : "Aprove a landing para liberar a URL de destino",
+      isMet: Boolean(data.followUpActionUrl),
+      isLoading: isLoadingReadiness,
+      actionLabel: "Abrir landing",
+      action: openLandingActions,
+    },
+  ];
   const diagnosticsVariant: Record<string, string> = {
     ERROR: "danger",
     WARNING: "warning",
@@ -2273,6 +2358,64 @@ export default function ExperimentDetailPage() {
           ) : null}
         </div>
       ) : null}
+      <div className="card border-0 shadow-sm rounded-3 mt-3">
+        <div className="card-body">
+          <div className="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+            <div>
+              <h5 className="card-title mb-1">
+                Checklist principal do experimento
+              </h5>
+              <p className="text-muted small mb-0">
+                Visão rápida dos marcos necessários para transformar o
+                experimento em campanha publicável.
+              </p>
+            </div>
+            <span className="badge text-bg-light border text-body">
+              {mainExperimentChecklist.filter((item) => item.isMet).length}/
+              {mainExperimentChecklist.length} concluídos
+            </span>
+          </div>
+          <div className="row g-3 mt-1">
+            {mainExperimentChecklist.map((item) => (
+              <div key={item.id} className="col-12 col-md-6 col-xl">
+                <button
+                  type="button"
+                  className={`w-100 h-100 text-start border rounded-3 p-3 bg-body ${
+                    item.isMet
+                      ? "border-success-subtle"
+                      : "border-warning-subtle"
+                  }`}
+                  onClick={item.action}
+                >
+                  <div className="d-flex align-items-start gap-2">
+                    <span
+                      className={`badge rounded-pill ${
+                        item.isLoading
+                          ? "text-bg-secondary"
+                          : item.isMet
+                            ? "text-bg-success"
+                            : "text-bg-warning"
+                      }`}
+                      aria-label={item.isMet ? "Concluído" : "Pendente"}
+                    >
+                      {item.isLoading ? "…" : item.isMet ? "✓" : "!"}
+                    </span>
+                    <span>
+                      <span className="fw-semibold d-block">{item.title}</span>
+                      <span className="small text-muted d-block mt-1">
+                        {item.detail}
+                      </span>
+                      <span className="small text-primary d-block mt-2">
+                        {item.actionLabel}
+                      </span>
+                    </span>
+                  </div>
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
       <div className="card border-0 shadow-sm rounded-3 mt-3">
         <div className="card-body">
           <div className="d-flex justify-content-between align-items-start">

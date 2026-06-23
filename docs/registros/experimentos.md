@@ -5155,3 +5155,8 @@
 - Criada regra para invalidar campanhas com pelo menos 1.500 impressões, R$ 20,00 de gasto sincronizado, taxa de acesso ao formulário igual ou inferior a 1,2% e zero envios de formulário.
 - Causa-raiz tratada: campanhas com pouca entrada no formulário e nenhum lead podiam continuar gastando até regras estatísticas mais longas, mesmo já apresentando sinal comercial composto ruim.
 - Prevenção de recorrência: a parada automática passa a registrar o motivo `LOW_FORM_ENTRY_NO_SUBMISSION_AFTER_SPEND` e solicitar pausa ao Facebook Ads Worker.
+
+## 2026-06-23 — Checklist principal na tela do experimento
+- Pedido: incluir na tela principal do experimento um quadro com marcação visual dos marcos já concluídos.
+- Alteração: a tela agora exibe um checklist consolidado com pipeline de experimento, pipeline GeraLanding, aprovação de pelo menos 3 criativos, escolha de público e aprovação da landing.
+- Objetivo de negócio: dar ao usuário uma visão rápida do que falta para transformar o experimento em campanha publicável, reduzindo esforço operacional e acelerando a liberação para vendas.

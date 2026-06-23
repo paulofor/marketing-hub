@@ -1777,3 +1777,8 @@ Arquivos principais:
 
 - Corrigida a exibição dos horários no detalhe `/mois/sales-pages-library/:pageId` para apresentar o horário literal retornado pelo backend, sem conversão automática pelo fuso do navegador.
 - A mudança evita que o histórico da página apareça com 3 horas a menos e mantém a tela mostrando a verdade persistida pelo backend.
+## 2026-06-23 — Regra de exibição da análise mais recente na Biblioteca Sales Pages
+
+- Revisada a decisão sobre retentativas de análise comercial: a tela deve refletir somente a execução mais recente da página, mesmo quando a tentativa mais recente falhar.
+- Removida a preservação automática de análise anterior concluída no status consolidado, porque ela misturava execução antiga com tentativa nova e poderia esconder erro operacional atual.
+- Mantida a leitura da causa operacional no histórico de execuções, preservando transparência para reprocessar quando a chamada OpenAI falhar.

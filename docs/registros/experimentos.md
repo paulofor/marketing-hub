@@ -1,3 +1,9 @@
+## 2026-06-23 — Hipóteses: histórico do nicho no prompt
+
+- decisão aplicada: toda nova solicitação de hipótese passa a carregar o resumo das hipóteses já existentes do mesmo nicho no contrato pendente para o Worker AI.
+- objetivo de negócio: evitar repetição de dor, promessa, persona ou mecanismo no mesmo nicho, aumentando variedade de apostas comerciais testáveis.
+- prevenção de recorrência: o cânone de experimentos passou a exigir esse histórico e foram adicionados testes no backend e no AI Worker para garantir que o resumo chega ao prompt.
+
 ## 2026-06-23 — Correção do teste de fechamento automático de hipótese
 
 - foi feito: o teste de finalização do pipeline de hipótese foi alinhado à regra vigente de nome automático por sigla do nicho e sequência (`<SIGLA>-H001`).

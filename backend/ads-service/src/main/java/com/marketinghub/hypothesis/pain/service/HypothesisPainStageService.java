@@ -7,12 +7,14 @@ import com.marketinghub.hypothesis.pain.provisorio.HypothesisPainEnrichmentProfi
 import com.marketinghub.hypothesis.pain.service.detailStageExecution.HypothesisPainExecutionDetailResponse;
 import com.marketinghub.hypothesis.pain.service.listStageExecutions.HypothesisPainExecutionSummaryResponse;
 import com.marketinghub.hypothesis.pain.service.pending.HypothesisPainPendingEnrichmentProfile;
+import com.marketinghub.hypothesis.pain.service.pending.HypothesisPainPendingExistingHypothesis;
 import com.marketinghub.hypothesis.pain.service.pending.HypothesisPainPendingExecution;
 import com.marketinghub.hypothesis.pain.service.pending.HypothesisPainPendingNiche;
 import com.marketinghub.hypothesis.pain.service.recebeResposta.RecebeRespostaRequest;
 import com.marketinghub.hypothesis.pain.service.start.HypothesisPainStartResponse;
 import com.marketinghub.hypothesis.pain.service.summary.HypothesisStageFinalSummaryResponse;
 import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.repository.jpa.hypothesis.HypothesisRepository;
 import com.marketinghub.repository.jpa.hypothesis.HypothesisPainStageExecutionRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -63,6 +65,7 @@ public class HypothesisPainStageService {
     private final MarketNicheRepository marketNicheRepository;
     private final HypothesisPainEnrichmentProfileReader enrichmentProfileReader;
     private final HypothesisPainStageExecutionRepository executionRepository;
+    private final HypothesisRepository hypothesisRepository;
     private final HypothesisPainCostCalculator costCalculator;
 
     /** Inicializa o serviço com os repositórios canônicos e o calculador interno de custo da etapa. */
@@ -70,10 +73,12 @@ public class HypothesisPainStageService {
             MarketNicheRepository marketNicheRepository,
             HypothesisPainEnrichmentProfileReader enrichmentProfileReader,
             HypothesisPainStageExecutionRepository executionRepository,
+            HypothesisRepository hypothesisRepository,
             HypothesisPainCostCalculator costCalculator) {
         this.marketNicheRepository = marketNicheRepository;
         this.enrichmentProfileReader = enrichmentProfileReader;
         this.executionRepository = executionRepository;
+        this.hypothesisRepository = hypothesisRepository;
         this.costCalculator = costCalculator;
     }
 
@@ -374,10 +379,30 @@ public class HypothesisPainStageService {
                         execution.getProcessingStartedAt(),
                         toPendingNiche(execution.getMarketNiche()),
                         toPendingEnrichmentProfile(execution.getMarketNicheId()),
+                        toExistingHypotheses(execution.getMarketNicheId()),
                         pendingPainResponse(execution),
                         pendingResultResponse(execution),
                         pendingMechanismResponse(execution),
                         pendingProofResponse(execution)))
+                .toList();
+    }
+
+    /** Resume as hipóteses já geradas para o mesmo nicho antes de criar uma nova variação. */
+    private List<HypothesisPainPendingExistingHypothesis> toExistingHypotheses(Long marketNicheId) {
+        if (marketNicheId == null) {
+            return List.of();
+        }
+        return hypothesisRepository.findByMarketNicheId(marketNicheId).stream()
+                .map(hypothesis -> new HypothesisPainPendingExistingHypothesis(
+                        hypothesis.getId() == null ? null : hypothesis.getId().toString(),
+                        hypothesis.getTitle(),
+                        hypothesis.getProblem(),
+                        hypothesis.getPromise(),
+                        hypothesis.getPersona(),
+                        hypothesis.getMechanism(),
+                        hypothesis.getUniqueMechanism(),
+                        hypothesis.getEntrega(),
+                        hypothesis.getStatus() == null ? null : hypothesis.getStatus().name()))
                 .toList();
     }
 

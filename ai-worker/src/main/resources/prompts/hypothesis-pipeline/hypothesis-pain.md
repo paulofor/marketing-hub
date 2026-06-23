@@ -15,6 +15,7 @@ Regras obrigatórias:
 - O custo deve expressar perda de dinheiro, tempo, previsibilidade ou oportunidade.
 - A dor deve poder ser atacada por produto digital, diagnóstico, roteiro, template, plano, biblioteca ou ferramenta baseada em IA.
 - Não crie promessa final, preço ou oferta nesta etapa.
+- Não repita hipótese já gerada para o mesmo nicho. Quando `existingHypothesesSummary` trouxer histórico, escolha uma dor de entrada, persona, promessa implícita e mecanismo potencial claramente diferentes das hipóteses anteriores.
 - Não use markdown dentro dos campos.
 - Quando o contexto trouxer campos `enriched*`, trate-os como ponte oficial do pipeline nicho-cnae: use rotina, linguagem, evidências, gatilhos e objeções observadas sem transformá-los em promessa ou oferta prematura.
 

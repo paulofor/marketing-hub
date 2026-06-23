@@ -8,14 +8,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.marketinghub.hypothesis.Hypothesis;
-import com.marketinghub.hypothesis.HypothesisStatus;
 import com.marketinghub.hypothesis.pain.HypothesisPainCostCalculator;
 import com.marketinghub.hypothesis.pain.HypothesisPainStageExecution;
 import com.marketinghub.hypothesis.pain.provisorio.HypothesisPainEnrichmentProfileReader;
 import com.marketinghub.hypothesis.pain.provisorio.HypothesisPainEnrichmentProfileSnapshot;
 import com.marketinghub.hypothesis.pain.service.recebeResposta.RecebeRespostaRequest;
 import com.marketinghub.niche.MarketNiche;
-import com.marketinghub.repository.jpa.hypothesis.HypothesisRepository;
 import com.marketinghub.repository.jpa.hypothesis.HypothesisPainStageExecutionRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import java.math.BigDecimal;
@@ -44,9 +42,6 @@ class HypothesisPainStageServiceTest {
     private HypothesisPainStageExecutionRepository executionRepository;
 
     @Mock
-    private HypothesisRepository hypothesisRepository;
-
-    @Mock
     private HypothesisPainCostCalculator costCalculator;
 
     private HypothesisPainStageService service;
@@ -58,7 +53,6 @@ class HypothesisPainStageServiceTest {
                 marketNicheRepository,
                 enrichmentProfileReader,
                 executionRepository,
-                hypothesisRepository,
                 costCalculator);
     }
 
@@ -219,16 +213,17 @@ class HypothesisPainStageServiceTest {
                 .status("INICIADO")
                 .executionRequestedAt(Instant.parse("2026-06-11T09:59:00Z"))
                 .build();
-        Hypothesis existing = Hypothesis.builder()
-                .id(java.util.UUID.fromString("11111111-1111-1111-1111-111111111111"))
-                .title("CPM-H001")
-                .problem("Agenda quebrada por remarcações.")
-                .promise("Agenda previsível em 7 dias.")
-                .persona("Manicure autônoma em domicílio")
-                .mechanism("Roteiro de confirmação por WhatsApp")
-                .uniqueMechanism("Checklist de pré-atendimento")
-                .entrega("Template operacional")
-                .status(HypothesisStatus.BACKLOG)
+        Hypothesis existing = new Hypothesis();
+        existing.setId(java.util.UUID.fromString("11111111-1111-1111-1111-111111111111"));
+        existing.setTitle("CPM-H001");
+        existing.setProblem("Agenda quebrada por remarcações.");
+        existing.setPromise("Agenda previsível em 7 dias.");
+        existing.setPersona("Manicure autônoma em domicílio");
+        existing.setMechanism("Roteiro de confirmação por WhatsApp");
+        existing.setUniqueMechanism("Checklist de pré-atendimento");
+        existing.setEntrega("Template operacional");
+        HypothesisPainStageExecution existingExecution = HypothesisPainStageExecution.builder()
+                .hypothesis(existing)
                 .build();
 
         when(executionRepository.findTop50ByStageCodeAndStatusInAndCompletedAtIsNullAndProcessingStartedAtBeforeOrderByProcessingStartedAtAsc(
@@ -240,7 +235,10 @@ class HypothesisPainStageServiceTest {
                         "hypothesis-pain",
                         "INICIADO"))
                 .thenReturn(List.of(execution));
-        when(hypothesisRepository.findByMarketNicheId(18L)).thenReturn(List.of(existing));
+        when(executionRepository.findByMarketNicheIdAndStageCodeOrderByExecutionRequestedAtDesc(
+                        18L,
+                        "hypothesis-offer"))
+                .thenReturn(List.of(existingExecution));
 
         var pending = service.listPending();
 
@@ -248,7 +246,7 @@ class HypothesisPainStageServiceTest {
         assertEquals(1, pending.getFirst().existingHypotheses().size());
         assertEquals("CPM-H001", pending.getFirst().existingHypotheses().getFirst().title());
         assertEquals("Agenda quebrada por remarcações.", pending.getFirst().existingHypotheses().getFirst().problem());
-        assertEquals("BACKLOG", pending.getFirst().existingHypotheses().getFirst().status());
+        assertNull(pending.getFirst().existingHypotheses().getFirst().status());
     }
 
     /** Deve falhar job antigo com openai_job_id para impedir recaptura duplicada de execução ativa na OpenAI. */

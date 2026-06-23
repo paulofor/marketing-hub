@@ -14,7 +14,7 @@ import com.marketinghub.hypothesis.pain.service.recebeResposta.RecebeRespostaReq
 import com.marketinghub.hypothesis.pain.service.start.HypothesisPainStartResponse;
 import com.marketinghub.hypothesis.pain.service.summary.HypothesisStageFinalSummaryResponse;
 import com.marketinghub.niche.MarketNiche;
-import com.marketinghub.repository.jpa.hypothesis.HypothesisRepository;
+import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.repository.jpa.hypothesis.HypothesisPainStageExecutionRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -65,7 +65,6 @@ public class HypothesisPainStageService {
     private final MarketNicheRepository marketNicheRepository;
     private final HypothesisPainEnrichmentProfileReader enrichmentProfileReader;
     private final HypothesisPainStageExecutionRepository executionRepository;
-    private final HypothesisRepository hypothesisRepository;
     private final HypothesisPainCostCalculator costCalculator;
 
     /** Inicializa o serviço com os repositórios canônicos e o calculador interno de custo da etapa. */
@@ -73,12 +72,10 @@ public class HypothesisPainStageService {
             MarketNicheRepository marketNicheRepository,
             HypothesisPainEnrichmentProfileReader enrichmentProfileReader,
             HypothesisPainStageExecutionRepository executionRepository,
-            HypothesisRepository hypothesisRepository,
             HypothesisPainCostCalculator costCalculator) {
         this.marketNicheRepository = marketNicheRepository;
         this.enrichmentProfileReader = enrichmentProfileReader;
         this.executionRepository = executionRepository;
-        this.hypothesisRepository = hypothesisRepository;
         this.costCalculator = costCalculator;
     }
 
@@ -392,18 +389,28 @@ public class HypothesisPainStageService {
         if (marketNicheId == null) {
             return List.of();
         }
-        return hypothesisRepository.findByMarketNicheId(marketNicheId).stream()
-                .map(hypothesis -> new HypothesisPainPendingExistingHypothesis(
-                        hypothesis.getId() == null ? null : hypothesis.getId().toString(),
-                        hypothesis.getTitle(),
-                        hypothesis.getProblem(),
-                        hypothesis.getPromise(),
-                        hypothesis.getPersona(),
-                        hypothesis.getMechanism(),
-                        hypothesis.getUniqueMechanism(),
-                        hypothesis.getEntrega(),
-                        hypothesis.getStatus() == null ? null : hypothesis.getStatus().name()))
+        return executionRepository.findByMarketNicheIdAndStageCodeOrderByExecutionRequestedAtDesc(
+                        marketNicheId,
+                        OFFER_STAGE_CODE)
+                .stream()
+                .map(HypothesisPainStageExecution::getHypothesis)
+                .filter(java.util.Objects::nonNull)
+                .map(this::toExistingHypothesis)
                 .toList();
+    }
+
+    /** Converte uma hipótese finalizada em resumo para evitar repetição na próxima geração. */
+    private HypothesisPainPendingExistingHypothesis toExistingHypothesis(Hypothesis hypothesis) {
+        return new HypothesisPainPendingExistingHypothesis(
+                hypothesis.getId() == null ? null : hypothesis.getId().toString(),
+                hypothesis.getTitle(),
+                hypothesis.getProblem(),
+                hypothesis.getPromise(),
+                hypothesis.getPersona(),
+                hypothesis.getMechanism(),
+                hypothesis.getUniqueMechanism(),
+                hypothesis.getEntrega(),
+                null);
     }
 
     /** Verifica se a execução pendente possui todos os pré-requisitos concluídos antes de ir ao worker. */

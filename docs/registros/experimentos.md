@@ -5081,3 +5081,10 @@
 - Causa-raiz: a fase 1 capturava tempos e falhas, mas a tela ainda exigia interpretação manual para separar lentidão real, falha de recurso, navegador in-app e possível baixa qualidade de tráfego.
 - Correção aplicada: o backend passou a classificar a saúde de carregamento com códigos operacionais (`GOOD`, `SLOW_LOAD`, `CRITICAL_SLOW_LOAD`, `RESOURCE_ERRORS`, `POSSIBLE_IN_APP_BROWSER`, `POSSIBLE_TRAFFIC_QUALITY`, `INSUFFICIENT_DATA`) e a expor resumo, severidade e recomendação para a tela.
 - Prevenção de recorrência: adicionados testes de contrato para garantir que o diagnóstico diferencia falha técnica de possível problema de tráfego quando o carregamento está saudável.
+
+## 2026-06-23 — Teste do analytics público da landing alinhado ao script atual
+
+- Problema: o teste do HTML público do Lead Portal esperava helpers antigos (`resolvePersistentId`/`resolveSessionId`) e falhava apesar do script atual gerar e persistir `visitorId`/`sessionId` via `safeGet`/`safeSet`.
+- Causa-raiz: a implementação do analytics da landing evoluiu, mas o contrato textual do teste não foi atualizado junto.
+- Correção aplicada: o teste de regressão passou a validar o contrato atual de persistência first-party em `localStorage` e `sessionStorage`, mantendo as proteções contra metadados técnicos no HTML final.
+- Prevenção de recorrência: a validação agora acompanha os trechos efetivamente emitidos pelo controller, evitando falha por expectativa legada sem reduzir a cobertura do analytics público.

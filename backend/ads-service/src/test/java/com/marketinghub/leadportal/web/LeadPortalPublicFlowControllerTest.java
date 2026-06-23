@@ -24,7 +24,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Verifies the public lead portal flow endpoints and the rendered landing HTML contract.
+ * Verifica os endpoints públicos do Lead Portal e o contrato HTML renderizado da landing.
  */
 @SpringBootTest(classes = AdsServiceApplication.class)
 @AutoConfigureMockMvc
@@ -46,7 +46,7 @@ class LeadPortalPublicFlowControllerTest {
     MarketNicheRepository marketNicheRepository;
 
     /**
-     * Cleans persisted test data before each public flow endpoint verification.
+     * Limpa os dados persistidos antes de cada verificação dos endpoints públicos do fluxo.
      */
     @BeforeEach
     void cleanDatabase() {
@@ -55,7 +55,7 @@ class LeadPortalPublicFlowControllerTest {
     }
 
     /**
-     * Verifies that an approved flow is returned through the public JSON endpoint.
+     * Verifica que um fluxo aprovado é retornado pelo endpoint JSON público.
      */
     @Test
     void getBySlugReturnsApprovedFlow() throws Exception {
@@ -111,17 +111,18 @@ class LeadPortalPublicFlowControllerTest {
                 .getContentAsString();
 
         assertThat(html).contains("data-mh-landing-analytics=\"true\"");
-        assertThat(html).contains("var visitorId = resolvePersistentId('mh_lp_visitor_' + slugValue);");
-        assertThat(html).contains("var sessionId = resolveSessionId('mh_lp_session_' + slugValue);");
+        assertThat(html)
+                .contains("var visitorId = safeGet('localStorage', 'mh_lp_visitor_' + slugValue) || randomId('visitor');");
+        assertThat(html).contains("safeSet('localStorage', 'mh_lp_visitor_' + slugValue, visitorId);");
+        assertThat(html)
+                .contains("var sessionId = safeGet('sessionStorage', 'mh_lp_session_' + slugValue) || randomId('session');");
+        assertThat(html).contains("safeSet('sessionStorage', 'mh_lp_session_' + slugValue, sessionId);");
         assertThat(html).contains("visitorId: visitorId");
         assertThat(html).contains("sessionId: sessionId");
         assertThat(html).contains("pageUrl: window.location.href");
         assertThat(html).contains("occurredAt: new Date().toISOString()");
         assertThat(html).contains("userAgent: navigator.userAgent || ''");
-        assertThat(html).contains("safeGet('localStorage', key)");
-        assertThat(html).contains("safeGet('sessionStorage', key)");
         assertThat(html).contains("window.crypto.randomUUID");
-        assertThat(html).contains("window.crypto.getRandomValues");
         assertThat(html).doesNotContain("<!-- AUTO:");
         assertThat(html).doesNotContain("debugInfo");
         assertThat(html).doesNotContain("legacyPreviewHtml");
@@ -129,7 +130,7 @@ class LeadPortalPublicFlowControllerTest {
     }
 
     /**
-     * Verifies that a non-approved flow remains unavailable in the public JSON endpoint.
+     * Verifica que um fluxo não aprovado permanece indisponível no endpoint JSON público.
      */
     @Test
     void getBySlugReturnsNotFoundWhenFlowIsNotApproved() throws Exception {

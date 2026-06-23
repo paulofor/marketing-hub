@@ -16,7 +16,7 @@ class HealthCheckBackendClientTest {
             server.start();
             var client = new HealthCheckBackendClient(WebClient.builder().baseUrl(server.url("/").toString()).build());
 
-            client.sendHeartbeat(new HealthCheckOutput("backend", "ONLINE", 200, 15, "{}", null)).block();
+            client.sendHeartbeat(new HealthCheckOutput("backend", java.time.Instant.parse("2026-06-23T12:00:00Z"), "ONLINE", 200, 15, "{}", null)).block();
 
             var request = server.takeRequest();
             assertThat(request.getMethod()).isEqualTo("POST");

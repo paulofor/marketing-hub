@@ -40,9 +40,8 @@ class TargetingRequestChatGptClientTest {
         payloadMethod.setAccessible(true);
         Map<?, ?> payload = (Map<?, ?>) payloadMethod.invoke(context);
 
-        assertThat(payload)
-                .containsEntry("model", "gpt-5.5")
-                .containsEntry("service_tier", "flex");
+        assertThat(payload.get("model")).isEqualTo("gpt-5.5");
+        assertThat(payload.get("service_tier")).isEqualTo("flex");
     }
 
     /**

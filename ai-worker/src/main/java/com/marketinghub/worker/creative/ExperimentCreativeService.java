@@ -596,7 +596,7 @@ public class ExperimentCreativeService {
         if (hypothesis != null && StringUtils.hasText(hypothesis.getPromise())) {
             parts.add("Promessa central da hipótese:\n\n " + hypothesis.getPromise() + ".");
         }
-        parts.add("Lembre-se de que o Worker AI usará o modelo gpt-imagem-1.5.");
+        parts.add("Lembre-se de que o Worker AI usará o modelo gpt-image-2.");
         parts.add("Não inclua logos das plataformas e evite rostos genéricos sem contexto.");
         return String.join(" ", parts);
     }

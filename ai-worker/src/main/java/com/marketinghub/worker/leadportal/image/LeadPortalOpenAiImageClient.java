@@ -67,7 +67,7 @@ public class LeadPortalOpenAiImageClient {
             CreativeImageOptimizer imageOptimizer,
             @Value("${openai.api-key:}") String apiKey,
             @Value("${openai.base-url:https://api.openai.com/v1}") String baseUrl,
-            @Value("${openai.image-model:gpt-image-1.5}") String model,
+            @Value("${openai.image-model:gpt-image-2}") String model,
             @Value("${openai.batch-poll-interval:PT0.5S}") Duration batchPollInterval,
             @Value("${openai.batch-timeout:PT5M}") Duration batchTimeout) {
         this.imageOptimizer = imageOptimizer;

@@ -153,7 +153,7 @@ const PROMPT_SOURCE_HINTS: PromptSourceHint[] = [
   {
     label: "Modelo do Worker IA",
     source: "buildPipelineImagePrompt (base)",
-    markers: ["Lembre-se de que o Worker AI usará o modelo gpt-imagem-1.5."],
+    markers: ["Lembre-se de que o Worker AI usará o modelo gpt-image-2."],
   },
   {
     label: "Restrição de logos e rostos",

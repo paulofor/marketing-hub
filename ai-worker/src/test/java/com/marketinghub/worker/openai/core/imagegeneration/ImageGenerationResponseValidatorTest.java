@@ -18,12 +18,12 @@ class ImageGenerationResponseValidatorTest {
     @Test
     void validateAndParseShouldDecodeBase64Image() {
         String payload = Base64.getEncoder().encodeToString("fake-image".getBytes(StandardCharsets.UTF_8));
-        String response = "{\"model\":\"gpt-image-1.5\",\"prompt\":\"hero\",\"data\":[{\"b64_json\":\"" + payload + "\"}]}";
+        String response = "{\"model\":\"gpt-image-2\",\"prompt\":\"hero\",\"data\":[{\"b64_json\":\"" + payload + "\"}]}";
 
         ImageGenerationOutput output = validator.validateAndParse(response);
 
         assertThat(output.images()).singleElement().satisfies(image -> {
-            assertThat(image.model()).isEqualTo("gpt-image-1.5");
+            assertThat(image.model()).isEqualTo("gpt-image-2");
             assertThat(image.prompt()).isEqualTo("hero");
             assertThat(image.imageContent()).isEqualTo("fake-image".getBytes(StandardCharsets.UTF_8));
             assertThat(image.imageUrl()).isNull();
@@ -36,7 +36,7 @@ class ImageGenerationResponseValidatorTest {
         String payload = Base64.getEncoder().encodeToString("hero-image".getBytes(StandardCharsets.UTF_8));
         String response = """
                 {
-                  "model": "gpt-image-1.5",
+                  "model": "gpt-image-2",
                   "images": [
                     {
                       "planningItemKey": "hero-img",

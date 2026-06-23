@@ -43,8 +43,8 @@ public class PipelineService {
     private static final Map<String, List<String>> GERA_LANDING_STAGE_ALIASES = buildGeraLandingStageAliases();
     private static final String TEXT_DEFAULT_MODEL_CODE = "gpt-5.2";
     private static final String TEXT_DEFAULT_MODEL_NAME = "GPT-5.2";
-    private static final String IMAGE_DEFAULT_MODEL_CODE = "gpt-image-1.5";
-    private static final String IMAGE_DEFAULT_MODEL_NAME = "GPT Image 1.5";
+    private static final String IMAGE_DEFAULT_MODEL_CODE = "gpt-image-2";
+    private static final String IMAGE_DEFAULT_MODEL_NAME = "GPT Image 2";
     private static final String PRICING_MODE_FLEX = "flex";
 
     private final PipelineRepository pipelineRepository;

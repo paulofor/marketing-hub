@@ -54,7 +54,7 @@ class FrameworkImageServiceTest {
                 "PENDING",
                 "WAITING_AI_WORKER",
                 null,
-                "gpt-image-1.5",
+                "gpt-image-2",
                 "prompt",
                 null,
                 null,
@@ -73,7 +73,7 @@ class FrameworkImageServiceTest {
                 FrameworkImageOpenAiBatchClient.FrameworkImageBatchResult.success(
                         jobId,
                         "batch-123",
-                        "gpt-image-1.5",
+                        "gpt-image-2",
                         "prompt",
                         new byte[] {1, 2, 3},
                         null

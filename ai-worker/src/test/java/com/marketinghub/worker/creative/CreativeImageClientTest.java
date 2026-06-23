@@ -172,7 +172,7 @@ class CreativeImageClientTest {
         ExchangeFunction exchange = stubOpenAiApi(requestPayload, body, HttpStatus.OK, "/responses");
         WebClient.Builder builder = WebClient.builder().exchangeFunction(exchange);
         CreativeImageClient flexClient = new CreativeImageClient(builder, backendAssetClient, optimizer, "key", "http://openai",
-                "gpt-image-1.5", "gpt-5.5", "flex", 900);
+                "gpt-image-2", "gpt-5.5", "flex", 900);
         when(backendAssetClient.uploadImage(any(), any(), any(), any(), any())).thenReturn("/uploads/flex.jpg");
 
         String result = flexClient.generateImage("prompt");
@@ -187,10 +187,10 @@ class CreativeImageClientTest {
         assertThat(tools.get(0))
                 .containsEntry("type", "image_generation")
                 .containsEntry("action", "generate")
-                .containsEntry("model", "gpt-image-1.5");
+                .containsEntry("model", "gpt-image-2");
         verify(backendAssetClient).uploadImage(any(byte[].class),
                 argThat(name -> name.endsWith(".jpg")),
-                argThat(model -> model.equals("gpt-image-1.5")),
+                argThat(model -> model.equals("gpt-image-2")),
                 argThat(prompt -> prompt.equals("prompt")),
                 isNull());
     }

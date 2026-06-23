@@ -96,7 +96,7 @@ public class ImageGenerationPromptBuilder implements StagePromptBuilder<ImageGen
         if (!StringUtils.hasText(requestedModel)
                 || "gpt-image-1".equalsIgnoreCase(requestedModel.trim())
                 || "gpt-image-1.0".equalsIgnoreCase(requestedModel.trim())) {
-            return "gpt-image-1.5";
+            return "gpt-image-2";
         }
         return requestedModel.trim();
     }

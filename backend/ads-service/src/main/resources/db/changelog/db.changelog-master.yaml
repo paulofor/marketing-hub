@@ -1073,3 +1073,6 @@ databaseChangeLog:
   - include:
       file: changesets/2026-06-23-ops-monitor.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-06-23-ops-monitor-phase4-modules.yaml
+      relativeToChangelogFile: true

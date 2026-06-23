@@ -1793,3 +1793,5 @@ Arquivos principais:
 
 - Ajustada a tela de detalhe da Biblioteca Sales Pages para permitir novo pedido quando já existe dossiê concluído, exibindo explicitamente o botão **Reprocessar dossiê**.
 - Mantido o bloqueio somente quando o backend indica dossiê em fila ou em processamento, e a tela informa que sempre exibirá o dossiê mais recente retornado pelo backend.
+
+- 2026-06-23 — Ops Monitor fase 4: adicionados os coletores MOIS ClickBank, Hotmart e o MOIS Sales Library Worker ao cadastro monitorado do backend; a tela de operação agora permite filtrar módulos por criticidade/tipo e consultar histórico recente de incidentes sem inferência local de status.

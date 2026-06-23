@@ -1353,3 +1353,5 @@
 - Removida a dependência direta do `candidate-generator` OPRM v2 sobre o repositório canônico de nichos fora do pacote permitido pela regra de arquitetura.
 - A criação do `MarketNiche` confirmado passa por um adaptador de persistência em `repository.jpa.oprm`, preservando o contrato do módulo OPRM e mantendo a regra ArchUnit como prevenção de recorrência.
 - Causa-raiz tratada: o service OPRM tinha assumido diretamente a materialização em `MarketNicheRepository`, quebrando o isolamento do módulo OPRM.
+
+- 2026-06-23 — Ops Monitor fase 4: adicionado o módulo `oprm-coletor-mei` ao cadastro monitorado do backend para acompanhar impacto operacional na descoberta de rotinas, dores e oportunidades.

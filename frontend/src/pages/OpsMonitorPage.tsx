@@ -7,6 +7,7 @@ import {
   OpsMonitorStatus,
   useOpsMonitorAvailability,
   useOpsMonitorAvailabilityHistory,
+  useOpsMonitorIncidentHistory,
   useOpsMonitorOpenIncidents,
   useOpsMonitorSummary,
 } from "../api/useOpsMonitor";
@@ -74,9 +75,16 @@ function getImpact(module: ModuleAvailability) {
 
 export default function OpsMonitorPage() {
   const [selectedModuleCode, setSelectedModuleCode] = useState<string>();
+  const [criticalityFilter, setCriticalityFilter] = useState("");
+  const [typeFilter, setTypeFilter] = useState("");
+  const filters = useMemo(
+    () => ({ criticality: criticalityFilter, type: typeFilter }),
+    [criticalityFilter, typeFilter],
+  );
   const summaryQuery = useOpsMonitorSummary();
-  const availabilityQuery = useOpsMonitorAvailability();
-  const incidentsQuery = useOpsMonitorOpenIncidents();
+  const availabilityQuery = useOpsMonitorAvailability(filters);
+  const incidentsQuery = useOpsMonitorOpenIncidents(filters);
+  const incidentHistoryQuery = useOpsMonitorIncidentHistory(filters);
 
   const modules = availabilityQuery.data ?? [];
   const selectedModule = useMemo(() => {
@@ -174,6 +182,49 @@ export default function OpsMonitorPage() {
         </div>
       </div>
 
+      <div className="card mb-4">
+        <div className="card-header">Filtros operacionais</div>
+        <div className="card-body">
+          <div className="row g-3">
+            <div className="col-md-6">
+              <label className="form-label" htmlFor="ops-criticality-filter">
+                Criticidade
+              </label>
+              <select
+                id="ops-criticality-filter"
+                className="form-select"
+                value={criticalityFilter}
+                onChange={(event) => setCriticalityFilter(event.target.value)}
+              >
+                <option value="">Todas as criticidades</option>
+                <option value="CRITICAL">Crítica</option>
+                <option value="HIGH">Alta</option>
+                <option value="MEDIUM">Média</option>
+                <option value="LOW">Baixa</option>
+              </select>
+            </div>
+            <div className="col-md-6">
+              <label className="form-label" htmlFor="ops-type-filter">
+                Tipo de módulo
+              </label>
+              <select
+                id="ops-type-filter"
+                className="form-select"
+                value={typeFilter}
+                onChange={(event) => setTypeFilter(event.target.value)}
+              >
+                <option value="">Todos os tipos</option>
+                <option value="BACKEND">Backend</option>
+                <option value="WORKER">Worker</option>
+                <option value="COLLECTOR">Coletor</option>
+                <option value="PORTAL">Portal</option>
+                <option value="SERVICE">Serviço</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {criticalAlerts.length > 0 ? (
         <div className="mb-4">
           {criticalAlerts.map((module) => (
@@ -252,6 +303,44 @@ export default function OpsMonitorPage() {
               )}
             </div>
           </div>
+        </div>
+      </div>
+
+      <div className="card mb-4">
+        <div className="card-header">Histórico recente de incidentes</div>
+        <div className="card-body">
+          {(incidentHistoryQuery.data ?? []).length === 0 ? (
+            <p className="text-muted mb-0">
+              Nenhum incidente no histórico recente para os filtros atuais.
+            </p>
+          ) : (
+            <div className="table-responsive">
+              <table className="table table-sm align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>Módulo</th>
+                    <th>Status</th>
+                    <th>Severidade</th>
+                    <th>Início</th>
+                    <th>Duração</th>
+                    <th>Sinal</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(incidentHistoryQuery.data ?? []).map((incident) => (
+                    <tr key={incident.id}>
+                      <td>{incident.moduleName}</td>
+                      <td>{incident.status}</td>
+                      <td>{incident.severity}</td>
+                      <td>{formatDateTime(incident.startedAt)}</td>
+                      <td>{formatDuration(incident.durationSeconds)}</td>
+                      <td>{incident.rootSignal ?? incident.summary}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
 

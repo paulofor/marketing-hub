@@ -5099,3 +5099,9 @@
 - Pedido: mudar a geração das imagens dos anúncios do pipeline para a versão 2 do modelo de imagens.
 - Alteração: o backend passa a expor `gpt-image-2` como modelo padrão de etapa de imagem quando não houver configuração explícita; o AI Worker passa a usar `gpt-image-2` como padrão operacional; a tela e o cânone de publicação de campanhas foram alinhados para não comunicar o modelo antigo.
 - Objetivo de negócio: melhorar a qualidade visual dos criativos de anúncios, aumentando aderência entre briefing, texto renderizado e imagem final para apoiar testes de venda.
+
+## 2026-06-23 — Correção de bootstrap do AI Worker sem metadados JDBC
+- solicitação: investigar por que o Gera Preset Design do experimento 47 não processava após o job ficar em `INICIADO`.
+- causa-raiz confirmada: o AI Worker não subia; o Spring/Hibernate tentava montar `entityManagerFactory` usando metadados JDBC, mas sem conexão/metadados disponíveis não conseguia determinar o dialect e abortava o bootstrap antes dos schedulers do GeraLanding rodarem.
+- foi feito: o AI Worker passou a declarar explicitamente o dialect MySQL e desabilitar acesso a metadados JDBC no bootstrap, além de não falhar a inicialização do Hikari quando a conexão inicial não estiver disponível.
+- impacto esperado: o worker volta a subir e os schedulers baseados em API do backend, incluindo `landing-page-design-preset`, conseguem consumir a fila pendente sem depender de descoberta inicial de metadados do banco.

@@ -605,11 +605,11 @@ components:
         sourceField: { type: string }
     FinalizeHypothesisRequest:
       type: object
-      required: [name]
       properties:
         name:
           type: string
-          description: Nome final da hipótese que aparecerá na criação de experimento.
+          nullable: true
+          description: Campo legado mantido por compatibilidade; o backend gera automaticamente o nome final da hipótese.
     HypothesisDto:
       type: object
       properties:

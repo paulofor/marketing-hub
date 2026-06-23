@@ -61,11 +61,12 @@ class HypothesisPipelineFinalizationServiceTest {
         mockCompletedStage("hypothesis-mechanism", "mecanismo plausível", "gpt-5.2", new BigDecimal("0.03000000"));
         mockCompletedStage("hypothesis-proof", "prova segura", "gpt-5.2", new BigDecimal("0.04000000"));
         mockCompletedStage("hypothesis-offer", "oferta low-ticket", "gpt-5.2", new BigDecimal("0.05000000"));
+        when(hypothesisRepository.countByMarketNicheId(18L)).thenReturn(0L);
         when(hypothesisRepository.save(any(Hypothesis.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         Hypothesis hypothesis = service.finalizeHypothesis(18L, new FinalizeHypothesisRequest(" Hipótese final "));
 
-        assertEquals("Hipótese final", hypothesis.getTitle());
+        assertEquals("SDB-H001", hypothesis.getTitle());
         assertEquals("Salões de beleza", hypothesis.getPersona());
         assertEquals("dor validada", hypothesis.getProblem());
         assertEquals("resultado claro", hypothesis.getPromise());

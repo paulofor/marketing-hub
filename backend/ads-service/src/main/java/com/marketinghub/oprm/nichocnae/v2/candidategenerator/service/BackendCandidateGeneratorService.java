@@ -331,7 +331,7 @@ public class BackendCandidateGeneratorService {
                 outcomeStatus(finalDecision, lastExecution),
                 outcomeMessage(finalDecision, finalDecisionReason, marketNicheId, lastExecution),
                 actionLabel(finalDecision, marketNicheId, lastExecution),
-                actionUrl(finalDecision, lastExecution.getCnaeCode(), marketNicheId),
+                actionUrl(finalDecision, lastExecution.getCnaeCode(), lastExecution.getJobId(), marketNicheId),
                 usedAi,
                 aiCostUsd,
                 loopDetected(executions),
@@ -499,20 +499,20 @@ public class BackendCandidateGeneratorService {
             return "Pesquisar outro recorte";
         }
         if (lastExecution.getStatus() == OprmNichoCnaeV2StageExecutionStatus.COMPLETED) {
-            return "Abrir CNAE para materializar";
+            return "Ver resultado do pipeline";
         }
         return null;
     }
 
     /** Define a URL interna do comando principal sem deixar a tela inferir regra de negócio. */
-    private String actionUrl(String decision, String cnaeCode, String marketNicheId) {
+    private String actionUrl(String decision, String cnaeCode, String jobId, String marketNicheId) {
         if (marketNicheId != null) {
             return "/niches/" + marketNicheId;
         }
         if ("NO_VIABLE_SUBNICHE".equals(decision)) {
             return "/oprm/cnaes/" + cnaeCode;
         }
-        return "/oprm/cnaes/" + cnaeCode;
+        return "/oprm/cnaes/" + cnaeCode + "/pipeline-v2/jobs/" + jobId;
     }
 
     /** Extrai o ID de nicho materializado quando alguma etapa persistiu esse identificador no payload. */

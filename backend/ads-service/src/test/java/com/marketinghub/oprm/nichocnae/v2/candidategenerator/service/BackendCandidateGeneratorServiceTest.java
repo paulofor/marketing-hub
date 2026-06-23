@@ -213,6 +213,30 @@ class BackendCandidateGeneratorServiceTest {
         assertThat(job.repeatedStageCount()).isEqualTo(2);
     }
 
+    /** Deve direcionar sucesso parcial da v2 para o relatório do job, sem misturar com a tela legada do CNAE. */
+    @Test
+    void listJobsForCnaePointsPartialSuccessToJobReport() {
+        BackendCandidateGeneratorService service = service(true, false);
+        OprmNichoCnaeV2StageExecution completed = execution(501L, 1, 0, 1);
+        completed.setJobId("nichocnae-v2-candidate-2-job-13");
+        completed.setCnaeCode("4781400");
+        completed.setStageCode("adaptive-query-planner");
+        completed.setStatus(OprmNichoCnaeV2StageExecutionStatus.COMPLETED);
+        completed.setOutputPayload("{\"planDecision\":\"ENOUGH_INFORMATION_FOR_NEXT_PIPELINE\",\"aiCostUsd\":0}");
+        completed.setUpdatedAt(Instant.parse("2026-06-22T23:51:00Z"));
+        when(stageExecutionRepository.findByCnaeCodeOrderByUpdatedAtDesc("4781400"))
+                .thenReturn(List.of(completed));
+
+        var result = service.listJobsForCnae("4781400");
+
+        assertThat(result.completedJobs()).hasSize(1);
+        var job = result.completedJobs().getFirst();
+        assertThat(job.outcomeStatus()).isEqualTo("SUCCESS");
+        assertThat(job.actionLabel()).isEqualTo("Ver resultado do pipeline");
+        assertThat(job.actionUrl())
+                .isEqualTo("/oprm/cnaes/4781400/pipeline-v2/jobs/nichocnae-v2-candidate-2-job-13");
+    }
+
     /** Deve detalhar cronologicamente as etapas do job para relatório de fracasso. */
     @Test
     void detailJobReturnsStageTimelineForFailureReport() {

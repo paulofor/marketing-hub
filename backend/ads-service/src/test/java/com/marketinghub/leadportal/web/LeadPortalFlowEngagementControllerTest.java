@@ -104,7 +104,12 @@ class LeadPortalFlowEngagementControllerTest {
                                   "pageUrl":"https://oportunidadebrasil.shop/api/flows/flow-slug/page",
                                   "operatingSystem":"ios",
                                   "screenWidth":390,
-                                  "screenHeight":844
+                                  "screenHeight":844,
+                                  "loadDurationMs":2400,
+                                  "domContentLoadedMs":900,
+                                  "firstContentfulPaintMs":700,
+                                  "resourceErrorCount":2,
+                                  "connectionType":"4g"
                                 }
                                 """))
                 .andExpect(status().isOk());
@@ -117,7 +122,12 @@ class LeadPortalFlowEngagementControllerTest {
                                 && "session-1".equals(request.sessionId())
                                 && "ios".equals(request.operatingSystem())
                                 && Integer.valueOf(390).equals(request.screenWidth())
-                                && Integer.valueOf(844).equals(request.screenHeight())));
+                                && Integer.valueOf(844).equals(request.screenHeight())
+                                && Long.valueOf(2400).equals(request.loadDurationMs())
+                                && Long.valueOf(900).equals(request.domContentLoadedMs())
+                                && Long.valueOf(700).equals(request.firstContentfulPaintMs())
+                                && Integer.valueOf(2).equals(request.resourceErrorCount())
+                                && "4g".equals(request.connectionType())));
     }
 
 }

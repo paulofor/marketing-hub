@@ -45,6 +45,13 @@ function shortUrl(value?: string | null) {
   }
 }
 
+function alertVariant(severity?: string | null) {
+  if (severity === "success" || severity === "danger" || severity === "warning") {
+    return severity;
+  }
+  return "info";
+}
+
 export default function ExperimentLandingAnalyticsTab({
   experimentId,
 }: ExperimentLandingAnalyticsTabProps) {
@@ -74,6 +81,7 @@ export default function ExperimentLandingAnalyticsTab({
   const mobileOperatingSystemBreakdown =
     data?.mobileOperatingSystemBreakdown ?? [];
   const screenSizeBreakdown = data?.screenSizeBreakdown ?? [];
+  const loadMetrics = data?.loadMetrics;
   const deviceIcons = {
     mobile: Smartphone,
     desktop: Monitor,
@@ -103,6 +111,24 @@ export default function ExperimentLandingAnalyticsTab({
       value: formatDuration(data?.averageVisibleMsPerSession),
       icon: Timer,
       hint: "Média do tempo visível acumulado nas seções por sessão.",
+    },
+    {
+      label: "Carregamento médio",
+      value: loadMetrics?.events ? formatDuration(loadMetrics.averageLoadDurationMs) : "—",
+      icon: Clock,
+      hint: "Média técnica até o evento load completo da landing.",
+    },
+    {
+      label: "P95 carregamento",
+      value: loadMetrics?.events ? formatDuration(loadMetrics.p95LoadDurationMs) : "—",
+      icon: Activity,
+      hint: "Tempo dos piores carregamentos capturados para detectar lentidão.",
+    },
+    {
+      label: "Erros de recursos",
+      value: loadMetrics?.totalResourceErrors ?? 0,
+      icon: MousePointer2,
+      hint: "Falhas de imagem, script ou CSS percebidas pelo navegador.",
     },
   ];
 
@@ -142,6 +168,29 @@ export default function ExperimentLandingAnalyticsTab({
           );
         })}
       </div>
+
+
+      {loadMetrics ? (
+        <div
+          className={`alert alert-${alertVariant(loadMetrics.diagnosisSeverity)} mb-0`}
+          role="status"
+        >
+          <div className="d-flex flex-column gap-1">
+            <strong>
+              Diagnóstico de carregamento: {loadMetrics.diagnosisLabel}
+            </strong>
+            <span>{loadMetrics.diagnosisSummary}</span>
+            <span className="small">
+              Recomendação: {loadMetrics.recommendation}
+            </span>
+            <span className="small text-muted">
+              Engajamento inicial: {loadMetrics.initialEngagementRate.toFixed(2)}%
+              · Sessões sem seção visível: {loadMetrics.sessionsWithoutSectionEvents}
+              · Navegador in-app: {loadMetrics.inAppBrowserPercentage.toFixed(2)}%
+            </span>
+          </div>
+        </div>
+      ) : null}
 
       <div className="card">
         <div className="card-body">

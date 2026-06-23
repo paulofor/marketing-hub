@@ -71,6 +71,24 @@ export interface ExperimentLandingAnalyticsVisitors {
   visitors: ExperimentLandingAnalyticsVisitor[];
 }
 
+export interface ExperimentLandingAnalyticsLoadMetrics {
+  events: number;
+  averageLoadDurationMs: number;
+  p95LoadDurationMs: number;
+  averageDomContentLoadedMs: number;
+  averageFirstContentfulPaintMs: number;
+  totalResourceErrors: number;
+  sessionsWithoutSectionEvents: number;
+  initialEngagementRate: number;
+  inAppBrowserSessions: number;
+  inAppBrowserPercentage: number;
+  diagnosisCode: string;
+  diagnosisLabel: string;
+  diagnosisSeverity: "success" | "warning" | "danger" | "info" | string;
+  diagnosisSummary: string;
+  recommendation: string;
+}
+
 export interface ExperimentLandingAnalytics {
   totalEvents: number;
   totalSessions: number;
@@ -82,6 +100,7 @@ export interface ExperimentLandingAnalytics {
   deviceBreakdown: ExperimentLandingAnalyticsDevice[];
   mobileOperatingSystemBreakdown: ExperimentLandingAnalyticsOperatingSystem[];
   screenSizeBreakdown: ExperimentLandingAnalyticsScreenSize[];
+  loadMetrics?: ExperimentLandingAnalyticsLoadMetrics | null;
   visitors?: ExperimentLandingAnalyticsVisitors | null;
   sessions: ExperimentLandingAnalyticsSession[];
 }

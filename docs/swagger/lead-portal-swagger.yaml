@@ -686,6 +686,33 @@ components:
           type: integer
           nullable: true
           minimum: 1
+        loadDurationMs:
+          type: integer
+          format: int64
+          nullable: true
+          minimum: 0
+          description: Tempo até o evento load completo da página, em milissegundos, enviado em page_load_metric.
+        domContentLoadedMs:
+          type: integer
+          format: int64
+          nullable: true
+          minimum: 0
+          description: Tempo até DOMContentLoaded, em milissegundos.
+        firstContentfulPaintMs:
+          type: integer
+          format: int64
+          nullable: true
+          minimum: 0
+          description: Tempo até first contentful paint, em milissegundos, quando disponível no navegador.
+        resourceErrorCount:
+          type: integer
+          nullable: true
+          minimum: 0
+          description: Quantidade de falhas de recursos estáticos percebidas pelo navegador.
+        connectionType:
+          type: string
+          nullable: true
+          description: Tipo efetivo de conexão informado pelo navegador, quando disponível.
     CreateLeadMultipartRequest:
       type: object
       required: [name, email, image]

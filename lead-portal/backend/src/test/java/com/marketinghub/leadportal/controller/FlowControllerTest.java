@@ -279,7 +279,10 @@ class FlowControllerTest {
                 .andExpect(content().string(containsString("mhAnalyticsDebug")))
                 .andExpect(content().string(containsString("[MH Landing Analytics]")))
                 .andExpect(content().string(containsString("operatingSystem")))
-                .andExpect(content().string(containsString("screenWidth")));
+                .andExpect(content().string(containsString("screenWidth")))
+                .andExpect(content().string(containsString("page_load_metric")))
+                .andExpect(content().string(containsString("loadDurationMs")))
+                .andExpect(content().string(containsString("resourceErrorCount")));
     }
 
     /**

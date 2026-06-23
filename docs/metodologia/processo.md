@@ -188,3 +188,6 @@ Coisa muito interessante que vejo acontecer hoje.
 
 (21-06-2026) - continuação
 - mesmo com tudo que foi escrito nos documentos na hora da execução vi que o reaproveitamento de aprendizagem não estava acontecendo, parece que o modelo precisa ter exemplos da pratica para pode realmente seguir o que foi planejado de forma correta. Parece que agora ele esta focando em um problema mais especifico que aconteceu ( ex: 'falta de candidatos' )
+
+(22-06-2026) - continuaçaõ
+- depois de muita tentativa com o fluxo atual estou vendo que ele fica em loop e pelo que estou vendo nos experimentos não adianta criar nichos muito especificos. Pq é muito dificil de achar então vamos para nichos mais abertos. Coloquei nas regras onde vai ser usado ( instagram ) e para que vai servir ( alimentar o pipeline de hipotese )

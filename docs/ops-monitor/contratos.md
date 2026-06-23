@@ -1,15 +1,34 @@
-# Ops Monitor — Contratos
+# Ops Monitor Worker — contratos
 
-## Consumo do worker
+## Entrada canônica do executor
 
-`GET /api/internal/ops-monitor/v1/module-checks/stage-executions/pending` retorna módulos habilitados para verificação.
+```http
+GET /api/internal/ops-monitor/v1/module-checks/stage-executions/pending
+```
 
-## Callback do worker
+## Registro de heartbeat
 
-`POST /api/internal/ops-monitor/v1/modules/{moduleCode}/heartbeat` registra uma verificação de saúde.
+```http
+POST /api/internal/ops-monitor/v1/modules/{moduleCode}/heartbeat
+```
 
-`POST /api/internal/ops-monitor/v1/modules/{moduleCode}/incidents` registra um incidente operacional.
+Payload funcional produzido pela etapa `healthcheck`:
 
-## Tela administrativa
+- `moduleCode`
+- `status`
+- `httpStatus`
+- `responseTimeMs`
+- `rawPayload`
+- `errorMessage`
 
-A tela administrativa deve consumir os endpoints `/api/ops-monitor/v1/*` para resumo, disponibilidade, histórico e incidentes.
+## Registro de incidente
+
+```http
+POST /api/internal/ops-monitor/v1/modules/{moduleCode}/incidents
+```
+
+Payload funcional produzido pela etapa `logscan`:
+
+- `moduleCode`
+- `incidentSignalFound`
+- `signals`

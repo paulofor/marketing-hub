@@ -1,22 +1,25 @@
-# Ops Monitor — Arquitetura
+# Ops Monitor Worker — arquitetura
 
-O Ops Monitor separa execução operacional e fonte de verdade.
+O `ops-monitor-worker` é o executor operacional do monitoramento de saúde dos módulos do Marketing Hub.
 
-- `ops-monitor-worker` executará as verificações ativas dos módulos.
-- O backend principal persiste módulos, heartbeats, disponibilidade e incidentes.
-- O frontend deverá apenas apresentar os dados expostos pelo backend, sem inferir disponibilidade localmente.
+## Responsabilidade
 
-## Backend — fase 1
+- Executar verificações periódicas de saúde.
+- Consolidar sinais de disponibilidade.
+- Identificar sinais relevantes em logs.
+- Reportar heartbeats, incidentes e evidências ao backend principal.
 
-Pacote criado: `com.marketinghub.opsmonitor`.
+## Separação obrigatória
 
-Contratos principais:
+- O worker não acessa banco de dados.
+- O backend principal é a fonte de verdade para persistência, histórico e dados exibidos no frontend.
+- O núcleo `com.marketinghub.opsmonitor.pipeline` não conhece etapas concretas.
+- As etapas `healthcheck`, `availability` e `logscan` são independentes entre si.
 
-- `GET /api/internal/ops-monitor/v1/module-checks/stage-executions/pending`
-- `POST /api/internal/ops-monitor/v1/modules/{moduleCode}/heartbeat`
-- `POST /api/internal/ops-monitor/v1/modules/{moduleCode}/incidents`
-- `GET /api/ops-monitor/v1/summary`
-- `GET /api/ops-monitor/v1/modules/availability`
-- `GET /api/ops-monitor/v1/modules/{moduleCode}/availability-history`
-- `GET /api/ops-monitor/v1/incidents/open`
-- `GET /api/ops-monitor/v1/incidents/history`
+## Módulos iniciais
+
+A fase 2 prepara o worker para monitorar inicialmente:
+
+1. backend;
+2. ai-worker;
+3. facebook-ads-worker.

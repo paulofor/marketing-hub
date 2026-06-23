@@ -50,7 +50,7 @@ public class FrameworkImageOpenAiBatchClient {
     public FrameworkImageOpenAiBatchClient(WebClient.Builder builder,
                                            @Value("${openai.api-key:}") String apiKey,
                                            @Value("${openai.base-url:https://api.openai.com/v1}") String baseUrl,
-                                           @Value("${openai.image-model:gpt-image-1.5}") String defaultModel,
+                                           @Value("${openai.image-model:gpt-image-2}") String defaultModel,
                                            @Value("${openai.max-in-memory-size-bytes:52428800}") int maxInMemorySizeBytes,
                                            @Value("${openai.batch-poll-interval:PT0.5S}") Duration batchPollInterval,
                                            @Value("${openai.batch-timeout:PT5M}") Duration batchTimeout) {
@@ -306,7 +306,7 @@ public class FrameworkImageOpenAiBatchClient {
     }
 
     private String resolveModel(String requestedModel) {
-        String normalizedDefaultModel = StringUtils.hasText(defaultModel) ? defaultModel.trim() : "gpt-image-1.5";
+        String normalizedDefaultModel = StringUtils.hasText(defaultModel) ? defaultModel.trim() : "gpt-image-2";
         if (!StringUtils.hasText(requestedModel)) {
             return normalizedDefaultModel;
         }

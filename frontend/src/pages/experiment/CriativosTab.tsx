@@ -142,7 +142,7 @@ const PIPELINE_PROMPT_SOURCE_FIELDS: PromptSourceField[] = [
   {
     label: "Modelo do Worker IA",
     source: "buildPipelineImagePrompt (base)",
-    markers: ["Lembre-se de que o Worker AI usará o modelo gpt-imagem-1.5."],
+    markers: ["Lembre-se de que o Worker AI usará o modelo gpt-image-2."],
   },
   {
     label: "Restrição de logos e rostos",
@@ -262,12 +262,12 @@ export default function CriativosTab({
     creativeGenerationStatus === "REQUESTED"
       ? "Worker AI aguardando a fila de imagens"
       : creativeGenerationStatus === "PROCESSING"
-        ? "Worker AI processando imagens com gpt-imagem-1.5"
+        ? "Worker AI processando imagens com gpt-image-2"
         : creativeGenerationStatus === "FAILED"
           ? "Geração falhou; revise a causa e tente novamente"
           : creativeGenerationStatus === "TIMEOUT"
             ? "Geração excedeu o tempo operacional; tente novamente"
-            : "Worker AI processando imagens com gpt-imagem-1.5";
+            : "Worker AI processando imagens com gpt-image-2";
   const pipelineButtonDisabled =
     alterationLocked ||
     pipelineRequest.isPending ||
@@ -918,7 +918,7 @@ export default function CriativosTab({
             <p className="mb-0 small text-muted">
               Encontramos {pipelinePairs}{" "}
               {pipelinePairs === 1 ? "variação" : "variações"} com texto e
-              briefing estruturados. O Worker AI usará o modelo gpt-imagem-1.5
+              briefing estruturados. O Worker AI usará o modelo gpt-image-2
               para gerar as imagens alinhadas ao experimento.
             </p>
           </div>

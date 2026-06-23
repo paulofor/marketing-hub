@@ -89,7 +89,7 @@ Implementação: `ExperimentReadinessService` (backend) expõe os mesmos critér
 
 1. **Criativos aprovados**
    - `experiment.creative_approved = true` e pelo menos um registro em `creative` do experimento com `status = 'READY'`.
-   - O botão **Gerar anúncios do pipeline** pode produzir até 3 anúncios (texto + prompt) via Worker AI (`gpt-image-1.5`). Eles entram como `DRAFT` e precisam ser aprovados antes da liberação.
+   - O botão **Gerar anúncios do pipeline** pode produzir até 3 anúncios (texto + prompt) via Worker AI (`gpt-image-2`). Eles entram como `DRAFT` e precisam ser aprovados antes da liberação.
    - Quando múltiplos criativos `READY` existem, o worker publica todos no mesmo ad set para preservar as variações aprovadas.
    - A criação, edição, aprovação e exclusão do criativo pertencem exclusivamente ao módulo Experimentos. O módulo Facebook não pode criar ou alterar criativos; ele apenas expõe contrato de leitura para consumo operacional.
    - O consumo pelo `facebook-ads-worker` deve ocorrer pelo endpoint exclusivo do módulo Facebook: `GET /api/facebook-campaigns/experiments/{experimentId}/creatives-ready`. O endpoint legado do domínio Experimentos (`GET /api/experiments/{id}/creatives`) permanece contrato de gestão do experimento e não deve ser consumido pelo worker de publicação Facebook.

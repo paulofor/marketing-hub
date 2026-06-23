@@ -86,7 +86,7 @@ class ImageGenerationBackendClientTest {
                         5,
                         server.url("/").toString(),
                         "/api",
-                        "gpt-image-1.5",
+                        "gpt-image-2",
                         Duration.ofSeconds(5),
                         3,
                         Duration.ofMillis(300),

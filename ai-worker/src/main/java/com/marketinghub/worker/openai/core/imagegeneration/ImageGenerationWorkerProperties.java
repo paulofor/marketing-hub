@@ -46,7 +46,7 @@ public record ImageGenerationWorkerProperties(
             apiPrefix = "/api";
         }
         if (imageModel == null || imageModel.isBlank()) {
-            imageModel = "gpt-image-1.5";
+            imageModel = "gpt-image-2";
         }
         if (timeout == null) {
             timeout = Duration.ofMinutes(30);

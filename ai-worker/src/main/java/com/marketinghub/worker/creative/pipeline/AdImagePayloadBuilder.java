@@ -13,7 +13,7 @@ import org.springframework.util.StringUtils;
  */
 @Component
 public class AdImagePayloadBuilder {
-    private static final String DEFAULT_MODEL = "gpt-image-1.5";
+    private static final String DEFAULT_MODEL = "gpt-image-2";
 
     public ImageBuildPayloadsOutput buildAdImagePayloads(BuildAdImagePayloadsInput input) {
         if (input == null) {

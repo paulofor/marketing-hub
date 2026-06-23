@@ -5094,3 +5094,8 @@
 - Causa-raiz: o schema real da coluna `experiment_promise_generation_request.status` ainda podia estar restrito a um tipo/enum antigo que não aceitava `DISMISSED`, apesar do contrato Java já prever esse status.
 - Correção aplicada: criado changelog incremental para normalizar a coluna `status` como `VARCHAR(32) NOT NULL DEFAULT 'PENDING'`, permitindo todos os estados operacionais atuais sem truncamento.
 - Prevenção de recorrência: o descarte do rascunho passa a depender de uma coluna textual compatível com evolução de estados da fila, evitando novo bloqueio ao adicionar status legítimos.
+
+## 2026-06-23 — Geração de imagens de anúncios com GPT Image 2
+- Pedido: mudar a geração das imagens dos anúncios do pipeline para a versão 2 do modelo de imagens.
+- Alteração: o backend passa a expor `gpt-image-2` como modelo padrão de etapa de imagem quando não houver configuração explícita; o AI Worker passa a usar `gpt-image-2` como padrão operacional; a tela e o cânone de publicação de campanhas foram alinhados para não comunicar o modelo antigo.
+- Objetivo de negócio: melhorar a qualidade visual dos criativos de anúncios, aumentando aderência entre briefing, texto renderizado e imagem final para apoiar testes de venda.

@@ -58,7 +58,7 @@ public class CreativeImageClient {
                                CreativeImageOptimizer imageOptimizer,
                                @Value("${openai.api-key:}") String apiKey,
                                @Value("${openai.base-url:https://api.openai.com/v1}") String baseUrl,
-                               @Value("${openai.image-model:gpt-image-1.5}") String model,
+                               @Value("${openai.image-model:gpt-image-2}") String model,
                                @Value("${openai.responses-model:gpt-5.5}") String responsesModel,
                                @Value("${openai.image-service-tier:flex}") String serviceTier,
                                @Value("${openai.image-timeout-seconds:900}") long requestTimeoutSeconds) {

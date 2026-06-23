@@ -25,6 +25,18 @@ Aplica-se ao fluxo de experimentos no Marketing Hub, especialmente:
 1. O usuário cria o experimento pela tela, preenchendo os campos obrigatórios do formulário.
 2. Após salvar, o experimento passa a ter contexto para geração de ativos do pipeline.
 
+
+### 3.1.1 Regra mandatória — identificação automática de hipótese e experimento
+
+O usuário não deve escolher manualmente nome de hipótese nem nome de experimento. Para reduzir esforço operacional e evitar nomes inconsistentes, o backend deve gerar a identificação no momento da criação usando:
+
+- sigla derivada do nome do nicho, com 3 a 4 caracteres em caixa alta;
+- sequência numérica por nicho para hipótese no formato `<SIGLA>-H001`, `<SIGLA>-H002`, ...;
+- sequência numérica por hipótese para experimento no formato `<CODIGO-HIPOTESE>-E001`, `<CODIGO-HIPOTESE>-E002`, ...;
+- quando não houver nicho associado, usar a sigla operacional `GER` como fallback.
+
+A interface deve informar que o identificador será automático e não deve exigir campo de nome para fechar hipótese ou criar experimento. O nome do experimento deve carregar o código da hipótese para manter rastreabilidade direta entre hipótese e teste.
+
 ### 3.2 Execução no detalhe do experimento
 1. O usuário entra no detalhe do experimento.
 2. A execução acontece por etapas guiadas, com geração e validação progressiva dos artefatos.

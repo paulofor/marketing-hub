@@ -150,7 +150,7 @@ describe("NewHypothesisPage", () => {
     expect(screen.getByText("Etapa 4 — Prova")).toBeInTheDocument();
     expect(screen.getByText("Etapa 5 — Oferta")).toBeInTheDocument();
     expect(screen.getByText(/US\$\s*0,026345/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Nome da hipótese/)).toBeInTheDocument();
+    expect(screen.getByText(/backend vai nomear automaticamente/i)).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Fechar hipótese" }),
     ).toBeDisabled();
@@ -237,14 +237,15 @@ describe("NewHypothesisPage", () => {
 
     renderPage();
 
-    const input = await screen.findByLabelText(/Nome da hipótese/);
-    fireEvent.change(input, { target: { value: "Agenda recorrente" } });
-    fireEvent.click(screen.getByRole("button", { name: "Fechar hipótese" }));
+    await screen.findByText(/backend vai nomear automaticamente/i);
+    const closeButton = screen.getByRole("button", { name: "Fechar hipótese" });
+    await waitFor(() => expect(closeButton).not.toBeDisabled());
+    fireEvent.click(closeButton);
 
     await waitFor(() => {
       expect(axios.post).toHaveBeenCalledWith(
         "/api/niches/18/hypothesis-pipeline/finalize",
-        { name: "Agenda recorrente" },
+        { name: "" },
       );
     });
   });

@@ -21,7 +21,6 @@ import { getStatisticsDefaultsForBudget } from "./statisticsDefaults";
 
 type FormState = {
   nicheId: string;
-  name: string;
   hypothesisId: string;
   hypothesis: string;
   kpiTarget: string;
@@ -60,7 +59,6 @@ export default function NewExperimentPage() {
   const { data: niches } = useNiches();
   const [form, setForm] = useState<FormState>({
     nicheId: nicheIdParam,
-    name: "",
     hypothesisId: hypothesisIdParam,
     hypothesis: "",
     kpiTarget: "",
@@ -285,7 +283,7 @@ export default function NewExperimentPage() {
       await create.mutateAsync({
         nicheId: Number(form.nicheId),
         hypothesisId: form.hypothesisId || undefined,
-        name: form.name,
+        name: "",
         hypothesis: form.hypothesis,
         stage: "AD",
         singlePain: form.singlePain.trim(),
@@ -327,7 +325,6 @@ export default function NewExperimentPage() {
       setForm({
         nicheId: nicheIdParam,
         hypothesisId: hypothesisIdParam,
-        name: "",
         hypothesis: "",
         kpiTarget: "",
         metricPresetId: "",
@@ -431,12 +428,9 @@ export default function NewExperimentPage() {
         </>
       )}
       {form.hypothesis && <h2 className="h5 mb-2">{form.hypothesis}</h2>}
-      <input
-        className="form-control mb-2"
-        placeholder="Nome"
-        value={form.name}
-        onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-      />
+      <div className="alert alert-info py-2 mb-3">
+        O nome do experimento será gerado automaticamente pelo backend com o código da hipótese e a próxima numeração.
+      </div>
       <div className="card border-primary mb-3">
         <div className="card-body">
           <div className="d-flex flex-column flex-md-row align-items-md-start justify-content-between gap-2 mb-3">

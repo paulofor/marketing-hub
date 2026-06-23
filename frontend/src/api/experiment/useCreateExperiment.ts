@@ -9,7 +9,7 @@ import type {
 export interface CreateExperiment {
   nicheId: number;
   hypothesisId?: string;
-  name: string;
+  name?: string;
   hypothesis: string;
   singlePain?: string;
   freeReward?: string;

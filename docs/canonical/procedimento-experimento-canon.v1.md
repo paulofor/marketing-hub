@@ -32,10 +32,10 @@ O usuário não deve escolher manualmente nome de hipótese nem nome de experime
 
 - sigla derivada do nome do nicho, com 3 a 4 caracteres em caixa alta;
 - sequência numérica por nicho para hipótese no formato `<SIGLA>-H001`, `<SIGLA>-H002`, ...;
-- sequência numérica por nicho para experimento no formato `<SIGLA>-E001`, `<SIGLA>-E002`, ...;
+- sequência numérica por hipótese para experimento no formato `<CODIGO-HIPOTESE>-E001`, `<CODIGO-HIPOTESE>-E002`, ...;
 - quando não houver nicho associado, usar a sigla operacional `GER` como fallback.
 
-A interface deve informar que o identificador será automático e não deve exigir campo de nome para fechar hipótese ou criar experimento.
+A interface deve informar que o identificador será automático e não deve exigir campo de nome para fechar hipótese ou criar experimento. O nome do experimento deve carregar o código da hipótese para manter rastreabilidade direta entre hipótese e teste.
 
 ### 3.2 Execução no detalhe do experimento
 1. O usuário entra no detalhe do experimento.

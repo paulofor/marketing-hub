@@ -248,10 +248,18 @@ public class ExperimentService {
 
     private record ImageGenerationSelection(ImageGenerationModel model, ImageGenerationQuality quality) { }
 
-    /** Monta o nome automático do experimento com sigla do nicho e numeração sequencial. */
-    private String buildAutomaticExperimentName(MarketNiche niche) {
-        long nextNumber = repository.countByNicheId(niche.getId()) + 1;
-        return "%s-E%03d".formatted(nicheAcronym(niche), nextNumber);
+    /** Monta o nome automático do experimento com o código da hipótese e numeração sequencial. */
+    private String buildAutomaticExperimentName(MarketNiche niche, com.marketinghub.hypothesis.Hypothesis hypothesis) {
+        long nextNumber = repository.countByHypothesisRef(hypothesis) + 1;
+        return "%s-E%03d".formatted(resolveHypothesisCode(niche, hypothesis), nextNumber);
+    }
+
+    /** Resolve o código da hipótese para compor o identificador do experimento. */
+    private String resolveHypothesisCode(MarketNiche niche, com.marketinghub.hypothesis.Hypothesis hypothesis) {
+        if (hypothesis != null && StringUtils.hasText(hypothesis.getTitle())) {
+            return hypothesis.getTitle().trim();
+        }
+        return "%s-H000".formatted(nicheAcronym(niche));
     }
 
     /** Gera uma sigla estável a partir do nome do nicho para identificar experimentos. */
@@ -297,7 +305,7 @@ public class ExperimentService {
                 request.getStartDate().isAfter(request.getEndDate())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "startDate must be before endDate");
         }
-        String automaticName = buildAutomaticExperimentName(niche);
+        String automaticName = buildAutomaticExperimentName(niche, hyp);
         if (repository.existsByNicheAndName(niche, automaticName)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "automatic name already exists for niche");
         }

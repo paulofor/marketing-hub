@@ -1,4 +1,11 @@
 
+## 2026-06-23 — Código da hipótese no nome do experimento
+
+- ajuste solicitado: incluir o código da hipótese também no identificador automático do experimento.
+- decisão aplicada: o experimento passa a ser nomeado no padrão `<CODIGO-HIPOTESE>-E001`, preservando a relação direta com a hipótese testada.
+- impacto esperado: fica mais simples rastrear qual hipótese originou cada experimento nas telas, relatórios e integrações.
+
+
 ## 2026-06-23 — Nome automático para hipóteses e experimentos
 
 - solicitação: parar de exigir que o usuário escolha nome de hipótese e nome de experimento.

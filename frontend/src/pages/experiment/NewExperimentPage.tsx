@@ -429,7 +429,7 @@ export default function NewExperimentPage() {
       )}
       {form.hypothesis && <h2 className="h5 mb-2">{form.hypothesis}</h2>}
       <div className="alert alert-info py-2 mb-3">
-        O nome do experimento será gerado automaticamente pelo backend com a sigla do nicho e a próxima numeração.
+        O nome do experimento será gerado automaticamente pelo backend com o código da hipótese e a próxima numeração.
       </div>
       <div className="card border-primary mb-3">
         <div className="card-body">

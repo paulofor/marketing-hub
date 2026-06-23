@@ -36,6 +36,7 @@ import {
   Mail,
   Inbox,
   Microscope,
+  HeartPulse,
 } from "lucide-react";
 import experimentIcon from "../assets/icons/experiment-icon.svg";
 import hypothesisIcon from "../assets/icons/hypothesis-icon.svg";
@@ -91,22 +92,26 @@ const NAV_SECTIONS: NavSection[] = [
     title: "Testes",
     items: [
       { to: "/niches", label: "Nichos", icon: nicheIcon },
+      {
+        to: "/experiments",
+        label: "Experimentos",
+        icon: experimentIcon,
+        children: [
           {
-            to: "/experiments",
-            label: "Experimentos",
-            icon: experimentIcon,
-            children: [
-              {
-                to: "/facebook-campaigns",
-                label: "Experimentos para campanha",
-                icon: Flag,
-                end: true,
-              },
-            ],
+            to: "/facebook-campaigns",
+            label: "Experimentos para campanha",
+            icon: Flag,
+            end: true,
           },
+        ],
+      },
       { to: "/hypotheses", label: "Hipóteses", icon: hypothesisIcon },
       { to: "/mois", label: "MOIS", icon: Workflow },
-      { to: "/mois/sales-pages-library", label: "Biblioteca Sales Pages", icon: Workflow },
+      {
+        to: "/mois/sales-pages-library",
+        label: "Biblioteca Sales Pages",
+        icon: Workflow,
+      },
       {
         to: "/oprm",
         label: "OPRM",
@@ -137,10 +142,18 @@ const NAV_SECTIONS: NavSection[] = [
       { to: "/openai-models", label: "Modelos OpenAI", icon: Cpu },
       { to: "/agents", label: "Agentes", icon: Bot },
       { to: "/agent-themes", label: "Temas de agente", icon: Layers },
-      { to: "/differentiated-technologies", label: "Tecnologias diferenciadas", icon: Cpu },
+      {
+        to: "/differentiated-technologies",
+        label: "Tecnologias diferenciadas",
+        icon: Cpu,
+      },
       { to: "/microservices", label: "Microserviços", icon: Server },
       { to: "/pipelines", label: "Pipelines", icon: Workflow },
-      { to: "/microservices/errors", label: "Erros de microserviço", icon: AlertTriangle },
+      {
+        to: "/microservices/errors",
+        label: "Erros de microserviço",
+        icon: AlertTriangle,
+      },
       { to: "/chat-dialogs", label: "ChatGPT", icon: MessageSquare },
       { to: "/prompt-entities", label: "Objetos de Prompt", icon: Shapes },
       { to: "/prompt-domains", label: "Domínios de Prompt", icon: Map },
@@ -209,13 +222,12 @@ const NAV_SECTIONS: NavSection[] = [
         icon: ClipboardCheck,
       },
       { to: "/analytics", label: "Analytics", icon: BarChart3 },
+      { to: "/ops-monitor", label: "Operação / Saúde", icon: HeartPulse },
     ],
   },
   {
     title: "Financeiro",
-    items: [
-      { to: "/payments", label: "Pagamentos", icon: CreditCard },
-    ],
+    items: [{ to: "/payments", label: "Pagamentos", icon: CreditCard }],
   },
   {
     title: "Configurações",
@@ -311,10 +323,7 @@ export default function MainNavigation() {
                       to={item.to}
                       end={item.end}
                       className={({ isActive }) =>
-                        [
-                          "main-navigation__link",
-                          isActive ? "is-active" : "",
-                        ]
+                        ["main-navigation__link", isActive ? "is-active" : ""]
                           .filter(Boolean)
                           .join(" ")
                       }
@@ -342,7 +351,9 @@ export default function MainNavigation() {
                           aria-hidden="true"
                         />
                       )}
-                      <span className="main-navigation__label">{item.label}</span>
+                      <span className="main-navigation__label">
+                        {item.label}
+                      </span>
                     </NavLink>
                     {hasChildren ? (
                       <div
@@ -402,7 +413,10 @@ export default function MainNavigation() {
           </div>
         ))}
       </nav>
-      <div className="main-navigation__market-test" aria-label="Etapas do teste de mercado">
+      <div
+        className="main-navigation__market-test"
+        aria-label="Etapas do teste de mercado"
+      >
         <p className="main-navigation__section-title">Teste de Mercado</p>
         <ol className="main-navigation__market-list">
           {MARKET_TEST_STEPS.map((step) => (

@@ -139,6 +139,7 @@ import MdsArtifactsPage from "./pages/mds/MdsArtifactsPage";
 import MdsReportPage from "./pages/mds/MdsReportPage";
 import HotmartPage from "./pages/hotmart/HotmartPage";
 import ClickbasePage from "./pages/clickbase/ClickbasePage";
+import OpsMonitorPage from "./pages/OpsMonitorPage";
 
 export default function App() {
   return (
@@ -453,6 +454,7 @@ export default function App() {
               />
               <Route path="/landing/:id" element={<LandingPreview />} />
               <Route path="/analytics" element={<AnalyticsDashboard />} />
+              <Route path="/ops-monitor" element={<OpsMonitorPage />} />
               <Route path="/funnels" element={<FunnelListPage />} />
               <Route path="/funnels/new" element={<NewFunnelPage />} />
               <Route path="/funnels/:id/edit" element={<EditFunnelPage />} />

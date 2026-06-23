@@ -1,0 +1,29 @@
+.ops-monitor-page__summary-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  background: #fff;
+  padding: 1rem;
+  min-height: 112px;
+}
+
+.ops-monitor-page__summary-value {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.ops-monitor-page__alert {
+  border-left: 6px solid #dc3545;
+}
+
+.ops-monitor-page__impact {
+  color: #475569;
+  font-size: 0.9rem;
+}
+
+.ops-monitor-page__table-error {
+  max-width: 360px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

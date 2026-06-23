@@ -23,3 +23,9 @@ A fase 2 prepara o worker para monitorar inicialmente:
 1. backend;
 2. ai-worker;
 3. facebook-ads-worker.
+
+## Frontend administrativo
+
+A fase 3 adicionou a tela `Operação / Saúde dos Módulos` em `/ops-monitor`. A tela consome exclusivamente os contratos do backend (`summary`, `modules/availability`, `availability-history` e `incidents/open`) e apenas apresenta os status já consolidados pelo backend, sem inferir disponibilidade localmente.
+
+A navegação fica no menu principal em Campanhas, e a página mostra resumo executivo, gráfico de disponibilidade, alertas de módulos críticos fora do ar, tabela de status atual, último erro e impacto operacional por módulo.

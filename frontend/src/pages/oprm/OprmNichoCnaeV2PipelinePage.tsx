@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { Bot, Globe2 } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import {
+  downloadOprmNichoCnaeV2JobReport,
   useOprmNichoCnaeV2Jobs,
   type OprmNichoCnaeV2JobSummary,
 } from "../../api/oprm/useOprmNichoCnaeV2Jobs";
@@ -131,12 +133,16 @@ function JobsTable({
   open,
   cancelingJobId,
   onCancelJob,
+  downloadingJobId,
+  onDownloadReport,
 }: {
   jobs: OprmNichoCnaeV2JobSummary[];
   emptyMessage: string;
   open: boolean;
   cancelingJobId?: string | null;
   onCancelJob?: (jobId: string) => void;
+  downloadingJobId?: string | null;
+  onDownloadReport?: (job: OprmNichoCnaeV2JobSummary) => void;
 }) {
   if (jobs.length === 0) {
     return <p className="text-secondary mb-0">{emptyMessage}</p>;
@@ -207,13 +213,37 @@ function JobsTable({
                     >
                       {nextAction}
                     </span>
-                    {!open && job.outcomeStatus === "FAILURE" ? (
-                      <Link
-                        className="btn btn-sm btn-outline-danger py-0 px-2"
-                        to={`/oprm/cnaes/${encodeURIComponent(job.cnaeCode)}/pipeline-v2/jobs/${encodeURIComponent(job.jobId)}`}
-                      >
-                        Ver etapas até o fracasso
-                      </Link>
+                    {!open ? (
+                      <div className="d-flex flex-wrap gap-1">
+                        {job.outcomeStatus === "FAILURE" ? (
+                          <Link
+                            className="btn btn-sm btn-outline-danger py-0 px-2"
+                            to={`/oprm/cnaes/${encodeURIComponent(job.cnaeCode)}/pipeline-v2/jobs/${encodeURIComponent(job.jobId)}`}
+                          >
+                            Ver etapas até o fracasso
+                          </Link>
+                        ) : null}
+                        {onDownloadReport ? (
+                          <button
+                            className="btn btn-sm btn-outline-secondary py-0 px-2"
+                            type="button"
+                            onClick={() => onDownloadReport(job)}
+                            disabled={downloadingJobId === job.jobId}
+                          >
+                            {downloadingJobId === job.jobId ? (
+                              <>
+                                <span
+                                  className="spinner-border spinner-border-sm me-1"
+                                  aria-hidden="true"
+                                />
+                                Baixando...
+                              </>
+                            ) : (
+                              "Baixar relatório"
+                            )}
+                          </button>
+                        ) : null}
+                      </div>
                     ) : null}
                     {open && onCancelJob ? (
                       <button
@@ -430,7 +460,29 @@ export default function OprmNichoCnaeV2PipelinePage() {
   const startJobMutation = useStartOprmNichoCnaeV2Job(decodedCnaeCode ?? "");
   const cancelJobMutation = useCancelOprmNichoCnaeV2Job(decodedCnaeCode ?? "");
   const jobsQuery = useOprmNichoCnaeV2Jobs(decodedCnaeCode ?? "");
+  const [downloadingReportJobId, setDownloadingReportJobId] = useState<
+    string | null
+  >(null);
+  const [downloadReportError, setDownloadReportError] = useState<string | null>(
+    null,
+  );
   const cnaeAiCostUsd = jobsQuery.data?.cnaeAiCostUsd ?? 0;
+
+  async function handleDownloadReport(job: OprmNichoCnaeV2JobSummary) {
+    setDownloadReportError(null);
+    setDownloadingReportJobId(job.jobId);
+    try {
+      await downloadOprmNichoCnaeV2JobReport(job);
+    } catch (error) {
+      setDownloadReportError(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível baixar o relatório do job.",
+      );
+    } finally {
+      setDownloadingReportJobId(null);
+    }
+  }
 
   return (
     <div className="d-flex flex-column gap-4">
@@ -582,6 +634,11 @@ export default function OprmNichoCnaeV2PipelinePage() {
                   aria-hidden="true"
                 />
               </div>
+              {downloadReportError ? (
+                <div className="alert alert-danger mb-3" role="alert">
+                  {downloadReportError}
+                </div>
+              ) : null}
               {jobsQuery.isLoading ? (
                 <p className="text-secondary mb-0">Carregando histórico...</p>
               ) : jobsQuery.isError ? (
@@ -593,6 +650,8 @@ export default function OprmNichoCnaeV2PipelinePage() {
                   jobs={jobsQuery.data?.completedJobs ?? []}
                   emptyMessage="Nenhum job concluído para este CNAE."
                   open={false}
+                  downloadingJobId={downloadingReportJobId}
+                  onDownloadReport={handleDownloadReport}
                 />
               )}
             </div>

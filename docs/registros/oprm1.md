@@ -1320,3 +1320,9 @@
 
 - Adicionado ponto de confirmação no relatório do job NichoCNAE v2 para o usuário definir nome único do nicho, visualizar o custo atual de IA do job e confirmar a criação do `MarketNiche`.
 - Backend passa a impedir repetição de nome de nicho e grava o vínculo do candidato CNAE com o nicho confirmado para uso nas próximas etapas do Marketing Hub.
+
+## 2026-06-23 — Correção da arquitetura OPRM na confirmação de nicho
+
+- Removida a dependência direta do `candidate-generator` OPRM v2 sobre o repositório canônico de nichos fora do pacote permitido pela regra de arquitetura.
+- A criação do `MarketNiche` confirmado passa por um adaptador de persistência em `repository.jpa.oprm`, preservando o contrato do módulo OPRM e mantendo a regra ArchUnit como prevenção de recorrência.
+- Causa-raiz tratada: o service OPRM tinha assumido diretamente a materialização em `MarketNicheRepository`, quebrando o isolamento do módulo OPRM.

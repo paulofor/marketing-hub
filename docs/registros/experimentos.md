@@ -5160,3 +5160,11 @@
 - Pedido: incluir na tela principal do experimento um quadro com marcação visual dos marcos já concluídos.
 - Alteração: a tela agora exibe um checklist consolidado com pipeline de experimento, pipeline GeraLanding, aprovação de pelo menos 3 criativos, escolha de público e aprovação da landing.
 - Objetivo de negócio: dar ao usuário uma visão rápida do que falta para transformar o experimento em campanha publicável, reduzindo esforço operacional e acelerando a liberação para vendas.
+
+## 2026-06-23 — Destravamento visual da aprovação de criativos
+
+- solicitação: a aprovação de criativo no experimento 48 ficou visualmente travada com overlay de processamento na tela.
+- causa-raiz identificada: o comando de aprovação dependia de uma chamada `PUT` sem limite de tempo específico; quando a rota/proxy do backend não respondia ou devolvia indisponibilidade, a tela podia permanecer em estado de processamento sem feedback operacional claro.
+- correção aplicada: a atualização de criativo passou a ter timeout de 30 segundos, o botão de aprovação passou a exibir estado explícito “Aprovando...” com spinner pequeno e a tela limpa o processamento ao receber erro, mantendo mensagem objetiva para nova tentativa.
+- ajuste operacional: o proxy local do Vite foi alinhado para usar o backend na porta 80, evitando dependência da porta 8000 quando ela estiver indisponível atrás do proxy.
+- validação: adicionada cobertura de frontend garantindo que falha na aprovação remove o loading e reabilita o botão.

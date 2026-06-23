@@ -26,6 +26,7 @@ export function useUpdateCreative(expId: string) {
       const { data: creative } = await axios.put<Creative>(
         `/api/creatives/${id}`,
         data,
+        { timeout: 30000 },
       );
       return creative;
     },

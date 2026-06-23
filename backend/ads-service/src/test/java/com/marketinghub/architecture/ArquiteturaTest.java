@@ -32,6 +32,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -105,6 +106,7 @@ class ArquiteturaTest {
     private static final String OPRM_NICHO_CNAE_V2_PACKAGE = "com.marketinghub.oprm.nichocnae.v2";
     private static final String OPRM_NICHO_CNAE_V2_EXECUTOR_MODULE = "oprm-coletor-mei";
     private static final String OPRM_CNAE_PACKAGE = "com.marketinghub.oprm.cnae";
+    private static final String OPS_MONITOR_PACKAGE = "com.marketinghub.opsmonitor";
     private static final String OPRM_CNAE_WEB_PACKAGE = OPRM_CNAE_PACKAGE + ".web";
     private static final String OPRM_CNAE_SERVICE_PACKAGE = OPRM_CNAE_PACKAGE + ".service";
     private static final String OPRM_CNAE_DTO_PACKAGE = OPRM_CNAE_PACKAGE + ".dto";
@@ -181,6 +183,44 @@ class ArquiteturaTest {
             .should(notDependOnOtherOprmNichoCnaeVersion())
             .because("[ARQUITETURA] [BACKEND][OPRM NichoCNAE] as versões inicial e v2 devem permanecer "
                     + "independentes; nenhuma classe de uma versão pode depender de classe da outra versão");
+
+
+
+    @ArchTest
+    static final ArchRule opsMonitorBackendMustRemainReadWriteOnly = classes()
+            .that()
+            .resideInAPackage(OPS_MONITOR_PACKAGE + "..")
+            .should(notAssumeOperationalExecutionResponsibilityForOpsMonitor())
+            .because("[ARQUITETURA] [BACKEND][Ops Monitor] o backend deve persistir, expor pendências e receber callbacks; "
+                    + "o monitoramento ativo pertence ao módulo executor ops-monitor-worker");
+
+    @ArchTest
+    static void opsMonitorBackendMustExposeCanonicalStructure(JavaClasses classes) {
+        long controllers = classes.stream()
+                .filter(javaClass -> javaClass.getPackageName().equals(OPS_MONITOR_PACKAGE + ".controller"))
+                .filter(javaClass -> javaClass.isAnnotatedWith(RestController.class))
+                .count();
+        if (controllers != 1) {
+            throw new AssertionError("[ARQUITETURA] [BACKEND][Ops Monitor] deve existir exatamente um controller canônico em "
+                    + OPS_MONITOR_PACKAGE + ".controller; encontrados=" + controllers);
+        }
+        long services = classes.stream()
+                .filter(javaClass -> javaClass.getPackageName().equals(OPS_MONITOR_PACKAGE + ".service"))
+                .filter(javaClass -> javaClass.isAnnotatedWith(Service.class))
+                .count();
+        if (services != 1) {
+            throw new AssertionError("[ARQUITETURA] [BACKEND][Ops Monitor] deve existir exatamente um service canônico em "
+                    + OPS_MONITOR_PACKAGE + ".service; encontrados=" + services);
+        }
+        boolean hasPending = classes.stream()
+                .filter(javaClass -> javaClass.getPackageName().equals(OPS_MONITOR_PACKAGE + ".controller"))
+                .flatMap(javaClass -> javaClass.getMethods().stream())
+                .anyMatch(method -> method.isAnnotatedWith(GetMapping.class) && method.getName().equals("pending"));
+        if (!hasPending) {
+            throw new AssertionError("[ARQUITETURA] [BACKEND][Ops Monitor] deve expor endpoint interno pending canônico "
+                    + "/api/internal/ops-monitor/v1/module-checks/stage-executions/pending");
+        }
+    }
 
     @ArchTest
     static final ArchRule epmMustNotDependOnOtherMarketingHubPackages = noClasses()
@@ -2770,6 +2810,25 @@ class ArquiteturaTest {
      * Representa a estrutura do pacote da biblioteca de páginas de venda do MOIS.
      */
     private record SalesLibraryPackageInfo(String namespace, String version, String layer) {}
+
+    /** Garante que o backend Ops Monitor não assuma execução operacional do worker externo. */
+    private static ArchCondition<JavaClass> notAssumeOperationalExecutionResponsibilityForOpsMonitor() {
+        List<String> forbiddenNames = List.of("Scheduled", "PipelineWorker", "StageProcessor", "StageContext",
+                "StageResult", "StageArtifact", "WebClient", "RestTemplate", "Jsoup", "Playwright", "Selenium");
+        return new ArchCondition<>("[ARQUITETURA] manter Ops Monitor backend como leitura/escrita") {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                item.getDirectDependenciesFromSelf().stream()
+                        .filter(dependency -> forbiddenNames.stream().anyMatch(name ->
+                                dependency.getTargetClass().getName().contains(name)))
+                        .forEach(dependency -> events.add(SimpleConditionEvent.violated(item,
+                                "[ARQUITETURA] [BACKEND][Ops Monitor] " + item.getName()
+                                        + " depende de " + dependency.getTargetClass().getName()
+                                        + "; execução operacional, polling e integrações ativas pertencem ao ops-monitor-worker")));
+            }
+        };
+    }
+
     /** Bloqueia uso de clientes/runtime OpenAI em pacotes de negócio do backend. */
     private static ArchCondition<JavaClass> notDependOnOpenAiRuntime() {
         return new ArchCondition<>("[ARQUITETURA] não depender do runtime OpenAI no backend") {

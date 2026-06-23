@@ -1,0 +1,60 @@
+openapi: 3.0.3
+info:
+  title: Ops Monitor API
+  version: v1
+paths:
+  /api/internal/ops-monitor/v1/module-checks/stage-executions/pending:
+    get:
+      summary: Lista módulos pendentes para verificação pelo worker
+      responses:
+        '200': { description: OK }
+  /api/internal/ops-monitor/v1/modules/{moduleCode}/heartbeat:
+    post:
+      summary: Registra heartbeat operacional do módulo
+      parameters:
+        - in: path
+          name: moduleCode
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+  /api/internal/ops-monitor/v1/modules/{moduleCode}/incidents:
+    post:
+      summary: Registra incidente operacional do módulo
+      parameters:
+        - in: path
+          name: moduleCode
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+  /api/ops-monitor/v1/summary:
+    get:
+      summary: Retorna resumo executivo de saúde operacional
+      responses:
+        '200': { description: OK }
+  /api/ops-monitor/v1/modules/availability:
+    get:
+      summary: Lista status atual dos módulos
+      responses:
+        '200': { description: OK }
+  /api/ops-monitor/v1/modules/{moduleCode}/availability-history:
+    get:
+      summary: Lista histórico de disponibilidade do módulo
+      parameters:
+        - in: path
+          name: moduleCode
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+  /api/ops-monitor/v1/incidents/open:
+    get:
+      summary: Lista incidentes abertos
+      responses:
+        '200': { description: OK }
+  /api/ops-monitor/v1/incidents/history:
+    get:
+      summary: Lista histórico recente de incidentes
+      responses:
+        '200': { description: OK }

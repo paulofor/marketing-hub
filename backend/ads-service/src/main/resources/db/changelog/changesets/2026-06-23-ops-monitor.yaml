@@ -1,0 +1,103 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-23-ops-monitor-001-create-tables
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: ops_monitored_module
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE ops_monitored_module (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                code VARCHAR(100) NOT NULL,
+                name VARCHAR(150) NOT NULL,
+                type VARCHAR(50) NOT NULL,
+                base_url VARCHAR(512) NOT NULL,
+                health_path VARCHAR(255) NOT NULL,
+                log_path VARCHAR(255) NULL,
+                enabled TINYINT(1) NOT NULL DEFAULT 1,
+                criticality VARCHAR(30) NOT NULL,
+                offline_threshold_seconds INT NOT NULL DEFAULT 300,
+                created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+                updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+                PRIMARY KEY (id),
+                UNIQUE KEY uk_ops_monitored_module_code (code)
+              );
+              CREATE TABLE ops_module_health_check (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                module_id BIGINT NOT NULL,
+                checked_at DATETIME(6) NOT NULL,
+                status VARCHAR(30) NOT NULL,
+                http_status INT NULL,
+                response_time_ms BIGINT NULL,
+                error_message VARCHAR(1000) NULL,
+                raw_payload LONGTEXT NULL,
+                created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+                PRIMARY KEY (id),
+                KEY idx_ops_health_module_checked (module_id, checked_at),
+                CONSTRAINT fk_ops_health_module FOREIGN KEY (module_id) REFERENCES ops_monitored_module (id)
+              );
+              CREATE TABLE ops_module_incident (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                module_id BIGINT NOT NULL,
+                status VARCHAR(30) NOT NULL,
+                severity VARCHAR(30) NOT NULL,
+                started_at DATETIME(6) NOT NULL,
+                ended_at DATETIME(6) NULL,
+                duration_seconds BIGINT NULL,
+                summary VARCHAR(500) NOT NULL,
+                root_signal VARCHAR(255) NULL,
+                last_error VARCHAR(1000) NULL,
+                created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+                updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+                PRIMARY KEY (id),
+                KEY idx_ops_incident_module_started (module_id, started_at),
+                KEY idx_ops_incident_status_started (status, started_at),
+                CONSTRAINT fk_ops_incident_module FOREIGN KEY (module_id) REFERENCES ops_monitored_module (id)
+              );
+              CREATE TABLE ops_module_availability_daily (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                module_id BIGINT NOT NULL,
+                availability_date DATE NOT NULL,
+                total_checks INT NOT NULL DEFAULT 0,
+                successful_checks INT NOT NULL DEFAULT 0,
+                failed_checks INT NOT NULL DEFAULT 0,
+                availability_percentage DECIMAL(5,2) NOT NULL DEFAULT 0.00,
+                offline_seconds BIGINT NOT NULL DEFAULT 0,
+                degraded_seconds BIGINT NOT NULL DEFAULT 0,
+                created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+                updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+                PRIMARY KEY (id),
+                UNIQUE KEY uk_ops_availability_module_date (module_id, availability_date),
+                CONSTRAINT fk_ops_availability_module FOREIGN KEY (module_id) REFERENCES ops_monitored_module (id)
+              );
+  - changeSet:
+      id: 2026-06-23-ops-monitor-002-seed-modules
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: ops_monitored_module
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO ops_monitored_module (code, name, type, base_url, health_path, log_path, enabled, criticality, offline_threshold_seconds)
+              SELECT 'backend', 'Backend principal', 'BACKEND', 'http://191.252.181.168', '/actuator/health', '/actuator/logfile', 1, 'CRITICAL', 300
+              FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM ops_monitored_module WHERE code = 'backend');
+              INSERT INTO ops_monitored_module (code, name, type, base_url, health_path, log_path, enabled, criticality, offline_threshold_seconds)
+              SELECT 'ai-worker', 'AI Worker', 'WORKER', 'http://191.252.181.168', '/actuator/health', '/actuator/logfile', 1, 'CRITICAL', 300
+              FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM ops_monitored_module WHERE code = 'ai-worker');
+              INSERT INTO ops_monitored_module (code, name, type, base_url, health_path, log_path, enabled, criticality, offline_threshold_seconds)
+              SELECT 'facebook-ads-worker', 'Facebook Ads Worker', 'WORKER', 'http://191.252.181.168', '/actuator/health', '/actuator/logfile', 1, 'HIGH', 300
+              FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM ops_monitored_module WHERE code = 'facebook-ads-worker');

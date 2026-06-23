@@ -4,6 +4,8 @@ import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.BackendCand
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.cancelJob.CandidateGeneratorCancelJobResponse;
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.completeStageExecution.CandidateGeneratorCompletionRequest;
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.completeStageExecution.CandidateGeneratorCompletionResponse;
+import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.confirmNiche.CandidateGeneratorConfirmNicheRequest;
+import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.confirmNiche.CandidateGeneratorConfirmNicheResponse;
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.createStageExecution.CandidateGeneratorCreateResponse;
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.detailJob.CandidateGeneratorJobDetailResponse;
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.failStageExecution.CandidateGeneratorFailureRequest;
@@ -45,6 +47,13 @@ public class BackendCandidateGeneratorController {
     @GetMapping("/jobs/{jobId}")
     public CandidateGeneratorJobDetailResponse detailJob(@PathVariable String jobId) {
         return service.detailJob(jobId);
+    }
+
+    /** Confirma o nome único e transforma o job concluído em nicho de mercado para a sequência do Marketing Hub. */
+    @PostMapping("/jobs/{jobId}/confirm-niche")
+    public CandidateGeneratorConfirmNicheResponse confirmNiche(
+            @PathVariable String jobId, @RequestBody(required = false) CandidateGeneratorConfirmNicheRequest request) {
+        return service.confirmNiche(jobId, request);
     }
 
     /** Cancela manualmente um job preso para liberar o CNAE para nova tentativa. */

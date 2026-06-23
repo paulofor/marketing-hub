@@ -3,6 +3,7 @@ package com.marketinghub.oprm.nichocnae.v2.candidategenerator.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.oprm.cnae.OprmNicheCandidate;
 import com.marketinghub.oprm.nichocnae.v2.OprmNichoCnaeV2FailureType;
 import com.marketinghub.oprm.nichocnae.v2.OprmNichoCnaeV2OpenAiInteraction;
@@ -11,6 +12,8 @@ import com.marketinghub.oprm.nichocnae.v2.OprmNichoCnaeV2StageExecutionStatus;
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.cancelJob.CandidateGeneratorCancelJobResponse;
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.completeStageExecution.CandidateGeneratorCompletionRequest;
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.completeStageExecution.CandidateGeneratorCompletionResponse;
+import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.confirmNiche.CandidateGeneratorConfirmNicheRequest;
+import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.confirmNiche.CandidateGeneratorConfirmNicheResponse;
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.createStageExecution.CandidateGeneratorCreateResponse;
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.detailJob.CandidateGeneratorJobDetailResponse;
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.detailJob.CandidateGeneratorJobStageStep;
@@ -20,6 +23,7 @@ import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.listCnaeJob
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.listCnaeJobs.CandidateGeneratorCnaeJobsResponse;
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.pending.CandidateGeneratorPendingResponse;
 import com.marketinghub.oprm.nichocnae.v2.service.openaiinteraction.OpenAiInteractionAuditRequest;
+import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import com.marketinghub.repository.jpa.oprm.cnae.OprmNicheCandidateRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.v2.OprmNichoCnaeV2OpenAiInteractionRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.v2.OprmNichoCnaeV2StageExecutionRepository;
@@ -73,6 +77,7 @@ public class BackendCandidateGeneratorService {
             "createdMarketNicheId");
 
     private final OprmNicheCandidateRepository nicheCandidateRepository;
+    private final MarketNicheRepository marketNicheRepository;
     private final OprmNichoCnaeV2StageExecutionRepository stageExecutionRepository;
     private final OprmNichoCnaeV2OpenAiInteractionRepository openAiInteractionRepository;
     private final boolean v2Enabled;
@@ -82,11 +87,13 @@ public class BackendCandidateGeneratorService {
     @Autowired
     public BackendCandidateGeneratorService(
             OprmNicheCandidateRepository nicheCandidateRepository,
+            MarketNicheRepository marketNicheRepository,
             OprmNichoCnaeV2StageExecutionRepository stageExecutionRepository,
             OprmNichoCnaeV2OpenAiInteractionRepository openAiInteractionRepository,
             @Value("${oprm.nichocnae.v2.enabled:false}") boolean v2Enabled,
             @Value("${oprm.nichocnae.v2.materialization-enabled:false}") boolean materializationEnabled) {
         this.nicheCandidateRepository = nicheCandidateRepository;
+        this.marketNicheRepository = marketNicheRepository;
         this.stageExecutionRepository = stageExecutionRepository;
         this.openAiInteractionRepository = openAiInteractionRepository;
         this.v2Enabled = v2Enabled;
@@ -96,10 +103,30 @@ public class BackendCandidateGeneratorService {
     /** Mantém compatibilidade com testes unitários que não exercem auditoria OpenAI. */
     public BackendCandidateGeneratorService(
             OprmNicheCandidateRepository nicheCandidateRepository,
+            MarketNicheRepository marketNicheRepository,
             OprmNichoCnaeV2StageExecutionRepository stageExecutionRepository,
             boolean v2Enabled,
             boolean materializationEnabled) {
-        this(nicheCandidateRepository, stageExecutionRepository, null, v2Enabled, materializationEnabled);
+        this(nicheCandidateRepository, marketNicheRepository, stageExecutionRepository, null, v2Enabled, materializationEnabled);
+    }
+
+    /** Mantém compatibilidade com testes unitários antigos sem repositório de MarketNiche. */
+    public BackendCandidateGeneratorService(
+            OprmNicheCandidateRepository nicheCandidateRepository,
+            OprmNichoCnaeV2StageExecutionRepository stageExecutionRepository,
+            boolean v2Enabled,
+            boolean materializationEnabled) {
+        this(nicheCandidateRepository, null, stageExecutionRepository, null, v2Enabled, materializationEnabled);
+    }
+
+    /** Mantém compatibilidade com testes unitários antigos que injetam auditoria OpenAI sem MarketNiche. */
+    public BackendCandidateGeneratorService(
+            OprmNicheCandidateRepository nicheCandidateRepository,
+            OprmNichoCnaeV2StageExecutionRepository stageExecutionRepository,
+            OprmNichoCnaeV2OpenAiInteractionRepository openAiInteractionRepository,
+            boolean v2Enabled,
+            boolean materializationEnabled) {
+        this(nicheCandidateRepository, null, stageExecutionRepository, openAiInteractionRepository, v2Enabled, materializationEnabled);
     }
 
     /** Lista pendências disponíveis para consumo canônico pelo executor OPRM NichoCNAE v2. */
@@ -223,7 +250,54 @@ public class BackendCandidateGeneratorService {
                 summary.finalDecisionReason(),
                 summary.outcomeStatus(),
                 summary.outcomeMessage(),
+                proposedNicheName(executions),
+                marketNicheIdFrom(executions).map(Long::valueOf).orElse(null),
+                summary.aiCostUsd(),
+                canConfirmNiche(summary, executions),
                 executions.stream().map(this::toJobStageStep).toList());
+    }
+
+
+    /** Confirma manualmente um job concluído como nicho de mercado com nome único para uso nas próximas etapas. */
+    @Transactional
+    public CandidateGeneratorConfirmNicheResponse confirmNiche(String jobId, CandidateGeneratorConfirmNicheRequest request) {
+        if (marketNicheRepository == null) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Repositório de nichos indisponível para confirmação.");
+        }
+        List<OprmNichoCnaeV2StageExecution> executions = stageExecutionRepository.findByJobIdOrderByCreatedAtAsc(jobId);
+        if (executions.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "NichoCNAE v2 job not found: " + jobId);
+        }
+        CandidateGeneratorCnaeJobSummary summary = toJobSummary(executions);
+        if (!canConfirmNiche(summary, executions)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Este job ainda não está pronto para virar nicho.");
+        }
+        String name = requiredUniqueNicheName(request == null ? null : request.nicheName());
+        OprmNichoCnaeV2StageExecution lastExecution = executions.getLast();
+        MarketNiche marketNiche = new MarketNiche();
+        marketNiche.setName(name);
+        marketNiche.setDescription(buildConfirmedNicheDescription(executions));
+        marketNiche.setTotalCost(summary.aiCostUsd());
+        marketNiche.setCost(summary.aiCostUsd());
+        MarketNiche saved = marketNicheRepository.save(marketNiche);
+        nicheCandidateRepository.findById(lastExecution.getSourceNicheId()).ifPresent(candidate -> {
+            candidate.setMarketNicheId(saved.getId());
+            candidate.setStatus("APPROVED");
+            candidate.setUpdatedAt(Instant.now());
+            nicheCandidateRepository.save(candidate);
+        });
+        lastExecution.setOutputPayload(mergeOutputPayload(lastExecution.getOutputPayload(), saved.getId(), name, summary.aiCostUsd()));
+        lastExecution.setUpdatedAt(Instant.now());
+        stageExecutionRepository.save(lastExecution);
+        return new CandidateGeneratorConfirmNicheResponse(
+                jobId,
+                lastExecution.getCnaeCode(),
+                saved.getId(),
+                saved.getName(),
+                summary.aiCostUsd(),
+                "CONFIRMED_AS_NICHE",
+                "Nicho confirmado e disponível para a sequência do Marketing Hub.",
+                lastExecution.getUpdatedAt());
     }
 
     /** Registra conclusão da etapa persistindo a próxima etapa informada pelo executor externo. */
@@ -277,6 +351,62 @@ public class BackendCandidateGeneratorService {
                 saved.getTechnicalRetryNumber());
     }
 
+
+    /** Valida nome obrigatório e impede repetir nome de nicho já existente. */
+    private String requiredUniqueNicheName(String nicheName) {
+        String normalized = nicheName == null ? "" : nicheName.trim();
+        if (normalized.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe um nome para o nicho.");
+        }
+        if (marketNicheRepository.existsByNameIgnoreCase(normalized)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Já existe um nicho com esse nome. Escolha um nome único.");
+        }
+        return normalized;
+    }
+
+    /** Indica se o job concluído ainda pode ser confirmado manualmente como nicho. */
+    private boolean canConfirmNiche(CandidateGeneratorCnaeJobSummary summary, List<OprmNichoCnaeV2StageExecution> executions) {
+        return "SUCCESS".equals(summary.outcomeStatus())
+                && marketNicheIdFrom(executions).isEmpty()
+                && !hasOpenExecution(executions);
+    }
+
+    /** Sugere o nome inicial do nicho a partir do candidato CNAE original. */
+    private String proposedNicheName(List<OprmNichoCnaeV2StageExecution> executions) {
+        Long sourceNicheId = executions.isEmpty() ? null : executions.getFirst().getSourceNicheId();
+        if (sourceNicheId == null) {
+            return null;
+        }
+        return nicheCandidateRepository.findById(sourceNicheId)
+                .map(OprmNicheCandidate::getCandidateNicheName)
+                .filter(name -> !name.isBlank())
+                .orElse(null);
+    }
+
+    /** Monta descrição funcional mínima do nicho confirmado com dados persistidos no job. */
+    private String buildConfirmedNicheDescription(List<OprmNichoCnaeV2StageExecution> executions) {
+        OprmNichoCnaeV2StageExecution first = executions.getFirst();
+        return "Nicho confirmado a partir do pipeline NichoCNAE v2. CNAE "
+                + first.getCnaeCode()
+                + ", job "
+                + first.getJobId()
+                + ".";
+    }
+
+    /** Acrescenta ao payload final os identificadores do nicho confirmado sem descartar o resultado do executor. */
+    private String mergeOutputPayload(String payload, Long marketNicheId, String nicheName, BigDecimal aiCostUsd) {
+        Map<String, Object> output = new LinkedHashMap<>(parsePayload(payload));
+        output.put("marketNicheId", marketNicheId);
+        output.put("confirmedNicheName", nicheName);
+        output.put("totalAiCostUsd", aiCostUsd);
+        output.put("materializationDecision", "CONFIRMED_AS_NICHE");
+        try {
+            return OBJECT_MAPPER.writeValueAsString(output);
+        } catch (JsonProcessingException ex) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Falha ao registrar confirmação do nicho.", ex);
+        }
+    }
+
     /** Converte uma execução persistida em item de linha cronológico do relatório de job. */
     private CandidateGeneratorJobStageStep toJobStageStep(OprmNichoCnaeV2StageExecution execution) {
         return new CandidateGeneratorJobStageStep(
@@ -309,7 +439,7 @@ public class BackendCandidateGeneratorService {
         Map<String, Object> lastOutput = parsePayload(lastExecution.getOutputPayload());
         String finalDecision = decisionFrom(lastOutput, lastExecution, executions);
         String finalDecisionReason = reasonForDecision(finalDecision, lastOutput, lastExecution, executions);
-        String marketNicheId = marketNicheIdFrom(executions);
+        String marketNicheId = marketNicheIdFrom(executions).orElse(null);
         BigDecimal aiCostUsd = sumAiCostUsd(lastExecution.getJobId(), executions);
         boolean usedAi = aiCostUsd.compareTo(BigDecimal.ZERO) > 0
                 || hasAuditedOpenAiInteraction(lastExecution.getJobId())
@@ -516,7 +646,7 @@ public class BackendCandidateGeneratorService {
     }
 
     /** Extrai o ID de nicho materializado quando alguma etapa persistiu esse identificador no payload. */
-    private String marketNicheIdFrom(List<OprmNichoCnaeV2StageExecution> executions) {
+    private Optional<String> marketNicheIdFrom(List<OprmNichoCnaeV2StageExecution> executions) {
         return executions.stream()
                 .sorted(Comparator.comparing(OprmNichoCnaeV2StageExecution::getUpdatedAt, Comparator.nullsLast(Comparator.naturalOrder()))
                         .reversed())
@@ -525,8 +655,7 @@ public class BackendCandidateGeneratorService {
                 .filter(Objects::nonNull)
                 .map(String::valueOf)
                 .filter(value -> !value.isBlank())
-                .findFirst()
-                .orElse(null);
+                .findFirst();
     }
 
     /** Soma custo de IA em dólares registrado na saída própria de cada etapa do job. */

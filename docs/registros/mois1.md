@@ -1773,6 +1773,10 @@ Arquivos principais:
 - Atualizado o cânone MOIS para refletir que a análise comercial usa Responses Flex, timeout canônico de 15 minutos e payload auditado com `service_tier: "flex"`.
 - Ajustado o teste de contrato do analisador para impedir regressão para payload sem modo Flex.
 
+## 2026-06-23 — Horários sem conversão de fuso na Biblioteca Sales Pages
+
+- Corrigida a exibição dos horários no detalhe `/mois/sales-pages-library/:pageId` para apresentar o horário literal retornado pelo backend, sem conversão automática pelo fuso do navegador.
+- A mudança evita que o histórico da página apareça com 3 horas a menos e mantém a tela mostrando a verdade persistida pelo backend.
 ## 2026-06-23 — Regra de exibição da análise mais recente na Biblioteca Sales Pages
 
 - Revisada a decisão sobre retentativas de análise comercial: a tela deve refletir somente a execução mais recente da página, mesmo quando a tentativa mais recente falhar.

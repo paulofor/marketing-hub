@@ -85,7 +85,7 @@ class SuccessProductNicheHypothesisServiceTest {
         var hypothesis = hypothesisRepository.findAll().get(0);
         assertThat(niche.getName()).isEqualTo("Saude");
         assertThat(niche.getDescription()).isEqualTo("Nicho de saude");
-        assertThat(hypothesis.getTitle()).isEqualTo("Hipotese A");
+        assertThat(hypothesis.getTitle()).isEqualTo("SXX-H001");
         assertThat(hypothesis.getMarketNiche().getId()).isEqualTo(niche.getId());
         assertThat(hypothesis.getPersona()).isEqualTo("Persona A");
         assertThat(hypothesis.getProblem()).isEqualTo("Problema A");

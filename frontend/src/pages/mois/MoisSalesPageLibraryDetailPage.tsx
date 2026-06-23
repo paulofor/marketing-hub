@@ -36,10 +36,14 @@ function formatHotmartTemperature(value?: number | null) {
 
 function formatDate(value?: string) {
   if (!value) return "—";
-  const date = new Date(value);
-  return Number.isNaN(date.getTime())
-    ? "—"
-    : date.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+  const match = value.match(
+    /^(\d{4})-(\d{2})-(\d{2})(?:[T\s](\d{2}):(\d{2}))?/,
+  );
+  if (!match) return "—";
+
+  const [, year, month, day, hour, minute] = match;
+  const formattedDate = `${day}/${month}/${year}`;
+  return hour && minute ? `${formattedDate}, ${hour}:${minute}` : formattedDate;
 }
 
 function labelStatus(value?: string) {

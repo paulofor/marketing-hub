@@ -181,21 +181,26 @@ jobs:
         run: ssh-keyscan -4 -p 22 -t rsa,ecdsa,ed25519 -H ${APP_VPS_IP} >> ~/.ssh/known_hosts
 
       - name: Copy deployment descriptors
+        env:
+          SSH_OPTS: -o ServerAliveInterval=30 -o ServerAliveCountMax=10 -o ConnectTimeout=30 -o TCPKeepAlive=yes
         run: |
-          ssh ${VPS_USER}@${APP_VPS_IP} "mkdir -p ${DEPLOY_DIR}"
-          rsync -az --delete deploy/ ${VPS_USER}@${APP_VPS_IP}:${DEPLOY_DIR}/
+          ssh ${SSH_OPTS} ${VPS_USER}@${APP_VPS_IP} "mkdir -p ${DEPLOY_DIR}"
+          rsync -az --delete -e "ssh ${SSH_OPTS}" deploy/ ${VPS_USER}@${APP_VPS_IP}:${DEPLOY_DIR}/
 
       - name: Upload images to APP VPS
+        env:
+          SSH_OPTS: -o ServerAliveInterval=30 -o ServerAliveCountMax=10 -o ConnectTimeout=30 -o TCPKeepAlive=yes
         run: |
-          scp artifacts/backend-image.tar ${VPS_USER}@${APP_VPS_IP}:/tmp/backend-image.tar
-          scp artifacts/frontend-image.tar ${VPS_USER}@${APP_VPS_IP}:/tmp/frontend-image.tar
+          scp ${SSH_OPTS} artifacts/backend-image.tar ${VPS_USER}@${APP_VPS_IP}:/tmp/backend-image.tar
+          scp ${SSH_OPTS} artifacts/frontend-image.tar ${VPS_USER}@${APP_VPS_IP}:/tmp/frontend-image.tar
 
       - name: Apply backend/frontend stack
         env:
           GIT_SHA: ${{ github.sha }}
+          SSH_OPTS: -o ServerAliveInterval=30 -o ServerAliveCountMax=10 -o ConnectTimeout=30 -o TCPKeepAlive=yes
         run: |
-          ssh ${VPS_USER}@${APP_VPS_IP} "chmod +x ${DEPLOY_DIR}/bin/apply.sh"
-          ssh ${VPS_USER}@${APP_VPS_IP} \
+          ssh ${SSH_OPTS} ${VPS_USER}@${APP_VPS_IP} "chmod +x ${DEPLOY_DIR}/bin/apply.sh"
+          timeout 30m ssh ${SSH_OPTS} ${VPS_USER}@${APP_VPS_IP} \
             "IMAGE_TAG=${GIT_SHA} BACKEND_TAR=/tmp/backend-image.tar FRONTEND_TAR=/tmp/frontend-image.tar BACKEND_IMAGE=${BACKEND_IMAGE} FRONTEND_IMAGE=${FRONTEND_IMAGE} DEPLOY_DIR=${DEPLOY_DIR} /bin/bash ${DEPLOY_DIR}/bin/apply.sh"
 
   deploy-video-management:

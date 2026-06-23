@@ -1782,3 +1782,14 @@ Arquivos principais:
 - Revisada a decisão sobre retentativas de análise comercial: a tela deve refletir somente a execução mais recente da página, mesmo quando a tentativa mais recente falhar.
 - Removida a preservação automática de análise anterior concluída no status consolidado, porque ela misturava execução antiga com tentativa nova e poderia esconder erro operacional atual.
 - Mantida a leitura da causa operacional no histórico de execuções, preservando transparência para reprocessar quando a chamada OpenAI falhar.
+
+## 2026-06-23 — Clareza do bloqueio do botão iniciar dossiê
+
+- Corrigida a causa-raiz visual da tela de detalhe da Biblioteca Sales Pages não explicar por que o botão **Iniciar dossiê** ficava desabilitado quando o backend já retornava um dossiê existente.
+- A tela agora mostra um aviso objetivo quando a página já possui dossiê registrado, evitando nova fila duplicada e direcionando o usuário para usar o dossiê exibido.
+
+
+## 2026-06-23 — Reprocessamento explícito do dossiê MOIS
+
+- Ajustada a tela de detalhe da Biblioteca Sales Pages para permitir novo pedido quando já existe dossiê concluído, exibindo explicitamente o botão **Reprocessar dossiê**.
+- Mantido o bloqueio somente quando o backend indica dossiê em fila ou em processamento, e a tela informa que sempre exibirá o dossiê mais recente retornado pelo backend.

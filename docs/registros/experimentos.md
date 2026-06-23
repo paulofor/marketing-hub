@@ -5149,3 +5149,9 @@
 - Causa-raiz: a regra de nomeação automática (`<SIGLA>-H001`) evoluiu no backend e os testes de integração do worker ficaram com expectativa legada.
 - Correção aplicada: os testes passaram a validar o identificador automático gerado para o nicho, preservando a checagem dos demais campos funcionais da hipótese.
 - Prevenção de recorrência: a cobertura agora confirma o contrato canônico de criação de hipótese e reduz risco de reintroduzir nomes manuais vindos da IA.
+
+## 2026-06-23 — Regra de invalidação por baixa entrada no formulário sem lead
+
+- Criada regra para invalidar campanhas com pelo menos 1.500 impressões, R$ 20,00 de gasto sincronizado, taxa de acesso ao formulário igual ou inferior a 1,2% e zero envios de formulário.
+- Causa-raiz tratada: campanhas com pouca entrada no formulário e nenhum lead podiam continuar gastando até regras estatísticas mais longas, mesmo já apresentando sinal comercial composto ruim.
+- Prevenção de recorrência: a parada automática passa a registrar o motivo `LOW_FORM_ENTRY_NO_SUBMISSION_AFTER_SPEND` e solicitar pausa ao Facebook Ads Worker.

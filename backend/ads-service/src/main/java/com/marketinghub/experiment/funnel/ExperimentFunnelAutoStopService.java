@@ -27,6 +27,9 @@ public class ExperimentFunnelAutoStopService {
     private static final double THREE_PERCENT = 0.03d;
     private static final double AD_INTEREST_MINIMUM_RATE = 0.015d;
     private static final BigDecimal LOW_AD_INTEREST_STOP_MINIMUM_SPEND = new BigDecimal("25.00");
+    private static final BigDecimal LOW_FORM_ENTRY_NO_SUBMISSION_MINIMUM_SPEND = new BigDecimal("20.00");
+    private static final long LOW_FORM_ENTRY_NO_SUBMISSION_MINIMUM_IMPRESSIONS = 1500L;
+    private static final double LOW_FORM_ENTRY_NO_SUBMISSION_MAX_ACCESS_RATE = 0.012d;
     private static final Duration LOW_IMPRESSIONS_MIN_CAMPAIGN_AGE = Duration.ofHours(48);
     private static final long LOW_IMPRESSIONS_MINIMUM = 100L;
 
@@ -93,6 +96,58 @@ public class ExperimentFunnelAutoStopService {
                 experiment,
                 FacebookCampaignStopReason.TARGET_AUDIENCE_LOW_INTEREST_STATISTICAL,
                 "taxa de acesso ao formulário abaixo de 1,5% com confiança estatística de 95% após atingir R$ 25,00 de mídia"
+        );
+        return true;
+    }
+
+    /**
+     * Avalia sinal composto de baixa entrada no formulário sem envio e invalida campanhas que já gastaram o piso
+     * operacional sem produzir lead.
+     *
+     * @return {@code true} quando o experimento foi parado automaticamente, {@code false} caso contrário.
+     */
+    public boolean stopIfLowFormEntryAndNoSubmissionAfterSpend(Experiment experiment) {
+        if (experiment == null || experiment.getStatus() != ExperimentStatus.RUNNING) {
+            return false;
+        }
+        BigDecimal campaignSpend = resolveCampaignSpend(experiment);
+        if (campaignSpend.compareTo(LOW_FORM_ENTRY_NO_SUBMISSION_MINIMUM_SPEND) < 0) {
+            return false;
+        }
+        ExperimentFunnelDiagnosticsResponseDto diagnostics = diagnosticService.diagnose(experiment.getId());
+        ExperimentFunnelStageDiagnosticDto leadAccessStage = findStageDiagnostic(
+                diagnostics,
+                ExperimentFunnelStage.ACESSO_FORM_LEAD
+        );
+        ExperimentFunnelStageDiagnosticDto submissionStage = findStageDiagnostic(
+                diagnostics,
+                ExperimentFunnelStage.ENVIO_FORM
+        );
+        if (leadAccessStage == null || submissionStage == null || leadAccessStage.attempts() <= 0) {
+            return false;
+        }
+        double leadAccessRate = (double) leadAccessStage.successes() / leadAccessStage.attempts();
+        boolean hasEnoughDistribution = leadAccessStage.attempts() >= LOW_FORM_ENTRY_NO_SUBMISSION_MINIMUM_IMPRESSIONS;
+        boolean hasLowFormEntry = leadAccessRate <= LOW_FORM_ENTRY_NO_SUBMISSION_MAX_ACCESS_RATE;
+        boolean hasNoSubmission = submissionStage.successes() == 0;
+        if (!hasEnoughDistribution || !hasLowFormEntry || !hasNoSubmission) {
+            return false;
+        }
+        LOGGER.warn(
+                "Automatic stop triggered for experiment {} due to low form entry and no submissions after spend: impressions={}, formAccesses={}, formAccessRate={}, formViews={}, submissions={}, spend={}, minimumSpend={}",
+                experiment.getId(),
+                leadAccessStage.attempts(),
+                leadAccessStage.successes(),
+                leadAccessRate,
+                submissionStage.attempts(),
+                submissionStage.successes(),
+                campaignSpend,
+                LOW_FORM_ENTRY_NO_SUBMISSION_MINIMUM_SPEND
+        );
+        invalidateExperimentAndRequestStops(
+                experiment,
+                FacebookCampaignStopReason.LOW_FORM_ENTRY_NO_SUBMISSION_AFTER_SPEND,
+                "baixa entrada no formulário após 1.500 impressões e R$ 20,00 de mídia, sem nenhum envio de formulário"
         );
         return true;
     }
@@ -181,6 +236,20 @@ public class ExperimentFunnelAutoStopService {
      */
     public boolean standbyOnFirstValidFormSubmission(Experiment experiment) {
         return standbyService.standbyOnFirstValidFormSubmission(experiment);
+    }
+
+    /**
+     * Localiza o diagnóstico de uma etapa específica dentro da resposta consolidada.
+     */
+    private ExperimentFunnelStageDiagnosticDto findStageDiagnostic(ExperimentFunnelDiagnosticsResponseDto diagnostics,
+                                                                   ExperimentFunnelStage stage) {
+        if (diagnostics == null || diagnostics.diagnostics() == null || stage == null) {
+            return null;
+        }
+        return diagnostics.diagnostics().stream()
+                .filter(dto -> dto.stageKey() == stage)
+                .findFirst()
+                .orElse(null);
     }
 
     /**

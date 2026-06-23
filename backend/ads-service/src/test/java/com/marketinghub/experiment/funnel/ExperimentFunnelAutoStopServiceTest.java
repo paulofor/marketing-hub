@@ -121,6 +121,72 @@ class ExperimentFunnelAutoStopServiceTest {
         assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.RUNNING);
     }
 
+
+    /**
+     * Garante parada quando a campanha tem distribuição suficiente, pouca entrada no formulário e nenhum envio após R$ 20,00.
+     */
+    @Test
+    void stopsExperimentWhenFormEntryIsLowAndNoSubmissionAfterMinimumSpend() {
+        ExperimentFunnelStageDiagnosticDto leadAccessStage = new ExperimentFunnelStageDiagnosticDto(
+                ExperimentFunnelStage.ACESSO_FORM_LEAD,
+                "Acesso ao formulário",
+                1521,
+                15,
+                0.0099,
+                0.015,
+                0.016,
+                List.of(new FunnelThresholdCheckDto(0.015, 200, 0.002, false, true)),
+                FunnelDiagnosticStatus.WEAK_SIGNAL,
+                FunnelDiagnosticReasonCode.BELOW_MIN_RATE,
+                "",
+                false
+        );
+        ExperimentFunnelStageDiagnosticDto submissionStage = new ExperimentFunnelStageDiagnosticDto(
+                ExperimentFunnelStage.ENVIO_FORM,
+                "Envio",
+                8,
+                0,
+                0.0,
+                0.10,
+                0.375,
+                List.of(new FunnelThresholdCheckDto(0.03, 100, 0.375, false, false)),
+                FunnelDiagnosticStatus.INSUFFICIENT_DATA,
+                FunnelDiagnosticReasonCode.LOW_SAMPLE_SIZE,
+                "",
+                false
+        );
+        when(campaignMetricRepository.findByExperiment(experiment))
+                .thenReturn(Optional.of(metricWithSpend("20.80")));
+        when(diagnosticService.diagnose(99L))
+                .thenReturn(new ExperimentFunnelDiagnosticsResponseDto(List.of(leadAccessStage, submissionStage), null));
+        FacebookAdsCampaign campaign = new FacebookAdsCampaign();
+        campaign.setId("camp-low-form-entry");
+        when(campaignRepository.findByExperimentId(99L)).thenReturn(List.of(campaign));
+
+        boolean stopped = service.stopIfLowFormEntryAndNoSubmissionAfterSpend(experiment);
+
+        assertThat(stopped).isTrue();
+        assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.INVALIDATED);
+        assertThat(campaign.getStopReason())
+                .isEqualTo(FacebookCampaignStopReason.LOW_FORM_ENTRY_NO_SUBMISSION_AFTER_SPEND);
+        assertThat(campaign.getStopRequestedAt()).isNotNull();
+        assertThat(campaign.getStopLastError()).isNull();
+    }
+
+    /**
+     * Garante que a nova regra não invalida antes de atingir o piso financeiro.
+     */
+    @Test
+    void keepsExperimentRunningWhenLowFormEntryHasNotReachedMinimumSpend() {
+        when(campaignMetricRepository.findByExperiment(experiment))
+                .thenReturn(Optional.of(metricWithSpend("19.99")));
+
+        boolean stopped = service.stopIfLowFormEntryAndNoSubmissionAfterSpend(experiment);
+
+        assertThat(stopped).isFalse();
+        assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.RUNNING);
+    }
+
     /**
      * Garante standby e pausa da campanha no primeiro envio válido do formulário.
      */

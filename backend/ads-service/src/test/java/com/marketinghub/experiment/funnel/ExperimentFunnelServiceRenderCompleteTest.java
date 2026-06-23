@@ -305,6 +305,8 @@ class ExperimentFunnelServiceRenderCompleteTest {
         assertEquals(3, summary.mobileOperatingSystemBreakdown().size());
         assertTrue(summary.mobileOperatingSystemBreakdown().stream().allMatch(os -> os.percentage() == 0));
         assertTrue(summary.screenSizeBreakdown().isEmpty());
+        assertEquals(0, summary.loadMetrics().events());
+        assertEquals("INSUFFICIENT_DATA", summary.loadMetrics().diagnosisCode());
     }
 
     /**
@@ -327,12 +329,14 @@ class ExperimentFunnelServiceRenderCompleteTest {
                         landingEvent(3L, "eventId=e3;eventType=page_view;sessionId=s3;deviceType=tablet;operatingSystem=ios;screenWidth=820;screenHeight=1180;userAgent=iPad",
                                 Instant.parse("2026-06-04T21:02:00Z")),
                         landingEvent(4L, "eventId=e4;eventType=section_view_time;sessionId=s1;elapsedMs=1500;deviceType=mobile;operatingSystem=ios;screenWidth=390;screenHeight=844",
-                                Instant.parse("2026-06-04T21:03:00Z"))));
+                                Instant.parse("2026-06-04T21:03:00Z")),
+                        landingEvent(5L, "eventId=e5;eventType=page_load_metric;sessionId=s1;loadDurationMs=2400;domContentLoadedMs=900;firstContentfulPaintMs=700;resourceErrorCount=2;connectionType=4g",
+                                Instant.parse("2026-06-04T21:04:00Z"))));
 
         var summary = service.summarizeLandingAnalytics(39L);
 
         assertEquals(3, summary.totalSessions());
-        assertEquals(4, summary.totalEvents());
+        assertEquals(5, summary.totalEvents());
         assertEquals(33.33, findDevicePercentage(summary.deviceBreakdown(), "mobile"));
         assertEquals(33.33, findDevicePercentage(summary.deviceBreakdown(), "desktop"));
         assertEquals(33.33, findDevicePercentage(summary.deviceBreakdown(), "tablet"));
@@ -345,6 +349,16 @@ class ExperimentFunnelServiceRenderCompleteTest {
         assertEquals("390x844 px", mobileSession.screenSizeLabel());
         assertEquals(100.0, findOperatingSystemPercentage(summary.mobileOperatingSystemBreakdown(), "ios"));
         assertEquals(33.33, findScreenSizePercentage(summary.screenSizeBreakdown(), "390x844"));
+        assertEquals(1, summary.loadMetrics().events());
+        assertEquals(2400, summary.loadMetrics().averageLoadDurationMs());
+        assertEquals(2400, summary.loadMetrics().p95LoadDurationMs());
+        assertEquals(900, summary.loadMetrics().averageDomContentLoadedMs());
+        assertEquals(700, summary.loadMetrics().averageFirstContentfulPaintMs());
+        assertEquals(2, summary.loadMetrics().totalResourceErrors());
+        assertEquals(2, summary.loadMetrics().sessionsWithoutSectionEvents());
+        assertEquals(33.33, summary.loadMetrics().initialEngagementRate());
+        assertEquals("RESOURCE_ERRORS", summary.loadMetrics().diagnosisCode());
+        assertEquals("danger", summary.loadMetrics().diagnosisSeverity());
     }
 
 
@@ -378,6 +392,42 @@ class ExperimentFunnelServiceRenderCompleteTest {
         assertEquals(2, visitor.distinctPages());
         assertEquals("mobile", visitor.deviceType());
         assertTrue(visitor.recurrent());
+    }
+    /**
+     * Valida que o diagnóstico diferencia baixa qualidade de tráfego quando carregamento está saudável.
+     */
+    @Test
+    void summarizeLandingAnalyticsDiagnosesPossibleTrafficQuality() {
+        Experiment experiment = Experiment.builder().id(55L).build();
+        when(experimentRepository.findById(55L)).thenReturn(Optional.of(experiment));
+        when(eventRepository.findLandingAnalyticsEvents(
+                eq(55L),
+                eq(ExperimentFunnelEventRepository.LANDING_PAGE_ANALYTICS_SOURCE),
+                eq(null),
+                any(Pageable.class)))
+                .thenReturn(List.of(
+                        landingEvent(1L, "eventId=e1;eventType=page_view;sessionId=s1;deviceType=mobile;userAgent=Instagram",
+                                Instant.parse("2026-06-04T21:00:00Z")),
+                        landingEvent(2L, "eventId=e2;eventType=page_view;sessionId=s2;deviceType=mobile;userAgent=Instagram",
+                                Instant.parse("2026-06-04T21:01:00Z")),
+                        landingEvent(3L, "eventId=e3;eventType=page_view;sessionId=s3;deviceType=mobile;userAgent=Chrome",
+                                Instant.parse("2026-06-04T21:02:00Z")),
+                        landingEvent(4L, "eventId=e4;eventType=page_view;sessionId=s4;deviceType=mobile;userAgent=Chrome",
+                                Instant.parse("2026-06-04T21:03:00Z")),
+                        landingEvent(5L, "eventId=e5;eventType=page_view;sessionId=s5;deviceType=mobile;userAgent=Chrome",
+                                Instant.parse("2026-06-04T21:04:00Z")),
+                        landingEvent(6L, "eventId=e6;eventType=page_load_metric;sessionId=s1;loadDurationMs=1200;domContentLoadedMs=600;firstContentfulPaintMs=500;resourceErrorCount=0",
+                                Instant.parse("2026-06-04T21:05:00Z"))));
+
+        var summary = service.summarizeLandingAnalytics(55L);
+
+        assertEquals(5, summary.totalSessions());
+        assertEquals(5, summary.loadMetrics().sessionsWithoutSectionEvents());
+        assertEquals(0.0, summary.loadMetrics().initialEngagementRate());
+        assertEquals(2, summary.loadMetrics().inAppBrowserSessions());
+        assertEquals(40.0, summary.loadMetrics().inAppBrowserPercentage());
+        assertEquals("POSSIBLE_TRAFFIC_QUALITY", summary.loadMetrics().diagnosisCode());
+        assertEquals("warning", summary.loadMetrics().diagnosisSeverity());
     }
 
     /**

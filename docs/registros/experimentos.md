@@ -5067,3 +5067,17 @@
 - Causa-raiz: a query JPQL `dismissByIdIn` atribuía `CURRENT_TIMESTAMP` diretamente a um campo `Instant`; no Hibernate 6 isso valida como `java.sql.Timestamp` e bloqueia a criação do repository antes dos testes iniciarem.
 - Correção aplicada: o backend passou a calcular o instante em Java (`Instant.now()`) e enviar esse valor tipado como parâmetro da query de descarte de rascunhos de promessa.
 - Prevenção de recorrência: executados os testes dos controllers afetados para confirmar que o contexto Spring volta a subir e que a falha de bootstrap não mascara os testes reais.
+
+## 2026-06-23 — Métrica técnica de carregamento da landing
+
+- Solicitação: implementar a fase 1 para medir se a landing está com dificuldade de carregar.
+- Causa-raiz: o analytics existente media `page_view` e tempo visível por seção, mas não capturava dados técnicos do carregamento; assim, uma sessão muito curta podia ser confundida com falta de interesse, clique acidental ou lentidão da página.
+- Correção aplicada: o script público da landing passou a emitir `page_load_metric` com tempo de carregamento, DOMContentLoaded, first contentful paint, falhas de recursos e tipo de conexão; o backend passou a preservar esses campos no payload rastreável e expor o resumo no analytics do experimento.
+- Prevenção de recorrência: a tela administrativa agora recebe métricas específicas de carregamento para separar problema técnico de baixa qualidade de tráfego.
+
+## 2026-06-23 — Diagnóstico automático de carregamento da landing
+
+- Solicitação: implementar a fase 2 da métrica de carregamento para transformar dados técnicos em diagnóstico operacional.
+- Causa-raiz: a fase 1 capturava tempos e falhas, mas a tela ainda exigia interpretação manual para separar lentidão real, falha de recurso, navegador in-app e possível baixa qualidade de tráfego.
+- Correção aplicada: o backend passou a classificar a saúde de carregamento com códigos operacionais (`GOOD`, `SLOW_LOAD`, `CRITICAL_SLOW_LOAD`, `RESOURCE_ERRORS`, `POSSIBLE_IN_APP_BROWSER`, `POSSIBLE_TRAFFIC_QUALITY`, `INSUFFICIENT_DATA`) e a expor resumo, severidade e recomendação para a tela.
+- Prevenção de recorrência: adicionados testes de contrato para garantir que o diagnóstico diferencia falha técnica de possível problema de tráfego quando o carregamento está saudável.

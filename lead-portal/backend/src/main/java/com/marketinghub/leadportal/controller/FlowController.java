@@ -214,9 +214,38 @@ public class FlowController {
                   };
                   const deviceType = resolveDeviceType();
                   const operatingSystem = resolveOperatingSystem();
-                  const sendEvent = function(eventType, sectionId, elapsedMs){
+                  let resourceErrorCount = 0;
+                  window.addEventListener('error', function(event){
+                    const target = event && event.target;
+                    if (target && target !== window && (target.src || target.href)) {
+                      resourceErrorCount += 1;
+                    }
+                  }, true);
+                  const buildPerformanceMetrics = function(){
+                    const navigation = performance && performance.getEntriesByType ? performance.getEntriesByType('navigation')[0] : null;
+                    const timing = navigation || (performance && performance.timing ? performance.timing : null);
+                    const origin = navigation ? 0 : (timing && timing.navigationStart ? timing.navigationStart : 0);
+                    const metric = function(name){
+                      if (!timing || typeof timing[name] !== 'number') return null;
+                      const value = timing[name] - origin;
+                      return value > 0 ? Math.round(value) : null;
+                    };
+                    let firstContentfulPaintMs = null;
+                    if (performance && performance.getEntriesByName) {
+                      const paints = performance.getEntriesByName('first-contentful-paint');
+                      if (paints && paints.length) firstContentfulPaintMs = Math.round(paints[0].startTime);
+                    }
+                    return {
+                      loadDurationMs: metric('loadEventEnd') || metric('duration'),
+                      domContentLoadedMs: metric('domContentLoadedEventEnd'),
+                      firstContentfulPaintMs: firstContentfulPaintMs,
+                      resourceErrorCount: resourceErrorCount,
+                      connectionType: navigator.connection && navigator.connection.effectiveType ? navigator.connection.effectiveType : null
+                    };
+                  };
+                  const sendEvent = function(eventType, sectionId, elapsedMs, extra){
                     const roundedElapsed = typeof elapsedMs === 'number' ? Math.round(elapsedMs) : null;
-                    const payload = {
+                    const payload = Object.assign({
                       eventId: buildEventId(),
                       eventType: eventType,
                       sessionId: sessionId,
@@ -230,7 +259,7 @@ public class FlowController {
                       operatingSystem: operatingSystem,
                       screenWidth: resolveScreenSize().width,
                       screenHeight: resolveScreenSize().height
-                    };
+                    }, extra || {});
                     debugLog('enviando evento', {endpoint: endpoint, payload: payload});
                     if (navigator.sendBeacon) {
                       const accepted = navigator.sendBeacon(endpoint, new Blob([JSON.stringify(payload)], {type: 'application/json'}));
@@ -244,6 +273,16 @@ public class FlowController {
                   const startTracking = function(){
                     debugLog('tracking iniciado', {slug: slugValue});
                     sendEvent('page_view', null, null);
+                    const sendLoadMetric = function(){
+                      setTimeout(function(){
+                        sendEvent('page_load_metric', null, null, buildPerformanceMetrics());
+                      }, 0);
+                    };
+                    if (document.readyState === 'complete') {
+                      sendLoadMetric();
+                    } else {
+                      window.addEventListener('load', sendLoadMetric, {once:true});
+                    }
                     const visibleSince = new Map();
                     const observer = new IntersectionObserver(function(entries){
                       const now = performance.now();

@@ -1340,12 +1340,59 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ExperimentLandingAnalyticsScreenSize'
+        loadMetrics:
+          $ref: '#/components/schemas/ExperimentLandingAnalyticsLoadMetric'
         visitors:
           $ref: '#/components/schemas/ExperimentLandingAnalyticsVisitors'
         sessions:
           type: array
           items:
             $ref: '#/components/schemas/ExperimentLandingAnalyticsSession'
+    ExperimentLandingAnalyticsLoadMetric:
+      type: object
+      properties:
+        events:
+          type: integer
+          format: int64
+        averageLoadDurationMs:
+          type: integer
+          format: int64
+        p95LoadDurationMs:
+          type: integer
+          format: int64
+        averageDomContentLoadedMs:
+          type: integer
+          format: int64
+        averageFirstContentfulPaintMs:
+          type: integer
+          format: int64
+        totalResourceErrors:
+          type: integer
+          format: int64
+        sessionsWithoutSectionEvents:
+          type: integer
+          format: int64
+        initialEngagementRate:
+          type: number
+          format: double
+        inAppBrowserSessions:
+          type: integer
+          format: int64
+        inAppBrowserPercentage:
+          type: number
+          format: double
+        diagnosisCode:
+          type: string
+          enum: [INSUFFICIENT_DATA, CRITICAL_SLOW_LOAD, RESOURCE_ERRORS, SLOW_LOAD, POSSIBLE_IN_APP_BROWSER, POSSIBLE_TRAFFIC_QUALITY, GOOD]
+        diagnosisLabel:
+          type: string
+        diagnosisSeverity:
+          type: string
+          enum: [success, warning, danger, info]
+        diagnosisSummary:
+          type: string
+        recommendation:
+          type: string
     ExperimentLandingAnalyticsVisitors:
       type: object
       properties:

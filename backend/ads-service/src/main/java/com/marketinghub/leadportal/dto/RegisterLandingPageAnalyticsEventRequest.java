@@ -21,5 +21,32 @@ public record RegisterLandingPageAnalyticsEventRequest(
         String deviceType,
         String operatingSystem,
         Integer screenWidth,
-        Integer screenHeight) {
+        Integer screenHeight,
+        Long loadDurationMs,
+        Long domContentLoadedMs,
+        Long firstContentfulPaintMs,
+        Integer resourceErrorCount,
+        String connectionType) {
+
+    /**
+     * Mantém compatibilidade com emissores que ainda enviam somente o contrato original de analytics.
+     */
+    public RegisterLandingPageAnalyticsEventRequest(
+            String eventId,
+            String eventType,
+            String visitorId,
+            String sessionId,
+            String sectionId,
+            Long visibleMs,
+            Long elapsedMs,
+            String pageUrl,
+            Instant occurredAt,
+            String userAgent,
+            String deviceType,
+            String operatingSystem,
+            Integer screenWidth,
+            Integer screenHeight) {
+        this(eventId, eventType, visitorId, sessionId, sectionId, visibleMs, elapsedMs, pageUrl, occurredAt, userAgent,
+                deviceType, operatingSystem, screenWidth, screenHeight, null, null, null, null, null);
+    }
 }

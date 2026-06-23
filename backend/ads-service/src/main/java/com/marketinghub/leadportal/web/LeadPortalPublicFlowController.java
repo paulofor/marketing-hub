@@ -296,50 +296,16 @@ public class LeadPortalPublicFlowController {
                   var safeSet = function(storageName, key, value){
                     try { if (window[storageName]) window[storageName].setItem(key, value); } catch (e) {}
                   };
-                  var cookieName = function(key){ return key.replace(/[^a-zA-Z0-9_\\-]/g, '_'); };
-                  var readCookie = function(name){
-                    try {
-                      var parts = ('; ' + document.cookie).split('; ' + name + '=');
-                      if (parts.length === 2) return decodeURIComponent(parts.pop().split(';').shift());
-                    } catch (e) {}
-                    return null;
-                  };
-                  var writeCookie = function(name, value){
-                    try {
-                      document.cookie = name + '=' + encodeURIComponent(value) + '; Max-Age=31536000; Path=/; SameSite=Lax';
-                    } catch (e) {}
-                  };
                   var randomId = function(prefix){
                     try {
                       if (window.crypto && typeof window.crypto.randomUUID === 'function') return prefix + '-' + window.crypto.randomUUID();
-                      if (window.crypto && typeof window.crypto.getRandomValues === 'function') {
-                        var bytes = new Uint8Array(16);
-                        window.crypto.getRandomValues(bytes);
-                        return prefix + '-' + Array.prototype.map.call(bytes, function(byte){ return byte.toString(16).padStart(2, '0'); }).join('');
-                      }
                     } catch (e) {}
                     return prefix + '-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2);
                   };
-                  var resolvePersistentId = function(key){
-                    var cookieKey = cookieName(key);
-                    var existing = safeGet('localStorage', key) || readCookie(cookieKey) || memoryStore[key];
-                    if (existing) return existing;
-                    var created = randomId('visitor');
-                    memoryStore[key] = created;
-                    safeSet('localStorage', key, created);
-                    writeCookie(cookieKey, created);
-                    return created;
-                  };
-                  var resolveSessionId = function(key){
-                    var existing = safeGet('sessionStorage', key) || memoryStore[key];
-                    if (existing) return existing;
-                    var created = randomId('session');
-                    memoryStore[key] = created;
-                    safeSet('sessionStorage', key, created);
-                    return created;
-                  };
-                  var visitorId = resolvePersistentId('mh_lp_visitor_' + slugValue);
-                  var sessionId = resolveSessionId('mh_lp_session_' + slugValue);
+                  var sessionId = safeGet('sessionStorage', 'mh_lp_session_' + slugValue) || randomId('session');
+                  safeSet('sessionStorage', 'mh_lp_session_' + slugValue, sessionId);
+                  var visitorId = safeGet('localStorage', 'mh_lp_visitor_' + slugValue) || randomId('visitor');
+                  safeSet('localStorage', 'mh_lp_visitor_' + slugValue, visitorId);
                   var resolveDeviceType = function(){
                     var userAgent = navigator.userAgent || '';
                     var isTablet = /ipad|tablet/i.test(userAgent) || (/android/i.test(userAgent) && !/mobile/i.test(userAgent));
@@ -347,55 +313,74 @@ public class LeadPortalPublicFlowController {
                     var isMobile = /mobi|iphone|ipod|android/i.test(userAgent);
                     return isMobile ? 'mobile' : 'desktop';
                   };
-                  var nowMs = function(){ return window.performance && typeof window.performance.now === 'function' ? window.performance.now() : Date.now(); };
-                  var deviceType = resolveDeviceType();
-                  var sendEvent = function(eventType, sectionId, elapsedMs){
-                    var payload = {
-                      eventId: randomId('event'),
-                  const resolveOperatingSystem = function(){
-                    const userAgent = navigator.userAgent || '';
+                  var resolveOperatingSystem = function(){
+                    var userAgent = navigator.userAgent || '';
                     if (/iphone|ipad|ipod/i.test(userAgent)) return 'ios';
                     if (/android/i.test(userAgent)) return 'android';
                     return 'other';
                   };
-                  const resolveScreenSize = function(){
-                    const width = window.innerWidth || document.documentElement.clientWidth || screen.width || null;
-                    const height = window.innerHeight || document.documentElement.clientHeight || screen.height || null;
+                  var resolveScreenSize = function(){
+                    var width = window.innerWidth || document.documentElement.clientWidth || screen.width || null;
+                    var height = window.innerHeight || document.documentElement.clientHeight || screen.height || null;
+                    return {width: typeof width === 'number' ? Math.round(width) : null, height: typeof height === 'number' ? Math.round(height) : null};
+                  };
+                  var resourceErrorCount = 0;
+                  window.addEventListener('error', function(event){
+                    var target = event && event.target;
+                    if (target && target !== window && (target.src || target.href)) resourceErrorCount += 1;
+                  }, true);
+                  var nowMs = function(){ return window.performance && typeof window.performance.now === 'function' ? window.performance.now() : Date.now(); };
+                  var buildPerformanceMetrics = function(){
+                    var navigation = window.performance && performance.getEntriesByType ? performance.getEntriesByType('navigation')[0] : null;
+                    var timing = navigation || (window.performance && performance.timing ? performance.timing : null);
+                    var origin = navigation ? 0 : (timing && timing.navigationStart ? timing.navigationStart : 0);
+                    var metric = function(name){
+                      if (!timing || typeof timing[name] !== 'number') return null;
+                      var value = timing[name] - origin;
+                      return value > 0 ? Math.round(value) : null;
+                    };
+                    var firstContentfulPaintMs = null;
+                    if (window.performance && performance.getEntriesByName) {
+                      var paints = performance.getEntriesByName('first-contentful-paint');
+                      if (paints && paints.length) firstContentfulPaintMs = Math.round(paints[0].startTime);
+                    }
                     return {
-                      width: typeof width === 'number' ? Math.round(width) : null,
-                      height: typeof height === 'number' ? Math.round(height) : null
+                      loadDurationMs: metric('loadEventEnd') || metric('duration'),
+                      domContentLoadedMs: metric('domContentLoadedEventEnd'),
+                      firstContentfulPaintMs: firstContentfulPaintMs,
+                      resourceErrorCount: resourceErrorCount,
+                      connectionType: navigator.connection && navigator.connection.effectiveType ? navigator.connection.effectiveType : null
                     };
                   };
-                  const deviceType = resolveDeviceType();
-                  const operatingSystem = resolveOperatingSystem();
-                  const sendEvent = function(eventType, sectionId, elapsedMs){
-                    const payload = {
-                      eventId: crypto.randomUUID ? crypto.randomUUID() : (Date.now().toString(36) + '-' + Math.random().toString(36).slice(2)),
+                  var deviceType = resolveDeviceType();
+                  var operatingSystem = resolveOperatingSystem();
+                  var sendEvent = function(eventType, sectionId, elapsedMs, extra){
+                    var screenSize = resolveScreenSize();
+                    var roundedElapsed = typeof elapsedMs === 'number' ? Math.round(elapsedMs) : null;
+                    var payload = Object.assign({
+                      eventId: randomId('event'),
                       eventType: eventType,
                       visitorId: visitorId,
                       sessionId: sessionId,
                       sectionId: sectionId || null,
-                      elapsedMs: typeof elapsedMs === 'number' ? Math.round(elapsedMs) : null,
-                      visibleMs: typeof elapsedMs === 'number' ? Math.round(elapsedMs) : null,
+                      elapsedMs: roundedElapsed,
+                      visibleMs: roundedElapsed,
                       pageUrl: window.location.href,
                       occurredAt: new Date().toISOString(),
                       userAgent: navigator.userAgent || '',
-                      deviceType: deviceType
-                      userAgent: navigator.userAgent,
                       deviceType: deviceType,
                       operatingSystem: operatingSystem,
-                      screenWidth: resolveScreenSize().width,
-                      screenHeight: resolveScreenSize().height
-                    };
+                      screenWidth: screenSize.width,
+                      screenHeight: screenSize.height
+                    }, extra || {});
                     if (navigator.sendBeacon && window.Blob) {
-                      try {
-                        navigator.sendBeacon(endpoint, new Blob([JSON.stringify(payload)], {type: 'application/json'}));
-                        return;
-                      } catch (e) {}
+                      try { navigator.sendBeacon(endpoint, new Blob([JSON.stringify(payload)], {type: 'application/json'})); return; } catch (e) {}
                     }
                     if (window.fetch) fetch(endpoint, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload), keepalive: true}).catch(function(){});
                   };
                   sendEvent('page_view', null, null);
+                  var sendLoadMetric = function(){ setTimeout(function(){ sendEvent('page_load_metric', null, null, buildPerformanceMetrics()); }, 0); };
+                  if (document.readyState === 'complete') sendLoadMetric(); else window.addEventListener('load', sendLoadMetric, {once:true});
                   if (!('IntersectionObserver' in window) || !window.Map) return;
                   var visibleSince = new Map();
                   var observer = new IntersectionObserver(function(entries){

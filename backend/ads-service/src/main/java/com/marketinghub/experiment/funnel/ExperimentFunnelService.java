@@ -5,6 +5,7 @@ import com.marketinghub.experiment.funnel.dto.ExperimentFunnelStageDto;
 import com.marketinghub.experiment.funnel.dto.RegisterExperimentFunnelEventRequest;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsDeviceDto;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsDto;
+import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsLoadMetricDto;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsOperatingSystemDto;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsScreenSizeDto;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsSectionDto;
@@ -107,8 +108,8 @@ public class ExperimentFunnelService {
             String sectionId = payload.get("sectionId");
             String pageUrl = payload.get("pageUrl");
             String userAgent = payload.get("userAgent");
-            String deviceType = normalizeLandingAnalyticsDeviceType(payload.get("deviceType"), userAgent);
-            String operatingSystem = normalizeLandingAnalyticsOperatingSystem(payload.get("operatingSystem"), userAgent);
+            String deviceType = payload.get("deviceType");
+            String operatingSystem = payload.get("operatingSystem");
             Integer screenWidth = parsePositiveInteger(payload.get("screenWidth"));
             Integer screenHeight = parsePositiveInteger(payload.get("screenHeight"));
             long elapsedMs = parseLong(payload.get("elapsedMs"));
@@ -139,6 +140,7 @@ public class ExperimentFunnelService {
         List<ExperimentLandingAnalyticsOperatingSystemDto> mobileOperatingSystemBreakdown =
                 buildMobileOperatingSystemBreakdown(sessions);
         List<ExperimentLandingAnalyticsScreenSizeDto> screenSizeBreakdown = buildScreenSizeBreakdown(sessions);
+        ExperimentLandingAnalyticsLoadMetricDto loadMetrics = buildLoadMetrics(rows, sessions);
         ExperimentLandingAnalyticsVisitorsDto visitors = summarizeLandingAnalyticsVisitors(experiment, baseline);
         return new ExperimentLandingAnalyticsDto(
                 rows.size(),
@@ -151,6 +153,7 @@ public class ExperimentFunnelService {
                 deviceBreakdown,
                 mobileOperatingSystemBreakdown,
                 screenSizeBreakdown,
+                loadMetrics,
                 visitors,
                 sessionDtos);
     }
@@ -431,6 +434,10 @@ public class ExperimentFunnelService {
                 throw new IllegalArgumentException("elapsedMs é obrigatório para section_view_time");
             }
         }
+        if ("page_load_metric".equalsIgnoreCase(eventType)) {
+            validateRequiredLandingAnalyticsField(request.sessionId(), "sessionId é obrigatório para page_load_metric");
+            validateRequiredLandingAnalyticsField(request.pageUrl(), "pageUrl é obrigatório para page_load_metric");
+        }
     }
 
     /**
@@ -547,6 +554,9 @@ public class ExperimentFunnelService {
         if ("section_view_time".equalsIgnoreCase(eventType)) {
             return ExperimentFunnelStage.VISUALIZACAO_FORM;
         }
+        if ("page_load_metric".equalsIgnoreCase(eventType)) {
+            return ExperimentFunnelStage.VISUALIZACAO_FORM;
+        }
         return null;
     }
 
@@ -565,6 +575,11 @@ public class ExperimentFunnelService {
                 normalizeLandingAnalyticsOperatingSystem(request.operatingSystem(), request.userAgent()));
         String screenWidth = request.screenWidth() == null ? "" : request.screenWidth().toString();
         String screenHeight = request.screenHeight() == null ? "" : request.screenHeight().toString();
+        String loadDurationMs = request.loadDurationMs() == null ? "" : request.loadDurationMs().toString();
+        String domContentLoadedMs = request.domContentLoadedMs() == null ? "" : request.domContentLoadedMs().toString();
+        String firstContentfulPaintMs = request.firstContentfulPaintMs() == null ? "" : request.firstContentfulPaintMs().toString();
+        String resourceErrorCount = request.resourceErrorCount() == null ? "" : request.resourceErrorCount().toString();
+        String connectionType = sanitizePayloadValue(request.connectionType());
         String duration = elapsedMs == null ? "" : elapsedMs.toString();
         return "eventId=" + sanitizePayloadValue(request.eventId())
                 + ";eventType=" + sanitizePayloadValue(request.eventType())
@@ -577,7 +592,12 @@ public class ExperimentFunnelService {
                 + ";deviceType=" + deviceType
                 + ";operatingSystem=" + operatingSystem
                 + ";screenWidth=" + sanitizePayloadValue(screenWidth)
-                + ";screenHeight=" + sanitizePayloadValue(screenHeight);
+                + ";screenHeight=" + sanitizePayloadValue(screenHeight)
+                + ";loadDurationMs=" + sanitizePayloadValue(loadDurationMs)
+                + ";domContentLoadedMs=" + sanitizePayloadValue(domContentLoadedMs)
+                + ";firstContentfulPaintMs=" + sanitizePayloadValue(firstContentfulPaintMs)
+                + ";resourceErrorCount=" + sanitizePayloadValue(resourceErrorCount)
+                + ";connectionType=" + connectionType;
     }
 
     /**
@@ -958,6 +978,180 @@ public class ExperimentFunnelService {
                 .toList();
     }
 
+
+    /**
+     * Consolida métricas técnicas de carregamento enviadas pelos eventos page_load_metric.
+     */
+    private ExperimentLandingAnalyticsLoadMetricDto buildLoadMetrics(
+            List<LandingAnalyticsEventRow> rows,
+            Map<String, LandingAnalyticsSessionAccumulator> sessions) {
+        List<Long> loadDurations = new ArrayList<>();
+        List<Long> domContentLoadedDurations = new ArrayList<>();
+        List<Long> firstContentfulPaintDurations = new ArrayList<>();
+        long totalResourceErrors = 0;
+        for (LandingAnalyticsEventRow row : rows) {
+            Map<String, String> payload = parseDelimitedPayload(row.payload());
+            String eventType = firstNonBlank(payload.get("eventType"), "desconhecido");
+            if (!"page_load_metric".equalsIgnoreCase(eventType)) {
+                continue;
+            }
+            addPositive(loadDurations, parseLong(payload.get("loadDurationMs")));
+            addPositive(domContentLoadedDurations, parseLong(payload.get("domContentLoadedMs")));
+            addPositive(firstContentfulPaintDurations, parseLong(payload.get("firstContentfulPaintMs")));
+            totalResourceErrors += Math.max(0, parseLong(payload.get("resourceErrorCount")));
+        }
+        long averageLoadDurationMs = average(loadDurations);
+        long p95LoadDurationMs = percentile95(loadDurations);
+        long sessionsWithoutSectionEvents = sessions.values().stream()
+                .filter(session -> session.sectionViewEvents() == 0)
+                .count();
+        double initialEngagementRate = sessions.isEmpty()
+                ? 0
+                : Math.round(((sessions.size() - sessionsWithoutSectionEvents) * 10000.0) / sessions.size()) / 100.0;
+        long inAppBrowserSessions = sessions.values().stream()
+                .filter(session -> isInAppBrowserUserAgent(session.lastUserAgent()))
+                .count();
+        double inAppBrowserPercentage = sessions.isEmpty()
+                ? 0
+                : Math.round((inAppBrowserSessions * 10000.0) / sessions.size()) / 100.0;
+        LoadHealthDiagnosis diagnosis = diagnoseLoadHealth(
+                loadDurations.size(),
+                averageLoadDurationMs,
+                p95LoadDurationMs,
+                totalResourceErrors,
+                sessions.size(),
+                initialEngagementRate,
+                inAppBrowserPercentage);
+        return new ExperimentLandingAnalyticsLoadMetricDto(
+                loadDurations.size(),
+                averageLoadDurationMs,
+                p95LoadDurationMs,
+                average(domContentLoadedDurations),
+                average(firstContentfulPaintDurations),
+                totalResourceErrors,
+                sessionsWithoutSectionEvents,
+                initialEngagementRate,
+                inAppBrowserSessions,
+                inAppBrowserPercentage,
+                diagnosis.code(),
+                diagnosis.label(),
+                diagnosis.severity(),
+                diagnosis.summary(),
+                diagnosis.recommendation());
+    }
+
+
+    /**
+     * Classifica a saúde técnica da landing cruzando carregamento, engajamento inicial e navegador in-app.
+     */
+    private LoadHealthDiagnosis diagnoseLoadHealth(long loadEvents,
+                                                   long averageLoadDurationMs,
+                                                   long p95LoadDurationMs,
+                                                   long totalResourceErrors,
+                                                   long totalSessions,
+                                                   double initialEngagementRate,
+                                                   double inAppBrowserPercentage) {
+        if (loadEvents == 0) {
+            return new LoadHealthDiagnosis(
+                    "INSUFFICIENT_DATA",
+                    "Dados insuficientes",
+                    "info",
+                    "Ainda não há eventos técnicos de carregamento suficientes para diagnosticar a landing.",
+                    "Aguarde novos acessos reais após a publicação ou reabra a landing para gerar page_load_metric.");
+        }
+        if (p95LoadDurationMs >= 8000 || averageLoadDurationMs >= 5000) {
+            return new LoadHealthDiagnosis(
+                    "CRITICAL_SLOW_LOAD",
+                    "Carregamento crítico",
+                    "danger",
+                    "Parte relevante dos visitantes está recebendo a página com lentidão crítica.",
+                    "Priorize reduzir peso da primeira dobra, imagens e scripts antes de escalar tráfego pago.");
+        }
+        if (totalResourceErrors > 0) {
+            return new LoadHealthDiagnosis(
+                    "RESOURCE_ERRORS",
+                    "Falhas de recursos",
+                    "danger",
+                    "O navegador reportou falhas ao carregar imagens, scripts ou estilos da landing.",
+                    "Verifique URLs de imagens, assets externos e disponibilidade do domínio da landing.");
+        }
+        if (p95LoadDurationMs >= 4000 || averageLoadDurationMs >= 2500) {
+            return new LoadHealthDiagnosis(
+                    "SLOW_LOAD",
+                    "Carregamento lento",
+                    "warning",
+                    "A landing carrega, mas o tempo técnico já pode reduzir engajamento inicial.",
+                    "Otimize imagens e scripts e compare o próximo ciclo antes de aumentar investimento.");
+        }
+        if (inAppBrowserPercentage >= 60 && initialEngagementRate < 50) {
+            return new LoadHealthDiagnosis(
+                    "POSSIBLE_IN_APP_BROWSER",
+                    "Atenção no navegador do app",
+                    "warning",
+                    "A maior parte das sessões vem de navegador in-app e o engajamento inicial está baixo.",
+                    "Compare Instagram/Facebook in-app com navegador externo e revise peso visual no mobile.");
+        }
+        if (totalSessions >= 5 && initialEngagementRate < 25) {
+            return new LoadHealthDiagnosis(
+                    "POSSIBLE_TRAFFIC_QUALITY",
+                    "Possível baixa qualidade de tráfego",
+                    "warning",
+                    "O carregamento não parece ser o principal gargalo, mas poucos visitantes veem seções da landing.",
+                    "Revise promessa do anúncio, segmentação e correspondência entre criativo e primeira dobra.");
+        }
+        return new LoadHealthDiagnosis(
+                "GOOD",
+                "Carregamento saudável",
+                "success",
+                "Os sinais técnicos de carregamento não indicam gargalo relevante neste momento.",
+                "Continue acompanhando P95 e engajamento inicial ao aumentar volume de tráfego.");
+    }
+
+    /**
+     * Identifica user agents de navegadores internos de apps sociais que podem afetar carregamento e medição.
+     */
+    private boolean isInAppBrowserUserAgent(String userAgent) {
+        if (userAgent == null || userAgent.isBlank()) {
+            return false;
+        }
+        String normalized = userAgent.toLowerCase();
+        return normalized.contains("instagram")
+                || normalized.contains("fban")
+                || normalized.contains("fbav")
+                || normalized.contains("iabmv");
+    }
+
+    /**
+     * Adiciona valor positivo à lista de durações consolidadas.
+     */
+    private void addPositive(List<Long> values, long value) {
+        if (value > 0) {
+            values.add(value);
+        }
+    }
+
+    /**
+     * Calcula média inteira de uma lista de durações em milissegundos.
+     */
+    private long average(List<Long> values) {
+        if (values.isEmpty()) {
+            return 0;
+        }
+        return Math.round(values.stream().mapToLong(Long::longValue).average().orElse(0));
+    }
+
+    /**
+     * Calcula percentil 95 simples para identificar piora percebida por parte dos visitantes.
+     */
+    private long percentile95(List<Long> values) {
+        if (values.isEmpty()) {
+            return 0;
+        }
+        List<Long> sorted = values.stream().sorted().toList();
+        int index = (int) Math.ceil(sorted.size() * 0.95) - 1;
+        return sorted.get(Math.max(0, Math.min(index, sorted.size() - 1)));
+    }
+
     /**
      * Normaliza o tipo de dispositivo enviado pela landing, usando user-agent como fallback.
      */
@@ -1107,6 +1301,17 @@ public class ExperimentFunnelService {
     }
 
     /**
+     * Representa a classificação operacional de saúde de carregamento exibida na tela de analytics.
+     */
+    private record LoadHealthDiagnosis(
+            String code,
+            String label,
+            String severity,
+            String summary,
+            String recommendation) {
+    }
+
+    /**
      * Linha mínima de evento de analytics retornada da tabela de eventos do funil.
      */
     private record LandingAnalyticsEventRow(long id, String payload, Instant occurredAt) {
@@ -1157,8 +1362,12 @@ public class ExperimentFunnelService {
                     lastUserAgent = userAgent;
                 }
             }
-            this.deviceType = normalizeLandingAnalyticsDeviceType(deviceType, userAgent);
-            this.operatingSystem = normalizeLandingAnalyticsOperatingSystem(operatingSystem, userAgent);
+            if ((deviceType != null && !deviceType.isBlank()) || (userAgent != null && !userAgent.isBlank())) {
+                this.deviceType = normalizeLandingAnalyticsDeviceType(deviceType, userAgent);
+            }
+            if ((operatingSystem != null && !operatingSystem.isBlank()) || (userAgent != null && !userAgent.isBlank())) {
+                this.operatingSystem = normalizeLandingAnalyticsOperatingSystem(operatingSystem, userAgent);
+            }
             if (screenWidth != null && screenHeight != null) {
                 this.screenWidth = screenWidth;
                 this.screenHeight = screenHeight;
@@ -1193,6 +1402,20 @@ public class ExperimentFunnelService {
          */
         private String operatingSystem() {
             return operatingSystem;
+        }
+
+        /**
+         * Retorna a quantidade de eventos de seção registrados para diagnóstico de engajamento inicial.
+         */
+        private long sectionViewEvents() {
+            return sectionViewEvents;
+        }
+
+        /**
+         * Retorna o user-agent mais recente da sessão para diagnóstico de navegador in-app.
+         */
+        private String lastUserAgent() {
+            return lastUserAgent;
         }
 
         /**

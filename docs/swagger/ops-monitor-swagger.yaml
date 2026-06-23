@@ -36,6 +36,16 @@ paths:
   /api/ops-monitor/v1/modules/availability:
     get:
       summary: Lista status atual dos módulos
+
+      parameters:
+        - in: query
+          name: criticality
+          required: false
+          schema: { type: string, enum: [CRITICAL, HIGH, MEDIUM, LOW] }
+        - in: query
+          name: type
+          required: false
+          schema: { type: string, enum: [BACKEND, WORKER, COLLECTOR, PORTAL, SERVICE] }
       responses:
         '200': { description: OK }
   /api/ops-monitor/v1/modules/{moduleCode}/availability-history:
@@ -51,10 +61,30 @@ paths:
   /api/ops-monitor/v1/incidents/open:
     get:
       summary: Lista incidentes abertos
+
+      parameters:
+        - in: query
+          name: criticality
+          required: false
+          schema: { type: string, enum: [CRITICAL, HIGH, MEDIUM, LOW] }
+        - in: query
+          name: type
+          required: false
+          schema: { type: string, enum: [BACKEND, WORKER, COLLECTOR, PORTAL, SERVICE] }
       responses:
         '200': { description: OK }
   /api/ops-monitor/v1/incidents/history:
     get:
       summary: Lista histórico recente de incidentes
+
+      parameters:
+        - in: query
+          name: criticality
+          required: false
+          schema: { type: string, enum: [CRITICAL, HIGH, MEDIUM, LOW] }
+        - in: query
+          name: type
+          required: false
+          schema: { type: string, enum: [BACKEND, WORKER, COLLECTOR, PORTAL, SERVICE] }
       responses:
         '200': { description: OK }

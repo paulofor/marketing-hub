@@ -87,7 +87,17 @@ public class OpsMonitorService {
     /** Lista a disponibilidade atual calculada a partir do último heartbeat de cada módulo. */
     @Transactional(readOnly = true)
     public List<ModuleAvailabilityResponse> listAvailability() {
-        return moduleRepository.findAll().stream().map(this::toAvailabilityResponse).toList();
+        return listAvailability(null, null);
+    }
+
+    /** Lista a disponibilidade atual filtrada por criticidade e tipo quando informado. */
+    @Transactional(readOnly = true)
+    public List<ModuleAvailabilityResponse> listAvailability(String criticality, String type) {
+        return moduleRepository.findAll().stream()
+                .filter(module -> matchesFilter(module.getCriticality(), criticality))
+                .filter(module -> matchesFilter(module.getType(), type))
+                .map(this::toAvailabilityResponse)
+                .toList();
     }
 
     /** Lista o histórico diário de disponibilidade do módulo informado. */
@@ -103,10 +113,20 @@ public class OpsMonitorService {
     /** Lista incidentes abertos ou o histórico recente de incidentes. */
     @Transactional(readOnly = true)
     public List<ModuleIncidentResponse> listIncidents(boolean openOnly) {
+        return listIncidents(openOnly, null, null);
+    }
+
+    /** Lista incidentes operacionais filtrados por criticidade e tipo quando informado. */
+    @Transactional(readOnly = true)
+    public List<ModuleIncidentResponse> listIncidents(boolean openOnly, String criticality, String type) {
         List<OpsModuleIncident> incidents = openOnly
                 ? incidentRepository.findByStatusOrderByStartedAtDesc("OPEN")
                 : incidentRepository.findTop100ByOrderByStartedAtDesc();
-        return incidents.stream().map(this::toIncidentResponse).toList();
+        return incidents.stream()
+                .filter(incident -> matchesFilter(incident.getModule().getCriticality(), criticality))
+                .filter(incident -> matchesFilter(incident.getModule().getType(), type))
+                .map(this::toIncidentResponse)
+                .toList();
     }
 
     /** Gera resumo executivo para a tela administrativa de operação. */
@@ -119,6 +139,11 @@ public class OpsMonitorService {
         long unknown = availability.stream().filter(item -> "UNKNOWN".equals(item.status())).count();
         long openIncidents = incidentRepository.findByStatusOrderByStartedAtDesc("OPEN").size();
         return new OpsMonitorSummaryResponse(online, degraded, offline, unknown, openIncidents);
+    }
+
+    /** Valida se um valor passa pelo filtro opcional recebido da tela. */
+    private boolean matchesFilter(String value, String filter) {
+        return filter == null || filter.isBlank() || value.equalsIgnoreCase(filter);
     }
 
     /** Busca um módulo monitorado pelo código e falha quando ele não existe. */

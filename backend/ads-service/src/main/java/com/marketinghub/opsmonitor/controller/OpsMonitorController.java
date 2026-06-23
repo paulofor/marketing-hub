@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /** Expõe contratos internos e administrativos do monitoramento operacional. */
@@ -56,8 +57,9 @@ public class OpsMonitorController {
 
     /** Retorna o status atual dos módulos monitorados. */
     @GetMapping("/api/ops-monitor/v1/modules/availability")
-    public List<ModuleAvailabilityResponse> listAvailability() {
-        return service.listAvailability();
+    public List<ModuleAvailabilityResponse> listAvailability(@RequestParam(required = false) String criticality,
+            @RequestParam(required = false) String type) {
+        return service.listAvailability(criticality, type);
     }
 
     /** Retorna o histórico diário de disponibilidade de um módulo. */
@@ -68,13 +70,15 @@ public class OpsMonitorController {
 
     /** Retorna incidentes operacionais abertos. */
     @GetMapping("/api/ops-monitor/v1/incidents/open")
-    public List<ModuleIncidentResponse> listOpenIncidents() {
-        return service.listIncidents(true);
+    public List<ModuleIncidentResponse> listOpenIncidents(@RequestParam(required = false) String criticality,
+            @RequestParam(required = false) String type) {
+        return service.listIncidents(true, criticality, type);
     }
 
     /** Retorna o histórico recente de incidentes operacionais. */
     @GetMapping("/api/ops-monitor/v1/incidents/history")
-    public List<ModuleIncidentResponse> listIncidentHistory() {
-        return service.listIncidents(false);
+    public List<ModuleIncidentResponse> listIncidentHistory(@RequestParam(required = false) String criticality,
+            @RequestParam(required = false) String type) {
+        return service.listIncidents(false, criticality, type);
     }
 }

@@ -59,12 +59,30 @@ export function useOpsMonitorSummary() {
   });
 }
 
-export function useOpsMonitorAvailability() {
+export interface OpsMonitorFilters {
+  criticality?: string;
+  type?: string;
+}
+
+function activeParams(filters?: OpsMonitorFilters) {
+  return {
+    criticality: filters?.criticality || undefined,
+    type: filters?.type || undefined,
+  };
+}
+
+export function useOpsMonitorAvailability(filters?: OpsMonitorFilters) {
   return useQuery({
-    queryKey: ["ops-monitor", "availability"],
+    queryKey: [
+      "ops-monitor",
+      "availability",
+      filters?.criticality ?? "",
+      filters?.type ?? "",
+    ],
     queryFn: async () => {
       const { data } = await axios.get<ModuleAvailability[]>(
         "/api/ops-monitor/v1/modules/availability",
+        { params: activeParams(filters) },
       );
       return data;
     },
@@ -86,15 +104,42 @@ export function useOpsMonitorAvailabilityHistory(moduleCode?: string) {
   });
 }
 
-export function useOpsMonitorOpenIncidents() {
+export function useOpsMonitorOpenIncidents(filters?: OpsMonitorFilters) {
   return useQuery({
-    queryKey: ["ops-monitor", "incidents", "open"],
+    queryKey: [
+      "ops-monitor",
+      "incidents",
+      "open",
+      filters?.criticality ?? "",
+      filters?.type ?? "",
+    ],
     queryFn: async () => {
       const { data } = await axios.get<ModuleIncident[]>(
         "/api/ops-monitor/v1/incidents/open",
+        { params: activeParams(filters) },
       );
       return data;
     },
     refetchInterval: 30_000,
+  });
+}
+
+export function useOpsMonitorIncidentHistory(filters?: OpsMonitorFilters) {
+  return useQuery({
+    queryKey: [
+      "ops-monitor",
+      "incidents",
+      "history",
+      filters?.criticality ?? "",
+      filters?.type ?? "",
+    ],
+    queryFn: async () => {
+      const { data } = await axios.get<ModuleIncident[]>(
+        "/api/ops-monitor/v1/incidents/history",
+        { params: activeParams(filters) },
+      );
+      return data;
+    },
+    refetchInterval: 60_000,
   });
 }

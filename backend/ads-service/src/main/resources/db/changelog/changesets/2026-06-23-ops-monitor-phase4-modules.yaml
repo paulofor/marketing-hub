@@ -1,0 +1,33 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-23-ops-monitor-003-seed-expanded-modules
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: ops_monitored_module
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO ops_monitored_module (code, name, type, base_url, health_path, log_path, enabled, criticality, offline_threshold_seconds)
+              SELECT 'oprm-coletor-mei', 'OPRM Coletor MEI', 'COLLECTOR', 'http://191.252.181.168', '/actuator/health', '/actuator/logfile', 1, 'HIGH', 300
+              FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM ops_monitored_module WHERE code = 'oprm-coletor-mei');
+              INSERT INTO ops_monitored_module (code, name, type, base_url, health_path, log_path, enabled, criticality, offline_threshold_seconds)
+              SELECT 'mois-clickbank-collector', 'MOIS ClickBank Collector', 'COLLECTOR', 'http://191.252.181.168:9096', '/internal/ops-monitor/health', '/internal/ops-monitor/logfile', 1, 'HIGH', 300
+              FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM ops_monitored_module WHERE code = 'mois-clickbank-collector');
+              INSERT INTO ops_monitored_module (code, name, type, base_url, health_path, log_path, enabled, criticality, offline_threshold_seconds)
+              SELECT 'mois-hotmart-collector', 'MOIS Hotmart Collector', 'COLLECTOR', 'http://191.252.181.168:8096', '/ops-monitor/health', '/ops-monitor/logfile', 1, 'HIGH', 300
+              FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM ops_monitored_module WHERE code = 'mois-hotmart-collector');
+              INSERT INTO ops_monitored_module (code, name, type, base_url, health_path, log_path, enabled, criticality, offline_threshold_seconds)
+              SELECT 'mois-sales-library-worker', 'MOIS Sales Library Worker', 'WORKER', 'http://191.252.181.168', '/actuator/health', '/actuator/logfile', 1, 'HIGH', 300
+              FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM ops_monitored_module WHERE code = 'mois-sales-library-worker');
+              INSERT INTO ops_monitored_module (code, name, type, base_url, health_path, log_path, enabled, criticality, offline_threshold_seconds)
+              SELECT 'lead-portal', 'Lead Portal', 'PORTAL', 'http://191.252.181.168:8080', '/api/ops-lp-observability-v2/health', '/api/ops-lp-observability-v2/logfile', 1, 'CRITICAL', 300
+              FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM ops_monitored_module WHERE code = 'lead-portal');
+              INSERT INTO ops_monitored_module (code, name, type, base_url, health_path, log_path, enabled, criticality, offline_threshold_seconds)
+              SELECT 'email-service', 'Email Service', 'SERVICE', 'http://191.252.181.168', '/actuator/health', '/actuator/logfile', 1, 'HIGH', 300
+              FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM ops_monitored_module WHERE code = 'email-service');

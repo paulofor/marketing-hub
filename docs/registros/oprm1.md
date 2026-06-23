@@ -1308,3 +1308,10 @@
 - O `candidate-generator` e o `routine-synthesizer` agora registram `commercialBoundary=NAO_GERAR_DOR_RESULTADO_OFERTA` e papéis de insumo para o pipeline de hipótese.
 - Causa-raiz tratada: o fluxo ainda carregava etapas e campos que empurravam o NichoCNAE para validação/oferta, apesar de a divulgação por Instagram exigir primeiro um pacote amplo de público, rotina e linguagem.
 - Prevenção de recorrência: adicionado teste garantindo que o catálogo v2 não registra etapas comerciais/materialização.
+
+
+## 2026-06-23 — Direcionamento do resultado NichoCNAE v2
+
+- Ajustado o comando de sucesso parcial do histórico NichoCNAE v2 para abrir o relatório do job, e não a tela legada do CNAE.
+- Causa-raiz tratada: o backend enviava o usuário para a página geral do CNAE quando a materialização automática estava desativada, misturando resultado v2 novo com subnichos/processamentos antigos.
+- Prevenção de recorrência: teste unitário valida que job v2 concluído sem nicho materializado direciona para o relatório do próprio job.

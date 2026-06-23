@@ -1355,3 +1355,4 @@
 - Causa-raiz tratada: o service OPRM tinha assumido diretamente a materialização em `MarketNicheRepository`, quebrando o isolamento do módulo OPRM.
 
 - 2026-06-23 — Ops Monitor fase 4: adicionado o módulo `oprm-coletor-mei` ao cadastro monitorado do backend para acompanhar impacto operacional na descoberta de rotinas, dores e oportunidades.
+- 2026-06-23 19:29:11 (UTC): tela OPRM de CNAEs atualizada para mostrar, na tabela principal, a contagem de nichos pendentes para materializar por CNAE. O endpoint `GET /api/oprm/market/import-runs/cnaes/top-volume` passou a expor `pendingMaterializationCount`, calculado no backend a partir dos cartões aprovados em `enriched-niche-materializer` ainda sem perfil materializado, evitando inferência local no frontend.

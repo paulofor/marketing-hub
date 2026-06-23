@@ -33,6 +33,17 @@ public interface OprmMarketSizeByCnaeRepository extends JpaRepository<OprmMarket
                 (select count(distinct c2.neutralNicheName)
                     from OprmRoutineResearchCycle c2
                     where c2.cnaeCode = ms.id.cnaeCode),
+                (select count(card.id)
+                    from OprmNicheRoutineCard card
+                    join OprmRoutineResearchCycle cycle on cycle.id = card.researchCycleId
+                    where cycle.cnaeCode = ms.id.cnaeCode
+                      and card.readyForHypothesis = true
+                      and cycle.currentStageCode = 'enriched-niche-materializer'
+                      and card.qualityCheckedAt is not null
+                      and not exists (
+                        select 1 from MarketNicheEnrichmentProfile profile
+                        where profile.sourceRoutineCardId = card.id
+                      )),
                 (select coalesce(sum(seed.costUsd), 0)
                     from OprmNicheResearchSeed seed
                     where seed.cnaeCode = ms.id.cnaeCode),
@@ -67,6 +78,17 @@ public interface OprmMarketSizeByCnaeRepository extends JpaRepository<OprmMarket
                 (select count(distinct c2.neutralNicheName)
                     from OprmRoutineResearchCycle c2
                     where c2.cnaeCode = ms.id.cnaeCode),
+                (select count(card.id)
+                    from OprmNicheRoutineCard card
+                    join OprmRoutineResearchCycle cycle on cycle.id = card.researchCycleId
+                    where cycle.cnaeCode = ms.id.cnaeCode
+                      and card.readyForHypothesis = true
+                      and cycle.currentStageCode = 'enriched-niche-materializer'
+                      and card.qualityCheckedAt is not null
+                      and not exists (
+                        select 1 from MarketNicheEnrichmentProfile profile
+                        where profile.sourceRoutineCardId = card.id
+                      )),
                 (select coalesce(sum(seed.costUsd), 0)
                     from OprmNicheResearchSeed seed
                     where seed.cnaeCode = ms.id.cnaeCode),

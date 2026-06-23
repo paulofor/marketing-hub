@@ -18,5 +18,6 @@ public record OprmTopCnaeMarketVolumeDto(
         BigDecimal opportunityScore,
         String scoreStatus,
         long subnicheCount,
+        long pendingMaterializationCount,
         BigDecimal researchCostUsd,
         boolean nicheResearchRunning) {}

@@ -283,6 +283,7 @@ export default function OprmCnaeVolumePage() {
                       <th>Simples</th>
                       <th>MEI</th>
                       <th>Subnichos</th>
+                      <th>Pendente materializar</th>
                       <th>Custo</th>
                       <th>Pesquisa</th>
                       <th>Pipeline v2</th>
@@ -314,6 +315,16 @@ export default function OprmCnaeVolumePage() {
                         <td>{formatNumber(item.totalEmpresasSimples)}</td>
                         <td>{formatNumber(item.totalEmpresasMei)}</td>
                         <td>{formatNumber(item.subnicheCount)}</td>
+                        <td>
+                          {item.pendingMaterializationCount > 0 ? (
+                            <span className="badge text-bg-warning">
+                              {formatNumber(item.pendingMaterializationCount)}{" "}
+                              pendente
+                            </span>
+                          ) : (
+                            <span className="text-secondary">-</span>
+                          )}
+                        </td>
                         <td>{formatCurrencyUsd(item.researchCostUsd)}</td>
                         <td>
                           {item.nicheResearchRunning ? (

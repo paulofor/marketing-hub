@@ -1292,3 +1292,19 @@
 - Atualizado o cânone OPRM e o contrato do executor v2 para declarar que este fluxo foca MEI/autônomo/dono-operador, tratando o CNAE como ponto de partida de segmentação e não como público final.
 - Causa-raiz tratada: os jobs recentes do CNAE 4781400 usavam um CNAE com alto volume MEI, mas os candidatos gerados descreviam operação genérica de loja de vestuário, reduzindo a chance de encontrar evidência direta da rotina real do microempreendedor.
 - Prevenção de recorrência: teste unitário valida que o CNAE de vestuário gera recortes como MEI de moda por WhatsApp/Instagram, brechó/revenda e sacoleira/revendedora, sem `RETAIL_OPERATOR` ou `STORE_ASSISTANT` genéricos.
+
+## 2026-06-23 — NichoCNAE v2 orientado a Instagram
+
+- Revisado o fluxo NichoCNAE v2 para considerar Instagram/Meta Ads como canal principal de divulgação: o CNAE passa a ser contexto de exemplo, enquanto os candidatos são gerados por desejos e dores amplas reconhecíveis no feed.
+- O `candidate-generator` do executor `oprm-coletor-mei` agora gera recortes amplos como renda com trabalho próprio, clientes pelo WhatsApp/Instagram, agenda vazia, preço/cobrança, profissionalização do atendimento, dependência de plataforma, organização da rotina e medo de ficar sem cliente.
+- O `adaptive-query-planner` deixa de encerrar cedo quando existem candidatos amplos sem gaps específicos e cria buscas iniciais sobre Instagram, WhatsApp, aquisição de clientes, cobrança e trabalho autônomo.
+- Causa-raiz tratada: o fluxo estava buscando microdores/subnichos específicos demais para uma divulgação que depende de público amplo e filtragem por criativo no Instagram.
+- Prevenção de recorrência: cânone OPRM, contrato do executor e testes unitários foram atualizados para manter a estratégia `BROAD_CREATIVE_FIRST`.
+
+## 2026-06-23 — Limite NichoCNAE v2 antes do pipeline de hipótese
+
+- Ajustado o NichoCNAE v2 para deixar explícito que o material produzido é insumo do pipeline posterior de hipótese (`dor -> resultado -> oferta`), não a decisão final de dor, resultado, mecanismo, oferta, campanha ou landing.
+- Removidas do catálogo operacional do executor v2 as etapas `commercial-evidence-gate` e `enriched-niche-materializer`, porque elas avançavam para evidência comercial/materialização antes da hora.
+- O `candidate-generator` e o `routine-synthesizer` agora registram `commercialBoundary=NAO_GERAR_DOR_RESULTADO_OFERTA` e papéis de insumo para o pipeline de hipótese.
+- Causa-raiz tratada: o fluxo ainda carregava etapas e campos que empurravam o NichoCNAE para validação/oferta, apesar de a divulgação por Instagram exigir primeiro um pacote amplo de público, rotina e linguagem.
+- Prevenção de recorrência: adicionado teste garantindo que o catálogo v2 não registra etapas comerciais/materialização.

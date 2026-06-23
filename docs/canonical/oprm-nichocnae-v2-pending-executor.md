@@ -56,12 +56,15 @@ O backend deve devolver esses mesmos identificadores no envelope do `pending`, m
 
 ### Payload funcional esperado
 
-A etapa inicial pode receber `inputPayload` vazio, desde que o envelope entregue `cnaeCode` e `cnaeDescription`. Quando o job nasce do levantamento MEI, este fluxo v2 deve focar MEI/autônomo/dono-operador brasileiro, tratando o CNAE como ponto de partida e não como público final. O executor deve gerar:
+A etapa inicial pode receber `inputPayload` vazio, desde que o envelope entregue `cnaeCode` e `cnaeDescription`. Quando o job nasce do levantamento MEI e o canal de divulgação previsto é Instagram/Meta Ads, este fluxo v2 deve focar MEI/autônomo/dono-operador brasileiro em recortes amplos, tratando o CNAE como contexto de exemplos e não como público final estreito. O executor deve gerar:
 
-- `candidates`: candidatos de subnicho/job operacional centrados em MEI/autônomo/dono-operador, preferencialmente entre 8 e 12 recortes para CNAEs amplos.
+- `candidates`: candidatos amplos e anunciáveis centrados em desejo/dor reconhecível no Instagram, preferencialmente entre 8 e 12 recortes para CNAEs amplos.
 - `candidateUrls`: URLs iniciais para validação de segurança.
 - `candidateCount`.
-- `audienceFocus = MEI_AUTONOMO_DONO_OPERADOR`.
+- `audienceFocus = INSTAGRAM_BROAD_MEI_AUTONOMO`.
+- `distributionChannel = INSTAGRAM`.
+- `discoveryStrategy = BROAD_CREATIVE_FIRST`.
+- `instagramAudiencePrinciple`: princípio textual de que o público é amplo e o criativo filtra a pessoa certa.
 - `nextStageCode = source-safety-filter`.
 
 ## Etapa 2 — `source-safety-filter`
@@ -172,7 +175,7 @@ A etapa inicial pode receber `inputPayload` vazio, desde que o envelope entregue
 | `inputPayload.candidateVersion` | Recomendado | Controla evolução do candidato. |
 | `inputPayload.budgetConsumed` | Recomendado | Permite relatório de custo quando aplicável. |
 
-### Saída que deve ser preservada para a próxima etapa
+### Saída final preservada como insumo do pipeline de hipótese
 
 - `knowledgeVersion` atualizado.
 - `validatedFacts`.
@@ -181,32 +184,12 @@ A etapa inicial pode receber `inputPayload` vazio, desde que o envelope entregue
 - `acceptedSourceCount`.
 - `rejectedSourceCount`.
 - `evidenceGaps` remanescentes.
+- `hypothesisPipelineInputRole`: papel do material como insumo para o pipeline posterior de hipótese.
+- `commercialBoundary = NAO_GERAR_DOR_RESULTADO_OFERTA`.
 
-## Etapa 7 — `commercial-evidence-gate`
+A v2 deve encerrar aqui quando houver conhecimento suficiente. Dor, resultado, mecanismo, oferta, promessa, campanha e landing pertencem ao pipeline posterior de hipótese (`dor -> resultado -> oferta`) e não devem ser decididos pelo NichoCNAE v2.
 
-### Pending inicial necessário
-
-| Campo | Obrigatório | Observação |
-| --- | --- | --- |
-| Envelope comum completo | Sim | Necessário para decisão auditável de avanço/materialização. |
-| `inputPayload.claims` ou `inputPayload.validatedClaims` | Sim | Base para calcular nível de evidência. |
-| `inputPayload.materializationEnabled` | Sim | Bloqueia materialização automática se a flag estiver desligada. |
-| `inputPayload.previousEvidenceLevel` | Recomendado | Permite medir ganho informacional. |
-| `inputPayload.acceptedSources` | Recomendado | Ajuda a explicar independência de fontes. |
-| `inputPayload.contradictions` ou contadores equivalentes | Recomendado | Impede aprovação quando houver contradição relevante. |
-
-### Saída que deve ser preservada para a próxima etapa
-
-- `gateDecision`.
-- `evidenceLevel`.
-- `confidence`.
-- `informationGain`.
-- `automaticMaterializationAllowed`.
-- `humanReviewRequired`.
-- `nextStageCode`.
-- Motivos de reprovação ou lacunas que expliquem reprocessamento.
-
-## Etapa 8 — `reprocess-controller`
+## Etapa 7 — `reprocess-controller`
 
 ### Pending inicial necessário
 
@@ -232,32 +215,9 @@ A etapa inicial pode receber `inputPayload` vazio, desde que o envelope entregue
 - `preservedArtifacts`.
 - `newEvidenceGaps`.
 
-## Etapa 9 — `enriched-niche-materializer`
+## Etapas removidas do executor v2 por limite de responsabilidade
 
-### Pending inicial necessário
-
-| Campo | Obrigatório | Observação |
-| --- | --- | --- |
-| Envelope comum completo | Sim | Necessário para materializar com rastreabilidade. |
-| `inputPayload.materializationEnabled` | Sim | Deve ser verdadeiro para materialização automática. |
-| `inputPayload.gateDecision` | Sim | Deve autorizar materialização. |
-| `inputPayload.validationLevel` ou `evidenceLevel` | Sim | Define nível de validação. |
-| `inputPayload.confidence` | Sim | Confiança da decisão. |
-| `inputPayload.executor` | Recomendado | Ator/persona operacional do nicho. |
-| `inputPayload.jobContext` | Recomendado | Contexto operacional do subnicho. |
-| `inputPayload.pain` | Recomendado | Dor principal validada. |
-| `inputPayload.desiredResult` | Recomendado | Resultado desejado pelo mercado. |
-| `inputPayload.plausibleMechanism` | Recomendado | Mecanismo plausível sem virar oferta prematura. |
-| `inputPayload.supportingClaimIds` | Recomendado | Evidências que sustentam a materialização. |
-| `inputPayload.sourceDomains` | Recomendado | Domínios/fontes usados como prova. |
-
-### Saída esperada
-
-- `materializationDecision`.
-- `validationLevel`.
-- `confidence`.
-- `materializedNicheId` quando houver materialização.
-- `enrichedNiche` com campos funcionais do nicho enriquecido.
+As etapas `commercial-evidence-gate` e `enriched-niche-materializer` não fazem mais parte do catálogo operacional do executor NichoCNAE v2. Elas invadiam a decisão de hipótese/oferta/materialização antes da hora. Qualquer necessidade de dor validada, resultado desejado, mecanismo, oferta, campanha ou landing deve nascer em pipeline posterior próprio, consumindo o pacote de conhecimento produzido pela v2.
 
 ## Etapas v2 referenciadas mas ainda sem contrato completo no executor atual
 

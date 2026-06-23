@@ -36,7 +36,9 @@ class RoutineSynthesizerProcessorTest {
         assertThat((List<?>) synthesis.get("economicSignals")).hasSize(1);
         assertThat((List<?>) synthesis.get("acquisitionSignals")).isEmpty();
         assertThat((List<Object>) synthesis.get("supportingClaimIds")).containsExactly(101, 102, 103);
-        assertThat(result.output()).containsEntry("nextStageCode", "commercial-evidence-gate");
+        assertThat(result.output()).containsEntry("hypothesisPipelineInputRole", "ROUTINE_CLAIMS_INPUT");
+        assertThat(result.output()).containsEntry("commercialBoundary", "NAO_GERAR_DOR_RESULTADO_OFERTA");
+        assertThat(result.output()).doesNotContainKey("nextStageCode");
     }
 
     /** Garante que falta de evidência vira limite explícito em vez de texto genérico inventado. */

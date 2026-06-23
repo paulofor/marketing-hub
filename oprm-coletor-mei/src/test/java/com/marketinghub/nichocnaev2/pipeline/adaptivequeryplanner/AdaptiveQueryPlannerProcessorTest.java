@@ -55,4 +55,28 @@ class AdaptiveQueryPlannerProcessorTest {
         assertThat(second.status()).isEqualTo("NO_RESEARCH_GAIN");
         assertThat(second.output()).containsEntry("earlyStopping", true);
     }
+    @Test
+    void shouldCreateBroadInstagramQueriesWhenCandidatesHaveNoSpecificGaps() {
+        AdaptiveQueryPlannerProcessor processor = new AdaptiveQueryPlannerProcessor();
+
+        StageResult result = processor.process(new StageContext(
+                "job-90",
+                "stage-90",
+                Map.of(
+                        "audienceFocus", "INSTAGRAM_BROAD_MEI_AUTONOMO",
+                        "cnaeDescription", "Serviço de transporte de passageiros - locação de automóveis com motorista",
+                        "candidates", List.of(Map.of(
+                                "candidateId", "C1",
+                                "operationalContext", "Pessoa que quer ganhar dinheiro trabalhando por conta própria")),
+                        "previousQueryHashes", List.of())));
+
+        assertThat(result.status()).isEqualTo("PLAN_READY");
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> plannedQueries = (List<Map<String, Object>>) result.output().get("plannedQueries");
+        assertThat(plannedQueries)
+                .extracting(query -> String.valueOf(query.get("query")))
+                .anySatisfy(query -> assertThat(query).contains("instagram"))
+                .anySatisfy(query -> assertThat(query).contains("whatsapp"));
+    }
+
 }

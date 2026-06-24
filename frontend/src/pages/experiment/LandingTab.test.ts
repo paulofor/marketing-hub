@@ -26,11 +26,31 @@ describe("LandingTab", () => {
     ).toBeNull();
   });
 
-  it("permite tentar aprovação pelo backend mesmo sem prévia local", () => {
-    expect(canAttemptLandingApproval({ id: "35" })).toBe(true);
+  it("permite tentar aprovação pelo backend quando ainda não há URL aprovada", () => {
+    expect(
+      canAttemptLandingApproval({ id: "35", followUpActionUrl: null }),
+    ).toBe(true);
   });
 
-  it("bloqueia aprovação apenas quando o experimento não tem id", () => {
-    expect(canAttemptLandingApproval({ id: "" })).toBe(false);
+  it("bloqueia aprovação quando o experimento não tem id", () => {
+    expect(canAttemptLandingApproval({ id: "", followUpActionUrl: null })).toBe(
+      false,
+    );
+  });
+
+  it("bloqueia nova aprovação quando já existe URL oficial de campanha", () => {
+    expect(
+      canAttemptLandingApproval({
+        id: "41",
+        followUpActionUrl:
+          "https://oportunidadebrasil.shop/api/flows/exp-41-landing-geralanding/page",
+      }),
+    ).toBe(false);
+  });
+
+  it("bloqueia cliques repetidos depois da publicação local", () => {
+    expect(
+      canAttemptLandingApproval({ id: "41", followUpActionUrl: null }, true),
+    ).toBe(false);
   });
 });

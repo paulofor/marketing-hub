@@ -5161,6 +5161,11 @@
 - Alteração: a tela agora exibe um checklist consolidado com pipeline de experimento, pipeline GeraLanding, aprovação de pelo menos 3 criativos, escolha de público e aprovação da landing.
 - Objetivo de negócio: dar ao usuário uma visão rápida do que falta para transformar o experimento em campanha publicável, reduzindo esforço operacional e acelerando a liberação para vendas.
 
+## 2026-06-23 — Prevenção de múltiplos cliques na aprovação da landing
+- Problema investigado: no experimento 41, a aprovação da landing demorava alguns segundos por publicar no Lead Portal e podia induzir o usuário a clicar novamente no botão.
+- Evidência: o banco já registrava `follow_up_action_url` para o experimento 41 e o endpoint canônico respondeu `200 OK`, mas com tempo perceptível de publicação externa.
+- Correção aplicada: a aba Landing passa a bloquear nova aprovação quando já existe URL oficial de campanha ou quando a publicação acabou de retornar sucesso na própria tela.
+- Prevenção de recorrência: o botão passa a funcionar como comando único de publicação, evitando repetição desnecessária de chamadas ao backend/Lead Portal.
 ## 2026-06-23 — Destravamento visual da aprovação de criativos
 
 - solicitação: a aprovação de criativo no experimento 48 ficou visualmente travada com overlay de processamento na tela.

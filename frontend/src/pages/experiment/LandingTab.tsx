@@ -35,8 +35,15 @@ export function resolveLandingHtml(
   return typeof raw === "string" && raw.trim().length > 0 ? raw : null;
 }
 
-export function canAttemptLandingApproval(experiment: Pick<Experiment, "id">) {
-  return String(experiment.id ?? "").trim().length > 0;
+export function canAttemptLandingApproval(
+  experiment: Pick<Experiment, "id" | "followUpActionUrl">,
+  hasLocalPublication = false,
+) {
+  const hasExperimentId = String(experiment.id ?? "").trim().length > 0;
+  const alreadyPublished =
+    normalizeUrl(experiment.followUpActionUrl).length > 0 ||
+    hasLocalPublication;
+  return hasExperimentId && !alreadyPublished;
 }
 
 export default function LandingTab({
@@ -56,8 +63,12 @@ export default function LandingTab({
     iframeUrl: string | null;
     standaloneUrl: string | null;
   } | null>(null);
+  const hasLocalPublication =
+    normalizeUrl(publishedUrls?.standaloneUrl).length > 0;
   const canApproveLanding =
-    !alterationLocked && canAttemptLandingApproval(experiment);
+    !alterationLocked &&
+    canAttemptLandingApproval(experiment, hasLocalPublication) &&
+    !approveAndPublishLanding.isPending;
   const selectedDestinationUrl = normalizeUrl(
     publishedUrls?.standaloneUrl ?? experiment.followUpActionUrl,
   );
@@ -66,6 +77,10 @@ export default function LandingTab({
   );
 
   const handleApproveLanding = async () => {
+    if (!canApproveLanding) {
+      return;
+    }
+
     setFeedback(null);
 
     try {
@@ -197,7 +212,7 @@ export default function LandingTab({
           type="button"
           className="btn btn-success"
           onClick={() => handleApproveLanding()}
-          disabled={approveAndPublishLanding.isPending || !canApproveLanding}
+          disabled={!canApproveLanding}
         >
           {approveAndPublishLanding.isPending ? (
             <span className="d-inline-flex align-items-center gap-2">
@@ -208,6 +223,8 @@ export default function LandingTab({
               />
               Aprovando...
             </span>
+          ) : selectedDestinationUrl ? (
+            "Landing aprovada"
           ) : (
             "Aprovar landing para campanha"
           )}

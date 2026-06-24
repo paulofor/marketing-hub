@@ -11,7 +11,6 @@ import com.marketinghub.targeting.TargetingElementType;
 import com.marketinghub.targeting.TargetingCandidateType;
 import com.marketinghub.repository.jpa.experiment.ExperimentTargetingSelectionRepository;
 import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
-import com.marketinghub.repository.jpa.targeting.TargetingElementRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,19 +36,16 @@ public class ExperimentReadinessService {
     );
 
     private final ExperimentTargetingSelectionRepository targetingSelectionRepository;
-    private final TargetingElementRepository targetingElementRepository;
     private final GeraLandingStageExecutionRepository geraLandingStageExecutionRepository;
 
     /** Cria o serviço com as fontes canônicas de prontidão do experimento. */
     public ExperimentReadinessService(ExperimentService experimentService,
                                       CreativeRepository creativeRepository,
                                       ExperimentTargetingSelectionRepository targetingSelectionRepository,
-                                      TargetingElementRepository targetingElementRepository,
                                       GeraLandingStageExecutionRepository geraLandingStageExecutionRepository) {
         this.experimentService = experimentService;
         this.creativeRepository = creativeRepository;
         this.targetingSelectionRepository = targetingSelectionRepository;
-        this.targetingElementRepository = targetingElementRepository;
         this.geraLandingStageExecutionRepository = geraLandingStageExecutionRepository;
     }
 
@@ -63,9 +59,10 @@ public class ExperimentReadinessService {
         long leadPortalFlowCount = hasReadyLeadPortalFlow(experiment) ? 1L : 0L;
         boolean hasLeadPortalFlow = leadPortalFlowCount > 0;
 
-        List<String> missingConfiguration = computeMissingConfiguration(experiment);
-        List<TargetingElementType> missingTypes = mapMissingTargetingTypes(missingConfiguration);
-        boolean hasCompleteTargeting = missingTypes.isEmpty();
+        boolean hasCompleteTargeting = hasConfiguredTargeting(experiment);
+        List<TargetingElementType> missingTypes = hasCompleteTargeting
+                ? List.of()
+                : List.of(TargetingElementType.JOB_TITLE);
         long geraLandingCompletedStageCount = countCompletedGeraLandingStages(experimentId);
         boolean hasGeraLandingPipeline = geraLandingCompletedStageCount == GERA_LANDING_REQUIRED_STAGES.size();
 
@@ -136,6 +133,9 @@ public class ExperimentReadinessService {
         if (!hasApprovedLandingDestination(experiment)) {
             missing.add("landingDestination");
         }
+        if (!hasConfiguredTargeting(experiment)) {
+            missing.add("approvedTargetingPackage");
+        }
         return List.copyOf(missing);
     }
 
@@ -150,37 +150,12 @@ public class ExperimentReadinessService {
                 .count();
     }
 
-    /** Converte pendências de configuração em tipos de segmentação faltantes. */
-    private List<TargetingElementType> mapMissingTargetingTypes(List<String> missingConfiguration) {
-        if (!missingConfiguration.contains("approvedTargetingPackage")) {
-            return List.of();
-        }
-        return List.of(
-                TargetingElementType.JOB_TITLE
-        );
-    }
-
-
-    /** Verifica se o experimento possui alguma segmentação configurada. */
+    /** Verifica se o experimento possui segmentação escolhida e salva pelo usuário. */
     private boolean hasConfiguredTargeting(Experiment experiment) {
         if (experiment == null) {
             return false;
         }
-        if (hasApprovedTargetingPackage(experiment)) {
-            return true;
-        }
         return hasSelectedTargeting(experiment.getId());
-    }
-
-    /** Verifica se existe pacote de cargo aprovado para o nicho e hipótese do experimento. */
-    private boolean hasApprovedTargetingPackage(Experiment experiment) {
-        if (experiment.getNiche() == null || experiment.getNiche().getId() == null) {
-            return false;
-        }
-        return !targetingElementRepository.findApprovedForExperiment(
-                experiment.getNiche().getId(),
-                TargetingElementType.JOB_TITLE,
-                experiment.getHypothesisRef() != null ? experiment.getHypothesisRef().getId() : null).isEmpty();
     }
 
     /** Verifica a aprovação real dos criativos pela fonte canônica: registros READY. */

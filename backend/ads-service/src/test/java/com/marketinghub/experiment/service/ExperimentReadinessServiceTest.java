@@ -11,11 +11,9 @@ import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.targeting.TargetingCandidateType;
-import com.marketinghub.targeting.TargetingElement;
 import com.marketinghub.targeting.TargetingElementType;
 import com.marketinghub.repository.jpa.experiment.ExperimentTargetingSelectionRepository;
 import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
-import com.marketinghub.repository.jpa.targeting.TargetingElementRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -39,8 +37,6 @@ class ExperimentReadinessServiceTest {
     @Mock
     private ExperimentTargetingSelectionRepository targetingSelectionRepository;
     @Mock
-    private TargetingElementRepository targetingElementRepository;
-    @Mock
     private GeraLandingStageExecutionRepository geraLandingStageExecutionRepository;
 
     @InjectMocks
@@ -57,15 +53,16 @@ class ExperimentReadinessServiceTest {
 
         assertThat(summary.hasCreatives()).isFalse();
         assertThat(summary.hasLeadPortalFlow()).isFalse();
-        assertThat(summary.hasCompleteTargeting()).isTrue();
+        assertThat(summary.hasCompleteTargeting()).isFalse();
         assertThat(summary.hasGeraLandingPipeline()).isFalse();
         assertThat(summary.geraLandingCompletedStageCount()).isZero();
-        assertThat(summary.missingTargetingTypes()).isEmpty();
-        assertThat(summary.issues()).hasSize(3);
+        assertThat(summary.missingTargetingTypes()).containsExactly(TargetingElementType.JOB_TITLE);
+        assertThat(summary.issues()).hasSize(4);
         assertThat(summary.issues()).extracting(ExperimentReadinessIssueDto::type)
                 .containsExactlyInAnyOrder(
                         ExperimentReadinessIssueType.CREATIVE,
                         ExperimentReadinessIssueType.LEAD_PORTAL_FLOW,
+                        ExperimentReadinessIssueType.TARGETING,
                         ExperimentReadinessIssueType.GERA_LANDING
                 );
     }
@@ -81,6 +78,8 @@ class ExperimentReadinessServiceTest {
 
         when(experimentService.get(experimentId)).thenReturn(experiment);
         when(creativeRepository.countByExperimentIdAndStatus(experimentId, CreativeStatus.READY)).thenReturn(2L);
+        when(targetingSelectionRepository.countByExperimentIdAndCandidateType(
+                experimentId, TargetingCandidateType.WORK_POSITION)).thenReturn(1L);
         mockCompletedGeraLandingStages(experimentId);
         ExperimentReadinessSummaryDto summary = service.summarize(experimentId);
 
@@ -101,13 +100,15 @@ class ExperimentReadinessServiceTest {
         experiment.setFollowUpActionUrl("https://example.com/landing/22");
 
         when(creativeRepository.existsByExperimentIdAndStatus(experimentId, CreativeStatus.READY)).thenReturn(true);
+        when(targetingSelectionRepository.countByExperimentIdAndCandidateType(
+                experimentId, TargetingCandidateType.WORK_POSITION)).thenReturn(1L);
 
         assertThat(service.computeMissingConfiguration(experiment)).isEmpty();
         assertThat(service.isReadyForCampaign(experiment)).isTrue();
     }
 
     @Test
-    void shouldNotReportTargetingIssueWhenThereIsNoApprovedJobTitleSelection() {
+    void shouldReportTargetingIssueWhenThereIsNoSavedJobTitleSelection() {
         Long experimentId = 11L;
         Experiment experiment = buildExperiment(experimentId, 19L);
         LeadPortalFlow flow = new LeadPortalFlow();
@@ -118,14 +119,14 @@ class ExperimentReadinessServiceTest {
         when(creativeRepository.countByExperimentIdAndStatus(experimentId, CreativeStatus.READY)).thenReturn(1L);
         ExperimentReadinessSummaryDto summary = service.summarize(experimentId);
 
-        assertThat(summary.hasCompleteTargeting()).isTrue();
-        assertThat(summary.missingTargetingTypes()).isEmpty();
+        assertThat(summary.hasCompleteTargeting()).isFalse();
+        assertThat(summary.missingTargetingTypes()).containsExactly(TargetingElementType.JOB_TITLE);
         assertThat(summary.issues()).extracting(ExperimentReadinessIssueDto::type)
-                .doesNotContain(ExperimentReadinessIssueType.TARGETING);
+                .contains(ExperimentReadinessIssueType.TARGETING);
     }
 
     @Test
-    void shouldTreatApprovedTargetingPackageAsReadyEvenWithoutSelection() {
+    void shouldTreatSavedJobTitleSelectionAsReady() {
         Long experimentId = 15L;
         Experiment experiment = buildExperiment(experimentId, 21L);
         LeadPortalFlow flow = new LeadPortalFlow();
@@ -134,6 +135,8 @@ class ExperimentReadinessServiceTest {
 
         when(experimentService.get(experimentId)).thenReturn(experiment);
         when(creativeRepository.countByExperimentIdAndStatus(experimentId, CreativeStatus.READY)).thenReturn(1L);
+        when(targetingSelectionRepository.countByExperimentIdAndCandidateType(
+                experimentId, TargetingCandidateType.WORK_POSITION)).thenReturn(1L);
         ExperimentReadinessSummaryDto summary = service.summarize(experimentId);
 
         assertThat(summary.hasCompleteTargeting()).isTrue();
@@ -173,6 +176,8 @@ class ExperimentReadinessServiceTest {
         experiment.setFollowUpActionUrl(null);
 
         when(creativeRepository.existsByExperimentIdAndStatus(20L, CreativeStatus.READY)).thenReturn(true);
+        when(targetingSelectionRepository.countByExperimentIdAndCandidateType(
+                20L, TargetingCandidateType.WORK_POSITION)).thenReturn(1L);
 
         assertThat(service.computeMissingConfiguration(experiment))
                 .containsExactly("landingDestination");
@@ -184,6 +189,8 @@ class ExperimentReadinessServiceTest {
         experiment.setFollowUpActionUrl("https://example.com/landing/21");
 
         when(creativeRepository.existsByExperimentIdAndStatus(21L, CreativeStatus.READY)).thenReturn(true);
+        when(targetingSelectionRepository.countByExperimentIdAndCandidateType(
+                21L, TargetingCandidateType.WORK_POSITION)).thenReturn(1L);
 
         assertThat(service.computeMissingConfiguration(experiment)).isEmpty();
         assertThat(service.isReadyForCampaign(experiment)).isTrue();

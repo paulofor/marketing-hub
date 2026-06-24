@@ -5187,3 +5187,9 @@
 - correção aplicada: a atualização de criativo passou a ter timeout de 30 segundos, o botão de aprovação passou a exibir estado explícito “Aprovando...” com spinner pequeno e a tela limpa o processamento ao receber erro, mantendo mensagem objetiva para nova tentativa.
 - ajuste operacional: o proxy local do Vite foi alinhado para usar o backend na porta 80, evitando dependência da porta 8000 quando ela estiver indisponível atrás do proxy.
 - validação: adicionada cobertura de frontend garantindo que falha na aprovação remove o loading e reabilita o botão.
+
+## 2026-06-24 — Prontidão de público exige seleção salva
+- Problema: o checklist do experimento podia marcar “Escolha de público” como pronto mesmo sem nenhum público selecionado na aba Público.
+- Causa-raiz: o resumo de prontidão calculava público a partir de pendências genéricas de campanha, que não verificavam a seleção salva de targeting do experimento.
+- Correção aplicada: a prontidão de público passou a depender de uma seleção salva de cargo/posição de trabalho para o experimento, e a falta dessa seleção volta a gerar pendência de targeting.
+- Prevenção de recorrência: os testes de prontidão foram ajustados para falhar quando um experimento sem seleção salva aparecer como pronto para público.

@@ -5302,3 +5302,6 @@
 - Causa-raiz: o workflow do AI Worker compilava contra o pacote publicado do backend, que pode ficar defasado em relação ao código do monorepo.
 - Correção aplicada: o workflow do AI Worker passou a instalar o `ads-service` local do checkout antes dos testes, mantendo o backend como fonte de verdade dos contratos e evitando duplicação de DTOs no worker.
 - Prevenção de recorrência: a build isolada do worker passa a usar o contrato do backend do mesmo commit, sem depender da publicação prévia do pacote no GitHub Packages.
+- Causa-raiz: o endpoint interno de targeting foi criado no backend, mas a build do worker depende de um pacote publicado que pode ficar defasado em relação ao código do monorepo.
+- Correção aplicada: o AI Worker passou a declarar localmente os contratos HTTP mínimos de pendência, resultado e falha usados nessa integração, preservando o consumo exclusivo via backend e evitando acesso direto ao banco.
+- Prevenção de recorrência: os contratos necessários à compilação isolada do worker ficam no próprio módulo executor, sem depender da publicação imediata do artefato do backend.

@@ -5166,3 +5166,10 @@
 - Evidência: o banco já registrava `follow_up_action_url` para o experimento 41 e o endpoint canônico respondeu `200 OK`, mas com tempo perceptível de publicação externa.
 - Correção aplicada: a aba Landing passa a bloquear nova aprovação quando já existe URL oficial de campanha ou quando a publicação acabou de retornar sucesso na própria tela.
 - Prevenção de recorrência: o botão passa a funcionar como comando único de publicação, evitando repetição desnecessária de chamadas ao backend/Lead Portal.
+## 2026-06-23 — Destravamento visual da aprovação de criativos
+
+- solicitação: a aprovação de criativo no experimento 48 ficou visualmente travada com overlay de processamento na tela.
+- causa-raiz identificada: o comando de aprovação dependia de uma chamada `PUT` sem limite de tempo específico; quando a rota/proxy do backend não respondia ou devolvia indisponibilidade, a tela podia permanecer em estado de processamento sem feedback operacional claro.
+- correção aplicada: a atualização de criativo passou a ter timeout de 30 segundos, o botão de aprovação passou a exibir estado explícito “Aprovando...” com spinner pequeno e a tela limpa o processamento ao receber erro, mantendo mensagem objetiva para nova tentativa.
+- ajuste operacional: o proxy local do Vite foi alinhado para usar o backend na porta 80, evitando dependência da porta 8000 quando ela estiver indisponível atrás do proxy.
+- validação: adicionada cobertura de frontend garantindo que falha na aprovação remove o loading e reabilita o botão.

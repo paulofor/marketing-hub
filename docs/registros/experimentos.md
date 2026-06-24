@@ -5253,3 +5253,15 @@
 - Causa-raiz tratada: o pipeline de hipótese/oferta já gerava produto low-ticket apoiado por IA, mas não obrigava a avaliar presença digital, WhatsApp, Instagram, Google Perfil da Empresa, atendimento e aquisição prática quando o público fosse MEI, autônomo ou negócio local.
 - Correção aplicada: o prompt versionado da etapa `hypothesis-offer` passou a orientar esse empacotamento como kit operacional de melhoria comercial, mantendo IA como redução de esforço e não como promessa genérica.
 - Cânone atualizado: a regra de entrada comercial com isca e produto passou a registrar essa frente como critério obrigatório para hipóteses de MEI/autônomo/negócio local.
+
+## 2026-06-24 — Nicho: solicitação de públicos sem duplicidade visual
+
+- Solicitação: reduzir confusão na tela do nicho, onde havia dois pontos aparentes para solicitar públicos de Meta Ads.
+- Causa-raiz: a seção exibia um formulário genérico de solicitação ao AI Worker e, logo abaixo, cards específicos para gerar interesses, cargos e comportamentos; para o usuário, ambos pareciam executar a mesma ação.
+- Correção aplicada: a tela passou a orientar o usuário a solicitar públicos somente pelos cards por tipo, mantendo o painel de solicitações apenas como acompanhamento da última rodada processada.
+
+## 2026-06-24 — Nicho: pendência automática de público fica explícita
+
+- Problema: a lista de públicos do nicho parecia aumentar sem ação do usuário porque solicitações já gravadas em `interests_to_generate`, `job_titles_to_generate` ou `behaviors_to_generate` são processadas automaticamente pelo AI Worker em rotina agendada.
+- Causa-raiz: a tela mostrava apenas “Solicitados: N”, sem explicar que isso era uma pendência ativa que o Worker processaria automaticamente e sem comando visível para cancelar a pendência antes da execução.
+- Correção aplicada: o card de geração passa a mostrar “Solicitação pendente no Worker”, explica que a lista pode aumentar automaticamente ao terminar o processamento e oferece o comando “Cancelar pendência”.

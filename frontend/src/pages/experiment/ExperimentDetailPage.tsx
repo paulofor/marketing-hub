@@ -1956,15 +1956,12 @@ export default function ExperimentDetailPage() {
     data.creativeTextPrompt ||
     data.creativeImagePrompt,
   );
-  const hasGeraLandingPipelineContent = Boolean(
-    data.landingPageWireframe ||
-    data.landingPageCopy ||
-    data.landingPageImagePlanning ||
-    data.landingPageDesignPreset ||
-    data.landingPageDeliverables ||
-    data.landingPageHtml ||
-    data.htmlGeraLanding,
-  );
+  const hasGeraLandingPipelineReady =
+    readinessSummary?.hasGeraLandingPipeline ?? false;
+  const geraLandingCompletedStageCount =
+    readinessSummary?.geraLandingCompletedStageCount ?? 0;
+  const geraLandingRequiredStageCount =
+    readinessSummary?.geraLandingRequiredStageCount ?? 7;
   const hasAtLeastThreeApprovedCreatives = readinessCreativeCount >= 3;
   const hasAudienceSelection = readinessSummary?.hasCompleteTargeting ?? false;
   const mainExperimentChecklist = [
@@ -1980,9 +1977,10 @@ export default function ExperimentDetailPage() {
     {
       id: "geralanding-pipeline",
       title: "Pipeline GeraLanding",
-      detail: "Aba Gera landing",
-      isMet: hasGeraLandingPipelineContent,
+      detail: `${geraLandingCompletedStageCount}/${geraLandingRequiredStageCount} etapas concluídas`,
+      isMet: hasGeraLandingPipelineReady,
       isLoading:
+        isLoadingReadiness ||
         isLoadingPendingGeraLandingExecutions ||
         isLoadingCompletedGeraLandingExecutions ||
         isLoadingPendingGeraLandingCopyExecutions ||

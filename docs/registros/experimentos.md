@@ -1,3 +1,17 @@
+## 2026-06-24 — Experimentos: card do GeraLanding usa finalização real
+
+- foi feito: o checklist principal do experimento passou a usar o resumo de prontidão do backend para o card `Pipeline GeraLanding`, contando somente etapas obrigatórias cuja execução mais recente está `CONCLUIDO`.
+- causa-raiz: a tela marcava o card como concluído por presença de qualquer conteúdo parcial do GeraLanding, como wireframe, mesmo quando uma etapa posterior falhava.
+- validação operacional: no experimento 48, consulta via MCP confirmou `landing-page-wireframe=CONCLUIDO` e `landing-page-copy=FALHA`; com o ajuste, a tela deve mostrar `1/7 etapas concluídas` e manter o card pendente.
+- prevenção de recorrência: teste unitário cobre o caso em que a etapa mais recente obrigatória falha e impede o sinal verde.
+
+## 2026-06-24 — Experimentos: card de criativos usa apenas aprovados
+
+- foi feito: a prontidão do experimento passou a contar somente criativos com status `READY` no endpoint `/api/experiments/{id}/readiness`.
+- causa-raiz: o resumo de prontidão já validava aprovação por `READY`, mas o contador exibido na tela somava todos os criativos do experimento, incluindo rascunhos (`DRAFT`), permitindo marcar o card como feito mesmo sem criativo aprovado.
+- validação operacional: no experimento 47, consulta via MCP confirmou 3 criativos `DRAFT` e 0 `READY`; com o ajuste, a tela deve mostrar `0/3 criativos aprovados` e manter o card pendente.
+- prevenção de recorrência: teste unitário do backend foi mantido/ajustado para usar a contagem canônica de criativos `READY`.
+
 ## 2026-06-23 — Hipóteses: histórico do nicho no prompt
 
 - decisão aplicada: toda nova solicitação de hipótese passa a carregar o resumo das hipóteses já existentes do mesmo nicho no contrato pendente para o Worker AI.

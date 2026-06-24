@@ -14,6 +14,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 
+/**
+ * Responsabilidade: coordenar o processamento de imagens de framework entre backend, OpenAI e storage.
+ */
 @Service
 public class FrameworkImageService {
     private static final Logger log = LoggerFactory.getLogger(FrameworkImageService.class);
@@ -96,7 +99,7 @@ public class FrameworkImageService {
             long successCount = batchResults.values().stream().filter(FrameworkImageOpenAiBatchClient.FrameworkImageBatchResult::success).count();
             long failedCount = claimedJobs.size() - successCount;
             double estimatedCost = successCount * costPerImageUsd;
-            log.info("Framework image OpenAI batch summary: workerId={} totalJobs={} success={} failed={} estimatedCostUsd={} unitCostUsd={}",
+            log.info("Framework image OpenAI Flex summary: workerId={} totalJobs={} success={} failed={} estimatedCostUsd={} unitCostUsd={}",
                     workerId, claimedJobs.size(), successCount, failedCount, String.format(java.util.Locale.US, "%.4f", estimatedCost),
                     String.format(java.util.Locale.US, "%.4f", costPerImageUsd));
 
@@ -105,7 +108,7 @@ public class FrameworkImageService {
                 if (result == null || !result.success()) {
                     String reason = result != null && StringUtils.hasText(result.errorMessage())
                             ? result.errorMessage()
-                            : "OpenAI batch did not return a valid response for the job";
+                            : "OpenAI Flex did not return a valid response for the job";
                     backendClient.fail(claimedJob.id(), reason);
                     continue;
                 }
@@ -152,7 +155,7 @@ public class FrameworkImageService {
                 return downloaded;
             }
         }
-        throw new IllegalStateException("OpenAI batch did not provide image bytes for job " + jobId);
+        throw new IllegalStateException("OpenAI Flex did not provide image bytes for job " + jobId);
     }
 
     private FrameworkImageStorageClient.UploadedFrameworkImage uploadWithRetry(byte[] content, String preferredName) {

@@ -42,16 +42,14 @@ import java.util.regex.Pattern;
 public class TargetingRequestChatGptClient {
     private static final Logger log = LoggerFactory.getLogger(TargetingRequestChatGptClient.class);
     private static final String DOMAIN = "TARGETING_REQUEST";
-    private static final String RESPONSES_ENDPOINT = "/v1/responses";
+    private static final String RESPONSES_ENDPOINT = "/responses";
     private static final String SERVICE_TIER_FLEX = "flex";
     private static final String PROMPT_PATH = "prompts/targetingrequest/targeting-request-v1.md";
-    private static final String COMPLETION_WINDOW = "24h";
     private static final int MAX_SEED_WORDS = 4;
     private static final Pattern MULTIPLE_SPACES = Pattern.compile("\\s+");
     private static final Pattern LOCATION_SUFFIX_PATTERN = Pattern.compile("(?i)\\s+(em|no|na)\\s+[\\p{L}\\s]{2,}$");
     private static final Pattern STATE_SUFFIX_PATTERN = Pattern.compile("(?i)\\s+(em|no|na)\\s+[A-Z]{2}$");
     private static final Pattern PARENTHESIS_SUFFIX_PATTERN = Pattern.compile("\\s*\\([^)]*\\)$");
-    private static final Set<String> TERMINAL_BATCH_STATUSES = Set.of("completed", "failed", "cancelled", "expired");
 
     private final WebClient webClient;
     private final ObjectMapper objectMapper;
@@ -92,10 +90,10 @@ public class TargetingRequestChatGptClient {
         String prompt = buildPrompt(request);
         RequestContext context = buildContext(request, prompt);
         Map<String, RequestContext> contexts = Map.of(context.customId(), context);
-        Map<String, OpenAiResponse> responses = executeBatchRequests(contexts);
+        Map<String, OpenAiResponse> responses = executeFlexRequests(contexts);
         OpenAiResponse response = responses.get(context.customId());
         if (response == null) {
-            log.warn("OpenAI batch returned no response for targeting request {}", request.id());
+            log.warn("OpenAI Flex returned no response for targeting request {}", request.id());
             return List.of();
         }
         if (response.hasError()) {
@@ -133,168 +131,27 @@ public class TargetingRequestChatGptClient {
         }
         OpenAiRequestUtils.maybeAddReasoning(payload, targetingModel);
         String customId = request.id() != null ? "targeting-request-" + request.id() : "targeting-request-" + UUID.randomUUID();
-        log.info("Queued targeting request {} with model {}", customId, targetingModel);
+        log.info("Executando targeting request {} no modo Flex com modelo {}", customId, targetingModel);
         return new RequestContext(customId, request, prompt, payload, targetingModel);
     }
 
     /**
-     * Executa o lote OpenAI e converte o arquivo de saída em respostas por customId.
+     * Executa chamadas diretas na Responses API em modo Flex e indexa por customId.
      */
-    private Map<String, OpenAiResponse> executeBatchRequests(Map<String, RequestContext> contexts) {
+    private Map<String, OpenAiResponse> executeFlexRequests(Map<String, RequestContext> contexts) {
         if (contexts.isEmpty()) {
             return Map.of();
         }
-        String inputFileId = uploadBatchFile(contexts);
-        OpenAiBatch batch = createBatch(inputFileId);
-        OpenAiBatch completed = awaitCompletion(batch);
-        if (!StringUtils.hasText(completed.outputFileId())) {
-            throw new IllegalStateException("OpenAI batch did not return output_file_id");
-        }
-        String content = downloadFile(completed.outputFileId());
-        return parseBatchOutput(content);
-    }
-
-    /**
-     * Envia o arquivo JSONL com as solicitações de targeting para a OpenAI.
-     */
-    private String uploadBatchFile(Map<String, RequestContext> contexts) {
-        StringBuilder sb = new StringBuilder();
-        contexts.forEach((customId, ctx) -> {
-            Map<String, Object> line = new LinkedHashMap<>();
-            line.put("custom_id", customId);
-            line.put("method", "POST");
-            line.put("url", RESPONSES_ENDPOINT);
-            line.put("body", ctx.payload());
-            try {
-                sb.append(objectMapper.writeValueAsString(line)).append('\n');
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to serialize batch line for " + customId, e);
-            }
-        });
-        byte[] content = sb.toString().getBytes(StandardCharsets.UTF_8);
-        ByteArrayResource resource = new ByteArrayResource(content) {
-            @Override
-            public String getFilename() {
-                return "targeting-request-batch.jsonl";
-            }
-        };
-        MultiValueMap<String, Object> multipart = new LinkedMultiValueMap<>();
-        multipart.add("purpose", "batch");
-        multipart.add("file", resource);
-        log.info("Uploading {} targeting requests to OpenAI batch file", contexts.size());
-        OpenAiFile file = webClient.post()
-                .uri("/files")
-                .contentType(MediaType.MULTIPART_FORM_DATA)
-                .body(BodyInserters.fromMultipartData(multipart))
-                .retrieve()
-                .bodyToMono(OpenAiFile.class)
-                .block();
-        if (file == null || !StringUtils.hasText(file.id())) {
-            throw new IllegalStateException("OpenAI file upload failed for targeting request batch");
-        }
-        return file.id();
-    }
-
-    /**
-     * Cria o batch da OpenAI para processar as solicitações de targeting.
-     */
-    private OpenAiBatch createBatch(String inputFileId) {
-        Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("input_file_id", inputFileId);
-        payload.put("endpoint", RESPONSES_ENDPOINT);
-        payload.put("completion_window", COMPLETION_WINDOW);
-        OpenAiBatch batch = webClient.post()
-                .uri("/batches")
-                .bodyValue(payload)
-                .retrieve()
-                .bodyToMono(OpenAiBatch.class)
-                .block();
-        if (batch == null || !StringUtils.hasText(batch.id())) {
-            throw new IllegalStateException("OpenAI batch creation failed for targeting requests");
-        }
-        return batch;
-    }
-
-    /**
-     * Aguarda a conclusão do batch da OpenAI dentro do timeout configurado.
-     */
-    private OpenAiBatch awaitCompletion(OpenAiBatch initial) {
-        OpenAiBatch current = initial;
-        Instant deadline = Instant.now().plus(batchTimeout);
-        while (current != null && !isTerminal(current)) {
-            if (Instant.now().isAfter(deadline)) {
-                throw new IllegalStateException("Timed out waiting for OpenAI batch " + current.id() + " in status " + current.status());
-            }
-            try {
-                Thread.sleep(Math.max(50L, batchPollInterval.toMillis()));
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new RuntimeException("Interrupted while waiting for OpenAI batch", e);
-            }
-            current = webClient.get()
-                    .uri("/batches/{id}", current.id())
-                    .retrieve()
-                    .bodyToMono(OpenAiBatch.class)
-                    .block();
-        }
-        if (current == null) {
-            throw new IllegalStateException("OpenAI returned null batch while polling targeting requests");
-        }
-        if (!"completed".equalsIgnoreCase(current.status())) {
-            throw new IllegalStateException("OpenAI batch " + current.id() + " finished with status " + current.status());
-        }
-        return current;
-    }
-
-    /**
-     * Verifica se o batch chegou a um estado terminal conhecido.
-     */
-    private boolean isTerminal(OpenAiBatch batch) {
-        if (batch == null || !StringUtils.hasText(batch.status())) {
-            return false;
-        }
-        return TERMINAL_BATCH_STATUSES.contains(batch.status().toLowerCase());
-    }
-
-    /**
-     * Baixa o arquivo de saída produzido pelo batch da OpenAI.
-     */
-    private String downloadFile(String fileId) {
-        return webClient.get()
-                .uri("/files/{id}/content", fileId)
-                .retrieve()
-                .bodyToMono(String.class)
-                .block();
-    }
-
-    /**
-     * Converte cada linha JSONL retornada pelo batch em resposta estruturada.
-     */
-    private Map<String, OpenAiResponse> parseBatchOutput(String content) {
         Map<String, OpenAiResponse> responses = new LinkedHashMap<>();
-        if (!StringUtils.hasText(content)) {
-            return responses;
-        }
-        for (String line : content.split("\n")) {
-            if (!StringUtils.hasText(line)) {
-                continue;
-            }
-            try {
-                BatchOutput output = objectMapper.readValue(line, BatchOutput.class);
-                if (output.response() != null && output.response().isSuccessful()) {
-                    Map<String, Object> body = output.response().body();
-                    if (body == null) {
-                        log.warn("OpenAI batch line {} has null body", output.customId());
-                        continue;
-                    }
-                    responses.put(output.customId(), objectMapper.convertValue(body, OpenAiResponse.class));
-                } else if (output.response() != null) {
-                    log.error("OpenAI batch request {} failed with status {}", output.customId(), output.response().statusCode());
-                } else if (output.error() != null) {
-                    log.error("OpenAI batch request {} failed: {} - {}", output.customId(), output.error().code(), output.error().message());
-                }
-            } catch (Exception ex) {
-                log.error("Failed to parse batch output line: {}", line, ex);
+        for (Map.Entry<String, RequestContext> entry : contexts.entrySet()) {
+            OpenAiResponse response = webClient.post()
+                    .uri(RESPONSES_ENDPOINT)
+                    .bodyValue(entry.getValue().payload())
+                    .retrieve()
+                    .bodyToMono(OpenAiResponse.class)
+                    .block();
+            if (response != null) {
+                responses.put(entry.getKey(), response);
             }
         }
         return responses;
@@ -476,29 +333,4 @@ public class TargetingRequestChatGptClient {
                                   String model) {
     }
 
-    private record OpenAiFile(String id) {
-    }
-
-    private record OpenAiBatch(String id, String status,
-                               @com.fasterxml.jackson.annotation.JsonProperty("output_file_id") String outputFileId,
-                               BatchError error) {
-    }
-
-    private record BatchError(String message, String code) {
-    }
-
-    private record BatchOutput(@com.fasterxml.jackson.annotation.JsonProperty("custom_id") String customId,
-                               BatchOutputResponse response,
-                               BatchOutputError error) {
-    }
-
-    private record BatchOutputResponse(@com.fasterxml.jackson.annotation.JsonProperty("status_code") Integer statusCode,
-                                       Map<String, Object> body) {
-        boolean isSuccessful() {
-            return statusCode != null && statusCode >= 200 && statusCode < 300;
-        }
-    }
-
-    private record BatchOutputError(String message, String code) {
-    }
 }

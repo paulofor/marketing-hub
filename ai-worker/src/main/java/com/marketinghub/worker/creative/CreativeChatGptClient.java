@@ -41,7 +41,7 @@ import com.marketinghub.worker.openai.OpenAiRequestUtils;
 import com.marketinghub.worker.openai.OpenAiResponse;
 
 /**
- * Simple wrapper around the OpenAI chat completions API for creative generation.
+ * Responsabilidade: gerar textos de criativos via OpenAI em modo Flex e registrar auditoria da geração.
  */
 @Component
 public class CreativeChatGptClient {
@@ -56,8 +56,8 @@ public class CreativeChatGptClient {
     private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(10);
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(90);
     private static final String DOMAIN = "CREATIVE_COPY";
-    private static final String RESPONSES_ENDPOINT = "/v1/responses";
-    private static final String COMPLETION_WINDOW = "24h";
+    private static final String RESPONSES_ENDPOINT = "/responses";
+    private static final String SERVICE_TIER_FLEX = "flex";
     private static final Duration DEFAULT_BATCH_POLL_INTERVAL = Duration.ofMillis(500);
     private static final Duration DEFAULT_BATCH_TIMEOUT = Duration.ofMinutes(5);
     private static final Set<String> TERMINAL_BATCH_STATUSES = Set.of("completed", "failed", "expired", "cancelled");
@@ -97,6 +97,7 @@ public class CreativeChatGptClient {
         }
     }
 
+    /** Gera criativos textuais para um experimento usando chamada direta na Responses API em modo Flex. */
     public Generation generateCreatives(Experiment experiment, int quantity) {
         if (!enabled) {
             log.warn("Skipping creative generation for experiment {} because OpenAI API key is missing", experiment != null ? experiment.getId() : "unknown");
@@ -111,17 +112,18 @@ public class CreativeChatGptClient {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("model", model);
         payload.put("input", input);
+        payload.put("service_tier", SERVICE_TIER_FLEX);
         OpenAiRequestUtils.maybeAddReasoning(payload, model);
 
         String customId = buildCustomId(experiment);
         Map<String, RequestContext> contexts = new LinkedHashMap<>();
         contexts.put(customId, new RequestContext(experiment, prompt, payload, model));
 
-        log.info("Enfileirando prompt de criativos {} no batch da OpenAI", experiment != null ? experiment.getId() : "sem-id");
-        Map<String, OpenAiResponse> responses = executeBatchRequests(contexts);
+        log.info("Executando prompt de criativos {} no modo Flex da OpenAI", experiment != null ? experiment.getId() : "sem-id");
+        Map<String, OpenAiResponse> responses = executeFlexRequests(contexts);
         OpenAiResponse response = responses.get(customId);
         if (response == null) {
-            log.warn("OpenAI batch returned no response for experiment {}", experiment != null ? experiment.getId() : "unknown");
+            log.warn("OpenAI Flex returned no response for experiment {}", experiment != null ? experiment.getId() : "unknown");
             return Generation.empty();
         }
         if (response.hasError()) {
@@ -171,145 +173,21 @@ public class CreativeChatGptClient {
         return "experiment-" + System.nanoTime();
     }
 
-    private Map<String, OpenAiResponse> executeBatchRequests(Map<String, RequestContext> contexts) {
+    /** Executa os contextos de criativo diretamente na Responses API com service_tier flex. */
+    private Map<String, OpenAiResponse> executeFlexRequests(Map<String, RequestContext> contexts) {
         if (contexts == null || contexts.isEmpty()) {
             return Map.of();
         }
-        String inputFileId = uploadBatchFile(contexts);
-        OpenAiBatch batch = createBatch(inputFileId);
-        OpenAiBatch completed = awaitCompletion(batch);
-        String outputFileId = completed.outputFileId();
-        if (!hasText(outputFileId)) {
-            throw new IllegalStateException("OpenAI batch did not return output_file_id");
-        }
-        String content = downloadFile(outputFileId);
-        return parseBatchOutput(content);
-    }
-
-    private String uploadBatchFile(Map<String, RequestContext> contexts) {
-        StringBuilder sb = new StringBuilder();
-        for (Map.Entry<String, RequestContext> entry : contexts.entrySet()) {
-            Map<String, Object> line = new LinkedHashMap<>();
-            line.put("custom_id", entry.getKey());
-            line.put("method", "POST");
-            line.put("url", RESPONSES_ENDPOINT);
-            line.put("body", entry.getValue().payload());
-            try {
-                sb.append(objectMapper.writeValueAsString(line)).append("\n");
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to serialize batch line for " + entry.getKey(), e);
-            }
-        }
-        byte[] payload = sb.toString().getBytes(StandardCharsets.UTF_8);
-        ByteArrayResource resource = new ByteArrayResource(payload) {
-            @Override
-            public String getFilename() {
-                return "creative-prompts.jsonl";
-            }
-        };
-        MultiValueMap<String, Object> multipart = new LinkedMultiValueMap<>();
-        multipart.add("purpose", "batch");
-        multipart.add("file", resource);
-        log.info("Uploading {} creative requests to OpenAI batch file", contexts.size());
-        OpenAiFile file = webClient.post()
-                .uri("/files")
-                .contentType(MediaType.MULTIPART_FORM_DATA)
-                .body(BodyInserters.fromMultipartData(multipart))
-                .retrieve()
-                .bodyToMono(OpenAiFile.class)
-                .block(REQUEST_TIMEOUT);
-        if (file == null || !hasText(file.id())) {
-            throw new IllegalStateException("OpenAI file upload failed for creative batch");
-        }
-        return file.id();
-    }
-
-    private OpenAiBatch createBatch(String inputFileId) {
-        Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("input_file_id", inputFileId);
-        payload.put("endpoint", RESPONSES_ENDPOINT);
-        payload.put("completion_window", COMPLETION_WINDOW);
-        OpenAiBatch batch = webClient.post()
-                .uri("/batches")
-                .bodyValue(payload)
-                .retrieve()
-                .bodyToMono(OpenAiBatch.class)
-                .block(REQUEST_TIMEOUT);
-        if (batch == null || !hasText(batch.id())) {
-            throw new IllegalStateException("OpenAI batch creation failed for creatives");
-        }
-        return batch;
-    }
-
-    private OpenAiBatch awaitCompletion(OpenAiBatch initial) {
-        OpenAiBatch current = initial;
-        Instant start = Instant.now();
-        while (!isTerminal(current)) {
-            if (Duration.between(start, Instant.now()).compareTo(batchTimeout) > 0) {
-                throw new IllegalStateException("Timed out waiting for OpenAI batch " + current.id() + " in status " + current.status());
-            }
-            try {
-                Thread.sleep(batchPollInterval.toMillis());
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new RuntimeException("Interrupted while waiting for OpenAI batch", e);
-            }
-            current = webClient.get()
-                    .uri("/batches/{id}", current.id())
-                    .retrieve()
-                    .bodyToMono(OpenAiBatch.class)
-                    .block(REQUEST_TIMEOUT);
-            if (current == null) {
-                throw new IllegalStateException("OpenAI returned null batch while polling creatives");
-            }
-        }
-        if (!"completed".equals(current.status())) {
-            throw new RuntimeException("OpenAI batch " + current.id() + " finished with status " + current.status());
-        }
-        return current;
-    }
-
-    private boolean isTerminal(OpenAiBatch batch) {
-        if (batch == null || batch.status() == null) {
-            return true;
-        }
-        return TERMINAL_BATCH_STATUSES.contains(batch.status());
-    }
-
-    private String downloadFile(String fileId) {
-        return webClient.get()
-                .uri("/files/{id}/content", fileId)
-                .retrieve()
-                .bodyToMono(String.class)
-                .block(REQUEST_TIMEOUT);
-    }
-
-    private Map<String, OpenAiResponse> parseBatchOutput(String content) {
         Map<String, OpenAiResponse> responses = new LinkedHashMap<>();
-        if (!hasText(content)) {
-            return responses;
-        }
-        for (String line : content.split("\n")) {
-            if (!hasText(line)) {
-                continue;
-            }
-            try {
-                BatchOutput output = objectMapper.readValue(line, BatchOutput.class);
-                if (output.response() != null && output.response().isSuccessful()) {
-                    Map<String, Object> body = output.response().body();
-                    if (body == null) {
-                        log.warn("Skipping batch line {} because body is null", output.customId());
-                        continue;
-                    }
-                    OpenAiResponse response = objectMapper.convertValue(body, OpenAiResponse.class);
-                    responses.put(output.customId(), response);
-                } else if (output.response() != null) {
-                    log.error("OpenAI batch request {} failed with status {}", output.customId(), output.response().statusCode());
-                } else if (output.error() != null) {
-                    log.error("OpenAI batch request {} failed: {} - {}", output.customId(), output.error().code(), output.error().message());
-                }
-            } catch (Exception e) {
-                log.error("Failed to parse batch output line: {}", line, e);
+        for (Map.Entry<String, RequestContext> entry : contexts.entrySet()) {
+            OpenAiResponse response = webClient.post()
+                    .uri(RESPONSES_ENDPOINT)
+                    .bodyValue(entry.getValue().payload())
+                    .retrieve()
+                    .bodyToMono(OpenAiResponse.class)
+                    .block(REQUEST_TIMEOUT);
+            if (response != null) {
+                responses.put(entry.getKey(), response);
             }
         }
         return responses;
@@ -430,25 +308,6 @@ public class CreativeChatGptClient {
                                   String prompt,
                                   Map<String, Object> payload,
                                   String model) {}
-
-    private record BatchOutput(@JsonProperty("custom_id") String customId,
-                               BatchResponse response,
-                               BatchError error) {}
-
-    private record BatchResponse(@JsonProperty("status_code") Integer statusCode,
-                                 @JsonProperty("request_id") String requestId,
-                                 Map<String, Object> body) {
-        boolean isSuccessful() {
-            return statusCode != null && statusCode >= 200 && statusCode < 300;
-        }
-    }
-
-    private record BatchError(String code, String message, String param, String line) {}
-
-    private record OpenAiBatch(String id, String status,
-                               @JsonProperty("output_file_id") String outputFileId) {}
-
-    private record OpenAiFile(String id) {}
 
     public record Generation(List<CreateCreativeRequest> creatives,
                              BigDecimal totalCostUsd,

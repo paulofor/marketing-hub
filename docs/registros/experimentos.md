@@ -5305,3 +5305,10 @@
 - Causa-raiz: o endpoint interno de targeting foi criado no backend, mas a build do worker depende de um pacote publicado que pode ficar defasado em relação ao código do monorepo.
 - Correção aplicada: o AI Worker passou a declarar localmente os contratos HTTP mínimos de pendência, resultado e falha usados nessa integração, preservando o consumo exclusivo via backend e evitando acesso direto ao banco.
 - Prevenção de recorrência: os contratos necessários à compilação isolada do worker ficam no próprio módulo executor, sem depender da publicação imediata do artefato do backend.
+
+## 2026-06-24 — AI Worker: OpenAI Flex no lugar de Batch
+
+- solicitação: trocar as solicitações OpenAI que ainda usavam modo Batch para modo Flex.
+- causa-raiz: fluxos acionados pela tela, como públicos de nicho e targeting, ainda dependiam da Batch API da OpenAI, aumentando latência operacional e dificultando acompanhamento imediato pelo usuário.
+- foi feito: removido o uso da Batch API nos clientes do AI Worker que enviavam lotes para OpenAI; os fluxos passaram a executar chamadas diretas em modo Flex ou equivalente direto, preservando os contratos agregados internos para não quebrar os services chamadores.
+- prevenção de recorrência: validação por busca no código confirmou ausência de chamadas `/batches`, `purpose=batch` e `completion_window` no AI Worker.

@@ -23,22 +23,33 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+/**
+ * Repositório JDBC que reivindica e atualiza a fila de resolução de públicos na Meta.
+ */
 @Repository
 public class TargetingResolutionJobJdbcRepository implements TargetingResolutionJobRepository {
     private static final Logger LOGGER = LoggerFactory.getLogger(TargetingResolutionJobJdbcRepository.class);
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
+    /**
+     * Inicializa o repositório com o template JDBC nomeado usado nas consultas da fila.
+     */
     public TargetingResolutionJobJdbcRepository(NamedParameterJdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
 
+    /**
+     * Recria jobs ausentes, reivindica jobs pendentes e carrega seus dados funcionais.
+     */
     @Override
     @Transactional
     public List<TargetingResolutionJobRecord> claimPendingJobs(String workerId, int batchSize) {
+        int normalizedBatchSize = Math.max(batchSize, 1);
+        reconcileMissingJobs(normalizedBatchSize);
         List<Long> candidates = jdbcTemplate.queryForList(
             "SELECT id FROM targeting_resolution_job WHERE status = 'PENDING' ORDER BY created_at ASC LIMIT :limit",
-            Map.of("limit", Math.max(batchSize, 1)),
+            Map.of("limit", normalizedBatchSize),
             Long.class
         );
         if (CollectionUtils.isEmpty(candidates)) {
@@ -74,6 +85,9 @@ public class TargetingResolutionJobJdbcRepository implements TargetingResolution
         return fetchJobRecords(claimed);
     }
 
+    /**
+     * Marca um job como concluído após o worker reportar opções resolvidas ao backend.
+     */
     @Override
     @Transactional
     public void markCompleted(long jobId, int resolvedOptionsCount) {
@@ -95,6 +109,9 @@ public class TargetingResolutionJobJdbcRepository implements TargetingResolution
         );
     }
 
+    /**
+     * Marca um job como falho preservando a mensagem operacional da falha.
+     */
     @Override
     @Transactional
     public void markFailed(long jobId, String errorMessage) {
@@ -116,6 +133,9 @@ public class TargetingResolutionJobJdbcRepository implements TargetingResolution
         );
     }
 
+    /**
+     * Libera locks expirados para que jobs travados voltem a ser processados.
+     */
     @Override
     @Transactional
     public int releaseExpiredLocks(Duration lockTtl) {
@@ -140,6 +160,44 @@ public class TargetingResolutionJobJdbcRepository implements TargetingResolution
         );
     }
 
+    /**
+     * Cria automaticamente jobs que deveriam existir para candidatos ainda pendentes.
+     */
+    private int reconcileMissingJobs(int batchSize) {
+        int inserted = jdbcTemplate.update(
+            """
+            INSERT IGNORE INTO targeting_resolution_job (
+                candidate_id,
+                request_id,
+                status,
+                attempt_count,
+                created_at,
+                updated_at
+            )
+            SELECT c.id,
+                   c.request_id,
+                   'PENDING',
+                   0,
+                   NOW(6),
+                   NOW(6)
+              FROM targeting_candidate c
+         LEFT JOIN targeting_resolution_job j ON j.candidate_id = c.id
+             WHERE c.status = 'PENDING_FACEBOOK_MATCH'
+               AND j.id IS NULL
+             ORDER BY c.created_at ASC, c.id ASC
+             LIMIT :limit
+            """,
+            Map.of("limit", Math.max(batchSize, 1))
+        );
+        if (inserted > 0) {
+            LOGGER.warn("Recreated {} missing targeting resolution jobs before claiming queue", inserted);
+        }
+        return inserted;
+    }
+
+    /**
+     * Busca os dados completos dos jobs reivindicados para montar a requisição à Meta.
+     */
     private List<TargetingResolutionJobRecord> fetchJobRecords(List<Long> jobIds) {
         MapSqlParameterSource params = new MapSqlParameterSource().addValue("jobIds", jobIds);
         SqlRowSet rowSet = jdbcTemplate.queryForRowSet(
@@ -229,6 +287,9 @@ public class TargetingResolutionJobJdbcRepository implements TargetingResolution
                 .toList();
     }
 
+    /**
+     * Carrega variações de seed associadas aos candidatos reivindicados.
+     */
     private Map<Long, List<String>> fetchVariants(List<Long> candidateIds) {
         if (CollectionUtils.isEmpty(candidateIds)) {
             return Map.of();
@@ -252,6 +313,9 @@ public class TargetingResolutionJobJdbcRepository implements TargetingResolution
         return variants;
     }
 
+    /**
+     * Converte UUID persistido como BINARY(16) para o tipo Java correspondente.
+     */
     private UUID toUuid(byte[] value) {
         if (value == null || value.length != 16) {
             return null;

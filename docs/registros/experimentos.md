@@ -5193,3 +5193,9 @@
 - Causa-raiz: o resumo de prontidão calculava público a partir de pendências genéricas de campanha, que não verificavam a seleção salva de targeting do experimento.
 - Correção aplicada: a prontidão de público passou a depender de uma seleção salva de cargo/posição de trabalho para o experimento, e a falta dessa seleção volta a gerar pendência de targeting.
 - Prevenção de recorrência: os testes de prontidão foram ajustados para falhar quando um experimento sem seleção salva aparecer como pronto para público.
+
+## 2026-06-24 — Correção automática da fila de resolução de público Meta
+
+- Problema: o experimento 48 não exibia opções na aba Público porque o nicho 24 possuía candidatos de targeting gerados, mas sem registros correspondentes em `targeting_resolution_job`; assim o Facebook Ads Worker não consumia os candidatos para validar IDs oficiais da Meta e materializar `targeting_element` aprovado.
+- Causa-raiz: a fila operacional de resolução dependia exclusivamente do enfileiramento pós-gravação dos candidatos. Se esse enfileiramento não acontecesse em produção, não havia reconciliação automática no worker.
+- Correção aplicada: o `facebook-ads-worker` passou a recriar automaticamente jobs ausentes para candidatos em `PENDING_FACEBOOK_MATCH` antes de reivindicar a fila, permitindo que o processamento automático continue e evitando que novos experimentos fiquem sem público por lacuna na fila.

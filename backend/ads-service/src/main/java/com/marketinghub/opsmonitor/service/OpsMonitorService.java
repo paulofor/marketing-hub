@@ -1,5 +1,6 @@
 package com.marketinghub.opsmonitor.service;
 
+import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.opsmonitor.OpsModuleHealthCheck;
 import com.marketinghub.opsmonitor.OpsModuleIncident;
 import com.marketinghub.opsmonitor.OpsMonitoredModule;
@@ -12,13 +13,18 @@ import com.marketinghub.opsmonitor.service.registerHeartbeat.RegisterModuleHeart
 import com.marketinghub.opsmonitor.service.registerIncident.RegisterModuleIncidentRequest;
 import com.marketinghub.opsmonitor.service.registerIncident.RegisterModuleIncidentResponse;
 import com.marketinghub.opsmonitor.service.summary.OpsMonitorSummaryResponse;
+import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
 import com.marketinghub.repository.jpa.opsmonitor.OpsModuleAvailabilityDailyRepository;
 import com.marketinghub.repository.jpa.opsmonitor.OpsModuleHealthCheckRepository;
 import com.marketinghub.repository.jpa.opsmonitor.OpsModuleIncidentRepository;
 import com.marketinghub.repository.jpa.opsmonitor.OpsMonitoredModuleRepository;
 import jakarta.persistence.EntityNotFoundException;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,16 +34,33 @@ public class OpsMonitorService {
     private final OpsMonitoredModuleRepository moduleRepository;
     private final OpsModuleHealthCheckRepository healthCheckRepository;
     private final OpsModuleIncidentRepository incidentRepository;
-    private final OpsModuleAvailabilityDailyRepository availabilityDailyRepository;
+    private static final String AI_WORKER_MODULE_CODE = "ai-worker";
+    private static final String STATUS_STARTED = "INICIADO";
+    private static final String STATUS_OPEN = "OPEN";
+    private static final Duration AI_WORKER_STALE_QUEUE_THRESHOLD = Duration.ofMinutes(5);
+    private static final List<String> AI_WORKER_GERALANDING_STAGES = List.of(
+            "landing-page-wireframe",
+            "landing-page-copy",
+            "landing-page-image-planning",
+            "landing-page-image-generation",
+            "landing-page-design-preset",
+            "landing-page-quality-review",
+            "landing-page-deliverables");
 
+    private final OpsModuleAvailabilityDailyRepository availabilityDailyRepository;
+    private final GeraLandingStageExecutionRepository geraLandingStageExecutionRepository;
+
+    /** Inicializa o serviço com repositórios de monitoramento e filas auditáveis do GeraLanding. */
     public OpsMonitorService(OpsMonitoredModuleRepository moduleRepository,
             OpsModuleHealthCheckRepository healthCheckRepository,
             OpsModuleIncidentRepository incidentRepository,
-            OpsModuleAvailabilityDailyRepository availabilityDailyRepository) {
+            OpsModuleAvailabilityDailyRepository availabilityDailyRepository,
+            GeraLandingStageExecutionRepository geraLandingStageExecutionRepository) {
         this.moduleRepository = moduleRepository;
         this.healthCheckRepository = healthCheckRepository;
         this.incidentRepository = incidentRepository;
         this.availabilityDailyRepository = availabilityDailyRepository;
+        this.geraLandingStageExecutionRepository = geraLandingStageExecutionRepository;
     }
 
     /** Lista módulos habilitados para o worker executar verificações pendentes. */
@@ -120,13 +143,19 @@ public class OpsMonitorService {
     @Transactional(readOnly = true)
     public List<ModuleIncidentResponse> listIncidents(boolean openOnly, String criticality, String type) {
         List<OpsModuleIncident> incidents = openOnly
-                ? incidentRepository.findByStatusOrderByStartedAtDesc("OPEN")
+                ? incidentRepository.findByStatusOrderByStartedAtDesc(STATUS_OPEN)
                 : incidentRepository.findTop100ByOrderByStartedAtDesc();
-        return incidents.stream()
+        List<ModuleIncidentResponse> responses = new ArrayList<>(incidents.stream()
                 .filter(incident -> matchesFilter(incident.getModule().getCriticality(), criticality))
                 .filter(incident -> matchesFilter(incident.getModule().getType(), type))
                 .map(this::toIncidentResponse)
-                .toList();
+                .toList());
+        syntheticAiWorkerQueueIncident(openOnly)
+                .filter(incident -> matchesFilter(incident.criticality(), criticality))
+                .filter(incident -> matchesFilter(incident.type(), type))
+                .map(this::toIncidentResponse)
+                .ifPresent(responses::add);
+        return responses;
     }
 
     /** Gera resumo executivo para a tela administrativa de operação. */
@@ -137,7 +166,8 @@ public class OpsMonitorService {
         long degraded = availability.stream().filter(item -> "DEGRADED".equals(item.status())).count();
         long offline = availability.stream().filter(item -> "OFFLINE".equals(item.status())).count();
         long unknown = availability.stream().filter(item -> "UNKNOWN".equals(item.status())).count();
-        long openIncidents = incidentRepository.findByStatusOrderByStartedAtDesc("OPEN").size();
+        long openIncidents = incidentRepository.findByStatusOrderByStartedAtDesc(STATUS_OPEN).size()
+                + syntheticAiWorkerQueueIncident(true).map(incident -> 1L).orElse(0L);
         return new OpsMonitorSummaryResponse(online, degraded, offline, unknown, openIncidents);
     }
 
@@ -154,12 +184,60 @@ public class OpsMonitorService {
 
     /** Converte entidade de módulo para o status administrativo atual. */
     private ModuleAvailabilityResponse toAvailabilityResponse(OpsMonitoredModule module) {
+        if (AI_WORKER_MODULE_CODE.equals(module.getCode())) {
+            Optional<SyntheticIncident> queueIncident = syntheticAiWorkerQueueIncident(true);
+            if (queueIncident.isPresent()) {
+                SyntheticIncident incident = queueIncident.get();
+                return new ModuleAvailabilityResponse(module.getCode(), module.getName(), module.getType(),
+                        module.getCriticality(), "DEGRADED", incident.startedAt(), null, incident.lastError());
+            }
+        }
         return healthCheckRepository.findTop1ByModuleCodeOrderByCheckedAtDesc(module.getCode())
                 .map(check -> new ModuleAvailabilityResponse(module.getCode(), module.getName(), module.getType(),
                         module.getCriticality(), check.getStatus(), check.getCheckedAt(), check.getResponseTimeMs(),
                         check.getErrorMessage()))
                 .orElseGet(() -> new ModuleAvailabilityResponse(module.getCode(), module.getName(), module.getType(),
                         module.getCriticality(), "UNKNOWN", null, null, null));
+    }
+
+    /** Cria incidente sintético quando há fila de GeraLanding parada antes do worker iniciar processamento. */
+    private Optional<SyntheticIncident> syntheticAiWorkerQueueIncident(boolean openOnly) {
+        if (!openOnly) {
+            return Optional.empty();
+        }
+        Instant threshold = Instant.now().minus(AI_WORKER_STALE_QUEUE_THRESHOLD);
+        for (String stageCode : AI_WORKER_GERALANDING_STAGES) {
+            List<GeraLandingStageExecution> staleExecutions = geraLandingStageExecutionRepository
+                    .findTop20ByStageCodeAndStatusAndExecutionRequestedAtBeforeOrderByExecutionRequestedAtAsc(
+                            stageCode,
+                            STATUS_STARTED,
+                            threshold);
+            if (!staleExecutions.isEmpty()) {
+                GeraLandingStageExecution execution = staleExecutions.getFirst();
+                String jobId = new String(execution.getIdJob(), StandardCharsets.UTF_8);
+                String lastError = "Job " + jobId + " do experimento " + execution.getExperimentId()
+                        + " está em INICIADO sem processamento iniciado na etapa " + stageCode + ".";
+                return Optional.of(new SyntheticIncident(
+                        AI_WORKER_MODULE_CODE,
+                        "AI Worker",
+                        "WORKER",
+                        "CRITICAL",
+                        STATUS_OPEN,
+                        "HIGH",
+                        execution.getExecutionRequestedAt(),
+                        "AI Worker não consumiu job pendente do GeraLanding",
+                        "GERALANDING_QUEUE_STALE",
+                        lastError));
+            }
+        }
+        return Optional.empty();
+    }
+
+    /** Converte incidente sintético para resposta administrativa sem persistir novo estado operacional. */
+    private ModuleIncidentResponse toIncidentResponse(SyntheticIncident incident) {
+        return new ModuleIncidentResponse(null, incident.moduleCode(), incident.moduleName(), incident.status(),
+                incident.severity(), incident.startedAt(), null, null, incident.summary(), incident.rootSignal(),
+                incident.lastError());
     }
 
     /** Converte entidade de incidente para resposta administrativa. */
@@ -170,3 +248,7 @@ public class OpsMonitorService {
                 incident.getSummary(), incident.getRootSignal(), incident.getLastError());
     }
 }
+
+/** Incidente calculado a partir de filas persistidas para destacar falha visível ao usuário. */
+record SyntheticIncident(String moduleCode, String moduleName, String type, String criticality, String status,
+        String severity, Instant startedAt, String summary, String rootSignal, String lastError) {}

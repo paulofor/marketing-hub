@@ -46,6 +46,9 @@ jobs:
           distribution: temurin
           java-version: 21
           cache: maven
+      - name: Install backend contracts
+        working-directory: backend/ads-service
+        run: mvn -B -DskipTests install
       - name: Run architecture tests
         run: mvn -B -s settings.xml -Dtest='*ArchitectureTest,*ArquiteturaTest' test
       - name: Run tests

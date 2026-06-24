@@ -5237,3 +5237,9 @@
 - Causa-raiz: o card “Escolha de público” inferia prontidão por criativo e landing, em vez de usar a mesma regra do backend/publicador (`hasCompleteTargeting`) usada por `/api/facebook-campaigns/experiments-ready`.
 - Correção aplicada: o checklist principal e os bloqueios de publicação passaram a exigir público salvo pela regra do publicador antes de mostrar pronto ou liberar o botão do Facebook Ads Worker.
 - Cânone atualizado: a regra de publicação Facebook Ads agora determina que cards e checklists da UI devem usar o contrato `/api/experiments/{experimentId}/readiness`, sem inferência local divergente.
+
+## 2026-06-24 — Tela de targeting mostra apenas a rodada mais recente
+
+- Solicitação: deixar a tela de públicos mais limpa após nova geração, evitando mistura visual entre resultados antigos, possivelmente gerados antes das regras atuais, e a rodada nova.
+- Causa-raiz: a tela de nicho/hipótese listava até seis solicitações recentes de targeting por contexto, mantendo na mesma área públicos antigos com scores baixos e públicos novos.
+- Correção aplicada: as telas de detalhe de nicho e hipótese passaram a solicitar somente a rodada mais recente de targeting no painel principal, preservando o histórico no backend sem poluir a decisão operacional do usuário.

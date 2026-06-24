@@ -2298,7 +2298,7 @@ export default function NicheDetailPage() {
 
           <TargetingRequestStatusPanel
             className="mb-4"
-            limit={6}
+            limit={1}
             nicheId={normalizedNicheId}
           />
 

@@ -5213,3 +5213,10 @@
 - Problema: o experimento 48 não exibia opções na aba Público porque o nicho 24 possuía candidatos de targeting gerados, mas sem registros correspondentes em `targeting_resolution_job`; assim o Facebook Ads Worker não consumia os candidatos para validar IDs oficiais da Meta e materializar `targeting_element` aprovado.
 - Causa-raiz: a fila operacional de resolução dependia exclusivamente do enfileiramento pós-gravação dos candidatos. Se esse enfileiramento não acontecesse em produção, não havia reconciliação automática no worker.
 - Correção aplicada: o `facebook-ads-worker` passou a recriar automaticamente jobs ausentes para candidatos em `PENDING_FACEBOOK_MATCH` antes de reivindicar a fila, permitindo que o processamento automático continue e evitando que novos experimentos fiquem sem público por lacuna na fila.
+
+## 2026-06-24 — Experimentos: correção da métrica de visualização do formulário
+
+- foi feito: o resumo do funil passou a contar como `Visualização do formulário` apenas `page_view` da landing e renderização explícita do formulário, sem somar eventos técnicos de analytics como tempo de seção e métricas de carregamento.
+- causa-raiz: todos os eventos de analytics da landing eram gravados em `experiment_funnel_event` na etapa `VISUALIZACAO_FORM`, e a consolidação somava qualquer evento dessa origem, inflando o funil.
+- evidência operacional: no experimento 41, o banco tinha 45 eventos nessa etapa, mas apenas 13 eram `page_view`; os demais eram eventos técnicos de analytics e não deveriam virar novas visualizações do formulário.
+- prevenção de recorrência: teste unitário garante que a consulta do resumo filtra `landing-page-analytics` por `eventType=page_view`.

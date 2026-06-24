@@ -678,7 +678,13 @@ public class ExperimentFunnelService {
                         FROM experiment_funnel_event
                         WHERE experiment_id = ?
                           AND stage = 'VISUALIZACAO_FORM'
-                          AND source IN (?, ?)
+                          AND (
+                              source = ?
+                              OR (
+                                  source = ?
+                                  AND payload LIKE '%eventType=page_view%'
+                              )
+                          )
                           AND (? IS NULL OR occurred_at > ?)
                         """, experimentId,
                         ExperimentFunnelEventRepository.RENDER_COMPLETE_SOURCE,

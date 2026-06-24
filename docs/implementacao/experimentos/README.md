@@ -16,9 +16,9 @@ Este diretório organiza a evolução do Marketing Hub para suportar, de forma c
 
 O objetivo principal permanece o mesmo do Marketing Hub: **gerar vendas de produtos digitais que entreguem valor real**, preservando Dor → Resultado → Mecanismo → Prova → Oferta.
 
-## 2. Documentos
+## 2. Documentos e precedência
 
-### Diagnóstico histórico obrigatório
+### 2.1 Diagnóstico histórico obrigatório
 
 Ler antes de qualquer implementação:
 
@@ -34,9 +34,9 @@ Esse documento consolida os experimentos 37–40 e demonstra que o status final 
 - qualidade dos artefatos vindos de nicho e hipótese;
 - distinção entre correção técnica e novo experimento comercial.
 
-### Documento mestre
+### 2.2 Documento mestre
 
-Seguir como roadmap principal:
+Roadmap funcional e arquitetural amplo:
 
 `docs/implementacao/experimentos/plano-mestre-evolucao-funis-produtos-personalizacao.md`
 
@@ -48,12 +48,36 @@ Esse documento define:
 - jornadas comerciais suportadas;
 - contratos e APIs;
 - mensuração e economia unitária;
-- fases de implementação;
-- sequência de pull requests;
 - migração e compatibilidade;
 - critérios globais de aceite.
 
-### Especificação obrigatória de frontend
+### 2.3 Adendo vinculante do plano mestre
+
+Usar como fonte de verdade para ordem das fases, primeiro incremento e sequência de PRs:
+
+`docs/implementacao/experimentos/adendo-plano-mestre-validade-e-execucoes.md`
+
+O adendo substitui as partes conflitantes do plano mestre após incorporar o aprendizado dos experimentos 37–40. A prioridade passa a ser provar a validade da execução antes de ampliar rotas, comparações e decisões por IA.
+
+### 2.4 Especificação obrigatória de `ExperimentRun`
+
+Usar para implementar tentativas operacionais, preflight e validade da evidência:
+
+`docs/implementacao/experimentos/especificacao-experiment-run-preflight.md`
+
+Esse documento detalha:
+
+- quando criar novo run ou novo experimento;
+- modelo de dados;
+- máquina de estados;
+- gates de qualidade, desenho, ativos, E2E, Meta e mensuração;
+- modo `TEST` versus `PRODUCTION`;
+- validade da evidência;
+- contratos administrativos e internos;
+- read model para o frontend;
+- migração, testes e sequência de PRs.
+
+### 2.5 Especificação obrigatória de frontend
 
 Usar para construir as telas de acompanhamento e decisão:
 
@@ -72,7 +96,7 @@ Esse documento detalha:
 - estados vazios, falhas e bloqueios;
 - critérios de usabilidade e aceite.
 
-### Especificação obrigatória de IA
+### 2.6 Especificação obrigatória de IA
 
 Usar para implementar o apoio à decisão por modelos:
 
@@ -83,10 +107,23 @@ Esse documento detalha:
 - separação entre cálculo determinístico, análise do modelo e decisão humana;
 - pipeline versionado `experimentdecision.v1`;
 - estágios, contratos, prompts e schemas;
-- evidências e confiança;
+- catálogo e referências de evidência;
 - políticas de autorização;
 - auditoria de request/response, tokens e custos;
 - regras que impedem o modelo de inventar métricas ou tomar ações de alto impacto sozinho.
+
+### 2.7 Regra de precedência
+
+Em caso de conflito:
+
+1. o cânone vigente governa regras já aprovadas do sistema;
+2. o diagnóstico histórico governa os problemas que precisam ser prevenidos;
+3. o adendo governa ordem de execução e prioridade;
+4. a especificação de `ExperimentRun` governa validade e preflight;
+5. o plano mestre governa o desenho funcional amplo;
+6. as especificações de frontend e IA governam suas respectivas implementações.
+
+Antes de implementar mudanças de regra, o documento canônico correspondente deve ser atualizado.
 
 ## 3. Decisão estrutural principal
 
@@ -156,14 +193,15 @@ Ações com impacto comercial continuam exigindo comando humano, salvo política
 
 1. **Fase 0 — cânone, baseline e feature flags**.
 2. **Fase 1 — `ExperimentRun`, preflight, validade e taxonomia de falha**.
-3. **Fase 2 — estratégia comercial do experimento, produto, oferta e personalização**.
-4. **Fase 3 — comparação de experimentos e contratos administrativos**.
-5. **Fase 4 — ingestão idempotente de Instant Forms e identidade do lead**.
-6. **Fase 5 — funil unificado, atribuição e economia unitária**.
-7. **Fase 6 — Centro de Decisão no frontend sem IA**.
-8. **Fase 7 — pipeline `experimentdecision.v1` no AI Worker e backend**.
-9. **Fase 8 — personalização, geração, entrega e fallback genérico**.
-10. **Fase 9 — testes controlados, calibração e automação gradual**.
+3. **Fase 2 — publicação e E2E vinculados ao run**.
+4. **Fase 3 — estratégia comercial, produto, oferta e personalização**.
+5. **Fase 4 — comparação de experimentos**.
+6. **Fase 5 — Instant Forms, identidade, consentimento e jornada**.
+7. **Fase 6 — eventos, atribuição e economia unitária**.
+8. **Fase 7 — Centro de Decisão determinístico no frontend**.
+9. **Fase 8 — pipeline `experimentdecision.v1`**.
+10. **Fase 9 — personalização, entrega e fallback genérico**.
+11. **Fase 10 — calibração e automação gradual**.
 
 Não iniciar a camada de decisão por IA antes de consolidar validade do run, identidade, atribuição, custos e qualidade dos dados. Um modelo sofisticado sobre dados incompletos apenas produzirá recomendações convincentes e pouco confiáveis.
 
@@ -183,7 +221,7 @@ O primeiro incremento implementável deve conter:
 
 Resultado esperado: o Marketing Hub deixa de confundir falha de execução com rejeição de mercado.
 
-O incremento seguinte adiciona `experiment_strategy` para declarar explicitamente qual funil está sendo testado.
+O incremento seguinte vincula publicação e teste E2E ao run. Somente depois entra `experiment_strategy` para declarar explicitamente qual funil está sendo testado.
 
 ## 7. Definição global de concluído
 

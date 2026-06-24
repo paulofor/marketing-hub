@@ -185,6 +185,12 @@ const formatDateTime = (value?: string | null) => {
   });
 };
 
+function hasDisplayValue(value: unknown) {
+  if (value === null || value === undefined) return false;
+  if (typeof value === "string") return value.trim() !== "";
+  return true;
+}
+
 export default function NicheDetailPage() {
   const { nicheId } = useParams();
   const id = Number(nicheId);
@@ -203,6 +209,9 @@ export default function NicheDetailPage() {
     ? formatDateTime(data.facebookPixelRequestedAt)
     : null;
   const isFacebookPixelPending = data?.facebookPixelRequestStatus === "PENDING";
+  const shouldShowFacebookPixelSection = Boolean(
+    facebookPixelId || facebookPixelCode || facebookPixelRequestedAtLabel,
+  );
   const { data: chatDialog } = useChatDialog(data?.chatDialogId);
   const { data: hypotheses } = useHypothesesByNiche(nicheId, "ALL");
   const { data: targetingElements, isFetching: isFetchingTargeting } =
@@ -619,6 +628,35 @@ export default function NicheDetailPage() {
       ) : undefined,
     },
   ];
+  const alwaysHiddenInfoLabels = new Set([
+    "Hipóteses a gerar",
+    "Modelo para hipóteses",
+    "Modelo para interesses",
+    "Modelo para cargos",
+    "Modelo para comportamentos",
+    "Modelo para descrições",
+    "Descrições a gerar",
+    "Interesses a gerar",
+    "Cargos a gerar",
+    "Comportamentos a gerar",
+    "Chat Dialog",
+  ]);
+  const hiddenWhenEmptyInfoLabels = new Set([
+    "Volume de demanda",
+    "Promessas",
+    "Ofertas",
+    "Segmentação base",
+    "Interesses",
+    "Filtros demográficos",
+    "Dicas extras",
+  ]);
+  const visibleInfoCards = infoCards.filter((card) => {
+    if (alwaysHiddenInfoLabels.has(card.label)) return false;
+    if (hiddenWhenEmptyInfoLabels.has(card.label)) {
+      return hasDisplayValue(card.value);
+    }
+    return true;
+  });
   const stats = [
     {
       icon: Target,
@@ -681,6 +719,15 @@ export default function NicheDetailPage() {
       helper: createdAtLabel ? `Criado em ${createdAtLabel}` : undefined,
     },
   ];
+  const shouldShowInformationSourcesSection = false;
+  const shouldShowManualDeliverablesSection = false;
+  const shouldShowSimpleLeadPortalFormsSection = false;
+  const visibleStats = stats.filter((stat) => {
+    if (stat.label === "Pixel do Facebook")
+      return shouldShowFacebookPixelSection;
+    if (stat.label === "Entregáveis") return false;
+    return true;
+  });
   const hypothesisStatusLabel =
     requestHypotheses.isPending || (isFetching && !isLoading)
       ? "Atualizando hipóteses..."
@@ -994,7 +1041,7 @@ export default function NicheDetailPage() {
         </div>
       </div>
       <ul className="niche-detail__stats">
-        {stats.map((stat) => {
+        {visibleStats.map((stat) => {
           const isInteractive = Boolean(stat.targetId);
           const targetId = stat.targetId;
           const className = `niche-detail__stat${
@@ -1040,7 +1087,7 @@ export default function NicheDetailPage() {
       </ul>
       <section aria-label="Informações do nicho">
         <div className="niche-detail__grid">
-          {infoCards.map((card) => (
+          {visibleInfoCards.map((card) => (
             <article key={card.label} className="niche-detail__card">
               <h3 className="niche-detail__card-title">{card.label}</h3>
               <div className="niche-detail__card-content">
@@ -1059,89 +1106,92 @@ export default function NicheDetailPage() {
           ))}
         </div>
       </section>
-      <section
-        className="niche-section"
-        aria-labelledby="niche-facebook-pixel-title"
-        id="niche-facebook-pixel"
-      >
-        <div className="niche-section__header">
-          <div>
-            <h2
-              className="niche-section__title"
-              id="niche-facebook-pixel-title"
-            >
-              Pixel do Facebook
-            </h2>
-            <p className="niche-section__subtitle">
-              Compartilhado por todos os experimentos deste nicho.
-            </p>
-            <p className="niche-section__status">
-              {facebookPixelId
-                ? `Pixel ${facebookPixelId} disponível para embutir nas landings.`
-                : "Nenhum pixel gerado ainda para este nicho."}
-            </p>
-          </div>
-          {facebookPixelCreatedAtLabel ? (
-            <span className="text-muted small">
-              Criado em {facebookPixelCreatedAtLabel}
-            </span>
-          ) : null}
-        </div>
-        {facebookPixelId ? (
-          <div className="d-flex flex-column gap-3">
+      {shouldShowFacebookPixelSection ? (
+        <section
+          className="niche-section"
+          aria-labelledby="niche-facebook-pixel-title"
+          id="niche-facebook-pixel"
+        >
+          <div className="niche-section__header">
             <div>
-              <strong>ID:</strong> {facebookPixelId}
-            </div>
-            {facebookPixelCode ? (
-              <textarea
-                className="form-control font-monospace"
-                value={facebookPixelCode ?? ""}
-                readOnly
-                rows={6}
-              />
-            ) : (
-              <div className="alert alert-info mb-0">
-                Pixel registrado. Aguarde o retorno do código completo pela
-                Meta.
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="alert alert-warning mb-0">
-            <div className="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
-              <div>
-                <strong>Pixel ainda não solicitado.</strong> Solicite a criação
-                para o worker gerar o pixel e liberar o uso nos experimentos.
-                {facebookPixelRequestedAtLabel ? (
-                  <span className="d-block small mt-1">
-                    Solicitação registrada em {facebookPixelRequestedAtLabel}.
-                  </span>
-                ) : null}
-              </div>
-              <button
-                type="button"
-                className="btn btn-warning"
-                onClick={handleRequestFacebookPixel}
-                disabled={
-                  requestFacebookPixel.isPending ||
-                  isFacebookPixelPending ||
-                  !normalizedNicheId
-                }
+              <h2
+                className="niche-section__title"
+                id="niche-facebook-pixel-title"
               >
-                {requestFacebookPixel.isPending ? (
-                  <span
-                    className="spinner-border spinner-border-sm me-2"
-                    aria-hidden="true"
-                  />
-                ) : null}
-                {isFacebookPixelPending
-                  ? "Pixel solicitado"
-                  : "Solicitar pixel"}
-              </button>
+                Pixel do Facebook
+              </h2>
+              <p className="niche-section__subtitle">
+                Compartilhado por todos os experimentos deste nicho.
+              </p>
+              <p className="niche-section__status">
+                {facebookPixelId
+                  ? `Pixel ${facebookPixelId} disponível para embutir nas landings.`
+                  : "Nenhum pixel gerado ainda para este nicho."}
+              </p>
             </div>
+            {facebookPixelCreatedAtLabel ? (
+              <span className="text-muted small">
+                Criado em {facebookPixelCreatedAtLabel}
+              </span>
+            ) : null}
           </div>
-        )}
-      </section>
+          {facebookPixelId ? (
+            <div className="d-flex flex-column gap-3">
+              <div>
+                <strong>ID:</strong> {facebookPixelId}
+              </div>
+              {facebookPixelCode ? (
+                <textarea
+                  className="form-control font-monospace"
+                  value={facebookPixelCode ?? ""}
+                  readOnly
+                  rows={6}
+                />
+              ) : (
+                <div className="alert alert-info mb-0">
+                  Pixel registrado. Aguarde o retorno do código completo pela
+                  Meta.
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="alert alert-warning mb-0">
+              <div className="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+                <div>
+                  <strong>Pixel ainda não solicitado.</strong> Solicite a
+                  criação para o worker gerar o pixel e liberar o uso nos
+                  experimentos.
+                  {facebookPixelRequestedAtLabel ? (
+                    <span className="d-block small mt-1">
+                      Solicitação registrada em {facebookPixelRequestedAtLabel}.
+                    </span>
+                  ) : null}
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-warning"
+                  onClick={handleRequestFacebookPixel}
+                  disabled={
+                    requestFacebookPixel.isPending ||
+                    isFacebookPixelPending ||
+                    !normalizedNicheId
+                  }
+                >
+                  {requestFacebookPixel.isPending ? (
+                    <span
+                      className="spinner-border spinner-border-sm me-2"
+                      aria-hidden="true"
+                    />
+                  ) : null}
+                  {isFacebookPixelPending
+                    ? "Pixel solicitado"
+                    : "Solicitar pixel"}
+                </button>
+              </div>
+            </div>
+          )}
+        </section>
+      ) : null}
       <NicheLearningDictionaryCard nicheId={normalizedNicheId} />
       <NicheBacklogRecommendationsCard nicheId={normalizedNicheId} />
       <section
@@ -1828,380 +1878,394 @@ export default function NicheDetailPage() {
           </div>
         </article>
       </section>
-      <section
-        className="niche-section"
-        aria-labelledby="niche-information-sources"
-      >
-        <div className="niche-section__header">
-          <div>
-            <h2 className="niche-section__title" id="niche-information-sources">
-              Fontes de informação
-            </h2>
-            <p className="niche-section__subtitle">
-              Registre links relevantes para pesquisas de mercado futuras.
-            </p>
-          </div>
-          <span className="badge text-bg-light text-dark niche-information-sources__badge">
-            {informationSourceList.length} item(s)
-          </span>
-        </div>
-        <form
-          className="niche-information-sources__form"
-          onSubmit={onCreateInformationSource}
+      {shouldShowInformationSourcesSection ? (
+        <section
+          className="niche-section"
+          aria-labelledby="niche-information-sources"
         >
-          <div className="row g-3">
-            <div className="col-md-5">
-              <label htmlFor="information-source-name" className="form-label">
-                Nome *
-              </label>
-              <input
-                id="information-source-name"
-                type="text"
-                className="form-control"
-                placeholder="Ex: Relatório Sebrae 2024"
-                disabled={createInformationSource.isPending}
-                {...registerInformationSource("name", { required: true })}
-              />
-            </div>
-            <div className="col-md-7">
-              <label htmlFor="information-source-url" className="form-label">
-                URL *
-              </label>
-              <input
-                id="information-source-url"
-                type="url"
-                className="form-control"
-                placeholder="https://..."
-                disabled={createInformationSource.isPending}
-                {...registerInformationSource("url", { required: true })}
-              />
-            </div>
-          </div>
-          <div className="d-flex justify-content-end mt-3">
-            <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={createInformationSource.isPending}
-            >
-              {createInformationSource.isPending ? (
-                <span
-                  className="spinner-border spinner-border-sm"
-                  role="status"
-                  aria-hidden="true"
-                />
-              ) : (
-                <Plus size={18} />
-              )}
-              <span>Adicionar fonte</span>
-            </button>
-          </div>
-        </form>
-        {informationSourceList.length === 0 ? (
-          <p className="niche-section__empty">
-            Nenhuma fonte de informação cadastrada ainda.
-          </p>
-        ) : (
-          <div className="niche-section__grid niche-information-sources__grid">
-            {informationSourceList.map((source) => (
-              <article key={source.id} className="card niche-section__card">
-                <div className="card-body niche-information-source-card__body">
-                  <h3 className="niche-information-source-card__title">
-                    {source.name}
-                  </h3>
-                  <a
-                    className="niche-detail__card-link"
-                    href={source.url}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    {source.url}
-                  </a>
-                </div>
-                <div className="card-footer niche-information-source-card__footer">
-                  {`Atualizado em ${
-                    source.updatedAt
-                      ? new Date(source.updatedAt).toLocaleString("pt-BR")
-                      : "-"
-                  }`}
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
-      </section>
-      <section className="niche-section" aria-labelledby="niche-deliverables">
-        <div className="niche-section__header">
-          <div>
-            <h2 className="niche-section__title" id="niche-deliverables">
-              Entregáveis
-            </h2>
-            <p className="niche-section__subtitle">
-              Centralize os materiais gerados para validar este nicho.
-            </p>
-          </div>
-          <span className="badge text-bg-light text-dark niche-deliverables__badge">
-            {deliverableList.length} item(s)
-          </span>
-        </div>
-        <form
-          className="niche-deliverables__form"
-          onSubmit={onCreateDeliverable}
-        >
-          <div className="row g-3">
-            <div className="col-md-4">
-              <label htmlFor="deliverable-title" className="form-label">
-                Título *
-              </label>
-              <input
-                id="deliverable-title"
-                type="text"
-                className="form-control"
-                placeholder="Resumo do entregável"
-                disabled={createDeliverable.isPending}
-                {...registerDeliverable("title", { required: true })}
-              />
-            </div>
-            <div className="col-md-4">
-              <label htmlFor="deliverable-model" className="form-label">
-                Modelo de IA
-              </label>
-              <input
-                id="deliverable-model"
-                type="text"
-                className="form-control"
-                placeholder="ex: gpt-4.1"
-                disabled={createDeliverable.isPending}
-                {...registerDeliverable("model")}
-              />
-            </div>
-            <div className="col-12">
-              <label htmlFor="deliverable-prompt" className="form-label">
-                Prompt utilizado *
-              </label>
-              <textarea
-                id="deliverable-prompt"
-                className="form-control"
-                rows={2}
-                placeholder="Cole aqui o prompt enviado ao modelo"
-                disabled={createDeliverable.isPending}
-                {...registerDeliverable("prompt", { required: true })}
-              />
-            </div>
-            <div className="col-md-6">
-              <label htmlFor="deliverable-description" className="form-label">
-                Descrição
-              </label>
-              <textarea
-                id="deliverable-description"
-                className="form-control"
-                rows={2}
-                placeholder="Resumo rápido do entregável"
-                disabled={createDeliverable.isPending}
-                {...registerDeliverable("description")}
-              />
-            </div>
-            <div className="col-md-6">
-              <label htmlFor="deliverable-content" className="form-label">
-                Conteúdo detalhado
-              </label>
-              <textarea
-                id="deliverable-content"
-                className="form-control"
-                rows={2}
-                placeholder="Cole aqui o conteúdo completo"
-                disabled={createDeliverable.isPending}
-                {...registerDeliverable("content")}
-              />
-            </div>
-          </div>
-          <div className="d-flex justify-content-end mt-3">
-            <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={createDeliverable.isPending}
-            >
-              {createDeliverable.isPending ? (
-                <span
-                  className="spinner-border spinner-border-sm"
-                  role="status"
-                  aria-hidden="true"
-                />
-              ) : (
-                <Sparkles size={18} />
-              )}
-              <span>Salvar entregável</span>
-            </button>
-          </div>
-        </form>
-        {deliverableList.length === 0 ? (
-          <p className="niche-section__empty">
-            Nenhum entregável cadastrado ainda.
-          </p>
-        ) : (
-          <div className="niche-section__grid niche-deliverables__grid">
-            {deliverableList.map((deliverable) => (
-              <article
-                key={deliverable.id}
-                className="card niche-section__card"
+          <div className="niche-section__header">
+            <div>
+              <h2
+                className="niche-section__title"
+                id="niche-information-sources"
               >
-                <div className="card-body niche-deliverable-card__body">
-                  <div className="niche-deliverable-card__head">
-                    <h3 className="niche-deliverable-card__title">
-                      {deliverable.title}
-                    </h3>
-                    {deliverable.model ? (
-                      <span className="badge text-bg-light text-dark">
-                        {deliverable.model}
-                      </span>
-                    ) : null}
-                  </div>
-                  {deliverable.description ? (
-                    <p className="niche-deliverable-card__description">
-                      {deliverable.description}
-                    </p>
-                  ) : null}
-                  {deliverable.content ? (
-                    <pre className="niche-deliverable-card__content">
-                      {deliverable.content}
-                    </pre>
-                  ) : null}
-                  <details className="niche-deliverable-card__prompt">
-                    <summary>Ver prompt utilizado</summary>
-                    <pre>{deliverable.prompt}</pre>
-                  </details>
-                </div>
-                <div className="card-footer niche-deliverable-card__footer">
-                  {`Atualizado em ${
-                    deliverable.updatedAt
-                      ? new Date(deliverable.updatedAt).toLocaleString("pt-BR")
-                      : "-"
-                  }`}
-                </div>
-              </article>
-            ))}
+                Fontes de informação
+              </h2>
+              <p className="niche-section__subtitle">
+                Registre links relevantes para pesquisas de mercado futuras.
+              </p>
+            </div>
+            <span className="badge text-bg-light text-dark niche-information-sources__badge">
+              {informationSourceList.length} item(s)
+            </span>
           </div>
-        )}
-      </section>
-      <section
-        className="niche-section"
-        aria-labelledby="niche-lead-portal-flows"
-      >
-        <div className="niche-section__header">
-          <div>
-            <h2 className="niche-section__title" id="niche-lead-portal-flows">
-              Formulários simples do nicho
-            </h2>
-            <p className="niche-section__subtitle">
-              Cadastre formulários sem imagem uma vez e reutilize em todos os
-              experimentos relacionados.
-            </p>
-          </div>
-        </div>
-        <div className="niche-section__body d-flex flex-column gap-3">
-          <SimpleLeadPortalFormCard
-            marketNicheId={normalizedNicheId}
-            onCreated={refetchLeadPortalFlows}
-            editingFlow={flowBeingEdited}
-            onEditFinished={() => setFlowBeingEdited(null)}
-          />
-          <div className="card border-0 shadow-sm">
-            <div className="card-body d-flex flex-column gap-3">
-              <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <h5 className="mb-0">Formulários disponíveis</h5>
-                <span className="badge text-bg-light text-dark">
-                  {leadPortalFlowList.length} item(s)
-                </span>
+          <form
+            className="niche-information-sources__form"
+            onSubmit={onCreateInformationSource}
+          >
+            <div className="row g-3">
+              <div className="col-md-5">
+                <label htmlFor="information-source-name" className="form-label">
+                  Nome *
+                </label>
+                <input
+                  id="information-source-name"
+                  type="text"
+                  className="form-control"
+                  placeholder="Ex: Relatório Sebrae 2024"
+                  disabled={createInformationSource.isPending}
+                  {...registerInformationSource("name", { required: true })}
+                />
               </div>
-              {isLoadingLeadPortalFlows ? (
-                <p className="text-muted mb-0">Carregando formulários...</p>
-              ) : isLeadPortalFlowsError ? (
-                <p className="text-danger mb-0">
-                  Não foi possível carregar os formulários deste nicho.
-                </p>
-              ) : leadPortalFlowList.length === 0 ? (
-                <p className="niche-section__empty mb-0">
-                  Nenhum formulário cadastrado ainda.
-                </p>
-              ) : (
-                <div className="d-flex flex-column gap-3">
-                  {leadPortalFlowList.map((flow) => (
-                    <article key={flow.id} className="card border-0 shadow-sm">
-                      <div className="card-body">
-                        <div className="d-flex flex-wrap gap-2 align-items-center mb-1">
-                          <h6 className="mb-0">{flow.name}</h6>
-                          <span
-                            className={`badge ${flow.approved ? "text-bg-success" : "text-bg-secondary"}`}
-                          >
-                            {flow.approved ? "Aprovado" : "Pendente"}
-                          </span>
-                          {flow.customFormHtml ? (
-                            <span className="badge text-bg-info">
-                              HTML personalizado
-                            </span>
-                          ) : null}
-                          {flowBeingEdited?.id === flow.id ? (
-                            <span className="badge text-bg-warning">
-                              Em edição
-                            </span>
-                          ) : null}
-                        </div>
-                        <p className="text-muted small mb-1">
-                          Slug: {flow.slug}
-                        </p>
-                        <p className="text-muted small mb-1">
-                          Atualizado em {formatDateTime(flow.updatedAt)}
-                        </p>
-                        {flow.publicUrl ? (
-                          <p className="text-muted small mb-1">
-                            URL pública:{" "}
-                            <a
-                              href={flow.publicUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              {flow.publicUrl}
-                            </a>
-                          </p>
-                        ) : null}
-                        <p className="text-muted small mb-0">
-                          {flow.questions.length} pergunta(s)
-                        </p>
-                        {flow.customFormHtml ? (
-                          <details className="mt-2">
-                            <summary>Ver HTML personalizado</summary>
-                            <pre className="bg-body-tertiary rounded-3 p-3 small overflow-auto">
-                              {flow.customFormHtml}
-                            </pre>
-                          </details>
-                        ) : null}
-
-                        {flow.experimentId ? (
-                          <p className="text-muted small mt-2 mb-0">
-                            Vinculado ao experimento #{flow.experimentId}
-                          </p>
-                        ) : (
-                          <div className="mt-2 d-flex flex-wrap gap-2">
-                            <button
-                              type="button"
-                              className="btn btn-outline-primary btn-sm"
-                              onClick={() => setFlowBeingEdited(flow)}
-                              disabled={flowBeingEdited?.id === flow.id}
-                            >
-                              {flowBeingEdited?.id === flow.id
-                                ? "Formulário em edição"
-                                : "Editar formulário"}
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              )}
+              <div className="col-md-7">
+                <label htmlFor="information-source-url" className="form-label">
+                  URL *
+                </label>
+                <input
+                  id="information-source-url"
+                  type="url"
+                  className="form-control"
+                  placeholder="https://..."
+                  disabled={createInformationSource.isPending}
+                  {...registerInformationSource("url", { required: true })}
+                />
+              </div>
+            </div>
+            <div className="d-flex justify-content-end mt-3">
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={createInformationSource.isPending}
+              >
+                {createInformationSource.isPending ? (
+                  <span
+                    className="spinner-border spinner-border-sm"
+                    role="status"
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <Plus size={18} />
+                )}
+                <span>Adicionar fonte</span>
+              </button>
+            </div>
+          </form>
+          {informationSourceList.length === 0 ? (
+            <p className="niche-section__empty">
+              Nenhuma fonte de informação cadastrada ainda.
+            </p>
+          ) : (
+            <div className="niche-section__grid niche-information-sources__grid">
+              {informationSourceList.map((source) => (
+                <article key={source.id} className="card niche-section__card">
+                  <div className="card-body niche-information-source-card__body">
+                    <h3 className="niche-information-source-card__title">
+                      {source.name}
+                    </h3>
+                    <a
+                      className="niche-detail__card-link"
+                      href={source.url}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      {source.url}
+                    </a>
+                  </div>
+                  <div className="card-footer niche-information-source-card__footer">
+                    {`Atualizado em ${
+                      source.updatedAt
+                        ? new Date(source.updatedAt).toLocaleString("pt-BR")
+                        : "-"
+                    }`}
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+      ) : null}
+      {shouldShowManualDeliverablesSection ? (
+        <section className="niche-section" aria-labelledby="niche-deliverables">
+          <div className="niche-section__header">
+            <div>
+              <h2 className="niche-section__title" id="niche-deliverables">
+                Entregáveis
+              </h2>
+              <p className="niche-section__subtitle">
+                Centralize os materiais gerados para validar este nicho.
+              </p>
+            </div>
+            <span className="badge text-bg-light text-dark niche-deliverables__badge">
+              {deliverableList.length} item(s)
+            </span>
+          </div>
+          <form
+            className="niche-deliverables__form"
+            onSubmit={onCreateDeliverable}
+          >
+            <div className="row g-3">
+              <div className="col-md-4">
+                <label htmlFor="deliverable-title" className="form-label">
+                  Título *
+                </label>
+                <input
+                  id="deliverable-title"
+                  type="text"
+                  className="form-control"
+                  placeholder="Resumo do entregável"
+                  disabled={createDeliverable.isPending}
+                  {...registerDeliverable("title", { required: true })}
+                />
+              </div>
+              <div className="col-md-4">
+                <label htmlFor="deliverable-model" className="form-label">
+                  Modelo de IA
+                </label>
+                <input
+                  id="deliverable-model"
+                  type="text"
+                  className="form-control"
+                  placeholder="ex: gpt-4.1"
+                  disabled={createDeliverable.isPending}
+                  {...registerDeliverable("model")}
+                />
+              </div>
+              <div className="col-12">
+                <label htmlFor="deliverable-prompt" className="form-label">
+                  Prompt utilizado *
+                </label>
+                <textarea
+                  id="deliverable-prompt"
+                  className="form-control"
+                  rows={2}
+                  placeholder="Cole aqui o prompt enviado ao modelo"
+                  disabled={createDeliverable.isPending}
+                  {...registerDeliverable("prompt", { required: true })}
+                />
+              </div>
+              <div className="col-md-6">
+                <label htmlFor="deliverable-description" className="form-label">
+                  Descrição
+                </label>
+                <textarea
+                  id="deliverable-description"
+                  className="form-control"
+                  rows={2}
+                  placeholder="Resumo rápido do entregável"
+                  disabled={createDeliverable.isPending}
+                  {...registerDeliverable("description")}
+                />
+              </div>
+              <div className="col-md-6">
+                <label htmlFor="deliverable-content" className="form-label">
+                  Conteúdo detalhado
+                </label>
+                <textarea
+                  id="deliverable-content"
+                  className="form-control"
+                  rows={2}
+                  placeholder="Cole aqui o conteúdo completo"
+                  disabled={createDeliverable.isPending}
+                  {...registerDeliverable("content")}
+                />
+              </div>
+            </div>
+            <div className="d-flex justify-content-end mt-3">
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={createDeliverable.isPending}
+              >
+                {createDeliverable.isPending ? (
+                  <span
+                    className="spinner-border spinner-border-sm"
+                    role="status"
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <Sparkles size={18} />
+                )}
+                <span>Salvar entregável</span>
+              </button>
+            </div>
+          </form>
+          {deliverableList.length === 0 ? (
+            <p className="niche-section__empty">
+              Nenhum entregável cadastrado ainda.
+            </p>
+          ) : (
+            <div className="niche-section__grid niche-deliverables__grid">
+              {deliverableList.map((deliverable) => (
+                <article
+                  key={deliverable.id}
+                  className="card niche-section__card"
+                >
+                  <div className="card-body niche-deliverable-card__body">
+                    <div className="niche-deliverable-card__head">
+                      <h3 className="niche-deliverable-card__title">
+                        {deliverable.title}
+                      </h3>
+                      {deliverable.model ? (
+                        <span className="badge text-bg-light text-dark">
+                          {deliverable.model}
+                        </span>
+                      ) : null}
+                    </div>
+                    {deliverable.description ? (
+                      <p className="niche-deliverable-card__description">
+                        {deliverable.description}
+                      </p>
+                    ) : null}
+                    {deliverable.content ? (
+                      <pre className="niche-deliverable-card__content">
+                        {deliverable.content}
+                      </pre>
+                    ) : null}
+                    <details className="niche-deliverable-card__prompt">
+                      <summary>Ver prompt utilizado</summary>
+                      <pre>{deliverable.prompt}</pre>
+                    </details>
+                  </div>
+                  <div className="card-footer niche-deliverable-card__footer">
+                    {`Atualizado em ${
+                      deliverable.updatedAt
+                        ? new Date(deliverable.updatedAt).toLocaleString(
+                            "pt-BR",
+                          )
+                        : "-"
+                    }`}
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+      ) : null}
+      {shouldShowSimpleLeadPortalFormsSection ? (
+        <section
+          className="niche-section"
+          aria-labelledby="niche-lead-portal-flows"
+        >
+          <div className="niche-section__header">
+            <div>
+              <h2 className="niche-section__title" id="niche-lead-portal-flows">
+                Formulários simples do nicho
+              </h2>
+              <p className="niche-section__subtitle">
+                Cadastre formulários sem imagem uma vez e reutilize em todos os
+                experimentos relacionados.
+              </p>
             </div>
           </div>
-        </div>
-      </section>
+          <div className="niche-section__body d-flex flex-column gap-3">
+            <SimpleLeadPortalFormCard
+              marketNicheId={normalizedNicheId}
+              onCreated={refetchLeadPortalFlows}
+              editingFlow={flowBeingEdited}
+              onEditFinished={() => setFlowBeingEdited(null)}
+            />
+            <div className="card border-0 shadow-sm">
+              <div className="card-body d-flex flex-column gap-3">
+                <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                  <h5 className="mb-0">Formulários disponíveis</h5>
+                  <span className="badge text-bg-light text-dark">
+                    {leadPortalFlowList.length} item(s)
+                  </span>
+                </div>
+                {isLoadingLeadPortalFlows ? (
+                  <p className="text-muted mb-0">Carregando formulários...</p>
+                ) : isLeadPortalFlowsError ? (
+                  <p className="text-danger mb-0">
+                    Não foi possível carregar os formulários deste nicho.
+                  </p>
+                ) : leadPortalFlowList.length === 0 ? (
+                  <p className="niche-section__empty mb-0">
+                    Nenhum formulário cadastrado ainda.
+                  </p>
+                ) : (
+                  <div className="d-flex flex-column gap-3">
+                    {leadPortalFlowList.map((flow) => (
+                      <article
+                        key={flow.id}
+                        className="card border-0 shadow-sm"
+                      >
+                        <div className="card-body">
+                          <div className="d-flex flex-wrap gap-2 align-items-center mb-1">
+                            <h6 className="mb-0">{flow.name}</h6>
+                            <span
+                              className={`badge ${flow.approved ? "text-bg-success" : "text-bg-secondary"}`}
+                            >
+                              {flow.approved ? "Aprovado" : "Pendente"}
+                            </span>
+                            {flow.customFormHtml ? (
+                              <span className="badge text-bg-info">
+                                HTML personalizado
+                              </span>
+                            ) : null}
+                            {flowBeingEdited?.id === flow.id ? (
+                              <span className="badge text-bg-warning">
+                                Em edição
+                              </span>
+                            ) : null}
+                          </div>
+                          <p className="text-muted small mb-1">
+                            Slug: {flow.slug}
+                          </p>
+                          <p className="text-muted small mb-1">
+                            Atualizado em {formatDateTime(flow.updatedAt)}
+                          </p>
+                          {flow.publicUrl ? (
+                            <p className="text-muted small mb-1">
+                              URL pública:{" "}
+                              <a
+                                href={flow.publicUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                {flow.publicUrl}
+                              </a>
+                            </p>
+                          ) : null}
+                          <p className="text-muted small mb-0">
+                            {flow.questions.length} pergunta(s)
+                          </p>
+                          {flow.customFormHtml ? (
+                            <details className="mt-2">
+                              <summary>Ver HTML personalizado</summary>
+                              <pre className="bg-body-tertiary rounded-3 p-3 small overflow-auto">
+                                {flow.customFormHtml}
+                              </pre>
+                            </details>
+                          ) : null}
+
+                          {flow.experimentId ? (
+                            <p className="text-muted small mt-2 mb-0">
+                              Vinculado ao experimento #{flow.experimentId}
+                            </p>
+                          ) : (
+                            <div className="mt-2 d-flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                className="btn btn-outline-primary btn-sm"
+                                onClick={() => setFlowBeingEdited(flow)}
+                                disabled={flowBeingEdited?.id === flow.id}
+                              >
+                                {flowBeingEdited?.id === flow.id
+                                  ? "Formulário em edição"
+                                  : "Editar formulário"}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+      ) : null}
 
       <section className="niche-section" aria-labelledby="niche-targeting">
         <div className="niche-section__header">

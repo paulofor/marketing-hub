@@ -6,12 +6,18 @@ import com.marketinghub.targeting.TargetingElement;
 import com.marketinghub.targeting.TargetingElementStatus;
 import com.marketinghub.targeting.TargetingElementType;
 import com.marketinghub.targeting.dto.CreateTargetingElementRequest;
+import com.marketinghub.targeting.dto.generation.TargetingElementGenerationFailureRequest;
+import com.marketinghub.targeting.dto.generation.TargetingElementGenerationPendingDto;
+import com.marketinghub.targeting.dto.generation.TargetingElementGenerationResultRequest;
 import com.marketinghub.targeting.dto.UpdateTargetingElementRequest;
 import com.marketinghub.repository.jpa.targeting.TargetingElementRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -20,6 +26,8 @@ import java.util.UUID;
  */
 @Service
 public class TargetingElementService {
+    private static final Logger log = LoggerFactory.getLogger(TargetingElementService.class);
+
     private final TargetingElementRepository repository;
     private final MarketNicheRepository nicheRepository;
     private final HypothesisRepository hypothesisRepository;
@@ -164,6 +172,71 @@ public class TargetingElementService {
         return repository.existsApprovedForExperiment(nicheId, type, hypothesisId);
     }
 
+    /** Lista pendências de geração de públicos para o AI Worker consumir via backend. */
+    @Transactional(readOnly = true)
+    public List<TargetingElementGenerationPendingDto> listPendingGeneration(int limit) {
+        int maxItems = Math.max(limit, 1);
+        List<TargetingElementGenerationPendingDto> pending = new ArrayList<>();
+        for (var niche : nicheRepository.findAllToGenerateInterests()) {
+            addPending(pending, niche, TargetingElementType.INTEREST, niche.getInterestsToGenerate(), niche.getInterestModel(), maxItems);
+            if (pending.size() >= maxItems) {
+                return pending;
+            }
+        }
+        for (var niche : nicheRepository.findAllToGenerateJobTitles()) {
+            addPending(pending, niche, TargetingElementType.JOB_TITLE, niche.getJobTitlesToGenerate(), niche.getJobTitleModel(), maxItems);
+            if (pending.size() >= maxItems) {
+                return pending;
+            }
+        }
+        for (var niche : nicheRepository.findAllToGenerateBehaviors()) {
+            addPending(pending, niche, TargetingElementType.BEHAVIOR, niche.getBehaviorsToGenerate(), niche.getBehaviorModel(), maxItems);
+            if (pending.size() >= maxItems) {
+                return pending;
+            }
+        }
+        return pending;
+    }
+
+    /** Persiste públicos gerados pelo AI Worker e zera a pendência processada no nicho. */
+    @Transactional
+    public void saveGeneratedElements(Long nicheId,
+                                      TargetingElementType type,
+                                      TargetingElementGenerationResultRequest request) {
+        if (nicheId == null || type == null) {
+            throw new IllegalArgumentException("nicheId e type são obrigatórios");
+        }
+        List<CreateTargetingElementRequest> items = request != null && request.items() != null
+                ? request.items()
+                : List.of();
+        for (CreateTargetingElementRequest item : items) {
+            item.setMarketNicheId(nicheId);
+            item.setType(type);
+            create(item);
+        }
+        var niche = nicheRepository.findById(nicheId).orElseThrow();
+        resetPendingCounter(niche, type);
+        nicheRepository.save(niche);
+        log.info("AI Worker reportou {} públicos gerados para nicho {} e tipo {}", items.size(), nicheId, type);
+    }
+
+    /** Registra falha do AI Worker e zera a pendência para impedir reprocessamento infinito. */
+    @Transactional
+    public void markGenerationFailure(Long nicheId,
+                                      TargetingElementType type,
+                                      TargetingElementGenerationFailureRequest request) {
+        if (nicheId == null || type == null) {
+            throw new IllegalArgumentException("nicheId e type são obrigatórios");
+        }
+        var niche = nicheRepository.findById(nicheId).orElseThrow();
+        resetPendingCounter(niche, type);
+        nicheRepository.save(niche);
+        log.warn("AI Worker reportou falha ao gerar públicos para nicho {} e tipo {}: {}",
+                nicheId,
+                type,
+                request != null ? request.error() : null);
+    }
+
     private String normalizeTerm(String term) {
         if (!StringUtils.hasText(term)) {
             return null;
@@ -174,6 +247,40 @@ public class TargetingElementService {
     private void validateReadyState(TargetingElement element) {
         if (element.getStatus() == TargetingElementStatus.APPROVED && !StringUtils.hasText(element.getTerm())) {
             throw new IllegalArgumentException("Não é possível aprovar um elemento sem termo");
+        }
+    }
+
+    /** Adiciona uma pendência de geração ao contrato interno respeitando o limite solicitado. */
+    private void addPending(List<TargetingElementGenerationPendingDto> pending,
+                            com.marketinghub.niche.MarketNiche niche,
+                            TargetingElementType type,
+                            Integer quantity,
+                            String model,
+                            int maxItems) {
+        if (pending.size() >= maxItems || niche == null || quantity == null || quantity <= 0) {
+            return;
+        }
+        pending.add(new TargetingElementGenerationPendingDto(
+                niche.getId(),
+                niche.getName(),
+                niche.getDescription(),
+                niche.getBaseSegmentation(),
+                niche.getInterests(),
+                niche.getDemographicFilters(),
+                niche.getExtraTips(),
+                niche.getInterestCategory(),
+                niche.getRoleCategory(),
+                type,
+                quantity,
+                model));
+    }
+
+    /** Zera o contador pendente referente ao tipo processado pelo AI Worker. */
+    private void resetPendingCounter(com.marketinghub.niche.MarketNiche niche, TargetingElementType type) {
+        switch (type) {
+            case INTEREST -> niche.setInterestsToGenerate(0);
+            case JOB_TITLE -> niche.setJobTitlesToGenerate(0);
+            case BEHAVIOR -> niche.setBehaviorsToGenerate(0);
         }
     }
 }

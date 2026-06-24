@@ -67,7 +67,7 @@ Projete perguntas que coletem consentimento explícito, reforcem a proposta de v
 
 ## Fluxos do portal do lead
 
-**Cliente responsável:** `ExperimentLeadPortalFlowChatGptClient`
+**Status:** fluxo legado removido do AI Worker na fase 4; a reativação deve nascer por contrato HTTP do backend, sem repository/JPA no worker.
 
 ### Mensagem do sistema
 

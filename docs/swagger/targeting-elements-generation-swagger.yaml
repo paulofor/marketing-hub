@@ -1,0 +1,146 @@
+openapi: 3.0.3
+info:
+  title: Marketing Hub - Targeting Elements Generation Internal API
+  version: 1.0.0
+  description: Endpoints internos para o AI Worker consumir pendências de públicos Meta Ads e reportar resultados pelo backend.
+paths:
+  /api/internal/targeting-elements/generation/pending:
+    get:
+      summary: Lista pendências de geração de targeting para o AI Worker
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            default: 20
+      responses:
+        '200':
+          description: Pendências disponíveis para processamento
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TargetingElementGenerationPending'
+  /api/internal/targeting-elements/generation/{nicheId}/{type}/results:
+    post:
+      summary: Registra públicos gerados pelo AI Worker
+      parameters:
+        - in: path
+          name: nicheId
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - in: path
+          name: type
+          required: true
+          schema:
+            $ref: '#/components/schemas/TargetingElementType'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TargetingElementGenerationResult'
+      responses:
+        '200':
+          description: Resultado persistido e pendência liberada
+  /api/internal/targeting-elements/generation/{nicheId}/{type}/failure:
+    post:
+      summary: Registra falha de geração reportada pelo AI Worker
+      parameters:
+        - in: path
+          name: nicheId
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - in: path
+          name: type
+          required: true
+          schema:
+            $ref: '#/components/schemas/TargetingElementType'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TargetingElementGenerationFailure'
+      responses:
+        '200':
+          description: Falha registrada e pendência liberada para evitar loop operacional
+components:
+  schemas:
+    TargetingElementType:
+      type: string
+      enum: [INTEREST, JOB_TITLE, BEHAVIOR]
+    TargetingElementGenerationPending:
+      type: object
+      required: [nicheId, type, quantity]
+      properties:
+        nicheId:
+          type: integer
+          format: int64
+        name:
+          type: string
+        description:
+          type: string
+        baseSegmentation:
+          type: string
+        interests:
+          type: string
+        demographicFilters:
+          type: string
+        extraTips:
+          type: string
+        interestCategory:
+          type: string
+        roleCategory:
+          type: string
+        type:
+          $ref: '#/components/schemas/TargetingElementType'
+        quantity:
+          type: integer
+        model:
+          type: string
+    TargetingElementGenerationResult:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/GeneratedTargetingElement'
+    GeneratedTargetingElement:
+      type: object
+      required: [term]
+      properties:
+        term:
+          type: string
+        description:
+          type: string
+        prompt:
+          type: string
+        model:
+          type: string
+        source:
+          type: string
+          enum: [MANUAL, AI]
+        status:
+          type: string
+          enum: [DRAFT, NEEDS_REVIEW, APPROVED, REJECTED]
+        notes:
+          type: string
+        metaId:
+          type: string
+        metaKey:
+          type: string
+        confidence:
+          type: number
+    TargetingElementGenerationFailure:
+      type: object
+      properties:
+        error:
+          type: string

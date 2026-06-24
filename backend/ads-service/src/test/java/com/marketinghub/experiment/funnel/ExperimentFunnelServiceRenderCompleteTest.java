@@ -492,11 +492,53 @@ class ExperimentFunnelServiceRenderCompleteTest {
                         FROM experiment_funnel_event
                         WHERE experiment_id = ?
                           AND stage = 'VISUALIZACAO_FORM'
-                          AND source IN (?, ?)
+                          AND (
+                              source = ?
+                              OR (
+                                  source = ?
+                                  AND payload LIKE '%eventType=page_view%'
+                              )
+                          )
                           AND (? IS NULL OR occurred_at > ?)
                         """),
                 any(ResultSetExtractor.class),
                 eq(37L),
+                eq(ExperimentFunnelEventRepository.RENDER_COMPLETE_SOURCE),
+                eq(ExperimentFunnelEventRepository.LANDING_PAGE_ANALYTICS_SOURCE),
+                eq(null),
+                eq(null));
+    }
+
+    /**
+     * Valida que o resumo não transforma eventos técnicos de analytics em novas visualizações do formulário.
+     */
+    @Test
+    void summarizeFiltersLandingAnalyticsFormVisualizationToPageViewOnly() {
+        Experiment experiment = Experiment.builder().id(41L).build();
+        when(experimentRepository.findById(41L)).thenReturn(Optional.of(experiment));
+        when(eventRepository.aggregateManualByExperiment(41L, null)).thenReturn(List.of());
+
+        service.summarize(41L);
+
+        verify(jdbcTemplate).query(
+                eq("""
+                        SELECT COUNT(*) AS total,
+                               NULL AS unique_count,
+                               MAX(occurred_at) AS last_event
+                        FROM experiment_funnel_event
+                        WHERE experiment_id = ?
+                          AND stage = 'VISUALIZACAO_FORM'
+                          AND (
+                              source = ?
+                              OR (
+                                  source = ?
+                                  AND payload LIKE '%eventType=page_view%'
+                              )
+                          )
+                          AND (? IS NULL OR occurred_at > ?)
+                        """),
+                any(ResultSetExtractor.class),
+                eq(41L),
                 eq(ExperimentFunnelEventRepository.RENDER_COMPLETE_SOURCE),
                 eq(ExperimentFunnelEventRepository.LANDING_PAGE_ANALYTICS_SOURCE),
                 eq(null),

@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -25,6 +26,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
@@ -39,8 +41,7 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 /**
- * ChatGPT client used to generate Meta Ads targeting elements (interests, job titles and behaviors)
- * in batch format using the OpenAI Batch API.
+ * Responsabilidade: gerar e filtrar públicos de Meta Ads com OpenAI antes de persistir candidatos do nicho.
  */
 @Component
 public class TargetingElementChatGptClient {
@@ -48,6 +49,8 @@ public class TargetingElementChatGptClient {
     private static final String DOMAIN = "TARGETING_ELEMENT";
     private static final String RESPONSES_ENDPOINT = "/v1/responses";
     private static final String COMPLETION_WINDOW = "24h";
+    private static final String SERVICE_TIER_FLEX = "flex";
+    private static final String PROMPT_PATH = "prompts/targetingelement/targeting-element-v1.md";
     private static final Duration DEFAULT_BATCH_POLL_INTERVAL = Duration.ofMillis(500);
     private static final Duration DEFAULT_BATCH_TIMEOUT = Duration.ofMinutes(5);
     private static final Set<String> TERMINAL_BATCH_STATUSES = Set.of("completed", "failed", "expired", "cancelled");
@@ -59,12 +62,13 @@ public class TargetingElementChatGptClient {
     private final Duration batchPollInterval;
     private final Duration batchTimeout;
 
+    /** Inicializa o cliente OpenAI de geração de públicos com auditoria e configuração de batch. */
     public TargetingElementChatGptClient(WebClient.Builder builder,
                                          ObjectMapper objectMapper,
                                          AiGenerationRecorder generationRecorder,
                                          @Value("${openai.api-key:}") String apiKey,
                                          @Value("${openai.base-url:https://api.openai.com/v1}") String baseUrl,
-                                         @Value("${openai.model:gpt-3.5-turbo}") String defaultModel,
+                                         @Value("${openai.model:gpt-5.5}") String defaultModel,
                                          @Value("${openai.batch-poll-interval:PT0.5S}") Duration batchPollInterval,
                                          @Value("${openai.batch-timeout:PT5M}") Duration batchTimeout) {
         this.webClient = builder
@@ -81,6 +85,7 @@ public class TargetingElementChatGptClient {
 
     public record TargetingBatchRequest(MarketNiche niche, TargetingElementType type, int quantity, String model) {}
 
+    /** Gera lotes de públicos com o modelo e mantém somente candidatos compatíveis com o nicho. */
     public Map<Long, List<CreateTargetingElementRequest>> generateBatch(List<TargetingBatchRequest> requests) {
         if (requests == null || requests.isEmpty()) {
             return Map.of();
@@ -104,6 +109,7 @@ public class TargetingElementChatGptClient {
             Map<String, Object> payload = new LinkedHashMap<>();
             payload.put("model", model);
             payload.put("input", input);
+            payload.put("service_tier", SERVICE_TIER_FLEX);
             OpenAiRequestUtils.maybeAddReasoning(payload, model);
 
             String customId = customId(request.niche(), request.type());
@@ -155,24 +161,39 @@ public class TargetingElementChatGptClient {
         return result;
     }
 
+    /** Monta o prompt versionado com contexto do nicho e critérios de curadoria comercial. */
     private PromptData buildPrompt(MarketNiche niche, TargetingElementType type, int quantity) {
         NichePromptContext context = NichePromptContext.from(niche);
-        StringBuilder sb = new StringBuilder();
-        sb.append("Gere ").append(quantity).append(" sugestões de ").append(typeLabel(type)).append(" para campanhas de Meta Ads.\n");
-        sb.append("Retorne somente JSON no formato {\"items\": [{\"term\": \"...\", \"description\": \"...\"}]} sem texto extra.\n");
-        sb.append("Os termos devem ser compatíveis com buscas do targeting search (interesses, cargos e comportamentos oficiais).\n");
+        String nicheContext = "";
         if (context != null) {
-            sb.append("Dados do nicho:\n");
+            StringBuilder sb = new StringBuilder();
             Map<String, Object> map = new HashMap<>(context.asMap());
             map.forEach((key, value) -> {
                 if (value != null && StringUtils.hasText(value.toString())) {
                     sb.append("- ").append(key).append(": ").append(value).append("\n");
                 }
             });
+            nicheContext = sb.toString();
         }
-        return new PromptData(sb.toString());
+        String prompt = loadPromptTemplate()
+                .replace("{{quantity}}", String.valueOf(quantity))
+                .replace("{{typeLabel}}", typeLabel(type))
+                .replace("{{nicheContext}}", nicheContext);
+        return new PromptData(prompt);
     }
 
+    /** Lê o prompt operacional do classpath para evitar instruções comerciais hardcoded. */
+    private String loadPromptTemplate() {
+        ClassPathResource resource = new ClassPathResource(PROMPT_PATH);
+        try {
+            return resource.getContentAsString(StandardCharsets.UTF_8);
+        } catch (IOException ex) {
+            log.error("Falha ao carregar prompt de curadoria de públicos no caminho {}", PROMPT_PATH, ex);
+            throw new IllegalStateException("Não foi possível carregar o prompt de curadoria de públicos", ex);
+        }
+    }
+
+    /** Interpreta a resposta do modelo e descarta candidatos que o próprio modelo marcou como fracos. */
     private List<CreateTargetingElementRequest> parseContent(String content, RequestContext context, OpenAiResponse.OpenAiUsage usage) throws Exception {
         JsonNode root = objectMapper.readTree(content);
         JsonNode itemsNode = extractItemsNode(root, context.request().type());
@@ -192,6 +213,15 @@ public class TargetingElementChatGptClient {
             if (!seen.add(normalizedKey)) {
                 continue;
             }
+            java.math.BigDecimal confidence = extractConfidence(node);
+            if (confidence != null && confidence.compareTo(java.math.BigDecimal.valueOf(0.75)) < 0) {
+                log.info(
+                        "Descartando público {} para nicho {} por baixa aderência de IA: {}",
+                        term,
+                        context.request().niche().getId(),
+                        confidence);
+                continue;
+            }
             CreateTargetingElementRequest req = new CreateTargetingElementRequest();
             req.setMarketNicheId(context.request().niche().getId());
             req.setType(context.request().type());
@@ -201,7 +231,7 @@ public class TargetingElementChatGptClient {
             req.setModel(context.model());
             req.setSource(TargetingElementSource.AI);
             req.setStatus(TargetingElementStatus.NEEDS_REVIEW);
-            req.setConfidence(extractConfidence(node));
+            req.setConfidence(confidence);
             req.setNotes(extractNotes(node));
             req.setMetaId(extractText(node, "metaId", null));
             req.setMetaKey(extractText(node, "metaKey", null));
@@ -306,7 +336,7 @@ public class TargetingElementChatGptClient {
             if (StringUtils.hasText(defaultModel)) {
                 return defaultModel;
             }
-            return "gpt-3.5-turbo";
+            return "gpt-5.5";
         }
         return model;
     }

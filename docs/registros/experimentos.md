@@ -1,3 +1,17 @@
+## 2026-06-24 — Experimentos: filtro inteligente de públicos por IA
+
+- solicitação: filtrar públicos com modelo de IA para manter somente públicos realmente compatíveis com o nicho.
+- causa-raiz: a geração anterior priorizava termos existentes na Meta e permitia públicos amplos demais, como acesso mobile, aniversariantes e viajantes, mesmo quando a aderência comercial ao nicho era baixa.
+- foi feito: o AI Worker passou a usar prompt versionado de curadoria para públicos de nicho, exigir score/confidence mínimo de 0,75 e descartar candidatos que o próprio modelo classificar como fracos antes de enviar/persistir.
+- prevenção de recorrência: adicionados teste de prompt/filtro e schema versionado do contrato de saída para impedir retorno de públicos genéricos como se fossem bons públicos de campanha.
+
+## 2026-06-24 — Experimentos: orientação para geração de públicos
+
+- solicitação: explicar como gerar públicos quando nada aparece na aba de público do experimento.
+- causa-raiz: a aba de público do experimento lista apenas elementos aprovados para Meta; quando o nicho ainda não tem itens gerados/aprovados, a tela mostrava vazio sem orientar o próximo passo.
+- foi feito: a tela passou a explicar o fluxo correto, indicar se existem itens pendentes/não aprovados e oferecer atalho para a seção Segmentação Meta Ads do nicho.
+- prevenção de recorrência: o usuário agora vê na própria aba de público que a geração ocorre no nicho e que o experimento só consome públicos aprovados.
+
 ## 2026-06-24 — Experimentos: card do GeraLanding usa finalização real
 
 - foi feito: o checklist principal do experimento passou a usar o resumo de prontidão do backend para o card `Pipeline GeraLanding`, contando somente etapas obrigatórias cuja execução mais recente está `CONCLUIDO`.

@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -90,6 +91,77 @@ class TargetingElementGenerationServiceTest {
         assertThat(captor.getValue().getType()).isEqualTo(TargetingElementType.JOB_TITLE);
         assertThat(niche.getJobTitlesToGenerate()).isZero();
         verify(nicheRepository).save(niche);
+    }
+
+
+    /** Garante que cargo só pode ser aprovado quando já possui ID oficial da Meta. */
+    @Test
+    void createShouldRejectApprovedJobTitleWithoutMetaId() {
+        MarketNiche niche = MarketNiche.builder().id(23L).build();
+        when(nicheRepository.findById(23L)).thenReturn(Optional.of(niche));
+        CreateTargetingElementRequest item = new CreateTargetingElementRequest();
+        item.setMarketNicheId(23L);
+        item.setType(TargetingElementType.JOB_TITLE);
+        item.setTerm("Gerente de loja");
+        item.setStatus(TargetingElementStatus.APPROVED);
+
+        assertThatThrownBy(() -> service.create(item))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("ID oficial da Meta");
+    }
+
+    /** Garante que cargo com ID oficial da Meta pode ser aprovado para uso operacional. */
+    @Test
+    void createShouldApproveJobTitleWithMetaId() {
+        MarketNiche niche = MarketNiche.builder().id(23L).build();
+        when(nicheRepository.findById(23L)).thenReturn(Optional.of(niche));
+        when(elementRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        CreateTargetingElementRequest item = new CreateTargetingElementRequest();
+        item.setMarketNicheId(23L);
+        item.setType(TargetingElementType.JOB_TITLE);
+        item.setTerm("Gerente de loja");
+        item.setMetaId("6000000000001");
+        item.setStatus(TargetingElementStatus.APPROVED);
+
+        var saved = service.create(item);
+
+        assertThat(saved.getStatus()).isEqualTo(TargetingElementStatus.APPROVED);
+        assertThat(saved.getMetaId()).isEqualTo("6000000000001");
+    }
+
+    /** Garante que comportamento também só pode ser aprovado quando possui ID oficial da Meta. */
+    @Test
+    void createShouldRejectApprovedBehaviorWithoutMetaId() {
+        MarketNiche niche = MarketNiche.builder().id(23L).build();
+        when(nicheRepository.findById(23L)).thenReturn(Optional.of(niche));
+        CreateTargetingElementRequest item = new CreateTargetingElementRequest();
+        item.setMarketNicheId(23L);
+        item.setType(TargetingElementType.BEHAVIOR);
+        item.setTerm("Compradores engajados");
+        item.setStatus(TargetingElementStatus.APPROVED);
+
+        assertThatThrownBy(() -> service.create(item))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("ID oficial da Meta");
+    }
+
+    /** Garante que comportamento com ID oficial da Meta pode ser aprovado para campanha. */
+    @Test
+    void createShouldApproveBehaviorWithMetaId() {
+        MarketNiche niche = MarketNiche.builder().id(23L).build();
+        when(nicheRepository.findById(23L)).thenReturn(Optional.of(niche));
+        when(elementRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        CreateTargetingElementRequest item = new CreateTargetingElementRequest();
+        item.setMarketNicheId(23L);
+        item.setType(TargetingElementType.BEHAVIOR);
+        item.setTerm("Compradores engajados");
+        item.setMetaId("6000000000002");
+        item.setStatus(TargetingElementStatus.APPROVED);
+
+        var saved = service.create(item);
+
+        assertThat(saved.getStatus()).isEqualTo(TargetingElementStatus.APPROVED);
+        assertThat(saved.getMetaId()).isEqualTo("6000000000002");
     }
 
     /** Garante que uma falha reportada pelo worker libera a pendência para evitar loop infinito. */

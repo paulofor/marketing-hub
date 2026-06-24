@@ -20,9 +20,12 @@ const statusLabels: Record<TargetingElementStatus, string> = {
 };
 
 const statusClasses: Record<TargetingElementStatus, string> = {
-  DRAFT: "bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle",
-  NEEDS_REVIEW: "bg-warning-subtle text-warning-emphasis border border-warning-subtle",
-  APPROVED: "bg-success-subtle text-success-emphasis border border-success-subtle",
+  DRAFT:
+    "bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle",
+  NEEDS_REVIEW:
+    "bg-warning-subtle text-warning-emphasis border border-warning-subtle",
+  APPROVED:
+    "bg-success-subtle text-success-emphasis border border-success-subtle",
   REJECTED: "bg-danger-subtle text-danger-emphasis border border-danger-subtle",
 };
 
@@ -90,10 +93,13 @@ export function TargetingElementCard({
   className,
 }: TargetingElementCardProps) {
   const [showModal, setShowModal] = useState(false);
-  const [formState, setFormState] = useState<FormState>(() => buildFormState(element));
-  const nicheId = useMemo(() => String(element.marketNicheId ?? ""), [
-    element.marketNicheId,
-  ]);
+  const [formState, setFormState] = useState<FormState>(() =>
+    buildFormState(element),
+  );
+  const nicheId = useMemo(
+    () => String(element.marketNicheId ?? ""),
+    [element.marketNicheId],
+  );
   const updateElement = useUpdateTargetingElement(nicheId);
   const audienceRangeLabel = formatAudienceRange(
     element.metaAudienceSizeLowerBound,
@@ -136,6 +142,11 @@ export function TargetingElementCard({
   };
 
   const isMutating = updateElement.isPending;
+  const hasOfficialMetaId = Boolean(element.metaId?.trim());
+  const canApprove = element.status === "APPROVED" || hasOfficialMetaId;
+  const approvalHelpText = hasOfficialMetaId
+    ? "ID oficial da Meta encontrado. Pode aprovar para uso em experimento."
+    : "Ainda sem ID oficial da Meta. Revise ou reprocese antes de aprovar.";
 
   const createdAtLabel = element.createdAt
     ? new Date(element.createdAt).toLocaleString("pt-BR")
@@ -164,9 +175,22 @@ export function TargetingElementCard({
               {statusLabels[element.status]}
             </span>
           </div>
-          <p className="text-body-secondary mb-0" style={{ whiteSpace: "pre-wrap" }}>
+          <p
+            className="text-body-secondary mb-0"
+            style={{ whiteSpace: "pre-wrap" }}
+          >
             {element.description?.trim() || "Sem descrição cadastrada."}
           </p>
+          {element.status !== "APPROVED" ? (
+            <div
+              className={`alert ${
+                hasOfficialMetaId ? "alert-success" : "alert-warning"
+              } py-2 mb-0 small`}
+              role="status"
+            >
+              {approvalHelpText}
+            </div>
+          ) : null}
           <dl className="row small mb-0">
             <dt className="col-sm-5">Modelo</dt>
             <dd className="col-sm-7">{element.model ?? "—"}</dd>
@@ -193,14 +217,16 @@ export function TargetingElementCard({
             <button
               type="button"
               className={`btn btn-sm ${
-                element.status === "APPROVED" ? "btn-outline-secondary" : "btn-outline-success"
+                element.status === "APPROVED"
+                  ? "btn-outline-secondary"
+                  : "btn-outline-success"
               }`}
               onClick={() =>
                 handleStatusUpdate(
                   element.status === "APPROVED" ? "NEEDS_REVIEW" : "APPROVED",
                 )
               }
-              disabled={isMutating}
+              disabled={isMutating || !canApprove}
             >
               {isMutating && (
                 <span
@@ -209,9 +235,7 @@ export function TargetingElementCard({
                   aria-hidden="true"
                 />
               )}
-              {element.status === "APPROVED"
-                ? "Revogar aprovação"
-                : "Aprovar"}
+              {element.status === "APPROVED" ? "Revogar aprovação" : "Aprovar"}
             </button>
             <button
               type="button"
@@ -225,7 +249,12 @@ export function TargetingElementCard({
       </div>
 
       {showModal ? (
-        <div className="modal d-block" tabIndex={-1} role="dialog" aria-modal="true">
+        <div
+          className="modal d-block"
+          tabIndex={-1}
+          role="dialog"
+          aria-modal="true"
+        >
           <div className="modal-dialog modal-lg modal-dialog-scrollable">
             <div className="modal-content">
               <div className="modal-header">
@@ -247,7 +276,10 @@ export function TargetingElementCard({
                       className="form-control"
                       value={formState.term}
                       onChange={(event) =>
-                        setFormState((prev) => ({ ...prev, term: event.target.value }))
+                        setFormState((prev) => ({
+                          ...prev,
+                          term: event.target.value,
+                        }))
                       }
                     />
                   </div>
@@ -278,7 +310,9 @@ export function TargetingElementCard({
                       onChange={(event) =>
                         setFormState((prev) => ({
                           ...prev,
-                          source: event.target.value as TargetingElementSource | "",
+                          source: event.target.value as
+                            | TargetingElementSource
+                            | "",
                         }))
                       }
                     >
@@ -296,7 +330,10 @@ export function TargetingElementCard({
                       className="form-control"
                       value={formState.model}
                       onChange={(event) =>
-                        setFormState((prev) => ({ ...prev, model: event.target.value }))
+                        setFormState((prev) => ({
+                          ...prev,
+                          model: event.target.value,
+                        }))
                       }
                     />
                   </div>
@@ -336,7 +373,10 @@ export function TargetingElementCard({
                       rows={4}
                       value={formState.prompt}
                       onChange={(event) =>
-                        setFormState((prev) => ({ ...prev, prompt: event.target.value }))
+                        setFormState((prev) => ({
+                          ...prev,
+                          prompt: event.target.value,
+                        }))
                       }
                     />
                   </div>
@@ -347,12 +387,17 @@ export function TargetingElementCard({
                       rows={3}
                       value={formState.notes}
                       onChange={(event) =>
-                        setFormState((prev) => ({ ...prev, notes: event.target.value }))
+                        setFormState((prev) => ({
+                          ...prev,
+                          notes: event.target.value,
+                        }))
                       }
                     />
                   </div>
                   <div className="col-12 col-md-6">
-                    <label className="form-label">Responsável pela revisão</label>
+                    <label className="form-label">
+                      Responsável pela revisão
+                    </label>
                     <input
                       className="form-control"
                       value={formState.lastReviewedBy}
@@ -370,7 +415,10 @@ export function TargetingElementCard({
                       className="form-control"
                       value={formState.metaId}
                       onChange={(event) =>
-                        setFormState((prev) => ({ ...prev, metaId: event.target.value }))
+                        setFormState((prev) => ({
+                          ...prev,
+                          metaId: event.target.value,
+                        }))
                       }
                     />
                   </div>
@@ -380,7 +428,10 @@ export function TargetingElementCard({
                       className="form-control"
                       value={formState.metaKey}
                       onChange={(event) =>
-                        setFormState((prev) => ({ ...prev, metaKey: event.target.value }))
+                        setFormState((prev) => ({
+                          ...prev,
+                          metaKey: event.target.value,
+                        }))
                       }
                     />
                   </div>

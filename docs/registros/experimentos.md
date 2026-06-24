@@ -5312,3 +5312,23 @@
 - causa-raiz: fluxos acionados pela tela, como públicos de nicho e targeting, ainda dependiam da Batch API da OpenAI, aumentando latência operacional e dificultando acompanhamento imediato pelo usuário.
 - foi feito: removido o uso da Batch API nos clientes do AI Worker que enviavam lotes para OpenAI; os fluxos passaram a executar chamadas diretas em modo Flex ou equivalente direto, preservando os contratos agregados internos para não quebrar os services chamadores.
 - prevenção de recorrência: validação por busca no código confirmou ausência de chamadas `/batches`, `purpose=batch` e `completion_window` no AI Worker.
+
+## 2026-06-24 — Acompanhamento visual da solicitação de cargos por nicho
+
+- Problema: na tela do nicho, a solicitação de cargos ficava marcada como pendente, mas o usuário precisava acompanhar manualmente se o Worker já havia concluído e atualizado a lista.
+- Causa-raiz: o card exibia apenas uma frase estática de pendência, sem destaque de fila e sem atualização automática enquanto existia solicitação em aberto.
+- Correção aplicada: o card de geração de targeting passou a mostrar um bloco de acompanhamento com fila livre/aguardando Worker, total pendente e aviso de atualização automática; a página do nicho passou a atualizar nicho e públicos a cada 15 segundos enquanto houver qualquer targeting pendente.
+- Prevenção de recorrência: o acompanhamento fica no próprio card de cada tipo, incluindo cargos, evitando depender apenas do painel geral de solicitações recentes.
+
+## 2026-06-24 — Aprovação de cargos exige ID oficial da Meta
+
+- Problema: o usuário não tinha clareza se cargos gerados pela IA já existiam na Meta e se a aprovação seria automática.
+- Causa-raiz: o fluxo permitia ação de aprovação mesmo quando o cargo ainda não tinha ID oficial da Meta, misturando geração por IA com validação operacional para campanha.
+- Correção aplicada: a tela passou a avisar quando falta ID oficial da Meta e bloqueia aprovação nesse caso; o backend passou a rejeitar aprovação de interesse, cargo ou comportamento sem ID oficial da Meta.
+- Prevenção de recorrência: teste unitário garante que cargo aprovado sem ID da Meta é rejeitado e cargo com ID pode ser aprovado.
+
+## 2026-06-24 — Mesma regra de Meta ID para comportamentos
+
+- Solicitação: aplicar aos comportamentos o mesmo controle já reforçado para cargos.
+- Correção aplicada: a regra de aprovação permanece única para interesses, cargos e comportamentos; a cobertura de testes passou a validar explicitamente comportamento sem ID oficial da Meta e comportamento com ID oficial.
+- Resultado esperado: comportamento gerado pela IA fica para revisão e só pode ser aprovado/publicado quando houver ID oficial da Meta.

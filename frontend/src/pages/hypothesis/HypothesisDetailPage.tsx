@@ -348,7 +348,7 @@ ${data.entrega ?? ""}
         />
         <TargetingRequestStatusPanel
           className="mb-4"
-          limit={6}
+          limit={1}
           nicheId={normalizedNicheId}
           hypothesisId={hypothesisId}
         />

@@ -1363,3 +1363,4 @@
 
 - Criado plano em `docs/implementacao/oprm/plano-audiencias-meta-nicho-experimento.md` para conectar audiências Meta Ads aos nichos materializados e aos experimentos, incluindo o conceito de parcela do nicho quando o experimento testar apenas um recorte do mercado amplo.
 - Definido modelo operacional com `meta_audience`, `meta_audience_segment` e `experiment_meta_audience`, evitando audiências órfãs e preservando leitura de performance por nicho, parcela, público, oferta e experimento.
+- 2026-06-24 00:00:00 (UTC): tela `/oprm/cnaes/:cnaeCode/pipeline-v2` ajustada para usar a descrição do CNAE como título principal, reaproveitando o catálogo canônico de CNAEs já consumido no OPRM e mantendo fallback para o código quando a descrição ainda não carregar.

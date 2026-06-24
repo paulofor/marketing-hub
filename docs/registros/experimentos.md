@@ -5326,3 +5326,9 @@
 - Causa-raiz: o fluxo permitia ação de aprovação mesmo quando o cargo ainda não tinha ID oficial da Meta, misturando geração por IA com validação operacional para campanha.
 - Correção aplicada: a tela passou a avisar quando falta ID oficial da Meta e bloqueia aprovação nesse caso; o backend passou a rejeitar aprovação de interesse, cargo ou comportamento sem ID oficial da Meta.
 - Prevenção de recorrência: teste unitário garante que cargo aprovado sem ID da Meta é rejeitado e cargo com ID pode ser aprovado.
+
+## 2026-06-24 — Mesma regra de Meta ID para comportamentos
+
+- Solicitação: aplicar aos comportamentos o mesmo controle já reforçado para cargos.
+- Correção aplicada: a regra de aprovação permanece única para interesses, cargos e comportamentos; a cobertura de testes passou a validar explicitamente comportamento sem ID oficial da Meta e comportamento com ID oficial.
+- Resultado esperado: comportamento gerado pela IA fica para revisão e só pode ser aprovado/publicado quando houver ID oficial da Meta.

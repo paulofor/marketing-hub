@@ -69,7 +69,8 @@ Como o fluxo agora sempre pré-carrega imagens via `POST /adimages` antes da cri
 
 O backend grava os candidatos que precisam ser validados na tabela `targeting_resolution_job`.
 O worker não depende mais de chamadas HTTP para receber esses itens: a cada ciclo o componente
-`TargetingResolutionQueueProcessor` consulta diretamente o MySQL, recupera até `targeting.queue.batch-size`
+`TargetingResolutionQueueProcessor` consulta diretamente o MySQL, recria automaticamente jobs ausentes
+para candidatos ainda em `PENDING_FACEBOOK_MATCH`, recupera até `targeting.queue.batch-size`
 registros com status `PENDING`, processa cada seed na Graph API e atualiza o status da linha para
 `SUCCEEDED` ou `FAILED`. Jobs travados por reinicializações são liberados automaticamente após o TTL
 configurado em `targeting.queue.lock-ttl`.

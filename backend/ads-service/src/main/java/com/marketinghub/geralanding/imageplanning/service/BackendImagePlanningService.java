@@ -7,6 +7,7 @@ import com.marketinghub.experiment.Experiment;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
+import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesLibraryGeraLandingInsightGateway;
 import com.marketinghub.geralanding.imageplanning.service.detailStageExecution.RecordBackendImagePlanningDetalheDto;
 import com.marketinghub.geralanding.imageplanning.service.listStageExecutions.GeraLandingImagePlanningExecutionSummaryResponse;
 import com.marketinghub.geralanding.imageplanning.service.pending.RecordImagePlanningExperiment;
@@ -22,6 +23,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,19 +43,32 @@ public class BackendImagePlanningService {
     private static final String STATUS_FAILED = "FALHA";
     private final ExperimentRepository experimentRepository;
     private final GeraLandingStageExecutionRepository executionRepository;
+    private final MoisSalesLibraryGeraLandingInsightGateway geraLandingInsightGateway;
     private final ObjectMapper objectMapper;
     private final ApplicationEventPublisher eventPublisher;
 
     /** Inicializa o serviço com os repositórios e montadores necessários para a etapa image planning. */
+    @Autowired
     public BackendImagePlanningService(
             ExperimentRepository experimentRepository,
             GeraLandingStageExecutionRepository executionRepository,
+            MoisSalesLibraryGeraLandingInsightGateway geraLandingInsightGateway,
             ObjectMapper objectMapper,
             ApplicationEventPublisher eventPublisher) {
         this.experimentRepository = experimentRepository;
         this.executionRepository = executionRepository;
+        this.geraLandingInsightGateway = geraLandingInsightGateway;
         this.objectMapper = objectMapper;
         this.eventPublisher = eventPublisher;
+    }
+
+    /** Mantém compatibilidade com testes que não precisam de insumos MOIS. */
+    BackendImagePlanningService(
+            ExperimentRepository experimentRepository,
+            GeraLandingStageExecutionRepository executionRepository,
+            ObjectMapper objectMapper,
+            ApplicationEventPublisher eventPublisher) {
+        this(experimentRepository, executionRepository, limit -> List.of(), objectMapper, eventPublisher);
     }
 
     /** Inicia a execução manual da etapa image planning e publica o reset de imagens antigas antes de gerar novos prompts. */
@@ -112,7 +127,8 @@ public class BackendImagePlanningService {
                         fromDatabaseIdJob(execution.getIdJob()),
                         execution.getStageCode(),
                         toPendingExperiment(execution.getExperiment()),
-                        toPendingHypothesis(execution.getExperiment())))
+                        toPendingHypothesis(execution.getExperiment()),
+                        loadGeraLandingReferenceInsights()))
                 .toList();
     }
 
@@ -284,6 +300,11 @@ public class BackendImagePlanningService {
                 .orElseThrow(() -> new EntityNotFoundException(
                         "GeraLanding execution not found for idJob: " + idJob
                 ));
+    }
+
+    /** Carrega padrões vencedores da biblioteca MOIS para orientar o prompt sem copiar páginas de referência. */
+    private List<MoisSalesLibraryGeraLandingInsightGateway.GeraLandingReferenceInsight> loadGeraLandingReferenceInsights() {
+        return geraLandingInsightGateway.findTopReferences(3);
     }
 
     /** Converte o experimento da execução para os dados expostos na fila pending. */

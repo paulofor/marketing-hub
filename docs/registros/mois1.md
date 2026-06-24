@@ -1795,3 +1795,14 @@ Arquivos principais:
 - Mantido o bloqueio somente quando o backend indica dossiê em fila ou em processamento, e a tela informa que sempre exibirá o dossiê mais recente retornado pelo backend.
 
 - 2026-06-23 — Ops Monitor fase 4: adicionados os coletores MOIS ClickBank, Hotmart e o MOIS Sales Library Worker ao cadastro monitorado do backend; a tela de operação agora permite filtrar módulos por criticidade/tipo e consultar histórico recente de incidentes sem inferência local de status.
+
+## 2026-06-24 — Insumos GeraLanding na análise da biblioteca de páginas
+
+- A análise comercial da biblioteca de páginas de vendas passou a registrar insumos específicos para o GeraLanding: wireframe, copy, prompt de imagens e preset design.
+- Objetivo comercial: transformar páginas vencedoras observadas em padrões reutilizáveis para gerar landings melhores e mais alinhadas ao eixo Dor → Resultado → Mecanismo → Prova → Oferta.
+- A tela de detalhe da página exibe a nova seção “Insumos para GeraLanding”, sempre baseada nos dados retornados pelo backend.
+
+## 2026-06-24 — Insumos MOIS aplicados ao GeraLanding
+
+- Os insights `geralanding_*` da Biblioteca de Páginas de Vendas deixaram de ser apenas consulta visual e passaram a alimentar os contratos `pending` das etapas GeraLanding.
+- O uso esperado é como padrão abstrato de mercado para wireframe, copy, prompts de imagem e preset visual, sem copiar conteúdo, marca, URL, promessa ou identidade de páginas externas.

@@ -39,6 +39,13 @@ Contrato de promessa única:
 
 {{prompt-regras-globais}}
 
+# Insumos MOIS de páginas vencedoras
+
+Use os padrões abaixo apenas como referência abstrata de mercado para estruturar a landing. Não copie texto, layout, marca, URL, claims específicos nem identidade de páginas de terceiros. Preserve sempre o contrato do experimento atual.
+
+{{geralandingReferenceInsights}}
+
+
 Ângulo da Campanha que vai ser publicada:
 {{dados-campaignAngle}}
 

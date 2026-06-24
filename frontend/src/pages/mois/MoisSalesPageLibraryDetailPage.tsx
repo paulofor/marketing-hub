@@ -584,6 +584,55 @@ export default function MoisSalesPageLibraryDetailPage() {
                   </div>
                 </div>
               </div>
+
+              <div className="border rounded p-3 bg-light-subtle">
+                <div className="mb-3">
+                  <h3 className="h6 mb-1">Insumos para GeraLanding</h3>
+                  <p className="text-secondary small mb-0">
+                    Padrões observados na página vencedora para orientar as
+                    etapas de wireframe, copy, prompt de imagens e preset
+                    design do pipeline.
+                  </p>
+                </div>
+                <div className="row g-3">
+                  <div className="col-lg-6">
+                    <div className="border rounded p-3 h-100 bg-white">
+                      <h4 className="h6 mb-2">Wireframe</h4>
+                      <CollapsibleJsonViewer
+                        content={analysisQuery.data.geralandingWireframeJson}
+                        initiallyCollapsed
+                      />
+                    </div>
+                  </div>
+                  <div className="col-lg-6">
+                    <div className="border rounded p-3 h-100 bg-white">
+                      <h4 className="h6 mb-2">Copy</h4>
+                      <CollapsibleJsonViewer
+                        content={analysisQuery.data.geralandingCopyJson}
+                        initiallyCollapsed
+                      />
+                    </div>
+                  </div>
+                  <div className="col-lg-6">
+                    <div className="border rounded p-3 h-100 bg-white">
+                      <h4 className="h6 mb-2">Prompt de imagens</h4>
+                      <CollapsibleJsonViewer
+                        content={analysisQuery.data.geralandingImagePromptJson}
+                        initiallyCollapsed
+                      />
+                    </div>
+                  </div>
+                  <div className="col-lg-6">
+                    <div className="border rounded p-3 h-100 bg-white">
+                      <h4 className="h6 mb-2">Preset design</h4>
+                      <CollapsibleJsonViewer
+                        content={analysisQuery.data.geralandingDesignPresetJson}
+                        initiallyCollapsed
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
             </>
           ) : null}
         </div>

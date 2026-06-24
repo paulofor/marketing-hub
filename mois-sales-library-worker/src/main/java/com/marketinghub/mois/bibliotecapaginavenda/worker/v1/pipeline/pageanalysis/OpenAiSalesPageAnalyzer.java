@@ -57,9 +57,9 @@ public class OpenAiSalesPageAnalyzer {
      * Monta o JSON enviado diretamente ao endpoint Responses da OpenAI em modo Flex.
      */
     String buildResponsesRequestPayload(long pageId, String canonicalUrl, String htmlBodyText) {
-        String prompt = "Analise a página de vendas para identificar por que este produto alcançou sucesso e devolva JSON válido com os campos: score_total (0-100), sections_json (objeto), copy_json (objeto), visual_json (objeto), image_json (objeto), analysis_notes (texto curto). "
+        String prompt = "Analise a página de vendas para identificar por que este produto alcançou sucesso e devolva JSON válido com os campos: score_total (0-100), sections_json (objeto), copy_json (objeto), visual_json (objeto), image_json (objeto), geralanding_wireframe_json (objeto), geralanding_copy_json (objeto), geralanding_image_prompt_json (objeto), geralanding_design_preset_json (objeto), analysis_notes (texto curto). "
                 + "A análise é diagnóstico de sucesso, não consultoria de melhoria: não inclua sugestões, recomendações, próximos passos, itens a adicionar/remover, nem chaves como recommended, suggestions, melhorias ou lacunas em nenhum campo. "
-                + "No campo image_json, explique somente a função persuasiva das imagens existentes no fluxo real: densidade visual, repetição de depoimentos/antes-e-depois, provas visuais, risco assumido de poluição visual e como isso sustenta ou prejudica a clareza da oferta já vencedora. "
+                + "No campo image_json, explique somente a função persuasiva das imagens existentes no fluxo real: densidade visual, repetição de depoimentos/antes-e-depois, provas visuais, risco assumido de poluição visual e como isso sustenta ou prejudica a clareza da oferta já vencedora. Nos campos geralanding_* extraia somente padrões observados que sirvam de insumo para o pipeline GeraLanding: wireframe deve mapear estrutura/seções/CTAs/formulário; copy deve mapear promessa, dor, mecanismo, prova, oferta e CTA; image_prompt deve mapear funções comerciais das imagens, tipo visual, objeção removida e padrão de prompt reaproveitável; design_preset deve mapear direção visual, hierarquia, CTAs, cards, mockups, mobile e confiança. Não proponha melhorias para a página analisada; descreva padrões vencedores observados como insumo reutilizável. "
                 + "Use o eixo Dor → Resultado → Mecanismo → Prova → Oferta apenas para explicar a fórmula observada que parece ter levado à venda, nunca para propor mudanças. URL: "
                 + canonicalUrl + "\nConteúdo e resumo visual: " + htmlBodyText;
         try {
@@ -119,11 +119,15 @@ public class OpenAiSalesPageAnalyzer {
                     objectMapper.writeValueAsString(parsed.path("copy_json")),
                     objectMapper.writeValueAsString(parsed.path("visual_json")),
                     objectMapper.writeValueAsString(parsed.path("image_json")),
+                    objectMapper.writeValueAsString(parsed.path("geralanding_wireframe_json")),
+                    objectMapper.writeValueAsString(parsed.path("geralanding_copy_json")),
+                    objectMapper.writeValueAsString(parsed.path("geralanding_image_prompt_json")),
+                    objectMapper.writeValueAsString(parsed.path("geralanding_design_preset_json")),
                     parsed.path("analysis_notes").asText("Análise gerada via OpenAI Responses Flex"),
                     requestPayloadJson,
                     responsePayloadJson,
                     "html-v1",
-                    "openai-flex-v1",
+                    "openai-flex-geralanding-insights-v2",
                     properties.normalizedModel(),
                     inputTokens,
                     outputTokens,

@@ -194,6 +194,7 @@ public class ImagePlanningBackendClient implements StageBackendPort<ImagePlannin
         payload.put("NICHE_NAME", firstText(experiment.get("nicheName"), experiment.get("niche"), experiment.get("name")));
         payload.put("PAIN_JSON", normalizeJsonArtifact(framework.get("pain")));
         payload.put("RESULT_JSON", normalizeJsonArtifact(framework.get("result")));
+        payload.put("geralandingReferenceInsights", pending.get("geralandingReferenceInsights"));
         payload.put("CASE_DATA_BLOCK", buildCaseDataBlock(payload));
 
         return payload;
@@ -242,6 +243,7 @@ public class ImagePlanningBackendClient implements StageBackendPort<ImagePlannin
         appendCaseData(builder, "adCopy", payload.get("adCopy"));
         appendCaseData(builder, "adImageBriefing", payload.get("adImageBriefing"));
         appendCaseData(builder, "landingPageCopy", payload.get("landingPageCopy"));
+        appendCaseData(builder, "geralandingReferenceInsights", payload.get("geralandingReferenceInsights"));
         builder.append("[CASE_DATA_END]");
         return builder.toString();
     }

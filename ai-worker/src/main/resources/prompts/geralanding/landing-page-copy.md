@@ -98,6 +98,8 @@ Regras obrigatórias:
 CASE_DATA
 {{CASE_DATA_BLOCK}}
 
+Regra para os insumos MOIS em `geralandingReferenceInsights`: use apenas padrões abstratos de copy vencedora; não copie frases, claims, marcas, URLs nem promessas fora do contrato do experimento atual.
+
 OUTPUT_CONTRACT
 Responda em JSON válido e estritamente aderente ao artefato `landingPageCopy`.
 

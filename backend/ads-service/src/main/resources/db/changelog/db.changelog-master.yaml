@@ -1079,3 +1079,7 @@ databaseChangeLog:
   - include:
       file: changesets/2026-06-23-ops-monitor-phase4-modules.yaml
       relativeToChangelogFile: true
+
+  - include:
+      file: changesets/2026-06-24-mois-sales-library-geralanding-insights.yaml
+      relativeToChangelogFile: true

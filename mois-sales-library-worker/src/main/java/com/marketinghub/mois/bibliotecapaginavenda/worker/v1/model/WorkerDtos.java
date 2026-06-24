@@ -15,7 +15,7 @@ public final class WorkerDtos {
     public record ClaimRequest(String workspaceId, String source) {}
     public record ClaimedJob(Long jobId, Long pageId, String urlCanonical, String title, String rawHtml) {}
     public record ClaimResponse(boolean claimed, ClaimedJob job) {}
-    public record CompleteRequest(BigDecimal scoreTotal, String sectionsJson, String copyJson, String visualJson, String imageJson, String analysisNotes, String requestPayloadJson, String responsePayloadJson, String parserVersion, String promptVersion, String modelName, Integer inputTokens, Integer outputTokens, BigDecimal modelCostUsd, Instant analyzedAt) {}
+    public record CompleteRequest(BigDecimal scoreTotal, String sectionsJson, String copyJson, String visualJson, String imageJson, String geralandingWireframeJson, String geralandingCopyJson, String geralandingImagePromptJson, String geralandingDesignPresetJson, String analysisNotes, String requestPayloadJson, String responsePayloadJson, String parserVersion, String promptVersion, String modelName, Integer inputTokens, Integer outputTokens, BigDecimal modelCostUsd, Instant analyzedAt) {}
     public record FailRequest(String errorCategory, String errorMessage) {}
 
     public record CollectedReferenceHtmlClaimRequest(String workspaceId, String source) {}

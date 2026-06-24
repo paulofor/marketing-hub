@@ -207,11 +207,15 @@ public class MoisSalesLibraryService {
                 UPDATE mois_sales_page_job_execution
                 SET job_type = 'PAGE_ANALYSIS', stage = 'ANALYSIS', status = 'DONE', score_total = ?,
                     sections_json = ?, copy_json = ?, visual_json = ?, image_json = ?,
+                    geralanding_wireframe_json = ?, geralanding_copy_json = ?,
+                    geralanding_image_prompt_json = ?, geralanding_design_preset_json = ?,
                     request_payload_json = ?, response_payload_json = ?, parser_version = ?, prompt_version = ?,
                     model_name = ?, input_tokens = ?, output_tokens = ?, model_cost_usd = ?,
                     error_category = NULL, error_message = ?, finished_at = ?, updated_at = UTC_TIMESTAMP()
                 WHERE id = ?
                 """, request.scoreTotal(), request.sectionsJson(), request.copyJson(), request.visualJson(), request.imageJson(),
+                request.geralandingWireframeJson(), request.geralandingCopyJson(),
+                request.geralandingImagePromptJson(), request.geralandingDesignPresetJson(),
                 request.requestPayloadJson(), request.responsePayloadJson(), request.parserVersion(), request.promptVersion(),
                 request.modelName(), request.inputTokens(), request.outputTokens(), modelCostUsd, null, Timestamp.from(analyzedAt), jobId);
         jdbcTemplate.update("""
@@ -833,7 +837,8 @@ public class MoisSalesLibraryService {
     public MoisSalesLibraryDtos.SalesLibraryPageAnalysisResponse getPageAnalysis(long pageId) {
         List<MoisSalesLibraryDtos.SalesLibraryPageAnalysisResponse> rows = jdbcTemplate.query("""
                 SELECT e.id, e.sales_page_id, e.status, e.score_total, e.sections_json, e.copy_json, e.visual_json,
-                       e.image_json, e.request_payload_json, e.response_payload_json, e.error_message, e.parser_version, e.prompt_version,
+                       e.image_json, e.geralanding_wireframe_json, e.geralanding_copy_json,
+                       e.geralanding_image_prompt_json, e.geralanding_design_preset_json, e.request_payload_json, e.response_payload_json, e.error_message, e.parser_version, e.prompt_version,
                        e.model_name, e.finished_at, e.updated_at
                 FROM mois_sales_page_job_execution e
                 WHERE e.sales_page_id = ? AND e.job_type = 'PAGE_ANALYSIS'
@@ -842,6 +847,8 @@ public class MoisSalesLibraryService {
                 rs.getLong("id"), rs.getLong("sales_page_id"), null, rs.getString("status"),
                 rs.getBigDecimal("score_total"), rs.getString("parser_version"), rs.getString("prompt_version"), rs.getString("model_name"), rs.getString("sections_json"),
                 rs.getString("copy_json"), rs.getString("visual_json"), rs.getString("image_json"),
+                rs.getString("geralanding_wireframe_json"), rs.getString("geralanding_copy_json"),
+                rs.getString("geralanding_image_prompt_json"), rs.getString("geralanding_design_preset_json"),
                 rs.getString("error_message"), rs.getString("request_payload_json"), rs.getString("response_payload_json"),
                 toInstant(rs, "finished_at"), toInstant(rs, "updated_at")), pageId);
         if (rows.isEmpty()) throw new IllegalArgumentException("Analysis not found for page: " + pageId);

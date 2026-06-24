@@ -13,6 +13,9 @@ public record ExperimentReadinessSummaryDto(
         boolean hasLeadPortalFlow,
         long leadPortalFlowCount,
         boolean hasCompleteTargeting,
+        boolean hasGeraLandingPipeline,
+        long geraLandingCompletedStageCount,
+        long geraLandingRequiredStageCount,
         List<TargetingElementType> missingTargetingTypes,
         List<ExperimentReadinessIssueDto> issues
 ) { }

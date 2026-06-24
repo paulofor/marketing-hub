@@ -13,12 +13,19 @@ import java.util.Optional;
  * Repository for creatives.
  */
 public interface CreativeRepository extends JpaRepository<Creative, Long> {
+    /** Lista os criativos vinculados ao experimento informado. */
     List<Creative> findByExperimentId(Long experimentId);
 
+    /** Verifica se existe criativo do experimento no status informado. */
     boolean existsByExperimentIdAndStatus(Long experimentId, CreativeStatus status);
 
+    /** Busca um criativo carregando também o experimento vinculado. */
     @Query("select c from Creative c join fetch c.experiment where c.id = :id")
     Optional<Creative> findByIdWithExperiment(@Param("id") Long id);
 
+    /** Conta todos os criativos vinculados ao experimento informado. */
     long countByExperimentId(Long experimentId);
+
+    /** Conta os criativos do experimento que estão no status informado. */
+    long countByExperimentIdAndStatus(Long experimentId, CreativeStatus status);
 }

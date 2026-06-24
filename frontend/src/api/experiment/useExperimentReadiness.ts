@@ -5,7 +5,8 @@ import type { TargetingElementType } from "../targeting/types";
 export type ExperimentReadinessIssueType =
   | "CREATIVE"
   | "LEAD_PORTAL_FLOW"
-  | "TARGETING";
+  | "TARGETING"
+  | "GERA_LANDING";
 
 export interface ExperimentReadinessIssue {
   type: ExperimentReadinessIssueType;
@@ -21,6 +22,9 @@ export interface ExperimentReadinessSummary {
   hasLeadPortalFlow: boolean;
   leadPortalFlowCount: number;
   hasCompleteTargeting: boolean;
+  hasGeraLandingPipeline: boolean;
+  geraLandingCompletedStageCount: number;
+  geraLandingRequiredStageCount: number;
   missingTargetingTypes: TargetingElementType[];
   issues: ExperimentReadinessIssue[];
 }

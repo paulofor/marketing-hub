@@ -202,6 +202,39 @@ public class FacebookAdsService {
         return createInstagramCampaign(adAccountId, name, objective);
     }
 
+
+    /**
+     * Cria uma audiência customizada de lista de clientes na Meta.
+     */
+    public String createCustomerListAudience(String adAccountId, String name) {
+        if (!hasText(adAccountId) || !hasText(name)) {
+            throw new IllegalArgumentException("adAccountId and name must not be blank");
+        }
+        Map<String, Object> body = new HashMap<>();
+        body.put("name", name.trim());
+        body.put("subtype", "CUSTOM");
+        body.put("customer_file_source", "USER_PROVIDED_ONLY");
+        body.put("access_token", requireAccessToken());
+        JsonNode response = executePost(buildVersionedPath("/act_" + adAccountId + "/customaudiences"), body);
+        return response.path("id").asText();
+    }
+
+    /**
+     * Envia lote de hashes SHA-256 de emails para uma audiência customizada existente.
+     */
+    public void addEmailHashesToCustomAudience(String customAudienceId, List<String> emailHashes) {
+        if (!hasText(customAudienceId) || CollectionUtils.isEmpty(emailHashes)) {
+            return;
+        }
+        Map<String, Object> schema = new HashMap<>();
+        schema.put("schema", List.of("EMAIL_SHA256"));
+        schema.put("data", emailHashes.stream().map(List::of).toList());
+        Map<String, Object> body = new HashMap<>();
+        body.put("payload", schema);
+        body.put("access_token", requireAccessToken());
+        executePost(buildVersionedPath("/" + customAudienceId + "/users"), body);
+    }
+
     public String createPixel(String adAccountId, String name) {
         return createPixel(adAccountId, name, null, null);
     }

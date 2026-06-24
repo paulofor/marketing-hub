@@ -5242,3 +5242,8 @@
 
 - As etapas `landing-page-wireframe`, `landing-page-copy`, `landing-page-image-planning` e `landing-page-design-preset` passaram a receber referências estruturadas da Biblioteca MOIS no payload pendente.
 - O AI Worker injeta essas referências nos prompts como insumo auxiliar e preserva o contrato do experimento atual como fonte principal de verdade.
+## 2026-06-24 — Tela de targeting mostra apenas a rodada mais recente
+
+- Solicitação: deixar a tela de públicos mais limpa após nova geração, evitando mistura visual entre resultados antigos, possivelmente gerados antes das regras atuais, e a rodada nova.
+- Causa-raiz: a tela de nicho/hipótese listava até seis solicitações recentes de targeting por contexto, mantendo na mesma área públicos antigos com scores baixos e públicos novos.
+- Correção aplicada: as telas de detalhe de nicho e hipótese passaram a solicitar somente a rodada mais recente de targeting no painel principal, preservando o histórico no backend sem poluir a decisão operacional do usuário.

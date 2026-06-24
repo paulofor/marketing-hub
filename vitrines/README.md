@@ -1,5 +1,11 @@
 # Vitrines
 
+> **Status: OBSOLETO / DESLIGADO.**
+>
+> Este módulo foi mantido no repositório apenas como histórico de protótipo/sandbox.
+> Ele não deve receber novas evoluções, builds automáticos ou deploys até nova decisão de produto.
+> O workflow de CI/CD foi removido para evitar publicação acidental de um módulo sem uso confirmado.
+
 Estrutura inicial para o novo produto de vitrines com frontend em React 18 (Vite + TypeScript) e backend em Java 21 com Spring
 Boot 3. Ambos possuem Dockerfiles próprios para gerar imagens que podem ser publicadas no mesmo host que executa o Portal Lead.
 

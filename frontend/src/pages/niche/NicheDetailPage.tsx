@@ -18,7 +18,6 @@ import type {
   TargetingElementType,
 } from "../../api/targeting/types";
 import { TargetingGenerationForm } from "../../components/TargetingGenerationForm";
-import { TargetingRequestForm } from "../../components/TargetingRequestForm";
 import { TargetingRequestStatusPanel } from "../../components/TargetingRequestStatusPanel";
 import { useRequestHypotheses } from "../../api/niche/useRequestHypotheses";
 import { HypothesisManualForm } from "../../components/HypothesisManualForm";
@@ -195,10 +194,6 @@ export default function NicheDetailPage() {
   const { nicheId } = useParams();
   const id = Number(nicheId);
   const normalizedNicheId = Number.isFinite(id) ? id : undefined;
-  const targetingRequestFilters = useMemo(
-    () => ({ limit: 6, nicheId: normalizedNicheId }),
-    [normalizedNicheId],
-  );
   const { data, isLoading, isFetching } = useNiche(id);
   const facebookPixelId = data?.facebookPixelId ?? null;
   const facebookPixelCode = data?.facebookPixelCode ?? null;
@@ -2286,21 +2281,17 @@ export default function NicheDetailPage() {
           </div>
         </div>
         <div className="niche-section__body">
-          <TargetingRequestForm
-            className="mb-3"
-            defaultDescricao={`Nicho ${data.name}`}
-            defaultIdioma="pt_BR"
-            defaultPais="BR"
-            defaultPublico="PROSPECT"
-            nicheId={normalizedNicheId}
-            queryFilters={targetingRequestFilters}
-          />
-
-          <TargetingRequestStatusPanel
-            className="mb-4"
-            limit={1}
-            nicheId={normalizedNicheId}
-          />
+          <div className="alert alert-info mb-3" role="status">
+            <div className="fw-semibold">
+              Solicite públicos por tipo nos cards abaixo.
+            </div>
+            <div className="small">
+              Para aparecer no experimento, gere e aprove separadamente
+              interesses, cargos e comportamentos com ID oficial da Meta. O
+              painel de solicitações fica apenas como acompanhamento da última
+              rodada processada.
+            </div>
+          </div>
 
           <div className="row row-cols-1 row-cols-md-3 g-3 mb-4">
             {targetingConfigs.map((config) => (
@@ -2332,6 +2323,12 @@ export default function NicheDetailPage() {
               </div>
             ))}
           </div>
+
+          <TargetingRequestStatusPanel
+            className="mb-4"
+            limit={1}
+            nicheId={normalizedNicheId}
+          />
 
           {targetingConfigs.map((config) => (
             <div

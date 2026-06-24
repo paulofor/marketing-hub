@@ -5243,3 +5243,15 @@
 - Solicitação: deixar a tela de públicos mais limpa após nova geração, evitando mistura visual entre resultados antigos, possivelmente gerados antes das regras atuais, e a rodada nova.
 - Causa-raiz: a tela de nicho/hipótese listava até seis solicitações recentes de targeting por contexto, mantendo na mesma área públicos antigos com scores baixos e públicos novos.
 - Correção aplicada: as telas de detalhe de nicho e hipótese passaram a solicitar somente a rodada mais recente de targeting no painel principal, preservando o histórico no backend sem poluir a decisão operacional do usuário.
+
+## 2026-06-24 — Nicho: solicitação de públicos sem duplicidade visual
+
+- Solicitação: reduzir confusão na tela do nicho, onde havia dois pontos aparentes para solicitar públicos de Meta Ads.
+- Causa-raiz: a seção exibia um formulário genérico de solicitação ao AI Worker e, logo abaixo, cards específicos para gerar interesses, cargos e comportamentos; para o usuário, ambos pareciam executar a mesma ação.
+- Correção aplicada: a tela passou a orientar o usuário a solicitar públicos somente pelos cards por tipo, mantendo o painel de solicitações apenas como acompanhamento da última rodada processada.
+
+## 2026-06-24 — Nicho: pendência automática de público fica explícita
+
+- Problema: a lista de públicos do nicho parecia aumentar sem ação do usuário porque solicitações já gravadas em `interests_to_generate`, `job_titles_to_generate` ou `behaviors_to_generate` são processadas automaticamente pelo AI Worker em rotina agendada.
+- Causa-raiz: a tela mostrava apenas “Solicitados: N”, sem explicar que isso era uma pendência ativa que o Worker processaria automaticamente e sem comando visível para cancelar a pendência antes da execução.
+- Correção aplicada: o card de geração passa a mostrar “Solicitação pendente no Worker”, explica que a lista pode aumentar automaticamente ao terminar o processamento e oferece o comando “Cancelar pendência”.

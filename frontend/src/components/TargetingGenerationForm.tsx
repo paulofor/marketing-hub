@@ -36,12 +36,7 @@ export function TargetingGenerationForm({
 }: TargetingGenerationFormProps) {
   const resolvedDefaultModel = defaultModel ?? openAiModels?.[0]?.code ?? "";
   const request = useRequestTargetingElements(nicheId, type);
-  const {
-    register,
-    handleSubmit,
-    reset,
-    setValue,
-  } = useForm<FormValues>({
+  const { register, handleSubmit, reset, setValue } = useForm<FormValues>({
     defaultValues: {
       quantity: 1,
       model: resolvedDefaultModel,
@@ -64,11 +59,30 @@ export function TargetingGenerationForm({
     }
   });
 
+  const cancelRequest = async () => {
+    try {
+      await request.mutateAsync({ quantity: 0 });
+      reset({ quantity: 1, model: resolvedDefaultModel });
+    } catch (error) {
+      console.error("Erro ao cancelar solicitação de segmentação", error);
+      alert("Não foi possível cancelar esta solicitação. Tente novamente.");
+    }
+  };
+
+  const pendingTotal = requestedTotal ?? 0;
+  const hasPendingRequest = pendingTotal > 0;
   const isSubmitting = request.isPending || Boolean(isLoadingModels);
-  const statusMessage = statusLabel ?? `Solicitados: ${requestedTotal ?? 0}`;
+  const statusMessage =
+    statusLabel ??
+    (hasPendingRequest
+      ? `Solicitação pendente no Worker: ${pendingTotal}. A lista pode aumentar automaticamente quando o processamento terminar.`
+      : "Nenhuma solicitação pendente no Worker.");
 
   return (
-    <form onSubmit={onSubmit} className={`d-flex flex-column gap-2 ${className ?? ""}`}>
+    <form
+      onSubmit={onSubmit}
+      className={`d-flex flex-column gap-2 ${className ?? ""}`}
+    >
       <div className="d-flex flex-wrap gap-2">
         <input
           type="number"
@@ -91,14 +105,34 @@ export function TargetingGenerationForm({
             </option>
           ))}
         </select>
-        <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+        <button
+          type="submit"
+          className="btn btn-primary"
+          disabled={isSubmitting}
+        >
           {isSubmitting && (
-            <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
+            <span
+              className="spinner-border spinner-border-sm me-2"
+              role="status"
+              aria-hidden="true"
+            />
           )}
           {ctaLabel}
         </button>
+        {hasPendingRequest ? (
+          <button
+            type="button"
+            className="btn btn-outline-secondary"
+            disabled={isSubmitting}
+            onClick={cancelRequest}
+          >
+            Cancelar pendência
+          </button>
+        ) : null}
       </div>
-      <small className="text-body-secondary">
+      <small
+        className={hasPendingRequest ? "text-warning" : "text-body-secondary"}
+      >
         {isFetchingStatus ? "Atualizando solicitações..." : statusMessage}
       </small>
     </form>

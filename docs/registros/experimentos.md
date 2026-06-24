@@ -5226,3 +5226,7 @@
 - solicitação: evitar que eventos de teste continuem misturados quando a campanha começa a receber valores reais de impressão.
 - causa-raiz: o reset manual/publicação limpava dados em alguns momentos, mas não existia proteção automática no primeiro recebimento efetivo de impressões do Facebook; assim eventos prévios podiam permanecer visíveis no funil depois que a mídia começava a rodar.
 - foi feito: a sincronização de métricas de campanha agora detecta a transição de zero para impressões reais, apaga eventos de funil/analytics de teste e grava novo marco temporal antes de salvar a métrica real.
+## 2026-06-24 — Checklist de público alinhado à liberação Facebook Ads
+- Problema: no experimento 48, o card “Escolha de público” do checklist principal ficava pendente mesmo quando a seção “Campanha de Facebook Ads” já estava pronta para liberação.
+- Causa-raiz: o card usava o resumo de prontidão de targeting (`hasCompleteTargeting`), enquanto a liberação para o Facebook Ads na tela usa os bloqueios de publicação consolidados de criativo aprovado e landing ativa.
+- Correção aplicada: o card “Escolha de público” passou a refletir a mesma regra operacional de liberação exibida na seção Facebook Ads, evitando sinal visual contraditório para o usuário.

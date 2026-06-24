@@ -3,6 +3,9 @@ package com.marketinghub.experiment.service;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentCampaignMetric;
 import com.marketinghub.repository.jpa.experiment.ExperimentCampaignMetricRepository;
+import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
+import com.marketinghub.repository.jpa.experiment.funnel.ExperimentFunnelEventRepository;
+import com.marketinghub.repository.jpa.experiment.funnel.ExperimentLandingAnalyticsEventRepository;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
 import com.marketinghub.cost.CostAttributionService;
 import com.marketinghub.repository.jpa.facebookads.FacebookAdsCampaignRepository;
@@ -11,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Instant;
 import java.time.LocalDate;
 
 /**
@@ -21,16 +25,25 @@ public class ExperimentCampaignMetricService {
     private final ExperimentCampaignMetricRepository repository;
     private final FacebookAdsCampaignRepository campaignRepository;
     private final CostAttributionService costAttributionService;
+    private final ExperimentRepository experimentRepository;
+    private final ExperimentFunnelEventRepository funnelEventRepository;
+    private final ExperimentLandingAnalyticsEventRepository landingAnalyticsEventRepository;
 
     /**
      * Inicializa o serviço com repositórios de campanha, métricas e atribuição de custo.
      */
     public ExperimentCampaignMetricService(ExperimentCampaignMetricRepository repository,
                                            FacebookAdsCampaignRepository campaignRepository,
-                                           CostAttributionService costAttributionService) {
+                                           CostAttributionService costAttributionService,
+                                           ExperimentRepository experimentRepository,
+                                           ExperimentFunnelEventRepository funnelEventRepository,
+                                           ExperimentLandingAnalyticsEventRepository landingAnalyticsEventRepository) {
         this.repository = repository;
         this.campaignRepository = campaignRepository;
         this.costAttributionService = costAttributionService;
+        this.experimentRepository = experimentRepository;
+        this.funnelEventRepository = funnelEventRepository;
+        this.landingAnalyticsEventRepository = landingAnalyticsEventRepository;
     }
 
     /**
@@ -53,7 +66,9 @@ public class ExperimentCampaignMetricService {
                 .orElseGet(() -> ExperimentCampaignMetric.builder()
                         .experiment(experiment)
                         .build());
+        Long previousImpressions = metric.getImpressions();
         BigDecimal previousSpend = metric.getSpend();
+        resetTestFunnelWhenImpressionsStart(experiment, previousImpressions, impressions);
         metric.setCampaign(campaign);
         metric.setDateStart(dateStart);
         metric.setDateStop(dateStop);
@@ -67,6 +82,28 @@ public class ExperimentCampaignMetricService {
         ExperimentCampaignMetric saved = repository.save(metric);
         applySpendDelta(experiment, normalizedSpend, previousSpend);
         return saved;
+    }
+
+    /**
+     * Remove automaticamente eventos de teste quando a campanha começa a receber impressões reais.
+     */
+    private void resetTestFunnelWhenImpressionsStart(
+            Experiment experiment, Long previousImpressions, Long newImpressions) {
+        if (experiment == null || experiment.getId() == null) {
+            return;
+        }
+        long previous = previousImpressions == null ? 0L : previousImpressions;
+        long current = newImpressions == null ? 0L : newImpressions;
+        if (previous > 0 || current <= 0) {
+            return;
+        }
+        landingAnalyticsEventRepository.deleteByExperimentId(experiment.getId());
+        funnelEventRepository.deleteByExperimentIdAndSource(
+                experiment.getId(),
+                ExperimentFunnelEventRepository.LANDING_PAGE_ANALYTICS_SOURCE);
+        funnelEventRepository.deleteByExperimentId(experiment.getId());
+        experiment.setFunnelResetAt(Instant.now());
+        experimentRepository.save(experiment);
     }
 
     /**

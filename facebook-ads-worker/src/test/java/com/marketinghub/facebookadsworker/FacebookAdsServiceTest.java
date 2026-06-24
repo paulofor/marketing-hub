@@ -354,7 +354,7 @@ class FacebookAdsServiceTest {
 
     @Test
     void searchGlobalTargetingOptionsDoesNotSendFieldsParameter() throws Exception {
-        server.enqueueResponse(new MockResponse().setBody("{\"data\":[{\"id\":\"1419795191647433\",\"name\":\"Certified Personal Trainer\"}]}" )
+        server.enqueueResponse(new MockResponse().setBody("{\"data\":[{\"id\":\"1419795191647433\",\"name\":\"Certified Personal Trainer\",\"coverage_lower_bound\":1000,\"coverage_upper_bound\":2000}]}" )
             .addHeader("Content-Type", "application/json"));
 
         List<FacebookAdsService.FacebookTargetingSearchResult> results = service.searchGlobalTargetingOptions(
@@ -382,6 +382,8 @@ class FacebookAdsServiceTest {
         assertEquals(1, results.size());
         assertEquals("1419795191647433", results.get(0).id());
         assertEquals("Certified Personal Trainer", results.get(0).name());
+        assertEquals(1000L, results.get(0).audienceSizeLowerBound());
+        assertEquals(2000L, results.get(0).audienceSizeUpperBound());
     }
 
 

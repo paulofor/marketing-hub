@@ -5332,3 +5332,9 @@
 - Solicitação: aplicar aos comportamentos o mesmo controle já reforçado para cargos.
 - Correção aplicada: a regra de aprovação permanece única para interesses, cargos e comportamentos; a cobertura de testes passou a validar explicitamente comportamento sem ID oficial da Meta e comportamento com ID oficial.
 - Resultado esperado: comportamento gerado pela IA fica para revisão e só pode ser aprovado/publicado quando houver ID oficial da Meta.
+
+## 2026-06-24 — Destravamento da fila de resolução Meta Ads para cargos
+
+- Solicitação: confirmar se os cargos gerados para nicho seriam pesquisados na Meta Ads em português e inglês.
+- Causa-raiz encontrada: o fluxo automático existia, mas podia manter itens antigos na fila quando a Graph API retornava alcance como `coverage_lower_bound`/`coverage_upper_bound` em vez de `audience_size_lower_bound`/`audience_size_upper_bound`, atrasando o avanço para cargos novos.
+- Correção aplicada: o Facebook Ads Worker passou a normalizar também os campos `coverage_*` como alcance oficial antes de reportar ao backend, permitindo que itens já resolvidos saiam da fila e a pesquisa avance para os próximos cargos pendentes.

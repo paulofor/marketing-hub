@@ -1523,8 +1523,8 @@ private FacebookInterest searchInterest(String interestName, String locale) {
                 String name = node.path("name").asText(null);
                 String type = node.path("type").asText(null);
                 String topic = node.path("topic").asText(null);
-                Long audienceSizeLower = node.hasNonNull("audience_size_lower_bound") ? node.path("audience_size_lower_bound").asLong() : null;
-                Long audienceSizeUpper = node.hasNonNull("audience_size_upper_bound") ? node.path("audience_size_upper_bound").asLong() : null;
+                Long audienceSizeLower = readLongField(node, "audience_size_lower_bound", "coverage_lower_bound");
+                Long audienceSizeUpper = readLongField(node, "audience_size_upper_bound", "coverage_upper_bound");
                 List<String> hierarchy = parseTargetingPath(node.path("path"));
                 results.add(new FacebookTargetingSearchResult(
                     id.trim(),
@@ -1543,6 +1543,22 @@ private FacebookInterest searchInterest(String interestName, String locale) {
             LOGGER.warn("Facebook targeting search failed for path {}: {}", pathValue, ex.getMessage(), ex);
             return Collections.emptyList();
         }
+    }
+
+    /**
+     * Lê um campo numérico da resposta da Meta aceitando nomes alternativos usados pela Graph API.
+     */
+    private Long readLongField(JsonNode node, String primaryField, String fallbackField) {
+        if (node == null || node.isNull()) {
+            return null;
+        }
+        if (node.hasNonNull(primaryField)) {
+            return node.path(primaryField).asLong();
+        }
+        if (node.hasNonNull(fallbackField)) {
+            return node.path(fallbackField).asLong();
+        }
+        return null;
     }
 
     public record FacebookTargetingSuggestionResult(String id, String name, Long audienceSize, List<String> path) {}

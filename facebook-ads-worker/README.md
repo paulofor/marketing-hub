@@ -50,6 +50,11 @@ interesses, `adworkposition` para cargos e `adTargetingCategory` com
 - limite mínimo estimado (`audience_size_lower_bound`),
 - limite máximo estimado (`audience_size_upper_bound`).
 
+Quando a Graph API retornar os limites como `coverage_lower_bound` e
+`coverage_upper_bound`, o worker normaliza esses campos para o mesmo contrato de
+alcance reportado ao backend. Isso evita que itens com ID oficial permaneçam na
+fila por falta dos nomes alternativos de alcance retornados pela Meta.
+
 Esses limites são usados pelo Marketing Hub como alcance inicial do sinal antes
 de montar ou escalar campanha. Após encontrar o melhor match, o worker envia os dados para o backend via
 `PATCH /api/internal/targeting/elements/{id}/metaads`, mantendo a base local

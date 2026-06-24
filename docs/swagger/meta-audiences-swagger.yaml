@@ -1,0 +1,57 @@
+openapi: 3.0.3
+info:
+  title: Marketing Hub Meta Audiences API
+  version: 1.0.0
+paths:
+  /api/meta-audiences:
+    post:
+      summary: Solicita criação de audiência Meta Ads vinculada a nicho e CNAE.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MetaAudienceRequest'
+      responses:
+        '200':
+          description: Audiência criada no backend e pronta para sincronização.
+  /api/internal/meta-audiences/pending:
+    get:
+      summary: Lista audiências prontas para o Facebook Ads Worker criar na Meta.
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: Lista de pendências internas.
+  /api/internal/meta-audiences/{id}/sync:
+    patch:
+      summary: Registra o resultado da criação/sincronização da audiência na Meta.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Audiência atualizada.
+components:
+  schemas:
+    MetaAudienceRequest:
+      type: object
+      required: [marketNicheId, cnaeCode, segmentName, facebookAdAccountId]
+      properties:
+        marketNicheId: { type: integer, format: int64 }
+        cnaeCode: { type: string }
+        segmentName: { type: string }
+        segmentDescription: { type: string }
+        painFocus: { type: string }
+        desiredOutcomeFocus: { type: string }
+        offerAngle: { type: string }
+        filterStrategy: { type: string }
+        facebookAdAccountId: { type: string }

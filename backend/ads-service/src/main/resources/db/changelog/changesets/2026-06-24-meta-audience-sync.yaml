@@ -1,0 +1,57 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-24-01-meta-audience-sync
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: meta_audience
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE meta_audience (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                market_niche_id BIGINT NOT NULL,
+                source_cnae_code VARCHAR(7) NOT NULL,
+                audience_name VARCHAR(255) NOT NULL,
+                facebook_ad_account_id VARCHAR(64) NOT NULL,
+                facebook_audience_id VARCHAR(64) NULL,
+                audience_type VARCHAR(32) NOT NULL,
+                source_type VARCHAR(32) NOT NULL,
+                filter_strategy TEXT NULL,
+                eligibility_status VARCHAR(32) NOT NULL,
+                total_contacts BIGINT NOT NULL DEFAULT 0,
+                unique_emails BIGINT NOT NULL DEFAULT 0,
+                synced_contacts BIGINT NOT NULL DEFAULT 0,
+                last_sync_at DATETIME NULL,
+                error_message VARCHAR(1000) NULL,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL,
+                CONSTRAINT pk_meta_audience PRIMARY KEY (id),
+                CONSTRAINT fk_meta_audience_market_niche FOREIGN KEY (market_niche_id) REFERENCES market_niche(id)
+              );
+              CREATE INDEX idx_meta_audience_status ON meta_audience (eligibility_status, updated_at);
+              CREATE INDEX idx_meta_audience_niche ON meta_audience (market_niche_id, source_cnae_code);
+              CREATE TABLE meta_audience_segment (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                meta_audience_id BIGINT NOT NULL,
+                market_niche_id BIGINT NOT NULL,
+                segment_name VARCHAR(255) NOT NULL,
+                segment_description TEXT NULL,
+                pain_focus TEXT NULL,
+                desired_outcome_focus TEXT NULL,
+                offer_angle TEXT NULL,
+                selection_rule TEXT NULL,
+                estimated_contacts BIGINT NOT NULL DEFAULT 0,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL,
+                CONSTRAINT pk_meta_audience_segment PRIMARY KEY (id),
+                CONSTRAINT fk_meta_audience_segment_audience FOREIGN KEY (meta_audience_id) REFERENCES meta_audience(id),
+                CONSTRAINT fk_meta_audience_segment_niche FOREIGN KEY (market_niche_id) REFERENCES market_niche(id)
+              );
+              CREATE INDEX idx_meta_audience_segment_audience ON meta_audience_segment (meta_audience_id);

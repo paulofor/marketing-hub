@@ -679,3 +679,7 @@ Quando o backend enviar `followUpActionUrl` no item de `/api/facebook-campaigns/
 ## Rastreabilidade por job de publicação
 
 O backend agora devolve `publicationJobId` em `GET /api/facebook-campaigns/experiments-ready`. Esse valor é um hash criado no backend para rastrear a tentativa de publicação do experimento como campanha. A cada interação com a Graph API da Meta, o worker registra um passo em `POST /api/facebook-campaigns/publication-job-steps`, enviando `jobId`, `experimentId`, nome da etapa, endpoint, método HTTP, status, payload enviado e payload recebido. Isso cria uma linha do tempo por job para análise operacional sem depender apenas dos logs de aplicação.
+
+## Audiências Meta Ads de nicho
+
+A etapa de criação de audiência na Meta é executada pelo `MetaAudienceSyncScheduler`. O worker consulta o backend em `/api/internal/meta-audiences/pending`, cria uma audiência customizada `CUSTOM` em `/act_<AD_ACCOUNT_ID>/customaudiences`, normaliza/deduplica emails, gera SHA-256 e envia lotes para `/{customAudienceId}/users`. O resultado é reportado ao backend em `/api/internal/meta-audiences/{id}/sync`, preservando `facebookAudienceId`, quantidade sincronizada e falhas operacionais.

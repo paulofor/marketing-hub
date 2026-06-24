@@ -12,6 +12,9 @@ Regras obrigatórias:
 - A oferta precisa deixar claro o que o cliente recebe, por que isso reduz esforço e como aproxima o resultado desejado.
 - Defina uma faixa de preço sugerida ou ancoragem de preço compatível com low-ticket; não crie checkout, cupom, parcelamento ou condição comercial final.
 - A oferta deve conter entregáveis concretos que possam ser produzidos pelo Marketing Hub depois: diagnóstico, roteiro, checklist, template, biblioteca, calculadora simples, prompts, plano ou mini-kit.
+- Quando o público for MEI, autônomo, trabalhador por conta própria, dono-operador ou negócio local, avalie obrigatoriamente se a dor pode ser atacada por uma oferta de presença digital, atendimento e aquisição prática: Google Perfil da Empresa, Instagram, WhatsApp, descrição do negócio, respostas prontas, rotina de postagens, pedido de avaliações, orçamento, follow-up, agenda e recuperação de interessados.
+- Se essa frente for coerente com Dor → Resultado → Mecanismo → Prova, empacote a oferta como kit operacional de melhoria comercial, não como “curso de IA” genérico: a IA deve aparecer como motor que reduz esforço para criar mensagens, textos, checklists, respostas, posts e planos de ação aplicáveis.
+- Para negócios locais e prestadores de serviço, prefira entregáveis que aproximem contato e venda: checklist de presença digital, mensagens prontas de WhatsApp, descrição de perfil, roteiro de atendimento, sequência de follow-up, pedido de avaliação, calendário simples de conteúdo e mini diagnóstico de oportunidades comerciais.
 - Monte uma pilha de valor clara, mostrando vários componentes que atacam a mesma dor por ângulos diferentes e fazem o comprador sentir que recebe muito mais do que pagou.
 - A oferta deve ser compatível com produto digital apoiado por IA e execução prática pelo cliente.
 - A oferta deve gerar uma vitória rápida demonstrável, que possa virar prova/amostra na futura página de vendas.

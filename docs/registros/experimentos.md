@@ -5247,3 +5247,9 @@
 - Solicitação: deixar a tela de públicos mais limpa após nova geração, evitando mistura visual entre resultados antigos, possivelmente gerados antes das regras atuais, e a rodada nova.
 - Causa-raiz: a tela de nicho/hipótese listava até seis solicitações recentes de targeting por contexto, mantendo na mesma área públicos antigos com scores baixos e públicos novos.
 - Correção aplicada: as telas de detalhe de nicho e hipótese passaram a solicitar somente a rodada mais recente de targeting no painel principal, preservando o histórico no backend sem poluir a decisão operacional do usuário.
+## 2026-06-24 — Ofertas com presença digital e IA operacional
+
+- Solicitação: inserir nas regras executáveis dos pipelines as ideias do artigo sobre IA em pequenos negócios, em vez de manter apenas orientação conceitual na conversa.
+- Causa-raiz tratada: o pipeline de hipótese/oferta já gerava produto low-ticket apoiado por IA, mas não obrigava a avaliar presença digital, WhatsApp, Instagram, Google Perfil da Empresa, atendimento e aquisição prática quando o público fosse MEI, autônomo ou negócio local.
+- Correção aplicada: o prompt versionado da etapa `hypothesis-offer` passou a orientar esse empacotamento como kit operacional de melhoria comercial, mantendo IA como redução de esforço e não como promessa genérica.
+- Cânone atualizado: a regra de entrada comercial com isca e produto passou a registrar essa frente como critério obrigatório para hipóteses de MEI/autônomo/negócio local.

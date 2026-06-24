@@ -1,0 +1,64 @@
+openapi: 3.0.3
+info:
+  title: Marketing Hub Meta Audiences API
+  version: 1.0.0
+paths:
+  /api/meta-audiences:
+    post:
+      summary: Persiste audiência Meta Ads já preparada pelo módulo OPRM executor.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MetaAudienceRequest'
+      responses:
+        '200':
+          description: Audiência persistida no backend conforme decisão do OPRM.
+  /api/internal/meta-audiences/pending:
+    get:
+      summary: Lista audiências prontas para o Facebook Ads Worker criar na Meta.
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: Lista de pendências internas.
+  /api/internal/meta-audiences/{id}/sync:
+    patch:
+      summary: Registra o resultado da criação/sincronização da audiência na Meta.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Audiência atualizada.
+components:
+  schemas:
+    MetaAudienceRequest:
+      type: object
+      required: [marketNicheId, cnaeCode, audienceName, segmentName, facebookAdAccountId, audienceType, sourceType, eligibilityStatus]
+      properties:
+        marketNicheId: { type: integer, format: int64 }
+        cnaeCode: { type: string }
+        audienceName: { type: string }
+        segmentName: { type: string }
+        segmentDescription: { type: string }
+        painFocus: { type: string }
+        desiredOutcomeFocus: { type: string }
+        offerAngle: { type: string }
+        filterStrategy: { type: string }
+        facebookAdAccountId: { type: string }
+        audienceType: { type: string }
+        sourceType: { type: string }
+        eligibilityStatus: { type: string }
+        totalContacts: { type: integer, format: int64 }
+        uniqueEmails: { type: integer, format: int64 }
+        estimatedContacts: { type: integer, format: int64 }

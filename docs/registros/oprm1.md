@@ -1364,3 +1364,9 @@
 - Criado plano em `docs/implementacao/oprm/plano-audiencias-meta-nicho-experimento.md` para conectar audiências Meta Ads aos nichos materializados e aos experimentos, incluindo o conceito de parcela do nicho quando o experimento testar apenas um recorte do mercado amplo.
 - Definido modelo operacional com `meta_audience`, `meta_audience_segment` e `experiment_meta_audience`, evitando audiências órfãs e preservando leitura de performance por nicho, parcela, público, oferta e experimento.
 - 2026-06-24 00:00:00 (UTC): tela `/oprm/cnaes/:cnaeCode/pipeline-v2` ajustada para usar a descrição do CNAE como título principal, reaproveitando o catálogo canônico de CNAEs já consumido no OPRM e mantendo fallback para o código quando a descrição ainda não carregar.
+
+## 2026-06-24 — Etapa 4 do plano de audiências Meta por nicho
+
+- Solicitação: executar a Etapa 4 — Criação da audiência na Meta do plano `docs/implementacao/oprm/plano-audiencias-meta-nicho-experimento.md`.
+- Foi feito: criado o contrato persistente `meta_audience`/`meta_audience_segment`, mantendo o backend somente como leitura/escrita da audiência já decidida pelo OPRM; o Facebook Ads Worker cria a Custom Audience, normaliza/deduplica emails apenas por exigência técnica da Meta, gera hash SHA-256, faz upload em lotes e retorna o `facebookAudienceId` ao backend.
+- Prevenção de recorrência: a regra de negócio de público, nome, recorte, elegibilidade e volumes fica no módulo OPRM executor; a audiência persistida continua vinculada a `market_niche_id`, CNAE, segmento e conta de anúncios para evitar audiência órfã na Meta.

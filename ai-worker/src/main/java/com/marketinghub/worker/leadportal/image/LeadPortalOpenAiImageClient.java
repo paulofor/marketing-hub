@@ -41,6 +41,9 @@ import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
+/**
+ * Responsabilidade: integrar geração e edição de imagens do Lead Portal com a OpenAI em modo direto.
+ */
 @Component
 public class LeadPortalOpenAiImageClient {
 
@@ -48,11 +51,6 @@ public class LeadPortalOpenAiImageClient {
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(120);
     private static final Duration DEFAULT_BATCH_POLL_INTERVAL = Duration.ofMillis(500);
     private static final Duration DEFAULT_BATCH_TIMEOUT = Duration.ofMinutes(5);
-    private static final String IMAGE_GENERATION_ENDPOINT = "/v1/images/generations";
-    private static final String BATCH_COMPLETION_WINDOW = "24h";
-    private static final String BATCH_FILE_NAME = "lead-portal-images.jsonl";
-    private static final Set<String> TERMINAL_BATCH_STATUSES =
-            Set.of("completed", "failed", "expired", "cancelled");
 
     private final WebClient webClient;
     private final CreativeImageOptimizer imageOptimizer;
@@ -94,6 +92,7 @@ public class LeadPortalOpenAiImageClient {
         return enabled;
     }
 
+    /** Gera imagens a partir de prompts em chamadas diretas, preservando o contrato agregado do chamador. */
     public Map<String, BatchGenerationResult> generatePromptBatch(List<BatchPromptRequest> requests) {
         if (!enabled) {
             throw new IllegalStateException("OpenAI API key is not configured");
@@ -102,38 +101,23 @@ public class LeadPortalOpenAiImageClient {
             return Map.of();
         }
 
-        StringBuilder builder = new StringBuilder();
-        int totalRequests = 0;
+        Map<String, BatchGenerationResult> results = new LinkedHashMap<>();
         for (BatchPromptRequest request : requests) {
             if (request == null || request.customId() == null || request.customId().isBlank()) {
                 continue;
             }
-            Map<String, Object> line = new LinkedHashMap<>();
-            line.put("custom_id", request.customId());
-            line.put("method", "POST");
-            line.put("url", IMAGE_GENERATION_ENDPOINT);
-            line.put("body", buildGenerationPayload(request.prompt(), request.plan()));
             try {
-                builder.append(mapper.writeValueAsString(line)).append('\n');
-                totalRequests++;
-            } catch (IOException e) {
-                throw new RuntimeException("Failed to serialize OpenAI image batch line for " + request.customId(), e);
+                log.info("Submitting prompt-only image request {} via OpenAI Flex", request.customId());
+                CreativeImageOptimizer.OptimizedImage optimized = generateFromPrompt(request.prompt(), request.plan());
+                results.put(request.customId(), new BatchGenerationResult(request.customId(), optimized, 200, null));
+            } catch (ImageGenerationException ex) {
+                results.put(request.customId(), new BatchGenerationResult(
+                        request.customId(), null, ex.getStatus().value(), ex.getMessage()));
+            } catch (RuntimeException ex) {
+                results.put(request.customId(), new BatchGenerationResult(request.customId(), null, null, ex.getMessage()));
             }
         }
-
-        if (totalRequests == 0) {
-            return Map.of();
-        }
-
-        log.info("Submitting {} prompt-only image requests via OpenAI batch", totalRequests);
-        String inputFileId = uploadBatchFile(builder.toString().getBytes(StandardCharsets.UTF_8));
-        OpenAiBatch batch = createBatch(inputFileId);
-        OpenAiBatch completed = awaitCompletion(batch);
-        if (completed.outputFileId() == null || completed.outputFileId().isBlank()) {
-            throw new IllegalStateException("OpenAI image batch completed without output_file_id");
-        }
-        String outputContent = downloadBatchFile(completed.outputFileId());
-        return parseBatchOutput(outputContent);
+        return Collections.unmodifiableMap(results);
     }
 
     public CreativeImageOptimizer.OptimizedImage generateFromBase(byte[] baseImage, String prompt, ImageGenerationPlan plan) {
@@ -359,143 +343,6 @@ public class LeadPortalOpenAiImageClient {
     }
 
 
-    private String uploadBatchFile(byte[] payload) {
-        ByteArrayResource resource = new ByteArrayResource(payload) {
-            @Override
-            public String getFilename() {
-                return BATCH_FILE_NAME;
-            }
-        };
-        MultiValueMap<String, Object> multipart = new LinkedMultiValueMap<>();
-        multipart.add("purpose", "batch");
-        multipart.add("file", resource);
-        OpenAiFile file = webClient.post()
-                .uri("/files")
-                .contentType(MediaType.MULTIPART_FORM_DATA)
-                .body(BodyInserters.fromMultipartData(multipart))
-                .retrieve()
-                .bodyToMono(OpenAiFile.class)
-                .block(REQUEST_TIMEOUT);
-        if (file == null || file.id() == null || file.id().isBlank()) {
-            throw new IllegalStateException("OpenAI file upload failed for lead-portal image batch");
-        }
-        return file.id();
-    }
-
-    private OpenAiBatch createBatch(String inputFileId) {
-        Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("input_file_id", inputFileId);
-        payload.put("endpoint", IMAGE_GENERATION_ENDPOINT);
-        payload.put("completion_window", BATCH_COMPLETION_WINDOW);
-        OpenAiBatch batch = webClient.post()
-                .uri("/batches")
-                .bodyValue(payload)
-                .retrieve()
-                .bodyToMono(OpenAiBatch.class)
-                .block(REQUEST_TIMEOUT);
-        if (batch == null || batch.id() == null || batch.id().isBlank()) {
-            throw new IllegalStateException("OpenAI image batch creation failed");
-        }
-        return batch;
-    }
-
-    private OpenAiBatch awaitCompletion(OpenAiBatch initial) {
-        OpenAiBatch current = initial;
-        Instant start = Instant.now();
-        while (!isTerminal(current)) {
-            if (Duration.between(start, Instant.now()).compareTo(batchTimeout) > 0) {
-                throw new IllegalStateException("Timed out waiting for OpenAI image batch " + current.id());
-            }
-            try {
-                Thread.sleep(batchPollInterval.toMillis());
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new RuntimeException("Interrupted while waiting for OpenAI image batch", e);
-            }
-            current = webClient.get()
-                    .uri("/batches/{id}", current.id())
-                    .retrieve()
-                    .bodyToMono(OpenAiBatch.class)
-                    .block(REQUEST_TIMEOUT);
-            if (current == null) {
-                throw new IllegalStateException("OpenAI returned null while polling image batch");
-            }
-        }
-        if (!"completed".equals(current.status())) {
-            throw new RuntimeException("OpenAI image batch finished with status " + current.status());
-        }
-        return current;
-    }
-
-    private boolean isTerminal(OpenAiBatch batch) {
-        if (batch == null || batch.status() == null) {
-            return true;
-        }
-        return TERMINAL_BATCH_STATUSES.contains(batch.status());
-    }
-
-    private String downloadBatchFile(String fileId) {
-        byte[] content = webClient.get()
-                .uri("/files/{id}/content", fileId)
-                .accept(MediaType.APPLICATION_OCTET_STREAM, MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN)
-                .exchangeToMono(response -> {
-                    if (response.statusCode().isError()) {
-                        return response.bodyToMono(String.class)
-                                .defaultIfEmpty("")
-                                .flatMap(body -> Mono.error(new ImageGenerationException(
-                                        response.statusCode(),
-                                        "Failed to download OpenAI batch output file " + fileId
-                                                + (body.isBlank() ? "" : " (" + body + ")"))));
-                    }
-                    return response.bodyToMono(byte[].class);
-                })
-                .block(REQUEST_TIMEOUT);
-        if (content == null || content.length == 0) {
-            throw new IllegalStateException("OpenAI returned an empty batch output file");
-        }
-        return new String(content, StandardCharsets.UTF_8);
-    }
-
-    private Map<String, BatchGenerationResult> parseBatchOutput(String content) {
-        if (content == null || content.isBlank()) {
-            return Map.of();
-        }
-        Map<String, BatchGenerationResult> results = new LinkedHashMap<>();
-        String[] lines = content.split("\n");
-        for (String line : lines) {
-            if (line == null || line.isBlank()) {
-                continue;
-            }
-            try {
-                BatchOutput output = mapper.readValue(line, BatchOutput.class);
-                if (output.response() != null && output.response().isSuccessful()) {
-                    Map<String, Object> body = output.response().body();
-                    if (body == null) {
-                        results.put(output.customId(), new BatchGenerationResult(
-                                output.customId(), null, output.response().statusCode(), "Resposta vazia da OpenAI"));
-                        continue;
-                    }
-                    ImageResponse imageResponse = mapper.convertValue(body, ImageResponse.class);
-                    CreativeImageOptimizer.OptimizedImage optimized = toOptimizedImage(imageResponse);
-                    results.put(output.customId(), new BatchGenerationResult(
-                            output.customId(), optimized, output.response().statusCode(), null));
-                } else if (output.response() != null) {
-                    results.put(output.customId(), new BatchGenerationResult(
-                            output.customId(),
-                            null,
-                            output.response().statusCode(),
-                            extractErrorMessage(output.response().body())));
-                } else if (output.error() != null) {
-                    results.put(output.customId(), new BatchGenerationResult(
-                            output.customId(), null, null, output.error().message()));
-                }
-            } catch (Exception ex) {
-                log.error("Failed to parse OpenAI image batch output line: {}", line, ex);
-            }
-        }
-        return Collections.unmodifiableMap(results);
-    }
-
     private String extractErrorMessage(Map<String, Object> body) {
         if (body == null) {
             return "OpenAI retornou erro sem detalhes";
@@ -526,25 +373,6 @@ public class LeadPortalOpenAiImageClient {
             return image != null && (errorMessage == null || errorMessage.isBlank());
         }
     }
-
-    private record BatchOutput(@JsonProperty("custom_id") String customId,
-                               BatchResponse response,
-                               BatchError error) {}
-
-    private record BatchResponse(@JsonProperty("status_code") Integer statusCode,
-                                 @JsonProperty("request_id") String requestId,
-                                 Map<String, Object> body) {
-        boolean isSuccessful() {
-            return statusCode != null && statusCode >= 200 && statusCode < 300;
-        }
-    }
-
-    private record BatchError(String code, String message, String param, String line) {}
-
-    private record OpenAiBatch(String id, String status,
-                               @JsonProperty("output_file_id") String outputFileId) {}
-
-    private record OpenAiFile(String id) {}
 
     private boolean supportsResponseFormat(String selectedModel) {
         if (selectedModel == null || selectedModel.isBlank()) {

@@ -222,7 +222,7 @@ class LeadPortalImageProcessingServiceTest {
         service.process();
 
         verify(packageClient)
-                .markRetry(eq(promptOnlyPackage.id()), contains("OpenAI batch não retornou o item package-5-image-1"));
+                .markRetry(eq(promptOnlyPackage.id()), contains("OpenAI Flex não retornou o item package-5-image-1"));
         verify(packageClient, never()).submitResults(anyLong(), any(), anyString(), anyString());
     }
 

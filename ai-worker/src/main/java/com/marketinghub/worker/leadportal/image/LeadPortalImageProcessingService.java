@@ -30,6 +30,9 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClientRequestException;
 import software.amazon.awssdk.core.exception.SdkException;
 
+/**
+ * Responsabilidade: coordenar o processamento de pacotes de imagens do Lead Portal.
+ */
 @Service
 public class LeadPortalImageProcessingService {
 
@@ -239,7 +242,7 @@ public class LeadPortalImageProcessingService {
         for (Map.Entry<String, BatchJobContext> entry : jobContexts.entrySet()) {
             if (!processed.contains(entry.getKey())) {
                 entry.getValue().packageContext().fail(
-                        "OpenAI batch não retornou o item " + entry.getKey());
+                        "OpenAI Flex não retornou o item " + entry.getKey());
             }
         }
 
@@ -253,7 +256,7 @@ public class LeadPortalImageProcessingService {
 
             String reason = context.failureReason();
             if (!StringUtils.hasText(reason)) {
-                reason = "OpenAI batch retornou apenas %d de %d imagens".formatted(
+                reason = "OpenAI Flex retornou apenas %d de %d imagens".formatted(
                         context.generated().size(), context.expectedImages());
             }
             requestPromptBatchRetry(context.imagePackage().id(), reason);
@@ -264,7 +267,7 @@ public class LeadPortalImageProcessingService {
         String reason = resolveFailureReason(throwable);
         boolean transientFailure = isTransientError(throwable);
         log.warn(
-                "Lead-portal prompt-only batch falhou com motivo '{}'; {} {} pacote(s)",
+                "Lead-portal prompt-only Flex falhou com motivo '{}'; {} {} pacote(s)",
                 reason,
                 transientFailure ? "reagendando" : "marcando como falho sem retry",
                 packages != null ? packages.size() : 0,
@@ -285,7 +288,7 @@ public class LeadPortalImageProcessingService {
         try {
             packageClient.markRetry(packageId, reason);
             log.info(
-                    "Scheduled retry for lead-portal prompt-only package {} after batch issue: {}",
+                    "Scheduled retry for lead-portal prompt-only package {} after Flex issue: {}",
                     packageId,
                     reason);
         } catch (LeadPortalWorkerException retryEx) {
@@ -311,12 +314,12 @@ public class LeadPortalImageProcessingService {
 
     private String determineBatchFailureReason(LeadPortalOpenAiImageClient.BatchGenerationResult result) {
         if (result == null) {
-            return "OpenAI batch retornou resposta vazia";
+            return "OpenAI Flex retornou resposta vazia";
         }
         if (StringUtils.hasText(result.errorMessage())) {
             return result.errorMessage();
         }
-        return "OpenAI batch retornou resposta vazia";
+        return "OpenAI Flex retornou resposta vazia";
     }
 
     private CreativeImageOptimizer.OptimizedImage generateWithRetry(

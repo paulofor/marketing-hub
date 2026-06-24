@@ -27,17 +27,17 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 
+/**
+ * Responsabilidade: gerar imagens do framework via OpenAI com chamadas diretas em modo Flex.
+ */
 @Component
 public class FrameworkImageOpenAiBatchClient {
     private static final Logger log = LoggerFactory.getLogger(FrameworkImageOpenAiBatchClient.class);
-    private static final String IMAGE_GENERATION_ENDPOINT = "/v1/images/generations";
-    private static final String BATCH_COMPLETION_WINDOW = "24h";
-    private static final String BATCH_FILE_NAME = "framework-image-batch.jsonl";
+    private static final String IMAGE_GENERATION_ENDPOINT = "/images/generations";
+    private static final String FLEX_EXECUTION_ID = "flex";
     private static final int DEFAULT_MAX_IN_MEMORY_SIZE_BYTES = 50 * 1024 * 1024; // 50 MB
     private static final Duration DEFAULT_BATCH_POLL_INTERVAL = Duration.ofMillis(500);
     private static final Duration DEFAULT_BATCH_TIMEOUT = Duration.ofMinutes(5);
-    private static final Set<String> TERMINAL_BATCH_STATUSES =
-            Set.of("completed", "failed", "expired", "cancelled");
 
     private final WebClient webClient;
     private final ObjectMapper mapper;
@@ -69,6 +69,7 @@ public class FrameworkImageOpenAiBatchClient {
         this.batchTimeout = normalizeDuration(batchTimeout, DEFAULT_BATCH_TIMEOUT);
     }
 
+    /** Gera imagens para os jobs informados sem usar a Batch API da OpenAI. */
     public Map<UUID, FrameworkImageBatchResult> generateBatch(List<FrameworkImageJobDto> jobs) {
         if (!enabled) {
             throw new IllegalStateException("OpenAI API key is not configured");
@@ -77,45 +78,50 @@ public class FrameworkImageOpenAiBatchClient {
             return Map.of();
         }
 
-        log.info("Framework image batch start: preparing {} OpenAI request(s)", jobs.size());
-        String batchContent = buildBatchFileContent(jobs);
-        String inputFileId = uploadBatchFile(batchContent.getBytes(StandardCharsets.UTF_8));
-        log.info("Framework image batch file uploaded: fileId={} requestCount={}", inputFileId, jobs.size());
-        OpenAiBatch createdBatch = createBatch(inputFileId);
-        log.info("Framework image batch created: batchId={} requestCount={}", createdBatch.id(), jobs.size());
-        OpenAiBatch completedBatch = awaitCompletion(createdBatch);
-        log.info("Framework image batch finished: batchId={} status={} outputFileId={}",
-                completedBatch.id(), completedBatch.status(), completedBatch.outputFileId());
-        if (!StringUtils.hasText(completedBatch.outputFileId())) {
-            throw new IllegalStateException("OpenAI image batch completed without output_file_id");
-        }
-
-        String outputContent = downloadBatchOutput(completedBatch.outputFileId());
-        Map<UUID, FrameworkImageBatchResult> results = parseBatchOutput(outputContent, completedBatch.id());
-        log.info("Framework image OpenAI batch {} returned {} result(s)", completedBatch.id(), results.size());
-        return results;
-    }
-
-    private String buildBatchFileContent(List<FrameworkImageJobDto> jobs) {
-        StringBuilder builder = new StringBuilder();
+        log.info("Framework image Flex start: preparing {} OpenAI request(s)", jobs.size());
+        Map<UUID, FrameworkImageBatchResult> results = new LinkedHashMap<>();
         for (FrameworkImageJobDto job : jobs) {
             if (job == null || job.id() == null) {
                 continue;
             }
-            Map<String, Object> line = new LinkedHashMap<>();
-            line.put("custom_id", job.id().toString());
-            line.put("method", "POST");
-            line.put("url", IMAGE_GENERATION_ENDPOINT);
-            line.put("body", buildGenerationPayload(job));
             try {
-                builder.append(mapper.writeValueAsString(line)).append('\n');
-            } catch (IOException e) {
-                throw new RuntimeException("Failed to serialize OpenAI image batch line for job " + job.id(), e);
+                ImageGenerationResponse response = webClient.post()
+                        .uri(IMAGE_GENERATION_ENDPOINT)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .bodyValue(buildGenerationPayload(job))
+                        .retrieve()
+                        .bodyToMono(ImageGenerationResponse.class)
+                        .block();
+                if (response == null) {
+                    results.put(job.id(), FrameworkImageBatchResult.failure(job.id(), FLEX_EXECUTION_ID,
+                            "OpenAI Flex response unavailable"));
+                    continue;
+                }
+                String model = resolveModel(response.model());
+                String prompt = response.prompt();
+                ImageData imageData = response.firstImageData();
+                if (imageData == null) {
+                    results.put(job.id(), FrameworkImageBatchResult.failure(job.id(), FLEX_EXECUTION_ID,
+                            "OpenAI Flex response did not include image data"));
+                    continue;
+                }
+                results.put(job.id(), FrameworkImageBatchResult.success(
+                        job.id(),
+                        FLEX_EXECUTION_ID,
+                        model,
+                        prompt,
+                        decodeBase64(imageData.base64()),
+                        imageData.url()));
+            } catch (RuntimeException ex) {
+                log.error("Framework image Flex request failed for job {}", job.id(), ex);
+                results.put(job.id(), FrameworkImageBatchResult.failure(job.id(), FLEX_EXECUTION_ID, ex.getMessage()));
             }
         }
-        return builder.toString();
+        log.info("Framework image OpenAI Flex returned {} result(s)", results.size());
+        return results;
     }
 
+    /** Monta o payload da chamada direta de geração de imagem para a OpenAI. */
     private Map<String, Object> buildGenerationPayload(FrameworkImageJobDto job) {
         Map<String, Object> payload = new LinkedHashMap<>();
         String selectedModel = resolveModel(job.model());
@@ -125,157 +131,6 @@ public class FrameworkImageOpenAiBatchClient {
             payload.put("response_format", "b64_json");
         }
         return payload;
-    }
-
-    private String uploadBatchFile(byte[] content) {
-        ByteArrayResource resource = new ByteArrayResource(content) {
-            @Override
-            public String getFilename() {
-                return BATCH_FILE_NAME;
-            }
-        };
-
-        MultiValueMap<String, Object> multipart = new LinkedMultiValueMap<>();
-        multipart.add("purpose", "batch");
-        multipart.add("file", resource);
-
-        OpenAiFile file = webClient.post()
-                .uri("/files")
-                .contentType(MediaType.MULTIPART_FORM_DATA)
-                .body(BodyInserters.fromMultipartData(multipart))
-                .retrieve()
-                .bodyToMono(OpenAiFile.class)
-                .block();
-
-        if (file == null || !StringUtils.hasText(file.id())) {
-            throw new IllegalStateException("OpenAI file upload failed for framework image batch");
-        }
-        return file.id();
-    }
-
-    private OpenAiBatch createBatch(String inputFileId) {
-        Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("input_file_id", inputFileId);
-        payload.put("endpoint", IMAGE_GENERATION_ENDPOINT);
-        payload.put("completion_window", BATCH_COMPLETION_WINDOW);
-
-        OpenAiBatch batch = webClient.post()
-                .uri("/batches")
-                .bodyValue(payload)
-                .retrieve()
-                .bodyToMono(OpenAiBatch.class)
-                .block();
-
-        if (batch == null || !StringUtils.hasText(batch.id())) {
-            throw new IllegalStateException("OpenAI batch creation failed for framework image jobs");
-        }
-        return batch;
-    }
-
-    private OpenAiBatch awaitCompletion(OpenAiBatch initial) {
-        OpenAiBatch current = initial;
-        Instant deadline = Instant.now().plus(batchTimeout);
-        while (current != null && !isTerminal(current.status())) {
-            if (Instant.now().isAfter(deadline)) {
-                throw new IllegalStateException("Timed out waiting for OpenAI image batch " + current.id()
-                        + " in status " + current.status());
-            }
-            try {
-                Thread.sleep(Math.max(50L, batchPollInterval.toMillis()));
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new RuntimeException("Interrupted while waiting for OpenAI image batch", e);
-            }
-            log.debug("Polling OpenAI framework image batch {} (status={})", current.id(), current.status());
-            current = webClient.get()
-                    .uri("/batches/{id}", current.id())
-                    .retrieve()
-                    .bodyToMono(OpenAiBatch.class)
-                    .block();
-        }
-
-        if (current == null) {
-            throw new IllegalStateException("OpenAI returned null batch while polling framework image jobs");
-        }
-        if (!"completed".equalsIgnoreCase(current.status())) {
-            throw new IllegalStateException("OpenAI image batch " + current.id() + " finished with status "
-                    + current.status());
-        }
-        return current;
-    }
-
-    private String downloadBatchOutput(String fileId) {
-        return webClient.get()
-                .uri("/files/{id}/content", fileId)
-                .retrieve()
-                .bodyToMono(String.class)
-                .block();
-    }
-
-    private Map<UUID, FrameworkImageBatchResult> parseBatchOutput(String outputContent, String batchId) {
-        Map<UUID, FrameworkImageBatchResult> results = new LinkedHashMap<>();
-        if (!StringUtils.hasText(outputContent)) {
-            return results;
-        }
-
-        for (String line : outputContent.split("\\n")) {
-            if (!StringUtils.hasText(line)) {
-                continue;
-            }
-            try {
-                BatchOutput output = mapper.readValue(line, BatchOutput.class);
-                UUID jobId = parseJobId(output.customId());
-                if (jobId == null) {
-                    continue;
-                }
-                if (output.response() == null || !output.response().isSuccessful() || output.response().body() == null) {
-                    String errorMessage = output.error() != null
-                            ? output.error().message()
-                            : "OpenAI batch response unavailable";
-                    results.put(jobId, FrameworkImageBatchResult.failure(jobId, batchId, errorMessage));
-                    continue;
-                }
-
-                ImageGenerationResponse response = mapper.convertValue(output.response().body(), ImageGenerationResponse.class);
-                String model = resolveModel(response.model());
-                String prompt = response.prompt();
-                ImageData imageData = response.firstImageData();
-                if (imageData == null) {
-                    results.put(jobId, FrameworkImageBatchResult.failure(jobId, batchId,
-                            "OpenAI batch response did not include image data"));
-                    continue;
-                }
-                results.put(jobId, FrameworkImageBatchResult.success(
-                        jobId,
-                        batchId,
-                        model,
-                        prompt,
-                        decodeBase64(imageData.base64()),
-                        imageData.url()));
-            } catch (Exception ex) {
-                throw new RuntimeException("Failed to parse OpenAI image batch output line", ex);
-            }
-        }
-        return results;
-    }
-
-    private UUID parseJobId(String customId) {
-        if (!StringUtils.hasText(customId)) {
-            return null;
-        }
-        try {
-            return UUID.fromString(customId.trim());
-        } catch (IllegalArgumentException ex) {
-            log.warn("Skipping OpenAI batch item with invalid custom_id: {}", customId);
-            return null;
-        }
-    }
-
-    private boolean isTerminal(String status) {
-        if (!StringUtils.hasText(status)) {
-            return false;
-        }
-        return TERMINAL_BATCH_STATUSES.contains(status.toLowerCase(Locale.ROOT));
     }
 
     private int normalizeMaxInMemorySize(int configuredValue) {
@@ -345,29 +200,6 @@ public class FrameworkImageOpenAiBatchClient {
         public static FrameworkImageBatchResult failure(UUID jobId, String batchId, String errorMessage) {
             return new FrameworkImageBatchResult(jobId, batchId, null, null, null, null, false, errorMessage);
         }
-    }
-
-    private record OpenAiFile(String id) {
-    }
-
-    private record OpenAiBatch(String id,
-                               String status,
-                               @JsonProperty("output_file_id") String outputFileId) {
-    }
-
-    private record BatchOutput(@JsonProperty("custom_id") String customId,
-                               BatchResponse response,
-                               BatchError error) {
-    }
-
-    private record BatchResponse(@JsonProperty("status_code") Integer statusCode,
-                                 Map<String, Object> body) {
-        boolean isSuccessful() {
-            return statusCode != null && statusCode >= 200 && statusCode < 300;
-        }
-    }
-
-    private record BatchError(String message) {
     }
 
     private record ImageGenerationResponse(String model,

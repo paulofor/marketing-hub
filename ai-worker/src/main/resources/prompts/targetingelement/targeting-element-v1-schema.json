@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["items"],
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["term", "description", "confidence"],
+        "properties": {
+          "term": { "type": "string", "minLength": 1 },
+          "description": { "type": "string", "minLength": 1 },
+          "confidence": { "type": "number", "minimum": 0.75, "maximum": 1 },
+          "notes": { "type": "string" }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

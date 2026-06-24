@@ -352,6 +352,10 @@ public class TargetingRequestChatGptClient {
             }
             TargetingCandidateType tipo = TargetingCandidateType.from(readText(node, "tipo"));
             BigDecimal score = readDecimal(node, "score");
+            if (score != null && score.compareTo(BigDecimal.valueOf(0.75)) < 0) {
+                log.info("Descartando seed {} por baixa aderência comercial de IA: {}", seed, score);
+                continue;
+            }
             String rationale = readText(node, "rationale");
             String idiomaHint = firstNonBlank(readText(node, "idioma_hint"), readText(node, "idioma"));
             String intent = readText(node, "intent_tag");

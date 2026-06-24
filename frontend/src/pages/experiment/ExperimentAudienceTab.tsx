@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   useExperimentTargetingSelections,
   useSaveExperimentTargetingSelections,
@@ -71,6 +72,8 @@ export function ExperimentAudienceTab({
     nicheIdAsString,
     { status: "APPROVED" },
   );
+  const { data: allElements, isLoading: isLoadingAllElements } =
+    useTargetingElementsByNiche(nicheIdAsString);
   const { data: savedSelections } =
     useExperimentTargetingSelections(experimentId);
   const saveSelections = useSaveExperimentTargetingSelections(experimentId);
@@ -101,6 +104,12 @@ export function ExperimentAudienceTab({
     });
     setSelected(next);
   }, [savedSelections, availableOptions]);
+
+  const totalElements = Array.isArray(allElements) ? allElements.length : 0;
+  const unavailableElements = Math.max(
+    totalElements - availableOptions.length,
+    0,
+  );
 
   const quantifiedMetaOptions = useMemo(
     () => availableOptions.filter((item) => formatMetaAudienceRange(item)),
@@ -208,9 +217,37 @@ export function ExperimentAudienceTab({
         {isLoading ? (
           <div className="text-muted small">Carregando opções do nicho...</div>
         ) : availableOptions.length === 0 ? (
-          <div className="text-muted small">
-            Nenhum interesse, cargo ou comportamento aprovado foi encontrado
-            para este nicho.
+          <div className="alert alert-warning mb-0 small" role="status">
+            <div className="fw-semibold mb-2">
+              Nenhum público aprovado apareceu para este experimento.
+            </div>
+            <ol className="mb-3 ps-3">
+              <li>Abra a tela do nicho e vá em Segmentação Meta Ads.</li>
+              <li>Gere interesses, cargos ou comportamentos.</li>
+              <li>Depois aprove somente os itens com ID oficial da Meta.</li>
+              <li>Volte aqui para selecionar o público do experimento.</li>
+            </ol>
+            {isLoadingAllElements ? (
+              <div className="text-muted mb-3">
+                Conferindo se existem públicos pendentes ou recusados...
+              </div>
+            ) : unavailableElements > 0 ? (
+              <div className="mb-3">
+                Já existem {unavailableElements} item
+                {unavailableElements === 1 ? "" : "s"} neste nicho, mas ainda
+                não estão aprovados para campanha.
+              </div>
+            ) : (
+              <div className="mb-3">
+                Ainda não existe nenhum item de público gerado para este nicho.
+              </div>
+            )}
+            <Link
+              className="btn btn-outline-primary btn-sm"
+              to={`/niches/${nicheId}#niche-targeting`}
+            >
+              Gerar públicos no nicho
+            </Link>
           </div>
         ) : (
           <div className="row g-3">

@@ -5295,3 +5295,10 @@
 - Problema: após remover o bootstrap de banco, ainda existiam classes produtivas legadas no AI Worker com repositories, JPA, EntityManager e services internos do backend.
 - Correção aplicada: removidos os fluxos legados desativados que ainda dependiam de acesso direto ao banco; o worker mantém somente fluxos que consomem contratos do backend ou integrações externas.
 - Prevenção de recorrência: a guarda ArchUnit passou a bloquear dependência de todo o AI Worker produtivo contra `repository`, JPA e services internos do backend.
+
+## 2026-06-24 — Correção de compilação dos contratos de targeting no AI Worker
+
+- Problema: o CI do AI Worker falhava porque o worker importava contratos de geração de targeting que ainda não estavam disponíveis no artefato `ads-service` publicado usado pela build isolada.
+- Causa-raiz: o workflow do AI Worker compilava contra o pacote publicado do backend, que pode ficar defasado em relação ao código do monorepo.
+- Correção aplicada: o workflow do AI Worker passou a instalar o `ads-service` local do checkout antes dos testes, mantendo o backend como fonte de verdade dos contratos e evitando duplicação de DTOs no worker.
+- Prevenção de recorrência: a build isolada do worker passa a usar o contrato do backend do mesmo commit, sem depender da publicação prévia do pacote no GitHub Packages.

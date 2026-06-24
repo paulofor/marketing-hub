@@ -40,6 +40,7 @@ public class TargetingElementService {
         this.hypothesisRepository = hypothesisRepository;
     }
 
+    /** Cria um elemento de segmentação garantindo dados mínimos para aprovação operacional. */
     @Transactional
     public TargetingElement create(CreateTargetingElementRequest request) {
         if (request.getMarketNicheId() == null) {
@@ -77,9 +78,11 @@ public class TargetingElementService {
         if (request.getStatus() != null) {
             element.setStatus(request.getStatus());
         }
+        validateReadyState(element);
         return repository.save(element);
     }
 
+    /** Atualiza um elemento de segmentação sem permitir aprovação sem ID oficial da Meta. */
     @Transactional
     public TargetingElement update(Long id, UpdateTargetingElementRequest request) {
         TargetingElement element = repository.findById(id).orElseThrow();
@@ -244,10 +247,23 @@ public class TargetingElementService {
         return term.trim();
     }
 
+    /** Valida se o elemento aprovado está pronto para uso em campanhas Meta Ads. */
     private void validateReadyState(TargetingElement element) {
         if (element.getStatus() == TargetingElementStatus.APPROVED && !StringUtils.hasText(element.getTerm())) {
             throw new IllegalArgumentException("Não é possível aprovar um elemento sem termo");
         }
+        if (element.getStatus() == TargetingElementStatus.APPROVED
+                && requiresMetaId(element.getType())
+                && !StringUtils.hasText(element.getMetaId())) {
+            throw new IllegalArgumentException("Não é possível aprovar um público sem ID oficial da Meta");
+        }
+    }
+
+    /** Indica se o tipo de público depende de ID oficial da Meta para uso em campanha. */
+    private boolean requiresMetaId(TargetingElementType type) {
+        return type == TargetingElementType.INTEREST
+                || type == TargetingElementType.JOB_TITLE
+                || type == TargetingElementType.BEHAVIOR;
     }
 
     /** Adiciona uma pendência de geração ao contrato interno respeitando o limite solicitado. */

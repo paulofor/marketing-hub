@@ -72,10 +72,11 @@ export function TargetingGenerationForm({
   const pendingTotal = requestedTotal ?? 0;
   const hasPendingRequest = pendingTotal > 0;
   const isSubmitting = request.isPending || Boolean(isLoadingModels);
+  const progressStatus = hasPendingRequest ? "Aguardando Worker" : "Fila livre";
   const statusMessage =
     statusLabel ??
     (hasPendingRequest
-      ? `Solicitação pendente no Worker: ${pendingTotal}. A lista pode aumentar automaticamente quando o processamento terminar.`
+      ? `Há ${pendingTotal} item(ns) solicitado(s). Esta tela atualiza automaticamente a cada 15 segundos até o Worker concluir.`
       : "Nenhuma solicitação pendente no Worker.");
 
   return (
@@ -130,11 +131,32 @@ export function TargetingGenerationForm({
           </button>
         ) : null}
       </div>
-      <small
-        className={hasPendingRequest ? "text-warning" : "text-body-secondary"}
+      <div
+        className={`border rounded-3 p-2 small ${
+          hasPendingRequest
+            ? "border-warning-subtle bg-warning-subtle"
+            : "bg-light"
+        }`}
+        aria-live="polite"
       >
-        {isFetchingStatus ? "Atualizando solicitações..." : statusMessage}
-      </small>
+        <div className="d-flex justify-content-between gap-2 flex-wrap">
+          <span className="fw-semibold">{progressStatus}</span>
+          <span>{pendingTotal} pendente(s)</span>
+        </div>
+        <div
+          className={
+            hasPendingRequest ? "text-warning-emphasis" : "text-body-secondary"
+          }
+        >
+          {isFetchingStatus ? "Atualizando solicitações..." : statusMessage}
+        </div>
+        {hasPendingRequest ? (
+          <div className="text-body-secondary mt-1">
+            Nova solicitação antes da conclusão substitui a quantidade pendente
+            atual; não soma automaticamente.
+          </div>
+        ) : null}
+      </div>
     </form>
   );
 }

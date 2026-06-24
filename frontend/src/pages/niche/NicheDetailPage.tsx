@@ -194,7 +194,7 @@ export default function NicheDetailPage() {
   const { nicheId } = useParams();
   const id = Number(nicheId);
   const normalizedNicheId = Number.isFinite(id) ? id : undefined;
-  const { data, isLoading, isFetching } = useNiche(id);
+  const { data, isLoading, isFetching, refetch: refetchNiche } = useNiche(id);
   const facebookPixelId = data?.facebookPixelId ?? null;
   const facebookPixelCode = data?.facebookPixelCode ?? null;
   const facebookPixelCreatedAtLabel = data?.facebookPixelCreatedAt
@@ -209,8 +209,11 @@ export default function NicheDetailPage() {
   );
   const { data: chatDialog } = useChatDialog(data?.chatDialogId);
   const { data: hypotheses } = useHypothesesByNiche(nicheId, "ALL");
-  const { data: targetingElements, isFetching: isFetchingTargeting } =
-    useTargetingElementsByNiche(nicheId);
+  const {
+    data: targetingElements,
+    isFetching: isFetchingTargeting,
+    refetch: refetchTargetingElements,
+  } = useTargetingElementsByNiche(nicheId);
   const { data: experiments } = useExperimentsByNiche(nicheId);
   const { data: deliverables } = useDeliverablesByNiche(nicheId);
   const { data: informationSources } = useInformationSourcesByNiche(nicheId);
@@ -515,6 +518,24 @@ export default function NicheDetailPage() {
       anchor: "niche-behaviors",
     },
   ];
+
+  const hasPendingTargetingGeneration = targetingConfigs.some(
+    (config) => (config.requested ?? 0) > 0,
+  );
+
+  useEffect(() => {
+    if (!hasPendingTargetingGeneration) {
+      return undefined;
+    }
+
+    const intervalId = window.setInterval(() => {
+      void refetchNiche();
+      void refetchTargetingElements();
+    }, 15_000);
+
+    return () => window.clearInterval(intervalId);
+  }, [hasPendingTargetingGeneration, refetchNiche, refetchTargetingElements]);
+
   const informationSourceList = Array.isArray(informationSources)
     ? [...informationSources].sort((a, b) => {
         const aDate = a.createdAt ? new Date(a.createdAt).getTime() : 0;
@@ -2287,9 +2308,9 @@ export default function NicheDetailPage() {
             </div>
             <div className="small">
               Para aparecer no experimento, gere e aprove separadamente
-              interesses, cargos e comportamentos com ID oficial da Meta. O
-              painel de solicitações fica apenas como acompanhamento da última
-              rodada processada.
+              interesses, cargos e comportamentos com ID oficial da Meta. A
+              geração por IA cria itens para revisão; a aprovação final não é
+              automática quando ainda não existe ID oficial da Meta.
             </div>
           </div>
 

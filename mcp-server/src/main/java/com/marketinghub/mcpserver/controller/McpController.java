@@ -35,7 +35,7 @@ public class McpController {
     private static final int MAX_QUERY_LIMIT = 500;
     private static final List<String> JAVA_LOG_MODULES = List.of("backend", "ai-worker", "lead-portal", "facebook-ads",
             "email-service", "lead-portal-payment", "mds", "mois", "mois-sales-library-worker",
-            "mois-hotmart", "clickbank-coletor-mois", "oprm-coletor-receita");
+            "mois-hotmart", "clickbank-coletor-mois", "oprm-coletor-receita", "ops-monitor-worker");
 
     private final McpProperties properties;
     private final DatabaseDiagnosticsService databaseDiagnosticsService;
@@ -136,7 +136,7 @@ public class McpController {
                     ),
                     Map.of(
                             "name", "java_module_logs",
-                            "description", "Retorna as últimas linhas de logs do Spring Boot dos módulos Java (backend, ai-worker, lead-portal, facebook-ads, email-service, lead-portal-payment, mds, mois, mois-sales-library-worker, mois-hotmart, clickbank-coletor-mois, oprm-coletor-receita).",
+                            "description", "Retorna as últimas linhas de logs do Spring Boot dos módulos Java (backend, ai-worker, lead-portal, facebook-ads, email-service, lead-portal-payment, mds, mois, mois-sales-library-worker, mois-hotmart, clickbank-coletor-mois, oprm-coletor-receita, ops-monitor-worker).",
                             "inputSchema", Map.of(
                                     "type", "object",
                                     "properties", Map.of(

@@ -12,3 +12,9 @@
 - Causa-raiz tratada: o Ops Monitor dependia apenas de heartbeats/incidentes reportados pelo worker; quando o próprio consumo da fila falhava, a tela não destacava a fila parada.
 - Ajuste: o backend passou a expor incidente sintético do `ai-worker` quando houver execução GeraLanding antiga em `INICIADO`, mantendo o backend apenas como leitura/relatório de estado persistido.
 - Prevenção: teste unitário cobre a criação do incidente sintético `GERALANDING_QUEUE_STALE`.
+
+## 2026-06-24 — Observabilidade e publicação do ops-monitor-worker
+
+- Causa-raiz tratada: o `ops-monitor-worker` não tinha exposição de logfile própria no Actuator, não estava listado na tool `java_module_logs` do MCP Server e não havia workflow dedicado de publicação.
+- Ajuste: o worker passou a expor `/actuator/logfile`, o MCP passou a aceitar o módulo `ops-monitor-worker` e foi criado workflow de teste, build, push e deploy para publicação do executor.
+- Prevenção: teste de contrato do MCP valida leitura dos logs do `ops-monitor-worker`.

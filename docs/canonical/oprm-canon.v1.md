@@ -192,17 +192,20 @@ Evitar fechamento prematuro de `import run` que destrói a totalização de mark
 - Este documento é o cânone específico de OPRM para ingestão de CNAE e totalização de market size.
 - As diretrizes gerais do sistema permanecem em `docs/canonical/system-governance-canon.v2.md`.
 
-## Regra obrigatória — snapshot canônico fixo para operação
+## Regra obrigatória — ciclo 3 com snapshot canônico fixo para operação
 
-- Para operação atual da ingestão OPRM CNPJ/CNAE, o `snapshotDate` canônico deve permanecer **fixo em `2026-05-10`**.
+- Para operação atual da ingestão OPRM CNPJ/CNAE, o ciclo vigente é o **ciclo 3**.
+- O ciclo 3 deve **apenas cadastrar emails associados a CNAEs**, usando os arquivos `Estabelecimentos*.zip`; ele não deve recalcular market size, score, enriquecimento ou materializar nichos.
+- No ciclo 3, o `snapshotDate` canônico deve permanecer **fixo em `2026-06-14`**.
 - É proibido alterar automaticamente a data do snapshot para diretórios mais novos durante execução agendada ou manual sem decisão explícita do usuário.
-- Qualquer tentativa de execução com `snapshotDate` diferente de `2026-05-10` deve ser tratada como não conformidade operacional e registrada em log com causa-raiz.
+- Qualquer tentativa de execução com `snapshotDate` diferente de `2026-06-14` deve ser tratada como não conformidade operacional e registrada em log com causa-raiz.
 
-## Critério de efetividade — snapshot fixo
+## Critério de efetividade — ciclo 3 com snapshot fixo
 
-- Logs de criação de run devem mostrar explicitamente `snapshotDate=2026-05-10`.
-- A base de download deve ser explicitamente `https://dados-abertos-rf-cnpj.casadosdados.com.br/arquivos/2026-05-10/` enquanto essa regra estiver vigente.
-- Antes de iniciar a execução agendada/manual, deve haver validação de acesso HTTP (ex.: `HEAD`) para os arquivos de referência do snapshot (mínimo: `Cnaes.zip`, `Empresas1.zip`, `Estabelecimentos1.zip`) com retorno `200`.
+- Logs de execução devem mostrar explicitamente `ciclo=3`, `snapshotDate=2026-06-14` e a `sourceUrl` usada.
+- A base de download deve ser explicitamente `https://dados-abertos-rf-cnpj.casadosdados.com.br/arquivos/2026-06-14/` enquanto o ciclo 3 estiver vigente.
+- Antes de iniciar a execução agendada/manual, deve haver validação de acesso HTTP (ex.: `HEAD`) para os arquivos de referência do snapshot (mínimo: `Estabelecimentos0.zip` e `Estabelecimentos1.zip`) com retorno `200`.
+- Linhas sem email devem ser ignoradas no ciclo 3 para evitar cadastro de CNAEs sem contato acionável.
 
 ## Regra obrigatória — ranking de CNAEs por score OPRM com paginação
 

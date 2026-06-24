@@ -68,4 +68,21 @@ class OprmEstabelecimentoCnaeRaizServiceTest {
         assertThat(jdbcTemplate.queryForObject("SELECT is_simples FROM oprm_estabelecimento_cnae_raiz WHERE cnpj_raiz = ? AND cnae_code = ?",
                 Integer.class, "12345678", "6201501")).isEqualTo(1);
     }
+    /**
+     * Garante que o ciclo 3 persiste somente CNAEs que tenham email associado.
+     */
+    @Test
+    void shouldIgnoreRowsWithoutEmailForCycleThree() {
+        var response = service.upsertBatch(new OprmEstabelecimentoCnaeRaizBatchRequestDto(List.of(
+                new OprmEstabelecimentoCnaeRaizUpsertDto("12345678", "6201501", ""),
+                new OprmEstabelecimentoCnaeRaizUpsertDto("87654321", "9602501", "contato@exemplo.com")
+        )));
+
+        assertThat(response.received()).isEqualTo(2);
+        assertThat(response.persisted()).isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM oprm_estabelecimento_cnae_raiz", Integer.class)).isEqualTo(1);
+        assertThat(jdbcTemplate.queryForObject("SELECT email FROM oprm_estabelecimento_cnae_raiz WHERE cnae_code = ?",
+                String.class, "9602501")).isEqualTo("contato@exemplo.com");
+    }
+
 }

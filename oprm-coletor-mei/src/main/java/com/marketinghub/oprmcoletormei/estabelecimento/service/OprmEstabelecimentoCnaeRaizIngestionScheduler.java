@@ -31,7 +31,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
 /**
- * Responsável pelo processo simples de ingestão da tabela oprm_estabelecimento_cnae_raiz a partir dos arquivos ESTABELECIMENTOS.
+ * Responsável pelo processo simples de cadastro de emails associados a CNAEs a partir dos arquivos ESTABELECIMENTOS.
  */
 @Component
 public class OprmEstabelecimentoCnaeRaizIngestionScheduler {
@@ -39,6 +39,7 @@ public class OprmEstabelecimentoCnaeRaizIngestionScheduler {
     private static final Logger log = LoggerFactory.getLogger(OprmEstabelecimentoCnaeRaizIngestionScheduler.class);
     private static final int BATCH_SIZE = 5000;
     private static final Pattern CNAE_7_DIGITS_PATTERN = Pattern.compile("(\\d{7})");
+    private static final int OPERATIONAL_CYCLE_NUMBER = 3;
 
     private final OprmMarketImportScheduleProperties scheduleProperties;
     private final OprmMarketImportCollectorProperties collectorProperties;
@@ -58,17 +59,19 @@ public class OprmEstabelecimentoCnaeRaizIngestionScheduler {
     }
 
     /**
-     * Executa em 29/05 às 10:00 a ingestão direta de todos os arquivos ESTABELECIMENTOS na tabela dedicada.
+     * Executa a ingestão do ciclo 3 para cadastrar somente emails associados a CNAEs.
      */
     @Scheduled(cron = "0 0 10 29 5 *", zone = "America/Sao_Paulo")
     public void runScheduledEstabelecimentoCnaeRaizIngestion() {
-        log.info("Iniciando ingestão simples OPRM de ESTABELECIMENTOS para oprm_estabelecimento_cnae_raiz.");
+        log.info("Iniciando ciclo 3 OPRM para cadastrar emails associados a CNAEs.");
         if (!scheduleProperties.enabled()) {
             log.info("Ingestão simples OPRM de ESTABELECIMENTOS ignorada porque schedule.enabled=false.");
             return;
         }
         LocalDate snapshotDate = resolveSnapshotDate();
         String sourceUrl = resolveSourceUrl(snapshotDate);
+        log.info("Ciclo 3 OPRM de emails por CNAE configurado. ciclo={} snapshotDate={} sourceUrl={}",
+                OPERATIONAL_CYCLE_NUMBER, snapshotDate, sourceUrl);
         Path runTempDir = Paths.get(collectorProperties.tempDir(), "estabelecimento-cnae-raiz-" + snapshotDate);
         long totalRowsRead = 0L;
         long totalRowsValid = 0L;
@@ -84,10 +87,11 @@ public class OprmEstabelecimentoCnaeRaizIngestionScheduler {
                 totalRowsValid += counters.rowsValid();
                 totalRowsRejected += counters.rowsRejected();
             }
-            log.info("Ingestão simples OPRM de ESTABELECIMENTOS concluída. snapshotDate={} rowsRead={} rowsValid={} rowsRejected={}",
-                    snapshotDate, totalRowsRead, totalRowsValid, totalRowsRejected);
+            log.info("Ciclo 3 OPRM de emails por CNAE concluído. ciclo={} snapshotDate={} rowsRead={} rowsValid={} rowsRejected={}",
+                    OPERATIONAL_CYCLE_NUMBER, snapshotDate, totalRowsRead, totalRowsValid, totalRowsRejected);
         } catch (Exception ex) {
-            log.error("Falha na ingestão simples OPRM de ESTABELECIMENTOS. snapshotDate={} sourceUrl={} tempDir={} rowsRead={} rowsValid={} rowsRejected={} exceptionClass={} exceptionMessage={} errorLine={}",
+            log.error("Falha no ciclo 3 OPRM de emails por CNAE. ciclo={} snapshotDate={} sourceUrl={} tempDir={} rowsRead={} rowsValid={} rowsRejected={} exceptionClass={} exceptionMessage={} errorLine={}",
+                    OPERATIONAL_CYCLE_NUMBER,
                     snapshotDate,
                     sourceUrl,
                     runTempDir,
@@ -98,7 +102,7 @@ public class OprmEstabelecimentoCnaeRaizIngestionScheduler {
                     ex.getMessage(),
                     firstStackLine(ex),
                     ex);
-            throw new IllegalStateException("Falha na ingestão simples OPRM de ESTABELECIMENTOS.", ex);
+            throw new IllegalStateException("Falha no ciclo 3 OPRM de emails por CNAE.", ex);
         } finally {
             cleanupDirectory(runTempDir);
         }
@@ -148,7 +152,7 @@ public class OprmEstabelecimentoCnaeRaizIngestionScheduler {
     }
 
     /**
-     * Lê um ZIP de ESTABELECIMENTOS em streaming e envia lotes normalizados ao backend.
+     * Lê um ZIP de ESTABELECIMENTOS em streaming e envia ao backend apenas linhas com email e CNAE.
      */
     private IngestionFileCounters ingestEstabelecimentosZip(Path zipPath, String fileName) throws IOException {
         log.info("Iniciando leitura streaming de ESTABELECIMENTOS. fileName={} zipPath={}", fileName, zipPath);
@@ -169,7 +173,7 @@ public class OprmEstabelecimentoCnaeRaizIngestionScheduler {
                     rowsRead++;
                     log.debug("payload_bruto_estabelecimento fileName={} raw='{}'", fileName, rawLine);
                     OprmEstabelecimentoCnaeRaizUpsertDto row = parseEstabelecimentoLine(rawLine);
-                    if (row == null) {
+                    if (row == null || row.email() == null || row.email().isBlank()) {
                         rowsRejected++;
                     } else {
                         rowsValid++;
@@ -196,7 +200,7 @@ public class OprmEstabelecimentoCnaeRaizIngestionScheduler {
     }
 
     /**
-     * Converte uma linha bruta de ESTABELECIMENTOS no DTO mínimo aceito pelo backend.
+     * Converte uma linha bruta de ESTABELECIMENTOS no DTO mínimo de email associado ao CNAE.
      */
     private OprmEstabelecimentoCnaeRaizUpsertDto parseEstabelecimentoLine(String rawLine) {
         if (rawLine == null || rawLine.isBlank()) {
@@ -215,7 +219,7 @@ public class OprmEstabelecimentoCnaeRaizIngestionScheduler {
     }
 
     /**
-     * Publica um lote já normalizado no endpoint backend da tabela de estabelecimentos por CNAE raiz.
+     * Publica um lote já normalizado de emails por CNAE no endpoint backend.
      */
     private void publishBatch(List<OprmEstabelecimentoCnaeRaizUpsertDto> batch, String fileName) {
         log.info("Publicando lote de estabelecimentos OPRM. fileName={} batchSize={}", fileName, batch.size());

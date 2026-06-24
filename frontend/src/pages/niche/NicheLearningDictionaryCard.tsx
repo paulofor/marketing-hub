@@ -37,20 +37,28 @@ function formatDate(value?: string | null) {
 export function NicheLearningDictionaryCard({ nicheId }: Props) {
   const { data, isLoading, error } = useNicheLearningDictionary(nicheId);
   const resolveEntries = (key: DictionaryKey): LearningStatement[] =>
-    ((data?.[key] ?? []) as LearningStatement[]);
+    (data?.[key] ?? []) as LearningStatement[];
 
   const hasContent = useMemo(() => {
     if (!data) return false;
     return sections.some((section) => resolveEntries(section.key).length > 0);
   }, [data]);
 
+  if (!isLoading && !error && !hasContent) {
+    return null;
+  }
+
   return (
-    <section className="niche-section" aria-label="Banco de aprendizados do nicho">
+    <section
+      className="niche-section"
+      aria-label="Banco de aprendizados do nicho"
+    >
       <div className="niche-section__header">
         <div>
           <h2 className="niche-section__title">Banco de aprendizados</h2>
           <p className="niche-section__subtitle">
-            Consolida os principais aprendizados Dor → Resultado → Mecanismo → Prova → Oferta para os próximos testes.
+            Consolida os principais aprendizados Dor → Resultado → Mecanismo →
+            Prova → Oferta para os próximos testes.
           </p>
           <p className="niche-section__status">
             Atualizado em {formatDate(data?.updatedAt)}
@@ -65,7 +73,9 @@ export function NicheLearningDictionaryCard({ nicheId }: Props) {
         <div className="text-muted">Carregando aprendizados...</div>
       ) : !hasContent ? (
         <div className="text-muted">
-          Ainda não existem aprendizados vinculados a este nicho. Gere um aprendizado a partir do painel do experimento para popular esta sessão.
+          Ainda não existem aprendizados vinculados a este nicho. Gere um
+          aprendizado a partir do painel do experimento para popular esta
+          sessão.
         </div>
       ) : (
         <div className="row g-3">
@@ -76,12 +86,16 @@ export function NicheLearningDictionaryCard({ nicheId }: Props) {
                 <div className="border rounded-3 p-3 h-100">
                   <strong className="d-block mb-2">{section.label}</strong>
                   {entries.length === 0 ? (
-                    <p className="text-body-secondary mb-0">Sem itens cadastrados.</p>
+                    <p className="text-body-secondary mb-0">
+                      Sem itens cadastrados.
+                    </p>
                   ) : (
                     <ul className="list-unstyled mb-0">
                       {entries.map((statement, index) => (
                         <li key={`${section.key}-${index}`} className="mb-3">
-                          <div className="fw-semibold">{statement.statement}</div>
+                          <div className="fw-semibold">
+                            {statement.statement}
+                          </div>
                           {statement.evidence ? (
                             <div className="text-body-secondary small">
                               {statement.evidence}

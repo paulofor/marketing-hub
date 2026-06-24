@@ -53,6 +53,7 @@ mcp:
     mois-hotmart-path: ${MCP_LOG_MOIS_HOTMART_PATH:http://177.153.62.107:8096/ops-monitor/mois-hotmart-log}
     clickbank-coletor-mois-path: ${MCP_LOG_CLICKBANK_COLETOR_MOIS_PATH:http://177.153.62.107:9096/internal/ops-monitor/logfile}
     oprm-coletor-receita-path: ${MCP_LOG_OPRM_COLETOR_RECEITA_PATH:http://177.153.62.107:8094/actuator/logfile}
+    ops-monitor-worker-path: ${MCP_LOG_OPS_MONITOR_WORKER_PATH:http://191.252.120.96:8098/actuator/logfile}
     fetch-timeout-seconds: ${MCP_LOG_FETCH_TIMEOUT_SECONDS:45}
     fetch-attempts: ${MCP_LOG_FETCH_ATTEMPTS:3}
     fetch-retry-delay-millis: ${MCP_LOG_FETCH_RETRY_DELAY_MILLIS:400}

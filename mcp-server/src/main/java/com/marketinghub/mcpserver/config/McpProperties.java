@@ -38,6 +38,7 @@ public record McpProperties(
             @NotBlank String moisHotmartPath,
             @NotBlank String clickbankColetorMoisPath,
             @NotBlank String oprmColetorReceitaPath,
+            @NotBlank String opsMonitorWorkerPath,
             @Positive int fetchTimeoutSeconds,
             @Positive int fetchAttempts,
             @Positive int fetchRetryDelayMillis,

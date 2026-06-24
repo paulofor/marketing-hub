@@ -1,0 +1,11 @@
+services:
+  ops-monitor-worker:
+    image: ${OPS_MONITOR_WORKER_IMAGE:-ghcr.io/marketing-hub-org/marketing-hub/ops-monitor-worker:latest}
+    container_name: ops-monitor-worker
+    restart: unless-stopped
+    ports:
+      - "${OPS_MONITOR_WORKER_PORT:-8098}:${SERVER_PORT:-8098}"
+    environment:
+      SERVER_PORT: ${SERVER_PORT:-8098}
+      LOG_FILE_NAME: ${LOG_FILE_NAME:-/tmp/ops-monitor-worker.log}
+      OPS_MONITOR_BACKEND_BASE_URL: ${OPS_MONITOR_BACKEND_BASE_URL:-http://191.252.181.168}

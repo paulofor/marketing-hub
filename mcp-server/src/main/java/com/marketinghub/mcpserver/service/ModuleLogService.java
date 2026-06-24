@@ -255,6 +255,7 @@ public class ModuleLogService {
             case "mois-hotmart" -> properties.logs().moisHotmartPath();
             case "clickbank-coletor-mois" -> properties.logs().clickbankColetorMoisPath();
             case "oprm-coletor-receita" -> properties.logs().oprmColetorReceitaPath();
+            case "ops-monitor-worker" -> properties.logs().opsMonitorWorkerPath();
             default -> throw new IllegalArgumentException("Unknown module: " + module);
         };
     }
@@ -270,10 +271,10 @@ public class ModuleLogService {
         return switch (normalized) {
             case "backend", "ai-worker", "lead-portal", "facebook-ads", "email-service", "lead-portal-payment",
                     "mds", "mois", "mois-sales-library-worker", "mois-hotmart", "clickbank-coletor-mois",
-                    "oprm-coletor-receita" -> normalized;
+                    "oprm-coletor-receita", "ops-monitor-worker" -> normalized;
             default -> throw new IllegalArgumentException("module must be one of: backend, ai-worker, lead-portal, "
                     + "facebook-ads, email-service, lead-portal-payment, mds, mois, mois-sales-library-worker, "
-                    + "mois-hotmart, clickbank-coletor-mois, oprm-coletor-receita");
+                    + "mois-hotmart, clickbank-coletor-mois, oprm-coletor-receita, ops-monitor-worker");
         };
     }
 

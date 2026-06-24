@@ -5220,3 +5220,9 @@
 - causa-raiz: todos os eventos de analytics da landing eram gravados em `experiment_funnel_event` na etapa `VISUALIZACAO_FORM`, e a consolidação somava qualquer evento dessa origem, inflando o funil.
 - evidência operacional: no experimento 41, o banco tinha 45 eventos nessa etapa, mas apenas 13 eram `page_view`; os demais eram eventos técnicos de analytics e não deveriam virar novas visualizações do formulário.
 - prevenção de recorrência: teste unitário garante que a consulta do resumo filtra `landing-page-analytics` por `eventType=page_view`.
+
+## 2026-06-24 — Reset automático do funil ao iniciar impressões reais
+
+- solicitação: evitar que eventos de teste continuem misturados quando a campanha começa a receber valores reais de impressão.
+- causa-raiz: o reset manual/publicação limpava dados em alguns momentos, mas não existia proteção automática no primeiro recebimento efetivo de impressões do Facebook; assim eventos prévios podiam permanecer visíveis no funil depois que a mídia começava a rodar.
+- foi feito: a sincronização de métricas de campanha agora detecta a transição de zero para impressões reais, apaga eventos de funil/analytics de teste e grava novo marco temporal antes de salvar a métrica real.

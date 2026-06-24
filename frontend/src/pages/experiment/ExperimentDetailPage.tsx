@@ -1963,7 +1963,8 @@ export default function ExperimentDetailPage() {
   const geraLandingRequiredStageCount =
     readinessSummary?.geraLandingRequiredStageCount ?? 7;
   const hasAtLeastThreeApprovedCreatives = readinessCreativeCount >= 3;
-  const hasAudienceSelection = readinessSummary?.hasCompleteTargeting ?? false;
+  const hasAudienceSelection =
+    hasCreativesReady && Boolean(data.followUpActionUrl);
   const mainExperimentChecklist = [
     {
       id: "experiment-pipeline",
@@ -2011,8 +2012,8 @@ export default function ExperimentDetailPage() {
       id: "audience-selection",
       title: "Escolha de público",
       detail: hasAudienceSelection
-        ? "Público completo selecionado"
-        : "Selecione interesses, comportamentos e dados demográficos",
+        ? "Atende a mesma regra de liberação para Facebook Ads"
+        : "Conclua os bloqueios usados para liberar o Facebook Ads",
       isMet: hasAudienceSelection,
       isLoading: isLoadingReadiness,
       actionLabel: "Abrir público",

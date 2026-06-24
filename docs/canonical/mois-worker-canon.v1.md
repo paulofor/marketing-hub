@@ -476,6 +476,7 @@ Fonte externa] -->|Coleta de produtos/URLs| CC[mois-clickbank-collector\npackage
 - A integração com OpenAI é realizada pelo `mois-sales-library-worker`, com retorno consolidado ao backend via endpoint de conclusão/falha.
 - A obtenção/montagem de prompt acontece no próprio worker (`OpenAiSalesPageAnalyzer`), combinando URL canônica, texto extraído da página e versão de prompt para rastreabilidade.
 - A persistência em MySQL 5.7 ocorre apenas nos pacotes de serviço/repositório do backend.
+- Os insumos `geralanding_*` produzidos pela análise da Biblioteca de Páginas de Vendas são responsabilidade do MOIS até a gravação no banco. O GeraLanding deve consumi-los pela persistência do backend, sem acoplamento direto a gateways, services, DTOs ou packages funcionais do MOIS.
 
 
 ### 12.6 Diagrama de arquitetura por módulo/pacote — Gera Landing (movido)

@@ -3,6 +3,7 @@ package com.marketinghub.repository.jpa.geralanding;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 import java.time.Instant;
 import java.util.List;
@@ -51,4 +52,30 @@ public interface GeraLandingStageExecutionRepository extends JpaRepository<GeraL
             Long experimentId,
             String stageCode,
             String status);
+
+    /**
+     * Lê do banco os melhores insumos de páginas de venda já persistidos pelo MOIS para enriquecer prompts do GeraLanding.
+     */
+    @Query(value = """
+            SELECT e.sales_page_id,
+                   p.url_canonical,
+                   p.title,
+                   e.score_total,
+                   e.geralanding_wireframe_json,
+                   e.geralanding_copy_json,
+                   e.geralanding_image_prompt_json,
+                   e.geralanding_design_preset_json
+            FROM mois_sales_page_job_execution e
+            INNER JOIN mois_sales_page p ON p.id = e.sales_page_id
+            WHERE e.job_type = 'PAGE_ANALYSIS'
+              AND e.status = 'DONE'
+              AND e.score_total IS NOT NULL
+              AND e.geralanding_wireframe_json IS NOT NULL
+              AND e.geralanding_copy_json IS NOT NULL
+              AND e.geralanding_image_prompt_json IS NOT NULL
+              AND e.geralanding_design_preset_json IS NOT NULL
+            ORDER BY e.score_total DESC, e.finished_at DESC, e.id DESC
+            LIMIT ?1
+            """, nativeQuery = true)
+    List<Object[]> findTopPersistedMoisGeraLandingReferenceRows(int limit);
 }

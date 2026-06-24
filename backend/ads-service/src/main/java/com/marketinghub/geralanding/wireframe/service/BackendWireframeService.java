@@ -7,7 +7,6 @@ import com.marketinghub.experiment.Experiment;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
-import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesLibraryGeraLandingInsightGateway;
 import com.marketinghub.geralanding.wireframe.service.detailStageExecution.RecordBackendWireframeDetalheDto;
 import com.marketinghub.geralanding.wireframe.service.listStageExecutions.GeraLandingWireframeExecutionSummaryResponse;
 import com.marketinghub.geralanding.wireframe.service.pending.RecordWireframeExperiment;
@@ -42,7 +41,6 @@ public class BackendWireframeService {
     private static final String STATUS_FAILED = "FALHA";
     private final ExperimentRepository experimentRepository;
     private final GeraLandingStageExecutionRepository executionRepository;
-    private final MoisSalesLibraryGeraLandingInsightGateway geraLandingInsightGateway;
     private final ObjectMapper objectMapper;
 
     /** Inicializa o serviço com os repositórios necessários para consultar execuções de wireframe. */
@@ -50,20 +48,10 @@ public class BackendWireframeService {
     public BackendWireframeService(
             ExperimentRepository experimentRepository,
             GeraLandingStageExecutionRepository executionRepository,
-            MoisSalesLibraryGeraLandingInsightGateway geraLandingInsightGateway,
             ObjectMapper objectMapper) {
         this.experimentRepository = experimentRepository;
         this.executionRepository = executionRepository;
-        this.geraLandingInsightGateway = geraLandingInsightGateway;
         this.objectMapper = objectMapper;
-    }
-
-    /** Mantém compatibilidade com testes que não precisam de insumos MOIS. */
-    BackendWireframeService(
-            ExperimentRepository experimentRepository,
-            GeraLandingStageExecutionRepository executionRepository,
-            ObjectMapper objectMapper) {
-        this(experimentRepository, executionRepository, limit -> List.of(), objectMapper);
     }
 
     /** Inicia a execução manual da etapa wireframe usando o código canônico da etapa. */
@@ -252,8 +240,45 @@ public class BackendWireframeService {
     }
 
     /** Carrega padrões vencedores da biblioteca MOIS para orientar o prompt sem copiar páginas de referência. */
-    private List<MoisSalesLibraryGeraLandingInsightGateway.GeraLandingReferenceInsight> loadGeraLandingReferenceInsights() {
-        return geraLandingInsightGateway.findTopReferences(3);
+    private List<RecordWireframePending.GeraLandingReferenceInsight> loadGeraLandingReferenceInsights() {
+        return executionRepository.findTopPersistedMoisGeraLandingReferenceRows(3).stream()
+                .map(row -> new RecordWireframePending.GeraLandingReferenceInsight(
+                        toLong(row[0]),
+                        toStringValue(row[1]),
+                        toStringValue(row[2]),
+                        (BigDecimal) row[3],
+                        parseJsonObject(toStringValue(row[4]), toLong(row[0]), "geralanding_wireframe_json"),
+                        parseJsonObject(toStringValue(row[5]), toLong(row[0]), "geralanding_copy_json"),
+                        parseJsonObject(toStringValue(row[6]), toLong(row[0]), "geralanding_image_prompt_json"),
+                        parseJsonObject(toStringValue(row[7]), toLong(row[0]), "geralanding_design_preset_json")))
+                .toList();
+    }
+
+    /** Converte valor numérico retornado pela consulta nativa para Long. */
+    private Long toLong(Object value) {
+        return value instanceof Number number ? number.longValue() : null;
+    }
+
+    /** Converte valor retornado pela consulta nativa para texto. */
+    private String toStringValue(Object value) {
+        return value != null ? value.toString() : null;
+    }
+
+    /** Converte JSON textual persistido pelo MOIS em objeto estruturado para o Worker AI. */
+    private Object parseJsonObject(String rawJson, Long pageId, String fieldName) {
+        if (rawJson == null || rawJson.isBlank()) {
+            return Map.of();
+        }
+        try {
+            return objectMapper.readValue(rawJson, FRAMEWORK_TYPE);
+        } catch (RuntimeException | JsonProcessingException ex) {
+            log.warn(
+                    "Falha ao converter insumo MOIS para objeto JSON estruturado. modulo=GeraLanding, operacao=parseJsonObject, pageId={}, fieldName={}",
+                    pageId,
+                    fieldName,
+                    ex);
+            return Map.of("raw", rawJson);
+        }
     }
 
     /** Converte o experimento da execução para os dados expostos na fila pending. */

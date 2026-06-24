@@ -5230,3 +5230,10 @@
 - Problema: no experimento 48, o card “Escolha de público” do checklist principal ficava pendente mesmo quando a seção “Campanha de Facebook Ads” já estava pronta para liberação.
 - Causa-raiz: o card usava o resumo de prontidão de targeting (`hasCompleteTargeting`), enquanto a liberação para o Facebook Ads na tela usa os bloqueios de publicação consolidados de criativo aprovado e landing ativa.
 - Correção aplicada: o card “Escolha de público” passou a refletir a mesma regra operacional de liberação exibida na seção Facebook Ads, evitando sinal visual contraditório para o usuário.
+
+## 2026-06-24 — Cards de prontidão seguem a regra do publicador Facebook Ads
+
+- Solicitação: corrigir a tela do experimento 47 porque os cards estavam verdes mesmo com o publicador sem colocar o experimento na fila.
+- Causa-raiz: o card “Escolha de público” inferia prontidão por criativo e landing, em vez de usar a mesma regra do backend/publicador (`hasCompleteTargeting`) usada por `/api/facebook-campaigns/experiments-ready`.
+- Correção aplicada: o checklist principal e os bloqueios de publicação passaram a exigir público salvo pela regra do publicador antes de mostrar pronto ou liberar o botão do Facebook Ads Worker.
+- Cânone atualizado: a regra de publicação Facebook Ads agora determina que cards e checklists da UI devem usar o contrato `/api/experiments/{experimentId}/readiness`, sem inferência local divergente.

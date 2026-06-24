@@ -109,11 +109,11 @@ Implementação: `ExperimentReadinessService` (backend) expõe os mesmos critér
    - O critério operacional de publicação é `experiment.follow_up_action_url` preenchido com a URL aprovada para destino da campanha.
    - O vínculo é do experimento com a própria landing aprovada; não há dependência bloqueante de `lead_portal_flow` para liberar campanha no Facebook Ads Worker.
 3. **Público completo**
-   - Para seleção manual de público, o mínimo de liberação é ter pelo menos **1 item aprovado** em qualquer categoria suportada de `targeting_element`: `INTEREST`, `JOB_TITLE` ou `BEHAVIOR`.
-   - Como alternativa, o playbook de ad sets finalizado também atende o requisito de público.
+   - Para seleção manual de público, o mínimo de liberação deve seguir exatamente a mesma regra do publicador/backend exposta em `ExperimentReadinessService`: o experimento precisa ter seleção de público salva para publicação, atualmente pelo menos **1 cargo/WORK_POSITION** vinculado ao experimento.
+   - A tela não pode considerar o card **Escolha de público** concluído por inferência local, por existência de criativo, por existência de landing ou apenas por playbook visual; ela deve usar a resposta do contrato `/api/experiments/{experimentId}/readiness`, especialmente `hasCompleteTargeting`, para refletir a mesma regra que coloca o experimento na fila `/api/facebook-campaigns/experiments-ready`.
    - O `facebook-ads-worker` deve consumir o pacote manual por `GET /api/facebook-adsets/experiments/{experimentId}/targeting-package`, contrato enxuto contendo somente `experimentId` e `targeting`, sem `ExperimentDto`, HTML, copy, landing ou artefatos de geração.
 
-Se qualquer bloqueio falhar o worker interrompe a publicação e retorna a lista de pendências no alerta cinza da UI.
+Se qualquer bloqueio falhar, os cards e checklists da UI devem permanecer bloqueados e o worker não deve receber o experimento na fila de publicação.
 
 ## 5.1 Explicação complementar em linguagem simples (para operação)
 
@@ -126,7 +126,7 @@ Em termos práticos, o experimento só pode ser liberado para campanha quando 3 
 2. **Tem página de destino publicada?**
    - A landing precisa estar aprovada e com URL final preenchida para receber o tráfego.
 3. **Tem público definido?**
-   - Precisa haver público aprovado (no fluxo manual, no mínimo 1 item aprovado em interesse, cargo ou comportamento).
+   - Precisa haver público salvo pela mesma regra do publicador; hoje isso significa pelo menos 1 cargo/WORK_POSITION salvo para o experimento.
 
 Se qualquer resposta for **não**, a liberação deve ser interrompida até a pendência ser resolvida.
 

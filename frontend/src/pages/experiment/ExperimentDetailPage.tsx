@@ -1769,6 +1769,7 @@ export default function ExperimentDetailPage() {
   const hasCreativesReady =
     readinessSummary?.hasCreatives ?? data.creativeApproved;
   const readinessCreativeCount = readinessSummary?.creativeCount ?? 0;
+  const hasPublisherTargeting = readinessSummary?.hasCompleteTargeting ?? false;
   const hasDailyBudget = data.dailyBudget != null && data.dailyBudget > 0;
   const openExperimentTab = (targetTab: string) => {
     setTab(targetTab);
@@ -1807,6 +1808,21 @@ export default function ExperimentDetailPage() {
         : "Aprove uma landing na aba Landing para definir a URL de destino da campanha.",
       action: data.followUpActionUrl ? undefined : openLandingActions,
       actionLabel: data.followUpActionUrl ? undefined : "Ir para Landing",
+    },
+    {
+      id: "publisher-targeting",
+      title: "Público salvo para publicação",
+      isMet: hasPublisherTargeting,
+      isLoading: isLoadingReadiness,
+      hint: isLoadingReadiness
+        ? "Verificando público salvo para o publicador..."
+        : hasPublisherTargeting
+          ? "Público salvo atende a regra do Facebook Ads Worker."
+          : "Salve na aba Público pelo menos um cargo/WORK_POSITION válido para este experimento.",
+      action: hasPublisherTargeting
+        ? undefined
+        : () => openExperimentTab("publico"),
+      actionLabel: hasPublisherTargeting ? undefined : "Ir para Público",
     },
   ];
 
@@ -1963,8 +1979,7 @@ export default function ExperimentDetailPage() {
   const geraLandingRequiredStageCount =
     readinessSummary?.geraLandingRequiredStageCount ?? 7;
   const hasAtLeastThreeApprovedCreatives = readinessCreativeCount >= 3;
-  const hasAudienceSelection =
-    hasCreativesReady && Boolean(data.followUpActionUrl);
+  const hasAudienceSelection = hasPublisherTargeting;
   const mainExperimentChecklist = [
     {
       id: "experiment-pipeline",
@@ -2012,8 +2027,8 @@ export default function ExperimentDetailPage() {
       id: "audience-selection",
       title: "Escolha de público",
       detail: hasAudienceSelection
-        ? "Atende a mesma regra de liberação para Facebook Ads"
-        : "Conclua os bloqueios usados para liberar o Facebook Ads",
+        ? "Público salvo atende a regra do publicador"
+        : "Salve um público válido para entrar na fila do publicador",
       isMet: hasAudienceSelection,
       isLoading: isLoadingReadiness,
       actionLabel: "Abrir público",

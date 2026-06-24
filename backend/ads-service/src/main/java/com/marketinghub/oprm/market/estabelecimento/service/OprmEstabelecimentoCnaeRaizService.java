@@ -16,7 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 /**
- * Serviço responsável por persistir vínculos CNPJ raiz/CNAE/email dos estabelecimentos da Receita no OPRM.
+ * Serviço responsável por persistir emails associados a CNAEs dos estabelecimentos da Receita no OPRM.
  */
 @Service
 @RequiredArgsConstructor
@@ -38,7 +38,7 @@ public class OprmEstabelecimentoCnaeRaizService {
     private final JdbcTemplate jdbcTemplate;
 
     /**
-     * Valida e grava em lote os vínculos de estabelecimentos recebidos do coletor OPRM.
+     * Valida e grava em lote somente vínculos que tenham email associado ao CNAE.
      */
     @Transactional
     public OprmEstabelecimentoCnaeRaizBatchResponseDto upsertBatch(OprmEstabelecimentoCnaeRaizBatchRequestDto request) {
@@ -79,7 +79,7 @@ public class OprmEstabelecimentoCnaeRaizService {
     }
 
     /**
-     * Normaliza o lote e rejeita linhas sem chave mínima para proteger a tabela operacional.
+     * Normaliza o lote e mantém somente linhas com chave mínima e email para proteger o ciclo 3.
      */
     private List<OprmEstabelecimentoCnaeRaizUpsertDto> normalizeAndValidate(List<OprmEstabelecimentoCnaeRaizUpsertDto> inputRows) {
         List<OprmEstabelecimentoCnaeRaizUpsertDto> rows = new ArrayList<>();
@@ -93,7 +93,11 @@ public class OprmEstabelecimentoCnaeRaizService {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         "Cada estabelecimento precisa informar cnpjRaiz com 8 dígitos e cnaeCode com 7 dígitos.");
             }
-            rows.add(new OprmEstabelecimentoCnaeRaizUpsertDto(cnpjRaiz, cnaeCode, normalizeEmail(row.email())));
+            String email = normalizeEmail(row.email());
+            if (email == null) {
+                continue;
+            }
+            rows.add(new OprmEstabelecimentoCnaeRaizUpsertDto(cnpjRaiz, cnaeCode, email));
         }
         return rows;
     }

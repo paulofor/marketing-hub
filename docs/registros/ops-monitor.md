@@ -18,3 +18,10 @@
 - Causa-raiz tratada: o `ops-monitor-worker` não tinha exposição de logfile própria no Actuator, não estava listado na tool `java_module_logs` do MCP Server e não havia workflow dedicado de publicação.
 - Ajuste: o worker passou a expor `/actuator/logfile`, o MCP passou a aceitar o módulo `ops-monitor-worker` e foi criado workflow de teste, build, push e deploy para publicação do executor.
 - Prevenção: teste de contrato do MCP valida leitura dos logs do `ops-monitor-worker`.
+
+## 2026-06-24 — Correção dos endpoints monitorados
+
+- Problema observado: a tela `/ops-monitor` marcava módulos como fora do ar com erro `404 Not Found` porque alguns registros de `ops_monitored_module` apontavam para `/actuator/health` na porta 80, enquanto os módulos expõem Actuator em portas e base paths próprios.
+- Causa-raiz tratada: cadastro inicial do monitor usou endpoints genéricos em vez dos contratos reais de observabilidade dos módulos.
+- Ajuste: criado changelog para corrigir `base_url`, `health_path` e `log_path` de backend, AI Worker, Facebook Ads Worker, OPRM Coletor MEI, MOIS Sales Library Worker e Email Service.
+- Prevenção: a correção fica versionada em Liquibase para manter o banco alinhado após deploy e evitar reincidência em novos ambientes.

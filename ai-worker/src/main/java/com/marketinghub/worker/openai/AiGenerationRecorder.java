@@ -1,23 +1,27 @@
 package com.marketinghub.worker.openai;
 
 import com.marketinghub.ai.generation.dto.AiWorkerGenerationRequest;
-import com.marketinghub.ai.generation.service.AiWorkerGenerationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 
+/**
+ * Responsabilidade: montar registros de auditoria de IA e delegar a persistência ao backend.
+ */
 @Component
 public class AiGenerationRecorder {
     private static final Logger log = LoggerFactory.getLogger(AiGenerationRecorder.class);
 
-    private final AiWorkerGenerationService service;
+    private final BackendAiGenerationClient backendClient;
 
-    public AiGenerationRecorder(AiWorkerGenerationService service) {
-        this.service = service;
+    /** Inicializa o registrador com cliente HTTP do backend principal. */
+    public AiGenerationRecorder(BackendAiGenerationClient backendClient) {
+        this.backendClient = backendClient;
     }
 
+    /** Registra prompt, resposta, modelo e custo estimado da interação de IA pelo backend. */
     public void record(String domain,
                        String referenceId,
                        String prompt,
@@ -28,7 +32,7 @@ public class AiGenerationRecorder {
         Integer inputTokens = usage != null ? usage.effectiveInputTokens() : null;
         Integer outputTokens = usage != null ? usage.effectiveOutputTokens() : null;
         try {
-            service.recordGeneration(AiWorkerGenerationRequest.builder()
+            backendClient.record(AiWorkerGenerationRequest.builder()
                     .domain(domain)
                     .referenceId(referenceId)
                     .prompt(prompt)

@@ -7,7 +7,7 @@ import com.marketinghub.experiment.Experiment;
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.worker.openai.AiGenerationRecorder;
-import com.marketinghub.ai.generation.service.AiWorkerGenerationService;
+import com.marketinghub.worker.openai.BackendAiGenerationClient;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
@@ -27,15 +27,15 @@ import static org.mockito.Mockito.verify;
 class DeliverableChatGptClientTest {
     private MockWebServer server;
     private DeliverableChatGptClient client;
-    private AiWorkerGenerationService generationService;
+    private BackendAiGenerationClient generationClient;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @BeforeEach
     void setUp() throws IOException {
         server = new MockWebServer();
         server.start();
-        generationService = mock(AiWorkerGenerationService.class);
-        AiGenerationRecorder recorder = new AiGenerationRecorder(generationService);
+        generationClient = mock(BackendAiGenerationClient.class);
+        AiGenerationRecorder recorder = new AiGenerationRecorder(generationClient);
         client = new DeliverableChatGptClient(
                 WebClientFactory.testBuilder(),
                 objectMapper,
@@ -104,7 +104,7 @@ class DeliverableChatGptClientTest {
         assertThat(request.getPrompt()).contains("Gere 2 entregáveis");
 
         ArgumentCaptor<com.marketinghub.ai.generation.dto.AiWorkerGenerationRequest> captor = ArgumentCaptor.forClass(com.marketinghub.ai.generation.dto.AiWorkerGenerationRequest.class);
-        verify(generationService).recordGeneration(captor.capture());
+        verify(generationClient).record(captor.capture());
         assertThat(captor.getValue().getDomain()).isEqualTo("EXPERIMENT_DELIVERABLE");
         assertThat(captor.getValue().getPrompt()).contains("Consultorias B2B");
     }

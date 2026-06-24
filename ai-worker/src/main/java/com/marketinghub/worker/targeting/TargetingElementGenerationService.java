@@ -1,116 +1,91 @@
 package com.marketinghub.worker.targeting;
 
 import com.marketinghub.niche.MarketNiche;
-import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import com.marketinghub.targeting.TargetingElement;
-import com.marketinghub.targeting.TargetingElementType;
 import com.marketinghub.targeting.dto.CreateTargetingElementRequest;
-import com.marketinghub.targeting.service.TargetingElementService;
+import com.marketinghub.targeting.dto.generation.TargetingElementGenerationPendingDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
+/**
+ * Responsabilidade: executar a geração de públicos de Meta Ads consumindo pendências pelo backend.
+ */
 @Service
 public class TargetingElementGenerationService {
     private static final Logger log = LoggerFactory.getLogger(TargetingElementGenerationService.class);
 
-    private final MarketNicheRepository nicheRepository;
-    private final TargetingElementService targetingElementService;
+    private final BackendTargetingElementClient backendClient;
     private final TargetingElementChatGptClient chatGptClient;
 
-    public TargetingElementGenerationService(MarketNicheRepository nicheRepository,
-                                             TargetingElementService targetingElementService,
+    /** Inicializa o serviço com cliente do backend e cliente OpenAI de targeting. */
+    public TargetingElementGenerationService(BackendTargetingElementClient backendClient,
                                              TargetingElementChatGptClient chatGptClient) {
-        this.nicheRepository = nicheRepository;
-        this.targetingElementService = targetingElementService;
+        this.backendClient = backendClient;
         this.chatGptClient = chatGptClient;
     }
 
+    /** Busca pendências no backend, gera os públicos e reporta resultados sem acessar o banco. */
     public Map<Long, List<TargetingElement>> generate() {
-        List<MarketNiche> niches = findNichesToGenerate();
-        if (niches.isEmpty()) {
+        List<TargetingElementGenerationPendingDto> pending = backendClient.listPending(20);
+        if (pending.isEmpty()) {
             return Map.of();
         }
 
-        List<TargetingElementChatGptClient.TargetingBatchRequest> batchRequests = new ArrayList<>();
-        for (MarketNiche niche : niches) {
-            int interests = normalize(niche.getInterestsToGenerate());
-            int jobTitles = normalize(niche.getJobTitlesToGenerate());
-            int behaviors = normalize(niche.getBehaviorsToGenerate());
-            if (interests > 0) {
-                batchRequests.add(new TargetingElementChatGptClient.TargetingBatchRequest(
-                        niche,
-                        TargetingElementType.INTEREST,
-                        interests,
-                        niche.getInterestModel()
-                ));
-            }
-            if (jobTitles > 0) {
-                batchRequests.add(new TargetingElementChatGptClient.TargetingBatchRequest(
-                        niche,
-                        TargetingElementType.JOB_TITLE,
-                        jobTitles,
-                        niche.getJobTitleModel()
-                ));
-            }
-            if (behaviors > 0) {
-                batchRequests.add(new TargetingElementChatGptClient.TargetingBatchRequest(
-                        niche,
-                        TargetingElementType.BEHAVIOR,
-                        behaviors,
-                        niche.getBehaviorModel()
-                ));
-            }
-        }
+        List<TargetingElementChatGptClient.TargetingBatchRequest> batchRequests = pending.stream()
+                .filter(item -> item.type() != null && item.quantity() > 0)
+                .map(item -> new TargetingElementChatGptClient.TargetingBatchRequest(
+                        toNiche(item),
+                        item.type(),
+                        item.quantity(),
+                        item.model()))
+                .toList();
 
-        Map<Long, List<CreateTargetingElementRequest>> generated = chatGptClient.generateBatch(batchRequests);
+        Map<Long, List<CreateTargetingElementRequest>> generated;
+        try {
+            generated = chatGptClient.generateBatch(batchRequests);
+        } catch (RuntimeException ex) {
+            log.error("Falha ao gerar públicos de targeting para {} pendências", pending.size(), ex);
+            pending.stream()
+                    .filter(item -> item.type() != null && item.quantity() > 0)
+                    .forEach(item -> backendClient.sendFailure(item.nicheId(), item.type(), ex.getMessage()));
+            return Map.of();
+        }
         Map<Long, List<TargetingElement>> persisted = new LinkedHashMap<>();
 
-        for (MarketNiche niche : niches) {
-            List<CreateTargetingElementRequest> requests = generated.getOrDefault(niche.getId(), List.of());
-            List<TargetingElement> saved = new ArrayList<>();
-            for (CreateTargetingElementRequest request : requests) {
-                try {
-                    saved.add(targetingElementService.create(request));
-                } catch (Exception e) {
-                    log.error("Failed to persist targeting element for niche {}: {}", niche.getId(), request, e);
-                }
+        for (TargetingElementGenerationPendingDto item : pending) {
+            if (item.type() == null || item.quantity() <= 0) {
+                continue;
             }
-            resetCounters(niche);
-            nicheRepository.save(niche);
-            persisted.put(niche.getId(), saved);
+            List<CreateTargetingElementRequest> requests = generated.getOrDefault(item.nicheId(), List.of());
+            try {
+                backendClient.sendResults(item.nicheId(), item.type(), requests);
+                persisted.put(item.nicheId(), List.of());
+                log.info("Reportados {} públicos para nicho {} e tipo {}", requests.size(), item.nicheId(), item.type());
+            } catch (RuntimeException ex) {
+                log.error("Falha ao reportar públicos para nicho {} e tipo {}", item.nicheId(), item.type(), ex);
+                backendClient.sendFailure(item.nicheId(), item.type(), ex.getMessage());
+            }
         }
         return persisted;
     }
 
-    private List<MarketNiche> findNichesToGenerate() {
-        Map<Long, MarketNiche> niches = new LinkedHashMap<>();
-        nicheRepository.findAllToGenerateInterests().forEach(n -> niches.put(n.getId(), n));
-        nicheRepository.findAllToGenerateJobTitles().forEach(n -> niches.put(n.getId(), n));
-        nicheRepository.findAllToGenerateBehaviors().forEach(n -> niches.put(n.getId(), n));
-        return niches.values().stream().filter(Objects::nonNull).toList();
-    }
-
-    private void resetCounters(MarketNiche niche) {
-        if (normalize(niche.getInterestsToGenerate()) > 0) {
-            niche.setInterestsToGenerate(0);
-        }
-        if (normalize(niche.getJobTitlesToGenerate()) > 0) {
-            niche.setJobTitlesToGenerate(0);
-        }
-        if (normalize(niche.getBehaviorsToGenerate()) > 0) {
-            niche.setBehaviorsToGenerate(0);
-        }
-    }
-
-    private int normalize(Integer value) {
-        return value != null ? value : 0;
+    /** Reconstrói apenas o contexto funcional do nicho recebido pelo backend para montar o prompt. */
+    private MarketNiche toNiche(TargetingElementGenerationPendingDto item) {
+        return MarketNiche.builder()
+                .id(item.nicheId())
+                .name(item.name())
+                .description(item.description())
+                .baseSegmentation(item.baseSegmentation())
+                .interests(item.interests())
+                .demographicFilters(item.demographicFilters())
+                .extraTips(item.extraTips())
+                .interestCategory(item.interestCategory())
+                .roleCategory(item.roleCategory())
+                .build();
     }
 }
-

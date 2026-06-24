@@ -5271,3 +5271,27 @@
 - Causa-raiz: os records de entrada (`CopyInput`, `ImagePlanningInput` e `PresetDesignInput`) usavam `Map.copyOf` diretamente, que rejeita valores nulos; campos opcionais do backend, como insights/revisões/artefatos ausentes, podiam chegar nulos mesmo quando o contrato comercial obrigatório estava correto.
 - Correção aplicada: os inputs agora normalizam `promptData` antes de congelar o mapa, preservando chaves válidas e trocando valores nulos por texto vazio para placeholders opcionais, sem mascarar validações comerciais obrigatórias feitas pelos clients.
 - Prevenção de recorrência: executados os testes específicos dos três clients que reproduziam a falha.
+
+## 2026-06-24 — Targeting Meta Ads via backend para AI Worker
+
+- Criados endpoints internos no backend para o AI Worker consumir pendências de geração de interesses, cargos e comportamentos sem acessar o banco diretamente.
+- Ajustado o fluxo de geração de targeting no AI Worker para buscar pendências e reportar resultados/falhas exclusivamente via backend.
+- Objetivo: remover a causa-raiz da lentidão gerada por acesso direto a JPA/repositories no worker e preservar o backend como única camada de banco.
+
+## 2026-06-24 — Fase 2: auditoria OpenAI do targeting via backend
+
+- Problema: mesmo após mover a fila de targeting para API do backend, o registrador de auditoria OpenAI ainda dependia de service do backend, mantendo acoplamento indireto com persistência no AI Worker.
+- Correção aplicada: o `AiGenerationRecorder` passou a enviar auditoria para `/api/ai/generations/internal` via cliente HTTP do backend.
+- Prevenção de recorrência: adicionada guarda ArchUnit para impedir que os pacotes de targeting e auditoria OpenAI do AI Worker dependam de repositories, JPA ou services do backend.
+
+## 2026-06-24 — Fase 3: AI Worker sem bootstrap de banco
+
+- Problema: mesmo com targeting e auditoria migrados para APIs do backend, o bootstrap produtivo do AI Worker ainda declarava datasource, JPA, driver MySQL e varredura ampla que ativava componentes legados com banco.
+- Correção aplicada: removidos starter JPA, driver MySQL e propriedades produtivas de datasource/JPA; a aplicação passou a excluir auto-configuração de datasource/Hibernate e a escanear apenas o pacote do worker, excluindo componentes legados ainda dependentes de banco.
+- Prevenção de recorrência: adicionado teste de bootstrap para bloquear reintrodução de JPA/MySQL/datasource nas configurações produtivas do AI Worker.
+
+## 2026-06-24 — Fase 4: remoção dos fluxos legados com banco no AI Worker
+
+- Problema: após remover o bootstrap de banco, ainda existiam classes produtivas legadas no AI Worker com repositories, JPA, EntityManager e services internos do backend.
+- Correção aplicada: removidos os fluxos legados desativados que ainda dependiam de acesso direto ao banco; o worker mantém somente fluxos que consomem contratos do backend ou integrações externas.
+- Prevenção de recorrência: a guarda ArchUnit passou a bloquear dependência de todo o AI Worker produtivo contra `repository`, JPA e services internos do backend.

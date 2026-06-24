@@ -1358,4 +1358,9 @@
 - 2026-06-23 19:29:11 (UTC): tela OPRM de CNAEs atualizada para mostrar, na tabela principal, a contagem de nichos pendentes para materializar por CNAE. O endpoint `GET /api/oprm/market/import-runs/cnaes/top-volume` passou a expor `pendingMaterializationCount`, calculado no backend a partir dos cartões aprovados em `enriched-niche-materializer` ainda sem perfil materializado, evitando inferência local no frontend.
 - 2026-06-24 00:50:00 (UTC): criação do ciclo 3 da ingestão OPRM CNPJ/CNAE por decisão operacional do usuário, alterando o snapshot canônico vigente para `2026-06-14` e a base de download para `https://dados-abertos-rf-cnpj.casadosdados.com.br/arquivos/2026-06-14/`. Validação HTTP HEAD confirmou acesso 200 para `Cnaes.zip`, `Empresas1.zip` e `Estabelecimentos1.zip`.
 - 2026-06-24 01:00:00 (UTC): ajuste do ciclo 3 da ingestão OPRM CNPJ/CNAE para deixar claro que o novo fluxo deve apenas cadastrar emails associados a CNAEs. A execução ficou limitada aos vínculos de ESTABELECIMENTOS com email preenchido, sem recalcular market size, score, enriquecimento ou materialização de nichos.
+
+## 2026-06-24 — Plano de audiências Meta Ads vinculadas a nichos e experimentos
+
+- Criado plano em `docs/implementacao/oprm/plano-audiencias-meta-nicho-experimento.md` para conectar audiências Meta Ads aos nichos materializados e aos experimentos, incluindo o conceito de parcela do nicho quando o experimento testar apenas um recorte do mercado amplo.
+- Definido modelo operacional com `meta_audience`, `meta_audience_segment` e `experiment_meta_audience`, evitando audiências órfãs e preservando leitura de performance por nicho, parcela, público, oferta e experimento.
 - 2026-06-24 00:00:00 (UTC): tela `/oprm/cnaes/:cnaeCode/pipeline-v2` ajustada para usar a descrição do CNAE como título principal, reaproveitando o catálogo canônico de CNAEs já consumido no OPRM e mantendo fallback para o código quando a descrição ainda não carregar.

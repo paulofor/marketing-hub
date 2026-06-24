@@ -5220,3 +5220,8 @@
 - causa-raiz: todos os eventos de analytics da landing eram gravados em `experiment_funnel_event` na etapa `VISUALIZACAO_FORM`, e a consolidação somava qualquer evento dessa origem, inflando o funil.
 - evidência operacional: no experimento 41, o banco tinha 45 eventos nessa etapa, mas apenas 13 eram `page_view`; os demais eram eventos técnicos de analytics e não deveriam virar novas visualizações do formulário.
 - prevenção de recorrência: teste unitário garante que a consulta do resumo filtra `landing-page-analytics` por `eventType=page_view`.
+
+## 2026-06-24 — Checklist de público alinhado à liberação Facebook Ads
+- Problema: no experimento 48, o card “Escolha de público” do checklist principal ficava pendente mesmo quando a seção “Campanha de Facebook Ads” já estava pronta para liberação.
+- Causa-raiz: o card usava o resumo de prontidão de targeting (`hasCompleteTargeting`), enquanto a liberação para o Facebook Ads na tela usa os bloqueios de publicação consolidados de criativo aprovado e landing ativa.
+- Correção aplicada: o card “Escolha de público” passou a refletir a mesma regra operacional de liberação exibida na seção Facebook Ads, evitando sinal visual contraditório para o usuário.

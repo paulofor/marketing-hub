@@ -1368,5 +1368,5 @@
 ## 2026-06-24 — Etapa 4 do plano de audiências Meta por nicho
 
 - Solicitação: executar a Etapa 4 — Criação da audiência na Meta do plano `docs/implementacao/oprm/plano-audiencias-meta-nicho-experimento.md`.
-- Foi feito: criado o contrato backend `meta_audience`/`meta_audience_segment`, endpoint público para solicitar audiência por nicho/CNAE, fila interna para o Facebook Ads Worker, sincronização no worker com criação de Custom Audience, normalização/deduplicação de emails, hash SHA-256, upload em lotes e retorno do `facebookAudienceId` ao backend.
-- Prevenção de recorrência: a audiência nasce vinculada a `market_niche_id`, CNAE, segmento e conta de anúncios, evitando audiência órfã na Meta e mantendo status persistido no backend.
+- Foi feito: criado o contrato persistente `meta_audience`/`meta_audience_segment`, mantendo o backend somente como leitura/escrita da audiência já decidida pelo OPRM; o Facebook Ads Worker cria a Custom Audience, normaliza/deduplica emails apenas por exigência técnica da Meta, gera hash SHA-256, faz upload em lotes e retorna o `facebookAudienceId` ao backend.
+- Prevenção de recorrência: a regra de negócio de público, nome, recorte, elegibilidade e volumes fica no módulo OPRM executor; a audiência persistida continua vinculada a `market_niche_id`, CNAE, segmento e conta de anúncios para evitar audiência órfã na Meta.

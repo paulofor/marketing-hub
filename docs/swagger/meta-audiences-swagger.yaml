@@ -5,7 +5,7 @@ info:
 paths:
   /api/meta-audiences:
     post:
-      summary: Solicita criação de audiência Meta Ads vinculada a nicho e CNAE.
+      summary: Persiste audiência Meta Ads já preparada pelo módulo OPRM executor.
       requestBody:
         required: true
         content:
@@ -14,7 +14,7 @@ paths:
               $ref: '#/components/schemas/MetaAudienceRequest'
       responses:
         '200':
-          description: Audiência criada no backend e pronta para sincronização.
+          description: Audiência persistida no backend conforme decisão do OPRM.
   /api/internal/meta-audiences/pending:
     get:
       summary: Lista audiências prontas para o Facebook Ads Worker criar na Meta.
@@ -44,10 +44,11 @@ components:
   schemas:
     MetaAudienceRequest:
       type: object
-      required: [marketNicheId, cnaeCode, segmentName, facebookAdAccountId]
+      required: [marketNicheId, cnaeCode, audienceName, segmentName, facebookAdAccountId, audienceType, sourceType, eligibilityStatus]
       properties:
         marketNicheId: { type: integer, format: int64 }
         cnaeCode: { type: string }
+        audienceName: { type: string }
         segmentName: { type: string }
         segmentDescription: { type: string }
         painFocus: { type: string }
@@ -55,3 +56,9 @@ components:
         offerAngle: { type: string }
         filterStrategy: { type: string }
         facebookAdAccountId: { type: string }
+        audienceType: { type: string }
+        sourceType: { type: string }
+        eligibilityStatus: { type: string }
+        totalContacts: { type: integer, format: int64 }
+        uniqueEmails: { type: integer, format: int64 }
+        estimatedContacts: { type: integer, format: int64 }

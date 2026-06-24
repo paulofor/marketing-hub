@@ -7,6 +7,7 @@ import {
   type OprmNichoCnaeV2JobSummary,
 } from "../../api/oprm/useOprmNichoCnaeV2Jobs";
 import { useCancelOprmNichoCnaeV2Job } from "../../api/oprm/useCancelOprmNichoCnaeV2Job";
+import { useOprmCnaeCatalog } from "../../api/oprm/useOprmCnaeCatalog";
 import { useStartOprmNichoCnaeV2Job } from "../../api/oprm/useStartOprmNichoCnaeV2Job";
 import PageTitle from "../../components/PageTitle";
 import OprmModuleNavigation from "./OprmModuleNavigation";
@@ -460,6 +461,7 @@ export default function OprmNichoCnaeV2PipelinePage() {
   const startJobMutation = useStartOprmNichoCnaeV2Job(decodedCnaeCode ?? "");
   const cancelJobMutation = useCancelOprmNichoCnaeV2Job(decodedCnaeCode ?? "");
   const jobsQuery = useOprmNichoCnaeV2Jobs(decodedCnaeCode ?? "");
+  const cnaeCatalogQuery = useOprmCnaeCatalog();
   const [downloadingReportJobId, setDownloadingReportJobId] = useState<
     string | null
   >(null);
@@ -467,6 +469,14 @@ export default function OprmNichoCnaeV2PipelinePage() {
     null,
   );
   const cnaeAiCostUsd = jobsQuery.data?.cnaeAiCostUsd ?? 0;
+  const cnaeName = cnaeCatalogQuery.data?.find(
+    (item) => item.cnaeCode === decodedCnaeCode,
+  )?.description;
+  const pageTitle = cnaeName
+    ? cnaeName
+    : decodedCnaeCode
+      ? `CNAE ${decodedCnaeCode}`
+      : "Pipeline NichoCNAE v2";
 
   async function handleDownloadReport(job: OprmNichoCnaeV2JobSummary) {
     setDownloadReportError(null);
@@ -489,7 +499,7 @@ export default function OprmNichoCnaeV2PipelinePage() {
       <header className="d-flex flex-column gap-2">
         <div className="d-flex flex-wrap justify-content-between align-items-start gap-3">
           <div>
-            <PageTitle>Pipeline NichoCNAE v2</PageTitle>
+            <PageTitle>{pageTitle}</PageTitle>
             <p className="text-secondary mb-0">
               Design das etapas da v2 para transformar CNAEs em nichos vendáveis
               com evidência auditável, reprocessamento inteligente e gates de

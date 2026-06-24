@@ -5265,3 +5265,9 @@
 - Problema: a lista de públicos do nicho parecia aumentar sem ação do usuário porque solicitações já gravadas em `interests_to_generate`, `job_titles_to_generate` ou `behaviors_to_generate` são processadas automaticamente pelo AI Worker em rotina agendada.
 - Causa-raiz: a tela mostrava apenas “Solicitados: N”, sem explicar que isso era uma pendência ativa que o Worker processaria automaticamente e sem comando visível para cancelar a pendência antes da execução.
 - Correção aplicada: o card de geração passa a mostrar “Solicitação pendente no Worker”, explica que a lista pode aumentar automaticamente ao terminar o processamento e oferece o comando “Cancelar pendência”.
+
+## 2026-06-24 — Correção de NullPointer nos inputs do GeraLanding core
+- Problema: testes de Copy, Image Planning e Design Preset falhavam com `NullPointerException` ao converter pendências válidas do backend em `promptData` do Worker AI.
+- Causa-raiz: os records de entrada (`CopyInput`, `ImagePlanningInput` e `PresetDesignInput`) usavam `Map.copyOf` diretamente, que rejeita valores nulos; campos opcionais do backend, como insights/revisões/artefatos ausentes, podiam chegar nulos mesmo quando o contrato comercial obrigatório estava correto.
+- Correção aplicada: os inputs agora normalizam `promptData` antes de congelar o mapa, preservando chaves válidas e trocando valores nulos por texto vazio para placeholders opcionais, sem mascarar validações comerciais obrigatórias feitas pelos clients.
+- Prevenção de recorrência: executados os testes específicos dos três clients que reproduziam a falha.

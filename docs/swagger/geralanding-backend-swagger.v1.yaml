@@ -1133,10 +1133,49 @@ components:
           $ref: '#/components/schemas/PendingStageExperiment'
         hypothesis:
           $ref: '#/components/schemas/PendingStageHypothesis'
+        geralandingReferenceInsights:
+          type: array
+          description: Referências estruturadas da biblioteca MOIS usadas como padrões abstratos para orientar wireframe, copy, planejamento de imagem e preset design sem copiar páginas externas.
+          items:
+            $ref: '#/components/schemas/GeraLandingReferenceInsight'
       required:
         - experimentId
         - jobid
         - stageCode
+    GeraLandingReferenceInsight:
+      type: object
+      additionalProperties: false
+      properties:
+        pageId:
+          type: integer
+          format: int64
+        urlCanonical:
+          type: string
+          nullable: true
+        title:
+          type: string
+          nullable: true
+        scoreTotal:
+          type: number
+          nullable: true
+        wireframeInsight:
+          type: object
+          nullable: true
+          additionalProperties: true
+        copyInsight:
+          type: object
+          nullable: true
+          additionalProperties: true
+        imagePromptInsight:
+          type: object
+          nullable: true
+          additionalProperties: true
+        designPresetInsight:
+          type: object
+          nullable: true
+          additionalProperties: true
+      required:
+        - pageId
     QualityReviewPendingStageExecution:
       type: object
       additionalProperties: false

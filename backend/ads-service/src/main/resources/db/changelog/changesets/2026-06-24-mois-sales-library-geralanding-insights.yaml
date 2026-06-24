@@ -1,0 +1,25 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-24-mois-sales-library-geralanding-insights-01
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: mois_sales_page_job_execution
+        - not:
+            columnExists:
+              tableName: mois_sales_page_job_execution
+              columnName: geralanding_wireframe_json
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE mois_sales_page_job_execution
+                ADD COLUMN geralanding_wireframe_json LONGTEXT NULL AFTER image_json,
+                ADD COLUMN geralanding_copy_json LONGTEXT NULL AFTER geralanding_wireframe_json,
+                ADD COLUMN geralanding_image_prompt_json LONGTEXT NULL AFTER geralanding_copy_json,
+                ADD COLUMN geralanding_design_preset_json LONGTEXT NULL AFTER geralanding_image_prompt_json;

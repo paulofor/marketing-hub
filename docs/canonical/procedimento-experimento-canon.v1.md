@@ -188,6 +188,12 @@ No fluxo atual, a geração da landing segue as etapas administrativas oficiais 
 ### 5.1 Observação obrigatória — HTML provisório por etapa
 Durante o pipeline de Gera Landing, existe produção incremental/provisória de conteúdo para permitir evolução etapa a etapa. No estágio de design preset é consolidada a base visual e ocorre a etapa usada para ingestão do pixel no fluxo atual. Ao concluir o Gera WireFrame com sucesso e persistir `experiment.landing_page_wireframe`, o backend deve criar automaticamente uma execução `landing-page-copy` com `promptTemplateId` operacional `auto/wireframe`. Ao concluir o Gera Prompt Imagem com sucesso e persistir `experiment.landing_page_image_planning`, o backend deve criar automaticamente uma execução `landing-page-image-generation` com `promptTemplateId` operacional `auto/image-planning`. Ao concluir o Gera Imagem com sucesso e persistir `experiment.landing_page_image_assets`, o backend deve criar automaticamente uma execução `landing-page-design-preset` com `promptTemplateId` operacional `auto/image-generation`, mantendo a continuidade do fluxo sem exigir novo clique do usuário.
 
+### 5.1.1 Insumos MOIS para orientar GeraLanding
+
+As etapas `landing-page-wireframe`, `landing-page-copy`, `landing-page-image-planning` e `landing-page-design-preset` podem receber, no contrato `pending`, o campo `geralandingReferenceInsights` com referências estruturadas da Biblioteca MOIS de páginas já analisadas e bem pontuadas. Esse insumo existe para transferir padrões abstratos de páginas vencedoras para o pipeline de geração, como estrutura comercial, função da copy, papel das imagens e direção visual.
+
+O uso desses dados é auxiliar: o contrato do experimento atual continua sendo a fonte principal de verdade. É proibido copiar texto, marca, URL, promessa específica, identidade visual ou claims de páginas externas. O worker deve usar as referências apenas para inferir padrões reutilizáveis e adequá-los ao produto, nicho, hipótese e oferta do experimento em execução.
+
 ### 5.2 Instrumentação obrigatória de funil no assembler do design preset
 Para a etapa `LANDING_PAGE_DESIGN_PRESET`, o assembler de HTML provisório deve injetar instrumentação mínima de comportamento para diagnóstico de avanço de funil na landing:
 1. disparo de `page_view` no carregamento da página;

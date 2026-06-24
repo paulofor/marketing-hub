@@ -33,6 +33,7 @@ Objetivo:
 - CTA principal: {dados-primaryCta}
 - Objetivo da campanha: {dados-campaignObjective}
 - Bloco completo de contexto: {{CASE_DATA_BLOCK}}
+- Insumos MOIS em `geralandingReferenceInsights`: use apenas padrões abstratos de função visual, tipo de imagem e objeção removida; não copie marcas, telas, URLs, identidade visual ou claims de terceiros.
 - NICHO: {{NICHE_NAME}}
 - Ângulo de campanha: {dados-campaignAngle}
 - Copy do anúncio: {dados-adCopy}

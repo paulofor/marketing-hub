@@ -179,6 +179,7 @@ public class CopyBackendClient implements StageBackendPort<CopyInput, CopyOutput
         payload.put("MECHANISM_JSON", mechanism);
         payload.put("PROOF_JSON", proof);
         payload.put("OFFER_JSON", offer);
+        payload.put("geralandingReferenceInsights", pending.get("geralandingReferenceInsights"));
         payload.put("CASE_DATA_BLOCK", buildCaseDataBlock(payload));
 
         return payload;
@@ -201,6 +202,7 @@ public class CopyBackendClient implements StageBackendPort<CopyInput, CopyOutput
         appendCaseData(builder, "campaignAngle", payload.get("campaignAngle"));
         appendCaseData(builder, "adCopy", payload.get("adCopy"));
         appendCaseData(builder, "adImageBriefing", payload.get("adImageBriefing"));
+        appendCaseData(builder, "geralandingReferenceInsights", payload.get("geralandingReferenceInsights"));
         builder.append("[CASE_DATA_END]");
         return builder.toString();
     }

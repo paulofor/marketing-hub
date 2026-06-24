@@ -57,6 +57,9 @@ Preset design anterior gerado, quando existir:
 Diagnóstico do Quality Review anterior, quando existir:
 {{landingPageQualityReview}}
 
+Insumos MOIS de páginas vencedoras, para referência visual abstrata sem cópia de terceiros:
+{{geralandingReferenceInsights}}
+
 # Objetivo
 
 Retornar um JSON válido no mesmo formato estrutural do wireframe, com objeto raiz contendo `definicoes` e `pagina`.

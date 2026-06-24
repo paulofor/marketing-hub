@@ -5237,3 +5237,8 @@
 - Causa-raiz: o card “Escolha de público” inferia prontidão por criativo e landing, em vez de usar a mesma regra do backend/publicador (`hasCompleteTargeting`) usada por `/api/facebook-campaigns/experiments-ready`.
 - Correção aplicada: o checklist principal e os bloqueios de publicação passaram a exigir público salvo pela regra do publicador antes de mostrar pronto ou liberar o botão do Facebook Ads Worker.
 - Cânone atualizado: a regra de publicação Facebook Ads agora determina que cards e checklists da UI devem usar o contrato `/api/experiments/{experimentId}/readiness`, sem inferência local divergente.
+
+## 2026-06-24 — GeraLanding orientado por padrões MOIS vencedores
+
+- As etapas `landing-page-wireframe`, `landing-page-copy`, `landing-page-image-planning` e `landing-page-design-preset` passaram a receber referências estruturadas da Biblioteca MOIS no payload pendente.
+- O AI Worker injeta essas referências nos prompts como insumo auxiliar e preserva o contrato do experimento atual como fonte principal de verdade.

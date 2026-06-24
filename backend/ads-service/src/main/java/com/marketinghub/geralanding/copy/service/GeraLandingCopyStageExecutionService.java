@@ -7,6 +7,7 @@ import com.marketinghub.experiment.Experiment;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
+import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesLibraryGeraLandingInsightGateway;
 import com.marketinghub.geralanding.copy.service.detailStageExecution.RecordBackendCopyDetalheDto;
 import com.marketinghub.geralanding.copy.service.listStageExecutions.GeraLandingCopyExecutionSummaryResponse;
 import com.marketinghub.geralanding.copy.service.pending.RecordCopyExperiment;
@@ -22,6 +23,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -40,16 +42,28 @@ public class GeraLandingCopyStageExecutionService {
     private static final String STATUS_FAILED = "FALHA";
     private final ExperimentRepository experimentRepository;
     private final GeraLandingStageExecutionRepository executionRepository;
+    private final MoisSalesLibraryGeraLandingInsightGateway geraLandingInsightGateway;
     private final ObjectMapper objectMapper;
 
     /** Inicializa o serviço com os repositórios necessários para consultar execuções de copy. */
+    @Autowired
     public GeraLandingCopyStageExecutionService(
             ExperimentRepository experimentRepository,
             GeraLandingStageExecutionRepository executionRepository,
+            MoisSalesLibraryGeraLandingInsightGateway geraLandingInsightGateway,
             ObjectMapper objectMapper) {
         this.experimentRepository = experimentRepository;
         this.executionRepository = executionRepository;
+        this.geraLandingInsightGateway = geraLandingInsightGateway;
         this.objectMapper = objectMapper;
+    }
+
+    /** Mantém compatibilidade com testes que não precisam de insumos MOIS. */
+    GeraLandingCopyStageExecutionService(
+            ExperimentRepository experimentRepository,
+            GeraLandingStageExecutionRepository executionRepository,
+            ObjectMapper objectMapper) {
+        this(experimentRepository, executionRepository, limit -> List.of(), objectMapper);
     }
 
     /** Inicia a execução manual da etapa copy usando o código canônico da etapa. */
@@ -106,7 +120,8 @@ public class GeraLandingCopyStageExecutionService {
                         execution.getStageCode(),
                         execution.getStatus(),
                         toPendingExperiment(execution.getExperiment()),
-                        toPendingHypothesis(execution.getExperiment())))
+                        toPendingHypothesis(execution.getExperiment()),
+                        loadGeraLandingReferenceInsights()))
                 .toList();
     }
 
@@ -269,6 +284,11 @@ public class GeraLandingCopyStageExecutionService {
                     .orElseThrow(() -> new EntityNotFoundException("Experiment not found: " + execution.getExperimentId()));
         }
         return experiment;
+    }
+
+    /** Carrega padrões vencedores da biblioteca MOIS para orientar o prompt sem copiar páginas de referência. */
+    private List<MoisSalesLibraryGeraLandingInsightGateway.GeraLandingReferenceInsight> loadGeraLandingReferenceInsights() {
+        return geraLandingInsightGateway.findTopReferences(3);
     }
 
     /** Converte o experimento da execução para os dados expostos na fila pending. */

@@ -7,6 +7,7 @@ import com.marketinghub.experiment.Experiment;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
+import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesLibraryGeraLandingInsightGateway;
 import com.marketinghub.geralanding.presetdesign.provisorio.DesignPresetProvisionalHtmlAssembler;
 import com.marketinghub.geralanding.presetdesign.service.detailStageExecution.RecordBackendPresetDesignDetalheDto;
 import com.marketinghub.geralanding.presetdesign.service.listStageExecutions.GeraLandingPresetDesignExecutionSummaryResponse;
@@ -23,6 +24,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -40,19 +42,32 @@ public class BackendPresetDesignService {
     private static final String STATUS_FAILED = "FALHA";
     private final ExperimentRepository experimentRepository;
     private final GeraLandingStageExecutionRepository executionRepository;
+    private final MoisSalesLibraryGeraLandingInsightGateway geraLandingInsightGateway;
     private final ObjectMapper objectMapper;
     private final DesignPresetProvisionalHtmlAssembler designPresetProvisionalHtmlAssembler;
 
     /** Inicializa o serviço com os repositórios e montador necessários para consultar e finalizar execuções de design preset. */
+    @Autowired
     public BackendPresetDesignService(
             ExperimentRepository experimentRepository,
             GeraLandingStageExecutionRepository executionRepository,
+            MoisSalesLibraryGeraLandingInsightGateway geraLandingInsightGateway,
             ObjectMapper objectMapper,
             DesignPresetProvisionalHtmlAssembler designPresetProvisionalHtmlAssembler) {
         this.experimentRepository = experimentRepository;
         this.executionRepository = executionRepository;
+        this.geraLandingInsightGateway = geraLandingInsightGateway;
         this.objectMapper = objectMapper;
         this.designPresetProvisionalHtmlAssembler = designPresetProvisionalHtmlAssembler;
+    }
+
+    /** Mantém compatibilidade com testes que não precisam de insumos MOIS. */
+    BackendPresetDesignService(
+            ExperimentRepository experimentRepository,
+            GeraLandingStageExecutionRepository executionRepository,
+            ObjectMapper objectMapper,
+            DesignPresetProvisionalHtmlAssembler designPresetProvisionalHtmlAssembler) {
+        this(experimentRepository, executionRepository, limit -> List.of(), objectMapper, designPresetProvisionalHtmlAssembler);
     }
 
 
@@ -88,7 +103,8 @@ public class BackendPresetDesignService {
                         fromDatabaseIdJob(execution.getIdJob()),
                         execution.getStageCode(),
                         toPendingExperiment(execution.getExperiment()),
-                        toPendingHypothesis(execution.getExperiment())))
+                        toPendingHypothesis(execution.getExperiment()),
+                        loadGeraLandingReferenceInsights()))
                 .toList();
     }
 
@@ -266,6 +282,11 @@ public class BackendPresetDesignService {
                 experiment.getLandingPageImageAssets(),
                 modelResponse,
                 fromDatabaseIdJob(execution.getIdJob()));
+    }
+
+    /** Carrega padrões vencedores da biblioteca MOIS para orientar o prompt sem copiar páginas de referência. */
+    private List<MoisSalesLibraryGeraLandingInsightGateway.GeraLandingReferenceInsight> loadGeraLandingReferenceInsights() {
+        return geraLandingInsightGateway.findTopReferences(3);
     }
 
     /** Converte o experimento da execução para os dados expostos na fila pending. */

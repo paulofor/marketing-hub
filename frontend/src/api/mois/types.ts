@@ -588,6 +588,10 @@ export interface MoisSalesLibraryPageAnalysis {
   copyJson?: string;
   visualJson?: string;
   imageJson?: string;
+  geralandingWireframeJson?: string;
+  geralandingCopyJson?: string;
+  geralandingImagePromptJson?: string;
+  geralandingDesignPresetJson?: string;
   analysisNotes?: string;
   requestPayloadJson?: string;
   responsePayloadJson?: string;

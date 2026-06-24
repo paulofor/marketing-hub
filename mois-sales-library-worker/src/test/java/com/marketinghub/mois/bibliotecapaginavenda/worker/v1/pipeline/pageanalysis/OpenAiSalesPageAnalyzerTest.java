@@ -20,6 +20,9 @@ class OpenAiSalesPageAnalyzerTest {
         assertTrue(payload.contains("identificar por que este produto alcançou sucesso"));
         assertTrue(payload.contains("não inclua sugestões"));
         assertTrue(payload.contains("nunca para propor mudanças"));
+        assertTrue(payload.contains("geralanding_wireframe_json"));
+        assertTrue(payload.contains("geralanding_image_prompt_json"));
+        assertTrue(payload.contains("padrões vencedores observados como insumo reutilizável"));
         assertFalse(payload.contains("recommended_images"));
         assertTrue(payload.contains("\"service_tier\":\"flex\""));
     }

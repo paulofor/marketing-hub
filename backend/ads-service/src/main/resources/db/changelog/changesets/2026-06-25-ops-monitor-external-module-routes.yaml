@@ -1,0 +1,32 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-25-ops-monitor-007-external-module-routes
+      author: marketing-hub
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: ops_monitored_module
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE ops_monitored_module
+              SET base_url = 'http://177.153.62.107:9096',
+                  health_path = '/internal/ops-monitor/health',
+                  log_path = '/internal/ops-monitor/logfile'
+              WHERE code = 'mois-clickbank-collector';
+
+              UPDATE ops_monitored_module
+              SET base_url = 'http://177.153.62.107:8096',
+                  health_path = '/ops-monitor/health',
+                  log_path = '/ops-monitor/mois-hotmart-log'
+              WHERE code = 'mois-hotmart-collector';
+
+              UPDATE ops_monitored_module
+              SET base_url = 'https://oportunidadebrasil.shop',
+                  health_path = '/api/ops-lp-observability-v2/health',
+                  log_path = '/api/ops-lp-observability-v2/logfile'
+              WHERE code = 'lead-portal';

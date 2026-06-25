@@ -132,7 +132,7 @@ public class HypothesisPipelineFinalizationService {
 
     /** Retorna a resposta concluída mais recente de uma etapa do framework. */
     private String latestCompletedStageResponse(Long marketNicheId, String stageCode) {
-        return executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
+        return executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusAndHypothesisIdIsNullOrderByExecutionRequestedAtDesc(
                         marketNicheId,
                         stageCode,
                         STATUS_COMPLETED)
@@ -143,7 +143,7 @@ public class HypothesisPipelineFinalizationService {
 
     /** Retorna o modelo da etapa concluída mais recente para rastreabilidade da hipótese final. */
     private String latestCompletedStageModel(Long marketNicheId, String stageCode) {
-        return executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
+        return executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusAndHypothesisIdIsNullOrderByExecutionRequestedAtDesc(
                         marketNicheId,
                         stageCode,
                         STATUS_COMPLETED)
@@ -156,7 +156,7 @@ public class HypothesisPipelineFinalizationService {
     private BigDecimal totalCompletedCostUsd(Long marketNicheId) {
         return STAGE_SEQUENCE.stream()
                 .map(stageCode -> executionRepository
-                        .findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
+                        .findTopByMarketNicheIdAndStageCodeAndStatusAndHypothesisIdIsNullOrderByExecutionRequestedAtDesc(
                                 marketNicheId,
                                 stageCode,
                                 STATUS_COMPLETED))
@@ -170,7 +170,7 @@ public class HypothesisPipelineFinalizationService {
     private void relateCompletedExecutionsToHypothesis(Long marketNicheId, Hypothesis hypothesis) {
         STAGE_SEQUENCE.stream()
                 .map(stageCode -> executionRepository
-                        .findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
+                        .findTopByMarketNicheIdAndStageCodeAndStatusAndHypothesisIdIsNullOrderByExecutionRequestedAtDesc(
                                 marketNicheId,
                                 stageCode,
                                 STATUS_COMPLETED))

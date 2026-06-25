@@ -289,7 +289,7 @@ class HypothesisPainStageServiceTest {
         MarketNiche niche = new MarketNiche();
         niche.setId(18L);
         when(marketNicheRepository.findById(18L)).thenReturn(Optional.of(niche));
-        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
+        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusAndHypothesisIdIsNullOrderByExecutionRequestedAtDesc(
                         18L,
                         "hypothesis-pain",
                         "CONCLUIDO"))
@@ -324,7 +324,7 @@ class HypothesisPainStageServiceTest {
                         "hypothesis-result",
                         "INICIADO"))
                 .thenReturn(List.of(resultExecution));
-        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
+        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusAndHypothesisIdIsNullOrderByExecutionRequestedAtDesc(
                         18L,
                         "hypothesis-pain",
                         "CONCLUIDO"))
@@ -342,7 +342,7 @@ class HypothesisPainStageServiceTest {
         MarketNiche niche = new MarketNiche();
         niche.setId(18L);
         when(marketNicheRepository.findById(18L)).thenReturn(Optional.of(niche));
-        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
+        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusAndHypothesisIdIsNullOrderByExecutionRequestedAtDesc(
                         18L,
                         "hypothesis-pain",
                         "CONCLUIDO"))
@@ -352,7 +352,7 @@ class HypothesisPainStageServiceTest {
                         .status("CONCLUIDO")
                         .modelResponse("{\"pain\":\"dor validada\"}")
                         .build()));
-        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
+        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusAndHypothesisIdIsNullOrderByExecutionRequestedAtDesc(
                         18L,
                         "hypothesis-result",
                         "CONCLUIDO"))
@@ -393,12 +393,12 @@ class HypothesisPainStageServiceTest {
                         "hypothesis-mechanism",
                         "INICIADO"))
                 .thenReturn(List.of(mechanismExecution));
-        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
+        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusAndHypothesisIdIsNullOrderByExecutionRequestedAtDesc(
                         18L,
                         "hypothesis-pain",
                         "CONCLUIDO"))
                 .thenReturn(Optional.of(completedPain));
-        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
+        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusAndHypothesisIdIsNullOrderByExecutionRequestedAtDesc(
                         18L,
                         "hypothesis-result",
                         "CONCLUIDO"))
@@ -417,7 +417,7 @@ class HypothesisPainStageServiceTest {
         MarketNiche niche = new MarketNiche();
         niche.setId(18L);
         when(marketNicheRepository.findById(18L)).thenReturn(Optional.of(niche));
-        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
+        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusAndHypothesisIdIsNullOrderByExecutionRequestedAtDesc(
                         18L,
                         "hypothesis-pain",
                         "CONCLUIDO"))
@@ -427,7 +427,7 @@ class HypothesisPainStageServiceTest {
                         .status("CONCLUIDO")
                         .modelResponse("{\"pain\":\"dor validada\"}")
                         .build()));
-        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
+        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusAndHypothesisIdIsNullOrderByExecutionRequestedAtDesc(
                         18L,
                         "hypothesis-result",
                         "CONCLUIDO"))
@@ -437,7 +437,7 @@ class HypothesisPainStageServiceTest {
                         .status("CONCLUIDO")
                         .modelResponse("{\"result\":\"resultado validado\"}")
                         .build()));
-        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
+        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusAndHypothesisIdIsNullOrderByExecutionRequestedAtDesc(
                         18L,
                         "hypothesis-mechanism",
                         "CONCLUIDO"))
@@ -453,7 +453,7 @@ class HypothesisPainStageServiceTest {
         MarketNiche niche = new MarketNiche();
         niche.setId(18L);
         when(marketNicheRepository.findById(18L)).thenReturn(Optional.of(niche));
-        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
+        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusAndHypothesisIdIsNullOrderByExecutionRequestedAtDesc(
                         18L,
                         "hypothesis-pain",
                         "CONCLUIDO"))
@@ -463,7 +463,7 @@ class HypothesisPainStageServiceTest {
                         .status("CONCLUIDO")
                         .modelResponse("{\"pain\":\"dor validada\"}")
                         .build()));
-        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
+        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusAndHypothesisIdIsNullOrderByExecutionRequestedAtDesc(
                         18L,
                         "hypothesis-result",
                         "CONCLUIDO"))
@@ -473,7 +473,7 @@ class HypothesisPainStageServiceTest {
                         .status("CONCLUIDO")
                         .modelResponse("{\"result\":\"resultado validado\"}")
                         .build()));
-        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
+        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusAndHypothesisIdIsNullOrderByExecutionRequestedAtDesc(
                         18L,
                         "hypothesis-mechanism",
                         "CONCLUIDO"))
@@ -483,7 +483,7 @@ class HypothesisPainStageServiceTest {
                         .status("CONCLUIDO")
                         .modelResponse("{\"mechanism\":\"mecanismo validado\"}")
                         .build()));
-        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
+        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusAndHypothesisIdIsNullOrderByExecutionRequestedAtDesc(
                         18L,
                         "hypothesis-proof",
                         "CONCLUIDO"))
@@ -536,22 +536,22 @@ class HypothesisPainStageServiceTest {
                         "hypothesis-offer",
                         "INICIADO"))
                 .thenReturn(List.of(offerExecution));
-        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
+        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusAndHypothesisIdIsNullOrderByExecutionRequestedAtDesc(
                         18L,
                         "hypothesis-pain",
                         "CONCLUIDO"))
                 .thenReturn(Optional.of(completedPain));
-        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
+        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusAndHypothesisIdIsNullOrderByExecutionRequestedAtDesc(
                         18L,
                         "hypothesis-result",
                         "CONCLUIDO"))
                 .thenReturn(Optional.of(completedResult));
-        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
+        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusAndHypothesisIdIsNullOrderByExecutionRequestedAtDesc(
                         18L,
                         "hypothesis-mechanism",
                         "CONCLUIDO"))
                 .thenReturn(Optional.of(completedMechanism));
-        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
+        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusAndHypothesisIdIsNullOrderByExecutionRequestedAtDesc(
                         18L,
                         "hypothesis-proof",
                         "CONCLUIDO"))
@@ -585,7 +585,7 @@ class HypothesisPainStageServiceTest {
                         "hypothesis-offer",
                         "INICIADO"))
                 .thenReturn(List.of(offerExecution));
-        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
+        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusAndHypothesisIdIsNullOrderByExecutionRequestedAtDesc(
                         18L,
                         "hypothesis-pain",
                         "CONCLUIDO"))
@@ -595,7 +595,7 @@ class HypothesisPainStageServiceTest {
                         .status("CONCLUIDO")
                         .modelResponse("{\"pain\":\"dor validada\"}")
                         .build()));
-        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
+        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusAndHypothesisIdIsNullOrderByExecutionRequestedAtDesc(
                         18L,
                         "hypothesis-result",
                         "CONCLUIDO"))
@@ -605,7 +605,7 @@ class HypothesisPainStageServiceTest {
                         .status("CONCLUIDO")
                         .modelResponse("{\"result\":\"resultado validado\"}")
                         .build()));
-        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
+        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusAndHypothesisIdIsNullOrderByExecutionRequestedAtDesc(
                         18L,
                         "hypothesis-mechanism",
                         "CONCLUIDO"))
@@ -615,7 +615,7 @@ class HypothesisPainStageServiceTest {
                         .status("CONCLUIDO")
                         .modelResponse("{\"mechanism\":\"mecanismo validado\"}")
                         .build()));
-        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
+        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusAndHypothesisIdIsNullOrderByExecutionRequestedAtDesc(
                         18L,
                         "hypothesis-proof",
                         "CONCLUIDO"))
@@ -687,7 +687,7 @@ class HypothesisPainStageServiceTest {
         when(marketNicheRepository.findById(18L)).thenReturn(Optional.of(niche));
         when(executionRepository.findByMarketNicheIdAndStageCodeOrderByExecutionRequestedAtDesc(any(), any()))
                 .thenReturn(List.of());
-        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(any(), any(), any()))
+        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusAndHypothesisIdIsNullOrderByExecutionRequestedAtDesc(any(), any(), any()))
                 .thenReturn(Optional.empty());
         when(executionRepository.save(any(HypothesisPainStageExecution.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -699,6 +699,37 @@ class HypothesisPainStageServiceTest {
         verify(executionRepository).save(captor.capture());
         assertEquals("hypothesis-pain", captor.getValue().getStageCode());
         org.assertj.core.api.Assertions.assertThat(captor.getValue().getPromptContent()).contains("[AUTO_HYPOTHESIS_FLOW]");
+    }
+
+    /** Deve ignorar etapas já vinculadas a hipótese fechada ao iniciar uma nova hipótese do mesmo nicho. */
+    @Test
+    void startFullFlowIgnoresCompletedStagesFromClosedHypothesis() {
+        MarketNiche niche = new MarketNiche();
+        niche.setId(18L);
+        HypothesisPainStageExecution closedHypothesisPain = HypothesisPainStageExecution.builder()
+                .marketNicheId(18L)
+                .stageCode("hypothesis-pain")
+                .status("CONCLUIDO")
+                .hypothesisId(java.util.UUID.randomUUID())
+                .modelResponse("{\"pain\":\"dor de hipótese antiga\"}")
+                .build();
+        when(marketNicheRepository.findById(18L)).thenReturn(Optional.of(niche));
+        when(executionRepository.findByMarketNicheIdAndStageCodeOrderByExecutionRequestedAtDesc(any(), any()))
+                .thenReturn(List.of(closedHypothesisPain));
+        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusAndHypothesisIdIsNullOrderByExecutionRequestedAtDesc(
+                        any(),
+                        any(),
+                        any()))
+                .thenReturn(Optional.empty());
+        when(executionRepository.save(any(HypothesisPainStageExecution.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        var response = service.startFullFlow(18L);
+
+        assertEquals("INICIADO", response.status());
+        ArgumentCaptor<HypothesisPainStageExecution> captor = ArgumentCaptor.forClass(HypothesisPainStageExecution.class);
+        verify(executionRepository).save(captor.capture());
+        assertEquals("hypothesis-pain", captor.getValue().getStageCode());
     }
 
     /** Deve criar nova tentativa automática da mesma etapa quando uma execução automática falha antes do limite. */

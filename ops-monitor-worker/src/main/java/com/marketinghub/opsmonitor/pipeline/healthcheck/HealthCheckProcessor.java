@@ -21,14 +21,15 @@ public class HealthCheckProcessor implements StageProcessor<HealthCheckInput, He
         long started = System.nanoTime();
         Instant checkedAt = Instant.now();
         try {
-            var entity = webClient.get().uri(input.url()).retrieve().toEntity(String.class)
+            var entity = webClient.get().uri(input.url()).exchangeToMono(response -> response.toEntity(String.class))
                     .timeout(timeout(input)).block();
             long elapsed = elapsedMs(started);
             int statusCode = entity.getStatusCode().value();
             String status = statusCode >= 200 && statusCode < 300 ? "ONLINE" : "DEGRADED";
             return new HealthCheckOutput(input.moduleCode(), checkedAt, status, statusCode, elapsed, entity.getBody(), null);
         } catch (RuntimeException ex) {
-            return new HealthCheckOutput(input.moduleCode(), checkedAt, "OFFLINE", null, elapsedMs(started), null, ex.getClass().getSimpleName() + ": " + ex.getMessage());
+            return new HealthCheckOutput(input.moduleCode(), checkedAt, "OFFLINE", null, elapsedMs(started), null,
+                    ex.getClass().getSimpleName() + ": " + ex.getMessage());
         }
     }
 

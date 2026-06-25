@@ -33,3 +33,13 @@ A navegação fica no menu principal em Campanhas, e a página mostra resumo exe
 ## Expansão da fase 4
 
 A fase 4 expande a lista operacional para incluir OPRM, coletores MOIS, Lead Portal e Email Service. A tela administrativa passa a consultar também o histórico recente de incidentes e aplicar filtros vindos do backend por criticidade e tipo de módulo, preservando a regra de que o frontend apenas apresenta a verdade consolidada pelo backend.
+
+## Ajuste de rota interna — 2026-06-25
+
+O `ops-monitor-worker` roda em container Docker e deve acessar os módulos publicados no host pelo gateway interno `host.docker.internal`, não pelo IP público do servidor. O IP público pode passar por proxy/firewall e retornar conexão recusada mesmo quando o módulo está ativo no próprio host.
+
+A configuração de módulos monitorados mantém o backend principal em `http://191.252.181.168`, pois ele responde pela porta 80; os demais módulos com portas dedicadas devem usar `http://host.docker.internal:<porta>` no contrato entregue ao worker.
+
+## Correção de persistência do heartbeat do backend — 2026-06-25
+
+A URL de saúde do backend principal responde `200 OK`, mas o heartbeat não era registrado quando o payload bruto do Actuator excedia 255 caracteres. O schema real estava com `ops_module_health_check.raw_payload` como `TINYTEXT`; o contrato correto é `LONGTEXT` para armazenar o retorno bruto auditável sem truncamento.

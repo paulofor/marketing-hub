@@ -173,6 +173,8 @@ O Marketing Hub é uma fábrica automatizada de produtos digitais: descobre dore
 
 - **Erro 400 (Bad Request) em APIs**: em validações de contrato/payload, o backend pode responder `400 Bad Request` sem registrar detalhes úteis no log de aplicação. Nesses casos, **não basta procurar logs**; é obrigatório inspecionar a requisição enviada (URL, método, headers, body) e comparar com DTO/contrato esperado para identificar campo, estrutura ou tipo inválido.
 
+- **Lição de investigação — validar o fluxo completo antes de corrigir (obrigatório)**: quando um sintoma indicar falha em qualquer fluxo do sistema, não conclua a causa-raiz apenas pelo estado exibido na tela, pelo primeiro erro visível ou pela hipótese mais provável. Antes de implementar correção, percorra o fluxo ponta a ponta: identifique a origem do dado/comando, confirme o endpoint/contrato usado, reproduza a chamada real com payload equivalente, verifique logs dos módulos envolvidos, valide o registro ou alteração no banco e compare contrato, DTO/entidade e schema real quando houver persistência. Só defina a causa-raiz após confirmar em qual etapa o fluxo quebra. Aprendizado registrado em 2026-06-25: a primeira decisão foi incorreta porque a análise parou em uma hipótese intermediária e não validou a etapa final de persistência do resultado.
+
 - **json** : temos que evitar ao máximo json dentro de json. Ou seja json em campo texto de outro json. 
 
 

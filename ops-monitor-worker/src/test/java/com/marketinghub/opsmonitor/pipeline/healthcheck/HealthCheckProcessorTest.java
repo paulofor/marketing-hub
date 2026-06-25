@@ -38,4 +38,19 @@ class HealthCheckProcessorTest {
             assertThat(output.errorMessage()).isNotBlank();
         }
     }
+
+    @Test
+    void deveClassificarErroHttpComoInstavel() throws Exception {
+        try (MockWebServer server = new MockWebServer()) {
+            server.enqueue(new MockResponse().setResponseCode(503).setBody("service unavailable"));
+            server.start();
+            var processor = new HealthCheckProcessor(WebClient.builder().build());
+
+            var output = processor.process(StageContext.simple("stage-3", "lead-portal"),
+                    new HealthCheckInput("lead-portal", server.url("/health").toString(), Duration.ofSeconds(2)));
+
+            assertThat(output.status()).isEqualTo("DEGRADED");
+            assertThat(output.httpStatus()).isEqualTo(503);
+        }
+    }
 }

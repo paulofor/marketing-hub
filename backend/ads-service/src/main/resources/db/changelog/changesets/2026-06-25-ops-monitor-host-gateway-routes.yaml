@@ -1,0 +1,46 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-25-ops-monitor-005-host-gateway-routes
+      author: marketing-hub
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: ops_monitored_module
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE ops_monitored_module
+              SET base_url = 'http://host.docker.internal:4567'
+              WHERE code = 'ai-worker';
+
+              UPDATE ops_monitored_module
+              SET base_url = 'http://host.docker.internal:8082'
+              WHERE code = 'facebook-ads-worker';
+
+              UPDATE ops_monitored_module
+              SET base_url = 'http://host.docker.internal:8094'
+              WHERE code = 'oprm-coletor-mei';
+
+              UPDATE ops_monitored_module
+              SET base_url = 'http://host.docker.internal:9096'
+              WHERE code = 'mois-clickbank-collector';
+
+              UPDATE ops_monitored_module
+              SET base_url = 'http://host.docker.internal:8096'
+              WHERE code = 'mois-hotmart-collector';
+
+              UPDATE ops_monitored_module
+              SET base_url = 'http://host.docker.internal:8097'
+              WHERE code = 'mois-sales-library-worker';
+
+              UPDATE ops_monitored_module
+              SET base_url = 'http://host.docker.internal:8080'
+              WHERE code = 'lead-portal';
+
+              UPDATE ops_monitored_module
+              SET base_url = 'http://host.docker.internal:8086'
+              WHERE code = 'email-service';

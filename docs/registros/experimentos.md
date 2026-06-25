@@ -5397,3 +5397,5 @@
 
 - Identificada a causa do alerta “Fora do ar” do Lead Portal: o cadastro operacional do Ops Monitor apontava para `host.docker.internal:8080`, enquanto o portal público saudável responde pelo domínio HTTPS `https://oportunidadebrasil.shop`.
 - Criado changelog incremental para o Ops Monitor verificar o Lead Portal pelo domínio público canônico, evitando falso offline na tela de operação.
+
+- 2026-06-25 — Remoção de cards redundantes na tela de detalhe do experimento: retiradas as seções “Configurações do experimento” e “Fluxo operacional do Meta” do checklist de publicação, mantendo apenas os bloqueios essenciais para liberar campanha.

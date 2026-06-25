@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 import com.marketinghub.geralanding.GeraLandingStageExecution;
+import com.marketinghub.opsmonitor.OpsModuleHealthCheck;
 import com.marketinghub.opsmonitor.OpsMonitoredModule;
 import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
 import com.marketinghub.repository.jpa.opsmonitor.OpsModuleAvailabilityDailyRepository;
@@ -14,6 +15,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import jakarta.persistence.Column;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -117,6 +119,14 @@ class OpsMonitorServiceTest {
         assertThat(incidents.getFirst().moduleCode()).isEqualTo("ai-worker");
         assertThat(incidents.getFirst().rootSignal()).isEqualTo("GERALANDING_QUEUE_STALE");
         assertThat(incidents.getFirst().lastError()).contains("job-stale");
+    }
+
+    /** Garante que o payload bruto de healthcheck suporta respostas Actuator maiores que 255 caracteres. */
+    @Test
+    void rawPayloadColumnUsesLongText() throws Exception {
+        Column column = OpsModuleHealthCheck.class.getDeclaredField("rawPayload").getAnnotation(Column.class);
+
+        assertThat(column.columnDefinition()).isEqualTo("LONGTEXT");
     }
 
 }

@@ -45,7 +45,7 @@ public class OpsModuleHealthCheck {
     private String errorMessage;
 
     @Lob
-    @Column(name = "raw_payload")
+    @Column(name = "raw_payload", columnDefinition = "LONGTEXT")
     private String rawPayload;
 
     @CreationTimestamp

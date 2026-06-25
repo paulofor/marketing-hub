@@ -16,7 +16,6 @@ import hypothesisIcon from "../../assets/icons/hypothesis-icon.svg";
 import CriativosTab from "./CriativosTab";
 import { useBreadcrumbs } from "../../app/breadcrumbs";
 import * as Tabs from "@radix-ui/react-tabs";
-import { useFacebookConfigurationStatus } from "../../api/useFacebookConfigurationStatus";
 import { useExperimentFacebookCampaigns } from "../../api/experiment/useExperimentFacebookCampaigns";
 import { useExperimentReadiness } from "../../api/experiment/useExperimentReadiness";
 import {
@@ -302,8 +301,6 @@ export default function ExperimentDetailPage() {
   const { data: presets } = useMetricPresets();
   const [tab, setTab] = useState("overview");
   const tabsSectionRef = useRef<HTMLDivElement | null>(null);
-  const { data: facebookConfig, isLoading: isLoadingFacebookConfig } =
-    useFacebookConfigurationStatus();
   const { data: facebookCampaigns, isLoading: isLoadingFacebookCampaigns } =
     useExperimentFacebookCampaigns(expId);
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
@@ -1757,21 +1754,12 @@ export default function ExperimentDetailPage() {
     (baseKpi != null && stopLossFactor != null
       ? baseKpi * stopLossFactor
       : null);
-  const hasConfiguredFacebookPage = facebookConfig?.hasConfiguredPages ?? false;
   const experimentPage = data.facebookPage;
-  const hasExperimentPage = Boolean(experimentPage?.pageId);
   const instagramAccount = data.instagramAccount;
-  const hasInstagramAccount = Boolean(instagramAccount);
-  const facebookWorker = facebookConfig?.worker;
-  const hasFacebookWorkerAccount = facebookWorker?.hasAccount ?? false;
-  const isFacebookWorkerReady = facebookWorker?.ready ?? false;
-  const facebookAccountLabel =
-    facebookWorker?.accountName ?? facebookWorker?.accountId ?? null;
   const hasCreativesReady =
     readinessSummary?.hasCreatives ?? data.creativeApproved;
   const readinessCreativeCount = readinessSummary?.creativeCount ?? 0;
   const hasPublisherTargeting = readinessSummary?.hasCompleteTargeting ?? false;
-  const hasDailyBudget = data.dailyBudget != null && data.dailyBudget > 0;
   const openExperimentTab = (targetTab: string) => {
     setTab(targetTab);
     window.requestAnimationFrame(() => {
@@ -1841,107 +1829,6 @@ export default function ExperimentDetailPage() {
     isLoadingReadiness ||
     alterationLocked;
 
-  const configurationChecklist: ChecklistItem[] = [
-    {
-      id: "facebook-account",
-      title: "Conta do Facebook Ads conectada",
-      isMet: isFacebookWorkerReady,
-      isLoading: isLoadingFacebookConfig,
-      hint: isLoadingFacebookConfig
-        ? "Verificando credenciais conectadas..."
-        : isFacebookWorkerReady
-          ? facebookAccountLabel
-            ? `Conta ${facebookAccountLabel} pronta para publicar.`
-            : "Conta conectada e pronta para publicar."
-          : hasFacebookWorkerAccount
-            ? "Existe uma conta conectada, mas o worker precisa ser reautorizado. Abra Contas do Facebook."
-            : "Nenhuma conta conectada. Acesse Contas do Facebook e conecte a conta do Meta Ads.",
-      action: isFacebookWorkerReady
-        ? undefined
-        : () => navigate("/accounts/facebook"),
-      actionLabel: isFacebookWorkerReady
-        ? undefined
-        : "Abrir Contas do Facebook",
-    },
-    {
-      id: "experiment-page",
-      title: "Página do Facebook definida",
-      isMet: hasExperimentPage,
-      hint: hasExperimentPage
-        ? `Este experimento usa a página ${experimentPage?.name ?? experimentPage?.pageId}.`
-        : hasConfiguredFacebookPage
-          ? "Escolha a página do experimento na tela de edição."
-          : "Nenhuma página conectada ao hub. Configure nas Contas do Facebook antes de editar o experimento.",
-      action: hasExperimentPage
-        ? undefined
-        : hasConfiguredFacebookPage
-          ? () => navigate(`/experiments/${expId}/edit`)
-          : () => navigate("/accounts/facebook"),
-      actionLabel: hasExperimentPage
-        ? undefined
-        : hasConfiguredFacebookPage
-          ? "Editar experimento"
-          : "Configurar páginas",
-    },
-    {
-      id: "instagram-account",
-      title: "Conta do Instagram vinculada",
-      isMet: hasInstagramAccount,
-      hint: hasInstagramAccount
-        ? `Este experimento usa a conta ${instagramAccount?.handle}.`
-        : "Associe uma conta do Instagram ao experimento para liberar as campanhas.",
-      action: hasInstagramAccount
-        ? undefined
-        : () => navigate(`/experiments/${expId}/edit`),
-      actionLabel: hasInstagramAccount ? undefined : "Editar experimento",
-    },
-    {
-      id: "daily-budget",
-      title: "Valor diário definido",
-      isMet: hasDailyBudget,
-      hint: hasDailyBudget
-        ? `Investimento diário de ${formatCurrency(data.dailyBudget)}.`
-        : "Defina o orçamento diário para orientar o worker de mídia.",
-      action: hasDailyBudget
-        ? undefined
-        : () => navigate(`/experiments/${expId}/edit`),
-      actionLabel: hasDailyBudget ? undefined : "Editar experimento",
-    },
-  ];
-
-  const operationalChecklist: ChecklistItem[] = [
-    {
-      id: "platform",
-      title: "Plataforma configurada para Facebook Ads",
-      isMet: data.platform === "FACEBOOK",
-      hint:
-        data.platform === "FACEBOOK"
-          ? "Este experimento já usa a plataforma do Facebook."
-          : `Plataforma atual: ${data.platform}. Ajuste para Facebook Ads para liberar a campanha.`,
-    },
-    {
-      id: "status",
-      title: "Status marcado como Planejado",
-      isMet: data.status === "PLANNED",
-      hint:
-        data.status === "PLANNED"
-          ? lastReleaseLabel
-            ? `Liberado para o worker em ${lastReleaseLabel}.`
-            : "Status Planejado. Use o botão acima para liberar novamente se precisar reiniciar o funil."
-          : "Use o botão de liberação para marcar como Planejado e disparar a publicação do worker.",
-      action: data.status === "PLANNED" ? undefined : handleFacebookRelease,
-      actionLabel: data.status === "PLANNED" ? undefined : "Liberar agora",
-      actionDisabled:
-        data.status === "PLANNED" ? undefined : releaseButtonDisabled,
-      actionLoading: data.status === "PLANNED" ? undefined : releaseInProgress,
-    },
-    {
-      id: "facebook-pixel",
-      title: "Pixel temporariamente desligado",
-      isMet: true,
-      hint: "Publicação liberada sem pixel enquanto a estratégia de pixels por vertical/conta é reorganizada.",
-    },
-  ];
   const checklistGroups = [
     {
       id: "blocking",
@@ -1949,20 +1836,6 @@ export default function ExperimentDetailPage() {
       description:
         "Itens que impedem a publicação automática. Mesma lógica do diagnóstico cinza.",
       items: blockingChecklist,
-    },
-    {
-      id: "configuration",
-      title: "Configurações do experimento",
-      description:
-        "Verificações previstas no documento de publicação (conta, página, Instagram e orçamento).",
-      items: configurationChecklist,
-    },
-    {
-      id: "operational",
-      title: "Fluxo operacional do Meta",
-      description:
-        "Ajustes que ajudam o worker a executar o plano end-to-end no Meta Ads.",
-      items: operationalChecklist,
     },
   ].filter((group) => group.items.length > 0);
 

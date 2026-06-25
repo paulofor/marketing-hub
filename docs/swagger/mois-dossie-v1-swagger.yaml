@@ -1,0 +1,520 @@
+openapi: 3.0.3
+info:
+  title: MOIS Dossiê v1 API
+  version: v1
+  description: Contratos internos do pipeline de criação de dossiê MOIS v1.
+paths:
+  /api/internal/mois/dossie/v1/intake/stage-executions/pending:
+    post:
+      summary: Lista pendências canônicas da etapa Entrada inicial do dossiê MOIS v1
+      operationId: pendingMoisDossieV1IntakeStageExecutions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DossierIntakePendingRequest'
+      responses:
+        '200':
+          description: Pendências disponíveis para o executor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DossierIntakePendingResponse'
+  /api/internal/mois/dossie/v1/product-understanding/stage-executions/pending:
+    post:
+      summary: Lista pendências canônicas da etapa Entendimento do produto do dossiê MOIS v1
+      operationId: pendingMoisDossieV1ProductUnderstandingStageExecutions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DossierProductUnderstandingPendingRequest'
+      responses:
+        '200':
+          description: Pendências disponíveis para o executor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DossierProductUnderstandingPendingResponse'
+  /api/internal/mois/dossie/v1/investigation-anchor-builder/stage-executions/pending:
+    post:
+      summary: Lista pendências canônicas da etapa Geração de âncoras de investigação do dossiê MOIS v1
+      operationId: pendingMoisDossieV1InvestigationAnchorBuilderStageExecutions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DossierInvestigationAnchorBuilderPendingRequest'
+      responses:
+        '200':
+          description: Pendências disponíveis para o executor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DossierInvestigationAnchorBuilderPendingResponse'
+  /api/internal/mois/dossie/v1/warmup-resource-discovery/stage-executions/pending:
+    post:
+      summary: Lista pendências canônicas da etapa Descoberta de recursos de aquecimento do dossiê MOIS v1
+      operationId: pendingMoisDossieV1WarmupResourceDiscoveryStageExecutions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DossierWarmupResourceDiscoveryPendingRequest'
+      responses:
+        '200':
+          description: Pendências disponíveis para o executor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DossierWarmupResourceDiscoveryPendingResponse'
+  /api/internal/mois/dossie/v1/source-product-match/stage-executions/pending:
+    post:
+      summary: Lista pendências canônicas da etapa Validação de relação fonte-produto do dossiê MOIS v1
+      operationId: pendingMoisDossieV1SourceProductMatchStageExecutions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DossierSourceProductMatchPendingRequest'
+      responses:
+        '200':
+          description: Pendências disponíveis para o executor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DossierSourceProductMatchPendingResponse'
+  /api/internal/mois/dossie/v1/warmup-signal-extraction/stage-executions/pending:
+    post:
+      summary: Lista pendências canônicas da etapa Extração de sinais de aquecimento do dossiê MOIS v1
+      operationId: pendingMoisDossieV1WarmupSignalExtractionStageExecutions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DossierWarmupSignalExtractionPendingRequest'
+      responses:
+        '200':
+          description: Pendências disponíveis para o executor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DossierWarmupSignalExtractionPendingResponse'
+  /api/internal/mois/dossie/v1/warmup-map-builder/stage-executions/pending:
+    post:
+      summary: Lista pendências canônicas da etapa Montagem do mapa de aquecimento do dossiê MOIS v1
+      operationId: pendingMoisDossieV1WarmupMapBuilderStageExecutions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DossierWarmupMapBuilderPendingRequest'
+      responses:
+        '200':
+          description: Pendências disponíveis para o executor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DossierWarmupMapBuilderPendingResponse'
+  /api/internal/mois/dossie/v1/dossier-synthesis/stage-executions/pending:
+    post:
+      summary: Lista pendências canônicas da etapa Síntese final do dossiê do dossiê MOIS v1
+      operationId: pendingMoisDossieV1DossierSynthesisStageExecutions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DossierDossierSynthesisPendingRequest'
+      responses:
+        '200':
+          description: Pendências disponíveis para o executor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DossierDossierSynthesisPendingResponse'
+components:
+  schemas:
+    DossierIntakePendingRequest:
+      type: object
+      required:
+        - workspaceId
+        - workerId
+      properties:
+        workspaceId:
+          type: string
+        workerId:
+          type: string
+        limit:
+          type: integer
+          format: int32
+    DossierIntakePendingResponse:
+      type: object
+      required:
+        - claimed
+        - jobs
+      properties:
+        claimed:
+          type: boolean
+        jobs:
+          type: array
+          items:
+            $ref: '#/components/schemas/DossierIntakePendingJob'
+    DossierIntakePendingJob:
+      type: object
+      required:
+        - stageExecutionId
+        - dossierId
+        - workspaceId
+        - stageName
+        - input
+      properties:
+        stageExecutionId:
+          type: integer
+          format: int64
+        dossierId:
+          type: integer
+          format: int64
+        workspaceId:
+          type: string
+        stageName:
+          type: string
+        input:
+          type: object
+          additionalProperties: true
+    DossierProductUnderstandingPendingRequest:
+      type: object
+      required:
+        - workspaceId
+        - workerId
+      properties:
+        workspaceId:
+          type: string
+        workerId:
+          type: string
+        limit:
+          type: integer
+          format: int32
+    DossierProductUnderstandingPendingResponse:
+      type: object
+      required:
+        - claimed
+        - jobs
+      properties:
+        claimed:
+          type: boolean
+        jobs:
+          type: array
+          items:
+            $ref: '#/components/schemas/DossierProductUnderstandingPendingJob'
+    DossierProductUnderstandingPendingJob:
+      type: object
+      required:
+        - stageExecutionId
+        - dossierId
+        - workspaceId
+        - stageName
+        - input
+      properties:
+        stageExecutionId:
+          type: integer
+          format: int64
+        dossierId:
+          type: integer
+          format: int64
+        workspaceId:
+          type: string
+        stageName:
+          type: string
+        input:
+          type: object
+          additionalProperties: true
+    DossierInvestigationAnchorBuilderPendingRequest:
+      type: object
+      required:
+        - workspaceId
+        - workerId
+      properties:
+        workspaceId:
+          type: string
+        workerId:
+          type: string
+        limit:
+          type: integer
+          format: int32
+    DossierInvestigationAnchorBuilderPendingResponse:
+      type: object
+      required:
+        - claimed
+        - jobs
+      properties:
+        claimed:
+          type: boolean
+        jobs:
+          type: array
+          items:
+            $ref: '#/components/schemas/DossierInvestigationAnchorBuilderPendingJob'
+    DossierInvestigationAnchorBuilderPendingJob:
+      type: object
+      required:
+        - stageExecutionId
+        - dossierId
+        - workspaceId
+        - stageName
+        - input
+      properties:
+        stageExecutionId:
+          type: integer
+          format: int64
+        dossierId:
+          type: integer
+          format: int64
+        workspaceId:
+          type: string
+        stageName:
+          type: string
+        input:
+          type: object
+          additionalProperties: true
+    DossierWarmupResourceDiscoveryPendingRequest:
+      type: object
+      required:
+        - workspaceId
+        - workerId
+      properties:
+        workspaceId:
+          type: string
+        workerId:
+          type: string
+        limit:
+          type: integer
+          format: int32
+    DossierWarmupResourceDiscoveryPendingResponse:
+      type: object
+      required:
+        - claimed
+        - jobs
+      properties:
+        claimed:
+          type: boolean
+        jobs:
+          type: array
+          items:
+            $ref: '#/components/schemas/DossierWarmupResourceDiscoveryPendingJob'
+    DossierWarmupResourceDiscoveryPendingJob:
+      type: object
+      required:
+        - stageExecutionId
+        - dossierId
+        - workspaceId
+        - stageName
+        - input
+      properties:
+        stageExecutionId:
+          type: integer
+          format: int64
+        dossierId:
+          type: integer
+          format: int64
+        workspaceId:
+          type: string
+        stageName:
+          type: string
+        input:
+          type: object
+          additionalProperties: true
+    DossierSourceProductMatchPendingRequest:
+      type: object
+      required:
+        - workspaceId
+        - workerId
+      properties:
+        workspaceId:
+          type: string
+        workerId:
+          type: string
+        limit:
+          type: integer
+          format: int32
+    DossierSourceProductMatchPendingResponse:
+      type: object
+      required:
+        - claimed
+        - jobs
+      properties:
+        claimed:
+          type: boolean
+        jobs:
+          type: array
+          items:
+            $ref: '#/components/schemas/DossierSourceProductMatchPendingJob'
+    DossierSourceProductMatchPendingJob:
+      type: object
+      required:
+        - stageExecutionId
+        - dossierId
+        - workspaceId
+        - stageName
+        - input
+      properties:
+        stageExecutionId:
+          type: integer
+          format: int64
+        dossierId:
+          type: integer
+          format: int64
+        workspaceId:
+          type: string
+        stageName:
+          type: string
+        input:
+          type: object
+          additionalProperties: true
+    DossierWarmupSignalExtractionPendingRequest:
+      type: object
+      required:
+        - workspaceId
+        - workerId
+      properties:
+        workspaceId:
+          type: string
+        workerId:
+          type: string
+        limit:
+          type: integer
+          format: int32
+    DossierWarmupSignalExtractionPendingResponse:
+      type: object
+      required:
+        - claimed
+        - jobs
+      properties:
+        claimed:
+          type: boolean
+        jobs:
+          type: array
+          items:
+            $ref: '#/components/schemas/DossierWarmupSignalExtractionPendingJob'
+    DossierWarmupSignalExtractionPendingJob:
+      type: object
+      required:
+        - stageExecutionId
+        - dossierId
+        - workspaceId
+        - stageName
+        - input
+      properties:
+        stageExecutionId:
+          type: integer
+          format: int64
+        dossierId:
+          type: integer
+          format: int64
+        workspaceId:
+          type: string
+        stageName:
+          type: string
+        input:
+          type: object
+          additionalProperties: true
+    DossierWarmupMapBuilderPendingRequest:
+      type: object
+      required:
+        - workspaceId
+        - workerId
+      properties:
+        workspaceId:
+          type: string
+        workerId:
+          type: string
+        limit:
+          type: integer
+          format: int32
+    DossierWarmupMapBuilderPendingResponse:
+      type: object
+      required:
+        - claimed
+        - jobs
+      properties:
+        claimed:
+          type: boolean
+        jobs:
+          type: array
+          items:
+            $ref: '#/components/schemas/DossierWarmupMapBuilderPendingJob'
+    DossierWarmupMapBuilderPendingJob:
+      type: object
+      required:
+        - stageExecutionId
+        - dossierId
+        - workspaceId
+        - stageName
+        - input
+      properties:
+        stageExecutionId:
+          type: integer
+          format: int64
+        dossierId:
+          type: integer
+          format: int64
+        workspaceId:
+          type: string
+        stageName:
+          type: string
+        input:
+          type: object
+          additionalProperties: true
+    DossierDossierSynthesisPendingRequest:
+      type: object
+      required:
+        - workspaceId
+        - workerId
+      properties:
+        workspaceId:
+          type: string
+        workerId:
+          type: string
+        limit:
+          type: integer
+          format: int32
+    DossierDossierSynthesisPendingResponse:
+      type: object
+      required:
+        - claimed
+        - jobs
+      properties:
+        claimed:
+          type: boolean
+        jobs:
+          type: array
+          items:
+            $ref: '#/components/schemas/DossierDossierSynthesisPendingJob'
+    DossierDossierSynthesisPendingJob:
+      type: object
+      required:
+        - stageExecutionId
+        - dossierId
+        - workspaceId
+        - stageName
+        - input
+      properties:
+        stageExecutionId:
+          type: integer
+          format: int64
+        dossierId:
+          type: integer
+          format: int64
+        workspaceId:
+          type: string
+        stageName:
+          type: string
+        input:
+          type: object
+          additionalProperties: true

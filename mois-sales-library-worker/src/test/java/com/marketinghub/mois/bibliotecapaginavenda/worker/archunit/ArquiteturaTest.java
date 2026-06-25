@@ -17,10 +17,11 @@ import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
 
 /** Garante contratos estruturais de rastreabilidade OpenAI consumidos pelo PromptBuilder. */
-@AnalyzeClasses(packages = "com.marketinghub.mois.bibliotecapaginavenda.worker", importOptions = ImportOption.DoNotIncludeTests.class)
+@AnalyzeClasses(packages = "com.marketinghub.mois", importOptions = ImportOption.DoNotIncludeTests.class)
 class ArquiteturaTest {
 
     private static final String PIPELINE_ROOT = "com.marketinghub.mois.bibliotecapaginavenda.worker.v1.pipeline";
+    private static final String DOSSIER_V1_PIPELINE_ROOT = "com.marketinghub.mois.dossiev1.pipeline";
 
     private static final DescribedPredicate<JavaClass> CLASSES_DE_ETAPA =
             new DescribedPredicate<>("[ARQUITETURA] classes dentro de pipeline.<etapa>") {
@@ -74,6 +75,50 @@ class ArquiteturaTest {
             .resideInAPackage(PIPELINE_ROOT)
             .should(notDependOnConcreteTechnologies())
             .because("[ARQUITETURA] o núcleo do pipeline deve depender de abstrações, não de tecnologias concretas");
+
+    /** Garante que o núcleo genérico do dossiê MOIS v1 não importe etapas concretas. */
+    @ArchTest
+    static final ArchRule dossie_v1_pipeline_raiz_nao_deve_depender_de_etapas = classes()
+            .that()
+            .resideInAPackage(DOSSIER_V1_PIPELINE_ROOT)
+            .should(notDependOnConcreteDossierV1Stages())
+            .because("[ARQUITETURA] o núcleo do dossiê MOIS v1 não pode conhecer etapas concretas");
+
+    /** Garante independência plugável entre etapas concretas do dossiê MOIS v1. */
+    @ArchTest
+    static final ArchRule dossie_v1_etapas_nao_devem_depender_umas_das_outras = classes()
+            .that(resideInDossierV1ConcreteStage())
+            .should(notDependOnAnotherDossierV1ConcreteStage())
+            .because("[ARQUITETURA] cada etapa concreta de com.marketinghub.mois.dossiev1.pipeline.<etapa> deve ser independente");
+
+    /** Garante que as etapas concretas do dossiê MOIS v1 não formem ciclos. */
+    @ArchTest
+    static final ArchRule dossie_v1_etapas_nao_devem_ter_ciclos = slices()
+            .matching("com.marketinghub.mois.dossiev1.pipeline.(*)..")
+            .should()
+            .beFreeOfCycles()
+            .because("[ARQUITETURA] etapas concretas do dossiê MOIS v1 não podem formar ciclos");
+
+    /** Garante que processors concretos do dossiê MOIS v1 implementem o contrato de etapa. */
+    @ArchTest
+    static final ArchRule dossie_v1_processors_devem_implementar_stage_processor = classes()
+            .that()
+            .resideInAPackage("com.marketinghub.mois.dossiev1.pipeline..")
+            .and()
+            .resideOutsideOfPackage(DOSSIER_V1_PIPELINE_ROOT)
+            .and()
+            .haveSimpleNameEndingWith("Processor")
+            .should()
+            .implement(com.marketinghub.mois.dossiev1.pipeline.StageProcessor.class)
+            .because("[ARQUITETURA] toda etapa concreta do dossiê MOIS v1 deve implementar StageProcessor");
+
+    /** Garante que o núcleo do dossiê MOIS v1 não dependa de tecnologias concretas. */
+    @ArchTest
+    static final ArchRule dossie_v1_pipeline_raiz_nao_deve_depender_de_tecnologias_concretas = classes()
+            .that()
+            .resideInAPackage(DOSSIER_V1_PIPELINE_ROOT)
+            .should(notDependOnConcreteTechnologies())
+            .because("[ARQUITETURA] o núcleo do dossiê MOIS v1 deve depender de abstrações, não de tecnologias concretas");
 
     /** Valida assinatura obrigatória com 4 parâmetros para uso direto do PromptBuilder. */
     @ArchTest
@@ -139,6 +184,58 @@ class ArquiteturaTest {
                 }
             }
         };
+    }
+
+    private static DescribedPredicate<JavaClass> resideInDossierV1ConcreteStage() {
+        return new DescribedPredicate<>("[ARQUITETURA] classes dentro de dossiev1.pipeline.<etapa>") {
+            @Override
+            public boolean test(JavaClass javaClass) {
+                return concreteDossierV1StageName(javaClass) != null;
+            }
+        };
+    }
+
+    private static ArchCondition<JavaClass> notDependOnConcreteDossierV1Stages() {
+        return new ArchCondition<>("[ARQUITETURA] não depender de dossiev1.pipeline.<etapa>") {
+            @Override
+            public void check(JavaClass javaClass, ConditionEvents events) {
+                for (Dependency dependency : javaClass.getDirectDependenciesFromSelf()) {
+                    JavaClass target = dependency.getTargetClass();
+                    boolean valid = concreteDossierV1StageName(target) == null;
+                    events.add(new SimpleConditionEvent(dependency, valid,
+                            "[ARQUITETURA] " + javaClass.getName() + " não pode depender da etapa concreta de dossiê "
+                                    + target.getName()));
+                }
+            }
+        };
+    }
+
+    private static ArchCondition<JavaClass> notDependOnAnotherDossierV1ConcreteStage() {
+        return new ArchCondition<>("[ARQUITETURA] não depender de outra etapa concreta do dossiê MOIS v1") {
+            @Override
+            public void check(JavaClass javaClass, ConditionEvents events) {
+                String sourceStage = concreteDossierV1StageName(javaClass);
+                for (Dependency dependency : javaClass.getDirectDependenciesFromSelf()) {
+                    JavaClass target = dependency.getTargetClass();
+                    String targetStage = concreteDossierV1StageName(target);
+                    boolean valid = targetStage == null || targetStage.equals(sourceStage);
+                    events.add(new SimpleConditionEvent(dependency, valid,
+                            "[ARQUITETURA] " + javaClass.getName() + " da etapa " + sourceStage
+                                    + " não pode depender de " + target.getName() + " da etapa " + targetStage));
+                }
+            }
+        };
+    }
+
+    private static String concreteDossierV1StageName(JavaClass javaClass) {
+        String prefix = DOSSIER_V1_PIPELINE_ROOT + ".";
+        String packageName = javaClass.getPackageName();
+        if (!packageName.startsWith(prefix)) {
+            return null;
+        }
+        String suffix = packageName.substring(prefix.length());
+        int dot = suffix.indexOf('.');
+        return dot < 0 ? suffix : suffix.substring(0, dot);
     }
 
     private static String concreteStageName(JavaClass javaClass) {

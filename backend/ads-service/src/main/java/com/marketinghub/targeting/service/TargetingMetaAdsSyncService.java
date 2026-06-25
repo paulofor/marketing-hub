@@ -26,7 +26,7 @@ public class TargetingMetaAdsSyncService {
     }
 
     /**
-     * Lista elementos aprovados que ainda precisam de ID oficial e alcance da Meta Ads.
+     * Lista elementos aprovados ou em revisão que ainda precisam de ID oficial e alcance da Meta Ads.
      */
     public List<TargetingMetaAdsPendingElementDto> listPending(int limit) {
         int safeLimit = Math.max(1, Math.min(limit, 200));

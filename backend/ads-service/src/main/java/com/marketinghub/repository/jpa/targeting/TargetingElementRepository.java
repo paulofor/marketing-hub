@@ -70,11 +70,14 @@ public interface TargetingElementRepository extends JpaRepository<TargetingEleme
                                         @Param("hypothesisId") UUID hypothesisId);
 
     /**
-     * Lista elementos aprovados que ainda precisam de ID e alcance oficial da Meta Ads.
+     * Lista elementos aprovados ou em revisão que ainda precisam de ID e alcance oficial da Meta Ads.
      */
     @Query("""
             select e from TargetingElement e
-            where e.status = com.marketinghub.targeting.TargetingElementStatus.APPROVED
+            where e.status in (
+                com.marketinghub.targeting.TargetingElementStatus.APPROVED,
+                com.marketinghub.targeting.TargetingElementStatus.NEEDS_REVIEW
+              )
               and e.source in (
                 com.marketinghub.targeting.TargetingElementSource.MANUAL,
                 com.marketinghub.targeting.TargetingElementSource.AI,

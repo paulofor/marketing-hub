@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { NavLink } from "react-router-dom";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -41,6 +41,7 @@ import {
 import experimentIcon from "../assets/icons/experiment-icon.svg";
 import hypothesisIcon from "../assets/icons/hypothesis-icon.svg";
 import nicheIcon from "../assets/icons/niche-icon.svg";
+import { useOpsMonitorAvailability } from "../api/useOpsMonitor";
 import "./MainNavigation.css";
 
 type NavIcon = LucideIcon | string;
@@ -251,18 +252,22 @@ const NAV_SECTIONS: NavSection[] = [
   },
 ];
 
-const MARKET_TEST_STEPS = [
-  "1- Hipótese e Oferta Isca",
-  "2- Funil Mínimo",
-  "3- Tráfego e Segmentação",
-  "4- KPIs e limiares de decisão",
-  "5- Automação analítica",
-];
+const OFFLINE_MODULE_LIMIT = 4;
 
 export default function MainNavigation() {
   const [isPinned, setIsPinned] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const isExpanded = isPinned || isHovered;
+  const availabilityQuery = useOpsMonitorAvailability();
+  const offlineModules = useMemo(() => {
+    return (availabilityQuery.data ?? [])
+      .filter((module) => module.status === "OFFLINE")
+      .slice(0, OFFLINE_MODULE_LIMIT);
+  }, [availabilityQuery.data]);
+  const shouldShowOfflinePanel =
+    availabilityQuery.isLoading ||
+    availabilityQuery.isError ||
+    offlineModules.length > 0;
 
   return (
     <aside
@@ -413,19 +418,44 @@ export default function MainNavigation() {
           </div>
         ))}
       </nav>
-      <div
-        className="main-navigation__market-test"
-        aria-label="Etapas do teste de mercado"
-      >
-        <p className="main-navigation__section-title">Teste de Mercado</p>
-        <ol className="main-navigation__market-list">
-          {MARKET_TEST_STEPS.map((step) => (
-            <li key={step} className="main-navigation__market-step">
-              {step}
-            </li>
-          ))}
-        </ol>
-      </div>
+      {shouldShowOfflinePanel ? (
+        <div
+          className="main-navigation__offline-modules"
+          aria-label="Módulos fora do ar apontados pelo monitor"
+        >
+          <p className="main-navigation__section-title">Módulos fora do ar</p>
+          {availabilityQuery.isLoading ? (
+            <p className="main-navigation__offline-status">
+              Consultando monitor...
+            </p>
+          ) : null}
+          {availabilityQuery.isError ? (
+            <p className="main-navigation__offline-status main-navigation__offline-status--error">
+              Monitor indisponível
+            </p>
+          ) : null}
+          {offlineModules.length > 0 ? (
+            <ul className="main-navigation__offline-list">
+              {offlineModules.map((module) => (
+                <li
+                  key={module.moduleCode}
+                  className="main-navigation__offline-item"
+                  title={module.lastError ?? module.name}
+                >
+                  <AlertTriangle
+                    className="main-navigation__offline-icon"
+                    size={14}
+                    aria-hidden="true"
+                  />
+                  <span className="main-navigation__offline-name">
+                    {module.name}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+      ) : null}
     </aside>
   );
 }

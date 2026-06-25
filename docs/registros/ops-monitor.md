@@ -25,3 +25,14 @@
 - Causa-raiz tratada: cadastro inicial do monitor usou endpoints genéricos em vez dos contratos reais de observabilidade dos módulos.
 - Ajuste: criado changelog para corrigir `base_url`, `health_path` e `log_path` de backend, AI Worker, Facebook Ads Worker, OPRM Coletor MEI, MOIS Sales Library Worker e Email Service.
 - Prevenção: a correção fica versionada em Liquibase para manter o banco alinhado após deploy e evitar reincidência em novos ambientes.
+
+## 2026-06-25 — Monitor operacional passa a usar URLs públicas
+
+- Decisão operacional: o Ops Monitor deve acessar os módulos sempre pela URL pública oficial, sem usar `host.docker.internal` como atalho interno.
+- Causa-raiz: o monitor podia marcar um módulo como `ONLINE` pela rede interna do Docker mesmo quando a rota pública estava recusando conexão, criando divergência entre saúde operacional exibida e disponibilidade real percebida fora do host.
+- Ajuste: criado changelog incremental para restaurar URLs públicas de AI Worker, Facebook Ads Worker, OPRM Coletor MEI, MOIS Sales Library Worker e Email Service no cadastro `ops_monitored_module`.
+- Prevenção: a regra foi registrada na arquitetura do Ops Monitor para impedir novos ajustes que voltem a usar rotas internas como fonte de verdade de disponibilidade.
+
+## 2026-06-25 — Incidente sintético para fila NichoCNAE v3
+- O monitor administrativo agora cruza disponibilidade do `oprm-coletor-mei` com a fila persistida do NichoCNAE v3.
+- Quando houver execução v3 em `PENDING` por mais de 6 minutos, o módulo aparece como `DEGRADED` e um incidente `OPRM_NICHO_CNAE_V3_QUEUE_STALE` é listado, mesmo que o `/health` do container esteja online.

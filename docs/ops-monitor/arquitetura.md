@@ -36,9 +36,9 @@ A fase 4 expande a lista operacional para incluir OPRM, coletores MOIS, Lead Por
 
 ## Ajuste de rota interna — 2026-06-25
 
-O `ops-monitor-worker` roda em container Docker e deve acessar os módulos publicados no host pelo gateway interno `host.docker.internal`, não pelo IP público do servidor. O IP público pode passar por proxy/firewall e retornar conexão recusada mesmo quando o módulo está ativo no próprio host.
+O `ops-monitor-worker` roda em container Docker, mas deve acessar os módulos monitorados sempre pela URL pública oficial cadastrada no backend, nunca por atalhos internos como `host.docker.internal`. O objetivo do monitor é refletir a disponibilidade real percebida pelos demais módulos e operadores fora do container local; se a URL pública estiver indisponível, o módulo deve aparecer como indisponível mesmo que responda por rota interna do host.
 
-A configuração de módulos monitorados mantém o backend principal em `http://191.252.181.168`, pois ele responde pela porta 80; os demais módulos com portas dedicadas devem usar `http://host.docker.internal:<porta>` no contrato entregue ao worker.
+A configuração de módulos monitorados mantém o backend principal em `http://191.252.181.168`, pois ele responde pela porta 80; os demais módulos com portas dedicadas também devem usar a URL pública oficial com a porta publicada correspondente no contrato entregue ao worker.
 
 ## Correção de persistência do heartbeat do backend — 2026-06-25
 

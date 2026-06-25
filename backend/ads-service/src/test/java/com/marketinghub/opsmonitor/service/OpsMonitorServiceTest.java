@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 import com.marketinghub.geralanding.GeraLandingStageExecution;
+import com.marketinghub.oprm.nichocnae.v3.OprmNichoCnaeV3StageExecution;
+import com.marketinghub.oprm.nichocnae.v3.OprmNichoCnaeV3StageExecutionStatus;
 import com.marketinghub.opsmonitor.OpsModuleHealthCheck;
 import com.marketinghub.opsmonitor.OpsMonitoredModule;
 import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
@@ -11,11 +13,12 @@ import com.marketinghub.repository.jpa.opsmonitor.OpsModuleAvailabilityDailyRepo
 import com.marketinghub.repository.jpa.opsmonitor.OpsModuleHealthCheckRepository;
 import com.marketinghub.repository.jpa.opsmonitor.OpsModuleIncidentRepository;
 import com.marketinghub.repository.jpa.opsmonitor.OpsMonitoredModuleRepository;
+import com.marketinghub.repository.jpa.oprm.nichocnae.v3.OprmNichoCnaeV3StageExecutionRepository;
+import jakarta.persistence.Column;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-import jakarta.persistence.Column;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -39,6 +42,9 @@ class OpsMonitorServiceTest {
     @Mock
     private GeraLandingStageExecutionRepository geraLandingStageExecutionRepository;
 
+    @Mock
+    private OprmNichoCnaeV3StageExecutionRepository nichoCnaeV3StageExecutionRepository;
+
     /** Garante que o pending retorna somente módulos habilitados pelo cadastro operacional. */
     @Test
     void listPendingChecksReturnsEnabledModules() {
@@ -55,7 +61,7 @@ class OpsMonitorServiceTest {
 
         OpsMonitorService service = new OpsMonitorService(
                 moduleRepository, healthCheckRepository, incidentRepository, availabilityDailyRepository,
-                geraLandingStageExecutionRepository);
+                geraLandingStageExecutionRepository, nichoCnaeV3StageExecutionRepository);
 
         var pending = service.listPendingChecks();
 
@@ -63,6 +69,7 @@ class OpsMonitorServiceTest {
         assertThat(pending.getFirst().moduleCode()).isEqualTo("backend");
         assertThat(pending.getFirst().healthPath()).isEqualTo("/actuator/health");
     }
+
     /** Garante que a disponibilidade respeita filtros administrativos por criticidade e tipo. */
     @Test
     void listAvailabilityFiltersByCriticalityAndType() {
@@ -83,7 +90,7 @@ class OpsMonitorServiceTest {
 
         OpsMonitorService service = new OpsMonitorService(
                 moduleRepository, healthCheckRepository, incidentRepository, availabilityDailyRepository,
-                geraLandingStageExecutionRepository);
+                geraLandingStageExecutionRepository, nichoCnaeV3StageExecutionRepository);
 
         var filtered = service.listAvailability("CRITICAL", "WORKER");
 
@@ -111,7 +118,7 @@ class OpsMonitorServiceTest {
 
         OpsMonitorService service = new OpsMonitorService(
                 moduleRepository, healthCheckRepository, incidentRepository, availabilityDailyRepository,
-                geraLandingStageExecutionRepository);
+                geraLandingStageExecutionRepository, nichoCnaeV3StageExecutionRepository);
 
         var incidents = service.listIncidents(true, "CRITICAL", "WORKER");
 
@@ -119,6 +126,72 @@ class OpsMonitorServiceTest {
         assertThat(incidents.getFirst().moduleCode()).isEqualTo("ai-worker");
         assertThat(incidents.getFirst().rootSignal()).isEqualTo("GERALANDING_QUEUE_STALE");
         assertThat(incidents.getFirst().lastError()).contains("job-stale");
+    }
+
+    /** Garante que fila antiga do NichoCNAE v3 aparece como incidente do OPRM Coletor MEI. */
+    @Test
+    void listIncidentsAddsSyntheticOprmNichoCnaeV3QueueIncident() {
+        OprmNichoCnaeV3StageExecution execution = new OprmNichoCnaeV3StageExecution();
+        execution.setJobId("nichocnae-v3-7319002-1782413765640");
+        execution.setCnaeCode("7319002");
+        execution.setStageCode("cnae-intake");
+        execution.setStatus(OprmNichoCnaeV3StageExecutionStatus.PENDING);
+        execution.setCreatedAt(Instant.now().minusSeconds(900));
+        when(incidentRepository.findByStatusOrderByStartedAtDesc("OPEN")).thenReturn(List.of());
+        when(geraLandingStageExecutionRepository
+                .findTop20ByStageCodeAndStatusAndExecutionRequestedAtBeforeOrderByExecutionRequestedAtAsc(
+                        org.mockito.ArgumentMatchers.anyString(),
+                        org.mockito.ArgumentMatchers.eq("INICIADO"),
+                        org.mockito.ArgumentMatchers.any(Instant.class)))
+                .thenReturn(List.of());
+        when(nichoCnaeV3StageExecutionRepository.findTop20ByStatusAndCreatedAtBeforeOrderByCreatedAtAsc(
+                        org.mockito.ArgumentMatchers.eq(OprmNichoCnaeV3StageExecutionStatus.PENDING),
+                        org.mockito.ArgumentMatchers.any(Instant.class)))
+                .thenReturn(List.of(execution));
+
+        OpsMonitorService service = new OpsMonitorService(
+                moduleRepository, healthCheckRepository, incidentRepository, availabilityDailyRepository,
+                geraLandingStageExecutionRepository, nichoCnaeV3StageExecutionRepository);
+
+        var incidents = service.listIncidents(true, "HIGH", "COLLECTOR");
+
+        assertThat(incidents).hasSize(1);
+        assertThat(incidents.getFirst().moduleCode()).isEqualTo("oprm-coletor-mei");
+        assertThat(incidents.getFirst().rootSignal()).isEqualTo("OPRM_NICHO_CNAE_V3_QUEUE_STALE");
+        assertThat(incidents.getFirst().lastError()).contains("7319002").contains("cnae-intake");
+    }
+
+    /** Garante que fila v3 parada degrada a disponibilidade do OPRM Coletor MEI. */
+    @Test
+    void listAvailabilityMarksOprmCollectorDegradedWhenV3QueueIsStale() {
+        OpsMonitoredModule collector = new OpsMonitoredModule();
+        collector.setCode("oprm-coletor-mei");
+        collector.setName("OPRM Coletor MEI");
+        collector.setType("COLLECTOR");
+        collector.setCriticality("HIGH");
+
+        OprmNichoCnaeV3StageExecution execution = new OprmNichoCnaeV3StageExecution();
+        execution.setJobId("nichocnae-v3-7319002-1782413765640");
+        execution.setCnaeCode("7319002");
+        execution.setStageCode("cnae-intake");
+        execution.setStatus(OprmNichoCnaeV3StageExecutionStatus.PENDING);
+        execution.setCreatedAt(Instant.now().minusSeconds(900));
+        when(moduleRepository.findAll()).thenReturn(List.of(collector));
+        when(nichoCnaeV3StageExecutionRepository.findTop20ByStatusAndCreatedAtBeforeOrderByCreatedAtAsc(
+                        org.mockito.ArgumentMatchers.eq(OprmNichoCnaeV3StageExecutionStatus.PENDING),
+                        org.mockito.ArgumentMatchers.any(Instant.class)))
+                .thenReturn(List.of(execution));
+
+        OpsMonitorService service = new OpsMonitorService(
+                moduleRepository, healthCheckRepository, incidentRepository, availabilityDailyRepository,
+                geraLandingStageExecutionRepository, nichoCnaeV3StageExecutionRepository);
+
+        var availability = service.listAvailability("HIGH", "COLLECTOR");
+
+        assertThat(availability).hasSize(1);
+        assertThat(availability.getFirst().moduleCode()).isEqualTo("oprm-coletor-mei");
+        assertThat(availability.getFirst().status()).isEqualTo("DEGRADED");
+        assertThat(availability.getFirst().lastError()).contains("NichoCNAE v3");
     }
 
     /** Garante que o payload bruto de healthcheck suporta respostas Actuator maiores que 255 caracteres. */

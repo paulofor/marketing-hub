@@ -22,6 +22,12 @@ public interface HypothesisPainStageExecutionRepository extends JpaRepository<Hy
             String stageCode,
             String status);
 
+    /** Busca a execução concluída mais recente ainda não vinculada a uma hipótese fechada. */
+    Optional<HypothesisPainStageExecution> findTopByMarketNicheIdAndStageCodeAndStatusAndHypothesisIdIsNullOrderByExecutionRequestedAtDesc(
+            Long marketNicheId,
+            String stageCode,
+            String status);
+
     /** Busca as execuções mais antigas de uma etapa com nicho carregado. */
     @EntityGraph(attributePaths = {"marketNiche", "hypothesis"})
     List<HypothesisPainStageExecution> findTop20ByStageCodeAndStatusOrderByExecutionRequestedAtAsc(String stageCode, String status);

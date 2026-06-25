@@ -264,25 +264,26 @@ public class HypothesisPainStageService {
                                 marketNicheId,
                                 stageCode)
                         .stream())
+                .filter(execution -> execution.getHypothesisId() == null)
                 .filter(execution -> ACTIVE_STATUSES.contains(execution.getStatus()))
                 .findFirst();
     }
 
     /** Define a primeira etapa ainda não concluída para o fluxo automático completo. */
     private String nextStageCodeForFullFlow(Long marketNicheId) {
-        if (!StringUtils.hasText(latestCompletedPainResponse(marketNicheId))) {
+        if (!StringUtils.hasText(latestOpenCompletedPainResponse(marketNicheId))) {
             return STAGE_CODE;
         }
-        if (!StringUtils.hasText(latestCompletedResultResponse(marketNicheId))) {
+        if (!StringUtils.hasText(latestOpenCompletedResultResponse(marketNicheId))) {
             return RESULT_STAGE_CODE;
         }
-        if (!StringUtils.hasText(latestCompletedMechanismResponse(marketNicheId))) {
+        if (!StringUtils.hasText(latestOpenCompletedMechanismResponse(marketNicheId))) {
             return MECHANISM_STAGE_CODE;
         }
-        if (!StringUtils.hasText(latestCompletedProofResponse(marketNicheId))) {
+        if (!StringUtils.hasText(latestOpenCompletedProofResponse(marketNicheId))) {
             return PROOF_STAGE_CODE;
         }
-        if (!StringUtils.hasText(latestCompletedStageResponse(marketNicheId, OFFER_STAGE_CODE))) {
+        if (!StringUtils.hasText(latestOpenCompletedStageResponse(marketNicheId, OFFER_STAGE_CODE))) {
             return OFFER_STAGE_CODE;
         }
         throw new IllegalStateException("Todas as etapas do fluxo de hipótese já estão concluídas para o nicho: " + marketNicheId);
@@ -497,7 +498,7 @@ public class HypothesisPainStageService {
                 || MECHANISM_STAGE_CODE.equals(execution.getStageCode())
                 || PROOF_STAGE_CODE.equals(execution.getStageCode())
                 || OFFER_STAGE_CODE.equals(execution.getStageCode())
-                ? latestCompletedPainResponse(execution.getMarketNicheId())
+                ? latestOpenCompletedPainResponse(execution.getMarketNicheId())
                 : null;
     }
 
@@ -506,7 +507,7 @@ public class HypothesisPainStageService {
         return MECHANISM_STAGE_CODE.equals(execution.getStageCode())
                         || PROOF_STAGE_CODE.equals(execution.getStageCode())
                         || OFFER_STAGE_CODE.equals(execution.getStageCode())
-                ? latestCompletedResultResponse(execution.getMarketNicheId())
+                ? latestOpenCompletedResultResponse(execution.getMarketNicheId())
                 : null;
     }
 
@@ -514,14 +515,14 @@ public class HypothesisPainStageService {
     private String pendingMechanismResponse(HypothesisPainStageExecution execution) {
         return PROOF_STAGE_CODE.equals(execution.getStageCode())
                 || OFFER_STAGE_CODE.equals(execution.getStageCode())
-                ? latestCompletedMechanismResponse(execution.getMarketNicheId())
+                ? latestOpenCompletedMechanismResponse(execution.getMarketNicheId())
                 : null;
     }
 
     /** Retorna a Prova concluída quando a etapa pendente precisa desse contexto. */
     private String pendingProofResponse(HypothesisPainStageExecution execution) {
         return OFFER_STAGE_CODE.equals(execution.getStageCode())
-                ? latestCompletedProofResponse(execution.getMarketNicheId())
+                ? latestOpenCompletedProofResponse(execution.getMarketNicheId())
                 : null;
     }
 
@@ -552,7 +553,7 @@ public class HypothesisPainStageService {
 
     /** Garante que a etapa Dor tenha sido concluída com resposta antes de liberar Resultado. */
     private void requireCompletedPain(Long marketNicheId) {
-        if (!StringUtils.hasText(latestCompletedPainResponse(marketNicheId))) {
+        if (!StringUtils.hasText(latestOpenCompletedPainResponse(marketNicheId))) {
             throw new IllegalStateException(
                     "A etapa Dor precisa estar concluída antes de iniciar Resultado para o nicho: " + marketNicheId);
         }
@@ -560,7 +561,7 @@ public class HypothesisPainStageService {
 
     /** Garante que a etapa Resultado tenha sido concluída com resposta antes de liberar Mecanismo. */
     private void requireCompletedResult(Long marketNicheId) {
-        if (!StringUtils.hasText(latestCompletedResultResponse(marketNicheId))) {
+        if (!StringUtils.hasText(latestOpenCompletedResultResponse(marketNicheId))) {
             throw new IllegalStateException(
                     "A etapa Resultado precisa estar concluída antes de iniciar Mecanismo para o nicho: " + marketNicheId);
         }
@@ -568,7 +569,7 @@ public class HypothesisPainStageService {
 
     /** Garante que a etapa Mecanismo tenha sido concluída com resposta antes de liberar Prova ou Oferta. */
     private void requireCompletedMechanism(Long marketNicheId) {
-        if (!StringUtils.hasText(latestCompletedMechanismResponse(marketNicheId))) {
+        if (!StringUtils.hasText(latestOpenCompletedMechanismResponse(marketNicheId))) {
             throw new IllegalStateException(
                     "A etapa Mecanismo precisa estar concluída antes de iniciar Prova ou Oferta para o nicho: " + marketNicheId);
         }
@@ -576,7 +577,7 @@ public class HypothesisPainStageService {
 
     /** Garante que a etapa Prova tenha sido concluída com resposta antes de liberar Oferta. */
     private void requireCompletedProof(Long marketNicheId) {
-        if (!StringUtils.hasText(latestCompletedProofResponse(marketNicheId))) {
+        if (!StringUtils.hasText(latestOpenCompletedProofResponse(marketNicheId))) {
             throw new IllegalStateException(
                     "A etapa Prova precisa estar concluída antes de iniciar Oferta para o nicho: " + marketNicheId);
         }
@@ -605,6 +606,37 @@ public class HypothesisPainStageService {
     /** Retorna a resposta concluída mais recente de uma etapa para contextualizar próximas etapas. */
     private String latestCompletedStageResponse(Long marketNicheId, String stageCode) {
         return executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
+                        marketNicheId,
+                        stageCode,
+                        STATUS_COMPLETED)
+                .map(HypothesisPainStageExecution::getModelResponse)
+                .filter(StringUtils::hasText)
+                .orElse(null);
+    }
+
+    /** Retorna a Dor concluída mais recente ainda aberta para uma nova hipótese. */
+    private String latestOpenCompletedPainResponse(Long marketNicheId) {
+        return latestOpenCompletedStageResponse(marketNicheId, STAGE_CODE);
+    }
+
+    /** Retorna o Resultado concluído mais recente ainda aberto para uma nova hipótese. */
+    private String latestOpenCompletedResultResponse(Long marketNicheId) {
+        return latestOpenCompletedStageResponse(marketNicheId, RESULT_STAGE_CODE);
+    }
+
+    /** Retorna o Mecanismo concluído mais recente ainda aberto para uma nova hipótese. */
+    private String latestOpenCompletedMechanismResponse(Long marketNicheId) {
+        return latestOpenCompletedStageResponse(marketNicheId, MECHANISM_STAGE_CODE);
+    }
+
+    /** Retorna a Prova concluída mais recente ainda aberta para uma nova hipótese. */
+    private String latestOpenCompletedProofResponse(Long marketNicheId) {
+        return latestOpenCompletedStageResponse(marketNicheId, PROOF_STAGE_CODE);
+    }
+
+    /** Retorna a resposta concluída mais recente ainda não vinculada a hipótese fechada. */
+    private String latestOpenCompletedStageResponse(Long marketNicheId, String stageCode) {
+        return executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusAndHypothesisIdIsNullOrderByExecutionRequestedAtDesc(
                         marketNicheId,
                         stageCode,
                         STATUS_COMPLETED)

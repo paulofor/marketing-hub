@@ -98,7 +98,7 @@ class HypothesisPipelineFinalizationServiceTest {
         MarketNiche niche = new MarketNiche();
         niche.setId(18L);
         when(marketNicheRepository.findById(18L)).thenReturn(Optional.of(niche));
-        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
+        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusAndHypothesisIdIsNullOrderByExecutionRequestedAtDesc(
                         18L,
                         "hypothesis-pain",
                         "CONCLUIDO"))
@@ -113,7 +113,7 @@ class HypothesisPipelineFinalizationServiceTest {
 
     /** Cria uma execução concluída simulada para a etapa informada. */
     private void mockCompletedStage(String stageCode, String response, String model, BigDecimal cost) {
-        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
+        when(executionRepository.findTopByMarketNicheIdAndStageCodeAndStatusAndHypothesisIdIsNullOrderByExecutionRequestedAtDesc(
                         18L,
                         stageCode,
                         "CONCLUIDO"))

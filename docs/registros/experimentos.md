@@ -1,3 +1,10 @@
+## 2026-06-25 — Hipóteses: nova hipótese não reaproveita execução já fechada
+
+- erro verificado: ao iniciar o fluxo completo em `/niches/23/hypotheses/new`, o backend retornava 500 com a mensagem "Todas as etapas do fluxo de hipótese já estão concluídas para o nicho: 23".
+- causa-raiz: o backend decidia a próxima etapa olhando todas as execuções concluídas do nicho, inclusive as já vinculadas a uma hipótese fechada; a tela de nova hipótese trabalha apenas com execuções ainda sem `hypothesis_id`.
+- foi feito: o início do fluxo completo, os pré-requisitos das etapas, o contexto entregue ao Worker AI e a finalização da hipótese agora usam somente execuções concluídas ainda não vinculadas a hipótese fechada.
+- prevenção de recorrência: adicionado teste cobrindo hipótese anterior já fechada no mesmo nicho, garantindo que nova hipótese comece novamente pela etapa Dor.
+
 ## 2026-06-24 — Experimentos: filtro inteligente de públicos por IA
 
 - solicitação: filtrar públicos com modelo de IA para manter somente públicos realmente compatíveis com o nicho.

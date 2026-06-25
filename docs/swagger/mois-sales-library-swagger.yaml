@@ -504,6 +504,28 @@ paths:
                 $ref: '#/components/schemas/MarketWarmupSignalListResponse'
         '404':
           $ref: '#/components/responses/MarketWarmupNotFound'
+  /market-warmup/stage-executions/pending:
+    post:
+      summary: Reserva pelo endpoint pending canônico a etapa de dossiê
+      description: Ponto inicial canônico do worker para o protocolo padrão backend/módulo. Entrega o texto completo disponível da página e os dados comerciais necessários.
+      tags: [MOIS Sales Library]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MarketWarmupClaimRequest'
+      responses:
+        '200':
+          description: Resultado da reserva interna
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MarketWarmupClaimResponse'
+        '400':
+          $ref: '#/components/responses/MarketWarmupBadRequest'
+        '403':
+          $ref: '#/components/responses/MarketWarmupForbidden'
   /market-warmup/jobs:claim:
     post:
       summary: Reserva internamente uma pesquisa pendente de aquecimento
@@ -995,6 +1017,10 @@ components:
         proofSummary:
           type: string
           nullable: true
+        salesPageText:
+          type: string
+          nullable: true
+          description: Texto/HTML completo da página de venda usado pelo worker para planejar termos de pesquisa.
     MarketWarmupClaimResponse:
       type: object
       properties:
@@ -1145,9 +1171,66 @@ components:
             $ref: '#/components/schemas/MarketWarmupSignalCompleteItem'
         summary:
           $ref: '#/components/schemas/MarketWarmupSummaryCompleteItem'
+        searchTerms:
+          type: array
+          items:
+            $ref: '#/components/schemas/MarketWarmupSearchTermCompleteItem'
+        searchResults:
+          type: array
+          items:
+            $ref: '#/components/schemas/MarketWarmupSearchResultCompleteItem'
+        finalDossier:
+          $ref: '#/components/schemas/MarketWarmupFinalDossierCompleteItem'
         finishedAt:
           type: string
           format: date-time
+          nullable: true
+    MarketWarmupSearchTermCompleteItem:
+      type: object
+      required: [termText]
+      properties:
+        termText:
+          type: string
+        reason:
+          type: string
+          nullable: true
+        source:
+          type: string
+          nullable: true
+    MarketWarmupSearchResultCompleteItem:
+      type: object
+      required: [termText, resultUrl]
+      properties:
+        termText:
+          type: string
+        resultUrl:
+          type: string
+        resultTitle:
+          type: string
+          nullable: true
+        resultSnippet:
+          type: string
+          nullable: true
+        rawPayload:
+          type: string
+          nullable: true
+        relatedToProduct:
+          type: boolean
+          nullable: true
+    MarketWarmupFinalDossierCompleteItem:
+      type: object
+      properties:
+        prestigeSummary:
+          type: string
+          nullable: true
+        externalWarmupResources:
+          type: string
+          nullable: true
+        finalConclusion:
+          type: string
+          nullable: true
+        rawModelResponse:
+          type: string
           nullable: true
     MarketWarmupFailRequest:
       type: object
@@ -1553,6 +1636,10 @@ components:
         proofSummary:
           type: string
           nullable: true
+        salesPageText:
+          type: string
+          nullable: true
+          description: Texto/HTML completo da página de venda usado pelo worker para planejar termos de pesquisa.
         modelName:
           type: string
           nullable: true

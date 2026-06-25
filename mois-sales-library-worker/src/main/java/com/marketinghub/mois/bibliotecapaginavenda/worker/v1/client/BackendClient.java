@@ -166,7 +166,7 @@ public class BackendClient {
     public MarketWarmupClaimResponse claimMarketWarmup(MarketWarmupClaimRequest request) {
         log.info("MOIS market-warmup worker calling backend claim endpoint. workspaceId={}, workerId={}", request.workspaceId(), request.workerId());
         MarketWarmupClaimResponse response = restClient.post()
-                .uri("/api/mois/sales-library/market-warmup/jobs:claim")
+                .uri("/api/mois/sales-library/market-warmup/stage-executions/pending")
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(request)
                 .retrieve()

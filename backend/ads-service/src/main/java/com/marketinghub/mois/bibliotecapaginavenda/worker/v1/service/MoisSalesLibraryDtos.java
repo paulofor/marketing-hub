@@ -815,8 +815,16 @@ public final class MoisSalesLibraryDtos {
             String offerSummary,
             String mechanismSummary,
             String promiseSummary,
-            String proofSummary
+            String proofSummary,
+            String salesPageText
     ) {
+        /**
+         * Mantém compatibilidade para consumidores que ainda não enviam texto completo.
+         */
+        public MarketWarmupClaimedJob(long jobId, long pageId, String workspaceId, String urlCanonical, String title,
+                                      String producerName, String offerSummary, String mechanismSummary, String promiseSummary, String proofSummary) {
+            this(jobId, pageId, workspaceId, urlCanonical, title, producerName, offerSummary, mechanismSummary, promiseSummary, proofSummary, null);
+        }
     }
 
     /**
@@ -908,7 +916,54 @@ public final class MoisSalesLibraryDtos {
             @NotEmpty List<@Valid MarketWarmupSourceCompleteItem> sources,
             @NotEmpty List<@Valid MarketWarmupSignalCompleteItem> signals,
             @NotNull @Valid MarketWarmupSummaryCompleteItem summary,
+            List<@Valid MarketWarmupSearchTermCompleteItem> searchTerms,
+            List<@Valid MarketWarmupSearchResultCompleteItem> searchResults,
+            @Valid MarketWarmupFinalDossierCompleteItem finalDossier,
             Instant finishedAt
+    ) {
+        /**
+         * Mantém compatibilidade com o contrato anterior enquanto os novos campos são opcionais.
+         */
+        public MarketWarmupCompleteRequest(List<MarketWarmupSearchAttemptCompleteItem> searchAttempts,
+                                           List<MarketWarmupSourceCompleteItem> sources,
+                                           List<MarketWarmupSignalCompleteItem> signals,
+                                           MarketWarmupSummaryCompleteItem summary,
+                                           Instant finishedAt) {
+            this(searchAttempts, sources, signals, summary, List.of(), List.of(), null, finishedAt);
+        }
+    }
+
+    /**
+     * Representa termo planejado pela OpenAI para investigar prestígio público.
+     */
+    public record MarketWarmupSearchTermCompleteItem(
+            @NotBlank String termText,
+            String reason,
+            String source
+    ) {
+    }
+
+    /**
+     * Representa resultado bruto pesquisado pelo worker para auditoria do dossiê.
+     */
+    public record MarketWarmupSearchResultCompleteItem(
+            @NotBlank String termText,
+            @NotBlank String resultUrl,
+            String resultTitle,
+            String resultSnippet,
+            String rawPayload,
+            Boolean relatedToProduct
+    ) {
+    }
+
+    /**
+     * Representa as conclusões finais do dossiê de prestígio e aquecimento.
+     */
+    public record MarketWarmupFinalDossierCompleteItem(
+            String prestigeSummary,
+            String externalWarmupResources,
+            String finalConclusion,
+            String rawModelResponse
     ) {
     }
 

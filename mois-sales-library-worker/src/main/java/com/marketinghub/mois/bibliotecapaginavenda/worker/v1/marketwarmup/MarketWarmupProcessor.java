@@ -6,6 +6,9 @@ import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.model.WorkerDtos.Ma
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.model.WorkerDtos.MarketWarmupPlatform;
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.model.WorkerDtos.MarketWarmupRecommendation;
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.model.WorkerDtos.MarketWarmupSearchAttemptCompleteItem;
+import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.model.WorkerDtos.MarketWarmupSearchResultCompleteItem;
+import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.model.WorkerDtos.MarketWarmupSearchTermCompleteItem;
+import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.model.WorkerDtos.MarketWarmupFinalDossierCompleteItem;
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.model.WorkerDtos.MarketWarmupSignalCompleteItem;
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.model.WorkerDtos.MarketWarmupSignalType;
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.model.WorkerDtos.MarketWarmupSourceCompleteItem;
@@ -64,9 +67,11 @@ public class MarketWarmupProcessor {
         List<String> queries = queryPlanner.planQueries(job, baseQueries);
         List<PublicSearchResult> rawResults = new ArrayList<>();
         List<MarketWarmupSearchAttemptCompleteItem> searchAttempts = new ArrayList<>();
+        List<MarketWarmupSearchResultCompleteItem> searchResults = new ArrayList<>();
         for (String query : queries) {
             List<PublicSearchResult> queryResults = searchClient.search(query, searchLimit);
             rawResults.addAll(queryResults);
+            searchResults.addAll(buildSearchResults(job, query, queryResults));
             searchAttempts.add(buildSearchAttempt(job, query, queryResults));
         }
         List<PublicSearchResult> deduplicatedResults = deduplicate(rawResults).stream().limit(searchLimit * 2L).toList();
@@ -77,9 +82,47 @@ public class MarketWarmupProcessor {
         List<MarketWarmupSourceCompleteItem> sources = buildSources(qualifiedResults);
         List<MarketWarmupSignalCompleteItem> signals = buildSignals(qualifiedResults);
         MarketWarmupSummaryCompleteItem summary = buildSummary(job, sources, signals);
+        List<MarketWarmupSearchTermCompleteItem> searchTerms = queries.stream()
+                .map(query -> new MarketWarmupSearchTermCompleteItem(query, "Termo usado para medir prestígio público e aquecimento externo do produto.", "OPENAI_OR_FALLBACK"))
+                .toList();
+        MarketWarmupFinalDossierCompleteItem finalDossier = buildFinalDossier(job, sources, signals, summary);
         log.info("MOIS market-warmup dossier built. jobId={}, pageId={}, queries={}, sources={}, signals={}, score={}",
                 job.jobId(), job.pageId(), queries.size(), sources.size(), signals.size(), summary.scoreTotal());
-        return new MarketWarmupCompleteRequest(searchAttempts, sources, signals, summary, Instant.now());
+        return new MarketWarmupCompleteRequest(searchAttempts, sources, signals, summary, searchTerms, searchResults, finalDossier, Instant.now());
+    }
+
+
+    /**
+     * Converte resultados de busca em evidências persistíveis relacionadas ao termo pesquisado.
+     */
+    private List<MarketWarmupSearchResultCompleteItem> buildSearchResults(MarketWarmupClaimedJob job, String query, List<PublicSearchResult> results) {
+        List<PublicSearchResult> qualified = keepOnlyQualifiedProducerSocialResults(job, results);
+        Set<String> qualifiedUrls = qualified.stream().map(PublicSearchResult::url).collect(java.util.stream.Collectors.toSet());
+        return results.stream()
+                .map(result -> new MarketWarmupSearchResultCompleteItem(query, result.url(), result.title(), result.snippet(), result.rawPayload(), qualifiedUrls.contains(result.url())))
+                .toList();
+    }
+
+    /**
+     * Monta o texto final simples do dossiê para a tela sem depender de recomputação no frontend.
+     */
+    private MarketWarmupFinalDossierCompleteItem buildFinalDossier(
+            MarketWarmupClaimedJob job,
+            List<MarketWarmupSourceCompleteItem> sources,
+            List<MarketWarmupSignalCompleteItem> signals,
+            MarketWarmupSummaryCompleteItem summary
+    ) {
+        String resources = sources.stream()
+                .map(source -> source.platform() + ": " + source.sourceTitle() + " (" + source.sourceUrl() + ")")
+                .limit(8)
+                .reduce((left, right) -> left + "\n" + right)
+                .orElse("Nenhum recurso externo qualificado foi identificado.");
+        String prestige = "Foram encontradas " + sources.size() + " fontes externas qualificadas e " + signals.size()
+                + " sinais de aquecimento relacionados ao produto " + nullSafe(job.title()) + ".";
+        String conclusion = summary.opportunityRecommendation() == null || summary.opportunityRecommendation().isBlank()
+                ? "Dossiê concluído para apoiar decisão comercial da biblioteca."
+                : summary.opportunityRecommendation();
+        return new MarketWarmupFinalDossierCompleteItem(prestige, resources, conclusion, null);
     }
 
     /**
@@ -181,6 +224,13 @@ public class MarketWarmupProcessor {
         }
         String withoutAccents = Normalizer.normalize(value, Normalizer.Form.NFD).replaceAll("\\p{M}+", "");
         return NON_ALPHANUMERIC.matcher(withoutAccents.toLowerCase(Locale.ROOT)).replaceAll(" ").replaceAll("\\s+", " ").trim();
+    }
+
+    /**
+     * Normaliza textos nulos para montar conclusão final segura.
+     */
+    private String nullSafe(String value) {
+        return value == null || value.isBlank() ? "produto sem título" : value;
     }
 
     /**

@@ -12,3 +12,9 @@
 - Pacote backend protegido: `com.marketinghub.opsmonitor`.
 - Executor operacional externo: `ops-monitor-worker`.
 - Endpoint pending canônico: `/api/internal/ops-monitor/v1/module-checks/stage-executions/pending`.
+
+## 2026-06-25 — MOIS Biblioteca de Páginas de Vendas / dossiê
+- Pacote protegido: `com.marketinghub.mois.bibliotecapaginavenda.worker.v1`.
+- Etapa: dossiê de prestígio e aquecimento da Biblioteca de Páginas de Vendas.
+- Endpoint pending canônico exposto no controller único: `/api/mois/sales-library/market-warmup/stage-executions/pending`.
+- Executor externo responsável pela execução operacional: `mois-sales-library-worker`.

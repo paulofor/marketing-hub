@@ -255,6 +255,16 @@ public class MoisSalesLibraryController {
     }
 
     /**
+     * Expõe o ponto inicial canônico pending da etapa de dossiê para o worker MOIS.
+     */
+    @PostMapping("/market-warmup/stage-executions/pending")
+    public MoisSalesLibraryDtos.MarketWarmupClaimResponse pending(
+            @Valid @RequestBody MoisSalesLibraryDtos.MarketWarmupClaimRequest request
+    ) {
+        return marketWarmupService.claimJob(request);
+    }
+
+    /**
      * Reserva internamente o próximo job pendente de aquecimento para o worker MOIS.
      */
     @PostMapping("/market-warmup/jobs:claim")

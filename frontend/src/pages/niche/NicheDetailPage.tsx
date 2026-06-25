@@ -21,9 +21,7 @@ import { TargetingGenerationForm } from "../../components/TargetingGenerationFor
 import { TargetingRequestStatusPanel } from "../../components/TargetingRequestStatusPanel";
 import { useRequestHypotheses } from "../../api/niche/useRequestHypotheses";
 import { HypothesisManualForm } from "../../components/HypothesisManualForm";
-import { useRequestDetailedDescriptions } from "../../api/niche/useRequestDetailedDescriptions";
 import { useNicheDetailedDescriptions } from "../../api/niche/useNicheDetailedDescriptions";
-import { useUpdateNicheDetailedDescriptionStatus } from "../../api/niche/useUpdateNicheDetailedDescriptionStatus";
 import { useExperimentsByNiche } from "../../api/experiment/useExperimentsByNiche";
 import { useDeliverablesByNiche } from "../../api/deliverable/useDeliverablesByNiche";
 import { useLeadPortalFlows } from "../../api/leadPortal/useLeadPortalFlows";
@@ -232,9 +230,6 @@ export default function NicheDetailPage() {
   );
   const { data: detailedDescriptions } = useNicheDetailedDescriptions(nicheId);
   const requestHypotheses = useRequestHypotheses(id);
-  const requestDetailedDescriptions = useRequestDetailedDescriptions(id);
-  const updateDetailedDescriptionStatus =
-    useUpdateNicheDetailedDescriptionStatus();
   const { data: openAiModels, isLoading: isLoadingModels } = useOpenAiModels();
   const {
     data: differentiatedTechnologies,
@@ -253,14 +248,6 @@ export default function NicheDetailPage() {
   const [editingBehaviorIndex, setEditingBehaviorIndex] = useState<
     number | null
   >(null);
-  const [updatingDescriptionId, setUpdatingDescriptionId] = useState<
-    number | null
-  >(null);
-  const [detailedDescriptionFeedback, setDetailedDescriptionFeedback] =
-    useState<{
-      type: "success" | "error";
-      message: string;
-    } | null>(null);
   const [isManualHypothesisFormVisible, setManualHypothesisFormVisible] =
     useState(false);
   const {
@@ -281,17 +268,6 @@ export default function NicheDetailPage() {
       differentiatedTechnologyId: undefined,
       detailedDescriptionId: undefined,
     },
-  });
-  const {
-    register: registerDescriptionRequest,
-    handleSubmit: handleSubmitDescriptionRequest,
-    reset: resetDescriptionRequest,
-    setValue: setDescriptionRequestValue,
-  } = useForm<{
-    quantity: number;
-    model?: string;
-  }>({
-    defaultValues: { quantity: 1, model: "" },
   });
   const {
     register: registerDeliverable,
@@ -342,16 +318,6 @@ export default function NicheDetailPage() {
     const defaultModel = data?.hypothesisModel ?? openAiModels?.[0]?.code ?? "";
     setHypothesisRequestValue("model", defaultModel);
   }, [data?.hypothesisModel, openAiModels, setHypothesisRequestValue]);
-
-  useEffect(() => {
-    const defaultDescriptionModel =
-      data?.detailedDescriptionModel ?? openAiModels?.[0]?.code ?? "";
-    setDescriptionRequestValue("model", defaultDescriptionModel);
-  }, [
-    data?.detailedDescriptionModel,
-    openAiModels,
-    setDescriptionRequestValue,
-  ]);
 
   useEffect(() => {
     setHypothesisRequestValue(
@@ -727,14 +693,6 @@ export default function NicheDetailPage() {
     requestHypotheses.isPending || (isFetching && !isLoading)
       ? "Atualizando hipóteses..."
       : `Solicitadas ao Worker: ${data.hypothesesToGenerate ?? 0}`;
-  const detailedDescriptionStatusLabel =
-    requestDetailedDescriptions.isPending || (isFetching && !isLoading)
-      ? "Atualizando descrições..."
-      : `Solicitadas ao Worker: ${data.detailedDescriptionsToGenerate ?? 0}`;
-  const pendingDetailedDescriptions = Math.max(
-    0,
-    data.detailedDescriptionsToGenerate ?? 0,
-  );
   const formatUsd = (value?: number | string | null) => {
     if (value === undefined || value === null) return undefined;
     const num = typeof value === "string" ? Number(value) : value;
@@ -894,57 +852,6 @@ export default function NicheDetailPage() {
       console.log("Validation errors", errors);
     },
   );
-  const onRequestDetailedDescriptions = handleSubmitDescriptionRequest(
-    async ({ quantity, model }) => {
-      if (!quantity || quantity <= 0) return;
-      const selectedModel =
-        model?.trim() ||
-        data?.detailedDescriptionModel ||
-        openAiModels?.[0]?.code;
-      try {
-        await requestDetailedDescriptions.mutateAsync({
-          quantity,
-          model: selectedModel,
-        });
-        setDetailedDescriptionFeedback({
-          type: "success",
-          message:
-            quantity === 1
-              ? "Solicitação enviada para o processamento em batch do Worker IA."
-              : `Solicitação enviada para o processamento em batch (${quantity} descrições).`,
-        });
-        resetDescriptionRequest({ quantity: 1, model: selectedModel ?? "" });
-      } catch {
-        setDetailedDescriptionFeedback({
-          type: "error",
-          message:
-            "Não foi possível enviar a solicitação para o batch do Worker IA. Tente novamente.",
-        });
-      }
-    },
-    (errors) => {
-      console.log("Validation errors", errors);
-    },
-  );
-
-  const onToggleDetailedDescriptionActive = async (
-    descriptionId: number,
-    active: boolean,
-  ) => {
-    try {
-      setUpdatingDescriptionId(descriptionId);
-      await updateDetailedDescriptionStatus.mutateAsync({
-        nicheId: nicheId ?? id,
-        descriptionId,
-        active,
-      });
-    } catch {
-      alert("Erro ao atualizar status da descrição");
-    } finally {
-      setUpdatingDescriptionId(null);
-    }
-  };
-
   const onCreateDeliverable = handleSubmitDeliverable(
     async (values) => {
       try {
@@ -1224,266 +1131,6 @@ export default function NicheDetailPage() {
       ) : null}
       <NicheLearningDictionaryCard nicheId={normalizedNicheId} />
       <NicheBacklogRecommendationsCard nicheId={normalizedNicheId} />
-      <section
-        className="niche-section"
-        aria-labelledby="niche-detailed-descriptions"
-        id="niche-detailed-descriptions"
-      >
-        <div className="niche-section__header">
-          <div>
-            <h2
-              className="niche-section__title"
-              id="niche-detailed-descriptions"
-            >
-              Descrição detalhada
-            </h2>
-            <p className="niche-section__subtitle">
-              Gere descrições completas com dores, desejos e necessidades do
-              público do nicho.
-            </p>
-            <p className="niche-section__status">
-              {detailedDescriptionStatusLabel}
-            </p>
-            <div
-              className="niche-section__status-hints"
-              role="status"
-              aria-live="polite"
-            >
-              {requestDetailedDescriptions.isPending ? (
-                <span className="badge text-bg-info-subtle text-info-emphasis">
-                  Enviando solicitação para o batch...
-                </span>
-              ) : pendingDetailedDescriptions > 0 ? (
-                <span className="badge text-bg-warning-subtle text-warning-emphasis">
-                  {pendingDetailedDescriptions} item(ns) aguardando
-                  processamento no Worker IA.
-                </span>
-              ) : (
-                <span className="badge text-bg-success-subtle text-success-emphasis">
-                  Sem itens pendentes no batch.
-                </span>
-              )}
-              <Link
-                to="/ai/pending-requests"
-                className="niche-section__status-link"
-              >
-                Ver fila completa do Worker IA
-              </Link>
-            </div>
-            {detailedDescriptionFeedback ? (
-              <div
-                className={`alert py-2 px-3 mt-2 mb-0 ${
-                  detailedDescriptionFeedback.type === "success"
-                    ? "alert-success"
-                    : "alert-danger"
-                }`}
-                role="alert"
-              >
-                {detailedDescriptionFeedback.message}
-              </div>
-            ) : null}
-          </div>
-          <form
-            className="niche-section__actions"
-            onSubmit={onRequestDetailedDescriptions}
-          >
-            <label
-              htmlFor="detailed-description-quantity"
-              className="visually-hidden"
-            >
-              Quantidade de descrições detalhadas que o Worker IA irá gerar
-            </label>
-            <input
-              id="detailed-description-quantity"
-              type="number"
-              min={1}
-              className="form-control"
-              title="Quantidade de descrições detalhadas que o Worker IA irá gerar"
-              disabled={requestDetailedDescriptions.isPending}
-              {...registerDescriptionRequest("quantity", {
-                valueAsNumber: true,
-              })}
-            />
-            <label
-              htmlFor="detailed-description-model"
-              className="visually-hidden"
-            >
-              Modelo do OpenAI que o Worker IA irá usar
-            </label>
-            <select
-              id="detailed-description-model"
-              className="form-select"
-              title="Modelo do OpenAI que o Worker IA irá usar"
-              disabled={
-                requestDetailedDescriptions.isPending || isLoadingModels
-              }
-              {...registerDescriptionRequest("model")}
-            >
-              <option value="">Selecione um modelo</option>
-              {(openAiModels ?? []).map((modelOption) => (
-                <option key={modelOption.code} value={modelOption.code}>
-                  {modelOption.name} ({modelOption.code})
-                </option>
-              ))}
-            </select>
-            <button
-              type="submit"
-              className="btn btn-secondary"
-              disabled={requestDetailedDescriptions.isPending}
-            >
-              {requestDetailedDescriptions.isPending ? (
-                <span
-                  className="spinner-border spinner-border-sm"
-                  role="status"
-                  aria-hidden="true"
-                />
-              ) : (
-                <Sparkles size={18} />
-              )}
-              <span>Gerar descrição</span>
-            </button>
-          </form>
-        </div>
-        {detailedDescriptionList.length === 0 ? (
-          <p className="niche-section__empty">
-            Nenhuma descrição detalhada ainda.
-          </p>
-        ) : (
-          <div className="niche-section__grid">
-            {detailedDescriptionList.map((description, index) => (
-              <article
-                key={description.id}
-                className="card niche-section__card"
-              >
-                <div className="card-body">
-                  <div className="d-flex justify-content-between align-items-start gap-2">
-                    <h3 className="card-title h5 mb-2">
-                      {description.title || `Descrição #${index + 1}`}
-                    </h3>
-                    <div className="d-flex flex-column align-items-end gap-2">
-                      <div className="d-flex gap-2 flex-wrap justify-content-end">
-                        {description.promptName ? (
-                          <span className="badge text-bg-light text-dark">
-                            Prompt: {description.promptName}
-                          </span>
-                        ) : null}
-                        {description.model ? (
-                          <span className="badge text-bg-light text-dark">
-                            {description.model}
-                          </span>
-                        ) : null}
-                      </div>
-                      <div className="d-flex align-items-center gap-2">
-                        <div className="form-check form-switch m-0">
-                          <input
-                            id={`detailed-description-active-${description.id}`}
-                            className="form-check-input"
-                            type="checkbox"
-                            checked={description.active ?? true}
-                            disabled={updatingDescriptionId === description.id}
-                            onChange={(event) => {
-                              onToggleDetailedDescriptionActive(
-                                description.id,
-                                event.target.checked,
-                              );
-                            }}
-                          />
-                          <label
-                            className="form-check-label"
-                            htmlFor={`detailed-description-active-${description.id}`}
-                          >
-                            Ativa
-                          </label>
-                        </div>
-                        {updatingDescriptionId === description.id ? (
-                          <span
-                            className="spinner-border spinner-border-sm"
-                            role="status"
-                            aria-hidden="true"
-                          />
-                        ) : null}
-                      </div>
-                    </div>
-                  </div>
-                  {description.description ? (
-                    <p className="niche-detail__card-text mb-3">
-                      {description.description}
-                    </p>
-                  ) : null}
-                  {description.pains ? (
-                    <div className="mb-3">
-                      <h4 className="h6 mb-2">Dores</h4>
-                      <ul className="niche-list">
-                        {description.pains
-                          .split(/\n+/)
-                          .filter(Boolean)
-                          .map((pain, painIndex) => (
-                            <li
-                              key={`${description.id}-pain-${painIndex}`}
-                              className="niche-list__item"
-                            >
-                              {pain}
-                            </li>
-                          ))}
-                      </ul>
-                    </div>
-                  ) : null}
-                  {description.desires ? (
-                    <div className="mb-3">
-                      <h4 className="h6 mb-2">Desejos</h4>
-                      <ul className="niche-list">
-                        {description.desires
-                          .split(/\n+/)
-                          .filter(Boolean)
-                          .map((desire, desireIndex) => (
-                            <li
-                              key={`${description.id}-desire-${desireIndex}`}
-                              className="niche-list__item"
-                            >
-                              {desire}
-                            </li>
-                          ))}
-                      </ul>
-                    </div>
-                  ) : null}
-                  {description.needs ? (
-                    <div className="mb-3">
-                      <h4 className="h6 mb-2">Necessidades</h4>
-                      <ul className="niche-list">
-                        {description.needs
-                          .split(/\n+/)
-                          .filter(Boolean)
-                          .map((need, needIndex) => (
-                            <li
-                              key={`${description.id}-need-${needIndex}`}
-                              className="niche-list__item"
-                            >
-                              {need}
-                            </li>
-                          ))}
-                      </ul>
-                    </div>
-                  ) : null}
-                  <div className="d-flex gap-3 flex-wrap text-body-secondary small mt-2">
-                    {description.costUsd !== undefined &&
-                    description.costUsd !== null ? (
-                      <span>
-                        Custo estimado: {formatUsd(description.costUsd)}
-                      </span>
-                    ) : null}
-                    {description.inputTokens || description.outputTokens ? (
-                      <span>
-                        Tokens: in {description.inputTokens ?? "-"} / out{" "}
-                        {description.outputTokens ?? "-"}
-                      </span>
-                    ) : null}
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
-      </section>
       <section
         className="niche-section"
         aria-labelledby="niche-segmentation-lists"

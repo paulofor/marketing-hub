@@ -5,6 +5,9 @@ import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.Mois
 import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageMarketWarmupGateway.MarketWarmupClaimData;
 import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageMarketWarmupGateway.MarketWarmupJobData;
 import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageMarketWarmupGateway.MarketWarmupSearchAttemptData;
+import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageMarketWarmupGateway.MarketWarmupSearchResultData;
+import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageMarketWarmupGateway.MarketWarmupSearchTermData;
+import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageMarketWarmupGateway.MarketWarmupFinalDossierData;
 import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageMarketWarmupGateway.MarketWarmupSignalData;
 import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageMarketWarmupGateway.MarketWarmupSignalReadData;
 import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageMarketWarmupGateway.MarketWarmupSourceData;
@@ -140,7 +143,7 @@ public class MoisSalesPageMarketWarmupService {
                     request.workspaceId(), request.workerId(), page.pageId(), pending.job().jobId());
             return new MoisSalesLibraryDtos.MarketWarmupClaimResponse(true, new MoisSalesLibraryDtos.MarketWarmupClaimedJob(
                     pending.job().jobId(), page.pageId(), page.workspaceId(), page.urlCanonical(), page.title(), page.producerName(), page.offerSummary(),
-                    page.mechanismSummary(), page.promiseSummary(), page.proofSummary()));
+                    page.mechanismSummary(), page.promiseSummary(), page.proofSummary(), page.salesPageText()));
         } catch (RuntimeException ex) {
             log.error("Falha ao reservar job de aquecimento MOIS. modulo=MOIS, operacao=claimMarketWarmupJob, workspaceId={}, workerId={}, erroClasse={}, erro={}",
                     request.workspaceId(), request.workerId(), ex.getClass().getName(), ex.getMessage(), ex);
@@ -163,6 +166,9 @@ public class MoisSalesPageMarketWarmupService {
                     job.workspaceId(), job.pageId(), jobId, request.sources().size(), request.signals().size());
             gateway.deleteJobDetails(jobId);
             persistSearchAttempts(job, request.searchAttempts());
+            persistSearchTerms(job, request.searchTerms());
+            persistSearchResults(job, request.searchResults());
+            persistFinalDossier(job, request.finalDossier());
             List<Long> sourceIds = persistSources(job, request.sources());
             persistSignals(job, sourceIds, request.signals());
             MarketWarmupSummaryWriteData summary = mapSummaryWrite(scoreEngine.calculate(request));
@@ -230,6 +236,43 @@ public class MoisSalesPageMarketWarmupService {
         for (MoisSalesLibraryDtos.MarketWarmupSearchAttemptCompleteItem attempt : attempts) {
             gateway.insertSearchAttempt(job.jobId(), job.pageId(), job.workspaceId(), mapSearchAttemptWrite(attempt));
         }
+    }
+
+
+    /**
+     * Persiste os termos de pesquisa extraídos por OpenAI para auditoria do planejamento.
+     */
+    private void persistSearchTerms(MarketWarmupJobData job, List<MoisSalesLibraryDtos.MarketWarmupSearchTermCompleteItem> terms) {
+        if (terms == null || terms.isEmpty()) {
+            return;
+        }
+        for (MoisSalesLibraryDtos.MarketWarmupSearchTermCompleteItem term : terms) {
+            gateway.insertSearchTerm(job.jobId(), job.pageId(), job.workspaceId(), new MarketWarmupSearchTermData(term.termText(), term.reason(), term.source()));
+        }
+    }
+
+    /**
+     * Persiste os resultados brutos de pesquisa enviados pelo worker para rastrear evidências.
+     */
+    private void persistSearchResults(MarketWarmupJobData job, List<MoisSalesLibraryDtos.MarketWarmupSearchResultCompleteItem> results) {
+        if (results == null || results.isEmpty()) {
+            return;
+        }
+        for (MoisSalesLibraryDtos.MarketWarmupSearchResultCompleteItem result : results) {
+            gateway.insertSearchResult(job.jobId(), job.pageId(), job.workspaceId(), new MarketWarmupSearchResultData(
+                    result.termText(), result.resultUrl(), result.resultTitle(), result.resultSnippet(), result.rawPayload(), result.relatedToProduct()));
+        }
+    }
+
+    /**
+     * Persiste as conclusões finais do dossiê para exibição direta pela tela.
+     */
+    private void persistFinalDossier(MarketWarmupJobData job, MoisSalesLibraryDtos.MarketWarmupFinalDossierCompleteItem dossier) {
+        if (dossier == null) {
+            return;
+        }
+        gateway.insertFinalDossier(job.jobId(), job.pageId(), job.workspaceId(), new MarketWarmupFinalDossierData(
+                dossier.prestigeSummary(), dossier.externalWarmupResources(), dossier.finalConclusion(), dossier.rawModelResponse()));
     }
 
     /**

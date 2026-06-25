@@ -30,11 +30,15 @@ class MarketWarmupProcessorTest {
                 "Oferta contra insônia",
                 "método respiratório",
                 "dormir melhor em 7 dias",
-                "depoimentos");
+                "depoimentos",
+                "texto completo da pagina");
 
         var result = processor.process(job, 3);
 
         assertThat(result.sources()).isNotEmpty();
+        assertThat(result.searchTerms()).isNotEmpty();
+        assertThat(result.searchResults()).isNotEmpty();
+        assertThat(result.finalDossier().finalConclusion()).isNotBlank();
         assertThat(result.signals()).extracting(signal -> signal.signalType()).contains(MarketWarmupSignalType.PAIN_EXPLICIT, MarketWarmupSignalType.BUYING_INTENT, MarketWarmupSignalType.CREATOR_AUTHORITY, MarketWarmupSignalType.SOCIAL_PROOF);
         assertThat(result.sources()).extracting(source -> source.platform()).contains(MarketWarmupPlatform.YOUTUBE);
         assertThat(result.summary().recommendation()).isNotNull();
@@ -60,7 +64,8 @@ class MarketWarmupProcessorTest {
                 "certificação para prescrição segura de peptídeos",
                 "protocolo avançado de peptídeos",
                 "dominar peptídeos com segurança clínica",
-                "depoimentos de profissionais");
+                "depoimentos de profissionais",
+                "texto completo da pagina");
 
         var result = processor.process(job, 4);
 
@@ -86,7 +91,8 @@ class MarketWarmupProcessorTest {
                 null,
                 null,
                 null,
-                null);
+                null,
+                "texto completo da pagina");
 
         assertThatThrownBy(() -> processor.process(job, 4))
                 .isInstanceOf(IllegalStateException.class)

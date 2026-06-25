@@ -599,18 +599,29 @@ Contratos operacionais do backend:
 - `POST /api/mois/sales-library/collected-reference-html/{captureId}:complete` persiste HTML bruto, URL final, status HTTP, content type, hash e tamanho em `mois_sales_page_job_execution` e consolida `mois_sales_page`.
 - `POST /api/mois/sales-library/collected-reference-html/{captureId}:fail` registra falha de captura em `mois_sales_page_job_execution` e atualiza o último erro consolidado da página.
 
-### 13.9 Dossiê de produto da Biblioteca de Páginas de Vendas — reconstrução passo a passo
+### 13.9 Dossiê de produto da Biblioteca de Páginas de Vendas — processo de prestígio e aquecimento
 
-A Etapa 3 da Biblioteca de Páginas de Vendas fica temporariamente reduzida a um dossiê factual e incremental. A tela não deve apresentar score, narrativa, hipótese, fontes públicas, sinais, perguntas de pesquisa ou conclusões comerciais enquanto esses blocos não forem reconstruídos e validados passo a passo.
+A geração do dossiê da Biblioteca de Páginas de Vendas passa a seguir um fluxo simples em cinco etapas, documentado também em `docs/novos-modulos/mois-biblioteca-pagina-venda/processo-geracao-dossie.md`.
 
-Regra de reconstrução:
+Regra operacional:
 
-1. O primeiro bloco obrigatório do dossiê é a identificação básica observada na página de venda: **preço exibido** e **produtor exibido**.
-2. Para produtos Hotmart, esses dados devem ser lidos preferencialmente de `mois_collected_reference.hotmart_price` e `mois_collected_reference.hotmart_producer`.
-3. Se o banco não possuir preço ou produtor, a UI deve mostrar lacuna operacional em vez de inferir, completar por texto genérico ou usar conclusão do modelo.
-4. O dossiê só pode avançar para novos blocos depois que o bloco factual anterior estiver persistido e auditável.
-5. A pesquisa pública do dossiê deve construir queries qualificadas antes da coleta, priorizando produtor, domínio da página, título/subtítulo do produto, canais sociais, reviews, afiliados, prova social e sinais de distribuição; quando houver OpenAI configurada no worker, ela pode ser usada como camada de planejamento de queries, mantendo fallback heurístico auditável.
-6. Para o produto `mois_sales_page.id = 1057`, a verificação manual da página Hotmart em 2026-06-11 identificou:
-   - preço exibido: `R$ 5.997,00`;
-   - produtor exibido: `Abrantes Lima Empreendimentos LTDA`.
-7. Esses dois fatos são apenas o ponto inicial do dossiê; nenhuma conclusão de venda, autoridade, canal, mecanismo ou prova deve ser derivada deles sem etapa posterior específica.
+1. O worker acessa no backend o texto completo da página de venda e envia esse conteúdo para a OpenAI extrair termos de pesquisa que ajudem a entender o prestígio público da página, do produto, do produtor, da promessa e da marca.
+2. Ao receber a resposta da OpenAI, o worker envia os termos de pesquisa para o backend, que deve armazená-los no banco vinculados ao item da Biblioteca de Páginas de Vendas.
+3. O worker obtém do backend os termos persistidos, executa as pesquisas sugeridas e envia os resultados encontrados novamente para o backend, mantendo vínculo com o item da biblioteca e com os termos pesquisados.
+4. O worker obtém do backend os resultados de pesquisa e envia esse material para a OpenAI analisar o que tem relação real com a página do produto e quais recursos externos estão aquecendo o público, como vídeos, redes sociais, anúncios, reviews, afiliados, comunidades, matérias, páginas auxiliares ou canais do produtor.
+5. O worker envia as conclusões finais para o backend; o backend grava o dossiê final no banco e disponibiliza esse dossiê na tela do item da biblioteca.
+
+Separação obrigatória de responsabilidades:
+
+- O backend controla estado, persistência, contratos e exposição do dossiê para a tela.
+- O worker executa OpenAI, pesquisas externas e callbacks para o backend.
+- O worker não acessa o banco diretamente.
+- Cada etapa deve persistir evidência suficiente para auditoria e relatório ao usuário.
+- O frontend deve exibir o dossiê retornado pelo backend, sem recomputar conclusões.
+
+Persistência mínima obrigatória:
+
+- termos planejados para pesquisa pública vinculados ao job e à página;
+- resultados pesquisados vinculados ao termo originador;
+- conclusão final do dossiê com resumo de prestígio, recursos externos de aquecimento e recomendação final;
+- endpoint pending canônico do fluxo no backend: `/api/mois/sales-library/market-warmup/stage-executions/pending`.

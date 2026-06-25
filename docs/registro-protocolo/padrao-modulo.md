@@ -14,3 +14,9 @@
 - Etapas iniciais: `healthcheck`, `availability` e `logscan`.
 - Ponto inicial canônico previsto para consumo no backend: `GET /api/internal/ops-monitor/v1/module-checks/stage-executions/pending`.
 - O worker não acessa banco de dados diretamente; a persistência permanece no backend principal.
+
+## 2026-06-25 — MOIS Sales Library Worker / dossiê
+- Módulo executor: `mois-sales-library-worker`.
+- Pacote executor: `com.marketinghub.mois.bibliotecapaginavenda.worker.v1`.
+- Fluxo protegido: dossiê de prestígio e aquecimento da Biblioteca de Páginas de Vendas.
+- O worker mantém a execução operacional de OpenAI e pesquisas externas; o backend mantém estado, persistência, pending e callbacks.

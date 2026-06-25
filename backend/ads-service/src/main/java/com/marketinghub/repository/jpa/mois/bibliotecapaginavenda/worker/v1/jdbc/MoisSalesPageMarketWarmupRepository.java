@@ -4,6 +4,9 @@ import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.Mois
 import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageMarketWarmupGateway.MarketWarmupClaimData;
 import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageMarketWarmupGateway.MarketWarmupJobData;
 import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageMarketWarmupGateway.MarketWarmupSearchAttemptData;
+import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageMarketWarmupGateway.MarketWarmupSearchResultData;
+import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageMarketWarmupGateway.MarketWarmupSearchTermData;
+import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageMarketWarmupGateway.MarketWarmupFinalDossierData;
 import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageMarketWarmupGateway.MarketWarmupSignalData;
 import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageMarketWarmupGateway.MarketWarmupSignalReadData;
 import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageMarketWarmupGateway.MarketWarmupSourceData;
@@ -44,7 +47,10 @@ public class MoisSalesPageMarketWarmupRepository implements MoisSalesPageMarketW
                        COALESCE(NULLIF(cr_link.hotmart_producer, ''), NULLIF(cr_link.producer_name, ''),
                                 NULLIF(cr_url.hotmart_producer, ''), NULLIF(cr_url.producer_name, '')) AS producer_name,
                        sp.current_status, sp.analysis_status,
-                       sp.offer_summary, sp.mechanism_summary, sp.promise_summary, sp.proof_summary
+                       sp.offer_summary, sp.mechanism_summary, sp.promise_summary, sp.proof_summary,
+                       (SELECT je.raw_html FROM mois_sales_page_job_execution je
+                        WHERE je.sales_page_id = sp.id AND je.raw_html IS NOT NULL AND je.raw_html_bytes > 0
+                        ORDER BY je.created_at DESC, je.id DESC LIMIT 1) AS sales_page_text
                 FROM mois_sales_page sp
                 LEFT JOIN mois_collected_reference cr_link ON cr_link.id = sp.collected_reference_id
                 LEFT JOIN mois_collected_reference cr_url ON cr_url.id = (
@@ -128,7 +134,10 @@ public class MoisSalesPageMarketWarmupRepository implements MoisSalesPageMarketW
                        COALESCE(NULLIF(cr_link.hotmart_producer, ''), NULLIF(cr_link.producer_name, ''),
                                 NULLIF(cr_url.hotmart_producer, ''), NULLIF(cr_url.producer_name, '')) AS producer_name,
                        sp.current_status, sp.analysis_status,
-                       sp.offer_summary, sp.mechanism_summary, sp.promise_summary, sp.proof_summary
+                       sp.offer_summary, sp.mechanism_summary, sp.promise_summary, sp.proof_summary,
+                       (SELECT je.raw_html FROM mois_sales_page_job_execution je
+                        WHERE je.sales_page_id = sp.id AND je.raw_html IS NOT NULL AND je.raw_html_bytes > 0
+                        ORDER BY je.created_at DESC, je.id DESC LIMIT 1) AS sales_page_text
                 FROM mois_sales_page_market_warmup_job j
                 JOIN mois_sales_page sp ON sp.id = j.sales_page_id
                 LEFT JOIN mois_collected_reference cr_link ON cr_link.id = sp.collected_reference_id
@@ -183,6 +192,9 @@ public class MoisSalesPageMarketWarmupRepository implements MoisSalesPageMarketW
      */
     @Override
     public void deleteJobDetails(long jobId) {
+        jdbcTemplate.update("DELETE FROM mois_sales_page_market_warmup_final_dossier WHERE job_id = ?", jobId);
+        jdbcTemplate.update("DELETE FROM mois_sales_page_market_warmup_search_result WHERE job_id = ?", jobId);
+        jdbcTemplate.update("DELETE FROM mois_sales_page_market_warmup_search_term WHERE job_id = ?", jobId);
         jdbcTemplate.update("DELETE FROM mois_sales_page_market_warmup_signal WHERE job_id = ?", jobId);
         jdbcTemplate.update("DELETE FROM mois_sales_page_market_warmup_source WHERE job_id = ?", jobId);
         jdbcTemplate.update("DELETE FROM mois_sales_page_market_warmup_summary WHERE job_id = ?", jobId);
@@ -201,6 +213,45 @@ public class MoisSalesPageMarketWarmupRepository implements MoisSalesPageMarketW
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, UTC_TIMESTAMP())
                 """, jobId, pageId, workspaceId, attempt.queryText(), attempt.resultCount(), attempt.qualifiedCount(),
                 attempt.rejectedCount(), attempt.status(), attempt.rejectionReason(), attempt.sampleResultTitle(), attempt.sampleResultUrl());
+    }
+
+
+    /**
+     * Insere termo de pesquisa planejado pela OpenAI para o dossiê.
+     */
+    @Override
+    public void insertSearchTerm(long jobId, long pageId, String workspaceId, MarketWarmupSearchTermData term) {
+        jdbcTemplate.update("""
+                INSERT INTO mois_sales_page_market_warmup_search_term
+                (job_id, sales_page_id, workspace_id, term_text, reason, source, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, UTC_TIMESTAMP())
+                """, jobId, pageId, workspaceId, term.termText(), term.reason(), term.source());
+    }
+
+    /**
+     * Insere resultado bruto de pesquisa usado para gerar o dossiê.
+     */
+    @Override
+    public void insertSearchResult(long jobId, long pageId, String workspaceId, MarketWarmupSearchResultData result) {
+        jdbcTemplate.update("""
+                INSERT INTO mois_sales_page_market_warmup_search_result
+                (job_id, sales_page_id, workspace_id, term_text, result_url, result_title, result_snippet, raw_payload, related_to_product, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, UTC_TIMESTAMP())
+                """, jobId, pageId, workspaceId, result.termText(), result.resultUrl(), result.resultTitle(),
+                result.resultSnippet(), result.rawPayload(), result.relatedToProduct());
+    }
+
+    /**
+     * Insere as conclusões finais exibidas como dossiê do produto.
+     */
+    @Override
+    public void insertFinalDossier(long jobId, long pageId, String workspaceId, MarketWarmupFinalDossierData dossier) {
+        jdbcTemplate.update("""
+                INSERT INTO mois_sales_page_market_warmup_final_dossier
+                (job_id, sales_page_id, workspace_id, prestige_summary, external_warmup_resources, final_conclusion, raw_model_response, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())
+                """, jobId, pageId, workspaceId, dossier.prestigeSummary(), dossier.externalWarmupResources(),
+                dossier.finalConclusion(), dossier.rawModelResponse());
     }
 
     /**
@@ -383,7 +434,8 @@ public class MoisSalesPageMarketWarmupRepository implements MoisSalesPageMarketW
     private SalesPageWarmupData mapSalesPage(ResultSet rs, int rowNum) throws SQLException {
         return new SalesPageWarmupData(rs.getLong("id"), rs.getString("workspace_id"), rs.getString("url_canonical"), rs.getString("title"),
                 rs.getString("producer_name"), rs.getString("current_status"), rs.getString("analysis_status"),
-                rs.getString("offer_summary"), rs.getString("mechanism_summary"), rs.getString("promise_summary"), rs.getString("proof_summary"));
+                rs.getString("offer_summary"), rs.getString("mechanism_summary"), rs.getString("promise_summary"), rs.getString("proof_summary"),
+                rs.getString("sales_page_text"));
     }
 
     /**
@@ -404,7 +456,8 @@ public class MoisSalesPageMarketWarmupRepository implements MoisSalesPageMarketW
                 rs.getString("error_category"), rs.getString("error_message"));
         SalesPageWarmupData page = new SalesPageWarmupData(rs.getLong("sales_page_id"), rs.getString("workspace_id"), rs.getString("url_canonical"),
                 rs.getString("title"), rs.getString("producer_name"), rs.getString("current_status"), rs.getString("analysis_status"),
-                rs.getString("offer_summary"), rs.getString("mechanism_summary"), rs.getString("promise_summary"), rs.getString("proof_summary"));
+                rs.getString("offer_summary"), rs.getString("mechanism_summary"), rs.getString("promise_summary"), rs.getString("proof_summary"),
+                rs.getString("sales_page_text"));
         return new MarketWarmupClaimData(job, page);
     }
 

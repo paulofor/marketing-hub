@@ -133,7 +133,7 @@ class MoisSalesPageMarketWarmupServiceTest {
 
         service.completeJob(99L, new MoisSalesLibraryDtos.MarketWarmupCompleteRequest(
                 List.of(),
-                List.of(source), List.of(signal), summary, Instant.parse("2026-06-10T10:00:00Z")));
+                List.of(source), List.of(signal), summary, List.of(), List.of(), null, Instant.parse("2026-06-10T10:00:00Z")));
 
         verify(gateway).deleteJobDetails(99L);
         verify(gateway).insertSignal(99L, 10L, "workspace-001", 501L, signalData(signal));
@@ -169,7 +169,7 @@ class MoisSalesPageMarketWarmupServiceTest {
 
         assertThatThrownBy(() -> service.completeJob(99L, new MoisSalesLibraryDtos.MarketWarmupCompleteRequest(
                 List.of(),
-                List.of(source), List.of(signal), sampleSummary(), Instant.parse("2026-06-10T10:00:00Z"))))
+                List.of(source), List.of(signal), sampleSummary(), List.of(), List.of(), null, Instant.parse("2026-06-10T10:00:00Z"))))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Índice de fonte inválido");
 

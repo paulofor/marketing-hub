@@ -39,12 +39,25 @@ public final class WorkerDtos {
     public enum MarketWarmupRecommendation { PRIORITIZE, OBSERVE, RESEARCH_MORE, DISCARD, SATURATED_REQUIRES_ANGLE }
 
     public record MarketWarmupClaimRequest(String workspaceId, String workerId) {}
-    public record MarketWarmupClaimedJob(Long jobId, Long pageId, String workspaceId, String urlCanonical, String title, String producerName, String offerSummary, String mechanismSummary, String promiseSummary, String proofSummary) {}
+    public record MarketWarmupClaimedJob(Long jobId, Long pageId, String workspaceId, String urlCanonical, String title, String producerName, String offerSummary, String mechanismSummary, String promiseSummary, String proofSummary, String salesPageText) {
+        /** Mantém compatibilidade com testes e payloads sem texto completo. */
+        public MarketWarmupClaimedJob(Long jobId, Long pageId, String workspaceId, String urlCanonical, String title, String producerName, String offerSummary, String mechanismSummary, String promiseSummary, String proofSummary) {
+            this(jobId, pageId, workspaceId, urlCanonical, title, producerName, offerSummary, mechanismSummary, promiseSummary, proofSummary, null);
+        }
+    }
     public record MarketWarmupClaimResponse(boolean claimed, MarketWarmupClaimedJob job) {}
     public record MarketWarmupSourceCompleteItem(MarketWarmupPlatform platform, MarketWarmupSourceType sourceType, String sourceUrl, String sourceTitle, String authorName, Instant publishedAt, Instant lastActivityAt, Long followersOrSubscribers, Long viewsCount, Long likesCount, Long commentsCount, BigDecimal recencyScore, BigDecimal engagementScore, String evidenceSummary) {}
     public record MarketWarmupSignalCompleteItem(int sourceIndex, MarketWarmupSignalType signalType, BigDecimal signalStrength, String signalText, String businessInterpretation) {}
     public record MarketWarmupSummaryCompleteItem(BigDecimal scoreTotal, MarketWarmupTemperature marketTemperature, MarketWarmupEcosystemType ecosystemType, MarketWarmupRecommendation recommendation, java.util.List<String> mainPains, java.util.List<String> mainObjections, java.util.List<String> mainPromises, java.util.List<String> mainChannels, java.util.List<String> mainCompetitors, String saturationRisk, String opportunityRecommendation, String nextExperimentSuggestion) {}
     public record MarketWarmupSearchAttemptCompleteItem(String queryText, int resultCount, int qualifiedCount, int rejectedCount, String status, String rejectionReason, String sampleResultTitle, String sampleResultUrl) {}
-    public record MarketWarmupCompleteRequest(java.util.List<MarketWarmupSearchAttemptCompleteItem> searchAttempts, java.util.List<MarketWarmupSourceCompleteItem> sources, java.util.List<MarketWarmupSignalCompleteItem> signals, MarketWarmupSummaryCompleteItem summary, Instant finishedAt) {}
+    public record MarketWarmupSearchTermCompleteItem(String termText, String reason, String source) {}
+    public record MarketWarmupSearchResultCompleteItem(String termText, String resultUrl, String resultTitle, String resultSnippet, String rawPayload, Boolean relatedToProduct) {}
+    public record MarketWarmupFinalDossierCompleteItem(String prestigeSummary, String externalWarmupResources, String finalConclusion, String rawModelResponse) {}
+    public record MarketWarmupCompleteRequest(java.util.List<MarketWarmupSearchAttemptCompleteItem> searchAttempts, java.util.List<MarketWarmupSourceCompleteItem> sources, java.util.List<MarketWarmupSignalCompleteItem> signals, MarketWarmupSummaryCompleteItem summary, java.util.List<MarketWarmupSearchTermCompleteItem> searchTerms, java.util.List<MarketWarmupSearchResultCompleteItem> searchResults, MarketWarmupFinalDossierCompleteItem finalDossier, Instant finishedAt) {
+        /** Mantém compatibilidade com chamadas sem evidências detalhadas do dossiê. */
+        public MarketWarmupCompleteRequest(java.util.List<MarketWarmupSearchAttemptCompleteItem> searchAttempts, java.util.List<MarketWarmupSourceCompleteItem> sources, java.util.List<MarketWarmupSignalCompleteItem> signals, MarketWarmupSummaryCompleteItem summary, Instant finishedAt) {
+            this(searchAttempts, sources, signals, summary, java.util.List.of(), java.util.List.of(), null, finishedAt);
+        }
+    }
     public record MarketWarmupFailRequest(String errorCategory, String errorMessage, java.util.List<MarketWarmupSearchAttemptCompleteItem> searchAttempts) {}
 }

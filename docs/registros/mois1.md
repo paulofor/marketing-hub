@@ -1816,3 +1816,14 @@ Arquivos principais:
 ## 2026-06-25 — Custo total na Biblioteca de Páginas de Vendas
 - adicionada exposição do custo total em USD das análises comerciais consolidadas no resumo da Biblioteca de Páginas de Vendas MOIS.
 - ajustada a tela `/mois/sales-pages-library` para exibir o card **Custo total da biblioteca**, ajudando o operador a acompanhar investimento acumulado de IA na biblioteca.
+
+## 2026-06-25 — Novo processo simples do dossiê da Biblioteca de Páginas de Vendas
+- definido o novo fluxo em 5 etapas para gerar dossiê: extrair termos via OpenAI, persistir termos, pesquisar resultados, analisar relação com o produto e gravar conclusões finais no backend.
+- registrado que o objetivo do dossiê é entender prestígio e aquecimento público do produto, identificando recursos externos que ajudam a aquecer o público além da página de venda.
+- atualizado o cânone MOIS e criado documento simples do processo para orientar implementação futura do worker, backend e tela.
+
+## 2026-06-25 — Implementação do dossiê com protocolos padrão
+- implementado no backend o suporte persistente ao novo dossiê da Biblioteca de Páginas de Vendas: termos de pesquisa, resultados pesquisados e conclusão final vinculados ao job e ao item da biblioteca.
+- exposto endpoint pending canônico para o worker iniciar a etapa de dossiê pelo backend, mantendo o backend como controlador de estado e persistência.
+- ajustado o `mois-sales-library-worker` para enviar termos, resultados e dossiê final estruturados ao backend, sem acessar banco diretamente.
+- aplicados e registrados o protocolo padrão backend e o protocolo padrão módulo para este fluxo.

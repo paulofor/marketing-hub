@@ -50,7 +50,8 @@ class MarketWarmupQueryBuilderTest {
                 null,
                 null,
                 null,
-                null);
+                null,
+                "texto completo da pagina");
 
         assertThat(builder.buildQueries(job))
                 .anySatisfy(query -> assertThat(query).contains("\"andreavermont.online\""))

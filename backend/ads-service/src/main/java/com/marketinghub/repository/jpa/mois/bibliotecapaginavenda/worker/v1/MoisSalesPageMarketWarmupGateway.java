@@ -56,6 +56,21 @@ public interface MoisSalesPageMarketWarmupGateway {
     void insertSearchAttempt(long jobId, long pageId, String workspaceId, MarketWarmupSearchAttemptData attempt);
 
     /**
+     * Insere termo planejado pela OpenAI para pesquisa pública do dossiê.
+     */
+    void insertSearchTerm(long jobId, long pageId, String workspaceId, MarketWarmupSearchTermData term);
+
+    /**
+     * Insere resultado pesquisado pelo worker para auditoria do dossiê.
+     */
+    void insertSearchResult(long jobId, long pageId, String workspaceId, MarketWarmupSearchResultData result);
+
+    /**
+     * Insere o dossiê final textual exibido na tela do item da biblioteca.
+     */
+    void insertFinalDossier(long jobId, long pageId, String workspaceId, MarketWarmupFinalDossierData dossier);
+
+    /**
      * Insere uma fonte pública rastreável coletada pelo worker.
      */
     long insertSource(long jobId, long pageId, String workspaceId, MarketWarmupSourceData source);
@@ -119,8 +134,35 @@ public interface MoisSalesPageMarketWarmupGateway {
             String offerSummary,
             String mechanismSummary,
             String promiseSummary,
-            String proofSummary
+            String proofSummary,
+            String salesPageText
     ) {
+        /**
+         * Mantém compatibilidade de testes e chamadas existentes sem texto completo da página.
+         */
+        public SalesPageWarmupData(long pageId, String workspaceId, String urlCanonical, String title, String producerName,
+                                   String currentStatus, String analysisStatus, String offerSummary, String mechanismSummary,
+                                   String promiseSummary, String proofSummary) {
+            this(pageId, workspaceId, urlCanonical, title, producerName, currentStatus, analysisStatus, offerSummary, mechanismSummary, promiseSummary, proofSummary, null);
+        }
+    }
+
+    /**
+     * Representa termo de pesquisa planejado e persistido para auditoria.
+     */
+    record MarketWarmupSearchTermData(String termText, String reason, String source) {
+    }
+
+    /**
+     * Representa resultado bruto de pesquisa vinculado ao termo originador.
+     */
+    record MarketWarmupSearchResultData(String termText, String resultUrl, String resultTitle, String resultSnippet, String rawPayload, Boolean relatedToProduct) {
+    }
+
+    /**
+     * Representa o dossiê final gerado pelo worker para exposição na tela.
+     */
+    record MarketWarmupFinalDossierData(String prestigeSummary, String externalWarmupResources, String finalConclusion, String rawModelResponse) {
     }
 
     /**

@@ -1113,6 +1113,25 @@ class ArquiteturaTest {
     }
 
     /**
+     * Garante que o protocolo padrão backend da etapa de dossiê exponha pending canônico.
+     */
+    @ArchTest
+    static void moisSalesLibraryDossierMustExposeCanonicalPendingEndpoint(JavaClasses importedClasses) {
+        List<String> violations = new ArrayList<>();
+        directPackageClasses(importedClasses, MOIS_SALES_LIBRARY_WEB_PACKAGE).stream()
+                .filter(javaClass -> javaClass.getSimpleName().equals("MoisSalesLibraryController"))
+                .findFirst()
+                .ifPresentOrElse(controller -> {
+                    boolean hasPending = controller.getMethods().stream().anyMatch(method -> method.getName().equals("pending"));
+                    if (!hasPending) {
+                        violations.add("[ARQUITETURA] [BACKEND][MOIS][BibliotecaPaginaVenda] classe=" + controller.getName()
+                                + " deve expor método pending como ponto inicial canônico em /api/mois/sales-library/market-warmup/stage-executions/pending");
+                    }
+                }, () -> violations.add("[ARQUITETURA] [BACKEND][MOIS][BibliotecaPaginaVenda] MoisSalesLibraryController não encontrado para validar pending canônico"));
+        failWithArchitectureViolations(violations);
+    }
+
+    /**
      * Garante que a Biblioteca de Páginas de Vendas do MOIS possua a fachada de service canônica.
      */
     @ArchTest

@@ -264,6 +264,10 @@ export default function MainNavigation() {
       .filter((module) => module.status === "OFFLINE")
       .slice(0, OFFLINE_MODULE_LIMIT);
   }, [availabilityQuery.data]);
+  const shouldShowOfflinePanel =
+    availabilityQuery.isLoading ||
+    availabilityQuery.isError ||
+    offlineModules.length > 0;
 
   return (
     <aside
@@ -414,49 +418,44 @@ export default function MainNavigation() {
           </div>
         ))}
       </nav>
-      <div
-        className="main-navigation__offline-modules"
-        aria-label="Módulos fora do ar apontados pelo monitor"
-      >
-        <p className="main-navigation__section-title">Módulos fora do ar</p>
-        {availabilityQuery.isLoading ? (
-          <p className="main-navigation__offline-status">
-            Consultando monitor...
-          </p>
-        ) : null}
-        {availabilityQuery.isError ? (
-          <p className="main-navigation__offline-status main-navigation__offline-status--error">
-            Monitor indisponível
-          </p>
-        ) : null}
-        {!availabilityQuery.isLoading &&
-        !availabilityQuery.isError &&
-        offlineModules.length === 0 ? (
-          <p className="main-navigation__offline-status">
-            Nenhum módulo fora do ar
-          </p>
-        ) : null}
-        {offlineModules.length > 0 ? (
-          <ul className="main-navigation__offline-list">
-            {offlineModules.map((module) => (
-              <li
-                key={module.moduleCode}
-                className="main-navigation__offline-item"
-                title={module.lastError ?? module.name}
-              >
-                <AlertTriangle
-                  className="main-navigation__offline-icon"
-                  size={14}
-                  aria-hidden="true"
-                />
-                <span className="main-navigation__offline-name">
-                  {module.name}
-                </span>
-              </li>
-            ))}
-          </ul>
-        ) : null}
-      </div>
+      {shouldShowOfflinePanel ? (
+        <div
+          className="main-navigation__offline-modules"
+          aria-label="Módulos fora do ar apontados pelo monitor"
+        >
+          <p className="main-navigation__section-title">Módulos fora do ar</p>
+          {availabilityQuery.isLoading ? (
+            <p className="main-navigation__offline-status">
+              Consultando monitor...
+            </p>
+          ) : null}
+          {availabilityQuery.isError ? (
+            <p className="main-navigation__offline-status main-navigation__offline-status--error">
+              Monitor indisponível
+            </p>
+          ) : null}
+          {offlineModules.length > 0 ? (
+            <ul className="main-navigation__offline-list">
+              {offlineModules.map((module) => (
+                <li
+                  key={module.moduleCode}
+                  className="main-navigation__offline-item"
+                  title={module.lastError ?? module.name}
+                >
+                  <AlertTriangle
+                    className="main-navigation__offline-icon"
+                    size={14}
+                    aria-hidden="true"
+                  />
+                  <span className="main-navigation__offline-name">
+                    {module.name}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+      ) : null}
     </aside>
   );
 }

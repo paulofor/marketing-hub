@@ -1,3 +1,10 @@
+## 2026-06-25 — Remoção do card final de hipóteses no detalhe do nicho
+
+- Solicitação: retirar o card de hipóteses duplicado no final da tela de detalhe do nicho, mantendo o novo card do início como ponto único de consulta.
+- Causa-raiz: a tela passou a ter duas áreas de hipóteses com informação sobreposta, aumentando ruído visual e esforço do usuário.
+- Correção aplicada: removida a seção final de hipóteses e preservado o atalho de estatística apontando para o card inicial.
+- Prevenção de recorrência: a tela mantém uma única área de hipóteses no resumo inicial, evitando duplicação de comandos e listas.
+
 ## 2026-06-25 — Nicho: remoção do card de segmentações sugeridas
 
 - solicitação: retirar da tela de detalhe do nicho o card “Segmentações sugeridas”, com listas manuais de interesses, cargos e comportamentos.

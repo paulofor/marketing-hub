@@ -13,14 +13,9 @@ import { NicheLearningDictionaryCard } from "./NicheLearningDictionaryCard";
 import { NicheBacklogRecommendationsCard } from "./NicheBacklogRecommendationsCard";
 import { useChatDialog } from "../../api/chatDialog/useChatDialog";
 import { useForm } from "react-hook-form";
-import type {
-  TargetingElementType,
-} from "../../api/targeting/types";
+import type { TargetingElementType } from "../../api/targeting/types";
 import { TargetingGenerationForm } from "../../components/TargetingGenerationForm";
 import { TargetingRequestStatusPanel } from "../../components/TargetingRequestStatusPanel";
-import { useRequestHypotheses } from "../../api/niche/useRequestHypotheses";
-import { HypothesisManualForm } from "../../components/HypothesisManualForm";
-import { useNicheDetailedDescriptions } from "../../api/niche/useNicheDetailedDescriptions";
 import { useExperimentsByNiche } from "../../api/experiment/useExperimentsByNiche";
 import { useDeliverablesByNiche } from "../../api/deliverable/useDeliverablesByNiche";
 import { useLeadPortalFlows } from "../../api/leadPortal/useLeadPortalFlows";
@@ -28,7 +23,6 @@ import type { LeadPortalFlow } from "../../api/leadPortal/useLeadPortalFlows";
 import { useCreateDeliverable } from "../../api/deliverable/useCreateDeliverable";
 import SimpleLeadPortalFormCard from "../../components/leadPortal/SimpleLeadPortalFormCard";
 import { useOpenAiModels } from "../../api/openAiModel/useOpenAiModels";
-import { useDifferentiatedTechnologies } from "../../api/differentiatedTechnology/useDifferentiatedTechnologies";
 import { useInformationSourcesByNiche } from "../../api/informationSource/useInformationSourcesByNiche";
 import { useRequestFacebookPixel } from "../../api/niche/useRequestFacebookPixel";
 import { useCreateInformationSource } from "../../api/informationSource/useCreateInformationSource";
@@ -38,14 +32,12 @@ import {
   Clock3,
   FileDown,
   Lightbulb,
-  Pencil,
   Package,
   Plus,
   Sparkles,
   Target,
   Briefcase,
   Activity,
-  Minus,
 } from "lucide-react";
 import "./NicheDetailPage.css";
 
@@ -116,34 +108,7 @@ export default function NicheDetailPage() {
   const [flowBeingEdited, setFlowBeingEdited] = useState<LeadPortalFlow | null>(
     null,
   );
-  const { data: detailedDescriptions } = useNicheDetailedDescriptions(nicheId);
-  const requestHypotheses = useRequestHypotheses(id);
   const { data: openAiModels, isLoading: isLoadingModels } = useOpenAiModels();
-  const {
-    data: differentiatedTechnologies,
-    isLoading: isLoadingDifferentiatedTechnologies,
-  } = useDifferentiatedTechnologies();
-  const [isManualHypothesisFormVisible, setManualHypothesisFormVisible] =
-    useState(false);
-  const {
-    register: registerHypothesisRequest,
-    handleSubmit: handleSubmitHypothesisRequest,
-    reset: resetHypothesisRequest,
-    setValue: setHypothesisRequestValue,
-    formState: { errors: hypothesisRequestErrors },
-  } = useForm<{
-    quantity: number;
-    model?: string;
-    differentiatedTechnologyId?: number;
-    detailedDescriptionId?: number;
-  }>({
-    defaultValues: {
-      quantity: 1,
-      model: "",
-      differentiatedTechnologyId: undefined,
-      detailedDescriptionId: undefined,
-    },
-  });
   const {
     register: registerDeliverable,
     handleSubmit: handleSubmitDeliverable,
@@ -176,18 +141,6 @@ export default function NicheDetailPage() {
   const requestFacebookPixel = useRequestFacebookPixel(normalizedNicheId);
   useBreadcrumbs([{ label: data?.name || "...", icon: nicheIcon }]);
 
-  useEffect(() => {
-    const defaultModel = data?.hypothesisModel ?? openAiModels?.[0]?.code ?? "";
-    setHypothesisRequestValue("model", defaultModel);
-  }, [data?.hypothesisModel, openAiModels, setHypothesisRequestValue]);
-
-  useEffect(() => {
-    setHypothesisRequestValue(
-      "differentiatedTechnologyId",
-      data?.differentiatedTechnologyId ?? undefined,
-    );
-  }, [data?.differentiatedTechnologyId, setHypothesisRequestValue]);
-
   const scrollToSection = useCallback((sectionId: string) => {
     if (typeof document === "undefined") return;
     const element = document.getElementById(sectionId);
@@ -195,20 +148,6 @@ export default function NicheDetailPage() {
       element.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   }, []);
-
-  const handleManualHypothesisSuccess = useCallback(() => {
-    setManualHypothesisFormVisible(false);
-  }, []);
-
-  const handleOpenManualHypothesisForm = useCallback(() => {
-    setManualHypothesisFormVisible(true);
-    const scrollToForm = () => scrollToSection("niche-manual-hypothesis-form");
-    if (typeof window.requestAnimationFrame === "function") {
-      window.requestAnimationFrame(scrollToForm);
-      return;
-    }
-    window.setTimeout(scrollToForm, 0);
-  }, [scrollToSection]);
 
   const handleRequestFacebookPixel = useCallback(async () => {
     try {
@@ -240,16 +179,6 @@ export default function NicheDetailPage() {
         return bDate - aDate;
       })
     : [];
-  const detailedDescriptionList = Array.isArray(detailedDescriptions)
-    ? [...detailedDescriptions].sort((a, b) => {
-        const aDate = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const bDate = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        return bDate - aDate;
-      })
-    : [];
-  const activeDetailedDescriptions = detailedDescriptionList.filter(
-    (description) => description.active ?? true,
-  );
   const targetingByType: Record<TargetingElementType, typeof targetingList> = {
     INTEREST: targetingList.filter((element) => element.type === "INTEREST"),
     JOB_TITLE: targetingList.filter((element) => element.type === "JOB_TITLE"),
@@ -316,22 +245,6 @@ export default function NicheDetailPage() {
         return bDate - aDate;
       })
     : [];
-
-  useEffect(() => {
-    const selectedId = data?.hypothesisDetailedDescriptionId ?? undefined;
-    if (
-      selectedId &&
-      activeDetailedDescriptions.some((desc) => desc.id === selectedId)
-    ) {
-      setHypothesisRequestValue("detailedDescriptionId", selectedId);
-    } else {
-      setHypothesisRequestValue("detailedDescriptionId", undefined);
-    }
-  }, [
-    activeDetailedDescriptions,
-    data?.hypothesisDetailedDescriptionId,
-    setHypothesisRequestValue,
-  ]);
 
   if (isLoading) return <p>Carregando...</p>;
   if (!data) return <p>Não encontrado</p>;
@@ -497,10 +410,6 @@ export default function NicheDetailPage() {
     if (stat.label === "Entregáveis") return false;
     return true;
   });
-  const hypothesisStatusLabel =
-    requestHypotheses.isPending || (isFetching && !isLoading)
-      ? "Atualizando hipóteses..."
-      : `Solicitadas ao Worker: ${data.hypothesesToGenerate ?? 0}`;
   const formatUsd = (value?: number | string | null) => {
     if (value === undefined || value === null) return undefined;
     const num = typeof value === "string" ? Number(value) : value;
@@ -513,43 +422,6 @@ export default function NicheDetailPage() {
     });
   };
 
-  const onRequestHypotheses = handleSubmitHypothesisRequest(
-    async ({
-      quantity,
-      model,
-      differentiatedTechnologyId,
-      detailedDescriptionId,
-    }) => {
-      if (!quantity || quantity <= 0) return;
-      const selectedModel = model?.trim();
-      const normalizedTechnologyId =
-        differentiatedTechnologyId === 0
-          ? undefined
-          : differentiatedTechnologyId;
-      const normalizedDescriptionId =
-        detailedDescriptionId === 0 ? undefined : detailedDescriptionId;
-      try {
-        await requestHypotheses.mutateAsync({
-          quantity,
-          model: selectedModel,
-          differentiatedTechnologyId: normalizedTechnologyId,
-          detailedDescriptionId: normalizedDescriptionId,
-        });
-        alert("Solicitação enviada!");
-        resetHypothesisRequest({
-          quantity: 1,
-          model: selectedModel ?? "",
-          differentiatedTechnologyId: normalizedTechnologyId,
-          detailedDescriptionId: normalizedDescriptionId,
-        });
-      } catch {
-        alert("Erro ao solicitar hipóteses");
-      }
-    },
-    (errors) => {
-      console.log("Validation errors", errors);
-    },
-  );
   const onCreateDeliverable = handleSubmitDeliverable(
     async (values) => {
       try {
@@ -666,7 +538,10 @@ export default function NicheDetailPage() {
       </ul>
       <section aria-label="Informações do nicho">
         <div className="niche-detail__grid">
-          <article className="niche-detail__card niche-detail__hypotheses-card">
+          <article
+            id="niche-hypotheses"
+            className="niche-detail__card niche-detail__hypotheses-card"
+          >
             <div className="niche-detail__hypotheses-card-header">
               <h3 className="niche-detail__card-title">Hipóteses do nicho</h3>
               <Link
@@ -1325,292 +1200,6 @@ export default function NicheDetailPage() {
             </div>
           ))}
         </div>
-      </section>
-      <section className="niche-section" aria-labelledby="niche-hypotheses">
-        <div className="niche-section__header">
-          <div>
-            <h2 className="niche-section__title" id="niche-hypotheses">
-              Hipóteses
-            </h2>
-            <p className="niche-section__subtitle">
-              {list.length === 0
-                ? "As hipóteses aparecerão aqui quando forem geradas pela IA."
-                : "Principais ângulos sugeridos pela IA para o nicho."}
-            </p>
-            <p className="niche-section__status">{hypothesisStatusLabel}</p>
-          </div>
-          <form
-            className="niche-section__actions niche-section__actions--hypotheses"
-            onSubmit={onRequestHypotheses}
-          >
-            <div className="niche-section__action-group niche-section__action-group--quantity">
-              <label htmlFor="hypothesis-quantity" className="form-label">
-                Quantidade <span aria-hidden="true">*</span>
-              </label>
-              <input
-                id="hypothesis-quantity"
-                type="number"
-                min={1}
-                className={`form-control ${
-                  hypothesisRequestErrors.quantity ? "is-invalid" : ""
-                }`}
-                title="Quantidade de hipóteses que o Worker IA irá gerar"
-                disabled={requestHypotheses.isPending}
-                {...registerHypothesisRequest("quantity", {
-                  valueAsNumber: true,
-                  required: "Informe a quantidade",
-                  min: { value: 1, message: "Informe pelo menos 1" },
-                })}
-              />
-              {hypothesisRequestErrors.quantity && (
-                <div className="invalid-feedback">
-                  {hypothesisRequestErrors.quantity.message}
-                </div>
-              )}
-            </div>
-            <div className="niche-section__action-group">
-              <label htmlFor="hypothesis-model" className="form-label">
-                Modelo IA <span aria-hidden="true">*</span>
-              </label>
-              <select
-                id="hypothesis-model"
-                className={`form-select ${
-                  hypothesisRequestErrors.model ? "is-invalid" : ""
-                }`}
-                title="Modelo do OpenAI que o Worker IA irá usar"
-                disabled={requestHypotheses.isPending || isLoadingModels}
-                {...registerHypothesisRequest("model", {
-                  required: "Selecione um modelo",
-                })}
-              >
-                <option value="">Selecione um modelo</option>
-                {(openAiModels ?? []).map((modelOption) => (
-                  <option key={modelOption.code} value={modelOption.code}>
-                    {modelOption.name} ({modelOption.code})
-                  </option>
-                ))}
-              </select>
-              {hypothesisRequestErrors.model && (
-                <div className="invalid-feedback">
-                  {hypothesisRequestErrors.model.message}
-                </div>
-              )}
-            </div>
-            <div className="niche-section__action-group">
-              <label htmlFor="hypothesis-technology" className="form-label">
-                Tecnologia diferenciada <span aria-hidden="true">*</span>
-              </label>
-              <select
-                id="hypothesis-technology"
-                className={`form-select ${
-                  hypothesisRequestErrors.differentiatedTechnologyId
-                    ? "is-invalid"
-                    : ""
-                }`}
-                title="Tecnologia diferenciada para orientar as hipóteses geradas pelo Worker IA"
-                disabled={
-                  requestHypotheses.isPending ||
-                  isLoadingDifferentiatedTechnologies
-                }
-                {...registerHypothesisRequest("differentiatedTechnologyId", {
-                  setValueAs: (value) => (value ? Number(value) : undefined),
-                  required: "Selecione uma tecnologia",
-                })}
-              >
-                <option value="">Selecione uma tecnologia</option>
-                <option value="0">Sem tecnologia diferenciada</option>
-                {(differentiatedTechnologies ?? []).map((tech) => (
-                  <option key={tech.id} value={tech.id}>
-                    {tech.name}
-                  </option>
-                ))}
-              </select>
-              {hypothesisRequestErrors.differentiatedTechnologyId && (
-                <div className="invalid-feedback">
-                  {hypothesisRequestErrors.differentiatedTechnologyId.message}
-                </div>
-              )}
-            </div>
-            <div className="niche-section__action-group">
-              <label
-                htmlFor="hypothesis-detailed-description"
-                className="form-label"
-              >
-                Descrição detalhada <span aria-hidden="true">*</span>
-              </label>
-              <select
-                id="hypothesis-detailed-description"
-                className={`form-select ${
-                  hypothesisRequestErrors.detailedDescriptionId
-                    ? "is-invalid"
-                    : ""
-                }`}
-                title="Descrição detalhada ativa para orientar as hipóteses geradas pelo Worker IA"
-                disabled={requestHypotheses.isPending}
-                {...registerHypothesisRequest("detailedDescriptionId", {
-                  setValueAs: (value) => (value ? Number(value) : undefined),
-                  required: "Selecione uma descrição",
-                })}
-              >
-                <option value="">Selecione uma descrição</option>
-                <option value="0">Sem descrição detalhada ativa</option>
-                {activeDetailedDescriptions.map((description, index) => (
-                  <option key={description.id} value={description.id}>
-                    {description.title ||
-                      description.promptName ||
-                      `Descrição #${index + 1}`}
-                  </option>
-                ))}
-              </select>
-              {hypothesisRequestErrors.detailedDescriptionId && (
-                <div className="invalid-feedback">
-                  {hypothesisRequestErrors.detailedDescriptionId.message}
-                </div>
-              )}
-            </div>
-            <div className="niche-section__action-group niche-section__action-group--submit">
-              <span className="form-label niche-section__action-helper">
-                Solicitar geração
-              </span>
-              <button
-                type="submit"
-                className="btn btn-secondary"
-                disabled={requestHypotheses.isPending}
-              >
-                {requestHypotheses.isPending ? (
-                  <span
-                    className="spinner-border spinner-border-sm"
-                    role="status"
-                    aria-hidden="true"
-                  />
-                ) : (
-                  <Sparkles size={18} />
-                )}
-                <span>Gerar Hipóteses</span>
-              </button>
-            </div>
-          </form>
-        </div>
-        <div className="niche-hypothesis-manual">
-          <button
-            type="button"
-            className="btn btn-outline-primary niche-hypothesis-manual__toggle"
-            onClick={() => setManualHypothesisFormVisible((prev) => !prev)}
-            aria-expanded={isManualHypothesisFormVisible}
-            aria-controls="niche-manual-hypothesis-form"
-          >
-            {isManualHypothesisFormVisible ? (
-              <Minus size={16} />
-            ) : (
-              <Plus size={16} />
-            )}
-            <span>
-              {isManualHypothesisFormVisible
-                ? "Fechar formulário manual"
-                : "Criar hipótese manual"}
-            </span>
-          </button>
-          {isManualHypothesisFormVisible && (
-            <div
-              id="niche-manual-hypothesis-form"
-              className="niche-hypothesis-manual__content"
-            >
-              <HypothesisManualForm
-                nicheId={normalizedNicheId}
-                onCancel={() => setManualHypothesisFormVisible(false)}
-                onSuccess={handleManualHypothesisSuccess}
-              />
-            </div>
-          )}
-        </div>
-        {list.length === 0 ? (
-          <p className="niche-section__empty">Nenhuma hipótese ainda.</p>
-        ) : (
-          <div className="niche-section__grid">
-            {list.map((h) => {
-              const experimentCount = experimentsCountByHypothesis[h.id] ?? 0;
-              const experimentLabel =
-                experimentCount === 1
-                  ? "1 experimento criado"
-                  : `${experimentCount} experimentos criados`;
-              const costLabel = formatUsd(h.costUsd);
-              const fields = [
-                { label: "Promessa", value: h.promise },
-                { label: "Problema", value: h.problem },
-                { label: "Mecanismo", value: h.mechanism },
-                { label: "Mecanismo único", value: h.uniqueMechanism },
-                { label: "Persona", value: h.persona },
-                { label: "Entrega", value: h.entrega },
-              ];
-              return (
-                <div key={h.id} className="card h-100 niche-section__card">
-                  <div className="card-body niche-hypothesis-card__body">
-                    <div className="niche-hypothesis-card__head">
-                      <h3 className="niche-hypothesis-card__title">
-                        {h.title}
-                      </h3>
-                      <div className="d-flex flex-column align-items-end gap-1">
-                        <span className="niche-hypothesis-card__counter">
-                          {experimentLabel}
-                        </span>
-                        <div className="d-flex gap-2 flex-wrap justify-content-end">
-                          {h.model && (
-                            <span className="badge bg-light text-dark">
-                              Modelo: {h.model}
-                            </span>
-                          )}
-                          {costLabel && (
-                            <span className="badge bg-light text-dark">
-                              Custo: {costLabel}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="niche-hypothesis-card__fields">
-                      {fields.map((field) => (
-                        <div
-                          key={field.label}
-                          className="niche-hypothesis-card__field"
-                        >
-                          <span className="niche-hypothesis-card__field-label">
-                            {`${field.label}:`}
-                          </span>
-                          <p className="niche-hypothesis-card__field-value">
-                            {field.value || "-"}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="niche-hypothesis-card__actions">
-                      <Link
-                        className="btn btn-sm btn-outline-secondary"
-                        to={`hypotheses/${h.id}/edit`}
-                      >
-                        <span>Editar</span>
-                        <Pencil size={16} />
-                      </Link>
-                      <Link
-                        className="btn btn-sm btn-outline-primary"
-                        to={`hypotheses/${h.id}`}
-                      >
-                        <span>Ver detalhes</span>
-                        <ArrowUpRight size={16} />
-                      </Link>
-                    </div>
-                  </div>
-                  <div className="card-footer niche-hypothesis-card__footer">
-                    {`Gerado com ${h.model || "-"} em ${
-                      h.createdAt
-                        ? new Date(h.createdAt).toLocaleString("pt-BR")
-                        : "-"
-                    }`}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
       </section>
     </div>
   );

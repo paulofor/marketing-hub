@@ -1,5 +1,5 @@
-import { FormEvent, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { FormEvent } from "react";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -138,6 +138,7 @@ function StageCard({
   nicheId,
   executionsQuery,
   blockedMessage,
+  readOnly = false,
 }: {
   stage: HypothesisPipelineStageConfig;
   nicheId?: string;
@@ -146,6 +147,7 @@ function StageCard({
     isLoading: boolean;
   };
   blockedMessage?: string;
+  readOnly?: boolean;
 }) {
   const queryClient = useQueryClient();
   const queryKey = ["hypothesis-stage-executions", stage.slug, nicheId];
@@ -176,6 +178,7 @@ function StageCard({
   );
   const isBlockedByPreviousStage = Boolean(blockedMessage);
   const isStartDisabled =
+    readOnly ||
     !nicheId ||
     startMutation.isPending ||
     hasRunningExecution ||
@@ -204,6 +207,8 @@ function StageCard({
               />
               Iniciando...
             </span>
+          ) : readOnly ? (
+            "Execuções da hipótese"
           ) : hasRunningExecution ? (
             "Execução em andamento"
           ) : (
@@ -302,14 +307,22 @@ function stageIsCompleted(executions?: StageExecution[]) {
 
 export default function NewHypothesisPage() {
   const { nicheId } = useParams();
+  const [searchParams] = useSearchParams();
+  const hypothesisId = searchParams.get("hypothesisId")?.trim() || undefined;
   const queryClient = useQueryClient();
   const stageQueries = useQueries({
     queries: STAGES.map((stage) => ({
-      queryKey: ["hypothesis-stage-executions", stage.slug, nicheId],
+      queryKey: [
+        "hypothesis-stage-executions",
+        stage.slug,
+        nicheId,
+        hypothesisId,
+      ],
       enabled: Boolean(nicheId),
       queryFn: async () => {
         const { data } = await axios.get<StageExecution[]>(
           `/api/niches/${nicheId}/hypothesis-pipeline/${stage.slug}/stage-executions`,
+          { params: hypothesisId ? { hypothesisId } : undefined },
         );
         return data;
       },
@@ -341,7 +354,12 @@ export default function NewHypothesisPage() {
       toast.success("Fluxo completo da hipótese iniciado");
       STAGES.forEach((stage) => {
         queryClient.invalidateQueries({
-          queryKey: ["hypothesis-stage-executions", stage.slug, nicheId],
+          queryKey: [
+            "hypothesis-stage-executions",
+            stage.slug,
+            nicheId,
+            hypothesisId,
+          ],
         });
       });
       queryClient.invalidateQueries({
@@ -415,13 +433,20 @@ export default function NewHypothesisPage() {
 
   return (
     <div className="hypothesis-new-page">
-      <PageTitle icon={hypothesisIcon}>Nova hipótese</PageTitle>
+      <PageTitle icon={hypothesisIcon}>
+        {hypothesisId ? "Execuções da hipótese" : "Nova hipótese"}
+      </PageTitle>
 
       {nicheId && (
         <section className="card mb-4">
           <div className="card-body d-flex flex-column flex-md-row gap-2 justify-content-between">
             <p className="mb-0">
               <strong>Nicho recebido:</strong> #{nicheId}
+              {hypothesisId && (
+                <span className="ms-2 text-muted">
+                  Hipótese: {hypothesisId}
+                </span>
+              )}
             </p>
             <div className="d-flex flex-column flex-md-row gap-2 align-items-md-center">
               <p className="mb-0">
@@ -432,6 +457,7 @@ export default function NewHypothesisPage() {
                 type="button"
                 className="btn btn-primary btn-sm"
                 disabled={
+                  Boolean(hypothesisId) ||
                   !nicheId ||
                   fullFlowMutation.isPending ||
                   hasRunningExecution ||
@@ -494,6 +520,7 @@ export default function NewHypothesisPage() {
             nicheId={nicheId}
             executionsQuery={stageQueries[index]}
             blockedMessage={blockedMessage}
+            readOnly={Boolean(hypothesisId)}
           />
         );
       })}
@@ -511,7 +538,8 @@ export default function NewHypothesisPage() {
           >
             <div className="col-12 col-lg-8">
               <div className="alert alert-info mb-0">
-                O backend vai nomear automaticamente com a sigla do nicho e a próxima numeração da hipótese.
+                O backend vai nomear automaticamente com a sigla do nicho e a
+                próxima numeração da hipótese.
               </div>
             </div>
             <div className="col-12 col-lg-4">
@@ -519,6 +547,7 @@ export default function NewHypothesisPage() {
                 type="submit"
                 className="btn btn-success w-100"
                 disabled={
+                  Boolean(hypothesisId) ||
                   !allStagesCompleted ||
                   finalizeMutation.isPending
                 }
@@ -536,7 +565,7 @@ export default function NewHypothesisPage() {
                 )}
               </button>
             </div>
-            {!allStagesCompleted && (
+            {!hypothesisId && !allStagesCompleted && (
               <div className="col-12">
                 <small className="text-muted">
                   Conclua todas as cinco etapas para liberar o fechamento da

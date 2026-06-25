@@ -68,6 +68,11 @@ paths:
         - in: query
           name: includeCompleted
           schema: { type: boolean, default: true }
+        - in: query
+          name: hypothesisId
+          required: false
+          schema: { type: string, format: uuid }
+          description: Quando informado, retorna apenas execuções vinculadas à hipótese; quando omitido, retorna apenas execuções ainda não fechadas em hipótese.
       responses:
         '200':
           description: Execuções retornadas.
@@ -176,6 +181,11 @@ paths:
         - in: query
           name: includeCompleted
           schema: { type: boolean, default: true }
+        - in: query
+          name: hypothesisId
+          required: false
+          schema: { type: string, format: uuid }
+          description: Quando informado, retorna apenas execuções vinculadas à hipótese; quando omitido, retorna apenas execuções ainda não fechadas em hipótese.
       responses:
         '200':
           description: Execuções retornadas.
@@ -284,6 +294,11 @@ paths:
         - in: query
           name: includeCompleted
           schema: { type: boolean, default: true }
+        - in: query
+          name: hypothesisId
+          required: false
+          schema: { type: string, format: uuid }
+          description: Quando informado, retorna apenas execuções vinculadas à hipótese; quando omitido, retorna apenas execuções ainda não fechadas em hipótese.
       responses:
         '200':
           description: Execuções retornadas.
@@ -392,6 +407,11 @@ paths:
         - in: query
           name: includeCompleted
           schema: { type: boolean, default: true }
+        - in: query
+          name: hypothesisId
+          required: false
+          schema: { type: string, format: uuid }
+          description: Quando informado, retorna apenas execuções vinculadas à hipótese; quando omitido, retorna apenas execuções ainda não fechadas em hipótese.
       responses:
         '200':
           description: Execuções retornadas.
@@ -500,6 +520,11 @@ paths:
         - in: query
           name: includeCompleted
           schema: { type: boolean, default: true }
+        - in: query
+          name: hypothesisId
+          required: false
+          schema: { type: string, format: uuid }
+          description: Quando informado, retorna apenas execuções vinculadas à hipótese; quando omitido, retorna apenas execuções ainda não fechadas em hipótese.
       responses:
         '200':
           description: Execuções retornadas.

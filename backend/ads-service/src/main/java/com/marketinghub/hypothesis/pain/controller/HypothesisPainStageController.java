@@ -10,6 +10,7 @@ import com.marketinghub.hypothesis.pain.service.start.HypothesisPainStartRespons
 import com.marketinghub.hypothesis.pain.service.summary.HypothesisStageFinalSummaryResponse;
 import jakarta.validation.Valid;
 import java.util.List;
+import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -73,40 +74,45 @@ public class HypothesisPainStageController {
     @GetMapping("/niches/{nicheId}/hypothesis-pipeline/pain/stage-executions")
     public ResponseEntity<List<HypothesisPainExecutionSummaryResponse>> listStageExecutions(
             @PathVariable Long nicheId,
-            @RequestParam(defaultValue = "true") boolean includeCompleted) {
-        return ResponseEntity.ok(service.listStageExecutions(nicheId, includeCompleted));
+            @RequestParam(defaultValue = "true") boolean includeCompleted,
+            @RequestParam(required = false) UUID hypothesisId) {
+        return ResponseEntity.ok(service.listStageExecutions(nicheId, includeCompleted, hypothesisId));
     }
 
     /** Lista execuções da etapa Resultado para acompanhamento na tela de nova hipótese. */
     @GetMapping("/niches/{nicheId}/hypothesis-pipeline/result/stage-executions")
     public ResponseEntity<List<HypothesisPainExecutionSummaryResponse>> listResultStageExecutions(
             @PathVariable Long nicheId,
-            @RequestParam(defaultValue = "true") boolean includeCompleted) {
-        return ResponseEntity.ok(service.listResultStageExecutions(nicheId, includeCompleted));
+            @RequestParam(defaultValue = "true") boolean includeCompleted,
+            @RequestParam(required = false) UUID hypothesisId) {
+        return ResponseEntity.ok(service.listResultStageExecutions(nicheId, includeCompleted, hypothesisId));
     }
 
     /** Lista execuções da etapa Mecanismo para acompanhamento na tela de nova hipótese. */
     @GetMapping("/niches/{nicheId}/hypothesis-pipeline/mechanism/stage-executions")
     public ResponseEntity<List<HypothesisPainExecutionSummaryResponse>> listMechanismStageExecutions(
             @PathVariable Long nicheId,
-            @RequestParam(defaultValue = "true") boolean includeCompleted) {
-        return ResponseEntity.ok(service.listMechanismStageExecutions(nicheId, includeCompleted));
+            @RequestParam(defaultValue = "true") boolean includeCompleted,
+            @RequestParam(required = false) UUID hypothesisId) {
+        return ResponseEntity.ok(service.listMechanismStageExecutions(nicheId, includeCompleted, hypothesisId));
     }
 
     /** Lista execuções da etapa Prova para acompanhamento na tela de nova hipótese. */
     @GetMapping("/niches/{nicheId}/hypothesis-pipeline/proof/stage-executions")
     public ResponseEntity<List<HypothesisPainExecutionSummaryResponse>> listProofStageExecutions(
             @PathVariable Long nicheId,
-            @RequestParam(defaultValue = "true") boolean includeCompleted) {
-        return ResponseEntity.ok(service.listProofStageExecutions(nicheId, includeCompleted));
+            @RequestParam(defaultValue = "true") boolean includeCompleted,
+            @RequestParam(required = false) UUID hypothesisId) {
+        return ResponseEntity.ok(service.listProofStageExecutions(nicheId, includeCompleted, hypothesisId));
     }
 
     /** Lista execuções da etapa Oferta para acompanhamento na tela de nova hipótese. */
     @GetMapping("/niches/{nicheId}/hypothesis-pipeline/offer/stage-executions")
     public ResponseEntity<List<HypothesisPainExecutionSummaryResponse>> listOfferStageExecutions(
             @PathVariable Long nicheId,
-            @RequestParam(defaultValue = "true") boolean includeCompleted) {
-        return ResponseEntity.ok(service.listOfferStageExecutions(nicheId, includeCompleted));
+            @RequestParam(defaultValue = "true") boolean includeCompleted,
+            @RequestParam(required = false) UUID hypothesisId) {
+        return ResponseEntity.ok(service.listOfferStageExecutions(nicheId, includeCompleted, hypothesisId));
     }
 
     /** Lista o conteúdo final de cada etapa concluída do framework para resumo executivo. */

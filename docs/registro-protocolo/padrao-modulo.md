@@ -20,3 +20,9 @@
 - Pacote executor: `com.marketinghub.mois.bibliotecapaginavenda.worker.v1`.
 - Fluxo protegido: dossiê de prestígio e aquecimento da Biblioteca de Páginas de Vendas.
 - O worker mantém a execução operacional de OpenAI e pesquisas externas; o backend mantém estado, persistência, pending e callbacks.
+
+## 2026-06-25 — OPRM NichoCNAE v3
+
+- Módulo executor: `oprm-coletor-mei`.
+- Pacote executor: `com.marketinghub.nichocnaev3`.
+- Protocolo aplicado com núcleo genérico `pipeline`, etapas concretas plugáveis em subpacotes por etapa, scheduler no executor, consumo via endpoint `pending` do backend e teste ArchUnit próprio.

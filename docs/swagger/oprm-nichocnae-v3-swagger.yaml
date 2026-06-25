@@ -1,0 +1,167 @@
+openapi: 3.0.3
+info:
+  title: OPRM NichoCNAE v3 API
+  version: v3
+  description: Endpoints internos por etapa para transformar CNAE em persona operacional, rotina e tarefas diárias.
+paths:
+  /api/internal/oprm/nichocnae/v3/{stage}/stage-executions:
+    post:
+      summary: Cria uma execução pendente de etapa NichoCNAE v3.
+      parameters:
+        - name: stage
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StagePendingRequest'
+      responses:
+        '200':
+          description: Execução criada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StageExecutionResponse'
+  /api/internal/oprm/nichocnae/v3/{stage}/stage-executions/cnaes/{cnaeCode}:
+    post:
+      summary: Inicia a primeira execução v3 para um CNAE.
+      parameters:
+        - name: stage
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: cnaeCode
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Execução criada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StageExecutionResponse'
+  /api/internal/oprm/nichocnae/v3/{stage}/stage-executions/pending:
+    get:
+      summary: Lista pendências da etapa para consumo do executor OPRM.
+      parameters:
+        - name: stage
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Pendências disponíveis.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StagePendingRequest'
+  /api/internal/oprm/nichocnae/v3/{stage}/stage-executions/{stageExecutionId}/complete:
+    post:
+      summary: Registra conclusão de etapa pelo executor OPRM.
+      parameters:
+        - name: stage
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: stageExecutionId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompletionRequest'
+      responses:
+        '200':
+          description: Execução concluída.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StageExecutionResponse'
+  /api/internal/oprm/nichocnae/v3/{stage}/stage-executions/{stageExecutionId}/fail:
+    post:
+      summary: Registra falha de etapa pelo executor OPRM.
+      parameters:
+        - name: stage
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: stageExecutionId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FailureRequest'
+      responses:
+        '200':
+          description: Execução marcada como falha.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StageExecutionResponse'
+components:
+  schemas:
+    StagePendingRequest:
+      type: object
+      properties:
+        stageExecutionId:
+          type: integer
+          format: int64
+        jobId:
+          type: string
+        cnaeCode:
+          type: string
+        inputPayload:
+          type: string
+        attemptNumber:
+          type: integer
+        knowledgeVersion:
+          type: integer
+    CompletionRequest:
+      type: object
+      properties:
+        outputPayload:
+          type: string
+        nextStageCode:
+          type: string
+    FailureRequest:
+      type: object
+      properties:
+        errorMessage:
+          type: string
+    StageExecutionResponse:
+      type: object
+      properties:
+        stageExecutionId:
+          type: integer
+          format: int64
+        jobId:
+          type: string
+        cnaeCode:
+          type: string
+        stageCode:
+          type: string
+        status:
+          type: string

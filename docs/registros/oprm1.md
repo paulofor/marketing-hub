@@ -1386,3 +1386,11 @@
 - O perfil enriquecido materializado por CNAE + nome neutro também passa a ser atualizado quando já existir, preservando o registro e renovando as informações auditáveis.
 
 - 2026-06-25 — Tela OPRM de CNAEs atualizada para destacar visualmente, já no início da linha, os CNAEs com processamento de pesquisa em execução, reutilizando o indicador `nicheResearchRunning` entregue pelo backend.
+
+## 2026-06-25 — OPRM NichoCNAE v3: criação do fluxo versionado de persona e tarefas diárias
+
+- Solicitação: criar a v3 do fluxo NichoCNAE aplicando protocolo padrão módulo e protocolo padrão backend.
+- Foi feito: criada a base backend `com.marketinghub.oprm.nichocnae.v3` com endpoints internos por etapa, tabela `oprm_nichocnae_v3_stage_execution`, contratos `record`, endpoint `pending` por etapa e regra ArchUnit de estrutura canônica.
+- Foi feito: criado o executor `com.marketinghub.nichocnaev3` no `oprm-coletor-mei` com núcleo genérico, catálogo de 10 etapas, processors plugáveis, scheduler de pendências, cliente backend, prompts/schemas versionados para etapas com IA e teste ArchUnit próprio.
+- Objetivo de negócio: transformar um CNAE em persona operacional, rotina real e lista de tarefas diárias auditável, sem criar oferta, campanha ou landing nesta fase.
+- Prevenção: a v3 nasce separada da v2 para evitar remendos no fluxo que parava após o planejador de buscas por falta de etapa cadastrada.

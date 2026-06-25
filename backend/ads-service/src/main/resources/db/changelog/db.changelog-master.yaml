@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-06-25-oprm-nichocnae-v3-stage-execution.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-06-25-mois-market-warmup-dossier-evidence.yaml
       relativeToChangelogFile: true
   - include:

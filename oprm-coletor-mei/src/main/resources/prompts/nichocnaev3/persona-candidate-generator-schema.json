@@ -1,0 +1,12 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "stage": { "type": "string" },
+    "decision": { "type": "string" },
+    "items": { "type": "array", "items": { "type": "string" } },
+    "evidenceLimits": { "type": "array", "items": { "type": "string" } },
+    "nextStageCode": { "type": "string" }
+  },
+  "required": ["stage", "decision", "items", "evidenceLimits", "nextStageCode"]
+}

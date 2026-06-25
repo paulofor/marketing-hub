@@ -5338,3 +5338,10 @@
 - Solicitação: confirmar se os cargos gerados para nicho seriam pesquisados na Meta Ads em português e inglês.
 - Causa-raiz encontrada: o fluxo automático existia, mas podia manter itens antigos na fila quando a Graph API retornava alcance como `coverage_lower_bound`/`coverage_upper_bound` em vez de `audience_size_lower_bound`/`audience_size_upper_bound`, atrasando o avanço para cargos novos.
 - Correção aplicada: o Facebook Ads Worker passou a normalizar também os campos `coverage_*` como alcance oficial antes de reportar ao backend, permitindo que itens já resolvidos saiam da fila e a pesquisa avance para os próximos cargos pendentes.
+
+## 2026-06-24 — Fila Meta Ads valida itens em revisão
+
+- Problema: interesses, cargos e comportamentos gerados pela IA ficavam em `NEEDS_REVIEW` sem ID oficial da Meta, mas o Facebook Ads Worker recebia fila vazia em `/api/internal/targeting/elements/metaads-pending`.
+- Causa-raiz: a query da fila Meta Ads entregava apenas elementos `APPROVED`, enquanto a aprovação de interesse, cargo e comportamento exige `metaId` oficial; isso criava um bloqueio circular entre validação Meta e aprovação humana.
+- Correção aplicada: a fila Meta Ads passou a incluir elementos `NEEDS_REVIEW` e `APPROVED` dos três tipos suportados (`INTEREST`, `JOB_TITLE` e `BEHAVIOR`), mantendo o bloqueio contra itens `DRAFT`, `REJECTED`, hipótese específica e itens já marcados como Meta indisponível.
+- Prevenção de recorrência: adicionado teste de repository cobrindo interesse, cargo e comportamento em revisão na fila Meta Ads e excluindo rascunho.

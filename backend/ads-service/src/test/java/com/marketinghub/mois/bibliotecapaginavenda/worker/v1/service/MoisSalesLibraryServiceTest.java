@@ -146,6 +146,7 @@ class MoisSalesLibraryServiceTest {
                         5L,
                         7L,
                         2L,
+                        BigDecimal.valueOf(1.75),
                         true,
                         Instant.parse("2026-06-07T05:20:13Z"),
                         9L,
@@ -166,6 +167,7 @@ class MoisSalesLibraryServiceTest {
         org.assertj.core.api.Assertions.assertThat(response.marketWarmupCompleted()).isEqualTo(70L);
         org.assertj.core.api.Assertions.assertThat(response.marketWarmupPromising()).isEqualTo(28L);
         org.assertj.core.api.Assertions.assertThat(response.marketWarmupStuck()).isEqualTo(2L);
+        org.assertj.core.api.Assertions.assertThat(response.totalModelCostUsd()).isEqualByComparingTo("1.75");
     }
 
     /**
@@ -593,6 +595,7 @@ class MoisSalesLibraryServiceTest {
         given(resultSet.getLong("market_warmup_cold")).willReturn(1L);
         given(resultSet.getLong("market_warmup_saturated")).willReturn(0L);
         given(resultSet.getLong("market_warmup_stuck")).willReturn(0L);
+        given(resultSet.getBigDecimal("total_model_cost_usd")).willReturn(BigDecimal.valueOf(3.25));
         given(resultSet.getLong("captured_last_hour")).willReturn(0L);
         given(resultSet.getLong("remaining_without_html")).willReturn(48L);
         given(resultSet.getBigDecimal("average_captures_per_hour")).willReturn(BigDecimal.valueOf(0.8));

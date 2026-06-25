@@ -1812,3 +1812,7 @@ Arquivos principais:
 - Decidido que o MOIS deve apenas gravar os insumos `geralanding_*` no banco e que o GeraLanding deve consumi-los a partir da persistência, sem depender diretamente de gateway/pacote do MOIS.
 - Ajustado o backend GeraLanding para ler as referências vencedoras persistidas nas tabelas da Biblioteca de Páginas de Vendas pelo repositório central já permitido do GeraLanding.
 - A decisão preserva o objetivo comercial dos insumos MOIS para melhorar wireframe, copy, imagens e preset visual, mas reduz acoplamento entre módulos e evita recorrência da violação ArchUnit de dependência direta GeraLanding → MOIS.
+
+## 2026-06-25 — Custo total na Biblioteca de Páginas de Vendas
+- adicionada exposição do custo total em USD das análises comerciais consolidadas no resumo da Biblioteca de Páginas de Vendas MOIS.
+- ajustada a tela `/mois/sales-pages-library` para exibir o card **Custo total da biblioteca**, ajudando o operador a acompanhar investimento acumulado de IA na biblioteca.

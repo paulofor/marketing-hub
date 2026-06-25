@@ -322,6 +322,7 @@ export interface MoisSalesLibraryPageSummary {
   marketWarmupCold: number;
   marketWarmupSaturated: number;
   marketWarmupStuck: number;
+  totalModelCostUsd: number;
   automaticProcessingActive: boolean;
   lastCapturedAt?: string;
   capturedLastHour: number;

@@ -44,3 +44,9 @@
 ## 2026-06-25 — Protocolo Monitor incluído no AGENTS.md
 - O `AGENTS.md` passou a listar o `Protocolo Monitor` junto dos demais protocolos operacionais acionáveis por gatilho literal.
 - A regra deixa explícito que versões de pipeline monitoradas precisam declarar sinal operacional, degradação/incidente, teste de contrato e registros obrigatórios.
+
+## 2026-06-25 — Correção do host monitorado do AI Worker
+- problema observado: a tela indicava `AI Worker` como módulo fora do ar, embora o worker tivesse acabado de executar jobs do GeraLanding.
+- causa-raiz confirmada: o monitor operacional consultava `http://191.252.181.168:4567/worker-observability/health`, mas os logs reais do AI Worker disponíveis pelo MCP apontam o serviço operacional em `http://191.252.120.96:4567/worker-observability/logfile`; por isso o health check registrava `Connection refused` mesmo com o worker ativo.
+- correção aplicada: novo changeset ajusta o cadastro canônico do `ai-worker` no Ops Monitor para `http://191.252.120.96:4567`, preservando `/worker-observability/health` e `/worker-observability/logfile`.
+- prevenção de recorrência: a disponibilidade do menu lateral passa a depender do endpoint de observabilidade do host real do módulo, reduzindo falso alarme de módulo fora do ar quando há execução recente.

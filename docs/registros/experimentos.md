@@ -5405,3 +5405,8 @@
 - Criado changelog incremental para o Ops Monitor verificar o Lead Portal pelo domínio público canônico, evitando falso offline na tela de operação.
 
 - 2026-06-25 — Remoção de cards redundantes na tela de detalhe do experimento: retiradas as seções “Configurações do experimento” e “Fluxo operacional do Meta” do checklist de publicação, mantendo apenas os bloqueios essenciais para liberar campanha.
+
+## 2026-06-25 — Diagnóstico do alerta falso de AI Worker em experimento 49
+- problema observado: na tela do experimento 49, o menu lateral exibia `AI Worker` como fora do ar enquanto a etapa Quality Review tinha execução recente.
+- causa-raiz confirmada no banco/logs: o experimento 49 tinha jobs recentes no GeraLanding e o log do AI Worker mostrava ciclos ativos, mas o Ops Monitor registrava health checks `OFFLINE` por `Connection refused` no host `191.252.181.168:4567`.
+- correção aplicada: o cadastro monitorado do `ai-worker` foi corrigido para o host operacional `191.252.120.96:4567`, usado pelo endpoint de observabilidade real do worker.

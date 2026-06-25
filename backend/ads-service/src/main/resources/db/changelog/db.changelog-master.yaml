@@ -1091,6 +1091,9 @@ databaseChangeLog:
   - include:
       file: changesets/2026-06-25-ops-monitor-raw-payload-longtext.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-06-25-ops-monitor-external-module-routes.yaml
+      relativeToChangelogFile: true
 
   - include:
       file: changesets/2026-06-24-mois-sales-library-geralanding-insights.yaml

@@ -5385,3 +5385,8 @@
 - Correção aplicada: a prontidão de campanha passou a considerar qualquer seleção salva cujo elemento esteja aprovado, tenha ID oficial da Meta e seja `INTEREST`, `JOB_TITLE` ou `BEHAVIOR`; a UI e o cânone foram alinhados para remover a exigência isolada de cargo.
 - Prevenção de recorrência: testes unitários cobrem interesse e comportamento como suficientes para campanha e bloqueiam seleção sem ID oficial da Meta.
 - 2026-06-25 06:25 (UTC): pipeline de criação de hipótese passou a vincular as execuções concluídas à hipótese fechada; a tela de criar nova hipótese lista apenas execuções ainda sem hipótese, e o clique no nome da hipótese no detalhe do nicho abre a auditoria das execuções daquela hipótese.
+
+## 2026-06-25 — Rota externa do Ops Monitor para Lead Portal
+
+- Identificada a causa do alerta “Fora do ar” do Lead Portal: o cadastro operacional do Ops Monitor apontava para `host.docker.internal:8080`, enquanto o portal público saudável responde pelo domínio HTTPS `https://oportunidadebrasil.shop`.
+- Criado changelog incremental para o Ops Monitor verificar o Lead Portal pelo domínio público canônico, evitando falso offline na tela de operação.

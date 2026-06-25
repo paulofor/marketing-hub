@@ -1827,3 +1827,8 @@ Arquivos principais:
 - exposto endpoint pending canônico para o worker iniciar a etapa de dossiê pelo backend, mantendo o backend como controlador de estado e persistência.
 - ajustado o `mois-sales-library-worker` para enviar termos, resultados e dossiê final estruturados ao backend, sem acessar banco diretamente.
 - aplicados e registrados o protocolo padrão backend e o protocolo padrão módulo para este fluxo.
+
+## 2026-06-25 — Rotas externas do Ops Monitor para coletores MOIS
+
+- Identificada a causa dos alertas “Fora do ar” nos coletores MOIS ClickBank/Hotmart: o cadastro operacional do Ops Monitor apontava para `host.docker.internal`, mas esses coletores estão expostos em rota externa monitorável.
+- Criado changelog incremental para restaurar as URLs externas dos coletores e corrigir o endpoint de log do Hotmart, evitando recorrência do falso offline na tela de operação.

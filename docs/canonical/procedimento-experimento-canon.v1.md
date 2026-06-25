@@ -106,6 +106,69 @@ Regras obrigatórias:
 - o status `STANDBY` por primeiro envio não substitui a validação estatística de 30+ envios qualificados, nem a regra de reprovação por 100 acessos sem envio;
 - a tela administrativa deve deixar claro que o experimento parou por sinal inicial, não por validação completa.
 
+### 4.1.4 Regra mandatória — execução auditável por `ExperimentRun`
+
+O `Experiment` continua representando uma pergunta comercial atômica: uma dor principal, uma promessa principal, uma oferta principal, uma rota comercial, uma variável primária e uma métrica primária. A tentativa operacional de colocar essa pergunta no mercado deve ser representada por `ExperimentRun`, sem alterar o significado comercial do experimento.
+
+Regras obrigatórias:
+- correção técnica que não muda a pergunta comercial principal cria novo `ExperimentRun` do mesmo experimento;
+- mudança de dor, promessa, isca, rota de captura, produto, oferta, preço, CTA principal, público estratégico, métrica primária ou pergunta de negócio cria novo `Experiment`;
+- `ExperimentRun` deve possuir modo explícito `TEST` ou `PRODUCTION`;
+- eventos, passos, gates e evidências de `TEST` não podem alimentar métricas comerciais de `PRODUCTION`;
+- status operacional do run e validade comercial da evidência são dimensões independentes;
+- run tecnicamente inválido continua visível para aprendizado operacional, mas não pode reprovar hipótese, materialização comercial ou mercado;
+- somente run com validade `COMMERCIALLY_VALID` pode alimentar comparação, declaração de vencedor, decisão de escala, reprovação comercial ou recomendação de próximo teste baseada em resultado.
+
+Validades canônicas iniciais:
+- `NOT_EVALUATED`: evidência ainda não avaliada ou legado migrado sem reclassificação segura;
+- `TECHNICALLY_INVALID`: publicação, destino, formulário, integração, targeting técnico ou exposição falharam;
+- `MEASUREMENT_INVALID`: eventos, custos, conversões, deduplicação ou janela comercial não são confiáveis;
+- `STRATEGICALLY_INVALID`: desenho experimental, variável primária, estratégia, público ou insumo upstream impedem conclusão de mercado;
+- `INSUFFICIENT_DATA`: execução e mensuração são válidas, mas a amostra ou janela ainda não sustentam decisão;
+- `COMMERCIALLY_VALID`: execução, exposição, estratégia e mensuração permitem aprendizado confiável, mesmo quando o resultado for negativo ou inconclusivo.
+
+Compatibilidade obrigatória com legado:
+- status existentes de `Experiment` permanecem legíveis durante a migração;
+- `INVALIDATED` legado não deve ser convertido automaticamente em falha de hipótese comercial;
+- experimentos legados ativos/concluídos devem receber run legado com validade inicial `NOT_EVALUATED` quando a persistência de runs for implementada;
+- a regra transitória de primeiro envio válido em `STANDBY` permanece como política de parada do modo inicial, mas deve ser registrada no run e não substitui validação comercial completa.
+
+### 4.1.5 Feature flags canônicas da evolução de experimentos
+
+A evolução de Experimentos deve ser liberada por feature flags, mantendo o comportamento legado como padrão até validação explícita. Nenhuma flag abaixo autoriza, sozinha, publicação, aumento de orçamento, decisão automática de vencedor ou remoção de fluxo legado.
+
+Flags iniciais:
+
+| Flag | Padrão | Responsabilidade | Rollback |
+|---|---:|---|---|
+| `experiments.runs.enabled` | `false` | habilita leitura/escrita operacional de `ExperimentRun` após a fase de persistência | voltar a UI e comandos para status legado de `Experiment` |
+| `experiments.runs.preflight-enabled` | `false` | habilita gates de readiness/preflight antes da mídia | desativar bloqueios novos e manter diagnósticos apenas informativos |
+| `experiments.runs.frontend-enabled` | `false` | exibe card/aba de execução atual e histórico mínimo de runs | ocultar UI nova sem apagar dados persistidos |
+| `experiments.comparison.enabled` | `false` | habilita criação e leitura de `ExperimentComparison` | pausar comparações sem pausar experimentos individuais |
+| `experiments.decision-ai.enabled` | `false` | habilita pipeline de apoio por IA somente após dados confiáveis | manter Centro de Decisão determinístico |
+
+Rollback obrigatório:
+- dados novos devem ser append-only ou compatíveis com leitura legada;
+- desativar a flag não deve apagar runs, gates, passos, fixtures nem histórico de decisão;
+- enquanto `experiments.runs.enabled=false`, comandos produtivos continuam usando o contrato legado;
+- enquanto `experiments.comparison.enabled=false`, a política de primeiro envio válido em `STANDBY` continua aplicável ao modo inicial.
+
+### 4.1.6 Fixtures históricas obrigatórias de regressão
+
+Os experimentos 37, 38, 39 e 40 formam baseline de regressão do processo decisório. O objetivo dessas fixtures não é reproduzir todos os relatórios históricos, mas impedir que o sistema volte a tratar falha técnica, dado contaminado, desenho incompleto ou medição inválida como rejeição simples de mercado.
+
+Fonte versionada das fixtures da Fase 0:
+
+- `docs/implementacao/experimentos/fixtures/experimentos-37-40-regressao.json`
+
+Regras obrigatórias para testes futuros:
+- experimento 37 deve bloquear conclusão comercial quando formulário/landing/captura não comprovam evidência válida;
+- experimento 38 deve bloquear aprendizado de mercado quando variável, métrica, KPI ou publicação estiverem incompletos;
+- experimento 39 deve diferenciar falha de qualidade upstream, reset/liberação, alcance e targeting antes de interpretar mercado;
+- experimento 40 deve bloquear materialização automática quando houver baixa correspondência semântica, fonte frágil ou contaminação por solução;
+- nenhum desses casos pode declarar `COMMERCIAL_HYPOTHESIS_FAILURE` sem run comercialmente válido e evidências persistidas.
+
+
 ### 4.2 Prompts dessas etapas
 Os prompts do pipeline ficam versionados no repositório, em `resources` do Worker AI.
 

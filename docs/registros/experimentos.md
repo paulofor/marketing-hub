@@ -5345,3 +5345,35 @@
 - Causa-raiz: a query da fila Meta Ads entregava apenas elementos `APPROVED`, enquanto a aprovação de interesse, cargo e comportamento exige `metaId` oficial; isso criava um bloqueio circular entre validação Meta e aprovação humana.
 - Correção aplicada: a fila Meta Ads passou a incluir elementos `NEEDS_REVIEW` e `APPROVED` dos três tipos suportados (`INTEREST`, `JOB_TITLE` e `BEHAVIOR`), mantendo o bloqueio contra itens `DRAFT`, `REJECTED`, hipótese específica e itens já marcados como Meta indisponível.
 - Prevenção de recorrência: adicionado teste de repository cobrindo interesse, cargo e comportamento em revisão na fila Meta Ads e excluindo rascunho.
+
+
+- 2026-06-25 — Fase 0 da evolução comercial de Experimentos: formalizado no cânone o modelo de `ExperimentRun`, validade da evidência, modos `TEST`/`PRODUCTION`, compatibilidade com status legados, feature flags iniciais e fixtures históricas de regressão dos experimentos 37–40.
+  - causa-raiz tratada: experimentos anteriores podiam misturar falha técnica, estratégia incompleta, medição inválida e rejeição comercial em um único status final.
+  - prevenção de recorrência: os casos 37–40 agora possuem fixture versionada para futuros testes de regressão do processo decisório.
+  - arquivos principais:
+    - docs/canonical/procedimento-experimento-canon.v1.md
+    - docs/implementacao/experimentos/fixtures/experimentos-37-40-regressao.json
+
+- 2026-06-25 — Persistência e API inicial de `ExperimentRun`: criada a entidade de run operacional, enums canônicos, changelog MySQL 5.7, repository centralizado, service/controller administrativo e Swagger para criação/listagem/consulta de runs.
+  - causa-raiz tratada: o sistema não possuía unidade persistida para separar tentativa operacional de hipótese comercial.
+  - prevenção de recorrência: adicionados testes de controller para criação sequencial e consulta de runs com validade inicial `NOT_EVALUATED`.
+  - arquivos principais:
+    - backend/ads-service/src/main/java/com/marketinghub/experiment/run/ExperimentRun.java
+    - backend/ads-service/src/main/resources/db/changelog/changesets/2026-06-25-experiment-run.yaml
+    - docs/swagger/experiment-runs-swagger.yaml
+
+- 2026-06-25 — Gates determinísticos iniciais de `ExperimentRun`: criada a persistência de `experiment_run_gate_result` e os endpoints de preflight para avaliar qualidade upstream e desenho experimental antes da mídia.
+  - causa-raiz tratada: runs podiam existir sem checklist persistido explicando por que uma execução está pronta ou bloqueada.
+  - prevenção de recorrência: testes cobrem preflight sem bloqueadores e preflight bloqueado por persona, métrica primária e KPI ausentes/inválidos.
+  - arquivos principais:
+    - backend/ads-service/src/main/java/com/marketinghub/experiment/run/ExperimentRunGateResult.java
+    - backend/ads-service/src/main/resources/db/changelog/changesets/2026-06-25-experiment-run-gate-result.yaml
+    - docs/swagger/experiment-runs-swagger.yaml
+
+- 2026-06-25 — Frontend mínimo de `ExperimentRun`: adicionada API frontend para runs/preflight e painel de execução atual no detalhe do experimento, com comandos para criar run e rodar preflight consumindo a verdade do backend.
+  - causa-raiz tratada: a tela de experimento ainda não mostrava a unidade operacional que separa falha técnica de evidência comercial.
+  - prevenção de recorrência: a tela passou a exibir status, validade, dados e checklist retornados pelo backend, sem inferir causa-raiz no navegador.
+  - arquivos principais:
+    - frontend/src/api/experiment/useExperimentRuns.ts
+    - frontend/src/pages/experiment/ExperimentRunPanel.tsx
+    - frontend/src/pages/experiment/ExperimentDetailPage.tsx

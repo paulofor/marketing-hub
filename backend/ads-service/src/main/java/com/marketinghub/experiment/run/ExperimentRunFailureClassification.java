@@ -1,0 +1,22 @@
+package com.marketinghub.experiment.run;
+
+/**
+ * Taxonomia inicial de causa-raiz para falhas de execução ou evidência comercial.
+ */
+public enum ExperimentRunFailureClassification {
+    INTEGRATION_FAILURE,
+    PUBLICATION_FAILURE,
+    MEASUREMENT_FAILURE,
+    FORM_FUNCTIONAL_FAILURE,
+    LANDING_QUALITY_FAILURE,
+    UPSTREAM_DATA_QUALITY_FAILURE,
+    STRATEGY_CONFIGURATION_FAILURE,
+    AUDIENCE_FAILURE,
+    CREATIVE_FAILURE,
+    PROMISE_OR_LEAD_MAGNET_FAILURE,
+    OFFER_FAILURE,
+    PRICE_OR_CHECKOUT_FAILURE,
+    INSUFFICIENT_DATA,
+    COMMERCIAL_HYPOTHESIS_FAILURE,
+    USER_STOPPED
+}

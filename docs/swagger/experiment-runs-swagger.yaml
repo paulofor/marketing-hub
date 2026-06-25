@@ -1,0 +1,278 @@
+openapi: 3.0.3
+info:
+  title: Marketing Hub Experiment Runs API
+  version: 1.0.0
+  description: Contratos administrativos iniciais para criar e consultar execuções operacionais de experimentos.
+paths:
+  /api/experiments/{experimentId}/runs:
+    post:
+      summary: Cria um novo run sequencial para o experimento
+      description: Cria uma tentativa operacional sem alterar o status legado do experimento.
+      parameters:
+        - name: experimentId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateExperimentRunRequest'
+      responses:
+        '200':
+          description: Run criado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExperimentRunResponse'
+    get:
+      summary: Lista runs de um experimento
+      parameters:
+        - name: experimentId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Runs do experimento em ordem operacional
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ExperimentRunResponse'
+  /api/experiment-runs/{runId}:
+    get:
+      summary: Consulta um run pelo identificador
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Detalhe do run
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExperimentRunResponse'
+
+  /api/experiment-runs/{runId}/preflight:
+    get:
+      summary: Consulta o preflight atual de um run
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Resultado atual do preflight
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExperimentRunPreflightResponse'
+    post:
+      summary: Executa a avaliação determinística inicial de preflight
+      description: Reavalia gates determinísticos iniciais e atualiza o status operacional do run.
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Resultado atualizado do preflight
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExperimentRunPreflightResponse'
+components:
+  schemas:
+
+    ExperimentRunPreflightResponse:
+      type: object
+      required: [runId, runStatus, hasBlockers, gates]
+      properties:
+        runId:
+          type: integer
+          format: int64
+        runStatus:
+          $ref: '#/components/schemas/ExperimentRunStatus'
+        hasBlockers:
+          type: boolean
+        gates:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExperimentRunGateResultResponse'
+    ExperimentRunGateResultResponse:
+      type: object
+      required: [gateCode, gateGroup, status, severity, summary, evaluatedAt, evaluatorType]
+      properties:
+        gateCode:
+          type: string
+        gateGroup:
+          $ref: '#/components/schemas/ExperimentRunGateGroup'
+        status:
+          $ref: '#/components/schemas/ExperimentRunGateStatus'
+        severity:
+          $ref: '#/components/schemas/ExperimentRunGateSeverity'
+        summary:
+          type: string
+        evidenceReference:
+          type: string
+          nullable: true
+        remediationCode:
+          type: string
+          nullable: true
+        evaluatedAt:
+          type: string
+          format: date-time
+        evaluatorType:
+          $ref: '#/components/schemas/ExperimentRunGateEvaluatorType'
+        evaluatorVersion:
+          type: string
+          nullable: true
+    CreateExperimentRunRequest:
+      type: object
+      properties:
+        mode:
+          $ref: '#/components/schemas/ExperimentRunMode'
+        stopPolicy:
+          $ref: '#/components/schemas/ExperimentRunStopPolicy'
+        createdBy:
+          type: string
+          maxLength: 191
+    ExperimentRunResponse:
+      type: object
+      required:
+        - id
+        - experimentId
+        - runNumber
+        - mode
+        - status
+        - evidenceValidity
+        - stopPolicy
+        - dataQualityStatus
+        - requestedAt
+      properties:
+        id:
+          type: integer
+          format: int64
+        experimentId:
+          type: integer
+          format: int64
+        runNumber:
+          type: integer
+        mode:
+          $ref: '#/components/schemas/ExperimentRunMode'
+        status:
+          $ref: '#/components/schemas/ExperimentRunStatus'
+        evidenceValidity:
+          $ref: '#/components/schemas/ExperimentEvidenceValidity'
+        strategyVersion:
+          type: integer
+          nullable: true
+        assetBundleVersion:
+          type: integer
+          nullable: true
+        audienceVersion:
+          type: integer
+          nullable: true
+        stopPolicy:
+          $ref: '#/components/schemas/ExperimentRunStopPolicy'
+        stopReason:
+          type: string
+          nullable: true
+        failureClassification:
+          $ref: '#/components/schemas/ExperimentRunFailureClassification'
+        failureDetail:
+          type: string
+          nullable: true
+        dataQualityStatus:
+          $ref: '#/components/schemas/ExperimentRunDataQualityStatus'
+        requestedAt:
+          type: string
+          format: date-time
+        preflightStartedAt:
+          type: string
+          format: date-time
+          nullable: true
+        preflightCompletedAt:
+          type: string
+          format: date-time
+          nullable: true
+        publicationRequestedAt:
+          type: string
+          format: date-time
+          nullable: true
+        publishedAt:
+          type: string
+          format: date-time
+          nullable: true
+        firstVerifiedImpressionAt:
+          type: string
+          format: date-time
+          nullable: true
+        commercialWindowStartedAt:
+          type: string
+          format: date-time
+          nullable: true
+        endedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdBy:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+          nullable: true
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+    ExperimentRunMode:
+      type: string
+      enum: [TEST, PRODUCTION]
+    ExperimentRunStatus:
+      type: string
+      enum: [DRAFT, PREFLIGHT_PENDING, PREFLIGHT_RUNNING, PREFLIGHT_FAILED, READY_TO_PUBLISH, PUBLICATION_PENDING, PUBLISHING, PUBLISHED_AWAITING_EXPOSURE, RUNNING, PAUSE_REQUESTED, PAUSED, STOP_REQUESTED, COMPLETED, FAILED, CANCELLED]
+    ExperimentEvidenceValidity:
+      type: string
+      enum: [NOT_EVALUATED, TECHNICALLY_INVALID, MEASUREMENT_INVALID, STRATEGICALLY_INVALID, INSUFFICIENT_DATA, COMMERCIALLY_VALID]
+    ExperimentRunDataQualityStatus:
+      type: string
+      enum: [UNKNOWN, VALID, WARNING, BLOCKED, STALE]
+    ExperimentRunFailureClassification:
+      type: string
+      nullable: true
+      enum: [INTEGRATION_FAILURE, PUBLICATION_FAILURE, MEASUREMENT_FAILURE, FORM_FUNCTIONAL_FAILURE, LANDING_QUALITY_FAILURE, UPSTREAM_DATA_QUALITY_FAILURE, STRATEGY_CONFIGURATION_FAILURE, AUDIENCE_FAILURE, CREATIVE_FAILURE, PROMISE_OR_LEAD_MAGNET_FAILURE, OFFER_FAILURE, PRICE_OR_CHECKOUT_FAILURE, INSUFFICIENT_DATA, COMMERCIAL_HYPOTHESIS_FAILURE, USER_STOPPED]
+    ExperimentRunStopPolicy:
+      type: string
+      enum: [FIRST_VALID_LEAD_STANDBY, FIXED_WINDOW, MIN_SAMPLE_AND_WINDOW, STOP_LOSS, MANUAL_ONLY]
+
+    ExperimentRunGateGroup:
+      type: string
+      enum: [UPSTREAM_QUALITY, EXPERIMENT_DESIGN, ASSET_QUALITY, FUNCTIONAL_E2E, META_PUBLICATION, MEASUREMENT]
+    ExperimentRunGateStatus:
+      type: string
+      enum: [PASS, WARNING, FAIL, NOT_APPLICABLE, PENDING]
+    ExperimentRunGateSeverity:
+      type: string
+      enum: [INFO, WARNING, BLOCKER]
+    ExperimentRunGateEvaluatorType:
+      type: string
+      enum: [DETERMINISTIC, HUMAN, EXTERNAL_PROVIDER]

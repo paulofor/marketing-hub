@@ -1,0 +1,98 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-25-experiment-run-gate-result-001
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: experiment_run_gate_result
+      changes:
+        - createTable:
+            tableName: experiment_run_gate_result
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: experiment_run_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: gate_code
+                  type: VARCHAR(96)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: gate_group
+                  type: VARCHAR(48)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(24)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: severity
+                  type: VARCHAR(24)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: summary
+                  type: VARCHAR(512)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: evidence_reference
+                  type: VARCHAR(512)
+              - column:
+                  name: remediation_code
+                  type: VARCHAR(96)
+              - column:
+                  name: evaluated_at
+                  type: DATETIME(6)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: evaluator_type
+                  type: VARCHAR(24)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: evaluator_version
+                  type: VARCHAR(64)
+              - column:
+                  name: created_at
+                  type: DATETIME(6)
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: experiment_run_gate_result
+            columnNames: experiment_run_id, gate_code
+            constraintName: uk_experiment_run_gate_code
+        - createIndex:
+            tableName: experiment_run_gate_result
+            indexName: idx_experiment_run_gate_group_status
+            columns:
+              - column:
+                  name: gate_group
+              - column:
+                  name: status
+        - addForeignKeyConstraint:
+            baseTableName: experiment_run_gate_result
+            baseColumnNames: experiment_run_id
+            referencedTableName: experiment_run
+            referencedColumnNames: id
+            constraintName: fk_experiment_run_gate_result_run
+            onDelete: CASCADE
+      rollback:
+        - dropTable:
+            tableName: experiment_run_gate_result

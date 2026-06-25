@@ -1,0 +1,150 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-25-experiment-run-001
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: experiment_run
+      changes:
+        - createTable:
+            tableName: experiment_run
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: experiment_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: run_number
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: mode
+                  type: VARCHAR(24)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: evidence_validity
+                  type: VARCHAR(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: strategy_version
+                  type: INT
+              - column:
+                  name: asset_bundle_version
+                  type: INT
+              - column:
+                  name: audience_version
+                  type: INT
+              - column:
+                  name: stop_policy
+                  type: VARCHAR(48)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: stop_reason
+                  type: VARCHAR(96)
+              - column:
+                  name: failure_classification
+                  type: VARCHAR(64)
+              - column:
+                  name: failure_detail
+                  type: LONGTEXT
+              - column:
+                  name: data_quality_status
+                  type: VARCHAR(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: requested_at
+                  type: DATETIME(6)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: preflight_started_at
+                  type: DATETIME(6)
+              - column:
+                  name: preflight_completed_at
+                  type: DATETIME(6)
+              - column:
+                  name: publication_requested_at
+                  type: DATETIME(6)
+              - column:
+                  name: published_at
+                  type: DATETIME(6)
+              - column:
+                  name: first_verified_impression_at
+                  type: DATETIME(6)
+              - column:
+                  name: commercial_window_started_at
+                  type: DATETIME(6)
+              - column:
+                  name: ended_at
+                  type: DATETIME(6)
+              - column:
+                  name: created_by
+                  type: VARCHAR(191)
+              - column:
+                  name: created_at
+                  type: DATETIME(6)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: DATETIME(6)
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: experiment_run
+            columnNames: experiment_id, run_number
+            constraintName: uk_experiment_run_experiment_number
+        - createIndex:
+            tableName: experiment_run
+            indexName: idx_experiment_run_experiment_status
+            columns:
+              - column:
+                  name: experiment_id
+              - column:
+                  name: status
+        - createIndex:
+            tableName: experiment_run
+            indexName: idx_experiment_run_status_requested
+            columns:
+              - column:
+                  name: status
+              - column:
+                  name: requested_at
+        - createIndex:
+            tableName: experiment_run
+            indexName: idx_experiment_run_evidence_validity
+            columns:
+              - column:
+                  name: evidence_validity
+        - addForeignKeyConstraint:
+            baseTableName: experiment_run
+            baseColumnNames: experiment_id
+            referencedTableName: experiment
+            referencedColumnNames: id
+            constraintName: fk_experiment_run_experiment
+            onDelete: RESTRICT
+      rollback:
+        - dropTable:
+            tableName: experiment_run

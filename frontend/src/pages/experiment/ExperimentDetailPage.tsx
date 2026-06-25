@@ -28,6 +28,7 @@ import ExperimentFunnelTab from "./ExperimentFunnelTab";
 import ExperimentLandingAnalyticsTab from "./ExperimentLandingAnalyticsTab";
 import ExperimentContentGenerationTab from "./ExperimentContentGenerationTab";
 import { ExperimentAudienceTab } from "./ExperimentAudienceTab";
+import ExperimentRunPanel from "./ExperimentRunPanel";
 import LandingTab from "./LandingTab";
 import CollapsibleJsonViewer from "../../components/CollapsibleJsonViewer";
 import { useExperimentFacebookRelease } from "../../api/experiment/useExperimentFacebookRelease";
@@ -2689,6 +2690,9 @@ export default function ExperimentDetailPage() {
             <Tabs.Trigger value="funnel" className="nav-link">
               Funil de vendas
             </Tabs.Trigger>
+            <Tabs.Trigger value="execucao" className="nav-link">
+              Execução
+            </Tabs.Trigger>
             <Tabs.Trigger value="analytics" className="nav-link">
               Analytics
             </Tabs.Trigger>
@@ -2713,6 +2717,7 @@ export default function ExperimentDetailPage() {
           </Tabs.List>
           <Tabs.Content value="overview" asChild>
             <div className="d-flex flex-column gap-3">
+              <ExperimentRunPanel experimentId={expId} compact />
               <div className="card">
                 <div className="card-body p-0">
                   <dl className="row mb-0">
@@ -2733,6 +2738,11 @@ export default function ExperimentDetailPage() {
                   </dl>
                 </div>
               </div>
+            </div>
+          </Tabs.Content>
+          <Tabs.Content value="execucao" asChild>
+            <div className="d-flex flex-column gap-3">
+              <ExperimentRunPanel experimentId={expId} />
             </div>
           </Tabs.Content>
           <Tabs.Content value="funnel" asChild>

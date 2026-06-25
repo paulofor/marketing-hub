@@ -1,0 +1,106 @@
+{
+  "schemaVersion": "experiment-history-regression.v1",
+  "sourceDocument": "docs/implementacao/experimentos/analise-historico-experimentos-sem-sucesso.md",
+  "purpose": "Baseline de regressão para impedir que falhas técnicas, estratégicas, de medição ou de qualidade upstream sejam interpretadas como rejeição comercial sem evidência válida.",
+  "experiments": [
+    {
+      "experimentId": 37,
+      "expectedEvidenceValidity": "TECHNICALLY_INVALID",
+      "primaryFailureClassifications": [
+        "FORM_FUNCTIONAL_FAILURE",
+        "LANDING_QUALITY_FAILURE",
+        "STRATEGY_CONFIGURATION_FAILURE"
+      ],
+      "observedSignals": {
+        "impressions": 2524,
+        "clicks": 114,
+        "spendBrl": 25.11,
+        "formViews": 100,
+        "formSubmissions": 0,
+        "legacyConclusion": "FORM_ZERO_CONVERSION_RULE_OF_THREE"
+      },
+      "regressionAssertions": [
+        "Não declarar rejeição de mercado sem formulário E2E comprovado.",
+        "Não usar landing com revisão insuficiente como evidência comercial confiável.",
+        "Correção técnica deve criar novo run do mesmo experimento quando a pergunta comercial não mudar."
+      ]
+    },
+    {
+      "experimentId": 38,
+      "expectedEvidenceValidity": "STRATEGICALLY_INVALID",
+      "primaryFailureClassifications": [
+        "STRATEGY_CONFIGURATION_FAILURE",
+        "PUBLICATION_FAILURE",
+        "INTEGRATION_FAILURE"
+      ],
+      "observedSignals": {
+        "legacyStatus": "INVALIDATED",
+        "persona": "teste",
+        "primaryVariablePresent": false,
+        "primaryMetricPresent": false,
+        "kpiTargetCpl": 0
+      },
+      "regressionAssertions": [
+        "Não iniciar produção sem variável e métrica primárias.",
+        "KPI zero ou ausente deve bloquear ou alertar explicitamente.",
+        "Falha de publicação não pode virar invalidação comercial automática."
+      ]
+    },
+    {
+      "experimentId": 39,
+      "expectedEvidenceValidity": "STRATEGICALLY_INVALID",
+      "primaryFailureClassifications": [
+        "UPSTREAM_DATA_QUALITY_FAILURE",
+        "AUDIENCE_FAILURE",
+        "PUBLICATION_FAILURE"
+      ],
+      "observedSignals": {
+        "niche": "manicure",
+        "upstreamIssues": [
+          "evidências duplicadas",
+          "rótulos genéricos repetidos",
+          "conteúdo adjacente ao trabalho da profissional",
+          "fontes de baixa utilidade comercial"
+        ],
+        "publicationIssues": [
+          "reset com dependência de eventos",
+          "estimativa de alcance sem localização",
+          "audiência estreita por composição inadequada"
+        ]
+      },
+      "regressionAssertions": [
+        "Validar qualidade de nicho/hipótese antes de interpretar mercado.",
+        "Diferenciar audiência inexistente, audiência estreita e erro técnico de payload.",
+        "Publicação deve registrar passos por jobId para explicar por que não chegou ao mercado."
+      ]
+    },
+    {
+      "experimentId": 40,
+      "expectedEvidenceValidity": "STRATEGICALLY_INVALID",
+      "primaryFailureClassifications": [
+        "UPSTREAM_DATA_QUALITY_FAILURE",
+        "PROMISE_OR_LEAD_MAGNET_FAILURE"
+      ],
+      "observedSignals": {
+        "niche": "alongamento de unhas",
+        "upstreamIssues": [
+          "claims genéricos promovidos como dores específicas",
+          "fontes de consumidor/procedimento usadas como rotina comercial da profissional",
+          "fontes duplicadas",
+          "contaminação por solução",
+          "ausência de eixo comercial único"
+        ]
+      },
+      "regressionAssertions": [
+        "Artefato upstream reprovado ou incompleto bloqueia materialização automática.",
+        "Contaminação por solução impede usar solução como prova da dor.",
+        "Dados insuficientes devem gerar revisão ou novo ciclo de pesquisa, não preenchimento especulativo."
+      ]
+    }
+  ],
+  "globalRegressionAssertions": [
+    "INVALIDATED legado não reprova hipótese sem run comercialmente válido.",
+    "Run tecnicamente inválido alimenta aprendizado operacional, não decisão de mercado.",
+    "Somente COMMERCIALLY_VALID entra em comparação, vencedor, escala ou recomendação de próximo teste baseada em resultado."
+  ]
+}

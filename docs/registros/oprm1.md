@@ -1370,3 +1370,13 @@
 - Solicitação: executar a Etapa 4 — Criação da audiência na Meta do plano `docs/implementacao/oprm/plano-audiencias-meta-nicho-experimento.md`.
 - Foi feito: criado o contrato persistente `meta_audience`/`meta_audience_segment`, mantendo o backend somente como leitura/escrita da audiência já decidida pelo OPRM; o Facebook Ads Worker cria a Custom Audience, normaliza/deduplica emails apenas por exigência técnica da Meta, gera hash SHA-256, faz upload em lotes e retorna o `facebookAudienceId` ao backend.
 - Prevenção de recorrência: a regra de negócio de público, nome, recorte, elegibilidade e volumes fica no módulo OPRM executor; a audiência persistida continua vinculada a `market_niche_id`, CNAE, segmento e conta de anúncios para evitar audiência órfã na Meta.
+
+## 2026-06-25 — Simplificação da tela de detalhe do nicho
+
+- Removidos da tela de detalhe do nicho os cards e seções de baixa prioridade visual solicitados pelo usuário: categorias, custos/receita, tecnologia diferenciada, descrição detalhada e segmentações sugeridas.
+- Objetivo: reduzir ruído na leitura do nicho e manter a tela focada em ações e informações mais relevantes para geração de hipóteses e vendas.
+
+## 2026-06-25 — Restauração da geração e aprovação de segmentações no nicho
+
+- Restaurada na tela de detalhe do nicho a área operacional de interesses, cargos e comportamentos, porque ela é necessária para gerar, revisar/aprovar e salvar as segmentações usadas na ativação comercial.
+- Mantida a remoção dos cards informativos solicitados anteriormente, evitando ruído sem bloquear a preparação de públicos para vendas.

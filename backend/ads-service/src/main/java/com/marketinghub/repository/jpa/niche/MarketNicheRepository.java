@@ -132,4 +132,9 @@ public interface MarketNicheRepository extends JpaRepository<MarketNiche, Long> 
      */
     boolean existsByNameIgnoreCase(String name);
 
+    /**
+     * Verifica se outro nicho já usa o mesmo nome, preservando atualização idempotente do próprio registro.
+     */
+    boolean existsByNameIgnoreCaseAndIdNot(String name, Long id);
+
 }

@@ -60,7 +60,9 @@ public class JpaOprmEnrichedNicheGateway implements OprmEnrichedNicheGateway {
         : marketNicheRepository.findById(nicheDraft.marketNicheId()).orElseGet(MarketNiche::new);
     applyNicheDraft(niche, nicheDraft);
     MarketNiche savedNiche = marketNicheRepository.save(niche);
-    MarketNicheEnrichmentProfile profile = buildProfile(savedNiche, profileDraft);
+    MarketNicheEnrichmentProfile profile = findExistingProfileForUpdate(profileDraft)
+        .orElseGet(MarketNicheEnrichmentProfile::new);
+    applyProfileDraft(profile, savedNiche, profileDraft);
     MarketNicheEnrichmentProfile savedProfile = enrichmentProfileRepository.save(profile);
     return new OprmEnrichedNicheMaterializationResult(savedNiche.getId(), savedProfile.getId(), savedProfile.getCreatedAt());
   }
@@ -126,9 +128,21 @@ public class JpaOprmEnrichedNicheGateway implements OprmEnrichedNicheGateway {
     }
   }
 
-  /** Cria o perfil enriquecido com whitelist dos campos aceitos pelo domínio Niche. */
-  private MarketNicheEnrichmentProfile buildProfile(MarketNiche niche, OprmEnrichedNicheProfileDraft draft) {
-    MarketNicheEnrichmentProfile profile = new MarketNicheEnrichmentProfile();
+  /** Localiza perfil enriquecido existente para atualização do mesmo CNAE e nome neutro. */
+  private Optional<MarketNicheEnrichmentProfile> findExistingProfileForUpdate(OprmEnrichedNicheProfileDraft draft) {
+    if (draft == null || draft.cnaeCode() == null || draft.neutralNicheName() == null) {
+      return Optional.empty();
+    }
+    return enrichmentProfileRepository
+        .findMaterializedByCnaeAndNormalizedNeutralName(
+            draft.cnaeCode().trim(), draft.neutralNicheName().trim().toLowerCase(java.util.Locale.ROOT), PageRequest.of(0, 1))
+        .stream()
+        .findFirst();
+  }
+
+  /** Aplica o perfil enriquecido com whitelist dos campos aceitos pelo domínio Niche. */
+  private void applyProfileDraft(MarketNicheEnrichmentProfile profile, MarketNiche niche, OprmEnrichedNicheProfileDraft draft) {
+    boolean creating = profile.getId() == null;
     profile.setMarketNiche(niche);
     profile.setSourceModule(SOURCE_MODULE);
     profile.setSourceNicheCandidateId(draft.sourceNicheCandidateId());
@@ -161,9 +175,10 @@ public class JpaOprmEnrichedNicheGateway implements OprmEnrichedNicheGateway {
     profile.setObjections(draft.objections());
     profile.setResearchReportMarkdown(draft.researchReportMarkdown());
     profile.setCreatedBy(draft.createdBy());
-    profile.setCreatedAt(draft.createdAt());
+    if (creating) {
+      profile.setCreatedAt(draft.createdAt());
+    }
     profile.setUpdatedAt(draft.updatedAt());
-    return profile;
   }
 
   /** Converte entidade Niche em snapshot de leitura permitido ao OPRM. */

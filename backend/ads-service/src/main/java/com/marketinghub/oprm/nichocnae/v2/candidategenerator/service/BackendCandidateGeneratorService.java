@@ -272,10 +272,11 @@ public class BackendCandidateGeneratorService {
         if (!canConfirmNiche(summary, executions)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Este job ainda não está pronto para virar nicho.");
         }
-        String name = requiredUniqueNicheName(request == null ? null : request.nicheName());
         OprmNichoCnaeV2StageExecution lastExecution = executions.getLast();
-        OprmConfirmedMarketNiche saved = confirmedMarketNicheRepository.createConfirmedNiche(
-                name, buildConfirmedNicheDescription(executions, summary), summary.aiCostUsd());
+        Optional<OprmNicheCandidate> currentCandidate = nicheCandidateRepository.findById(lastExecution.getSourceNicheId());
+        Long existingMarketNicheId = currentCandidate.map(OprmNicheCandidate::getMarketNicheId).orElse(null);
+        String name = requiredNicheNameForConfirmation(request == null ? null : request.nicheName(), existingMarketNicheId);
+        OprmConfirmedMarketNiche saved = saveConfirmedNiche(existingMarketNicheId, name, executions, summary);
         nicheCandidateRepository.findById(lastExecution.getSourceNicheId()).ifPresent(candidate -> {
             candidate.setMarketNicheId(saved.id());
             candidate.setStatus("APPROVED");
@@ -298,8 +299,10 @@ public class BackendCandidateGeneratorService {
                 saved.id(),
                 saved.name(),
                 summary.aiCostUsd(),
-                "CONFIRMED_AS_NICHE",
-                "Nicho confirmado e disponível para a sequência do Marketing Hub.",
+                existingMarketNicheId == null ? "CONFIRMED_AS_NICHE" : "UPDATED_EXISTING_NICHE",
+                existingMarketNicheId == null
+                        ? "Nicho confirmado e disponível para a sequência do Marketing Hub."
+                        : "Nicho existente atualizado com as novas informações enriquecidas do job.",
                 lastExecution.getUpdatedAt());
     }
 
@@ -355,16 +358,32 @@ public class BackendCandidateGeneratorService {
     }
 
 
-    /** Valida nome obrigatório e impede repetir nome de nicho já existente. */
-    private String requiredUniqueNicheName(String nicheName) {
+    /** Valida nome obrigatório e aplica unicidade conforme criação nova ou atualização de nicho existente. */
+    private String requiredNicheNameForConfirmation(String nicheName, Long existingMarketNicheId) {
         String normalized = nicheName == null ? "" : nicheName.trim();
         if (normalized.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe um nome para o nicho.");
         }
-        if (confirmedMarketNicheRepository.existsByNameIgnoreCase(normalized)) {
+        boolean duplicated = existingMarketNicheId == null
+                ? confirmedMarketNicheRepository.existsByNameIgnoreCase(normalized)
+                : confirmedMarketNicheRepository.existsByNameIgnoreCaseExcludingId(normalized, existingMarketNicheId);
+        if (duplicated) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Já existe um nicho com esse nome. Escolha um nome único.");
         }
         return normalized;
+    }
+
+    /** Cria novo nicho ou atualiza o nicho já ligado ao CNAE sem bloquear nova execução do pipeline. */
+    private OprmConfirmedMarketNiche saveConfirmedNiche(
+            Long existingMarketNicheId,
+            String name,
+            List<OprmNichoCnaeV2StageExecution> executions,
+            CandidateGeneratorCnaeJobSummary summary) {
+        String description = buildConfirmedNicheDescription(executions, summary);
+        if (existingMarketNicheId == null) {
+            return confirmedMarketNicheRepository.createConfirmedNiche(name, description, summary.aiCostUsd());
+        }
+        return confirmedMarketNicheRepository.updateConfirmedNiche(existingMarketNicheId, name, description, summary.aiCostUsd());
     }
 
     /** Indica se o job concluído ainda pode ser confirmado manualmente como nicho. */

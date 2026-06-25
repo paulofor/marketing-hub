@@ -1378,3 +1378,9 @@
 - Removida a promoção de `offer_idea` no momento de materialização do NichoCNAE: essa etapa permanece responsável por rotina/evidência, enquanto a oferta fica para o pipeline de hipótese/oferta.
 - Causa-raiz tratada: o resultado final misturava maturidades diferentes — rotina real do nicho, hipótese comercial e ideia de oferta — e não persistia uma trilha auditável fechada no próprio perfil criado.
 - Prevenção de recorrência: o cânone de experimento foi atualizado para exigir tarefas diárias e relatório auditável na passagem enriquecida `nicho-cnae → hipótese`.
+
+## 2026-06-25 — Reexecução de CNAE com nicho existente
+
+- Regra ajustada: executar novamente o pipeline para CNAE que já possui nicho não deve bloquear a pesquisa.
+- Na conclusão, quando o candidato/CNAE já estiver ligado a um `market_niche`, o fluxo atualiza o nicho existente e renova `updated_at`, em vez de criar duplicidade silenciosa.
+- O perfil enriquecido materializado por CNAE + nome neutro também passa a ser atualizado quando já existir, preservando o registro e renovando as informações auditáveis.

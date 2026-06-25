@@ -26,3 +26,10 @@
 - Módulo executor: `oprm-coletor-mei`.
 - Pacote executor: `com.marketinghub.nichocnaev3`.
 - Protocolo aplicado com núcleo genérico `pipeline`, etapas concretas plugáveis em subpacotes por etapa, scheduler no executor, consumo via endpoint `pending` do backend e teste ArchUnit próprio.
+
+## 2026-06-25 — MOIS dossiê v1
+
+- Módulo executor: `mois-sales-library-worker`.
+- Pacote protegido/criado: `com.marketinghub.mois.dossiev1.pipeline`.
+- Pipeline criado como `v1`, com núcleo genérico (`PipelineWorker`, `StageProcessor`, `StageContext`, `StageResult`, `StageArtifact`, `ArtifactStore`) e etapas plugáveis `intake`, `product-understanding`, `investigation-anchor-builder`, `warmup-resource-discovery`, `source-product-match`, `warmup-signal-extraction`, `warmup-map-builder` e `dossier-synthesis`.
+- Pontos iniciais canônicos previstos para consumo pelo executor: `/api/internal/mois/dossie/v1/<etapa>/stage-executions/pending`, começando por `intake` e cobrindo todas as etapas v1 do dossiê.

@@ -1832,3 +1832,15 @@ Arquivos principais:
 
 - Identificada a causa dos alertas “Fora do ar” nos coletores MOIS ClickBank/Hotmart: o cadastro operacional do Ops Monitor apontava para `host.docker.internal`, mas esses coletores estão expostos em rota externa monitorável.
 - Criado changelog incremental para restaurar as URLs externas dos coletores e corrigir o endpoint de log do Hotmart, evitando recorrência do falso offline na tela de operação.
+
+## 2026-06-25 — Pipeline de criação de dossiê MOIS v1
+
+- Criado esqueleto do pipeline de dossiê MOIS v1 no módulo executor `mois-sales-library-worker`.
+- Criado contrato backend inicial para etapa `intake`, expondo pending canônico para o executor.
+- Aplicados protocolo padrão módulo e protocolo padrão backend para garantir versionamento, separação de responsabilidades e ponto inicial canônico antes do estudo detalhado das etapas.
+
+## 2026-06-25 15:06:34 UTC-3
+
+- Expandido o desenho do dossiê v1 para refletir o objetivo de entender o produto e mapear recursos usados para aquecer o público.
+- Criadas etapas canônicas: intake, product-understanding, investigation-anchor-builder, warmup-resource-discovery, source-product-match, warmup-signal-extraction, warmup-map-builder e dossier-synthesis.
+- Mantida a separação operacional: backend publica pendências por etapa e o módulo executor mantém processamento, integrações externas e evolução dos processors.

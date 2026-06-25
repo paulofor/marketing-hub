@@ -33,6 +33,7 @@ import java.util.regex.Pattern;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -164,6 +165,17 @@ class ArquiteturaTest {
             HYPOTHESIS_REPOSITORY_CLASS,
             FRAMEWORK_IMAGE_GENERATION_JOB_REPOSITORY_CLASS,
             GERALANDING_STAGE_EXECUTION_REPOSITORY_CLASS);
+    private static final String MOIS_DOSSIE_V1_EXECUTOR_MODULE = "mois-sales-library-worker";
+    private static final String MOIS_DOSSIE_V1_PACKAGE = "com.marketinghub.mois.dossie.v1";
+    private static final Map<String, String> MOIS_DOSSIE_V1_STAGE_ENDPOINT_SLUGS = Map.ofEntries(
+            Map.entry("intake", "intake"),
+            Map.entry("productunderstanding", "product-understanding"),
+            Map.entry("investigationanchorbuilder", "investigation-anchor-builder"),
+            Map.entry("warmupresourcediscovery", "warmup-resource-discovery"),
+            Map.entry("sourceproductmatch", "source-product-match"),
+            Map.entry("warmupsignalextraction", "warmup-signal-extraction"),
+            Map.entry("warmupmapbuilder", "warmup-map-builder"),
+            Map.entry("dossiersynthesis", "dossier-synthesis"));
 
 
     @ArchTest
@@ -337,6 +349,56 @@ class ArquiteturaTest {
             .dependOnClassesThat()
             .resideInAPackage(MOIS_SALES_LIBRARY_PACKAGE + "..")
             .because("[ARQUITETURA][MOIS] nenhum outro pacote interno deve depender da biblioteca de páginas de vendas do MOIS");
+
+    @ArchTest
+    static final ArchRule moisDossieV1BackendMustRemainReadWriteOnly = classes()
+            .that()
+            .resideInAPackage("com.marketinghub.mois.dossie.v1..")
+            .should(notAssumeOperationalExecutionResponsibilityForMoisDossieV1())
+            .because("[ARQUITETURA] [BACKEND][MOIS Dossiê v1] o backend deve publicar pendências e receber callbacks; "
+                    + "o controle operacional pertence ao módulo executor " + MOIS_DOSSIE_V1_EXECUTOR_MODULE);
+
+    /**
+     * Garante a estrutura canônica da etapa intake do pipeline de dossiê MOIS v1 no backend.
+     */
+    @ArchTest
+    static void moisDossieV1StagesMustExposeCanonicalStructure(JavaClasses importedClasses) {
+        List<String> violations = new ArrayList<>();
+        MOIS_DOSSIE_V1_STAGE_ENDPOINT_SLUGS.forEach((stagePackage, endpointSlug) -> {
+            String controllerPackage = MOIS_DOSSIE_V1_PACKAGE + "." + stagePackage + ".controller";
+            String servicePackage = MOIS_DOSSIE_V1_PACKAGE + "." + stagePackage + ".service";
+            List<JavaClass> controllerClasses = directPackageClasses(importedClasses, controllerPackage);
+            List<JavaClass> serviceClasses = directPackageClasses(importedClasses, servicePackage);
+            long controllers = controllerClasses.stream().filter(javaClass -> javaClass.isAnnotatedWith(RestController.class)).count();
+            long services = serviceClasses.stream().filter(javaClass -> javaClass.isAnnotatedWith(Service.class)).count();
+            if (controllers != 1) {
+                violations.add("[ARQUITETURA] [BACKEND][MOIS Dossiê v1] etapa " + stagePackage
+                        + " deve possuir exatamente um controller canônico em " + controllerPackage
+                        + "; encontrados=" + controllers);
+            }
+            if (services != 1) {
+                violations.add("[ARQUITETURA] [BACKEND][MOIS Dossiê v1] etapa " + stagePackage
+                        + " deve possuir exatamente um service canônico em " + servicePackage
+                        + "; encontrados=" + services);
+            }
+            boolean hasPending = controllerClasses.stream()
+                    .flatMap(javaClass -> javaClass.getMethods().stream())
+                    .anyMatch(method -> method.getName().equals("pending") && method.isAnnotatedWith(PostMapping.class));
+            if (!hasPending) {
+                violations.add("[ARQUITETURA] [BACKEND][MOIS Dossiê v1] etapa " + stagePackage
+                        + " deve expor endpoint pending canônico /api/internal/mois/dossie/v1/"
+                        + endpointSlug + "/stage-executions/pending");
+            }
+        });
+        failWithArchitectureViolations(violations);
+    }
+
+    @ArchTest
+    static final ArchRule moisDossieV1ServiceContractsMustBeRecords = classes()
+            .that()
+            .resideInAPackage("com.marketinghub.mois.dossie.v1.*.service..")
+            .should(beRecordWhenInsideMoisDossieV1ServiceSubpackage())
+            .because("[ARQUITETURA] [BACKEND][MOIS Dossiê v1] DTOs/contratos de service devem ser records em subpacotes da operação");
 
     @ArchTest
     static final ArchRule springDataJpaRepositoriesMustResideInRepositoryJpaSubpackages = classes()
@@ -1732,6 +1794,26 @@ class ArquiteturaTest {
     }
 
     /**
+     * Exige records nos subpacotes de service que representam contratos do dossiê MOIS v1.
+     */
+    private static ArchCondition<JavaClass> beRecordWhenInsideMoisDossieV1ServiceSubpackage() {
+        return new ArchCondition<>("[ARQUITETURA] ser record quando estiver em subpacote de service do dossiê MOIS v1") {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                boolean contractSubpackage = MOIS_DOSSIE_V1_STAGE_ENDPOINT_SLUGS.keySet().stream()
+                        .anyMatch(stagePackage -> item.getPackageName()
+                                .startsWith(MOIS_DOSSIE_V1_PACKAGE + "." + stagePackage + ".service."));
+                if (!contractSubpackage || item.reflect().isRecord()) {
+                    return;
+                }
+                events.add(SimpleConditionEvent.violated(item,
+                        "[ARQUITETURA] [BACKEND][MOIS Dossiê v1] classe=" + item.getName()
+                                + " está em subpacote de service e deve ser declarada como record"));
+            }
+        };
+    }
+
+    /**
      * Garante que controllers Facebook Ads não consumam controllers de outros módulos.
      */
     private static ArchCondition<JavaClass> notDependOnOtherModuleControllers() {
@@ -1988,6 +2070,75 @@ class ArquiteturaTest {
                 || targetPackage.startsWith("org.openqa.selenium")
                 || targetPackage.startsWith("software.amazon.awssdk.services.s3")
                 || targetPackage.startsWith("com.amazonaws.services.s3");
+    }
+
+    /**
+     * Bloqueia responsabilidades operacionais de execução no backend do dossiê MOIS v1.
+     */
+    private static ArchCondition<JavaClass> notAssumeOperationalExecutionResponsibilityForMoisDossieV1() {
+        return new ArchCondition<>("[ARQUITETURA] [BACKEND][MOIS Dossiê v1] não assume execução operacional externa") {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                if (hasForbiddenMoisDossieV1ExecutionName(item)) {
+                    events.add(SimpleConditionEvent.violated(item,
+                            "[ARQUITETURA] [BACKEND][MOIS Dossiê v1] classe=" + item.getName()
+                                    + " tem nome de worker/runner/processor/núcleo operacional. "
+                                    + "O backend deve publicar pendências e receber resultados; a execução operacional fica no módulo "
+                                    + MOIS_DOSSIE_V1_EXECUTOR_MODULE + "."));
+                }
+                item.getDirectDependenciesFromSelf().forEach(dependency -> {
+                    JavaClass targetClass = dependency.getTargetClass();
+                    if (!isForbiddenMoisDossieV1ExecutionDependency(targetClass)) {
+                        return;
+                    }
+                    events.add(SimpleConditionEvent.violated(item,
+                            "[ARQUITETURA] [BACKEND][MOIS Dossiê v1] classe=" + item.getName()
+                                    + " depende de tecnologia/contrato operacional proibido no backend: "
+                                    + dependency.getDescription() + ". A execução pertence ao módulo "
+                                    + MOIS_DOSSIE_V1_EXECUTOR_MODULE + "."));
+                });
+            }
+        };
+    }
+
+    /**
+     * Identifica nomes que indicam execução operacional indevida no backend do dossiê MOIS v1.
+     */
+    private static boolean hasForbiddenMoisDossieV1ExecutionName(JavaClass javaClass) {
+        String simpleName = javaClass.getSimpleName();
+        return simpleName.equals("PipelineWorker")
+                || simpleName.equals("StageProcessor")
+                || simpleName.equals("StageContext")
+                || simpleName.equals("StageResult")
+                || simpleName.equals("StageArtifact")
+                || simpleName.endsWith("Worker")
+                || simpleName.endsWith("Runner")
+                || simpleName.endsWith("Poller")
+                || simpleName.endsWith("Scheduler")
+                || simpleName.endsWith("Processor");
+    }
+
+    /**
+     * Identifica dependências de execução externa que não podem entrar no backend do dossiê MOIS v1.
+     */
+    private static boolean isForbiddenMoisDossieV1ExecutionDependency(JavaClass targetClass) {
+        String targetName = targetClass.getName();
+        String targetPackage = targetClass.getPackageName();
+        return targetName.equals("org.springframework.scheduling.annotation.Scheduled")
+                || targetName.equals("org.springframework.web.reactive.function.client.WebClient")
+                || targetPackage.startsWith("org.springframework.web.client")
+                || targetPackage.startsWith("com.openai")
+                || targetPackage.startsWith("com.theokanning.openai")
+                || targetPackage.startsWith("org.jsoup")
+                || targetPackage.startsWith("com.microsoft.playwright")
+                || targetPackage.startsWith("org.openqa.selenium")
+                || targetPackage.startsWith("software.amazon.awssdk.services.s3")
+                || targetPackage.startsWith("com.amazonaws.services.s3")
+                || targetName.contains("PipelineWorker")
+                || targetName.contains("StageProcessor")
+                || targetName.contains("StageContext")
+                || targetName.contains("StageResult")
+                || targetName.contains("StageArtifact");
     }
 
     /**

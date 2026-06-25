@@ -299,7 +299,7 @@ export default function OprmCnaeVolumePage() {
                       <th>Pendente materializar</th>
                       <th>Custo</th>
                       <th>Pesquisa</th>
-                      <th>Pipeline v2</th>
+                      <th>Pipeline v3</th>
                     </>
                   ) : (
                     <th>Status</th>
@@ -312,7 +312,9 @@ export default function OprmCnaeVolumePage() {
                       <tr key={`${item.snapshotDate}-${item.cnaeCode}`}>
                         <td>
                           <span className="d-inline-flex align-items-center gap-2">
-                            <span>{(currentPage - 1) * pageSize + index + 1}</span>
+                            <span>
+                              {(currentPage - 1) * pageSize + index + 1}
+                            </span>
                             {item.nicheResearchRunning ? (
                               <RunningProcessingIcon />
                             ) : null}
@@ -361,10 +363,10 @@ export default function OprmCnaeVolumePage() {
                         <td>
                           <Link
                             className="btn btn-sm btn-outline-primary text-nowrap"
-                            to={`/oprm/cnaes/${encodeURIComponent(item.cnaeCode)}/pipeline-v2`}
-                            title="Abrir design da v2 do pipeline NichoCNAE"
+                            to={`/oprm/cnaes/${encodeURIComponent(item.cnaeCode)}/pipeline-v3`}
+                            title="Abrir design da v3 do pipeline NichoCNAE"
                           >
-                            Ver v2
+                            Ver v3
                           </Link>
                         </td>
                       </tr>

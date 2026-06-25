@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { buildApiUrl } from "../../utils/buildApiUrl";
 
 export interface OprmNichoCnaeV3JobStartResult {
@@ -29,7 +29,14 @@ async function startOprmNichoCnaeV3Job(
 }
 
 export function useStartOprmNichoCnaeV3Job(cnaeCode: string) {
+  const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: () => startOprmNichoCnaeV3Job(cnaeCode),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: ["oprm-nichocnae-v3-progress", cnaeCode],
+      });
+    },
   });
 }

@@ -1384,3 +1384,5 @@
 - Regra ajustada: executar novamente o pipeline para CNAE que já possui nicho não deve bloquear a pesquisa.
 - Na conclusão, quando o candidato/CNAE já estiver ligado a um `market_niche`, o fluxo atualiza o nicho existente e renova `updated_at`, em vez de criar duplicidade silenciosa.
 - O perfil enriquecido materializado por CNAE + nome neutro também passa a ser atualizado quando já existir, preservando o registro e renovando as informações auditáveis.
+
+- 2026-06-25 — Tela OPRM de CNAEs atualizada para destacar visualmente, já no início da linha, os CNAEs com processamento de pesquisa em execução, reutilizando o indicador `nicheResearchRunning` entregue pelo backend.

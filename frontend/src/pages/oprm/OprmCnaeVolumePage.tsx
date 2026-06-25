@@ -33,6 +33,19 @@ function formatDateTime(value: string | null | undefined) {
   return new Date(value).toLocaleString("pt-BR");
 }
 
+function RunningProcessingIcon() {
+  return (
+    <span
+      className="d-inline-flex align-items-center gap-1 text-primary"
+      title="Processamento em execução neste CNAE"
+      aria-label="Processamento em execução neste CNAE"
+    >
+      <span className="spinner-border spinner-border-sm" aria-hidden="true" />
+      <span aria-hidden="true">⚙️</span>
+    </span>
+  );
+}
+
 export default function OprmCnaeVolumePage() {
   const pageSize = 50;
   const [currentPage, setCurrentPage] = useState(1);
@@ -297,7 +310,14 @@ export default function OprmCnaeVolumePage() {
                 {hasVolumeData
                   ? volumeData.map((item, index) => (
                       <tr key={`${item.snapshotDate}-${item.cnaeCode}`}>
-                        <td>{(currentPage - 1) * pageSize + index + 1}</td>
+                        <td>
+                          <span className="d-inline-flex align-items-center gap-2">
+                            <span>{(currentPage - 1) * pageSize + index + 1}</span>
+                            {item.nicheResearchRunning ? (
+                              <RunningProcessingIcon />
+                            ) : null}
+                          </span>
+                        </td>
                         <td>{item.cnaeCode}</td>
                         <td>
                           <Link
@@ -328,13 +348,7 @@ export default function OprmCnaeVolumePage() {
                         <td>{formatCurrencyUsd(item.researchCostUsd)}</td>
                         <td>
                           {item.nicheResearchRunning ? (
-                            <span
-                              className="text-primary"
-                              title="Pesquisa de nicho em execução neste CNAE"
-                              aria-label="Pesquisa de nicho em execução"
-                            >
-                              🔎
-                            </span>
+                            <RunningProcessingIcon />
                           ) : (
                             <span
                               className="text-secondary"

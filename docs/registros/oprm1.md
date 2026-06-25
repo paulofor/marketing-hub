@@ -1403,3 +1403,10 @@
 
 - Alterado o botão da tabela de CNAEs do OPRM para abrir o pipeline NichoCNAE v3 em vez da v2.
 - Criada tela inicial do pipeline v3 no frontend, com acionamento do endpoint canônico `cnae-intake` para iniciar novo job v3 por CNAE.
+
+## 2026-06-25 — Indicadores visuais no pipeline NichoCNAE v3
+
+- Adicionado endpoint de leitura do progresso do job v3 mais recente por CNAE, baseado nas execuções persistidas pelo backend.
+- A tela do pipeline v3 passa a consultar esse progresso periodicamente e mostrar nos cards o status real de cada etapa, com destaque visual para etapas na fila/em execução.
+- Ajustado para recuperar sempre o último job iniciado pelo CNAE no backend ao sair e voltar para a tela, sem depender do estado local do navegador.
+- Objetivo de negócio: dar clareza operacional ao usuário sobre o que está acontecendo agora, reduzindo incerteza durante a geração de personas, rotina e tarefas diárias.

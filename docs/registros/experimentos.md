@@ -5417,3 +5417,8 @@
 - problema observado: na tela do experimento 49, o menu lateral exibia `AI Worker` como fora do ar enquanto a etapa Quality Review tinha execução recente.
 - causa-raiz confirmada no banco/logs: o experimento 49 tinha jobs recentes no GeraLanding e o log do AI Worker mostrava ciclos ativos, mas o Ops Monitor registrava health checks `OFFLINE` por `Connection refused` no host `191.252.181.168:4567`.
 - correção aplicada: o cadastro monitorado do `ai-worker` foi corrigido para o host operacional `191.252.120.96:4567`, usado pelo endpoint de observabilidade real do worker.
+
+## 2026-06-25 — Remoção do bloco de diagnóstico no cartão Facebook Ads
+- Tela: detalhe do experimento.
+- Solicitação: retirar o trecho visual de bloqueios de publicação e execução registrada do cartão “Campanha de Facebook Ads”, mantendo o botão “Liberar para Facebook Ads Worker”.
+- Ajuste: o cartão continua exibindo título, status, explicação, carregamento e botão de liberação; a lista detalhada de bloqueios e a seção de execução registrada deixaram de ser renderizadas nesse ponto da tela.

@@ -11,6 +11,7 @@ import com.marketinghub.ads.InstagramAccount;
 import com.marketinghub.repository.jpa.experiment.ExperimentTargetingSelectionRepository;
 import com.marketinghub.experiment.AdSet;
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.ExperimentTargetingSelection;
 import com.marketinghub.experiment.ExperimentPlatform;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.funnel.ExperimentFunnelAutoStopService;
@@ -35,6 +36,9 @@ import com.marketinghub.leadportal.dto.LeadPortalExperimentUserDto;
 import com.marketinghub.leadportal.service.LeadPortalMetricsService;
 import com.marketinghub.repository.jpa.experiment.AdSetRepository;
 import com.marketinghub.targeting.TargetingCandidateType;
+import com.marketinghub.targeting.TargetingElement;
+import com.marketinghub.targeting.TargetingElementStatus;
+import com.marketinghub.targeting.TargetingElementType;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -206,7 +210,17 @@ class FacebookAdsCampaignControllerTest {
                 .leadPortalFlow(leadPortalFlow)
                 .build();
         when(creativeRepository.existsByExperimentIdAndStatus(1L, CreativeStatus.READY)).thenReturn(true);
-        when(targetingSelectionRepository.countByExperimentIdAndCandidateType(1L, TargetingCandidateType.WORK_POSITION)).thenReturn(1L);
+        when(targetingSelectionRepository.findByExperimentIdWithTargetingElement(1L)).thenReturn(List.of(
+                ExperimentTargetingSelection.builder()
+                        .candidateType(TargetingCandidateType.INTEREST)
+                        .term("Loja de roupas")
+                        .targetingElement(TargetingElement.builder()
+                                .type(TargetingElementType.INTEREST)
+                                .term("Loja de roupas")
+                                .status(TargetingElementStatus.APPROVED)
+                                .metaId("meta-interest-1")
+                                .build())
+                        .build()));
         when(experimentService.listByStatusAndPlatform(
                 com.marketinghub.experiment.ExperimentStatus.PLANNED,
                 com.marketinghub.experiment.ExperimentPlatform.FACEBOOK))

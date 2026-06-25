@@ -3,6 +3,7 @@ package com.marketinghub.experiment.service;
 import com.marketinghub.repository.jpa.creative.CreativeRepository;
 import com.marketinghub.creative.CreativeStatus;
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.ExperimentTargetingSelection;
 import com.marketinghub.experiment.dto.ExperimentReadinessIssueDto;
 import com.marketinghub.experiment.dto.ExperimentReadinessIssueType;
 import com.marketinghub.experiment.dto.ExperimentReadinessSummaryDto;
@@ -11,6 +12,8 @@ import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.targeting.TargetingCandidateType;
+import com.marketinghub.targeting.TargetingElement;
+import com.marketinghub.targeting.TargetingElementStatus;
 import com.marketinghub.targeting.TargetingElementType;
 import com.marketinghub.repository.jpa.experiment.ExperimentTargetingSelectionRepository;
 import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
@@ -56,7 +59,10 @@ class ExperimentReadinessServiceTest {
         assertThat(summary.hasCompleteTargeting()).isFalse();
         assertThat(summary.hasGeraLandingPipeline()).isFalse();
         assertThat(summary.geraLandingCompletedStageCount()).isZero();
-        assertThat(summary.missingTargetingTypes()).containsExactly(TargetingElementType.JOB_TITLE);
+        assertThat(summary.missingTargetingTypes()).containsExactly(
+                TargetingElementType.INTEREST,
+                TargetingElementType.JOB_TITLE,
+                TargetingElementType.BEHAVIOR);
         assertThat(summary.issues()).hasSize(4);
         assertThat(summary.issues()).extracting(ExperimentReadinessIssueDto::type)
                 .containsExactlyInAnyOrder(
@@ -78,8 +84,7 @@ class ExperimentReadinessServiceTest {
 
         when(experimentService.get(experimentId)).thenReturn(experiment);
         when(creativeRepository.countByExperimentIdAndStatus(experimentId, CreativeStatus.READY)).thenReturn(2L);
-        when(targetingSelectionRepository.countByExperimentIdAndCandidateType(
-                experimentId, TargetingCandidateType.WORK_POSITION)).thenReturn(1L);
+        mockPublishableSelection(experimentId, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
         mockCompletedGeraLandingStages(experimentId);
         ExperimentReadinessSummaryDto summary = service.summarize(experimentId);
 
@@ -100,15 +105,14 @@ class ExperimentReadinessServiceTest {
         experiment.setFollowUpActionUrl("https://example.com/landing/22");
 
         when(creativeRepository.existsByExperimentIdAndStatus(experimentId, CreativeStatus.READY)).thenReturn(true);
-        when(targetingSelectionRepository.countByExperimentIdAndCandidateType(
-                experimentId, TargetingCandidateType.WORK_POSITION)).thenReturn(1L);
+        mockPublishableSelection(experimentId, TargetingCandidateType.BEHAVIOR, TargetingElementType.BEHAVIOR);
 
         assertThat(service.computeMissingConfiguration(experiment)).isEmpty();
         assertThat(service.isReadyForCampaign(experiment)).isTrue();
     }
 
     @Test
-    void shouldReportTargetingIssueWhenThereIsNoSavedJobTitleSelection() {
+    void shouldReportTargetingIssueWhenThereIsNoPublishableSelection() {
         Long experimentId = 11L;
         Experiment experiment = buildExperiment(experimentId, 19L);
         LeadPortalFlow flow = new LeadPortalFlow();
@@ -120,13 +124,16 @@ class ExperimentReadinessServiceTest {
         ExperimentReadinessSummaryDto summary = service.summarize(experimentId);
 
         assertThat(summary.hasCompleteTargeting()).isFalse();
-        assertThat(summary.missingTargetingTypes()).containsExactly(TargetingElementType.JOB_TITLE);
+        assertThat(summary.missingTargetingTypes()).containsExactly(
+                TargetingElementType.INTEREST,
+                TargetingElementType.JOB_TITLE,
+                TargetingElementType.BEHAVIOR);
         assertThat(summary.issues()).extracting(ExperimentReadinessIssueDto::type)
                 .contains(ExperimentReadinessIssueType.TARGETING);
     }
 
     @Test
-    void shouldTreatSavedJobTitleSelectionAsReady() {
+    void shouldTreatSavedInterestSelectionAsReady() {
         Long experimentId = 15L;
         Experiment experiment = buildExperiment(experimentId, 21L);
         LeadPortalFlow flow = new LeadPortalFlow();
@@ -135,8 +142,7 @@ class ExperimentReadinessServiceTest {
 
         when(experimentService.get(experimentId)).thenReturn(experiment);
         when(creativeRepository.countByExperimentIdAndStatus(experimentId, CreativeStatus.READY)).thenReturn(1L);
-        when(targetingSelectionRepository.countByExperimentIdAndCandidateType(
-                experimentId, TargetingCandidateType.WORK_POSITION)).thenReturn(1L);
+        mockPublishableSelection(experimentId, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
         ExperimentReadinessSummaryDto summary = service.summarize(experimentId);
 
         assertThat(summary.hasCompleteTargeting()).isTrue();
@@ -176,8 +182,7 @@ class ExperimentReadinessServiceTest {
         experiment.setFollowUpActionUrl(null);
 
         when(creativeRepository.existsByExperimentIdAndStatus(20L, CreativeStatus.READY)).thenReturn(true);
-        when(targetingSelectionRepository.countByExperimentIdAndCandidateType(
-                20L, TargetingCandidateType.WORK_POSITION)).thenReturn(1L);
+        mockPublishableSelection(20L, TargetingCandidateType.WORK_POSITION, TargetingElementType.JOB_TITLE);
 
         assertThat(service.computeMissingConfiguration(experiment))
                 .containsExactly("landingDestination");
@@ -189,13 +194,52 @@ class ExperimentReadinessServiceTest {
         experiment.setFollowUpActionUrl("https://example.com/landing/21");
 
         when(creativeRepository.existsByExperimentIdAndStatus(21L, CreativeStatus.READY)).thenReturn(true);
-        when(targetingSelectionRepository.countByExperimentIdAndCandidateType(
-                21L, TargetingCandidateType.WORK_POSITION)).thenReturn(1L);
+        mockPublishableSelection(21L, TargetingCandidateType.BEHAVIOR, TargetingElementType.BEHAVIOR);
 
         assertThat(service.computeMissingConfiguration(experiment)).isEmpty();
         assertThat(service.isReadyForCampaign(experiment)).isTrue();
     }
 
+    @Test
+    void shouldBlockCampaignWhenSelectionDoesNotHaveOfficialMetaId() {
+        Experiment experiment = buildExperiment(23L, 33L);
+        experiment.setFollowUpActionUrl("https://example.com/landing/23");
+
+        when(creativeRepository.existsByExperimentIdAndStatus(23L, CreativeStatus.READY)).thenReturn(true);
+        when(targetingSelectionRepository.findByExperimentIdWithTargetingElement(23L))
+                .thenReturn(List.of(selection(
+                        TargetingCandidateType.INTEREST,
+                        targetingElement(TargetingElementType.INTEREST, ""))));
+
+        assertThat(service.computeMissingConfiguration(experiment)).containsExactly("approvedTargetingPackage");
+        assertThat(service.isReadyForCampaign(experiment)).isFalse();
+    }
+
+
+    /** Simula uma seleção de público aprovada e identificável pela Meta. */
+    private void mockPublishableSelection(Long experimentId, TargetingCandidateType candidateType, TargetingElementType elementType) {
+        when(targetingSelectionRepository.findByExperimentIdWithTargetingElement(experimentId))
+                .thenReturn(List.of(selection(candidateType, targetingElement(elementType, "meta-" + experimentId))));
+    }
+
+    /** Cria uma seleção de público para os testes de prontidão. */
+    private ExperimentTargetingSelection selection(TargetingCandidateType candidateType, TargetingElement element) {
+        return ExperimentTargetingSelection.builder()
+                .candidateType(candidateType)
+                .term(element.getTerm())
+                .targetingElement(element)
+                .build();
+    }
+
+    /** Cria um elemento de público aprovado para os testes de prontidão. */
+    private TargetingElement targetingElement(TargetingElementType type, String metaId) {
+        return TargetingElement.builder()
+                .type(type)
+                .term(type.name())
+                .status(TargetingElementStatus.APPROVED)
+                .metaId(metaId)
+                .build();
+    }
 
     /** Simula todas as etapas obrigatórias do GeraLanding como concluídas. */
     private void mockCompletedGeraLandingStages(Long experimentId) {

@@ -7,8 +7,9 @@ import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.dto.ExperimentReadinessIssueDto;
 import com.marketinghub.experiment.dto.ExperimentReadinessIssueType;
 import com.marketinghub.experiment.dto.ExperimentReadinessSummaryDto;
+import com.marketinghub.targeting.TargetingElement;
+import com.marketinghub.targeting.TargetingElementStatus;
 import com.marketinghub.targeting.TargetingElementType;
-import com.marketinghub.targeting.TargetingCandidateType;
 import com.marketinghub.repository.jpa.experiment.ExperimentTargetingSelectionRepository;
 import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
 import org.springframework.stereotype.Service;
@@ -16,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Consolida pendências básicas de preparação do experimento.
@@ -36,6 +38,13 @@ public class ExperimentReadinessService {
     );
 
     private final ExperimentTargetingSelectionRepository targetingSelectionRepository;
+    private static final List<TargetingElementType> PUBLISHABLE_TARGETING_TYPES = List.of(
+            TargetingElementType.INTEREST,
+            TargetingElementType.JOB_TITLE,
+            TargetingElementType.BEHAVIOR
+    );
+    private static final Set<TargetingElementType> PUBLISHABLE_TARGETING_TYPE_SET = Set.copyOf(PUBLISHABLE_TARGETING_TYPES);
+
     private final GeraLandingStageExecutionRepository geraLandingStageExecutionRepository;
 
     /** Cria o serviço com as fontes canônicas de prontidão do experimento. */
@@ -62,7 +71,7 @@ public class ExperimentReadinessService {
         boolean hasCompleteTargeting = hasConfiguredTargeting(experiment);
         List<TargetingElementType> missingTypes = hasCompleteTargeting
                 ? List.of()
-                : List.of(TargetingElementType.JOB_TITLE);
+                : PUBLISHABLE_TARGETING_TYPES;
         long geraLandingCompletedStageCount = countCompletedGeraLandingStages(experimentId);
         boolean hasGeraLandingPipeline = geraLandingCompletedStageCount == GERA_LANDING_REQUIRED_STAGES.size();
 
@@ -89,8 +98,8 @@ public class ExperimentReadinessService {
             issues.add(new ExperimentReadinessIssueDto(
                     ExperimentReadinessIssueType.TARGETING,
                     "Público não selecionado",
-                    "Ainda não há nenhuma segmentação salva para este experimento.",
-                    "Acesse a aba Segmentação, marque ao menos um cargo com ID oficial da Meta e salve o público.",
+                    "Ainda não há nenhum interesse, cargo ou comportamento publicável salvo para este experimento.",
+                    "Acesse a aba Segmentação, marque ao menos um interesse, cargo ou comportamento com ID oficial da Meta e salve o público.",
                     List.copyOf(missingTypes)
             ));
         }
@@ -173,13 +182,24 @@ public class ExperimentReadinessService {
                 && experiment.getLeadPortalFlow().isApproved();
     }
 
-    /** Verifica se o usuário selecionou cargo para segmentação do experimento. */
+    /** Verifica se o usuário selecionou qualquer público publicável para segmentação do experimento. */
     private boolean hasSelectedTargeting(Long experimentId) {
         if (experimentId == null) {
             return false;
         }
-        return targetingSelectionRepository.countByExperimentIdAndCandidateType(
-                experimentId, TargetingCandidateType.WORK_POSITION) > 0;
+        return targetingSelectionRepository.findByExperimentIdWithTargetingElement(experimentId).stream()
+                .map(com.marketinghub.experiment.ExperimentTargetingSelection::getTargetingElement)
+                .anyMatch(this::isPublishableTargetingElement);
+    }
+
+    /** Confirma que o item de público escolhido está aprovado e possui identificador oficial da Meta. */
+    private boolean isPublishableTargetingElement(TargetingElement element) {
+        return element != null
+                && element.getStatus() == TargetingElementStatus.APPROVED
+                && element.getType() != null
+                && PUBLISHABLE_TARGETING_TYPE_SET.contains(element.getType())
+                && element.getMetaId() != null
+                && !element.getMetaId().isBlank();
     }
 
     /** Verifica se o experimento possui URL de destino aprovada para campanha. */

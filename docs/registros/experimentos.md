@@ -5377,3 +5377,10 @@
     - frontend/src/api/experiment/useExperimentRuns.ts
     - frontend/src/pages/experiment/ExperimentRunPanel.tsx
     - frontend/src/pages/experiment/ExperimentDetailPage.tsx
+
+## 2026-06-25 — Público de campanha aceita interesse, cargo ou comportamento
+
+- Solicitação: revisar a liberação de campanha para que qualquer item de público escolhido possa liberar o experimento, sem exigir cargo isoladamente.
+- Causa-raiz: a publicação canônica já aceitava `INTEREST`, `JOB_TITLE` ou `BEHAVIOR`, mas a prontidão do experimento ainda verificava apenas `WORK_POSITION`, bloqueando experimentos com interesse aprovado e ID oficial da Meta.
+- Correção aplicada: a prontidão de campanha passou a considerar qualquer seleção salva cujo elemento esteja aprovado, tenha ID oficial da Meta e seja `INTEREST`, `JOB_TITLE` ou `BEHAVIOR`; a UI e o cânone foram alinhados para remover a exigência isolada de cargo.
+- Prevenção de recorrência: testes unitários cobrem interesse e comportamento como suficientes para campanha e bloqueiam seleção sem ID oficial da Meta.

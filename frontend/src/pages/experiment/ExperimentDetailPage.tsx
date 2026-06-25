@@ -1819,7 +1819,7 @@ export default function ExperimentDetailPage() {
         ? "Verificando público salvo para o publicador..."
         : hasPublisherTargeting
           ? "Público salvo atende a regra do Facebook Ads Worker."
-          : "Salve na aba Público pelo menos um cargo/WORK_POSITION válido para este experimento.",
+          : "Salve na aba Público pelo menos um interesse, cargo ou comportamento válido para este experimento.",
       action: hasPublisherTargeting
         ? undefined
         : () => openExperimentTab("publico"),

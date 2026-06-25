@@ -109,7 +109,7 @@ Implementação: `ExperimentReadinessService` (backend) expõe os mesmos critér
    - O critério operacional de publicação é `experiment.follow_up_action_url` preenchido com a URL aprovada para destino da campanha.
    - O vínculo é do experimento com a própria landing aprovada; não há dependência bloqueante de `lead_portal_flow` para liberar campanha no Facebook Ads Worker.
 3. **Público completo**
-   - Para seleção manual de público, o mínimo de liberação deve seguir exatamente a mesma regra do publicador/backend exposta em `ExperimentReadinessService`: o experimento precisa ter seleção de público salva para publicação, atualmente pelo menos **1 cargo/WORK_POSITION** vinculado ao experimento.
+   - Para seleção manual de público, o mínimo de liberação deve seguir exatamente a mesma regra do publicador/backend exposta em `ExperimentReadinessService`: o experimento precisa ter **ao menos 1 item escolhido, aprovado e identificável pela Meta** em qualquer categoria suportada: **interesse/INTEREST**, **cargo/JOB_TITLE (WORK_POSITION na UI/API de seleção)** ou **comportamento/BEHAVIOR**. Nenhuma categoria é obrigatória isoladamente.
    - A tela não pode considerar o card **Escolha de público** concluído por inferência local, por existência de criativo, por existência de landing ou apenas por playbook visual; ela deve usar a resposta do contrato `/api/experiments/{experimentId}/readiness`, especialmente `hasCompleteTargeting`, para refletir a mesma regra que coloca o experimento na fila `/api/facebook-campaigns/experiments-ready`.
    - O `facebook-ads-worker` deve consumir o pacote manual por `GET /api/facebook-adsets/experiments/{experimentId}/targeting-package`, contrato enxuto contendo somente `experimentId` e `targeting`, sem `ExperimentDto`, HTML, copy, landing ou artefatos de geração.
 
@@ -126,7 +126,7 @@ Em termos práticos, o experimento só pode ser liberado para campanha quando 3 
 2. **Tem página de destino publicada?**
    - A landing precisa estar aprovada e com URL final preenchida para receber o tráfego.
 3. **Tem público definido?**
-   - Precisa haver público salvo pela mesma regra do publicador; hoje isso significa pelo menos 1 cargo/WORK_POSITION salvo para o experimento.
+   - Precisa haver público salvo pela mesma regra do publicador: pelo menos 1 interesse, cargo ou comportamento escolhido, aprovado e com ID oficial da Meta. Se qualquer um desses itens existir, o público está definido para publicação.
 
 Se qualquer resposta for **não**, a liberação deve ser interrompida até a pendência ser resolvida.
 

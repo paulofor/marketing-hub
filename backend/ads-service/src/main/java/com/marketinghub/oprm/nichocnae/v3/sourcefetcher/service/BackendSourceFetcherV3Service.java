@@ -10,11 +10,11 @@ import org.springframework.stereotype.Service;
 
 /** Service canônico da etapa source-fetcher do pipeline NichoCNAE v3 no backend. */
 @Service
-public class BackendSourceFetcherService extends OprmNichoCnaeV3StageServiceSupport {
+public class BackendSourceFetcherV3Service extends OprmNichoCnaeV3StageServiceSupport {
     private static final String STAGE_CODE = "source-fetcher";
 
     /** Inicializa o service com repository canônico de execuções v3. */
-    public BackendSourceFetcherService(OprmNichoCnaeV3StageExecutionRepository repository) {
+    public BackendSourceFetcherV3Service(OprmNichoCnaeV3StageExecutionRepository repository) {
         super(repository, STAGE_CODE);
     }
 

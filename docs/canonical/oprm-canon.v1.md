@@ -157,6 +157,7 @@ Evitar fechamento prematuro de `import run` que destrói a totalização de mark
 - Campos legados de materialização com nomes comerciais devem receber somente conteúdo operacional compatível ou valor funcional de reprocessamento neutro; não podem eternizar hipótese, oferta, produto, curso, ferramenta, automação ou oportunidade de solução como verdade da pesquisa inicial.
 - O vínculo entre OPRM e nicho comercial deve permanecer rastreável por `research_cycle_id`, `routine_card_id`, `source_niche_candidate_id` e `market_niche_id`.
 - A conclusão da etapa deve atualizar o ciclo para `ENRICHED_NICHE_CREATED`; falhas devem registrar status `ENRICHED_NICHE_FAILED` e mensagem operacional no ciclo.
+- No pipeline NichoCNAE v3, a etapa final `persona-routine-materializer` também deve alimentar obrigatoriamente `market_niche` e `market_niche_enrichment_profile`; o `output_payload` da execução é auditoria técnica, não pode ser o único local das informações finais, porque pipelines posteriores consomem dados do nicho.
 
 ## Critério de efetividade — nicho enriquecido materializado
 

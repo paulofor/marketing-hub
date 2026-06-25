@@ -841,6 +841,7 @@ public class HypothesisPainStageService {
                 profile.sourceDiversityScore(),
                 profile.solutionLanguageRiskScore(),
                 profile.routineSummary(),
+                profile.personaDailyTasks(),
                 profile.painsSummary(),
                 profile.resultsSummary(),
                 profile.mechanismOpportunitiesSummary(),

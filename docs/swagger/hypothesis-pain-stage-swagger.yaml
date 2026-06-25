@@ -695,6 +695,7 @@ components:
         sourceDiversityScore: { type: integer, nullable: true }
         solutionLanguageRiskScore: { type: integer, nullable: true }
         routineSummary: { type: string, nullable: true }
+        personaDailyTasks: { type: string, nullable: true }
         painsSummary: { type: string, nullable: true }
         resultsSummary: { type: string, nullable: true }
         mechanismOpportunitiesSummary: { type: string, nullable: true }

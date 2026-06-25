@@ -18,6 +18,7 @@ public record EnrichedNicheMaterializerDetailResponse(
     String cnaeCode,
     String qualityStatus,
     String routineSummary,
+    String personaDailyTasks,
     String painsSummary,
     String resultsSummary,
     String mechanismOpportunitiesSummary,

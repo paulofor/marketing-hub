@@ -149,6 +149,7 @@ public class JpaOprmEnrichedNicheGateway implements OprmEnrichedNicheGateway {
     profile.setNeutralNicheName(draft.neutralNicheName());
     profile.setResearchMode(draft.researchMode());
     profile.setRoutineSummary(draft.routineSummary());
+    profile.setPersonaDailyTasks(draft.personaDailyTasks());
     profile.setPainsSummary(draft.painsSummary());
     profile.setResultsSummary(draft.resultsSummary());
     profile.setMechanismOpportunitiesSummary(draft.mechanismOpportunitiesSummary());
@@ -158,6 +159,7 @@ public class JpaOprmEnrichedNicheGateway implements OprmEnrichedNicheGateway {
     profile.setLanguagePatterns(draft.languagePatterns());
     profile.setCommercialTriggers(draft.commercialTriggers());
     profile.setObjections(draft.objections());
+    profile.setResearchReportMarkdown(draft.researchReportMarkdown());
     profile.setCreatedBy(draft.createdBy());
     profile.setCreatedAt(draft.createdAt());
     profile.setUpdatedAt(draft.updatedAt());
@@ -180,11 +182,13 @@ public class JpaOprmEnrichedNicheGateway implements OprmEnrichedNicheGateway {
         profile.getSourceDiversityScore(),
         profile.getSolutionLanguageRiskScore(),
         profile.getRoutineSummary(),
+        profile.getPersonaDailyTasks(),
         profile.getPainsSummary(),
         profile.getResultsSummary(),
         profile.getMechanismOpportunitiesSummary(),
         profile.getEvidenceSummary(),
         profile.getSourceDomains(),
+        profile.getResearchReportMarkdown(),
         profile.getCreatedAt());
   }
 }

@@ -1094,3 +1094,7 @@ databaseChangeLog:
   - include:
       file: changesets/2026-06-25-experiment-run-gate-result.yaml
       relativeToChangelogFile: true
+
+  - include:
+      file: changesets/2026-06-25-oprm-enriched-niche-audit-report.yaml
+      relativeToChangelogFile: true

@@ -43,6 +43,7 @@ public class HypothesisPainEnrichmentProfileReader {
                 profile.getSourceDiversityScore(),
                 profile.getSolutionLanguageRiskScore(),
                 profile.getRoutineSummary(),
+                profile.getPersonaDailyTasks(),
                 profile.getPainsSummary(),
                 profile.getResultsSummary(),
                 profile.getMechanismOpportunitiesSummary(),

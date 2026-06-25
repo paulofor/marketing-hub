@@ -63,6 +63,7 @@ public interface OprmEnrichedNicheGateway {
       String neutralNicheName,
       String researchMode,
       String routineSummary,
+      String personaDailyTasks,
       String painsSummary,
       String resultsSummary,
       String mechanismOpportunitiesSummary,
@@ -72,6 +73,7 @@ public interface OprmEnrichedNicheGateway {
       String languagePatterns,
       String commercialTriggers,
       String objections,
+      String researchReportMarkdown,
       String createdBy,
       Instant createdAt,
       Instant updatedAt) {}
@@ -97,10 +99,12 @@ public interface OprmEnrichedNicheGateway {
       Integer sourceDiversityScore,
       Integer solutionLanguageRiskScore,
       String routineSummary,
+      String personaDailyTasks,
       String painsSummary,
       String resultsSummary,
       String mechanismOpportunitiesSummary,
       String evidenceSummary,
       String sourceDomains,
+      String researchReportMarkdown,
       Instant createdAt) {}
 }

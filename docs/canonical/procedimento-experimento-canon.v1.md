@@ -206,7 +206,8 @@ Regras obrigatórias:
 Quando o nicho tiver sido materializado pelo pipeline `nicho-cnae`, o pipeline de hipótese deve receber, além do registro base de `market_niche`, o perfil enriquecido mais recente do nicho.
 
 Regras obrigatórias:
-- o backend deve incluir no contrato pendente da hipótese os sinais não-ofertivos do perfil enriquecido: rotina, dores, resultados desejados, oportunidades de mecanismo, evidências, fontes, persona operacional, padrões de linguagem, gatilhos comerciais, objeções e scores de qualidade/confiança;
+- o backend deve incluir no contrato pendente da hipótese os sinais não-ofertivos do perfil enriquecido: rotina, lista de tarefas diárias da persona, dores, resultados desejados, oportunidades de mecanismo, evidências, fontes, persona operacional, padrões de linguagem, gatilhos comerciais, objeções e scores de qualidade/confiança;
+- a materialização do `nicho-cnae` deve persistir a lista de tarefas diárias da persona e um relatório auditável das pesquisas/fontes/sinais usados na criação do nicho, para permitir auditoria futura sem depender de logs técnicos;
 - o Worker AI deve colocar esses sinais no bloco de contexto das etapas Dor, Resultado, Mecanismo, Prova e Oferta, preservando-os como insumo estratégico;
 - o pipeline de hipótese deve usar esses sinais para aumentar especificidade, linguagem real, plausibilidade do mecanismo, redução de objeções e percepção de valor da oferta low-ticket;
 - a passagem enriquecida não autoriza o `nicho-cnae` a criar promessa, oferta, preço, checkout, landing ou campanha. O `nicho-cnae` permanece responsável por realidade operacional e evidências; a hipótese permanece responsável por transformar essa realidade em Dor → Resultado → Mecanismo → Prova → Oferta.

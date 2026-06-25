@@ -1433,3 +1433,7 @@
 - O Ops Monitor passou a detectar pendências antigas do pipeline NichoCNAE v3 persistidas no backend como incidente sintético do módulo `oprm-coletor-mei`.
 - A regra degrada o módulo quando existir execução v3 em `PENDING` há mais de 6 minutos, expondo o job, CNAE e etapa parada para facilitar ação operacional.
 - A causa-raiz tratada é a diferença entre container ativo e pipeline sem consumo: saúde HTTP isolada não garante que o executor esteja processando a fila v3.
+
+## 2026-06-25 — NichoCNAE v3 registrado no Protocolo Monitor
+- O NichoCNAE v3 ficou registrado como primeiro caso do `Protocolo Monitor`, usando o `oprm-coletor-mei` como módulo executor monitorado.
+- A regra operacional é detectar fila v3 parada mesmo quando o container está online, evitando falso positivo de saúde operacional.

@@ -36,3 +36,7 @@
 ## 2026-06-25 — Incidente sintético para fila NichoCNAE v3
 - O monitor administrativo agora cruza disponibilidade do `oprm-coletor-mei` com a fila persistida do NichoCNAE v3.
 - Quando houver execução v3 em `PENDING` por mais de 6 minutos, o módulo aparece como `DEGRADED` e um incidente `OPRM_NICHO_CNAE_V3_QUEUE_STALE` é listado, mesmo que o `/health` do container esteja online.
+
+## 2026-06-25 — Criação do Protocolo Monitor
+- Decisão operacional: sempre que uma versão de pipeline precisar ser acompanhada pelo Ops Monitor, aplicar o `Protocolo Monitor`.
+- O protocolo exige sinal canônico por versão de pipeline, regra de pendência antiga, degradação/incidente no módulo executor, teste de contrato e registro operacional.

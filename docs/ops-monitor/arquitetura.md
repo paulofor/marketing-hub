@@ -43,3 +43,11 @@ A configuração de módulos monitorados mantém o backend principal em `http://
 ## Correção de persistência do heartbeat do backend — 2026-06-25
 
 A URL de saúde do backend principal responde `200 OK`, mas o heartbeat não era registrado quando o payload bruto do Actuator excedia 255 caracteres. O schema real estava com `ops_module_health_check.raw_payload` como `TINYTEXT`; o contrato correto é `LONGTEXT` para armazenar o retorno bruto auditável sem truncamento.
+
+## Protocolo Monitor — pipelines versionados
+
+Quando uma versão de pipeline precisar ser acompanhada pelo Ops Monitor, deve ser aplicado o Protocolo Monitor definido em `docs/canonical/protocolo-monitor.md`.
+
+A regra operacional é simples: saúde HTTP do módulo não basta para considerar o pipeline saudável. O monitor deve cruzar o módulo executor com sinais persistidos de fila/execução do pipeline e degradar o módulo quando houver pendência antiga sem consumo.
+
+O primeiro caso aplicado é o NichoCNAE v3: pendências `PENDING` por mais de 6 minutos geram incidente sintético `OPRM_NICHO_CNAE_V3_QUEUE_STALE` e degradam o `oprm-coletor-mei`.

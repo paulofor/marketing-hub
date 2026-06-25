@@ -18,6 +18,7 @@ public record HypothesisPainEnrichmentProfileSnapshot(
         Integer sourceDiversityScore,
         Integer solutionLanguageRiskScore,
         String routineSummary,
+        String personaDailyTasks,
         String painsSummary,
         String resultsSummary,
         String mechanismOpportunitiesSummary,

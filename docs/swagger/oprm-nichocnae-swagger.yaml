@@ -2861,6 +2861,10 @@ components:
         routineSummary:
           type: string
           nullable: true
+        personaDailyTasks:
+          type: string
+          nullable: true
+          description: Lista de tarefas diárias da persona observadas na pesquisa do nicho.
         painsSummary:
           type: string
           nullable: true

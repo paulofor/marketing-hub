@@ -272,17 +272,25 @@ public class BackendCandidateGeneratorService {
         if (!canConfirmNiche(summary, executions)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Este job ainda não está pronto para virar nicho.");
         }
-        String name = requiredUniqueNicheName(request == null ? null : request.nicheName());
         OprmNichoCnaeV2StageExecution lastExecution = executions.getLast();
-        OprmConfirmedMarketNiche saved = confirmedMarketNicheRepository.createConfirmedNiche(
-                name, buildConfirmedNicheDescription(executions), summary.aiCostUsd());
+        Optional<OprmNicheCandidate> currentCandidate = nicheCandidateRepository.findById(lastExecution.getSourceNicheId());
+        Long existingMarketNicheId = currentCandidate.map(OprmNicheCandidate::getMarketNicheId).orElse(null);
+        String name = requiredNicheNameForConfirmation(request == null ? null : request.nicheName(), existingMarketNicheId);
+        OprmConfirmedMarketNiche saved = saveConfirmedNiche(existingMarketNicheId, name, executions, summary);
         nicheCandidateRepository.findById(lastExecution.getSourceNicheId()).ifPresent(candidate -> {
             candidate.setMarketNicheId(saved.id());
             candidate.setStatus("APPROVED");
+            candidate.setOfferIdea(null);
             candidate.setUpdatedAt(Instant.now());
             nicheCandidateRepository.save(candidate);
         });
-        lastExecution.setOutputPayload(mergeOutputPayload(lastExecution.getOutputPayload(), saved.id(), name, summary.aiCostUsd()));
+        lastExecution.setOutputPayload(mergeOutputPayload(
+                lastExecution.getOutputPayload(),
+                saved.id(),
+                name,
+                summary.aiCostUsd(),
+                personaDailyTasks(executions),
+                buildResearchReportMarkdown(executions, summary)));
         lastExecution.setUpdatedAt(Instant.now());
         stageExecutionRepository.save(lastExecution);
         return new CandidateGeneratorConfirmNicheResponse(
@@ -291,8 +299,10 @@ public class BackendCandidateGeneratorService {
                 saved.id(),
                 saved.name(),
                 summary.aiCostUsd(),
-                "CONFIRMED_AS_NICHE",
-                "Nicho confirmado e disponível para a sequência do Marketing Hub.",
+                existingMarketNicheId == null ? "CONFIRMED_AS_NICHE" : "UPDATED_EXISTING_NICHE",
+                existingMarketNicheId == null
+                        ? "Nicho confirmado e disponível para a sequência do Marketing Hub."
+                        : "Nicho existente atualizado com as novas informações enriquecidas do job.",
                 lastExecution.getUpdatedAt());
     }
 
@@ -348,16 +358,32 @@ public class BackendCandidateGeneratorService {
     }
 
 
-    /** Valida nome obrigatório e impede repetir nome de nicho já existente. */
-    private String requiredUniqueNicheName(String nicheName) {
+    /** Valida nome obrigatório e aplica unicidade conforme criação nova ou atualização de nicho existente. */
+    private String requiredNicheNameForConfirmation(String nicheName, Long existingMarketNicheId) {
         String normalized = nicheName == null ? "" : nicheName.trim();
         if (normalized.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Informe um nome para o nicho.");
         }
-        if (confirmedMarketNicheRepository.existsByNameIgnoreCase(normalized)) {
+        boolean duplicated = existingMarketNicheId == null
+                ? confirmedMarketNicheRepository.existsByNameIgnoreCase(normalized)
+                : confirmedMarketNicheRepository.existsByNameIgnoreCaseExcludingId(normalized, existingMarketNicheId);
+        if (duplicated) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Já existe um nicho com esse nome. Escolha um nome único.");
         }
         return normalized;
+    }
+
+    /** Cria novo nicho ou atualiza o nicho já ligado ao CNAE sem bloquear nova execução do pipeline. */
+    private OprmConfirmedMarketNiche saveConfirmedNiche(
+            Long existingMarketNicheId,
+            String name,
+            List<OprmNichoCnaeV2StageExecution> executions,
+            CandidateGeneratorCnaeJobSummary summary) {
+        String description = buildConfirmedNicheDescription(executions, summary);
+        if (existingMarketNicheId == null) {
+            return confirmedMarketNicheRepository.createConfirmedNiche(name, description, summary.aiCostUsd());
+        }
+        return confirmedMarketNicheRepository.updateConfirmedNiche(existingMarketNicheId, name, description, summary.aiCostUsd());
     }
 
     /** Indica se o job concluído ainda pode ser confirmado manualmente como nicho. */
@@ -380,27 +406,122 @@ public class BackendCandidateGeneratorService {
     }
 
     /** Monta descrição funcional mínima do nicho confirmado com dados persistidos no job. */
-    private String buildConfirmedNicheDescription(List<OprmNichoCnaeV2StageExecution> executions) {
+    private String buildConfirmedNicheDescription(
+            List<OprmNichoCnaeV2StageExecution> executions, CandidateGeneratorCnaeJobSummary summary) {
         OprmNichoCnaeV2StageExecution first = executions.getFirst();
         return "Nicho confirmado a partir do pipeline NichoCNAE v2. CNAE "
                 + first.getCnaeCode()
                 + ", job "
                 + first.getJobId()
-                + ".";
+                + ".\n\nTarefas diárias da persona:\n"
+                + personaDailyTasks(executions)
+                + "\n\nRelatório auditável das pesquisas:\n"
+                + buildResearchReportMarkdown(executions, summary);
     }
 
     /** Acrescenta ao payload final os identificadores do nicho confirmado sem descartar o resultado do executor. */
-    private String mergeOutputPayload(String payload, Long marketNicheId, String nicheName, BigDecimal aiCostUsd) {
+    private String mergeOutputPayload(
+            String payload,
+            Long marketNicheId,
+            String nicheName,
+            BigDecimal aiCostUsd,
+            String personaDailyTasks,
+            String researchReportMarkdown) {
         Map<String, Object> output = new LinkedHashMap<>(parsePayload(payload));
         output.put("marketNicheId", marketNicheId);
         output.put("confirmedNicheName", nicheName);
         output.put("totalAiCostUsd", aiCostUsd);
         output.put("materializationDecision", "CONFIRMED_AS_NICHE");
+        output.put("personaDailyTasks", personaDailyTasks);
+        output.put("researchReportMarkdown", researchReportMarkdown);
         try {
             return OBJECT_MAPPER.writeValueAsString(output);
         } catch (JsonProcessingException ex) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Falha ao registrar confirmação do nicho.", ex);
         }
+    }
+
+    /** Lista tarefas diárias observadas no job sem transformar isso em oferta ou promessa. */
+    private String personaDailyTasks(List<OprmNichoCnaeV2StageExecution> executions) {
+        List<String> tasks = new ArrayList<>();
+        executions.stream()
+                .map(OprmNichoCnaeV2StageExecution::getOutputPayload)
+                .map(this::parsePayload)
+                .forEach(output -> collectTasksFromValue(output, tasks));
+        if (tasks.isEmpty()) {
+            return "- Tarefas diárias ainda não individualizadas; consultar o relatório do job para revisar candidatos, buscas e evidências.";
+        }
+        return tasks.stream().distinct().limit(12).map(task -> "- " + task).collect(Collectors.joining("\n"));
+    }
+
+    /** Coleta textos operacionais em mapas/listas vindos dos outputs persistidos do executor. */
+    @SuppressWarnings("unchecked")
+    private void collectTasksFromValue(Object value, List<String> tasks) {
+        if (value instanceof Map<?, ?> map) {
+            map.forEach((key, nested) -> {
+                String keyText = String.valueOf(key);
+                if (keyText.equals("operationalContext") || keyText.equals("job") || keyText.equals("dailyRoutine")) {
+                    addTaskText(nested, tasks);
+                }
+                collectTasksFromValue(nested, tasks);
+            });
+            return;
+        }
+        if (value instanceof List<?> list) {
+            list.forEach(item -> collectTasksFromValue(item, tasks));
+        }
+    }
+
+    /** Adiciona tarefa textual apenas quando ela descreve rotina concreta da persona. */
+    private void addTaskText(Object value, List<String> tasks) {
+        String text = value == null ? "" : String.valueOf(value).trim();
+        if (text.length() < 8) {
+            return;
+        }
+        String normalized = text.replace('_', ' ').toLowerCase(java.util.Locale.ROOT);
+        if (normalized.contains("cliente")
+                || normalized.contains("whatsapp")
+                || normalized.contains("instagram")
+                || normalized.contains("agenda")
+                || normalized.contains("cobran")
+                || normalized.contains("preço")
+                || normalized.contains("atendimento")
+                || normalized.contains("trabalho")) {
+            tasks.add(text);
+        }
+    }
+
+    /** Monta relatório Markdown auditável a partir das etapas persistidas do job v2. */
+    private String buildResearchReportMarkdown(
+            List<OprmNichoCnaeV2StageExecution> executions, CandidateGeneratorCnaeJobSummary summary) {
+        StringBuilder report = new StringBuilder();
+        OprmNichoCnaeV2StageExecution first = executions.getFirst();
+        report.append("# Pesquisa NichoCNAE v2 — ").append(first.getCnaeCode()).append("\n\n");
+        report.append("- **Job:** ").append(first.getJobId()).append("\n");
+        report.append("- **CNAE:** ").append(first.getCnaeCode()).append("\n");
+        report.append("- **Status:** ").append(summary.outcomeStatus()).append("\n");
+        report.append("- **Custo IA USD:** ").append(summary.aiCostUsd()).append("\n\n");
+        report.append("## Tarefas diárias da persona\n\n").append(personaDailyTasks(executions)).append("\n\n");
+        report.append("## Etapas executadas\n\n");
+        executions.forEach(execution -> report
+                .append("- **")
+                .append(execution.getStageCode())
+                .append("** · status ")
+                .append(execution.getStatus())
+                .append(" · atualizado em ")
+                .append(execution.getUpdatedAt())
+                .append("\n")
+                .append("  - Próxima etapa: ")
+                .append(execution.getNextStageCode() == null ? "Não informada" : execution.getNextStageCode())
+                .append("\n"));
+        report.append("\n## Saídas estruturadas preservadas\n\n");
+        executions.forEach(execution -> report
+                .append("### ")
+                .append(execution.getStageCode())
+                .append("\n\n```json\n")
+                .append(execution.getOutputPayload() == null ? "{}" : execution.getOutputPayload())
+                .append("\n```\n\n"));
+        return report.toString();
     }
 
     /** Converte uma execução persistida em item de linha cronológico do relatório de job. */

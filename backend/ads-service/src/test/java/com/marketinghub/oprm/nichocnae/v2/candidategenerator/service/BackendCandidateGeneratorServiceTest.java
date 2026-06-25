@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -15,10 +16,13 @@ import com.marketinghub.oprm.nichocnae.v2.OprmNichoCnaeV2StageExecution;
 import com.marketinghub.oprm.nichocnae.v2.OprmNichoCnaeV2StageExecutionStatus;
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.completeStageExecution.CandidateGeneratorCompletionRequest;
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.completeStageExecution.CandidateGeneratorCompletionResponse;
+import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.confirmNiche.CandidateGeneratorConfirmNicheRequest;
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.failStageExecution.CandidateGeneratorFailureRequest;
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.failStageExecution.CandidateGeneratorFailureResponse;
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.pending.CandidateGeneratorPendingResponse;
 import com.marketinghub.oprm.nichocnae.v2.service.openaiinteraction.OpenAiInteractionAuditRequest;
+import com.marketinghub.repository.jpa.oprm.cnae.OprmConfirmedMarketNiche;
+import com.marketinghub.repository.jpa.oprm.cnae.OprmConfirmedMarketNicheRepository;
 import com.marketinghub.repository.jpa.oprm.cnae.OprmNicheCandidateRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.v2.OprmNichoCnaeV2OpenAiInteractionRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.v2.OprmNichoCnaeV2StageExecutionRepository;
@@ -401,6 +405,42 @@ class BackendCandidateGeneratorServiceTest {
         assertThat(result.status()).isEqualTo("COMPLETED");
         assertThat(result.nextStageCode()).isEqualTo("enriched-niche-materializer");
         assertThat(result.materializationEnabled()).isTrue();
+    }
+
+    /** Deve atualizar o nicho existente quando o CNAE já possui vínculo anterior. */
+    @Test
+    void confirmNicheUpdatesExistingMarketNicheWhenCandidateAlreadyHasNiche() {
+        OprmConfirmedMarketNicheRepository confirmedRepository = mock(OprmConfirmedMarketNicheRepository.class);
+        BackendCandidateGeneratorService service = new BackendCandidateGeneratorService(
+                nicheCandidateRepository, confirmedRepository, stageExecutionRepository, openAiInteractionRepository, true, false);
+        OprmNichoCnaeV2StageExecution completed = execution(731L, 1, 0, 1);
+        completed.setJobId("nichocnae-v2-candidate-3-job-7");
+        completed.setSourceNicheId(3L);
+        completed.setCnaeCode("7319002");
+        completed.setStatus(OprmNichoCnaeV2StageExecutionStatus.COMPLETED);
+        completed.setOutputPayload(
+                "{\"planDecision\":\"ENOUGH_INFORMATION_FOR_NEXT_PIPELINE\",\"candidateCount\":10,"
+                        + "\"candidates\":[{\"job\":\"CLIENTES_PELO_WHATSAPP\","
+                        + "\"operationalContext\":\"Autônomo responde clientes no WhatsApp e organiza agenda\"}]}");
+        OprmNicheCandidate candidate = candidate(3L, "7319002");
+        candidate.setMarketNicheId(24L);
+        when(stageExecutionRepository.findByJobIdOrderByCreatedAtAsc("nichocnae-v2-candidate-3-job-7"))
+                .thenReturn(List.of(completed));
+        when(nicheCandidateRepository.findById(3L)).thenReturn(Optional.of(candidate));
+        when(confirmedRepository.existsByNameIgnoreCaseExcludingId("Promoção de vendas revisada", 24L)).thenReturn(false);
+        when(confirmedRepository.updateConfirmedNiche(eq(24L), eq("Promoção de vendas revisada"), any(), eq(BigDecimal.ZERO)))
+                .thenReturn(new OprmConfirmedMarketNiche(24L, "Promoção de vendas revisada", BigDecimal.ZERO));
+        when(stageExecutionRepository.save(completed)).thenReturn(completed);
+
+        var response = service.confirmNiche(
+                "nichocnae-v2-candidate-3-job-7",
+                new CandidateGeneratorConfirmNicheRequest("Promoção de vendas revisada"));
+
+        assertThat(response.marketNicheId()).isEqualTo(24L);
+        assertThat(response.status()).isEqualTo("UPDATED_EXISTING_NICHE");
+        assertThat(completed.getOutputPayload()).contains("personaDailyTasks");
+        verify(confirmedRepository, never()).createConfirmedNiche(any(), any(), any());
+        verify(confirmedRepository).updateConfirmedNiche(eq(24L), eq("Promoção de vendas revisada"), any(), eq(BigDecimal.ZERO));
     }
 
     /** Deve gravar auditoria OpenAI no próprio service canônico sem delegar a service auxiliar. */

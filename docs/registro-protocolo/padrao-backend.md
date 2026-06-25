@@ -7,6 +7,15 @@
 - **Endpoint pending canônico:** `/api/internal/oprm/nichocnae/v2/candidate-generator/stage-executions/pending`.
 - **Aplicação:** protocolo padrão backend aplicado para a etapa inicial `candidate-generator`, com controller canônico, service canônico, contrato `record` em subpacote de service e regra ArchUnit dedicada em `ArquiteturaTest`.
 
+## 2026-06-25 — OPRM NichoCNAE versão 2 completo
+
+- **Backend:** `backend/ads-service`.
+- **Pacote protegido:** `com.marketinghub.oprm.nichocnae.v2`.
+- **Executor operacional externo:** `oprm-coletor-mei`.
+- **Etapas protegidas:** `candidate-generator`, `source-safety-filter`, `adaptive-query-planner`, `source-fetcher-reranker`, `candidate-tournament`, `knowledge-accumulator`, `commercial-evidence-gate`, `reprocess-controller` e `enriched-niche-materializer`.
+- **Endpoint pending canônico:** `/api/internal/oprm/nichocnae/v2/<etapa>/stage-executions/pending`.
+- **Aplicação:** protocolo padrão backend ampliado para todas as etapas v2 existentes, exigindo controller único, service backend canônico único, endpoint interno `pending` como ponto inicial do executor e contratos `record` em subpacotes de service por regra ArchUnit dedicada em `ArquiteturaTest`.
+
 ## 2026-06-23 — Ops Monitor
 
 - Pacote backend protegido: `com.marketinghub.opsmonitor`.

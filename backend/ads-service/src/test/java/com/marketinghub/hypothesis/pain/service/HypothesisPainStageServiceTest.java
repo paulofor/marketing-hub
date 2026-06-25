@@ -167,6 +167,7 @@ class HypothesisPainStageServiceTest {
                 73,
                 null,
                 "Agenda, deslocamento e atendimento em domicílio.",
+                "- Organizar agenda de atendimentos.\n- Responder clientes no WhatsApp.",
                 "Remarcações e ociosidade reduzem faturamento.",
                 "Agenda previsível e pacote simples de atendimento.",
                 "Checklists operacionais e scripts de WhatsApp.",
@@ -193,6 +194,7 @@ class HypothesisPainStageServiceTest {
 
         assertEquals(1, pending.size());
         assertEquals(7L, pending.getFirst().enrichmentProfile().id());
+        assertEquals("- Organizar agenda de atendimentos.\n- Responder clientes no WhatsApp.", pending.getFirst().enrichmentProfile().personaDailyTasks());
         assertEquals("Manicure autônoma em domicílio.", pending.getFirst().enrichmentProfile().personaSummary());
         assertEquals("agenda quebrada; cliente some", pending.getFirst().enrichmentProfile().languagePatterns());
         assertEquals("busca previsibilidade e redução de retrabalho", pending.getFirst().enrichmentProfile().commercialTriggers());

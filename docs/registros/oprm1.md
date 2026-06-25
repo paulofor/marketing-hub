@@ -1370,3 +1370,17 @@
 - Solicitação: executar a Etapa 4 — Criação da audiência na Meta do plano `docs/implementacao/oprm/plano-audiencias-meta-nicho-experimento.md`.
 - Foi feito: criado o contrato persistente `meta_audience`/`meta_audience_segment`, mantendo o backend somente como leitura/escrita da audiência já decidida pelo OPRM; o Facebook Ads Worker cria a Custom Audience, normaliza/deduplica emails apenas por exigência técnica da Meta, gera hash SHA-256, faz upload em lotes e retorna o `facebookAudienceId` ao backend.
 - Prevenção de recorrência: a regra de negócio de público, nome, recorte, elegibilidade e volumes fica no módulo OPRM executor; a audiência persistida continua vinculada a `market_niche_id`, CNAE, segmento e conta de anúncios para evitar audiência órfã na Meta.
+
+## 2026-06-25 — Resultado final do NichoCNAE com tarefas e auditoria
+
+- Ajustada a materialização de nicho enriquecido para persistir explicitamente uma lista de tarefas diárias da persona, separada do resumo geral de rotina.
+- A criação do perfil enriquecido passa a guardar um relatório Markdown auditável da pesquisa, reunindo queries, fontes candidatas, snapshots, sinais, card de rotina e conclusão operacional.
+- Removida a promoção de `offer_idea` no momento de materialização do NichoCNAE: essa etapa permanece responsável por rotina/evidência, enquanto a oferta fica para o pipeline de hipótese/oferta.
+- Causa-raiz tratada: o resultado final misturava maturidades diferentes — rotina real do nicho, hipótese comercial e ideia de oferta — e não persistia uma trilha auditável fechada no próprio perfil criado.
+- Prevenção de recorrência: o cânone de experimento foi atualizado para exigir tarefas diárias e relatório auditável na passagem enriquecida `nicho-cnae → hipótese`.
+
+## 2026-06-25 — Reexecução de CNAE com nicho existente
+
+- Regra ajustada: executar novamente o pipeline para CNAE que já possui nicho não deve bloquear a pesquisa.
+- Na conclusão, quando o candidato/CNAE já estiver ligado a um `market_niche`, o fluxo atualiza o nicho existente e renova `updated_at`, em vez de criar duplicidade silenciosa.
+- O perfil enriquecido materializado por CNAE + nome neutro também passa a ser atualizado quando já existir, preservando o registro e renovando as informações auditáveis.

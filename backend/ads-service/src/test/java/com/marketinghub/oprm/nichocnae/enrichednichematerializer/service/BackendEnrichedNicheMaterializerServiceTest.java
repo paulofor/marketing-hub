@@ -22,6 +22,7 @@ import com.marketinghub.oprm.nichocnae.enrichednichematerializer.service.pending
 import com.marketinghub.oprm.nichocnae.meiaudienceprofile.OprmMeiAudienceProfile;
 import com.marketinghub.oprm.nichocnae.gateway.OprmEnrichedNicheGateway;
 import com.marketinghub.oprm.nichocnae.gateway.OprmEnrichedNicheGateway.OprmEnrichedNicheMaterializationResult;
+import com.marketinghub.oprm.nichocnae.gateway.OprmEnrichedNicheGateway.OprmEnrichedNicheProfileDraft;
 import com.marketinghub.oprm.nichocnae.gateway.OprmEnrichedNicheGateway.OprmEnrichedNicheProfileSnapshot;
 import com.marketinghub.oprm.nichocnae.gateway.OprmEnrichedNicheGateway.OprmMarketNicheSnapshot;
 import com.marketinghub.repository.jpa.oprm.cnae.OprmNicheCandidateRepository;
@@ -38,6 +39,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.data.domain.Pageable;
 
 /** Responsabilidade: validar a etapa final que alimenta nicho e nicho enriquecido no backend. */
@@ -111,8 +113,12 @@ class BackendEnrichedNicheMaterializerServiceTest {
     assertThat(response.enrichedNicheProfileId()).isEqualTo(300L);
     assertThat(cycle.getStatus()).isEqualTo("ENRICHED_NICHE_CREATED");
     assertThat(candidate.getMarketNicheId()).isEqualTo(200L);
+    assertThat(candidate.getOfferIdea()).isNull();
+    ArgumentCaptor<OprmEnrichedNicheProfileDraft> profileCaptor = ArgumentCaptor.forClass(OprmEnrichedNicheProfileDraft.class);
     verify(metaSignalService).buildReadableSignalSummary(metaSignalPackage);
-    verify(enrichedNicheGateway).materialize(any(), any());
+    verify(enrichedNicheGateway).materialize(any(), profileCaptor.capture());
+    assertThat(profileCaptor.getValue().personaDailyTasks()).contains("agenda");
+    assertThat(profileCaptor.getValue().researchReportMarkdown()).contains("Pesquisa OPRM NichoCNAE");
   }
 
   /** Deve permitir reprocessar o mesmo cartão criando novo perfil para o mesmo nicho existente. */
@@ -317,6 +323,7 @@ class BackendEnrichedNicheMaterializerServiceTest {
     candidate.setId(77L);
     candidate.setStatus("LIGHTLY_RESEARCHED");
     candidate.setRoutineResearchStatus("LIGHTLY_RESEARCHED");
+    candidate.setOfferIdea("Oferta antiga que não deve sobreviver à materialização de rotina.");
     return candidate;
   }
 
@@ -419,11 +426,13 @@ class BackendEnrichedNicheMaterializerServiceTest {
         72,
         35,
         "Rotina final",
+        "- Organizar agenda de atendimentos.",
         "Dores finais",
         "Resultados finais",
         "Contexto operacional final",
         "Evidências finais",
         "exemplo.com",
+        "# Relatório auditável",
         Instant.parse("2026-01-01T00:00:00Z"));
   }
 

@@ -87,6 +87,9 @@ public class MarketNicheEnrichmentProfile {
   @Column(name = "routine_summary", nullable = false, columnDefinition = "LONGTEXT")
   private String routineSummary;
 
+  @Column(name = "persona_daily_tasks", columnDefinition = "LONGTEXT")
+  private String personaDailyTasks;
+
   @Column(name = "pains_summary", nullable = false, columnDefinition = "LONGTEXT")
   private String painsSummary;
 
@@ -113,6 +116,9 @@ public class MarketNicheEnrichmentProfile {
 
   @Column(name = "objections", columnDefinition = "LONGTEXT")
   private String objections;
+
+  @Column(name = "research_report_markdown", columnDefinition = "LONGTEXT")
+  private String researchReportMarkdown;
 
   @Column(name = "created_by", nullable = false, length = 64)
   private String createdBy;

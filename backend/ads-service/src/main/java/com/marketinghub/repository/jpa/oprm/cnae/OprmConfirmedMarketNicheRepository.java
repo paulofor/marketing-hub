@@ -2,6 +2,7 @@ package com.marketinghub.repository.jpa.oprm.cnae;
 
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
+import jakarta.persistence.EntityNotFoundException;
 import java.math.BigDecimal;
 import org.springframework.stereotype.Repository;
 
@@ -20,9 +21,26 @@ public class OprmConfirmedMarketNicheRepository {
         return marketNicheRepository.existsByNameIgnoreCase(name);
     }
 
+    /** Verifica duplicidade de nome ao atualizar um nicho existente do mesmo CNAE. */
+    public boolean existsByNameIgnoreCaseExcludingId(String name, Long marketNicheId) {
+        return marketNicheRepository.existsByNameIgnoreCaseAndIdNot(name, marketNicheId);
+    }
+
     /** Cria o nicho de mercado confirmado e retorna apenas o contrato permitido ao módulo OPRM. */
     public OprmConfirmedMarketNiche createConfirmedNiche(String name, String description, BigDecimal cost) {
         MarketNiche marketNiche = new MarketNiche();
+        marketNiche.setName(name);
+        marketNiche.setDescription(description);
+        marketNiche.setTotalCost(cost);
+        marketNiche.setCost(cost);
+        MarketNiche saved = marketNicheRepository.save(marketNiche);
+        return new OprmConfirmedMarketNiche(saved.getId(), saved.getName(), saved.getCost());
+    }
+
+    /** Atualiza o nicho já vinculado ao CNAE, preservando o registro e renovando updated_at. */
+    public OprmConfirmedMarketNiche updateConfirmedNiche(Long marketNicheId, String name, String description, BigDecimal cost) {
+        MarketNiche marketNiche = marketNicheRepository.findById(marketNicheId)
+                .orElseThrow(() -> new EntityNotFoundException("MarketNiche not found: " + marketNicheId));
         marketNiche.setName(name);
         marketNiche.setDescription(description);
         marketNiche.setTotalCost(cost);

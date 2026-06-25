@@ -210,12 +210,17 @@ public class BackendEnrichedNicheMaterializerService {
     OprmRoutineResearchCycle cycle = findCycle(researchCycleId);
     OprmNicheRoutineCard card = routineCardRepository.findFirstByResearchCycleIdOrderByIdDesc(researchCycleId).orElse(null);
     OprmNicheResearchSeed seed = seedRepository.findByResearchCycleId(researchCycleId).orElse(null);
-    List<OprmResearchQuery> queries = researchQueryRepository.findByResearchCycleIdOrderByPriorityAscIdAsc(researchCycleId);
-    List<OprmSourceCandidate> candidates = sourceCandidateRepository.findByResearchCycleIdOrderByResearchQueryIdAscSearchPositionAscIdAsc(
-        researchCycleId);
-    List<OprmSourceSnapshot> snapshots = sourceSnapshotRepository.findByResearchCycleIdOrderByIdAsc(researchCycleId);
-    List<OprmExtractedSignal> signals = extractedSignalRepository.findByResearchCycleIdOrderByIdAsc(researchCycleId);
+    List<OprmResearchQuery> queries = safeList(researchQueryRepository.findByResearchCycleIdOrderByPriorityAscIdAsc(researchCycleId));
+    List<OprmSourceCandidate> candidates = safeList(sourceCandidateRepository.findByResearchCycleIdOrderByResearchQueryIdAscSearchPositionAscIdAsc(
+        researchCycleId));
+    List<OprmSourceSnapshot> snapshots = safeList(sourceSnapshotRepository.findByResearchCycleIdOrderByIdAsc(researchCycleId));
+    List<OprmExtractedSignal> signals = safeList(extractedSignalRepository.findByResearchCycleIdOrderByIdAsc(researchCycleId));
     return buildPipelineMarkdown(profile, cycle, card, seed, queries, candidates, snapshots, signals);
+  }
+
+  /** Garante coleção vazia quando algum repositório mockado ou legado retornar nulo. */
+  private <T> List<T> safeList(List<T> items) {
+    return items == null ? List.of() : items;
   }
 
   /** Localiza ciclos e perfis históricos com termos de solução para orientar reprocessamento neutro. */
@@ -254,6 +259,7 @@ public class BackendEnrichedNicheMaterializerService {
         cycle.getCnaeCode(),
         card == null ? null : card.getQualityStatus(),
         profile == null ? null : profile.routineSummary(),
+        profile == null ? (card == null ? null : buildPersonaDailyTasks(card)) : profile.personaDailyTasks(),
         profile == null ? null : profile.painsSummary(),
         profile == null ? null : profile.resultsSummary(),
         profile == null ? null : profile.mechanismOpportunitiesSummary(),
@@ -388,6 +394,7 @@ public class BackendEnrichedNicheMaterializerService {
         "Nome original recebido para auditoria: " + defaultText(cycle.getOriginalNicheName(), cycle.getNicheName()),
         "Nome neutro pesquisado: " + neutralNicheName(cycle),
         "Rotina observada:\n" + card.getRoutineSummary(),
+        "Tarefas diárias da persona:\n" + buildPersonaDailyTasks(card),
         "Dificuldades observadas:\n" + card.getPainsSummary(),
         "Perguntas observadas:\n" + card.getResultsSummary(),
         "Contexto operacional e linguagem pública:\n" + materializableOperationalContext(card),
@@ -528,6 +535,7 @@ public class BackendEnrichedNicheMaterializerService {
     appendKeyValue(markdown, "Diversidade de fontes", card.getSourceDiversityScore());
     appendKeyValue(markdown, "Risco de linguagem de solução", card.getSolutionLanguageRiskScore());
     appendTextBlock(markdown, "Rotina observada", card.getRoutineSummary());
+    appendTextBlock(markdown, "Tarefas diárias da persona", buildPersonaDailyTasks(card));
     appendTextBlock(markdown, "Dores observadas", card.getPainsSummary());
     appendTextBlock(markdown, "Perguntas/resultados observados", card.getResultsSummary());
     appendTextBlock(markdown, "Contexto operacional e linguagem", card.getMechanismOpportunitiesSummary());
@@ -554,6 +562,7 @@ public class BackendEnrichedNicheMaterializerService {
     appendKeyValue(markdown, "Evidências curtas processadas", snapshots.size());
     appendKeyValue(markdown, "Sinais processados", signals.size());
     appendTextBlock(markdown, "Rotina final", profile == null ? null : profile.routineSummary());
+    appendTextBlock(markdown, "Tarefas diárias finais da persona", profile == null ? (card == null ? null : buildPersonaDailyTasks(card)) : profile.personaDailyTasks());
     appendTextBlock(markdown, "Dores finais", profile == null ? null : profile.painsSummary());
     appendTextBlock(markdown, "Perguntas/resultados finais", profile == null ? null : profile.resultsSummary());
     appendTextBlock(markdown, "Contexto operacional final", profile == null ? null : profile.mechanismOpportunitiesSummary());
@@ -657,6 +666,7 @@ public class BackendEnrichedNicheMaterializerService {
         requiredText(neutralNicheName(cycle), "neutralNicheName"),
         defaultText(cycle.getResearchMode(), "ROUTINE_REALITY_RESEARCH"),
         requiredText(card.getRoutineSummary(), "routineSummary"),
+        buildPersonaDailyTasks(card),
         requiredText(card.getPainsSummary(), "painsSummary"),
         requiredText(card.getResultsSummary(), "resultsSummary"),
         materializableOperationalContext(card),
@@ -666,9 +676,52 @@ public class BackendEnrichedNicheMaterializerService {
         trimOptional(request.languagePatterns()),
         trimOptional(request.commercialTriggers()),
         trimOptional(request.objections()),
+        buildPipelineMarkdownForCycle(cycle.getId(), null),
         defaultText(request.materializedBy(), "oprmEnrichedNicheMaterializer"),
         now,
         now);
+  }
+
+  /** Monta uma lista objetiva de tarefas diárias da persona a partir da rotina validada. */
+  private String buildPersonaDailyTasks(OprmNicheRoutineCard card) {
+    List<String> tasks = new ArrayList<>();
+    addTaskIfPresent(tasks, card.getRoutineSummary());
+    addTaskIfPresent(tasks, card.getCustomerBehaviorSummary());
+    addTaskIfPresent(tasks, card.getChannelsSummary());
+    addTaskIfPresent(tasks, card.getMechanismOpportunitiesSummary());
+    if (tasks.isEmpty()) {
+      return "Tarefas diárias não foram individualizadas no cartão aprovado; usar a rotina observada como fonte primária e reprocessar a síntese quando precisar de lista granular.";
+    }
+    return tasks.stream()
+        .distinct()
+        .limit(12)
+        .map(task -> "- " + task)
+        .collect(Collectors.joining("\n"));
+  }
+
+  /** Extrai frases operacionais curtas que representem ação cotidiana da persona. */
+  private void addTaskIfPresent(List<String> tasks, String source) {
+    if (!StringUtils.hasText(source)) {
+      return;
+    }
+    String normalized = source.replace("\r\n", "\n").replace('\r', '\n');
+    for (String piece : normalized.split("[\\n.;•]+")) {
+      String task = piece.replaceFirst("^\\s*[-–—*0-9.)]+\\s*", "").trim();
+      String lower = task.toLowerCase(Locale.ROOT);
+      if (task.length() >= 18
+          && (lower.contains("atend")
+              || lower.contains("cliente")
+              || lower.contains("agenda")
+              || lower.contains("mensag")
+              || lower.contains("orçamento")
+              || lower.contains("cobran")
+              || lower.contains("venda")
+              || lower.contains("divulga")
+              || lower.contains("rotina")
+              || lower.contains("serviço"))) {
+        tasks.add(task);
+      }
+    }
   }
 
   /** Preserva apenas o bloco de contexto/linguagem quando ele foi sintetizado como pesquisa de rotina real. */
@@ -700,6 +753,7 @@ public class BackendEnrichedNicheMaterializerService {
       candidate.setStatus(cycle.getStatus());
       candidate.setRoutineResearchStatus(cycle.getStatus());
       candidate.setLastRoutineResearchCycleId(cycle.getId());
+      candidate.setOfferIdea(null);
       candidate.setUpdatedAt(now);
       nicheCandidateRepository.save(candidate);
     }

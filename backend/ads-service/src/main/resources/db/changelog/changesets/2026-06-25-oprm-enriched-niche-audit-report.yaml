@@ -1,0 +1,39 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-25-01-oprm-enriched-niche-audit-report
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: market_niche_enrichment_profile
+        - not:
+            columnExists:
+              tableName: market_niche_enrichment_profile
+              columnName: persona_daily_tasks
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE market_niche_enrichment_profile
+                ADD COLUMN persona_daily_tasks LONGTEXT NULL AFTER routine_summary,
+                ADD COLUMN research_report_markdown LONGTEXT NULL AFTER objections;
+              UPDATE market_niche_enrichment_profile profile
+              LEFT JOIN oprm_niche_routine_card card ON card.id = profile.routine_card_id
+              SET profile.persona_daily_tasks = CASE
+                    WHEN card.routine_summary IS NOT NULL AND TRIM(card.routine_summary) <> '' THEN card.routine_summary
+                    ELSE profile.routine_summary
+                  END,
+                  profile.research_report_markdown = CONCAT(
+                    '# Pesquisa OPRM NichoCNAE — ', COALESCE(profile.neutral_niche_name, profile.cnae_description, 'Nicho'), '\n\n',
+                    '- **Perfil enriquecido:** ', profile.id, '\n',
+                    '- **Nicho:** ', profile.market_niche_id, '\n',
+                    '- **CNAE:** ', profile.cnae_code, ' - ', profile.cnae_description, '\n\n',
+                    '## Rotina observada\n\n', COALESCE(profile.routine_summary, 'Não informado'), '\n\n',
+                    '## Tarefas diárias da persona\n\n', COALESCE(card.routine_summary, profile.routine_summary, 'Não informado'), '\n\n',
+                    '## Dores observadas\n\n', COALESCE(profile.pains_summary, 'Não informado'), '\n\n',
+                    '## Evidências e fontes\n\n', COALESCE(profile.evidence_summary, 'Não informado')
+                  );

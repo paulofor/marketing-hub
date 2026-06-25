@@ -1,3 +1,9 @@
+## 2026-06-25 — Nicho: remoção do card de segmentações sugeridas
+
+- solicitação: retirar da tela de detalhe do nicho o card “Segmentações sugeridas”, com listas manuais de interesses, cargos e comportamentos.
+- foi feito: a seção foi removida da página do nicho, reduzindo ruído operacional na tela e deixando o foco nas ações principais do fluxo.
+- prevenção de recorrência: a tela deixa de exibir o formulário manual legado nessa posição; públicos aprovados continuam acessíveis pelos fluxos específicos de targeting/experimentos.
+
 ## 2026-06-25 — Hipóteses: nova hipótese não reaproveita execução já fechada
 
 - erro verificado: ao iniciar o fluxo completo em `/niches/23/hypotheses/new`, o backend retornava 500 com a mensagem "Todas as etapas do fluxo de hipótese já estão concluídas para o nicho: 23".

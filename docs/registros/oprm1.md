@@ -1437,3 +1437,10 @@
 ## 2026-06-25 — NichoCNAE v3 registrado no Protocolo Monitor
 - O NichoCNAE v3 ficou registrado como primeiro caso do `Protocolo Monitor`, usando o `oprm-coletor-mei` como módulo executor monitorado.
 - A regra operacional é detectar fila v3 parada mesmo quando o container está online, evitando falso positivo de saúde operacional.
+
+## 2026-06-25 — OPRM NichoCNAE v3: isolamento da materialização final
+
+- Corrigido o acoplamento direto da etapa `persona-routine-materializer` v3 com a porta da versão inicial `OprmEnrichedNicheGateway`.
+- Causa-raiz tratada: o service v3 reutilizava contrato sem versão, fazendo o ArchUnit interpretar dependência direta da v3 para a versão inicial.
+- Correção aplicada: a etapa v3 passou a depender de uma porta própria, localizada no pacote da própria etapa, e o adaptador JPA externo faz a tradução para a persistência canônica.
+- Prevenção de recorrência: validado que não restam imports de `com.marketinghub.oprm.nichocnae.gateway` dentro do pacote v3 e executados os testes da etapa afetada.

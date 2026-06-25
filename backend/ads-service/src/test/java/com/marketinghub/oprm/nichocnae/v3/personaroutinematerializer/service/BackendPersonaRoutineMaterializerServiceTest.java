@@ -7,12 +7,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.marketinghub.oprm.nichocnae.gateway.OprmEnrichedNicheGateway;
-import com.marketinghub.oprm.nichocnae.gateway.OprmEnrichedNicheGateway.OprmEnrichedNicheMaterializationResult;
-import com.marketinghub.oprm.nichocnae.gateway.OprmEnrichedNicheGateway.OprmEnrichedNicheProfileDraft;
-import com.marketinghub.oprm.nichocnae.gateway.OprmEnrichedNicheGateway.OprmMarketNicheDraft;
 import com.marketinghub.oprm.nichocnae.v3.OprmNichoCnaeV3StageExecution;
 import com.marketinghub.oprm.nichocnae.v3.OprmNichoCnaeV3StageExecutionStatus;
+import com.marketinghub.oprm.nichocnae.v3.personaroutinematerializer.gateway.PersonaRoutineMaterializerNicheGateway;
 import com.marketinghub.repository.jpa.oprm.nichocnae.v3.OprmNichoCnaeV3StageExecutionRepository;
 import java.time.Instant;
 import java.util.Optional;
@@ -30,13 +27,13 @@ class BackendPersonaRoutineMaterializerServiceTest {
     private OprmNichoCnaeV3StageExecutionRepository repository;
 
     @Mock
-    private OprmEnrichedNicheGateway enrichedNicheGateway;
+    private PersonaRoutineMaterializerNicheGateway nicheGateway;
 
     private BackendPersonaRoutineMaterializerService service;
 
     @BeforeEach
     void setUp() {
-        service = new BackendPersonaRoutineMaterializerService(repository, enrichedNicheGateway, new ObjectMapper());
+        service = new BackendPersonaRoutineMaterializerService(repository, nicheGateway, new ObjectMapper());
     }
 
     /** Garante que a etapa final grava MarketNiche e perfil enriquecido para uso por outros pipelines. */
@@ -59,17 +56,17 @@ class BackendPersonaRoutineMaterializerServiceTest {
                 """;
         when(repository.findById(19L)).thenReturn(Optional.of(execution));
         when(repository.save(any(OprmNichoCnaeV3StageExecution.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(enrichedNicheGateway.findByCnaeAndNormalizedNeutralName(
+        when(nicheGateway.findPersonaRoutineMaterializedNiche(
                 eq("4781400"), eq("lojistas de roupas infantis com rotina de reposição")))
                 .thenReturn(Optional.empty());
-        when(enrichedNicheGateway.materialize(any(OprmMarketNicheDraft.class), any(OprmEnrichedNicheProfileDraft.class)))
-                .thenReturn(new OprmEnrichedNicheMaterializationResult(300L, 400L, Instant.now()));
+        when(nicheGateway.materialize(any(PersonaRoutineMaterializerNicheGateway.MarketNicheDraft.class), any(PersonaRoutineMaterializerNicheGateway.EnrichedNicheProfileDraft.class)))
+                .thenReturn(new PersonaRoutineMaterializerNicheGateway.NicheMaterializationResult(300L, 400L, Instant.now()));
 
         service.complete(19L, outputPayload, "");
 
-        ArgumentCaptor<OprmMarketNicheDraft> nicheCaptor = ArgumentCaptor.forClass(OprmMarketNicheDraft.class);
-        ArgumentCaptor<OprmEnrichedNicheProfileDraft> profileCaptor = ArgumentCaptor.forClass(OprmEnrichedNicheProfileDraft.class);
-        verify(enrichedNicheGateway).materialize(nicheCaptor.capture(), profileCaptor.capture());
+        ArgumentCaptor<PersonaRoutineMaterializerNicheGateway.MarketNicheDraft> nicheCaptor = ArgumentCaptor.forClass(PersonaRoutineMaterializerNicheGateway.MarketNicheDraft.class);
+        ArgumentCaptor<PersonaRoutineMaterializerNicheGateway.EnrichedNicheProfileDraft> profileCaptor = ArgumentCaptor.forClass(PersonaRoutineMaterializerNicheGateway.EnrichedNicheProfileDraft.class);
+        verify(nicheGateway).materialize(nicheCaptor.capture(), profileCaptor.capture());
         assertThat(nicheCaptor.getValue().name()).isEqualTo("Lojistas de roupas infantis com rotina de reposição");
         assertThat(nicheCaptor.getValue().description()).contains("Compram, organizam vitrines");
         assertThat(profileCaptor.getValue().researchCycleId()).isEqualTo(19L);

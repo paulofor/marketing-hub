@@ -40,3 +40,7 @@
 ## 2026-06-25 — Criação do Protocolo Monitor
 - Decisão operacional: sempre que uma versão de pipeline precisar ser acompanhada pelo Ops Monitor, aplicar o `Protocolo Monitor`.
 - O protocolo exige sinal canônico por versão de pipeline, regra de pendência antiga, degradação/incidente no módulo executor, teste de contrato e registro operacional.
+
+## 2026-06-25 — Protocolo Monitor incluído no AGENTS.md
+- O `AGENTS.md` passou a listar o `Protocolo Monitor` junto dos demais protocolos operacionais acionáveis por gatilho literal.
+- A regra deixa explícito que versões de pipeline monitoradas precisam declarar sinal operacional, degradação/incidente, teste de contrato e registros obrigatórios.

@@ -1711,6 +1711,10 @@ components:
           type: integer
           format: int64
           description: Jobs da Etapa 3 em `FETCHING` há mais de 120 minutos, considerados presos para saneamento operacional.
+        totalModelCostUsd:
+          type: number
+          format: double
+          description: Custo total em USD registrado nas análises comerciais consolidadas da biblioteca.
         automaticProcessingActive:
           type: boolean
           description: Indica avanço automático recente quando há captura em execução ou páginas capturadas na última hora.

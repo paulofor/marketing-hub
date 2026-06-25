@@ -748,6 +748,7 @@ public class MoisSalesLibraryService {
                        SUM(mws.market_temperature = 'SATURATED') AS market_warmup_saturated,
                        SUM(mwj.status = 'FETCHING'
                            AND COALESCE(mwj.started_at, mwj.updated_at, mwj.created_at) < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 120 MINUTE)) AS market_warmup_stuck,
+                       COALESCE(SUM(p.model_cost_usd), 0) AS total_model_cost_usd,
                        SUM(COALESCE(p.html_bytes, 0) = 0) AS remaining_without_html,
                        MAX(CASE WHEN COALESCE(p.html_bytes, 0) > 0 THEN p.last_captured_at END) AS last_captured_at,
                        (
@@ -788,7 +789,7 @@ public class MoisSalesLibraryService {
                 rs.getLong("market_warmup_failed"), rs.getLong("market_warmup_hot"),
                 rs.getLong("market_warmup_promising"), rs.getLong("market_warmup_warm"),
                 rs.getLong("market_warmup_cold"), rs.getLong("market_warmup_saturated"),
-                rs.getLong("market_warmup_stuck"),
+                rs.getLong("market_warmup_stuck"), rs.getBigDecimal("total_model_cost_usd"),
                 rs.getLong("capturing") > 0 || rs.getLong("captured_last_hour") > 0,
                 toInstant(rs, "last_captured_at"), rs.getLong("captured_last_hour"),
                 rs.getLong("remaining_without_html"), rs.getBigDecimal("average_captures_per_hour"),

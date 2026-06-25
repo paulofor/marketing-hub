@@ -166,6 +166,7 @@ class MoisSalesLibraryControllerTest {
                         5L,
                         18L,
                         3L,
+                        BigDecimal.valueOf(2.50),
                         true,
                         Instant.parse("2026-06-04T15:50:09Z"),
                         5L,
@@ -198,7 +199,8 @@ class MoisSalesLibraryControllerTest {
                 .andExpect(jsonPath("$.marketWarmupHot").value(16))
                 .andExpect(jsonPath("$.marketWarmupPromising").value(22))
                 .andExpect(jsonPath("$.marketWarmupSaturated").value(18))
-                .andExpect(jsonPath("$.marketWarmupStuck").value(3));
+                .andExpect(jsonPath("$.marketWarmupStuck").value(3))
+                .andExpect(jsonPath("$.totalModelCostUsd").value(2.5));
     }
 
     /**

@@ -309,6 +309,7 @@ public final class MoisSalesLibraryDtos {
             long marketWarmupCold,
             long marketWarmupSaturated,
             long marketWarmupStuck,
+            BigDecimal totalModelCostUsd,
             boolean automaticProcessingActive,
             Instant lastCapturedAt,
             long capturedLastHour,

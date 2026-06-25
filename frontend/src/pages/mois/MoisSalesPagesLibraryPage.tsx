@@ -187,9 +187,9 @@ export default function MoisSalesPagesLibraryPage() {
           <div className="col-sm-6 col-lg-3">
             <div className="card border-0 shadow-sm h-100">
               <div className="card-body">
-                <p className="text-secondary mb-1">Quentes/promissores</p>
+                <p className="text-secondary mb-1">Custo total da biblioteca</p>
                 <h3 className="mb-0">
-                  {summary.marketWarmupHot + summary.marketWarmupPromising}
+                  {formatCurrencyUsd(summary.totalModelCostUsd)}
                 </h3>
               </div>
             </div>

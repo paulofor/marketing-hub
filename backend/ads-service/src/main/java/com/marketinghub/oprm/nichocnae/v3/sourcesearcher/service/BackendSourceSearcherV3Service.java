@@ -10,11 +10,11 @@ import org.springframework.stereotype.Service;
 
 /** Service canônico da etapa source-searcher do pipeline NichoCNAE v3 no backend. */
 @Service
-public class BackendSourceSearcherService extends OprmNichoCnaeV3StageServiceSupport {
+public class BackendSourceSearcherV3Service extends OprmNichoCnaeV3StageServiceSupport {
     private static final String STAGE_CODE = "source-searcher";
 
     /** Inicializa o service com repository canônico de execuções v3. */
-    public BackendSourceSearcherService(OprmNichoCnaeV3StageExecutionRepository repository) {
+    public BackendSourceSearcherV3Service(OprmNichoCnaeV3StageExecutionRepository repository) {
         super(repository, STAGE_CODE);
     }
 

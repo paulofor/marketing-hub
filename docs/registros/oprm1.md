@@ -1395,6 +1395,10 @@
 - Objetivo de negócio: transformar um CNAE em persona operacional, rotina real e lista de tarefas diárias auditável, sem criar oferta, campanha ou landing nesta fase.
 - Prevenção: a v3 nasce separada da v2 para evitar remendos no fluxo que parava após o planejador de buscas por falta de etapa cadastrada.
 
+## 2026-06-25 — Correção preventiva de conflito de beans no NichoCNAE v3
+
+- Corrigida a diferenciação dos nomes das classes versionadas v3 das etapas `source-fetcher` e `source-searcher`, evitando conflito de bean Spring com as classes legadas de mesmo papel.
+- Verificados os componentes Spring do backend para localizar outros nomes simples duplicados com bean name padrão; não restaram duplicidades sem nome explícito após o ajuste.
 ## 2026-06-25 — Tela de CNAEs passa a abrir NichoCNAE v3
 
 - Alterado o botão da tabela de CNAEs do OPRM para abrir o pipeline NichoCNAE v3 em vez da v2.

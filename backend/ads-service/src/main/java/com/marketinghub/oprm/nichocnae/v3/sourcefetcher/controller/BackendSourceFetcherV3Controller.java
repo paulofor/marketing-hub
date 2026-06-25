@@ -1,6 +1,6 @@
 package com.marketinghub.oprm.nichocnae.v3.sourcefetcher.controller;
 
-import com.marketinghub.oprm.nichocnae.v3.sourcefetcher.service.BackendSourceFetcherService;
+import com.marketinghub.oprm.nichocnae.v3.sourcefetcher.service.BackendSourceFetcherV3Service;
 import com.marketinghub.oprm.nichocnae.v3.sourcefetcher.service.completeStageExecution.SourceFetcherCompletionRequest;
 import com.marketinghub.oprm.nichocnae.v3.sourcefetcher.service.createStageExecution.SourceFetcherCreateResponse;
 import com.marketinghub.oprm.nichocnae.v3.sourcefetcher.service.failStageExecution.SourceFetcherFailureRequest;
@@ -16,11 +16,11 @@ import org.springframework.web.bind.annotation.RestController;
 /** Controller canônico da etapa source-fetcher do pipeline NichoCNAE v3. */
 @RestController
 @RequestMapping("/api/internal/oprm/nichocnae/v3/source-fetcher/stage-executions")
-public class BackendSourceFetcherController {
-    private final BackendSourceFetcherService service;
+public class BackendSourceFetcherV3Controller {
+    private final BackendSourceFetcherV3Service service;
 
     /** Inicializa o controller com service canônico da etapa. */
-    public BackendSourceFetcherController(BackendSourceFetcherService service) {
+    public BackendSourceFetcherV3Controller(BackendSourceFetcherV3Service service) {
         this.service = service;
     }
 

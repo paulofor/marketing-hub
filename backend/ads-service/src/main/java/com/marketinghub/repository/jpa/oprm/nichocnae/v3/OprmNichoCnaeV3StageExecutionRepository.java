@@ -2,6 +2,7 @@ package com.marketinghub.repository.jpa.oprm.nichocnae.v3;
 
 import com.marketinghub.oprm.nichocnae.v3.OprmNichoCnaeV3StageExecution;
 import com.marketinghub.oprm.nichocnae.v3.OprmNichoCnaeV3StageExecutionStatus;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -21,4 +22,8 @@ public interface OprmNichoCnaeV3StageExecutionRepository extends JpaRepository<O
 
     /** Lista todas as etapas persistidas de um job em ordem de criação. */
     List<OprmNichoCnaeV3StageExecution> findByJobIdOrderByCreatedAtAsc(String jobId);
+
+    /** Lista pendências antigas para o Ops Monitor detectar fila v3 parada. */
+    List<OprmNichoCnaeV3StageExecution> findTop20ByStatusAndCreatedAtBeforeOrderByCreatedAtAsc(
+            OprmNichoCnaeV3StageExecutionStatus status, Instant threshold);
 }

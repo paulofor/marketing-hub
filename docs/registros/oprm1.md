@@ -1416,3 +1416,24 @@
 - Verificação: o executor `oprm-coletor-mei` possui um scheduler único em `com.marketinghub.nichocnaev3.execution.NichoCnaeV3PendingExecutionScheduler`, com cron `0 */3 * * * *`, que chama a varredura de todas as etapas cadastradas no catálogo v3.
 - Evidência de cobertura: o catálogo v3 contém as 10 etapas `cnae-intake`, `persona-candidate-generator`, `persona-tournament`, `routine-query-planner`, `source-searcher`, `source-fetcher`, `routine-signal-extractor`, `daily-tasks-synthesizer`, `quality-gate` e `persona-routine-materializer`, todas com processor e endpoint backend v3 derivado do código da etapa.
 - Prevenção: adicionados testes de contrato para impedir alteração acidental do cron de 3 em 3 minutos e para garantir que toda etapa v3 cadastrada tenha `backendPath` e `processor` disponíveis para a varredura agendada.
+
+## 2026-06-25 — Correção do carregamento Spring do NichoCNAE v3
+
+- Causa-raiz comprovada pelo log do container: o `oprm-coletor-mei` estava ativo e executando schedulers legados/v2, mas não havia nenhuma linha do `NichoCnaeV3PendingExecutionScheduler`; no código, o pacote `com.marketinghub.nichocnaev3` não estava incluído no `scanBasePackages` da aplicação Spring.
+- Correção: adicionado `com.marketinghub.nichocnaev3` ao `scanBasePackages` do `OprmColetorMeiApplication`, permitindo que scheduler, service e client v3 sejam registrados no contexto e executem a cada 3 minutos.
+- Prevenção: adicionado teste de contrato para garantir que o pacote v3 permaneça no component scan da aplicação, além dos testes de cron e catálogo v3 já criados.
+
+## 2026-06-25 — Desligamento operacional do NichoCNAE v2 no coletor
+
+- Decisão operacional: desligar o NichoCNAE v2 no `oprm-coletor-mei` para evitar varreduras agendadas concorrentes e ruído operacional enquanto a v3 é a versão ativa do fluxo.
+- Correção: removido `com.marketinghub.nichocnaev2` do `scanBasePackages` do `OprmColetorMeiApplication`, impedindo que scheduler, service e client v2 sejam registrados no contexto Spring do container.
+- Prevenção: adicionado teste de contrato garantindo que o pacote v2 permaneça fora do component scan e que o pacote v3 continue carregado.
+
+## 2026-06-25 — Monitoramento operacional do NichoCNAE v3 no Ops Monitor
+- O Ops Monitor passou a detectar pendências antigas do pipeline NichoCNAE v3 persistidas no backend como incidente sintético do módulo `oprm-coletor-mei`.
+- A regra degrada o módulo quando existir execução v3 em `PENDING` há mais de 6 minutos, expondo o job, CNAE e etapa parada para facilitar ação operacional.
+- A causa-raiz tratada é a diferença entre container ativo e pipeline sem consumo: saúde HTTP isolada não garante que o executor esteja processando a fila v3.
+
+## 2026-06-25 — NichoCNAE v3 registrado no Protocolo Monitor
+- O NichoCNAE v3 ficou registrado como primeiro caso do `Protocolo Monitor`, usando o `oprm-coletor-mei` como módulo executor monitorado.
+- A regra operacional é detectar fila v3 parada mesmo quando o container está online, evitando falso positivo de saúde operacional.

@@ -32,3 +32,15 @@
 - Causa-raiz: o monitor podia marcar um módulo como `ONLINE` pela rede interna do Docker mesmo quando a rota pública estava recusando conexão, criando divergência entre saúde operacional exibida e disponibilidade real percebida fora do host.
 - Ajuste: criado changelog incremental para restaurar URLs públicas de AI Worker, Facebook Ads Worker, OPRM Coletor MEI, MOIS Sales Library Worker e Email Service no cadastro `ops_monitored_module`.
 - Prevenção: a regra foi registrada na arquitetura do Ops Monitor para impedir novos ajustes que voltem a usar rotas internas como fonte de verdade de disponibilidade.
+
+## 2026-06-25 — Incidente sintético para fila NichoCNAE v3
+- O monitor administrativo agora cruza disponibilidade do `oprm-coletor-mei` com a fila persistida do NichoCNAE v3.
+- Quando houver execução v3 em `PENDING` por mais de 6 minutos, o módulo aparece como `DEGRADED` e um incidente `OPRM_NICHO_CNAE_V3_QUEUE_STALE` é listado, mesmo que o `/health` do container esteja online.
+
+## 2026-06-25 — Criação do Protocolo Monitor
+- Decisão operacional: sempre que uma versão de pipeline precisar ser acompanhada pelo Ops Monitor, aplicar o `Protocolo Monitor`.
+- O protocolo exige sinal canônico por versão de pipeline, regra de pendência antiga, degradação/incidente no módulo executor, teste de contrato e registro operacional.
+
+## 2026-06-25 — Protocolo Monitor incluído no AGENTS.md
+- O `AGENTS.md` passou a listar o `Protocolo Monitor` junto dos demais protocolos operacionais acionáveis por gatilho literal.
+- A regra deixa explícito que versões de pipeline monitoradas precisam declarar sinal operacional, degradação/incidente, teste de contrato e registros obrigatórios.

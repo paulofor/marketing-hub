@@ -1,6 +1,8 @@
 package com.marketinghub.opsmonitor.service;
 
 import com.marketinghub.geralanding.GeraLandingStageExecution;
+import com.marketinghub.oprm.nichocnae.v3.OprmNichoCnaeV3StageExecution;
+import com.marketinghub.oprm.nichocnae.v3.OprmNichoCnaeV3StageExecutionStatus;
 import com.marketinghub.opsmonitor.OpsModuleHealthCheck;
 import com.marketinghub.opsmonitor.OpsModuleIncident;
 import com.marketinghub.opsmonitor.OpsMonitoredModule;
@@ -18,6 +20,7 @@ import com.marketinghub.repository.jpa.opsmonitor.OpsModuleAvailabilityDailyRepo
 import com.marketinghub.repository.jpa.opsmonitor.OpsModuleHealthCheckRepository;
 import com.marketinghub.repository.jpa.opsmonitor.OpsModuleIncidentRepository;
 import com.marketinghub.repository.jpa.opsmonitor.OpsMonitoredModuleRepository;
+import com.marketinghub.repository.jpa.oprm.nichocnae.v3.OprmNichoCnaeV3StageExecutionRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -35,9 +38,11 @@ public class OpsMonitorService {
     private final OpsModuleHealthCheckRepository healthCheckRepository;
     private final OpsModuleIncidentRepository incidentRepository;
     private static final String AI_WORKER_MODULE_CODE = "ai-worker";
+    private static final String OPRM_COLETOR_MEI_MODULE_CODE = "oprm-coletor-mei";
     private static final String STATUS_STARTED = "INICIADO";
     private static final String STATUS_OPEN = "OPEN";
     private static final Duration AI_WORKER_STALE_QUEUE_THRESHOLD = Duration.ofMinutes(5);
+    private static final Duration OPRM_NICHO_CNAE_V3_STALE_QUEUE_THRESHOLD = Duration.ofMinutes(6);
     private static final List<String> AI_WORKER_GERALANDING_STAGES = List.of(
             "landing-page-wireframe",
             "landing-page-copy",
@@ -49,18 +54,21 @@ public class OpsMonitorService {
 
     private final OpsModuleAvailabilityDailyRepository availabilityDailyRepository;
     private final GeraLandingStageExecutionRepository geraLandingStageExecutionRepository;
+    private final OprmNichoCnaeV3StageExecutionRepository nichoCnaeV3StageExecutionRepository;
 
-    /** Inicializa o serviço com repositórios de monitoramento e filas auditáveis do GeraLanding. */
+    /** Inicializa o serviço com repositórios de monitoramento e filas auditáveis dos pipelines. */
     public OpsMonitorService(OpsMonitoredModuleRepository moduleRepository,
             OpsModuleHealthCheckRepository healthCheckRepository,
             OpsModuleIncidentRepository incidentRepository,
             OpsModuleAvailabilityDailyRepository availabilityDailyRepository,
-            GeraLandingStageExecutionRepository geraLandingStageExecutionRepository) {
+            GeraLandingStageExecutionRepository geraLandingStageExecutionRepository,
+            OprmNichoCnaeV3StageExecutionRepository nichoCnaeV3StageExecutionRepository) {
         this.moduleRepository = moduleRepository;
         this.healthCheckRepository = healthCheckRepository;
         this.incidentRepository = incidentRepository;
         this.availabilityDailyRepository = availabilityDailyRepository;
         this.geraLandingStageExecutionRepository = geraLandingStageExecutionRepository;
+        this.nichoCnaeV3StageExecutionRepository = nichoCnaeV3StageExecutionRepository;
     }
 
     /** Lista módulos habilitados para o worker executar verificações pendentes. */
@@ -155,6 +163,11 @@ public class OpsMonitorService {
                 .filter(incident -> matchesFilter(incident.type(), type))
                 .map(this::toIncidentResponse)
                 .ifPresent(responses::add);
+        syntheticOprmNichoCnaeV3QueueIncident(openOnly)
+                .filter(incident -> matchesFilter(incident.criticality(), criticality))
+                .filter(incident -> matchesFilter(incident.type(), type))
+                .map(this::toIncidentResponse)
+                .ifPresent(responses::add);
         return responses;
     }
 
@@ -167,7 +180,8 @@ public class OpsMonitorService {
         long offline = availability.stream().filter(item -> "OFFLINE".equals(item.status())).count();
         long unknown = availability.stream().filter(item -> "UNKNOWN".equals(item.status())).count();
         long openIncidents = incidentRepository.findByStatusOrderByStartedAtDesc(STATUS_OPEN).size()
-                + syntheticAiWorkerQueueIncident(true).map(incident -> 1L).orElse(0L);
+                + syntheticAiWorkerQueueIncident(true).map(incident -> 1L).orElse(0L)
+                + syntheticOprmNichoCnaeV3QueueIncident(true).map(incident -> 1L).orElse(0L);
         return new OpsMonitorSummaryResponse(online, degraded, offline, unknown, openIncidents);
     }
 
@@ -186,6 +200,14 @@ public class OpsMonitorService {
     private ModuleAvailabilityResponse toAvailabilityResponse(OpsMonitoredModule module) {
         if (AI_WORKER_MODULE_CODE.equals(module.getCode())) {
             Optional<SyntheticIncident> queueIncident = syntheticAiWorkerQueueIncident(true);
+            if (queueIncident.isPresent()) {
+                SyntheticIncident incident = queueIncident.get();
+                return new ModuleAvailabilityResponse(module.getCode(), module.getName(), module.getType(),
+                        module.getCriticality(), "DEGRADED", incident.startedAt(), null, incident.lastError());
+            }
+        }
+        if (OPRM_COLETOR_MEI_MODULE_CODE.equals(module.getCode())) {
+            Optional<SyntheticIncident> queueIncident = syntheticOprmNichoCnaeV3QueueIncident(true);
             if (queueIncident.isPresent()) {
                 SyntheticIncident incident = queueIncident.get();
                 return new ModuleAvailabilityResponse(module.getCode(), module.getName(), module.getType(),
@@ -231,6 +253,36 @@ public class OpsMonitorService {
             }
         }
         return Optional.empty();
+    }
+
+    /** Cria incidente sintético quando há pendência antiga no pipeline OPRM NichoCNAE v3. */
+    private Optional<SyntheticIncident> syntheticOprmNichoCnaeV3QueueIncident(boolean openOnly) {
+        if (!openOnly) {
+            return Optional.empty();
+        }
+        Instant threshold = Instant.now().minus(OPRM_NICHO_CNAE_V3_STALE_QUEUE_THRESHOLD);
+        List<OprmNichoCnaeV3StageExecution> staleExecutions = nichoCnaeV3StageExecutionRepository
+                .findTop20ByStatusAndCreatedAtBeforeOrderByCreatedAtAsc(
+                        OprmNichoCnaeV3StageExecutionStatus.PENDING,
+                        threshold);
+        if (staleExecutions.isEmpty()) {
+            return Optional.empty();
+        }
+        OprmNichoCnaeV3StageExecution execution = staleExecutions.getFirst();
+        String lastError = "Job " + execution.getJobId() + " do CNAE " + execution.getCnaeCode()
+                + " está PENDING na etapa " + execution.getStageCode()
+                + " sem consumo pelo executor NichoCNAE v3.";
+        return Optional.of(new SyntheticIncident(
+                OPRM_COLETOR_MEI_MODULE_CODE,
+                "OPRM Coletor MEI",
+                "COLLECTOR",
+                "HIGH",
+                STATUS_OPEN,
+                "HIGH",
+                execution.getCreatedAt(),
+                "OPRM Coletor MEI não consumiu pendência do NichoCNAE v3",
+                "OPRM_NICHO_CNAE_V3_QUEUE_STALE",
+                lastError));
     }
 
     /** Converte incidente sintético para resposta administrativa sem persistir novo estado operacional. */

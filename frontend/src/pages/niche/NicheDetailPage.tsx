@@ -599,9 +599,6 @@ export default function NicheDetailPage() {
     ? new Date(data.updatedAt).toLocaleString("pt-BR")
     : undefined;
   const infoCards = [
-    { label: "Descrição", value: data.description },
-    { label: "Categoria de interesse", value: data.interestCategory },
-    { label: "Categoria de cargo", value: data.roleCategory },
     { label: "Volume de demanda", value: data.demandVolume },
     { label: "Promessas", value: data.promises },
     { label: "Ofertas", value: data.offers },
@@ -1007,13 +1004,6 @@ export default function NicheDetailPage() {
           </p>
         </div>
         <div className="niche-detail__actions">
-          <Link
-            className="btn btn-primary niche-detail__action-btn"
-            to={`/niches/${normalizedNicheId}/hypotheses/new`}
-          >
-            <Plus size={18} />
-            <span>Criar hipótese</span>
-          </Link>
           <button
             type="button"
             className="btn btn-outline-secondary niche-detail__action-btn"
@@ -1071,6 +1061,62 @@ export default function NicheDetailPage() {
       </ul>
       <section aria-label="Informações do nicho">
         <div className="niche-detail__grid">
+          <article className="niche-detail__card niche-detail__hypotheses-card">
+            <div className="niche-detail__hypotheses-card-header">
+              <h3 className="niche-detail__card-title">Hipóteses do nicho</h3>
+              <Link
+                className="btn btn-primary niche-detail__hypotheses-create"
+                to={`/niches/${normalizedNicheId}/hypotheses/new`}
+              >
+                <Plus size={18} />
+                <span>Criar nova hipótese</span>
+              </Link>
+            </div>
+            <div className="niche-detail__card-content">
+              {list.length === 0 ? (
+                <span className="niche-detail__card-empty">
+                  Nenhuma hipótese criada para este nicho ainda.
+                </span>
+              ) : (
+                <div className="niche-detail__hypotheses-list">
+                  {list.map((hypothesis) => {
+                    const experimentCount =
+                      experimentsCountByHypothesis[hypothesis.id] ?? 0;
+                    const experimentLabel =
+                      experimentCount === 1
+                        ? "1 experimento"
+                        : `${experimentCount} experimentos`;
+                    const costLabel = formatUsd(hypothesis.costUsd) ?? "-";
+                    return (
+                      <div
+                        key={hypothesis.id}
+                        className="niche-detail__hypothesis-row"
+                      >
+                        <div className="niche-detail__hypothesis-main">
+                          <Link
+                            className="niche-detail__hypothesis-name"
+                            to={`hypotheses/${hypothesis.id}`}
+                          >
+                            {hypothesis.title || "Hipótese sem nome"}
+                          </Link>
+                          <span className="niche-detail__hypothesis-meta">
+                            Custo: {costLabel} • {experimentLabel}
+                          </span>
+                        </div>
+                        <Link
+                          className="btn btn-sm btn-outline-primary"
+                          to={`hypotheses/${hypothesis.id}`}
+                        >
+                          Entrar
+                          <ArrowUpRight size={16} />
+                        </Link>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </article>
           {visibleInfoCards.map((card) => (
             <article key={card.label} className="niche-detail__card">
               <h3 className="niche-detail__card-title">{card.label}</h3>

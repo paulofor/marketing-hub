@@ -187,50 +187,73 @@ public class HypothesisPainStageService {
                 .build();
     }
 
-    /** Lista execuções da etapa Dor para o nicho informado. */
+    /** Lista execuções da etapa Dor para o nicho informado, vazias na criação ou filtradas pela hipótese selecionada. */
     @Transactional(readOnly = true)
-    public List<HypothesisPainExecutionSummaryResponse> listStageExecutions(Long marketNicheId, boolean includeCompleted) {
-        return listStageExecutions(marketNicheId, STAGE_CODE, includeCompleted);
+    public List<HypothesisPainExecutionSummaryResponse> listStageExecutions(
+            Long marketNicheId,
+            boolean includeCompleted,
+            UUID hypothesisId) {
+        return listStageExecutions(marketNicheId, STAGE_CODE, includeCompleted, hypothesisId);
     }
 
     /** Lista execuções da etapa Resultado para o nicho informado. */
     @Transactional(readOnly = true)
-    public List<HypothesisPainExecutionSummaryResponse> listResultStageExecutions(Long marketNicheId, boolean includeCompleted) {
-        return listStageExecutions(marketNicheId, RESULT_STAGE_CODE, includeCompleted);
+    public List<HypothesisPainExecutionSummaryResponse> listResultStageExecutions(
+            Long marketNicheId,
+            boolean includeCompleted,
+            UUID hypothesisId) {
+        return listStageExecutions(marketNicheId, RESULT_STAGE_CODE, includeCompleted, hypothesisId);
     }
 
     /** Lista execuções da etapa Mecanismo para o nicho informado. */
     @Transactional(readOnly = true)
     public List<HypothesisPainExecutionSummaryResponse> listMechanismStageExecutions(
             Long marketNicheId,
-            boolean includeCompleted) {
-        return listStageExecutions(marketNicheId, MECHANISM_STAGE_CODE, includeCompleted);
+            boolean includeCompleted,
+            UUID hypothesisId) {
+        return listStageExecutions(marketNicheId, MECHANISM_STAGE_CODE, includeCompleted, hypothesisId);
     }
 
     /** Lista execuções da etapa Prova para o nicho informado. */
     @Transactional(readOnly = true)
     public List<HypothesisPainExecutionSummaryResponse> listProofStageExecutions(
             Long marketNicheId,
-            boolean includeCompleted) {
-        return listStageExecutions(marketNicheId, PROOF_STAGE_CODE, includeCompleted);
+            boolean includeCompleted,
+            UUID hypothesisId) {
+        return listStageExecutions(marketNicheId, PROOF_STAGE_CODE, includeCompleted, hypothesisId);
     }
 
     /** Lista execuções da etapa Oferta para o nicho informado. */
     @Transactional(readOnly = true)
     public List<HypothesisPainExecutionSummaryResponse> listOfferStageExecutions(
             Long marketNicheId,
-            boolean includeCompleted) {
-        return listStageExecutions(marketNicheId, OFFER_STAGE_CODE, includeCompleted);
+            boolean includeCompleted,
+            UUID hypothesisId) {
+        return listStageExecutions(marketNicheId, OFFER_STAGE_CODE, includeCompleted, hypothesisId);
     }
 
-    /** Lista execuções de uma etapa específica para o nicho informado. */
-    private List<HypothesisPainExecutionSummaryResponse> listStageExecutions(Long marketNicheId, String stageCode, boolean includeCompleted) {
-        List<HypothesisPainStageExecution> executions = includeCompleted
-                ? executionRepository.findByMarketNicheIdAndStageCodeOrderByExecutionRequestedAtDesc(marketNicheId, stageCode)
-                : executionRepository.findTop20ByMarketNicheIdAndStageCodeAndStatusNotOrderByExecutionRequestedAtDesc(
-                        marketNicheId,
-                        stageCode,
-                        STATUS_COMPLETED);
+    /** Lista execuções de uma etapa específica para criação limpa ou auditoria da hipótese selecionada. */
+    private List<HypothesisPainExecutionSummaryResponse> listStageExecutions(
+            Long marketNicheId,
+            String stageCode,
+            boolean includeCompleted,
+            UUID hypothesisId) {
+        List<HypothesisPainStageExecution> executions;
+        if (hypothesisId != null) {
+            executions = executionRepository.findByMarketNicheIdAndStageCodeAndHypothesisIdOrderByExecutionRequestedAtDesc(
+                    marketNicheId,
+                    stageCode,
+                    hypothesisId);
+        } else if (includeCompleted) {
+            executions = executionRepository.findByMarketNicheIdAndStageCodeAndHypothesisIdIsNullOrderByExecutionRequestedAtDesc(
+                    marketNicheId,
+                    stageCode);
+        } else {
+            executions = executionRepository.findTop20ByMarketNicheIdAndStageCodeAndStatusNotAndHypothesisIdIsNullOrderByExecutionRequestedAtDesc(
+                    marketNicheId,
+                    stageCode,
+                    STATUS_COMPLETED);
+        }
         return executions.stream().map(this::toSummaryResponse).toList();
     }
 

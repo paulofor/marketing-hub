@@ -83,7 +83,9 @@ public class HypothesisPipelineFinalizationService {
                 hypothesis,
                 finalizedFramework(title, pain, result, mechanism, proof, offer),
                 null);
-        return hypothesisRepository.save(hypothesis);
+        Hypothesis savedHypothesis = hypothesisRepository.save(hypothesis);
+        relateCompletedExecutionsToHypothesis(marketNicheId, savedHypothesis);
+        return savedHypothesis;
     }
 
     /** Monta o título automático da hipótese fechada com sigla do nicho e numeração sequencial. */
@@ -162,6 +164,18 @@ public class HypothesisPipelineFinalizationService {
                 .map(HypothesisPainStageExecution::getCostUsd)
                 .filter(cost -> cost != null)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    /** Vincula as execuções concluídas usadas no fechamento à hipótese gerada para auditoria posterior. */
+    private void relateCompletedExecutionsToHypothesis(Long marketNicheId, Hypothesis hypothesis) {
+        STAGE_SEQUENCE.stream()
+                .map(stageCode -> executionRepository
+                        .findTopByMarketNicheIdAndStageCodeAndStatusOrderByExecutionRequestedAtDesc(
+                                marketNicheId,
+                                stageCode,
+                                STATUS_COMPLETED))
+                .flatMap(Optional::stream)
+                .forEach(execution -> execution.setHypothesisId(hypothesis.getId()));
     }
 
     /** Monta o snapshot canônico Dor → Resultado → Mecanismo → Prova → Oferta aprovado para experimento. */

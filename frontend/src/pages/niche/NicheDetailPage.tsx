@@ -1002,7 +1002,7 @@ export default function NicheDetailPage() {
                         <div className="niche-detail__hypothesis-main">
                           <Link
                             className="niche-detail__hypothesis-name"
-                            to={`hypotheses/${hypothesis.id}`}
+                            to={`hypotheses/new?hypothesisId=${hypothesis.id}`}
                           >
                             {hypothesis.title || "Hipótese sem nome"}
                           </Link>

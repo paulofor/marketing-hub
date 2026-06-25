@@ -4,6 +4,7 @@ import com.marketinghub.hypothesis.pain.HypothesisPainStageExecution;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -35,8 +36,19 @@ public interface HypothesisPainStageExecutionRepository extends JpaRepository<Hy
     @EntityGraph(attributePaths = {"hypothesis"})
     List<HypothesisPainStageExecution> findByMarketNicheIdAndStageCodeOrderByExecutionRequestedAtDesc(Long marketNicheId, String stageCode);
 
+    /** Lista execuções ainda não vinculadas a uma hipótese fechada para a tela de criação limpa. */
+    List<HypothesisPainStageExecution> findByMarketNicheIdAndStageCodeAndHypothesisIdIsNullOrderByExecutionRequestedAtDesc(
+            Long marketNicheId,
+            String stageCode);
+
+    /** Lista execuções vinculadas a uma hipótese específica para auditoria da hipótese selecionada. */
+    List<HypothesisPainStageExecution> findByMarketNicheIdAndStageCodeAndHypothesisIdOrderByExecutionRequestedAtDesc(
+            Long marketNicheId,
+            String stageCode,
+            UUID hypothesisId);
+
     /** Lista as últimas vinte execuções de uma etapa dentro de um nicho excluindo um status operacional. */
-    List<HypothesisPainStageExecution> findTop20ByMarketNicheIdAndStageCodeAndStatusNotOrderByExecutionRequestedAtDesc(
+    List<HypothesisPainStageExecution> findTop20ByMarketNicheIdAndStageCodeAndStatusNotAndHypothesisIdIsNullOrderByExecutionRequestedAtDesc(
             Long marketNicheId,
             String stageCode,
             String status);

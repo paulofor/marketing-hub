@@ -2,10 +2,8 @@ package com.marketinghub.oprm.nichocnae.v3.personaroutinematerializer.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.oprm.nichocnae.v3.personaroutinematerializer.gateway.PersonaRoutineMaterializerNicheGateway;
 import com.marketinghub.oprm.nichocnae.v3.OprmNichoCnaeV3StageExecution;
-import com.marketinghub.oprm.nichocnae.gateway.OprmEnrichedNicheGateway;
-import com.marketinghub.oprm.nichocnae.gateway.OprmEnrichedNicheGateway.OprmEnrichedNicheProfileDraft;
-import com.marketinghub.oprm.nichocnae.gateway.OprmEnrichedNicheGateway.OprmMarketNicheDraft;
 import com.marketinghub.oprm.nichocnae.v3.personaroutinematerializer.service.createStageExecution.PersonaRoutineMaterializerCreateResponse;
 import com.marketinghub.oprm.nichocnae.v3.personaroutinematerializer.service.pending.PersonaRoutineMaterializerPendingResponse;
 import com.marketinghub.oprm.nichocnae.v3.shared.OprmNichoCnaeV3StageServiceSupport;
@@ -25,16 +23,16 @@ public class BackendPersonaRoutineMaterializerService extends OprmNichoCnaeV3Sta
     private static final String CREATED_BY = "OPRM_NICHO_CNAE_V3";
     private static final String DEFAULT_QUALITY_STATUS = "V3_PERSONA_ROUTINE_MATERIALIZED";
     private static final BigDecimal DEFAULT_SOURCE_SCORE = BigDecimal.ZERO;
-    private final OprmEnrichedNicheGateway enrichedNicheGateway;
+    private final PersonaRoutineMaterializerNicheGateway nicheGateway;
     private final ObjectMapper objectMapper;
 
     /** Inicializa o service com repository canônico de execuções v3. */
     public BackendPersonaRoutineMaterializerService(
             OprmNichoCnaeV3StageExecutionRepository repository,
-            OprmEnrichedNicheGateway enrichedNicheGateway,
+            PersonaRoutineMaterializerNicheGateway nicheGateway,
             ObjectMapper objectMapper) {
         super(repository, STAGE_CODE);
-        this.enrichedNicheGateway = enrichedNicheGateway;
+        this.nicheGateway = nicheGateway;
         this.objectMapper = objectMapper;
     }
 
@@ -99,13 +97,13 @@ public class BackendPersonaRoutineMaterializerService extends OprmNichoCnaeV3Sta
                 firstText(output, "mechanismOpportunitiesSummary", "mechanismOpportunities", "opportunities"),
                 "Oportunidades de mecanismo identificadas pelo NichoCNAE v3.");
         Instant now = Instant.now();
-        Long existingMarketNicheId = enrichedNicheGateway
-                .findByCnaeAndNormalizedNeutralName(
+        Long existingMarketNicheId = nicheGateway
+                .findPersonaRoutineMaterializedNiche(
                         execution.getCnaeCode(), neutralNicheName.trim().toLowerCase(Locale.ROOT))
-                .map(OprmEnrichedNicheGateway.OprmMarketNicheSnapshot::marketNicheId)
+                .map(PersonaRoutineMaterializerNicheGateway.MarketNicheSnapshot::marketNicheId)
                 .orElse(null);
-        enrichedNicheGateway.materialize(
-                new OprmMarketNicheDraft(
+        nicheGateway.materialize(
+                new PersonaRoutineMaterializerNicheGateway.MarketNicheDraft(
                         existingMarketNicheId,
                         neutralNicheName,
                         buildNicheDescription(cnaeDescription, routineSummary, dailyTasks),
@@ -118,7 +116,7 @@ public class BackendPersonaRoutineMaterializerService extends OprmNichoCnaeV3Sta
                         null,
                         dailyTasks,
                         null),
-                new OprmEnrichedNicheProfileDraft(
+                new PersonaRoutineMaterializerNicheGateway.EnrichedNicheProfileDraft(
                         null,
                         execution.getId(),
                         execution.getId(),

@@ -3,6 +3,7 @@ package com.marketinghub.niche.oprm;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.niche.MarketNicheEnrichmentProfile;
 import com.marketinghub.oprm.nichocnae.gateway.OprmEnrichedNicheGateway;
+import com.marketinghub.oprm.nichocnae.v3.personaroutinematerializer.gateway.PersonaRoutineMaterializerNicheGateway;
 import com.marketinghub.repository.jpa.niche.MarketNicheEnrichmentProfileRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -15,7 +16,7 @@ import org.springframework.util.StringUtils;
 
 /** Adaptador JPA que isola o domínio Niche atrás da porta permitida ao OPRM. */
 @Component
-public class JpaOprmEnrichedNicheGateway implements OprmEnrichedNicheGateway {
+public class JpaOprmEnrichedNicheGateway implements OprmEnrichedNicheGateway, PersonaRoutineMaterializerNicheGateway {
   private static final String SOURCE_MODULE = "OPRM_NICHO_CNAE";
 
   private final MarketNicheRepository marketNicheRepository;
@@ -65,6 +66,27 @@ public class JpaOprmEnrichedNicheGateway implements OprmEnrichedNicheGateway {
     applyProfileDraft(profile, savedNiche, profileDraft);
     MarketNicheEnrichmentProfile savedProfile = enrichmentProfileRepository.save(profile);
     return new OprmEnrichedNicheMaterializationResult(savedNiche.getId(), savedProfile.getId(), savedProfile.getCreatedAt());
+  }
+
+  /** Busca materialização existente pelo contrato exclusivo da etapa persona-routine-materializer v3. */
+  @Override
+  public Optional<PersonaRoutineMaterializerNicheGateway.MarketNicheSnapshot> findPersonaRoutineMaterializedNiche(
+      String cnaeCode, String normalizedNeutralNicheName) {
+    return enrichmentProfileRepository
+        .findMaterializedByCnaeAndNormalizedNeutralName(cnaeCode, normalizedNeutralNicheName, PageRequest.of(0, 1))
+        .stream()
+        .findFirst()
+        .map(profile -> new PersonaRoutineMaterializerNicheGateway.MarketNicheSnapshot(profile.getMarketNiche().getId()));
+  }
+
+  /** Materializa ou atualiza o nicho usando o contrato exclusivo da etapa persona-routine-materializer v3. */
+  @Override
+  public PersonaRoutineMaterializerNicheGateway.NicheMaterializationResult materialize(
+      PersonaRoutineMaterializerNicheGateway.MarketNicheDraft nicheDraft,
+      PersonaRoutineMaterializerNicheGateway.EnrichedNicheProfileDraft profileDraft) {
+    OprmEnrichedNicheMaterializationResult result = materialize(toOprmNicheDraft(nicheDraft), toOprmProfileDraft(profileDraft));
+    return new PersonaRoutineMaterializerNicheGateway.NicheMaterializationResult(
+        result.marketNicheId(), result.profileId(), result.createdAt());
   }
 
   /** Busca o perfil mais recente do ciclo sem retornar entidade JPA ao OPRM. */
@@ -205,5 +227,60 @@ public class JpaOprmEnrichedNicheGateway implements OprmEnrichedNicheGateway {
         profile.getSourceDomains(),
         profile.getResearchReportMarkdown(),
         profile.getCreatedAt());
+  }
+
+  /** Converte o contrato v3 de nicho para o contrato canônico de persistência OPRM. */
+  private OprmMarketNicheDraft toOprmNicheDraft(PersonaRoutineMaterializerNicheGateway.MarketNicheDraft draft) {
+    return new OprmMarketNicheDraft(
+        draft.marketNicheId(),
+        draft.name(),
+        draft.description(),
+        draft.demandVolume(),
+        draft.baseSegmentation(),
+        draft.demographicFilters(),
+        draft.interestList(),
+        draft.roleList(),
+        draft.behaviorList(),
+        draft.interests(),
+        draft.extraTips(),
+        draft.identificationCostBrl());
+  }
+
+  /** Converte o contrato v3 de perfil enriquecido para o contrato canônico de persistência OPRM. */
+  private OprmEnrichedNicheProfileDraft toOprmProfileDraft(
+      PersonaRoutineMaterializerNicheGateway.EnrichedNicheProfileDraft draft) {
+    return new OprmEnrichedNicheProfileDraft(
+        draft.sourceNicheCandidateId(),
+        draft.researchCycleId(),
+        draft.sourceRoutineCardId(),
+        draft.cnaeCode(),
+        draft.cnaeDescription(),
+        draft.sourceScore(),
+        draft.qualityStatus(),
+        draft.specificityScore(),
+        draft.confidenceScore(),
+        draft.duplicationScore(),
+        draft.routineEvidenceScore(),
+        draft.difficultyEvidenceScore(),
+        draft.sourceDiversityScore(),
+        draft.solutionLanguageRiskScore(),
+        draft.originalNicheName(),
+        draft.neutralNicheName(),
+        draft.researchMode(),
+        draft.routineSummary(),
+        draft.personaDailyTasks(),
+        draft.painsSummary(),
+        draft.resultsSummary(),
+        draft.mechanismOpportunitiesSummary(),
+        draft.evidenceSummary(),
+        draft.sourceDomains(),
+        draft.personaSummary(),
+        draft.languagePatterns(),
+        draft.commercialTriggers(),
+        draft.objections(),
+        draft.researchReportMarkdown(),
+        draft.createdBy(),
+        draft.createdAt(),
+        draft.updatedAt());
   }
 }

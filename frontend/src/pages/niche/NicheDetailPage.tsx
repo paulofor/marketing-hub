@@ -41,7 +41,6 @@ import {
   Check,
   Clock3,
   FileDown,
-  FileText,
   Lightbulb,
   Pencil,
   Package,
@@ -599,11 +598,6 @@ export default function NicheDetailPage() {
   const updatedAtLabel = data.updatedAt
     ? new Date(data.updatedAt).toLocaleString("pt-BR")
     : undefined;
-  const totalCostLabel = formatCurrency(data.totalCost) ?? "-";
-  const totalRevenueLabel = formatCurrency(data.totalRevenue) ?? "-";
-  const differentiatedTechnologyName = differentiatedTechnologies?.find(
-    (tech) => tech.id === data.differentiatedTechnologyId,
-  )?.name;
   const infoCards = [
     { label: "Descrição", value: data.description },
     { label: "Categoria de interesse", value: data.interestCategory },
@@ -611,10 +605,6 @@ export default function NicheDetailPage() {
     { label: "Volume de demanda", value: data.demandVolume },
     { label: "Promessas", value: data.promises },
     { label: "Ofertas", value: data.offers },
-    { label: "Custo", value: formatCurrency(data.cost) },
-    { label: "Despesa", value: formatCurrency(data.expense) },
-    { label: "Custo total", value: formatCurrency(data.totalCost) },
-    { label: "Receita total", value: formatCurrency(data.totalRevenue) },
     { label: "Hipóteses a gerar", value: data.hypothesesToGenerate },
     { label: "Modelo para hipóteses", value: data.hypothesisModel },
     { label: "Modelo para interesses", value: data.interestModel },
@@ -622,7 +612,6 @@ export default function NicheDetailPage() {
     { label: "Modelo para comportamentos", value: data.behaviorModel },
     { label: "Modelo para descrições", value: data.detailedDescriptionModel },
     { label: "Descrições a gerar", value: data.detailedDescriptionsToGenerate },
-    { label: "Tecnologia diferenciada", value: differentiatedTechnologyName },
     { label: "Interesses a gerar", value: data.interestsToGenerate },
     { label: "Cargos a gerar", value: data.jobTitlesToGenerate },
     { label: "Comportamentos a gerar", value: data.behaviorsToGenerate },
@@ -701,13 +690,6 @@ export default function NicheDetailPage() {
       value: `${list.length}`,
       helper: `Meta: ${data.hypothesesToGenerate ?? 0}`,
       targetId: "niche-hypotheses",
-    },
-    {
-      icon: FileText,
-      label: "Descrições",
-      value: `${detailedDescriptionList.length}`,
-      helper: `Meta: ${data.detailedDescriptionsToGenerate ?? 0}`,
-      targetId: "niche-detailed-descriptions",
     },
     {
       icon: Package,
@@ -1023,20 +1005,6 @@ export default function NicheDetailPage() {
             {`Nicho #${data.id}`}
             {updatedAtLabel ? ` • Atualizado em ${updatedAtLabel}` : ""}
           </p>
-          <div className="niche-detail__totals" aria-label="Totais do nicho">
-            <div className="niche-detail__total">
-              <span className="niche-detail__total-label">Custo total</span>
-              <span className="niche-detail__total-value">
-                {totalCostLabel}
-              </span>
-            </div>
-            <div className="niche-detail__total">
-              <span className="niche-detail__total-label">Receita total</span>
-              <span className="niche-detail__total-value">
-                {totalRevenueLabel}
-              </span>
-            </div>
-          </div>
         </div>
         <div className="niche-detail__actions">
           <Link

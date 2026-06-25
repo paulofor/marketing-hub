@@ -1394,3 +1394,8 @@
 - Foi feito: criado o executor `com.marketinghub.nichocnaev3` no `oprm-coletor-mei` com núcleo genérico, catálogo de 10 etapas, processors plugáveis, scheduler de pendências, cliente backend, prompts/schemas versionados para etapas com IA e teste ArchUnit próprio.
 - Objetivo de negócio: transformar um CNAE em persona operacional, rotina real e lista de tarefas diárias auditável, sem criar oferta, campanha ou landing nesta fase.
 - Prevenção: a v3 nasce separada da v2 para evitar remendos no fluxo que parava após o planejador de buscas por falta de etapa cadastrada.
+
+## 2026-06-25 — Tela de CNAEs passa a abrir NichoCNAE v3
+
+- Alterado o botão da tabela de CNAEs do OPRM para abrir o pipeline NichoCNAE v3 em vez da v2.
+- Criada tela inicial do pipeline v3 no frontend, com acionamento do endpoint canônico `cnae-intake` para iniciar novo job v3 por CNAE.

@@ -53,17 +53,17 @@ describe("OPRM navigation", () => {
     ).toBeTruthy();
   });
 
-  it("renders v2 pipeline design page for a CNAE", () => {
-    setup(<App />, ["/oprm/cnaes/9602501/pipeline-v2"]);
-    expect(screen.getByText(/^Pipeline NichoCNAE v2$/)).toBeTruthy();
+  it("renders v3 pipeline page for a CNAE", () => {
+    setup(<App />, ["/oprm/cnaes/9602501/pipeline-v3"]);
+    expect(screen.getByText(/^Pipeline NichoCNAE v3$/)).toBeTruthy();
     expect(screen.getByText(/^CNAE 9602501$/)).toBeTruthy();
-    expect(screen.getByText(/^Gerador de Candidatos$/)).toBeTruthy();
+    expect(screen.getByText(/^Entrada do CNAE$/)).toBeTruthy();
     expect(
-      screen.getByRole("button", { name: /iniciar novo job v2/i }),
+      screen.getByRole("button", { name: /iniciar novo job v3/i }),
     ).toBeTruthy();
-    expect(screen.getByText(/^Acumulador de Conhecimento$/)).toBeTruthy();
-    expect(screen.getAllByText(/^IA$/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/^Web$/).length).toBeGreaterThan(0);
+    expect(
+      screen.getByText(/^Materialização de persona e rotina$/),
+    ).toBeTruthy();
   });
 
   it("translates v2 job stage names returned in English", () => {

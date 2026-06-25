@@ -466,7 +466,8 @@ A interface de Experimentos deve manter abas/visões que permitam acompanhar, de
 4. Gerar anúncios com IA.
 5. Aprovar anúncios.
 6. Ir para aba Landing, revisar/aprovar/publicar landing e confirmar URL final para campanha.
-7. Validar custos/telemetria da geração no experimento.
+7. Na aba Público, salvar ao menos 1 item escolhido, aprovado e identificável pela Meta em qualquer categoria suportada: interesse, cargo ou comportamento. Qualquer uma dessas categorias basta para liberar campanha; cargo não é requisito isolado.
+8. Validar custos/telemetria da geração no experimento.
 
 ## 13. Fonte de verdade técnica (código)
 

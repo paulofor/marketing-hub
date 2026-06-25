@@ -1410,3 +1410,9 @@
 - A tela do pipeline v3 passa a consultar esse progresso periodicamente e mostrar nos cards o status real de cada etapa, com destaque visual para etapas na fila/em execução.
 - Ajustado para recuperar sempre o último job iniciado pelo CNAE no backend ao sair e voltar para a tela, sem depender do estado local do navegador.
 - Objetivo de negócio: dar clareza operacional ao usuário sobre o que está acontecendo agora, reduzindo incerteza durante a geração de personas, rotina e tarefas diárias.
+
+## 2026-06-25 — Verificação do agendamento do NichoCNAE v3
+
+- Verificação: o executor `oprm-coletor-mei` possui um scheduler único em `com.marketinghub.nichocnaev3.execution.NichoCnaeV3PendingExecutionScheduler`, com cron `0 */3 * * * *`, que chama a varredura de todas as etapas cadastradas no catálogo v3.
+- Evidência de cobertura: o catálogo v3 contém as 10 etapas `cnae-intake`, `persona-candidate-generator`, `persona-tournament`, `routine-query-planner`, `source-searcher`, `source-fetcher`, `routine-signal-extractor`, `daily-tasks-synthesizer`, `quality-gate` e `persona-routine-materializer`, todas com processor e endpoint backend v3 derivado do código da etapa.
+- Prevenção: adicionados testes de contrato para impedir alteração acidental do cron de 3 em 3 minutos e para garantir que toda etapa v3 cadastrada tenha `backendPath` e `processor` disponíveis para a varredura agendada.

@@ -1456,3 +1456,9 @@
 - Decisão: a materialização final do NichoCNAE v3 passa a criar ou atualizar o nicho usando vínculo explícito com o CNAE de origem.
 - Ajuste: `market_niche` recebeu `source_cnae_code` e `source_cnae_description`; novos nichos v3 usam nome canônico `CNAE <código> — <descrição>`.
 - Reprocessamento: quando o mesmo CNAE já tiver nicho materializado, o fluxo v3 atualiza esse nicho e o perfil enriquecido em vez de criar outro registro solto.
+
+## 2026-06-26 — Tela do pipeline NichoCNAE v3 em coluna única
+
+- Ajuste visual: a tela de etapas do pipeline v3 passou a exibir os cards em coluna única para facilitar leitura sequencial do fluxo.
+- Ajuste de legibilidade: payloads JSON de entrada e saída agora são exibidos em árvore expansível, mantendo campos abertos por padrão nos primeiros níveis e evitando blocos longos difíceis de navegar.
+- Escopo: mudança apenas de apresentação no frontend, usando os dados já retornados pelo backend.

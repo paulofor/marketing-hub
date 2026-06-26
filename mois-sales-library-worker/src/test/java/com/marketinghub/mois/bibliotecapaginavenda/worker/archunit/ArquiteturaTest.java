@@ -17,11 +17,11 @@ import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
 
 /** Garante contratos estruturais de rastreabilidade OpenAI consumidos pelo PromptBuilder. */
-@AnalyzeClasses(packages = "com.marketinghub.mois", importOptions = ImportOption.DoNotIncludeTests.class)
+@AnalyzeClasses(packages = {"com.marketinghub.mois", "com.marketinghub.pipelines"}, importOptions = ImportOption.DoNotIncludeTests.class)
 class ArquiteturaTest {
 
     private static final String PIPELINE_ROOT = "com.marketinghub.mois.bibliotecapaginavenda.worker.v1.pipeline";
-    private static final String DOSSIER_V1_PIPELINE_ROOT = "com.marketinghub.mois.dossiev1.pipeline";
+    private static final String DOSSIER_V1_PIPELINE_ROOT = "com.marketinghub.pipelines.dossie.v1";
     private static final String DOSSIER_PRODUCT_V1_PIPELINE_ROOT =
             "com.marketinghub.mois.bibliotecapaginavenda.worker.pipelines.dossieproduto.v1";
 
@@ -91,12 +91,12 @@ class ArquiteturaTest {
     static final ArchRule dossie_v1_etapas_nao_devem_depender_umas_das_outras = classes()
             .that(resideInDossierV1ConcreteStage())
             .should(notDependOnAnotherDossierV1ConcreteStage())
-            .because("[ARQUITETURA] cada etapa concreta de com.marketinghub.mois.dossiev1.pipeline.<etapa> deve ser independente");
+            .because("[ARQUITETURA] cada etapa concreta de com.marketinghub.pipelines.dossie.v1.<etapa> deve ser independente");
 
     /** Garante que as etapas concretas do dossiê MOIS v1 não formem ciclos. */
     @ArchTest
     static final ArchRule dossie_v1_etapas_nao_devem_ter_ciclos = slices()
-            .matching("com.marketinghub.mois.dossiev1.pipeline.(*)..")
+            .matching("com.marketinghub.pipelines.dossie.v1.(*)..")
             .should()
             .beFreeOfCycles()
             .because("[ARQUITETURA] etapas concretas do dossiê MOIS v1 não podem formar ciclos");
@@ -105,13 +105,13 @@ class ArquiteturaTest {
     @ArchTest
     static final ArchRule dossie_v1_processors_devem_implementar_stage_processor = classes()
             .that()
-            .resideInAPackage("com.marketinghub.mois.dossiev1.pipeline..")
+            .resideInAPackage("com.marketinghub.pipelines.dossie.v1..")
             .and()
             .resideOutsideOfPackage(DOSSIER_V1_PIPELINE_ROOT)
             .and()
             .haveSimpleNameEndingWith("Processor")
             .should()
-            .implement(com.marketinghub.mois.dossiev1.pipeline.StageProcessor.class)
+            .implement(com.marketinghub.pipelines.dossie.v1.StageProcessor.class)
             .because("[ARQUITETURA] toda etapa concreta do dossiê MOIS v1 deve implementar StageProcessor");
 
     /** Garante que o núcleo do dossiê MOIS v1 não dependa de tecnologias concretas. */
@@ -233,7 +233,7 @@ class ArquiteturaTest {
     }
 
     private static DescribedPredicate<JavaClass> resideInDossierV1ConcreteStage() {
-        return new DescribedPredicate<>("[ARQUITETURA] classes dentro de dossiev1.pipeline.<etapa>") {
+        return new DescribedPredicate<>("[ARQUITETURA] classes dentro de pipelines.dossie.v1.<etapa>") {
             @Override
             public boolean test(JavaClass javaClass) {
                 return concreteDossierV1StageName(javaClass) != null;
@@ -242,7 +242,7 @@ class ArquiteturaTest {
     }
 
     private static ArchCondition<JavaClass> notDependOnConcreteDossierV1Stages() {
-        return new ArchCondition<>("[ARQUITETURA] não depender de dossiev1.pipeline.<etapa>") {
+        return new ArchCondition<>("[ARQUITETURA] não depender de pipelines.dossie.v1.<etapa>") {
             @Override
             public void check(JavaClass javaClass, ConditionEvents events) {
                 for (Dependency dependency : javaClass.getDirectDependenciesFromSelf()) {

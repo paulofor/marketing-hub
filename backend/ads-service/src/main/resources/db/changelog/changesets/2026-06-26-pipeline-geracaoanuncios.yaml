@@ -1,0 +1,94 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-26-01-create-pipeline-geracaoanuncios
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: pipeline_geracaoanuncios
+      changes:
+        - createTable:
+            tableName: pipeline_geracaoanuncios
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: id_externo
+                  type: VARCHAR(191)
+              - column:
+                  name: request
+                  type: LONGTEXT
+              - column:
+                  name: response
+                  type: LONGTEXT
+              - column:
+                  name: codigo_etapa
+                  type: VARCHAR(96)
+              - column:
+                  name: data_hora
+                  type: DATETIME(6)
+              - column:
+                  name: job_id
+                  type: VARCHAR(191)
+              - column:
+                  name: quantidade_token_entrada
+                  type: BIGINT
+              - column:
+                  name: quantidade_token_saida
+                  type: BIGINT
+              - column:
+                  name: modelo
+                  type: VARCHAR(128)
+              - column:
+                  name: custo
+                  type: DECIMAL(12,6)
+              - column:
+                  name: descricao_erro
+                  type: LONGTEXT
+              - column:
+                  name: job_id_externo
+                  type: VARCHAR(191)
+              - column:
+                  name: plataforma
+                  type: VARCHAR(64)
+              - column:
+                  name: prompt
+                  type: LONGTEXT
+              - column:
+                  name: schema
+                  type: LONGTEXT
+              - column:
+                  name: versao_pipeline
+                  type: VARCHAR(64)
+        - createIndex:
+            tableName: pipeline_geracaoanuncios
+            indexName: idx_pipeline_geracaoanuncios_job_id
+            columns:
+              - column:
+                  name: job_id
+        - createIndex:
+            tableName: pipeline_geracaoanuncios
+            indexName: idx_pipeline_geracaoanuncios_etapa_data
+            columns:
+              - column:
+                  name: codigo_etapa
+              - column:
+                  name: data_hora
+        - createIndex:
+            tableName: pipeline_geracaoanuncios
+            indexName: idx_pipeline_geracaoanuncios_id_externo
+            columns:
+              - column:
+                  name: id_externo
+      rollback:
+        - dropTable:
+            tableName: pipeline_geracaoanuncios

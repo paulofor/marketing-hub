@@ -48,6 +48,22 @@ As regras abaixo pertencem ao domínio de geração de landing pages. Elas podem
 5. **Presets de design:** pertencem ao fluxo de composição visual do GeraLanding; novos pipelines só devem ter presets quando isso fizer sentido para o domínio.
 6. **Renderização e screenshots:** são necessários para validar landing pages renderizadas; outros pipelines devem substituir por evidências apropriadas, como prévia textual, simulação, validação de contrato, arquivo final ou métrica operacional.
 
+
+## 3.3 Pontos de sucesso do GeraLanding obrigatórios para novos pipelines
+
+Os pontos abaixo deixam de ser apenas aprendizado do GeraLanding e passam a ser regra operacional para qualquer pipeline, adaptando nomes e artefatos ao domínio:
+
+1. **Contrato fechado antes da execução:** toda etapa precisa ter entrada, saída, artefatos, critérios de bloqueio, critérios de conclusão e próxima etapa permitida documentados antes de ser enfileirada.
+2. **Backend decide avanço:** o executor nunca decide sozinho a transição de negócio; ele executa, valida e reporta resultado. O backend persiste o resultado e enfileira a próxima etapa somente quando o sucesso funcional estiver comprovado.
+3. **Endpoint interno por etapa:** cada etapa consumida por worker deve ter `pending` próprio e callbacks próprios para registrar request/prompt quando houver, resposta/resultado, erro, custo e evidências.
+4. **Executor por etapa plugável:** o módulo executor deve manter núcleo genérico separado das etapas concretas; etapa concreta não importa outra etapa concreta e consome resultados anteriores por contrato persistido ou artefato auditável.
+5. **Prompt/schema versionados quando houver IA:** prompt operacional, schema de saída e validação ficam versionados no executor, não hardcoded em service de backend nem dispersos na UI.
+6. **Auditoria bruta separada do artefato funcional:** request bruto, response bruto, metadados, logs técnicos e flags internas não podem contaminar o artefato final consumível/publicável.
+7. **Gate funcional antes de risco comercial:** antes de publicação, materialização, gasto de mídia, oferta ou encerramento como sucesso, deve existir gate compatível com o domínio, apontando causa-raiz, impacto comercial e etapa recomendada de correção.
+8. **Relatório por dados persistidos:** a tela deve explicar andamento, decisão, bloqueio, evidências, custo e próxima ação por dados persistidos, não por leitura de logs técnicos.
+9. **Catálogo de etapas consistente:** é proibido retornar ou persistir `nextStageCode` para etapa sem contrato completo, endpoint `pending`, processor/handler registrado e persistência de execução.
+10. **UI simples e orientada à decisão:** a tela deve mostrar o essencial para o usuário decidir o próximo passo, mantendo detalhes técnicos em nível secundário.
+
 ## 4. Modelo conceitual obrigatório
 
 Todo pipeline deve ser descrito por quatro camadas:

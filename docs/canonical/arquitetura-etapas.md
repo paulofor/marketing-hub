@@ -6,6 +6,21 @@ primeiro este cânone e, em seguida, sincronizar os testes de arquitetura corres
 protocolo padrão backend, os testes/regras ArchUnit devem ficar no arquivo
 `backend/ads-service/src/test/java/com/marketinghub/architecture/ArquiteturaTest.java`.
 
+
+## Protocolo padrão backend — pontos de sucesso do GeraLanding
+
+Ao aplicar o protocolo padrão backend em qualquer pacote, os pontos de sucesso do GeraLanding passam a ser a referência mínima obrigatória, adaptados ao domínio:
+
+1. **Etapa como contrato fechado:** cada etapa precisa ter controller canônico, service canônico, DTOs/records de borda, entrada mínima, saída funcional, critérios de bloqueio, critérios de conclusão e próxima etapa permitida.
+2. **Fila interna por etapa:** todo processamento assíncrono ou externo começa em `pending` próprio da etapa; o retorno deve ser uma unidade de trabalho completa, com rastreabilidade e contexto funcional suficiente.
+3. **Callbacks por operação real:** quando houver IA ou integração externa, o backend deve receber e persistir request/prompt, resposta/resultado, erro, custo e evidências em contratos próprios, sem misturar esses dados no artefato final.
+4. **Backend decide avanço:** o backend valida o resultado recebido, aplica no domínio, persiste auditoria e só então enfileira a próxima etapa. Falha técnica, resposta inválida, ausência de entrada, risco comercial ou necessidade de aprovação humana bloqueiam avanço com motivo persistido.
+5. **Artefato consolidado limpo:** o dado consumível pela próxima etapa, tela, publicação ou materialização deve ficar separado de payload bruto, metadados técnicos, flags internas e logs.
+6. **Relatório persistido:** a execução deve deixar dados suficientes para a UI explicar estado, decisão, bloqueio, evidências, custo e próxima ação sem depender de logs técnicos.
+7. **Catálogo consistente:** nenhum backend deve aceitar ou gerar `nextStageCode` para etapa sem pacote, endpoint `pending`, callback/complete/fail quando aplicável, persistência de execução e contrato documentado.
+
+Esses pontos devem orientar as regras ArchUnit do protocolo padrão backend, com mensagens iniciadas por `[ARQUITETURA] ` e validações explícitas para evitar falso positivo/falso negativo.
+
 ## Regra global — persistência JPA do backend
 
 Todo acesso Spring Data JPA ao banco de dados do backend deve ficar centralizado em algum subpacote de

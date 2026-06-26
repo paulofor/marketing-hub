@@ -20,6 +20,12 @@ import org.springframework.web.server.ResponseStatusException;
 /** Responsabilidade: expor contratos de leitura, escrita e auditoria da etapa Texto do pipeline GeraAnuncio v2. */
 @Service
 public class GeraAnuncioTextoService {
+    private static final String STAGE_CODE = "texto";
+    private static final String NEXT_STAGE = "imagem";
+    private static final String STATUS_STARTED = "INICIADO";
+    private static final String STATUS_WAITING = "AGUARDANDO_RETORNO_MODULO";
+    private static final String STATUS_COMPLETED = "CONCLUIDO";
+    private static final String STATUS_FAILED = "FALHA";
     private final ExperimentService experimentService;
 
     /** Inicializa o service com o serviço canônico de experimentos. */
@@ -119,17 +125,17 @@ public class GeraAnuncioTextoService {
 
     /** Gera identificador determinístico da execução da etapa a partir do experimento. */
     private String stageExecutionId(Experiment experiment) {
-        return "geracaoanuncios-v1-texto-exp-" + experiment.getId();
+        return "geracaoanuncios-v1-" + STAGE_CODE + "-exp-" + experiment.getId();
     }
 
     /** Gera identificador de job estável para correlação operacional. */
     private String stageJobId(Experiment experiment) {
-        return "exp:" + experiment.getId() + "|pipeline:geracaoanuncios|v:1|stage:texto";
+        return "exp:" + experiment.getId() + "|pipeline:geracaoanuncios|v:1|stage:" + STAGE_CODE;
     }
 
     /** Extrai o experimento de um identificador determinístico da etapa. */
     private Long extractExperimentId(String stageExecutionId) {
-        String prefix = "geracaoanuncios-v1-texto-exp-";
+        String prefix = "geracaoanuncios-v1-" + STAGE_CODE + "-exp-";
         if (stageExecutionId == null || !stageExecutionId.startsWith(prefix)) {
             return null;
         }

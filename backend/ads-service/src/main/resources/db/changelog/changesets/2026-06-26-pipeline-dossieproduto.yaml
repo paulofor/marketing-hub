@@ -1,0 +1,40 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-26-pipeline-dossieproduto-01
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: pipeline_dossieproduto
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE pipeline_dossieproduto (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                id_externo VARCHAR(255) NULL,
+                request LONGTEXT NULL,
+                response LONGTEXT NULL,
+                codigo_etapa VARCHAR(120) NULL,
+                data_hora DATETIME(6) NULL,
+                job_id VARCHAR(255) NULL,
+                quantidade_token_entrada BIGINT NULL,
+                quantidade_token_saida BIGINT NULL,
+                modelo VARCHAR(120) NULL,
+                custo DECIMAL(19,6) NULL,
+                descricao_erro LONGTEXT NULL,
+                job_id_externo VARCHAR(255) NULL,
+                plataforma VARCHAR(120) NULL,
+                prompt LONGTEXT NULL,
+                `schema` LONGTEXT NULL,
+                versao_pipeline VARCHAR(80) NULL,
+                PRIMARY KEY (id),
+                INDEX idx_pipeline_dossieproduto_job_id (job_id),
+                INDEX idx_pipeline_dossieproduto_id_externo (id_externo),
+                INDEX idx_pipeline_dossieproduto_etapa_data (codigo_etapa, data_hora)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

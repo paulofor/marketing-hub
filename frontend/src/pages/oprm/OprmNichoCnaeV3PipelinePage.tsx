@@ -411,6 +411,19 @@ export default function OprmNichoCnaeV3PipelinePage() {
                             payload={stageProgress.inputPayload}
                           />
                         </div>
+                        {stageProgress.errorMessage ? (
+                          <div
+                            className="alert alert-danger py-2 px-3 mb-0"
+                            role="alert"
+                          >
+                            <div className="small fw-semibold mb-1">
+                              Erro registrado
+                            </div>
+                            <div className="small text-break">
+                              {stageProgress.errorMessage}
+                            </div>
+                          </div>
+                        ) : null}
                         <div>
                           <div className="small fw-semibold mb-1">
                             O que gerou de saída

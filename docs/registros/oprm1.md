@@ -1399,6 +1399,7 @@
 
 - Corrigida a diferenciação dos nomes das classes versionadas v3 das etapas `source-fetcher` e `source-searcher`, evitando conflito de bean Spring com as classes legadas de mesmo papel.
 - Verificados os componentes Spring do backend para localizar outros nomes simples duplicados com bean name padrão; não restaram duplicidades sem nome explícito após o ajuste.
+
 ## 2026-06-25 — Tela de CNAEs passa a abrir NichoCNAE v3
 
 - Alterado o botão da tabela de CNAEs do OPRM para abrir o pipeline NichoCNAE v3 em vez da v2.
@@ -1430,11 +1431,13 @@
 - Prevenção: adicionado teste de contrato garantindo que o pacote v2 permaneça fora do component scan e que o pacote v3 continue carregado.
 
 ## 2026-06-25 — Monitoramento operacional do NichoCNAE v3 no Ops Monitor
+
 - O Ops Monitor passou a detectar pendências antigas do pipeline NichoCNAE v3 persistidas no backend como incidente sintético do módulo `oprm-coletor-mei`.
 - A regra degrada o módulo quando existir execução v3 em `PENDING` há mais de 6 minutos, expondo o job, CNAE e etapa parada para facilitar ação operacional.
 - A causa-raiz tratada é a diferença entre container ativo e pipeline sem consumo: saúde HTTP isolada não garante que o executor esteja processando a fila v3.
 
 ## 2026-06-25 — NichoCNAE v3 registrado no Protocolo Monitor
+
 - O NichoCNAE v3 ficou registrado como primeiro caso do `Protocolo Monitor`, usando o `oprm-coletor-mei` como módulo executor monitorado.
 - A regra operacional é detectar fila v3 parada mesmo quando o container está online, evitando falso positivo de saúde operacional.
 
@@ -1475,3 +1478,20 @@
 - Correção: a etapa `persona-candidate-generator` passou a usar cliente da OpenAI Responses API com prompt e schema versionados, `service_tier=flex`, JSON Schema estrito e validação de quantidade mínima de personas antes de concluir.
 - Prevenção de recorrência: adicionados testes de processor e cliente OpenAI garantindo que a etapa chama o gerador, envia `json_schema`/Flex e falha quando a resposta não contém personas suficientes.
 
+## 2026-06-26 — NichoCNAE v3: erro visível na etapa falha
+
+- Diagnóstico: a etapa `persona-candidate-generator` do CNAE `4781400` falhou com `IllegalStateException: OpenAI API key não configurada para persona-candidate-generator NichoCNAE v3.`, e o backend já persistia esse erro em `oprm_nichocnae_v3_stage_execution.error_message`.
+- Causa-raiz da tela: a página do pipeline v3 exibia apenas entrada e saída da etapa, ignorando `errorMessage`; por isso o card aparecia como `Falhou`, mas mostrava `Sem saída registrada` em vez da causa da falha.
+- Correção: a tela passou a mostrar o bloco `Erro registrado` quando o backend retornar `errorMessage` para a etapa.
+
+## 2026-06-26 — NichoCNAE v3: OpenAI API key pelo mesmo fallback das versões anteriores
+
+- Causa-raiz complementar: o `persona-candidate-generator` v3 tinha `@ConfigurationProperties`, mas o `application.yml` não declarava o bloco `oprm.nichocnaev3.persona-candidate-generator.openai`; por isso a etapa não herdava o fallback global `OPENAI_API_KEY`/`OPENAI_API_KEY_FILE` já usado pelas etapas anteriores do OPRM.
+- Correção: o coletor OPRM passou a configurar a etapa v3 com variável específica opcional e fallback para `OPENAI_API_KEY` e `OPENAI_API_KEY_FILE`, mantendo o mesmo padrão operacional das versões anteriores.
+- Prevenção de recorrência: adicionado teste de configuração garantindo que o fallback global da OpenAI continue presente no `application.yml` para a etapa `persona-candidate-generator` v3.
+
+## 2026-06-26 — Protocolo padrão módulo: fallback OpenAI obrigatório
+
+- Decisão de regra: a definição do protocolo padrão módulo passou a exigir que etapas OpenAI em módulos executores declarem configuração própria, mas reutilizem obrigatoriamente os fallbacks globais `OPENAI_API_KEY` e `OPENAI_API_KEY_FILE`.
+- Motivo: evitar recorrência da falha em que uma etapa nova de OpenAI tinha `@ConfigurationProperties`, mas não herdava o segredo operacional já provisionado para os workers.
+- Documentos atualizados: `docs/metodologia/gerado-5-5/arquitetura-pipeline-etapas-archunit.md` e `docs/canonical/pipeline-operacional-canon.v1.md`.

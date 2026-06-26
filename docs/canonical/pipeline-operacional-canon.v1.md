@@ -129,6 +129,8 @@ Cada etapa deve possuir configuração própria, adapter de backend, construtor 
 
 O worker não acessa banco. Ele busca pendências no backend pelo endpoint `pending`, faz `claim` quando o contrato da etapa exigir reserva explícita, monta prompt, chama OpenAI, valida resposta e devolve o resultado ao backend. O backend não pode substituir o worker fazendo chamada direta à OpenAI para “atalhar” uma tela ou reduzir latência; se a UI precisar de resposta rápida, o contrato deve continuar assíncrono e mostrar estado de solicitação/processamento.
 
+Regra canônica de segredo OpenAI em módulos executores: toda etapa concreta de worker/coletor que chama OpenAI deve declarar configuração própria da etapa, aceitar variável específica de `api-key`/`api-key-file` quando necessário e reutilizar obrigatoriamente os fallbacks globais `OPENAI_API_KEY` e `OPENAI_API_KEY_FILE`. O fallback global deve ser coberto por teste de configuração ou contrato para impedir regressão em novas etapas do protocolo padrão módulo.
+
 ### 6.3 Persistência
 
 A persistência deve separar:

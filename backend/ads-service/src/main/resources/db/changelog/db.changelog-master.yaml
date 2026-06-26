@@ -1,5 +1,9 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-06-26-mois-sales-page-dossie-produto-updated-at.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-06-26-mois-sales-page-dossie-produto-status.yaml
       file: changesets/2026-06-26-oprm-cnae-nichocnae-v3-progress-timestamp.yaml
       relativeToChangelogFile: true
   - include:

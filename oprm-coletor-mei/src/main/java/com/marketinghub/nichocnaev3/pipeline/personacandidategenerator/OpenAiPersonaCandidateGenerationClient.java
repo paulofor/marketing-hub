@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestClientResponseException;
 
 /** Integra a etapa persona-candidate-generator com a OpenAI Responses API usando saída estruturada. */
 @Component
@@ -51,6 +52,15 @@ public class OpenAiPersonaCandidateGenerationClient implements PersonaCandidateG
     public Map<String, Object> generate(PersonaCandidateGenerationRequest request) {
         String apiKey = resolveApiKey(request);
         if (apiKey.isBlank()) {
+            log.error(
+                    "OpenAI API key ausente para persona-candidate-generator (jobId={}, stageExecutionId={}, cnaeCode={}, baseUrl={}, model={}, serviceTier={}, apiKeyFileConfigurado={})",
+                    request.jobId(),
+                    request.stageExecutionId(),
+                    request.cnaeCode(),
+                    properties.baseUrl(),
+                    properties.model(),
+                    properties.serviceTier(),
+                    !properties.apiKeyFile().isBlank());
             throw new IllegalStateException("OpenAI API key não configurada para persona-candidate-generator NichoCNAE v3.");
         }
         String url = properties.baseUrl() + RESPONSES_PATH;
@@ -60,18 +70,32 @@ public class OpenAiPersonaCandidateGenerationClient implements PersonaCandidateG
             Map<String, Object> raw = responseBody(url, requestBody, apiKey);
             logOpenAiResponse(url, request, raw);
             if (raw == null) {
+                log.error(
+                        "OpenAI retornou corpo vazio para persona-candidate-generator (endpoint={}, jobId={}, stageExecutionId={}, cnaeCode={}, model={}, serviceTier={})",
+                        url,
+                        request.jobId(),
+                        request.stageExecutionId(),
+                        request.cnaeCode(),
+                        properties.model(),
+                        properties.serviceTier());
                 throw new IllegalStateException("OpenAI retornou corpo vazio para persona-candidate-generator NichoCNAE v3.");
             }
-            return objectMapper.readValue(extractModelResponse(raw), MAP_TYPE);
+            String modelResponse = extractModelResponse(raw, request, url);
+            return objectMapper.readValue(modelResponse, MAP_TYPE);
+        } catch (RestClientResponseException ex) {
+            logOpenAiHttpError(url, request, ex);
+            throw new IllegalStateException("Falha na OpenAI ao gerar personas candidatas do NichoCNAE v3.", ex);
         } catch (RestClientException | JsonProcessingException | IllegalStateException | IllegalArgumentException ex) {
             log.error(
-                    "Erro ao gerar personas candidatas com OpenAI (endpoint={}, jobId={}, stageExecutionId={}, cnaeCode={}, model={}, serviceTier={})",
+                    "Erro ao gerar personas candidatas com OpenAI (endpoint={}, jobId={}, stageExecutionId={}, cnaeCode={}, model={}, serviceTier={}, exceptionType={}, message={})",
                     url,
                     request.jobId(),
                     request.stageExecutionId(),
                     request.cnaeCode(),
                     properties.model(),
                     properties.serviceTier(),
+                    ex.getClass().getName(),
+                    ex.getMessage(),
                     ex);
             throw new IllegalStateException("Falha na OpenAI ao gerar personas candidatas do NichoCNAE v3.", ex);
         }
@@ -85,9 +109,21 @@ public class OpenAiPersonaCandidateGenerationClient implements PersonaCandidateG
         for (Path apiKeyPath : apiKeyCandidatePaths()) {
             String apiKey = readApiKeyFile(apiKeyPath, request);
             if (!apiKey.isBlank()) {
+                log.info(
+                        "OpenAI API key resolvida por arquivo seguro para persona-candidate-generator (apiKeyFile={}, jobId={}, stageExecutionId={}, cnaeCode={})",
+                        apiKeyPath,
+                        request.jobId(),
+                        request.stageExecutionId(),
+                        request.cnaeCode());
                 return apiKey;
             }
         }
+        log.warn(
+                "Nenhuma origem de OpenAI API key disponível para persona-candidate-generator (jobId={}, stageExecutionId={}, cnaeCode={}, candidateFiles={})",
+                request.jobId(),
+                request.stageExecutionId(),
+                request.cnaeCode(),
+                apiKeyCandidatePaths());
         return "";
     }
 
@@ -104,6 +140,12 @@ public class OpenAiPersonaCandidateGenerationClient implements PersonaCandidateG
     /** Lê um arquivo de chave quando ele existe e registra falhas sem expor o segredo. */
     private String readApiKeyFile(Path apiKeyPath, PersonaCandidateGenerationRequest request) {
         if (!Files.isRegularFile(apiKeyPath) || !Files.isReadable(apiKeyPath)) {
+            log.debug(
+                    "Arquivo de chave OpenAI indisponível para persona-candidate-generator (apiKeyFile={}, jobId={}, stageExecutionId={}, cnaeCode={})",
+                    apiKeyPath,
+                    request.jobId(),
+                    request.stageExecutionId(),
+                    request.cnaeCode());
             return "";
         }
         try {
@@ -184,10 +226,34 @@ public class OpenAiPersonaCandidateGenerationClient implements PersonaCandidateG
         return response == null ? null : (Map<String, Object>) response;
     }
 
+    /** Registra detalhes HTTP quando a OpenAI responde com erro. */
+    private void logOpenAiHttpError(String url, PersonaCandidateGenerationRequest request, RestClientResponseException ex) {
+        log.error(
+                "Erro HTTP da OpenAI em persona-candidate-generator (endpoint={}, jobId={}, stageExecutionId={}, cnaeCode={}, model={}, serviceTier={}, statusCode={}, statusText={}, responseHeaders={}, responseBody={})",
+                url,
+                request.jobId(),
+                request.stageExecutionId(),
+                request.cnaeCode(),
+                properties.model(),
+                properties.serviceTier(),
+                ex.getStatusCode().value(),
+                ex.getStatusText(),
+                ex.getResponseHeaders(),
+                ex.getResponseBodyAsString(),
+                ex);
+    }
+
     /** Extrai texto JSON da resposta da OpenAI aceitando output_text ou output estruturado. */
-    private String extractModelResponse(Map<String, Object> raw) {
+    private String extractModelResponse(Map<String, Object> raw, PersonaCandidateGenerationRequest request, String url) {
         Object outputText = raw.get("output_text");
         if (outputText != null && !outputText.toString().isBlank()) {
+            log.info(
+                    "JSON extraído de output_text da OpenAI para persona-candidate-generator (endpoint={}, jobId={}, stageExecutionId={}, cnaeCode={}, outputLength={})",
+                    url,
+                    request.jobId(),
+                    request.stageExecutionId(),
+                    request.cnaeCode(),
+                    outputText.toString().length());
             return outputText.toString();
         }
         Object output = raw.get("output");
@@ -197,9 +263,25 @@ public class OpenAiPersonaCandidateGenerationClient implements PersonaCandidateG
                 appendOutputItemText(builder, item);
             }
             if (!builder.isEmpty()) {
+                log.info(
+                        "JSON extraído de output estruturado da OpenAI para persona-candidate-generator (endpoint={}, jobId={}, stageExecutionId={}, cnaeCode={}, outputItems={}, outputLength={})",
+                        url,
+                        request.jobId(),
+                        request.stageExecutionId(),
+                        request.cnaeCode(),
+                        list.size(),
+                        builder.length());
                 return builder.toString();
             }
         }
+        log.error(
+                "Resposta OpenAI sem texto JSON extraível para persona-candidate-generator (endpoint={}, jobId={}, stageExecutionId={}, cnaeCode={}, responseKeys={}, payload={})",
+                url,
+                request.jobId(),
+                request.stageExecutionId(),
+                request.cnaeCode(),
+                raw.keySet(),
+                toJsonForLog(raw));
         throw new IllegalStateException("Não foi possível extrair JSON da resposta OpenAI de personas candidatas.");
     }
 

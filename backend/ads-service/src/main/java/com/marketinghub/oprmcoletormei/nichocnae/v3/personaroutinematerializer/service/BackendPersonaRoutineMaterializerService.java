@@ -8,7 +8,9 @@ import com.marketinghub.oprm.market.OprmCnpjCnaeDim;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.personaroutinematerializer.service.createStageExecution.PersonaRoutineMaterializerCreateResponse;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.personaroutinematerializer.service.pending.PersonaRoutineMaterializerPendingResponse;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.shared.OprmNichoCnaeV3StageServiceSupport;
+import com.marketinghub.oprmcoletormei.nichocnae.v3.shared.OprmNichoCnaeV3RecebeRequestRequest;
 import com.marketinghub.repository.jpa.oprm.market.OprmCnpjCnaeDimRepository;
+import com.marketinghub.repository.jpa.oprm.nichocnae.PipelineNichoCnaeRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.v3.OprmNichoCnaeV3StageExecutionRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -36,9 +38,10 @@ public class BackendPersonaRoutineMaterializerService extends OprmNichoCnaeV3Sta
     public BackendPersonaRoutineMaterializerService(
             OprmNichoCnaeV3StageExecutionRepository repository,
             OprmCnpjCnaeDimRepository cnaeRepository,
+            PipelineNichoCnaeRepository pipelineNichoCnaeRepository,
             PersonaRoutineMaterializerNicheGateway nicheGateway,
             ObjectMapper objectMapper) {
-        super(repository, cnaeRepository, STAGE_CODE);
+        super(repository, cnaeRepository, pipelineNichoCnaeRepository, STAGE_CODE);
         this.nicheGateway = nicheGateway;
         this.objectMapper = objectMapper;
     }
@@ -52,6 +55,11 @@ public class BackendPersonaRoutineMaterializerService extends OprmNichoCnaeV3Sta
     public PersonaRoutineMaterializerCreateResponse start(String cnaeCode) {
         markCnaePipelineStarted(cnaeCode, STATUS_STARTED);
         return create(null, cnaeCode, "{\"cnaeCode\":\"" + cnaeCode + "\"}", 1, 1);
+    }
+
+    /** Recebe o request bruto da etapa e registra auditoria para o pipeline NichoCNAE v3. */
+    public PersonaRoutineMaterializerCreateResponse recebeRequest(String cnaeCode, OprmNichoCnaeV3RecebeRequestRequest request) {
+        return new PersonaRoutineMaterializerCreateResponse(null, doRecebeRequest(cnaeCode, request).getJobId(), cnaeCode, STAGE_CODE, "AGUARDANDO_MODULO");
     }
 
     /** Lista pendências da etapa persona-routine-materializer para o executor OPRM. */

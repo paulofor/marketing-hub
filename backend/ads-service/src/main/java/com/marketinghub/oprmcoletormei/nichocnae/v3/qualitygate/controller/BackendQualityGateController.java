@@ -5,6 +5,7 @@ import com.marketinghub.oprmcoletormei.nichocnae.v3.qualitygate.service.complete
 import com.marketinghub.oprmcoletormei.nichocnae.v3.qualitygate.service.createStageExecution.QualityGateCreateResponse;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.qualitygate.service.failStageExecution.QualityGateFailureRequest;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.qualitygate.service.pending.QualityGatePendingResponse;
+import com.marketinghub.oprmcoletormei.nichocnae.v3.shared.OprmNichoCnaeV3RecebeRequestRequest;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -41,6 +42,12 @@ public class BackendQualityGateController {
     @PostMapping("/cnaes/{cnaeCode}")
     public QualityGateCreateResponse createForCnae(@PathVariable String cnaeCode) {
         return service.create(null, cnaeCode, "{\"cnaeCode\":\"" + cnaeCode + "\"}", 1, 1);
+    }
+
+    /** Recebe o request bruto da etapa identificado pelo CNAE. */
+    @PostMapping("/cnaes/{cnaeCode}/recebeRequest")
+    public QualityGateCreateResponse recebeRequest(@PathVariable String cnaeCode, @RequestBody OprmNichoCnaeV3RecebeRequestRequest request) {
+        return service.recebeRequest(cnaeCode, request);
     }
 
     /** Entrega pendências da etapa quality-gate ao executor OPRM. */

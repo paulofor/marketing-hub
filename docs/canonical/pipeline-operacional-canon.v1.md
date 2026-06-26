@@ -130,7 +130,7 @@ No módulo executor/worker, use o mesmo padrão sem repetir o nome do módulo de
 com.marketinghub.<modulo-executor>.pipelines.<nome-pipeline>.v<numero-versao>.<nome-etapa>
 ```
 
-Exemplo backend: `com.marketinghub.pipelines.facebookads.geracaoanuncios.v1.roteiroCriativo.web`.
+Exemplo backend: `com.marketinghub.pipelines.aiworker.geracaoanuncios.v1.roteiroCriativo.web`.
 
 Quando a etapa usa Worker AI, o backend deve expor o contrato mínimo:
 

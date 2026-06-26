@@ -2,6 +2,8 @@ package com.marketinghub.oprmcoletormei.nichocnae.v3.shared;
 
 import com.marketinghub.oprmcoletormei.nichocnae.v3.OprmNichoCnaeV3StageExecution;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.OprmNichoCnaeV3StageExecutionStatus;
+import com.marketinghub.oprm.market.OprmCnpjCnaeDim;
+import com.marketinghub.repository.jpa.oprm.market.OprmCnpjCnaeDimRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.v3.OprmNichoCnaeV3StageExecutionRepository;
 import java.time.Instant;
 import java.util.List;
@@ -23,12 +25,29 @@ public abstract class OprmNichoCnaeV3StageServiceSupport {
             Map.entry("quality-gate", 9),
             Map.entry("persona-routine-materializer", 10));
     private final OprmNichoCnaeV3StageExecutionRepository repository;
+    private final OprmCnpjCnaeDimRepository cnaeRepository;
     private final String stageCode;
 
     /** Inicializa o suporte com repository canônico e código da etapa. */
-    protected OprmNichoCnaeV3StageServiceSupport(OprmNichoCnaeV3StageExecutionRepository repository, String stageCode) {
+    protected OprmNichoCnaeV3StageServiceSupport(
+            OprmNichoCnaeV3StageExecutionRepository repository,
+            OprmCnpjCnaeDimRepository cnaeRepository,
+            String stageCode) {
         this.repository = repository;
+        this.cnaeRepository = cnaeRepository;
         this.stageCode = stageCode;
+    }
+
+    /** Marca no cadastro de CNAE que o pipeline NichoCNAE v3 foi iniciado na etapa atual. */
+    protected void markCnaePipelineStarted(String cnaeCode, String statusStarted) {
+        OprmCnpjCnaeDim cnae = cnaeRepository.findById(cnaeCode)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "CNAE não encontrado."));
+        Instant now = Instant.now();
+        cnae.setNichocnaePipelineStatus(statusStarted);
+        cnae.setNichocnaeCurrentStageCode(stageCode);
+        cnae.setNichocnaePipelineUpdatedAt(now);
+        cnae.setUpdatedAt(now);
+        cnaeRepository.save(cnae);
     }
 
     /** Cria uma execução pendente para a etapa canônica. */

@@ -1,0 +1,69 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-26-01-oprm-cnae-nichocnae-pipeline-status
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: oprm_cnpj_cnae_dim
+        - not:
+            columnExists:
+              tableName: oprm_cnpj_cnae_dim
+              columnName: nichocnae_pipeline_status
+      changes:
+        - addColumn:
+            tableName: oprm_cnpj_cnae_dim
+            columns:
+              - column:
+                  name: nichocnae_pipeline_status
+                  type: VARCHAR(40)
+  - changeSet:
+      id: 2026-06-26-02-oprm-cnae-nichocnae-current-stage
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: oprm_cnpj_cnae_dim
+        - not:
+            columnExists:
+              tableName: oprm_cnpj_cnae_dim
+              columnName: nichocnae_current_stage_code
+      changes:
+        - addColumn:
+            tableName: oprm_cnpj_cnae_dim
+            columns:
+              - column:
+                  name: nichocnae_current_stage_code
+                  type: VARCHAR(64)
+  - changeSet:
+      id: 2026-06-26-03-oprm-cnae-nichocnae-status-stage-index
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: oprm_cnpj_cnae_dim
+        - columnExists:
+            tableName: oprm_cnpj_cnae_dim
+            columnName: nichocnae_pipeline_status
+        - columnExists:
+            tableName: oprm_cnpj_cnae_dim
+            columnName: nichocnae_current_stage_code
+        - not:
+            indexExists:
+              tableName: oprm_cnpj_cnae_dim
+              indexName: idx_oprm_cnae_nichocnae_status_stage
+      changes:
+        - createIndex:
+            tableName: oprm_cnpj_cnae_dim
+            indexName: idx_oprm_cnae_nichocnae_status_stage
+            columns:
+              - column:
+                  name: nichocnae_pipeline_status
+              - column:
+                  name: nichocnae_current_stage_code

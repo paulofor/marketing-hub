@@ -1,0 +1,44 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-26-04-oprm-cnae-nichocnae-pipeline-updated-at
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: oprm_cnpj_cnae_dim
+        - not:
+            columnExists:
+              tableName: oprm_cnpj_cnae_dim
+              columnName: nichocnae_pipeline_updated_at
+      changes:
+        - addColumn:
+            tableName: oprm_cnpj_cnae_dim
+            columns:
+              - column:
+                  name: nichocnae_pipeline_updated_at
+                  type: DATETIME
+  - changeSet:
+      id: 2026-06-26-05-oprm-cnae-nichocnae-pipeline-updated-at-index
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: oprm_cnpj_cnae_dim
+        - columnExists:
+            tableName: oprm_cnpj_cnae_dim
+            columnName: nichocnae_pipeline_updated_at
+        - not:
+            indexExists:
+              tableName: oprm_cnpj_cnae_dim
+              indexName: idx_oprm_cnae_nichocnae_updated_at
+      changes:
+        - createIndex:
+            tableName: oprm_cnpj_cnae_dim
+            indexName: idx_oprm_cnae_nichocnae_updated_at
+            columns:
+              - column:
+                  name: nichocnae_pipeline_updated_at

@@ -1556,3 +1556,12 @@
 
 - Correção: os services canônicos de etapa do backend NichoCNAE v3 receberam constantes explícitas para `STAGE_CODE`, `NEXT_STAGE` e statuses operacionais (`INICIADO`, `AGUARDANDO_RETORNO_MODULO`, `CONCLUIDO`, `FALHA`).
 - Objetivo: reduzir divergência de códigos de etapa/status entre backend, executor OPRM MEI e relatórios operacionais do pipeline.
+
+## 2026-06-26 — NichoCNAE v3: rastreio do status no cadastro CNAE
+
+- Correção: os métodos `start(String cnaeCode)` dos services de etapa do backend NichoCNAE v3 agora localizam o CNAE pelo repository canônico, marcam o pipeline `nichocnae` como `INICIADO` e registram a etapa atual com `STAGE_CODE` antes de criar a pendência.
+- Persistência: adicionadas colunas em `oprm_cnpj_cnae_dim` para manter status do pipeline e etapa atual diretamente no cadastro do CNAE.
+
+## 2026-06-26 — NichoCNAE v3: data/hora do status no cadastro CNAE
+
+- Ajuste: adicionada a coluna `nichocnae_pipeline_updated_at` em `oprm_cnpj_cnae_dim` para registrar a data/hora corrente sempre que o `start` de uma etapa atualizar o status e a etapa atual do pipeline NichoCNAE v3.

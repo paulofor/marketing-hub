@@ -13,8 +13,6 @@ import com.marketinghub.experiment.*;
 import com.marketinghub.finance.CurrencyConversionService;
 import com.marketinghub.experiment.dto.CreateExperimentRequest;
 import com.marketinghub.experiment.dto.UpdateExperimentRequest;
-import com.marketinghub.experiment.pipeline.ads.ExperimentPipelineAdExtractor;
-import com.marketinghub.experiment.pipeline.ads.PipelineAdCreativePlan;
 import com.marketinghub.repository.jpa.experiment.ExperimentPromiseGenerationRequestRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.experiment.funnel.ExperimentFunnelEventRepository;
@@ -740,32 +738,13 @@ public class ExperimentService {
     }
 
     /**
-     * Solicita geração de anúncios do pipeline com rastreio operacional explícito.
+     * Bloqueia a solicitação antiga de anúncios do pipeline para forçar uso do GeraAnuncio v2.
      */
     @Transactional
     public Experiment requestPipelineCreatives(Long id) {
-        Experiment exp = repository.findById(id).orElseThrow();
-        Integer pending = exp.getCreativesToGenerate();
-        if (pending != null && pending > 0) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Já existe uma solicitação de criativos pendente");
-        }
-        ensurePipelinePrerequisites(exp);
-        ExperimentPipelineAdExtractor extractor = new ExperimentPipelineAdExtractor(objectMapper);
-        java.util.List<PipelineAdCreativePlan> plans = extractor.extract(exp);
-        if (plans.isEmpty()) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Nenhuma variação válida foi encontrada no pipeline de anúncio.");
-        }
-        int quantity = Math.min(3, plans.size());
-        exp.setCreativesToGenerate(quantity);
-        exp.setCreativeGenerationMode(CreativeGenerationMode.PIPELINE_ADS);
-        exp.setCreativeGenerationStatus(CreativeGenerationStatus.REQUESTED);
-        exp.setCreativeGenerationRequestedAt(java.time.Instant.now());
-        exp.setCreativeGenerationStartedAt(null);
-        exp.setCreativeGenerationFinishedAt(null);
-        exp.setCreativeGenerationError(null);
-        return exp;
+        throw new ResponseStatusException(
+                HttpStatus.GONE,
+                "A geração antiga de anúncios foi desligada. Use o pipeline GeraAnuncio v2.");
     }
 
     /**
@@ -1008,6 +987,7 @@ public class ExperimentService {
     public List<Experiment> listPendingCreativeGeneration(int limit) {
         int effectiveLimit = Math.max(1, limit);
         return repository.findAllToGenerateCreatives().stream()
+                .filter(experiment -> experiment.getCreativeGenerationMode() != CreativeGenerationMode.PIPELINE_ADS)
                 .filter(experiment -> experiment.getCreativeGenerationStatus() == CreativeGenerationStatus.REQUESTED
                         || experiment.getCreativeGenerationStatus() == CreativeGenerationStatus.PROCESSING)
                 .limit(effectiveLimit)

@@ -1,0 +1,51 @@
+openapi: 3.0.3
+info:
+  title: GeraAnuncio v2 API
+  version: v2
+  description: Contratos internos do pipeline GeraAnuncio v2 para geração de criativos de anúncios pelo AI Worker.
+paths:
+  /api/internal/geraanuncio/v2/criativo/stage-executions/experiments/{experimentId}/start:
+    post:
+      summary: Inicia execução da etapa Criativo para um experimento
+      description: Endpoint usado pela tela administrativa para iniciar o fluxo novo GeraAnuncio v2 sem acionar a fila antiga.
+      parameters:
+        - name: experimentId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Solicitação registrada na etapa Criativo do GeraAnuncio v2.
+  /api/internal/geraanuncio/v2/criativo/stage-executions/pending:
+    post:
+      summary: Lista execuções pendentes da etapa Criativo
+      description: Endpoint canônico usado pelo AI Worker para consumir a fila da etapa Criativo.
+      responses:
+        '200':
+          description: Execuções pendentes retornadas com contexto e artefatos anteriores.
+  /api/internal/geraanuncio/v2/criativo/stage-executions/{stageExecutionId}/prompt:
+    post:
+      summary: Registra prompt enviado ao modelo
+      parameters:
+        - name: stageExecutionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '202':
+          description: Prompt aceito para auditoria.
+  /api/internal/geraanuncio/v2/criativo/stage-executions/{stageExecutionId}/response:
+    post:
+      summary: Registra resposta do modelo e saída estruturada
+      parameters:
+        - name: stageExecutionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '202':
+          description: Resposta aceita para auditoria e relatório.

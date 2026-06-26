@@ -1,0 +1,34 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-26-mois-sales-page-geracaoanuncios-pipeline-01
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: mois_sales_page
+        - not:
+            columnExists:
+              tableName: mois_sales_page
+              columnName: status_pipeline_geracaoanuncios
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE mois_sales_page
+                ADD COLUMN status_pipeline_geracaoanuncios VARCHAR(40) NULL AFTER dossie_produto_updated_at,
+                ADD COLUMN data_pipeline_geracaoanuncios DATETIME(6) NULL AFTER status_pipeline_geracaoanuncios;
+              CREATE INDEX idx_mois_sales_page_geracaoanuncios_pipeline
+                ON mois_sales_page (status_pipeline_geracaoanuncios, data_pipeline_geracaoanuncios);
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              DROP INDEX idx_mois_sales_page_geracaoanuncios_pipeline ON mois_sales_page;
+              ALTER TABLE mois_sales_page
+                DROP COLUMN data_pipeline_geracaoanuncios,
+                DROP COLUMN status_pipeline_geracaoanuncios;

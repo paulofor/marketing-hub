@@ -5,6 +5,7 @@ import com.marketinghub.pipelines.aiworker.geracaoanuncios.v1.imagem.service.det
 import com.marketinghub.pipelines.aiworker.geracaoanuncios.v1.imagem.service.listStageExecutions.GeraAnuncioImagemExecutionSummaryResponse;
 import com.marketinghub.pipelines.aiworker.geracaoanuncios.v1.imagem.service.pending.GeraAnuncioImagemPendingResponse;
 import com.marketinghub.pipelines.aiworker.geracaoanuncios.v1.imagem.service.recebePrompt.GeraAnuncioImagemPromptRequest;
+import com.marketinghub.pipelines.aiworker.geracaoanuncios.v1.imagem.service.recebeRequest.GeraAnuncioImagemRecebeRequestRequest;
 import com.marketinghub.pipelines.aiworker.geracaoanuncios.v1.imagem.service.recebeResposta.GeraAnuncioImagemRespostaRequest;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
@@ -49,6 +50,14 @@ public class GeraAnuncioImagemController {
     @PostMapping("/pending")
     public List<GeraAnuncioImagemPendingResponse> pending() {
         return service.pending();
+    }
+
+    /** Recebe o request operacional gerado pelo AI Worker para a etapa. */
+    @PostMapping("/{experimentKey}/recebeRequest")
+    public ResponseEntity<Void> recebeRequest(
+            @PathVariable String experimentKey, @RequestBody GeraAnuncioImagemRecebeRequestRequest request) {
+        service.recebeRequest(experimentKey, request);
+        return ResponseEntity.accepted().build();
     }
 
     /** Recebe o prompt operacional enviado ao modelo pelo AI Worker. */

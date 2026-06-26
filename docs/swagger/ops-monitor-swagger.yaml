@@ -47,7 +47,14 @@ paths:
           required: false
           schema: { type: string, enum: [BACKEND, WORKER, COLLECTOR, PORTAL, SERVICE] }
       responses:
-        '200': { description: OK }
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ModuleAvailabilityResponse'
   /api/ops-monitor/v1/modules/{moduleCode}/availability-history:
     get:
       summary: Lista histórico de disponibilidade do módulo
@@ -88,3 +95,21 @@ paths:
           schema: { type: string, enum: [BACKEND, WORKER, COLLECTOR, PORTAL, SERVICE] }
       responses:
         '200': { description: OK }
+
+components:
+  schemas:
+    ModuleAvailabilityResponse:
+      type: object
+      properties:
+        moduleCode: { type: string }
+        name: { type: string }
+        type: { type: string }
+        criticality: { type: string }
+        status: { type: string }
+        lastCheckedAt: { type: string, format: date-time, nullable: true }
+        lastResponseTimeMs: { type: integer, format: int64, nullable: true }
+        lastError: { type: string, nullable: true }
+        attemptedUrl:
+          type: string
+          nullable: true
+          description: URL completa de healthcheck que o monitor tenta acessar para o módulo.

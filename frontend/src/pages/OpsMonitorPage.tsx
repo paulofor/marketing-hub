@@ -358,6 +358,7 @@ export default function OpsMonitorPage() {
                 <th>Última verificação</th>
                 <th>Tempo de resposta</th>
                 <th>Último erro</th>
+                <th>URL tentada</th>
                 <th>Impacto de negócio</th>
               </tr>
             </thead>
@@ -384,6 +385,9 @@ export default function OpsMonitorPage() {
                   <td className="ops-monitor-page__table-error">
                     {module.lastError ?? "Sem erro"}
                   </td>
+                  <td>
+                    <code>{module.attemptedUrl ?? "Sem URL"}</code>
+                  </td>
                   <td className="ops-monitor-page__impact">
                     <AlertTriangle size={14} aria-hidden="true" />{" "}
                     {getImpact(module)}
@@ -392,7 +396,7 @@ export default function OpsMonitorPage() {
               ))}
               {modules.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center text-muted py-4">
+                  <td colSpan={8} className="text-center text-muted py-4">
                     Nenhum módulo monitorado retornado pelo backend.
                   </td>
                 </tr>

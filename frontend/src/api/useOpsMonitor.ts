@@ -20,6 +20,7 @@ export interface ModuleAvailability {
   lastCheckedAt?: string | null;
   lastResponseTimeMs?: number | null;
   lastError?: string | null;
+  attemptedUrl?: string | null;
 }
 
 export interface ModuleAvailabilityHistory {

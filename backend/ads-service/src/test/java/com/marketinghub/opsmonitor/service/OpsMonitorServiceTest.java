@@ -77,6 +77,8 @@ class OpsMonitorServiceTest {
         criticalWorker.setCode("ai-worker");
         criticalWorker.setName("AI Worker");
         criticalWorker.setType("WORKER");
+        criticalWorker.setBaseUrl("http://191.252.120.96:4567/");
+        criticalWorker.setHealthPath("worker-observability/health");
         criticalWorker.setCriticality("CRITICAL");
 
         OpsMonitoredModule highCollector = new OpsMonitoredModule();
@@ -96,6 +98,7 @@ class OpsMonitorServiceTest {
 
         assertThat(filtered).hasSize(1);
         assertThat(filtered.getFirst().moduleCode()).isEqualTo("ai-worker");
+        assertThat(filtered.getFirst().attemptedUrl()).isEqualTo("http://191.252.120.96:4567/worker-observability/health");
     }
 
     /** Garante que fila antiga de GeraLanding aparece como incidente do AI Worker. */
@@ -168,6 +171,8 @@ class OpsMonitorServiceTest {
         collector.setCode("oprm-coletor-mei");
         collector.setName("OPRM Coletor MEI");
         collector.setType("COLLECTOR");
+        collector.setBaseUrl("http://191.252.181.168");
+        collector.setHealthPath("/actuator/health");
         collector.setCriticality("HIGH");
 
         OprmNichoCnaeV3StageExecution execution = new OprmNichoCnaeV3StageExecution();
@@ -192,6 +197,7 @@ class OpsMonitorServiceTest {
         assertThat(availability.getFirst().moduleCode()).isEqualTo("oprm-coletor-mei");
         assertThat(availability.getFirst().status()).isEqualTo("DEGRADED");
         assertThat(availability.getFirst().lastError()).contains("NichoCNAE v3");
+        assertThat(availability.getFirst().attemptedUrl()).isEqualTo("http://191.252.181.168/actuator/health");
     }
 
     /** Garante que o payload bruto de healthcheck suporta respostas Actuator maiores que 255 caracteres. */

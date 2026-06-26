@@ -72,6 +72,12 @@ public class OprmNicheCandidate {
     @Column(name = "routine_research_status", nullable = false, length = 32)
     private String routineResearchStatus;
 
+    @Column(name = "geracao_anuncios_pipeline_status", length = 32)
+    private String geracaoAnunciosPipelineStatus;
+
+    @Column(name = "geracao_anuncios_current_stage_code", length = 64)
+    private String geracaoAnunciosCurrentStageCode;
+
     @Column(name = "last_routine_research_cycle_id")
     private Long lastRoutineResearchCycleId;
 

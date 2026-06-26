@@ -1850,3 +1850,9 @@ Arquivos principais:
 - Criados os pacotes do backend no padrão `com.marketinghub.pipelines.mois.dossieproduto.v1.<etapa>` para as etapas `fatosproduto`, `analisepagina`, `planejabuscas`, `qualificafontes` e `consolidadossie`.
 - Criados os pacotes do executor `mois-sales-library-worker` no padrão `com.marketinghub.mois.bibliotecapaginavenda.worker.pipelines.dossieproduto.v1.<etapa>`.
 - Atualizadas regras ArchUnit de backend e do worker para proteger controller/service/pending, contratos `record`, núcleo genérico sem dependência de etapas concretas e independência entre etapas.
+
+## 2026-06-26 — Consolidação dos pacotes do dossiê da Página de Vendas
+
+- Mantido no módulo executor apenas o pacote canônico `com.marketinghub.pipelines.dossie.v1` para o pipeline v1 de dossiê.
+- Ajustado o backend para usar o pacote canônico `com.marketinghub.moissaleslibraryworker.pipelines.dossie.v1`.
+- Removidos os pacotes duplicados `dossieproduto.v1` do executor e do backend para evitar divergência operacional e de contratos.

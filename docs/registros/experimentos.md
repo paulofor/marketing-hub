@@ -1,3 +1,10 @@
+## 2026-06-26 — GeraLanding Quality Review em processamento default/standard da OpenAI
+
+- solicitação: testar a etapa `landing-page-quality-review` fora do modo Flex após falhas repetidas `HTTP 429 rate_limit_exceeded` em requisições multimodais grandes.
+- causa-raiz operacional provável: a revisão visual envia HTML final completo, schema estrito e screenshots mobile/desktop; no Flex, a OpenAI pode ficar temporariamente indisponível para esse tipo de carga e o worker marcava a tentativa como falha.
+- foi feito: a etapa Quality Review passou a declarar `service_tier=default` no request OpenAI, com configuração própria `QUALITYREVIEW_WORKER_SERVICE_TIER`, mantendo Flex como padrão das demais etapas do core.
+- prevenção de recorrência: o tier efetivo e a justificativa da exceção ficam auditados nos metadados da etapa, permitindo comparar novas tentativas com o histórico de falhas Flex.
+
 ## 2026-06-25 — Remoção do card final de hipóteses no detalhe do nicho
 
 - Solicitação: retirar o card de hipóteses duplicado no final da tela de detalhe do nicho, mantendo o novo card do início como ponto único de consulta.

@@ -61,7 +61,8 @@ public class QualityReviewPromptBuilder implements StagePromptBuilder<QualityRev
                 properties.schemaName(),
                 schemaJson,
                 promptMarkdownContent,
-                auditMetadata(execution, screenshots, prompt, requestBodyJson));
+                auditMetadata(execution, screenshots, prompt, requestBodyJson),
+                properties.serviceTier());
     }
 
 
@@ -82,6 +83,8 @@ public class QualityReviewPromptBuilder implements StagePromptBuilder<QualityRev
         audit.put("schemaName", properties.schemaName());
         audit.put("visionModel", properties.visionModel());
         audit.put("imageDetail", properties.imageDetail());
+        audit.put("serviceTier", properties.serviceTier());
+        audit.put("serviceTierJustification", "Quality Review usa processamento default/standard para reduzir indisponibilidade operacional observada no modo Flex em requisições multimodais grandes.");
         audit.put("screenshots", screenshots.stream().map(this::toScreenshotAudit).toList());
 
         Map<String, Object> metadata = new LinkedHashMap<>();

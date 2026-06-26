@@ -48,19 +48,20 @@ public class ResponsesApiOpenAiClient implements OpenAiClientPort {
                 .build();
     }
 
-    /** Envia o request final em modo flex para a OpenAI e devolve os dados de despacho para auditoria no backend. */
+    /** Envia o request final com o service tier da etapa para a OpenAI e devolve os dados de despacho para auditoria no backend. */
     @Override
     public OpenAiDispatch dispatch(OpenAiRequest request) {
         String originalRequestBodyJson = request.requestBodyJson();
         String marketingHubJobId = marketingHubJobId(request);
         String requestBodyJson = originalRequestBodyJson;
         try {
-            Map<String, Object> requestBody = buildFlexRequestBody(originalRequestBodyJson);
+            Map<String, Object> requestBody = buildServiceTierRequestBody(originalRequestBodyJson, request.serviceTier());
             requestBodyJson = objectMapper.writeValueAsString(requestBody);
             log.info(
-                    "Enviando request final em modo flex para OpenAI Responses API [jobId={}, schemaName={}, requestBodyJson={}]",
+                    "Enviando request final para OpenAI Responses API [jobId={}, schemaName={}, serviceTier={}, requestBodyJson={}]",
                     marketingHubJobId,
                     request.schemaName(),
+                    request.serviceTier(),
                     requestBodyJson);
 
             Map<String, Object> raw = webClient.post()
@@ -125,10 +126,10 @@ public class ResponsesApiOpenAiClient implements OpenAiClientPort {
         }
     }
 
-    /** Monta o payload final da Responses API fixando o processamento OpenAI em service_tier flex. */
-    private Map<String, Object> buildFlexRequestBody(String requestBodyJson) throws JsonProcessingException {
+    /** Monta o payload final da Responses API aplicando o service_tier solicitado pela etapa. */
+    private Map<String, Object> buildServiceTierRequestBody(String requestBodyJson, String serviceTier) throws JsonProcessingException {
         Map<String, Object> requestBody = objectMapper.readValue(requestBodyJson, new TypeReference<>() {});
-        requestBody.put("service_tier", "flex");
+        requestBody.put("service_tier", serviceTier);
         return requestBody;
     }
 

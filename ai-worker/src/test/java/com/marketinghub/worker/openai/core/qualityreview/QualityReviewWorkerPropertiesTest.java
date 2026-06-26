@@ -21,10 +21,12 @@ class QualityReviewWorkerPropertiesTest {
                 "experiment_pipeline_landing_page_quality_review",
                 "gpt-5.5",
                 "original",
+                null,
                 Duration.ofMinutes(30),
                 "/usr/bin/chromium",
                 null);
 
         assertThat(properties.screenshotTimeout()).isEqualTo(Duration.ofMinutes(2));
+        assertThat(properties.serviceTier()).isEqualTo("default");
     }
 }

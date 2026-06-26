@@ -451,7 +451,7 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
 - **Sintomas recorrentes**:
   - custo aparece `$0.00` apesar de tokens retornados;
   - modelo da etapa não aparece na tela;
-  - request auditado não mostra `service_tier=flex`;
+  - request auditado não mostra o `service_tier` efetivo da etapa;
   - Worker AI usa preço hardcoded ou propriedade zerada;
   - modelo configurado em `/pipelines` não chega à execução.
 - **Causa-raiz sistêmica provável**:
@@ -469,7 +469,8 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
   - modelo por etapa vindo do pipeline/catálogo;
   - fallback default explícito por tipo de artefato;
   - custo calculado via backend/catalogo `openai_model`;
-  - request auditável sempre com `service_tier=flex`;
+  - request auditável sempre com o `service_tier` efetivo da etapa;
+  - exceções ao Flex, como Quality Review em processamento default/standard por indisponibilidade operacional do Flex em requisições multimodais grandes, devem registrar justificativa funcional no fluxo;
   - UI mostra modelo, modo, preço e custo acumulado.
 - **Regra preventiva**:
   - nenhuma etapa OpenAI deve persistir execução sem modelo efetivo, tokens e regra de preço identificável.

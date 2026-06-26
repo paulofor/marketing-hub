@@ -1,41 +1,70 @@
 package com.marketinghub.pipelines.aiworker.geracaoanuncios.v1.imagem.service;
 
-import com.marketinghub.pipelines.aiworker.geracaoanuncios.v1.imagem.service.detailStageExecution.GeraAnuncioImagemDetailResponse;
-import com.marketinghub.pipelines.aiworker.geracaoanuncios.v1.imagem.service.listStageExecutions.GeraAnuncioImagemExecutionSummaryResponse;
-import com.marketinghub.pipelines.aiworker.geracaoanuncios.v1.imagem.service.pending.GeraAnuncioImagemPendingResponse;
-import com.marketinghub.pipelines.aiworker.geracaoanuncios.v1.imagem.service.recebePrompt.GeraAnuncioImagemPromptRequest;
-import com.marketinghub.pipelines.aiworker.geracaoanuncios.v1.imagem.service.recebeResposta.GeraAnuncioImagemRespostaRequest;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.CreativeGenerationMode;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.service.ExperimentService;
 import com.marketinghub.oprm.cnae.OprmNicheCandidate;
+import com.marketinghub.pipeline.geracaoanuncios.PipelineGeracaoAnuncios;
+import com.marketinghub.pipelines.aiworker.geracaoanuncios.v1.imagem.service.detailStageExecution.GeraAnuncioImagemDetailResponse;
+import com.marketinghub.pipelines.aiworker.geracaoanuncios.v1.imagem.service.listStageExecutions.GeraAnuncioImagemExecutionSummaryResponse;
+import com.marketinghub.pipelines.aiworker.geracaoanuncios.v1.imagem.service.pending.GeraAnuncioImagemPendingResponse;
+import com.marketinghub.pipelines.aiworker.geracaoanuncios.v1.imagem.service.recebePrompt.GeraAnuncioImagemPromptRequest;
+import com.marketinghub.pipelines.aiworker.geracaoanuncios.v1.imagem.service.recebeRequest.GeraAnuncioImagemRecebeRequestRequest;
+import com.marketinghub.pipelines.aiworker.geracaoanuncios.v1.imagem.service.recebeResposta.GeraAnuncioImagemRespostaRequest;
+import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageRepository;
+import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.entity.MoisSalesPage;
 import com.marketinghub.repository.jpa.oprm.cnae.OprmNicheCandidateRepository;
+import com.marketinghub.repository.jpa.pipeline.geracaoanuncios.PipelineGeracaoAnunciosRepository;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
-import org.springframework.data.domain.PageRequest;
 import java.util.Objects;
+import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
 /** Responsabilidade: expor contratos de leitura, escrita e auditoria da etapa Imagem do pipeline GeraAnuncio v2. */
 @Service
 public class GeraAnuncioImagemService {
+    private static final Logger log = LoggerFactory.getLogger(GeraAnuncioImagemService.class);
     private static final String STAGE_CODE = "imagem";
     private static final String NEXT_STAGE = "fim";
     private static final String STATUS_STARTED = "INICIADO";
     private static final String STATUS_WAITING = "AGUARDANDO_RETORNO_MODULO";
+    private static final String STATUS_AGUARDANDO_MODULO = "AGUARDANDO_MODULO";
+    private static final String PIPELINE_VERSION = "v1";
     private static final String STATUS_COMPLETED = "CONCLUIDO";
     private static final String STATUS_FAILED = "FALHA";
     private final ExperimentService experimentService;
     private final OprmNicheCandidateRepository cnaeRepository;
+    private final MoisSalesPageRepository salesPageRepository;
+    private final PipelineGeracaoAnunciosRepository pipelineRepository;
+    private final ObjectMapper objectMapper;
 
-    /** Inicializa o service com o repositório canônico de candidatos CNAE. */
-    public GeraAnuncioImagemService(ExperimentService experimentService, OprmNicheCandidateRepository cnaeRepository) {
+    /** Inicializa o service com os repositórios canônicos de controle e auditoria. */
+    public GeraAnuncioImagemService(
+            ExperimentService experimentService,
+            OprmNicheCandidateRepository cnaeRepository,
+            MoisSalesPageRepository salesPageRepository,
+            PipelineGeracaoAnunciosRepository pipelineRepository,
+            ObjectMapper objectMapper) {
         this.experimentService = experimentService;
         this.cnaeRepository = cnaeRepository;
+        this.salesPageRepository = salesPageRepository;
+        this.pipelineRepository = pipelineRepository;
+        this.objectMapper = objectMapper;
     }
 
     /** Inicia uma solicitação da etapa Imagem usando o código/chave operacional do experimento. */
@@ -72,6 +101,33 @@ public class GeraAnuncioImagemService {
                 .stream()
                 .map(this::toPending)
                 .toList();
+    }
+
+    /** Recebe e audita o request operacional enviado para a etapa Imagem. */
+    @Transactional
+    public void recebeRequest(String experimentKey, GeraAnuncioImagemRecebeRequestRequest request) {
+        if (request == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "payload required");
+        }
+        Instant now = Instant.now();
+        MoisSalesPage salesPage = salesPageRepository
+                .findById(resolveExperimentId(experimentKey))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Sales page not found"));
+        salesPage.setStatusPipelineGeracaoAnuncios(STATUS_AGUARDANDO_MODULO);
+        salesPage.setDataPipelineGeracaoAnuncios(now);
+        salesPageRepository.save(salesPage);
+
+        PipelineGeracaoAnuncios pipeline = new PipelineGeracaoAnuncios();
+        pipeline.setIdExterno(experimentKey);
+        pipeline.setRequest(serializeRequest(request.request()));
+        pipeline.setCodigoEtapa(STAGE_CODE);
+        pipeline.setDataHora(now);
+        pipeline.setJobId(createJobHash(experimentKey, now));
+        pipeline.setPlataforma(request.plataforma());
+        pipeline.setPrompt(request.prompt());
+        pipeline.setSchema(request.schema());
+        pipeline.setVersaoPipeline(PIPELINE_VERSION);
+        pipelineRepository.save(pipeline);
     }
 
     /** Registra o prompt enviado ao modelo para auditoria da etapa. */
@@ -158,6 +214,35 @@ public class GeraAnuncioImagemService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "experimentKey must be the numeric experiment id");
         }
         return Long.valueOf(normalizedExperimentKey);
+    }
+
+    /** Serializa o request recebido preservando payload estruturado quando existir. */
+    private String serializeRequest(Object request) {
+        if (request == null) {
+            return null;
+        }
+        if (request instanceof String requestText) {
+            return requestText;
+        }
+        try {
+            return objectMapper.writeValueAsString(request);
+        } catch (JsonProcessingException ex) {
+            log.warn("Falha ao serializar request do pipeline geracaoanuncios; etapa={}", STAGE_CODE, ex);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "request payload invalid", ex);
+        }
+    }
+
+    /** Cria um hash único para rastrear o job recebido nesta chamada. */
+    private String createJobHash(String experimentKey, Instant now) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest((experimentKey + "|" + STAGE_CODE + "|" + now + "|" + UUID.randomUUID())
+                    .getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(hash);
+        } catch (NoSuchAlgorithmException ex) {
+            log.error("Falha ao gerar hash jobId do pipeline geracaoanuncios; etapa={}, experimentKey={}", STAGE_CODE, experimentKey, ex);
+            throw new IllegalStateException("SHA-256 indisponível para gerar jobId", ex);
+        }
     }
 
     /** Gera identificador determinístico da execução da etapa a partir do experimento. */

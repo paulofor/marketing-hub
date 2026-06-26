@@ -28,4 +28,10 @@ public class MoisSalesPage {
 
     @Column(name = "dossie_produto_updated_at")
     private Instant dossieProdutoUpdatedAt;
+
+    @Column(name = "status_pipeline_geracaoanuncios", length = 40)
+    private String statusPipelineGeracaoAnuncios;
+
+    @Column(name = "data_pipeline_geracaoanuncios")
+    private Instant dataPipelineGeracaoAnuncios;
 }

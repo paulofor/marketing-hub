@@ -5450,3 +5450,9 @@
 - Foi feito: o backend passou a organizar as etapas `texto` e `imagem` em `com.marketinghub.pipelines.aiworker.geracaoanuncios.v1`, enquanto o AI Worker passou a usar `com.marketinghub.pipelines.geracaoanuncios.v1`, sem repetir o nome do módulo executor.
 - Foi feito: os endpoints internos canônicos de `pending` foram alinhados para `/api/internal/aiworker/geracaoanuncios/v1/<etapa>/stage-executions/pending` e os services de etapa agora publicam pendências reais do modo `PIPELINE_ADS` com contexto de texto e briefing de imagem do experimento.
 - Prevenção de recorrência: os testes ArchUnit do backend e do AI Worker foram atualizados para proteger o novo namespace e o contrato de consumo por etapa.
+
+## 2026-06-26 — Botão de GeraAnuncio inicia pela primeira etapa v2
+
+- Solicitação: o botão “Gerar anúncios do pipeline” deve chamar o `/start` da primeira etapa do pipeline GeraAnuncio v2 usando o código/chave do experimento.
+- Ajuste aplicado: o frontend deixou de chamar o endpoint legado por `experimentId` no caminho e passou a chamar `/api/internal/aiworker/geracaoanuncios/v1/texto/stage-executions/start` com `experimentKey` como parâmetro de query, alinhando a tela ao contrato documentado da primeira etapa.
+- Prevenção de recorrência: adicionado teste de frontend validando que o clique no botão envia a chave do experimento para o endpoint de início da etapa Texto.

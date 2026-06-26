@@ -266,6 +266,57 @@ describe("CriativosTab", () => {
     ).toBeInTheDocument();
   });
 
+  it("starts GeraAnuncio v2 from the first stage using experiment key", async () => {
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url.endsWith("/experiments/1/creatives")) {
+        return Promise.resolve({ data: [] });
+      }
+      if (url.endsWith("/experiments/1")) {
+        return Promise.resolve({
+          data: {
+            creativesToGenerate: 0,
+            creativeGenerationMode: "DEFAULT",
+            creativeGenerationStatus: "IDLE",
+            adCopy: JSON.stringify({
+              adCopy: { primaryTextVariants: [{ primaryText: "Texto" }] },
+            }),
+            adImageBriefing: JSON.stringify({
+              adImageBriefing: { briefings: [{ visualBriefing: "Imagem" }] },
+            }),
+          },
+        });
+      }
+      return Promise.resolve({ data: [] });
+    });
+    (axios.post as any).mockResolvedValue({ data: { idJob: "job-1" } });
+
+    const client = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <CriativosTab experimentId="1" />
+      </QueryClientProvider>,
+    );
+
+    await userEvent.click(
+      await screen.findByRole("button", {
+        name: "Gerar anúncios do pipeline",
+      }),
+    );
+
+    await waitFor(() => {
+      expect(axios.post).toHaveBeenCalledWith(
+        "/api/internal/aiworker/geracaoanuncios/v1/texto/stage-executions/start",
+        null,
+        { params: { experimentKey: "1" } },
+      );
+    });
+  });
+
   it("clears approval loading state when the backend rejects the update", async () => {
     (axios.get as any).mockImplementation((url: string) => {
       if (url.endsWith("/experiments/1/creatives")) {

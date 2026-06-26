@@ -8,4 +8,6 @@ public record NichoCnaeV3FinalizationReviewResponse(
         Long targetMarketNicheId,
         String targetNicheName,
         String nicheInformation,
-        String enrichedNicheInformation) {}
+        String enrichedNicheInformation,
+        boolean canConfirmFinalization,
+        String blockingReason) {}

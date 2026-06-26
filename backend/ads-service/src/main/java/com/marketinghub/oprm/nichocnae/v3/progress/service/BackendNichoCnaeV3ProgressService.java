@@ -7,6 +7,7 @@ import com.marketinghub.oprm.nichocnae.v3.OprmNichoCnaeV3StageExecutionStatus;
 import com.marketinghub.oprm.nichocnae.v3.personaroutinematerializer.gateway.PersonaRoutineMaterializerNicheGateway;
 import com.marketinghub.oprm.nichocnae.v3.personaroutinematerializer.service.BackendPersonaRoutineMaterializerService;
 import com.marketinghub.repository.jpa.oprm.nichocnae.v3.OprmNichoCnaeV3StageExecutionRepository;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import org.springframework.stereotype.Service;
@@ -59,6 +60,11 @@ public class BackendNichoCnaeV3ProgressService {
         if (qualityGate.getStatus() != OprmNichoCnaeV3StageExecutionStatus.COMPLETED) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Quality gate ainda não foi concluído.");
         }
+        JsonNode output = parseOutput(qualityGate.getOutputPayload());
+        List<String> missingFields = missingFunctionalEvidence(output);
+        if (!missingFields.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "A etapa 9 não trouxe informações funcionais suficientes para liberar a materialização: " + String.join(", ", missingFields) + ".");
+        }
         if (!repository.existsByJobIdAndStageCode(latest.getJobId(), FINAL_STAGE)) {
             materializerService.create(latest.getJobId(), latest.getCnaeCode(), qualityGate.getOutputPayload(), qualityGate.getAttemptNumber(), qualityGate.getKnowledgeVersion());
         }
@@ -76,6 +82,8 @@ public class BackendNichoCnaeV3ProgressService {
         String targetName = "CNAE " + qualityGate.getCnaeCode() + " — " + cnaeDescription;
         Long existingId = nicheGateway.findPersonaRoutineMaterializedNiche(qualityGate.getCnaeCode(), targetName.trim().toLowerCase(Locale.ROOT))
                 .map(PersonaRoutineMaterializerNicheGateway.MarketNicheSnapshot::marketNicheId).orElse(null);
+        List<String> missingFields = missingFunctionalEvidence(output);
+        boolean canConfirm = missingFields.isEmpty();
         return new NichoCnaeV3FinalizationReviewResponse(
                 true,
                 qualityGate.getId(),
@@ -83,7 +91,9 @@ public class BackendNichoCnaeV3ProgressService {
                 existingId,
                 targetName,
                 buildNicheInformation(output, cnaeDescription),
-                buildEnrichedInformation(output, qualityGate.getOutputPayload()));
+                buildEnrichedInformation(output),
+                canConfirm,
+                canConfirm ? null : "A etapa 9 não trouxe informações funcionais suficientes: " + String.join(", ", missingFields) + ". Reexecute o job v3 antes de materializar.");
     }
 
     /** Converte a entidade persistida em contrato de progresso para a UI. */
@@ -117,8 +127,26 @@ public class BackendNichoCnaeV3ProgressService {
         return "Descrição CNAE: " + cnaeDescription + "\n\nRotina observada: " + textOrDefault(firstText(output, "routineSummary", "routine", "rotina"), "Não informada.") + "\n\nTarefas diárias: " + textOrDefault(firstText(output, "personaDailyTasks", "dailyTasks", "tarefasDiarias", "tasks"), "Não informadas.");
     }
 
-    /** Monta resumo do perfil enriquecido encontrado antes da materialização. */
-    private String buildEnrichedInformation(JsonNode output, String fallback) {
-        return "Persona: " + textOrDefault(firstText(output, "personaSummary", "persona"), "Não informada.") + "\n\nEvidências: " + textOrDefault(firstText(output, "evidenceSummary", "evidences"), fallback) + "\n\nGatilhos comerciais: " + textOrDefault(firstText(output, "commercialTriggers", "triggers"), "Não informados.") + "\n\nObjeções: " + textOrDefault(firstText(output, "objections"), "Não informadas.");
+    /** Monta resumo do perfil enriquecido encontrado antes da materialização sem expor payload técnico. */
+    private String buildEnrichedInformation(JsonNode output) {
+        return "Persona: " + textOrDefault(firstText(output, "personaSummary", "persona"), "Não informada.") + "\n\nEvidências: " + textOrDefault(firstText(output, "evidenceSummary", "evidences"), "Não informadas.") + "\n\nGatilhos comerciais: " + textOrDefault(firstText(output, "commercialTriggers", "triggers"), "Não informados.") + "\n\nObjeções: " + textOrDefault(firstText(output, "objections"), "Não informadas.");
+    }
+
+    /** Lista campos funcionais ausentes que impedem materialização segura. */
+    private List<String> missingFunctionalEvidence(JsonNode output) {
+        List<String> missing = new ArrayList<>();
+        if (!StringUtils.hasText(firstText(output, "routineSummary", "routine", "rotina"))) {
+            missing.add("rotina observada");
+        }
+        if (!StringUtils.hasText(firstText(output, "personaDailyTasks", "dailyTasks", "tarefasDiarias", "tasks"))) {
+            missing.add("tarefas diárias");
+        }
+        if (!StringUtils.hasText(firstText(output, "personaSummary", "persona"))) {
+            missing.add("persona");
+        }
+        if (!StringUtils.hasText(firstText(output, "evidenceSummary", "evidences"))) {
+            missing.add("evidências");
+        }
+        return missing;
     }
 }

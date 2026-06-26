@@ -18,6 +18,8 @@ export interface OprmNichoCnaeV3FinalizationReview {
   targetNicheName: string;
   nicheInformation: string;
   enrichedNicheInformation: string;
+  canConfirmFinalization: boolean;
+  blockingReason: string | null;
 }
 
 export interface OprmNichoCnaeV3JobProgress {

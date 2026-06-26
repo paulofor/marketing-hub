@@ -62,7 +62,8 @@ export default function OprmNichoCnaeV3PipelinePage() {
   const decodedCnaeCode = decodeURIComponent(cnaeCode ?? "");
   const startJob = useStartOprmNichoCnaeV3Job(decodedCnaeCode);
   const progress = useOprmNichoCnaeV3Progress(decodedCnaeCode);
-  const confirmFinalization = useConfirmOprmNichoCnaeV3Finalization(decodedCnaeCode);
+  const confirmFinalization =
+    useConfirmOprmNichoCnaeV3Finalization(decodedCnaeCode);
   const stagesByCode = new Map(
     (progress.data?.stages ?? []).map((stage) => [stage.stageCode, stage]),
   );
@@ -75,7 +76,11 @@ export default function OprmNichoCnaeV3PipelinePage() {
   };
 
   const handleConfirmFinalization = () => {
-    if (!decodedCnaeCode || confirmFinalization.isPending) {
+    if (
+      !decodedCnaeCode ||
+      confirmFinalization.isPending ||
+      progress.data?.finalizationReview?.canConfirmFinalization === false
+    ) {
       return;
     }
     confirmFinalization.mutate();
@@ -138,10 +143,13 @@ export default function OprmNichoCnaeV3PipelinePage() {
               <div>
                 <h2 className="h5 mb-1">Conferência antes da finalização</h2>
                 <p className="text-muted mb-0">
-                  A etapa final (#10) só será liberada depois da sua confirmação.
+                  A etapa final (#10) só será liberada depois da sua
+                  confirmação.
                 </p>
               </div>
-              <span className="badge text-bg-warning">Aguardando confirmação</span>
+              <span className="badge text-bg-warning">
+                Aguardando confirmação
+              </span>
             </div>
             <div className="alert alert-light border" role="status">
               <strong>Decisão de materialização:</strong>{" "}
@@ -150,11 +158,20 @@ export default function OprmNichoCnaeV3PipelinePage() {
                 ? "aproveitar nicho existente"
                 : "criar nicho novo"}
               {" — "}
-              <strong>{progress.data.finalizationReview.targetNicheName}</strong>
+              <strong>
+                {progress.data.finalizationReview.targetNicheName}
+              </strong>
               {progress.data.finalizationReview.targetMarketNicheId ? (
                 <> #{progress.data.finalizationReview.targetMarketNicheId}</>
               ) : null}
             </div>
+            {progress.data.finalizationReview.canConfirmFinalization ? null : (
+              <div className="alert alert-danger" role="alert">
+                <strong>Materialização bloqueada.</strong>{" "}
+                {progress.data.finalizationReview.blockingReason ??
+                  "A etapa 9 não trouxe dados funcionais suficientes para criar ou atualizar o nicho."}
+              </div>
+            )}
             <div className="row g-3">
               <div className="col-12 col-lg-6">
                 <h3 className="h6">Informações de nicho encontradas</h3>
@@ -163,7 +180,9 @@ export default function OprmNichoCnaeV3PipelinePage() {
                 </pre>
               </div>
               <div className="col-12 col-lg-6">
-                <h3 className="h6">Informações de nicho enriquecido encontradas</h3>
+                <h3 className="h6">
+                  Informações de nicho enriquecido encontradas
+                </h3>
                 <pre className="small bg-light border rounded-3 p-3 text-wrap mb-0">
                   {progress.data.finalizationReview.enrichedNicheInformation}
                 </pre>
@@ -174,7 +193,10 @@ export default function OprmNichoCnaeV3PipelinePage() {
                 type="button"
                 className="btn btn-success"
                 onClick={handleConfirmFinalization}
-                disabled={confirmFinalization.isPending}
+                disabled={
+                  confirmFinalization.isPending ||
+                  !progress.data.finalizationReview.canConfirmFinalization
+                }
               >
                 {confirmFinalization.isPending ? (
                   <>

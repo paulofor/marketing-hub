@@ -57,12 +57,22 @@ nascer como `v1`, porque uma mudança completa futura poderá exigir `v2` sem so
 Ela existe porque alguns pipelines precisam conviver em versões paralelas durante validação, rollout gradual,
 comparação de qualidade e rollback seguro.
 
-No módulo executor, a versão deve aparecer no pacote que contém o núcleo e as etapas do fluxo, por
-exemplo `com.marketinghub.nichocnaev1.pipeline`, `com.marketinghub.nichocnaev1.pipeline.<etapa>` ou,
-quando houver nova versão completa, `com.marketinghub.nichocnaev2.pipeline.<etapa>`. No backend, a versão
-deve aparecer antes da etapa, por exemplo `com.marketinghub.oprm.nichocnae.v1.<etapa>` ou
-`com.marketinghub.oprm.nichocnae.v2.<etapa>`, preservando o backend como contrato, persistência e
-publicação de pendências da versão correta.
+O padrão canônico de pacotes para pipelines versionados passa a ser:
+
+- **Backend:** `...pipelines.<nome-modulo>.<nome-pipeline>.v<numero-versao>.<nome-etapa>`.
+- **Módulo executor:** `...pipelines.<nome-pipeline>.v<numero-versao>.<nome-etapa>`.
+
+No backend, o pacote inclui o `<nome-modulo>` porque o backend concentra contratos, persistência e
+publicação de pendências de múltiplos módulos. Exemplo:
+`com.marketinghub.pipelines.oprm.nichocnae.v1.coletaRotina`.
+
+No módulo executor, o pacote não repete o nome do módulo, porque o próprio repositório/módulo já define o
+contexto operacional. Exemplo: `com.marketinghub.pipelines.nichocnae.v1.coletaRotina`.
+
+A regra substitui padrões antigos como `...nichocnaev1.pipeline.<etapa>` ou
+`...<dominio>.<pipeline>.v1.<etapa>` em novos pipelines e em reestruturações completas. Pacotes legados só
+devem permanecer quando não fizer parte do escopo migrá-los; novos fluxos devem nascer no padrão
+`pipelines.<...>.<pipeline>.v<versao>.<etapa>`.
 
 A nova versão precisa continuar plugável: núcleo genérico separado das etapas concretas, etapas concretas
 independentes entre si, dependência por contratos/artefatos/estado persistido e consumo iniciado pelo

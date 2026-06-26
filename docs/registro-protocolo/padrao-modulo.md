@@ -34,11 +34,11 @@
 - Pipeline criado como `v1`, com núcleo genérico (`PipelineWorker`, `StageProcessor`, `StageContext`, `StageResult`, `StageArtifact`, `ArtifactStore`) e etapas plugáveis `intake`, `product-understanding`, `investigation-anchor-builder`, `warmup-resource-discovery`, `source-product-match`, `warmup-signal-extraction`, `warmup-map-builder` e `dossier-synthesis`.
 - Pontos iniciais canônicos previstos para consumo pelo executor: `/api/internal/mois/dossie/v1/<etapa>/stage-executions/pending`, começando por `intake` e cobrindo todas as etapas v1 do dossiê.
 
-- 2026-06-26 — Registro legado do GeraAnuncio v2 no `ai-worker` substituído pelo pacote correto `com.marketinghub.geraanuncio.v2` e pelas etapas `texto` e `imagem`.
+- 2026-06-26 — Registro do pipeline `geracaoanuncios` v1 no `ai-worker` aplicado no pacote correto `com.marketinghub.pipelines.geracaoanuncios.v1` e pelas etapas `texto` e `imagem`.
 
 
-## 2026-06-26 — AI Worker — GeraAnuncio v2 texto/imagem
+## 2026-06-26 — AI Worker — GeracaoAnuncios v1 texto/imagem
 
 - Módulo executor: `ai-worker`.
-- Pacote protegido: `com.marketinghub.geraanuncio.v2`.
-- Alteração: o pipeline GeraAnuncio v2 passou a ter duas etapas internas espelhadas com o backend, `texto` e `imagem`, cada uma com client próprio para o endpoint `pending` canônico da etapa par no backend.
+- Pacote protegido: `com.marketinghub.pipelines.geracaoanuncios.v1`.
+- Alteração: o pipeline GeracaoAnuncios v1 passou a ter duas etapas internas espelhadas com o backend, `texto` e `imagem`, cada uma com client próprio para o endpoint `pending` canônico da etapa par no backend.

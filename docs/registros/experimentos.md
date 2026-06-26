@@ -5443,3 +5443,10 @@
 - Causa-raiz: a reativação anterior do AI Worker consumia apenas a fila padrão e excluía solicitações `PIPELINE_ADS`; ao mesmo tempo, o endpoint v2 de start não atualizava o experimento.
 - Correção aplicada: o start do GeraAnuncio v2 passou a enfileirar o experimento em modo `PIPELINE_ADS`, validar textos/briefings do pipeline e permitir que a fila de criativos pendentes entregue também esse modo ao AI Worker.
 - Prevenção de recorrência: teste unitário confirma que uma solicitação do pipeline fica com status `REQUESTED`, quantidade 3 e aparece na fila consumida pelo worker.
+
+## 2026-06-26 — Pipeline de geração de anúncios no padrão versionado
+
+- Solicitação: implementar o novo padrão de pacotes para o pipeline de geração de anúncios.
+- Foi feito: o backend passou a organizar as etapas `texto` e `imagem` em `com.marketinghub.pipelines.facebookads.geracaoanuncios.v1`, enquanto o AI Worker passou a usar `com.marketinghub.pipelines.geracaoanuncios.v1`, sem repetir o nome do módulo executor.
+- Foi feito: os endpoints internos canônicos de `pending` foram alinhados para `/api/internal/facebookads/geracaoanuncios/v1/<etapa>/stage-executions/pending` e os services de etapa agora publicam pendências reais do modo `PIPELINE_ADS` com contexto de texto e briefing de imagem do experimento.
+- Prevenção de recorrência: os testes ArchUnit do backend e do AI Worker foram atualizados para proteger o novo namespace e o contrato de consumo por etapa.

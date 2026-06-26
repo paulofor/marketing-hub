@@ -272,6 +272,74 @@ paths:
       responses:
         '200':
           description: Lista de criativos
+  /api/experiments/creatives/stage-executions/pending:
+    get:
+      tags: [Creatives]
+      summary: Listar solicitações pendentes de geração de criativos para o AI Worker
+      parameters:
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: Experimentos com geração de criativos pendente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Experiment'
+  /api/experiments/{id}/creatives/stage-execution/start:
+    post:
+      tags: [Creatives]
+      summary: Marcar geração de criativos como iniciada pelo AI Worker
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Experimento atualizado
+  /api/experiments/{id}/creatives/stage-execution/complete:
+    post:
+      tags: [Creatives]
+      summary: Marcar geração de criativos como concluída pelo AI Worker
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Experimento atualizado
+  /api/experiments/{id}/creatives/stage-execution/fail:
+    post:
+      tags: [Creatives]
+      summary: Marcar geração de criativos como falha pelo AI Worker
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                error:
+                  type: string
+      responses:
+        '200':
+          description: Experimento atualizado
   /api/creatives/{id}/preview:
     get:
       tags: [Creatives]

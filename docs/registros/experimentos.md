@@ -5429,3 +5429,10 @@
 - Tela: detalhe do experimento.
 - Solicitação: retirar o trecho visual de bloqueios de publicação e execução registrada do cartão “Campanha de Facebook Ads”, mantendo o botão “Liberar para Facebook Ads Worker”.
 - Ajuste: o cartão continua exibindo título, status, explicação, carregamento e botão de liberação; a lista detalhada de bloqueios e a seção de execução registrada deixaram de ser renderizadas nesse ponto da tela.
+
+## 2026-06-26 — Reativação da geração de criativos pelo AI Worker
+
+- Problema: o experimento 49 voltava a ficar preso em `Gerando anúncios...` após nova solicitação, com `creatives_to_generate=3`, `creative_generation_status=REQUESTED` e nenhum registro em `creative`.
+- Causa-raiz: os clientes `CreativeChatGptClient` e `CreativeImageClient` existiam no AI Worker, mas não havia scheduler/service ativo consumindo a fila `creatives_to_generate` do backend e registrando os criativos.
+- Correção aplicada: o backend passou a expor contrato pending/start/complete/fail para geração de criativos; o AI Worker recebeu `CreativeGenerationScheduler`, `CreativeGenerationService` e `CreativeGenerationBackendClient` para consumir a fila via backend, gerar imagens e criar criativos `DRAFT`.
+- Prevenção de recorrência: adicionado teste unitário garantindo que a fila pendente é consumida, o criativo é criado e a pendência é concluída no backend.

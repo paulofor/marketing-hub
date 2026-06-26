@@ -1518,3 +1518,9 @@
 
 - Diagnóstico: o workflow atual publica o `oprm-coletor-mei` em `191.252.120.96`, mas o default do MCP ainda apontava o alias legado `oprm-coletor-receita` para `177.153.62.107:8094`.
 - Correção: o default documentado e configurado no `mcp-server` passou a apontar para `http://191.252.120.96:8094/actuator/logfile`, mantendo o alias operacional `oprm-coletor-receita` usado pela tool `java_module_logs`.
+
+## 2026-06-26 — NichoCNAE v3: logs completos de falhas OpenAI
+
+- Diagnóstico: a falha recente da etapa `persona-candidate-generator` chegava ao banco e à tela como erro genérico, porque o log não registrava explicitamente `statusCode`, `statusText`, headers e corpo retornado pela OpenAI em respostas HTTP de erro.
+- Correção: o cliente OpenAI da etapa passou a registrar caminhos de diagnóstico para chave ausente, origem da chave por arquivo seguro, request enviado, response recebido, corpo vazio, erro HTTP com status/corpo, falha genérica com tipo/mensagem da exceção e ausência de texto JSON extraível.
+- Prevenção de recorrência: adicionado teste unitário cobrindo erro HTTP 400 da OpenAI e validando que o log contém status e corpo do provedor sem expor a chave direta.

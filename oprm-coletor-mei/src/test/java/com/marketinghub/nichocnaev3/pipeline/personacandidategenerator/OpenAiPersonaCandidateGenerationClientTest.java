@@ -1,9 +1,11 @@
 package com.marketinghub.nichocnaev3.pipeline.personacandidategenerator;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.client.ExpectedCount.once;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.jsonPath;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -16,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
@@ -87,6 +90,42 @@ class OpenAiPersonaCandidateGenerationClientTest {
 
         assertThat(apiKey).isEqualTo("file-key");
         Files.deleteIfExists(apiKeyFile);
+    }
+
+    /** Confirma que erros HTTP da OpenAI registram status e corpo para diagnóstico da causa-raiz. */
+    @Test
+    void shouldLogOpenAiHttpStatusAndBodyWhenProviderRejectsRequest(CapturedOutput logs) {
+        RestClient.Builder builder = RestClient.builder();
+        MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+        String errorBody = "{\"error\":{\"message\":\"invalid schema\",\"type\":\"invalid_request_error\"}}";
+        server.expect(once(), requestTo(URI.create("https://api.openai.com/v1/responses")))
+                .andRespond(withStatus(HttpStatus.BAD_REQUEST)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body(errorBody));
+        OpenAiPersonaCandidateGenerationClient client = new OpenAiPersonaCandidateGenerationClient(
+                builder.build(),
+                new ObjectMapper(),
+                new PersonaCandidateOpenAiProperties("https://api.openai.com/v1", "direct-key", "", "gpt-test", null),
+                new PersonaCandidatePromptBuilder(),
+                new PersonaCandidateSchemaLoader(new ObjectMapper()));
+
+        assertThatThrownBy(() -> client.generate(new PersonaCandidateGenerationRequest(
+                        "job-err",
+                        "87",
+                        "4781400",
+                        "Comércio varejista de artigos do vestuário",
+                        Map.of("cnaeCode", "4781400"))))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Falha na OpenAI ao gerar personas candidatas do NichoCNAE v3.");
+
+        assertThat(logs.getOut())
+                .contains("Erro HTTP da OpenAI em persona-candidate-generator")
+                .contains("jobId=job-err")
+                .contains("stageExecutionId=87")
+                .contains("statusCode=400")
+                .contains("invalid schema")
+                .doesNotContain("direct-key");
+        server.verify();
     }
 
 }

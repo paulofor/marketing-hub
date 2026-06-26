@@ -61,3 +61,9 @@
 - Causa-raiz confirmada pela URL tentada exibida na própria tela: esses dois módulos estão publicados no host operacional `191.252.120.96`, mantendo as portas `8082` para Facebook Ads e `8094` para OPRM MEI.
 - Correção aplicada: novo changeset ajusta o cadastro canônico do Ops Monitor para `http://191.252.120.96:8082/worker-observability/health` e `http://191.252.120.96:8094/actuator/health`.
 - Prevenção de recorrência: o endereço real fica versionado no Liquibase e registrado no histórico operacional do monitor.
+
+## 2026-06-26 — Correção dos hosts do MOIS Sales Library Worker e Email Service
+
+- Problema observado: a tela `/ops-monitor` marcava `mois-sales-library-worker` e `email-service` como fora do ar porque os health checks estavam cadastrados em `http://191.252.181.168:8097` e `http://191.252.181.168:8086`.
+- Causa-raiz confirmada pelo workflow de deploy e pelo banco via MCP: os dois módulos são publicados pelo GitHub Actions no host operacional `191.252.120.96`, enquanto o cadastro canônico do Ops Monitor ainda apontava para o host antigo/incorreto `191.252.181.168`.
+- Correção aplicada: novo changeset ajusta o cadastro canônico para `http://191.252.120.96:8097/actuator/health` e `http://191.252.120.96:8086/ops-email-gateway-7xk9/health`.

@@ -1507,3 +1507,8 @@
 - Causa-raiz aprofundada: depender apenas de variável de ambiente para apontar o arquivo da chave ainda deixava a etapa vulnerável a deploy sem `OPENAI_API_KEY_FILE`, mesmo com o segredo existente no servidor em `/root/infra/openai-token/openai_api_key`.
 - Correção: a etapa `persona-candidate-generator` v3 agora tenta ler a chave por variável direta, pelo arquivo configurado, pelo segredo montado no container em `/run/secrets/openai_api_key` e, como fallback operacional, pelo caminho seguro do host `/root/infra/openai-token/openai_api_key`.
 - Prevenção de recorrência: o `application.yml` do executor agora tem default explícito para `/run/secrets/openai_api_key`, e os testes validam a leitura de chave por arquivo seguro.
+
+## 2026-06-26 — NichoCNAE v3: logs do request e response OpenAI
+
+- Correção operacional: a etapa `persona-candidate-generator` do executor OPRM passou a registrar em log o payload enviado à OpenAI e a resposta bruta recebida, com `jobId`, `stageExecutionId`, `cnaeCode` e endpoint, sem expor a chave de autenticação.
+- Motivo: permitir diagnosticar a causa real de falhas da OpenAI no NichoCNAE v3 sem depender apenas da mensagem genérica persistida na tela.

@@ -55,8 +55,10 @@ public class OpenAiPersonaCandidateGenerationClient implements PersonaCandidateG
         }
         String url = properties.baseUrl() + RESPONSES_PATH;
         Map<String, Object> requestBody = buildRequestBody(promptBuilder.build(request), properties.model());
+        logOpenAiRequest(url, request, requestBody);
         try {
             Map<String, Object> raw = responseBody(url, requestBody, apiKey);
+            logOpenAiResponse(url, request, raw);
             if (raw == null) {
                 throw new IllegalStateException("OpenAI retornou corpo vazio para persona-candidate-generator NichoCNAE v3.");
             }
@@ -135,6 +137,38 @@ public class OpenAiPersonaCandidateGenerationClient implements PersonaCandidateG
         body.put("text", text);
         body.put("service_tier", properties.serviceTier());
         return body;
+    }
+
+    /** Registra o payload enviado à OpenAI sem expor credenciais de autenticação. */
+    private void logOpenAiRequest(String url, PersonaCandidateGenerationRequest request, Map<String, Object> requestBody) {
+        log.info(
+                "Request OpenAI persona-candidate-generator (endpoint={}, jobId={}, stageExecutionId={}, cnaeCode={}, payload={})",
+                url,
+                request.jobId(),
+                request.stageExecutionId(),
+                request.cnaeCode(),
+                toJsonForLog(requestBody));
+    }
+
+    /** Registra a resposta bruta recebida da OpenAI para auditoria operacional. */
+    private void logOpenAiResponse(String url, PersonaCandidateGenerationRequest request, Map<String, Object> raw) {
+        log.info(
+                "Response OpenAI persona-candidate-generator (endpoint={}, jobId={}, stageExecutionId={}, cnaeCode={}, payload={})",
+                url,
+                request.jobId(),
+                request.stageExecutionId(),
+                request.cnaeCode(),
+                toJsonForLog(raw));
+    }
+
+    /** Serializa payloads para log preservando diagnóstico mesmo quando houver valor não serializável. */
+    private String toJsonForLog(Object payload) {
+        try {
+            return objectMapper.writeValueAsString(payload);
+        } catch (JsonProcessingException ex) {
+            log.warn("Falha ao serializar payload OpenAI para log.", ex);
+            return String.valueOf(payload);
+        }
     }
 
     /** Executa a requisição HTTP para a Responses API. */

@@ -1390,8 +1390,8 @@
 ## 2026-06-25 — OPRM NichoCNAE v3: criação do fluxo versionado de persona e tarefas diárias
 
 - Solicitação: criar a v3 do fluxo NichoCNAE aplicando protocolo padrão módulo e protocolo padrão backend.
-- Foi feito: criada a base backend `com.marketinghub.oprm.nichocnae.v3` com endpoints internos por etapa, tabela `oprm_nichocnae_v3_stage_execution`, contratos `record`, endpoint `pending` por etapa e regra ArchUnit de estrutura canônica.
-- Foi feito: criado o executor `com.marketinghub.nichocnaev3` no `oprm-coletor-mei` com núcleo genérico, catálogo de 10 etapas, processors plugáveis, scheduler de pendências, cliente backend, prompts/schemas versionados para etapas com IA e teste ArchUnit próprio.
+- Foi feito: criada a base backend `com.marketinghub.pipelines.oprm.nichocnae.v3` com endpoints internos por etapa, tabela `oprm_nichocnae_v3_stage_execution`, contratos `record`, endpoint `pending` por etapa e regra ArchUnit de estrutura canônica.
+- Foi feito: criado o executor `com.marketinghub.pipelines.nichocnae.v3` no `oprm-coletor-mei` com núcleo genérico, catálogo de 10 etapas, processors plugáveis, scheduler de pendências, cliente backend, prompts/schemas versionados para etapas com IA e teste ArchUnit próprio.
 - Objetivo de negócio: transformar um CNAE em persona operacional, rotina real e lista de tarefas diárias auditável, sem criar oferta, campanha ou landing nesta fase.
 - Prevenção: a v3 nasce separada da v2 para evitar remendos no fluxo que parava após o planejador de buscas por falta de etapa cadastrada.
 
@@ -1414,14 +1414,14 @@
 
 ## 2026-06-25 — Verificação do agendamento do NichoCNAE v3
 
-- Verificação: o executor `oprm-coletor-mei` possui um scheduler único em `com.marketinghub.nichocnaev3.execution.NichoCnaeV3PendingExecutionScheduler`, com cron `0 */3 * * * *`, que chama a varredura de todas as etapas cadastradas no catálogo v3.
+- Verificação: o executor `oprm-coletor-mei` possui um scheduler único em `com.marketinghub.pipelines.nichocnae.v3.execution.NichoCnaeV3PendingExecutionScheduler`, com cron `0 */3 * * * *`, que chama a varredura de todas as etapas cadastradas no catálogo v3.
 - Evidência de cobertura: o catálogo v3 contém as 10 etapas `cnae-intake`, `persona-candidate-generator`, `persona-tournament`, `routine-query-planner`, `source-searcher`, `source-fetcher`, `routine-signal-extractor`, `daily-tasks-synthesizer`, `quality-gate` e `persona-routine-materializer`, todas com processor e endpoint backend v3 derivado do código da etapa.
 - Prevenção: adicionados testes de contrato para impedir alteração acidental do cron de 3 em 3 minutos e para garantir que toda etapa v3 cadastrada tenha `backendPath` e `processor` disponíveis para a varredura agendada.
 
 ## 2026-06-25 — Correção do carregamento Spring do NichoCNAE v3
 
-- Causa-raiz comprovada pelo log do container: o `oprm-coletor-mei` estava ativo e executando schedulers legados/v2, mas não havia nenhuma linha do `NichoCnaeV3PendingExecutionScheduler`; no código, o pacote `com.marketinghub.nichocnaev3` não estava incluído no `scanBasePackages` da aplicação Spring.
-- Correção: adicionado `com.marketinghub.nichocnaev3` ao `scanBasePackages` do `OprmColetorMeiApplication`, permitindo que scheduler, service e client v3 sejam registrados no contexto e executem a cada 3 minutos.
+- Causa-raiz comprovada pelo log do container: o `oprm-coletor-mei` estava ativo e executando schedulers legados/v2, mas não havia nenhuma linha do `NichoCnaeV3PendingExecutionScheduler`; no código, o pacote `com.marketinghub.pipelines.nichocnae.v3` não estava incluído no `scanBasePackages` da aplicação Spring.
+- Correção: adicionado `com.marketinghub.pipelines.nichocnae.v3` ao `scanBasePackages` do `OprmColetorMeiApplication`, permitindo que scheduler, service e client v3 sejam registrados no contexto e executem a cada 3 minutos.
 - Prevenção: adicionado teste de contrato para garantir que o pacote v3 permaneça no component scan da aplicação, além dos testes de cron e catálogo v3 já criados.
 
 ## 2026-06-25 — Desligamento operacional do NichoCNAE v2 no coletor
@@ -1486,7 +1486,7 @@
 
 ## 2026-06-26 — NichoCNAE v3: OpenAI API key pelo mesmo fallback das versões anteriores
 
-- Causa-raiz complementar: o `persona-candidate-generator` v3 tinha `@ConfigurationProperties`, mas o `application.yml` não declarava o bloco `oprm.nichocnaev3.persona-candidate-generator.openai`; por isso a etapa não herdava o fallback global `OPENAI_API_KEY`/`OPENAI_API_KEY_FILE` já usado pelas etapas anteriores do OPRM.
+- Causa-raiz complementar: o `persona-candidate-generator` v3 tinha `@ConfigurationProperties`, mas o `application.yml` não declarava o bloco `oprm.pipelines.nichocnae.v3.persona-candidate-generator.openai`; por isso a etapa não herdava o fallback global `OPENAI_API_KEY`/`OPENAI_API_KEY_FILE` já usado pelas etapas anteriores do OPRM.
 - Correção: o coletor OPRM passou a configurar a etapa v3 com variável específica opcional e fallback para `OPENAI_API_KEY` e `OPENAI_API_KEY_FILE`, mantendo o mesmo padrão operacional das versões anteriores.
 - Prevenção de recorrência: adicionado teste de configuração garantindo que o fallback global da OpenAI continue presente no `application.yml` para a etapa `persona-candidate-generator` v3.
 
@@ -1530,3 +1530,16 @@
 - Diagnóstico: a etapa `persona-candidate-generator` do job `nichocnae-v3-4781400-1782477451721` falhou durante POST para `https://api.openai.com/v1/responses` com `Broken pipe`, após a chave e o payload terem sido resolvidos corretamente.
 - Correção: o `RestClient` compartilhado do executor OPRM passou a usar timeout de conexão de 30 segundos e timeout de leitura de 5 minutos, reduzindo falhas prematuras em chamadas OpenAI longas em modo Flex.
 - Prevenção de recorrência: adicionado teste unitário garantindo que os timeouts ampliados permaneçam configurados no cliente HTTP do coletor.
+
+## 2026-06-26 — Refatoração de pacotes do pipeline NichoCNAE v3
+
+- Decisão aplicada: organizar o pipeline NichoCNAE v3 no padrão de pacotes solicitado.
+- Backend: raiz movida para `com.marketinghub.pipelines.oprm.nichocnae.v3`, mantendo as etapas abaixo de `v3.<nome-etapa>`.
+- Executor OPRM MEI: raiz movida para `com.marketinghub.pipelines.nichocnae.v3`, mantendo as etapas abaixo de `v3.<nome-etapa>` e o núcleo genérico em `v3.core`.
+- Correção preventiva associada: o schema OpenAI da etapa `persona-candidate-generator` passou a declarar `type: string` nos campos constantes rejeitados pela Responses API.
+
+## 2026-06-26 — Atualização canônica do padrão de pacotes NichoCNAE v3
+
+- Atualizados os documentos canônicos para refletir a regra decidida: backend em `com.marketinghub.pipelines.<nome-modulo>.<nome-pipeline>.v<numero-versao>.<nome-etapa>` e executor em `com.marketinghub.pipelines.<nome-pipeline>.v<numero-versao>.<nome-etapa>`.
+- Canonizado o caso OPRM NichoCNAE v3 com backend em `com.marketinghub.pipelines.oprm.nichocnae.v3`, executor em `com.marketinghub.pipelines.nichocnae.v3`, núcleo executor em `.core`, operação de pendências em `.execution` e repositories JPA preservados em `com.marketinghub.repository.jpa.oprm.nichocnae.v3`.
+- Objetivo: evitar nova divergência entre a refatoração de pacotes, os protocolos de arquitetura por etapa e a documentação usada como fonte de verdade.

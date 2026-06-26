@@ -113,12 +113,21 @@ O backend deve concentrar:
 
 Para pipelines por etapa, o pacote deve seguir a separação funcional do GeraLanding dentro do padrão
 versionado canônico:
+Para pipelines por etapa, o pacote deve seguir a separação funcional versionada. No backend, use o padrão
+`...pipelines.<nome-modulo>.<nome-pipeline>.v<numero-versao>.<nome-etapa>` e, dentro da etapa, separe
+`web`, `service`, `model` e demais subpacotes necessários:
 
 ```text
 com.marketinghub.pipelines.<nome-modulo>.<nome-pipeline>.v<numero-versao>.<nome-etapa>.web
 com.marketinghub.pipelines.<nome-modulo>.<nome-pipeline>.v<numero-versao>.<nome-etapa>.service
 com.marketinghub.pipelines.<nome-modulo>.<nome-pipeline>.v<numero-versao>.<nome-etapa>.model
 com.marketinghub.pipelines.<nome-modulo>.<nome-pipeline>.v<numero-versao>.<nome-etapa>.repository
+```
+
+No módulo executor/worker, use o mesmo padrão sem repetir o nome do módulo dentro do pipeline:
+
+```text
+com.marketinghub.<modulo-executor>.pipelines.<nome-pipeline>.v<numero-versao>.<nome-etapa>
 ```
 
 Exemplo backend: `com.marketinghub.pipelines.facebookads.geracaoanuncios.v1.roteiroCriativo.web`.

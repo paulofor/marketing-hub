@@ -6,6 +6,22 @@ primeiro este cânone e, em seguida, sincronizar os testes de arquitetura corres
 protocolo padrão backend, os testes/regras ArchUnit devem ficar no arquivo
 `backend/ads-service/src/test/java/com/marketinghub/architecture/ArquiteturaTest.java`.
 
+## Regra global — pacotes versionados de pipelines
+
+Todo pipeline inteiro criado, reestruturado ou versionado deve nascer em pacote explícito de `pipelines`, com a versão antes da etapa. O backend principal usa o nome do módulo para manter a fronteira funcional do contrato; o módulo executor não repete esse nome porque o próprio artefato/serviço já representa o contexto operacional.
+
+```text
+# Backend principal
+com.marketinghub.pipelines.<nome-modulo>.<nome-pipeline>.v<numero-versao>.<nome-etapa>
+
+# Executor, worker ou coletor
+com.marketinghub.pipelines.<nome-pipeline>.v<numero-versao>.<nome-etapa>
+```
+
+As etapas concretas ficam diretamente abaixo de `v<numero-versao>`. Pacotes de apoio são permitidos somente quando não representarem etapa concreta, como `core` para contratos genéricos do executor e `execution` para consumo de pendências/callbacks/catálogo. Repositories JPA do backend continuam exclusivamente em `com.marketinghub.repository.jpa`, mesmo quando persistem execuções ou artefatos de pipeline.
+
+As regras ArchUnit de protocolo backend ou módulo devem proteger esses pacotes contra regressão: backend sem execução operacional de worker, executor sem dependência direta entre etapas concretas, núcleo genérico sem tecnologia concreta e nenhuma etapa gerando `nextStageCode` sem contrato completo no backend e processor registrado no executor.
+
 
 ## Protocolo padrão backend — pontos de sucesso do GeraLanding
 
@@ -73,6 +89,16 @@ A regra substitui padrões antigos como `...nichocnaev1.pipeline.<etapa>` ou
 `...<dominio>.<pipeline>.v1.<etapa>` em novos pipelines e em reestruturações completas. Pacotes legados só
 devem permanecer quando não fizer parte do escopo migrá-los; novos fluxos devem nascer no padrão
 `pipelines.<...>.<pipeline>.v<versao>.<etapa>`.
+O padrão canônico de pacote para pipelines versionados é:
+
+- **Backend:** `...pipelines.<nome-modulo>.<nome-pipeline>.v<numero-versao>.<nome-etapa>`.
+- **Módulo executor/worker:** `...pipelines.<nome-pipeline>.v<numero-versao>.<nome-etapa>`.
+
+No backend, o pacote carrega o nome do módulo para deixar claro qual domínio controla contrato,
+persistência, pendências e callbacks da versão correta. No módulo executor, o nome do módulo não deve ser
+repetido dentro do pacote do pipeline; o executor deve carregar apenas `pipelines`, o nome do pipeline, a
+versão e a etapa concreta. Exemplo backend: `com.marketinghub.pipelines.mois.dossieproduto.v1.qualificafontes`.
+Exemplo módulo executor: `com.marketinghub.mois.worker.pipelines.dossieproduto.v1.qualificafontes`.
 
 A nova versão precisa continuar plugável: núcleo genérico separado das etapas concretas, etapas concretas
 independentes entre si, dependência por contratos/artefatos/estado persistido e consumo iniciado pelo

@@ -1146,3 +1146,7 @@ databaseChangeLog:
   - include:
       file: changesets/2026-06-26-remove-commercial-fields-from-niche-profile.yaml
       relativeToChangelogFile: true
+
+  - include:
+      file: changesets/2026-06-26-pipeline-geracaoanuncios.yaml
+      relativeToChangelogFile: true

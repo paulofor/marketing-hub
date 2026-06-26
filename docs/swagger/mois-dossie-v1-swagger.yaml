@@ -4,6 +4,22 @@ info:
   version: v1
   description: Contratos internos do pipeline de criação de dossiê MOIS v1.
 paths:
+  /api/internal/mois/dossieproduto/v1/start:
+    post:
+      summary: Inicia o pipeline de dossiê de produto MOIS v1
+      parameters:
+        - in: query
+          name: codigoProduto
+          required: true
+          schema:
+            type: string
+            minLength: 1
+          description: Código do produto que será usado para iniciar o pipeline.
+      responses:
+        '202':
+          description: Solicitação de início aceita.
+        '400':
+          description: Código do produto ausente ou inválido.
   /api/internal/mois/dossie/v1/intake/stage-executions/pending:
     post:
       summary: Lista pendências canônicas da etapa Entrada inicial do dossiê MOIS v1

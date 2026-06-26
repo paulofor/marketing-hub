@@ -90,6 +90,15 @@ type HistoryItem = {
   detail: string;
 };
 
+type DossierPipelineStage = {
+  name: string;
+  objective: string;
+  input: string;
+  output: string;
+  usesOpenAi: boolean;
+  model: string;
+};
+
 const SOCIAL_PLATFORMS = new Set(["YOUTUBE", "INSTAGRAM", "TIKTOK"]);
 const PRODUCER_SOCIAL_SOURCE_TYPES = new Set([
   "CREATOR_CONTENT",
@@ -179,6 +188,66 @@ export default function MoisSalesPageLibraryDetailPage() {
     cleanText(pageQuery.data?.hotmartProducer) ||
     cleanText(pageQuery.data?.producerName);
   const soldProductFormat = cleanText(pageQuery.data?.soldProductFormat);
+  const commercialAnalysisModel = displayText(
+    analysisQuery.data?.modelName || pageQuery.data?.modelName,
+  );
+  const dossierPipelineStages: DossierPipelineStage[] = [
+    {
+      name: "1. Fatos Hotmart do produto",
+      objective:
+        "Reunir os dados básicos que identificam a oferta antes de qualquer conclusão comercial.",
+      input:
+        "Página capturada, URL final, preço, temperatura Hotmart, produtor e formato vendido.",
+      output:
+        "Bloco factual do dossiê com preço, temperatura, produtor e produto vendido.",
+      usesOpenAi: false,
+      model: "Não usa OpenAI",
+    },
+    {
+      name: "2. Análise comercial da página",
+      objective:
+        "Ler a página de vendas capturada e transformar a comunicação em sinais comerciais para decisão.",
+      input:
+        "HTML/texto extraído da página, URL analisada e metadados da captura persistidos pelo backend.",
+      output:
+        "Score comercial, seções identificadas, leitura de copy, visual, provas e insumos para GeraLanding.",
+      usesOpenAi: true,
+      model: commercialAnalysisModel,
+    },
+    {
+      name: "3. Planejamento das pesquisas públicas",
+      objective:
+        "Criar buscas mais precisas para encontrar autoridade, canais, prova social e sinais externos do produtor/produto.",
+      input:
+        "Produto, produtor, domínio, título/subtítulo, análise comercial e queries base do worker.",
+      output:
+        "Lista de termos de pesquisa auditáveis usados na busca pública do dossiê.",
+      usesOpenAi: true,
+      model: "gpt-5.2 (padrão do worker, com fallback sem OpenAI)",
+    },
+    {
+      name: "4. Busca pública e qualificação de fontes",
+      objective:
+        "Localizar fontes rastreáveis e descartar homônimos, páginas genéricas ou sinais sem relação com a oferta.",
+      input:
+        "Termos planejados e resultados públicos de web, YouTube, Instagram, TikTok, reviews e marketplaces.",
+      output:
+        "Tentativas de busca, fontes qualificadas, fontes rejeitadas e exemplos retornados.",
+      usesOpenAi: false,
+      model: "Não usa OpenAI",
+    },
+    {
+      name: "5. Consolidação do dossiê",
+      objective:
+        "Cruzar fontes e sinais para indicar aquecimento, risco, recomendação e próximo movimento comercial.",
+      input:
+        "Fontes qualificadas, sinais comerciais, dados Hotmart e análise comercial da página.",
+      output:
+        "Temperatura do mercado, recomendação, score do dossiê, dores, objeções, canais e sugestão de experimento.",
+      usesOpenAi: false,
+      model: "Não usa OpenAI",
+    },
+  ];
 
   const producerSocialSources = (marketWarmupSourcesQuery.data?.items ?? [])
     .filter(
@@ -418,6 +487,55 @@ export default function MoisSalesPageLibraryDetailPage() {
           Falha ao carregar o produto.
         </div>
       ) : null}
+
+      <section className="card border-0 shadow-sm">
+        <div className="card-body d-flex flex-column gap-3">
+          <div>
+            <h2 className="h5 mb-1">Etapas do pipeline de geração do dossiê</h2>
+            <p className="text-secondary mb-0">
+              Visão operacional do caminho que transforma a página capturada em
+              um dossiê útil para decidir se vale criar ou escalar uma oferta.
+            </p>
+          </div>
+
+          <div className="table-responsive">
+            <table className="table table-sm align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Etapa</th>
+                  <th>Objetivo</th>
+                  <th>Dado de entrada</th>
+                  <th>Dado de saída</th>
+                  <th>OpenAI</th>
+                  <th>Modelo</th>
+                </tr>
+              </thead>
+              <tbody>
+                {dossierPipelineStages.map((stage) => (
+                  <tr key={stage.name}>
+                    <td className="fw-semibold">{stage.name}</td>
+                    <td>{stage.objective}</td>
+                    <td>{stage.input}</td>
+                    <td>{stage.output}</td>
+                    <td>
+                      <span
+                        className={
+                          stage.usesOpenAi
+                            ? "badge text-bg-primary"
+                            : "badge text-bg-secondary"
+                        }
+                      >
+                        {stage.usesOpenAi ? "Sim" : "Não"}
+                      </span>
+                    </td>
+                    <td>{stage.model}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
 
       <section className="card border-0 shadow-sm">
         <div className="card-body d-flex flex-column gap-3">

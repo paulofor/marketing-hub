@@ -38,7 +38,7 @@ A fase 4 expande a lista operacional para incluir OPRM, coletores MOIS, Lead Por
 
 O `ops-monitor-worker` roda em container Docker, mas deve acessar os módulos monitorados sempre pela URL pública oficial cadastrada no backend, nunca por atalhos internos como `host.docker.internal`. O objetivo do monitor é refletir a disponibilidade real percebida pelos demais módulos e operadores fora do container local; se a URL pública estiver indisponível, o módulo deve aparecer como indisponível mesmo que responda por rota interna do host.
 
-A configuração de módulos monitorados mantém o backend principal em `http://191.252.181.168`, pois ele responde pela porta 80; os demais módulos com portas dedicadas também devem usar a URL pública oficial com a porta publicada correspondente no contrato entregue ao worker.
+A configuração de módulos monitorados mantém o backend principal em `http://191.252.181.168`, pois ele responde pela porta 80; os demais módulos com portas dedicadas devem usar a URL pública oficial do host onde o módulo está realmente publicado com a porta correspondente no contrato entregue ao worker. Em 26/06/2026, `ai-worker`, `facebook-ads-worker` e `oprm-coletor-mei` usam o host operacional `191.252.120.96`.
 
 ## Correção de persistência do heartbeat do backend — 2026-06-25
 

@@ -1,10 +1,10 @@
-package com.marketinghub.geraanuncio.v2.criativo.service.pending;
+package com.marketinghub.geraanuncio.v2.imagem;
 
 import java.time.Instant;
 import java.util.Map;
 
-/** Resposta com uma execução pendente da etapa Criativo do GeraAnuncio v2. */
-public record GeraAnuncioCriativoPendingResponse(
+/** Responsabilidade: transportar a execução pendente recebida do backend para a etapa Imagem. */
+public record GeraAnuncioImagemInput(
         String stageExecutionId,
         Long experimentId,
         String jobId,

@@ -2,12 +2,12 @@ openapi: 3.0.3
 info:
   title: GeraAnuncio v2 API
   version: v2
-  description: Contratos internos do pipeline GeraAnuncio v2 para geração de criativos de anúncios pelo AI Worker.
+  description: Contratos internos do pipeline GeraAnuncio v2 para geração separada de texto e imagem de anúncios pelo AI Worker.
 paths:
-  /api/internal/geraanuncio/v2/criativo/stage-executions/experiments/{experimentId}/start:
+  /api/internal/geraanuncio/v2/texto/stage-executions/experiments/{experimentId}/start:
     post:
-      summary: Inicia execução da etapa Criativo para um experimento
-      description: Endpoint usado pela tela administrativa para iniciar o fluxo novo GeraAnuncio v2 sem acionar a fila antiga.
+      summary: Inicia execução da etapa Texto para um experimento
+      description: Endpoint usado pela tela administrativa para iniciar a etapa de texto do GeraAnuncio v2.
       parameters:
         - name: experimentId
           in: path
@@ -17,17 +17,17 @@ paths:
             format: int64
       responses:
         '200':
-          description: Solicitação registrada na etapa Criativo do GeraAnuncio v2.
-  /api/internal/geraanuncio/v2/criativo/stage-executions/pending:
+          description: Solicitação registrada na etapa Texto do GeraAnuncio v2.
+  /api/internal/geraanuncio/v2/texto/stage-executions/pending:
     post:
-      summary: Lista execuções pendentes da etapa Criativo
-      description: Endpoint canônico usado pelo AI Worker para consumir a fila da etapa Criativo.
+      summary: Lista execuções pendentes da etapa Texto
+      description: Endpoint canônico usado pelo AI Worker para consumir a fila da etapa Texto.
       responses:
         '200':
           description: Execuções pendentes retornadas com contexto e artefatos anteriores.
-  /api/internal/geraanuncio/v2/criativo/stage-executions/{stageExecutionId}/prompt:
+  /api/internal/geraanuncio/v2/texto/stage-executions/{stageExecutionId}/prompt:
     post:
-      summary: Registra prompt enviado ao modelo
+      summary: Registra prompt enviado ao modelo na etapa Texto
       parameters:
         - name: stageExecutionId
           in: path
@@ -37,9 +37,54 @@ paths:
       responses:
         '202':
           description: Prompt aceito para auditoria.
-  /api/internal/geraanuncio/v2/criativo/stage-executions/{stageExecutionId}/response:
+  /api/internal/geraanuncio/v2/texto/stage-executions/{stageExecutionId}/response:
     post:
-      summary: Registra resposta do modelo e saída estruturada
+      summary: Registra resposta do modelo e saída estruturada da etapa Texto
+      parameters:
+        - name: stageExecutionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '202':
+          description: Resposta aceita para auditoria e relatório.
+  /api/internal/geraanuncio/v2/imagem/stage-executions/experiments/{experimentId}/start:
+    post:
+      summary: Inicia execução da etapa Imagem para um experimento
+      description: Endpoint usado pela tela administrativa para iniciar a etapa de imagem do GeraAnuncio v2.
+      parameters:
+        - name: experimentId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Solicitação registrada na etapa Imagem do GeraAnuncio v2.
+  /api/internal/geraanuncio/v2/imagem/stage-executions/pending:
+    post:
+      summary: Lista execuções pendentes da etapa Imagem
+      description: Endpoint canônico usado pelo AI Worker para consumir a fila da etapa Imagem.
+      responses:
+        '200':
+          description: Execuções pendentes retornadas com contexto e artefatos anteriores.
+  /api/internal/geraanuncio/v2/imagem/stage-executions/{stageExecutionId}/prompt:
+    post:
+      summary: Registra prompt enviado ao modelo na etapa Imagem
+      parameters:
+        - name: stageExecutionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '202':
+          description: Prompt aceito para auditoria.
+  /api/internal/geraanuncio/v2/imagem/stage-executions/{stageExecutionId}/response:
+    post:
+      summary: Registra resposta do modelo e saída estruturada da etapa Imagem
       parameters:
         - name: stageExecutionId
           in: path

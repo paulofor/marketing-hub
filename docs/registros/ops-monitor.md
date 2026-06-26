@@ -50,3 +50,8 @@
 - causa-raiz confirmada: o monitor operacional consultava `http://191.252.181.168:4567/worker-observability/health`, mas os logs reais do AI Worker disponíveis pelo MCP apontam o serviço operacional em `http://191.252.120.96:4567/worker-observability/logfile`; por isso o health check registrava `Connection refused` mesmo com o worker ativo.
 - correção aplicada: novo changeset ajusta o cadastro canônico do `ai-worker` no Ops Monitor para `http://191.252.120.96:4567`, preservando `/worker-observability/health` e `/worker-observability/logfile`.
 - prevenção de recorrência: a disponibilidade do menu lateral passa a depender do endpoint de observabilidade do host real do módulo, reduzindo falso alarme de módulo fora do ar quando há execução recente.
+
+## 2026-06-26 — URL tentada visível na tela do Ops Monitor
+- Ajuste: a disponibilidade dos módulos passa a expor a URL completa de healthcheck tentada pelo monitor e a tela `/ops-monitor` mostra essa URL na tabela de status atual.
+- Motivo: reduzir tempo de diagnóstico quando um módulo aparece fora do ar, deixando claro se o problema está no serviço ou no endereço configurado para verificação.
+- Prevenção: testes de backend e frontend cobrem a presença da URL no contrato e na tela.

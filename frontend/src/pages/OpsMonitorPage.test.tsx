@@ -46,6 +46,7 @@ describe("OpsMonitorPage", () => {
               lastCheckedAt: "2026-06-23T10:00:00Z",
               lastResponseTimeMs: null,
               lastError: "timeout",
+              attemptedUrl: "http://191.252.181.168/actuator/health",
             },
           ],
         });
@@ -94,5 +95,8 @@ describe("OpsMonitorPage", () => {
     expect(await screen.findByText("Backend indisponível")).toBeInTheDocument();
     expect(await screen.findByTestId("availability-chart")).toBeInTheDocument();
     expect(await screen.findByText("timeout")).toBeInTheDocument();
+    expect(
+      await screen.findByText("http://191.252.181.168/actuator/health"),
+    ).toBeInTheDocument();
   });
 });

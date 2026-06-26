@@ -203,7 +203,8 @@ public class OpsMonitorService {
             if (queueIncident.isPresent()) {
                 SyntheticIncident incident = queueIncident.get();
                 return new ModuleAvailabilityResponse(module.getCode(), module.getName(), module.getType(),
-                        module.getCriticality(), "DEGRADED", incident.startedAt(), null, incident.lastError());
+                        module.getCriticality(), "DEGRADED", incident.startedAt(), null, incident.lastError(),
+                        buildAttemptedUrl(module));
             }
         }
         if (OPRM_COLETOR_MEI_MODULE_CODE.equals(module.getCode())) {
@@ -211,15 +212,28 @@ public class OpsMonitorService {
             if (queueIncident.isPresent()) {
                 SyntheticIncident incident = queueIncident.get();
                 return new ModuleAvailabilityResponse(module.getCode(), module.getName(), module.getType(),
-                        module.getCriticality(), "DEGRADED", incident.startedAt(), null, incident.lastError());
+                        module.getCriticality(), "DEGRADED", incident.startedAt(), null, incident.lastError(),
+                        buildAttemptedUrl(module));
             }
         }
         return healthCheckRepository.findTop1ByModuleCodeOrderByCheckedAtDesc(module.getCode())
                 .map(check -> new ModuleAvailabilityResponse(module.getCode(), module.getName(), module.getType(),
                         module.getCriticality(), check.getStatus(), check.getCheckedAt(), check.getResponseTimeMs(),
-                        check.getErrorMessage()))
+                        check.getErrorMessage(), buildAttemptedUrl(module)))
                 .orElseGet(() -> new ModuleAvailabilityResponse(module.getCode(), module.getName(), module.getType(),
-                        module.getCriticality(), "UNKNOWN", null, null, null));
+                        module.getCriticality(), "UNKNOWN", null, null, null, buildAttemptedUrl(module)));
+    }
+
+    /** Monta a URL de healthcheck que o worker deve tentar para o módulo monitorado. */
+    private String buildAttemptedUrl(OpsMonitoredModule module) {
+        String baseUrl = module.getBaseUrl();
+        String healthPath = module.getHealthPath();
+        if (baseUrl == null || baseUrl.isBlank() || healthPath == null || healthPath.isBlank()) {
+            return null;
+        }
+        String normalizedBaseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
+        String normalizedHealthPath = healthPath.startsWith("/") ? healthPath : "/" + healthPath;
+        return normalizedBaseUrl + normalizedHealthPath;
     }
 
     /** Cria incidente sintético quando há fila de GeraLanding parada antes do worker iniciar processamento. */

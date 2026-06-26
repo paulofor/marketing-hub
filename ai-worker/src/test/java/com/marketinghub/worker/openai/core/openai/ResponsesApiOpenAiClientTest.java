@@ -97,9 +97,9 @@ class ResponsesApiOpenAiClientTest {
                         .contains("Invalid schema"));
     }
 
-    /** Deve fixar service_tier flex no payload enviado e no despacho auditável do core OpenAI. */
+    /** Deve aplicar o service_tier informado pela etapa no payload enviado e no despacho auditável. */
     @Test
-    void dispatchShouldForceFlexServiceTierInOpenAiPayloadAndDispatch() throws Exception {
+    void dispatchShouldApplyRequestServiceTierInOpenAiPayloadAndDispatch() throws Exception {
         server.enqueue(new MockResponse()
                 .setResponseCode(200)
                 .setHeader("Content-Type", "application/json")
@@ -129,7 +129,8 @@ class ResponsesApiOpenAiClientTest {
                 "schema-wireframe",
                 "{\"type\":\"object\"}",
                 "# Prompt markdown bruto",
-                Map.of("idJob", "job-123"));
+                Map.of("idJob", "job-123"),
+                "default");
 
         var dispatch = client.dispatch(request);
 
@@ -139,11 +140,11 @@ class ResponsesApiOpenAiClientTest {
         assertThat(sentPayload)
                 .containsEntry("model", "gpt-test")
                 .containsEntry("input", "Prompt")
-                .containsEntry("service_tier", "flex");
+                .containsEntry("service_tier", "default");
         Map<String, Object> dispatchPayload = new ObjectMapper().readValue(
                 dispatch.requestBodyJson(),
                 new TypeReference<>() {});
-        assertThat(dispatchPayload).containsEntry("service_tier", "flex");
+        assertThat(dispatchPayload).containsEntry("service_tier", "default");
     }
 
     /** Deve estimar custo em modo flex pelo modelo do request quando a configuração não informa tarifa explícita. */

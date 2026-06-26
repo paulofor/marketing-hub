@@ -125,6 +125,7 @@ class QualityReviewBackendClientTest {
                 "experiment_pipeline_landing_page_quality_review",
                 "gpt-5.5",
                 "original",
+                "default",
                 Duration.ofSeconds(5),
                 "/usr/bin/chromium",
                 Duration.ofSeconds(5));

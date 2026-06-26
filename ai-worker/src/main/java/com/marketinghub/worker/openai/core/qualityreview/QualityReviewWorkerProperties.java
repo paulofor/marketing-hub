@@ -21,6 +21,7 @@ public record QualityReviewWorkerProperties(
         @NotBlank String schemaName,
         @NotBlank String visionModel,
         @NotBlank String imageDetail,
+        String serviceTier,
         @NotNull Duration timeout,
         String chromiumExecutablePath,
         @NotNull Duration screenshotTimeout
@@ -40,6 +41,17 @@ public record QualityReviewWorkerProperties(
         }
         if (!List.of("low", "high", "original", "auto").contains(imageDetail)) {
             throw new IllegalArgumentException("qualityreview.worker.image-detail must be one of: low, high, original, auto");
+        }
+        if (serviceTier == null || serviceTier.isBlank()) {
+            serviceTier = "default";
+        } else {
+            serviceTier = serviceTier.trim().toLowerCase();
+        }
+        if ("standard".equals(serviceTier)) {
+            serviceTier = "default";
+        }
+        if (!List.of("default", "flex", "auto", "priority").contains(serviceTier)) {
+            throw new IllegalArgumentException("qualityreview.worker.service-tier must be one of: default, flex, auto, priority");
         }
         if (timeout == null) {
             timeout = Duration.ofMinutes(30);

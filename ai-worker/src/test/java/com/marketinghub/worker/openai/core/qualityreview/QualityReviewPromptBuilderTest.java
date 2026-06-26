@@ -78,11 +78,13 @@ class QualityReviewPromptBuilderTest {
                 .doesNotContain("https://cdn.example.com/asset-hero.jpg");
         assertThat(body.get("model")).isEqualTo("gpt-5.5");
         assertThat(request.model()).isEqualTo("gpt-5.5");
+        assertThat(request.serviceTier()).isEqualTo("default");
         assertThat(request.metadata()).containsKeys("qualityReviewAudit", "idJob", "experimentId");
         Map<String, Object> audit = (Map<String, Object>) request.metadata().get("qualityReviewAudit");
         assertThat(audit)
                 .containsEntry("landingHtmlLength", 48)
                 .containsEntry("imageDetail", "original")
+                .containsEntry("serviceTier", "default")
                 .containsEntry("visionModel", "gpt-5.5");
         assertThat((List<Map<String, Object>>) audit.get("screenshots"))
                 .extracting(item -> item.get("sha256"))
@@ -101,6 +103,7 @@ class QualityReviewPromptBuilderTest {
                 "experiment_pipeline_landing_page_quality_review",
                 "gpt-5.5",
                 "original",
+                "default",
                 Duration.ofSeconds(5),
                 "/usr/bin/chromium",
                 Duration.ofSeconds(5));

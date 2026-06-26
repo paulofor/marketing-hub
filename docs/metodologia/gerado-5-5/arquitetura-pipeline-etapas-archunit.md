@@ -37,6 +37,23 @@ Exemplo OPRM NichoCNAE: como a execução das etapas ocorre no `oprm-coletor-mei
 
 ---
 
+
+## Pontos de sucesso do GeraLanding incorporados ao protocolo padrão módulo
+
+Ao aplicar o protocolo padrão módulo, o executor deve reproduzir os aprendizados operacionais que estabilizaram o GeraLanding, adaptando nomes e artefatos ao domínio executado:
+
+1. **Catálogo executável completo:** uma etapa só pode aparecer no catálogo do executor se também tiver contrato backend, endpoint `pending`, processor/handler registrado, saída estruturada e próxima transição permitida.
+2. **Pending como única porta de entrada:** o executor inicia trabalho somente pelo `pending` canônico da etapa, com envelope completo de rastreabilidade (`jobId`, execução, entidade de negócio, tentativa, versão/conhecimento quando aplicável) e payload funcional suficiente.
+3. **Separação request/validação/handler:** etapas com IA ou integração externa devem separar montagem de request/prompt/schema, chamada externa, validação de resposta e aplicação do resultado.
+4. **Auditoria bruta e artefato funcional separados:** request bruto, response bruto, metadados, custos, erros e evidências ficam em auditoria; a saída funcional que a próxima etapa consome deve ser JSON estruturado limpo.
+5. **Sem avanço para etapa inexistente:** o executor não pode devolver `nextStageCode` para etapa sem contrato completo e sem registro no catálogo. Se faltar contrato, a etapa deve bloquear com motivo funcional persistível.
+6. **Gate equivalente ao risco do domínio:** quando a etapa prepara publicação, materialização, gasto, oferta ou conclusão comercial, o executor deve produzir decisão com causa-raiz, impacto e recomendação de correção, não apenas `COMPLETED`.
+7. **Relatório persistível:** todo resultado deve carregar dados suficientes para a UI explicar ao usuário o que aconteceu, por que avançou/bloqueou e qual é o próximo passo, sem depender de log técnico.
+8. **Tecnologia isolada na etapa:** OpenAI, scraping, browser, HTTP externo, storage e parsers ficam no pacote da etapa concreta ou infraestrutura compartilhada permitida, nunca no núcleo genérico.
+
+Esses pontos devem ser cobertos por ArchUnit/teste de contrato sempre que possível, principalmente a proibição de etapa concreta depender de outra etapa concreta e a proibição de `nextStageCode` para etapa não registrada.
+
+---
 ## Conceito principal
 
 O conceito geral é:

@@ -1,6 +1,7 @@
 package com.marketinghub.oprmcoletormei.nichocnae.v3.routinesignalextractor.service;
 
 import com.marketinghub.oprmcoletormei.nichocnae.v3.OprmNichoCnaeV3StageExecution;
+import com.marketinghub.oprm.market.OprmCnpjCnaeDim;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.routinesignalextractor.service.createStageExecution.RoutineSignalExtractorCreateResponse;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.routinesignalextractor.service.pending.RoutineSignalExtractorPendingResponse;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.shared.OprmNichoCnaeV3StageServiceSupport;
@@ -14,7 +15,6 @@ import org.springframework.stereotype.Service;
 public class BackendRoutineSignalExtractorService extends OprmNichoCnaeV3StageServiceSupport {
     private static final String STAGE_CODE = "routine-signal-extractor";
     private static final String NEXT_STAGE = "daily-tasks-synthesizer";
-    private static final String STATUS_STARTED = "INICIADO";
     private static final String STATUS_WAITING = "AGUARDANDO_RETORNO_MODULO";
     private static final String STATUS_COMPLETED = "CONCLUIDO";
     private static final String STATUS_FAILED = "FALHA";
@@ -37,7 +37,7 @@ public class BackendRoutineSignalExtractorService extends OprmNichoCnaeV3StageSe
 
     /** Lista pendências da etapa routine-signal-extractor para o executor OPRM. */
     public List<RoutineSignalExtractorPendingResponse> pending() {
-        return pendingExecutions().stream().map(this::toPendingResponse).toList();
+        return pendingCnaes().stream().map(this::toPendingResponse).toList();
     }
 
     /** Registra conclusão da etapa routine-signal-extractor. */
@@ -56,7 +56,14 @@ public class BackendRoutineSignalExtractorService extends OprmNichoCnaeV3StageSe
     }
 
     /** Converte entidade persistida em item pendente para executor externo. */
-    private RoutineSignalExtractorPendingResponse toPendingResponse(OprmNichoCnaeV3StageExecution execution) {
-        return new RoutineSignalExtractorPendingResponse(execution.getId(), execution.getJobId(), execution.getCnaeCode(), execution.getInputPayload(), execution.getAttemptNumber(), execution.getKnowledgeVersion());
+    private RoutineSignalExtractorPendingResponse toPendingResponse(OprmCnpjCnaeDim cnae) {
+        OprmNichoCnaeV3StageExecution execution = pendingExecution(cnae).orElse(null);
+        return new RoutineSignalExtractorPendingResponse(
+                execution == null ? null : execution.getId(),
+                execution == null ? pendingJobId(cnae) : execution.getJobId(),
+                cnae.getCnaeCode(),
+                execution == null ? cnaeInputPayload(cnae) : execution.getInputPayload(),
+                execution == null ? 1 : execution.getAttemptNumber(),
+                execution == null ? 1 : execution.getKnowledgeVersion());
     }
 }

@@ -1,6 +1,7 @@
 package com.marketinghub.oprmcoletormei.nichocnae.v3.personatournament.service;
 
 import com.marketinghub.oprmcoletormei.nichocnae.v3.OprmNichoCnaeV3StageExecution;
+import com.marketinghub.oprm.market.OprmCnpjCnaeDim;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.personatournament.service.createStageExecution.PersonaTournamentCreateResponse;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.personatournament.service.pending.PersonaTournamentPendingResponse;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.shared.OprmNichoCnaeV3StageServiceSupport;
@@ -14,7 +15,6 @@ import org.springframework.stereotype.Service;
 public class BackendPersonaTournamentService extends OprmNichoCnaeV3StageServiceSupport {
     private static final String STAGE_CODE = "persona-tournament";
     private static final String NEXT_STAGE = "routine-query-planner";
-    private static final String STATUS_STARTED = "INICIADO";
     private static final String STATUS_WAITING = "AGUARDANDO_RETORNO_MODULO";
     private static final String STATUS_COMPLETED = "CONCLUIDO";
     private static final String STATUS_FAILED = "FALHA";
@@ -37,7 +37,7 @@ public class BackendPersonaTournamentService extends OprmNichoCnaeV3StageService
 
     /** Lista pendências da etapa persona-tournament para o executor OPRM. */
     public List<PersonaTournamentPendingResponse> pending() {
-        return pendingExecutions().stream().map(this::toPendingResponse).toList();
+        return pendingCnaes().stream().map(this::toPendingResponse).toList();
     }
 
     /** Registra conclusão da etapa persona-tournament. */
@@ -56,7 +56,14 @@ public class BackendPersonaTournamentService extends OprmNichoCnaeV3StageService
     }
 
     /** Converte entidade persistida em item pendente para executor externo. */
-    private PersonaTournamentPendingResponse toPendingResponse(OprmNichoCnaeV3StageExecution execution) {
-        return new PersonaTournamentPendingResponse(execution.getId(), execution.getJobId(), execution.getCnaeCode(), execution.getInputPayload(), execution.getAttemptNumber(), execution.getKnowledgeVersion());
+    private PersonaTournamentPendingResponse toPendingResponse(OprmCnpjCnaeDim cnae) {
+        OprmNichoCnaeV3StageExecution execution = pendingExecution(cnae).orElse(null);
+        return new PersonaTournamentPendingResponse(
+                execution == null ? null : execution.getId(),
+                execution == null ? pendingJobId(cnae) : execution.getJobId(),
+                cnae.getCnaeCode(),
+                execution == null ? cnaeInputPayload(cnae) : execution.getInputPayload(),
+                execution == null ? 1 : execution.getAttemptNumber(),
+                execution == null ? 1 : execution.getKnowledgeVersion());
     }
 }

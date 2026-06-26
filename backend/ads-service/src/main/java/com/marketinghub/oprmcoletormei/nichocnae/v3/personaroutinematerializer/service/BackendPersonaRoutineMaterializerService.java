@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.personaroutinematerializer.gateway.PersonaRoutineMaterializerNicheGateway;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.OprmNichoCnaeV3StageExecution;
+import com.marketinghub.oprm.market.OprmCnpjCnaeDim;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.personaroutinematerializer.service.createStageExecution.PersonaRoutineMaterializerCreateResponse;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.personaroutinematerializer.service.pending.PersonaRoutineMaterializerPendingResponse;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.shared.OprmNichoCnaeV3StageServiceSupport;
@@ -22,7 +23,6 @@ import org.springframework.util.StringUtils;
 public class BackendPersonaRoutineMaterializerService extends OprmNichoCnaeV3StageServiceSupport {
     private static final String STAGE_CODE = "persona-routine-materializer";
     private static final String NEXT_STAGE = "";
-    private static final String STATUS_STARTED = "INICIADO";
     private static final String STATUS_WAITING = "AGUARDANDO_RETORNO_MODULO";
     private static final String STATUS_COMPLETED = "CONCLUIDO";
     private static final String STATUS_FAILED = "FALHA";
@@ -56,7 +56,7 @@ public class BackendPersonaRoutineMaterializerService extends OprmNichoCnaeV3Sta
 
     /** Lista pendências da etapa persona-routine-materializer para o executor OPRM. */
     public List<PersonaRoutineMaterializerPendingResponse> pending() {
-        return pendingExecutions().stream().map(this::toPendingResponse).toList();
+        return pendingCnaes().stream().map(this::toPendingResponse).toList();
     }
 
     /** Registra conclusão da etapa persona-routine-materializer. */
@@ -78,8 +78,15 @@ public class BackendPersonaRoutineMaterializerService extends OprmNichoCnaeV3Sta
     }
 
     /** Converte entidade persistida em item pendente para executor externo. */
-    private PersonaRoutineMaterializerPendingResponse toPendingResponse(OprmNichoCnaeV3StageExecution execution) {
-        return new PersonaRoutineMaterializerPendingResponse(execution.getId(), execution.getJobId(), execution.getCnaeCode(), execution.getInputPayload(), execution.getAttemptNumber(), execution.getKnowledgeVersion());
+    private PersonaRoutineMaterializerPendingResponse toPendingResponse(OprmCnpjCnaeDim cnae) {
+        OprmNichoCnaeV3StageExecution execution = pendingExecution(cnae).orElse(null);
+        return new PersonaRoutineMaterializerPendingResponse(
+                execution == null ? null : execution.getId(),
+                execution == null ? pendingJobId(cnae) : execution.getJobId(),
+                cnae.getCnaeCode(),
+                execution == null ? cnaeInputPayload(cnae) : execution.getInputPayload(),
+                execution == null ? 1 : execution.getAttemptNumber(),
+                execution == null ? 1 : execution.getKnowledgeVersion());
     }
 
     /** Materializa o resultado final v3 nas estruturas reutilizáveis do nicho. */

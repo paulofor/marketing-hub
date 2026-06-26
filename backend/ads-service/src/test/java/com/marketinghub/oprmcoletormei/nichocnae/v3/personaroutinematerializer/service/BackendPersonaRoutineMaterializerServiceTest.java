@@ -14,7 +14,9 @@ import com.marketinghub.oprmcoletormei.nichocnae.v3.personaroutinematerializer.g
 import com.marketinghub.repository.jpa.oprm.market.OprmCnpjCnaeDimRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.v3.OprmNichoCnaeV3StageExecutionRepository;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.PageRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -103,6 +105,35 @@ class BackendPersonaRoutineMaterializerServiceTest {
         assertThat(cnae.getNichocnaeCurrentStageCode()).isEqualTo("persona-routine-materializer");
         assertThat(cnae.getNichocnaePipelineUpdatedAt()).isNotNull();
         verify(cnaeRepository).save(cnae);
+    }
+
+
+    /** Garante que o pending lê CNAEs iniciados da etapa corrente pelo cadastro canônico de CNAE. */
+    @Test
+    void pendingListsStartedCnaesFromCurrentStage() {
+        OprmCnpjCnaeDim cnae = new OprmCnpjCnaeDim();
+        cnae.setCnaeCode("4781400");
+        cnae.setNichocnaeCurrentStageCode("persona-routine-materializer");
+        cnae.setNichocnaePipelineStatus("INICIADO");
+        OprmNichoCnaeV3StageExecution execution = execution();
+        execution.setInputPayload("{\"origin\":\"stage-execution\"}");
+        execution.setAttemptNumber(2);
+        execution.setKnowledgeVersion(3);
+        when(cnaeRepository.findByNichocnaeCurrentStageCodeAndNichocnaePipelineStatusOrderByNichocnaePipelineUpdatedAtAsc(
+                eq("persona-routine-materializer"), eq("INICIADO"), eq(PageRequest.of(0, 10))))
+                .thenReturn(List.of(cnae));
+        when(repository.findTop1ByCnaeCodeAndStageCodeOrderByCreatedAtDesc("4781400", "persona-routine-materializer"))
+                .thenReturn(Optional.of(execution));
+
+        var pending = service.pending();
+
+        assertThat(pending).hasSize(1);
+        assertThat(pending.getFirst().stageExecutionId()).isEqualTo(19L);
+        assertThat(pending.getFirst().jobId()).isEqualTo("nichocnae-v3-4781400-1782411268024");
+        assertThat(pending.getFirst().cnaeCode()).isEqualTo("4781400");
+        assertThat(pending.getFirst().inputPayload()).isEqualTo("{\"origin\":\"stage-execution\"}");
+        assertThat(pending.getFirst().attemptNumber()).isEqualTo(2);
+        assertThat(pending.getFirst().knowledgeVersion()).isEqualTo(3);
     }
 
     /** Monta uma execução final pendente para o callback de conclusão. */

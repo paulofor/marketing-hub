@@ -46,9 +46,6 @@ describe("OprmEnrichedNicheDetailPage", () => {
             cnaeCode: "9602501",
             qualityStatus: "LIGHTLY_RESEARCHED",
             routineSummary: "Rotina operacional observada.",
-            painsSummary: "Dores observadas.",
-            resultsSummary: "Resultados desejados.",
-            mechanismOpportunitiesSummary: "Mecanismos plausíveis.",
             evidenceSummary: "Evidências coletadas.",
             sourceDomains: "exemplo.com.br",
             materializedAt: "2026-06-05T02:00:12Z",
@@ -72,6 +69,9 @@ describe("OprmEnrichedNicheDetailPage", () => {
       "href",
       "http://localhost/api/oprm/nichocnae/enriched-niche-materializer/profiles/1/pipeline-markdown",
     );
+    expect(screen.queryByText("Dores")).toBeNull();
+    expect(screen.queryByText("Resultados desejados")).toBeNull();
+    expect(screen.queryByText("Mecanismos e oportunidades")).toBeNull();
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
         "http://localhost/api/oprm/nichocnae/enriched-niche-materializer/profiles/1",

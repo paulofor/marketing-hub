@@ -1,0 +1,49 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-26-01-market-niche-cnae-link
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            columnExists:
+              tableName: market_niche
+              columnName: source_cnae_code
+      changes:
+        - addColumn:
+            tableName: market_niche
+            columns:
+              - column:
+                  name: source_cnae_code
+                  type: VARCHAR(16)
+                  remarks: CNAE de origem usado para atualizar o nicho em reprocessamentos do NichoCNAE v3.
+              - column:
+                  name: source_cnae_description
+                  type: VARCHAR(255)
+                  remarks: Descrição do CNAE de origem do nicho materializado.
+        - createIndex:
+            tableName: market_niche
+            indexName: idx_market_niche_source_cnae
+            columns:
+              - column:
+                  name: source_cnae_code
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE market_niche mn
+              JOIN (
+                  SELECT p.market_niche_id, p.cnae_code, p.cnae_description
+                  FROM market_niche_enrichment_profile p
+                  JOIN (
+                      SELECT market_niche_id, MAX(id) AS latest_profile_id
+                      FROM market_niche_enrichment_profile
+                      GROUP BY market_niche_id
+                  ) latest
+                    ON latest.latest_profile_id = p.id
+              ) latest_profile
+                ON latest_profile.market_niche_id = mn.id
+              SET mn.source_cnae_code = latest_profile.cnae_code,
+                  mn.source_cnae_description = latest_profile.cnae_description
+              WHERE mn.source_cnae_code IS NULL;

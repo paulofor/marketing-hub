@@ -349,6 +349,8 @@ public class BackendEnrichedNicheMaterializerService {
         marketNicheId,
         requiredText(neutralNicheName(cycle), "neutralNicheName"),
         buildMarketNicheDescription(card, cycle),
+        cycle.getCnaeCode(),
+        cycle.getCnaeDescription(),
         "CNAE " + cycle.getCnaeCode() + " · Score OPRM " + cycle.getSourceScore(),
         "Nicho operacional CNAE " + cycle.getCnaeCode() + " - " + cycle.getCnaeDescription(),
         "Público profissional/empreendedor ligado a " + cycle.getCnaeDescription(),

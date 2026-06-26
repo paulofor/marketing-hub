@@ -128,21 +128,6 @@ export default function OprmEnrichedNicheDetailPage() {
         <div className="col-md-6">
           <SummaryCard title="Rotina" text={data.routineSummary} />
         </div>
-        <div className="col-md-6">
-          <SummaryCard title="Dores" text={data.painsSummary} />
-        </div>
-        <div className="col-md-6">
-          <SummaryCard
-            title="Resultados desejados"
-            text={data.resultsSummary}
-          />
-        </div>
-        <div className="col-md-6">
-          <SummaryCard
-            title="Mecanismos e oportunidades"
-            text={data.mechanismOpportunitiesSummary}
-          />
-        </div>
         <div className="col-12">
           <SummaryCard title="Evidências" text={data.evidenceSummary} />
         </div>

@@ -137,4 +137,9 @@ public interface MarketNicheRepository extends JpaRepository<MarketNiche, Long> 
      */
     boolean existsByNameIgnoreCaseAndIdNot(String name, Long id);
 
+    /**
+     * Busca o nicho mais recente associado ao CNAE de origem para reprocessamento idempotente.
+     */
+    java.util.Optional<MarketNiche> findFirstBySourceCnaeCodeOrderByIdDesc(String sourceCnaeCode);
+
 }

@@ -54,5 +54,11 @@ public interface OprmNicheCandidateRepository extends JpaRepository<OprmNicheCan
      * Lista candidatos de nicho enriquecidos priorizando maiores scores para acompanhamento no frontend.
      */
     List<OprmNicheCandidate> findAllByOrderByOpportunityScoreDescCreatedAtDesc(Pageable pageable);
+
+    /**
+     * Lista candidatos iniciados na etapa atual da geração de anúncios, em ordem de solicitação mais antiga.
+     */
+    List<OprmNicheCandidate> findByGeracaoAnunciosCurrentStageCodeAndGeracaoAnunciosPipelineStatusOrderByUpdatedAtAsc(
+            String currentStageCode, String pipelineStatus, Pageable pageable);
 }
 

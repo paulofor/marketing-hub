@@ -13,6 +13,7 @@ import com.marketinghub.repository.jpa.oprm.cnae.OprmNicheCandidateRepository;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import org.springframework.data.domain.PageRequest;
 import java.util.Objects;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -64,10 +65,11 @@ public class GeraAnuncioTextoService {
         return List.of(toSummary(experiment));
     }
 
-    /** Publica pendências canônicas para consumo do AI Worker. */
+    /** Publica até dez pendências iniciadas da etapa Texto para consumo do AI Worker. */
     public List<GeraAnuncioTextoPendingResponse> pending() {
-        return experimentService.listPendingCreativeGeneration(10).stream()
-                .filter(experiment -> experiment.getCreativeGenerationMode() == CreativeGenerationMode.PIPELINE_ADS)
+        return cnaeRepository.findByGeracaoAnunciosCurrentStageCodeAndGeracaoAnunciosPipelineStatusOrderByUpdatedAtAsc(
+                        STAGE_CODE, STATUS_STARTED, PageRequest.of(0, 10))
+                .stream()
                 .map(this::toPending)
                 .toList();
     }
@@ -101,6 +103,12 @@ public class GeraAnuncioTextoService {
                 experiment.getCreativeGenerationRequestedAt(), context(experiment), previousArtifacts(experiment));
     }
 
+    /** Converte um candidato CNAE iniciado em unidade de trabalho fechada para o AI Worker. */
+    private GeraAnuncioTextoPendingResponse toPending(OprmNicheCandidate cnae) {
+        return new GeraAnuncioTextoPendingResponse(stageExecutionId(cnae), cnae.getId(), stageJobId(cnae), cnae.getUpdatedAt(), context(cnae),
+                previousArtifacts(cnae));
+    }
+
     /** Monta o contexto funcional necessário para geração de anúncio sem consulta adicional. */
     private Map<String, Object> context(Experiment experiment) {
         return Map.of(
@@ -110,11 +118,34 @@ public class GeraAnuncioTextoService {
                 "creativeGenerationMode", experiment.getCreativeGenerationMode().name());
     }
 
+    /** Monta o contexto funcional do candidato CNAE para geração de anúncio sem consulta adicional. */
+    private Map<String, Object> context(OprmNicheCandidate cnae) {
+        return Map.of(
+                "experimentId", cnae.getId(),
+                "cnaeCode", Objects.toString(cnae.getCnaeCode(), ""),
+                "cnaeDescription", Objects.toString(cnae.getCnaeDescription(), ""),
+                "candidateNicheName", Objects.toString(cnae.getCandidateNicheName(), ""),
+                "persona", Objects.toString(cnae.getPersona(), ""),
+                "painHypothesis", Objects.toString(cnae.getPainHypothesis(), ""),
+                "desiredOutcome", Objects.toString(cnae.getDesiredOutcome(), ""),
+                "mechanismHypothesis", Objects.toString(cnae.getMechanismHypothesis(), ""),
+                "offerIdea", Objects.toString(cnae.getOfferIdea(), ""),
+                "stageCode", Objects.toString(cnae.getGeracaoAnunciosCurrentStageCode(), ""));
+    }
+
     /** Monta artefatos anteriores já persistidos no experimento. */
     private Map<String, Object> previousArtifacts(Experiment experiment) {
         return Map.of(
                 "adCopy", Objects.toString(experiment.getAdCopy(), ""),
                 "adImageBriefing", Objects.toString(experiment.getAdImageBriefing(), ""));
+    }
+
+    /** Monta artefatos anteriores já persistidos no candidato CNAE. */
+    private Map<String, Object> previousArtifacts(OprmNicheCandidate cnae) {
+        return Map.of(
+                "proofDirection", Objects.toString(cnae.getProofDirection(), ""),
+                "marketVolumeSignals", Objects.toString(cnae.getMarketVolumeSignals(), ""),
+                "sourceArtifacts", Objects.toString(cnae.getSourceArtifacts(), ""));
     }
 
     /** Resolve o código/chave recebido no contrato administrativo para o identificador interno do experimento. */

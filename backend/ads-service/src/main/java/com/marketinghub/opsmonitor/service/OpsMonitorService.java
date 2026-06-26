@@ -1,8 +1,8 @@
 package com.marketinghub.opsmonitor.service;
 
 import com.marketinghub.geralanding.GeraLandingStageExecution;
-import com.marketinghub.pipelines.oprm.nichocnae.v3.OprmNichoCnaeV3StageExecution;
-import com.marketinghub.pipelines.oprm.nichocnae.v3.OprmNichoCnaeV3StageExecutionStatus;
+import com.marketinghub.oprmcoletormei.nichocnae.v3.OprmNichoCnaeV3StageExecution;
+import com.marketinghub.oprmcoletormei.nichocnae.v3.OprmNichoCnaeV3StageExecutionStatus;
 import com.marketinghub.opsmonitor.OpsModuleHealthCheck;
 import com.marketinghub.opsmonitor.OpsModuleIncident;
 import com.marketinghub.opsmonitor.OpsMonitoredModule;

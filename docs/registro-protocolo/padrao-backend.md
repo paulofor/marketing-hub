@@ -30,7 +30,7 @@
 
 ## 2026-06-25 — OPRM NichoCNAE v3
 
-- Pacote backend protegido: `com.marketinghub.pipelines.oprm.nichocnae.v3`.
+- Pacote backend protegido: `com.marketinghub.oprmcoletormei.nichocnae.v3`.
 - Módulo executor externo: `oprm-coletor-mei`.
 - Protocolo aplicado com etapas versionadas, controller/service canônicos por etapa, contratos `record` em subpacotes de service e endpoint `pending` em `/api/internal/oprm/nichocnae/v3/<etapa>/stage-executions/pending`.
 

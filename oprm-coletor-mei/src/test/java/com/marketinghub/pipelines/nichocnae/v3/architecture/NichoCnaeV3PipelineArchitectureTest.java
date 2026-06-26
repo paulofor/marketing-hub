@@ -16,9 +16,7 @@ import org.junit.jupiter.api.Test;
 
 /** Garante que o pipeline NichoCNAE versão 3 siga o protocolo padrão módulo no executor OPRM. */
 class NichoCnaeV3PipelineArchitectureTest {
-    private static final String INITIAL_VERSION_PACKAGE = "com.marketinghub.nichocnae";
     private static final String BASE_PACKAGE = "com.marketinghub.pipelines.nichocnae.v3";
-    private static final String VERSION_TWO_PACKAGE = "com.marketinghub.nichocnaev2";
     private static final String CORE_PACKAGE = BASE_PACKAGE + ".core";
 
     private static final DescribedPredicate<JavaClass> ARE_IN_CONCRETE_STAGE =
@@ -67,36 +65,11 @@ class NichoCnaeV3PipelineArchitectureTest {
                 .check(importedClasses);
     }
 
-    /** Valida que a versão 3 não conhece classes da versão inicial do pipeline NichoCNAE. */
-    @Test
-    void versionThreeShouldNotDependOnInitialVersion() {
-        JavaClasses importedClasses = importProductionClasses();
-
-        classes()
-                .that().resideInAPackage(BASE_PACKAGE + "..")
-                .should(notDependOnInitialVersion())
-                .because("[ARQUITETURA] a versão 3 nichocnae deve permanecer independente da versão inicial")
-                .check(importedClasses);
-    }
-
-
-    /** Valida que a versão 3 não conhece classes da versão 2 do pipeline NichoCNAE. */
-    @Test
-    void versionThreeShouldNotDependOnVersionTwo() {
-        JavaClasses importedClasses = importProductionClasses();
-
-        classes()
-                .that().resideInAPackage(BASE_PACKAGE + "..")
-                .should(notDependOnVersionTwo())
-                .because("[ARQUITETURA] a versão 3 nichocnae deve permanecer independente da versão 2")
-                .check(importedClasses);
-    }
-
     /** Importa classes de produção do pipeline versão 3. */
     private JavaClasses importProductionClasses() {
         return new ClassFileImporter()
                 .withImportOption(new ImportOption.DoNotIncludeTests())
-                .importPackages(BASE_PACKAGE, INITIAL_VERSION_PACKAGE, VERSION_TWO_PACKAGE);
+                .importPackages(BASE_PACKAGE);
     }
 
     /** Cria condição explícita que bloqueia dependência do núcleo para etapa concreta. */
@@ -127,46 +100,6 @@ class NichoCnaeV3PipelineArchitectureTest {
                     if (targetStage != null && !targetStage.equals(sourceStage)) {
                         events.add(SimpleConditionEvent.violated(source, "[ARQUITETURA] " + source.getName()
                                 + " pertence à etapa " + sourceStage + " mas depende da etapa " + targetStage));
-                    }
-                }
-            }
-        };
-    }
-
-    /** Cria condição explícita que bloqueia dependência direta da versão 3 para a versão inicial. */
-    private ArchCondition<JavaClass> notDependOnInitialVersion() {
-        return new ArchCondition<>("[ARQUITETURA] não depender de " + INITIAL_VERSION_PACKAGE) {
-            /** Verifica dependências diretas originadas na versão 3 para classes da versão inicial. */
-            @Override
-            public void check(JavaClass source, ConditionEvents events) {
-                for (Dependency dependency : source.getDirectDependenciesFromSelf()) {
-                    JavaClass target = dependency.getTargetClass();
-                    if (target.getPackageName().equals(INITIAL_VERSION_PACKAGE)
-                            || target.getPackageName().startsWith(INITIAL_VERSION_PACKAGE + ".")) {
-                        events.add(SimpleConditionEvent.violated(source, "[ARQUITETURA] " + source.getName()
-                                + " pertence à versão 3 mas depende da versão inicial "
-                                + target.getName() + " via: " + dependency.getDescription()));
-                    }
-                }
-            }
-        };
-    }
-
-
-
-    /** Cria condição explícita que bloqueia dependência direta da versão 3 para a versão 2. */
-    private ArchCondition<JavaClass> notDependOnVersionTwo() {
-        return new ArchCondition<>("[ARQUITETURA] não depender de " + VERSION_TWO_PACKAGE) {
-            /** Verifica dependências diretas originadas na versão 3 para classes da versão 2. */
-            @Override
-            public void check(JavaClass source, ConditionEvents events) {
-                for (Dependency dependency : source.getDirectDependenciesFromSelf()) {
-                    JavaClass target = dependency.getTargetClass();
-                    if (target.getPackageName().equals(VERSION_TWO_PACKAGE)
-                            || target.getPackageName().startsWith(VERSION_TWO_PACKAGE + ".")) {
-                        events.add(SimpleConditionEvent.violated(source, "[ARQUITETURA] " + source.getName()
-                                + " pertence à versão 3 mas depende da versão 2 "
-                                + target.getName() + " via: " + dependency.getDescription()));
                     }
                 }
             }

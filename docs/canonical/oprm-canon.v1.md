@@ -172,7 +172,7 @@ Evitar fechamento prematuro de `import run` que destrói a totalização de mark
 ## Regra obrigatória — pipeline oficial OPRM NichoCNAE
 
 - O pipeline oficial de pesquisa e materialização de NichoCNAE deve usar o código operacional `oprm-nicho-cnae-pipeline` e o módulo `OPRM`.
-- Para o NichoCNAE v3, o backend deve usar a raiz `com.marketinghub.pipelines.oprm.nichocnae.v3` e cada etapa concreta deve ficar diretamente abaixo da versão, no formato `com.marketinghub.pipelines.oprm.nichocnae.v3.<nome-etapa>`.
+- Para o NichoCNAE v3, o backend deve usar a raiz `com.marketinghub.oprmcoletormei.nichocnae.v3` e cada etapa concreta deve ficar diretamente abaixo da versão, no formato `com.marketinghub.oprmcoletormei.nichocnae.v3.<nome-etapa>`.
 - Para o NichoCNAE v3, o executor `oprm-coletor-mei` deve usar a raiz `com.marketinghub.pipelines.nichocnae.v3` e cada etapa concreta deve ficar diretamente abaixo da versão, no formato `com.marketinghub.pipelines.nichocnae.v3.<nome-etapa>`, sem repetir `oprm` no pacote do executor.
 - No executor NichoCNAE v3, contratos genéricos do motor de etapas podem ficar em `com.marketinghub.pipelines.nichocnae.v3.core`; consumo de pendências, catálogo de etapas, scheduler e client de backend podem ficar em `com.marketinghub.pipelines.nichocnae.v3.execution`.
 - Repositories JPA do backend que persistem dados do NichoCNAE continuam no pacote canônico de persistência `com.marketinghub.repository.jpa.oprm.nichocnae.v3`; eles não devem ser movidos para dentro do pacote funcional do pipeline.
@@ -312,7 +312,7 @@ Evitar fechamento prematuro de `import run` que destrói a totalização de mark
 - Ciclos `RUNNING` do pipeline OPRM NichoCNAE não podem permanecer indefinidamente como execução saudável quando não houver avanço operacional persistido.
 - O backend deve marcar como `STALLED` ciclos `RUNNING` sem progresso por mais de 6 horas, considerando ausência simultânea de queries, candidatos de fonte, snapshots e sinais extraídos.
 - Ao marcar um ciclo como `STALLED`, o backend deve preencher `finishedAt`, registrar `errorMessage` com orientação operacional e atualizar o candidato de origem para `RESEARCH_STALLED` quando ele existir.
-- A correção de um ciclo `STALLED` deve investigar primeiro executor `oprm-coletor-mei`, carregamento do pacote `com.marketinghub.nichocnae`, scheduler da etapa parada e conectividade com o backend antes de abrir novo ciclo.
+- A correção de um ciclo `STALLED` deve investigar primeiro executor `oprm-coletor-mei`, carregamento do pacote `com.marketinghub.pipelines.nichocnae.v3`, scheduler da etapa parada e conectividade com o backend antes de abrir novo ciclo.
 
 ## Critério de efetividade — ciclos NichoCNAE sem progresso
 

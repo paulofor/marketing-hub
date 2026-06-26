@@ -7,7 +7,7 @@
 - **Executor real do pipeline v3:** `oprm-coletor-mei`.
 - **Pacote executor:** `com.marketinghub.pipelines.nichocnae.v3`.
 - **Backend fonte de verdade e controle:** `backend/ads-service`.
-- **Pacote backend:** `com.marketinghub.pipelines.oprm.nichocnae.v3`.
+- **Pacote backend:** `com.marketinghub.oprmcoletormei.nichocnae.v3`.
 - **Padrão de comunicação:** o executor consome pendências no endpoint `pending` do backend, executa a etapa e devolve `complete` ou `fail`.
 
 ### Pacotes no módulo executor `oprm-coletor-mei`
@@ -35,7 +35,7 @@ Subpacotes identificados:
 
 Raiz backend:
 
-- `com.marketinghub.pipelines.oprm.nichocnae.v3`
+- `com.marketinghub.oprmcoletormei.nichocnae.v3`
 
 Subpacotes principais identificados:
 
@@ -68,6 +68,6 @@ Subpacotes principais identificados:
 ### Endpoints e leitura administrativa
 
 - O padrão interno por etapa é `/api/internal/oprm/nichocnae/v3/<stageCode>/stage-executions`.
-- A leitura administrativa de progresso fica no pacote `com.marketinghub.pipelines.oprm.nichocnae.v3.progress`.
+- A leitura administrativa de progresso fica no pacote `com.marketinghub.oprmcoletormei.nichocnae.v3.progress`.
 - O endpoint administrativo de progresso é `/api/oprm/nichocnae/v3/cnaes/{cnaeCode}/progress`.
 - A confirmação de finalização usa `/api/oprm/nichocnae/v3/cnaes/{cnaeCode}/progress/confirm-finalization`.

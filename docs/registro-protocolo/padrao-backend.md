@@ -30,7 +30,7 @@
 
 ## 2026-06-25 — OPRM NichoCNAE v3
 
-- Pacote backend protegido: `com.marketinghub.oprm.nichocnae.v3`.
+- Pacote backend protegido: `com.marketinghub.pipelines.oprm.nichocnae.v3`.
 - Módulo executor externo: `oprm-coletor-mei`.
 - Protocolo aplicado com etapas versionadas, controller/service canônicos por etapa, contratos `record` em subpacotes de service e endpoint `pending` em `/api/internal/oprm/nichocnae/v3/<etapa>/stage-executions/pending`.
 
@@ -50,3 +50,4 @@
 - Etapas criadas: `fatosproduto`, `analisepagina`, `planejabuscas`, `qualificafontes` e `consolidadossie`.
 - Endpoints internos pending canônicos aplicados no padrão `/api/internal/mois/dossieproduto/v1/<etapa>/stage-executions/pending`.
 - Contratos da operação mantidos como `record` em subpacotes de `service`.
+- 2026-06-26 — Aplicado ao pipeline `geraanuncio` v2 no backend, pacote `com.marketinghub.geraanuncio.v2`, etapas `texto` e `imagem`, com endpoints pending canônicos `/api/internal/geraanuncio/v2/texto/stage-executions/pending` e `/api/internal/geraanuncio/v2/imagem/stage-executions/pending` e contratos DTO como `record` em subpacotes de service.

@@ -24,7 +24,7 @@
 ## 2026-06-25 — OPRM NichoCNAE v3
 
 - Módulo executor: `oprm-coletor-mei`.
-- Pacote executor: `com.marketinghub.nichocnaev3`.
+- Pacote executor: `com.marketinghub.pipelines.nichocnae.v3`.
 - Protocolo aplicado com núcleo genérico `pipeline`, etapas concretas plugáveis em subpacotes por etapa, scheduler no executor, consumo via endpoint `pending` do backend e teste ArchUnit próprio.
 
 ## 2026-06-25 — MOIS dossiê v1
@@ -42,3 +42,11 @@
 - Pacote protegido/criado: `com.marketinghub.mois.bibliotecapaginavenda.worker.pipelines.dossieproduto.v1` no padrão `pipelines.<nome-pipeline>.v<numero-versao>.<nome-etapa>`.
 - Pipeline criado como `v1`, com núcleo genérico (`PipelineWorker`, `StageProcessor`, `StageContext`, `StageResult`, `StageArtifact`, `ArtifactStore`) e etapas plugáveis `fatosproduto`, `analisepagina`, `planejabuscas`, `qualificafontes` e `consolidadossie`.
 - Pontos iniciais canônicos previstos para consumo pelo executor: `/api/internal/mois/dossieproduto/v1/<etapa>/stage-executions/pending`.
+- 2026-06-26 — Registro legado do GeraAnuncio v2 no `ai-worker` substituído pelo pacote correto `com.marketinghub.geraanuncio.v2` e pelas etapas `texto` e `imagem`.
+
+
+## 2026-06-26 — AI Worker — GeraAnuncio v2 texto/imagem
+
+- Módulo executor: `ai-worker`.
+- Pacote protegido: `com.marketinghub.geraanuncio.v2`.
+- Alteração: o pipeline GeraAnuncio v2 passou a ter duas etapas internas espelhadas com o backend, `texto` e `imagem`, cada uma com client próprio para o endpoint `pending` canônico da etapa par no backend.

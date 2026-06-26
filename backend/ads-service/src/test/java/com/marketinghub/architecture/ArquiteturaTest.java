@@ -117,7 +117,7 @@ class ArquiteturaTest {
             Map.entry("reprocesscontroller", "reprocess-controller"),
             Map.entry("enrichednichematerializer", "enriched-niche-materializer"));
 
-    private static final String OPRM_NICHO_CNAE_V3_PACKAGE = "com.marketinghub.oprm.nichocnae.v3";
+    private static final String OPRM_NICHO_CNAE_V3_PACKAGE = "com.marketinghub.pipelines.oprm.nichocnae.v3";
     private static final Map<String, String> OPRM_NICHO_CNAE_V3_STAGE_ENDPOINT_SLUGS = Map.ofEntries(
             Map.entry("cnaeintake", "cnae-intake"),
             Map.entry("personacandidategenerator", "persona-candidate-generator"),
@@ -170,7 +170,8 @@ class ArquiteturaTest {
     private static final String MOIS_DOSSIE_PRODUTO_V1_PACKAGE = "com.marketinghub.pipelines.mois.dossieproduto.v1";
     private static final String GERAANUNCIO_V2_PACKAGE = "com.marketinghub.geraanuncio.v2";
     private static final Map<String, String> GERAANUNCIO_V2_STAGE_ENDPOINT_SLUGS = Map.ofEntries(
-            Map.entry("criativo", "criativo"));
+            Map.entry("texto", "texto"),
+            Map.entry("imagem", "imagem"));
     private static final Map<String, String> MOIS_DOSSIE_V1_STAGE_ENDPOINT_SLUGS = Map.ofEntries(
             Map.entry("intake", "intake"),
             Map.entry("productunderstanding", "product-understanding"),

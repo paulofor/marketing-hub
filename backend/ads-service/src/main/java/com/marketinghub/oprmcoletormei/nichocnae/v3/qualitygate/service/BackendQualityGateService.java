@@ -1,6 +1,7 @@
 package com.marketinghub.oprmcoletormei.nichocnae.v3.qualitygate.service;
 
 import com.marketinghub.oprmcoletormei.nichocnae.v3.OprmNichoCnaeV3StageExecution;
+import com.marketinghub.oprm.market.OprmCnpjCnaeDim;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.qualitygate.service.createStageExecution.QualityGateCreateResponse;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.qualitygate.service.pending.QualityGatePendingResponse;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.shared.OprmNichoCnaeV3StageServiceSupport;
@@ -14,7 +15,6 @@ import org.springframework.stereotype.Service;
 public class BackendQualityGateService extends OprmNichoCnaeV3StageServiceSupport {
     private static final String STAGE_CODE = "quality-gate";
     private static final String NEXT_STAGE = "persona-routine-materializer";
-    private static final String STATUS_STARTED = "INICIADO";
     private static final String STATUS_WAITING = "AGUARDANDO_RETORNO_MODULO";
     private static final String STATUS_COMPLETED = "CONCLUIDO";
     private static final String STATUS_FAILED = "FALHA";
@@ -37,7 +37,7 @@ public class BackendQualityGateService extends OprmNichoCnaeV3StageServiceSuppor
 
     /** Lista pendências da etapa quality-gate para o executor OPRM. */
     public List<QualityGatePendingResponse> pending() {
-        return pendingExecutions().stream().map(this::toPendingResponse).toList();
+        return pendingCnaes().stream().map(this::toPendingResponse).toList();
     }
 
     /** Registra conclusão da etapa quality-gate. */
@@ -56,7 +56,14 @@ public class BackendQualityGateService extends OprmNichoCnaeV3StageServiceSuppor
     }
 
     /** Converte entidade persistida em item pendente para executor externo. */
-    private QualityGatePendingResponse toPendingResponse(OprmNichoCnaeV3StageExecution execution) {
-        return new QualityGatePendingResponse(execution.getId(), execution.getJobId(), execution.getCnaeCode(), execution.getInputPayload(), execution.getAttemptNumber(), execution.getKnowledgeVersion());
+    private QualityGatePendingResponse toPendingResponse(OprmCnpjCnaeDim cnae) {
+        OprmNichoCnaeV3StageExecution execution = pendingExecution(cnae).orElse(null);
+        return new QualityGatePendingResponse(
+                execution == null ? null : execution.getId(),
+                execution == null ? pendingJobId(cnae) : execution.getJobId(),
+                cnae.getCnaeCode(),
+                execution == null ? cnaeInputPayload(cnae) : execution.getInputPayload(),
+                execution == null ? 1 : execution.getAttemptNumber(),
+                execution == null ? 1 : execution.getKnowledgeVersion());
     }
 }

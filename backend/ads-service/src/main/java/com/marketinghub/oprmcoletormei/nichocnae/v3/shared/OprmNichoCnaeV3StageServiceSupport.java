@@ -8,11 +8,15 @@ import com.marketinghub.repository.jpa.oprm.nichocnae.v3.OprmNichoCnaeV3StageExe
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
 /** Base compartilhada para services canônicos de etapas NichoCNAE v3 sem assumir execução operacional. */
 public abstract class OprmNichoCnaeV3StageServiceSupport {
+    protected static final String STATUS_STARTED = "INICIADO";
+    private static final int PENDING_LIMIT = 10;
     private static final Map<String, Integer> STAGE_ORDER = Map.ofEntries(
             Map.entry("cnae-intake", 1),
             Map.entry("persona-candidate-generator", 2),
@@ -62,9 +66,25 @@ public abstract class OprmNichoCnaeV3StageServiceSupport {
         return repository.save(execution);
     }
 
-    /** Lista pendências da etapa para o executor externo consumir pelo endpoint pending. */
-    protected List<OprmNichoCnaeV3StageExecution> pendingExecutions() {
-        return repository.findTop10ByStageCodeAndStatusOrderByCreatedAtAsc(stageCode, OprmNichoCnaeV3StageExecutionStatus.PENDING);
+    /** Lista CNAEs iniciados na etapa corrente para o executor externo consumir pelo endpoint pending. */
+    protected List<OprmCnpjCnaeDim> pendingCnaes() {
+        return cnaeRepository.findByNichocnaeCurrentStageCodeAndNichocnaePipelineStatusOrderByNichocnaePipelineUpdatedAtAsc(
+                stageCode, STATUS_STARTED, PageRequest.of(0, PENDING_LIMIT));
+    }
+
+    /** Recupera a execução mais recente do CNAE na etapa corrente para preservar o contrato de callback. */
+    protected Optional<OprmNichoCnaeV3StageExecution> pendingExecution(OprmCnpjCnaeDim cnae) {
+        return repository.findTop1ByCnaeCodeAndStageCodeOrderByCreatedAtDesc(cnae.getCnaeCode(), stageCode);
+    }
+
+    /** Monta payload mínimo de entrada para um CNAE pendente quando não houver execução persistida. */
+    protected String cnaeInputPayload(OprmCnpjCnaeDim cnae) {
+        return "{\"cnaeCode\":\"" + cnae.getCnaeCode() + "\"}";
+    }
+
+    /** Monta jobId estável para uma pendência publicada diretamente pelo cadastro de CNAE. */
+    protected String pendingJobId(OprmCnpjCnaeDim cnae) {
+        return "nichocnae-v3-" + cnae.getCnaeCode();
     }
 
     /** Registra conclusão reportada pelo executor externo. */

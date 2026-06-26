@@ -1565,3 +1565,5 @@
 ## 2026-06-26 — NichoCNAE v3: data/hora do status no cadastro CNAE
 
 - Ajuste: adicionada a coluna `nichocnae_pipeline_updated_at` em `oprm_cnpj_cnae_dim` para registrar a data/hora corrente sempre que o `start` de uma etapa atualizar o status e a etapa atual do pipeline NichoCNAE v3.
+
+- 2026-06-26: Ajustado pending do backend NichoCNAE v3 para publicar até 10 CNAEs iniciados por etapa corrente a partir de oprm_cnpj_cnae_dim, ordenados por atualização ascendente, usando a constante INICIADO no suporte compartilhado das etapas.

@@ -1,6 +1,7 @@
 package com.marketinghub.oprmcoletormei.nichocnae.v3.routinequeryplanner.service;
 
 import com.marketinghub.oprmcoletormei.nichocnae.v3.OprmNichoCnaeV3StageExecution;
+import com.marketinghub.oprm.market.OprmCnpjCnaeDim;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.routinequeryplanner.service.createStageExecution.RoutineQueryPlannerCreateResponse;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.routinequeryplanner.service.pending.RoutineQueryPlannerPendingResponse;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.shared.OprmNichoCnaeV3StageServiceSupport;
@@ -14,7 +15,6 @@ import org.springframework.stereotype.Service;
 public class BackendRoutineQueryPlannerService extends OprmNichoCnaeV3StageServiceSupport {
     private static final String STAGE_CODE = "routine-query-planner";
     private static final String NEXT_STAGE = "source-searcher";
-    private static final String STATUS_STARTED = "INICIADO";
     private static final String STATUS_WAITING = "AGUARDANDO_RETORNO_MODULO";
     private static final String STATUS_COMPLETED = "CONCLUIDO";
     private static final String STATUS_FAILED = "FALHA";
@@ -37,7 +37,7 @@ public class BackendRoutineQueryPlannerService extends OprmNichoCnaeV3StageServi
 
     /** Lista pendências da etapa routine-query-planner para o executor OPRM. */
     public List<RoutineQueryPlannerPendingResponse> pending() {
-        return pendingExecutions().stream().map(this::toPendingResponse).toList();
+        return pendingCnaes().stream().map(this::toPendingResponse).toList();
     }
 
     /** Registra conclusão da etapa routine-query-planner. */
@@ -56,7 +56,14 @@ public class BackendRoutineQueryPlannerService extends OprmNichoCnaeV3StageServi
     }
 
     /** Converte entidade persistida em item pendente para executor externo. */
-    private RoutineQueryPlannerPendingResponse toPendingResponse(OprmNichoCnaeV3StageExecution execution) {
-        return new RoutineQueryPlannerPendingResponse(execution.getId(), execution.getJobId(), execution.getCnaeCode(), execution.getInputPayload(), execution.getAttemptNumber(), execution.getKnowledgeVersion());
+    private RoutineQueryPlannerPendingResponse toPendingResponse(OprmCnpjCnaeDim cnae) {
+        OprmNichoCnaeV3StageExecution execution = pendingExecution(cnae).orElse(null);
+        return new RoutineQueryPlannerPendingResponse(
+                execution == null ? null : execution.getId(),
+                execution == null ? pendingJobId(cnae) : execution.getJobId(),
+                cnae.getCnaeCode(),
+                execution == null ? cnaeInputPayload(cnae) : execution.getInputPayload(),
+                execution == null ? 1 : execution.getAttemptNumber(),
+                execution == null ? 1 : execution.getKnowledgeVersion());
     }
 }

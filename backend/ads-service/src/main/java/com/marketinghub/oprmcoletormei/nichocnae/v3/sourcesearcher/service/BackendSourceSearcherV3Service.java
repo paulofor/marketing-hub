@@ -1,6 +1,7 @@
 package com.marketinghub.oprmcoletormei.nichocnae.v3.sourcesearcher.service;
 
 import com.marketinghub.oprmcoletormei.nichocnae.v3.OprmNichoCnaeV3StageExecution;
+import com.marketinghub.oprm.market.OprmCnpjCnaeDim;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.sourcesearcher.service.createStageExecution.SourceSearcherCreateResponse;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.sourcesearcher.service.pending.SourceSearcherPendingResponse;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.shared.OprmNichoCnaeV3StageServiceSupport;
@@ -14,7 +15,6 @@ import org.springframework.stereotype.Service;
 public class BackendSourceSearcherV3Service extends OprmNichoCnaeV3StageServiceSupport {
     private static final String STAGE_CODE = "source-searcher";
     private static final String NEXT_STAGE = "source-fetcher";
-    private static final String STATUS_STARTED = "INICIADO";
     private static final String STATUS_WAITING = "AGUARDANDO_RETORNO_MODULO";
     private static final String STATUS_COMPLETED = "CONCLUIDO";
     private static final String STATUS_FAILED = "FALHA";
@@ -37,7 +37,7 @@ public class BackendSourceSearcherV3Service extends OprmNichoCnaeV3StageServiceS
 
     /** Lista pendências da etapa source-searcher para o executor OPRM. */
     public List<SourceSearcherPendingResponse> pending() {
-        return pendingExecutions().stream().map(this::toPendingResponse).toList();
+        return pendingCnaes().stream().map(this::toPendingResponse).toList();
     }
 
     /** Registra conclusão da etapa source-searcher. */
@@ -56,7 +56,14 @@ public class BackendSourceSearcherV3Service extends OprmNichoCnaeV3StageServiceS
     }
 
     /** Converte entidade persistida em item pendente para executor externo. */
-    private SourceSearcherPendingResponse toPendingResponse(OprmNichoCnaeV3StageExecution execution) {
-        return new SourceSearcherPendingResponse(execution.getId(), execution.getJobId(), execution.getCnaeCode(), execution.getInputPayload(), execution.getAttemptNumber(), execution.getKnowledgeVersion());
+    private SourceSearcherPendingResponse toPendingResponse(OprmCnpjCnaeDim cnae) {
+        OprmNichoCnaeV3StageExecution execution = pendingExecution(cnae).orElse(null);
+        return new SourceSearcherPendingResponse(
+                execution == null ? null : execution.getId(),
+                execution == null ? pendingJobId(cnae) : execution.getJobId(),
+                cnae.getCnaeCode(),
+                execution == null ? cnaeInputPayload(cnae) : execution.getInputPayload(),
+                execution == null ? 1 : execution.getAttemptNumber(),
+                execution == null ? 1 : execution.getKnowledgeVersion());
     }
 }

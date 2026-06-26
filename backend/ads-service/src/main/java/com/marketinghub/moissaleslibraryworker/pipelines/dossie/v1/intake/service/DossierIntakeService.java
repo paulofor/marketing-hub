@@ -3,8 +3,16 @@ package com.marketinghub.moissaleslibraryworker.pipelines.dossie.v1.intake.servi
 import com.marketinghub.moissaleslibraryworker.pipelines.dossie.v1.intake.service.pending.DossierIntakePendingJob;
 import com.marketinghub.moissaleslibraryworker.pipelines.dossie.v1.intake.service.pending.DossierIntakePendingRequest;
 import com.marketinghub.moissaleslibraryworker.pipelines.dossie.v1.intake.service.pending.DossierIntakePendingResponse;
+import com.marketinghub.moissaleslibraryworker.pipelines.dossie.v1.intake.service.receberequest.DossierIntakeRecebeRequestRequest;
+import com.marketinghub.moissaleslibraryworker.pipelines.dossie.v1.intake.service.receberequest.DossierIntakeRecebeRequestResponse;
 import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageRepository;
+import com.marketinghub.repository.jpa.mois.dossieproduto.PipelineDossieProdutoRepository;
+import com.marketinghub.repository.jpa.mois.dossieproduto.entity.PipelineDossieProduto;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import org.springframework.stereotype.Service;
@@ -13,10 +21,14 @@ import org.springframework.stereotype.Service;
 @Service
 public class DossierIntakeService {
     private final MoisSalesPageRepository salesPageRepository;
+    private final PipelineDossieProdutoRepository pipelineDossieProdutoRepository;
 
-    /** Cria o service da etapa com acesso ao repositório canônico da página/produto. */
-    public DossierIntakeService(MoisSalesPageRepository salesPageRepository) {
+    /** Cria o service da etapa com acesso aos repositórios canônicos da página/produto e da auditoria do pipeline. */
+    public DossierIntakeService(
+            MoisSalesPageRepository salesPageRepository,
+            PipelineDossieProdutoRepository pipelineDossieProdutoRepository) {
         this.salesPageRepository = salesPageRepository;
+        this.pipelineDossieProdutoRepository = pipelineDossieProdutoRepository;
     }
 
     private static final String STAGE_CODE = "intake";
@@ -35,6 +47,45 @@ public class DossierIntakeService {
         page.setDossieProdutoCurrentStage(STAGE_CODE);
         page.setDossieProdutoUpdatedAt(Instant.now());
         salesPageRepository.save(page);
+    }
+
+
+    /** Recebe o request operacional da etapa, coloca a página em espera do módulo e audita a entrada do pipeline. */
+    public DossierIntakeRecebeRequestResponse recebeRequest(String productKey, DossierIntakeRecebeRequestRequest request) {
+        long pageId = Long.parseLong(productKey);
+        Instant now = Instant.now();
+        String jobId = createJobId(productKey, now);
+        var page = salesPageRepository.findById(pageId)
+                .orElseThrow(() -> new IllegalArgumentException("Página/produto MOIS não encontrada: " + productKey));
+        page.setDossieProdutoStatus(STATUS_WAITING);
+        page.setDossieProdutoCurrentStage(STAGE_CODE);
+        page.setDossieProdutoUpdatedAt(now);
+        salesPageRepository.save(page);
+
+        PipelineDossieProduto pipeline = new PipelineDossieProduto();
+        pipeline.setIdExterno(productKey);
+        pipeline.setRequest(request.request());
+        pipeline.setCodigoEtapa(STAGE_CODE);
+        pipeline.setDataHora(now);
+        pipeline.setJobId(jobId);
+        pipeline.setPlataforma(request.plataforma());
+        pipeline.setPrompt(request.prompt());
+        pipeline.setSchema(request.schema());
+        pipeline.setVersaoPipeline("v1");
+        pipelineDossieProdutoRepository.save(pipeline);
+
+        return new DossierIntakeRecebeRequestResponse(jobId, productKey, STAGE_CODE, STATUS_WAITING);
+    }
+
+    /** Cria um hash operacional para rastrear a entrada recebida nesta etapa. */
+    private String createJobId(String productKey, Instant now) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest((STAGE_CODE + "|" + productKey + "|" + now).getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(hash);
+        } catch (NoSuchAlgorithmException ex) {
+            throw new IllegalStateException("Não foi possível criar jobId do dossiê MOIS", ex);
+        }
     }
 
     /** Entrega até dez trabalhos iniciados da etapa atual ao executor, ordenados pela data operacional mais antiga. */

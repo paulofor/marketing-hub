@@ -1,10 +1,13 @@
 package com.marketinghub.moissaleslibraryworker.pipelines.dossie.v1.warmupsignalextraction.controller;
 
 import com.marketinghub.moissaleslibraryworker.pipelines.dossie.v1.warmupsignalextraction.service.DossierWarmupSignalExtractionService;
+import com.marketinghub.moissaleslibraryworker.pipelines.dossie.v1.warmupsignalextraction.service.receberequest.DossierWarmupSignalExtractionRecebeRequestRequest;
+import com.marketinghub.moissaleslibraryworker.pipelines.dossie.v1.warmupsignalextraction.service.receberequest.DossierWarmupSignalExtractionRecebeRequestResponse;
 import com.marketinghub.moissaleslibraryworker.pipelines.dossie.v1.warmupsignalextraction.service.pending.DossierWarmupSignalExtractionPendingRequest;
 import com.marketinghub.moissaleslibraryworker.pipelines.dossie.v1.warmupsignalextraction.service.pending.DossierWarmupSignalExtractionPendingResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -23,6 +26,15 @@ public class DossierWarmupSignalExtractionController {
     @PostMapping("/start")
     public void start(@RequestParam("productKey") String productKey) {
         service.start(productKey);
+    }
+
+
+    /** Recebe o request do módulo executor para a página/produto informada pela chave operacional. */
+    @PostMapping("/{productKey}/recebeRequest")
+    public DossierWarmupSignalExtractionRecebeRequestResponse recebeRequest(
+            @PathVariable("productKey") String productKey,
+            @Valid @RequestBody DossierWarmupSignalExtractionRecebeRequestRequest request) {
+        return service.recebeRequest(productKey, request);
     }
 
     /** Expõe o ponto inicial canônico de consumo da fila pelo módulo executor. */

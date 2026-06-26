@@ -1,10 +1,13 @@
 package com.marketinghub.moissaleslibraryworker.pipelines.dossie.v1.sourceproductmatch.controller;
 
 import com.marketinghub.moissaleslibraryworker.pipelines.dossie.v1.sourceproductmatch.service.DossierSourceProductMatchService;
+import com.marketinghub.moissaleslibraryworker.pipelines.dossie.v1.sourceproductmatch.service.receberequest.DossierSourceProductMatchRecebeRequestRequest;
+import com.marketinghub.moissaleslibraryworker.pipelines.dossie.v1.sourceproductmatch.service.receberequest.DossierSourceProductMatchRecebeRequestResponse;
 import com.marketinghub.moissaleslibraryworker.pipelines.dossie.v1.sourceproductmatch.service.pending.DossierSourceProductMatchPendingRequest;
 import com.marketinghub.moissaleslibraryworker.pipelines.dossie.v1.sourceproductmatch.service.pending.DossierSourceProductMatchPendingResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -23,6 +26,15 @@ public class DossierSourceProductMatchController {
     @PostMapping("/start")
     public void start(@RequestParam("productKey") String productKey) {
         service.start(productKey);
+    }
+
+
+    /** Recebe o request do módulo executor para a página/produto informada pela chave operacional. */
+    @PostMapping("/{productKey}/recebeRequest")
+    public DossierSourceProductMatchRecebeRequestResponse recebeRequest(
+            @PathVariable("productKey") String productKey,
+            @Valid @RequestBody DossierSourceProductMatchRecebeRequestRequest request) {
+        return service.recebeRequest(productKey, request);
     }
 
     /** Expõe o ponto inicial canônico de consumo da fila pelo módulo executor. */

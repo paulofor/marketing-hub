@@ -20,12 +20,12 @@ public class MoisSalesPage {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "dossie_produto_status", length = 40)
+    @Column(name = "status_pipeline_dossieproduto", length = 40)
     private String dossieProdutoStatus;
 
     @Column(name = "dossie_produto_current_stage", length = 80)
     private String dossieProdutoCurrentStage;
 
-    @Column(name = "dossie_produto_updated_at")
+    @Column(name = "data_pipeline_dossieproduto")
     private Instant dossieProdutoUpdatedAt;
 }

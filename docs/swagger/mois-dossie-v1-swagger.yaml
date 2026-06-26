@@ -140,8 +140,432 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DossierDossierSynthesisPendingResponse'
+  /api/internal/mois/dossie/v1/intake/stage-executions/{productKey}/recebeRequest:
+    post:
+      summary: Recebe request operacional da etapa intake do dossiê MOIS v1
+      operationId: recebeRequestMoisDossieV1IntakeStageExecutions
+      parameters:
+        - name: productKey
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DossierIntakeRecebeRequestRequest'
+      responses:
+        '200':
+          description: Request recebido e auditoria registrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DossierIntakeRecebeRequestResponse'
+  /api/internal/mois/dossie/v1/product-understanding/stage-executions/{productKey}/recebeRequest:
+    post:
+      summary: Recebe request operacional da etapa product-understanding do dossiê MOIS v1
+      operationId: recebeRequestMoisDossieV1ProductUnderstandingStageExecutions
+      parameters:
+        - name: productKey
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DossierProductUnderstandingRecebeRequestRequest'
+      responses:
+        '200':
+          description: Request recebido e auditoria registrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DossierProductUnderstandingRecebeRequestResponse'
+  /api/internal/mois/dossie/v1/investigation-anchor-builder/stage-executions/{productKey}/recebeRequest:
+    post:
+      summary: Recebe request operacional da etapa investigation-anchor-builder do dossiê MOIS v1
+      operationId: recebeRequestMoisDossieV1InvestigationAnchorBuilderStageExecutions
+      parameters:
+        - name: productKey
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DossierInvestigationAnchorBuilderRecebeRequestRequest'
+      responses:
+        '200':
+          description: Request recebido e auditoria registrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DossierInvestigationAnchorBuilderRecebeRequestResponse'
+  /api/internal/mois/dossie/v1/warmup-resource-discovery/stage-executions/{productKey}/recebeRequest:
+    post:
+      summary: Recebe request operacional da etapa warmup-resource-discovery do dossiê MOIS v1
+      operationId: recebeRequestMoisDossieV1WarmupResourceDiscoveryStageExecutions
+      parameters:
+        - name: productKey
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DossierWarmupResourceDiscoveryRecebeRequestRequest'
+      responses:
+        '200':
+          description: Request recebido e auditoria registrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DossierWarmupResourceDiscoveryRecebeRequestResponse'
+  /api/internal/mois/dossie/v1/source-product-match/stage-executions/{productKey}/recebeRequest:
+    post:
+      summary: Recebe request operacional da etapa source-product-match do dossiê MOIS v1
+      operationId: recebeRequestMoisDossieV1SourceProductMatchStageExecutions
+      parameters:
+        - name: productKey
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DossierSourceProductMatchRecebeRequestRequest'
+      responses:
+        '200':
+          description: Request recebido e auditoria registrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DossierSourceProductMatchRecebeRequestResponse'
+  /api/internal/mois/dossie/v1/warmup-signal-extraction/stage-executions/{productKey}/recebeRequest:
+    post:
+      summary: Recebe request operacional da etapa warmup-signal-extraction do dossiê MOIS v1
+      operationId: recebeRequestMoisDossieV1WarmupSignalExtractionStageExecutions
+      parameters:
+        - name: productKey
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DossierWarmupSignalExtractionRecebeRequestRequest'
+      responses:
+        '200':
+          description: Request recebido e auditoria registrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DossierWarmupSignalExtractionRecebeRequestResponse'
+  /api/internal/mois/dossie/v1/warmup-map-builder/stage-executions/{productKey}/recebeRequest:
+    post:
+      summary: Recebe request operacional da etapa warmup-map-builder do dossiê MOIS v1
+      operationId: recebeRequestMoisDossieV1WarmupMapBuilderStageExecutions
+      parameters:
+        - name: productKey
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DossierWarmupMapBuilderRecebeRequestRequest'
+      responses:
+        '200':
+          description: Request recebido e auditoria registrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DossierWarmupMapBuilderRecebeRequestResponse'
+  /api/internal/mois/dossie/v1/dossier-synthesis/stage-executions/{productKey}/recebeRequest:
+    post:
+      summary: Recebe request operacional da etapa dossier-synthesis do dossiê MOIS v1
+      operationId: recebeRequestMoisDossieV1DossierSynthesisStageExecutions
+      parameters:
+        - name: productKey
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DossierDossierSynthesisRecebeRequestRequest'
+      responses:
+        '200':
+          description: Request recebido e auditoria registrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DossierDossierSynthesisRecebeRequestResponse'
 components:
   schemas:
+
+    DossierIntakeRecebeRequestRequest:
+      type: object
+      required:
+        - request
+      properties:
+        request:
+          type: string
+        plataforma:
+          type: string
+        prompt:
+          type: string
+        schema:
+          type: string
+    DossierIntakeRecebeRequestResponse:
+      type: object
+      required:
+        - jobId
+        - idExterno
+        - codigoEtapa
+        - status
+      properties:
+        jobId:
+          type: string
+        idExterno:
+          type: string
+        codigoEtapa:
+          type: string
+        status:
+          type: string
+
+    DossierProductUnderstandingRecebeRequestRequest:
+      type: object
+      required:
+        - request
+      properties:
+        request:
+          type: string
+        plataforma:
+          type: string
+        prompt:
+          type: string
+        schema:
+          type: string
+    DossierProductUnderstandingRecebeRequestResponse:
+      type: object
+      required:
+        - jobId
+        - idExterno
+        - codigoEtapa
+        - status
+      properties:
+        jobId:
+          type: string
+        idExterno:
+          type: string
+        codigoEtapa:
+          type: string
+        status:
+          type: string
+
+    DossierInvestigationAnchorBuilderRecebeRequestRequest:
+      type: object
+      required:
+        - request
+      properties:
+        request:
+          type: string
+        plataforma:
+          type: string
+        prompt:
+          type: string
+        schema:
+          type: string
+    DossierInvestigationAnchorBuilderRecebeRequestResponse:
+      type: object
+      required:
+        - jobId
+        - idExterno
+        - codigoEtapa
+        - status
+      properties:
+        jobId:
+          type: string
+        idExterno:
+          type: string
+        codigoEtapa:
+          type: string
+        status:
+          type: string
+
+    DossierWarmupResourceDiscoveryRecebeRequestRequest:
+      type: object
+      required:
+        - request
+      properties:
+        request:
+          type: string
+        plataforma:
+          type: string
+        prompt:
+          type: string
+        schema:
+          type: string
+    DossierWarmupResourceDiscoveryRecebeRequestResponse:
+      type: object
+      required:
+        - jobId
+        - idExterno
+        - codigoEtapa
+        - status
+      properties:
+        jobId:
+          type: string
+        idExterno:
+          type: string
+        codigoEtapa:
+          type: string
+        status:
+          type: string
+
+    DossierSourceProductMatchRecebeRequestRequest:
+      type: object
+      required:
+        - request
+      properties:
+        request:
+          type: string
+        plataforma:
+          type: string
+        prompt:
+          type: string
+        schema:
+          type: string
+    DossierSourceProductMatchRecebeRequestResponse:
+      type: object
+      required:
+        - jobId
+        - idExterno
+        - codigoEtapa
+        - status
+      properties:
+        jobId:
+          type: string
+        idExterno:
+          type: string
+        codigoEtapa:
+          type: string
+        status:
+          type: string
+
+    DossierWarmupSignalExtractionRecebeRequestRequest:
+      type: object
+      required:
+        - request
+      properties:
+        request:
+          type: string
+        plataforma:
+          type: string
+        prompt:
+          type: string
+        schema:
+          type: string
+    DossierWarmupSignalExtractionRecebeRequestResponse:
+      type: object
+      required:
+        - jobId
+        - idExterno
+        - codigoEtapa
+        - status
+      properties:
+        jobId:
+          type: string
+        idExterno:
+          type: string
+        codigoEtapa:
+          type: string
+        status:
+          type: string
+
+    DossierWarmupMapBuilderRecebeRequestRequest:
+      type: object
+      required:
+        - request
+      properties:
+        request:
+          type: string
+        plataforma:
+          type: string
+        prompt:
+          type: string
+        schema:
+          type: string
+    DossierWarmupMapBuilderRecebeRequestResponse:
+      type: object
+      required:
+        - jobId
+        - idExterno
+        - codigoEtapa
+        - status
+      properties:
+        jobId:
+          type: string
+        idExterno:
+          type: string
+        codigoEtapa:
+          type: string
+        status:
+          type: string
+
+    DossierDossierSynthesisRecebeRequestRequest:
+      type: object
+      required:
+        - request
+      properties:
+        request:
+          type: string
+        plataforma:
+          type: string
+        prompt:
+          type: string
+        schema:
+          type: string
+    DossierDossierSynthesisRecebeRequestResponse:
+      type: object
+      required:
+        - jobId
+        - idExterno
+        - codigoEtapa
+        - status
+      properties:
+        jobId:
+          type: string
+        idExterno:
+          type: string
+        codigoEtapa:
+          type: string
+        status:
+          type: string
     DossierIntakePendingRequest:
       type: object
       required:

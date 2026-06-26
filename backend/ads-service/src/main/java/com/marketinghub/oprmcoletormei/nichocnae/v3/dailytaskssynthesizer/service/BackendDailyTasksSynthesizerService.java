@@ -23,6 +23,11 @@ public class BackendDailyTasksSynthesizerService extends OprmNichoCnaeV3StageSer
         return toCreateResponse(doCreate(jobId, cnaeCode, inputPayload, attemptNumber, knowledgeVersion));
     }
 
+    /** Inicia pendência da etapa para o CNAE informado pela tela administrativa. */
+    public DailyTasksSynthesizerCreateResponse start(String cnaeCode) {
+        return create(null, cnaeCode, "{\"cnaeCode\":\"" + cnaeCode + "\"}", 1, 1);
+    }
+
     /** Lista pendências da etapa daily-tasks-synthesizer para o executor OPRM. */
     public List<DailyTasksSynthesizerPendingResponse> pending() {
         return pendingExecutions().stream().map(this::toPendingResponse).toList();

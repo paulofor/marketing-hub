@@ -23,6 +23,11 @@ public class BackendCnaeIntakeService extends OprmNichoCnaeV3StageServiceSupport
         return toCreateResponse(doCreate(jobId, cnaeCode, inputPayload, attemptNumber, knowledgeVersion));
     }
 
+    /** Inicia pendência da etapa para o CNAE informado pela tela administrativa. */
+    public CnaeIntakeCreateResponse start(String cnaeCode) {
+        return create(null, cnaeCode, "{\"cnaeCode\":\"" + cnaeCode + "\"}", 1, 1);
+    }
+
     /** Lista pendências da etapa cnae-intake para o executor OPRM. */
     public List<CnaeIntakePendingResponse> pending() {
         return pendingExecutions().stream().map(this::toPendingResponse).toList();

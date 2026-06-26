@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /** Controller canônico da etapa source-fetcher do pipeline NichoCNAE v3. */
@@ -22,6 +23,12 @@ public class BackendSourceFetcherV3Controller {
     /** Inicializa o controller com service canônico da etapa. */
     public BackendSourceFetcherV3Controller(BackendSourceFetcherV3Service service) {
         this.service = service;
+    }
+
+    /** Inicia uma execução pendente da etapa a partir do CNAE informado pela tela. */
+    @PostMapping("/start")
+    public SourceFetcherCreateResponse start(@RequestParam String cnaeCode) {
+        return service.start(cnaeCode);
     }
 
     /** Cria uma execução pendente da etapa source-fetcher. */

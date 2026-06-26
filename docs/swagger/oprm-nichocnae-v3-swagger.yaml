@@ -26,6 +26,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StageExecutionResponse'
+  /api/internal/oprm/nichocnae/v3/{stage}/stage-executions/start:
+    post:
+      summary: Inicia uma execução pendente da etapa NichoCNAE v3 para o CNAE informado.
+      parameters:
+        - name: stage
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: cnaeCode
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Execução iniciada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StageExecutionResponse'
   /api/internal/oprm/nichocnae/v3/{stage}/stage-executions/cnaes/{cnaeCode}:
     post:
       summary: Inicia a primeira execução v3 para um CNAE.

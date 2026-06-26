@@ -5,6 +5,7 @@ import com.marketinghub.oprmcoletormei.nichocnae.v3.personatournament.service.co
 import com.marketinghub.oprmcoletormei.nichocnae.v3.personatournament.service.createStageExecution.PersonaTournamentCreateResponse;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.personatournament.service.failStageExecution.PersonaTournamentFailureRequest;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.personatournament.service.pending.PersonaTournamentPendingResponse;
+import com.marketinghub.oprmcoletormei.nichocnae.v3.shared.OprmNichoCnaeV3RecebeRequestRequest;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -41,6 +42,12 @@ public class BackendPersonaTournamentController {
     @PostMapping("/cnaes/{cnaeCode}")
     public PersonaTournamentCreateResponse createForCnae(@PathVariable String cnaeCode) {
         return service.create(null, cnaeCode, "{\"cnaeCode\":\"" + cnaeCode + "\"}", 1, 1);
+    }
+
+    /** Recebe o request bruto da etapa identificado pelo CNAE. */
+    @PostMapping("/cnaes/{cnaeCode}/recebeRequest")
+    public PersonaTournamentCreateResponse recebeRequest(@PathVariable String cnaeCode, @RequestBody OprmNichoCnaeV3RecebeRequestRequest request) {
+        return service.recebeRequest(cnaeCode, request);
     }
 
     /** Entrega pendências da etapa persona-tournament ao executor OPRM. */

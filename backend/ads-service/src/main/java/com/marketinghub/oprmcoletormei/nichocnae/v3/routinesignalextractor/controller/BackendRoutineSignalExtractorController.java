@@ -5,6 +5,7 @@ import com.marketinghub.oprmcoletormei.nichocnae.v3.routinesignalextractor.servi
 import com.marketinghub.oprmcoletormei.nichocnae.v3.routinesignalextractor.service.createStageExecution.RoutineSignalExtractorCreateResponse;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.routinesignalextractor.service.failStageExecution.RoutineSignalExtractorFailureRequest;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.routinesignalextractor.service.pending.RoutineSignalExtractorPendingResponse;
+import com.marketinghub.oprmcoletormei.nichocnae.v3.shared.OprmNichoCnaeV3RecebeRequestRequest;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -41,6 +42,12 @@ public class BackendRoutineSignalExtractorController {
     @PostMapping("/cnaes/{cnaeCode}")
     public RoutineSignalExtractorCreateResponse createForCnae(@PathVariable String cnaeCode) {
         return service.create(null, cnaeCode, "{\"cnaeCode\":\"" + cnaeCode + "\"}", 1, 1);
+    }
+
+    /** Recebe o request bruto da etapa identificado pelo CNAE. */
+    @PostMapping("/cnaes/{cnaeCode}/recebeRequest")
+    public RoutineSignalExtractorCreateResponse recebeRequest(@PathVariable String cnaeCode, @RequestBody OprmNichoCnaeV3RecebeRequestRequest request) {
+        return service.recebeRequest(cnaeCode, request);
     }
 
     /** Entrega pendências da etapa routine-signal-extractor ao executor OPRM. */

@@ -5,6 +5,7 @@ import com.marketinghub.oprmcoletormei.nichocnae.v3.dailytaskssynthesizer.servic
 import com.marketinghub.oprmcoletormei.nichocnae.v3.dailytaskssynthesizer.service.createStageExecution.DailyTasksSynthesizerCreateResponse;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.dailytaskssynthesizer.service.failStageExecution.DailyTasksSynthesizerFailureRequest;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.dailytaskssynthesizer.service.pending.DailyTasksSynthesizerPendingResponse;
+import com.marketinghub.oprmcoletormei.nichocnae.v3.shared.OprmNichoCnaeV3RecebeRequestRequest;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -41,6 +42,12 @@ public class BackendDailyTasksSynthesizerController {
     @PostMapping("/cnaes/{cnaeCode}")
     public DailyTasksSynthesizerCreateResponse createForCnae(@PathVariable String cnaeCode) {
         return service.create(null, cnaeCode, "{\"cnaeCode\":\"" + cnaeCode + "\"}", 1, 1);
+    }
+
+    /** Recebe o request bruto da etapa identificado pelo CNAE. */
+    @PostMapping("/cnaes/{cnaeCode}/recebeRequest")
+    public DailyTasksSynthesizerCreateResponse recebeRequest(@PathVariable String cnaeCode, @RequestBody OprmNichoCnaeV3RecebeRequestRequest request) {
+        return service.recebeRequest(cnaeCode, request);
     }
 
     /** Entrega pendências da etapa daily-tasks-synthesizer ao executor OPRM. */

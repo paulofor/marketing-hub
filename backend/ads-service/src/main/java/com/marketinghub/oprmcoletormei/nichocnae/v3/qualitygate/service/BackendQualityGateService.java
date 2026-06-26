@@ -5,7 +5,9 @@ import com.marketinghub.oprm.market.OprmCnpjCnaeDim;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.qualitygate.service.createStageExecution.QualityGateCreateResponse;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.qualitygate.service.pending.QualityGatePendingResponse;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.shared.OprmNichoCnaeV3StageServiceSupport;
+import com.marketinghub.oprmcoletormei.nichocnae.v3.shared.OprmNichoCnaeV3RecebeRequestRequest;
 import com.marketinghub.repository.jpa.oprm.market.OprmCnpjCnaeDimRepository;
+import com.marketinghub.repository.jpa.oprm.nichocnae.PipelineNichoCnaeRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.v3.OprmNichoCnaeV3StageExecutionRepository;
 import java.util.List;
 import org.springframework.stereotype.Service;
@@ -20,8 +22,8 @@ public class BackendQualityGateService extends OprmNichoCnaeV3StageServiceSuppor
     private static final String STATUS_FAILED = "FALHA";
 
     /** Inicializa o service com repository canônico de execuções v3. */
-    public BackendQualityGateService(OprmNichoCnaeV3StageExecutionRepository repository, OprmCnpjCnaeDimRepository cnaeRepository) {
-        super(repository, cnaeRepository, STAGE_CODE);
+    public BackendQualityGateService(OprmNichoCnaeV3StageExecutionRepository repository, OprmCnpjCnaeDimRepository cnaeRepository, PipelineNichoCnaeRepository pipelineNichoCnaeRepository) {
+        super(repository, cnaeRepository, pipelineNichoCnaeRepository, STAGE_CODE);
     }
 
     /** Cria pendência inicial ou encadeada para a etapa quality-gate. */
@@ -33,6 +35,11 @@ public class BackendQualityGateService extends OprmNichoCnaeV3StageServiceSuppor
     public QualityGateCreateResponse start(String cnaeCode) {
         markCnaePipelineStarted(cnaeCode, STATUS_STARTED);
         return create(null, cnaeCode, "{\"cnaeCode\":\"" + cnaeCode + "\"}", 1, 1);
+    }
+
+    /** Recebe o request bruto da etapa e registra auditoria para o pipeline NichoCNAE v3. */
+    public QualityGateCreateResponse recebeRequest(String cnaeCode, OprmNichoCnaeV3RecebeRequestRequest request) {
+        return new QualityGateCreateResponse(null, doRecebeRequest(cnaeCode, request).getJobId(), cnaeCode, STAGE_CODE, "AGUARDANDO_MODULO");
     }
 
     /** Lista pendências da etapa quality-gate para o executor OPRM. */

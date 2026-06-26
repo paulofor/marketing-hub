@@ -5,6 +5,7 @@ import com.marketinghub.oprmcoletormei.nichocnae.v3.routinequeryplanner.service.
 import com.marketinghub.oprmcoletormei.nichocnae.v3.routinequeryplanner.service.createStageExecution.RoutineQueryPlannerCreateResponse;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.routinequeryplanner.service.failStageExecution.RoutineQueryPlannerFailureRequest;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.routinequeryplanner.service.pending.RoutineQueryPlannerPendingResponse;
+import com.marketinghub.oprmcoletormei.nichocnae.v3.shared.OprmNichoCnaeV3RecebeRequestRequest;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -41,6 +42,12 @@ public class BackendRoutineQueryPlannerController {
     @PostMapping("/cnaes/{cnaeCode}")
     public RoutineQueryPlannerCreateResponse createForCnae(@PathVariable String cnaeCode) {
         return service.create(null, cnaeCode, "{\"cnaeCode\":\"" + cnaeCode + "\"}", 1, 1);
+    }
+
+    /** Recebe o request bruto da etapa identificado pelo CNAE. */
+    @PostMapping("/cnaes/{cnaeCode}/recebeRequest")
+    public RoutineQueryPlannerCreateResponse recebeRequest(@PathVariable String cnaeCode, @RequestBody OprmNichoCnaeV3RecebeRequestRequest request) {
+        return service.recebeRequest(cnaeCode, request);
     }
 
     /** Entrega pendências da etapa routine-query-planner ao executor OPRM. */

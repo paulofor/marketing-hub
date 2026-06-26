@@ -5,6 +5,7 @@ import com.marketinghub.oprmcoletormei.nichocnae.v3.personacandidategenerator.se
 import com.marketinghub.oprmcoletormei.nichocnae.v3.personacandidategenerator.service.createStageExecution.PersonaCandidateGeneratorCreateResponse;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.personacandidategenerator.service.failStageExecution.PersonaCandidateGeneratorFailureRequest;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.personacandidategenerator.service.pending.PersonaCandidateGeneratorPendingResponse;
+import com.marketinghub.oprmcoletormei.nichocnae.v3.shared.OprmNichoCnaeV3RecebeRequestRequest;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -41,6 +42,12 @@ public class BackendPersonaCandidateGeneratorController {
     @PostMapping("/cnaes/{cnaeCode}")
     public PersonaCandidateGeneratorCreateResponse createForCnae(@PathVariable String cnaeCode) {
         return service.create(null, cnaeCode, "{\"cnaeCode\":\"" + cnaeCode + "\"}", 1, 1);
+    }
+
+    /** Recebe o request bruto da etapa identificado pelo CNAE. */
+    @PostMapping("/cnaes/{cnaeCode}/recebeRequest")
+    public PersonaCandidateGeneratorCreateResponse recebeRequest(@PathVariable String cnaeCode, @RequestBody OprmNichoCnaeV3RecebeRequestRequest request) {
+        return service.recebeRequest(cnaeCode, request);
     }
 
     /** Entrega pendências da etapa persona-candidate-generator ao executor OPRM. */

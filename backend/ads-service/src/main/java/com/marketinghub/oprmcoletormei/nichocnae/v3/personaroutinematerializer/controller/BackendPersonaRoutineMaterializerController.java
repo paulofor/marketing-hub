@@ -5,6 +5,7 @@ import com.marketinghub.oprmcoletormei.nichocnae.v3.personaroutinematerializer.s
 import com.marketinghub.oprmcoletormei.nichocnae.v3.personaroutinematerializer.service.createStageExecution.PersonaRoutineMaterializerCreateResponse;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.personaroutinematerializer.service.failStageExecution.PersonaRoutineMaterializerFailureRequest;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.personaroutinematerializer.service.pending.PersonaRoutineMaterializerPendingResponse;
+import com.marketinghub.oprmcoletormei.nichocnae.v3.shared.OprmNichoCnaeV3RecebeRequestRequest;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -41,6 +42,12 @@ public class BackendPersonaRoutineMaterializerController {
     @PostMapping("/cnaes/{cnaeCode}")
     public PersonaRoutineMaterializerCreateResponse createForCnae(@PathVariable String cnaeCode) {
         return service.create(null, cnaeCode, "{\"cnaeCode\":\"" + cnaeCode + "\"}", 1, 1);
+    }
+
+    /** Recebe o request bruto da etapa identificado pelo CNAE. */
+    @PostMapping("/cnaes/{cnaeCode}/recebeRequest")
+    public PersonaRoutineMaterializerCreateResponse recebeRequest(@PathVariable String cnaeCode, @RequestBody OprmNichoCnaeV3RecebeRequestRequest request) {
+        return service.recebeRequest(cnaeCode, request);
     }
 
     /** Entrega pendências da etapa persona-routine-materializer ao executor OPRM. */

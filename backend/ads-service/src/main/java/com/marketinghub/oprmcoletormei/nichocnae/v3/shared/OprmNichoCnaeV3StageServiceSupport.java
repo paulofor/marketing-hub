@@ -3,8 +3,13 @@ package com.marketinghub.oprmcoletormei.nichocnae.v3.shared;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.OprmNichoCnaeV3StageExecution;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.OprmNichoCnaeV3StageExecutionStatus;
 import com.marketinghub.oprm.market.OprmCnpjCnaeDim;
+import com.marketinghub.oprm.nichocnae.PipelineNichoCnae;
 import com.marketinghub.repository.jpa.oprm.market.OprmCnpjCnaeDimRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.v3.OprmNichoCnaeV3StageExecutionRepository;
+import com.marketinghub.repository.jpa.oprm.nichocnae.PipelineNichoCnaeRepository;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -17,6 +22,8 @@ import org.springframework.web.server.ResponseStatusException;
 public abstract class OprmNichoCnaeV3StageServiceSupport {
     protected static final String STATUS_STARTED = "INICIADO";
     private static final int PENDING_LIMIT = 10;
+    private static final String STATUS_WAITING_MODULE = "AGUARDANDO_MODULO";
+    private static final String PIPELINE_VERSION = "v3";
     private static final Map<String, Integer> STAGE_ORDER = Map.ofEntries(
             Map.entry("cnae-intake", 1),
             Map.entry("persona-candidate-generator", 2),
@@ -30,15 +37,18 @@ public abstract class OprmNichoCnaeV3StageServiceSupport {
             Map.entry("persona-routine-materializer", 10));
     private final OprmNichoCnaeV3StageExecutionRepository repository;
     private final OprmCnpjCnaeDimRepository cnaeRepository;
+    private final PipelineNichoCnaeRepository pipelineNichoCnaeRepository;
     private final String stageCode;
 
     /** Inicializa o suporte com repository canônico e código da etapa. */
     protected OprmNichoCnaeV3StageServiceSupport(
             OprmNichoCnaeV3StageExecutionRepository repository,
             OprmCnpjCnaeDimRepository cnaeRepository,
+            PipelineNichoCnaeRepository pipelineNichoCnaeRepository,
             String stageCode) {
         this.repository = repository;
         this.cnaeRepository = cnaeRepository;
+        this.pipelineNichoCnaeRepository = pipelineNichoCnaeRepository;
         this.stageCode = stageCode;
     }
 
@@ -52,6 +62,47 @@ public abstract class OprmNichoCnaeV3StageServiceSupport {
         cnae.setNichocnaePipelineUpdatedAt(now);
         cnae.setUpdatedAt(now);
         cnaeRepository.save(cnae);
+    }
+
+
+    /** Recebe o request bruto da etapa, atualiza o CNAE para aguardar o módulo e audita o payload no pipeline NichoCNAE. */
+    protected PipelineNichoCnae doRecebeRequest(String cnaeCode, OprmNichoCnaeV3RecebeRequestRequest request) {
+        OprmCnpjCnaeDim cnae = cnaeRepository.findById(cnaeCode)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "CNAE não encontrado."));
+        Instant now = Instant.now();
+        cnae.setNichocnaePipelineStatus(STATUS_WAITING_MODULE);
+        cnae.setNichocnaeCurrentStageCode(stageCode);
+        cnae.setNichocnaePipelineUpdatedAt(now);
+        cnae.setUpdatedAt(now);
+        cnaeRepository.save(cnae);
+
+        PipelineNichoCnae pipeline = new PipelineNichoCnae();
+        pipeline.setIdExterno(cnaeCode);
+        pipeline.setRequest(request == null ? null : request.request());
+        pipeline.setCodigoEtapa(stageCode);
+        pipeline.setDataHora(now);
+        pipeline.setJobId(generateJobId(cnaeCode, now));
+        pipeline.setPlataforma(request == null ? null : request.plataforma());
+        pipeline.setPrompt(request == null ? null : request.prompt());
+        pipeline.setSchema(request == null ? null : request.schema());
+        pipeline.setVersaoPipeline(PIPELINE_VERSION);
+        return pipelineNichoCnaeRepository.save(pipeline);
+    }
+
+    /** Gera hash único para rastrear o request recebido na etapa. */
+    private String generateJobId(String cnaeCode, Instant now) {
+        String source = PIPELINE_VERSION + ":" + stageCode + ":" + cnaeCode + ":" + now.toString();
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(source.getBytes(StandardCharsets.UTF_8));
+            StringBuilder builder = new StringBuilder();
+            for (byte b : hash) {
+                builder.append(String.format("%02x", b));
+            }
+            return builder.toString();
+        } catch (NoSuchAlgorithmException ex) {
+            throw new IllegalStateException("Não foi possível gerar jobId do request NichoCNAE v3.", ex);
+        }
     }
 
     /** Cria uma execução pendente para a etapa canônica. */

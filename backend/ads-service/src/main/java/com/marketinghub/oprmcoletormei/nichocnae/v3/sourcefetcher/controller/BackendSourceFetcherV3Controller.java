@@ -5,6 +5,7 @@ import com.marketinghub.oprmcoletormei.nichocnae.v3.sourcefetcher.service.comple
 import com.marketinghub.oprmcoletormei.nichocnae.v3.sourcefetcher.service.createStageExecution.SourceFetcherCreateResponse;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.sourcefetcher.service.failStageExecution.SourceFetcherFailureRequest;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.sourcefetcher.service.pending.SourceFetcherPendingResponse;
+import com.marketinghub.oprmcoletormei.nichocnae.v3.shared.OprmNichoCnaeV3RecebeRequestRequest;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -41,6 +42,12 @@ public class BackendSourceFetcherV3Controller {
     @PostMapping("/cnaes/{cnaeCode}")
     public SourceFetcherCreateResponse createForCnae(@PathVariable String cnaeCode) {
         return service.create(null, cnaeCode, "{\"cnaeCode\":\"" + cnaeCode + "\"}", 1, 1);
+    }
+
+    /** Recebe o request bruto da etapa identificado pelo CNAE. */
+    @PostMapping("/cnaes/{cnaeCode}/recebeRequest")
+    public SourceFetcherCreateResponse recebeRequest(@PathVariable String cnaeCode, @RequestBody OprmNichoCnaeV3RecebeRequestRequest request) {
+        return service.recebeRequest(cnaeCode, request);
     }
 
     /** Entrega pendências da etapa source-fetcher ao executor OPRM. */

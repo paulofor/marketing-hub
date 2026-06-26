@@ -5,6 +5,7 @@ import com.marketinghub.oprmcoletormei.nichocnae.v3.cnaeintake.service.completeS
 import com.marketinghub.oprmcoletormei.nichocnae.v3.cnaeintake.service.createStageExecution.CnaeIntakeCreateResponse;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.cnaeintake.service.failStageExecution.CnaeIntakeFailureRequest;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.cnaeintake.service.pending.CnaeIntakePendingResponse;
+import com.marketinghub.oprmcoletormei.nichocnae.v3.shared.OprmNichoCnaeV3RecebeRequestRequest;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -41,6 +42,12 @@ public class BackendCnaeIntakeController {
     @PostMapping("/cnaes/{cnaeCode}")
     public CnaeIntakeCreateResponse createForCnae(@PathVariable String cnaeCode) {
         return service.create(null, cnaeCode, "{\"cnaeCode\":\"" + cnaeCode + "\"}", 1, 1);
+    }
+
+    /** Recebe o request bruto da etapa identificado pelo CNAE. */
+    @PostMapping("/cnaes/{cnaeCode}/recebeRequest")
+    public CnaeIntakeCreateResponse recebeRequest(@PathVariable String cnaeCode, @RequestBody OprmNichoCnaeV3RecebeRequestRequest request) {
+        return service.recebeRequest(cnaeCode, request);
     }
 
     /** Entrega pendências da etapa cnae-intake ao executor OPRM. */

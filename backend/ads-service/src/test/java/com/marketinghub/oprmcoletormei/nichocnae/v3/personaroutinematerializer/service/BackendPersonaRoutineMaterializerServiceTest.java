@@ -12,6 +12,7 @@ import com.marketinghub.oprmcoletormei.nichocnae.v3.OprmNichoCnaeV3StageExecutio
 import com.marketinghub.oprmcoletormei.nichocnae.v3.OprmNichoCnaeV3StageExecutionStatus;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.personaroutinematerializer.gateway.PersonaRoutineMaterializerNicheGateway;
 import com.marketinghub.repository.jpa.oprm.market.OprmCnpjCnaeDimRepository;
+import com.marketinghub.repository.jpa.oprm.nichocnae.PipelineNichoCnaeRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.v3.OprmNichoCnaeV3StageExecutionRepository;
 import java.time.Instant;
 import java.util.List;
@@ -36,11 +37,14 @@ class BackendPersonaRoutineMaterializerServiceTest {
     @Mock
     private PersonaRoutineMaterializerNicheGateway nicheGateway;
 
+    @Mock
+    private PipelineNichoCnaeRepository pipelineNichoCnaeRepository;
+
     private BackendPersonaRoutineMaterializerService service;
 
     @BeforeEach
     void setUp() {
-        service = new BackendPersonaRoutineMaterializerService(repository, cnaeRepository, nicheGateway, new ObjectMapper());
+        service = new BackendPersonaRoutineMaterializerService(repository, cnaeRepository, pipelineNichoCnaeRepository, nicheGateway, new ObjectMapper());
     }
 
     /** Garante que a etapa final grava MarketNiche e perfil enriquecido para uso por outros pipelines. */

@@ -14,7 +14,7 @@ Manter os seguintes endpoints como defaults de origem de logs no módulo `mcp-se
 - MOIS Sales Library Worker (`mois-sales-library-worker`): `http://191.252.120.96:8097/actuator/logfile`
 - Mois Coletor Hotmart: `http://177.153.62.107:8096/ops-monitor/mois-hotmart-log`
 - Clickbank Coletor Mois: `http://177.153.62.107:9096/internal/ops-monitor/logfile`
-- OPRM Coletor Receita: `http://177.153.62.107:8094/actuator/logfile`
+- OPRM Coletor Receita/MEI: `http://191.252.120.96:8094/actuator/logfile`
 - Ops Monitor Worker: `http://191.252.120.96:8098/actuator/logfile`
 
 Sempre que houver alteração desses endpoints, atualizar em conjunto:

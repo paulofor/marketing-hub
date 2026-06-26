@@ -72,7 +72,8 @@ public abstract class OprmNichoCnaeV3StageServiceSupport {
     /** Cria a próxima pendência quando o backend reconhecer avanço sequencial válido. */
     private void createNextStageWhenAllowed(OprmNichoCnaeV3StageExecution current, String outputPayload, String nextStageCode) {
         String normalizedNextStage = nextStageCode == null ? "" : nextStageCode.trim();
-        if (!isAllowedNextStage(normalizedNextStage)
+        if (requiresUserConfirmation(current, normalizedNextStage)
+                || !isAllowedNextStage(normalizedNextStage)
                 || repository.existsByJobIdAndStageCode(current.getJobId(), normalizedNextStage)) {
             return;
         }
@@ -84,6 +85,11 @@ public abstract class OprmNichoCnaeV3StageServiceSupport {
         next.setAttemptNumber(current.getAttemptNumber());
         next.setKnowledgeVersion(current.getKnowledgeVersion());
         repository.save(next);
+    }
+
+    /** Bloqueia a etapa final até a confirmação explícita do usuário na tela. */
+    private boolean requiresUserConfirmation(OprmNichoCnaeV3StageExecution current, String nextStageCode) {
+        return "quality-gate".equals(current.getStageCode()) && "persona-routine-materializer".equals(nextStageCode);
     }
 
     /** Valida se a próxima etapa é conhecida e vem imediatamente depois da etapa atual. */

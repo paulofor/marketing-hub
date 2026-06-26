@@ -10,10 +10,21 @@ export interface OprmNichoCnaeV3StageProgress {
   errorMessage: string | null;
 }
 
+export interface OprmNichoCnaeV3FinalizationReview {
+  requiresConfirmation: boolean;
+  qualityGateStageExecutionId: number;
+  materializationMode: "CREATE_NEW" | "REUSE_EXISTING" | string;
+  targetMarketNicheId: number | null;
+  targetNicheName: string;
+  nicheInformation: string;
+  enrichedNicheInformation: string;
+}
+
 export interface OprmNichoCnaeV3JobProgress {
   jobId: string | null;
   cnaeCode: string;
   stages: OprmNichoCnaeV3StageProgress[];
+  finalizationReview: OprmNichoCnaeV3FinalizationReview | null;
 }
 
 async function fetchOprmNichoCnaeV3Progress(

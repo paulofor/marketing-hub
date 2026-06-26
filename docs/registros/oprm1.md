@@ -1469,3 +1469,9 @@
 - Correção: a etapa passou a produzir quatro personas candidatas estruturadas por CNAE, com dores operacionais, tarefas diárias, sinais de compra, resumo de persona, resumo de rotina, limitações de evidência e `nextStageCode` para o torneio.
 - Prevenção de recorrência: adicionado teste unitário garantindo que a etapa entregue personas funcionais e não apenas metadados técnicos.
 
+## 2026-06-26 — NichoCNAE v3: persona-candidate-generator com OpenAI
+
+- Ajuste de causa-raiz após revisão: a implementação anterior ainda gerava personas por regra determinística e não acessava a OpenAI.
+- Correção: a etapa `persona-candidate-generator` passou a usar cliente da OpenAI Responses API com prompt e schema versionados, `service_tier=flex`, JSON Schema estrito e validação de quantidade mínima de personas antes de concluir.
+- Prevenção de recorrência: adicionados testes de processor e cliente OpenAI garantindo que a etapa chama o gerador, envia `json_schema`/Flex e falha quando a resposta não contém personas suficientes.
+

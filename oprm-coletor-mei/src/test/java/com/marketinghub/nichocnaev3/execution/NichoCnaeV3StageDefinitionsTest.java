@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 /** Valida o catálogo completo das etapas NichoCNAE v3. */
@@ -12,7 +13,7 @@ class NichoCnaeV3StageDefinitionsTest {
     /** Confirma que a v3 nasce com o fluxo completo até materialização da rotina da persona. */
     @Test
     void shouldRegisterAllVersionThreeStagesInOrder() {
-        List<String> stages = new NichoCnaeV3StageDefinitions().all().stream()
+        List<String> stages = new NichoCnaeV3StageDefinitions(request -> personaPayload()).all().stream()
                 .map(NichoCnaeV3StageDefinition::stageCode)
                 .toList();
 
@@ -22,7 +23,7 @@ class NichoCnaeV3StageDefinitionsTest {
     /** Confirma que toda etapa v3 cadastrada tem endpoint pending e processor executável pelo scheduler único. */
     @Test
     void shouldRegisterBackendPathAndProcessorForEveryVersionThreeStage() {
-        List<NichoCnaeV3StageDefinition> stages = new NichoCnaeV3StageDefinitions().all();
+        List<NichoCnaeV3StageDefinition> stages = new NichoCnaeV3StageDefinitions(request -> personaPayload()).all();
 
         assertEquals(expectedStages().size(), stages.size());
         for (NichoCnaeV3StageDefinition stage : stages) {
@@ -32,6 +33,14 @@ class NichoCnaeV3StageDefinitionsTest {
             assertNotNull(stage.processor());
             assertFalse(stage.stageCode().isBlank());
         }
+    }
+
+    /** Cria payload mínimo de personas para o processor plugado no catálogo. */
+    private static Map<String, Object> personaPayload() {
+        return Map.of("candidatePersonas", List.of(
+                Map.of("name", "persona"),
+                Map.of("name", "persona 2"),
+                Map.of("name", "persona 3")));
     }
 
     /** Lista canônica das etapas v3 executadas pela varredura agendada. */

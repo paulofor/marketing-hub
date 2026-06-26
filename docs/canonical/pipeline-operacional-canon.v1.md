@@ -111,13 +111,20 @@ O backend deve concentrar:
 7. exposição de endpoints administrativos;
 8. exposição de endpoints internos para workers.
 
-Para pipelines por etapa, o pacote deve seguir a separação funcional do GeraLanding:
+Para pipelines por etapa, o pacote deve seguir a separação funcional versionada. No backend, use o padrão
+`...pipelines.<nome-modulo>.<nome-pipeline>.v<numero-versao>.<nome-etapa>` e, dentro da etapa, separe
+`web`, `service`, `model` e demais subpacotes necessários:
 
 ```text
-com.marketinghub.<dominio>.<etapa>.web
-com.marketinghub.<dominio>.<etapa>.service
-com.marketinghub.<dominio>.<etapa>.model
-com.marketinghub.<dominio>.<etapa>.repository
+com.marketinghub.pipelines.<nome-modulo>.<nome-pipeline>.v<numero-versao>.<nome-etapa>.web
+com.marketinghub.pipelines.<nome-modulo>.<nome-pipeline>.v<numero-versao>.<nome-etapa>.service
+com.marketinghub.pipelines.<nome-modulo>.<nome-pipeline>.v<numero-versao>.<nome-etapa>.model
+```
+
+No módulo executor/worker, use o mesmo padrão sem repetir o nome do módulo dentro do pipeline:
+
+```text
+com.marketinghub.<modulo-executor>.pipelines.<nome-pipeline>.v<numero-versao>.<nome-etapa>
 ```
 
 Quando a etapa usa Worker AI, o backend deve expor o contrato mínimo:

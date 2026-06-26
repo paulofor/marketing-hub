@@ -35,3 +35,10 @@
 - Pontos iniciais canônicos previstos para consumo pelo executor: `/api/internal/mois/dossie/v1/<etapa>/stage-executions/pending`, começando por `intake` e cobrindo todas as etapas v1 do dossiê.
 
 - 2026-06-26 — Aplicado ao módulo executor `ai-worker`, pacote `com.marketinghub.worker.geraanunciov2.pipeline`, pipeline `geraanuncio` v2, etapa inicial `criativo`, consumindo trabalho pelo endpoint pending canônico do backend `/api/internal/geraanuncio/v2/criativo/stage-executions/pending`.
+
+## 2026-06-26 — MOIS dossiê do produto v1
+
+- Módulo executor: `mois-sales-library-worker`.
+- Pacote protegido/criado: `com.marketinghub.mois.bibliotecapaginavenda.worker.pipelines.dossieproduto.v1` no padrão `pipelines.<nome-pipeline>.v<numero-versao>.<nome-etapa>`.
+- Pipeline criado como `v1`, com núcleo genérico (`PipelineWorker`, `StageProcessor`, `StageContext`, `StageResult`, `StageArtifact`, `ArtifactStore`) e etapas plugáveis `fatosproduto`, `analisepagina`, `planejabuscas`, `qualificafontes` e `consolidadossie`.
+- Pontos iniciais canônicos previstos para consumo pelo executor: `/api/internal/mois/dossieproduto/v1/<etapa>/stage-executions/pending`.

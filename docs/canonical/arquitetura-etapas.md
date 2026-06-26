@@ -57,12 +57,16 @@ nascer como `v1`, porque uma mudança completa futura poderá exigir `v2` sem so
 Ela existe porque alguns pipelines precisam conviver em versões paralelas durante validação, rollout gradual,
 comparação de qualidade e rollback seguro.
 
-No módulo executor, a versão deve aparecer no pacote que contém o núcleo e as etapas do fluxo, por
-exemplo `com.marketinghub.nichocnaev1.pipeline`, `com.marketinghub.nichocnaev1.pipeline.<etapa>` ou,
-quando houver nova versão completa, `com.marketinghub.nichocnaev2.pipeline.<etapa>`. No backend, a versão
-deve aparecer antes da etapa, por exemplo `com.marketinghub.oprm.nichocnae.v1.<etapa>` ou
-`com.marketinghub.oprm.nichocnae.v2.<etapa>`, preservando o backend como contrato, persistência e
-publicação de pendências da versão correta.
+O padrão canônico de pacote para pipelines versionados é:
+
+- **Backend:** `...pipelines.<nome-modulo>.<nome-pipeline>.v<numero-versao>.<nome-etapa>`.
+- **Módulo executor/worker:** `...pipelines.<nome-pipeline>.v<numero-versao>.<nome-etapa>`.
+
+No backend, o pacote carrega o nome do módulo para deixar claro qual domínio controla contrato,
+persistência, pendências e callbacks da versão correta. No módulo executor, o nome do módulo não deve ser
+repetido dentro do pacote do pipeline; o executor deve carregar apenas `pipelines`, o nome do pipeline, a
+versão e a etapa concreta. Exemplo backend: `com.marketinghub.pipelines.mois.dossieproduto.v1.qualificafontes`.
+Exemplo módulo executor: `com.marketinghub.mois.worker.pipelines.dossieproduto.v1.qualificafontes`.
 
 A nova versão precisa continuar plugável: núcleo genérico separado das etapas concretas, etapas concretas
 independentes entre si, dependência por contratos/artefatos/estado persistido e consumo iniciado pelo

@@ -1844,3 +1844,9 @@ Arquivos principais:
 - Expandido o desenho do dossiê v1 para refletir o objetivo de entender o produto e mapear recursos usados para aquecer o público.
 - Criadas etapas canônicas: intake, product-understanding, investigation-anchor-builder, warmup-resource-discovery, source-product-match, warmup-signal-extraction, warmup-map-builder e dossier-synthesis.
 - Mantida a separação operacional: backend publica pendências por etapa e o módulo executor mantém processamento, integrações externas e evolução dos processors.
+
+## 2026-06-26 — Pacotes canônicos do pipeline dossiê do produto v1
+
+- Criados os pacotes do backend no padrão `com.marketinghub.pipelines.mois.dossieproduto.v1.<etapa>` para as etapas `fatosproduto`, `analisepagina`, `planejabuscas`, `qualificafontes` e `consolidadossie`.
+- Criados os pacotes do executor `mois-sales-library-worker` no padrão `com.marketinghub.mois.bibliotecapaginavenda.worker.pipelines.dossieproduto.v1.<etapa>`.
+- Atualizadas regras ArchUnit de backend e do worker para proteger controller/service/pending, contratos `record`, núcleo genérico sem dependência de etapas concretas e independência entre etapas.

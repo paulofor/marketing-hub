@@ -12,6 +12,11 @@ import org.springframework.stereotype.Service;
 @Service
 public class BackendSourceSearcherV3Service extends OprmNichoCnaeV3StageServiceSupport {
     private static final String STAGE_CODE = "source-searcher";
+    private static final String NEXT_STAGE = "source-fetcher";
+    private static final String STATUS_STARTED = "INICIADO";
+    private static final String STATUS_WAITING = "AGUARDANDO_RETORNO_MODULO";
+    private static final String STATUS_COMPLETED = "CONCLUIDO";
+    private static final String STATUS_FAILED = "FALHA";
 
     /** Inicializa o service com repository canônico de execuções v3. */
     public BackendSourceSearcherV3Service(OprmNichoCnaeV3StageExecutionRepository repository) {

@@ -1,10 +1,12 @@
 package com.marketinghub.moissaleslibraryworker.pipelines.dossie.v1.investigationanchorbuilder.service;
 
+import com.marketinghub.moissaleslibraryworker.pipelines.dossie.v1.investigationanchorbuilder.service.pending.DossierInvestigationAnchorBuilderPendingJob;
 import com.marketinghub.moissaleslibraryworker.pipelines.dossie.v1.investigationanchorbuilder.service.pending.DossierInvestigationAnchorBuilderPendingRequest;
 import com.marketinghub.moissaleslibraryworker.pipelines.dossie.v1.investigationanchorbuilder.service.pending.DossierInvestigationAnchorBuilderPendingResponse;
 import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageRepository;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import org.springframework.stereotype.Service;
 
 /** Publica pendências e contratos da etapa geração de âncoras de investigação do pipeline de dossiê MOIS v1. */
@@ -35,8 +37,24 @@ public class DossierInvestigationAnchorBuilderService {
         salesPageRepository.save(page);
     }
 
-    /** Entrega trabalhos pendentes ao executor sem assumir controle operacional de execução no backend. */
+    /** Entrega até dez trabalhos iniciados da etapa atual ao executor, ordenados pela data operacional mais antiga. */
     public DossierInvestigationAnchorBuilderPendingResponse pending(DossierInvestigationAnchorBuilderPendingRequest request) {
-        return new DossierInvestigationAnchorBuilderPendingResponse(false, List.of());
+        List<DossierInvestigationAnchorBuilderPendingJob> jobs = salesPageRepository
+                .findTop10ByDossieProdutoStatusAndDossieProdutoCurrentStageOrderByDossieProdutoUpdatedAtAscIdAsc(
+                        STATUS_STARTED, STAGE_CODE)
+                .stream()
+                .map(page -> new DossierInvestigationAnchorBuilderPendingJob(
+                        page.getId(),
+                        page.getId(),
+                        "mois-sales-page-" + page.getId(),
+                        STAGE_CODE,
+                        Map.of(
+                                "productKey", String.valueOf(page.getId()),
+                                "pageId", page.getId(),
+                                "stageCode", STAGE_CODE,
+                                "status", STATUS_STARTED,
+                                "nextStageCode", NEXT_STAGE)))
+                .toList();
+        return new DossierInvestigationAnchorBuilderPendingResponse(!jobs.isEmpty(), jobs);
     }
 }

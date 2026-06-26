@@ -8,6 +8,8 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -50,4 +52,28 @@ class OpenAiPersonaCandidateGenerationClientTest {
         assertThat((List<?>) output.get("candidatePersonas")).hasSize(3);
         server.verify();
     }
+
+    /** Confirma que o cliente lê a chave OpenAI de arquivo seguro quando a variável direta não está presente. */
+    @Test
+    void shouldResolveApiKeyFromConfiguredSecureFile() throws Exception {
+        Path apiKeyFile = Files.createTempFile("oprm-openai-key", ".txt");
+        Files.writeString(apiKeyFile, " file-key ");
+        OpenAiPersonaCandidateGenerationClient client = new OpenAiPersonaCandidateGenerationClient(
+                RestClient.builder().build(),
+                new ObjectMapper(),
+                new PersonaCandidateOpenAiProperties("https://api.openai.com/v1", "", apiKeyFile.toString(), "gpt-test", null),
+                new PersonaCandidatePromptBuilder(),
+                new PersonaCandidateSchemaLoader(new ObjectMapper()));
+
+        String apiKey = client.resolveApiKey(new PersonaCandidateGenerationRequest(
+                "job-1",
+                "72",
+                "4781400",
+                "Comércio varejista de artigos do vestuário",
+                Map.of("cnaeCode", "4781400")));
+
+        assertThat(apiKey).isEqualTo("file-key");
+        Files.deleteIfExists(apiKeyFile);
+    }
+
 }

@@ -21,6 +21,28 @@ class PersonaCandidateOpenAiConfigurationTest {
                 .contains("nichocnaev3:")
                 .contains("persona-candidate-generator:")
                 .contains("api-key: ${OPRM_NICHO_CNAE_V3_PERSONA_CANDIDATE_GENERATOR_OPENAI_API_KEY:${OPENAI_API_KEY:}}")
-                .contains("api-key-file: ${OPRM_NICHO_CNAE_V3_PERSONA_CANDIDATE_GENERATOR_OPENAI_API_KEY_FILE:${OPENAI_API_KEY_FILE:}}");
+                .contains("api-key-file: ${OPRM_NICHO_CNAE_V3_PERSONA_CANDIDATE_GENERATOR_OPENAI_API_KEY_FILE:${OPENAI_API_KEY_FILE:/run/secrets/openai_api_key}}");
     }
+
+    /** Confirma que o compose publicado monta o segredo OpenAI para a etapa v3 e para o fallback global. */
+    @Test
+    void shouldPublishOpenAiKeyFileFallbackInComposeFiles() throws IOException {
+        String deployCompose = readProjectFile("docker-compose.deploy.yml");
+        String localCompose = readProjectFile("docker-compose.yml");
+
+        assertThat(deployCompose)
+                .contains("OPENAI_API_KEY_FILE: ${OPENAI_API_KEY_FILE:-/run/secrets/openai_api_key}")
+                .contains("OPRM_NICHO_CNAE_V3_PERSONA_CANDIDATE_GENERATOR_OPENAI_API_KEY_FILE: ${OPRM_NICHO_CNAE_V3_PERSONA_CANDIDATE_GENERATOR_OPENAI_API_KEY_FILE:-/run/secrets/openai_api_key}")
+                .contains("OPRM_NICHO_CNAE_V3_PERSONA_CANDIDATE_GENERATOR_OPENAI_MODEL: ${OPRM_NICHO_CNAE_V3_PERSONA_CANDIDATE_GENERATOR_OPENAI_MODEL:-gpt-5.2}");
+        assertThat(localCompose)
+                .contains("OPENAI_API_KEY_FILE=${OPENAI_API_KEY_FILE:-/run/secrets/openai_api_key}")
+                .contains("OPRM_NICHO_CNAE_V3_PERSONA_CANDIDATE_GENERATOR_OPENAI_API_KEY_FILE=${OPRM_NICHO_CNAE_V3_PERSONA_CANDIDATE_GENERATOR_OPENAI_API_KEY_FILE:-/run/secrets/openai_api_key}")
+                .contains("OPRM_NICHO_CNAE_V3_PERSONA_CANDIDATE_GENERATOR_OPENAI_MODEL=${OPRM_NICHO_CNAE_V3_PERSONA_CANDIDATE_GENERATOR_OPENAI_MODEL:-gpt-5.2}");
+    }
+
+    /** Lê arquivos do projeto que ficam fora do classpath de teste. */
+    private String readProjectFile(String relativePath) throws IOException {
+        return java.nio.file.Files.readString(java.nio.file.Path.of(relativePath), StandardCharsets.UTF_8);
+    }
+
 }

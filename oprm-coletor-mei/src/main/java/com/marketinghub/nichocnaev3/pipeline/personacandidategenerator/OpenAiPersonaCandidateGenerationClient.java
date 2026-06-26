@@ -22,6 +22,8 @@ public class OpenAiPersonaCandidateGenerationClient implements PersonaCandidateG
     private static final Logger log = LoggerFactory.getLogger(OpenAiPersonaCandidateGenerationClient.class);
     private static final String RESPONSES_PATH = "/responses";
     private static final String SCHEMA_NAME = "oprm_nichocnae_v3_persona_candidate_generator";
+    private static final String CONTAINER_OPENAI_KEY_FILE = "/run/secrets/openai_api_key";
+    private static final String HOST_OPENAI_KEY_FILE = "/root/infra/openai-token/openai_api_key";
     private static final TypeReference<Map<String, Object>> MAP_TYPE = new TypeReference<>() {};
 
     private final RestClient restClient;
@@ -73,25 +75,46 @@ public class OpenAiPersonaCandidateGenerationClient implements PersonaCandidateG
         }
     }
 
-    /** Resolve a chave por propriedade direta ou arquivo montado no host. */
+    /** Resolve a chave por propriedade direta, segredo montado no container ou arquivo seguro do host. */
     String resolveApiKey(PersonaCandidateGenerationRequest request) {
         if (!properties.apiKey().isBlank()) {
             return properties.apiKey().trim();
         }
-        if (properties.apiKeyFile().isBlank()) {
+        for (Path apiKeyPath : apiKeyCandidatePaths()) {
+            String apiKey = readApiKeyFile(apiKeyPath, request);
+            if (!apiKey.isBlank()) {
+                return apiKey;
+            }
+        }
+        return "";
+    }
+
+    /** Lista os caminhos seguros aceitos para a chave OpenAI sem duplicar a mesma origem. */
+    private List<Path> apiKeyCandidatePaths() {
+        List<String> candidates = List.of(properties.apiKeyFile(), CONTAINER_OPENAI_KEY_FILE, HOST_OPENAI_KEY_FILE);
+        return candidates.stream()
+                .filter(candidate -> !candidate.isBlank())
+                .map(Path::of)
+                .distinct()
+                .toList();
+    }
+
+    /** Lê um arquivo de chave quando ele existe e registra falhas sem expor o segredo. */
+    private String readApiKeyFile(Path apiKeyPath, PersonaCandidateGenerationRequest request) {
+        if (!Files.isRegularFile(apiKeyPath) || !Files.isReadable(apiKeyPath)) {
             return "";
         }
         try {
-            return Files.readString(Path.of(properties.apiKeyFile())).trim();
+            return Files.readString(apiKeyPath).trim();
         } catch (IOException ex) {
             log.error(
                     "Erro ao ler arquivo de chave OpenAI da etapa persona-candidate-generator (apiKeyFile={}, jobId={}, stageExecutionId={}, cnaeCode={})",
-                    properties.apiKeyFile(),
+                    apiKeyPath,
                     request.jobId(),
                     request.stageExecutionId(),
                     request.cnaeCode(),
                     ex);
-            throw new IllegalStateException("Falha ao ler arquivo de chave OpenAI da etapa persona-candidate-generator.", ex);
+            return "";
         }
     }
 

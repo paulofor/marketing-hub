@@ -1,0 +1,31 @@
+package com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.entity;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import java.time.Instant;
+import lombok.Getter;
+import lombok.Setter;
+
+/** Entidade JPA mínima da página/produto da biblioteca de vendas MOIS usada para controlar o dossiê. */
+@Entity
+@Table(name = "mois_sales_page")
+@Getter
+@Setter
+public class MoisSalesPage {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "dossie_produto_status", length = 40)
+    private String dossieProdutoStatus;
+
+    @Column(name = "dossie_produto_current_stage", length = 80)
+    private String dossieProdutoCurrentStage;
+
+    @Column(name = "dossie_produto_updated_at")
+    private Instant dossieProdutoUpdatedAt;
+}

@@ -1856,3 +1856,9 @@ Arquivos principais:
 - Mantido no módulo executor apenas o pacote canônico `com.marketinghub.pipelines.dossie.v1` para o pipeline v1 de dossiê.
 - Ajustado o backend para usar o pacote canônico `com.marketinghub.moissaleslibraryworker.pipelines.dossie.v1`.
 - Removidos os pacotes duplicados `dossieproduto.v1` do executor e do backend para evitar divergência operacional e de contratos.
+
+## 2026-06-26 — RecebeRequest do dossiê de produto MOIS v1
+
+- Implementados endpoints `recebeRequest` no backend para as etapas do pipeline `moissaleslibraryworker.dossieproduto.v1`, com identificador da página/produto na URL.
+- Cada chamada coloca a página/produto em espera do módulo, atualiza a data operacional em UTC e registra a auditoria em `pipeline_dossieproduto` com `id_externo`, `request`, etapa, `jobId`, plataforma, prompt, schema e versão `v1`.
+- Padronizados os nomes físicos das colunas operacionais da página/produto para `status_pipeline_dossieproduto` e `data_pipeline_dossieproduto` via changelog incremental.

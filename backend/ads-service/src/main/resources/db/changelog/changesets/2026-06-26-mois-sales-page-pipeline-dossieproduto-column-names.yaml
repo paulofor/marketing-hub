@@ -1,0 +1,48 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-26-mois-sales-page-pipeline-dossieproduto-column-names-01
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: mois_sales_page
+        - columnExists:
+            tableName: mois_sales_page
+            columnName: dossie_produto_status
+        - not:
+            columnExists:
+              tableName: mois_sales_page
+              columnName: status_pipeline_dossieproduto
+      changes:
+        - renameColumn:
+            tableName: mois_sales_page
+            oldColumnName: dossie_produto_status
+            newColumnName: status_pipeline_dossieproduto
+            columnDataType: VARCHAR(40)
+
+  - changeSet:
+      id: 2026-06-26-mois-sales-page-pipeline-dossieproduto-column-names-02
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: mois_sales_page
+        - columnExists:
+            tableName: mois_sales_page
+            columnName: dossie_produto_updated_at
+        - not:
+            columnExists:
+              tableName: mois_sales_page
+              columnName: data_pipeline_dossieproduto
+      changes:
+        - renameColumn:
+            tableName: mois_sales_page
+            oldColumnName: dossie_produto_updated_at
+            newColumnName: data_pipeline_dossieproduto
+            columnDataType: DATETIME(6)

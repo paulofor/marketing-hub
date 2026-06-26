@@ -2,6 +2,7 @@ import { Link, useParams } from "react-router-dom";
 import PageTitle from "../../components/PageTitle";
 import { useStartOprmNichoCnaeV3Job } from "../../api/oprm/useStartOprmNichoCnaeV3Job";
 import { useOprmNichoCnaeV3Progress } from "../../api/oprm/useOprmNichoCnaeV3Progress";
+import { useConfirmOprmNichoCnaeV3Finalization } from "../../api/oprm/useConfirmOprmNichoCnaeV3Finalization";
 
 const v3Stages = [
   {
@@ -61,6 +62,7 @@ export default function OprmNichoCnaeV3PipelinePage() {
   const decodedCnaeCode = decodeURIComponent(cnaeCode ?? "");
   const startJob = useStartOprmNichoCnaeV3Job(decodedCnaeCode);
   const progress = useOprmNichoCnaeV3Progress(decodedCnaeCode);
+  const confirmFinalization = useConfirmOprmNichoCnaeV3Finalization(decodedCnaeCode);
   const stagesByCode = new Map(
     (progress.data?.stages ?? []).map((stage) => [stage.stageCode, stage]),
   );
@@ -70,6 +72,13 @@ export default function OprmNichoCnaeV3PipelinePage() {
       return;
     }
     startJob.mutate();
+  };
+
+  const handleConfirmFinalization = () => {
+    if (!decodedCnaeCode || confirmFinalization.isPending) {
+      return;
+    }
+    confirmFinalization.mutate();
   };
 
   return (
@@ -120,6 +129,78 @@ export default function OprmNichoCnaeV3PipelinePage() {
         <div className="alert alert-danger" role="alert">
           {(startJob.error as Error).message}
         </div>
+      ) : null}
+
+      {progress.data?.finalizationReview ? (
+        <section className="card border-warning shadow-sm">
+          <div className="card-body">
+            <div className="d-flex flex-wrap justify-content-between gap-3 align-items-start mb-3">
+              <div>
+                <h2 className="h5 mb-1">Conferência antes da finalização</h2>
+                <p className="text-muted mb-0">
+                  A etapa final (#10) só será liberada depois da sua confirmação.
+                </p>
+              </div>
+              <span className="badge text-bg-warning">Aguardando confirmação</span>
+            </div>
+            <div className="alert alert-light border" role="status">
+              <strong>Decisão de materialização:</strong>{" "}
+              {progress.data.finalizationReview.materializationMode ===
+              "REUSE_EXISTING"
+                ? "aproveitar nicho existente"
+                : "criar nicho novo"}
+              {" — "}
+              <strong>{progress.data.finalizationReview.targetNicheName}</strong>
+              {progress.data.finalizationReview.targetMarketNicheId ? (
+                <> #{progress.data.finalizationReview.targetMarketNicheId}</>
+              ) : null}
+            </div>
+            <div className="row g-3">
+              <div className="col-12 col-lg-6">
+                <h3 className="h6">Informações de nicho encontradas</h3>
+                <pre className="small bg-light border rounded-3 p-3 text-wrap mb-0">
+                  {progress.data.finalizationReview.nicheInformation}
+                </pre>
+              </div>
+              <div className="col-12 col-lg-6">
+                <h3 className="h6">Informações de nicho enriquecido encontradas</h3>
+                <pre className="small bg-light border rounded-3 p-3 text-wrap mb-0">
+                  {progress.data.finalizationReview.enrichedNicheInformation}
+                </pre>
+              </div>
+            </div>
+            <div className="d-flex flex-wrap gap-2 align-items-center mt-3">
+              <button
+                type="button"
+                className="btn btn-success"
+                onClick={handleConfirmFinalization}
+                disabled={confirmFinalization.isPending}
+              >
+                {confirmFinalization.isPending ? (
+                  <>
+                    <span
+                      className="spinner-border spinner-border-sm me-2"
+                      aria-hidden="true"
+                    />
+                    Confirmando...
+                  </>
+                ) : (
+                  "Confirmar e executar etapa #10"
+                )}
+              </button>
+              {confirmFinalization.isError ? (
+                <span className="text-danger small">
+                  {(confirmFinalization.error as Error).message}
+                </span>
+              ) : null}
+              {confirmFinalization.isSuccess ? (
+                <span className="text-success small">
+                  Confirmação registrada. A etapa #10 foi liberada.
+                </span>
+              ) : null}
+            </div>
+          </div>
+        </section>
       ) : null}
 
       <section className="card border-0 shadow-sm">

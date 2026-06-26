@@ -16,6 +16,9 @@ public interface OprmNichoCnaeV3StageExecutionRepository extends JpaRepository<O
     /** Verifica se o job já possui pendência ou conclusão para uma etapa específica. */
     boolean existsByJobIdAndStageCode(String jobId, String stageCode);
 
+    /** Busca uma etapa específica dentro do job para confirmação manual do avanço. */
+    Optional<OprmNichoCnaeV3StageExecution> findByJobIdAndStageCode(String jobId, String stageCode);
+
     /** Busca a entrada mais recente de um CNAE para recuperar o último job iniciado na tela. */
     Optional<OprmNichoCnaeV3StageExecution> findTop1ByCnaeCodeAndStageCodeOrderByCreatedAtDesc(
             String cnaeCode, String stageCode);

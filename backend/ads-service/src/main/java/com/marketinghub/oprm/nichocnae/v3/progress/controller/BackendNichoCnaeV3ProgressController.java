@@ -4,6 +4,7 @@ import com.marketinghub.oprm.nichocnae.v3.progress.service.BackendNichoCnaeV3Pro
 import com.marketinghub.oprm.nichocnae.v3.progress.service.NichoCnaeV3JobProgressResponse;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -22,5 +23,11 @@ public class BackendNichoCnaeV3ProgressController {
     @GetMapping
     public NichoCnaeV3JobProgressResponse latestByCnae(@PathVariable String cnaeCode) {
         return service.latestByCnae(cnaeCode);
+    }
+
+    /** Confirma a revisão exibida na tela e libera a etapa final do pipeline. */
+    @PostMapping("/confirm-finalization")
+    public void confirmFinalization(@PathVariable String cnaeCode) {
+        service.confirmFinalization(cnaeCode);
     }
 }

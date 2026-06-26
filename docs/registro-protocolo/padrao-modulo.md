@@ -30,7 +30,7 @@
 ## 2026-06-25 — MOIS dossiê v1
 
 - Módulo executor: `mois-sales-library-worker`.
-- Pacote protegido/criado: `com.marketinghub.mois.dossiev1.pipeline`.
+- Pacote protegido/criado: `com.marketinghub.pipelines.dossie.v1`.
 - Pipeline criado como `v1`, com núcleo genérico (`PipelineWorker`, `StageProcessor`, `StageContext`, `StageResult`, `StageArtifact`, `ArtifactStore`) e etapas plugáveis `intake`, `product-understanding`, `investigation-anchor-builder`, `warmup-resource-discovery`, `source-product-match`, `warmup-signal-extraction`, `warmup-map-builder` e `dossier-synthesis`.
 - Pontos iniciais canônicos previstos para consumo pelo executor: `/api/internal/mois/dossie/v1/<etapa>/stage-executions/pending`, começando por `intake` e cobrindo todas as etapas v1 do dossiê.
 

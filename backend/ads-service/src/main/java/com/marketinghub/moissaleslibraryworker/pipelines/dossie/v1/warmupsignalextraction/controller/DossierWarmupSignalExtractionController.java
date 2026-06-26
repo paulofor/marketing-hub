@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /** Expõe a borda HTTP interna da etapa extração de sinais de aquecimento do pipeline de dossiê MOIS v1. */
@@ -17,6 +18,12 @@ import org.springframework.web.bind.annotation.RestController;
 public class DossierWarmupSignalExtractionController {
 
     private final DossierWarmupSignalExtractionService service;
+
+    /** Inicia manualmente a etapa para o produto informado pela chave operacional. */
+    @PostMapping("/start")
+    public void start(@RequestParam("productKey") String productKey) {
+        service.start(productKey);
+    }
 
     /** Expõe o ponto inicial canônico de consumo da fila pelo módulo executor. */
     @PostMapping("/pending")

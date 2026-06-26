@@ -1,5 +1,11 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-06-26-oprm-cnae-nichocnae-v3-progress-timestamp.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changesets/2026-06-26-oprm-cnae-nichocnae-v3-progress-columns.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-06-26-market-niche-cnae-link.yaml
       relativeToChangelogFile: true
   - include:

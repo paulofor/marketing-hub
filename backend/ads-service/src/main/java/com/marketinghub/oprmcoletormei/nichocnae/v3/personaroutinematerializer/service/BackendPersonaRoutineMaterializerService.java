@@ -7,6 +7,7 @@ import com.marketinghub.oprmcoletormei.nichocnae.v3.OprmNichoCnaeV3StageExecutio
 import com.marketinghub.oprmcoletormei.nichocnae.v3.personaroutinematerializer.service.createStageExecution.PersonaRoutineMaterializerCreateResponse;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.personaroutinematerializer.service.pending.PersonaRoutineMaterializerPendingResponse;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.shared.OprmNichoCnaeV3StageServiceSupport;
+import com.marketinghub.repository.jpa.oprm.market.OprmCnpjCnaeDimRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.v3.OprmNichoCnaeV3StageExecutionRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -34,9 +35,10 @@ public class BackendPersonaRoutineMaterializerService extends OprmNichoCnaeV3Sta
     /** Inicializa o service com repository canônico de execuções v3. */
     public BackendPersonaRoutineMaterializerService(
             OprmNichoCnaeV3StageExecutionRepository repository,
+            OprmCnpjCnaeDimRepository cnaeRepository,
             PersonaRoutineMaterializerNicheGateway nicheGateway,
             ObjectMapper objectMapper) {
-        super(repository, STAGE_CODE);
+        super(repository, cnaeRepository, STAGE_CODE);
         this.nicheGateway = nicheGateway;
         this.objectMapper = objectMapper;
     }
@@ -48,6 +50,7 @@ public class BackendPersonaRoutineMaterializerService extends OprmNichoCnaeV3Sta
 
     /** Inicia pendência da etapa para o CNAE informado pela tela administrativa. */
     public PersonaRoutineMaterializerCreateResponse start(String cnaeCode) {
+        markCnaePipelineStarted(cnaeCode, STATUS_STARTED);
         return create(null, cnaeCode, "{\"cnaeCode\":\"" + cnaeCode + "\"}", 1, 1);
     }
 

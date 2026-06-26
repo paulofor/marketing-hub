@@ -4,7 +4,6 @@ import type {
   MoisCollectedReferenceUrlSummary,
   MoisMarketWarmupOpportunityRankingResponse,
   MoisMarketWarmupReprocessStaleResponse,
-  MoisMarketWarmupRequestResponse,
   MoisMarketWarmupSearchAttemptListResponse,
   MoisMarketWarmupSignalListResponse,
   MoisMarketWarmupSourceListResponse,
@@ -426,14 +425,15 @@ export function useReprocessStaleMoisSalesLibraryMarketWarmup(
   });
 }
 
-export function useRequestMoisSalesLibraryMarketWarmup(workspaceId: string) {
+export function useStartMoisDossierPipeline(workspaceId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (pageId: number) => {
-      const { data } = await axios.post<MoisMarketWarmupRequestResponse>(
-        `/api/mois/sales-library/pages/${pageId}/market-warmup:request`,
+      await axios.post(
+        "/api/internal/mois/dossie/v1/intake/stage-executions/start",
+        undefined,
+        { params: { productKey: String(pageId) } },
       );
-      return data;
     },
     onSuccess: (_, pageId) => {
       void queryClient.invalidateQueries({

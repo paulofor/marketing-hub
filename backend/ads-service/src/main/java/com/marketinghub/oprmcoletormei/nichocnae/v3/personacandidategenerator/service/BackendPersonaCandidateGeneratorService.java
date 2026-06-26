@@ -12,6 +12,11 @@ import org.springframework.stereotype.Service;
 @Service
 public class BackendPersonaCandidateGeneratorService extends OprmNichoCnaeV3StageServiceSupport {
     private static final String STAGE_CODE = "persona-candidate-generator";
+    private static final String NEXT_STAGE = "persona-tournament";
+    private static final String STATUS_STARTED = "INICIADO";
+    private static final String STATUS_WAITING = "AGUARDANDO_RETORNO_MODULO";
+    private static final String STATUS_COMPLETED = "CONCLUIDO";
+    private static final String STATUS_FAILED = "FALHA";
 
     /** Inicializa o service com repository canônico de execuções v3. */
     public BackendPersonaCandidateGeneratorService(OprmNichoCnaeV3StageExecutionRepository repository) {

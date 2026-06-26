@@ -20,6 +20,11 @@ import org.springframework.util.StringUtils;
 @Service
 public class BackendPersonaRoutineMaterializerService extends OprmNichoCnaeV3StageServiceSupport {
     private static final String STAGE_CODE = "persona-routine-materializer";
+    private static final String NEXT_STAGE = "";
+    private static final String STATUS_STARTED = "INICIADO";
+    private static final String STATUS_WAITING = "AGUARDANDO_RETORNO_MODULO";
+    private static final String STATUS_COMPLETED = "CONCLUIDO";
+    private static final String STATUS_FAILED = "FALHA";
     private static final String CREATED_BY = "OPRM_NICHO_CNAE_V3";
     private static final String DEFAULT_QUALITY_STATUS = "V3_PERSONA_ROUTINE_MATERIALIZED";
     private static final BigDecimal DEFAULT_SOURCE_SCORE = BigDecimal.ZERO;

@@ -12,6 +12,11 @@ import org.springframework.stereotype.Service;
 @Service
 public class BackendDailyTasksSynthesizerService extends OprmNichoCnaeV3StageServiceSupport {
     private static final String STAGE_CODE = "daily-tasks-synthesizer";
+    private static final String NEXT_STAGE = "quality-gate";
+    private static final String STATUS_STARTED = "INICIADO";
+    private static final String STATUS_WAITING = "AGUARDANDO_RETORNO_MODULO";
+    private static final String STATUS_COMPLETED = "CONCLUIDO";
+    private static final String STATUS_FAILED = "FALHA";
 
     /** Inicializa o service com repository canônico de execuções v3. */
     public BackendDailyTasksSynthesizerService(OprmNichoCnaeV3StageExecutionRepository repository) {

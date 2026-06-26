@@ -1551,3 +1551,8 @@
 - Correção: cada etapa interna do backend NichoCNAE v3 passou a expor `POST /start` recebendo `cnaeCode` como parâmetro para criar uma execução pendente da própria etapa.
 - Service: cada service canônico da etapa recebeu método `start(String cnaeCode)`, mantendo o backend como fonte de verdade para abertura de pendências e preservando o executor externo apenas como consumidor do endpoint `pending`.
 - Contrato: a documentação Swagger v3 foi atualizada com o novo endpoint genérico por etapa.
+
+## 2026-06-26 — NichoCNAE v3: constantes operacionais nos services de etapa
+
+- Correção: os services canônicos de etapa do backend NichoCNAE v3 receberam constantes explícitas para `STAGE_CODE`, `NEXT_STAGE` e statuses operacionais (`INICIADO`, `AGUARDANDO_RETORNO_MODULO`, `CONCLUIDO`, `FALHA`).
+- Objetivo: reduzir divergência de códigos de etapa/status entre backend, executor OPRM MEI e relatórios operacionais do pipeline.

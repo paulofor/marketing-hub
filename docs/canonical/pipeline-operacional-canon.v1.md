@@ -111,6 +111,8 @@ O backend deve concentrar:
 7. exposição de endpoints administrativos;
 8. exposição de endpoints internos para workers.
 
+Para pipelines por etapa, o pacote deve seguir a separação funcional do GeraLanding dentro do padrão
+versionado canônico:
 Para pipelines por etapa, o pacote deve seguir a separação funcional versionada. No backend, use o padrão
 `...pipelines.<nome-modulo>.<nome-pipeline>.v<numero-versao>.<nome-etapa>` e, dentro da etapa, separe
 `web`, `service`, `model` e demais subpacotes necessários:
@@ -119,6 +121,7 @@ Para pipelines por etapa, o pacote deve seguir a separação funcional versionad
 com.marketinghub.pipelines.<nome-modulo>.<nome-pipeline>.v<numero-versao>.<nome-etapa>.web
 com.marketinghub.pipelines.<nome-modulo>.<nome-pipeline>.v<numero-versao>.<nome-etapa>.service
 com.marketinghub.pipelines.<nome-modulo>.<nome-pipeline>.v<numero-versao>.<nome-etapa>.model
+com.marketinghub.pipelines.<nome-modulo>.<nome-pipeline>.v<numero-versao>.<nome-etapa>.repository
 ```
 
 No módulo executor/worker, use o mesmo padrão sem repetir o nome do módulo dentro do pipeline:
@@ -126,6 +129,8 @@ No módulo executor/worker, use o mesmo padrão sem repetir o nome do módulo de
 ```text
 com.marketinghub.<modulo-executor>.pipelines.<nome-pipeline>.v<numero-versao>.<nome-etapa>
 ```
+
+Exemplo backend: `com.marketinghub.pipelines.facebookads.geracaoanuncios.v1.roteiroCriativo.web`.
 
 Quando a etapa usa Worker AI, o backend deve expor o contrato mínimo:
 
@@ -142,13 +147,15 @@ A nomenclatura pode variar por domínio, mas o padrão funcional não pode varia
 
 ### 6.2 Worker AI
 
-Quando uma etapa usa OpenAI, o Worker AI deve seguir o padrão do núcleo por etapa:
+Quando uma etapa usa OpenAI, o módulo executor deve seguir o padrão canônico sem repetir o nome do módulo:
 
 ```text
-com.marketinghub.worker.openai.core.<etapa>
+com.marketinghub.pipelines.<nome-pipeline>.v<numero-versao>.<nome-etapa>
 ```
 
-Cada etapa deve possuir configuração própria, adapter de backend, construtor de prompt, validador de resposta e handler de aplicação. O core genérico não deve depender de etapas concretas.
+Exemplo no executor: `com.marketinghub.pipelines.geracaoanuncios.v1.roteiroCriativo`.
+
+Cada etapa deve possuir configuração própria, adapter de backend, construtor de prompt, validador de resposta e handler de aplicação. O núcleo genérico do executor não deve depender de etapas concretas.
 
 O worker não acessa banco. Ele busca pendências no backend pelo endpoint `pending`, faz `claim` quando o contrato da etapa exigir reserva explícita, monta prompt, chama OpenAI, valida resposta e devolve o resultado ao backend. O backend não pode substituir o worker fazendo chamada direta à OpenAI para “atalhar” uma tela ou reduzir latência; se a UI precisar de resposta rápida, o contrato deve continuar assíncrono e mostrar estado de solicitação/processamento.
 

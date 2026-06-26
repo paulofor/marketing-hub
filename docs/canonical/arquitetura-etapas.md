@@ -73,6 +73,22 @@ nascer como `v1`, porque uma mudança completa futura poderá exigir `v2` sem so
 Ela existe porque alguns pipelines precisam conviver em versões paralelas durante validação, rollout gradual,
 comparação de qualidade e rollback seguro.
 
+O padrão canônico de pacotes para pipelines versionados passa a ser:
+
+- **Backend:** `...pipelines.<nome-modulo>.<nome-pipeline>.v<numero-versao>.<nome-etapa>`.
+- **Módulo executor:** `...pipelines.<nome-pipeline>.v<numero-versao>.<nome-etapa>`.
+
+No backend, o pacote inclui o `<nome-modulo>` porque o backend concentra contratos, persistência e
+publicação de pendências de múltiplos módulos. Exemplo:
+`com.marketinghub.pipelines.oprm.nichocnae.v1.coletaRotina`.
+
+No módulo executor, o pacote não repete o nome do módulo, porque o próprio repositório/módulo já define o
+contexto operacional. Exemplo: `com.marketinghub.pipelines.nichocnae.v1.coletaRotina`.
+
+A regra substitui padrões antigos como `...nichocnaev1.pipeline.<etapa>` ou
+`...<dominio>.<pipeline>.v1.<etapa>` em novos pipelines e em reestruturações completas. Pacotes legados só
+devem permanecer quando não fizer parte do escopo migrá-los; novos fluxos devem nascer no padrão
+`pipelines.<...>.<pipeline>.v<versao>.<etapa>`.
 O padrão canônico de pacote para pipelines versionados é:
 
 - **Backend:** `...pipelines.<nome-modulo>.<nome-pipeline>.v<numero-versao>.<nome-etapa>`.

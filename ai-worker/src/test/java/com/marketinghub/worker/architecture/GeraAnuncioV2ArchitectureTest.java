@@ -23,7 +23,7 @@ import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.sli
 /** Guarda arquitetural do pipeline executor GeraAnuncio v2 no AI Worker. */
 @AnalyzeClasses(packages = "com.marketinghub", importOptions = ImportOption.DoNotIncludeTests.class)
 class GeraAnuncioV2ArchitectureTest {
-    private static final String PIPELINE_ROOT = "com.marketinghub.geraanuncio.v2";
+    private static final String PIPELINE_ROOT = "com.marketinghub.pipelines.geracaoanuncios.v1";
 
     @ArchTest
     static final ArchRule nucleo_geraanuncio_v2_nao_deve_depender_de_etapas = noClasses()
@@ -36,14 +36,14 @@ class GeraAnuncioV2ArchitectureTest {
 
     @ArchTest
     static final ArchRule etapas_geraanuncio_v2_nao_devem_depender_umas_das_outras = slices()
-            .matching("com.marketinghub.geraanuncio.v2.(*)..")
+            .matching("com.marketinghub.pipelines.geracaoanuncios.v1.(*)..")
             .should()
             .notDependOnEachOther()
             .because("[ARQUITETURA] [AI Worker][GeraAnuncio v2] etapas concretas não podem depender umas das outras");
 
     @ArchTest
     static final ArchRule etapas_geraanuncio_v2_nao_devem_ter_ciclos = slices()
-            .matching("com.marketinghub.geraanuncio.v2.(*)..")
+            .matching("com.marketinghub.pipelines.geracaoanuncios.v1.(*)..")
             .should()
             .beFreeOfCycles()
             .because("[ARQUITETURA] [AI Worker][GeraAnuncio v2] etapas do pipeline não podem formar ciclos");
@@ -73,9 +73,9 @@ class GeraAnuncioV2ArchitectureTest {
         importedClasses.stream().filter(javaClass -> javaClass.getPackageName().startsWith(PIPELINE_ROOT)).findAny();
         Path repositoryRoot = repositoryRoot();
         Path backendRoot = repositoryRoot.resolve(Path.of(
-                "backend", "ads-service", "src", "main", "java", "com", "marketinghub", "geraanuncio", "v2"));
+                "backend", "ads-service", "src", "main", "java", "com", "marketinghub", "pipelines", "facebookads", "geracaoanuncios", "v1"));
         Path workerRoot = repositoryRoot.resolve(Path.of(
-                "ai-worker", "src", "main", "java", "com", "marketinghub", "geraanuncio", "v2"));
+                "ai-worker", "src", "main", "java", "com", "marketinghub", "pipelines", "geracaoanuncios", "v1"));
         Set<String> backendStages = directSubpackages(backendRoot);
         Set<String> workerStages = directSubpackages(workerRoot);
         List<String> violations = new ArrayList<>();
@@ -90,7 +90,7 @@ class GeraAnuncioV2ArchitectureTest {
     /** Valida que a etapa do AI Worker chama o endpoint pending canônico da etapa par no backend. */
     private static void validatePendingEndpoint(Path workerRoot, String stage, List<String> violations) {
         Path stageDirectory = workerRoot.resolve(stage);
-        String expectedEndpoint = "/internal/geraanuncio/v2/" + stage + "/stage-executions/pending";
+        String expectedEndpoint = "/internal/facebookads/geracaoanuncios/v1/" + stage + "/stage-executions/pending";
         if (!Files.isDirectory(stageDirectory)) {
             violations.add("[ARQUITETURA] [AI Worker][GeraAnuncio v2] etapa " + stage
                     + " deve existir no módulo externo antes de validar pending");

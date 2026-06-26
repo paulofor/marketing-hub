@@ -5,6 +5,8 @@ import com.marketinghub.geraanuncio.v2.criativo.service.listStageExecutions.Gera
 import com.marketinghub.geraanuncio.v2.criativo.service.pending.GeraAnuncioCriativoPendingResponse;
 import com.marketinghub.geraanuncio.v2.criativo.service.recebePrompt.GeraAnuncioCriativoPromptRequest;
 import com.marketinghub.geraanuncio.v2.criativo.service.recebeResposta.GeraAnuncioCriativoRespostaRequest;
+import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.service.ExperimentService;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -13,9 +15,22 @@ import org.springframework.stereotype.Service;
 /** Responsabilidade: expor contratos de leitura, escrita e auditoria da etapa Criativo do pipeline GeraAnuncio v2. */
 @Service
 public class GeraAnuncioCriativoService {
+    private final ExperimentService experimentService;
+
+    /** Inicializa o service com o serviço canônico de experimentos. */
+    public GeraAnuncioCriativoService(ExperimentService experimentService) {
+        this.experimentService = experimentService;
+    }
+
     /** Inicia uma solicitação de geração de criativos para um experimento. */
     public GeraAnuncioCriativoExecutionSummaryResponse start(Long experimentId) {
-        return new GeraAnuncioCriativoExecutionSummaryResponse(null, experimentId, null, "REQUESTED", Instant.now());
+        Experiment experiment = experimentService.requestPipelineCreatives(experimentId);
+        return new GeraAnuncioCriativoExecutionSummaryResponse(
+                null,
+                experiment.getId(),
+                null,
+                experiment.getCreativeGenerationStatus().name(),
+                experiment.getCreativeGenerationRequestedAt());
     }
 
     /** Lista execuções da etapa Criativo para relatório operacional. */

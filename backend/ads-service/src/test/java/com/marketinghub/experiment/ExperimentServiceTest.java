@@ -105,7 +105,7 @@ class ExperimentServiceTest {
     }
 
     @Test
-    void requestPipelineCreativesRejectsLegacyPipelineAssets() {
+    void requestPipelineCreativesQueuesPipelineAdsForWorker() {
         MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste").build());
         var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
         var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
@@ -142,14 +142,18 @@ class ExperimentServiceTest {
         exp.setAdImageBriefing("{\"adImageBriefing\":{\"briefings\":[{\"mustMatchAdVariant\":\"dor\",\"visualBriefing\":\"Use contraste simples\",\"assetType\":\"estatico\"}]}}");
         experimentRepository.save(exp);
 
-        assertThatThrownBy(() -> service.requestPipelineCreatives(exp.getId()))
-                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
-                .hasMessageContaining("410 GONE")
-                .hasMessageContaining("GeraAnuncio v2");
+        Experiment requested = service.requestPipelineCreatives(exp.getId());
+
+        assertThat(requested.getCreativeGenerationMode()).isEqualTo(CreativeGenerationMode.PIPELINE_ADS);
+        assertThat(requested.getCreativeGenerationStatus()).isEqualTo(CreativeGenerationStatus.REQUESTED);
+        assertThat(requested.getCreativesToGenerate()).isEqualTo(3);
+        assertThat(service.listPendingCreativeGeneration(10))
+                .extracting(Experiment::getId)
+                .contains(requested.getId());
     }
 
     @Test
-    void requestPipelineCreativesRejectsLegacyDraftWithoutDestination() {
+    void requestPipelineCreativesRejectsMissingPipelineAssets() {
         MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste sem destino").build());
         var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
         var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
@@ -181,14 +185,9 @@ class ExperimentServiceTest {
         req.setInstagramAccountId(createInstagramAccount().getId());
         req.setLeadPortalFlowId(createLeadPortalFlow(niche));
         Experiment exp = service.create(req);
-        exp.setAdCopy("{\"adCopy\":{\"primaryTextVariants\":[{\"label\":\"dor\",\"primaryText\":\"Texto\",\"headline\":\"Headline\",\"description\":\"Descrição\",\"ctaText\":\"Saiba mais\"}]}}");
-        exp.setAdImageBriefing("{\"adImageBriefing\":{\"briefings\":[{\"mustMatchAdVariant\":\"dor\",\"visualBriefing\":\"Use contraste simples\",\"assetType\":\"estatico\"}]}}");
-        experimentRepository.save(exp);
-
         assertThatThrownBy(() -> service.requestPipelineCreatives(exp.getId()))
                 .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
-                .hasMessageContaining("410 GONE")
-                .hasMessageContaining("GeraAnuncio v2");
+                .hasMessageContaining("Conclua as etapas de Texto do Anúncio e Prompt da Imagem");
     }
 
 

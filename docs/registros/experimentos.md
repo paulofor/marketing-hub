@@ -5436,3 +5436,10 @@
 - Causa-raiz: os clientes `CreativeChatGptClient` e `CreativeImageClient` existiam no AI Worker, mas não havia scheduler/service ativo consumindo a fila `creatives_to_generate` do backend e registrando os criativos.
 - Correção aplicada: o backend passou a expor contrato pending/start/complete/fail para geração de criativos; o AI Worker recebeu `CreativeGenerationScheduler`, `CreativeGenerationService` e `CreativeGenerationBackendClient` para consumir a fila via backend, gerar imagens e criar criativos `DRAFT`.
 - Prevenção de recorrência: adicionado teste unitário garantindo que a fila pendente é consumida, o criativo é criado e a pendência é concluída no backend.
+
+## 2026-06-26 — Botão de gerar anúncios do pipeline volta a enfileirar trabalho
+
+- Problema: o botão “Gerar anúncios do pipeline” chamava o endpoint canônico do GeraAnuncio v2, mas o backend apenas devolvia um resumo em memória e não gravava pendência para o AI Worker.
+- Causa-raiz: a reativação anterior do AI Worker consumia apenas a fila padrão e excluía solicitações `PIPELINE_ADS`; ao mesmo tempo, o endpoint v2 de start não atualizava o experimento.
+- Correção aplicada: o start do GeraAnuncio v2 passou a enfileirar o experimento em modo `PIPELINE_ADS`, validar textos/briefings do pipeline e permitir que a fila de criativos pendentes entregue também esse modo ao AI Worker.
+- Prevenção de recorrência: teste unitário confirma que uma solicitação do pipeline fica com status `REQUESTED`, quantidade 3 e aparece na fila consumida pelo worker.

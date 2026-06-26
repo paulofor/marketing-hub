@@ -4,6 +4,7 @@ import com.marketinghub.oprmcoletormei.nichocnae.v3.OprmNichoCnaeV3StageExecutio
 import com.marketinghub.oprmcoletormei.nichocnae.v3.sourcefetcher.service.createStageExecution.SourceFetcherCreateResponse;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.sourcefetcher.service.pending.SourceFetcherPendingResponse;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.shared.OprmNichoCnaeV3StageServiceSupport;
+import com.marketinghub.repository.jpa.oprm.market.OprmCnpjCnaeDimRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.v3.OprmNichoCnaeV3StageExecutionRepository;
 import java.util.List;
 import org.springframework.stereotype.Service;
@@ -19,8 +20,8 @@ public class BackendSourceFetcherV3Service extends OprmNichoCnaeV3StageServiceSu
     private static final String STATUS_FAILED = "FALHA";
 
     /** Inicializa o service com repository canônico de execuções v3. */
-    public BackendSourceFetcherV3Service(OprmNichoCnaeV3StageExecutionRepository repository) {
-        super(repository, STAGE_CODE);
+    public BackendSourceFetcherV3Service(OprmNichoCnaeV3StageExecutionRepository repository, OprmCnpjCnaeDimRepository cnaeRepository) {
+        super(repository, cnaeRepository, STAGE_CODE);
     }
 
     /** Cria pendência inicial ou encadeada para a etapa source-fetcher. */
@@ -30,6 +31,7 @@ public class BackendSourceFetcherV3Service extends OprmNichoCnaeV3StageServiceSu
 
     /** Inicia pendência da etapa para o CNAE informado pela tela administrativa. */
     public SourceFetcherCreateResponse start(String cnaeCode) {
+        markCnaePipelineStarted(cnaeCode, STATUS_STARTED);
         return create(null, cnaeCode, "{\"cnaeCode\":\"" + cnaeCode + "\"}", 1, 1);
     }
 

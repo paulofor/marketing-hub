@@ -169,6 +169,9 @@ class ArquiteturaTest {
     private static final String MOIS_DOSSIE_V1_PACKAGE = "com.marketinghub.pipelines.mois.dossie.v1";
     private static final String MOIS_DOSSIE_PRODUTO_V1_PACKAGE = "com.marketinghub.pipelines.mois.dossieproduto.v1";
     private static final String GERAANUNCIO_V2_PACKAGE = "com.marketinghub.pipelines.facebookads.geracaoanuncios.v1";
+    private static final String MOIS_DOSSIE_V1_PACKAGE = "com.marketinghub.mois.dossie.v1";
+    private static final String MOIS_DOSSIE_PRODUTO_V1_PACKAGE = "com.marketinghub.pipelines.mois.dossieproduto.v1";
+    private static final String GERAANUNCIO_V2_PACKAGE = "com.marketinghub.pipelines.aiworker.geracaoanuncios.v1";
     private static final Map<String, String> GERAANUNCIO_V2_STAGE_ENDPOINT_SLUGS = Map.ofEntries(
             Map.entry("texto", "texto"),
             Map.entry("imagem", "imagem"));
@@ -489,7 +492,7 @@ class ArquiteturaTest {
                     .anyMatch(method -> method.getName().equals("pending") && method.isAnnotatedWith(PostMapping.class));
             if (!hasPending) {
                 violations.add("[ARQUITETURA] [BACKEND][GeraAnuncio v2] etapa " + stagePackage
-                        + " deve expor endpoint pending canônico /api/internal/facebookads/geracaoanuncios/v1/"
+                        + " deve expor endpoint pending canônico /api/internal/aiworker/geracaoanuncios/v1/"
                         + endpointSlug + "/stage-executions/pending");
             }
         });
@@ -499,9 +502,9 @@ class ArquiteturaTest {
     @ArchTest
     static final ArchRule geraAnuncioV2ServiceContractsMustBeRecords = classes()
             .that()
-            .resideInAPackage("com.marketinghub.pipelines.facebookads.geracaoanuncios.v1.*.service..")
+            .resideInAPackage("com.marketinghub.pipelines.aiworker.geracaoanuncios.v1.*.service..")
             .and()
-            .resideOutsideOfPackage("com.marketinghub.pipelines.facebookads.geracaoanuncios.v1.*.service")
+            .resideOutsideOfPackage("com.marketinghub.pipelines.aiworker.geracaoanuncios.v1.*.service")
             .should(beRecords())
             .because("[ARQUITETURA] [BACKEND][GeraAnuncio v2] DTOs/contratos de service devem ser records em subpacotes da operação");
 

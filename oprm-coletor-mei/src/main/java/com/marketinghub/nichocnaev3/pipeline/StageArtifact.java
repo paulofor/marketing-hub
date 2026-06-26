@@ -1,4 +1,0 @@
-package com.marketinghub.nichocnaev3.pipeline;
-
-/** Artefato auditável produzido por uma etapa do NichoCNAE v3. */
-public record StageArtifact(String type, String uri, String summary) {}

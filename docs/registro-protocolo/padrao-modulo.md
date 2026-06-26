@@ -24,7 +24,7 @@
 ## 2026-06-25 — OPRM NichoCNAE v3
 
 - Módulo executor: `oprm-coletor-mei`.
-- Pacote executor: `com.marketinghub.nichocnaev3`.
+- Pacote executor: `com.marketinghub.pipelines.nichocnae.v3`.
 - Protocolo aplicado com núcleo genérico `pipeline`, etapas concretas plugáveis em subpacotes por etapa, scheduler no executor, consumo via endpoint `pending` do backend e teste ArchUnit próprio.
 
 ## 2026-06-25 — MOIS dossiê v1

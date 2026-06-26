@@ -12,7 +12,10 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+import org.springframework.web.server.ResponseStatusException;
 
 /** Responsabilidade: expor contratos de leitura, escrita e auditoria da etapa Texto do pipeline GeraAnuncio v2. */
 @Service
@@ -22,6 +25,11 @@ public class GeraAnuncioTextoService {
     /** Inicializa o service com o serviço canônico de experimentos. */
     public GeraAnuncioTextoService(ExperimentService experimentService) {
         this.experimentService = experimentService;
+    }
+
+    /** Inicia uma solicitação da etapa Texto usando o código/chave operacional do experimento. */
+    public GeraAnuncioTextoExecutionSummaryResponse start(String experimentKey) {
+        return start(resolveExperimentId(experimentKey));
     }
 
     /** Inicia uma solicitação da etapa Texto para um experimento. */
@@ -95,6 +103,18 @@ public class GeraAnuncioTextoService {
         return Map.of(
                 "adCopy", Objects.toString(experiment.getAdCopy(), ""),
                 "adImageBriefing", Objects.toString(experiment.getAdImageBriefing(), ""));
+    }
+
+    /** Resolve o código/chave recebido no contrato administrativo para o identificador interno do experimento. */
+    private Long resolveExperimentId(String experimentKey) {
+        if (!StringUtils.hasText(experimentKey)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "experimentKey required");
+        }
+        String normalizedExperimentKey = experimentKey.trim();
+        if (!normalizedExperimentKey.chars().allMatch(Character::isDigit)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "experimentKey must be the numeric experiment id");
+        }
+        return Long.valueOf(normalizedExperimentKey);
     }
 
     /** Gera identificador determinístico da execução da etapa a partir do experimento. */

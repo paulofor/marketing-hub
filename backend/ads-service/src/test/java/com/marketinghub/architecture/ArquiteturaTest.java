@@ -117,7 +117,7 @@ class ArquiteturaTest {
             Map.entry("reprocesscontroller", "reprocess-controller"),
             Map.entry("enrichednichematerializer", "enriched-niche-materializer"));
 
-    private static final String OPRM_NICHO_CNAE_V3_PACKAGE = "com.marketinghub.oprm.nichocnae.v3";
+    private static final String OPRM_NICHO_CNAE_V3_PACKAGE = "com.marketinghub.pipelines.oprm.nichocnae.v3";
     private static final Map<String, String> OPRM_NICHO_CNAE_V3_STAGE_ENDPOINT_SLUGS = Map.ofEntries(
             Map.entry("cnaeintake", "cnae-intake"),
             Map.entry("personacandidategenerator", "persona-candidate-generator"),

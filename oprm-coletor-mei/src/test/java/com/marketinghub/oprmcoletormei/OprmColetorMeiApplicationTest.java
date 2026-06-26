@@ -14,7 +14,7 @@ class OprmColetorMeiApplicationTest {
     void shouldScanNichoCnaeVersionThreePackage() {
         SpringBootApplication annotation = OprmColetorMeiApplication.class.getAnnotation(SpringBootApplication.class);
 
-        assertTrue(Arrays.asList(annotation.scanBasePackages()).contains("com.marketinghub.nichocnaev3"));
+        assertTrue(Arrays.asList(annotation.scanBasePackages()).contains("com.marketinghub.pipelines.nichocnae.v3"));
     }
 
     /** Confirma que o executor NichoCNAE v2 não é mais carregado operacionalmente pelo coletor. */

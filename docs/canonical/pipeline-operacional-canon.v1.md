@@ -111,7 +111,26 @@ O backend deve concentrar:
 7. exposição de endpoints administrativos;
 8. exposição de endpoints internos para workers.
 
-Para pipelines por etapa, o pacote deve seguir a separação funcional do GeraLanding:
+Para pipelines completos, versionados ou reestruturados por fluxo inteiro, o padrão canônico de pacotes é:
+
+```text
+# Backend principal
+com.marketinghub.pipelines.<nome-modulo>.<nome-pipeline>.v<numero-versao>.<nome-etapa>
+
+# Módulo executor, worker ou coletor responsável pela execução
+com.marketinghub.pipelines.<nome-pipeline>.v<numero-versao>.<nome-etapa>
+```
+
+Regras obrigatórias desse padrão:
+
+1. no backend, `<nome-modulo>` preserva a fronteira funcional do módulo dono do contrato, por exemplo `oprm`, `mois` ou `mds`;
+2. no executor, o nome do módulo não deve ser repetido no pacote, porque o módulo físico já define o contexto operacional;
+3. as etapas concretas devem ficar diretamente abaixo da versão (`v1`, `v2`, `v3`...), sem criar camada intermediária `pipeline` entre a versão e a etapa;
+4. o núcleo genérico do executor, quando existir, pode ficar em `com.marketinghub.pipelines.<nome-pipeline>.v<numero-versao>.core`;
+5. a camada operacional de consumo de pendências, catálogo de etapas e callbacks do executor pode ficar em `com.marketinghub.pipelines.<nome-pipeline>.v<numero-versao>.execution`;
+6. repositories Spring Data JPA do backend continuam no pacote canônico `com.marketinghub.repository.jpa`, mesmo quando atendem a um pipeline versionado.
+
+Para módulos legados simples, não versionados e sem reestruturação de pipeline inteiro, a separação funcional do GeraLanding ainda pode ser usada até migração explícita:
 
 ```text
 com.marketinghub.<dominio>.<etapa>.web

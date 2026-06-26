@@ -3,7 +3,7 @@ package com.marketinghub.oprmcoletormei.marketimport.config;
 import com.marketinghub.nichocnae.meiaudiencesegmenter.MeiAudienceSegmenterOpenAiProperties;
 import com.marketinghub.nichocnae.nicheresearchseedbuilder.NicheResearchSeedBuilderOpenAiProperties;
 import com.marketinghub.nichocnae.sourcesearcher.GoogleCustomSearchProperties;
-import com.marketinghub.nichocnaev3.pipeline.personacandidategenerator.PersonaCandidateOpenAiProperties;
+import com.marketinghub.pipelines.nichocnae.v3.personacandidategenerator.PersonaCandidateOpenAiProperties;
 import java.time.Duration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;

@@ -1,5 +1,6 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-06-26-pipeline-nichocnae.yaml
       file: changesets/2026-06-26-pipeline-dossieproduto.yaml
       relativeToChangelogFile: true
   - include:

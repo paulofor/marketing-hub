@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /** Responsabilidade: disponibilizar a borda HTTP canônica da etapa Texto do pipeline GeraAnuncio v2. */
@@ -24,6 +25,12 @@ public class GeraAnuncioTextoController {
     /** Inicializa o controller com o service canônico da etapa. */
     public GeraAnuncioTextoController(GeraAnuncioTextoService service) {
         this.service = service;
+    }
+
+    /** Inicia uma execução da etapa Texto para o código/chave do experimento informado. */
+    @PostMapping("/start")
+    public GeraAnuncioTextoExecutionSummaryResponse startPorChave(@RequestParam("experimentKey") String experimentKey) {
+        return service.start(experimentKey);
     }
 
     /** Inicia uma execução da etapa Texto para o experimento informado. */

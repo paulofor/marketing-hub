@@ -4,6 +4,20 @@ info:
   version: v2
   description: Contratos internos do pipeline GeraAnuncio v2 para geração separada de texto e imagem de anúncios pelo AI Worker.
 paths:
+  /api/internal/aiworker/geracaoanuncios/v1/texto/stage-executions/start:
+    post:
+      summary: Inicia execução da etapa Texto pela chave do experimento
+      description: Endpoint usado pela tela administrativa para iniciar a etapa de texto do GeraAnuncio v2 usando o código/chave operacional do experimento.
+      parameters:
+        - name: experimentKey
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Código/chave operacional do experimento; atualmente corresponde ao id numérico do experimento.
+      responses:
+        '200':
+          description: Solicitação registrada na etapa Texto do GeraAnuncio v2.
   /api/internal/aiworker/geracaoanuncios/v1/texto/stage-executions/experiments/{experimentId}/start:
     post:
       summary: Inicia execução da etapa Texto para um experimento
@@ -49,6 +63,20 @@ paths:
       responses:
         '202':
           description: Resposta aceita para auditoria e relatório.
+  /api/internal/aiworker/geracaoanuncios/v1/imagem/stage-executions/start:
+    post:
+      summary: Inicia execução da etapa Imagem pela chave do experimento
+      description: Endpoint usado pela tela administrativa para iniciar a etapa de imagem do GeraAnuncio v2 usando o código/chave operacional do experimento.
+      parameters:
+        - name: experimentKey
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Código/chave operacional do experimento; atualmente corresponde ao id numérico do experimento.
+      responses:
+        '200':
+          description: Solicitação registrada na etapa Imagem do GeraAnuncio v2.
   /api/internal/aiworker/geracaoanuncios/v1/imagem/stage-executions/experiments/{experimentId}/start:
     post:
       summary: Inicia execução da etapa Imagem para um experimento

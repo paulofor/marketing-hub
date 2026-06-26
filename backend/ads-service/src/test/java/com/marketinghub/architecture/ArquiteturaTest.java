@@ -168,9 +168,6 @@ class ArquiteturaTest {
     private static final String MOIS_DOSSIE_V1_EXECUTOR_MODULE = "mois-sales-library-worker";
     private static final String MOIS_DOSSIE_V1_PACKAGE = "com.marketinghub.pipelines.mois.dossie.v1";
     private static final String MOIS_DOSSIE_PRODUTO_V1_PACKAGE = "com.marketinghub.pipelines.mois.dossieproduto.v1";
-    private static final String GERAANUNCIO_V2_PACKAGE = "com.marketinghub.pipelines.facebookads.geracaoanuncios.v1";
-    private static final String MOIS_DOSSIE_V1_PACKAGE = "com.marketinghub.mois.dossie.v1";
-    private static final String MOIS_DOSSIE_PRODUTO_V1_PACKAGE = "com.marketinghub.pipelines.mois.dossieproduto.v1";
     private static final String GERAANUNCIO_V2_PACKAGE = "com.marketinghub.pipelines.aiworker.geracaoanuncios.v1";
     private static final Map<String, String> GERAANUNCIO_V2_STAGE_ENDPOINT_SLUGS = Map.ofEntries(
             Map.entry("texto", "texto"),

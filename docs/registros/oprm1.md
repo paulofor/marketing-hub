@@ -1524,3 +1524,9 @@
 - Diagnóstico: a falha recente da etapa `persona-candidate-generator` chegava ao banco e à tela como erro genérico, porque o log não registrava explicitamente `statusCode`, `statusText`, headers e corpo retornado pela OpenAI em respostas HTTP de erro.
 - Correção: o cliente OpenAI da etapa passou a registrar caminhos de diagnóstico para chave ausente, origem da chave por arquivo seguro, request enviado, response recebido, corpo vazio, erro HTTP com status/corpo, falha genérica com tipo/mensagem da exceção e ausência de texto JSON extraível.
 - Prevenção de recorrência: adicionado teste unitário cobrindo erro HTTP 400 da OpenAI e validando que o log contém status e corpo do provedor sem expor a chave direta.
+
+## 2026-06-26 — NichoCNAE v3: timeout ampliado para OpenAI
+
+- Diagnóstico: a etapa `persona-candidate-generator` do job `nichocnae-v3-4781400-1782477451721` falhou durante POST para `https://api.openai.com/v1/responses` com `Broken pipe`, após a chave e o payload terem sido resolvidos corretamente.
+- Correção: o `RestClient` compartilhado do executor OPRM passou a usar timeout de conexão de 30 segundos e timeout de leitura de 5 minutos, reduzindo falhas prematuras em chamadas OpenAI longas em modo Flex.
+- Prevenção de recorrência: adicionado teste unitário garantindo que os timeouts ampliados permaneçam configurados no cliente HTTP do coletor.

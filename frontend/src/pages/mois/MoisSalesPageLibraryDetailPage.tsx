@@ -7,7 +7,7 @@ import {
   useMoisSalesLibraryMarketWarmupSearchAttempts,
   useMoisSalesLibraryMarketWarmupSources,
   useMoisSalesLibraryPage,
-  useRequestMoisSalesLibraryMarketWarmup,
+  useStartMoisDossierPipeline,
   useMoisSalesLibraryPageExecutions,
   useMoisSalesLibraryPages,
   useUpdateMoisSalesLibraryPageStatus,
@@ -151,8 +151,7 @@ export default function MoisSalesPageLibraryDetailPage() {
   const pagesQuery = useMoisSalesLibraryPages(WORKSPACE_ID, 1, PAGE_SIZE);
   const updateStatusMutation =
     useUpdateMoisSalesLibraryPageStatus(WORKSPACE_ID);
-  const requestWarmupMutation =
-    useRequestMoisSalesLibraryMarketWarmup(WORKSPACE_ID);
+  const requestWarmupMutation = useStartMoisDossierPipeline(WORKSPACE_ID);
 
   const currentIndex =
     pagesQuery.data?.items.findIndex((item) => item.pageId === validPageId) ??
@@ -437,20 +436,20 @@ export default function MoisSalesPageLibraryDetailPage() {
 
       {requestWarmupMutation.isSuccess ? (
         <div className="alert alert-success mb-0">
-          Dossiê enviado para fila. A tela sempre mostrará o dossiê mais
-          recente retornado pelo backend.
+          Pipeline v1 do dossiê iniciado pela etapa intake. A tela sempre
+          mostrará o dossiê mais recente retornado pelo backend.
         </div>
       ) : null}
       {requestWarmupMutation.isError ? (
         <div className="alert alert-danger mb-0">
-          Falha ao solicitar dossiê.
+          Falha ao iniciar pipeline v1 do dossiê.
         </div>
       ) : null}
       {hasWarmupDossier && !hasActiveWarmupDossier ? (
         <div className="alert alert-info mb-0">
           Já existe um dossiê para esta página
-          {warmupStatus ? ` com status ${labelStatus(warmupStatus)}` : ""}.
-          Você pode usar o resultado exibido abaixo ou clicar em
+          {warmupStatus ? ` com status ${labelStatus(warmupStatus)}` : ""}. Você
+          pode usar o resultado exibido abaixo ou clicar em
           <strong> Reprocessar dossiê</strong> para criar uma nova fila. A tela
           passará a mostrar o dossiê mais recente retornado pelo backend.
         </div>
@@ -461,8 +460,8 @@ export default function MoisSalesPageLibraryDetailPage() {
           {hasActiveWarmupDossier ? (
             <>
               Esta página já possui dossiê em fila ou em processamento
-              {warmupStatus ? ` com status ${labelStatus(warmupStatus)}` : ""}
-              . Aguarde a conclusão para reprocessar.
+              {warmupStatus ? ` com status ${labelStatus(warmupStatus)}` : ""}.
+              Aguarde a conclusão para reprocessar.
             </>
           ) : (
             <>
@@ -708,8 +707,8 @@ export default function MoisSalesPageLibraryDetailPage() {
                   <h3 className="h6 mb-1">Insumos para GeraLanding</h3>
                   <p className="text-secondary small mb-0">
                     Padrões observados na página vencedora para orientar as
-                    etapas de wireframe, copy, prompt de imagens e preset
-                    design do pipeline.
+                    etapas de wireframe, copy, prompt de imagens e preset design
+                    do pipeline.
                   </p>
                 </div>
                 <div className="row g-3">

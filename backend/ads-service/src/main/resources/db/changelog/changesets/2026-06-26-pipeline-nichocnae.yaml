@@ -1,0 +1,81 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-26-01-pipeline-nichocnae
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            - tableExists:
+                tableName: pipeline_nichocnae
+      changes:
+        - createTable:
+            tableName: pipeline_nichocnae
+            columns:
+              - column:
+                  name: id_externo
+                  type: VARCHAR(96)
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_pipeline_nichocnae
+                    nullable: false
+              - column:
+                  name: request
+                  type: LONGTEXT
+              - column:
+                  name: response
+                  type: LONGTEXT
+              - column:
+                  name: codigo_etapa
+                  type: VARCHAR(96)
+              - column:
+                  name: data_hora
+                  type: DATETIME(6)
+              - column:
+                  name: job_id
+                  type: VARCHAR(128)
+              - column:
+                  name: quantidade_token_entrada
+                  type: BIGINT
+              - column:
+                  name: quantidade_token_saida
+                  type: BIGINT
+              - column:
+                  name: modelo
+                  type: VARCHAR(128)
+              - column:
+                  name: custo
+                  type: DECIMAL(19,4)
+              - column:
+                  name: descricao_erro
+                  type: LONGTEXT
+              - column:
+                  name: job_id_externo
+                  type: VARCHAR(128)
+              - column:
+                  name: plataforma
+                  type: VARCHAR(64)
+              - column:
+                  name: prompt
+                  type: LONGTEXT
+              - column:
+                  name: schema
+                  type: LONGTEXT
+              - column:
+                  name: versao_pipeline
+                  type: VARCHAR(32)
+        - createIndex:
+            tableName: pipeline_nichocnae
+            indexName: idx_pipeline_nichocnae_job_id
+            columns:
+              - column:
+                  name: job_id
+        - createIndex:
+            tableName: pipeline_nichocnae
+            indexName: idx_pipeline_nichocnae_etapa_versao
+            columns:
+              - column:
+                  name: codigo_etapa
+              - column:
+                  name: versao_pipeline

@@ -1567,3 +1567,8 @@
 - Ajuste: adicionada a coluna `nichocnae_pipeline_updated_at` em `oprm_cnpj_cnae_dim` para registrar a data/hora corrente sempre que o `start` de uma etapa atualizar o status e a etapa atual do pipeline NichoCNAE v3.
 
 - 2026-06-26: Ajustado pending do backend NichoCNAE v3 para publicar até 10 CNAEs iniciados por etapa corrente a partir de oprm_cnpj_cnae_dim, ordenados por atualização ascendente, usando a constante INICIADO no suporte compartilhado das etapas.
+
+## 2026-06-26 — Backend: tabela de auditoria `pipeline_nichocnae`
+
+- Criada a tabela `pipeline_nichocnae` para centralizar auditoria de request/response, prompt/schema, tokens, modelo, custo, erro, etapa, plataforma e versão do pipeline NichoCNAE.
+- Criadas a entidade JPA e o repository canônico no backend para permitir persistência e consultas de custo por `jobId` sem acesso direto ao banco por módulos externos.

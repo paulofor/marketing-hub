@@ -16,16 +16,31 @@ function formatDateTime(value?: string) {
   });
 }
 
-function extractModelFromRequestBody(raw?: string) {
-  if (!raw) return "—";
+function parseOpenAiRequestBody(raw?: string) {
+  if (!raw) return null;
   try {
-    const parsed = JSON.parse(raw);
-    return typeof parsed?.model === "string" && parsed.model.trim()
-      ? parsed.model
-      : "—";
+    return JSON.parse(raw) as Record<string, unknown>;
   } catch {
-    return "—";
+    return null;
   }
+}
+
+function extractModelFromRequestBody(raw?: string) {
+  const parsed = parseOpenAiRequestBody(raw);
+  return typeof parsed?.model === "string" && parsed.model.trim()
+    ? parsed.model
+    : "—";
+}
+
+function formatOpenAiServiceTier(raw?: string) {
+  const parsed = parseOpenAiRequestBody(raw);
+  const serviceTier =
+    typeof parsed?.service_tier === "string" ? parsed.service_tier.trim() : "";
+
+  if (!serviceTier || serviceTier === "default") return "Standard";
+  if (serviceTier === "flex") return "Flex";
+
+  return serviceTier;
 }
 
 export interface QualityReviewSentScreenshot {
@@ -239,6 +254,9 @@ export default function ExperimentGeraLandingExecutionDetailPage() {
   const modelUsed = extractModelFromRequestBody(
     detailQuery.data?.openAiRequestBody,
   );
+  const openAiMode = formatOpenAiServiceTier(
+    detailQuery.data?.openAiRequestBody,
+  );
   const provisionalHtml = detailQuery.data?.provisionalHtml?.trim() ?? "";
   const errorFileContent = extractErrorFileContent(
     detailQuery.data?.errorDetail,
@@ -418,6 +436,9 @@ export default function ExperimentGeraLandingExecutionDetailPage() {
                 </div>
                 <div className="col-md-6">
                   <strong>Modelo usado:</strong> {modelUsed}
+                </div>
+                <div className="col-md-6">
+                  <strong>Modo:</strong> {openAiMode}
                 </div>
                 <div className="col-md-6">
                   <strong>Criado em:</strong>{" "}

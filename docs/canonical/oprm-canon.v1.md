@@ -295,7 +295,7 @@ Evitar fechamento prematuro de `import run` que destrói a totalização de mark
 - O `oprm-coletor-mei`, quando executar etapas NichoCNAE com IA, deve ser publicado no mesmo host do `ai-worker`: `191.252.120.96`.
 - A publicação no mesmo host permite reutilizar o arquivo de chave OpenAI já provisionado para o `ai-worker`, sem duplicar segredo em outro VPS.
 - O arquivo de chave OpenAI deve ser montado no container OPRM como somente leitura em `/run/secrets/openai_api_key`, usando por padrão o caminho de host `/root/infra/openai-token/openai_api_key`.
-- A etapa OPRM deve preferir variável direta de chave quando explicitamente configurada, mas deve aceitar `OPRM_NICHO_CNAE_SEED_BUILDER_OPENAI_API_KEY_FILE`/`OPENAI_API_KEY_FILE` para leitura do segredo montado.
+- A etapa OPRM deve preferir variável direta de chave quando explicitamente configurada, mas toda etapa OpenAI do executor deve aceitar a variável específica `*_OPENAI_API_KEY_FILE`, o fallback global `OPENAI_API_KEY_FILE` e o caminho operacional seguro do host `/root/infra/openai-token/openai_api_key` quando disponível, sem commitar credenciais.
 
 ## Critério de efetividade — publicação e segredo OpenAI do executor OPRM
 

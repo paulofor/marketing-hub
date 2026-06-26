@@ -1495,3 +1495,15 @@
 - Decisão de regra: a definição do protocolo padrão módulo passou a exigir que etapas OpenAI em módulos executores declarem configuração própria, mas reutilizem obrigatoriamente os fallbacks globais `OPENAI_API_KEY` e `OPENAI_API_KEY_FILE`.
 - Motivo: evitar recorrência da falha em que uma etapa nova de OpenAI tinha `@ConfigurationProperties`, mas não herdava o segredo operacional já provisionado para os workers.
 - Documentos atualizados: `docs/metodologia/gerado-5-5/arquitetura-pipeline-etapas-archunit.md` e `docs/canonical/pipeline-operacional-canon.v1.md`.
+
+## 2026-06-26 — NichoCNAE v3: segredo OpenAI publicado no compose do executor
+
+- Causa-raiz comprovada: a correção anterior passou a declarar fallback `OPENAI_API_KEY_FILE` no `application.yml`, mas o `docker-compose` do `oprm-coletor-mei` não publicava esse fallback global nem a variável específica da etapa `persona-candidate-generator` v3 no ambiente do container.
+- Correção: os compose local e de deploy do executor passaram a expor `OPENAI_API_KEY_FILE` e `OPRM_NICHO_CNAE_V3_PERSONA_CANDIDATE_GENERATOR_OPENAI_API_KEY_FILE`, ambos apontando por padrão para `/run/secrets/openai_api_key`, além do modelo operacional `gpt-5.2` da etapa v3.
+- Prevenção de recorrência: o teste de configuração da etapa v3 agora valida também os arquivos compose, impedindo nova publicação sem o segredo OpenAI necessário para o executor.
+
+## 2026-06-26 — NichoCNAE v3: leitura direta do arquivo seguro da OpenAI
+
+- Causa-raiz aprofundada: depender apenas de variável de ambiente para apontar o arquivo da chave ainda deixava a etapa vulnerável a deploy sem `OPENAI_API_KEY_FILE`, mesmo com o segredo existente no servidor em `/root/infra/openai-token/openai_api_key`.
+- Correção: a etapa `persona-candidate-generator` v3 agora tenta ler a chave por variável direta, pelo arquivo configurado, pelo segredo montado no container em `/run/secrets/openai_api_key` e, como fallback operacional, pelo caminho seguro do host `/root/infra/openai-token/openai_api_key`.
+- Prevenção de recorrência: o `application.yml` do executor agora tem default explícito para `/run/secrets/openai_api_key`, e os testes validam a leitura de chave por arquivo seguro.

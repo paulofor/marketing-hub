@@ -3,4 +3,4 @@
 * Com que ele deve estar relacionado para quando voltar ter as informações ( hipoteses, experimento, nicho, etc )
 * Precisamos ver entrada e saida de cada etapa senão ele faz besteira.
 
-* Criou somente a carcaça ( o contrato ) vou tentar ir criando e vendo funcionar pelo front end. Desenvolvimento interativo mas vai ser demorado.
+## Criou somente a carcaça ( o contrato ) vou tentar ir criando e vendo funcionar pelo front end. Desenvolvimento interativo mas vai ser demorado.

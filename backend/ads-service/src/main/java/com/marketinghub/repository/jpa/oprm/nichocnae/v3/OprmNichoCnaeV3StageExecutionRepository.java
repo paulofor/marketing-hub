@@ -1,7 +1,7 @@
 package com.marketinghub.repository.jpa.oprm.nichocnae.v3;
 
-import com.marketinghub.pipelines.oprm.nichocnae.v3.OprmNichoCnaeV3StageExecution;
-import com.marketinghub.pipelines.oprm.nichocnae.v3.OprmNichoCnaeV3StageExecutionStatus;
+import com.marketinghub.oprmcoletormei.nichocnae.v3.OprmNichoCnaeV3StageExecution;
+import com.marketinghub.oprmcoletormei.nichocnae.v3.OprmNichoCnaeV3StageExecutionStatus;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;

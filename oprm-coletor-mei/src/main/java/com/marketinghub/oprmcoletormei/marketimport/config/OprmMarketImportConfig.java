@@ -1,8 +1,5 @@
 package com.marketinghub.oprmcoletormei.marketimport.config;
 
-import com.marketinghub.nichocnae.meiaudiencesegmenter.MeiAudienceSegmenterOpenAiProperties;
-import com.marketinghub.nichocnae.nicheresearchseedbuilder.NicheResearchSeedBuilderOpenAiProperties;
-import com.marketinghub.nichocnae.sourcesearcher.GoogleCustomSearchProperties;
 import com.marketinghub.pipelines.nichocnae.v3.personacandidategenerator.PersonaCandidateOpenAiProperties;
 import java.time.Duration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -17,10 +14,7 @@ import org.springframework.web.client.RestClient;
 @EnableConfigurationProperties({
         OprmMarketImportScheduleProperties.class,
         OprmMarketImportCollectorProperties.class,
-        NicheResearchSeedBuilderOpenAiProperties.class,
-        MeiAudienceSegmenterOpenAiProperties.class,
-        PersonaCandidateOpenAiProperties.class,
-        GoogleCustomSearchProperties.class
+        PersonaCandidateOpenAiProperties.class
 })
 public class OprmMarketImportConfig {
     private static final Duration HTTP_CONNECT_TIMEOUT = Duration.ofSeconds(30);

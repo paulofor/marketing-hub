@@ -117,7 +117,7 @@ class ArquiteturaTest {
             Map.entry("reprocesscontroller", "reprocess-controller"),
             Map.entry("enrichednichematerializer", "enriched-niche-materializer"));
 
-    private static final String OPRM_NICHO_CNAE_V3_PACKAGE = "com.marketinghub.pipelines.oprm.nichocnae.v3";
+    private static final String OPRM_NICHO_CNAE_V3_PACKAGE = "com.marketinghub.oprmcoletormei.nichocnae.v3";
     private static final Map<String, String> OPRM_NICHO_CNAE_V3_STAGE_ENDPOINT_SLUGS = Map.ofEntries(
             Map.entry("cnaeintake", "cnae-intake"),
             Map.entry("personacandidategenerator", "persona-candidate-generator"),
@@ -167,9 +167,6 @@ class ArquiteturaTest {
             GERALANDING_STAGE_EXECUTION_REPOSITORY_CLASS);
     private static final String MOIS_DOSSIE_V1_EXECUTOR_MODULE = "mois-sales-library-worker";
     private static final String MOIS_DOSSIE_V1_PACKAGE = "com.marketinghub.pipelines.mois.dossie.v1";
-    private static final String MOIS_DOSSIE_PRODUTO_V1_PACKAGE = "com.marketinghub.pipelines.mois.dossieproduto.v1";
-    private static final String GERAANUNCIO_V2_PACKAGE = "com.marketinghub.pipelines.facebookads.geracaoanuncios.v1";
-    private static final String MOIS_DOSSIE_V1_PACKAGE = "com.marketinghub.mois.dossie.v1";
     private static final String MOIS_DOSSIE_PRODUTO_V1_PACKAGE = "com.marketinghub.pipelines.mois.dossieproduto.v1";
     private static final String GERAANUNCIO_V2_PACKAGE = "com.marketinghub.pipelines.aiworker.geracaoanuncios.v1";
     private static final Map<String, String> GERAANUNCIO_V2_STAGE_ENDPOINT_SLUGS = Map.ofEntries(

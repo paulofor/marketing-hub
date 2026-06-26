@@ -22,6 +22,7 @@ class OprmColetorMeiApplicationTest {
     void shouldNotScanNichoCnaeVersionTwoPackage() {
         SpringBootApplication annotation = OprmColetorMeiApplication.class.getAnnotation(SpringBootApplication.class);
 
+        assertFalse(Arrays.asList(annotation.scanBasePackages()).contains("com.marketinghub.nichocnae"));
         assertFalse(Arrays.asList(annotation.scanBasePackages()).contains("com.marketinghub.nichocnaev2"));
     }
 }

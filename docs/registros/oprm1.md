@@ -1390,7 +1390,7 @@
 ## 2026-06-25 — OPRM NichoCNAE v3: criação do fluxo versionado de persona e tarefas diárias
 
 - Solicitação: criar a v3 do fluxo NichoCNAE aplicando protocolo padrão módulo e protocolo padrão backend.
-- Foi feito: criada a base backend `com.marketinghub.pipelines.oprm.nichocnae.v3` com endpoints internos por etapa, tabela `oprm_nichocnae_v3_stage_execution`, contratos `record`, endpoint `pending` por etapa e regra ArchUnit de estrutura canônica.
+- Foi feito: criada a base backend `com.marketinghub.oprmcoletormei.nichocnae.v3` com endpoints internos por etapa, tabela `oprm_nichocnae_v3_stage_execution`, contratos `record`, endpoint `pending` por etapa e regra ArchUnit de estrutura canônica.
 - Foi feito: criado o executor `com.marketinghub.pipelines.nichocnae.v3` no `oprm-coletor-mei` com núcleo genérico, catálogo de 10 etapas, processors plugáveis, scheduler de pendências, cliente backend, prompts/schemas versionados para etapas com IA e teste ArchUnit próprio.
 - Objetivo de negócio: transformar um CNAE em persona operacional, rotina real e lista de tarefas diárias auditável, sem criar oferta, campanha ou landing nesta fase.
 - Prevenção: a v3 nasce separada da v2 para evitar remendos no fluxo que parava após o planejador de buscas por falta de etapa cadastrada.
@@ -1534,12 +1534,14 @@
 ## 2026-06-26 — Refatoração de pacotes do pipeline NichoCNAE v3
 
 - Decisão aplicada: organizar o pipeline NichoCNAE v3 no padrão de pacotes solicitado.
-- Backend: raiz movida para `com.marketinghub.pipelines.oprm.nichocnae.v3`, mantendo as etapas abaixo de `v3.<nome-etapa>`.
+- Backend: raiz movida para `com.marketinghub.oprmcoletormei.nichocnae.v3`, mantendo as etapas abaixo de `v3.<nome-etapa>`.
 - Executor OPRM MEI: raiz movida para `com.marketinghub.pipelines.nichocnae.v3`, mantendo as etapas abaixo de `v3.<nome-etapa>` e o núcleo genérico em `v3.core`.
 - Correção preventiva associada: o schema OpenAI da etapa `persona-candidate-generator` passou a declarar `type: string` nos campos constantes rejeitados pela Responses API.
 
 ## 2026-06-26 — Atualização canônica do padrão de pacotes NichoCNAE v3
 
 - Atualizados os documentos canônicos para refletir a regra decidida: backend em `com.marketinghub.pipelines.<nome-modulo>.<nome-pipeline>.v<numero-versao>.<nome-etapa>` e executor em `com.marketinghub.pipelines.<nome-pipeline>.v<numero-versao>.<nome-etapa>`.
-- Canonizado o caso OPRM NichoCNAE v3 com backend em `com.marketinghub.pipelines.oprm.nichocnae.v3`, executor em `com.marketinghub.pipelines.nichocnae.v3`, núcleo executor em `.core`, operação de pendências em `.execution` e repositories JPA preservados em `com.marketinghub.repository.jpa.oprm.nichocnae.v3`.
+- Canonizado o caso OPRM NichoCNAE v3 com backend em `com.marketinghub.oprmcoletormei.nichocnae.v3`, executor em `com.marketinghub.pipelines.nichocnae.v3`, núcleo executor em `.core`, operação de pendências em `.execution` e repositories JPA preservados em `com.marketinghub.repository.jpa.oprm.nichocnae.v3`.
 - Objetivo: evitar nova divergência entre a refatoração de pacotes, os protocolos de arquitetura por etapa e a documentação usada como fonte de verdade.
+
+- 2026-06-26 00:00:00 (UTC): padronizado o NichoCNAE v3 para manter no executor apenas a raiz `com.marketinghub.pipelines.nichocnae.v3`; removidos do módulo os pacotes legados `com.marketinghub.nichocnae` e `com.marketinghub.nichocnaev2`. No backend, o pacote v3 foi movido de `com.marketinghub.pipelines.oprm.nichocnae.v3` para `com.marketinghub.oprmcoletormei.nichocnae.v3`, preservando o backend como fonte de verdade das execuções e o executor como consumidor dos endpoints `pending`.

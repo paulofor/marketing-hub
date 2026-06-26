@@ -6,9 +6,9 @@ import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
- * Inicializa o coletor OPRM MEI com o NichoCNAE legado e a versão operacional atual no contexto Spring.
+ * Inicializa o coletor OPRM MEI com o pipeline NichoCNAE v3 no contexto Spring.
  */
-@SpringBootApplication(scanBasePackages = {"com.marketinghub.oprmcoletormei", "com.marketinghub.nichocnae", "com.marketinghub.pipelines.nichocnae.v3"})
+@SpringBootApplication(scanBasePackages = {"com.marketinghub.oprmcoletormei", "com.marketinghub.pipelines.nichocnae.v3"})
 @EnableScheduling
 @ConfigurationPropertiesScan
 public class OprmColetorMeiApplication {

@@ -4,8 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 import com.marketinghub.geralanding.GeraLandingStageExecution;
-import com.marketinghub.pipelines.oprm.nichocnae.v3.OprmNichoCnaeV3StageExecution;
-import com.marketinghub.pipelines.oprm.nichocnae.v3.OprmNichoCnaeV3StageExecutionStatus;
+import com.marketinghub.oprmcoletormei.nichocnae.v3.OprmNichoCnaeV3StageExecution;
+import com.marketinghub.oprmcoletormei.nichocnae.v3.OprmNichoCnaeV3StageExecutionStatus;
 import com.marketinghub.opsmonitor.OpsModuleHealthCheck;
 import com.marketinghub.opsmonitor.OpsMonitoredModule;
 import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;

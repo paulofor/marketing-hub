@@ -13,6 +13,71 @@ function parsePayload(payload: string | null | undefined) {
   }
 }
 
+type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonValue[]
+  | { [key: string]: JsonValue };
+
+function formatJsonPrimitive(value: JsonValue) {
+  if (value === null) return "null";
+  if (typeof value === "string") return JSON.stringify(value);
+  return String(value);
+}
+
+function JsonTree({
+  value,
+  name,
+  depth = 0,
+}: {
+  value: JsonValue;
+  name?: string;
+  depth?: number;
+}) {
+  const label = name ? <span className="text-primary">{name}: </span> : null;
+
+  if (value === null || typeof value !== "object") {
+    return (
+      <div className="font-monospace small py-1">
+        {label}
+        <span className="text-break">{formatJsonPrimitive(value)}</span>
+      </div>
+    );
+  }
+
+  const isArray = Array.isArray(value);
+  const entries = isArray
+    ? value.map((item, index) => [String(index), item] as const)
+    : Object.entries(value);
+  const itemLabel = isArray
+    ? `${entries.length} item(ns)`
+    : `${entries.length} campo(s)`;
+  const bracketOpen = isArray ? "[" : "{";
+  const bracketClose = isArray ? "]" : "}";
+
+  return (
+    <details className="json-tree-node" open={depth < 2}>
+      <summary className="font-monospace small py-1">
+        {label}
+        <span>{bracketOpen}</span>
+        <span className="text-muted ms-1">{itemLabel}</span>
+        <span className="ms-1">{bracketClose}</span>
+      </summary>
+      <div className="border-start ps-3 ms-2">
+        {entries.length > 0 ? (
+          entries.map(([key, item]) => (
+            <JsonTree key={key} name={key} value={item} depth={depth + 1} />
+          ))
+        ) : (
+          <div className="text-muted small py-1">Sem conteúdo.</div>
+        )}
+      </div>
+    </details>
+  );
+}
+
 function summarizePayload(payload: string | null | undefined) {
   if (!payload) return "Sem registro.";
   const parsed = parsePayload(payload);
@@ -38,17 +103,22 @@ function PayloadSummary({
   }
 
   const parsed = parsePayload(payload);
-  const display = parsed === null ? payload : JSON.stringify(parsed, null, 2);
 
   return (
-    <details className="small">
+    <details className="small" open>
       <summary className="fw-semibold">{summarizePayload(payload)}</summary>
-      <pre
-        className="mt-2 mb-0 bg-white border rounded p-2 text-wrap overflow-auto"
-        style={{ maxHeight: "16rem", whiteSpace: "pre-wrap" }}
+      <div
+        className="mt-2 mb-0 bg-white border rounded-3 p-2 overflow-auto"
+        style={{ maxHeight: "22rem" }}
       >
-        {display}
-      </pre>
+        {parsed === null ? (
+          <pre className="mb-0 text-wrap" style={{ whiteSpace: "pre-wrap" }}>
+            {payload}
+          </pre>
+        ) : (
+          <JsonTree value={parsed as JsonValue} />
+        )}
+      </div>
     </details>
   );
 }
@@ -210,14 +280,14 @@ export default function OprmNichoCnaeV3PipelinePage() {
                 <> #{progress.data.finalizationReview.targetMarketNicheId}</>
               ) : null}
             </div>
-            <div className="row g-3">
-              <div className="col-12 col-lg-6">
+            <div className="d-flex flex-column gap-3">
+              <div className="w-100">
                 <h3 className="h6">Informações de nicho encontradas</h3>
                 <pre className="small bg-light border rounded-3 p-3 text-wrap mb-0">
                   {progress.data.finalizationReview.nicheInformation}
                 </pre>
               </div>
-              <div className="col-12 col-lg-6">
+              <div className="w-100">
                 <h3 className="h6">
                   Informações de nicho enriquecido encontradas
                 </h3>
@@ -281,7 +351,7 @@ export default function OprmNichoCnaeV3PipelinePage() {
               </span>
             ) : null}
           </div>
-          <div className="row g-3">
+          <div className="d-flex flex-column gap-3">
             {v3Stages.map((stage, index) => {
               const stageProgress = stagesByCode.get(stage.code);
               const status = stageProgress?.status ?? "WAITING";
@@ -306,7 +376,7 @@ export default function OprmNichoCnaeV3PipelinePage() {
                 }[status] ?? "text-bg-secondary";
 
               return (
-                <div className="col-12 col-md-6 col-xl-4" key={stage.code}>
+                <div key={stage.code}>
                   <div
                     className={`border rounded-3 p-3 h-100 ${
                       isActive ? "bg-primary-subtle border-primary" : "bg-light"

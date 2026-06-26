@@ -1,20 +1,24 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 
-export function useRequestPipelineCreatives(experimentId?: string) {
+export function useRequestPipelineCreatives(experimentKey?: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async () => {
-      if (!experimentId) throw new Error("Experimento não informado");
+      if (!experimentKey) throw new Error("Experimento não informado");
       const { data } = await axios.post(
-        `/api/internal/geraanuncio/v2/criativo/stage-executions/experiments/${experimentId}/start`,
+        "/api/internal/aiworker/geracaoanuncios/v1/texto/stage-executions/start",
+        null,
+        { params: { experimentKey } },
       );
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["experiment", experimentId] });
-      queryClient.invalidateQueries({ queryKey: ["creatives", experimentId] });
+      queryClient.invalidateQueries({
+        queryKey: ["experiment", experimentKey],
+      });
+      queryClient.invalidateQueries({ queryKey: ["creatives", experimentKey] });
     },
   });
 }

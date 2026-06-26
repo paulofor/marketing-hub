@@ -169,7 +169,8 @@ class ArquiteturaTest {
     private static final String MOIS_DOSSIE_V1_PACKAGE = "com.marketinghub.mois.dossie.v1";
     private static final String GERAANUNCIO_V2_PACKAGE = "com.marketinghub.geraanuncio.v2";
     private static final Map<String, String> GERAANUNCIO_V2_STAGE_ENDPOINT_SLUGS = Map.ofEntries(
-            Map.entry("criativo", "criativo"));
+            Map.entry("texto", "texto"),
+            Map.entry("imagem", "imagem"));
     private static final Map<String, String> MOIS_DOSSIE_V1_STAGE_ENDPOINT_SLUGS = Map.ofEntries(
             Map.entry("intake", "intake"),
             Map.entry("productunderstanding", "product-understanding"),

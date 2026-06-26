@@ -41,4 +41,4 @@
 - Endpoints internos pending canônicos aplicados no padrão `/api/internal/mois/dossie/v1/<etapa>/stage-executions/pending`.
 - Contratos da operação mantidos como `record` em subpacotes de `service`.
 
-- 2026-06-26 — Aplicado ao pipeline `geraanuncio` v2 no backend, pacote `com.marketinghub.geraanuncio.v2`, etapa inicial `criativo`, com endpoint pending canônico `/api/internal/geraanuncio/v2/criativo/stage-executions/pending` e contratos DTO como `record` em subpacotes de service.
+- 2026-06-26 — Aplicado ao pipeline `geraanuncio` v2 no backend, pacote `com.marketinghub.geraanuncio.v2`, etapas `texto` e `imagem`, com endpoints pending canônicos `/api/internal/geraanuncio/v2/texto/stage-executions/pending` e `/api/internal/geraanuncio/v2/imagem/stage-executions/pending` e contratos DTO como `record` em subpacotes de service.

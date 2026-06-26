@@ -1,0 +1,55 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-26-01-remove-pains-summary-from-niche-profile
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - columnExists:
+            tableName: market_niche_enrichment_profile
+            columnName: pains_summary
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE market_niche_enrichment_profile
+                DROP COLUMN pains_summary;
+  - changeSet:
+      id: 2026-06-26-02-remove-results-summary-from-niche-profile
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - columnExists:
+            tableName: market_niche_enrichment_profile
+            columnName: results_summary
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE market_niche_enrichment_profile
+                DROP COLUMN results_summary;
+  - changeSet:
+      id: 2026-06-26-03-remove-mechanism-opportunities-from-niche-profile
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - columnExists:
+            tableName: market_niche_enrichment_profile
+            columnName: mechanism_opportunities_summary
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE market_niche_enrichment_profile
+                DROP COLUMN mechanism_opportunities_summary;

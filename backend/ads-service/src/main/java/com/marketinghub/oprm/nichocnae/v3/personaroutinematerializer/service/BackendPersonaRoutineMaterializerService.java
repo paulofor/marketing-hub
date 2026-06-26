@@ -83,9 +83,6 @@ public class BackendPersonaRoutineMaterializerService extends OprmNichoCnaeV3Sta
         String dailyTasks = textOrDefault(
                 firstText(output, "personaDailyTasks", "dailyTasks", "tarefasDiarias", "tasks"),
                 "Tarefas diárias materializadas pelo NichoCNAE v3.");
-        String painsSummary = null;
-        String resultsSummary = null;
-        String mechanismSummary = null;
         Instant now = Instant.now();
         Long existingMarketNicheId = nicheGateway
                 .findPersonaRoutineMaterializedNiche(
@@ -128,9 +125,6 @@ public class BackendPersonaRoutineMaterializerService extends OprmNichoCnaeV3Sta
                         "V3_PERSONA_ROUTINE",
                         routineSummary,
                         dailyTasks,
-                        painsSummary,
-                        resultsSummary,
-                        mechanismSummary,
                         textOrDefault(firstText(output, "evidenceSummary", "evidences"), execution.getOutputPayload()),
                         firstText(output, "sourceDomains", "sources"),
                         firstText(output, "personaSummary", "persona"),

@@ -260,9 +260,9 @@ public class BackendEnrichedNicheMaterializerService {
         card == null ? null : card.getQualityStatus(),
         profile == null ? null : profile.routineSummary(),
         profile == null ? (card == null ? null : buildPersonaDailyTasks(card)) : profile.personaDailyTasks(),
-        profile == null ? null : profile.painsSummary(),
-        profile == null ? null : profile.resultsSummary(),
-        profile == null ? null : profile.mechanismOpportunitiesSummary(),
+        card == null ? null : card.getPainsSummary(),
+        card == null ? null : card.getResultsSummary(),
+        card == null ? null : card.getMechanismOpportunitiesSummary(),
         profile == null ? null : profile.evidenceSummary(),
         profile == null ? null : profile.sourceDomains(),
         profile == null ? scoreOrZero(card == null ? null : card.getRoutineEvidenceScore()) : profile.routineEvidenceScore(),
@@ -565,9 +565,9 @@ public class BackendEnrichedNicheMaterializerService {
     appendKeyValue(markdown, "Sinais processados", signals.size());
     appendTextBlock(markdown, "Rotina final", profile == null ? null : profile.routineSummary());
     appendTextBlock(markdown, "Tarefas diárias finais da persona", profile == null ? (card == null ? null : buildPersonaDailyTasks(card)) : profile.personaDailyTasks());
-    appendTextBlock(markdown, "Dores finais", profile == null ? null : profile.painsSummary());
-    appendTextBlock(markdown, "Perguntas/resultados finais", profile == null ? null : profile.resultsSummary());
-    appendTextBlock(markdown, "Contexto operacional final", profile == null ? null : profile.mechanismOpportunitiesSummary());
+    appendTextBlock(markdown, "Dores observadas no cartão de rotina", card == null ? null : card.getPainsSummary());
+    appendTextBlock(markdown, "Perguntas/resultados observados no cartão de rotina", card == null ? null : card.getResultsSummary());
+    appendTextBlock(markdown, "Contexto operacional observado no cartão de rotina", card == null ? null : card.getMechanismOpportunitiesSummary());
     appendTextBlock(markdown, "Evidências finais", profile == null ? null : profile.evidenceSummary());
     String quality = card == null ? "sem card de qualidade localizado" : card.getQualityStatus();
     markdown.append("\n**Decisão operacional:** o job está em `")
@@ -669,9 +669,6 @@ public class BackendEnrichedNicheMaterializerService {
         defaultText(cycle.getResearchMode(), "ROUTINE_REALITY_RESEARCH"),
         requiredText(card.getRoutineSummary(), "routineSummary"),
         buildPersonaDailyTasks(card),
-        requiredText(card.getPainsSummary(), "painsSummary"),
-        requiredText(card.getResultsSummary(), "resultsSummary"),
-        materializableOperationalContext(card),
         requiredText(card.getEvidenceSummary(), "evidenceSummary"),
         trimOptional(card.getSourceDomains()),
         trimOptional(request.personaSummary()),

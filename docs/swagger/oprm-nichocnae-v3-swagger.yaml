@@ -121,6 +121,22 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StageExecutionResponse'
+  /api/oprm/nichocnae/v3/cnaes/{cnaeCode}/progress:
+    get:
+      summary: Consulta o progresso do job v3 mais recente de um CNAE para a tela administrativa.
+      parameters:
+        - name: cnaeCode
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Progresso persistido do pipeline com entrada e saída de cada etapa.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobProgressResponse'
 components:
   schemas:
     StagePendingRequest:
@@ -151,6 +167,44 @@ components:
       properties:
         errorMessage:
           type: string
+    JobProgressResponse:
+      type: object
+      properties:
+        jobId:
+          type: string
+        cnaeCode:
+          type: string
+        stages:
+          type: array
+          items:
+            $ref: '#/components/schemas/StageProgressResponse'
+        finalizationReview:
+          type: object
+          nullable: true
+    StageProgressResponse:
+      type: object
+      properties:
+        stageExecutionId:
+          type: integer
+          format: int64
+        stageCode:
+          type: string
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        errorMessage:
+          type: string
+        inputPayload:
+          type: string
+          nullable: true
+        outputPayload:
+          type: string
+          nullable: true
     StageExecutionResponse:
       type: object
       properties:

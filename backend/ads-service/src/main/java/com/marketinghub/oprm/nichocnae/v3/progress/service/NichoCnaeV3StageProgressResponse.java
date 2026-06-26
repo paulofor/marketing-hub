@@ -9,4 +9,6 @@ public record NichoCnaeV3StageProgressResponse(
         String status,
         Instant createdAt,
         Instant updatedAt,
-        String errorMessage) {}
+        String errorMessage,
+        String inputPayload,
+        String outputPayload) {}

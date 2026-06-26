@@ -1545,3 +1545,9 @@
 - Objetivo: evitar nova divergência entre a refatoração de pacotes, os protocolos de arquitetura por etapa e a documentação usada como fonte de verdade.
 
 - 2026-06-26 00:00:00 (UTC): padronizado o NichoCNAE v3 para manter no executor apenas a raiz `com.marketinghub.pipelines.nichocnae.v3`; removidos do módulo os pacotes legados `com.marketinghub.nichocnae` e `com.marketinghub.nichocnaev2`. No backend, o pacote v3 foi movido de `com.marketinghub.pipelines.oprm.nichocnae.v3` para `com.marketinghub.oprmcoletormei.nichocnae.v3`, preservando o backend como fonte de verdade das execuções e o executor como consumidor dos endpoints `pending`.
+
+## 2026-06-26 — NichoCNAE v3: endpoint start por etapa no backend
+
+- Correção: cada etapa interna do backend NichoCNAE v3 passou a expor `POST /start` recebendo `cnaeCode` como parâmetro para criar uma execução pendente da própria etapa.
+- Service: cada service canônico da etapa recebeu método `start(String cnaeCode)`, mantendo o backend como fonte de verdade para abertura de pendências e preservando o executor externo apenas como consumidor do endpoint `pending`.
+- Contrato: a documentação Swagger v3 foi atualizada com o novo endpoint genérico por etapa.

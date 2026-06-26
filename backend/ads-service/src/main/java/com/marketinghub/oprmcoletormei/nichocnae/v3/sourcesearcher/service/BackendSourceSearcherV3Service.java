@@ -23,6 +23,11 @@ public class BackendSourceSearcherV3Service extends OprmNichoCnaeV3StageServiceS
         return toCreateResponse(doCreate(jobId, cnaeCode, inputPayload, attemptNumber, knowledgeVersion));
     }
 
+    /** Inicia pendência da etapa para o CNAE informado pela tela administrativa. */
+    public SourceSearcherCreateResponse start(String cnaeCode) {
+        return create(null, cnaeCode, "{\"cnaeCode\":\"" + cnaeCode + "\"}", 1, 1);
+    }
+
     /** Lista pendências da etapa source-searcher para o executor OPRM. */
     public List<SourceSearcherPendingResponse> pending() {
         return pendingExecutions().stream().map(this::toPendingResponse).toList();

@@ -23,6 +23,11 @@ public class BackendQualityGateService extends OprmNichoCnaeV3StageServiceSuppor
         return toCreateResponse(doCreate(jobId, cnaeCode, inputPayload, attemptNumber, knowledgeVersion));
     }
 
+    /** Inicia pendência da etapa para o CNAE informado pela tela administrativa. */
+    public QualityGateCreateResponse start(String cnaeCode) {
+        return create(null, cnaeCode, "{\"cnaeCode\":\"" + cnaeCode + "\"}", 1, 1);
+    }
+
     /** Lista pendências da etapa quality-gate para o executor OPRM. */
     public List<QualityGatePendingResponse> pending() {
         return pendingExecutions().stream().map(this::toPendingResponse).toList();

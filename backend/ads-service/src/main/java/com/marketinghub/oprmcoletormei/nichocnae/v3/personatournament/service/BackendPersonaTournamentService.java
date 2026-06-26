@@ -23,6 +23,11 @@ public class BackendPersonaTournamentService extends OprmNichoCnaeV3StageService
         return toCreateResponse(doCreate(jobId, cnaeCode, inputPayload, attemptNumber, knowledgeVersion));
     }
 
+    /** Inicia pendência da etapa para o CNAE informado pela tela administrativa. */
+    public PersonaTournamentCreateResponse start(String cnaeCode) {
+        return create(null, cnaeCode, "{\"cnaeCode\":\"" + cnaeCode + "\"}", 1, 1);
+    }
+
     /** Lista pendências da etapa persona-tournament para o executor OPRM. */
     public List<PersonaTournamentPendingResponse> pending() {
         return pendingExecutions().stream().map(this::toPendingResponse).toList();

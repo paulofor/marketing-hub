@@ -1001,6 +1001,63 @@ public class ExperimentService {
         return objective;
     }
 
+    /**
+     * Lista experimentos com geração de criativos pendente para consumo operacional do AI Worker.
+     */
+    @Transactional(readOnly = true)
+    public List<Experiment> listPendingCreativeGeneration(int limit) {
+        int effectiveLimit = Math.max(1, limit);
+        return repository.findAllToGenerateCreatives().stream()
+                .filter(experiment -> experiment.getCreativeGenerationStatus() == CreativeGenerationStatus.REQUESTED
+                        || experiment.getCreativeGenerationStatus() == CreativeGenerationStatus.PROCESSING)
+                .limit(effectiveLimit)
+                .toList();
+    }
+
+    /**
+     * Marca a solicitação de criativos como em processamento pelo worker.
+     */
+    @Transactional
+    public Experiment markCreativeGenerationStarted(Long id) {
+        Experiment exp = repository.findById(id).orElseThrow();
+        Integer pending = exp.getCreativesToGenerate();
+        if (pending == null || pending <= 0) {
+            return exp;
+        }
+        exp.setCreativeGenerationStatus(CreativeGenerationStatus.PROCESSING);
+        if (exp.getCreativeGenerationStartedAt() == null) {
+            exp.setCreativeGenerationStartedAt(Instant.now());
+        }
+        exp.setCreativeGenerationError(null);
+        return exp;
+    }
+
+    /**
+     * Marca a solicitação de criativos como concluída e limpa a pendência da tela.
+     */
+    @Transactional
+    public Experiment markCreativeGenerationCompleted(Long id) {
+        Experiment exp = repository.findById(id).orElseThrow();
+        exp.setCreativesToGenerate(0);
+        exp.setCreativeGenerationStatus(CreativeGenerationStatus.COMPLETED);
+        exp.setCreativeGenerationFinishedAt(Instant.now());
+        exp.setCreativeGenerationError(null);
+        return exp;
+    }
+
+    /**
+     * Marca a solicitação de criativos como falha para destravar nova tentativa consciente.
+     */
+    @Transactional
+    public Experiment markCreativeGenerationFailed(Long id, String error) {
+        Experiment exp = repository.findById(id).orElseThrow();
+        exp.setCreativesToGenerate(0);
+        exp.setCreativeGenerationStatus(CreativeGenerationStatus.FAILED);
+        exp.setCreativeGenerationFinishedAt(Instant.now());
+        exp.setCreativeGenerationError(StringUtils.hasText(error) ? error.trim() : "Falha ao gerar criativos");
+        return exp;
+    }
+
     private int normalizeImagesPerPackage(Integer imagesPerPackage) {
         if (imagesPerPackage == null) {
             return 20;

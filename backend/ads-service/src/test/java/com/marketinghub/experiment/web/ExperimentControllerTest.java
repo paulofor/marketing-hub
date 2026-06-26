@@ -33,7 +33,9 @@ import java.util.UUID;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -179,6 +181,35 @@ class ExperimentControllerTest {
         assertThat(saved).hasSize(1);
         assertThat(saved.get(0).getJourneyTemplate()).isNotNull();
         assertThat(saved.get(0).getJourneyTemplate().getId()).isEqualTo(template.getId());
+    }
+
+    /** Garante que o contrato do AI Worker lista e conclui geração pendente de criativos. */
+    @Test
+    void creativeGenerationWorkerContractListsAndCompletesPendingExperiment() throws Exception {
+        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("Criativo").build());
+        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(nicheRepo.findById(nicheId).orElseThrow())
+                .title("Hipótese criativo")
+                .premiseAngle(angle)
+                .build());
+        var experiment = repository.save(com.marketinghub.experiment.Experiment.builder()
+                .niche(nicheRepo.findById(nicheId).orElseThrow())
+                .name("Experimento Criativo")
+                .hypothesisRef(hyp)
+                .creativesToGenerate(3)
+                .creativeGenerationMode(com.marketinghub.experiment.CreativeGenerationMode.PIPELINE_ADS)
+                .creativeGenerationStatus(com.marketinghub.experiment.CreativeGenerationStatus.REQUESTED)
+                .build());
+
+        mockMvc.perform(get("/api/experiments/creatives/stage-executions/pending")
+                        .param("limit", "5"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(experiment.getId()));
+
+        mockMvc.perform(post("/api/experiments/{id}/creatives/stage-execution/complete", experiment.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.creativeGenerationStatus").value("COMPLETED"))
+                .andExpect(jsonPath("$.creativesToGenerate").value(0));
     }
 
     @Test

@@ -108,6 +108,38 @@ public class ExperimentController {
         return mapper.toDto(service.requestPipelineCreatives(id));
     }
 
+    /** Lista solicitações pendentes de criativos para consumo do AI Worker. */
+    @GetMapping("/creatives/stage-executions/pending")
+    public List<ExperimentDto> pendingCreativeGeneration(@RequestParam(defaultValue = "10") int limit) {
+        return service.listPendingCreativeGeneration(limit).stream()
+                .map(mapper::toDto)
+                .toList();
+    }
+
+    /** Marca a geração de criativos como iniciada pelo AI Worker. */
+    @PostMapping("/{id}/creatives/stage-execution/start")
+    public ExperimentDto startCreativeGeneration(@PathVariable Long id) {
+        return mapper.toDto(service.markCreativeGenerationStarted(id));
+    }
+
+    /** Marca a geração de criativos como concluída pelo AI Worker. */
+    @PostMapping("/{id}/creatives/stage-execution/complete")
+    public ExperimentDto completeCreativeGeneration(@PathVariable Long id) {
+        return mapper.toDto(service.markCreativeGenerationCompleted(id));
+    }
+
+    /** Marca a geração de criativos como falha pelo AI Worker. */
+    @PostMapping("/{id}/creatives/stage-execution/fail")
+    public ExperimentDto failCreativeGeneration(
+            @PathVariable Long id,
+            @RequestBody CreativeGenerationFailureRequest request) {
+        return mapper.toDto(service.markCreativeGenerationFailed(id, request != null ? request.error() : null));
+    }
+
+    /** Payload de falha operacional informado pelo AI Worker. */
+    public record CreativeGenerationFailureRequest(String error) {
+    }
+
     /** Solicita geração de formulários instantâneos para captação de leads. */
     @PatchMapping("/{id}/instant-forms-to-generate")
     public ExperimentDto requestInstantForms(@PathVariable Long id, @RequestParam("quantity") int quantity) {

@@ -1,0 +1,26 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-26-ops-monitor-011-mois-email-hosts
+      author: marketing-hub
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: ops_monitored_module
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE ops_monitored_module
+              SET base_url = 'http://191.252.120.96:8097',
+                  health_path = '/actuator/health',
+                  log_path = '/actuator/logfile'
+              WHERE code = 'mois-sales-library-worker';
+
+              UPDATE ops_monitored_module
+              SET base_url = 'http://191.252.120.96:8086',
+                  health_path = '/ops-email-gateway-7xk9/health',
+                  log_path = '/ops-email-gateway-7xk9/email-service-audit-log'
+              WHERE code = 'email-service';

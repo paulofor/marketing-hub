@@ -167,6 +167,7 @@ class ArquiteturaTest {
             GERALANDING_STAGE_EXECUTION_REPOSITORY_CLASS);
     private static final String MOIS_DOSSIE_V1_EXECUTOR_MODULE = "mois-sales-library-worker";
     private static final String MOIS_DOSSIE_V1_PACKAGE = "com.marketinghub.mois.dossie.v1";
+    private static final String MOIS_DOSSIE_PRODUTO_V1_PACKAGE = "com.marketinghub.pipelines.mois.dossieproduto.v1";
     private static final String GERAANUNCIO_V2_PACKAGE = "com.marketinghub.geraanuncio.v2";
     private static final Map<String, String> GERAANUNCIO_V2_STAGE_ENDPOINT_SLUGS = Map.ofEntries(
             Map.entry("texto", "texto"),
@@ -180,6 +181,12 @@ class ArquiteturaTest {
             Map.entry("warmupsignalextraction", "warmup-signal-extraction"),
             Map.entry("warmupmapbuilder", "warmup-map-builder"),
             Map.entry("dossiersynthesis", "dossier-synthesis"));
+    private static final Map<String, String> MOIS_DOSSIE_PRODUTO_V1_STAGE_ENDPOINT_SLUGS = Map.ofEntries(
+            Map.entry("fatosproduto", "fatos-produto"),
+            Map.entry("analisepagina", "analise-pagina"),
+            Map.entry("planejabuscas", "planeja-buscas"),
+            Map.entry("qualificafontes", "qualifica-fontes"),
+            Map.entry("consolidadossie", "consolida-dossie"));
 
 
     @ArchTest
@@ -403,6 +410,56 @@ class ArquiteturaTest {
             .resideInAPackage("com.marketinghub.mois.dossie.v1.*.service..")
             .should(beRecordWhenInsideMoisDossieV1ServiceSubpackage())
             .because("[ARQUITETURA] [BACKEND][MOIS Dossiê v1] DTOs/contratos de service devem ser records em subpacotes da operação");
+
+    @ArchTest
+    static final ArchRule moisDossieProdutoV1BackendMustRemainReadWriteOnly = classes()
+            .that()
+            .resideInAPackage(MOIS_DOSSIE_PRODUTO_V1_PACKAGE + "..")
+            .should(notAssumeOperationalExecutionResponsibilityForMoisDossieProdutoV1())
+            .because("[ARQUITETURA] [BACKEND][MOIS Dossiê Produto v1] o backend deve publicar pendências e receber callbacks; "
+                    + "o controle operacional pertence ao módulo executor " + MOIS_DOSSIE_V1_EXECUTOR_MODULE);
+
+    /**
+     * Garante a estrutura canônica das etapas do pipeline dossiê do produto MOIS v1 no backend.
+     */
+    @ArchTest
+    static void moisDossieProdutoV1StagesMustExposeCanonicalStructure(JavaClasses importedClasses) {
+        List<String> violations = new ArrayList<>();
+        MOIS_DOSSIE_PRODUTO_V1_STAGE_ENDPOINT_SLUGS.forEach((stagePackage, endpointSlug) -> {
+            String controllerPackage = MOIS_DOSSIE_PRODUTO_V1_PACKAGE + "." + stagePackage + ".web";
+            String servicePackage = MOIS_DOSSIE_PRODUTO_V1_PACKAGE + "." + stagePackage + ".service";
+            List<JavaClass> controllerClasses = directPackageClasses(importedClasses, controllerPackage);
+            List<JavaClass> serviceClasses = directPackageClasses(importedClasses, servicePackage);
+            long controllers = controllerClasses.stream().filter(javaClass -> javaClass.isAnnotatedWith(RestController.class)).count();
+            long services = serviceClasses.stream().filter(javaClass -> javaClass.isAnnotatedWith(Service.class)).count();
+            if (controllers != 1) {
+                violations.add("[ARQUITETURA] [BACKEND][MOIS Dossiê Produto v1] etapa " + stagePackage
+                        + " deve possuir exatamente um controller canônico em " + controllerPackage
+                        + "; encontrados=" + controllers);
+            }
+            if (services != 1) {
+                violations.add("[ARQUITETURA] [BACKEND][MOIS Dossiê Produto v1] etapa " + stagePackage
+                        + " deve possuir exatamente um service canônico em " + servicePackage
+                        + "; encontrados=" + services);
+            }
+            boolean hasPending = controllerClasses.stream()
+                    .flatMap(javaClass -> javaClass.getMethods().stream())
+                    .anyMatch(method -> method.getName().equals("pending") && method.isAnnotatedWith(PostMapping.class));
+            if (!hasPending) {
+                violations.add("[ARQUITETURA] [BACKEND][MOIS Dossiê Produto v1] etapa " + stagePackage
+                        + " deve expor endpoint pending canônico /api/internal/mois/dossieproduto/v1/"
+                        + endpointSlug + "/stage-executions/pending");
+            }
+        });
+        failWithArchitectureViolations(violations);
+    }
+
+    @ArchTest
+    static final ArchRule moisDossieProdutoV1ServiceContractsMustBeRecords = classes()
+            .that()
+            .resideInAPackage(MOIS_DOSSIE_PRODUTO_V1_PACKAGE + ".*.service..")
+            .should(beRecordWhenInsideMoisDossieProdutoV1ServiceSubpackage())
+            .because("[ARQUITETURA] [BACKEND][MOIS Dossiê Produto v1] DTOs/contratos de service devem ser records em subpacotes da operação");
 
     /**
      * Garante a estrutura canônica do pipeline GeraAnuncio v2 no backend.
@@ -1862,6 +1919,26 @@ class ArquiteturaTest {
     }
 
     /**
+     * Exige records nos subpacotes de service que representam contratos do dossiê do produto MOIS v1.
+     */
+    private static ArchCondition<JavaClass> beRecordWhenInsideMoisDossieProdutoV1ServiceSubpackage() {
+        return new ArchCondition<>("[ARQUITETURA] ser record quando estiver em subpacote de service do dossiê do produto MOIS v1") {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                boolean contractSubpackage = MOIS_DOSSIE_PRODUTO_V1_STAGE_ENDPOINT_SLUGS.keySet().stream()
+                        .anyMatch(stagePackage -> item.getPackageName()
+                                .startsWith(MOIS_DOSSIE_PRODUTO_V1_PACKAGE + "." + stagePackage + ".service."));
+                if (!contractSubpackage || item.reflect().isRecord()) {
+                    return;
+                }
+                events.add(SimpleConditionEvent.violated(item,
+                        "[ARQUITETURA] [BACKEND][MOIS Dossiê Produto v1] classe=" + item.getName()
+                                + " está em subpacote de service e deve ser declarada como record"));
+            }
+        };
+    }
+
+    /**
      * Garante que controllers Facebook Ads não consumam controllers de outros módulos.
      */
     private static ArchCondition<JavaClass> notDependOnOtherModuleControllers() {
@@ -2141,6 +2218,35 @@ class ArquiteturaTest {
                     }
                     events.add(SimpleConditionEvent.violated(item,
                             "[ARQUITETURA] [BACKEND][MOIS Dossiê v1] classe=" + item.getName()
+                                    + " depende de tecnologia/contrato operacional proibido no backend: "
+                                    + dependency.getDescription() + ". A execução pertence ao módulo "
+                                    + MOIS_DOSSIE_V1_EXECUTOR_MODULE + "."));
+                });
+            }
+        };
+    }
+
+    /**
+     * Bloqueia responsabilidades operacionais de execução no backend do dossiê do produto MOIS v1.
+     */
+    private static ArchCondition<JavaClass> notAssumeOperationalExecutionResponsibilityForMoisDossieProdutoV1() {
+        return new ArchCondition<>("[ARQUITETURA] [BACKEND][MOIS Dossiê Produto v1] não assume execução operacional externa") {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                if (hasForbiddenMoisDossieV1ExecutionName(item)) {
+                    events.add(SimpleConditionEvent.violated(item,
+                            "[ARQUITETURA] [BACKEND][MOIS Dossiê Produto v1] classe=" + item.getName()
+                                    + " tem nome de worker/runner/processor/núcleo operacional. "
+                                    + "O backend deve publicar pendências e receber resultados; a execução operacional fica no módulo "
+                                    + MOIS_DOSSIE_V1_EXECUTOR_MODULE + "."));
+                }
+                item.getDirectDependenciesFromSelf().forEach(dependency -> {
+                    JavaClass targetClass = dependency.getTargetClass();
+                    if (!isForbiddenMoisDossieV1ExecutionDependency(targetClass)) {
+                        return;
+                    }
+                    events.add(SimpleConditionEvent.violated(item,
+                            "[ARQUITETURA] [BACKEND][MOIS Dossiê Produto v1] classe=" + item.getName()
                                     + " depende de tecnologia/contrato operacional proibido no backend: "
                                     + dependency.getDescription() + ". A execução pertence ao módulo "
                                     + MOIS_DOSSIE_V1_EXECUTOR_MODULE + "."));

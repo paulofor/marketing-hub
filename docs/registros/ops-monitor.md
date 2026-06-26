@@ -55,3 +55,9 @@
 - Ajuste: a disponibilidade dos módulos passa a expor a URL completa de healthcheck tentada pelo monitor e a tela `/ops-monitor` mostra essa URL na tabela de status atual.
 - Motivo: reduzir tempo de diagnóstico quando um módulo aparece fora do ar, deixando claro se o problema está no serviço ou no endereço configurado para verificação.
 - Prevenção: testes de backend e frontend cobrem a presença da URL no contrato e na tela.
+
+## 2026-06-26 — Correção dos hosts monitorados de Facebook Ads e OPRM MEI
+- Problema observado: a tela `/ops-monitor` marcava `facebook-ads-worker` e `oprm-coletor-mei` como fora do ar porque os health checks estavam sendo feitos no host `191.252.181.168`.
+- Causa-raiz confirmada pela URL tentada exibida na própria tela: esses dois módulos estão publicados no host operacional `191.252.120.96`, mantendo as portas `8082` para Facebook Ads e `8094` para OPRM MEI.
+- Correção aplicada: novo changeset ajusta o cadastro canônico do Ops Monitor para `http://191.252.120.96:8082/worker-observability/health` e `http://191.252.120.96:8094/actuator/health`.
+- Prevenção de recorrência: o endereço real fica versionado no Liquibase e registrado no histórico operacional do monitor.

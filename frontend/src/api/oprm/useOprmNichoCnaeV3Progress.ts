@@ -8,6 +8,8 @@ export interface OprmNichoCnaeV3StageProgress {
   createdAt: string;
   updatedAt: string;
   errorMessage: string | null;
+  inputPayload: string | null;
+  outputPayload: string | null;
 }
 
 export interface OprmNichoCnaeV3FinalizationReview {

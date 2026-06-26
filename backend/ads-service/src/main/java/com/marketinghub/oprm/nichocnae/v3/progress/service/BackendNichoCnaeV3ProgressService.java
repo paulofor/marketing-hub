@@ -88,7 +88,15 @@ public class BackendNichoCnaeV3ProgressService {
 
     /** Converte a entidade persistida em contrato de progresso para a UI. */
     private NichoCnaeV3StageProgressResponse toStage(OprmNichoCnaeV3StageExecution execution) {
-        return new NichoCnaeV3StageProgressResponse(execution.getId(), execution.getStageCode(), execution.getStatus().name(), execution.getCreatedAt(), execution.getUpdatedAt(), execution.getErrorMessage());
+        return new NichoCnaeV3StageProgressResponse(
+                execution.getId(),
+                execution.getStageCode(),
+                execution.getStatus().name(),
+                execution.getCreatedAt(),
+                execution.getUpdatedAt(),
+                execution.getErrorMessage(),
+                execution.getInputPayload(),
+                execution.getOutputPayload());
     }
 
     /** Converte JSON funcional ou payload livre para leitura da prévia. */

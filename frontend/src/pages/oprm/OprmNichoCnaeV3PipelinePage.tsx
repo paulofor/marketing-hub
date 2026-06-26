@@ -4,6 +4,55 @@ import { useStartOprmNichoCnaeV3Job } from "../../api/oprm/useStartOprmNichoCnae
 import { useOprmNichoCnaeV3Progress } from "../../api/oprm/useOprmNichoCnaeV3Progress";
 import { useConfirmOprmNichoCnaeV3Finalization } from "../../api/oprm/useConfirmOprmNichoCnaeV3Finalization";
 
+function parsePayload(payload: string | null | undefined) {
+  if (!payload) return null;
+  try {
+    return JSON.parse(payload) as unknown;
+  } catch {
+    return null;
+  }
+}
+
+function summarizePayload(payload: string | null | undefined) {
+  if (!payload) return "Sem registro.";
+  const parsed = parsePayload(payload);
+  if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+    const keys = Object.keys(parsed);
+    if (keys.length === 0) return "JSON vazio.";
+    const visibleKeys = keys.slice(0, 5).join(", ");
+    return `JSON com campos: ${visibleKeys}${keys.length > 5 ? "..." : ""}.`;
+  }
+  if (Array.isArray(parsed)) return `JSON com ${parsed.length} item(ns).`;
+  return "Texto registrado.";
+}
+
+function PayloadSummary({
+  label,
+  payload,
+}: {
+  label: string;
+  payload: string | null | undefined;
+}) {
+  if (!payload) {
+    return <span className="text-muted">Sem {label} registrada.</span>;
+  }
+
+  const parsed = parsePayload(payload);
+  const display = parsed === null ? payload : JSON.stringify(parsed, null, 2);
+
+  return (
+    <details className="small">
+      <summary className="fw-semibold">{summarizePayload(payload)}</summary>
+      <pre
+        className="mt-2 mb-0 bg-white border rounded p-2 text-wrap overflow-auto"
+        style={{ maxHeight: "16rem", whiteSpace: "pre-wrap" }}
+      >
+        {display}
+      </pre>
+    </details>
+  );
+}
+
 const v3Stages = [
   {
     code: "cnae-intake",
@@ -62,7 +111,8 @@ export default function OprmNichoCnaeV3PipelinePage() {
   const decodedCnaeCode = decodeURIComponent(cnaeCode ?? "");
   const startJob = useStartOprmNichoCnaeV3Job(decodedCnaeCode);
   const progress = useOprmNichoCnaeV3Progress(decodedCnaeCode);
-  const confirmFinalization = useConfirmOprmNichoCnaeV3Finalization(decodedCnaeCode);
+  const confirmFinalization =
+    useConfirmOprmNichoCnaeV3Finalization(decodedCnaeCode);
   const stagesByCode = new Map(
     (progress.data?.stages ?? []).map((stage) => [stage.stageCode, stage]),
   );
@@ -138,10 +188,13 @@ export default function OprmNichoCnaeV3PipelinePage() {
               <div>
                 <h2 className="h5 mb-1">Conferência antes da finalização</h2>
                 <p className="text-muted mb-0">
-                  A etapa final (#10) só será liberada depois da sua confirmação.
+                  A etapa final (#10) só será liberada depois da sua
+                  confirmação.
                 </p>
               </div>
-              <span className="badge text-bg-warning">Aguardando confirmação</span>
+              <span className="badge text-bg-warning">
+                Aguardando confirmação
+              </span>
             </div>
             <div className="alert alert-light border" role="status">
               <strong>Decisão de materialização:</strong>{" "}
@@ -150,7 +203,9 @@ export default function OprmNichoCnaeV3PipelinePage() {
                 ? "aproveitar nicho existente"
                 : "criar nicho novo"}
               {" — "}
-              <strong>{progress.data.finalizationReview.targetNicheName}</strong>
+              <strong>
+                {progress.data.finalizationReview.targetNicheName}
+              </strong>
               {progress.data.finalizationReview.targetMarketNicheId ? (
                 <> #{progress.data.finalizationReview.targetMarketNicheId}</>
               ) : null}
@@ -163,7 +218,9 @@ export default function OprmNichoCnaeV3PipelinePage() {
                 </pre>
               </div>
               <div className="col-12 col-lg-6">
-                <h3 className="h6">Informações de nicho enriquecido encontradas</h3>
+                <h3 className="h6">
+                  Informações de nicho enriquecido encontradas
+                </h3>
                 <pre className="small bg-light border rounded-3 p-3 text-wrap mb-0">
                   {progress.data.finalizationReview.enrichedNicheInformation}
                 </pre>
@@ -268,11 +325,33 @@ export default function OprmNichoCnaeV3PipelinePage() {
                       </span>
                     </div>
                     <h3 className="h6 mb-2">{stage.title}</h3>
-                    <p className="small text-muted mb-0">
+                    <p className="small text-muted mb-3">
                       {stageProgress
                         ? stage.activity
                         : "Ainda não chegou nesta etapa."}
                     </p>
+                    {stageProgress ? (
+                      <div className="d-flex flex-column gap-2">
+                        <div>
+                          <div className="small fw-semibold mb-1">
+                            O que recebeu de entrada
+                          </div>
+                          <PayloadSummary
+                            label="entrada"
+                            payload={stageProgress.inputPayload}
+                          />
+                        </div>
+                        <div>
+                          <div className="small fw-semibold mb-1">
+                            O que gerou de saída
+                          </div>
+                          <PayloadSummary
+                            label="saída"
+                            payload={stageProgress.outputPayload}
+                          />
+                        </div>
+                      </div>
+                    ) : null}
                   </div>
                 </div>
               );

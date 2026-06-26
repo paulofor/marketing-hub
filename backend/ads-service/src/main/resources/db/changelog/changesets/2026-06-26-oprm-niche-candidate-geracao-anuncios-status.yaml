@@ -1,0 +1,24 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-26-01-oprm-niche-candidate-geracao-anuncios-status
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: oprm_niche_candidate
+        - not:
+            - columnExists:
+                tableName: oprm_niche_candidate
+                columnName: geracao_anuncios_pipeline_status
+      changes:
+        - addColumn:
+            tableName: oprm_niche_candidate
+            columns:
+              - column:
+                  name: geracao_anuncios_pipeline_status
+                  type: VARCHAR(32)
+              - column:
+                  name: geracao_anuncios_current_stage_code
+                  type: VARCHAR(64)

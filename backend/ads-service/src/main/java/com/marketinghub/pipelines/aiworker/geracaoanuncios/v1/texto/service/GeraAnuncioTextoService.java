@@ -8,6 +8,8 @@ import com.marketinghub.pipelines.aiworker.geracaoanuncios.v1.texto.service.rece
 import com.marketinghub.experiment.CreativeGenerationMode;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.service.ExperimentService;
+import com.marketinghub.oprm.cnae.OprmNicheCandidate;
+import com.marketinghub.repository.jpa.oprm.cnae.OprmNicheCandidateRepository;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -27,10 +29,12 @@ public class GeraAnuncioTextoService {
     private static final String STATUS_COMPLETED = "CONCLUIDO";
     private static final String STATUS_FAILED = "FALHA";
     private final ExperimentService experimentService;
+    private final OprmNicheCandidateRepository cnaeRepository;
 
-    /** Inicializa o service com o serviço canônico de experimentos. */
-    public GeraAnuncioTextoService(ExperimentService experimentService) {
+    /** Inicializa o service com o repositório canônico de candidatos CNAE. */
+    public GeraAnuncioTextoService(ExperimentService experimentService, OprmNicheCandidateRepository cnaeRepository) {
         this.experimentService = experimentService;
+        this.cnaeRepository = cnaeRepository;
     }
 
     /** Inicia uma solicitação da etapa Texto usando o código/chave operacional do experimento. */
@@ -38,15 +42,17 @@ public class GeraAnuncioTextoService {
         return start(resolveExperimentId(experimentKey));
     }
 
-    /** Inicia uma solicitação da etapa Texto para um experimento. */
+    /** Inicia uma solicitação da etapa Texto para o candidato CNAE informado. */
     public GeraAnuncioTextoExecutionSummaryResponse start(Long experimentId) {
-        Experiment experiment = experimentService.requestPipelineCreatives(experimentId);
+        OprmNicheCandidate cnae = cnaeRepository
+                .findById(experimentId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "CNAE experiment not found"));
+        cnae.setGeracaoAnunciosPipelineStatus(STATUS_STARTED);
+        cnae.setGeracaoAnunciosCurrentStageCode(STAGE_CODE);
+        cnae.setUpdatedAt(Instant.now());
+        OprmNicheCandidate saved = cnaeRepository.save(cnae);
         return new GeraAnuncioTextoExecutionSummaryResponse(
-                null,
-                experiment.getId(),
-                null,
-                experiment.getCreativeGenerationStatus().name(),
-                experiment.getCreativeGenerationRequestedAt());
+                stageExecutionId(saved), saved.getId(), stageJobId(saved), STATUS_STARTED, saved.getUpdatedAt());
     }
 
     /** Lista execuções da etapa Texto para relatório operacional. */
@@ -131,6 +137,16 @@ public class GeraAnuncioTextoService {
     /** Gera identificador de job estável para correlação operacional. */
     private String stageJobId(Experiment experiment) {
         return "exp:" + experiment.getId() + "|pipeline:geracaoanuncios|v:1|stage:" + STAGE_CODE;
+    }
+
+    /** Gera identificador determinístico da execução da etapa a partir do candidato CNAE. */
+    private String stageExecutionId(OprmNicheCandidate cnae) {
+        return "geracaoanuncios-v1-" + STAGE_CODE + "-cnae-" + cnae.getId();
+    }
+
+    /** Gera identificador de job estável para correlação operacional do candidato CNAE. */
+    private String stageJobId(OprmNicheCandidate cnae) {
+        return "cnae:" + cnae.getId() + "|pipeline:geracaoanuncios|v:1|stage:" + STAGE_CODE;
     }
 
     /** Extrai o experimento de um identificador determinístico da etapa. */

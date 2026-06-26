@@ -19,7 +19,6 @@ A ideia central é não construir um framework específico para OpenAI. A OpenAI
 
 ---
 
-
 ## Escopo obrigatório: módulo executor, nunca backend por padrão
 
 O protocolo padrão módulo é uma regra para o **módulo que executa o fluxo**: workers, coletores, serviços executores ou módulos operacionais que fazem scraping, chamadas a modelos, downloads, transformações e integrações externas.
@@ -37,6 +36,7 @@ Regra prática obrigatória antes de implementar:
 Exemplo OPRM NichoCNAE: como a execução das etapas ocorre no `oprm-coletor-mei`, o protocolo padrão módulo deve ser aplicado no `oprm-coletor-mei`; o `backend/ads-service` deve permanecer como API/persistência/contrato do OPRM.
 
 ---
+
 ## Conceito principal
 
 O conceito geral é:
@@ -242,6 +242,34 @@ StageExecution
 ```
 
 O `PipelineWorker` não deve saber se a etapa usa OpenAI, scraping, Jsoup, Playwright, WebClient, S3, PDF parser ou lógica local.
+
+### Regra obrigatória para chave OpenAI em etapas de módulo executor
+
+Quando uma etapa concreta do módulo executor usar OpenAI, a configuração da etapa deve seguir o mesmo padrão operacional dos demais workers do Marketing Hub:
+
+1. declarar propriedades próprias da etapa no arquivo de configuração do módulo executor, no pacote/namespace da etapa concreta;
+2. permitir variável específica da etapa para `api-key` quando houver necessidade operacional de segredo dedicado;
+3. usar obrigatoriamente fallback para `OPENAI_API_KEY` quando a variável específica da etapa não estiver definida;
+4. usar obrigatoriamente fallback para `OPENAI_API_KEY_FILE` quando a etapa suportar leitura de segredo por arquivo montado;
+5. preferir arquivo montado como somente leitura para publicação em servidor, evitando duplicar segredo por módulo;
+6. manter endpoint, modelo e `service_tier` configuráveis por etapa, com `service_tier=flex` como padrão quando o provedor for OpenAI;
+7. adicionar teste de configuração ou contrato que impeça a etapa de perder o fallback global `OPENAI_API_KEY`/`OPENAI_API_KEY_FILE`.
+
+Exemplo de configuração esperada para uma etapa OpenAI:
+
+```yaml
+<modulo>:
+  <pipeline>:
+    <etapa>:
+      openai:
+        base-url: ${<ETAPA>_OPENAI_BASE_URL:https://api.openai.com/v1}
+        api-key: ${<ETAPA>_OPENAI_API_KEY:${OPENAI_API_KEY:}}
+        api-key-file: ${<ETAPA>_OPENAI_API_KEY_FILE:${OPENAI_API_KEY_FILE:}}
+        model: ${<ETAPA>_OPENAI_MODEL:gpt-5.2}
+        service-tier: ${<ETAPA>_OPENAI_SERVICE_TIER:flex}
+```
+
+Essa regra evita que uma nova etapa OpenAI funcione em teste com chave direta, mas falhe em produção por não reutilizar o segredo global já provisionado para os workers.
 
 Quem conhece a tecnologia específica é o `StageProcessor` da etapa.
 

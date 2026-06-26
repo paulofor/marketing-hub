@@ -1489,3 +1489,9 @@
 - Causa-raiz complementar: o `persona-candidate-generator` v3 tinha `@ConfigurationProperties`, mas o `application.yml` não declarava o bloco `oprm.nichocnaev3.persona-candidate-generator.openai`; por isso a etapa não herdava o fallback global `OPENAI_API_KEY`/`OPENAI_API_KEY_FILE` já usado pelas etapas anteriores do OPRM.
 - Correção: o coletor OPRM passou a configurar a etapa v3 com variável específica opcional e fallback para `OPENAI_API_KEY` e `OPENAI_API_KEY_FILE`, mantendo o mesmo padrão operacional das versões anteriores.
 - Prevenção de recorrência: adicionado teste de configuração garantindo que o fallback global da OpenAI continue presente no `application.yml` para a etapa `persona-candidate-generator` v3.
+
+## 2026-06-26 — Protocolo padrão módulo: fallback OpenAI obrigatório
+
+- Decisão de regra: a definição do protocolo padrão módulo passou a exigir que etapas OpenAI em módulos executores declarem configuração própria, mas reutilizem obrigatoriamente os fallbacks globais `OPENAI_API_KEY` e `OPENAI_API_KEY_FILE`.
+- Motivo: evitar recorrência da falha em que uma etapa nova de OpenAI tinha `@ConfigurationProperties`, mas não herdava o segredo operacional já provisionado para os workers.
+- Documentos atualizados: `docs/metodologia/gerado-5-5/arquitetura-pipeline-etapas-archunit.md` e `docs/canonical/pipeline-operacional-canon.v1.md`.

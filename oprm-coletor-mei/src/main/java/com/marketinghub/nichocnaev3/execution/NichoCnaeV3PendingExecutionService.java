@@ -47,6 +47,7 @@ public class NichoCnaeV3PendingExecutionService {
     private void processOne(NichoCnaeV3StageDefinition stage, NichoCnaeV3PendingExecution pending) {
         try {
             Map<String, Object> input = backendClient.parseInput(pending.inputPayload());
+            input.putIfAbsent("cnaeCode", pending.cnaeCode());
             StageResult result = new PipelineWorker(stage.processor()).run(new StageContext(pending.jobId(), pending.stageExecutionId(), input));
             String outputPayload = backendClient.toJson(result.output());
             Map<String, Object> completion = new LinkedHashMap<>();

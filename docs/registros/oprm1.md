@@ -1462,3 +1462,16 @@
 - Ajuste visual: a tela de etapas do pipeline v3 passou a exibir os cards em coluna única para facilitar leitura sequencial do fluxo.
 - Ajuste de legibilidade: payloads JSON de entrada e saída agora são exibidos em árvore expansível, mantendo campos abertos por padrão nos primeiros níveis e evitando blocos longos difíceis de navegar.
 - Escopo: mudança apenas de apresentação no frontend, usando os dados já retornados pelo backend.
+
+## 2026-06-26 — NichoCNAE v3: geração real de personas candidatas
+
+- Causa-raiz comprovada: a etapa `persona-candidate-generator` do executor OPRM NichoCNAE v3 estava concluindo o pipeline com payload técnico, sem gerar `candidatePersonas`, embora a tela prometesse geração de personas.
+- Correção: a etapa passou a produzir quatro personas candidatas estruturadas por CNAE, com dores operacionais, tarefas diárias, sinais de compra, resumo de persona, resumo de rotina, limitações de evidência e `nextStageCode` para o torneio.
+- Prevenção de recorrência: adicionado teste unitário garantindo que a etapa entregue personas funcionais e não apenas metadados técnicos.
+
+## 2026-06-26 — NichoCNAE v3: persona-candidate-generator com OpenAI
+
+- Ajuste de causa-raiz após revisão: a implementação anterior ainda gerava personas por regra determinística e não acessava a OpenAI.
+- Correção: a etapa `persona-candidate-generator` passou a usar cliente da OpenAI Responses API com prompt e schema versionados, `service_tier=flex`, JSON Schema estrito e validação de quantidade mínima de personas antes de concluir.
+- Prevenção de recorrência: adicionados testes de processor e cliente OpenAI garantindo que a etapa chama o gerador, envia `json_schema`/Flex e falha quando a resposta não contém personas suficientes.
+

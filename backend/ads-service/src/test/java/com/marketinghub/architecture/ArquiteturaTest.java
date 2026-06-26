@@ -167,6 +167,9 @@ class ArquiteturaTest {
             GERALANDING_STAGE_EXECUTION_REPOSITORY_CLASS);
     private static final String MOIS_DOSSIE_V1_EXECUTOR_MODULE = "mois-sales-library-worker";
     private static final String MOIS_DOSSIE_V1_PACKAGE = "com.marketinghub.mois.dossie.v1";
+    private static final String GERAANUNCIO_V2_PACKAGE = "com.marketinghub.geraanuncio.v2";
+    private static final Map<String, String> GERAANUNCIO_V2_STAGE_ENDPOINT_SLUGS = Map.ofEntries(
+            Map.entry("criativo", "criativo"));
     private static final Map<String, String> MOIS_DOSSIE_V1_STAGE_ENDPOINT_SLUGS = Map.ofEntries(
             Map.entry("intake", "intake"),
             Map.entry("productunderstanding", "product-understanding"),
@@ -399,6 +402,50 @@ class ArquiteturaTest {
             .resideInAPackage("com.marketinghub.mois.dossie.v1.*.service..")
             .should(beRecordWhenInsideMoisDossieV1ServiceSubpackage())
             .because("[ARQUITETURA] [BACKEND][MOIS Dossiê v1] DTOs/contratos de service devem ser records em subpacotes da operação");
+
+    /**
+     * Garante a estrutura canônica do pipeline GeraAnuncio v2 no backend.
+     */
+    @ArchTest
+    static void geraAnuncioV2StagesMustExposeCanonicalStructure(JavaClasses importedClasses) {
+        List<String> violations = new ArrayList<>();
+        GERAANUNCIO_V2_STAGE_ENDPOINT_SLUGS.forEach((stagePackage, endpointSlug) -> {
+            String controllerPackage = GERAANUNCIO_V2_PACKAGE + "." + stagePackage + ".controller";
+            String servicePackage = GERAANUNCIO_V2_PACKAGE + "." + stagePackage + ".service";
+            List<JavaClass> controllerClasses = directPackageClasses(importedClasses, controllerPackage);
+            List<JavaClass> serviceClasses = directPackageClasses(importedClasses, servicePackage);
+            long controllers = controllerClasses.stream().filter(javaClass -> javaClass.isAnnotatedWith(RestController.class)).count();
+            long services = serviceClasses.stream().filter(javaClass -> javaClass.isAnnotatedWith(Service.class)).count();
+            if (controllers != 1) {
+                violations.add("[ARQUITETURA] [BACKEND][GeraAnuncio v2] etapa " + stagePackage
+                        + " deve possuir exatamente um controller canônico em " + controllerPackage
+                        + "; encontrados=" + controllers);
+            }
+            if (services != 1) {
+                violations.add("[ARQUITETURA] [BACKEND][GeraAnuncio v2] etapa " + stagePackage
+                        + " deve possuir exatamente um service canônico em " + servicePackage
+                        + "; encontrados=" + services);
+            }
+            boolean hasPending = controllerClasses.stream()
+                    .flatMap(javaClass -> javaClass.getMethods().stream())
+                    .anyMatch(method -> method.getName().equals("pending") && method.isAnnotatedWith(PostMapping.class));
+            if (!hasPending) {
+                violations.add("[ARQUITETURA] [BACKEND][GeraAnuncio v2] etapa " + stagePackage
+                        + " deve expor endpoint pending canônico /api/internal/geraanuncio/v2/"
+                        + endpointSlug + "/stage-executions/pending");
+            }
+        });
+        failWithArchitectureViolations(violations);
+    }
+
+    @ArchTest
+    static final ArchRule geraAnuncioV2ServiceContractsMustBeRecords = classes()
+            .that()
+            .resideInAPackage("com.marketinghub.geraanuncio.v2.*.service..")
+            .and()
+            .resideOutsideOfPackage("com.marketinghub.geraanuncio.v2.*.service")
+            .should(beRecords())
+            .because("[ARQUITETURA] [BACKEND][GeraAnuncio v2] DTOs/contratos de service devem ser records em subpacotes da operação");
 
     @ArchTest
     static final ArchRule springDataJpaRepositoriesMustResideInRepositoryJpaSubpackages = classes()
@@ -3244,6 +3291,19 @@ class ArquiteturaTest {
                                 "[ARQUITETURA] " + item.getName()
                                         + " depende de " + dependency.getTargetClass().getName()
                                         + "; o backend deve registrar a solicitação no banco e o AI Worker deve consumir via pending")));
+            }
+        };
+    }
+
+    /** Exige que contratos em subpacotes de service sejam records imutáveis. */
+    private static ArchCondition<JavaClass> beRecords() {
+        return new ArchCondition<>("[ARQUITETURA] contratos devem ser records") {
+            @Override
+            public void check(JavaClass javaClass, ConditionEvents events) {
+                if (!javaClass.reflect().isRecord()) {
+                    events.add(SimpleConditionEvent.violated(javaClass,
+                            "[ARQUITETURA] contrato " + javaClass.getName() + " deve ser record"));
+                }
             }
         };
     }

@@ -6,14 +6,14 @@ export function useRequestPipelineCreatives(experimentId?: string) {
 
   return useMutation({
     mutationFn: async () => {
-      if (!experimentId) throw new Error("Experiment not provided");
-      const { data } = await axios.post(`/api/experiments/${experimentId}/pipeline/ads`);
+      if (!experimentId) throw new Error("Experimento não informado");
+      const { data } = await axios.post(
+        `/api/internal/geraanuncio/v2/criativo/stage-executions/experiments/${experimentId}/start`,
+      );
       return data;
     },
     onSuccess: () => {
-      if (!experimentId) return;
       queryClient.invalidateQueries({ queryKey: ["experiment", experimentId] });
-      queryClient.invalidateQueries({ queryKey: ["experiments"] });
       queryClient.invalidateQueries({ queryKey: ["creatives", experimentId] });
     },
   });

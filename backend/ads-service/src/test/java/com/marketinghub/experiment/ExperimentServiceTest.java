@@ -105,7 +105,7 @@ class ExperimentServiceTest {
     }
 
     @Test
-    void requestPipelineCreativesUsesPipelineAssets() {
+    void requestPipelineCreativesRejectsLegacyPipelineAssets() {
         MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste").build());
         var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
         var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
@@ -142,16 +142,14 @@ class ExperimentServiceTest {
         exp.setAdImageBriefing("{\"adImageBriefing\":{\"briefings\":[{\"mustMatchAdVariant\":\"dor\",\"visualBriefing\":\"Use contraste simples\",\"assetType\":\"estatico\"}]}}");
         experimentRepository.save(exp);
 
-        Experiment updated = service.requestPipelineCreatives(exp.getId());
-
-        assertThat(updated.getCreativesToGenerate()).isEqualTo(1);
-        assertThat(updated.getCreativeGenerationMode()).isEqualTo(CreativeGenerationMode.PIPELINE_ADS);
-        assertThat(updated.getCreativeGenerationStatus()).isEqualTo(CreativeGenerationStatus.REQUESTED);
-        assertThat(updated.getCreativeGenerationRequestedAt()).isNotNull();
+        assertThatThrownBy(() -> service.requestPipelineCreatives(exp.getId()))
+                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+                .hasMessageContaining("410 GONE")
+                .hasMessageContaining("GeraAnuncio v2");
     }
 
     @Test
-    void requestPipelineCreativesAllowsDraftWithoutDestination() {
+    void requestPipelineCreativesRejectsLegacyDraftWithoutDestination() {
         MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste sem destino").build());
         var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());
         var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
@@ -187,14 +185,10 @@ class ExperimentServiceTest {
         exp.setAdImageBriefing("{\"adImageBriefing\":{\"briefings\":[{\"mustMatchAdVariant\":\"dor\",\"visualBriefing\":\"Use contraste simples\",\"assetType\":\"estatico\"}]}}");
         experimentRepository.save(exp);
 
-        Experiment updated = service.requestPipelineCreatives(exp.getId());
-
-        assertThat(updated.getCreativesToGenerate()).isEqualTo(1);
-        assertThat(updated.getCreativeGenerationMode()).isEqualTo(CreativeGenerationMode.PIPELINE_ADS);
-        assertThat(updated.getCreativeGenerationStatus()).isEqualTo(CreativeGenerationStatus.REQUESTED);
-        assertThat(updated.getCreativeGenerationRequestedAt()).isNotNull();
-        assertThat(updated.getFollowUpActionUrl()).isNull();
-        assertThat(updated.getFacebookInstantForm()).isNull();
+        assertThatThrownBy(() -> service.requestPipelineCreatives(exp.getId()))
+                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+                .hasMessageContaining("410 GONE")
+                .hasMessageContaining("GeraAnuncio v2");
     }
 
 

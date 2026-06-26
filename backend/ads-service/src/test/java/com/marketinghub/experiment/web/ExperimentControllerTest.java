@@ -197,7 +197,7 @@ class ExperimentControllerTest {
                 .name("Experimento Criativo")
                 .hypothesisRef(hyp)
                 .creativesToGenerate(3)
-                .creativeGenerationMode(com.marketinghub.experiment.CreativeGenerationMode.PIPELINE_ADS)
+                .creativeGenerationMode(com.marketinghub.experiment.CreativeGenerationMode.DEFAULT)
                 .creativeGenerationStatus(com.marketinghub.experiment.CreativeGenerationStatus.REQUESTED)
                 .build());
 

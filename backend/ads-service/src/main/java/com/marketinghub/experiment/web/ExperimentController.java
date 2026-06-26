@@ -102,7 +102,7 @@ public class ExperimentController {
         return mapper.toDto(service.requestCreatives(id, quantity));
     }
 
-    /** Solicita geração de anúncios pelo pipeline do experimento. */
+    /** Bloqueia a geração antiga de anúncios pelo pipeline do experimento. */
     @PostMapping("/{id}/pipeline/ads")
     public ExperimentDto requestPipelineAds(@PathVariable Long id) {
         return mapper.toDto(service.requestPipelineCreatives(id));

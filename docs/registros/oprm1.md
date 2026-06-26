@@ -1507,3 +1507,14 @@
 - Causa-raiz aprofundada: depender apenas de variável de ambiente para apontar o arquivo da chave ainda deixava a etapa vulnerável a deploy sem `OPENAI_API_KEY_FILE`, mesmo com o segredo existente no servidor em `/root/infra/openai-token/openai_api_key`.
 - Correção: a etapa `persona-candidate-generator` v3 agora tenta ler a chave por variável direta, pelo arquivo configurado, pelo segredo montado no container em `/run/secrets/openai_api_key` e, como fallback operacional, pelo caminho seguro do host `/root/infra/openai-token/openai_api_key`.
 - Prevenção de recorrência: o `application.yml` do executor agora tem default explícito para `/run/secrets/openai_api_key`, e os testes validam a leitura de chave por arquivo seguro.
+
+## 2026-06-26 — NichoCNAE v3: logs do request e response OpenAI
+
+- Correção operacional: a etapa `persona-candidate-generator` do executor OPRM passou a registrar em log o payload enviado à OpenAI e a resposta bruta recebida, com `jobId`, `stageExecutionId`, `cnaeCode` e endpoint, sem expor a chave de autenticação.
+- Motivo: permitir diagnosticar a causa real de falhas da OpenAI no NichoCNAE v3 sem depender apenas da mensagem genérica persistida na tela.
+
+
+## 2026-06-26 — OPRM Coletor MEI: URL correta de logs no MCP
+
+- Diagnóstico: o workflow atual publica o `oprm-coletor-mei` em `191.252.120.96`, mas o default do MCP ainda apontava o alias legado `oprm-coletor-receita` para `177.153.62.107:8094`.
+- Correção: o default documentado e configurado no `mcp-server` passou a apontar para `http://191.252.120.96:8094/actuator/logfile`, mantendo o alias operacional `oprm-coletor-receita` usado pela tool `java_module_logs`.

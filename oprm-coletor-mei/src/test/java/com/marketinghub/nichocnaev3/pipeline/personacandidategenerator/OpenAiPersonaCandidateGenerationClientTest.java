@@ -13,15 +13,19 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 
 /** Valida o contrato de chamada da OpenAI para geração de personas candidatas v3. */
+@ExtendWith(OutputCaptureExtension.class)
 class OpenAiPersonaCandidateGenerationClientTest {
     /** Confirma que a requisição usa Responses API com JSON Schema e Flex Processing. */
     @Test
-    void shouldCallOpenAiResponsesApiWithStrictJsonSchemaAndFlex() throws Exception {
+    void shouldCallOpenAiResponsesApiWithStrictJsonSchemaAndFlex(CapturedOutput logs) throws Exception {
         RestClient.Builder builder = RestClient.builder();
         MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
         String modelJson = """
@@ -50,6 +54,15 @@ class OpenAiPersonaCandidateGenerationClientTest {
                 Map.of("cnaeCode", "4781400")));
 
         assertThat((List<?>) output.get("candidatePersonas")).hasSize(3);
+        assertThat(logs.getOut())
+                .contains("Request OpenAI persona-candidate-generator")
+                .contains("Response OpenAI persona-candidate-generator")
+                .contains("jobId=job-1")
+                .contains("stageExecutionId=72")
+                .contains("cnaeCode=4781400")
+                .contains("\"service_tier\":\"flex\"")
+                .contains("\"output_text\"")
+                .doesNotContain("direct-key");
         server.verify();
     }
 

@@ -12,7 +12,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 /** Responsabilidade: consumir os contratos backend da etapa Texto do GeraAnuncio v2. */
 @Component
 public class GeraAnuncioTextoBackendClient {
-    public static final String PENDING_ENDPOINT = "/internal/facebookads/geracaoanuncios/v1/texto/stage-executions/pending";
+    public static final String PENDING_ENDPOINT = "/internal/aiworker/geracaoanuncios/v1/texto/stage-executions/pending";
 
     private static final Logger log = LoggerFactory.getLogger(GeraAnuncioTextoBackendClient.class);
 

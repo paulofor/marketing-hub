@@ -73,7 +73,7 @@ class GeraAnuncioV2ArchitectureTest {
         importedClasses.stream().filter(javaClass -> javaClass.getPackageName().startsWith(PIPELINE_ROOT)).findAny();
         Path repositoryRoot = repositoryRoot();
         Path backendRoot = repositoryRoot.resolve(Path.of(
-                "backend", "ads-service", "src", "main", "java", "com", "marketinghub", "pipelines", "facebookads", "geracaoanuncios", "v1"));
+                "backend", "ads-service", "src", "main", "java", "com", "marketinghub", "pipelines", "aiworker", "geracaoanuncios", "v1"));
         Path workerRoot = repositoryRoot.resolve(Path.of(
                 "ai-worker", "src", "main", "java", "com", "marketinghub", "pipelines", "geracaoanuncios", "v1"));
         Set<String> backendStages = directSubpackages(backendRoot);
@@ -90,7 +90,7 @@ class GeraAnuncioV2ArchitectureTest {
     /** Valida que a etapa do AI Worker chama o endpoint pending canônico da etapa par no backend. */
     private static void validatePendingEndpoint(Path workerRoot, String stage, List<String> violations) {
         Path stageDirectory = workerRoot.resolve(stage);
-        String expectedEndpoint = "/internal/facebookads/geracaoanuncios/v1/" + stage + "/stage-executions/pending";
+        String expectedEndpoint = "/internal/aiworker/geracaoanuncios/v1/" + stage + "/stage-executions/pending";
         if (!Files.isDirectory(stageDirectory)) {
             violations.add("[ARQUITETURA] [AI Worker][GeraAnuncio v2] etapa " + stage
                     + " deve existir no módulo externo antes de validar pending");

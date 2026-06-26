@@ -5447,6 +5447,6 @@
 ## 2026-06-26 — Pipeline de geração de anúncios no padrão versionado
 
 - Solicitação: implementar o novo padrão de pacotes para o pipeline de geração de anúncios.
-- Foi feito: o backend passou a organizar as etapas `texto` e `imagem` em `com.marketinghub.pipelines.facebookads.geracaoanuncios.v1`, enquanto o AI Worker passou a usar `com.marketinghub.pipelines.geracaoanuncios.v1`, sem repetir o nome do módulo executor.
-- Foi feito: os endpoints internos canônicos de `pending` foram alinhados para `/api/internal/facebookads/geracaoanuncios/v1/<etapa>/stage-executions/pending` e os services de etapa agora publicam pendências reais do modo `PIPELINE_ADS` com contexto de texto e briefing de imagem do experimento.
+- Foi feito: o backend passou a organizar as etapas `texto` e `imagem` em `com.marketinghub.pipelines.aiworker.geracaoanuncios.v1`, enquanto o AI Worker passou a usar `com.marketinghub.pipelines.geracaoanuncios.v1`, sem repetir o nome do módulo executor.
+- Foi feito: os endpoints internos canônicos de `pending` foram alinhados para `/api/internal/aiworker/geracaoanuncios/v1/<etapa>/stage-executions/pending` e os services de etapa agora publicam pendências reais do modo `PIPELINE_ADS` com contexto de texto e briefing de imagem do experimento.
 - Prevenção de recorrência: os testes ArchUnit do backend e do AI Worker foram atualizados para proteger o novo namespace e o contrato de consumo por etapa.

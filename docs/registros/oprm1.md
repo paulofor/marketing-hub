@@ -1444,3 +1444,15 @@
 - Causa-raiz tratada: o service v3 reutilizava contrato sem versão, fazendo o ArchUnit interpretar dependência direta da v3 para a versão inicial.
 - Correção aplicada: a etapa v3 passou a depender de uma porta própria, localizada no pacote da própria etapa, e o adaptador JPA externo faz a tradução para a persistência canônica.
 - Prevenção de recorrência: validado que não restam imports de `com.marketinghub.oprm.nichocnae.gateway` dentro do pacote v3 e executados os testes da etapa afetada.
+
+## 2026-06-26 — NichoCNAE v3: saída final sem dores, resultados e mecanismos
+
+- Decisão: a saída final do NichoCNAE v3 deixou de tratar dores, resultados desejados e mecanismos/oportunidades como itens finais do nicho enriquecido.
+- Motivo: esses blocos pertencem a fluxos posteriores de hipótese/oferta; a etapa v3 deve finalizar apenas persona, rotina, tarefas, contexto, evidências, fontes e auditoria operacional.
+- Ajuste: o backend v3 não preenche mais os campos legados desses blocos na materialização final, e a tela de nicho enriquecido não os exibe como lista principal.
+
+## 2026-06-26 — NichoCNAE v3: vínculo de CNAE no nicho materializado
+
+- Decisão: a materialização final do NichoCNAE v3 passa a criar ou atualizar o nicho usando vínculo explícito com o CNAE de origem.
+- Ajuste: `market_niche` recebeu `source_cnae_code` e `source_cnae_description`; novos nichos v3 usam nome canônico `CNAE <código> — <descrição>`.
+- Reprocessamento: quando o mesmo CNAE já tiver nicho materializado, o fluxo v3 atualiza esse nicho e o perfil enriquecido em vez de criar outro registro solto.

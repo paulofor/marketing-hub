@@ -17,6 +17,8 @@ public class MarketNicheDto {
     private Instant facebookPixelCreatedAt;
     private Instant facebookPixelRequestedAt;
     private String facebookPixelRequestStatus;
+    private String sourceCnaeCode;
+    private String sourceCnaeDescription;
     private String interestCategory;
     private String roleCategory;
     private String demandVolume;

@@ -72,30 +72,20 @@ public class BackendPersonaRoutineMaterializerService extends OprmNichoCnaeV3Sta
     /** Materializa o resultado final v3 nas estruturas reutilizáveis do nicho. */
     private void materializeNicheData(OprmNichoCnaeV3StageExecution execution) {
         JsonNode output = parseOutput(execution.getOutputPayload());
-        String neutralNicheName = firstText(output, "neutralNicheName", "nicheName", "personaName", "persona");
-        if (!StringUtils.hasText(neutralNicheName)) {
-            neutralNicheName = "CNAE " + execution.getCnaeCode() + " — persona e rotina v3";
-        }
         String cnaeDescription = firstText(output, "cnaeDescription", "marketDescription", "description");
         if (!StringUtils.hasText(cnaeDescription)) {
-            cnaeDescription = "Persona, rotina e tarefas diárias materializadas pelo NichoCNAE v3 para o CNAE "
-                    + execution.getCnaeCode() + ".";
+            cnaeDescription = "CNAE " + execution.getCnaeCode();
         }
+        String neutralNicheName = buildCnaeNicheName(execution.getCnaeCode(), cnaeDescription);
         String routineSummary = textOrDefault(
                 firstText(output, "routineSummary", "routine", "rotina"),
                 "Rotina operacional materializada pelo NichoCNAE v3.");
         String dailyTasks = textOrDefault(
                 firstText(output, "personaDailyTasks", "dailyTasks", "tarefasDiarias", "tasks"),
                 "Tarefas diárias materializadas pelo NichoCNAE v3.");
-        String painsSummary = textOrDefault(
-                firstText(output, "painsSummary", "painSignals", "pains", "dores"),
-                "Dores e esforços extraídos pelo NichoCNAE v3.");
-        String resultsSummary = textOrDefault(
-                firstText(output, "resultsSummary", "desiredResults", "resultadosDesejados"),
-                "Resultados desejados inferidos pelo NichoCNAE v3.");
-        String mechanismSummary = textOrDefault(
-                firstText(output, "mechanismOpportunitiesSummary", "mechanismOpportunities", "opportunities"),
-                "Oportunidades de mecanismo identificadas pelo NichoCNAE v3.");
+        String painsSummary = null;
+        String resultsSummary = null;
+        String mechanismSummary = null;
         Instant now = Instant.now();
         Long existingMarketNicheId = nicheGateway
                 .findPersonaRoutineMaterializedNiche(
@@ -107,6 +97,8 @@ public class BackendPersonaRoutineMaterializerService extends OprmNichoCnaeV3Sta
                         existingMarketNicheId,
                         neutralNicheName,
                         buildNicheDescription(cnaeDescription, routineSummary, dailyTasks),
+                        execution.getCnaeCode(),
+                        cnaeDescription,
                         null,
                         routineSummary,
                         null,
@@ -190,6 +182,12 @@ public class BackendPersonaRoutineMaterializerService extends OprmNichoCnaeV3Sta
     private Integer integerOrDefault(JsonNode root, String fieldName, int defaultValue) {
         JsonNode value = root == null ? null : root.path(fieldName);
         return value != null && value.isNumber() ? value.asInt() : defaultValue;
+    }
+
+
+    /** Monta o nome canônico do nicho usando código e descrição do CNAE. */
+    private String buildCnaeNicheName(String cnaeCode, String cnaeDescription) {
+        return "CNAE " + cnaeCode + " — " + cnaeDescription;
     }
 
     /** Monta uma descrição compacta do nicho base para outros pipelines consumirem. */

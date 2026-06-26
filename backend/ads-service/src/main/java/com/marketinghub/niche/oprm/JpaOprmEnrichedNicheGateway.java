@@ -72,11 +72,13 @@ public class JpaOprmEnrichedNicheGateway implements OprmEnrichedNicheGateway, Pe
   @Override
   public Optional<PersonaRoutineMaterializerNicheGateway.MarketNicheSnapshot> findPersonaRoutineMaterializedNiche(
       String cnaeCode, String normalizedNeutralNicheName) {
-    return enrichmentProfileRepository
-        .findMaterializedByCnaeAndNormalizedNeutralName(cnaeCode, normalizedNeutralNicheName, PageRequest.of(0, 1))
-        .stream()
-        .findFirst()
-        .map(profile -> new PersonaRoutineMaterializerNicheGateway.MarketNicheSnapshot(profile.getMarketNiche().getId()));
+    return marketNicheRepository.findFirstBySourceCnaeCodeOrderByIdDesc(cnaeCode)
+        .map(niche -> new PersonaRoutineMaterializerNicheGateway.MarketNicheSnapshot(niche.getId()))
+        .or(() -> enrichmentProfileRepository
+            .findMaterializedByCnaeAndNormalizedNeutralName(cnaeCode, normalizedNeutralNicheName, PageRequest.of(0, 1))
+            .stream()
+            .findFirst()
+            .map(profile -> new PersonaRoutineMaterializerNicheGateway.MarketNicheSnapshot(profile.getMarketNiche().getId())));
   }
 
   /** Materializa ou atualiza o nicho usando o contrato exclusivo da etapa persona-routine-materializer v3. */
@@ -124,6 +126,8 @@ public class JpaOprmEnrichedNicheGateway implements OprmEnrichedNicheGateway, Pe
   private void applyNicheDraft(MarketNiche niche, OprmMarketNicheDraft draft) {
     niche.setName(draft.name());
     niche.setDescription(draft.description());
+    niche.setSourceCnaeCode(draft.sourceCnaeCode());
+    niche.setSourceCnaeDescription(draft.sourceCnaeDescription());
     niche.setDemandVolume(draft.demandVolume());
     niche.setPromises(null);
     niche.setOffers(null);
@@ -235,6 +239,8 @@ public class JpaOprmEnrichedNicheGateway implements OprmEnrichedNicheGateway, Pe
         draft.marketNicheId(),
         draft.name(),
         draft.description(),
+        draft.sourceCnaeCode(),
+        draft.sourceCnaeDescription(),
         draft.demandVolume(),
         draft.baseSegmentation(),
         draft.demographicFilters(),

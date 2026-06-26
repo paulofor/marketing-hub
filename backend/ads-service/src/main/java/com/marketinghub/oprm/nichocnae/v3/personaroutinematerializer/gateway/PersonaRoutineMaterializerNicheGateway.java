@@ -21,6 +21,8 @@ public interface PersonaRoutineMaterializerNicheGateway {
             Long marketNicheId,
             String name,
             String description,
+            String sourceCnaeCode,
+            String sourceCnaeDescription,
             String demandVolume,
             String baseSegmentation,
             String demographicFilters,

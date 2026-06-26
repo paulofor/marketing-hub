@@ -46,9 +46,6 @@ class BackendPersonaRoutineMaterializerServiceTest {
                   "cnaeDescription":"Comércio varejista de artigos do vestuário",
                   "routineSummary":"Compram, organizam vitrines e atendem famílias diariamente.",
                   "personaDailyTasks":["repor peças", "responder clientes"],
-                  "painsSummary":"Perdem tempo conciliando estoque e atendimento.",
-                  "resultsSummary":"Querem previsibilidade de vendas e menos ruptura.",
-                  "mechanismOpportunitiesSummary":"Padronização de rotina e priorização de reposição.",
                   "routineEvidenceScore":82,
                   "difficultyEvidenceScore":77,
                   "sourceDiversityScore":68
@@ -57,7 +54,7 @@ class BackendPersonaRoutineMaterializerServiceTest {
         when(repository.findById(19L)).thenReturn(Optional.of(execution));
         when(repository.save(any(OprmNichoCnaeV3StageExecution.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(nicheGateway.findPersonaRoutineMaterializedNiche(
-                eq("4781400"), eq("lojistas de roupas infantis com rotina de reposição")))
+                eq("4781400"), eq("cnae 4781400 — comércio varejista de artigos do vestuário")))
                 .thenReturn(Optional.empty());
         when(nicheGateway.materialize(any(PersonaRoutineMaterializerNicheGateway.MarketNicheDraft.class), any(PersonaRoutineMaterializerNicheGateway.EnrichedNicheProfileDraft.class)))
                 .thenReturn(new PersonaRoutineMaterializerNicheGateway.NicheMaterializationResult(300L, 400L, Instant.now()));
@@ -67,7 +64,9 @@ class BackendPersonaRoutineMaterializerServiceTest {
         ArgumentCaptor<PersonaRoutineMaterializerNicheGateway.MarketNicheDraft> nicheCaptor = ArgumentCaptor.forClass(PersonaRoutineMaterializerNicheGateway.MarketNicheDraft.class);
         ArgumentCaptor<PersonaRoutineMaterializerNicheGateway.EnrichedNicheProfileDraft> profileCaptor = ArgumentCaptor.forClass(PersonaRoutineMaterializerNicheGateway.EnrichedNicheProfileDraft.class);
         verify(nicheGateway).materialize(nicheCaptor.capture(), profileCaptor.capture());
-        assertThat(nicheCaptor.getValue().name()).isEqualTo("Lojistas de roupas infantis com rotina de reposição");
+        assertThat(nicheCaptor.getValue().name()).isEqualTo("CNAE 4781400 — Comércio varejista de artigos do vestuário");
+        assertThat(nicheCaptor.getValue().sourceCnaeCode()).isEqualTo("4781400");
+        assertThat(nicheCaptor.getValue().sourceCnaeDescription()).isEqualTo("Comércio varejista de artigos do vestuário");
         assertThat(nicheCaptor.getValue().description()).contains("Compram, organizam vitrines");
         assertThat(profileCaptor.getValue().researchCycleId()).isEqualTo(19L);
         assertThat(profileCaptor.getValue().sourceRoutineCardId()).isEqualTo(19L);
@@ -76,6 +75,9 @@ class BackendPersonaRoutineMaterializerServiceTest {
         assertThat(profileCaptor.getValue().sourceDiversityScore()).isEqualTo(68);
         assertThat(profileCaptor.getValue().routineSummary()).contains("Compram");
         assertThat(profileCaptor.getValue().personaDailyTasks()).contains("repor peças");
+        assertThat(profileCaptor.getValue().painsSummary()).isNull();
+        assertThat(profileCaptor.getValue().resultsSummary()).isNull();
+        assertThat(profileCaptor.getValue().mechanismOpportunitiesSummary()).isNull();
     }
 
     /** Monta uma execução final pendente para o callback de conclusão. */

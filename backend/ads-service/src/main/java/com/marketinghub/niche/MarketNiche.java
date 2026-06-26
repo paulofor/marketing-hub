@@ -58,6 +58,14 @@ public class MarketNiche {
     @Column(name = "facebook_pixel_request_status", length = 32)
     private String facebookPixelRequestStatus;
 
+    /** Código CNAE de origem usado para atualizar o nicho em reprocessamentos do NichoCNAE. */
+    @Column(name = "source_cnae_code", length = 16)
+    private String sourceCnaeCode;
+
+    /** Descrição do CNAE de origem usado na materialização do nicho. */
+    @Column(name = "source_cnae_description", length = 255)
+    private String sourceCnaeDescription;
+
     /** Categoria principal de interesse associada ao nicho. */
     private String interestCategory;
 

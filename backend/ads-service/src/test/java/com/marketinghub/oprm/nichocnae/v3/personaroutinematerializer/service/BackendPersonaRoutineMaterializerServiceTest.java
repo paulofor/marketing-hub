@@ -75,9 +75,6 @@ class BackendPersonaRoutineMaterializerServiceTest {
         assertThat(profileCaptor.getValue().sourceDiversityScore()).isEqualTo(68);
         assertThat(profileCaptor.getValue().routineSummary()).contains("Compram");
         assertThat(profileCaptor.getValue().personaDailyTasks()).contains("repor peças");
-        assertThat(profileCaptor.getValue().painsSummary()).isNull();
-        assertThat(profileCaptor.getValue().resultsSummary()).isNull();
-        assertThat(profileCaptor.getValue().mechanismOpportunitiesSummary()).isNull();
     }
 
     /** Monta uma execução final pendente para o callback de conclusão. */

@@ -239,7 +239,7 @@ class BackendEnrichedNicheMaterializerServiceTest {
     assertThat(markdown).contains("## 6. Sinais extraídos");
     assertThat(markdown).contains("## 8. Conclusão final do nicho enriquecido");
     assertThat(markdown).contains("Rotina final");
-    assertThat(markdown).contains("Dores finais");
+    assertThat(markdown).contains("Dores observadas no cartão de rotina");
     assertThat(markdown).contains("ENRICHED_NICHE_CREATED");
   }
 
@@ -427,9 +427,6 @@ class BackendEnrichedNicheMaterializerServiceTest {
         35,
         "Rotina final",
         "- Organizar agenda de atendimentos.",
-        "Dores finais",
-        "Resultados finais",
-        "Contexto operacional final",
         "Evidências finais",
         "exemplo.com",
         "# Relatório auditável",

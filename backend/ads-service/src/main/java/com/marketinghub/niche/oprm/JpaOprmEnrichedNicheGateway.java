@@ -190,9 +190,6 @@ public class JpaOprmEnrichedNicheGateway implements OprmEnrichedNicheGateway, Pe
     profile.setResearchMode(draft.researchMode());
     profile.setRoutineSummary(draft.routineSummary());
     profile.setPersonaDailyTasks(draft.personaDailyTasks());
-    profile.setPainsSummary(draft.painsSummary());
-    profile.setResultsSummary(draft.resultsSummary());
-    profile.setMechanismOpportunitiesSummary(draft.mechanismOpportunitiesSummary());
     profile.setEvidenceSummary(draft.evidenceSummary());
     profile.setSourceDomains(draft.sourceDomains());
     profile.setPersonaSummary(draft.personaSummary());
@@ -224,9 +221,6 @@ public class JpaOprmEnrichedNicheGateway implements OprmEnrichedNicheGateway, Pe
         profile.getSolutionLanguageRiskScore(),
         profile.getRoutineSummary(),
         profile.getPersonaDailyTasks(),
-        profile.getPainsSummary(),
-        profile.getResultsSummary(),
-        profile.getMechanismOpportunitiesSummary(),
         profile.getEvidenceSummary(),
         profile.getSourceDomains(),
         profile.getResearchReportMarkdown(),
@@ -275,9 +269,6 @@ public class JpaOprmEnrichedNicheGateway implements OprmEnrichedNicheGateway, Pe
         draft.researchMode(),
         draft.routineSummary(),
         draft.personaDailyTasks(),
-        draft.painsSummary(),
-        draft.resultsSummary(),
-        draft.mechanismOpportunitiesSummary(),
         draft.evidenceSummary(),
         draft.sourceDomains(),
         draft.personaSummary(),

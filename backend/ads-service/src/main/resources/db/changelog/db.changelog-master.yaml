@@ -1122,3 +1122,7 @@ databaseChangeLog:
   - include:
       file: changesets/2026-06-25-oprm-enriched-niche-audit-report.yaml
       relativeToChangelogFile: true
+
+  - include:
+      file: changesets/2026-06-26-remove-commercial-fields-from-niche-profile.yaml
+      relativeToChangelogFile: true

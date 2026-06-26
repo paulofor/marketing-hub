@@ -1,10 +1,12 @@
 package com.marketinghub.moissaleslibraryworker.pipelines.dossie.v1.intake.service;
 
+import com.marketinghub.moissaleslibraryworker.pipelines.dossie.v1.intake.service.pending.DossierIntakePendingJob;
 import com.marketinghub.moissaleslibraryworker.pipelines.dossie.v1.intake.service.pending.DossierIntakePendingRequest;
 import com.marketinghub.moissaleslibraryworker.pipelines.dossie.v1.intake.service.pending.DossierIntakePendingResponse;
 import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageRepository;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import org.springframework.stereotype.Service;
 
 /** Publica pendências e contratos da etapa entrada inicial do pipeline de dossiê MOIS v1. */
@@ -35,8 +37,24 @@ public class DossierIntakeService {
         salesPageRepository.save(page);
     }
 
-    /** Entrega trabalhos pendentes ao executor sem assumir controle operacional de execução no backend. */
+    /** Entrega até dez trabalhos iniciados da etapa atual ao executor, ordenados pela data operacional mais antiga. */
     public DossierIntakePendingResponse pending(DossierIntakePendingRequest request) {
-        return new DossierIntakePendingResponse(false, List.of());
+        List<DossierIntakePendingJob> jobs = salesPageRepository
+                .findTop10ByDossieProdutoStatusAndDossieProdutoCurrentStageOrderByDossieProdutoUpdatedAtAscIdAsc(
+                        STATUS_STARTED, STAGE_CODE)
+                .stream()
+                .map(page -> new DossierIntakePendingJob(
+                        page.getId(),
+                        page.getId(),
+                        "mois-sales-page-" + page.getId(),
+                        STAGE_CODE,
+                        Map.of(
+                                "productKey", String.valueOf(page.getId()),
+                                "pageId", page.getId(),
+                                "stageCode", STAGE_CODE,
+                                "status", STATUS_STARTED,
+                                "nextStageCode", NEXT_STAGE)))
+                .toList();
+        return new DossierIntakePendingResponse(!jobs.isEmpty(), jobs);
     }
 }

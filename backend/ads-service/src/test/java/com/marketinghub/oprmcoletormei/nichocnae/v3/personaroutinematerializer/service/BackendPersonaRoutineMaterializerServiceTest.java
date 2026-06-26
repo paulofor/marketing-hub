@@ -7,9 +7,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.oprm.market.OprmCnpjCnaeDim;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.OprmNichoCnaeV3StageExecution;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.OprmNichoCnaeV3StageExecutionStatus;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.personaroutinematerializer.gateway.PersonaRoutineMaterializerNicheGateway;
+import com.marketinghub.repository.jpa.oprm.market.OprmCnpjCnaeDimRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.v3.OprmNichoCnaeV3StageExecutionRepository;
 import java.time.Instant;
 import java.util.Optional;
@@ -27,13 +29,16 @@ class BackendPersonaRoutineMaterializerServiceTest {
     private OprmNichoCnaeV3StageExecutionRepository repository;
 
     @Mock
+    private OprmCnpjCnaeDimRepository cnaeRepository;
+
+    @Mock
     private PersonaRoutineMaterializerNicheGateway nicheGateway;
 
     private BackendPersonaRoutineMaterializerService service;
 
     @BeforeEach
     void setUp() {
-        service = new BackendPersonaRoutineMaterializerService(repository, nicheGateway, new ObjectMapper());
+        service = new BackendPersonaRoutineMaterializerService(repository, cnaeRepository, nicheGateway, new ObjectMapper());
     }
 
     /** Garante que a etapa final grava MarketNiche e perfil enriquecido para uso por outros pipelines. */
@@ -75,6 +80,29 @@ class BackendPersonaRoutineMaterializerServiceTest {
         assertThat(profileCaptor.getValue().sourceDiversityScore()).isEqualTo(68);
         assertThat(profileCaptor.getValue().routineSummary()).contains("Compram");
         assertThat(profileCaptor.getValue().personaDailyTasks()).contains("repor peças");
+    }
+
+    /** Garante que o start marca o status do pipeline e a etapa atual no cadastro do CNAE. */
+    @Test
+    void startUpdatesCnaePipelineStatusAndCurrentStage() {
+        OprmCnpjCnaeDim cnae = new OprmCnpjCnaeDim();
+        cnae.setCnaeCode("4781400");
+        cnae.setDescription("Comércio varejista de artigos do vestuário");
+        cnae.setActive(true);
+        cnae.setUpdatedAt(Instant.parse("2026-06-26T00:00:00Z"));
+        when(cnaeRepository.findById("4781400")).thenReturn(Optional.of(cnae));
+        when(repository.save(any(OprmNichoCnaeV3StageExecution.class))).thenAnswer(invocation -> {
+            OprmNichoCnaeV3StageExecution saved = invocation.getArgument(0);
+            saved.setId(88L);
+            return saved;
+        });
+
+        service.start("4781400");
+
+        assertThat(cnae.getNichocnaePipelineStatus()).isEqualTo("INICIADO");
+        assertThat(cnae.getNichocnaeCurrentStageCode()).isEqualTo("persona-routine-materializer");
+        assertThat(cnae.getNichocnaePipelineUpdatedAt()).isNotNull();
+        verify(cnaeRepository).save(cnae);
     }
 
     /** Monta uma execução final pendente para o callback de conclusão. */

@@ -1,0 +1,25 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-26-mois-sales-page-dossie-produto-status-01
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: mois_sales_page
+        - not:
+            columnExists:
+              tableName: mois_sales_page
+              columnName: dossie_produto_status
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE mois_sales_page
+                ADD COLUMN dossie_produto_status VARCHAR(40) NULL AFTER current_status,
+                ADD COLUMN dossie_produto_current_stage VARCHAR(80) NULL AFTER dossie_produto_status;
+              CREATE INDEX idx_mois_sales_page_dossie_produto
+                ON mois_sales_page (dossie_produto_status, dossie_produto_current_stage, updated_at);

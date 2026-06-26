@@ -1,0 +1,22 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-26-mois-sales-page-dossie-produto-updated-at-01
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: mois_sales_page
+        - not:
+            columnExists:
+              tableName: mois_sales_page
+              columnName: dossie_produto_updated_at
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE mois_sales_page
+                ADD COLUMN dossie_produto_updated_at DATETIME NULL AFTER dossie_produto_current_stage;

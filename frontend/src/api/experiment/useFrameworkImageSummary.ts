@@ -22,6 +22,6 @@ export function useFrameworkImageSummary(experimentId?: string) {
       );
       return data;
     },
-    refetchInterval: 5000,
+    refetchInterval: 15000,
   });
 }

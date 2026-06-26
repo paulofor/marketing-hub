@@ -61,7 +61,7 @@ export function useGeraLandingStageExecutions(
       includeCompleted,
     ],
     enabled: Boolean(experimentId),
-    refetchInterval: includeCompleted ? 10000 : 3000,
+    refetchInterval: includeCompleted ? 60000 : 5000,
     queryFn: async () => {
       const { data } = await axios.get<GeraLandingStageExecutionItem[]>(
         `/api/experiments/${experimentId}/geralanding/${resolveStageExecutionsEndpointSegment(stageCode)}/stage-executions`,

@@ -16,13 +16,13 @@ tags:
   - name: Imagem
     description: Etapa de geração de imagens dos anúncios.
 paths:
-  /api/internal/aiworker/geracaoanuncios/v1/texto/stage-executions/start:
+  /api/internal/aiworker/geracaoanuncios/v1/texto/stage-executions/{idExterno}/start:
     post:
       tags: [Texto]
-      operationId: startAiWorkerGeracaoAnunciosV1TextoByExperimentKey
-      summary: Inicia a etapa Texto pela chave do experimento
+      operationId: startAiWorkerGeracaoAnunciosV1TextoByIdExterno
+      summary: Inicia a etapa Texto pelo identificador externo
       parameters:
-        - $ref: '#/components/parameters/ExperimentKeyQuery'
+        - $ref: '#/components/parameters/IdExternoPath'
       responses:
         '200':
           description: Execução da etapa Texto registrada.
@@ -75,13 +75,13 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/PendingStageExecution'
-  /api/internal/aiworker/geracaoanuncios/v1/texto/stage-executions/{experimentKey}/jobs/{jobId}/recebeRequest:
+  /api/internal/aiworker/geracaoanuncios/v1/texto/stage-executions/{idExterno}/{jobId}/recebeRequest:
     post:
       tags: [Texto]
       operationId: receiveAiWorkerGeracaoAnunciosV1TextoRequestByJob
       summary: Registra o request operacional da etapa Texto
       parameters:
-        - $ref: '#/components/parameters/ExperimentKeyPath'
+        - $ref: '#/components/parameters/IdExternoPath'
         - $ref: '#/components/parameters/JobIdPath'
       requestBody:
         required: true
@@ -92,14 +92,14 @@ paths:
       responses:
         '202':
           description: Request aceito para auditoria.
-  /api/internal/aiworker/geracaoanuncios/v1/texto/stage-executions/{experimentKey}/jobs/{jobId}/recebeResponse:
+  /api/internal/aiworker/geracaoanuncios/v1/texto/stage-executions/{idExterno}/{jobId}/recebeResponse:
     post:
       tags: [Texto]
       operationId: receiveAiWorkerGeracaoAnunciosV1TextoResponseByJob
       summary: Registra o callback final da etapa Texto
       description: Retorna o código da próxima etapa quando houver avanço funcional.
       parameters:
-        - $ref: '#/components/parameters/ExperimentKeyPath'
+        - $ref: '#/components/parameters/IdExternoPath'
         - $ref: '#/components/parameters/JobIdPath'
       requestBody:
         required: true
@@ -162,13 +162,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StageExecutionDetail'
-  /api/internal/aiworker/geracaoanuncios/v1/imagem/stage-executions/start:
+  /api/internal/aiworker/geracaoanuncios/v1/imagem/stage-executions/{idExterno}/start:
     post:
       tags: [Imagem]
-      operationId: startAiWorkerGeracaoAnunciosV1ImagemByExperimentKey
-      summary: Inicia a etapa Imagem pela chave do experimento
+      operationId: startAiWorkerGeracaoAnunciosV1ImagemByIdExterno
+      summary: Inicia a etapa Imagem pelo identificador externo
       parameters:
-        - $ref: '#/components/parameters/ExperimentKeyQuery'
+        - $ref: '#/components/parameters/IdExternoPath'
       responses:
         '200':
           description: Execução da etapa Imagem registrada.
@@ -221,13 +221,13 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/PendingStageExecution'
-  /api/internal/aiworker/geracaoanuncios/v1/imagem/stage-executions/{experimentKey}/jobs/{jobId}/recebeRequest:
+  /api/internal/aiworker/geracaoanuncios/v1/imagem/stage-executions/{idExterno}/{jobId}/recebeRequest:
     post:
       tags: [Imagem]
       operationId: receiveAiWorkerGeracaoAnunciosV1ImagemRequestByJob
       summary: Registra o request operacional da etapa Imagem
       parameters:
-        - $ref: '#/components/parameters/ExperimentKeyPath'
+        - $ref: '#/components/parameters/IdExternoPath'
         - $ref: '#/components/parameters/JobIdPath'
       requestBody:
         required: true
@@ -238,13 +238,13 @@ paths:
       responses:
         '202':
           description: Request aceito para auditoria.
-  /api/internal/aiworker/geracaoanuncios/v1/imagem/stage-executions/{experimentKey}/jobs/{jobId}/recebeResponse:
+  /api/internal/aiworker/geracaoanuncios/v1/imagem/stage-executions/{idExterno}/{jobId}/recebeResponse:
     post:
       tags: [Imagem]
       operationId: receiveAiWorkerGeracaoAnunciosV1ImagemResponseByJob
       summary: Registra o callback final da etapa Imagem
       parameters:
-        - $ref: '#/components/parameters/ExperimentKeyPath'
+        - $ref: '#/components/parameters/IdExternoPath'
         - $ref: '#/components/parameters/JobIdPath'
       requestBody:
         required: true
@@ -308,20 +308,13 @@ paths:
                 $ref: '#/components/schemas/StageExecutionDetail'
 components:
   parameters:
-    ExperimentKeyQuery:
-      name: experimentKey
-      in: query
-      required: true
-      schema:
-        type: string
-      description: Chave operacional do experimento; atualmente aceita o id numérico em formato textual.
-    ExperimentKeyPath:
-      name: experimentKey
+    IdExternoPath:
+      name: idExterno
       in: path
       required: true
       schema:
         type: string
-      description: Chave operacional do experimento vinculada ao job.
+      description: Identificador externo da execução.
     ExperimentIdPath:
       name: experimentId
       in: path
@@ -361,7 +354,7 @@ components:
           example: 123
         jobId:
           type: string
-          example: exp:123|pipeline:geracaoanuncios|v:1|stage:texto
+          example: geracaoanuncios-v1-texto-exp-123
         status:
           type: string
           example: PENDING

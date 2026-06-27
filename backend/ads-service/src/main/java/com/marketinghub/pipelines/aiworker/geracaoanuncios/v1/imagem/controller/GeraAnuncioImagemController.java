@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /** Responsabilidade: disponibilizar a borda HTTP canônica da etapa Imagem do pipeline GeraAnuncio v2. */
@@ -31,10 +30,10 @@ public class GeraAnuncioImagemController {
         this.service = service;
     }
 
-    /** Inicia uma execução da etapa Imagem para o código/chave do experimento informado. */
-    @PostMapping("/start")
-    public GeraAnuncioImagemExecutionSummaryResponse startPorChave(@RequestParam("experimentKey") String experimentKey) {
-        return service.start(experimentKey);
+    /** Inicia uma execução da etapa Imagem para o identificador externo informado no caminho. */
+    @PostMapping("/{idExterno}/start")
+    public GeraAnuncioImagemExecutionSummaryResponse startPorIdExterno(@PathVariable String idExterno) {
+        return service.start(idExterno);
     }
 
     /** Inicia uma execução da etapa Imagem para o experimento informado. */
@@ -56,23 +55,23 @@ public class GeraAnuncioImagemController {
     }
 
     /** Recebe o request operacional gerado pelo AI Worker para a etapa usando o jobId da execução. */
-    @PostMapping("/{experimentKey}/jobs/{jobId}/recebeRequest")
+    @PostMapping("/{idExterno}/{jobId}/recebeRequest")
     public ResponseEntity<Void> recebeRequest(
-            @PathVariable String experimentKey, @PathVariable String jobId, @RequestBody GeraAnuncioImagemRecebeRequestRequest request) {
-        service.recebeRequest(experimentKey, jobId, request);
+            @PathVariable String idExterno, @PathVariable String jobId, @RequestBody GeraAnuncioImagemRecebeRequestRequest request) {
+        service.recebeRequest(idExterno, jobId, request);
         return ResponseEntity.accepted().build();
     }
 
     /** Recebe o callback final do AI Worker com a resposta da etapa e retorna a próxima etapa, quando existir. */
-    @PostMapping("/{experimentKey}/jobs/{jobId}/recebeResponse")
+    @PostMapping("/{idExterno}/{jobId}/recebeResponse")
     public ResponseEntity<String> recebeResponse(
-            @PathVariable String experimentKey, @PathVariable String jobId, @RequestBody GeraAnuncioImagemRespostaRequest request) {
+            @PathVariable String idExterno, @PathVariable String jobId, @RequestBody GeraAnuncioImagemRespostaRequest request) {
         log.info(
-                "Recebendo response do pipeline geracaoanuncios; etapa=imagem; experimentKey={}; jobId={}; payload={}",
-                experimentKey,
+                "Recebendo response do pipeline geracaoanuncios; etapa=imagem; idExterno={}; jobId={}; payload={}",
+                idExterno,
                 jobId,
                 request);
-        String nextStageCode = service.recebeResponse(experimentKey, jobId, request);
+        String nextStageCode = service.recebeResponse(idExterno, jobId, request);
         return ResponseEntity.accepted().body(nextStageCode);
     }
 

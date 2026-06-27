@@ -1,0 +1,49 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-27-oprm-nichocnae-v3-only-pipeline
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE pipeline
+              SET active = 0, updated_at = NOW()
+              WHERE code = 'oprm-nicho-cnae-pipeline';
+
+              UPDATE pipeline_definition
+              SET active = 0, updated_at = NOW()
+              WHERE code = 'oprm-nicho-cnae-pipeline';
+
+              INSERT INTO pipeline (name, code, module, description, active, created_at, updated_at)
+              SELECT 'Pipeline Nicho CNAE v3', 'oprm-nicho-cnae-v3-pipeline', 'OPRM', 'Fluxo OPRM NichoCNAE v3 executado pelo oprm-coletor-mei com etapas versionadas em com.marketinghub.pipelines.nichocnae.v3.', 1, NOW(), NOW()
+              WHERE NOT EXISTS (SELECT 1 FROM pipeline WHERE code = 'oprm-nicho-cnae-v3-pipeline');
+
+              INSERT INTO pipeline_definition (module, code, name, canonical_version, active, created_at, updated_at)
+              SELECT 'OPRM', 'oprm-nicho-cnae-v3-pipeline', 'Pipeline Nicho CNAE v3', 'oprm-nichocnae-canon.v3', 1, NOW(), NOW()
+              WHERE NOT EXISTS (SELECT 1 FROM pipeline_definition WHERE code = 'oprm-nicho-cnae-v3-pipeline' AND canonical_version = 'oprm-nichocnae-canon.v3');
+
+              INSERT INTO pipeline_stage_definition (pipeline_definition_id, canonical_code, display_name, position, required, implemented_stage_enum, requires_openai_model, configurable, execution_module, root_package, created_at, updated_at)
+              SELECT pd.id, v.canonical_code, v.display_name, v.position, 1, v.implemented_stage_enum, v.requires_openai_model, 1, 'oprm-coletor-mei', v.root_package, NOW(), NOW()
+              FROM pipeline_definition pd
+              JOIN (
+                SELECT 'CNAE_INTAKE' canonical_code, 'Entrada do CNAE' display_name, 1 position, 'CNAE_INTAKE' implemented_stage_enum, 0 requires_openai_model, 'com.marketinghub.oprm.nichocnae.v3.cnaeintake' root_package
+                UNION ALL SELECT 'PERSONA_CANDIDATE_GENERATOR', 'Geração de candidatos de persona', 2, 'PERSONA_CANDIDATE_GENERATOR', 1, 'com.marketinghub.oprm.nichocnae.v3.personacandidategenerator'
+                UNION ALL SELECT 'PERSONA_TOURNAMENT', 'Torneio de personas', 3, 'PERSONA_TOURNAMENT', 0, 'com.marketinghub.oprm.nichocnae.v3.personatournament'
+                UNION ALL SELECT 'ROUTINE_QUERY_PLANNER', 'Planejamento de queries de rotina', 4, 'ROUTINE_QUERY_PLANNER', 0, 'com.marketinghub.oprm.nichocnae.v3.routinequeryplanner'
+                UNION ALL SELECT 'SOURCE_SEARCHER', 'Busca de fontes públicas', 5, 'SOURCE_SEARCHER', 0, 'com.marketinghub.oprm.nichocnae.v3.sourcesearcher'
+                UNION ALL SELECT 'SOURCE_FETCHER', 'Coleta curta de fontes', 6, 'SOURCE_FETCHER', 0, 'com.marketinghub.oprm.nichocnae.v3.sourcefetcher'
+                UNION ALL SELECT 'ROUTINE_SIGNAL_EXTRACTOR', 'Extração de sinais de rotina', 7, 'ROUTINE_SIGNAL_EXTRACTOR', 0, 'com.marketinghub.oprm.nichocnae.v3.routinesignalextractor'
+                UNION ALL SELECT 'DAILY_TASKS_SYNTHESIZER', 'Síntese de tarefas diárias', 8, 'DAILY_TASKS_SYNTHESIZER', 0, 'com.marketinghub.oprm.nichocnae.v3.dailytaskssynthesizer'
+                UNION ALL SELECT 'QUALITY_GATE', 'Gate de qualidade', 9, 'QUALITY_GATE', 0, 'com.marketinghub.oprm.nichocnae.v3.qualitygate'
+                UNION ALL SELECT 'PERSONA_ROUTINE_MATERIALIZER', 'Materialização da rotina da persona', 10, 'PERSONA_ROUTINE_MATERIALIZER', 0, 'com.marketinghub.oprm.nichocnae.v3.personaroutinematerializer'
+              ) v
+              LEFT JOIN pipeline_stage_definition existing_stage
+                ON existing_stage.pipeline_definition_id = pd.id AND existing_stage.canonical_code = v.canonical_code
+              WHERE pd.code = 'oprm-nicho-cnae-v3-pipeline'
+                AND pd.canonical_version = 'oprm-nichocnae-canon.v3'
+                AND existing_stage.id IS NULL;

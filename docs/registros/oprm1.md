@@ -1583,3 +1583,5 @@
 
 - Adicionada regra no teste de arquitetura do `oprm-coletor-mei` para validar que subpacotes de etapa concreta em `com.marketinghub.pipelines.nichocnae.v3`, quando adotarem o padrão canônico do worker, fiquem restritos às 9 classes esperadas: `BackendClient`, `ExecutionScheduler`, `Input`, `Output`, `PromptBuilder`, `ResponseHandler`, `ResponseValidator`, `WorkerConfiguration` e `WorkerProperties`.
 - Objetivo: impedir crescimento desordenado dos subpacotes de etapa e manter o executor simples, auditável e plugável.
+
+- 2026-06-27 00:00:00 (UTC): removido o contrato oficial obsoleto `oprm-nicho-cnae-pipeline` do registry do backend e substituído pelo contrato único `oprm-nicho-cnae-v3-pipeline`, alinhado aos pacotes reais do executor `oprm-coletor-mei` em `com.marketinghub.pipelines.nichocnae.v3`; changelog incremental desativa o pipeline antigo no banco e cria a definição persistente v3.

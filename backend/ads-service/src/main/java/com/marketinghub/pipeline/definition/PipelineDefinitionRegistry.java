@@ -2,7 +2,6 @@ package com.marketinghub.pipeline.definition;
 
 import com.marketinghub.experiment.pipeline.ExperimentPipelineSection;
 import com.marketinghub.oprm.generalaudience.pipeline.OprmGeneralAudienceDiscoveryPipelineSection;
-import com.marketinghub.oprm.nichocnae.pipeline.OprmNichoCnaePipelineSection;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -26,9 +25,11 @@ public class PipelineDefinitionRegistry {
     private static final String GERALANDING_BACKEND_ROOT_PACKAGE = "com.marketinghub.geralanding";
     private static final String GERALANDING_OPENAI_CORE_ROOT_PACKAGE = "com.marketinghub.worker.openai.core";
     private static final String GERALANDING_DELIVERABLES_MODULE_PACKAGE = "com.marketinghub.worker.geralanding.deliverables";
-    private static final String OPRM_NICHO_CNAE_PIPELINE_CODE = "oprm-nicho-cnae-pipeline";
+    private static final String OPRM_NICHO_CNAE_V3_PIPELINE_CODE = "oprm-nicho-cnae-v3-pipeline";
     private static final String OPRM_MODULE = "OPRM";
-    private static final String OPRM_NICHO_CNAE_CANONICAL_VERSION = "oprm-nichocnae-canon.v1";
+    private static final String OPRM_NICHO_CNAE_V3_CANONICAL_VERSION = "oprm-nichocnae-canon.v3";
+    private static final String OPRM_NICHO_CNAE_V3_BACKEND_ROOT_PACKAGE = "com.marketinghub.oprm.nichocnae.v3";
+    private static final String OPRM_NICHO_CNAE_V3_WORKER_ROOT_PACKAGE = "com.marketinghub.pipelines.nichocnae.v3";
     private static final String OPRM_GENERAL_AUDIENCE_DISCOVERY_PIPELINE_CODE =
             "oprm-general-audience-discovery-pipeline";
     private static final String OPRM_GENERAL_AUDIENCE_DISCOVERY_CANONICAL_VERSION =
@@ -240,33 +241,93 @@ public class PipelineDefinitionRegistry {
     }
 
     /**
-     * Monta a definição oficial do pipeline OPRM NichoCNAE a partir das etapas implementadas no backend/coletor.
+     * Monta a definição oficial do pipeline OPRM NichoCNAE v3 usando apenas as etapas reais do coletor v3.
      */
     private PipelineDefinition buildOprmNichoCnaePipeline() {
-        List<PipelineStageDefinition> stages = Arrays.stream(OprmNichoCnaePipelineSection.values())
-                .map(section -> new PipelineStageDefinition(
-                        section.name(),
-                        section.path(),
-                        section.displayName(),
-                        section.position(),
+        List<PipelineStageDefinition> stages = List.of(
+                oprmNichoCnaeV3Stage("CNAE_INTAKE", "cnae-intake", "Entrada do CNAE", 1, false, "cnaeintake"),
+                oprmNichoCnaeV3Stage(
+                        "PERSONA_CANDIDATE_GENERATOR",
+                        "persona-candidate-generator",
+                        "Geração de candidatos de persona",
+                        2,
                         true,
-                        section.requiresOpenAiModel(),
-                        true,
-                        section.executionModule(),
-                        section.rootPackage(),
-                        section.modulePackage(),
-                        section.aliases()))
-                .toList();
+                        "personacandidategenerator"),
+                oprmNichoCnaeV3Stage(
+                        "PERSONA_TOURNAMENT",
+                        "persona-tournament",
+                        "Torneio de personas",
+                        3,
+                        false,
+                        "personatournament"),
+                oprmNichoCnaeV3Stage(
+                        "ROUTINE_QUERY_PLANNER",
+                        "routine-query-planner",
+                        "Planejamento de queries de rotina",
+                        4,
+                        false,
+                        "routinequeryplanner"),
+                oprmNichoCnaeV3Stage(
+                        "SOURCE_SEARCHER", "source-searcher", "Busca de fontes públicas", 5, false, "sourcesearcher"),
+                oprmNichoCnaeV3Stage(
+                        "SOURCE_FETCHER", "source-fetcher", "Coleta curta de fontes", 6, false, "sourcefetcher"),
+                oprmNichoCnaeV3Stage(
+                        "ROUTINE_SIGNAL_EXTRACTOR",
+                        "routine-signal-extractor",
+                        "Extração de sinais de rotina",
+                        7,
+                        false,
+                        "routinesignalextractor"),
+                oprmNichoCnaeV3Stage(
+                        "DAILY_TASKS_SYNTHESIZER",
+                        "daily-tasks-synthesizer",
+                        "Síntese de tarefas diárias",
+                        8,
+                        false,
+                        "dailytaskssynthesizer"),
+                oprmNichoCnaeV3Stage(
+                        "QUALITY_GATE", "quality-gate", "Gate de qualidade", 9, false, "qualitygate"),
+                oprmNichoCnaeV3Stage(
+                        "PERSONA_ROUTINE_MATERIALIZER",
+                        "persona-routine-materializer",
+                        "Materialização da rotina da persona",
+                        10,
+                        false,
+                        "personaroutinematerializer"));
         return new PipelineDefinition(
                 OPRM_MODULE,
-                OPRM_NICHO_CNAE_PIPELINE_CODE,
-                "Pipeline Nicho CNAE",
-                OPRM_NICHO_CNAE_CANONICAL_VERSION,
+                OPRM_NICHO_CNAE_V3_PIPELINE_CODE,
+                "Pipeline Nicho CNAE v3",
+                OPRM_NICHO_CNAE_V3_CANONICAL_VERSION,
                 true,
-                Set.of(OPRM_NICHO_CNAE_PIPELINE_CODE, "nicho-cnae-pipeline", "oprm_nicho_cnae_pipeline"),
+                Set.of(OPRM_NICHO_CNAE_V3_PIPELINE_CODE, "nicho-cnae-v3-pipeline", "oprm_nicho_cnae_v3_pipeline"),
                 PipelineFieldPolicy.officialDefault(),
                 StageFieldPolicy.officialDefault(),
                 stages);
+    }
+
+    /**
+     * Cria uma etapa oficial do NichoCNAE v3 apontando para o pacote real do coletor.
+     */
+    private PipelineStageDefinition oprmNichoCnaeV3Stage(
+            String canonicalCode,
+            String operationalCode,
+            String name,
+            int position,
+            boolean requiresOpenAiModel,
+            String implementationPackage) {
+        return new PipelineStageDefinition(
+                canonicalCode,
+                operationalCode,
+                name,
+                position,
+                true,
+                requiresOpenAiModel,
+                true,
+                "oprm-coletor-mei",
+                OPRM_NICHO_CNAE_V3_BACKEND_ROOT_PACKAGE + "." + implementationPackage,
+                OPRM_NICHO_CNAE_V3_WORKER_ROOT_PACKAGE + "." + implementationPackage,
+                Set.of(operationalCode, canonicalCode, canonicalCode.toLowerCase(Locale.ROOT)));
     }
 
 

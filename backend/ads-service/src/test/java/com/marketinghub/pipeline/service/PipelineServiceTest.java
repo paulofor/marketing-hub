@@ -518,8 +518,8 @@ class PipelineServiceTest {
             assertThat(pipeline.pipelineFieldPolicy().codeStructural()).isTrue();
             assertThat(pipeline.stageFieldPolicy().openAiModelOperational()).isTrue();
         });
-        assertThat(definitionRegistry.findByPipelineCode("oprm-nicho-cnae-pipeline")).hasValueSatisfying(pipeline -> {
-            assertThat(pipeline.canonicalVersion()).isEqualTo("oprm-nichocnae-canon.v1");
+        assertThat(definitionRegistry.findByPipelineCode("oprm-nicho-cnae-v3-pipeline")).hasValueSatisfying(pipeline -> {
+            assertThat(pipeline.canonicalVersion()).isEqualTo("oprm-nichocnae-canon.v3");
             assertThat(pipeline.pipelineFieldPolicy().codeStructural()).isTrue();
             assertThat(pipeline.stageFieldPolicy().openAiModelOperational()).isTrue();
         });
@@ -568,40 +568,40 @@ class PipelineServiceTest {
 
 
     /**
-     * Garante que o pipeline oficial OPRM NichoCNAE reflete as etapas implementadas no backend e no coletor.
+     * Garante que o pipeline oficial OPRM NichoCNAE mantém somente as etapas v3 implementadas no coletor.
      */
     @Test
-    void shouldExposeOfficialOprmNichoCnaePipelineFromImplementedStages() {
-        assertThat(definitionRegistry.findByPipelineCode("oprm-nicho-cnae-pipeline")).hasValueSatisfying(pipeline -> {
+    void shouldExposeOnlyOfficialOprmNichoCnaeV3PipelineFromImplementedStages() {
+        assertThat(definitionRegistry.findByPipelineCode("oprm-nicho-cnae-pipeline")).isEmpty();
+        assertThat(definitionRegistry.findByPipelineCode("oprm-nicho-cnae-v3-pipeline")).hasValueSatisfying(pipeline -> {
             assertThat(pipeline.module()).isEqualTo("OPRM");
-            assertThat(pipeline.name()).isEqualTo("Pipeline Nicho CNAE");
-            assertThat(pipeline.stages()).hasSize(11);
+            assertThat(pipeline.name()).isEqualTo("Pipeline Nicho CNAE v3");
+            assertThat(pipeline.stages()).hasSize(10);
             assertThat(pipeline.stages()).extracting(stage -> stage.operationalCode())
                     .containsExactly(
-                            "routine-research-orchestrator",
-                            "routine-research-cycle",
-                            "niche-research-seed-builder",
+                            "cnae-intake",
+                            "persona-candidate-generator",
+                            "persona-tournament",
+                            "routine-query-planner",
                             "source-searcher",
                             "source-fetcher",
-                            "signal-extractor",
-                            "routine-synthesizer",
-                            "mei-audience-segmenter",
-                            "routine-quality-gate",
-                            "evidence-level-gate",
-                            "enriched-niche-materializer");
+                            "routine-signal-extractor",
+                            "daily-tasks-synthesizer",
+                            "quality-gate",
+                            "persona-routine-materializer");
             assertThat(pipeline.stages())
                     .allSatisfy(stage -> {
                         assertThat(stage.executionModule()).isEqualTo("oprm-coletor-mei");
-                        assertThat(stage.rootPackage()).startsWith("com.marketinghub.oprm.nichocnae.");
+                        assertThat(stage.modulePackage()).startsWith("com.marketinghub.pipelines.nichocnae.v3.");
                         assertThat(definitionRegistry.findStage(pipeline, stage.canonicalCode())).contains(stage);
                         assertThat(definitionRegistry.findStage(pipeline, stage.operationalCode())).contains(stage);
                     });
             assertThat(pipeline.stages())
                     .filteredOn(stage -> stage.requiresOpenAiModel())
                     .extracting(stage -> stage.operationalCode())
-                    .containsExactly("niche-research-seed-builder", "mei-audience-segmenter");
-            assertThat(definitionRegistry.findStage(pipeline, "oprmEnrichedNicheMaterializer"))
-                    .hasValueSatisfying(stage -> assertThat(stage.operationalCode()).isEqualTo("enriched-niche-materializer"));
+                    .containsExactly("persona-candidate-generator");
+            assertThat(definitionRegistry.findStage(pipeline, "PERSONA_ROUTINE_MATERIALIZER"))
+                    .hasValueSatisfying(stage -> assertThat(stage.operationalCode()).isEqualTo("persona-routine-materializer"));
         });
     }
 
@@ -721,7 +721,7 @@ class PipelineServiceTest {
     @Test
     void shouldMatchOprmNichoCnaeOpenAiFlagsWithCollectorCode() throws IOException {
         PipelineDefinitionRegistry.PipelineDefinition pipeline = definitionRegistry
-                .findByPipelineCode("oprm-nicho-cnae-pipeline")
+                .findByPipelineCode("oprm-nicho-cnae-v3-pipeline")
                 .orElseThrow();
 
         for (PipelineDefinitionRegistry.PipelineStageDefinition stage : pipeline.stages()) {
@@ -734,11 +734,11 @@ class PipelineServiceTest {
     }
 
     /**
-     * Garante que a sincronização oficial cria o pipeline OPRM NichoCNAE ausente pelo código canônico.
+     * Garante que a sincronização oficial cria somente o pipeline OPRM NichoCNAE v3 ausente pelo código canônico.
      */
     @Test
-    void shouldCreateMissingOfficialOprmNichoCnaePipelineByCode() {
-        when(pipelineRepository.findByCode("oprm-nicho-cnae-pipeline")).thenReturn(Optional.empty());
+    void shouldCreateMissingOfficialOprmNichoCnaeV3PipelineByCode() {
+        when(pipelineRepository.findByCode("oprm-nicho-cnae-v3-pipeline")).thenReturn(Optional.empty());
         when(pipelineRepository.save(any(Pipeline.class))).thenAnswer(invocation -> {
             Pipeline saved = invocation.getArgument(0);
             if (saved.getId() == null) {
@@ -749,8 +749,8 @@ class PipelineServiceTest {
         when(pipelineRepository.findById(20L)).thenAnswer(invocation -> {
             Pipeline pipeline = Pipeline.builder()
                     .id(20L)
-                    .name("Pipeline Nicho CNAE")
-                    .code("oprm-nicho-cnae-pipeline")
+                    .name("Pipeline Nicho CNAE v3")
+                    .code("oprm-nicho-cnae-v3-pipeline")
                     .module("OPRM")
                     .stages(new ArrayList<>())
                     .build();
@@ -758,10 +758,10 @@ class PipelineServiceTest {
         });
         when(stageRepository.save(any(PipelineStage.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        PipelineSyncResultDto result = synchronizer.syncOfficialByCode("oprm-nicho-cnae-pipeline");
+        PipelineSyncResultDto result = synchronizer.syncOfficialByCode("oprm-nicho-cnae-v3-pipeline");
 
-        assertThat(result.appliedActions()).hasSize(11);
-        assertThat(result.canonicalPipelineCode()).isEqualTo("oprm-nicho-cnae-pipeline");
+        assertThat(result.appliedActions()).hasSize(10);
+        assertThat(result.canonicalPipelineCode()).isEqualTo("oprm-nicho-cnae-v3-pipeline");
     }
 
     /**

@@ -67,7 +67,7 @@ Subpacotes principais identificados:
 
 ### Endpoints e leitura administrativa
 
-- O padrão interno por etapa é `/api/internal/oprm/nichocnae/v3/<stageCode>/stage-executions`.
+- O padrão interno por etapa é `/api/internal/oprmcoletormei/nichocnae/v3/<stageCode>/stage-executions`.
 - A leitura administrativa de progresso fica no pacote `com.marketinghub.oprmcoletormei.nichocnae.v3.progress`.
 - O endpoint administrativo de progresso é `/api/oprm/nichocnae/v3/cnaes/{cnaeCode}/progress`.
 - A confirmação de finalização usa `/api/oprm/nichocnae/v3/cnaes/{cnaeCode}/progress/confirm-finalization`.

@@ -1587,3 +1587,9 @@
 - 2026-06-27 00:00:00 (UTC): removido o contrato oficial obsoleto `oprm-nicho-cnae-pipeline` do registry do backend e substituído pelo contrato único `oprm-nicho-cnae-v3-pipeline`, alinhado aos pacotes reais do executor `oprm-coletor-mei` em `com.marketinghub.pipelines.nichocnae.v3`; changelog incremental desativa o pipeline antigo no banco e cria a definição persistente v3.
 
 - 2026-06-27 00:00:00 (UTC): gerado Swagger específico `docs/swagger/oprmcoletormei-nichocnae-v3-swagger.yaml` para o contrato operacional do executor `oprm-coletor-mei` no pipeline `com.marketinghub.pipelines.nichocnae.v3`, documentando consumo de `pending`, callbacks `complete`/`fail`, health do módulo, etapas registradas e separação de responsabilidade em que o backend mantém a decisão de avanço do pipeline.
+
+## 2026-06-27 — Ajuste de endpoints internos NichoCNAE v3 do OPRM Coletor MEI
+
+- Atualizados os controllers backend de `com.marketinghub.oprmcoletormei.nichocnae.v3` para expor o prefixo canônico `/api/internal/oprmcoletormei/nichocnae/v3/<etapa>/stage-executions`.
+- Padronizados os callbacks operacionais para `/{idExterno}/start`, `/{idExterno}/{jobId}/recebeRequest`, `/{idExterno}/{jobId}/recebeResponse` e `POST /pending`.
+- Sincronizados o Swagger e o cliente do executor `oprm-coletor-mei` para consumir o novo contrato.

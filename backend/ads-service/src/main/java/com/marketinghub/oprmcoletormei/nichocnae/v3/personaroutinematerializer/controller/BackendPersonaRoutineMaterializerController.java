@@ -11,17 +11,15 @@ import com.marketinghub.oprmcoletormei.nichocnae.v3.shared.OprmNichoCnaeV3Recebe
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /** Controller canônico da etapa persona-routine-materializer do pipeline NichoCNAE v3. */
 @RestController
-@RequestMapping("/api/internal/oprm/nichocnae/v3/persona-routine-materializer/stage-executions")
+@RequestMapping("/api/internal/oprmcoletormei/nichocnae/v3/persona-routine-materializer/stage-executions")
 public class BackendPersonaRoutineMaterializerController {
     private static final Logger log = LoggerFactory.getLogger(BackendPersonaRoutineMaterializerController.class);
     private final BackendPersonaRoutineMaterializerService service;
@@ -32,8 +30,8 @@ public class BackendPersonaRoutineMaterializerController {
     }
 
     /** Inicia uma execução pendente da etapa a partir do CNAE informado pela tela. */
-    @PostMapping("/start")
-    public PersonaRoutineMaterializerCreateResponse start(@RequestParam String cnaeCode) {
+    @PostMapping("/{idExterno}/start")
+    public PersonaRoutineMaterializerCreateResponse start(@PathVariable("idExterno") String cnaeCode) {
         return service.start(cnaeCode);
     }
 
@@ -50,20 +48,20 @@ public class BackendPersonaRoutineMaterializerController {
     }
 
     /** Recebe o request bruto da etapa identificado pelo CNAE e jobId. */
-    @PostMapping("/cnaes/{cnaeCode}/jobs/{jobId}/recebeRequest")
-    public PersonaRoutineMaterializerCreateResponse recebeRequest(@PathVariable String cnaeCode, @PathVariable String jobId, @RequestBody OprmNichoCnaeV3RecebeRequestRequest request) {
+    @PostMapping("/{idExterno}/{jobId}/recebeRequest")
+    public PersonaRoutineMaterializerCreateResponse recebeRequest(@PathVariable("idExterno") String cnaeCode, @PathVariable String jobId, @RequestBody OprmNichoCnaeV3RecebeRequestRequest request) {
         return service.recebeRequest(cnaeCode, jobId, request);
     }
 
     /** Recebe o response bruto da etapa identificado pelo CNAE e jobId. */
-    @PostMapping("/cnaes/{cnaeCode}/jobs/{jobId}/recebeResponse")
-    public OprmNichoCnaeV3RecebeResponseResponse recebeResponse(@PathVariable String cnaeCode, @PathVariable String jobId, @RequestBody OprmNichoCnaeV3RecebeResponseRequest request) {
+    @PostMapping("/{idExterno}/{jobId}/recebeResponse")
+    public OprmNichoCnaeV3RecebeResponseResponse recebeResponse(@PathVariable("idExterno") String cnaeCode, @PathVariable String jobId, @RequestBody OprmNichoCnaeV3RecebeResponseRequest request) {
         log.info("Recebendo response NichoCNAE v3. etapa={}, cnaeCode={}, jobId={}, payload={}", service.stageCode(), cnaeCode, jobId, request);
         return service.recebeResponse(cnaeCode, jobId, request);
     }
 
     /** Entrega pendências da etapa persona-routine-materializer ao executor OPRM. */
-    @GetMapping("/pending")
+    @PostMapping("/pending")
     public List<PersonaRoutineMaterializerPendingResponse> pending() {
         return service.pending();
     }

@@ -19,8 +19,70 @@ tags:
   - name: Executor health
     description: Endpoint próprio do módulo executor para verificação operacional.
 paths:
-  /api/internal/oprm/nichocnae/v3/{stage}/stage-executions/pending:
-    get:
+  /api/internal/oprmcoletormei/nichocnae/v3/{stage}/stage-executions/{idExterno}/start:
+    post:
+      tags:
+        - Backend queue consumed by oprm-coletor-mei
+      summary: Inicia uma execução pendente da etapa NichoCNAE v3 para o identificador externo informado.
+      operationId: startNichoCnaeV3StageExecutionFromExternalId
+      parameters:
+        - $ref: '#/components/parameters/StagePath'
+        - $ref: '#/components/parameters/IdExternoPath'
+      responses:
+        '200':
+          description: Execução iniciada no backend.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NichoCnaeV3StageExecutionResponse'
+  /api/internal/oprmcoletormei/nichocnae/v3/{stage}/stage-executions/{idExterno}/{jobId}/recebeRequest:
+    post:
+      tags:
+        - Backend queue consumed by oprm-coletor-mei
+      summary: Registra o request bruto enviado para a execução por idExterno e jobId.
+      operationId: recebeRequestNichoCnaeV3StageExecution
+      parameters:
+        - $ref: '#/components/parameters/StagePath'
+        - $ref: '#/components/parameters/IdExternoPath'
+        - $ref: '#/components/parameters/JobIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NichoCnaeV3RecebeRequestRequest'
+      responses:
+        '200':
+          description: Request auditado no backend.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NichoCnaeV3StageExecutionResponse'
+  /api/internal/oprmcoletormei/nichocnae/v3/{stage}/stage-executions/{idExterno}/{jobId}/recebeResponse:
+    post:
+      tags:
+        - Backend queue consumed by oprm-coletor-mei
+      summary: Registra o response bruto recebido na execução por idExterno e jobId.
+      operationId: recebeResponseNichoCnaeV3StageExecution
+      parameters:
+        - $ref: '#/components/parameters/StagePath'
+        - $ref: '#/components/parameters/IdExternoPath'
+        - $ref: '#/components/parameters/JobIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NichoCnaeV3RecebeResponseRequest'
+      responses:
+        '200':
+          description: Response auditado no backend.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NichoCnaeV3RecebeResponseResponse'
+  /api/internal/oprmcoletormei/nichocnae/v3/{stage}/stage-executions/pending:
+    post:
       tags:
         - Backend queue consumed by oprm-coletor-mei
       summary: Lista pendências da etapa NichoCNAE v3 para execução no OPRM Coletor MEI.
@@ -42,7 +104,7 @@ paths:
                   $ref: '#/components/schemas/NichoCnaeV3PendingExecution'
         '500':
           $ref: '#/components/responses/BackendError'
-  /api/internal/oprm/nichocnae/v3/{stage}/stage-executions/{stageExecutionId}/complete:
+  /api/internal/oprmcoletormei/nichocnae/v3/{stage}/stage-executions/{stageExecutionId}/complete:
     post:
       tags:
         - Backend queue consumed by oprm-coletor-mei
@@ -74,7 +136,7 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/BackendError'
-  /api/internal/oprm/nichocnae/v3/{stage}/stage-executions/{stageExecutionId}/fail:
+  /api/internal/oprmcoletormei/nichocnae/v3/{stage}/stage-executions/{stageExecutionId}/fail:
     post:
       tags:
         - Backend queue consumed by oprm-coletor-mei
@@ -137,6 +199,22 @@ components:
         type: integer
         format: int64
         minimum: 1
+    IdExternoPath:
+      name: idExterno
+      in: path
+      required: true
+      description: Identificador externo do objeto processado pela etapa; no NichoCNAE v3 corresponde ao CNAE.
+      schema:
+        type: string
+        example: '9602501'
+    JobIdPath:
+      name: jobId
+      in: path
+      required: true
+      description: Identificador operacional ponta a ponta do job.
+      schema:
+        type: string
+        example: nichocnae-v3-9602501-1782411268024
   responses:
     InvalidRequest:
       description: Requisição inválida para o contrato da etapa.
@@ -202,6 +280,40 @@ components:
           type: integer
           minimum: 1
           example: 3
+    NichoCnaeV3RecebeRequestRequest:
+      type: object
+      properties:
+        request:
+          type: string
+        plataforma:
+          type: string
+        prompt:
+          type: string
+        schema:
+          type: string
+      additionalProperties: false
+    NichoCnaeV3RecebeResponseRequest:
+      type: object
+      properties:
+        response:
+          type: string
+        status:
+          type: string
+        modelo:
+          type: string
+        erro:
+          type: string
+      additionalProperties: false
+    NichoCnaeV3RecebeResponseResponse:
+      type: object
+      properties:
+        stageExecutionId:
+          type: integer
+          format: int64
+        status:
+          type: string
+        jobId:
+          type: string
     NichoCnaeV3CompletionRequest:
       type: object
       required:
@@ -274,7 +386,7 @@ components:
           example: Contrato inválido para a etapa informada.
         path:
           type: string
-          example: /api/internal/oprm/nichocnae/v3/source-fetcher/stage-executions/123/complete
+          example: /api/internal/oprmcoletormei/nichocnae/v3/source-fetcher/stage-executions/123/complete
 x-marketinghub:
   executorModule: oprm-coletor-mei
   executorPackage: com.marketinghub.pipelines.nichocnae.v3

@@ -41,6 +41,6 @@ public class NichoCnaeV3StageDefinitions {
 
     /** Cria definição com endpoint interno v3 da etapa. */
     private static NichoCnaeV3StageDefinition stage(String stageCode, com.marketinghub.pipelines.nichocnae.v3.core.StageProcessor processor) {
-        return new NichoCnaeV3StageDefinition(stageCode, "/api/internal/oprm/nichocnae/v3/" + stageCode + "/stage-executions", processor);
+        return new NichoCnaeV3StageDefinition(stageCode, "/api/internal/oprmcoletormei/nichocnae/v3/" + stageCode + "/stage-executions", processor);
     }
 }

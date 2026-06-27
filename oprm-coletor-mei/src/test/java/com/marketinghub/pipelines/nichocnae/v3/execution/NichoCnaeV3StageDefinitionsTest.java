@@ -28,7 +28,7 @@ class NichoCnaeV3StageDefinitionsTest {
         assertEquals(expectedStages().size(), stages.size());
         for (NichoCnaeV3StageDefinition stage : stages) {
             assertEquals(
-                    "/api/internal/oprm/nichocnae/v3/" + stage.stageCode() + "/stage-executions",
+                    "/api/internal/oprmcoletormei/nichocnae/v3/" + stage.stageCode() + "/stage-executions",
                     stage.backendPath());
             assertNotNull(stage.processor());
             assertFalse(stage.stageCode().isBlank());

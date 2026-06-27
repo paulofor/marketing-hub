@@ -1874,3 +1874,8 @@ Arquivos principais:
 - Aplicado no módulo executor `mois-sales-library-worker` para a solicitação `dossieproduto.v1` usando o pacote canônico consolidado `com.marketinghub.pipelines.dossie.v1`.
 - Adicionado teste de contrato do executor para validar o catálogo completo de processors do dossiê v1, execução pelo `PipelineWorker`, saída estruturada, artefatos auditáveis não nulos e bloqueio de etapa sem processor registrado.
 - Mantida a decisão de não recriar pacote duplicado `dossieproduto.v1`, preservando o backend fora do protocolo padrão módulo e o worker como executor operacional.
+
+## 2026-06-27 — Correção Liquibase das colunas do dossiê MOIS
+
+- Removida a dependência de posição física `AFTER dossie_produto_current_stage` na criação de `dossie_produto_updated_at`, que quebrava o bootstrap quando a coluna de etapa ainda não existia.
+- Criado changeset incremental para garantir as colunas canônicas `status_pipeline_dossieproduto` e `data_pipeline_dossieproduto` após a criação das colunas legadas, cobrindo bancos onde o rename anterior foi marcado como executado antes da falha.

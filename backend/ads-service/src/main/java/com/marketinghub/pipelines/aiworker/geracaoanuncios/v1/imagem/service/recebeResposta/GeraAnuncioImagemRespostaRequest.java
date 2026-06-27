@@ -1,7 +1,20 @@
 package com.marketinghub.pipelines.aiworker.geracaoanuncios.v1.imagem.service.recebeResposta;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Map;
 
 /** Dados auditáveis da resposta e da saída funcional da etapa Imagem. */
-public record GeraAnuncioImagemRespostaRequest(String jobId, Instant receivedAt, String status, Map<String, Object> responsePayload, Map<String, Object> structuredOutput, String error) {}
+public record GeraAnuncioImagemRespostaRequest(
+        String jobId,
+        Instant receivedAt,
+        String status,
+        Object response,
+        Map<String, Object> responsePayload,
+        Map<String, Object> structuredOutput,
+        String error,
+        String descricaoErro,
+        Long quantidadeTokenEntrada,
+        Long quantidadeTokenSaida,
+        BigDecimal custo,
+        String modelo) {}

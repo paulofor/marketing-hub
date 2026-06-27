@@ -139,6 +139,41 @@ public class GeraAnuncioTextoService {
     /** Registra a resposta do modelo e a saída estruturada retornada pelo worker. */
     public void recebeResposta(String stageExecutionId, GeraAnuncioTextoRespostaRequest request) {}
 
+    /** Recebe o callback final da etapa, atualiza o experimento e audita a resposta do AI Worker. */
+    @Transactional
+    public String recebeResponse(String experimentKey, String jobId, GeraAnuncioTextoRespostaRequest request) {
+        if (request == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "payload required");
+        }
+        if (!StringUtils.hasText(jobId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "jobId required");
+        }
+        Instant now = Instant.now();
+        String descricaoErro = resolveDescricaoErro(request);
+        MoisSalesPage salesPage = salesPageRepository
+                .findById(resolveExperimentId(experimentKey))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Sales page not found"));
+        salesPage.setStatusPipelineGeracaoAnuncios(StringUtils.hasText(descricaoErro) ? STATUS_FAILED : STATUS_COMPLETED);
+        salesPage.setDataPipelineGeracaoAnuncios(now);
+        salesPageRepository.save(salesPage);
+
+        PipelineGeracaoAnuncios pipeline = new PipelineGeracaoAnuncios();
+        pipeline.setIdExterno(experimentKey);
+        pipeline.setResponse(serializeRequest(resolveResponsePayload(request)));
+        pipeline.setCodigoEtapa(STAGE_CODE);
+        pipeline.setDataHora(now);
+        pipeline.setVersaoPipeline(PIPELINE_VERSION);
+        pipeline.setJobId(jobId.trim());
+        pipeline.setQuantidadeTokenEntrada(request.quantidadeTokenEntrada());
+        pipeline.setQuantidadeTokenSaida(request.quantidadeTokenSaida());
+        pipeline.setCusto(request.custo());
+        pipeline.setModelo(request.modelo());
+        pipeline.setDescricaoErro(descricaoErro);
+        pipelineRepository.save(pipeline);
+
+        return StringUtils.hasText(descricaoErro) ? null : resolveNextStageCode();
+    }
+
     /** Busca o detalhe auditável de uma execução da etapa. */
     public GeraAnuncioTextoDetailResponse detailStageExecution(String stageExecutionId) {
         Long experimentId = extractExperimentId(stageExecutionId);
@@ -235,6 +270,33 @@ public class GeraAnuncioTextoService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "experimentKey must be the numeric experiment id");
         }
         return Long.valueOf(normalizedExperimentKey);
+    }
+
+    /** Resolve a descrição de erro recebida pelo worker para decidir sucesso ou falha da etapa. */
+    private String resolveDescricaoErro(GeraAnuncioTextoRespostaRequest request) {
+        if (StringUtils.hasText(request.descricaoErro())) {
+            return request.descricaoErro().trim();
+        }
+        return StringUtils.hasText(request.error()) ? request.error().trim() : null;
+    }
+
+    /** Resolve o payload de resposta que deve ser auditado no histórico do pipeline. */
+    private Object resolveResponsePayload(GeraAnuncioTextoRespostaRequest request) {
+        if (request.response() != null) {
+            return request.response();
+        }
+        if (request.responsePayload() != null) {
+            return request.responsePayload();
+        }
+        if (request.structuredOutput() != null) {
+            return request.structuredOutput();
+        }
+        return request;
+    }
+
+    /** Retorna a próxima etapa funcional ou nulo quando a etapa atual finaliza o pipeline. */
+    private String resolveNextStageCode() {
+        return "fim".equals(NEXT_STAGE) ? null : NEXT_STAGE;
     }
 
     /** Serializa o request recebido preservando payload estruturado quando existir. */

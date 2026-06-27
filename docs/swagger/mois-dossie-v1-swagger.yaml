@@ -1,149 +1,60 @@
 openapi: 3.0.3
 info:
-  title: MOIS Dossiê v1 API
+  title: MOIS Sales Library Worker Dossiê Produto v1 API
   version: v1
-  description: Contratos internos do pipeline de criação de dossiê MOIS v1.
+  description: >-
+    Swagger dos contratos internos do backend para o executor
+    moissaleslibraryworker.dossieproduto.v1. O backend é a fonte de verdade
+    da fila, auditoria, status e avanço; o worker consome pending e reporta
+    request/response pelas rotas canônicas.
+servers:
+  - url: http://191.252.181.168
+    description: Backend principal para uso do Codex e workers
+tags:
+  - name: moissaleslibraryworker.dossieproduto.v1
+    description: Pipeline v1 de dossiê de produto da biblioteca de páginas de venda MOIS
 paths:
+  /api/internal/mois/dossieproduto/v1/intake/stage-executions/start:
+    post:
+      tags:
+        - moissaleslibraryworker.dossieproduto.v1
+      summary: Inicia manualmente a etapa Entrada inicial do dossiê MOIS v1
+      operationId: startMoisDossieProdutoV1IntakeStageExecution
+      parameters:
+        - name: productKey
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Chave operacional da página/produto MOIS.
+      responses:
+        '200':
+          description: Etapa iniciada sem corpo de resposta
   /api/internal/mois/dossieproduto/v1/intake/stage-executions/pending:
     post:
+      tags:
+        - moissaleslibraryworker.dossieproduto.v1
       summary: Lista pendências canônicas da etapa Entrada inicial do dossiê MOIS v1
-      operationId: pendingMoisDossieV1IntakeStageExecutions
+      operationId: pendingMoisDossieProdutoV1IntakeStageExecutions
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/DossierIntakePendingRequest'
+              $ref: "#/components/schemas/DossierIntakePendingRequest"
       responses:
         '200':
           description: Pendências disponíveis para o executor
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DossierIntakePendingResponse'
-  /api/internal/mois/dossieproduto/v1/product-understanding/stage-executions/pending:
-    post:
-      summary: Lista pendências canônicas da etapa Entendimento do produto do dossiê MOIS v1
-      operationId: pendingMoisDossieV1ProductUnderstandingStageExecutions
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/DossierProductUnderstandingPendingRequest'
-      responses:
-        '200':
-          description: Pendências disponíveis para o executor
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DossierProductUnderstandingPendingResponse'
-  /api/internal/mois/dossieproduto/v1/investigation-anchor-builder/stage-executions/pending:
-    post:
-      summary: Lista pendências canônicas da etapa Geração de âncoras de investigação do dossiê MOIS v1
-      operationId: pendingMoisDossieV1InvestigationAnchorBuilderStageExecutions
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/DossierInvestigationAnchorBuilderPendingRequest'
-      responses:
-        '200':
-          description: Pendências disponíveis para o executor
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DossierInvestigationAnchorBuilderPendingResponse'
-  /api/internal/mois/dossieproduto/v1/warmup-resource-discovery/stage-executions/pending:
-    post:
-      summary: Lista pendências canônicas da etapa Descoberta de recursos de aquecimento do dossiê MOIS v1
-      operationId: pendingMoisDossieV1WarmupResourceDiscoveryStageExecutions
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/DossierWarmupResourceDiscoveryPendingRequest'
-      responses:
-        '200':
-          description: Pendências disponíveis para o executor
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DossierWarmupResourceDiscoveryPendingResponse'
-  /api/internal/mois/dossieproduto/v1/source-product-match/stage-executions/pending:
-    post:
-      summary: Lista pendências canônicas da etapa Validação de relação fonte-produto do dossiê MOIS v1
-      operationId: pendingMoisDossieV1SourceProductMatchStageExecutions
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/DossierSourceProductMatchPendingRequest'
-      responses:
-        '200':
-          description: Pendências disponíveis para o executor
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DossierSourceProductMatchPendingResponse'
-  /api/internal/mois/dossieproduto/v1/warmup-signal-extraction/stage-executions/pending:
-    post:
-      summary: Lista pendências canônicas da etapa Extração de sinais de aquecimento do dossiê MOIS v1
-      operationId: pendingMoisDossieV1WarmupSignalExtractionStageExecutions
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/DossierWarmupSignalExtractionPendingRequest'
-      responses:
-        '200':
-          description: Pendências disponíveis para o executor
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DossierWarmupSignalExtractionPendingResponse'
-  /api/internal/mois/dossieproduto/v1/warmup-map-builder/stage-executions/pending:
-    post:
-      summary: Lista pendências canônicas da etapa Montagem do mapa de aquecimento do dossiê MOIS v1
-      operationId: pendingMoisDossieV1WarmupMapBuilderStageExecutions
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/DossierWarmupMapBuilderPendingRequest'
-      responses:
-        '200':
-          description: Pendências disponíveis para o executor
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DossierWarmupMapBuilderPendingResponse'
-  /api/internal/mois/dossieproduto/v1/dossier-synthesis/stage-executions/pending:
-    post:
-      summary: Lista pendências canônicas da etapa Síntese final do dossiê do dossiê MOIS v1
-      operationId: pendingMoisDossieV1DossierSynthesisStageExecutions
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/DossierDossierSynthesisPendingRequest'
-      responses:
-        '200':
-          description: Pendências disponíveis para o executor
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DossierDossierSynthesisPendingResponse'
+                $ref: "#/components/schemas/DossierIntakePendingResponse"
   /api/internal/mois/dossieproduto/v1/intake/stage-executions/{productKey}/{jobId}/recebeRequest:
     post:
+      tags:
+        - moissaleslibraryworker.dossieproduto.v1
       summary: Recebe request operacional da etapa intake do dossiê MOIS v1
-      operationId: recebeRequestMoisDossieV1IntakeStageExecutions
+      operationId: recebeRequestMoisDossieProdutoV1IntakeStageExecutions
       parameters:
         - name: productKey
           in: path
@@ -160,214 +71,20 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/DossierIntakeRecebeRequestRequest'
+              $ref: "#/components/schemas/DossierIntakeRecebeRequestRequest"
       responses:
         '200':
-          description: Request recebido e auditoria registrada
+          description: Request operacional recebido e auditado
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DossierIntakeRecebeRequestResponse'
-  /api/internal/mois/dossieproduto/v1/product-understanding/stage-executions/{productKey}/{jobId}/recebeRequest:
-    post:
-      summary: Recebe request operacional da etapa product-understanding do dossiê MOIS v1
-      operationId: recebeRequestMoisDossieV1ProductUnderstandingStageExecutions
-      parameters:
-        - name: productKey
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: jobId
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/DossierProductUnderstandingRecebeRequestRequest'
-      responses:
-        '200':
-          description: Request recebido e auditoria registrada
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DossierProductUnderstandingRecebeRequestResponse'
-  /api/internal/mois/dossieproduto/v1/investigation-anchor-builder/stage-executions/{productKey}/{jobId}/recebeRequest:
-    post:
-      summary: Recebe request operacional da etapa investigation-anchor-builder do dossiê MOIS v1
-      operationId: recebeRequestMoisDossieV1InvestigationAnchorBuilderStageExecutions
-      parameters:
-        - name: productKey
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: jobId
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/DossierInvestigationAnchorBuilderRecebeRequestRequest'
-      responses:
-        '200':
-          description: Request recebido e auditoria registrada
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DossierInvestigationAnchorBuilderRecebeRequestResponse'
-  /api/internal/mois/dossieproduto/v1/warmup-resource-discovery/stage-executions/{productKey}/{jobId}/recebeRequest:
-    post:
-      summary: Recebe request operacional da etapa warmup-resource-discovery do dossiê MOIS v1
-      operationId: recebeRequestMoisDossieV1WarmupResourceDiscoveryStageExecutions
-      parameters:
-        - name: productKey
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: jobId
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/DossierWarmupResourceDiscoveryRecebeRequestRequest'
-      responses:
-        '200':
-          description: Request recebido e auditoria registrada
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DossierWarmupResourceDiscoveryRecebeRequestResponse'
-  /api/internal/mois/dossieproduto/v1/source-product-match/stage-executions/{productKey}/{jobId}/recebeRequest:
-    post:
-      summary: Recebe request operacional da etapa source-product-match do dossiê MOIS v1
-      operationId: recebeRequestMoisDossieV1SourceProductMatchStageExecutions
-      parameters:
-        - name: productKey
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: jobId
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/DossierSourceProductMatchRecebeRequestRequest'
-      responses:
-        '200':
-          description: Request recebido e auditoria registrada
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DossierSourceProductMatchRecebeRequestResponse'
-  /api/internal/mois/dossieproduto/v1/warmup-signal-extraction/stage-executions/{productKey}/{jobId}/recebeRequest:
-    post:
-      summary: Recebe request operacional da etapa warmup-signal-extraction do dossiê MOIS v1
-      operationId: recebeRequestMoisDossieV1WarmupSignalExtractionStageExecutions
-      parameters:
-        - name: productKey
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: jobId
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/DossierWarmupSignalExtractionRecebeRequestRequest'
-      responses:
-        '200':
-          description: Request recebido e auditoria registrada
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DossierWarmupSignalExtractionRecebeRequestResponse'
-  /api/internal/mois/dossieproduto/v1/warmup-map-builder/stage-executions/{productKey}/{jobId}/recebeRequest:
-    post:
-      summary: Recebe request operacional da etapa warmup-map-builder do dossiê MOIS v1
-      operationId: recebeRequestMoisDossieV1WarmupMapBuilderStageExecutions
-      parameters:
-        - name: productKey
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: jobId
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/DossierWarmupMapBuilderRecebeRequestRequest'
-      responses:
-        '200':
-          description: Request recebido e auditoria registrada
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DossierWarmupMapBuilderRecebeRequestResponse'
-  /api/internal/mois/dossieproduto/v1/dossier-synthesis/stage-executions/{productKey}/{jobId}/recebeRequest:
-    post:
-      summary: Recebe request operacional da etapa dossier-synthesis do dossiê MOIS v1
-      operationId: recebeRequestMoisDossieV1DossierSynthesisStageExecutions
-      parameters:
-        - name: productKey
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: jobId
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/DossierDossierSynthesisRecebeRequestRequest'
-      responses:
-        '200':
-          description: Request recebido e auditoria registrada
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DossierDossierSynthesisRecebeRequestResponse'
+                $ref: "#/components/schemas/DossierIntakeRecebeRequestResponse"
   /api/internal/mois/dossieproduto/v1/intake/stage-executions/{productKey}/{jobId}/recebeResponse:
     post:
-      summary: Recebe response operacional da etapa intake do dossiê MOIS v1
-      operationId: recebeResponseMoisDossieV1IntakeStageExecutions
+      tags:
+        - moissaleslibraryworker.dossieproduto.v1
+      summary: Recebe resposta operacional da etapa intake do dossiê MOIS v1
+      operationId: recebeResponseMoisDossieProdutoV1IntakeStageExecutions
       parameters:
         - name: productKey
           in: path
@@ -384,18 +101,85 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/DossierIntakeRecebeResponseRequest'
+              $ref: "#/components/schemas/DossierIntakeRecebeResponseRequest"
       responses:
         '200':
-          description: Response recebido, página atualizada e auditoria registrada
+          description: Resposta operacional recebido e auditado
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DossierIntakeRecebeResponseResponse'
+                $ref: "#/components/schemas/DossierIntakeRecebeResponseResponse"
+  /api/internal/mois/dossieproduto/v1/product-understanding/stage-executions/start:
+    post:
+      tags:
+        - moissaleslibraryworker.dossieproduto.v1
+      summary: Inicia manualmente a etapa Entendimento do produto do dossiê MOIS v1
+      operationId: startMoisDossieProdutoV1ProductUnderstandingStageExecution
+      parameters:
+        - name: productKey
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Chave operacional da página/produto MOIS.
+      responses:
+        '200':
+          description: Etapa iniciada sem corpo de resposta
+  /api/internal/mois/dossieproduto/v1/product-understanding/stage-executions/pending:
+    post:
+      tags:
+        - moissaleslibraryworker.dossieproduto.v1
+      summary: Lista pendências canônicas da etapa Entendimento do produto do dossiê MOIS v1
+      operationId: pendingMoisDossieProdutoV1ProductUnderstandingStageExecutions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DossierProductUnderstandingPendingRequest"
+      responses:
+        '200':
+          description: Pendências disponíveis para o executor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DossierProductUnderstandingPendingResponse"
+  /api/internal/mois/dossieproduto/v1/product-understanding/stage-executions/{productKey}/{jobId}/recebeRequest:
+    post:
+      tags:
+        - moissaleslibraryworker.dossieproduto.v1
+      summary: Recebe request operacional da etapa product-understanding do dossiê MOIS v1
+      operationId: recebeRequestMoisDossieProdutoV1ProductUnderstandingStageExecutions
+      parameters:
+        - name: productKey
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DossierProductUnderstandingRecebeRequestRequest"
+      responses:
+        '200':
+          description: Request operacional recebido e auditado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DossierProductUnderstandingRecebeRequestResponse"
   /api/internal/mois/dossieproduto/v1/product-understanding/stage-executions/{productKey}/{jobId}/recebeResponse:
     post:
-      summary: Recebe response operacional da etapa product-understanding do dossiê MOIS v1
-      operationId: recebeResponseMoisDossieV1ProductUnderstandingStageExecutions
+      tags:
+        - moissaleslibraryworker.dossieproduto.v1
+      summary: Recebe resposta operacional da etapa product-understanding do dossiê MOIS v1
+      operationId: recebeResponseMoisDossieProdutoV1ProductUnderstandingStageExecutions
       parameters:
         - name: productKey
           in: path
@@ -412,18 +196,85 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/DossierProductUnderstandingRecebeResponseRequest'
+              $ref: "#/components/schemas/DossierProductUnderstandingRecebeResponseRequest"
       responses:
         '200':
-          description: Response recebido, página atualizada e auditoria registrada
+          description: Resposta operacional recebido e auditado
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DossierProductUnderstandingRecebeResponseResponse'
+                $ref: "#/components/schemas/DossierProductUnderstandingRecebeResponseResponse"
+  /api/internal/mois/dossieproduto/v1/investigation-anchor-builder/stage-executions/start:
+    post:
+      tags:
+        - moissaleslibraryworker.dossieproduto.v1
+      summary: Inicia manualmente a etapa Geração de âncoras de investigação do dossiê MOIS v1
+      operationId: startMoisDossieProdutoV1InvestigationAnchorBuilderStageExecution
+      parameters:
+        - name: productKey
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Chave operacional da página/produto MOIS.
+      responses:
+        '200':
+          description: Etapa iniciada sem corpo de resposta
+  /api/internal/mois/dossieproduto/v1/investigation-anchor-builder/stage-executions/pending:
+    post:
+      tags:
+        - moissaleslibraryworker.dossieproduto.v1
+      summary: Lista pendências canônicas da etapa Geração de âncoras de investigação do dossiê MOIS v1
+      operationId: pendingMoisDossieProdutoV1InvestigationAnchorBuilderStageExecutions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DossierInvestigationAnchorBuilderPendingRequest"
+      responses:
+        '200':
+          description: Pendências disponíveis para o executor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DossierInvestigationAnchorBuilderPendingResponse"
+  /api/internal/mois/dossieproduto/v1/investigation-anchor-builder/stage-executions/{productKey}/{jobId}/recebeRequest:
+    post:
+      tags:
+        - moissaleslibraryworker.dossieproduto.v1
+      summary: Recebe request operacional da etapa investigation-anchor-builder do dossiê MOIS v1
+      operationId: recebeRequestMoisDossieProdutoV1InvestigationAnchorBuilderStageExecutions
+      parameters:
+        - name: productKey
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DossierInvestigationAnchorBuilderRecebeRequestRequest"
+      responses:
+        '200':
+          description: Request operacional recebido e auditado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DossierInvestigationAnchorBuilderRecebeRequestResponse"
   /api/internal/mois/dossieproduto/v1/investigation-anchor-builder/stage-executions/{productKey}/{jobId}/recebeResponse:
     post:
-      summary: Recebe response operacional da etapa investigation-anchor-builder do dossiê MOIS v1
-      operationId: recebeResponseMoisDossieV1InvestigationAnchorBuilderStageExecutions
+      tags:
+        - moissaleslibraryworker.dossieproduto.v1
+      summary: Recebe resposta operacional da etapa investigation-anchor-builder do dossiê MOIS v1
+      operationId: recebeResponseMoisDossieProdutoV1InvestigationAnchorBuilderStageExecutions
       parameters:
         - name: productKey
           in: path
@@ -440,18 +291,85 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/DossierInvestigationAnchorBuilderRecebeResponseRequest'
+              $ref: "#/components/schemas/DossierInvestigationAnchorBuilderRecebeResponseRequest"
       responses:
         '200':
-          description: Response recebido, página atualizada e auditoria registrada
+          description: Resposta operacional recebido e auditado
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DossierInvestigationAnchorBuilderRecebeResponseResponse'
+                $ref: "#/components/schemas/DossierInvestigationAnchorBuilderRecebeResponseResponse"
+  /api/internal/mois/dossieproduto/v1/warmup-resource-discovery/stage-executions/start:
+    post:
+      tags:
+        - moissaleslibraryworker.dossieproduto.v1
+      summary: Inicia manualmente a etapa Descoberta de recursos de aquecimento do dossiê MOIS v1
+      operationId: startMoisDossieProdutoV1WarmupResourceDiscoveryStageExecution
+      parameters:
+        - name: productKey
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Chave operacional da página/produto MOIS.
+      responses:
+        '200':
+          description: Etapa iniciada sem corpo de resposta
+  /api/internal/mois/dossieproduto/v1/warmup-resource-discovery/stage-executions/pending:
+    post:
+      tags:
+        - moissaleslibraryworker.dossieproduto.v1
+      summary: Lista pendências canônicas da etapa Descoberta de recursos de aquecimento do dossiê MOIS v1
+      operationId: pendingMoisDossieProdutoV1WarmupResourceDiscoveryStageExecutions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DossierWarmupResourceDiscoveryPendingRequest"
+      responses:
+        '200':
+          description: Pendências disponíveis para o executor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DossierWarmupResourceDiscoveryPendingResponse"
+  /api/internal/mois/dossieproduto/v1/warmup-resource-discovery/stage-executions/{productKey}/{jobId}/recebeRequest:
+    post:
+      tags:
+        - moissaleslibraryworker.dossieproduto.v1
+      summary: Recebe request operacional da etapa warmup-resource-discovery do dossiê MOIS v1
+      operationId: recebeRequestMoisDossieProdutoV1WarmupResourceDiscoveryStageExecutions
+      parameters:
+        - name: productKey
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DossierWarmupResourceDiscoveryRecebeRequestRequest"
+      responses:
+        '200':
+          description: Request operacional recebido e auditado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DossierWarmupResourceDiscoveryRecebeRequestResponse"
   /api/internal/mois/dossieproduto/v1/warmup-resource-discovery/stage-executions/{productKey}/{jobId}/recebeResponse:
     post:
-      summary: Recebe response operacional da etapa warmup-resource-discovery do dossiê MOIS v1
-      operationId: recebeResponseMoisDossieV1WarmupResourceDiscoveryStageExecutions
+      tags:
+        - moissaleslibraryworker.dossieproduto.v1
+      summary: Recebe resposta operacional da etapa warmup-resource-discovery do dossiê MOIS v1
+      operationId: recebeResponseMoisDossieProdutoV1WarmupResourceDiscoveryStageExecutions
       parameters:
         - name: productKey
           in: path
@@ -468,18 +386,85 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/DossierWarmupResourceDiscoveryRecebeResponseRequest'
+              $ref: "#/components/schemas/DossierWarmupResourceDiscoveryRecebeResponseRequest"
       responses:
         '200':
-          description: Response recebido, página atualizada e auditoria registrada
+          description: Resposta operacional recebido e auditado
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DossierWarmupResourceDiscoveryRecebeResponseResponse'
+                $ref: "#/components/schemas/DossierWarmupResourceDiscoveryRecebeResponseResponse"
+  /api/internal/mois/dossieproduto/v1/source-product-match/stage-executions/start:
+    post:
+      tags:
+        - moissaleslibraryworker.dossieproduto.v1
+      summary: Inicia manualmente a etapa Validação de relação fonte-produto do dossiê MOIS v1
+      operationId: startMoisDossieProdutoV1SourceProductMatchStageExecution
+      parameters:
+        - name: productKey
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Chave operacional da página/produto MOIS.
+      responses:
+        '200':
+          description: Etapa iniciada sem corpo de resposta
+  /api/internal/mois/dossieproduto/v1/source-product-match/stage-executions/pending:
+    post:
+      tags:
+        - moissaleslibraryworker.dossieproduto.v1
+      summary: Lista pendências canônicas da etapa Validação de relação fonte-produto do dossiê MOIS v1
+      operationId: pendingMoisDossieProdutoV1SourceProductMatchStageExecutions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DossierSourceProductMatchPendingRequest"
+      responses:
+        '200':
+          description: Pendências disponíveis para o executor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DossierSourceProductMatchPendingResponse"
+  /api/internal/mois/dossieproduto/v1/source-product-match/stage-executions/{productKey}/{jobId}/recebeRequest:
+    post:
+      tags:
+        - moissaleslibraryworker.dossieproduto.v1
+      summary: Recebe request operacional da etapa source-product-match do dossiê MOIS v1
+      operationId: recebeRequestMoisDossieProdutoV1SourceProductMatchStageExecutions
+      parameters:
+        - name: productKey
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DossierSourceProductMatchRecebeRequestRequest"
+      responses:
+        '200':
+          description: Request operacional recebido e auditado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DossierSourceProductMatchRecebeRequestResponse"
   /api/internal/mois/dossieproduto/v1/source-product-match/stage-executions/{productKey}/{jobId}/recebeResponse:
     post:
-      summary: Recebe response operacional da etapa source-product-match do dossiê MOIS v1
-      operationId: recebeResponseMoisDossieV1SourceProductMatchStageExecutions
+      tags:
+        - moissaleslibraryworker.dossieproduto.v1
+      summary: Recebe resposta operacional da etapa source-product-match do dossiê MOIS v1
+      operationId: recebeResponseMoisDossieProdutoV1SourceProductMatchStageExecutions
       parameters:
         - name: productKey
           in: path
@@ -496,18 +481,85 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/DossierSourceProductMatchRecebeResponseRequest'
+              $ref: "#/components/schemas/DossierSourceProductMatchRecebeResponseRequest"
       responses:
         '200':
-          description: Response recebido, página atualizada e auditoria registrada
+          description: Resposta operacional recebido e auditado
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DossierSourceProductMatchRecebeResponseResponse'
+                $ref: "#/components/schemas/DossierSourceProductMatchRecebeResponseResponse"
+  /api/internal/mois/dossieproduto/v1/warmup-signal-extraction/stage-executions/start:
+    post:
+      tags:
+        - moissaleslibraryworker.dossieproduto.v1
+      summary: Inicia manualmente a etapa Extração de sinais de aquecimento do dossiê MOIS v1
+      operationId: startMoisDossieProdutoV1WarmupSignalExtractionStageExecution
+      parameters:
+        - name: productKey
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Chave operacional da página/produto MOIS.
+      responses:
+        '200':
+          description: Etapa iniciada sem corpo de resposta
+  /api/internal/mois/dossieproduto/v1/warmup-signal-extraction/stage-executions/pending:
+    post:
+      tags:
+        - moissaleslibraryworker.dossieproduto.v1
+      summary: Lista pendências canônicas da etapa Extração de sinais de aquecimento do dossiê MOIS v1
+      operationId: pendingMoisDossieProdutoV1WarmupSignalExtractionStageExecutions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DossierWarmupSignalExtractionPendingRequest"
+      responses:
+        '200':
+          description: Pendências disponíveis para o executor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DossierWarmupSignalExtractionPendingResponse"
+  /api/internal/mois/dossieproduto/v1/warmup-signal-extraction/stage-executions/{productKey}/{jobId}/recebeRequest:
+    post:
+      tags:
+        - moissaleslibraryworker.dossieproduto.v1
+      summary: Recebe request operacional da etapa warmup-signal-extraction do dossiê MOIS v1
+      operationId: recebeRequestMoisDossieProdutoV1WarmupSignalExtractionStageExecutions
+      parameters:
+        - name: productKey
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DossierWarmupSignalExtractionRecebeRequestRequest"
+      responses:
+        '200':
+          description: Request operacional recebido e auditado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DossierWarmupSignalExtractionRecebeRequestResponse"
   /api/internal/mois/dossieproduto/v1/warmup-signal-extraction/stage-executions/{productKey}/{jobId}/recebeResponse:
     post:
-      summary: Recebe response operacional da etapa warmup-signal-extraction do dossiê MOIS v1
-      operationId: recebeResponseMoisDossieV1WarmupSignalExtractionStageExecutions
+      tags:
+        - moissaleslibraryworker.dossieproduto.v1
+      summary: Recebe resposta operacional da etapa warmup-signal-extraction do dossiê MOIS v1
+      operationId: recebeResponseMoisDossieProdutoV1WarmupSignalExtractionStageExecutions
       parameters:
         - name: productKey
           in: path
@@ -524,18 +576,85 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/DossierWarmupSignalExtractionRecebeResponseRequest'
+              $ref: "#/components/schemas/DossierWarmupSignalExtractionRecebeResponseRequest"
       responses:
         '200':
-          description: Response recebido, página atualizada e auditoria registrada
+          description: Resposta operacional recebido e auditado
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DossierWarmupSignalExtractionRecebeResponseResponse'
+                $ref: "#/components/schemas/DossierWarmupSignalExtractionRecebeResponseResponse"
+  /api/internal/mois/dossieproduto/v1/warmup-map-builder/stage-executions/start:
+    post:
+      tags:
+        - moissaleslibraryworker.dossieproduto.v1
+      summary: Inicia manualmente a etapa Montagem do mapa de aquecimento do dossiê MOIS v1
+      operationId: startMoisDossieProdutoV1WarmupMapBuilderStageExecution
+      parameters:
+        - name: productKey
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Chave operacional da página/produto MOIS.
+      responses:
+        '200':
+          description: Etapa iniciada sem corpo de resposta
+  /api/internal/mois/dossieproduto/v1/warmup-map-builder/stage-executions/pending:
+    post:
+      tags:
+        - moissaleslibraryworker.dossieproduto.v1
+      summary: Lista pendências canônicas da etapa Montagem do mapa de aquecimento do dossiê MOIS v1
+      operationId: pendingMoisDossieProdutoV1WarmupMapBuilderStageExecutions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DossierWarmupMapBuilderPendingRequest"
+      responses:
+        '200':
+          description: Pendências disponíveis para o executor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DossierWarmupMapBuilderPendingResponse"
+  /api/internal/mois/dossieproduto/v1/warmup-map-builder/stage-executions/{productKey}/{jobId}/recebeRequest:
+    post:
+      tags:
+        - moissaleslibraryworker.dossieproduto.v1
+      summary: Recebe request operacional da etapa warmup-map-builder do dossiê MOIS v1
+      operationId: recebeRequestMoisDossieProdutoV1WarmupMapBuilderStageExecutions
+      parameters:
+        - name: productKey
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DossierWarmupMapBuilderRecebeRequestRequest"
+      responses:
+        '200':
+          description: Request operacional recebido e auditado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DossierWarmupMapBuilderRecebeRequestResponse"
   /api/internal/mois/dossieproduto/v1/warmup-map-builder/stage-executions/{productKey}/{jobId}/recebeResponse:
     post:
-      summary: Recebe response operacional da etapa warmup-map-builder do dossiê MOIS v1
-      operationId: recebeResponseMoisDossieV1WarmupMapBuilderStageExecutions
+      tags:
+        - moissaleslibraryworker.dossieproduto.v1
+      summary: Recebe resposta operacional da etapa warmup-map-builder do dossiê MOIS v1
+      operationId: recebeResponseMoisDossieProdutoV1WarmupMapBuilderStageExecutions
       parameters:
         - name: productKey
           in: path
@@ -552,18 +671,85 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/DossierWarmupMapBuilderRecebeResponseRequest'
+              $ref: "#/components/schemas/DossierWarmupMapBuilderRecebeResponseRequest"
       responses:
         '200':
-          description: Response recebido, página atualizada e auditoria registrada
+          description: Resposta operacional recebido e auditado
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DossierWarmupMapBuilderRecebeResponseResponse'
+                $ref: "#/components/schemas/DossierWarmupMapBuilderRecebeResponseResponse"
+  /api/internal/mois/dossieproduto/v1/dossier-synthesis/stage-executions/start:
+    post:
+      tags:
+        - moissaleslibraryworker.dossieproduto.v1
+      summary: Inicia manualmente a etapa Síntese final do dossiê do dossiê MOIS v1
+      operationId: startMoisDossieProdutoV1DossierSynthesisStageExecution
+      parameters:
+        - name: productKey
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Chave operacional da página/produto MOIS.
+      responses:
+        '200':
+          description: Etapa iniciada sem corpo de resposta
+  /api/internal/mois/dossieproduto/v1/dossier-synthesis/stage-executions/pending:
+    post:
+      tags:
+        - moissaleslibraryworker.dossieproduto.v1
+      summary: Lista pendências canônicas da etapa Síntese final do dossiê do dossiê MOIS v1
+      operationId: pendingMoisDossieProdutoV1DossierSynthesisStageExecutions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DossierDossierSynthesisPendingRequest"
+      responses:
+        '200':
+          description: Pendências disponíveis para o executor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DossierDossierSynthesisPendingResponse"
+  /api/internal/mois/dossieproduto/v1/dossier-synthesis/stage-executions/{productKey}/{jobId}/recebeRequest:
+    post:
+      tags:
+        - moissaleslibraryworker.dossieproduto.v1
+      summary: Recebe request operacional da etapa dossier-synthesis do dossiê MOIS v1
+      operationId: recebeRequestMoisDossieProdutoV1DossierSynthesisStageExecutions
+      parameters:
+        - name: productKey
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DossierDossierSynthesisRecebeRequestRequest"
+      responses:
+        '200':
+          description: Request operacional recebido e auditado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DossierDossierSynthesisRecebeRequestResponse"
   /api/internal/mois/dossieproduto/v1/dossier-synthesis/stage-executions/{productKey}/{jobId}/recebeResponse:
     post:
-      summary: Recebe response operacional da etapa dossier-synthesis do dossiê MOIS v1
-      operationId: recebeResponseMoisDossieV1DossierSynthesisStageExecutions
+      tags:
+        - moissaleslibraryworker.dossieproduto.v1
+      summary: Recebe resposta operacional da etapa dossier-synthesis do dossiê MOIS v1
+      operationId: recebeResponseMoisDossieProdutoV1DossierSynthesisStageExecutions
       parameters:
         - name: productKey
           in: path
@@ -580,21 +766,95 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/DossierDossierSynthesisRecebeResponseRequest'
+              $ref: "#/components/schemas/DossierDossierSynthesisRecebeResponseRequest"
       responses:
         '200':
-          description: Response recebido, página atualizada e auditoria registrada
+          description: Resposta operacional recebido e auditado
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DossierDossierSynthesisRecebeResponseResponse'
+                $ref: "#/components/schemas/DossierDossierSynthesisRecebeResponseResponse"
 components:
   schemas:
+    DossierIntakePendingRequest:
+      type: object
+      required:
+        - workspaceId
+        - workerId
+      properties:
+        workspaceId:
+          type: string
+        workerId:
+          type: string
+        limit:
+          type: integer
+          format: int32
+          minimum: 1
+    DossierIntakePendingResponse:
+      type: object
+      required:
+        - claimed
+        - jobs
+      properties:
+        claimed:
+          type: boolean
+        jobs:
+          type: array
+          items:
+            $ref: "#/components/schemas/DossierIntakePendingJob"
+    DossierIntakePendingJob:
+      type: object
+      required:
+        - jobId
+        - stageExecutionId
+        - dossierId
+        - workspaceId
+        - stageName
+        - input
+      properties:
+        jobId:
+          type: string
+          description: JobId UUID para rastrear a execução da etapa.
+        stageExecutionId:
+          type: integer
+          format: int64
+        dossierId:
+          type: integer
+          format: int64
+        workspaceId:
+          type: string
+        stageName:
+          type: string
+        input:
+          type: object
+          additionalProperties: true
+    DossierIntakeRecebeRequestRequest:
+      type: object
+      required:
+        - request
+      properties:
+        request:
+          type: string
+          description: Payload bruto/request enviado pelo executor.
+        plataforma:
+          type: string
+        prompt:
+          type: string
+        schema:
+          type: string
+    DossierIntakeRecebeRequestResponse:
+      type: object
+      properties:
+        jobId: { type: string }
+        idExterno: { type: string, description: Chave operacional da página/produto MOIS. }
+        codigoEtapa: { type: string }
+        status: { type: string }
     DossierIntakeRecebeResponseRequest:
       type: object
       properties:
         response:
           type: string
+          description: Payload bruto/response recebido pelo executor.
         descricaoErro:
           type: string
         quantidadeTokenEntrada:
@@ -610,21 +870,90 @@ components:
     DossierIntakeRecebeResponseResponse:
       type: object
       properties:
+        jobId: { type: string }
+        productKey: { type: string }
+        stageCode: { type: string }
+        status: { type: string }
+        nextStageCode: { type: string, nullable: true }
+    DossierProductUnderstandingPendingRequest:
+      type: object
+      required:
+        - workspaceId
+        - workerId
+      properties:
+        workspaceId:
+          type: string
+        workerId:
+          type: string
+        limit:
+          type: integer
+          format: int32
+          minimum: 1
+    DossierProductUnderstandingPendingResponse:
+      type: object
+      required:
+        - claimed
+        - jobs
+      properties:
+        claimed:
+          type: boolean
+        jobs:
+          type: array
+          items:
+            $ref: "#/components/schemas/DossierProductUnderstandingPendingJob"
+    DossierProductUnderstandingPendingJob:
+      type: object
+      required:
+        - jobId
+        - stageExecutionId
+        - dossierId
+        - workspaceId
+        - stageName
+        - input
+      properties:
         jobId:
           type: string
-        productKey:
+          description: JobId UUID para rastrear a execução da etapa.
+        stageExecutionId:
+          type: integer
+          format: int64
+        dossierId:
+          type: integer
+          format: int64
+        workspaceId:
           type: string
-        stageCode:
+        stageName:
           type: string
-        status:
+        input:
+          type: object
+          additionalProperties: true
+    DossierProductUnderstandingRecebeRequestRequest:
+      type: object
+      required:
+        - request
+      properties:
+        request:
           type: string
-        nextStageCode:
+          description: Payload bruto/request enviado pelo executor.
+        plataforma:
           type: string
+        prompt:
+          type: string
+        schema:
+          type: string
+    DossierProductUnderstandingRecebeRequestResponse:
+      type: object
+      properties:
+        jobId: { type: string }
+        idExterno: { type: string, description: Chave operacional da página/produto MOIS. }
+        codigoEtapa: { type: string }
+        status: { type: string }
     DossierProductUnderstandingRecebeResponseRequest:
       type: object
       properties:
         response:
           type: string
+          description: Payload bruto/response recebido pelo executor.
         descricaoErro:
           type: string
         quantidadeTokenEntrada:
@@ -640,21 +969,90 @@ components:
     DossierProductUnderstandingRecebeResponseResponse:
       type: object
       properties:
+        jobId: { type: string }
+        productKey: { type: string }
+        stageCode: { type: string }
+        status: { type: string }
+        nextStageCode: { type: string, nullable: true }
+    DossierInvestigationAnchorBuilderPendingRequest:
+      type: object
+      required:
+        - workspaceId
+        - workerId
+      properties:
+        workspaceId:
+          type: string
+        workerId:
+          type: string
+        limit:
+          type: integer
+          format: int32
+          minimum: 1
+    DossierInvestigationAnchorBuilderPendingResponse:
+      type: object
+      required:
+        - claimed
+        - jobs
+      properties:
+        claimed:
+          type: boolean
+        jobs:
+          type: array
+          items:
+            $ref: "#/components/schemas/DossierInvestigationAnchorBuilderPendingJob"
+    DossierInvestigationAnchorBuilderPendingJob:
+      type: object
+      required:
+        - jobId
+        - stageExecutionId
+        - dossierId
+        - workspaceId
+        - stageName
+        - input
+      properties:
         jobId:
           type: string
-        productKey:
+          description: JobId UUID para rastrear a execução da etapa.
+        stageExecutionId:
+          type: integer
+          format: int64
+        dossierId:
+          type: integer
+          format: int64
+        workspaceId:
           type: string
-        stageCode:
+        stageName:
           type: string
-        status:
+        input:
+          type: object
+          additionalProperties: true
+    DossierInvestigationAnchorBuilderRecebeRequestRequest:
+      type: object
+      required:
+        - request
+      properties:
+        request:
           type: string
-        nextStageCode:
+          description: Payload bruto/request enviado pelo executor.
+        plataforma:
           type: string
+        prompt:
+          type: string
+        schema:
+          type: string
+    DossierInvestigationAnchorBuilderRecebeRequestResponse:
+      type: object
+      properties:
+        jobId: { type: string }
+        idExterno: { type: string, description: Chave operacional da página/produto MOIS. }
+        codigoEtapa: { type: string }
+        status: { type: string }
     DossierInvestigationAnchorBuilderRecebeResponseRequest:
       type: object
       properties:
         response:
           type: string
+          description: Payload bruto/response recebido pelo executor.
         descricaoErro:
           type: string
         quantidadeTokenEntrada:
@@ -670,21 +1068,90 @@ components:
     DossierInvestigationAnchorBuilderRecebeResponseResponse:
       type: object
       properties:
+        jobId: { type: string }
+        productKey: { type: string }
+        stageCode: { type: string }
+        status: { type: string }
+        nextStageCode: { type: string, nullable: true }
+    DossierWarmupResourceDiscoveryPendingRequest:
+      type: object
+      required:
+        - workspaceId
+        - workerId
+      properties:
+        workspaceId:
+          type: string
+        workerId:
+          type: string
+        limit:
+          type: integer
+          format: int32
+          minimum: 1
+    DossierWarmupResourceDiscoveryPendingResponse:
+      type: object
+      required:
+        - claimed
+        - jobs
+      properties:
+        claimed:
+          type: boolean
+        jobs:
+          type: array
+          items:
+            $ref: "#/components/schemas/DossierWarmupResourceDiscoveryPendingJob"
+    DossierWarmupResourceDiscoveryPendingJob:
+      type: object
+      required:
+        - jobId
+        - stageExecutionId
+        - dossierId
+        - workspaceId
+        - stageName
+        - input
+      properties:
         jobId:
           type: string
-        productKey:
+          description: JobId UUID para rastrear a execução da etapa.
+        stageExecutionId:
+          type: integer
+          format: int64
+        dossierId:
+          type: integer
+          format: int64
+        workspaceId:
           type: string
-        stageCode:
+        stageName:
           type: string
-        status:
+        input:
+          type: object
+          additionalProperties: true
+    DossierWarmupResourceDiscoveryRecebeRequestRequest:
+      type: object
+      required:
+        - request
+      properties:
+        request:
           type: string
-        nextStageCode:
+          description: Payload bruto/request enviado pelo executor.
+        plataforma:
           type: string
+        prompt:
+          type: string
+        schema:
+          type: string
+    DossierWarmupResourceDiscoveryRecebeRequestResponse:
+      type: object
+      properties:
+        jobId: { type: string }
+        idExterno: { type: string, description: Chave operacional da página/produto MOIS. }
+        codigoEtapa: { type: string }
+        status: { type: string }
     DossierWarmupResourceDiscoveryRecebeResponseRequest:
       type: object
       properties:
         response:
           type: string
+          description: Payload bruto/response recebido pelo executor.
         descricaoErro:
           type: string
         quantidadeTokenEntrada:
@@ -700,21 +1167,90 @@ components:
     DossierWarmupResourceDiscoveryRecebeResponseResponse:
       type: object
       properties:
+        jobId: { type: string }
+        productKey: { type: string }
+        stageCode: { type: string }
+        status: { type: string }
+        nextStageCode: { type: string, nullable: true }
+    DossierSourceProductMatchPendingRequest:
+      type: object
+      required:
+        - workspaceId
+        - workerId
+      properties:
+        workspaceId:
+          type: string
+        workerId:
+          type: string
+        limit:
+          type: integer
+          format: int32
+          minimum: 1
+    DossierSourceProductMatchPendingResponse:
+      type: object
+      required:
+        - claimed
+        - jobs
+      properties:
+        claimed:
+          type: boolean
+        jobs:
+          type: array
+          items:
+            $ref: "#/components/schemas/DossierSourceProductMatchPendingJob"
+    DossierSourceProductMatchPendingJob:
+      type: object
+      required:
+        - jobId
+        - stageExecutionId
+        - dossierId
+        - workspaceId
+        - stageName
+        - input
+      properties:
         jobId:
           type: string
-        productKey:
+          description: JobId UUID para rastrear a execução da etapa.
+        stageExecutionId:
+          type: integer
+          format: int64
+        dossierId:
+          type: integer
+          format: int64
+        workspaceId:
           type: string
-        stageCode:
+        stageName:
           type: string
-        status:
+        input:
+          type: object
+          additionalProperties: true
+    DossierSourceProductMatchRecebeRequestRequest:
+      type: object
+      required:
+        - request
+      properties:
+        request:
           type: string
-        nextStageCode:
+          description: Payload bruto/request enviado pelo executor.
+        plataforma:
           type: string
+        prompt:
+          type: string
+        schema:
+          type: string
+    DossierSourceProductMatchRecebeRequestResponse:
+      type: object
+      properties:
+        jobId: { type: string }
+        idExterno: { type: string, description: Chave operacional da página/produto MOIS. }
+        codigoEtapa: { type: string }
+        status: { type: string }
     DossierSourceProductMatchRecebeResponseRequest:
       type: object
       properties:
         response:
           type: string
+          description: Payload bruto/response recebido pelo executor.
         descricaoErro:
           type: string
         quantidadeTokenEntrada:
@@ -730,21 +1266,90 @@ components:
     DossierSourceProductMatchRecebeResponseResponse:
       type: object
       properties:
+        jobId: { type: string }
+        productKey: { type: string }
+        stageCode: { type: string }
+        status: { type: string }
+        nextStageCode: { type: string, nullable: true }
+    DossierWarmupSignalExtractionPendingRequest:
+      type: object
+      required:
+        - workspaceId
+        - workerId
+      properties:
+        workspaceId:
+          type: string
+        workerId:
+          type: string
+        limit:
+          type: integer
+          format: int32
+          minimum: 1
+    DossierWarmupSignalExtractionPendingResponse:
+      type: object
+      required:
+        - claimed
+        - jobs
+      properties:
+        claimed:
+          type: boolean
+        jobs:
+          type: array
+          items:
+            $ref: "#/components/schemas/DossierWarmupSignalExtractionPendingJob"
+    DossierWarmupSignalExtractionPendingJob:
+      type: object
+      required:
+        - jobId
+        - stageExecutionId
+        - dossierId
+        - workspaceId
+        - stageName
+        - input
+      properties:
         jobId:
           type: string
-        productKey:
+          description: JobId UUID para rastrear a execução da etapa.
+        stageExecutionId:
+          type: integer
+          format: int64
+        dossierId:
+          type: integer
+          format: int64
+        workspaceId:
           type: string
-        stageCode:
+        stageName:
           type: string
-        status:
+        input:
+          type: object
+          additionalProperties: true
+    DossierWarmupSignalExtractionRecebeRequestRequest:
+      type: object
+      required:
+        - request
+      properties:
+        request:
           type: string
-        nextStageCode:
+          description: Payload bruto/request enviado pelo executor.
+        plataforma:
           type: string
+        prompt:
+          type: string
+        schema:
+          type: string
+    DossierWarmupSignalExtractionRecebeRequestResponse:
+      type: object
+      properties:
+        jobId: { type: string }
+        idExterno: { type: string, description: Chave operacional da página/produto MOIS. }
+        codigoEtapa: { type: string }
+        status: { type: string }
     DossierWarmupSignalExtractionRecebeResponseRequest:
       type: object
       properties:
         response:
           type: string
+          description: Payload bruto/response recebido pelo executor.
         descricaoErro:
           type: string
         quantidadeTokenEntrada:
@@ -760,21 +1365,90 @@ components:
     DossierWarmupSignalExtractionRecebeResponseResponse:
       type: object
       properties:
+        jobId: { type: string }
+        productKey: { type: string }
+        stageCode: { type: string }
+        status: { type: string }
+        nextStageCode: { type: string, nullable: true }
+    DossierWarmupMapBuilderPendingRequest:
+      type: object
+      required:
+        - workspaceId
+        - workerId
+      properties:
+        workspaceId:
+          type: string
+        workerId:
+          type: string
+        limit:
+          type: integer
+          format: int32
+          minimum: 1
+    DossierWarmupMapBuilderPendingResponse:
+      type: object
+      required:
+        - claimed
+        - jobs
+      properties:
+        claimed:
+          type: boolean
+        jobs:
+          type: array
+          items:
+            $ref: "#/components/schemas/DossierWarmupMapBuilderPendingJob"
+    DossierWarmupMapBuilderPendingJob:
+      type: object
+      required:
+        - jobId
+        - stageExecutionId
+        - dossierId
+        - workspaceId
+        - stageName
+        - input
+      properties:
         jobId:
           type: string
-        productKey:
+          description: JobId UUID para rastrear a execução da etapa.
+        stageExecutionId:
+          type: integer
+          format: int64
+        dossierId:
+          type: integer
+          format: int64
+        workspaceId:
           type: string
-        stageCode:
+        stageName:
           type: string
-        status:
+        input:
+          type: object
+          additionalProperties: true
+    DossierWarmupMapBuilderRecebeRequestRequest:
+      type: object
+      required:
+        - request
+      properties:
+        request:
           type: string
-        nextStageCode:
+          description: Payload bruto/request enviado pelo executor.
+        plataforma:
           type: string
+        prompt:
+          type: string
+        schema:
+          type: string
+    DossierWarmupMapBuilderRecebeRequestResponse:
+      type: object
+      properties:
+        jobId: { type: string }
+        idExterno: { type: string, description: Chave operacional da página/produto MOIS. }
+        codigoEtapa: { type: string }
+        status: { type: string }
     DossierWarmupMapBuilderRecebeResponseRequest:
       type: object
       properties:
         response:
           type: string
+          description: Payload bruto/response recebido pelo executor.
         descricaoErro:
           type: string
         quantidadeTokenEntrada:
@@ -790,21 +1464,90 @@ components:
     DossierWarmupMapBuilderRecebeResponseResponse:
       type: object
       properties:
+        jobId: { type: string }
+        productKey: { type: string }
+        stageCode: { type: string }
+        status: { type: string }
+        nextStageCode: { type: string, nullable: true }
+    DossierDossierSynthesisPendingRequest:
+      type: object
+      required:
+        - workspaceId
+        - workerId
+      properties:
+        workspaceId:
+          type: string
+        workerId:
+          type: string
+        limit:
+          type: integer
+          format: int32
+          minimum: 1
+    DossierDossierSynthesisPendingResponse:
+      type: object
+      required:
+        - claimed
+        - jobs
+      properties:
+        claimed:
+          type: boolean
+        jobs:
+          type: array
+          items:
+            $ref: "#/components/schemas/DossierDossierSynthesisPendingJob"
+    DossierDossierSynthesisPendingJob:
+      type: object
+      required:
+        - jobId
+        - stageExecutionId
+        - dossierId
+        - workspaceId
+        - stageName
+        - input
+      properties:
         jobId:
           type: string
-        productKey:
+          description: JobId UUID para rastrear a execução da etapa.
+        stageExecutionId:
+          type: integer
+          format: int64
+        dossierId:
+          type: integer
+          format: int64
+        workspaceId:
           type: string
-        stageCode:
+        stageName:
           type: string
-        status:
+        input:
+          type: object
+          additionalProperties: true
+    DossierDossierSynthesisRecebeRequestRequest:
+      type: object
+      required:
+        - request
+      properties:
+        request:
           type: string
-        nextStageCode:
+          description: Payload bruto/request enviado pelo executor.
+        plataforma:
           type: string
+        prompt:
+          type: string
+        schema:
+          type: string
+    DossierDossierSynthesisRecebeRequestResponse:
+      type: object
+      properties:
+        jobId: { type: string }
+        idExterno: { type: string, description: Chave operacional da página/produto MOIS. }
+        codigoEtapa: { type: string }
+        status: { type: string }
     DossierDossierSynthesisRecebeResponseRequest:
       type: object
       properties:
         response:
           type: string
+          description: Payload bruto/response recebido pelo executor.
         descricaoErro:
           type: string
         quantidadeTokenEntrada:
@@ -820,661 +1563,8 @@ components:
     DossierDossierSynthesisRecebeResponseResponse:
       type: object
       properties:
-        jobId:
-          type: string
-        productKey:
-          type: string
-        stageCode:
-          type: string
-        status:
-          type: string
-        nextStageCode:
-          type: string
-
-    DossierIntakeRecebeRequestRequest:
-      type: object
-      required:
-        - request
-      properties:
-        request:
-          type: string
-        plataforma:
-          type: string
-        prompt:
-          type: string
-        schema:
-          type: string
-    DossierIntakeRecebeRequestResponse:
-      type: object
-      required:
-        - jobId
-        - idExterno
-        - codigoEtapa
-        - status
-      properties:
-        jobId:
-          type: string
-        idExterno:
-          type: string
-        codigoEtapa:
-          type: string
-        status:
-          type: string
-
-    DossierProductUnderstandingRecebeRequestRequest:
-      type: object
-      required:
-        - request
-      properties:
-        request:
-          type: string
-        plataforma:
-          type: string
-        prompt:
-          type: string
-        schema:
-          type: string
-    DossierProductUnderstandingRecebeRequestResponse:
-      type: object
-      required:
-        - jobId
-        - idExterno
-        - codigoEtapa
-        - status
-      properties:
-        jobId:
-          type: string
-        idExterno:
-          type: string
-        codigoEtapa:
-          type: string
-        status:
-          type: string
-
-    DossierInvestigationAnchorBuilderRecebeRequestRequest:
-      type: object
-      required:
-        - request
-      properties:
-        request:
-          type: string
-        plataforma:
-          type: string
-        prompt:
-          type: string
-        schema:
-          type: string
-    DossierInvestigationAnchorBuilderRecebeRequestResponse:
-      type: object
-      required:
-        - jobId
-        - idExterno
-        - codigoEtapa
-        - status
-      properties:
-        jobId:
-          type: string
-        idExterno:
-          type: string
-        codigoEtapa:
-          type: string
-        status:
-          type: string
-
-    DossierWarmupResourceDiscoveryRecebeRequestRequest:
-      type: object
-      required:
-        - request
-      properties:
-        request:
-          type: string
-        plataforma:
-          type: string
-        prompt:
-          type: string
-        schema:
-          type: string
-    DossierWarmupResourceDiscoveryRecebeRequestResponse:
-      type: object
-      required:
-        - jobId
-        - idExterno
-        - codigoEtapa
-        - status
-      properties:
-        jobId:
-          type: string
-        idExterno:
-          type: string
-        codigoEtapa:
-          type: string
-        status:
-          type: string
-
-    DossierSourceProductMatchRecebeRequestRequest:
-      type: object
-      required:
-        - request
-      properties:
-        request:
-          type: string
-        plataforma:
-          type: string
-        prompt:
-          type: string
-        schema:
-          type: string
-    DossierSourceProductMatchRecebeRequestResponse:
-      type: object
-      required:
-        - jobId
-        - idExterno
-        - codigoEtapa
-        - status
-      properties:
-        jobId:
-          type: string
-        idExterno:
-          type: string
-        codigoEtapa:
-          type: string
-        status:
-          type: string
-
-    DossierWarmupSignalExtractionRecebeRequestRequest:
-      type: object
-      required:
-        - request
-      properties:
-        request:
-          type: string
-        plataforma:
-          type: string
-        prompt:
-          type: string
-        schema:
-          type: string
-    DossierWarmupSignalExtractionRecebeRequestResponse:
-      type: object
-      required:
-        - jobId
-        - idExterno
-        - codigoEtapa
-        - status
-      properties:
-        jobId:
-          type: string
-        idExterno:
-          type: string
-        codigoEtapa:
-          type: string
-        status:
-          type: string
-
-    DossierWarmupMapBuilderRecebeRequestRequest:
-      type: object
-      required:
-        - request
-      properties:
-        request:
-          type: string
-        plataforma:
-          type: string
-        prompt:
-          type: string
-        schema:
-          type: string
-    DossierWarmupMapBuilderRecebeRequestResponse:
-      type: object
-      required:
-        - jobId
-        - idExterno
-        - codigoEtapa
-        - status
-      properties:
-        jobId:
-          type: string
-        idExterno:
-          type: string
-        codigoEtapa:
-          type: string
-        status:
-          type: string
-
-    DossierDossierSynthesisRecebeRequestRequest:
-      type: object
-      required:
-        - request
-      properties:
-        request:
-          type: string
-        plataforma:
-          type: string
-        prompt:
-          type: string
-        schema:
-          type: string
-    DossierDossierSynthesisRecebeRequestResponse:
-      type: object
-      required:
-        - jobId
-        - idExterno
-        - codigoEtapa
-        - status
-      properties:
-        jobId:
-          type: string
-        idExterno:
-          type: string
-        codigoEtapa:
-          type: string
-        status:
-          type: string
-    DossierIntakePendingRequest:
-      type: object
-      required:
-        - workspaceId
-        - workerId
-      properties:
-        workspaceId:
-          type: string
-        workerId:
-          type: string
-        limit:
-          type: integer
-          format: int32
-    DossierIntakePendingResponse:
-      type: object
-      required:
-        - claimed
-        - jobs
-      properties:
-        claimed:
-          type: boolean
-        jobs:
-          type: array
-          items:
-            $ref: '#/components/schemas/DossierIntakePendingJob'
-    DossierIntakePendingJob:
-      type: object
-      required:
-        - jobId
-        - stageExecutionId
-        - dossierId
-        - workspaceId
-        - stageName
-        - input
-      properties:
-        jobId:
-          type: string
-          description: JobId UUID criado pelo /start para rastrear a execução da etapa.
-        stageExecutionId:
-          type: integer
-          format: int64
-        dossierId:
-          type: integer
-          format: int64
-        workspaceId:
-          type: string
-        stageName:
-          type: string
-        input:
-          type: object
-          additionalProperties: true
-    DossierProductUnderstandingPendingRequest:
-      type: object
-      required:
-        - workspaceId
-        - workerId
-      properties:
-        workspaceId:
-          type: string
-        workerId:
-          type: string
-        limit:
-          type: integer
-          format: int32
-    DossierProductUnderstandingPendingResponse:
-      type: object
-      required:
-        - claimed
-        - jobs
-      properties:
-        claimed:
-          type: boolean
-        jobs:
-          type: array
-          items:
-            $ref: '#/components/schemas/DossierProductUnderstandingPendingJob'
-    DossierProductUnderstandingPendingJob:
-      type: object
-      required:
-        - jobId
-        - stageExecutionId
-        - dossierId
-        - workspaceId
-        - stageName
-        - input
-      properties:
-        jobId:
-          type: string
-          description: JobId UUID criado pelo /start para rastrear a execução da etapa.
-        stageExecutionId:
-          type: integer
-          format: int64
-        dossierId:
-          type: integer
-          format: int64
-        workspaceId:
-          type: string
-        stageName:
-          type: string
-        input:
-          type: object
-          additionalProperties: true
-    DossierInvestigationAnchorBuilderPendingRequest:
-      type: object
-      required:
-        - workspaceId
-        - workerId
-      properties:
-        workspaceId:
-          type: string
-        workerId:
-          type: string
-        limit:
-          type: integer
-          format: int32
-    DossierInvestigationAnchorBuilderPendingResponse:
-      type: object
-      required:
-        - claimed
-        - jobs
-      properties:
-        claimed:
-          type: boolean
-        jobs:
-          type: array
-          items:
-            $ref: '#/components/schemas/DossierInvestigationAnchorBuilderPendingJob'
-    DossierInvestigationAnchorBuilderPendingJob:
-      type: object
-      required:
-        - jobId
-        - stageExecutionId
-        - dossierId
-        - workspaceId
-        - stageName
-        - input
-      properties:
-        jobId:
-          type: string
-          description: JobId UUID criado pelo /start para rastrear a execução da etapa.
-        stageExecutionId:
-          type: integer
-          format: int64
-        dossierId:
-          type: integer
-          format: int64
-        workspaceId:
-          type: string
-        stageName:
-          type: string
-        input:
-          type: object
-          additionalProperties: true
-    DossierWarmupResourceDiscoveryPendingRequest:
-      type: object
-      required:
-        - workspaceId
-        - workerId
-      properties:
-        workspaceId:
-          type: string
-        workerId:
-          type: string
-        limit:
-          type: integer
-          format: int32
-    DossierWarmupResourceDiscoveryPendingResponse:
-      type: object
-      required:
-        - claimed
-        - jobs
-      properties:
-        claimed:
-          type: boolean
-        jobs:
-          type: array
-          items:
-            $ref: '#/components/schemas/DossierWarmupResourceDiscoveryPendingJob'
-    DossierWarmupResourceDiscoveryPendingJob:
-      type: object
-      required:
-        - jobId
-        - stageExecutionId
-        - dossierId
-        - workspaceId
-        - stageName
-        - input
-      properties:
-        jobId:
-          type: string
-          description: JobId UUID criado pelo /start para rastrear a execução da etapa.
-        stageExecutionId:
-          type: integer
-          format: int64
-        dossierId:
-          type: integer
-          format: int64
-        workspaceId:
-          type: string
-        stageName:
-          type: string
-        input:
-          type: object
-          additionalProperties: true
-    DossierSourceProductMatchPendingRequest:
-      type: object
-      required:
-        - workspaceId
-        - workerId
-      properties:
-        workspaceId:
-          type: string
-        workerId:
-          type: string
-        limit:
-          type: integer
-          format: int32
-    DossierSourceProductMatchPendingResponse:
-      type: object
-      required:
-        - claimed
-        - jobs
-      properties:
-        claimed:
-          type: boolean
-        jobs:
-          type: array
-          items:
-            $ref: '#/components/schemas/DossierSourceProductMatchPendingJob'
-    DossierSourceProductMatchPendingJob:
-      type: object
-      required:
-        - jobId
-        - stageExecutionId
-        - dossierId
-        - workspaceId
-        - stageName
-        - input
-      properties:
-        jobId:
-          type: string
-          description: JobId UUID criado pelo /start para rastrear a execução da etapa.
-        stageExecutionId:
-          type: integer
-          format: int64
-        dossierId:
-          type: integer
-          format: int64
-        workspaceId:
-          type: string
-        stageName:
-          type: string
-        input:
-          type: object
-          additionalProperties: true
-    DossierWarmupSignalExtractionPendingRequest:
-      type: object
-      required:
-        - workspaceId
-        - workerId
-      properties:
-        workspaceId:
-          type: string
-        workerId:
-          type: string
-        limit:
-          type: integer
-          format: int32
-    DossierWarmupSignalExtractionPendingResponse:
-      type: object
-      required:
-        - claimed
-        - jobs
-      properties:
-        claimed:
-          type: boolean
-        jobs:
-          type: array
-          items:
-            $ref: '#/components/schemas/DossierWarmupSignalExtractionPendingJob'
-    DossierWarmupSignalExtractionPendingJob:
-      type: object
-      required:
-        - jobId
-        - stageExecutionId
-        - dossierId
-        - workspaceId
-        - stageName
-        - input
-      properties:
-        jobId:
-          type: string
-          description: JobId UUID criado pelo /start para rastrear a execução da etapa.
-        stageExecutionId:
-          type: integer
-          format: int64
-        dossierId:
-          type: integer
-          format: int64
-        workspaceId:
-          type: string
-        stageName:
-          type: string
-        input:
-          type: object
-          additionalProperties: true
-    DossierWarmupMapBuilderPendingRequest:
-      type: object
-      required:
-        - workspaceId
-        - workerId
-      properties:
-        workspaceId:
-          type: string
-        workerId:
-          type: string
-        limit:
-          type: integer
-          format: int32
-    DossierWarmupMapBuilderPendingResponse:
-      type: object
-      required:
-        - claimed
-        - jobs
-      properties:
-        claimed:
-          type: boolean
-        jobs:
-          type: array
-          items:
-            $ref: '#/components/schemas/DossierWarmupMapBuilderPendingJob'
-    DossierWarmupMapBuilderPendingJob:
-      type: object
-      required:
-        - jobId
-        - stageExecutionId
-        - dossierId
-        - workspaceId
-        - stageName
-        - input
-      properties:
-        jobId:
-          type: string
-          description: JobId UUID criado pelo /start para rastrear a execução da etapa.
-        stageExecutionId:
-          type: integer
-          format: int64
-        dossierId:
-          type: integer
-          format: int64
-        workspaceId:
-          type: string
-        stageName:
-          type: string
-        input:
-          type: object
-          additionalProperties: true
-    DossierDossierSynthesisPendingRequest:
-      type: object
-      required:
-        - workspaceId
-        - workerId
-      properties:
-        workspaceId:
-          type: string
-        workerId:
-          type: string
-        limit:
-          type: integer
-          format: int32
-    DossierDossierSynthesisPendingResponse:
-      type: object
-      required:
-        - claimed
-        - jobs
-      properties:
-        claimed:
-          type: boolean
-        jobs:
-          type: array
-          items:
-            $ref: '#/components/schemas/DossierDossierSynthesisPendingJob'
-    DossierDossierSynthesisPendingJob:
-      type: object
-      required:
-        - jobId
-        - stageExecutionId
-        - dossierId
-        - workspaceId
-        - stageName
-        - input
-      properties:
-        jobId:
-          type: string
-          description: JobId UUID criado pelo /start para rastrear a execução da etapa.
-        stageExecutionId:
-          type: integer
-          format: int64
-        dossierId:
-          type: integer
-          format: int64
-        workspaceId:
-          type: string
-        stageName:
-          type: string
-        input:
-          type: object
-          additionalProperties: true
+        jobId: { type: string }
+        productKey: { type: string }
+        stageCode: { type: string }
+        status: { type: string }
+        nextStageCode: { type: string, nullable: true }

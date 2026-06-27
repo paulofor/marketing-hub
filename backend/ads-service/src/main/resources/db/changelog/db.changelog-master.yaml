@@ -18,6 +18,9 @@ databaseChangeLog:
       file: changesets/2026-06-26-mois-sales-page-dossie-produto-status.yaml
       relativeToChangelogFile: true
   - include:
+      file: changesets/2026-06-27-mois-sales-page-dossie-produto-canonical-columns.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-06-26-oprm-cnae-nichocnae-v3-progress-timestamp.yaml
       relativeToChangelogFile: true
   - include:

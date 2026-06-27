@@ -51,6 +51,13 @@
 - Pacote protegido: `com.marketinghub.pipelines.geracaoanuncios.v1`.
 - Alteração: o pipeline GeracaoAnuncios v1 passou a ter duas etapas internas espelhadas com o backend, `texto` e `imagem`, cada uma com client próprio para o endpoint `pending` canônico da etapa par no backend.
 
+## 2026-06-27 — MOIS dossieproduto v1 no Sales Library Worker
+
+- Módulo executor: `mois-sales-library-worker`.
+- Solicitação aplicada para `dossieproduto.v1`, usando o pacote executor canônico consolidado `com.marketinghub.pipelines.dossie.v1` para evitar recriar o pacote duplicado removido em 2026-06-26.
+- Escopo protegido: núcleo genérico do dossiê v1 e etapas plugáveis `intake`, `productunderstanding`, `investigationanchorbuilder`, `warmupresourcediscovery`, `sourceproductmatch`, `warmupsignalextraction`, `warmupmapbuilder` e `dossiersynthesis`.
+- Validação adicional: teste de contrato do executor garante catálogo completo de processors, execução por `PipelineWorker`, saída estruturada, artefatos auditáveis não nulos e bloqueio para etapa sem processor registrado.
+- Backend permanece fora do protocolo padrão módulo; o worker continua consumindo o trabalho pelos contratos `pending` canônicos do backend e reportando resultados pelos callbacks oficiais.
 ## 2026-06-27 — OPRM NichoCNAE v3 / reforço do protocolo padrão módulo
 
 - Módulo executor: `oprm-coletor-mei`.

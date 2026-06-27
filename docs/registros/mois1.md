@@ -1869,13 +1869,8 @@ Arquivos principais:
 - Ajustado o `/pending` para devolver cada objeto pendente acompanhado do `jobId` ativo da etapa.
 - Ajustado o `recebeRequest` para receber o `jobId` na URL junto com o identificador do objeto, mantendo a auditoria vinculada ao mesmo job iniciado.
 
-## 2026-06-27 — Redirecionamento do pacote canônico do teste do Dossiê Produto MOIS v1
+## 2026-06-27 — Protocolo padrão módulo em dossieproduto.v1
 
-- Redirecionado o teste arquitetural do backend para o pacote canônico `com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1`.
-- Removida a referência arquitetural ao pacote antigo `com.marketinghub.pipelines.mois.dossie.v1`.
-- O backend do dossiê de produto MOIS v1 passa a manter contratos por etapa no namespace `moissaleslibraryworker.dossieproduto.v1`, preservando o módulo executor `mois-sales-library-worker` como responsável pela execução operacional.
-
-## 2026-06-27 — Remoção do endpoint antigo dossiê v1 do código backend
-
-- Removidas do código backend as rotas internas antigas `/api/internal/mois/dossie/v1/...` do pacote `moissaleslibraryworker.dossieproduto.v1`.
-- Padronizadas as rotas internas do dossiê de produto MOIS v1 para `/api/internal/mois/dossieproduto/v1/...`, mantendo alinhamento entre pacote Java, Swagger e teste arquitetural.
+- Aplicado no módulo executor `mois-sales-library-worker` para a solicitação `dossieproduto.v1` usando o pacote canônico consolidado `com.marketinghub.pipelines.dossie.v1`.
+- Adicionado teste de contrato do executor para validar o catálogo completo de processors do dossiê v1, execução pelo `PipelineWorker`, saída estruturada, artefatos auditáveis não nulos e bloqueio de etapa sem processor registrado.
+- Mantida a decisão de não recriar pacote duplicado `dossieproduto.v1`, preservando o backend fora do protocolo padrão módulo e o worker como executor operacional.

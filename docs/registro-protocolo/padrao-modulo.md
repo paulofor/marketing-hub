@@ -51,6 +51,12 @@
 - Pacote protegido: `com.marketinghub.pipelines.geracaoanuncios.v1`.
 - Alteração: o pipeline GeracaoAnuncios v1 passou a ter duas etapas internas espelhadas com o backend, `texto` e `imagem`, cada uma com client próprio para o endpoint `pending` canônico da etapa par no backend.
 
+## 2026-06-27 — OPRM NichoCNAE v3 / reforço do protocolo padrão módulo
+
+- Módulo executor: `oprm-coletor-mei`.
+- Pacote protegido: `com.marketinghub.pipelines.nichocnae.v3`.
+- Reforço aplicado no teste ArchUnit do executor para bloquear tecnologia concreta no núcleo `v3.core` e ciclos entre pacotes da v3, mantendo etapas plugáveis e consumo por endpoints `pending` do backend.
+- Backend fora do escopo desta aplicação: permanece como fonte de verdade de contratos, pendências e callbacks.
 ## 2026-06-27 — AI Worker — GeracaoAnuncios v1
 
 - Módulo executor: `ai-worker`.

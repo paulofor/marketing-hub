@@ -1572,3 +1572,9 @@
 
 - Criada a tabela `pipeline_nichocnae` para centralizar auditoria de request/response, prompt/schema, tokens, modelo, custo, erro, etapa, plataforma e versão do pipeline NichoCNAE.
 - Criadas a entidade JPA e o repository canônico no backend para permitir persistência e consultas de custo por `jobId` sem acesso direto ao banco por módulos externos.
+
+## 2026-06-27 — NichoCNAE v3: reforço do protocolo padrão módulo no executor
+
+- Aplicado reforço do protocolo padrão módulo no `oprm-coletor-mei` para o pacote executor `com.marketinghub.pipelines.nichocnae.v3`.
+- O teste ArchUnit da v3 agora também bloqueia tecnologia concreta no núcleo `v3.core` e ciclos entre pacotes, prevenindo acoplamento que dificultaria troca, remoção ou evolução das etapas.
+- Backend não foi alterado: o executor continua consumindo o trabalho pelos endpoints `pending` canônicos e reportando resultado ao backend.

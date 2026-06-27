@@ -3,6 +3,10 @@ import PageTitle from "../../components/PageTitle";
 import { useStartOprmNichoCnaeV3Job } from "../../api/oprm/useStartOprmNichoCnaeV3Job";
 import { useOprmNichoCnaeV3Progress } from "../../api/oprm/useOprmNichoCnaeV3Progress";
 import { useConfirmOprmNichoCnaeV3Finalization } from "../../api/oprm/useConfirmOprmNichoCnaeV3Finalization";
+import {
+  OprmNichoCnaeV3Situacao,
+  useOprmNichoCnaeV3Situacoes,
+} from "../../api/oprm/useOprmNichoCnaeV3Situacao";
 
 function parsePayload(payload: string | null | undefined) {
   if (!payload) return null;
@@ -123,6 +127,49 @@ function PayloadSummary({
   );
 }
 
+function formatCost(cost: OprmNichoCnaeV3Situacao["custo"] | undefined) {
+  if (cost === null || cost === undefined || cost === "") return "Sem custo";
+  const numericCost = Number(cost);
+  if (!Number.isFinite(numericCost)) return String(cost);
+  return numericCost.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 4,
+  });
+}
+
+function formatTokens(value: number | null | undefined) {
+  if (value === null || value === undefined) return "-";
+  return value.toLocaleString("pt-BR");
+}
+
+function pickSituacaoForJob(
+  records: OprmNichoCnaeV3Situacao[] | undefined,
+  jobId: string | null | undefined,
+) {
+  if (!records?.length) return null;
+  if (jobId) {
+    const sameJob = records.find((record) => record.jobId === jobId);
+    if (sameJob) return sameJob;
+  }
+  return records[0];
+}
+
+function StageMetric({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="border rounded-3 bg-white px-3 py-2">
+      <div className="text-muted small">{label}</div>
+      <div className="fw-semibold text-break">{value}</div>
+    </div>
+  );
+}
+
 const v3Stages = [
   {
     code: "cnae-intake",
@@ -181,11 +228,23 @@ export default function OprmNichoCnaeV3PipelinePage() {
   const decodedCnaeCode = decodeURIComponent(cnaeCode ?? "");
   const startJob = useStartOprmNichoCnaeV3Job(decodedCnaeCode);
   const progress = useOprmNichoCnaeV3Progress(decodedCnaeCode);
+  const situacoes = useOprmNichoCnaeV3Situacoes(
+    decodedCnaeCode,
+    v3Stages.map((stage) => stage.code),
+  );
   const confirmFinalization =
     useConfirmOprmNichoCnaeV3Finalization(decodedCnaeCode);
   const stagesByCode = new Map(
     (progress.data?.stages ?? []).map((stage) => [stage.stageCode, stage]),
   );
+  const situacoesByStage = new Map(
+    v3Stages.map((stage, index) => [
+      stage.code,
+      pickSituacaoForJob(situacoes[index]?.data, progress.data?.jobId),
+    ]),
+  );
+  const isFetchingSituacao = situacoes.some((query) => query.isFetching);
+  const hasSituacaoError = situacoes.some((query) => query.isError);
 
   const handleStart = () => {
     if (!decodedCnaeCode || startJob.isPending) {
@@ -341,7 +400,7 @@ export default function OprmNichoCnaeV3PipelinePage() {
                   : "O status fica salvo no backend e será recuperado ao voltar para esta tela."}
               </p>
             </div>
-            {progress.isFetching ? (
+            {progress.isFetching || isFetchingSituacao ? (
               <span className="badge rounded-pill text-bg-light border">
                 <span
                   className="spinner-border spinner-border-sm me-2"
@@ -351,9 +410,16 @@ export default function OprmNichoCnaeV3PipelinePage() {
               </span>
             ) : null}
           </div>
+          {hasSituacaoError ? (
+            <div className="alert alert-warning py-2 small" role="alert">
+              Parte da auditoria de situação não foi carregada. Os cards ainda
+              mostram o progresso salvo no backend.
+            </div>
+          ) : null}
           <div className="d-flex flex-column gap-3">
             {v3Stages.map((stage, index) => {
               const stageProgress = stagesByCode.get(stage.code);
+              const situacao = situacoesByStage.get(stage.code);
               const status = stageProgress?.status ?? "WAITING";
               const isActive = status === "PENDING" || status === "RUNNING";
               const statusLabel =
@@ -374,16 +440,34 @@ export default function OprmNichoCnaeV3PipelinePage() {
                   FAILED: "text-bg-danger",
                   CANCELED: "text-bg-secondary",
                 }[status] ?? "text-bg-secondary";
+              const requestPayload =
+                situacao?.request ?? stageProgress?.inputPayload ?? null;
+              const responsePayload =
+                situacao?.response ?? stageProgress?.outputPayload ?? null;
+              const errorMessage =
+                situacao?.descricaoErro ?? stageProgress?.errorMessage;
+              const cardBackground = isActive
+                ? "bg-primary-subtle border-primary"
+                : situacao
+                  ? "bg-white"
+                  : "bg-light";
 
               return (
                 <div key={stage.code}>
                   <div
-                    className={`border rounded-3 p-3 h-100 ${
-                      isActive ? "bg-primary-subtle border-primary" : "bg-light"
-                    }`}
+                    className={`border rounded-3 p-3 h-100 ${cardBackground}`}
                   >
                     <div className="d-flex justify-content-between gap-2 align-items-start mb-2">
-                      <span className="badge text-bg-primary">{index + 1}</span>
+                      <div className="d-flex align-items-center gap-2">
+                        <span className="badge text-bg-primary">
+                          {index + 1}
+                        </span>
+                        {situacao ? (
+                          <span className="badge rounded-pill text-bg-info">
+                            Auditoria registrada
+                          </span>
+                        ) : null}
+                      </div>
                       <span className={`badge rounded-pill ${statusClass}`}>
                         {isActive ? (
                           <span
@@ -400,18 +484,48 @@ export default function OprmNichoCnaeV3PipelinePage() {
                         ? stage.activity
                         : "Ainda não chegou nesta etapa."}
                     </p>
-                    {stageProgress ? (
-                      <div className="d-flex flex-column gap-2">
+                    {stageProgress || situacao ? (
+                      <div className="d-flex flex-column gap-3">
+                        <div className="row g-2">
+                          <div className="col-12 col-md-3">
+                            <StageMetric
+                              label="Custo"
+                              value={formatCost(situacao?.custo)}
+                            />
+                          </div>
+                          <div className="col-12 col-md-3">
+                            <StageMetric
+                              label="Modelo"
+                              value={situacao?.modelo ?? "Sem modelo"}
+                            />
+                          </div>
+                          <div className="col-12 col-md-3">
+                            <StageMetric
+                              label="Tokens entrada"
+                              value={formatTokens(
+                                situacao?.quantidadeTokenEntrada,
+                              )}
+                            />
+                          </div>
+                          <div className="col-12 col-md-3">
+                            <StageMetric
+                              label="Tokens saída"
+                              value={formatTokens(
+                                situacao?.quantidadeTokenSaida,
+                              )}
+                            />
+                          </div>
+                        </div>
                         <div>
                           <div className="small fw-semibold mb-1">
-                            O que recebeu de entrada
+                            Request enviado
                           </div>
                           <PayloadSummary
-                            label="entrada"
-                            payload={stageProgress.inputPayload}
+                            label="request"
+                            payload={requestPayload}
                           />
                         </div>
-                        {stageProgress.errorMessage ? (
+                        {errorMessage ? (
                           <div
                             className="alert alert-danger py-2 px-3 mb-0"
                             role="alert"
@@ -420,19 +534,40 @@ export default function OprmNichoCnaeV3PipelinePage() {
                               Erro registrado
                             </div>
                             <div className="small text-break">
-                              {stageProgress.errorMessage}
+                              {errorMessage}
                             </div>
                           </div>
                         ) : null}
                         <div>
                           <div className="small fw-semibold mb-1">
-                            O que gerou de saída
+                            Response recebido
                           </div>
                           <PayloadSummary
-                            label="saída"
-                            payload={stageProgress.outputPayload}
+                            label="response"
+                            payload={responsePayload}
                           />
                         </div>
+                        {situacao?.prompt || situacao?.schema ? (
+                          <details className="small">
+                            <summary className="fw-semibold">
+                              Prompt e schema usados
+                            </summary>
+                            <div className="row g-2 mt-1">
+                              <div className="col-12 col-lg-6">
+                                <PayloadSummary
+                                  label="prompt"
+                                  payload={situacao.prompt}
+                                />
+                              </div>
+                              <div className="col-12 col-lg-6">
+                                <PayloadSummary
+                                  label="schema"
+                                  payload={situacao.schema}
+                                />
+                              </div>
+                            </div>
+                          </details>
+                        ) : null}
                       </div>
                     ) : null}
                   </div>

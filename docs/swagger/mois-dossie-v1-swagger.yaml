@@ -4,7 +4,7 @@ info:
   version: v1
   description: Contratos internos do pipeline de criação de dossiê MOIS v1.
 paths:
-  /api/internal/mois/dossie/v1/intake/stage-executions/pending:
+  /api/internal/mois/dossieproduto/v1/intake/stage-executions/pending:
     post:
       summary: Lista pendências canônicas da etapa Entrada inicial do dossiê MOIS v1
       operationId: pendingMoisDossieV1IntakeStageExecutions
@@ -21,7 +21,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DossierIntakePendingResponse'
-  /api/internal/mois/dossie/v1/product-understanding/stage-executions/pending:
+  /api/internal/mois/dossieproduto/v1/product-understanding/stage-executions/pending:
     post:
       summary: Lista pendências canônicas da etapa Entendimento do produto do dossiê MOIS v1
       operationId: pendingMoisDossieV1ProductUnderstandingStageExecutions
@@ -38,7 +38,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DossierProductUnderstandingPendingResponse'
-  /api/internal/mois/dossie/v1/investigation-anchor-builder/stage-executions/pending:
+  /api/internal/mois/dossieproduto/v1/investigation-anchor-builder/stage-executions/pending:
     post:
       summary: Lista pendências canônicas da etapa Geração de âncoras de investigação do dossiê MOIS v1
       operationId: pendingMoisDossieV1InvestigationAnchorBuilderStageExecutions
@@ -55,7 +55,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DossierInvestigationAnchorBuilderPendingResponse'
-  /api/internal/mois/dossie/v1/warmup-resource-discovery/stage-executions/pending:
+  /api/internal/mois/dossieproduto/v1/warmup-resource-discovery/stage-executions/pending:
     post:
       summary: Lista pendências canônicas da etapa Descoberta de recursos de aquecimento do dossiê MOIS v1
       operationId: pendingMoisDossieV1WarmupResourceDiscoveryStageExecutions
@@ -72,7 +72,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DossierWarmupResourceDiscoveryPendingResponse'
-  /api/internal/mois/dossie/v1/source-product-match/stage-executions/pending:
+  /api/internal/mois/dossieproduto/v1/source-product-match/stage-executions/pending:
     post:
       summary: Lista pendências canônicas da etapa Validação de relação fonte-produto do dossiê MOIS v1
       operationId: pendingMoisDossieV1SourceProductMatchStageExecutions
@@ -89,7 +89,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DossierSourceProductMatchPendingResponse'
-  /api/internal/mois/dossie/v1/warmup-signal-extraction/stage-executions/pending:
+  /api/internal/mois/dossieproduto/v1/warmup-signal-extraction/stage-executions/pending:
     post:
       summary: Lista pendências canônicas da etapa Extração de sinais de aquecimento do dossiê MOIS v1
       operationId: pendingMoisDossieV1WarmupSignalExtractionStageExecutions
@@ -106,7 +106,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DossierWarmupSignalExtractionPendingResponse'
-  /api/internal/mois/dossie/v1/warmup-map-builder/stage-executions/pending:
+  /api/internal/mois/dossieproduto/v1/warmup-map-builder/stage-executions/pending:
     post:
       summary: Lista pendências canônicas da etapa Montagem do mapa de aquecimento do dossiê MOIS v1
       operationId: pendingMoisDossieV1WarmupMapBuilderStageExecutions
@@ -123,7 +123,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DossierWarmupMapBuilderPendingResponse'
-  /api/internal/mois/dossie/v1/dossier-synthesis/stage-executions/pending:
+  /api/internal/mois/dossieproduto/v1/dossier-synthesis/stage-executions/pending:
     post:
       summary: Lista pendências canônicas da etapa Síntese final do dossiê do dossiê MOIS v1
       operationId: pendingMoisDossieV1DossierSynthesisStageExecutions
@@ -140,7 +140,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DossierDossierSynthesisPendingResponse'
-  /api/internal/mois/dossie/v1/intake/stage-executions/{productKey}/{jobId}/recebeRequest:
+  /api/internal/mois/dossieproduto/v1/intake/stage-executions/{productKey}/{jobId}/recebeRequest:
     post:
       summary: Recebe request operacional da etapa intake do dossiê MOIS v1
       operationId: recebeRequestMoisDossieV1IntakeStageExecutions
@@ -168,7 +168,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DossierIntakeRecebeRequestResponse'
-  /api/internal/mois/dossie/v1/product-understanding/stage-executions/{productKey}/{jobId}/recebeRequest:
+  /api/internal/mois/dossieproduto/v1/product-understanding/stage-executions/{productKey}/{jobId}/recebeRequest:
     post:
       summary: Recebe request operacional da etapa product-understanding do dossiê MOIS v1
       operationId: recebeRequestMoisDossieV1ProductUnderstandingStageExecutions
@@ -196,7 +196,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DossierProductUnderstandingRecebeRequestResponse'
-  /api/internal/mois/dossie/v1/investigation-anchor-builder/stage-executions/{productKey}/{jobId}/recebeRequest:
+  /api/internal/mois/dossieproduto/v1/investigation-anchor-builder/stage-executions/{productKey}/{jobId}/recebeRequest:
     post:
       summary: Recebe request operacional da etapa investigation-anchor-builder do dossiê MOIS v1
       operationId: recebeRequestMoisDossieV1InvestigationAnchorBuilderStageExecutions
@@ -224,7 +224,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DossierInvestigationAnchorBuilderRecebeRequestResponse'
-  /api/internal/mois/dossie/v1/warmup-resource-discovery/stage-executions/{productKey}/{jobId}/recebeRequest:
+  /api/internal/mois/dossieproduto/v1/warmup-resource-discovery/stage-executions/{productKey}/{jobId}/recebeRequest:
     post:
       summary: Recebe request operacional da etapa warmup-resource-discovery do dossiê MOIS v1
       operationId: recebeRequestMoisDossieV1WarmupResourceDiscoveryStageExecutions
@@ -252,7 +252,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DossierWarmupResourceDiscoveryRecebeRequestResponse'
-  /api/internal/mois/dossie/v1/source-product-match/stage-executions/{productKey}/{jobId}/recebeRequest:
+  /api/internal/mois/dossieproduto/v1/source-product-match/stage-executions/{productKey}/{jobId}/recebeRequest:
     post:
       summary: Recebe request operacional da etapa source-product-match do dossiê MOIS v1
       operationId: recebeRequestMoisDossieV1SourceProductMatchStageExecutions
@@ -280,7 +280,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DossierSourceProductMatchRecebeRequestResponse'
-  /api/internal/mois/dossie/v1/warmup-signal-extraction/stage-executions/{productKey}/{jobId}/recebeRequest:
+  /api/internal/mois/dossieproduto/v1/warmup-signal-extraction/stage-executions/{productKey}/{jobId}/recebeRequest:
     post:
       summary: Recebe request operacional da etapa warmup-signal-extraction do dossiê MOIS v1
       operationId: recebeRequestMoisDossieV1WarmupSignalExtractionStageExecutions
@@ -308,7 +308,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DossierWarmupSignalExtractionRecebeRequestResponse'
-  /api/internal/mois/dossie/v1/warmup-map-builder/stage-executions/{productKey}/{jobId}/recebeRequest:
+  /api/internal/mois/dossieproduto/v1/warmup-map-builder/stage-executions/{productKey}/{jobId}/recebeRequest:
     post:
       summary: Recebe request operacional da etapa warmup-map-builder do dossiê MOIS v1
       operationId: recebeRequestMoisDossieV1WarmupMapBuilderStageExecutions
@@ -336,7 +336,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DossierWarmupMapBuilderRecebeRequestResponse'
-  /api/internal/mois/dossie/v1/dossier-synthesis/stage-executions/{productKey}/{jobId}/recebeRequest:
+  /api/internal/mois/dossieproduto/v1/dossier-synthesis/stage-executions/{productKey}/{jobId}/recebeRequest:
     post:
       summary: Recebe request operacional da etapa dossier-synthesis do dossiê MOIS v1
       operationId: recebeRequestMoisDossieV1DossierSynthesisStageExecutions
@@ -364,7 +364,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DossierDossierSynthesisRecebeRequestResponse'
-  /api/internal/mois/dossie/v1/intake/stage-executions/{productKey}/{jobId}/recebeResponse:
+  /api/internal/mois/dossieproduto/v1/intake/stage-executions/{productKey}/{jobId}/recebeResponse:
     post:
       summary: Recebe response operacional da etapa intake do dossiê MOIS v1
       operationId: recebeResponseMoisDossieV1IntakeStageExecutions
@@ -392,7 +392,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DossierIntakeRecebeResponseResponse'
-  /api/internal/mois/dossie/v1/product-understanding/stage-executions/{productKey}/{jobId}/recebeResponse:
+  /api/internal/mois/dossieproduto/v1/product-understanding/stage-executions/{productKey}/{jobId}/recebeResponse:
     post:
       summary: Recebe response operacional da etapa product-understanding do dossiê MOIS v1
       operationId: recebeResponseMoisDossieV1ProductUnderstandingStageExecutions
@@ -420,7 +420,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DossierProductUnderstandingRecebeResponseResponse'
-  /api/internal/mois/dossie/v1/investigation-anchor-builder/stage-executions/{productKey}/{jobId}/recebeResponse:
+  /api/internal/mois/dossieproduto/v1/investigation-anchor-builder/stage-executions/{productKey}/{jobId}/recebeResponse:
     post:
       summary: Recebe response operacional da etapa investigation-anchor-builder do dossiê MOIS v1
       operationId: recebeResponseMoisDossieV1InvestigationAnchorBuilderStageExecutions
@@ -448,7 +448,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DossierInvestigationAnchorBuilderRecebeResponseResponse'
-  /api/internal/mois/dossie/v1/warmup-resource-discovery/stage-executions/{productKey}/{jobId}/recebeResponse:
+  /api/internal/mois/dossieproduto/v1/warmup-resource-discovery/stage-executions/{productKey}/{jobId}/recebeResponse:
     post:
       summary: Recebe response operacional da etapa warmup-resource-discovery do dossiê MOIS v1
       operationId: recebeResponseMoisDossieV1WarmupResourceDiscoveryStageExecutions
@@ -476,7 +476,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DossierWarmupResourceDiscoveryRecebeResponseResponse'
-  /api/internal/mois/dossie/v1/source-product-match/stage-executions/{productKey}/{jobId}/recebeResponse:
+  /api/internal/mois/dossieproduto/v1/source-product-match/stage-executions/{productKey}/{jobId}/recebeResponse:
     post:
       summary: Recebe response operacional da etapa source-product-match do dossiê MOIS v1
       operationId: recebeResponseMoisDossieV1SourceProductMatchStageExecutions
@@ -504,7 +504,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DossierSourceProductMatchRecebeResponseResponse'
-  /api/internal/mois/dossie/v1/warmup-signal-extraction/stage-executions/{productKey}/{jobId}/recebeResponse:
+  /api/internal/mois/dossieproduto/v1/warmup-signal-extraction/stage-executions/{productKey}/{jobId}/recebeResponse:
     post:
       summary: Recebe response operacional da etapa warmup-signal-extraction do dossiê MOIS v1
       operationId: recebeResponseMoisDossieV1WarmupSignalExtractionStageExecutions
@@ -532,7 +532,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DossierWarmupSignalExtractionRecebeResponseResponse'
-  /api/internal/mois/dossie/v1/warmup-map-builder/stage-executions/{productKey}/{jobId}/recebeResponse:
+  /api/internal/mois/dossieproduto/v1/warmup-map-builder/stage-executions/{productKey}/{jobId}/recebeResponse:
     post:
       summary: Recebe response operacional da etapa warmup-map-builder do dossiê MOIS v1
       operationId: recebeResponseMoisDossieV1WarmupMapBuilderStageExecutions
@@ -560,7 +560,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DossierWarmupMapBuilderRecebeResponseResponse'
-  /api/internal/mois/dossie/v1/dossier-synthesis/stage-executions/{productKey}/{jobId}/recebeResponse:
+  /api/internal/mois/dossieproduto/v1/dossier-synthesis/stage-executions/{productKey}/{jobId}/recebeResponse:
     post:
       summary: Recebe response operacional da etapa dossier-synthesis do dossiê MOIS v1
       operationId: recebeResponseMoisDossieV1DossierSynthesisStageExecutions

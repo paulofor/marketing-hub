@@ -167,6 +167,37 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/BackendError'
+  /api/internal/oprmcoletormei/nichocnae/v1/{stage}/stage-executions/{idExterno}/situacao:
+    post:
+      tags:
+        - Backend queue consumed by oprm-coletor-mei
+      summary: Consulta auditorias do pipeline NichoCNAE por etapa, id externo e lista de status.
+      description: |
+        Retorna os registros existentes na tabela `pipeline_nichocnae` para a etapa,
+        `idExterno` e qualquer status informado no corpo, ordenados por `dataHora`
+        decrescente. O caminho v1 preserva a versão do contrato de auditoria usado
+        pelos callbacks do executor, mesmo dentro do pacote operacional v3.
+      operationId: searchNichoCnaeV3PipelineSituacao
+      parameters:
+        - $ref: '#/components/parameters/StagePath'
+        - $ref: '#/components/parameters/IdExternoPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NichoCnaeV3PipelineSituacaoRequest'
+      responses:
+        '200':
+          description: Registros de auditoria encontrados para o filtro.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/NichoCnaeV3PipelineSituacaoResponse'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
   /api/oprm-mei/health:
     get:
       tags:
@@ -235,6 +266,75 @@ components:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
   schemas:
+    NichoCnaeV3PipelineSituacaoRequest:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: array
+          minItems: 1
+          items:
+            type: string
+          example:
+            - AGUARDANDO_MODULO
+            - CONCLUIDO
+            - FALHA
+      additionalProperties: false
+    NichoCnaeV3PipelineSituacaoResponse:
+      type: object
+      properties:
+        idExterno:
+          type: string
+          example: '4781400'
+        codigoEtapa:
+          $ref: '#/components/schemas/NichoCnaeV3StageCode'
+        status:
+          type: string
+          example: CONCLUIDO
+        dataHora:
+          type: string
+          format: date-time
+        jobId:
+          type: string
+        request:
+          type: string
+          nullable: true
+        response:
+          type: string
+          nullable: true
+        quantidadeTokenEntrada:
+          type: integer
+          format: int64
+          nullable: true
+        quantidadeTokenSaida:
+          type: integer
+          format: int64
+          nullable: true
+        modelo:
+          type: string
+          nullable: true
+        custo:
+          type: number
+          nullable: true
+        descricaoErro:
+          type: string
+          nullable: true
+        jobIdExterno:
+          type: string
+          nullable: true
+        plataforma:
+          type: string
+          nullable: true
+        prompt:
+          type: string
+          nullable: true
+        schema:
+          type: string
+          nullable: true
+        versaoPipeline:
+          type: string
+          nullable: true
     NichoCnaeV3StageCode:
       type: string
       enum:

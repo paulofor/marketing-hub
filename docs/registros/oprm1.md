@@ -1610,3 +1610,8 @@
 - Ajuste: a saída da etapa `cnae-intake` agora explicita que o pipeline está analisando MEI e profissionais autônomos que atuam por conta própria, sem contratação direta como CLT.
 - Motivo: esse recorte precisa nascer na primeira etapa para orientar a geração de personas e evitar que as próximas etapas pesquisem funcionários CLT de empresas do CNAE.
 - Prevenção: teste unitário da etapa 1 passou a validar `targetAudienceType`, `targetAudienceDefinition` e `employmentBoundary`.
+
+## 2026-06-27 — Backend NichoCNAE v3: consulta de situação da auditoria
+
+- Criado endpoint interno `POST /api/internal/oprmcoletormei/nichocnae/v1/<etapa>/stage-executions/{idExterno}/situacao` para consultar `pipeline_nichocnae` por etapa, identificador externo e lista de status, retornando registros ordenados por `data_hora` decrescente.
+- Adicionada coluna `status` à auditoria `pipeline_nichocnae`, preenchida nos callbacks v3 como `AGUARDANDO_MODULO`, `CONCLUIDO` ou `FALHA`, permitindo filtro direto no banco em vez de inferência por payload.

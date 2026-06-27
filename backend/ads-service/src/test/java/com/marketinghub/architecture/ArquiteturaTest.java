@@ -166,8 +166,7 @@ class ArquiteturaTest {
             FRAMEWORK_IMAGE_GENERATION_JOB_REPOSITORY_CLASS,
             GERALANDING_STAGE_EXECUTION_REPOSITORY_CLASS);
     private static final String MOIS_DOSSIE_V1_EXECUTOR_MODULE = "mois-sales-library-worker";
-    private static final String MOIS_DOSSIE_V1_PACKAGE = "com.marketinghub.pipelines.mois.dossie.v1";
-    private static final String MOIS_DOSSIE_PRODUTO_V1_PACKAGE = "com.marketinghub.pipelines.mois.dossieproduto.v1";
+    private static final String MOIS_DOSSIE_V1_PACKAGE = "com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1";
     private static final String GERAANUNCIO_V2_PACKAGE = "com.marketinghub.pipelines.aiworker.geracaoanuncios.v1";
     private static final Map<String, String> GERAANUNCIO_V2_STAGE_ENDPOINT_SLUGS = Map.ofEntries(
             Map.entry("texto", "texto"),
@@ -357,7 +356,7 @@ class ArquiteturaTest {
     @ArchTest
     static final ArchRule moisDossieV1BackendMustRemainReadWriteOnly = classes()
             .that()
-            .resideInAPackage("com.marketinghub.moissaleslibraryworker.pipelines.dossie.v1..")
+            .resideInAPackage("com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1..")
             .should(notAssumeOperationalExecutionResponsibilityForMoisDossieV1())
             .because("[ARQUITETURA] [BACKEND][MOIS Dossiê v1] o backend deve publicar pendências e receber callbacks; "
                     + "o controle operacional pertence ao módulo executor " + MOIS_DOSSIE_V1_EXECUTOR_MODULE);
@@ -400,7 +399,7 @@ class ArquiteturaTest {
     @ArchTest
     static final ArchRule moisDossieV1ServiceContractsMustBeRecords = classes()
             .that()
-            .resideInAPackage("com.marketinghub.moissaleslibraryworker.pipelines.dossie.v1.*.service..")
+            .resideInAPackage("com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1.*.service..")
             .should(beRecordWhenInsideMoisDossieV1ServiceSubpackage())
             .because("[ARQUITETURA] [BACKEND][MOIS Dossiê v1] DTOs/contratos de service devem ser records em subpacotes da operação");
 

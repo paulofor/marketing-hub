@@ -1854,7 +1854,7 @@ Arquivos principais:
 ## 2026-06-26 — Consolidação dos pacotes do dossiê da Página de Vendas
 
 - Mantido no módulo executor apenas o pacote canônico `com.marketinghub.pipelines.dossie.v1` para o pipeline v1 de dossiê.
-- Ajustado o backend para usar o pacote canônico `com.marketinghub.moissaleslibraryworker.pipelines.dossie.v1`.
+- Ajustado o backend para usar o pacote canônico `com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1`.
 - Removidos os pacotes duplicados `dossieproduto.v1` do executor e do backend para evitar divergência operacional e de contratos.
 
 ## 2026-06-26 — RecebeRequest do dossiê de produto MOIS v1
@@ -1868,3 +1868,9 @@ Arquivos principais:
 - Alterado o backend do fluxo `moissaleslibraryworker.dossieproduto.v1` para criar `jobId` por UUID no `/start` de cada etapa.
 - Ajustado o `/pending` para devolver cada objeto pendente acompanhado do `jobId` ativo da etapa.
 - Ajustado o `recebeRequest` para receber o `jobId` na URL junto com o identificador do objeto, mantendo a auditoria vinculada ao mesmo job iniciado.
+
+## 2026-06-27 — Redirecionamento do pacote canônico do teste do Dossiê Produto MOIS v1
+
+- Redirecionado o teste arquitetural do backend para o pacote canônico `com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1`.
+- Removida a referência arquitetural ao pacote antigo `com.marketinghub.pipelines.mois.dossie.v1`.
+- O backend do dossiê de produto MOIS v1 passa a manter contratos por etapa no namespace `moissaleslibraryworker.dossieproduto.v1`, preservando o módulo executor `mois-sales-library-worker` como responsável pela execução operacional.

@@ -26,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
 
 import java.io.IOException;
@@ -41,10 +42,11 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Service layer for creatives.
+ * Responsabilidade: centralizar as operações de criativos vinculados a experimentos.
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class CreativeService {
 
     private final CreativeRepository repository;
@@ -59,32 +61,47 @@ public class CreativeService {
     private final ObjectMapper objectMapper;
 
     /**
-     * Creates and stores a creative.
+     * Cria e persiste um criativo para o experimento informado.
      */
     @Transactional
     public Creative create(Long experimentId, CreateCreativeRequest request) {
-        Experiment exp = experimentRepository.findById(experimentId).orElseThrow();
-        Creative creative = Creative.builder()
-                .experiment(exp)
-                .format(request.getFormat())
-                .headline(request.getHeadline())
-                .primaryText(request.getPrimaryText())
-                .imageUrl(request.getImageUrl())
-                .description(request.getDescription())
-                .cta(request.getCta())
-                .destinationUrl(request.getDestinationUrl())
-                .leadGenFormId(request.getLeadGenFormId())
-                .instagramUserId(request.getInstagramUserId())
-                .status(request.getStatus())
-                .build();
-        Creative saved = repository.save(creative);
-        applyGenerationCost(exp, request.getCostUsd());
-        refreshExperimentApproval(exp);
-        return saved;
+        try {
+            Experiment exp = experimentRepository.findById(experimentId).orElseThrow();
+            Creative creative = Creative.builder()
+                    .experiment(exp)
+                    .format(request.getFormat())
+                    .headline(request.getHeadline())
+                    .primaryText(request.getPrimaryText())
+                    .imageUrl(request.getImageUrl())
+                    .description(request.getDescription())
+                    .cta(request.getCta())
+                    .destinationUrl(request.getDestinationUrl())
+                    .leadGenFormId(request.getLeadGenFormId())
+                    .instagramUserId(request.getInstagramUserId())
+                    .status(request.getStatus())
+                    .build();
+            Creative saved = repository.save(creative);
+            applyGenerationCost(exp, request.getCostUsd());
+            refreshExperimentApproval(exp);
+            return saved;
+        } catch (RuntimeException ex) {
+            log.error(
+                    "Falha ao criar criativo no backend. classe={} operacao=createCreative experimentId={} "
+                            + "requestFormat={} requestStatus={} headline='{}' imageUrl='{}' erro='{}'",
+                    getClass().getSimpleName(),
+                    experimentId,
+                    request != null ? request.getFormat() : null,
+                    request != null ? request.getStatus() : null,
+                    sanitizeForLog(request != null ? request.getHeadline() : null),
+                    sanitizeForLog(request != null ? request.getImageUrl() : null),
+                    ex.getMessage(),
+                    ex);
+            throw ex;
+        }
     }
 
     /**
-     * Updates an existing creative.
+     * Atualiza um criativo existente.
      */
     @Transactional
     public Creative update(Long id, CreateCreativeRequest request) {
@@ -104,6 +121,9 @@ public class CreativeService {
         return saved;
     }
 
+    /**
+     * Remove um criativo e atualiza o estado de aprovação do experimento.
+     */
     @Transactional
     public void delete(Long id) {
         Creative creative = repository.findByIdWithExperiment(id).orElseThrow();
@@ -112,10 +132,16 @@ public class CreativeService {
         refreshExperimentApproval(experiment);
     }
 
+    /**
+     * Lista os criativos vinculados ao experimento informado.
+     */
     public Iterable<Creative> listByExperiment(Long experimentId) {
         return repository.findByExperimentId(experimentId);
     }
 
+    /**
+     * Atualiza os rótulos comerciais do criativo.
+     */
     @Transactional
     public Creative updateLabels(Long id, Long angleId,
                                  Long proofId,
@@ -133,6 +159,9 @@ public class CreativeService {
         return creative;
     }
 
+    /**
+     * Recalcula se o experimento possui criativos aprovados.
+     */
     private void refreshExperimentApproval(Experiment experiment) {
         boolean hasApprovedCreatives = repository.existsByExperimentIdAndStatus(
                 experiment.getId(), CreativeStatus.READY);
@@ -140,6 +169,9 @@ public class CreativeService {
         experimentRepository.save(experiment);
     }
 
+    /**
+     * Atribui o custo da geração ao experimento e à hierarquia comercial.
+     */
     private void applyGenerationCost(Experiment experiment, BigDecimal costUsd) {
         if (experiment == null) {
             return;
@@ -148,7 +180,21 @@ public class CreativeService {
     }
 
     /**
-     * Saves the uploaded image and returns storage metadata.
+     * Reduz textos longos para manter o log legível e preservar o diagnóstico.
+     */
+    private String sanitizeForLog(String value) {
+        if (value == null) {
+            return null;
+        }
+        String normalized = value.replaceAll("\\s+", " ").trim();
+        if (normalized.length() <= 500) {
+            return normalized;
+        }
+        return normalized.substring(0, 500) + "...";
+    }
+
+    /**
+     * Salva a imagem enviada e retorna os metadados de armazenamento.
      */
     public AssetUploadResponse uploadImage(MultipartFile file,
                                                                          String model,
@@ -185,6 +231,9 @@ public class CreativeService {
                 resolvedCategory);
     }
 
+    /**
+     * Monta o payload auditável do asset armazenado.
+     */
     private String buildAssetPayload(AssetStorageService.StoredObject storedObject,
                                             AssetUploadCategory category,
                                             Long experimentId,
@@ -207,12 +256,12 @@ public class CreativeService {
         try {
             return objectMapper.writeValueAsString(payload);
         } catch (JsonProcessingException ex) {
-            throw new StorageException("Failed to serialize asset metadata", ex);
+            throw new StorageException("Falha ao serializar metadados do asset", ex);
         }
     }
 
     /**
-     * Fetches the preview HTML from Facebook Marketing API.
+     * Busca o HTML de prévia do criativo na API de Marketing do Facebook.
      */
     public String preview(Long creativeId) throws IOException, InterruptedException {
         String token = System.getProperty("FB_ACCESS_TOKEN");

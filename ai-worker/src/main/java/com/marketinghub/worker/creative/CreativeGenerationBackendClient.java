@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -54,10 +55,37 @@ public class CreativeGenerationBackendClient {
 
     /** Persiste um criativo gerado no backend. */
     public void createCreative(Long experimentId, CreateCreativeRequest request) {
+        log.info(
+                "Enviando criativo gerado ao backend. experimentId={} headline='{}' format={} status={} imageUrl={}",
+                experimentId,
+                sanitize(request != null ? request.getHeadline() : null),
+                request != null ? request.getFormat() : null,
+                request != null ? request.getStatus() : null,
+                sanitize(request != null ? request.getImageUrl() : null));
         webClient.post()
                 .uri(backendBaseUrl + "/api/experiments/{id}/creatives", experimentId)
                 .bodyValue(request)
                 .retrieve()
+                .onStatus(HttpStatusCode::isError, response -> response.bodyToMono(String.class)
+                        .defaultIfEmpty("")
+                        .map(body -> {
+                            String sanitizedBody = sanitize(body);
+                            log.error(
+                                    "Backend recusou criação de criativo. experimentId={} status={} body='{}' "
+                                            + "headline='{}' format={} creativeStatus={} imageUrl={}",
+                                    experimentId,
+                                    response.statusCode().value(),
+                                    sanitizedBody,
+                                    sanitize(request != null ? request.getHeadline() : null),
+                                    request != null ? request.getFormat() : null,
+                                    request != null ? request.getStatus() : null,
+                                    sanitize(request != null ? request.getImageUrl() : null));
+                            return new IllegalStateException(
+                                    "Falha ao salvar criativo no backend: status="
+                                            + response.statusCode().value()
+                                            + " body="
+                                            + sanitizedBody);
+                        }))
                 .toBodilessEntity()
                 .block(TIMEOUT);
     }
@@ -88,6 +116,18 @@ public class CreativeGenerationBackendClient {
             normalized = normalized.substring(0, normalized.length() - 1);
         }
         return normalized;
+    }
+
+    /** Normaliza valores longos para preservar contexto útil sem poluir o log operacional. */
+    private String sanitize(String value) {
+        if (value == null) {
+            return null;
+        }
+        String normalized = value.replaceAll("\\s+", " ").trim();
+        if (normalized.length() <= 500) {
+            return normalized;
+        }
+        return normalized.substring(0, 500) + "...";
     }
 
     /** Payload de falha enviado ao backend. */

@@ -50,3 +50,11 @@
 - Módulo executor: `ai-worker`.
 - Pacote protegido: `com.marketinghub.pipelines.geracaoanuncios.v1`.
 - Alteração: o pipeline GeracaoAnuncios v1 passou a ter duas etapas internas espelhadas com o backend, `texto` e `imagem`, cada uma com client próprio para o endpoint `pending` canônico da etapa par no backend.
+
+## 2026-06-27 — AI Worker — GeracaoAnuncios v1
+
+- Módulo executor: `ai-worker`.
+- Pacote protegido: `com.marketinghub.pipelines.geracaoanuncios.v1`.
+- Etapas protegidas: `texto` e `imagem`.
+- Ponto inicial canônico de consumo pelo executor: `/api/internal/aiworker/geracaoanuncios/v1/<etapa>/stage-executions/pending`.
+- Aplicação: protocolo padrão módulo reforçado no executor, sem alterar o backend principal, com núcleo declarativo versionado, etapas plugáveis e regras ArchUnit específicas para impedir dependência do núcleo em etapas concretas, dependência entre etapas, ciclos, processor fora do contrato `StageProcessor` e tecnologia concreta no núcleo.

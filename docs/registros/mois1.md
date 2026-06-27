@@ -1879,3 +1879,7 @@ Arquivos principais:
 
 - Removida a dependência de posição física `AFTER dossie_produto_current_stage` na criação de `dossie_produto_updated_at`, que quebrava o bootstrap quando a coluna de etapa ainda não existia.
 - Criado changeset incremental para garantir as colunas canônicas `status_pipeline_dossieproduto` e `data_pipeline_dossieproduto` após a criação das colunas legadas, cobrindo bancos onde o rename anterior foi marcado como executado antes da falha.
+## 2026-06-27 — Endpoints internos do dossiê MOIS v1 ajustados
+
+- Ajustados os controllers do backend `moissaleslibraryworker.dossieproduto.v1` para expor os endpoints internos com domínio `moissaleslibraryworker`, etapa na URL e `idExterno` como identificador operacional no caminho.
+- Atualizada a documentação Swagger do dossiê para refletir `start`, `recebeRequest`, `recebeResponse` e `pending` no novo padrão canônico solicitado.

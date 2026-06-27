@@ -5471,3 +5471,11 @@
 - Solicitação: ao concluir uma etapa com sucesso no backend de `aiworker.geracaoanuncios.v1`, a tabela do experimento deve voltar o pipeline para `INICIADO`, registrar a data-hora atual e apontar a próxima etapa.
 - Ajuste aplicado: os callbacks de sucesso das etapas `texto` e `imagem` agora atualizam `mois_sales_page.status_pipeline_geracaoanuncios`, `data_pipeline_geracaoanuncios` e `etapa_pipeline_geracaoanuncios` conforme a próxima etapa funcional.
 - Prevenção de recorrência: foi adicionada coluna canônica para a etapa do pipeline no controle de experimento, evitando depender apenas do histórico técnico da tabela de auditoria.
+
+## 2026-06-27 — Falha antiga de GeraAnuncio ocultada durante nova tentativa
+
+- Problema: ao clicar novamente em “Gerar anúncios do pipeline”, a aba Criativos mantinha visível a mensagem de falha anterior enquanto a nova solicitação ainda estava em andamento.
+- Causa-raiz: a tela usava corretamente o status persistido no backend, mas não separava o estado transitório da requisição de retry; por isso a falha anterior parecia pertencer à tentativa atual até a atualização do experimento retornar.
+- Correção aplicada: durante o POST de nova solicitação, a UI oculta o badge e o detalhe da falha recuperável anterior, mantendo o botão em carregamento até o backend responder.
+- Prevenção de recorrência: foi adicionado teste de frontend garantindo que a falha anterior desaparece enquanto o retry está pendente.
+- Observação operacional: a consulta aos logs via MCP retornou timeout de conexão no momento da investigação, então não houve evidência nova suficiente para confirmar uma nova falha do worker nesta rodada.

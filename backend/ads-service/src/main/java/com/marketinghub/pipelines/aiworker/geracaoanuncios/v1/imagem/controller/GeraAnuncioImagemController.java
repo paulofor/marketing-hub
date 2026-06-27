@@ -1,6 +1,8 @@
 package com.marketinghub.pipelines.aiworker.geracaoanuncios.v1.imagem.controller;
 
 import com.marketinghub.pipelines.aiworker.geracaoanuncios.v1.imagem.service.GeraAnuncioImagemService;
+import com.marketinghub.pipelines.aiworker.geracaoanuncios.v1.imagem.service.consultaSituacao.GeraAnuncioImagemSituacaoRequest;
+import com.marketinghub.pipelines.aiworker.geracaoanuncios.v1.imagem.service.consultaSituacao.GeraAnuncioImagemSituacaoResponse;
 import com.marketinghub.pipelines.aiworker.geracaoanuncios.v1.imagem.service.detailStageExecution.GeraAnuncioImagemDetailResponse;
 import com.marketinghub.pipelines.aiworker.geracaoanuncios.v1.imagem.service.listStageExecutions.GeraAnuncioImagemExecutionSummaryResponse;
 import com.marketinghub.pipelines.aiworker.geracaoanuncios.v1.imagem.service.pending.GeraAnuncioImagemPendingResponse;
@@ -52,6 +54,13 @@ public class GeraAnuncioImagemController {
     @PostMapping("/pending")
     public List<GeraAnuncioImagemPendingResponse> pending() {
         return service.pending();
+    }
+
+    /** Consulta auditorias da etapa filtrando pelo identificador externo e pela lista de status. */
+    @PostMapping("/{idExterno}/situacao")
+    public List<GeraAnuncioImagemSituacaoResponse> consultaSituacao(
+            @PathVariable String idExterno, @RequestBody GeraAnuncioImagemSituacaoRequest request) {
+        return service.consultaSituacao(idExterno, request);
     }
 
     /** Recebe o request operacional gerado pelo AI Worker para a etapa usando o jobId da execução. */

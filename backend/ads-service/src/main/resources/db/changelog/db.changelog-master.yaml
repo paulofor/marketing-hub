@@ -1,5 +1,6 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-06-27-pipeline-geracaoanuncios-status.yaml
       file: changesets/2026-06-27-pipeline-nichocnae-status.yaml
       relativeToChangelogFile: true
   - include:

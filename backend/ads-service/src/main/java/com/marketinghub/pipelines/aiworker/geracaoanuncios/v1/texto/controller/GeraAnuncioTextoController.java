@@ -1,6 +1,8 @@
 package com.marketinghub.pipelines.aiworker.geracaoanuncios.v1.texto.controller;
 
 import com.marketinghub.pipelines.aiworker.geracaoanuncios.v1.texto.service.GeraAnuncioTextoService;
+import com.marketinghub.pipelines.aiworker.geracaoanuncios.v1.texto.service.consultaSituacao.GeraAnuncioTextoSituacaoRequest;
+import com.marketinghub.pipelines.aiworker.geracaoanuncios.v1.texto.service.consultaSituacao.GeraAnuncioTextoSituacaoResponse;
 import com.marketinghub.pipelines.aiworker.geracaoanuncios.v1.texto.service.detailStageExecution.GeraAnuncioTextoDetailResponse;
 import com.marketinghub.pipelines.aiworker.geracaoanuncios.v1.texto.service.listStageExecutions.GeraAnuncioTextoExecutionSummaryResponse;
 import com.marketinghub.pipelines.aiworker.geracaoanuncios.v1.texto.service.pending.GeraAnuncioTextoPendingResponse;
@@ -52,6 +54,13 @@ public class GeraAnuncioTextoController {
     @PostMapping("/pending")
     public List<GeraAnuncioTextoPendingResponse> pending() {
         return service.pending();
+    }
+
+    /** Consulta auditorias da etapa filtrando pelo identificador externo e pela lista de status. */
+    @PostMapping("/{idExterno}/situacao")
+    public List<GeraAnuncioTextoSituacaoResponse> consultaSituacao(
+            @PathVariable String idExterno, @RequestBody GeraAnuncioTextoSituacaoRequest request) {
+        return service.consultaSituacao(idExterno, request);
     }
 
     /** Recebe o request operacional gerado pelo AI Worker para a etapa usando o jobId da execução. */

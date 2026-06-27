@@ -86,15 +86,21 @@ public class DossierDossierSynthesisService {
     }
 
 
-    /** Recebe a resposta operacional da etapa, conclui ou falha a página/produto e audita a saída do pipeline. */
+    /** Recebe a resposta operacional da etapa, avança sucesso para a próxima etapa e audita a saída do pipeline. */
     public DossierDossierSynthesisRecebeResponseResponse recebeResponse(String productKey, String jobId, DossierDossierSynthesisRecebeResponseRequest request) {
         long pageId = Long.parseLong(productKey);
         Instant now = Instant.now();
         String status = isBlank(request.descricaoErro()) ? STATUS_COMPLETED : STATUS_FAILED;
         var page = salesPageRepository.findById(pageId)
                 .orElseThrow(() -> new IllegalArgumentException("Página/produto MOIS não encontrada: " + productKey));
-        page.setDossieProdutoStatus(status);
-        page.setDossieProdutoCurrentStage(STAGE_CODE);
+        String nextStageCode = STATUS_COMPLETED.equals(status) ? normalizeNextStage(NEXT_STAGE) : null;
+        if (nextStageCode == null) {
+            page.setDossieProdutoStatus(status);
+            page.setDossieProdutoCurrentStage(STAGE_CODE);
+        } else {
+            page.setDossieProdutoStatus(STATUS_STARTED);
+            page.setDossieProdutoCurrentStage(nextStageCode);
+        }
         page.setDossieProdutoUpdatedAt(now);
         salesPageRepository.save(page);
 
@@ -112,7 +118,6 @@ public class DossierDossierSynthesisService {
         pipeline.setVersaoPipeline("v1");
         pipelineDossieProdutoRepository.save(pipeline);
 
-        String nextStageCode = STATUS_COMPLETED.equals(status) ? normalizeNextStage(NEXT_STAGE) : null;
         return new DossierDossierSynthesisRecebeResponseResponse(jobId, productKey, STAGE_CODE, status, nextStageCode);
     }
 

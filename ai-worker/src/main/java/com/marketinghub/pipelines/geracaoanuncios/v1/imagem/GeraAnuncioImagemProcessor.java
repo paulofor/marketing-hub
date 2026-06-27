@@ -3,17 +3,28 @@ package com.marketinghub.pipelines.geracaoanuncios.v1.imagem;
 import com.marketinghub.worker.pipeline.StageContext;
 import com.marketinghub.worker.pipeline.StageProcessor;
 import com.marketinghub.worker.pipeline.StageResult;
-import java.util.List;
-import java.util.Map;
-import org.springframework.stereotype.Component;
 
 /** Responsabilidade: executar a etapa Imagem do pipeline GeracaoAnuncios v1 a partir do contrato canônico do backend. */
-@Component
 public class GeraAnuncioImagemProcessor implements StageProcessor<GeraAnuncioImagemInput, GeraAnuncioImagemOutput> {
-    /** Processa o contexto pendente e devolve saída estruturada pronta para callback ao backend. */
+    private final GeraAnuncioImagemPromptBuilder promptBuilder;
+    private final GeraAnuncioImagemResponseValidator responseValidator;
+    private final GeraAnuncioImagemResponseHandler responseHandler;
+
+    /** Inicializa o processor com montagem de prompt, validação de resposta e tratamento de saída da etapa. */
+    public GeraAnuncioImagemProcessor(
+            GeraAnuncioImagemPromptBuilder promptBuilder,
+            GeraAnuncioImagemResponseValidator responseValidator,
+            GeraAnuncioImagemResponseHandler responseHandler) {
+        this.promptBuilder = promptBuilder;
+        this.responseValidator = responseValidator;
+        this.responseHandler = responseHandler;
+    }
+
+    /** Processa a execução pendente gerando payload auditável e saída funcional estruturada. */
     @Override
     public StageResult<GeraAnuncioImagemOutput> process(StageContext<GeraAnuncioImagemInput> context) {
-        GeraAnuncioImagemOutput output = new GeraAnuncioImagemOutput(List.of(), Map.of("status", "IMAGE_SCAFFOLD"));
-        return new StageResult<>(output, List.of(), Map.of());
+        String requestPayload = promptBuilder.buildRequestPayload(context);
+        GeraAnuncioImagemOutput output = responseValidator.validateAndParse(requestPayload);
+        return responseHandler.handle(context, requestPayload, output);
     }
 }

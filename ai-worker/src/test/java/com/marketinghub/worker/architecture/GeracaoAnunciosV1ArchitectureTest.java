@@ -35,6 +35,7 @@ class GeracaoAnunciosV1ArchitectureTest {
             "ExecutionScheduler",
             "Input",
             "Output",
+            "Processor",
             "PromptBuilder",
             "ResponseHandler",
             "ResponseValidator",
@@ -123,9 +124,9 @@ class GeracaoAnunciosV1ArchitectureTest {
     }
 
 
-    /** Garante que cada etapa concreta tenha somente as nove classes padronizadas do executor. */
+    /** Garante que cada etapa concreta tenha somente as dez classes padronizadas do executor. */
     @ArchTest
-    static void subpacotes_geracaoanuncios_v1_devem_ter_apenas_nove_classes_padronizadas(JavaClasses importedClasses) {
+    static void subpacotes_geracaoanuncios_v1_devem_ter_apenas_dez_classes_padronizadas(JavaClasses importedClasses) {
         importedClasses.stream().filter(javaClass -> javaClass.getPackageName().startsWith(PIPELINE_ROOT)).findAny();
         Path workerRoot = repositoryRoot().resolve(Path.of(
                 "ai-worker", "src", "main", "java", "com", "marketinghub", "pipelines", "geracaoanuncios", "v1"));

@@ -1,48 +1,103 @@
 package com.marketinghub.pipelines.geracaoanuncios.v1.imagem;
 
+import com.marketinghub.worker.pipeline.StageBackendPort;
+import com.marketinghub.worker.pipeline.StageExecution;
+import com.marketinghub.worker.pipeline.StageResult;
 import com.marketinghub.worker.util.UrlUtils;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
 /** Responsabilidade: consumir os contratos backend da etapa Imagem do GeracaoAnuncios v1. */
-@Component
-public class GeraAnuncioImagemBackendClient {
+public class GeraAnuncioImagemBackendClient implements StageBackendPort<GeraAnuncioImagemInput, GeraAnuncioImagemOutput> {
     public static final String PENDING_ENDPOINT = "/internal/aiworker/geracaoanuncios/v1/imagem/stage-executions/pending";
 
     private static final Logger log = LoggerFactory.getLogger(GeraAnuncioImagemBackendClient.class);
 
     private final WebClient webClient;
-    private final String backendBaseUrl;
-    private final String apiPrefix;
+    private final GeraAnuncioImagemWorkerProperties properties;
 
-    /** Inicializa o cliente HTTP com URL base e prefixo oficial da API do backend. */
-    public GeraAnuncioImagemBackendClient(
-            WebClient.Builder builder,
-            @Value("${backend.base-url:http://191.252.181.168:8000}") String backendBaseUrl,
-            @Value("${backend.api-prefix:/api}") String apiPrefix) {
+    /** Inicializa o cliente HTTP com URL base e propriedades oficiais da etapa. */
+    public GeraAnuncioImagemBackendClient(WebClient.Builder builder, GeraAnuncioImagemWorkerProperties properties) {
         this.webClient = builder.build();
-        this.backendBaseUrl = backendBaseUrl;
-        this.apiPrefix = apiPrefix;
+        this.properties = properties;
     }
 
     /** Busca execuções pendentes pelo endpoint pending canônico da etapa Imagem no backend. */
     public List<GeraAnuncioImagemInput> fetchPending() {
-        String uri = UrlUtils.joinPath(backendBaseUrl, apiPrefix, PENDING_ENDPOINT);
+        return listPending(properties.pendingLimit()).stream().map(StageExecution::input).toList();
+    }
+
+    /** Lista execuções pendentes e adapta o contrato do backend ao worker genérico. */
+    @Override
+    public List<StageExecution<GeraAnuncioImagemInput>> listPending(int limit) {
+        String uri = stageExecutionBaseUrl() + "/pending";
         log.info("Buscando pending GeracaoAnuncios v1 Imagem. endpoint={}", uri);
         List<GeraAnuncioImagemInput> response = webClient.post()
                 .uri(uri)
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<List<GeraAnuncioImagemInput>>() {})
-                .doOnNext(payload -> log.info(
-                        "Resposta pending GeracaoAnuncios v1 Imagem recebida. endpoint={} quantidade={}",
-                        uri,
-                        payload.size()))
-                .block();
-        return response != null ? response : List.of();
+                .block(properties.timeout());
+        List<GeraAnuncioImagemInput> pending = response != null ? response : List.of();
+        log.info("Resposta pending GeracaoAnuncios v1 Imagem recebida. endpoint={} quantidade={}", uri, pending.size());
+        return pending.stream().limit(Math.max(1, limit)).map(this::toExecution).toList();
+    }
+
+    /** Registra em log o início local da execução antes do processamento da etapa. */
+    @Override
+    public void markRunning(StageExecution<GeraAnuncioImagemInput> execution) {
+        log.info("Iniciando GeracaoAnuncios v1 Imagem. jobId={} stageExecutionId={}", execution.idJob(), execution.input().stageExecutionId());
+    }
+
+    /** Envia ao backend a saída funcional estruturada produzida pela etapa. */
+    @Override
+    public void markCompleted(StageExecution<GeraAnuncioImagemInput> execution, StageResult<GeraAnuncioImagemOutput> result) {
+        String uri = stageExecutionBaseUrl() + "/" + execution.input().stageExecutionId() + "/response";
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("jobId", execution.idJob());
+        body.put("receivedAt", java.time.Instant.now().toString());
+        body.put("status", "COMPLETED");
+        body.put("response", result.output());
+        body.put("responsePayload", Map.of("artifacts", result.artifacts(), "metrics", result.metrics()));
+        body.put("structuredOutput", Map.of("output", result.output()));
+        body.put("error", null);
+        body.put("descricaoErro", null);
+        body.put("quantidadeTokenEntrada", null);
+        body.put("quantidadeTokenSaida", null);
+        body.put("custo", null);
+        body.put("modelo", "deterministic-geracaoanuncios-v1-imagem");
+        log.info("Enviando resultado GeracaoAnuncios v1 Imagem ao backend. endpoint={} jobId={} payload={}", uri, execution.idJob(), body);
+        webClient.post().uri(uri).bodyValue(body).retrieve().bodyToMono(Void.class).block(properties.timeout());
+    }
+
+    /** Registra falha com contexto suficiente para diagnóstico operacional da etapa. */
+    @Override
+    public void markFailed(StageExecution<GeraAnuncioImagemInput> execution, Throwable error) {
+        log.error(
+                "Falha no processamento GeracaoAnuncios v1 Imagem. jobId={} stageExecutionId={}",
+                execution.idJob(),
+                execution.input().stageExecutionId(),
+                error);
+    }
+
+    /** Adapta a entrada pendente para o contrato genérico de execução de etapa. */
+    private StageExecution<GeraAnuncioImagemInput> toExecution(GeraAnuncioImagemInput input) {
+        return new StageExecution<>(
+                input.jobId(),
+                input.experimentId(),
+                "imagem",
+                "PENDING",
+                input.requestedAt(),
+                input,
+                Map.of());
+    }
+
+    /** Monta a URL base dos endpoints internos da etapa no backend. */
+    private String stageExecutionBaseUrl() {
+        return UrlUtils.joinPath(properties.backendBaseUrl(), properties.apiPrefix(), PENDING_ENDPOINT.replace("/pending", ""));
     }
 }

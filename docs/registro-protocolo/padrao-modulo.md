@@ -71,3 +71,10 @@
 - Etapas protegidas: `texto` e `imagem`.
 - Ponto inicial canônico de consumo pelo executor: `/api/internal/aiworker/geracaoanuncios/v1/<etapa>/stage-executions/pending`.
 - Aplicação: protocolo padrão módulo reforçado no executor, sem alterar o backend principal, com núcleo declarativo versionado, etapas plugáveis e regras ArchUnit específicas para impedir dependência do núcleo em etapas concretas, dependência entre etapas, ciclos, processor fora do contrato `StageProcessor` e tecnologia concreta no núcleo.
+
+## 2026-06-27 — AI Worker — GeracaoAnuncios v1 / classes completas por etapa
+
+- Módulo executor: `ai-worker`.
+- Pacote protegido: `com.marketinghub.pipelines.geracaoanuncios.v1`.
+- Etapas protegidas: `texto` e `imagem`.
+- Aplicação: protocolo padrão módulo reforçado com conjunto completo de classes por etapa (`BackendClient`, `ExecutionScheduler`, `Input`, `Output`, `Processor`, `PromptBuilder`, `ResponseHandler`, `ResponseValidator`, `WorkerConfiguration` e `WorkerProperties`), mantendo consumo pelo endpoint `pending` canônico e backend fora do escopo do protocolo módulo.

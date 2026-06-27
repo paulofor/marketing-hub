@@ -14,7 +14,7 @@ async function startOprmNichoCnaeV3Job(
 ): Promise<OprmNichoCnaeV3JobStartResult> {
   const response = await fetch(
     buildApiUrl(
-      `/api/internal/oprm/nichocnae/v3/cnae-intake/stage-executions/start?cnaeCode=${encodeURIComponent(cnaeCode)}`,
+      `/api/internal/oprmcoletormei/nichocnae/v3/cnae-intake/stage-executions/${encodeURIComponent(cnaeCode)}/start`,
     ),
     { method: "POST" },
   );

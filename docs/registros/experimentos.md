@@ -5458,3 +5458,10 @@
 - Prevenção de recorrência: adicionado teste de frontend validando que o clique no botão envia a chave do experimento para o endpoint de início da etapa Texto.
 
 - 2026-06-27: identificado erro 500 no start de `/api/internal/aiworker/geracaoanuncios/v1/texto/stage-executions/start` causado por persistência JPA em coluna MySQL reservada `schema`; a correção final renomeou o mapeamento para a coluna canônica `schema_json` e adicionou migração para ambientes que já tinham a coluna antiga em `PipelineGeracaoAnuncios` e `PipelineNichoCnae`.
+
+## 2026-06-27 — Chamada Swagger correta para iniciar GeraAnuncio v2
+
+- Problema: a aba Criativos ainda exibia erro ao clicar em “Gerar anúncios do pipeline”.
+- Causa-raiz confirmada no Swagger publicado: a tela chamava `/api/internal/aiworker/geracaoanuncios/v1/texto/stage-executions/start` com `experimentKey` por query, mas o contrato exposto pelo backend aceita o início por caminho em `/{idExterno}/start` ou `/experiments/{experimentId}/start`.
+- Correção aplicada: o frontend passou a chamar `/api/internal/aiworker/geracaoanuncios/v1/texto/stage-executions/{experimentId}/start`, tratando o `idExterno` como o id do experimento.
+- Prevenção de recorrência: o teste da aba Criativos foi atualizado para validar exatamente a rota Swagger usada no clique do botão.

@@ -32,7 +32,7 @@
 - Módulo executor: `mois-sales-library-worker`.
 - Pacote protegido/criado: `com.marketinghub.pipelines.dossie.v1`.
 - Pipeline criado como `v1`, com núcleo genérico (`PipelineWorker`, `StageProcessor`, `StageContext`, `StageResult`, `StageArtifact`, `ArtifactStore`) e etapas plugáveis `intake`, `product-understanding`, `investigation-anchor-builder`, `warmup-resource-discovery`, `source-product-match`, `warmup-signal-extraction`, `warmup-map-builder` e `dossier-synthesis`.
-- Pontos iniciais canônicos previstos para consumo pelo executor: `/api/internal/mois/dossie/v1/<etapa>/stage-executions/pending`, começando por `intake` e cobrindo todas as etapas v1 do dossiê.
+- Pontos iniciais canônicos previstos para consumo pelo executor: `/api/internal/mois/dossieproduto/v1/<etapa>/stage-executions/pending`, começando por `intake` e cobrindo todas as etapas v1 do dossiê.
 
 - 2026-06-26 — Registro do pipeline `geracaoanuncios` v1 no `ai-worker` aplicado no pacote correto `com.marketinghub.pipelines.geracaoanuncios.v1` e pelas etapas `texto` e `imagem`.
 - 2026-06-26 — Aplicado ao módulo executor `ai-worker`, pacote `com.marketinghub.worker.geraanunciov2.pipeline`, pipeline `geraanuncio` v2, etapa inicial `criativo`, consumindo trabalho pelo endpoint pending canônico do backend `/api/internal/geraanuncio/v2/criativo/stage-executions/pending`.
@@ -57,3 +57,10 @@
 - Pacote protegido: `com.marketinghub.pipelines.nichocnae.v3`.
 - Reforço aplicado no teste ArchUnit do executor para bloquear tecnologia concreta no núcleo `v3.core` e ciclos entre pacotes da v3, mantendo etapas plugáveis e consumo por endpoints `pending` do backend.
 - Backend fora do escopo desta aplicação: permanece como fonte de verdade de contratos, pendências e callbacks.
+## 2026-06-27 — AI Worker — GeracaoAnuncios v1
+
+- Módulo executor: `ai-worker`.
+- Pacote protegido: `com.marketinghub.pipelines.geracaoanuncios.v1`.
+- Etapas protegidas: `texto` e `imagem`.
+- Ponto inicial canônico de consumo pelo executor: `/api/internal/aiworker/geracaoanuncios/v1/<etapa>/stage-executions/pending`.
+- Aplicação: protocolo padrão módulo reforçado no executor, sem alterar o backend principal, com núcleo declarativo versionado, etapas plugáveis e regras ArchUnit específicas para impedir dependência do núcleo em etapas concretas, dependência entre etapas, ciclos, processor fora do contrato `StageProcessor` e tecnologia concreta no núcleo.

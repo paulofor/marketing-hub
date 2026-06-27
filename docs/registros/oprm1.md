@@ -1578,3 +1578,8 @@
 - Aplicado reforço do protocolo padrão módulo no `oprm-coletor-mei` para o pacote executor `com.marketinghub.pipelines.nichocnae.v3`.
 - O teste ArchUnit da v3 agora também bloqueia tecnologia concreta no núcleo `v3.core` e ciclos entre pacotes, prevenindo acoplamento que dificultaria troca, remoção ou evolução das etapas.
 - Backend não foi alterado: o executor continua consumindo o trabalho pelos endpoints `pending` canônicos e reportando resultado ao backend.
+
+## 2026-06-27 — OPRM NichoCNAE v3: regra de classes canônicas por etapa
+
+- Adicionada regra no teste de arquitetura do `oprm-coletor-mei` para validar que subpacotes de etapa concreta em `com.marketinghub.pipelines.nichocnae.v3`, quando adotarem o padrão canônico do worker, fiquem restritos às 9 classes esperadas: `BackendClient`, `ExecutionScheduler`, `Input`, `Output`, `PromptBuilder`, `ResponseHandler`, `ResponseValidator`, `WorkerConfiguration` e `WorkerProperties`.
+- Objetivo: impedir crescimento desordenado dos subpacotes de etapa e manter o executor simples, auditável e plugável.

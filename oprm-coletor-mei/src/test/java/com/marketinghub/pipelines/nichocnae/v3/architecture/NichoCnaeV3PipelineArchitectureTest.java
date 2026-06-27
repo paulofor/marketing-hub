@@ -13,13 +13,27 @@ import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import org.junit.jupiter.api.Test;
 
 /** Garante que o pipeline NichoCNAE versão 3 siga o protocolo padrão módulo no executor OPRM. */
 class NichoCnaeV3PipelineArchitectureTest {
     private static final String BASE_PACKAGE = "com.marketinghub.pipelines.nichocnae.v3";
     private static final String CORE_PACKAGE = BASE_PACKAGE + ".core";
+    private static final Set<String> SUPPORT_PACKAGES = Set.of("core", "execution", "architecture");
+    private static final Set<String> REQUIRED_STAGE_CLASS_SUFFIXES = Set.of(
+            "BackendClient",
+            "ExecutionScheduler",
+            "Input",
+            "Output",
+            "PromptBuilder",
+            "ResponseHandler",
+            "ResponseValidator",
+            "WorkerConfiguration",
+            "WorkerProperties");
     private static final Set<String> FORBIDDEN_CORE_TECH_PACKAGES = Set.of(
             "org.springframework",
             "org.jsoup",
@@ -59,6 +73,19 @@ class NichoCnaeV3PipelineArchitectureTest {
                 .that(ARE_IN_CONCRETE_STAGE)
                 .should(notDependOnOtherConcreteStages())
                 .because("[ARQUITETURA] etapas NichoCNAE v3 devem ser plugáveis e removíveis")
+                .check(importedClasses);
+    }
+
+
+    /** Valida que cada etapa concreta da v3 possui somente as 9 classes canônicas do worker. */
+    @Test
+    void concreteStagePackagesShouldHaveOnlyCanonicalWorkerClasses() {
+        JavaClasses importedClasses = importProductionClasses();
+
+        classes()
+                .that(ARE_IN_CONCRETE_STAGE)
+                .should(haveOnlyCanonicalWorkerClassesByStagePackage(importedClasses))
+                .because("[ARQUITETURA] cada subpacote de etapa NichoCNAE v3 deve ter apenas as 9 classes canônicas do worker")
                 .check(importedClasses);
     }
 
@@ -104,6 +131,77 @@ class NichoCnaeV3PipelineArchitectureTest {
         return new ClassFileImporter()
                 .withImportOption(new ImportOption.DoNotIncludeTests())
                 .importPackages(BASE_PACKAGE);
+    }
+
+
+    /** Cria condição explícita que valida o conjunto exato de classes por subpacote de etapa. */
+    private ArchCondition<JavaClass> haveOnlyCanonicalWorkerClassesByStagePackage(JavaClasses importedClasses) {
+        Map<String, Set<String>> classesByStage = classesByStage(importedClasses);
+        return new ArchCondition<>("[ARQUITETURA] ter somente as 9 classes canônicas por etapa NichoCNAE v3") {
+            /** Valida se o pacote da etapa possui exatamente os nomes esperados pelo padrão canônico. */
+            @Override
+            public void check(JavaClass source, ConditionEvents events) {
+                String stage = stageNameOf(source);
+                if (stage == null) {
+                    return;
+                }
+                Set<String> actualClasses = classesByStage.getOrDefault(stage, Set.of());
+                String expectedPrefix = stageClassPrefix(stage);
+                Set<String> expectedClasses = new TreeSet<>();
+                for (String suffix : REQUIRED_STAGE_CLASS_SUFFIXES) {
+                    expectedClasses.add(expectedPrefix + suffix);
+                }
+                if (!usesCanonicalWorkerClassPattern(actualClasses, expectedPrefix)) {
+                    return;
+                }
+                if (!actualClasses.equals(expectedClasses)) {
+                    Set<String> missingClasses = new TreeSet<>(expectedClasses);
+                    missingClasses.removeAll(actualClasses);
+                    Set<String> extraClasses = new TreeSet<>(actualClasses);
+                    extraClasses.removeAll(expectedClasses);
+                    events.add(SimpleConditionEvent.violated(source, "[ARQUITETURA] etapa NichoCNAE v3 '" + stage
+                            + "' deve conter exatamente 9 classes canônicas " + expectedClasses
+                            + ", mas encontrou " + actualClasses
+                            + ". Faltando: " + missingClasses + ". Extras: " + extraClasses));
+                }
+            }
+        };
+    }
+
+    /** Identifica subpacotes que já adotaram pelo menos uma classe do padrão canônico do worker com o prefixo da etapa. */
+    private static boolean usesCanonicalWorkerClassPattern(Set<String> actualClasses, String expectedPrefix) {
+        return actualClasses.stream().anyMatch(className -> REQUIRED_STAGE_CLASS_SUFFIXES.stream()
+                .map(expectedPrefix::concat)
+                .anyMatch(className::equals));
+    }
+
+    /** Agrupa classes de produção por subpacote de etapa concreta. */
+    private static Map<String, Set<String>> classesByStage(JavaClasses importedClasses) {
+        Map<String, Set<String>> classesByStage = new HashMap<>();
+        for (JavaClass javaClass : importedClasses) {
+            String stage = stageNameOf(javaClass);
+            if (stage != null) {
+                classesByStage.computeIfAbsent(stage, ignored -> new TreeSet<>()).add(javaClass.getSimpleName());
+            }
+        }
+        return classesByStage;
+    }
+
+    /** Converte o nome do pacote da etapa em prefixo PascalCase esperado para as classes. */
+    private static String stageClassPrefix(String stage) {
+        StringBuilder prefix = new StringBuilder();
+        boolean capitalizeNext = true;
+        for (char character : stage.toCharArray()) {
+            if (character == '-' || character == '_') {
+                capitalizeNext = true;
+            } else if (capitalizeNext) {
+                prefix.append(Character.toUpperCase(character));
+                capitalizeNext = false;
+            } else {
+                prefix.append(character);
+            }
+        }
+        return prefix.toString();
     }
 
     /** Cria condição explícita que bloqueia dependência do núcleo para etapa concreta. */
@@ -168,7 +266,7 @@ class NichoCnaeV3PipelineArchitectureTest {
         }
         String remainder = packageName.substring(prefix.length());
         String firstSegment = remainder.contains(".") ? remainder.substring(0, remainder.indexOf('.')) : remainder;
-        if (firstSegment.equals("core") || firstSegment.equals("execution") || firstSegment.equals("architecture")) {
+        if (SUPPORT_PACKAGES.contains(firstSegment)) {
             return null;
         }
         return firstSegment;

@@ -5492,3 +5492,9 @@
 - Sintoma: a tela de experimento falhava ao salvar criativos quando o pipeline gerava `primaryText` maior que o campo persistido.
 - Causa-raiz confirmada: o schema/prompt de `AD_COPY` não limitava `primaryText`, `headline` e `description` aos tamanhos operacionais recomendados para Meta Ads; ampliar a coluna apenas mascarava o problema e permitiria copy longa/truncada na publicação.
 - Correção: revertida a ampliação de banco e adicionados limites no prompt/schema da etapa: `primaryText` até 125 caracteres, `headline` até 40 e `description` até 25, para bloquear a recorrência na origem da geração.
+
+## 2026-06-27 — Remoção do card de contexto da aba Conteúdo
+
+- Solicitação: retirar da aba Conteúdo do experimento o card “Contexto do framework da hipótese”, que ocupava espaço e repetia os resumos de Dor, Resultado, Mecanismo, Prova e Oferta.
+- Ajuste aplicado: o frontend deixou de renderizar esse card na aba de geração de conteúdo, mantendo o botão de relatório consolidado e os painéis operacionais da tela.
+- Prevenção de recorrência: removida também a montagem local dos cards, evitando manter lógica visual sem uso na tela.

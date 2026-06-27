@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 
 /** Valida a qualificação inicial do CNAE no pipeline NichoCNAE v3. */
 class CnaeIntakeProcessorTest {
-    /** Garante que a etapa 1 entrega código e nome completo do CNAE para a geração de personas. */
+    /** Garante que a etapa 1 entrega código, nome do CNAE e recorte MEI/autônomo para a geração de personas. */
     @Test
     void shouldQualifyCnaeBeforePersonaGeneration() {
         CnaeIntakeProcessor processor = new CnaeIntakeProcessor();
@@ -23,6 +23,9 @@ class CnaeIntakeProcessorTest {
         assertThat(result.status()).isEqualTo("CNAE_RECEBIDO");
         assertThat(result.output()).containsEntry("cnaeCode", "4781400");
         assertThat(result.output()).containsEntry("cnaeDescription", "Comércio varejista de artigos do vestuário");
+        assertThat(result.output()).containsEntry("targetAudienceType", "MEI_PROFISSIONAIS_AUTONOMOS_NAO_CLT");
+        assertThat(result.output()).containsEntry("targetAudienceDefinition", "Estamos falando de MEI e profissionais autônomos que atuam por conta própria, sem contratação direta como CLT.");
+        assertThat(result.output()).containsEntry("employmentBoundary", "NAO_ANALISAR_FUNCIONARIOS_CLT_CONTRATADOS_DIRETAMENTE");
         assertThat(result.output()).containsEntry("businessBoundary", "NAO_GERAR_OFERTA_CAMPANHA_LANDING");
         assertThat(result.output()).containsEntry("reportRole", "PERSONA_ROTINA_TAREFAS_DIARIAS");
         assertThat(result.output()).containsEntry("nextStageCode", "persona-candidate-generator");

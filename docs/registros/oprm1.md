@@ -1598,3 +1598,15 @@
 - Atualizados os controllers backend de `com.marketinghub.oprmcoletormei.nichocnae.v3` para expor o prefixo canônico `/api/internal/oprmcoletormei/nichocnae/v3/<etapa>/stage-executions`.
 - Padronizados os callbacks operacionais para `/{idExterno}/start`, `/{idExterno}/{jobId}/recebeRequest`, `/{idExterno}/{jobId}/recebeResponse` e `POST /pending`.
 - Sincronizados o Swagger e o cliente do executor `oprm-coletor-mei` para consumir o novo contrato.
+
+## 2026-06-27 — NichoCNAE v3: saída útil da etapa 4
+
+- Causa-raiz confirmada no executor: `RoutineQueryPlannerProcessor` encerrava a etapa `routine-query-planner` com metadados técnicos (`stage`, `status`, `inputKeys`) e não transformava a persona vencedora em um plano de busca acionável.
+- Correção: a etapa 4 agora exige `winnerPersona` e gera `personaFocus`, objetivo de busca, consultas priorizadas, perguntas de validação, critérios de aceite de fonte e critérios de descarte antes de avançar para `source-searcher`.
+- Prevenção: adicionado teste unitário garantindo que a saída contenha plano útil e bloqueie execução sem persona vencedora.
+
+## 2026-06-27 — NichoCNAE v3: recorte MEI/autônomo na etapa 1
+
+- Ajuste: a saída da etapa `cnae-intake` agora explicita que o pipeline está analisando MEI e profissionais autônomos que atuam por conta própria, sem contratação direta como CLT.
+- Motivo: esse recorte precisa nascer na primeira etapa para orientar a geração de personas e evitar que as próximas etapas pesquisem funcionários CLT de empresas do CNAE.
+- Prevenção: teste unitário da etapa 1 passou a validar `targetAudienceType`, `targetAudienceDefinition` e `employmentBoundary`.

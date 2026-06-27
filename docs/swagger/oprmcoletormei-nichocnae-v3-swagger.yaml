@@ -1,0 +1,294 @@
+openapi: 3.0.3
+info:
+  title: OPRM Coletor MEI NichoCNAE v3 Executor Contract
+  version: v3
+  description: |
+    Contrato operacional do módulo executor `oprm-coletor-mei` para o pipeline
+    `com.marketinghub.pipelines.nichocnae.v3`. O executor não decide avanço de
+    pipeline nem acessa banco diretamente: ele consome pendências canônicas do
+    backend, executa a etapa plugável correspondente e reporta conclusão ou falha
+    para o backend persistir auditoria e decidir a próxima etapa.
+servers:
+  - url: http://191.252.181.168
+    description: Backend Marketing Hub consumido pelo executor OPRM no ambiente Codex/produção.
+  - url: http://localhost:8080
+    description: Backend local para validação de contrato.
+tags:
+  - name: Backend queue consumed by oprm-coletor-mei
+    description: Endpoints canônicos que o executor consome para buscar e reportar execuções v3.
+  - name: Executor health
+    description: Endpoint próprio do módulo executor para verificação operacional.
+paths:
+  /api/internal/oprm/nichocnae/v3/{stage}/stage-executions/pending:
+    get:
+      tags:
+        - Backend queue consumed by oprm-coletor-mei
+      summary: Lista pendências da etapa NichoCNAE v3 para execução no OPRM Coletor MEI.
+      description: |
+        Ponto inicial obrigatório do executor. O scheduler do `oprm-coletor-mei`
+        consulta este endpoint para cada etapa registrada no catálogo v3 e processa
+        somente itens retornados como pendentes pelo backend.
+      operationId: listNichoCnaeV3PendingExecutionsForOprmColetorMei
+      parameters:
+        - $ref: '#/components/parameters/StagePath'
+      responses:
+        '200':
+          description: Lista de execuções pendentes disponíveis para a etapa.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/NichoCnaeV3PendingExecution'
+        '500':
+          $ref: '#/components/responses/BackendError'
+  /api/internal/oprm/nichocnae/v3/{stage}/stage-executions/{stageExecutionId}/complete:
+    post:
+      tags:
+        - Backend queue consumed by oprm-coletor-mei
+      summary: Reporta conclusão funcional de uma etapa executada pelo OPRM Coletor MEI.
+      description: |
+        O executor envia o payload funcional produzido pela etapa. O backend continua
+        sendo a fonte de verdade para persistir auditoria, status e decisão de avanço
+        para a próxima etapa.
+      operationId: completeNichoCnaeV3StageExecutionFromOprmColetorMei
+      parameters:
+        - $ref: '#/components/parameters/StagePath'
+        - $ref: '#/components/parameters/StageExecutionIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NichoCnaeV3CompletionRequest'
+      responses:
+        '200':
+          description: Execução marcada como concluída no backend.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NichoCnaeV3StageExecutionResponse'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/BackendError'
+  /api/internal/oprm/nichocnae/v3/{stage}/stage-executions/{stageExecutionId}/fail:
+    post:
+      tags:
+        - Backend queue consumed by oprm-coletor-mei
+      summary: Reporta falha técnica ou funcional de uma etapa executada pelo OPRM Coletor MEI.
+      description: |
+        Deve ser chamado quando o executor não conseguir processar a pendência ou
+        quando a resposta da etapa não atender ao contrato esperado.
+      operationId: failNichoCnaeV3StageExecutionFromOprmColetorMei
+      parameters:
+        - $ref: '#/components/parameters/StagePath'
+        - $ref: '#/components/parameters/StageExecutionIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NichoCnaeV3FailureRequest'
+      responses:
+        '200':
+          description: Execução marcada como falha no backend.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NichoCnaeV3StageExecutionResponse'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/BackendError'
+  /api/oprm-mei/health:
+    get:
+      tags:
+        - Executor health
+      summary: Verifica se o módulo OPRM Coletor MEI está ativo.
+      operationId: getOprmColetorMeiHealth
+      responses:
+        '200':
+          description: Módulo executor ativo.
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: ok
+components:
+  parameters:
+    StagePath:
+      name: stage
+      in: path
+      required: true
+      description: Código da etapa v3 registrada no executor.
+      schema:
+        $ref: '#/components/schemas/NichoCnaeV3StageCode'
+    StageExecutionIdPath:
+      name: stageExecutionId
+      in: path
+      required: true
+      description: Identificador da execução de etapa criada e persistida pelo backend.
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+  responses:
+    InvalidRequest:
+      description: Requisição inválida para o contrato da etapa.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Execução de etapa não encontrada.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    BackendError:
+      description: Erro interno no backend ao consultar ou registrar a execução.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+  schemas:
+    NichoCnaeV3StageCode:
+      type: string
+      enum:
+        - cnae-intake
+        - persona-candidate-generator
+        - persona-tournament
+        - routine-query-planner
+        - source-searcher
+        - source-fetcher
+        - routine-signal-extractor
+        - daily-tasks-synthesizer
+        - quality-gate
+        - persona-routine-materializer
+    NichoCnaeV3PendingExecution:
+      type: object
+      required:
+        - stageExecutionId
+        - jobId
+        - cnaeCode
+        - inputPayload
+      properties:
+        stageExecutionId:
+          type: integer
+          format: int64
+          example: 123
+        jobId:
+          type: string
+          description: Identificador operacional ponta a ponta da execução.
+          example: 550e8400-e29b-41d4-a716-446655440000
+        cnaeCode:
+          type: string
+          description: CNAE normalizado que está sendo processado.
+          example: '9602501'
+        inputPayload:
+          type: string
+          description: JSON textual com a entrada funcional da etapa, recebido do backend.
+          example: '{"cnaeCode":"9602501","cnaeName":"Cabeleireiros, manicure e pedicure"}'
+        attemptNumber:
+          type: integer
+          minimum: 1
+          example: 1
+        knowledgeVersion:
+          type: integer
+          minimum: 1
+          example: 3
+    NichoCnaeV3CompletionRequest:
+      type: object
+      required:
+        - outputPayload
+      properties:
+        outputPayload:
+          type: string
+          description: JSON textual com a saída funcional estruturada produzida pela etapa.
+          example: '{"status":"PERSONA_PRIORIZADA","cnaeCode":"9602501","nextStageCode":"routine-query-planner"}'
+        nextStageCode:
+          $ref: '#/components/schemas/NichoCnaeV3StageCode'
+      additionalProperties: false
+    NichoCnaeV3FailureRequest:
+      type: object
+      required:
+        - errorMessage
+      properties:
+        errorMessage:
+          type: string
+          description: Erro operacional com contexto suficiente para auditoria.
+          example: Falha ao processar pendência NichoCNAE v3 na etapa source-fetcher.
+      additionalProperties: false
+    NichoCnaeV3StageExecutionResponse:
+      type: object
+      properties:
+        stageExecutionId:
+          type: integer
+          format: int64
+          example: 123
+        jobId:
+          type: string
+          example: 550e8400-e29b-41d4-a716-446655440000
+        cnaeCode:
+          type: string
+          example: '9602501'
+        stageCode:
+          $ref: '#/components/schemas/NichoCnaeV3StageCode'
+        status:
+          type: string
+          enum:
+            - PENDING
+            - RUNNING
+            - COMPLETED
+            - FAILED
+            - BLOCKED
+          example: COMPLETED
+        inputPayload:
+          type: string
+        outputPayload:
+          type: string
+        errorMessage:
+          type: string
+          nullable: true
+        nextStageCode:
+          $ref: '#/components/schemas/NichoCnaeV3StageCode'
+    ErrorResponse:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        status:
+          type: integer
+          example: 400
+        error:
+          type: string
+          example: Bad Request
+        message:
+          type: string
+          example: Contrato inválido para a etapa informada.
+        path:
+          type: string
+          example: /api/internal/oprm/nichocnae/v3/source-fetcher/stage-executions/123/complete
+x-marketinghub:
+  executorModule: oprm-coletor-mei
+  executorPackage: com.marketinghub.pipelines.nichocnae.v3
+  scheduler: NichoCnaeV3PendingExecutionScheduler
+  schedulerCron: '0 */3 * * * *'
+  backendAdvancementOwner: backend/ads-service
+  stages:
+    - cnae-intake
+    - persona-candidate-generator
+    - persona-tournament
+    - routine-query-planner
+    - source-searcher
+    - source-fetcher
+    - routine-signal-extractor
+    - daily-tasks-synthesizer
+    - quality-gate
+    - persona-routine-materializer

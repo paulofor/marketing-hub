@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-06-27-pipeline-geracaoanuncios-status.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-06-26-mois-sales-page-pipeline-dossieproduto-column-names.yaml
       relativeToChangelogFile: true
   - include:

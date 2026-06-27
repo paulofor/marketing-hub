@@ -7,6 +7,8 @@ import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.service.ExperimentService;
 import com.marketinghub.oprm.cnae.OprmNicheCandidate;
 import com.marketinghub.pipeline.geracaoanuncios.PipelineGeracaoAnuncios;
+import com.marketinghub.pipelines.aiworker.geracaoanuncios.v1.imagem.service.consultaSituacao.GeraAnuncioImagemSituacaoRequest;
+import com.marketinghub.pipelines.aiworker.geracaoanuncios.v1.imagem.service.consultaSituacao.GeraAnuncioImagemSituacaoResponse;
 import com.marketinghub.pipelines.aiworker.geracaoanuncios.v1.imagem.service.detailStageExecution.GeraAnuncioImagemDetailResponse;
 import com.marketinghub.pipelines.aiworker.geracaoanuncios.v1.imagem.service.listStageExecutions.GeraAnuncioImagemExecutionSummaryResponse;
 import com.marketinghub.pipelines.aiworker.geracaoanuncios.v1.imagem.service.pending.GeraAnuncioImagemPendingResponse;
@@ -42,6 +44,7 @@ public class GeraAnuncioImagemService {
     private static final String STATUS_AGUARDANDO_MODULO = "AGUARDANDO_MODULO";
     private static final String PIPELINE_VERSION = "v1";
     private static final String STATUS_FAILED = "FALHA";
+    private static final String STATUS_DONE = "CONCLUIDO";
     private final ExperimentService experimentService;
     private final OprmNicheCandidateRepository cnaeRepository;
     private final MoisSalesPageRepository salesPageRepository;
@@ -123,6 +126,7 @@ public class GeraAnuncioImagemService {
         pipeline.setIdExterno(experimentKey);
         pipeline.setRequest(serializeRequest(request.request()));
         pipeline.setCodigoEtapa(STAGE_CODE);
+        pipeline.setStatus(STATUS_WAITING);
         pipeline.setDataHora(now);
         pipeline.setJobId(jobId.trim());
         pipeline.setPlataforma(request.plataforma());
@@ -165,6 +169,7 @@ public class GeraAnuncioImagemService {
         pipeline.setIdExterno(experimentKey);
         pipeline.setResponse(serializeRequest(resolveResponsePayload(request)));
         pipeline.setCodigoEtapa(STAGE_CODE);
+        pipeline.setStatus(StringUtils.hasText(descricaoErro) ? STATUS_FAILED : STATUS_DONE);
         pipeline.setDataHora(now);
         pipeline.setVersaoPipeline(PIPELINE_VERSION);
         pipeline.setJobId(jobId.trim());
@@ -178,6 +183,17 @@ public class GeraAnuncioImagemService {
         return StringUtils.hasText(descricaoErro) ? null : resolveNextStageCode();
     }
 
+    /** Pesquisa auditorias da etapa por identificador externo e lista de status. */
+    public List<GeraAnuncioImagemSituacaoResponse> consultaSituacao(String idExterno, GeraAnuncioImagemSituacaoRequest request) {
+        if (!StringUtils.hasText(idExterno)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "idExterno required");
+        }
+        List<String> status = normalizeStatus(request);
+        return pipelineRepository.findByCodigoEtapaAndIdExternoAndStatusInOrderByDataHoraDesc(STAGE_CODE, idExterno.trim(), status).stream()
+                .map(this::toSituacaoResponse)
+                .toList();
+    }
+
     /** Busca o detalhe auditável de uma execução da etapa. */
     public GeraAnuncioImagemDetailResponse detailStageExecution(String stageExecutionId) {
         Long experimentId = extractExperimentId(stageExecutionId);
@@ -187,6 +203,45 @@ public class GeraAnuncioImagemService {
         Experiment experiment = experimentService.get(experimentId);
         return new GeraAnuncioImagemDetailResponse(stageExecutionId, stageJobId(experiment), experiment.getCreativeGenerationStatus().name(),
                 Objects.requireNonNullElse(experiment.getCreativeGenerationRequestedAt(), Instant.now()), context(experiment));
+    }
+
+    /** Normaliza a lista de status recebida no filtro de situação. */
+    private List<String> normalizeStatus(GeraAnuncioImagemSituacaoRequest request) {
+        if (request == null || request.status() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "status required");
+        }
+        List<String> status = request.status().stream()
+                .filter(StringUtils::hasText)
+                .map(String::trim)
+                .distinct()
+                .toList();
+        if (status.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "status required");
+        }
+        return status;
+    }
+
+    /** Converte uma auditoria persistida em resposta do endpoint de situação. */
+    private GeraAnuncioImagemSituacaoResponse toSituacaoResponse(PipelineGeracaoAnuncios pipeline) {
+        return new GeraAnuncioImagemSituacaoResponse(
+                pipeline.getId(),
+                pipeline.getIdExterno(),
+                pipeline.getCodigoEtapa(),
+                pipeline.getStatus(),
+                pipeline.getDataHora(),
+                pipeline.getJobId(),
+                pipeline.getRequest(),
+                pipeline.getResponse(),
+                pipeline.getModelo(),
+                pipeline.getQuantidadeTokenEntrada(),
+                pipeline.getQuantidadeTokenSaida(),
+                pipeline.getCusto(),
+                pipeline.getDescricaoErro(),
+                pipeline.getJobIdExterno(),
+                pipeline.getPlataforma(),
+                pipeline.getPrompt(),
+                pipeline.getSchema(),
+                pipeline.getVersaoPipeline());
     }
 
     /** Converte o experimento em resumo auditável da etapa. */
@@ -212,6 +267,7 @@ public class GeraAnuncioImagemService {
         PipelineGeracaoAnuncios pipeline = new PipelineGeracaoAnuncios();
         pipeline.setIdExterno(String.valueOf(cnae.getId()));
         pipeline.setCodigoEtapa(STAGE_CODE);
+        pipeline.setStatus(STATUS_STARTED);
         pipeline.setDataHora(now);
         pipeline.setJobId(jobId);
         pipeline.setVersaoPipeline(PIPELINE_VERSION);

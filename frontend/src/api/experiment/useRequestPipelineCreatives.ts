@@ -8,7 +8,7 @@ export function useRequestPipelineCreatives(experimentId?: string) {
     mutationFn: async () => {
       if (!experimentId) throw new Error("Experimento não informado");
       const { data } = await axios.post(
-        `/api/internal/aiworker/geracaoanuncios/v1/texto/stage-executions/${encodeURIComponent(
+        `/api/internal/aiworker/geracaoanuncios/v1/texto/stage-executions/experiments/${encodeURIComponent(
           experimentId,
         )}/start`,
       );

@@ -1,0 +1,32 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-27-mois-sales-page-geracaoanuncios-etapa-01
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: mois_sales_page
+        - not:
+            columnExists:
+              tableName: mois_sales_page
+              columnName: etapa_pipeline_geracaoanuncios
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE mois_sales_page
+                ADD COLUMN etapa_pipeline_geracaoanuncios VARCHAR(80) NULL AFTER data_pipeline_geracaoanuncios;
+              CREATE INDEX idx_mois_sales_page_geracaoanuncios_etapa
+                ON mois_sales_page (etapa_pipeline_geracaoanuncios);
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              DROP INDEX idx_mois_sales_page_geracaoanuncios_etapa ON mois_sales_page;
+              ALTER TABLE mois_sales_page
+                DROP COLUMN etapa_pipeline_geracaoanuncios;

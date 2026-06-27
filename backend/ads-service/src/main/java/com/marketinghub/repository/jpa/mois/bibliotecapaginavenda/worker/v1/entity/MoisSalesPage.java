@@ -34,4 +34,7 @@ public class MoisSalesPage {
 
     @Column(name = "data_pipeline_geracaoanuncios")
     private Instant dataPipelineGeracaoAnuncios;
+
+    @Column(name = "etapa_pipeline_geracaoanuncios", length = 80)
+    private String etapaPipelineGeracaoAnuncios;
 }

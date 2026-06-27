@@ -1174,5 +1174,9 @@ databaseChangeLog:
       relativeToChangelogFile: true
 
   - include:
+      file: changesets/2026-06-27-mois-sales-page-geracaoanuncios-etapa.yaml
+      relativeToChangelogFile: true
+
+  - include:
       file: changesets/2026-06-27-oprm-nichocnae-v3-only-pipeline.yaml
       relativeToChangelogFile: true

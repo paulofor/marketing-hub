@@ -1,0 +1,33 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-27-01-pipeline-nichocnae-status
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: pipeline_nichocnae
+        - not:
+            - columnExists:
+                tableName: pipeline_nichocnae
+                columnName: status
+      changes:
+        - addColumn:
+            tableName: pipeline_nichocnae
+            columns:
+              - column:
+                  name: status
+                  type: VARCHAR(32)
+        - createIndex:
+            tableName: pipeline_nichocnae
+            indexName: idx_pipeline_nichocnae_situacao
+            columns:
+              - column:
+                  name: codigo_etapa
+              - column:
+                  name: id_externo
+              - column:
+                  name: status
+              - column:
+                  name: data_hora

@@ -140,12 +140,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DossierDossierSynthesisPendingResponse'
-  /api/internal/mois/dossie/v1/intake/stage-executions/{productKey}/recebeRequest:
+  /api/internal/mois/dossie/v1/intake/stage-executions/{productKey}/{jobId}/recebeRequest:
     post:
       summary: Recebe request operacional da etapa intake do dossiê MOIS v1
       operationId: recebeRequestMoisDossieV1IntakeStageExecutions
       parameters:
         - name: productKey
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: jobId
           in: path
           required: true
           schema:
@@ -163,12 +168,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DossierIntakeRecebeRequestResponse'
-  /api/internal/mois/dossie/v1/product-understanding/stage-executions/{productKey}/recebeRequest:
+  /api/internal/mois/dossie/v1/product-understanding/stage-executions/{productKey}/{jobId}/recebeRequest:
     post:
       summary: Recebe request operacional da etapa product-understanding do dossiê MOIS v1
       operationId: recebeRequestMoisDossieV1ProductUnderstandingStageExecutions
       parameters:
         - name: productKey
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: jobId
           in: path
           required: true
           schema:
@@ -186,12 +196,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DossierProductUnderstandingRecebeRequestResponse'
-  /api/internal/mois/dossie/v1/investigation-anchor-builder/stage-executions/{productKey}/recebeRequest:
+  /api/internal/mois/dossie/v1/investigation-anchor-builder/stage-executions/{productKey}/{jobId}/recebeRequest:
     post:
       summary: Recebe request operacional da etapa investigation-anchor-builder do dossiê MOIS v1
       operationId: recebeRequestMoisDossieV1InvestigationAnchorBuilderStageExecutions
       parameters:
         - name: productKey
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: jobId
           in: path
           required: true
           schema:
@@ -209,12 +224,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DossierInvestigationAnchorBuilderRecebeRequestResponse'
-  /api/internal/mois/dossie/v1/warmup-resource-discovery/stage-executions/{productKey}/recebeRequest:
+  /api/internal/mois/dossie/v1/warmup-resource-discovery/stage-executions/{productKey}/{jobId}/recebeRequest:
     post:
       summary: Recebe request operacional da etapa warmup-resource-discovery do dossiê MOIS v1
       operationId: recebeRequestMoisDossieV1WarmupResourceDiscoveryStageExecutions
       parameters:
         - name: productKey
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: jobId
           in: path
           required: true
           schema:
@@ -232,12 +252,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DossierWarmupResourceDiscoveryRecebeRequestResponse'
-  /api/internal/mois/dossie/v1/source-product-match/stage-executions/{productKey}/recebeRequest:
+  /api/internal/mois/dossie/v1/source-product-match/stage-executions/{productKey}/{jobId}/recebeRequest:
     post:
       summary: Recebe request operacional da etapa source-product-match do dossiê MOIS v1
       operationId: recebeRequestMoisDossieV1SourceProductMatchStageExecutions
       parameters:
         - name: productKey
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: jobId
           in: path
           required: true
           schema:
@@ -255,12 +280,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DossierSourceProductMatchRecebeRequestResponse'
-  /api/internal/mois/dossie/v1/warmup-signal-extraction/stage-executions/{productKey}/recebeRequest:
+  /api/internal/mois/dossie/v1/warmup-signal-extraction/stage-executions/{productKey}/{jobId}/recebeRequest:
     post:
       summary: Recebe request operacional da etapa warmup-signal-extraction do dossiê MOIS v1
       operationId: recebeRequestMoisDossieV1WarmupSignalExtractionStageExecutions
       parameters:
         - name: productKey
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: jobId
           in: path
           required: true
           schema:
@@ -278,12 +308,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DossierWarmupSignalExtractionRecebeRequestResponse'
-  /api/internal/mois/dossie/v1/warmup-map-builder/stage-executions/{productKey}/recebeRequest:
+  /api/internal/mois/dossie/v1/warmup-map-builder/stage-executions/{productKey}/{jobId}/recebeRequest:
     post:
       summary: Recebe request operacional da etapa warmup-map-builder do dossiê MOIS v1
       operationId: recebeRequestMoisDossieV1WarmupMapBuilderStageExecutions
       parameters:
         - name: productKey
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: jobId
           in: path
           required: true
           schema:
@@ -301,12 +336,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DossierWarmupMapBuilderRecebeRequestResponse'
-  /api/internal/mois/dossie/v1/dossier-synthesis/stage-executions/{productKey}/recebeRequest:
+  /api/internal/mois/dossie/v1/dossier-synthesis/stage-executions/{productKey}/{jobId}/recebeRequest:
     post:
       summary: Recebe request operacional da etapa dossier-synthesis do dossiê MOIS v1
       operationId: recebeRequestMoisDossieV1DossierSynthesisStageExecutions
       parameters:
         - name: productKey
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: jobId
           in: path
           required: true
           schema:
@@ -594,12 +634,16 @@ components:
     DossierIntakePendingJob:
       type: object
       required:
+        - jobId
         - stageExecutionId
         - dossierId
         - workspaceId
         - stageName
         - input
       properties:
+        jobId:
+          type: string
+          description: JobId UUID criado pelo /start para rastrear a execução da etapa.
         stageExecutionId:
           type: integer
           format: int64
@@ -641,12 +685,16 @@ components:
     DossierProductUnderstandingPendingJob:
       type: object
       required:
+        - jobId
         - stageExecutionId
         - dossierId
         - workspaceId
         - stageName
         - input
       properties:
+        jobId:
+          type: string
+          description: JobId UUID criado pelo /start para rastrear a execução da etapa.
         stageExecutionId:
           type: integer
           format: int64
@@ -688,12 +736,16 @@ components:
     DossierInvestigationAnchorBuilderPendingJob:
       type: object
       required:
+        - jobId
         - stageExecutionId
         - dossierId
         - workspaceId
         - stageName
         - input
       properties:
+        jobId:
+          type: string
+          description: JobId UUID criado pelo /start para rastrear a execução da etapa.
         stageExecutionId:
           type: integer
           format: int64
@@ -735,12 +787,16 @@ components:
     DossierWarmupResourceDiscoveryPendingJob:
       type: object
       required:
+        - jobId
         - stageExecutionId
         - dossierId
         - workspaceId
         - stageName
         - input
       properties:
+        jobId:
+          type: string
+          description: JobId UUID criado pelo /start para rastrear a execução da etapa.
         stageExecutionId:
           type: integer
           format: int64
@@ -782,12 +838,16 @@ components:
     DossierSourceProductMatchPendingJob:
       type: object
       required:
+        - jobId
         - stageExecutionId
         - dossierId
         - workspaceId
         - stageName
         - input
       properties:
+        jobId:
+          type: string
+          description: JobId UUID criado pelo /start para rastrear a execução da etapa.
         stageExecutionId:
           type: integer
           format: int64
@@ -829,12 +889,16 @@ components:
     DossierWarmupSignalExtractionPendingJob:
       type: object
       required:
+        - jobId
         - stageExecutionId
         - dossierId
         - workspaceId
         - stageName
         - input
       properties:
+        jobId:
+          type: string
+          description: JobId UUID criado pelo /start para rastrear a execução da etapa.
         stageExecutionId:
           type: integer
           format: int64
@@ -876,12 +940,16 @@ components:
     DossierWarmupMapBuilderPendingJob:
       type: object
       required:
+        - jobId
         - stageExecutionId
         - dossierId
         - workspaceId
         - stageName
         - input
       properties:
+        jobId:
+          type: string
+          description: JobId UUID criado pelo /start para rastrear a execução da etapa.
         stageExecutionId:
           type: integer
           format: int64
@@ -923,12 +991,16 @@ components:
     DossierDossierSynthesisPendingJob:
       type: object
       required:
+        - jobId
         - stageExecutionId
         - dossierId
         - workspaceId
         - stageName
         - input
       properties:
+        jobId:
+          type: string
+          description: JobId UUID criado pelo /start para rastrear a execução da etapa.
         stageExecutionId:
           type: integer
           format: int64

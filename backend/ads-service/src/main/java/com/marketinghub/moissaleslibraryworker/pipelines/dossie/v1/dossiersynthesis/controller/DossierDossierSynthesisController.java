@@ -30,11 +30,12 @@ public class DossierDossierSynthesisController {
 
 
     /** Recebe o request do módulo executor para a página/produto informada pela chave operacional. */
-    @PostMapping("/{productKey}/recebeRequest")
+    @PostMapping("/{productKey}/{jobId}/recebeRequest")
     public DossierDossierSynthesisRecebeRequestResponse recebeRequest(
             @PathVariable("productKey") String productKey,
+            @PathVariable("jobId") String jobId,
             @Valid @RequestBody DossierDossierSynthesisRecebeRequestRequest request) {
-        return service.recebeRequest(productKey, request);
+        return service.recebeRequest(productKey, jobId, request);
     }
 
     /** Expõe o ponto inicial canônico de consumo da fila pelo módulo executor. */

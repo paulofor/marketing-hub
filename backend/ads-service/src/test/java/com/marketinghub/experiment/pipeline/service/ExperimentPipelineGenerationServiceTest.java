@@ -544,6 +544,41 @@ class ExperimentPipelineGenerationServiceTest {
     }
 
     @Test
+    void generateAdCopyLimitsMetaAdsTextFieldsInJsonSchema() {
+        Experiment experiment = new Experiment();
+        experiment.setId(133L);
+        experiment.setName("Experimento 133");
+        experiment.setCampaignAngle("{\"campaignAngle\":true}");
+
+        when(experimentRepository.findById(133L)).thenReturn(Optional.of(experiment));
+        when(jobRepository.findByExperimentIdAndStatusInOrderByCreatedAtDesc(
+                133L,
+                Set.of(ExperimentPipelineGenerationJobStatus.PENDING, ExperimentPipelineGenerationJobStatus.PROCESSING)))
+                .thenReturn(List.of());
+        when(jobRepository.findLatestCompletedPerSectionByExperimentId(133L, null))
+                .thenReturn(List.of(completedJob(
+                        experiment,
+                        ExperimentPipelineSection.CAMPAIGN_ANGLE,
+                        experiment.getCampaignAngle())));
+        when(jobRepository.save(any(ExperimentPipelineGenerationJob.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(experimentMapper.toDto(experiment)).thenReturn(new ExperimentDto());
+
+        service.generate(133L, ExperimentPipelineSection.AD_COPY, new ExperimentPipelineGenerationRequest());
+
+        verify(jobRepository).save(argThat(job -> {
+            String requestBodyJson = job.getRequestBodyJson();
+            return requestBodyJson != null
+                    && requestBodyJson.contains("\"primaryText\"")
+                    && requestBodyJson.contains("\"maxLength\":125")
+                    && requestBodyJson.contains("\"headline\"")
+                    && requestBodyJson.contains("\"maxLength\":40")
+                    && requestBodyJson.contains("\"description\"")
+                    && requestBodyJson.contains("\"maxLength\":25")
+                    && requestBodyJson.contains("\"required\":[\"label\",\"openingHookType\",\"placementHint\",\"lengthVariants\",\"primaryText\",\"headline\",\"description\",\"ctaText\",\"compliance\"]");
+        }));
+    }
+
+    @Test
     void generateRejectsNewStageWhenAnotherStageIsAlreadyActiveForExperiment() {
         Experiment experiment = new Experiment();
         experiment.setId(14L);

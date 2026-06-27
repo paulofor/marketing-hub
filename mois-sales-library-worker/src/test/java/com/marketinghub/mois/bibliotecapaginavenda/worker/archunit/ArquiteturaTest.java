@@ -6,6 +6,7 @@ import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.sli
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.pipeline.StageProcessor;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
+import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.domain.Dependency;
 import com.tngtech.archunit.core.domain.JavaMethod;
 import com.tngtech.archunit.core.importer.ImportOption;
@@ -15,6 +16,11 @@ import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /** Garante contratos estruturais de rastreabilidade OpenAI consumidos pelo PromptBuilder. */
 @AnalyzeClasses(packages = {"com.marketinghub.mois", "com.marketinghub.pipelines"}, importOptions = ImportOption.DoNotIncludeTests.class)
@@ -22,6 +28,17 @@ class ArquiteturaTest {
 
     private static final String PIPELINE_ROOT = "com.marketinghub.mois.bibliotecapaginavenda.worker.v1.pipeline";
     private static final String DOSSIER_V1_PIPELINE_ROOT = "com.marketinghub.pipelines.dossie.v1";
+    private static final String DOSSIE_PRODUTO_V1_PIPELINE_ROOT = "com.marketinghub.pipelines.dossieproduto.v1";
+    private static final List<String> DOSSIE_PRODUTO_STAGE_SUFFIXES = List.of(
+            "BackendClient",
+            "ExecutionScheduler",
+            "Input",
+            "Output",
+            "PromptBuilder",
+            "ResponseHandler",
+            "ResponseValidator",
+            "WorkerConfiguration",
+            "WorkerProperties");
 
     private static final DescribedPredicate<JavaClass> CLASSES_DE_ETAPA =
             new DescribedPredicate<>("[ARQUITETURA] classes dentro de pipeline.<etapa>") {
@@ -119,6 +136,35 @@ class ArquiteturaTest {
             .resideInAPackage(DOSSIER_V1_PIPELINE_ROOT)
             .should(notDependOnConcreteTechnologies())
             .because("[ARQUITETURA] o núcleo do dossiê MOIS v1 deve depender de abstrações, não de tecnologias concretas");
+
+
+    /** Garante que cada subpacote de dossieproduto.v1 tenha somente as 9 classes canônicas da etapa. */
+    @ArchTest
+    static void dossie_produto_v1_subpacotes_devem_ter_apenas_nove_classes_canonicas(JavaClasses classes) {
+        Map<String, Set<String>> classesByStagePackage = new LinkedHashMap<>();
+        for (JavaClass javaClass : classes) {
+            String packageName = javaClass.getPackageName();
+            if (isDirectDossieProdutoV1StagePackage(packageName)) {
+                classesByStagePackage
+                        .computeIfAbsent(packageName, ignored -> new LinkedHashSet<>())
+                        .add(javaClass.getSimpleName());
+            }
+        }
+
+        for (Map.Entry<String, Set<String>> entry : classesByStagePackage.entrySet()) {
+            String packageName = entry.getKey();
+            Set<String> classNames = entry.getValue();
+            Set<String> expectedClassNames = expectedDossieProdutoV1ClassNames(classNames);
+            if (!classNames.equals(expectedClassNames)) {
+                throw new AssertionError("[ARQUITETURA] " + packageName
+                        + " deve conter apenas 9 classes canônicas no formato <nome-etapa>BackendClient, "
+                        + "<nome-etapa>ExecutionScheduler, <nome-etapa>Input, <nome-etapa>Output, "
+                        + "<nome-etapa>PromptBuilder, <nome-etapa>ResponseHandler, <nome-etapa>ResponseValidator, "
+                        + "<nome-etapa>WorkerConfiguration e <nome-etapa>WorkerProperties. Esperado: "
+                        + expectedClassNames + ". Encontrado: " + classNames);
+            }
+        }
+    }
 
     /** Valida assinatura obrigatória com 4 parâmetros para uso direto do PromptBuilder. */
     @ArchTest
@@ -247,6 +293,39 @@ class ArquiteturaTest {
         String suffix = packageName.substring(prefix.length());
         int dot = suffix.indexOf('.');
         return dot < 0 ? suffix : suffix.substring(0, dot);
+    }
+
+
+    private static boolean isDirectDossieProdutoV1StagePackage(String packageName) {
+        String prefix = DOSSIE_PRODUTO_V1_PIPELINE_ROOT + ".";
+        if (!packageName.startsWith(prefix)) {
+            return false;
+        }
+        String suffix = packageName.substring(prefix.length());
+        return !suffix.isBlank() && !suffix.contains(".");
+    }
+
+    private static Set<String> expectedDossieProdutoV1ClassNames(Set<String> classNames) {
+        String stageClassPrefix = dossieProdutoV1StageClassPrefix(classNames);
+        Set<String> expectedClassNames = new LinkedHashSet<>();
+        DOSSIE_PRODUTO_STAGE_SUFFIXES.forEach(suffix -> expectedClassNames.add(stageClassPrefix + suffix));
+        return expectedClassNames;
+    }
+
+    private static String dossieProdutoV1StageClassPrefix(Set<String> classNames) {
+        return classNames.stream()
+                .map(ArquiteturaTest::dossieProdutoV1StageClassPrefix)
+                .filter(prefix -> !prefix.isBlank())
+                .findFirst()
+                .orElse("<nome-etapa>");
+    }
+
+    private static String dossieProdutoV1StageClassPrefix(String className) {
+        return DOSSIE_PRODUTO_STAGE_SUFFIXES.stream()
+                .filter(className::endsWith)
+                .map(suffix -> className.substring(0, className.length() - suffix.length()))
+                .findFirst()
+                .orElse("");
     }
 
     private static ArchCondition<com.tngtech.archunit.core.domain.JavaClass> haveRequiredRecordMethod() {

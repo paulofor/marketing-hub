@@ -58,6 +58,10 @@ function labelStatus(value?: string) {
     FAILED: "Falhou",
     ANULADO: "Anulada",
     BLOCKED_COOLDOWN: "Aguardando nova tentativa",
+    INICIADO: "Em processamento",
+    AGUARDANDO: "Aguardando executor",
+    CONCLUIDO: "Concluída",
+    FALHA: "Falhou",
   };
   return value ? labels[value] || value : "—";
 }
@@ -74,6 +78,8 @@ function getStatusBadgeClass(value?: string) {
     case "FETCHING":
     case "CAPTURING":
     case "ANALYZING":
+    case "INICIADO":
+    case "AGUARDANDO":
       return "text-bg-primary";
     case "PENDING":
     case "BLOCKED_COOLDOWN":
@@ -159,10 +165,10 @@ export default function MoisSalesPageLibraryDetailPage() {
   const nextItem =
     currentIndex >= 0 ? pagesQuery.data?.items[currentIndex + 1] : undefined;
   const isMutating = updateStatusMutation.isPending;
-  const warmupStatus =
-    pageQuery.data?.marketWarmupStatus || marketWarmupQuery.data?.status || "";
-  const hasWarmupDossier = Boolean(marketWarmupQuery.data || warmupStatus);
-  const hasActiveWarmupDossier = ["PENDING", "FETCHING"].includes(warmupStatus);
+  const dossierStatus = pageQuery.data?.dossieProdutoStatus || "";
+  const dossierStage = pageQuery.data?.dossieProdutoCurrentStage || "";
+  const hasWarmupDossier = Boolean(dossierStatus);
+  const hasActiveWarmupDossier = ["INICIADO", "AGUARDANDO"].includes(dossierStatus);
   const isCommercialAnalysisDone = ["DONE", "ANALYZED"].includes(
     pageQuery.data?.analysisStatus || pageQuery.data?.currentStatus || "",
   );
@@ -396,22 +402,29 @@ export default function MoisSalesPageLibraryDetailPage() {
             </span>
           </div>
           <div className="row g-3">
-            <div className="col-md-4">
+            <div className="col-md-3">
               <div className="border rounded p-3 h-100 bg-light-subtle">
                 <div className="text-secondary small">Status geral</div>
                 <strong>{labelStatus(currentStatus)}</strong>
               </div>
             </div>
-            <div className="col-md-4">
+            <div className="col-md-3">
               <div className="border rounded p-3 h-100 bg-light-subtle">
                 <div className="text-secondary small">Captura</div>
                 <strong>{labelStatus(captureStatus)}</strong>
               </div>
             </div>
-            <div className="col-md-4">
+            <div className="col-md-3">
               <div className="border rounded p-3 h-100 bg-light-subtle">
                 <div className="text-secondary small">Análise comercial</div>
                 <strong>{labelStatus(analysisStatus)}</strong>
+              </div>
+            </div>
+            <div className="col-md-3">
+              <div className="border rounded p-3 h-100 bg-light-subtle">
+                <div className="text-secondary small">Dossiê v1</div>
+                <strong>{labelStatus(dossierStatus)}</strong>
+                {dossierStage ? <div className="small text-secondary">Etapa: {dossierStage}</div> : null}
               </div>
             </div>
           </div>
@@ -447,11 +460,10 @@ export default function MoisSalesPageLibraryDetailPage() {
       ) : null}
       {hasWarmupDossier && !hasActiveWarmupDossier ? (
         <div className="alert alert-info mb-0">
-          Já existe um dossiê para esta página
-          {warmupStatus ? ` com status ${labelStatus(warmupStatus)}` : ""}. Você
-          pode usar o resultado exibido abaixo ou clicar em
-          <strong> Reprocessar dossiê</strong> para criar uma nova fila. A tela
-          passará a mostrar o dossiê mais recente retornado pelo backend.
+          Já existe uma solicitação de dossiê v1 para esta página
+          {dossierStatus ? ` com status ${labelStatus(dossierStatus)}` : ""}
+          {dossierStage ? ` na etapa ${dossierStage}` : ""}. Clique em
+          <strong> Reprocessar dossiê</strong> para criar uma nova fila v1 quando precisar.
         </div>
       ) : null}
 
@@ -460,7 +472,7 @@ export default function MoisSalesPageLibraryDetailPage() {
           {hasActiveWarmupDossier ? (
             <>
               Esta página já possui dossiê em fila ou em processamento
-              {warmupStatus ? ` com status ${labelStatus(warmupStatus)}` : ""}.
+              {dossierStatus ? ` com status ${labelStatus(dossierStatus)}` : ""}.
               Aguarde a conclusão para reprocessar.
             </>
           ) : (

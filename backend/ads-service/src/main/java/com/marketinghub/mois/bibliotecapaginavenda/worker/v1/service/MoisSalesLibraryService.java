@@ -637,7 +637,10 @@ public class MoisSalesLibraryService {
                        p.last_error_category, p.last_error_message, p.last_job_execution_id, p.last_captured_at, p.last_analyzed_at, p.updated_at,
                        mws.score_total AS market_warmup_score_total, mws.market_temperature AS market_warmup_temperature,
                        mws.ecosystem_type AS market_warmup_ecosystem_type, mwj.recommendation AS market_warmup_recommendation,
-                       mwj.status AS market_warmup_status, COALESCE(mws.updated_at, mwj.updated_at) AS market_warmup_updated_at
+                       mwj.status AS market_warmup_status, COALESCE(mws.updated_at, mwj.updated_at) AS market_warmup_updated_at,
+                       p.status_pipeline_dossieproduto AS dossie_produto_status,
+                       p.dossie_produto_current_stage AS dossie_produto_current_stage,
+                       p.data_pipeline_dossieproduto AS dossie_produto_updated_at
                 """ + joins + " ORDER BY " + orderBy + " LIMIT ? OFFSET ?",
                 this::mapSalesPageResponse, workspaceId, normalizedPageSize, offset);
         return new MoisSalesLibraryDtos.SalesLibraryPageListResponse(normalizedPage, normalizedPageSize, total == null ? 0 : total, items);
@@ -809,7 +812,10 @@ public class MoisSalesLibraryService {
                        p.last_error_category, p.last_error_message, p.last_job_execution_id, p.last_captured_at, p.last_analyzed_at, p.updated_at,
                        mws.score_total AS market_warmup_score_total, mws.market_temperature AS market_warmup_temperature,
                        mws.ecosystem_type AS market_warmup_ecosystem_type, mwj.recommendation AS market_warmup_recommendation,
-                       mwj.status AS market_warmup_status, COALESCE(mws.updated_at, mwj.updated_at) AS market_warmup_updated_at
+                       mwj.status AS market_warmup_status, COALESCE(mws.updated_at, mwj.updated_at) AS market_warmup_updated_at,
+                       p.status_pipeline_dossieproduto AS dossie_produto_status,
+                       p.dossie_produto_current_stage AS dossie_produto_current_stage,
+                       p.data_pipeline_dossieproduto AS dossie_produto_updated_at
                 FROM mois_sales_page p
                 LEFT JOIN (
                     SELECT sales_page_id, MAX(id) AS latest_warmup_job_id
@@ -1511,7 +1517,10 @@ public class MoisSalesLibraryService {
                 mapEnum(MoisSalesLibraryDtos.MarketWarmupEcosystemType.class, rs.getString("market_warmup_ecosystem_type")),
                 mapEnum(MoisSalesLibraryDtos.MarketWarmupRecommendation.class, rs.getString("market_warmup_recommendation")),
                 mapEnum(MoisSalesLibraryDtos.MarketWarmupJobStatus.class, rs.getString("market_warmup_status")),
-                toInstant(rs, "market_warmup_updated_at")
+                toInstant(rs, "market_warmup_updated_at"),
+                rs.getString("dossie_produto_status"),
+                rs.getString("dossie_produto_current_stage"),
+                toInstant(rs, "dossie_produto_updated_at")
         );
     }
 

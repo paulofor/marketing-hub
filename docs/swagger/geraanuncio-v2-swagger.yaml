@@ -4,13 +4,13 @@ info:
   version: v2
   description: Contratos internos do pipeline GeraAnuncio v2 para geração separada de texto e imagem de anúncios pelo AI Worker.
 paths:
-  /api/internal/aiworker/geracaoanuncios/v1/texto/stage-executions/start:
+  /api/internal/aiworker/geracaoanuncios/v1/texto/stage-executions/{idExterno}/start:
     post:
       summary: Inicia execução da etapa Texto pela chave do experimento
       description: Endpoint usado pela tela administrativa para iniciar a etapa de texto do GeraAnuncio v2 usando o código/chave operacional do experimento.
       parameters:
-        - name: experimentKey
-          in: query
+        - name: idExterno
+          in: path
           required: true
           schema:
             type: string
@@ -39,12 +39,12 @@ paths:
       responses:
         '200':
           description: Execuções pendentes retornadas com contexto e artefatos anteriores.
-  /api/internal/aiworker/geracaoanuncios/v1/texto/stage-executions/{experimentKey}/jobs/{jobId}/recebeRequest:
+  /api/internal/aiworker/geracaoanuncios/v1/texto/stage-executions/{idExterno}/{jobId}/recebeRequest:
     post:
       summary: Registra request operacional da etapa Texto
       description: Recebe o request gerado pelo AI Worker vinculado ao id do objeto e ao jobId UUID criado no start.
       parameters:
-        - name: experimentKey
+        - name: idExterno
           in: path
           required: true
           schema:
@@ -58,12 +58,12 @@ paths:
       responses:
         '202':
           description: Request aceito para auditoria.
-  /api/internal/aiworker/geracaoanuncios/v1/texto/stage-executions/{experimentKey}/jobs/{jobId}/recebeResponse:
+  /api/internal/aiworker/geracaoanuncios/v1/texto/stage-executions/{idExterno}/{jobId}/recebeResponse:
     post:
       summary: Registra response final da etapa Texto
       description: Recebe o callback final do AI Worker, atualiza status/data do experimento e grava auditoria em pipeline_geracaoanuncios. Retorna o código da próxima etapa quando a etapa termina sem erro.
       parameters:
-        - name: experimentKey
+        - name: idExterno
           in: path
           required: true
           schema:
@@ -101,13 +101,13 @@ paths:
       responses:
         '202':
           description: Resposta aceita para auditoria e relatório.
-  /api/internal/aiworker/geracaoanuncios/v1/imagem/stage-executions/start:
+  /api/internal/aiworker/geracaoanuncios/v1/imagem/stage-executions/{idExterno}/start:
     post:
       summary: Inicia execução da etapa Imagem pela chave do experimento
       description: Endpoint usado pela tela administrativa para iniciar a etapa de imagem do GeraAnuncio v2 usando o código/chave operacional do experimento.
       parameters:
-        - name: experimentKey
-          in: query
+        - name: idExterno
+          in: path
           required: true
           schema:
             type: string
@@ -136,12 +136,12 @@ paths:
       responses:
         '200':
           description: Execuções pendentes retornadas com contexto e artefatos anteriores.
-  /api/internal/aiworker/geracaoanuncios/v1/imagem/stage-executions/{experimentKey}/jobs/{jobId}/recebeRequest:
+  /api/internal/aiworker/geracaoanuncios/v1/imagem/stage-executions/{idExterno}/{jobId}/recebeRequest:
     post:
       summary: Registra request operacional da etapa Imagem
       description: Recebe o request gerado pelo AI Worker vinculado ao id do objeto e ao jobId UUID criado no start.
       parameters:
-        - name: experimentKey
+        - name: idExterno
           in: path
           required: true
           schema:
@@ -155,12 +155,12 @@ paths:
       responses:
         '202':
           description: Request aceito para auditoria.
-  /api/internal/aiworker/geracaoanuncios/v1/imagem/stage-executions/{experimentKey}/jobs/{jobId}/recebeResponse:
+  /api/internal/aiworker/geracaoanuncios/v1/imagem/stage-executions/{idExterno}/{jobId}/recebeResponse:
     post:
       summary: Registra response final da etapa Imagem
       description: Recebe o callback final do AI Worker, atualiza status/data do experimento e grava auditoria em pipeline_geracaoanuncios. Retorna nulo/corpo vazio quando a etapa final termina sem erro.
       parameters:
-        - name: experimentKey
+        - name: idExterno
           in: path
           required: true
           schema:

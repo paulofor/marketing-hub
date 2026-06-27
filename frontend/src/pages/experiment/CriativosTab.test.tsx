@@ -266,7 +266,7 @@ describe("CriativosTab", () => {
     ).toBeInTheDocument();
   });
 
-  it("starts GeraAnuncio v2 from the first stage using the experiment id as external id", async () => {
+  it("starts GeraAnuncio v2 from the first stage using the explicit experiment route", async () => {
     (axios.get as any).mockImplementation((url: string) => {
       if (url.endsWith("/experiments/1/creatives")) {
         return Promise.resolve({ data: [] });
@@ -310,7 +310,7 @@ describe("CriativosTab", () => {
 
     await waitFor(() => {
       expect(axios.post).toHaveBeenCalledWith(
-        "/api/internal/aiworker/geracaoanuncios/v1/texto/stage-executions/1/start",
+        "/api/internal/aiworker/geracaoanuncios/v1/texto/stage-executions/experiments/1/start",
       );
     });
   });

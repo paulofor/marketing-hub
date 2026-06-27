@@ -156,12 +156,25 @@ public class DossierSourceProductMatchService {
                 .toList();
         return new DossierSourceProductMatchPendingResponse(!jobs.isEmpty(), jobs);
     }
-    /** Recupera o jobId UUID criado no start para compor o contrato pending da etapa. */
+    /** Recupera ou recompõe o jobId UUID para impedir que pendências antigas travem a fila da etapa. */
     private String resolveJobId(String productKey) {
         return pipelineDossieProdutoRepository
                 .findTopByIdExternoAndCodigoEtapaOrderByDataHoraDescIdDesc(productKey, STAGE_CODE)
                 .map(PipelineDossieProduto::getJobId)
-                .orElseThrow(() -> new IllegalStateException(
-                        "JobId do dossiê MOIS não encontrado para produto " + productKey + " na etapa " + STAGE_CODE));
+                .filter(jobId -> jobId != null && !jobId.isBlank())
+                .orElseGet(() -> rebuildJobId(productKey));
+    }
+
+    /** Cria auditoria mínima com jobId novo quando existe pendência legada sem registro rastreável. */
+    private String rebuildJobId(String productKey) {
+        String jobId = UUID.randomUUID().toString();
+        PipelineDossieProduto pipeline = new PipelineDossieProduto();
+        pipeline.setIdExterno(productKey);
+        pipeline.setCodigoEtapa(STAGE_CODE);
+        pipeline.setDataHora(Instant.now());
+        pipeline.setJobId(jobId);
+        pipeline.setVersaoPipeline("v1");
+        pipelineDossieProdutoRepository.save(pipeline);
+        return jobId;
     }
 }

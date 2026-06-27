@@ -3,9 +3,7 @@ import CollapsibleJsonViewer from "../../components/CollapsibleJsonViewer";
 import PageTitle from "../../components/PageTitle";
 import {
   useMoisSalesLibraryPageAnalysis,
-  useMoisSalesLibraryMarketWarmup,
-  useMoisSalesLibraryMarketWarmupSearchAttempts,
-  useMoisSalesLibraryMarketWarmupSources,
+  useMoisDossierProductPipeline,
   useMoisSalesLibraryPage,
   useStartMoisDossierPipeline,
   useMoisSalesLibraryPageExecutions,
@@ -106,36 +104,6 @@ type DossierPipelineStage = {
   model: string;
 };
 
-const SOCIAL_PLATFORMS = new Set(["YOUTUBE", "INSTAGRAM", "TIKTOK"]);
-const PRODUCER_SOCIAL_SOURCE_TYPES = new Set([
-  "CREATOR_CONTENT",
-  "SPECIALIST_CONTENT",
-  "SOCIAL_POST",
-]);
-
-function labelPlatform(value: string) {
-  const labels: Record<string, string> = {
-    YOUTUBE: "YouTube",
-    INSTAGRAM: "Instagram",
-    TIKTOK: "TikTok",
-    WEB: "Web",
-    MARKETPLACE: "Marketplace",
-    REVIEW_SITE: "Reviews",
-  };
-  return labels[value] || value;
-}
-
-function labelRecommendation(value?: string) {
-  const labels: Record<string, string> = {
-    PRIORITIZE: "priorizar",
-    OBSERVE: "observar",
-    RESEARCH_MORE: "pesquisar mais",
-    DISCARD: "descartar",
-    SATURATED_REQUIRES_ANGLE: "exige novo ângulo",
-  };
-  return value ? labels[value] || value : "—";
-}
-
 export default function MoisSalesPageLibraryDetailPage() {
   const { pageId } = useParams();
   const numericPageId = Number(pageId);
@@ -145,20 +113,11 @@ export default function MoisSalesPageLibraryDetailPage() {
   const pageQuery = useMoisSalesLibraryPage(validPageId);
   const analysisQuery = useMoisSalesLibraryPageAnalysis(validPageId);
   const executionsQuery = useMoisSalesLibraryPageExecutions(validPageId);
-  const marketWarmupQuery = useMoisSalesLibraryMarketWarmup(validPageId);
-  const marketWarmupSearchAttemptsQuery =
-    useMoisSalesLibraryMarketWarmupSearchAttempts(
-      validPageId,
-      Boolean(pageQuery.data?.marketWarmupStatus),
-    );
-  const marketWarmupSourcesQuery = useMoisSalesLibraryMarketWarmupSources(
-    validPageId,
-    Boolean(marketWarmupQuery.data),
-  );
+  const dossierPipelineQuery = useMoisDossierProductPipeline(validPageId);
   const pagesQuery = useMoisSalesLibraryPages(WORKSPACE_ID, 1, PAGE_SIZE);
   const updateStatusMutation =
     useUpdateMoisSalesLibraryPageStatus(WORKSPACE_ID);
-  const requestWarmupMutation = useStartMoisDossierPipeline(WORKSPACE_ID);
+  const requestDossierMutation = useStartMoisDossierPipeline(WORKSPACE_ID);
 
   const currentIndex =
     pagesQuery.data?.items.findIndex((item) => item.pageId === validPageId) ??
@@ -168,25 +127,27 @@ export default function MoisSalesPageLibraryDetailPage() {
   const isMutating = updateStatusMutation.isPending;
   const dossierStatus = pageQuery.data?.dossieProdutoStatus || "";
   const dossierStage = pageQuery.data?.dossieProdutoCurrentStage || "";
-  const hasWarmupDossier = Boolean(dossierStatus);
-  const hasActiveWarmupDossier = ["INICIADO", "AGUARDANDO"].includes(
-    dossierStatus,
-  );
+  const hasDossierRequest = Boolean(dossierStatus);
+  const hasActiveDossierRequest = [
+    "INICIADO",
+    "AGUARDANDO",
+    "AGUARDANDO_RETORNO_MODULO",
+  ].includes(dossierStatus);
   const isCommercialAnalysisDone = ["DONE", "ANALYZED"].includes(
     pageQuery.data?.analysisStatus || pageQuery.data?.currentStatus || "",
   );
-  const warmupRequestBlockReason = hasActiveWarmupDossier
+  const dossierRequestBlockReason = hasActiveDossierRequest
     ? "Esta página já possui dossiê em fila ou em processamento; aguarde o backend concluir antes de reprocessar."
     : !isCommercialAnalysisDone
       ? "O dossiê só pode iniciar depois que a análise comercial da página estiver concluída."
       : undefined;
-  const warmupRequestButtonLabel = hasWarmupDossier
+  const dossierRequestButtonLabel = hasDossierRequest
     ? "Reprocessar dossiê"
     : "Iniciar dossiê";
-  const isWarmupRequestDisabled =
+  const isDossierRequestDisabled =
     !validPageId ||
-    requestWarmupMutation.isPending ||
-    Boolean(warmupRequestBlockReason);
+    requestDossierMutation.isPending ||
+    Boolean(dossierRequestBlockReason);
   const currentStatus = pageQuery.data?.currentStatus;
   const analysisStatus = pageQuery.data?.analysisStatus;
   const captureStatus = pageQuery.data?.captureStatus;
@@ -261,14 +222,6 @@ export default function MoisSalesPageLibraryDetailPage() {
       model: "Não usa OpenAI",
     },
   ];
-
-  const producerSocialSources = (marketWarmupSourcesQuery.data?.items ?? [])
-    .filter(
-      (source) =>
-        SOCIAL_PLATFORMS.has(source.platform) &&
-        PRODUCER_SOCIAL_SOURCE_TYPES.has(source.sourceType),
-    )
-    .slice(0, 6);
 
   const history: HistoryItem[] = (executionsQuery.data ?? []).map((item) => ({
     key: String(item.executionId),
@@ -354,22 +307,22 @@ export default function MoisSalesPageLibraryDetailPage() {
         <button
           type="button"
           className="btn btn-outline-primary"
-          disabled={isWarmupRequestDisabled}
-          title={warmupRequestBlockReason}
+          disabled={isDossierRequestDisabled}
+          title={dossierRequestBlockReason}
           onClick={() =>
-            validPageId && requestWarmupMutation.mutate(validPageId)
+            validPageId && requestDossierMutation.mutate(validPageId)
           }
         >
-          {requestWarmupMutation.isPending ? (
+          {requestDossierMutation.isPending ? (
             <span
               className="spinner-border spinner-border-sm me-2"
               role="status"
               aria-hidden="true"
             />
           ) : null}
-          {requestWarmupMutation.isPending
+          {requestDossierMutation.isPending
             ? "Solicitando dossiê..."
-            : warmupRequestButtonLabel}
+            : dossierRequestButtonLabel}
         </button>
         <button
           type="button"
@@ -459,18 +412,18 @@ export default function MoisSalesPageLibraryDetailPage() {
         </div>
       ) : null}
 
-      {requestWarmupMutation.isSuccess ? (
+      {requestDossierMutation.isSuccess ? (
         <div className="alert alert-success mb-0">
           Pipeline v1 do dossiê iniciado pela etapa intake. A tela sempre
           mostrará o dossiê mais recente retornado pelo backend.
         </div>
       ) : null}
-      {requestWarmupMutation.isError ? (
+      {requestDossierMutation.isError ? (
         <div className="alert alert-danger mb-0">
           Falha ao iniciar pipeline v1 do dossiê.
         </div>
       ) : null}
-      {hasWarmupDossier && !hasActiveWarmupDossier ? (
+      {hasDossierRequest && !hasActiveDossierRequest ? (
         <div className="alert alert-info mb-0">
           Já existe uma solicitação de dossiê v1 para esta página
           {dossierStatus ? ` com status ${labelStatus(dossierStatus)}` : ""}
@@ -480,9 +433,9 @@ export default function MoisSalesPageLibraryDetailPage() {
         </div>
       ) : null}
 
-      {warmupRequestBlockReason ? (
+      {dossierRequestBlockReason ? (
         <div className="alert alert-warning mb-0">
-          {hasActiveWarmupDossier ? (
+          {hasActiveDossierRequest ? (
             <>
               Esta página já possui dossiê em fila ou em processamento
               {dossierStatus ? ` com status ${labelStatus(dossierStatus)}` : ""}
@@ -799,165 +752,165 @@ export default function MoisSalesPageLibraryDetailPage() {
       <section className="card border-0 shadow-sm">
         <div className="card-body d-flex flex-column gap-3">
           <div>
-            <h2 className="h5 mb-1">Dossiê do produto — redes do produtor</h2>
+            <h2 className="h5 mb-1">Resultado do dossiê v1</h2>
             <p className="text-secondary mb-0">
-              Quando o produtor Hotmart está disponível, a pesquisa pública
-              busca perfis sociais do mesmo nome e só aproveita fontes que
-              também falam de conteúdo semelhante ao produto.
+              Esta seção usa somente o pipeline novo de dossiê v1 e mostra a
+              auditoria real gravada pelo backend: entrada, saída, modelo, custo
+              e resultado final de cada etapa.
             </p>
           </div>
 
-          {marketWarmupQuery.isLoading ? (
+          {dossierPipelineQuery.isLoading ? (
             <p className="text-secondary mb-0">
-              Carregando pesquisa pública do dossiê...
+              Carregando auditoria do dossiê v1...
             </p>
           ) : null}
-          {marketWarmupQuery.isError || marketWarmupSourcesQuery.isError ? (
+          {dossierPipelineQuery.isError ? (
             <div className="alert alert-danger mb-0">
-              Falha ao carregar a pesquisa pública do produtor.
+              Falha ao carregar o pipeline novo de dossiê v1.
             </div>
           ) : null}
-          {!marketWarmupQuery.isLoading && !marketWarmupQuery.data ? (
+          {dossierPipelineQuery.data &&
+          dossierPipelineQuery.data.stages.length === 0 ? (
             <div className="alert alert-warning mb-0">
-              Ainda não há dossiê de aquecimento concluído para este produto. O
-              comando será liberado quando a análise comercial da página estiver
-              concluída.
+              Ainda não há auditoria do dossiê v1 para esta página. Inicie o
+              dossiê para o backend registrar as etapas.
             </div>
           ) : null}
 
-          {marketWarmupSearchAttemptsQuery.data?.items.length ? (
-            <div className="border rounded p-3 bg-light-subtle">
-              <h3 className="h6 mb-2">Tentativas de pesquisa realizadas</h3>
-              <p className="small text-secondary mb-3">
-                Estas são as buscas que o worker fez e o motivo de elas terem ou
-                não virado fonte do dossiê.
-              </p>
-              <div className="d-flex flex-column gap-2">
-                {marketWarmupSearchAttemptsQuery.data.items.map((attempt) => (
-                  <div
-                    key={attempt.attemptId}
-                    className="border rounded p-2 bg-white"
-                  >
-                    <div className="d-flex flex-wrap justify-content-between gap-2">
-                      <strong>{attempt.queryText}</strong>
-                      <span
-                        className={
-                          attempt.qualifiedCount > 0
+          {dossierPipelineQuery.data?.finalResult ? (
+            <div className="border rounded p-3 bg-success-subtle">
+              <div className="d-flex flex-wrap justify-content-between gap-2 mb-2">
+                <div>
+                  <h3 className="h6 mb-1">Resultado final consolidado</h3>
+                  <p className="small text-secondary mb-0">
+                    Última resposta da etapa final do pipeline novo.
+                  </p>
+                </div>
+                <span className="badge text-bg-success">
+                  {labelStatus(dossierPipelineQuery.data.status)}
+                </span>
+              </div>
+              <CollapsibleJsonViewer
+                content={dossierPipelineQuery.data.finalResult.response}
+                initiallyCollapsed={false}
+              />
+            </div>
+          ) : null}
+
+          {dossierPipelineQuery.data?.stages.length ? (
+            <div className="d-flex flex-column gap-3">
+              {dossierPipelineQuery.data.stages.map((stage, index) => (
+                <div
+                  key={`${stage.auditId ?? index}-${stage.stageCode ?? "stage"}`}
+                  className="border rounded p-3 bg-light-subtle"
+                >
+                  <div className="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-3">
+                    <div>
+                      <h3 className="h6 mb-1">
+                        {index + 1}. {stage.stageCode || "Etapa sem código"}
+                      </h3>
+                      <p className="small text-secondary mb-0">
+                        jobId: {stage.jobId || "—"} • versão: {stage.pipelineVersion || "—"} • data: {formatDate(stage.occurredAt)}
+                      </p>
+                    </div>
+                    <span
+                      className={
+                        stage.errorDescription
+                          ? "badge text-bg-danger"
+                          : stage.response
                             ? "badge text-bg-success"
-                            : "badge text-bg-warning"
-                        }
-                      >
-                        {attempt.qualifiedCount > 0
-                          ? "gerou fonte"
-                          : "sem fonte útil"}
-                      </span>
-                    </div>
-                    <div className="small text-secondary mt-1">
-                      Resultados lidos: {attempt.resultCount} • aproveitados:{" "}
-                      {attempt.qualifiedCount} • descartados:{" "}
-                      {attempt.rejectedCount}
-                    </div>
-                    {attempt.rejectionReason ? (
-                      <div className="small text-secondary mt-1">
-                        {attempt.rejectionReason}
+                            : "badge text-bg-secondary"
+                      }
+                    >
+                      {stage.errorDescription
+                        ? "falha"
+                        : stage.response
+                          ? "com saída"
+                          : "registro"}
+                    </span>
+                  </div>
+
+                  <div className="row g-3 mb-3">
+                    <div className="col-md-3">
+                      <div className="border rounded p-2 bg-white h-100">
+                        <div className="small text-secondary">Plataforma</div>
+                        <strong>{displayText(stage.platform)}</strong>
                       </div>
-                    ) : null}
-                    {attempt.sampleResultUrl ? (
-                      <a
-                        className="small"
-                        href={attempt.sampleResultUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        Exemplo retornado:{" "}
-                        {attempt.sampleResultTitle || attempt.sampleResultUrl}
-                      </a>
-                    ) : null}
+                    </div>
+                    <div className="col-md-3">
+                      <div className="border rounded p-2 bg-white h-100">
+                        <div className="small text-secondary">Modelo</div>
+                        <strong>{displayText(stage.model)}</strong>
+                      </div>
+                    </div>
+                    <div className="col-md-3">
+                      <div className="border rounded p-2 bg-white h-100">
+                        <div className="small text-secondary">Tokens</div>
+                        <strong>
+                          {stage.inputTokens ?? "—"} / {stage.outputTokens ?? "—"}
+                        </strong>
+                      </div>
+                    </div>
+                    <div className="col-md-3">
+                      <div className="border rounded p-2 bg-white h-100">
+                        <div className="small text-secondary">Custo</div>
+                        <strong>{stage.cost ?? "—"}</strong>
+                      </div>
+                    </div>
                   </div>
-                ))}
-              </div>
-            </div>
-          ) : null}
 
-          {marketWarmupQuery.data ? (
-            <>
-              <div className="row g-3">
-                <div className="col-md-4">
-                  <div className="border rounded p-3 h-100 bg-light-subtle">
-                    <div className="text-secondary small">Temperatura</div>
-                    <strong>{marketWarmupQuery.data.marketTemperature}</strong>
-                  </div>
-                </div>
-                <div className="col-md-4">
-                  <div className="border rounded p-3 h-100 bg-light-subtle">
-                    <div className="text-secondary small">Recomendação</div>
-                    <strong>
-                      {labelRecommendation(
-                        marketWarmupQuery.data.recommendation,
-                      )}
-                    </strong>
-                  </div>
-                </div>
-                <div className="col-md-4">
-                  <div className="border rounded p-3 h-100 bg-light-subtle">
-                    <div className="text-secondary small">Score do dossiê</div>
-                    <strong>{marketWarmupQuery.data.scoreTotal ?? "—"}</strong>
-                  </div>
-                </div>
-              </div>
+                  {stage.errorDescription ? (
+                    <div className="alert alert-danger mb-3">
+                      {stage.errorDescription}
+                    </div>
+                  ) : null}
 
-              {marketWarmupQuery.data.opportunityRecommendation ? (
-                <div className="alert alert-info mb-0">
-                  {marketWarmupQuery.data.opportunityRecommendation}
-                </div>
-              ) : null}
-
-              <div>
-                <h3 className="h6 mb-2">Fontes sociais qualificadas</h3>
-                {marketWarmupSourcesQuery.isLoading ? (
-                  <p className="text-secondary mb-0">
-                    Carregando fontes sociais qualificadas...
-                  </p>
-                ) : null}
-                {!marketWarmupSourcesQuery.isLoading &&
-                producerSocialSources.length === 0 ? (
-                  <p className="text-secondary mb-0">
-                    Nenhuma rede social do produtor foi qualificada ainda. Isso
-                    evita usar homônimos ou perfis com assunto diferente do
-                    produto.
-                  </p>
-                ) : (
-                  <div className="d-flex flex-column gap-2">
-                    {producerSocialSources.map((source) => (
-                      <div
-                        key={source.sourceId}
-                        className="border rounded p-3 bg-light-subtle"
-                      >
-                        <div className="d-flex flex-wrap justify-content-between gap-2">
-                          <strong>
-                            {source.sourceTitle || source.sourceUrl}
-                          </strong>
-                          <span className="badge text-bg-primary">
-                            {labelPlatform(source.platform)}
-                          </span>
+                  <div className="row g-3">
+                    <div className="col-lg-6">
+                      <div className="border rounded p-3 h-100 bg-white">
+                        <h4 className="h6 mb-2">Entrada recebida pela etapa</h4>
+                        <CollapsibleJsonViewer
+                          content={stage.request}
+                          initiallyCollapsed
+                        />
+                      </div>
+                    </div>
+                    <div className="col-lg-6">
+                      <div className="border rounded p-3 h-100 bg-white">
+                        <h4 className="h6 mb-2">Saída retornada pela etapa</h4>
+                        <CollapsibleJsonViewer
+                          content={stage.response}
+                          initiallyCollapsed
+                        />
+                      </div>
+                    </div>
+                    {stage.prompt ? (
+                      <div className="col-lg-6">
+                        <div className="border rounded p-3 h-100 bg-white">
+                          <h4 className="h6 mb-2">Prompt</h4>
+                          <CollapsibleJsonViewer
+                            content={stage.prompt}
+                            initiallyCollapsed
+                          />
                         </div>
-                        <p className="small text-secondary mb-2 mt-2">
-                          {source.evidenceSummary ||
-                            "Fonte social qualificada pela pesquisa pública."}
-                        </p>
-                        <a
-                          href={source.sourceUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          Abrir fonte
-                        </a>
                       </div>
-                    ))}
+                    ) : null}
+                    {stage.schema ? (
+                      <div className="col-lg-6">
+                        <div className="border rounded p-3 h-100 bg-white">
+                          <h4 className="h6 mb-2">Schema</h4>
+                          <CollapsibleJsonViewer
+                            content={stage.schema}
+                            initiallyCollapsed
+                          />
+                        </div>
+                      </div>
+                    ) : null}
                   </div>
-                )}
-              </div>
-            </>
+                </div>
+              ))}
+            </div>
           ) : null}
         </div>
       </section>

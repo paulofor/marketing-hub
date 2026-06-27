@@ -1587,6 +1587,66 @@ public class MoisSalesLibraryService {
         return Enum.valueOf(enumType, value);
     }
 
+
+    /**
+     * Consulta a auditoria do pipeline novo de dossiê v1 para a tela exibir entrada, saída e resultado final.
+     */
+    public MoisSalesLibraryDtos.DossierProductPipelineResponse getDossierProductPipeline(long pageId) {
+        var page = getPage(pageId);
+        List<MoisSalesLibraryDtos.DossierProductPipelineStageItem> stages = jdbcTemplate.query("""
+                SELECT id,
+                       job_id,
+                       codigo_etapa,
+                       versao_pipeline,
+                       data_hora,
+                       plataforma,
+                       modelo,
+                       quantidade_token_entrada,
+                       quantidade_token_saida,
+                       custo,
+                       request,
+                       response,
+                       prompt,
+                       `schema`,
+                       descricao_erro
+                FROM pipeline_dossieproduto
+                WHERE id_externo = ?
+                  AND versao_pipeline = 'v1'
+                ORDER BY data_hora ASC, id ASC
+                """, (rs, rowNum) -> new MoisSalesLibraryDtos.DossierProductPipelineStageItem(
+                rs.getLong("id"),
+                rs.getString("job_id"),
+                rs.getString("codigo_etapa"),
+                rs.getString("versao_pipeline"),
+                toInstant(rs, "data_hora"),
+                rs.getString("plataforma"),
+                rs.getString("modelo"),
+                nullableLong(rs, "quantidade_token_entrada"),
+                nullableLong(rs, "quantidade_token_saida"),
+                rs.getBigDecimal("custo"),
+                rs.getString("request"),
+                rs.getString("response"),
+                rs.getString("prompt"),
+                rs.getString("schema"),
+                rs.getString("descricao_erro")
+        ), String.valueOf(pageId));
+        MoisSalesLibraryDtos.DossierProductPipelineStageItem finalResult = stages.stream()
+                .filter(stage -> "dossier-synthesis".equals(stage.stageCode()) && stage.response() != null && !stage.response().isBlank())
+                .reduce((previous, current) -> current)
+                .orElseGet(() -> stages.stream()
+                        .filter(stage -> stage.response() != null && !stage.response().isBlank())
+                        .reduce((previous, current) -> current)
+                        .orElse(null));
+        return new MoisSalesLibraryDtos.DossierProductPipelineResponse(
+                pageId,
+                page.dossieProdutoStatus(),
+                page.dossieProdutoCurrentStage(),
+                page.dossieProdutoUpdatedAt(),
+                stages,
+                finalResult
+        );
+    }
+
     /**
      * Normaliza uma URL para deduplicação por esquema, host e caminho.
      */

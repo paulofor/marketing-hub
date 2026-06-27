@@ -30,6 +30,16 @@ import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.sli
 @AnalyzeClasses(packages = "com.marketinghub", importOptions = ImportOption.DoNotIncludeTests.class)
 class GeracaoAnunciosV1ArchitectureTest {
     private static final String PIPELINE_ROOT = "com.marketinghub.pipelines.geracaoanuncios.v1";
+    private static final List<String> REQUIRED_STAGE_CLASS_SUFFIXES = List.of(
+            "BackendClient",
+            "ExecutionScheduler",
+            "Input",
+            "Output",
+            "PromptBuilder",
+            "ResponseHandler",
+            "ResponseValidator",
+            "WorkerConfiguration",
+            "WorkerProperties");
 
     @ArchTest
     static final ArchRule nucleo_geracaoanuncios_v1_nao_deve_depender_de_etapas = classes()
@@ -110,6 +120,61 @@ class GeracaoAnunciosV1ArchitectureTest {
                 }
             }
         };
+    }
+
+
+    /** Garante que cada etapa concreta tenha somente as nove classes padronizadas do executor. */
+    @ArchTest
+    static void subpacotes_geracaoanuncios_v1_devem_ter_apenas_nove_classes_padronizadas(JavaClasses importedClasses) {
+        importedClasses.stream().filter(javaClass -> javaClass.getPackageName().startsWith(PIPELINE_ROOT)).findAny();
+        Path workerRoot = repositoryRoot().resolve(Path.of(
+                "ai-worker", "src", "main", "java", "com", "marketinghub", "pipelines", "geracaoanuncios", "v1"));
+        List<String> violations = new ArrayList<>();
+        directSubpackages(workerRoot).forEach(stage -> validateStageClassPattern(workerRoot.resolve(stage), stage, violations));
+        failWithArchitectureViolations(violations);
+    }
+
+    /** Valida quantidade, prefixo e sufixos obrigatórios das classes Java de uma etapa. */
+    private static void validateStageClassPattern(Path stageDirectory, String stage, List<String> violations) {
+        List<String> classNames = javaFiles(stageDirectory).stream()
+                .map(path -> path.getFileName().toString().replaceFirst("\\.java$", ""))
+                .sorted()
+                .toList();
+        if (classNames.size() != REQUIRED_STAGE_CLASS_SUFFIXES.size()) {
+            violations.add("[ARQUITETURA] [AI Worker][GeracaoAnuncios v1] etapa " + stage
+                    + " deve ter exatamente " + REQUIRED_STAGE_CLASS_SUFFIXES.size()
+                    + " classes Java padronizadas; encontradas=" + classNames);
+        }
+        Set<String> detectedPrefixes = detectedStagePrefixes(classNames);
+        if (detectedPrefixes.size() != 1) {
+            violations.add("[ARQUITETURA] [AI Worker][GeracaoAnuncios v1] etapa " + stage
+                    + " deve usar um único <nome-etapa> antes dos sufixos padronizados; prefixos="
+                    + detectedPrefixes + "; classes=" + classNames);
+            return;
+        }
+        String stageClassPrefix = detectedPrefixes.iterator().next();
+        Set<String> expectedClassNames = new TreeSet<>();
+        REQUIRED_STAGE_CLASS_SUFFIXES.forEach(suffix -> expectedClassNames.add(stageClassPrefix + suffix));
+        Set<String> actualClassNames = new TreeSet<>(classNames);
+        if (!actualClassNames.equals(expectedClassNames)) {
+            violations.add("[ARQUITETURA] [AI Worker][GeracaoAnuncios v1] etapa " + stage
+                    + " deve conter somente as classes " + expectedClassNames
+                    + "; encontradas=" + actualClassNames);
+        }
+    }
+
+    /** Identifica o prefixo de etapa removendo os sufixos arquiteturais permitidos. */
+    private static Set<String> detectedStagePrefixes(List<String> classNames) {
+        Set<String> prefixes = new TreeSet<>();
+        for (String className : classNames) {
+            Optional<String> suffix = REQUIRED_STAGE_CLASS_SUFFIXES.stream().filter(className::endsWith).findFirst();
+            if (suffix.isPresent()) {
+                prefixes.add(className.substring(0, className.length() - suffix.get().length()));
+            } else {
+                prefixes.add(className);
+            }
+        }
+        return prefixes;
     }
 
     /** Garante que o módulo externo espelhe as etapas backend e consuma o pending canônico de cada etapa. */

@@ -5,6 +5,8 @@ import com.marketinghub.moissaleslibraryworker.pipelines.dossie.v1.warmupsignale
 import com.marketinghub.moissaleslibraryworker.pipelines.dossie.v1.warmupsignalextraction.service.pending.DossierWarmupSignalExtractionPendingResponse;
 import com.marketinghub.moissaleslibraryworker.pipelines.dossie.v1.warmupsignalextraction.service.receberequest.DossierWarmupSignalExtractionRecebeRequestRequest;
 import com.marketinghub.moissaleslibraryworker.pipelines.dossie.v1.warmupsignalextraction.service.receberequest.DossierWarmupSignalExtractionRecebeRequestResponse;
+import com.marketinghub.moissaleslibraryworker.pipelines.dossie.v1.warmupsignalextraction.service.receberesponse.DossierWarmupSignalExtractionRecebeResponseRequest;
+import com.marketinghub.moissaleslibraryworker.pipelines.dossie.v1.warmupsignalextraction.service.receberesponse.DossierWarmupSignalExtractionRecebeResponseResponse;
 import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageRepository;
 import com.marketinghub.repository.jpa.mois.dossieproduto.PipelineDossieProdutoRepository;
 import com.marketinghub.repository.jpa.mois.dossieproduto.entity.PipelineDossieProduto;
@@ -81,6 +83,47 @@ public class DossierWarmupSignalExtractionService {
         pipelineDossieProdutoRepository.save(pipeline);
 
         return new DossierWarmupSignalExtractionRecebeRequestResponse(jobId, productKey, STAGE_CODE, STATUS_WAITING);
+    }
+
+
+    /** Recebe a resposta operacional da etapa, conclui ou falha a página/produto e audita a saída do pipeline. */
+    public DossierWarmupSignalExtractionRecebeResponseResponse recebeResponse(String productKey, String jobId, DossierWarmupSignalExtractionRecebeResponseRequest request) {
+        long pageId = Long.parseLong(productKey);
+        Instant now = Instant.now();
+        String status = isBlank(request.descricaoErro()) ? STATUS_COMPLETED : STATUS_FAILED;
+        var page = salesPageRepository.findById(pageId)
+                .orElseThrow(() -> new IllegalArgumentException("Página/produto MOIS não encontrada: " + productKey));
+        page.setDossieProdutoStatus(status);
+        page.setDossieProdutoCurrentStage(STAGE_CODE);
+        page.setDossieProdutoUpdatedAt(now);
+        salesPageRepository.save(page);
+
+        PipelineDossieProduto pipeline = new PipelineDossieProduto();
+        pipeline.setIdExterno(productKey);
+        pipeline.setResponse(request.response());
+        pipeline.setCodigoEtapa(STAGE_CODE);
+        pipeline.setDataHora(now);
+        pipeline.setJobId(jobId);
+        pipeline.setQuantidadeTokenEntrada(request.quantidadeTokenEntrada());
+        pipeline.setQuantidadeTokenSaida(request.quantidadeTokenSaida());
+        pipeline.setCusto(request.custo());
+        pipeline.setModelo(request.modelo());
+        pipeline.setDescricaoErro(request.descricaoErro());
+        pipeline.setVersaoPipeline("v1");
+        pipelineDossieProdutoRepository.save(pipeline);
+
+        String nextStageCode = STATUS_COMPLETED.equals(status) ? normalizeNextStage(NEXT_STAGE) : null;
+        return new DossierWarmupSignalExtractionRecebeResponseResponse(jobId, productKey, STAGE_CODE, status, nextStageCode);
+    }
+
+    /** Normaliza a próxima etapa para nulo quando a etapa atual encerra o pipeline. */
+    private String normalizeNextStage(String nextStage) {
+        return isBlank(nextStage) ? null : nextStage;
+    }
+
+    /** Verifica se o texto informado está vazio para decidir sucesso ou falha da etapa. */
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 
     /** Entrega até dez trabalhos iniciados da etapa atual ao executor, ordenados pela data operacional mais antiga. */

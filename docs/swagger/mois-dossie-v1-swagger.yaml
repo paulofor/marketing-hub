@@ -364,8 +364,472 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DossierDossierSynthesisRecebeRequestResponse'
+  /api/internal/mois/dossie/v1/intake/stage-executions/{productKey}/{jobId}/recebeResponse:
+    post:
+      summary: Recebe response operacional da etapa intake do dossiê MOIS v1
+      operationId: recebeResponseMoisDossieV1IntakeStageExecutions
+      parameters:
+        - name: productKey
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DossierIntakeRecebeResponseRequest'
+      responses:
+        '200':
+          description: Response recebido, página atualizada e auditoria registrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DossierIntakeRecebeResponseResponse'
+  /api/internal/mois/dossie/v1/product-understanding/stage-executions/{productKey}/{jobId}/recebeResponse:
+    post:
+      summary: Recebe response operacional da etapa product-understanding do dossiê MOIS v1
+      operationId: recebeResponseMoisDossieV1ProductUnderstandingStageExecutions
+      parameters:
+        - name: productKey
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DossierProductUnderstandingRecebeResponseRequest'
+      responses:
+        '200':
+          description: Response recebido, página atualizada e auditoria registrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DossierProductUnderstandingRecebeResponseResponse'
+  /api/internal/mois/dossie/v1/investigation-anchor-builder/stage-executions/{productKey}/{jobId}/recebeResponse:
+    post:
+      summary: Recebe response operacional da etapa investigation-anchor-builder do dossiê MOIS v1
+      operationId: recebeResponseMoisDossieV1InvestigationAnchorBuilderStageExecutions
+      parameters:
+        - name: productKey
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DossierInvestigationAnchorBuilderRecebeResponseRequest'
+      responses:
+        '200':
+          description: Response recebido, página atualizada e auditoria registrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DossierInvestigationAnchorBuilderRecebeResponseResponse'
+  /api/internal/mois/dossie/v1/warmup-resource-discovery/stage-executions/{productKey}/{jobId}/recebeResponse:
+    post:
+      summary: Recebe response operacional da etapa warmup-resource-discovery do dossiê MOIS v1
+      operationId: recebeResponseMoisDossieV1WarmupResourceDiscoveryStageExecutions
+      parameters:
+        - name: productKey
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DossierWarmupResourceDiscoveryRecebeResponseRequest'
+      responses:
+        '200':
+          description: Response recebido, página atualizada e auditoria registrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DossierWarmupResourceDiscoveryRecebeResponseResponse'
+  /api/internal/mois/dossie/v1/source-product-match/stage-executions/{productKey}/{jobId}/recebeResponse:
+    post:
+      summary: Recebe response operacional da etapa source-product-match do dossiê MOIS v1
+      operationId: recebeResponseMoisDossieV1SourceProductMatchStageExecutions
+      parameters:
+        - name: productKey
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DossierSourceProductMatchRecebeResponseRequest'
+      responses:
+        '200':
+          description: Response recebido, página atualizada e auditoria registrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DossierSourceProductMatchRecebeResponseResponse'
+  /api/internal/mois/dossie/v1/warmup-signal-extraction/stage-executions/{productKey}/{jobId}/recebeResponse:
+    post:
+      summary: Recebe response operacional da etapa warmup-signal-extraction do dossiê MOIS v1
+      operationId: recebeResponseMoisDossieV1WarmupSignalExtractionStageExecutions
+      parameters:
+        - name: productKey
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DossierWarmupSignalExtractionRecebeResponseRequest'
+      responses:
+        '200':
+          description: Response recebido, página atualizada e auditoria registrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DossierWarmupSignalExtractionRecebeResponseResponse'
+  /api/internal/mois/dossie/v1/warmup-map-builder/stage-executions/{productKey}/{jobId}/recebeResponse:
+    post:
+      summary: Recebe response operacional da etapa warmup-map-builder do dossiê MOIS v1
+      operationId: recebeResponseMoisDossieV1WarmupMapBuilderStageExecutions
+      parameters:
+        - name: productKey
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DossierWarmupMapBuilderRecebeResponseRequest'
+      responses:
+        '200':
+          description: Response recebido, página atualizada e auditoria registrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DossierWarmupMapBuilderRecebeResponseResponse'
+  /api/internal/mois/dossie/v1/dossier-synthesis/stage-executions/{productKey}/{jobId}/recebeResponse:
+    post:
+      summary: Recebe response operacional da etapa dossier-synthesis do dossiê MOIS v1
+      operationId: recebeResponseMoisDossieV1DossierSynthesisStageExecutions
+      parameters:
+        - name: productKey
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DossierDossierSynthesisRecebeResponseRequest'
+      responses:
+        '200':
+          description: Response recebido, página atualizada e auditoria registrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DossierDossierSynthesisRecebeResponseResponse'
 components:
   schemas:
+    DossierIntakeRecebeResponseRequest:
+      type: object
+      properties:
+        response:
+          type: string
+        descricaoErro:
+          type: string
+        quantidadeTokenEntrada:
+          type: integer
+          format: int64
+        quantidadeTokenSaida:
+          type: integer
+          format: int64
+        custo:
+          type: number
+        modelo:
+          type: string
+    DossierIntakeRecebeResponseResponse:
+      type: object
+      properties:
+        jobId:
+          type: string
+        productKey:
+          type: string
+        stageCode:
+          type: string
+        status:
+          type: string
+        nextStageCode:
+          type: string
+    DossierProductUnderstandingRecebeResponseRequest:
+      type: object
+      properties:
+        response:
+          type: string
+        descricaoErro:
+          type: string
+        quantidadeTokenEntrada:
+          type: integer
+          format: int64
+        quantidadeTokenSaida:
+          type: integer
+          format: int64
+        custo:
+          type: number
+        modelo:
+          type: string
+    DossierProductUnderstandingRecebeResponseResponse:
+      type: object
+      properties:
+        jobId:
+          type: string
+        productKey:
+          type: string
+        stageCode:
+          type: string
+        status:
+          type: string
+        nextStageCode:
+          type: string
+    DossierInvestigationAnchorBuilderRecebeResponseRequest:
+      type: object
+      properties:
+        response:
+          type: string
+        descricaoErro:
+          type: string
+        quantidadeTokenEntrada:
+          type: integer
+          format: int64
+        quantidadeTokenSaida:
+          type: integer
+          format: int64
+        custo:
+          type: number
+        modelo:
+          type: string
+    DossierInvestigationAnchorBuilderRecebeResponseResponse:
+      type: object
+      properties:
+        jobId:
+          type: string
+        productKey:
+          type: string
+        stageCode:
+          type: string
+        status:
+          type: string
+        nextStageCode:
+          type: string
+    DossierWarmupResourceDiscoveryRecebeResponseRequest:
+      type: object
+      properties:
+        response:
+          type: string
+        descricaoErro:
+          type: string
+        quantidadeTokenEntrada:
+          type: integer
+          format: int64
+        quantidadeTokenSaida:
+          type: integer
+          format: int64
+        custo:
+          type: number
+        modelo:
+          type: string
+    DossierWarmupResourceDiscoveryRecebeResponseResponse:
+      type: object
+      properties:
+        jobId:
+          type: string
+        productKey:
+          type: string
+        stageCode:
+          type: string
+        status:
+          type: string
+        nextStageCode:
+          type: string
+    DossierSourceProductMatchRecebeResponseRequest:
+      type: object
+      properties:
+        response:
+          type: string
+        descricaoErro:
+          type: string
+        quantidadeTokenEntrada:
+          type: integer
+          format: int64
+        quantidadeTokenSaida:
+          type: integer
+          format: int64
+        custo:
+          type: number
+        modelo:
+          type: string
+    DossierSourceProductMatchRecebeResponseResponse:
+      type: object
+      properties:
+        jobId:
+          type: string
+        productKey:
+          type: string
+        stageCode:
+          type: string
+        status:
+          type: string
+        nextStageCode:
+          type: string
+    DossierWarmupSignalExtractionRecebeResponseRequest:
+      type: object
+      properties:
+        response:
+          type: string
+        descricaoErro:
+          type: string
+        quantidadeTokenEntrada:
+          type: integer
+          format: int64
+        quantidadeTokenSaida:
+          type: integer
+          format: int64
+        custo:
+          type: number
+        modelo:
+          type: string
+    DossierWarmupSignalExtractionRecebeResponseResponse:
+      type: object
+      properties:
+        jobId:
+          type: string
+        productKey:
+          type: string
+        stageCode:
+          type: string
+        status:
+          type: string
+        nextStageCode:
+          type: string
+    DossierWarmupMapBuilderRecebeResponseRequest:
+      type: object
+      properties:
+        response:
+          type: string
+        descricaoErro:
+          type: string
+        quantidadeTokenEntrada:
+          type: integer
+          format: int64
+        quantidadeTokenSaida:
+          type: integer
+          format: int64
+        custo:
+          type: number
+        modelo:
+          type: string
+    DossierWarmupMapBuilderRecebeResponseResponse:
+      type: object
+      properties:
+        jobId:
+          type: string
+        productKey:
+          type: string
+        stageCode:
+          type: string
+        status:
+          type: string
+        nextStageCode:
+          type: string
+    DossierDossierSynthesisRecebeResponseRequest:
+      type: object
+      properties:
+        response:
+          type: string
+        descricaoErro:
+          type: string
+        quantidadeTokenEntrada:
+          type: integer
+          format: int64
+        quantidadeTokenSaida:
+          type: integer
+          format: int64
+        custo:
+          type: number
+        modelo:
+          type: string
+    DossierDossierSynthesisRecebeResponseResponse:
+      type: object
+      properties:
+        jobId:
+          type: string
+        productKey:
+          type: string
+        stageCode:
+          type: string
+        status:
+          type: string
+        nextStageCode:
+          type: string
 
     DossierIntakeRecebeRequestRequest:
       type: object

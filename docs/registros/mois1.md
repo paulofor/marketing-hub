@@ -1862,3 +1862,9 @@ Arquivos principais:
 - Implementados endpoints `recebeRequest` no backend para as etapas do pipeline `moissaleslibraryworker.dossieproduto.v1`, com identificador da página/produto na URL.
 - Cada chamada coloca a página/produto em espera do módulo, atualiza a data operacional em UTC e registra a auditoria em `pipeline_dossieproduto` com `id_externo`, `request`, etapa, `jobId`, plataforma, prompt, schema e versão `v1`.
 - Padronizados os nomes físicos das colunas operacionais da página/produto para `status_pipeline_dossieproduto` e `data_pipeline_dossieproduto` via changelog incremental.
+
+## 2026-06-27 — JobId UUID no dossiê de produto MOIS v1
+
+- Alterado o backend do fluxo `moissaleslibraryworker.dossieproduto.v1` para criar `jobId` por UUID no `/start` de cada etapa.
+- Ajustado o `/pending` para devolver cada objeto pendente acompanhado do `jobId` ativo da etapa.
+- Ajustado o `recebeRequest` para receber o `jobId` na URL junto com o identificador do objeto, mantendo a auditoria vinculada ao mesmo job iniciado.

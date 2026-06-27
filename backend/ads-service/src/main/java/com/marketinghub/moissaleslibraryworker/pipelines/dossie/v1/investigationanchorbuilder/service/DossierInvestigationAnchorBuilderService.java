@@ -8,12 +8,9 @@ import com.marketinghub.moissaleslibraryworker.pipelines.dossie.v1.investigation
 import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageRepository;
 import com.marketinghub.repository.jpa.mois.dossieproduto.PipelineDossieProdutoRepository;
 import com.marketinghub.repository.jpa.mois.dossieproduto.entity.PipelineDossieProduto;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
-import java.util.HexFormat;
 import java.util.List;
+import java.util.UUID;
 import java.util.Map;
 import org.springframework.stereotype.Service;
 
@@ -38,23 +35,32 @@ public class DossierInvestigationAnchorBuilderService {
     private static final String STATUS_COMPLETED = "CONCLUIDO";
     private static final String STATUS_FAILED = "FALHA";
 
-    /** Marca a página/produto como iniciado no dossiê e posiciona a etapa atual. */
+    /** Marca a página/produto como iniciado no dossiê, cria o jobId UUID e posiciona a etapa atual. */
     public void start(String productKey) {
         long pageId = Long.parseLong(productKey);
+        Instant now = Instant.now();
+        String jobId = UUID.randomUUID().toString();
         var page = salesPageRepository.findById(pageId)
                 .orElseThrow(() -> new IllegalArgumentException("Página/produto MOIS não encontrada: " + productKey));
         page.setDossieProdutoStatus(STATUS_STARTED);
         page.setDossieProdutoCurrentStage(STAGE_CODE);
-        page.setDossieProdutoUpdatedAt(Instant.now());
+        page.setDossieProdutoUpdatedAt(now);
         salesPageRepository.save(page);
+
+        PipelineDossieProduto pipeline = new PipelineDossieProduto();
+        pipeline.setIdExterno(productKey);
+        pipeline.setCodigoEtapa(STAGE_CODE);
+        pipeline.setDataHora(now);
+        pipeline.setJobId(jobId);
+        pipeline.setVersaoPipeline("v1");
+        pipelineDossieProdutoRepository.save(pipeline);
     }
 
 
     /** Recebe o request operacional da etapa, coloca a página em espera do módulo e audita a entrada do pipeline. */
-    public DossierInvestigationAnchorBuilderRecebeRequestResponse recebeRequest(String productKey, DossierInvestigationAnchorBuilderRecebeRequestRequest request) {
+    public DossierInvestigationAnchorBuilderRecebeRequestResponse recebeRequest(String productKey, String jobId, DossierInvestigationAnchorBuilderRecebeRequestRequest request) {
         long pageId = Long.parseLong(productKey);
         Instant now = Instant.now();
-        String jobId = createJobId(productKey, now);
         var page = salesPageRepository.findById(pageId)
                 .orElseThrow(() -> new IllegalArgumentException("Página/produto MOIS não encontrada: " + productKey));
         page.setDossieProdutoStatus(STATUS_WAITING);
@@ -77,35 +83,37 @@ public class DossierInvestigationAnchorBuilderService {
         return new DossierInvestigationAnchorBuilderRecebeRequestResponse(jobId, productKey, STAGE_CODE, STATUS_WAITING);
     }
 
-    /** Cria um hash operacional para rastrear a entrada recebida nesta etapa. */
-    private String createJobId(String productKey, Instant now) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest((STAGE_CODE + "|" + productKey + "|" + now).getBytes(StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(hash);
-        } catch (NoSuchAlgorithmException ex) {
-            throw new IllegalStateException("Não foi possível criar jobId do dossiê MOIS", ex);
-        }
-    }
-
     /** Entrega até dez trabalhos iniciados da etapa atual ao executor, ordenados pela data operacional mais antiga. */
     public DossierInvestigationAnchorBuilderPendingResponse pending(DossierInvestigationAnchorBuilderPendingRequest request) {
         List<DossierInvestigationAnchorBuilderPendingJob> jobs = salesPageRepository
                 .findTop10ByDossieProdutoStatusAndDossieProdutoCurrentStageOrderByDossieProdutoUpdatedAtAscIdAsc(
                         STATUS_STARTED, STAGE_CODE)
                 .stream()
-                .map(page -> new DossierInvestigationAnchorBuilderPendingJob(
+                .map(page -> {
+                    String jobId = resolveJobId(String.valueOf(page.getId()));
+                    return new DossierInvestigationAnchorBuilderPendingJob(
+                        jobId,
                         page.getId(),
                         page.getId(),
                         "mois-sales-page-" + page.getId(),
                         STAGE_CODE,
                         Map.of(
+                                "jobId", jobId,
                                 "productKey", String.valueOf(page.getId()),
                                 "pageId", page.getId(),
                                 "stageCode", STAGE_CODE,
                                 "status", STATUS_STARTED,
-                                "nextStageCode", NEXT_STAGE)))
+                                "nextStageCode", NEXT_STAGE));
+                })
                 .toList();
         return new DossierInvestigationAnchorBuilderPendingResponse(!jobs.isEmpty(), jobs);
+    }
+    /** Recupera o jobId UUID criado no start para compor o contrato pending da etapa. */
+    private String resolveJobId(String productKey) {
+        return pipelineDossieProdutoRepository
+                .findTopByIdExternoAndCodigoEtapaOrderByDataHoraDescIdDesc(productKey, STAGE_CODE)
+                .map(PipelineDossieProduto::getJobId)
+                .orElseThrow(() -> new IllegalStateException(
+                        "JobId do dossiê MOIS não encontrado para produto " + productKey + " na etapa " + STAGE_CODE));
     }
 }

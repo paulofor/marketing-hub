@@ -19,7 +19,7 @@ databaseChangeLog:
             stripComments: true
             sql: |
               ALTER TABLE mois_sales_page
-                ADD COLUMN status_pipeline_geracaoanuncios VARCHAR(40) NULL AFTER dossie_produto_updated_at,
+                ADD COLUMN status_pipeline_geracaoanuncios VARCHAR(40) NULL AFTER data_pipeline_dossieproduto,
                 ADD COLUMN data_pipeline_geracaoanuncios DATETIME(6) NULL AFTER status_pipeline_geracaoanuncios;
               CREATE INDEX idx_mois_sales_page_geracaoanuncios_pipeline
                 ON mois_sales_page (status_pipeline_geracaoanuncios, data_pipeline_geracaoanuncios);

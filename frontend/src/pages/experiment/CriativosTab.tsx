@@ -258,8 +258,9 @@ export default function CriativosTab({
     creativeGenerationStatus === "REQUESTED" ||
     creativeGenerationStatus === "PROCESSING";
   const pipelineHasRecoverableFailure =
-    creativeGenerationStatus === "FAILED" ||
-    creativeGenerationStatus === "TIMEOUT";
+    !pipelineRequest.isPending &&
+    (creativeGenerationStatus === "FAILED" ||
+      creativeGenerationStatus === "TIMEOUT");
   const pipelineStatusLabel =
     creativeGenerationStatus === "REQUESTED"
       ? "Worker AI aguardando a fila de imagens"

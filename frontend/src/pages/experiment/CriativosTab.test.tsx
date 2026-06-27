@@ -315,6 +315,63 @@ describe("CriativosTab", () => {
     });
   });
 
+  it("hides the previous generation failure while a retry request is pending", async () => {
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url.endsWith("/experiments/1/creatives")) {
+        return Promise.resolve({ data: [] });
+      }
+      if (url.endsWith("/experiments/1")) {
+        return Promise.resolve({
+          data: {
+            creativesToGenerate: 0,
+            creativeGenerationStatus: "FAILED",
+            creativeGenerationError: "Falha anterior",
+            adCopy: JSON.stringify({
+              adCopy: { primaryTextVariants: [{ primaryText: "Texto" }] },
+            }),
+            adImageBriefing: JSON.stringify({
+              adImageBriefing: { briefings: [{ visualBriefing: "Imagem" }] },
+            }),
+          },
+        });
+      }
+      return Promise.resolve({ data: [] });
+    });
+    let resolveRetry: (value: unknown) => void = () => {};
+    (axios.post as any).mockImplementation(
+      () => new Promise((resolve) => {
+        resolveRetry = resolve;
+      }),
+    );
+
+    const client = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <CriativosTab experimentId="1" />
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByText("Falha anterior")).toBeInTheDocument();
+
+    await userEvent.click(
+      await screen.findByRole("button", {
+        name: "Gerar anúncios do pipeline",
+      }),
+    );
+
+    expect(screen.queryByText("Falha anterior")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Geração falhou; revise a causa e tente novamente"),
+    ).not.toBeInTheDocument();
+
+    resolveRetry({ data: { idJob: "job-1" } });
+  });
+
   it("clears approval loading state when the backend rejects the update", async () => {
     (axios.get as any).mockImplementation((url: string) => {
       if (url.endsWith("/experiments/1/creatives")) {

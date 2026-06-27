@@ -14,6 +14,38 @@ tags:
   - name: moissaleslibraryworker.dossieproduto.v1
     description: Pipeline v1 de dossiê de produto da biblioteca de páginas de venda MOIS
 paths:
+  /api/internal/moissaleslibraryworker/dossieproduto/v1/{etapa}/stage-executions/{idExterno}/situacao:
+    post:
+      tags:
+        - moissaleslibraryworker.dossieproduto.v1
+      summary: Consulta registros existentes da auditoria por etapa, identificador externo e status
+      operationId: situacaoMoisDossieProdutoV1StageExecutions
+      parameters:
+        - name: etapa
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Código slug da etapa do pipeline.
+        - name: idExterno
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Chave operacional da página/produto MOIS.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DossierSituacaoRequest"
+      responses:
+        '200':
+          description: Registros encontrados com OR entre os status informados, ordenados por dataHora descendente.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DossierSituacaoResponse"
   /api/internal/moissaleslibraryworker/dossieproduto/v1/intake/stage-executions/{idExterno}/start:
     post:
       tags:
@@ -776,6 +808,59 @@ paths:
                 $ref: "#/components/schemas/DossierDossierSynthesisRecebeResponseResponse"
 components:
   schemas:
+    DossierSituacaoRequest:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: array
+          items:
+            type: string
+          description: Lista de status usada como filtro OR.
+    DossierSituacaoResponse:
+      type: object
+      properties:
+        idExterno: { type: string }
+        codigoEtapa: { type: string }
+        status:
+          type: array
+          items:
+            type: string
+        registros:
+          type: array
+          items:
+            $ref: "#/components/schemas/DossierSituacaoItem"
+    DossierSituacaoItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        idExterno: { type: string }
+        codigoEtapa: { type: string }
+        status: { type: string }
+        dataHora:
+          type: string
+          format: date-time
+        jobId: { type: string }
+        request: { type: string }
+        response: { type: string }
+        quantidadeTokenEntrada:
+          type: integer
+          format: int64
+        quantidadeTokenSaida:
+          type: integer
+          format: int64
+        modelo: { type: string }
+        custo:
+          type: number
+        descricaoErro: { type: string }
+        jobIdExterno: { type: string }
+        plataforma: { type: string }
+        prompt: { type: string }
+        schema: { type: string }
+        versaoPipeline: { type: string }
     DossierIntakePendingRequest:
       type: object
       required:

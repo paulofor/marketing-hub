@@ -52,6 +52,7 @@ public class DossierSourceProductMatchService {
         PipelineDossieProduto pipeline = new PipelineDossieProduto();
         pipeline.setIdExterno(productKey);
         pipeline.setCodigoEtapa(STAGE_CODE);
+        pipeline.setStatus(STATUS_STARTED);
         pipeline.setDataHora(now);
         pipeline.setJobId(jobId);
         pipeline.setVersaoPipeline("v1");
@@ -74,6 +75,7 @@ public class DossierSourceProductMatchService {
         pipeline.setIdExterno(productKey);
         pipeline.setRequest(request.request());
         pipeline.setCodigoEtapa(STAGE_CODE);
+        pipeline.setStatus(STATUS_WAITING);
         pipeline.setDataHora(now);
         pipeline.setJobId(jobId);
         pipeline.setPlataforma(request.plataforma());
@@ -108,6 +110,7 @@ public class DossierSourceProductMatchService {
         pipeline.setIdExterno(productKey);
         pipeline.setResponse(request.response());
         pipeline.setCodigoEtapa(STAGE_CODE);
+        pipeline.setStatus(status);
         pipeline.setDataHora(now);
         pipeline.setJobId(jobId);
         pipeline.setQuantidadeTokenEntrada(request.quantidadeTokenEntrada());
@@ -171,6 +174,7 @@ public class DossierSourceProductMatchService {
         PipelineDossieProduto pipeline = new PipelineDossieProduto();
         pipeline.setIdExterno(productKey);
         pipeline.setCodigoEtapa(STAGE_CODE);
+        pipeline.setStatus(STATUS_STARTED);
         pipeline.setDataHora(Instant.now());
         pipeline.setJobId(jobId);
         pipeline.setVersaoPipeline("v1");

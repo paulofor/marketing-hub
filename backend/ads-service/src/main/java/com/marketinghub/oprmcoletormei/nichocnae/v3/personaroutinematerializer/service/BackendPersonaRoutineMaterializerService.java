@@ -58,8 +58,8 @@ public class BackendPersonaRoutineMaterializerService extends OprmNichoCnaeV3Sta
     }
 
     /** Recebe o request bruto da etapa e registra auditoria para o pipeline NichoCNAE v3. */
-    public PersonaRoutineMaterializerCreateResponse recebeRequest(String cnaeCode, OprmNichoCnaeV3RecebeRequestRequest request) {
-        return new PersonaRoutineMaterializerCreateResponse(null, doRecebeRequest(cnaeCode, request).getJobId(), cnaeCode, STAGE_CODE, "AGUARDANDO_MODULO");
+    public PersonaRoutineMaterializerCreateResponse recebeRequest(String cnaeCode, String jobId, OprmNichoCnaeV3RecebeRequestRequest request) {
+        return new PersonaRoutineMaterializerCreateResponse(null, doRecebeRequest(cnaeCode, jobId, request).getJobId(), cnaeCode, STAGE_CODE, "AGUARDANDO_MODULO");
     }
 
     /** Lista pendências da etapa persona-routine-materializer para o executor OPRM. */

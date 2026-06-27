@@ -38,8 +38,8 @@ public class BackendSourceSearcherV3Service extends OprmNichoCnaeV3StageServiceS
     }
 
     /** Recebe o request bruto da etapa e registra auditoria para o pipeline NichoCNAE v3. */
-    public SourceSearcherCreateResponse recebeRequest(String cnaeCode, OprmNichoCnaeV3RecebeRequestRequest request) {
-        return new SourceSearcherCreateResponse(null, doRecebeRequest(cnaeCode, request).getJobId(), cnaeCode, STAGE_CODE, "AGUARDANDO_MODULO");
+    public SourceSearcherCreateResponse recebeRequest(String cnaeCode, String jobId, OprmNichoCnaeV3RecebeRequestRequest request) {
+        return new SourceSearcherCreateResponse(null, doRecebeRequest(cnaeCode, jobId, request).getJobId(), cnaeCode, STAGE_CODE, "AGUARDANDO_MODULO");
     }
 
     /** Lista pendências da etapa source-searcher para o executor OPRM. */

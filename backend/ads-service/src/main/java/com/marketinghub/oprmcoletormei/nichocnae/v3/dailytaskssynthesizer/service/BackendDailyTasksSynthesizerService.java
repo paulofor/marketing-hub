@@ -38,8 +38,8 @@ public class BackendDailyTasksSynthesizerService extends OprmNichoCnaeV3StageSer
     }
 
     /** Recebe o request bruto da etapa e registra auditoria para o pipeline NichoCNAE v3. */
-    public DailyTasksSynthesizerCreateResponse recebeRequest(String cnaeCode, OprmNichoCnaeV3RecebeRequestRequest request) {
-        return new DailyTasksSynthesizerCreateResponse(null, doRecebeRequest(cnaeCode, request).getJobId(), cnaeCode, STAGE_CODE, "AGUARDANDO_MODULO");
+    public DailyTasksSynthesizerCreateResponse recebeRequest(String cnaeCode, String jobId, OprmNichoCnaeV3RecebeRequestRequest request) {
+        return new DailyTasksSynthesizerCreateResponse(null, doRecebeRequest(cnaeCode, jobId, request).getJobId(), cnaeCode, STAGE_CODE, "AGUARDANDO_MODULO");
     }
 
     /** Lista pendências da etapa daily-tasks-synthesizer para o executor OPRM. */

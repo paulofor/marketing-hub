@@ -44,10 +44,10 @@ public class BackendPersonaCandidateGeneratorController {
         return service.create(null, cnaeCode, "{\"cnaeCode\":\"" + cnaeCode + "\"}", 1, 1);
     }
 
-    /** Recebe o request bruto da etapa identificado pelo CNAE. */
-    @PostMapping("/cnaes/{cnaeCode}/recebeRequest")
-    public PersonaCandidateGeneratorCreateResponse recebeRequest(@PathVariable String cnaeCode, @RequestBody OprmNichoCnaeV3RecebeRequestRequest request) {
-        return service.recebeRequest(cnaeCode, request);
+    /** Recebe o request bruto da etapa identificado pelo CNAE e jobId. */
+    @PostMapping("/cnaes/{cnaeCode}/jobs/{jobId}/recebeRequest")
+    public PersonaCandidateGeneratorCreateResponse recebeRequest(@PathVariable String cnaeCode, @PathVariable String jobId, @RequestBody OprmNichoCnaeV3RecebeRequestRequest request) {
+        return service.recebeRequest(cnaeCode, jobId, request);
     }
 
     /** Entrega pendências da etapa persona-candidate-generator ao executor OPRM. */

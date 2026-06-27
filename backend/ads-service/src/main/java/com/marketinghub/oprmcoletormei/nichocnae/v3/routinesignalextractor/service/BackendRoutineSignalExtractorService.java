@@ -38,8 +38,8 @@ public class BackendRoutineSignalExtractorService extends OprmNichoCnaeV3StageSe
     }
 
     /** Recebe o request bruto da etapa e registra auditoria para o pipeline NichoCNAE v3. */
-    public RoutineSignalExtractorCreateResponse recebeRequest(String cnaeCode, OprmNichoCnaeV3RecebeRequestRequest request) {
-        return new RoutineSignalExtractorCreateResponse(null, doRecebeRequest(cnaeCode, request).getJobId(), cnaeCode, STAGE_CODE, "AGUARDANDO_MODULO");
+    public RoutineSignalExtractorCreateResponse recebeRequest(String cnaeCode, String jobId, OprmNichoCnaeV3RecebeRequestRequest request) {
+        return new RoutineSignalExtractorCreateResponse(null, doRecebeRequest(cnaeCode, jobId, request).getJobId(), cnaeCode, STAGE_CODE, "AGUARDANDO_MODULO");
     }
 
     /** Lista pendências da etapa routine-signal-extractor para o executor OPRM. */

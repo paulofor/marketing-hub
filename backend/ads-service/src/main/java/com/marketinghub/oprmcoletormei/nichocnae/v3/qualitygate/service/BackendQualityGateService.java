@@ -38,8 +38,8 @@ public class BackendQualityGateService extends OprmNichoCnaeV3StageServiceSuppor
     }
 
     /** Recebe o request bruto da etapa e registra auditoria para o pipeline NichoCNAE v3. */
-    public QualityGateCreateResponse recebeRequest(String cnaeCode, OprmNichoCnaeV3RecebeRequestRequest request) {
-        return new QualityGateCreateResponse(null, doRecebeRequest(cnaeCode, request).getJobId(), cnaeCode, STAGE_CODE, "AGUARDANDO_MODULO");
+    public QualityGateCreateResponse recebeRequest(String cnaeCode, String jobId, OprmNichoCnaeV3RecebeRequestRequest request) {
+        return new QualityGateCreateResponse(null, doRecebeRequest(cnaeCode, jobId, request).getJobId(), cnaeCode, STAGE_CODE, "AGUARDANDO_MODULO");
     }
 
     /** Lista pendências da etapa quality-gate para o executor OPRM. */

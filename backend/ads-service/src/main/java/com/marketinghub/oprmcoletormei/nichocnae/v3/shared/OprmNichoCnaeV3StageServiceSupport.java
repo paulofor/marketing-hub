@@ -7,15 +7,14 @@ import com.marketinghub.oprm.nichocnae.PipelineNichoCnae;
 import com.marketinghub.repository.jpa.oprm.market.OprmCnpjCnaeDimRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.v3.OprmNichoCnaeV3StageExecutionRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.PipelineNichoCnaeRepository;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
+import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
 /** Base compartilhada para services canônicos de etapas NichoCNAE v3 sem assumir execução operacional. */
@@ -66,7 +65,10 @@ public abstract class OprmNichoCnaeV3StageServiceSupport {
 
 
     /** Recebe o request bruto da etapa, atualiza o CNAE para aguardar o módulo e audita o payload no pipeline NichoCNAE. */
-    protected PipelineNichoCnae doRecebeRequest(String cnaeCode, OprmNichoCnaeV3RecebeRequestRequest request) {
+    protected PipelineNichoCnae doRecebeRequest(String cnaeCode, String jobId, OprmNichoCnaeV3RecebeRequestRequest request) {
+        if (!StringUtils.hasText(jobId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "jobId é obrigatório no recebimento do request.");
+        }
         OprmCnpjCnaeDim cnae = cnaeRepository.findById(cnaeCode)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "CNAE não encontrado."));
         Instant now = Instant.now();
@@ -81,28 +83,12 @@ public abstract class OprmNichoCnaeV3StageServiceSupport {
         pipeline.setRequest(request == null ? null : request.request());
         pipeline.setCodigoEtapa(stageCode);
         pipeline.setDataHora(now);
-        pipeline.setJobId(generateJobId(cnaeCode, now));
+        pipeline.setJobId(jobId);
         pipeline.setPlataforma(request == null ? null : request.plataforma());
         pipeline.setPrompt(request == null ? null : request.prompt());
         pipeline.setSchema(request == null ? null : request.schema());
         pipeline.setVersaoPipeline(PIPELINE_VERSION);
         return pipelineNichoCnaeRepository.save(pipeline);
-    }
-
-    /** Gera hash único para rastrear o request recebido na etapa. */
-    private String generateJobId(String cnaeCode, Instant now) {
-        String source = PIPELINE_VERSION + ":" + stageCode + ":" + cnaeCode + ":" + now.toString();
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(source.getBytes(StandardCharsets.UTF_8));
-            StringBuilder builder = new StringBuilder();
-            for (byte b : hash) {
-                builder.append(String.format("%02x", b));
-            }
-            return builder.toString();
-        } catch (NoSuchAlgorithmException ex) {
-            throw new IllegalStateException("Não foi possível gerar jobId do request NichoCNAE v3.", ex);
-        }
     }
 
     /** Cria uma execução pendente para a etapa canônica. */
@@ -201,6 +187,6 @@ public abstract class OprmNichoCnaeV3StageServiceSupport {
 
     /** Monta jobId simples quando a UI iniciar o fluxo por CNAE sem identificador prévio. */
     private String defaultJobId(String cnaeCode) {
-        return "nichocnae-v3-" + cnaeCode + "-" + Instant.now().toEpochMilli();
+        return UUID.randomUUID().toString();
     }
 }

@@ -28,7 +28,7 @@ paths:
                 $ref: '#/components/schemas/StageExecutionResponse'
   /api/internal/oprm/nichocnae/v3/{stage}/stage-executions/start:
     post:
-      summary: Inicia uma execução pendente da etapa NichoCNAE v3 para o CNAE informado.
+      summary: Inicia uma execução pendente da etapa NichoCNAE v3 para o CNAE informado com jobId em UUID.
       parameters:
         - name: stage
           in: path
@@ -68,9 +68,41 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StageExecutionResponse'
+  /api/internal/oprm/nichocnae/v3/{stage}/stage-executions/cnaes/{cnaeCode}/jobs/{jobId}/recebeRequest:
+    post:
+      summary: Registra o request bruto enviado ao executor para um objeto CNAE e jobId específicos.
+      parameters:
+        - name: stage
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: cnaeCode
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecebeRequestRequest'
+      responses:
+        '200':
+          description: Request auditado com o jobId informado na URL.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StageExecutionResponse'
   /api/internal/oprm/nichocnae/v3/{stage}/stage-executions/pending:
     get:
-      summary: Lista pendências da etapa para consumo do executor OPRM.
+      summary: Lista pendências da etapa para consumo do executor OPRM com jobId junto do objeto CNAE.
       parameters:
         - name: stage
           in: path
@@ -176,6 +208,17 @@ components:
           type: integer
         knowledgeVersion:
           type: integer
+    RecebeRequestRequest:
+      type: object
+      properties:
+        request:
+          type: string
+        plataforma:
+          type: string
+        prompt:
+          type: string
+        schema:
+          type: string
     CompletionRequest:
       type: object
       properties:

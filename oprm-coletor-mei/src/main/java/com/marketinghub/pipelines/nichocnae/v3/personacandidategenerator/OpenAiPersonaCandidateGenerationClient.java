@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
@@ -32,6 +33,7 @@ public class OpenAiPersonaCandidateGenerationClient implements PersonaCandidateG
     private final PersonaCandidateOpenAiProperties properties;
     private final PersonaCandidatePromptBuilder promptBuilder;
     private final PersonaCandidateSchemaLoader schemaLoader;
+    private final String backendBaseUrl;
 
     /** Inicializa o cliente OpenAI com prompt, schema e propriedades da etapa. */
     public OpenAiPersonaCandidateGenerationClient(
@@ -39,12 +41,14 @@ public class OpenAiPersonaCandidateGenerationClient implements PersonaCandidateG
             ObjectMapper objectMapper,
             PersonaCandidateOpenAiProperties properties,
             PersonaCandidatePromptBuilder promptBuilder,
-            PersonaCandidateSchemaLoader schemaLoader) {
+            PersonaCandidateSchemaLoader schemaLoader,
+            @Value("${backend.base-url:http://191.252.181.168}") String backendBaseUrl) {
         this.restClient = restClient;
         this.objectMapper = objectMapper;
         this.properties = properties;
         this.promptBuilder = promptBuilder;
         this.schemaLoader = schemaLoader;
+        this.backendBaseUrl = backendBaseUrl == null || backendBaseUrl.isBlank() ? "http://191.252.181.168" : backendBaseUrl;
     }
 
     /** Gera personas candidatas por OpenAI e retorna o payload funcional validado pelo schema. */
@@ -66,9 +70,11 @@ public class OpenAiPersonaCandidateGenerationClient implements PersonaCandidateG
         String url = properties.baseUrl() + RESPONSES_PATH;
         Map<String, Object> requestBody = buildRequestBody(promptBuilder.build(request), properties.model());
         logOpenAiRequest(url, request, requestBody);
+        sendBackendRequestAudit(request, requestBody);
         try {
             Map<String, Object> raw = responseBody(url, requestBody, apiKey);
             logOpenAiResponse(url, request, raw);
+            sendBackendResponseAudit(request, raw, null);
             if (raw == null) {
                 log.error(
                         "OpenAI retornou corpo vazio para persona-candidate-generator (endpoint={}, jobId={}, stageExecutionId={}, cnaeCode={}, model={}, serviceTier={})",
@@ -84,6 +90,7 @@ public class OpenAiPersonaCandidateGenerationClient implements PersonaCandidateG
             return objectMapper.readValue(modelResponse, MAP_TYPE);
         } catch (RestClientResponseException ex) {
             logOpenAiHttpError(url, request, ex);
+            sendBackendResponseAudit(request, responseErrorPayload(ex), ex.getClass().getSimpleName() + ": " + ex.getMessage());
             throw new IllegalStateException("Falha na OpenAI ao gerar personas candidatas do NichoCNAE v3.", ex);
         } catch (RestClientException | JsonProcessingException | IllegalStateException | IllegalArgumentException ex) {
             log.error(
@@ -201,6 +208,71 @@ public class OpenAiPersonaCandidateGenerationClient implements PersonaCandidateG
                 request.stageExecutionId(),
                 request.cnaeCode(),
                 toJsonForLog(raw));
+    }
+
+
+    /** Envia ao backend o request bruto encaminhado à OpenAI pelo endpoint recebeRequest. */
+    private void sendBackendRequestAudit(PersonaCandidateGenerationRequest request, Map<String, Object> requestBody) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("request", toJsonForLog(requestBody));
+        payload.put("plataforma", "OPENAI_RESPONSES_API");
+        payload.put("prompt", String.valueOf(requestBody.getOrDefault("input", "")));
+        payload.put("schema", toJsonForLog(schemaLoader.load()));
+        String endpoint = backendStageExecutionUrl(request, "recebeRequest");
+        log.info(
+                "Enviando request OpenAI persona-candidate-generator ao backend (endpoint={}, jobId={}, stageExecutionId={}, cnaeCode={})",
+                endpoint,
+                request.jobId(),
+                request.stageExecutionId(),
+                request.cnaeCode());
+        restClient.post().uri(URI.create(endpoint)).body(payload).retrieve().toBodilessEntity();
+    }
+
+    /** Envia ao backend a resposta bruta da OpenAI ou o erro capturado pelo endpoint recebeResponse. */
+    private void sendBackendResponseAudit(PersonaCandidateGenerationRequest request, Map<String, Object> responseBody, String errorMessage) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("response", toJsonForLog(responseBody));
+        payload.put("descricaoErro", errorMessage);
+        payload.put("quantidadeTokenEntrada", tokenUsage(responseBody, "input_tokens"));
+        payload.put("quantidadeTokenSaida", tokenUsage(responseBody, "output_tokens"));
+        payload.put("custo", null);
+        payload.put("modelo", properties.model());
+        String endpoint = backendStageExecutionUrl(request, "recebeResponse");
+        log.info(
+                "Enviando response OpenAI persona-candidate-generator ao backend (endpoint={}, jobId={}, stageExecutionId={}, cnaeCode={}, hasError={})",
+                endpoint,
+                request.jobId(),
+                request.stageExecutionId(),
+                request.cnaeCode(),
+                errorMessage != null && !errorMessage.isBlank());
+        restClient.post().uri(URI.create(endpoint)).body(payload).retrieve().toBodilessEntity();
+    }
+
+    /** Monta payload estruturado para auditoria de erro HTTP da OpenAI. */
+    private Map<String, Object> responseErrorPayload(RestClientResponseException ex) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("statusCode", ex.getStatusCode().value());
+        payload.put("statusText", ex.getStatusText());
+        payload.put("responseBody", ex.getResponseBodyAsString());
+        return payload;
+    }
+
+    /** Monta a URL canônica do callback backend para auditoria request/response. */
+    private String backendStageExecutionUrl(PersonaCandidateGenerationRequest request, String callback) {
+        String base = backendBaseUrl.endsWith("/") ? backendBaseUrl.substring(0, backendBaseUrl.length() - 1) : backendBaseUrl;
+        return base + "/api/internal/oprmcoletormei/nichocnae/v3/persona-candidate-generator/stage-executions/"
+                + request.cnaeCode() + "/" + request.jobId() + "/" + callback;
+    }
+
+    /** Extrai tokens retornados pela OpenAI quando o campo usage estiver disponível. */
+    private Long tokenUsage(Map<String, Object> responseBody, String field) {
+        if (responseBody != null && responseBody.get("usage") instanceof Map<?, ?> usage) {
+            Object value = usage.get(field);
+            if (value instanceof Number number) {
+                return number.longValue();
+            }
+        }
+        return null;
     }
 
     /** Serializa payloads para log preservando diagnóstico mesmo quando houver valor não serializável. */

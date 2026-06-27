@@ -1,7 +1,13 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQueries,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import axios from "axios";
 import type {
   MoisCollectedReferenceUrlSummary,
+  MoisDossierProductSituacaoResponse,
   MoisMarketWarmupOpportunityRankingResponse,
   MoisMarketWarmupReprocessStaleResponse,
   MoisMarketWarmupSearchAttemptListResponse,
@@ -25,6 +31,15 @@ import type {
 function isHttpNotFound(error: unknown) {
   return axios.isAxiosError(error) && error.response?.status === 404;
 }
+
+const dossierSituacaoStatuses = [
+  "INICIADO",
+  "AGUARDANDO_RETORNO_MODULO",
+  "AGUARDANDO_MODULO",
+  "AGUARDANDO",
+  "CONCLUIDO",
+  "FALHA",
+];
 
 export function useMoisSalesLibraryEntries(
   workspaceId: string,
@@ -341,6 +356,34 @@ export function useMoisDossierProductPipeline(pageId?: number) {
       );
       return data;
     },
+  });
+}
+
+export function useMoisDossierProductSituacoes(
+  pageId: number | undefined,
+  stageCodes: string[],
+) {
+  return useQueries({
+    queries: stageCodes.map((stageCode) => ({
+      queryKey: [
+        "mois",
+        "sales-library",
+        "dossier-product-situacao",
+        pageId,
+        stageCode,
+      ],
+      enabled: Boolean(pageId && stageCode),
+      refetchInterval: 5000,
+      queryFn: async () => {
+        const { data } = await axios.post<MoisDossierProductSituacaoResponse>(
+          `/api/internal/moissaleslibraryworker/dossieproduto/v1/${encodeURIComponent(
+            stageCode,
+          )}/stage-executions/${encodeURIComponent(String(pageId))}/situacao`,
+          { status: dossierSituacaoStatuses },
+        );
+        return data;
+      },
+    })),
   });
 }
 

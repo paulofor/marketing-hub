@@ -18,4 +18,8 @@ public interface PipelineGeracaoAnunciosRepository extends JpaRepository<Pipelin
 
     /** Busca a auditoria mais recente de uma etapa vinculada a um identificador externo. */
     Optional<PipelineGeracaoAnuncios> findTopByIdExternoAndCodigoEtapaOrderByDataHoraDesc(String idExterno, String codigoEtapa);
+
+    /** Lista auditorias por etapa, identificador externo e conjunto de status em ordem mais recente. */
+    List<PipelineGeracaoAnuncios> findByCodigoEtapaAndIdExternoAndStatusInOrderByDataHoraDesc(
+            String codigoEtapa, String idExterno, List<String> status);
 }

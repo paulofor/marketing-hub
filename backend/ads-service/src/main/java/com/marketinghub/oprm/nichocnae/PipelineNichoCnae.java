@@ -29,6 +29,9 @@ public class PipelineNichoCnae {
     @Column(name = "data_hora")
     private Instant dataHora;
 
+    @Column(name = "status", length = 32)
+    private String status;
+
     @Column(name = "job_id", length = 128)
     private String jobId;
 

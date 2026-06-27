@@ -31,6 +31,9 @@ public class PipelineGeracaoAnuncios {
     @Column(name = "codigo_etapa", length = 96)
     private String codigoEtapa;
 
+    @Column(name = "status", length = 40)
+    private String status;
+
     @Column(name = "data_hora")
     private Instant dataHora;
 

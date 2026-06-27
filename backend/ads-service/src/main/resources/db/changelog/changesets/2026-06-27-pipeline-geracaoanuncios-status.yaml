@@ -1,0 +1,42 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-27-01-add-status-pipeline-geracaoanuncios
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: pipeline_geracaoanuncios
+        - not:
+            columnExists:
+              tableName: pipeline_geracaoanuncios
+              columnName: status
+      changes:
+        - addColumn:
+            tableName: pipeline_geracaoanuncios
+            columns:
+              - column:
+                  name: status
+                  type: VARCHAR(40)
+                  afterColumn: codigo_etapa
+        - createIndex:
+            tableName: pipeline_geracaoanuncios
+            indexName: idx_pipeline_geracaoanuncios_situacao
+            columns:
+              - column:
+                  name: codigo_etapa
+              - column:
+                  name: id_externo
+              - column:
+                  name: status
+              - column:
+                  name: data_hora
+      rollback:
+        - dropIndex:
+            tableName: pipeline_geracaoanuncios
+            indexName: idx_pipeline_geracaoanuncios_situacao
+        - dropColumn:
+            tableName: pipeline_geracaoanuncios
+            columnName: status

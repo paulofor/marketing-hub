@@ -1,3 +1,8 @@
+## 2026-06-27 — MOIS Biblioteca de Páginas: atualização da tela após reprocessar dossiê
+- Causa-raiz identificada na página `/mois/sales-pages-library/286`: o backend aceitou o reprocessamento e o worker concluiu o dossiê, mas a tela de detalhe não invalidava a query da própria página ao clicar em **Reprocessar dossiê** e também não fazia polling do estado do dossiê.
+- Correção aplicada no frontend: o comando agora invalida a query do detalhe da página e as consultas de detalhe/pipeline do dossiê são atualizadas periodicamente, reduzindo a chance de a tela mostrar status antigo enquanto o backend já avançou.
+- Verificação operacional: via MCP, a página 286 ficou com `status_pipeline_dossieproduto=CONCLUIDO` e etapa `dossier-synthesis`; logs do `mois-sales-library-worker` confirmaram execução das etapas após a solicitação.
+
 ## 2026-06-17 — Protocolo padrão backend na Biblioteca de Páginas de Vendas
 - aplicado o protocolo padrão backend no pacote `com.marketinghub.mois.bibliotecapaginavenda.worker.v1` com regras ArchUnit para controller único/canônico, fachada de service canônica, contratos imutáveis e persistência centralizada no pacote `com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1`.
 - objetivo: reduzir risco de dispersão arquitetural na Biblioteca de Páginas de Vendas e preservar a capacidade do MOIS de transformar páginas coletadas em inteligência comercial para vendas.

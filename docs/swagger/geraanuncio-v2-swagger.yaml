@@ -58,6 +58,25 @@ paths:
       responses:
         '202':
           description: Request aceito para auditoria.
+  /api/internal/aiworker/geracaoanuncios/v1/texto/stage-executions/{experimentKey}/jobs/{jobId}/recebeResponse:
+    post:
+      summary: Registra response final da etapa Texto
+      description: Recebe o callback final do AI Worker, atualiza status/data do experimento e grava auditoria em pipeline_geracaoanuncios. Retorna o código da próxima etapa quando a etapa termina sem erro.
+      parameters:
+        - name: experimentKey
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '202':
+          description: Response aceito para auditoria e avanço do pipeline.
   /api/internal/aiworker/geracaoanuncios/v1/texto/stage-executions/{stageExecutionId}/prompt:
     post:
       summary: Registra prompt enviado ao modelo na etapa Texto
@@ -136,6 +155,25 @@ paths:
       responses:
         '202':
           description: Request aceito para auditoria.
+  /api/internal/aiworker/geracaoanuncios/v1/imagem/stage-executions/{experimentKey}/jobs/{jobId}/recebeResponse:
+    post:
+      summary: Registra response final da etapa Imagem
+      description: Recebe o callback final do AI Worker, atualiza status/data do experimento e grava auditoria em pipeline_geracaoanuncios. Retorna nulo/corpo vazio quando a etapa final termina sem erro.
+      parameters:
+        - name: experimentKey
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '202':
+          description: Response aceito para auditoria e avanço do pipeline.
   /api/internal/aiworker/geracaoanuncios/v1/imagem/stage-executions/{stageExecutionId}/prompt:
     post:
       summary: Registra prompt enviado ao modelo na etapa Imagem

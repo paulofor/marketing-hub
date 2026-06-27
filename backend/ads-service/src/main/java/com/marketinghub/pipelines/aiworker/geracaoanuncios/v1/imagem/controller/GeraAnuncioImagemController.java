@@ -8,6 +8,8 @@ import com.marketinghub.pipelines.aiworker.geracaoanuncios.v1.imagem.service.rec
 import com.marketinghub.pipelines.aiworker.geracaoanuncios.v1.imagem.service.recebeRequest.GeraAnuncioImagemRecebeRequestRequest;
 import com.marketinghub.pipelines.aiworker.geracaoanuncios.v1.imagem.service.recebeResposta.GeraAnuncioImagemRespostaRequest;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -21,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/internal/aiworker/geracaoanuncios/v1/imagem/stage-executions")
 public class GeraAnuncioImagemController {
+    private static final Logger log = LoggerFactory.getLogger(GeraAnuncioImagemController.class);
     private final GeraAnuncioImagemService service;
 
     /** Inicializa o controller com o service canônico da etapa. */
@@ -58,6 +61,19 @@ public class GeraAnuncioImagemController {
             @PathVariable String experimentKey, @PathVariable String jobId, @RequestBody GeraAnuncioImagemRecebeRequestRequest request) {
         service.recebeRequest(experimentKey, jobId, request);
         return ResponseEntity.accepted().build();
+    }
+
+    /** Recebe o callback final do AI Worker com a resposta da etapa e retorna a próxima etapa, quando existir. */
+    @PostMapping("/{experimentKey}/jobs/{jobId}/recebeResponse")
+    public ResponseEntity<String> recebeResponse(
+            @PathVariable String experimentKey, @PathVariable String jobId, @RequestBody GeraAnuncioImagemRespostaRequest request) {
+        log.info(
+                "Recebendo response do pipeline geracaoanuncios; etapa=imagem; experimentKey={}; jobId={}; payload={}",
+                experimentKey,
+                jobId,
+                request);
+        String nextStageCode = service.recebeResponse(experimentKey, jobId, request);
+        return ResponseEntity.accepted().body(nextStageCode);
     }
 
     /** Recebe o prompt operacional enviado ao modelo pelo AI Worker. */

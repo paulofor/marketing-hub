@@ -64,14 +64,28 @@ public class GeraAnuncioTextoService {
 
     /** Inicia uma solicitação da etapa Texto usando o código/chave operacional do experimento. */
     public GeraAnuncioTextoExecutionSummaryResponse start(String experimentKey) {
-        return start(resolveExperimentId(experimentKey));
+        return startExperiment(resolveExperimentId(experimentKey));
+    }
+
+    /** Inicia uma solicitação da etapa Texto para o experimento informado e enfileira a geração real de criativos. */
+    @Transactional
+    public GeraAnuncioTextoExecutionSummaryResponse start(Long experimentId) {
+        return startExperiment(experimentId);
+    }
+
+    /** Inicia uma solicitação da etapa Texto para o experimento informado e registra auditoria do start. */
+    private GeraAnuncioTextoExecutionSummaryResponse startExperiment(Long experimentId) {
+        Experiment requested = experimentService.requestPipelineCreatives(experimentId);
+        Instant now = Objects.requireNonNullElse(requested.getCreativeGenerationRequestedAt(), Instant.now());
+        registrarInicioPipeline(requested, stageJobId(requested), now);
+        return toSummary(requested);
     }
 
     /** Inicia uma solicitação da etapa Texto para o candidato CNAE informado e cria o jobId UUID da execução. */
     @Transactional
-    public GeraAnuncioTextoExecutionSummaryResponse start(Long experimentId) {
+    public GeraAnuncioTextoExecutionSummaryResponse startCnae(Long cnaeId) {
         OprmNicheCandidate cnae = cnaeRepository
-                .findById(experimentId)
+                .findById(cnaeId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "CNAE experiment not found"));
         cnae.setGeracaoAnunciosPipelineStatus(STATUS_STARTED);
         cnae.setGeracaoAnunciosCurrentStageCode(STAGE_CODE);
@@ -211,6 +225,17 @@ public class GeraAnuncioTextoService {
     private void registrarInicioPipeline(OprmNicheCandidate cnae, String jobId, Instant now) {
         PipelineGeracaoAnuncios pipeline = new PipelineGeracaoAnuncios();
         pipeline.setIdExterno(String.valueOf(cnae.getId()));
+        pipeline.setCodigoEtapa(STAGE_CODE);
+        pipeline.setDataHora(now);
+        pipeline.setJobId(jobId);
+        pipeline.setVersaoPipeline(PIPELINE_VERSION);
+        pipelineRepository.save(pipeline);
+    }
+
+    /** Registra a criação da execução de experimento com o jobId estável da etapa. */
+    private void registrarInicioPipeline(Experiment experiment, String jobId, Instant now) {
+        PipelineGeracaoAnuncios pipeline = new PipelineGeracaoAnuncios();
+        pipeline.setIdExterno(String.valueOf(experiment.getId()));
         pipeline.setCodigoEtapa(STAGE_CODE);
         pipeline.setDataHora(now);
         pipeline.setJobId(jobId);

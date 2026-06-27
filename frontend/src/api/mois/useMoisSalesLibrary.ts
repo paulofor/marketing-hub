@@ -430,9 +430,7 @@ export function useStartMoisDossierPipeline(workspaceId: string) {
   return useMutation({
     mutationFn: async (pageId: number) => {
       await axios.post(
-        "/api/internal/mois/dossie/v1/intake/stage-executions/start",
-        undefined,
-        { params: { productKey: String(pageId) } },
+        `/api/internal/moissaleslibraryworker/dossieproduto/v1/intake/stage-executions/${pageId}/start`,
       );
     },
     onSuccess: (_, pageId) => {

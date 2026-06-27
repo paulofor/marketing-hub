@@ -4,6 +4,7 @@ import PageTitle from "../../components/PageTitle";
 import {
   useMoisSalesLibraryPageAnalysis,
   useMoisDossierProductPipeline,
+  useMoisDossierProductSituacoes,
   useMoisSalesLibraryPage,
   useStartMoisDossierPipeline,
   useMoisSalesLibraryPageExecutions,
@@ -58,6 +59,8 @@ function labelStatus(value?: string) {
     BLOCKED_COOLDOWN: "Aguardando nova tentativa",
     INICIADO: "Em processamento",
     AGUARDANDO: "Aguardando executor",
+    AGUARDANDO_MODULO: "Aguardando módulo",
+    AGUARDANDO_RETORNO_MODULO: "Aguardando retorno",
     CONCLUIDO: "Concluída",
     FALHA: "Falhou",
   };
@@ -78,6 +81,8 @@ function getStatusBadgeClass(value?: string) {
     case "ANALYZING":
     case "INICIADO":
     case "AGUARDANDO":
+    case "AGUARDANDO_MODULO":
+    case "AGUARDANDO_RETORNO_MODULO":
       return "text-bg-primary";
     case "PENDING":
     case "BLOCKED_COOLDOWN":
@@ -96,13 +101,118 @@ type HistoryItem = {
 
 type DossierPipelineStage = {
   step: number;
+  code: string;
   name: string;
   objective: string;
-  input: string;
-  output: string;
-  usesOpenAi: boolean;
-  model: string;
+  expectedOutput: string;
 };
+
+const DOSSIER_PIPELINE_STAGES: DossierPipelineStage[] = [
+  {
+    step: 1,
+    code: "intake",
+    name: "Entrada inicial",
+    objective:
+      "Confirma se a página está pronta para virar dossiê e abre a execução rastreável.",
+    expectedOutput: "Execução criada com jobId, produto e contexto mínimo.",
+  },
+  {
+    step: 2,
+    code: "product-understanding",
+    name: "Entendimento do produto",
+    objective:
+      "Resume a oferta, promessa, público e sinais principais da página de venda.",
+    expectedOutput: "Leitura estruturada do produto para orientar a investigação.",
+  },
+  {
+    step: 3,
+    code: "investigation-anchor-builder",
+    name: "Âncoras de investigação",
+    objective:
+      "Define os caminhos de busca para validar prestígio, produtor, promessa e canais.",
+    expectedOutput: "Âncoras e termos que guiam a coleta de sinais públicos.",
+  },
+  {
+    step: 4,
+    code: "warmup-resource-discovery",
+    name: "Descoberta de recursos",
+    objective:
+      "Procura ativos externos que possam aquecer o público antes da oferta.",
+    expectedOutput: "Recursos, canais e evidências externas candidatos ao dossiê.",
+  },
+  {
+    step: 5,
+    code: "source-product-match",
+    name: "Relação fonte-produto",
+    objective:
+      "Separa sinais realmente ligados ao produto de homônimos ou fontes genéricas.",
+    expectedOutput: "Fontes qualificadas e rejeições com motivo rastreável.",
+  },
+  {
+    step: 6,
+    code: "warmup-signal-extraction",
+    name: "Extração de sinais",
+    objective:
+      "Extrai sinais de prova, autoridade, demanda, objeções e distribuição.",
+    expectedOutput: "Sinais úteis para decidir potencial comercial do produto.",
+  },
+  {
+    step: 7,
+    code: "warmup-map-builder",
+    name: "Mapa de aquecimento",
+    objective:
+      "Organiza os sinais em um mapa simples de aquecimento e risco comercial.",
+    expectedOutput: "Mapa com leitura de oportunidade, risco e próximos movimentos.",
+  },
+  {
+    step: 8,
+    code: "dossier-synthesis",
+    name: "Síntese final",
+    objective:
+      "Consolida o dossiê em uma resposta final para apoiar decisão de oferta.",
+    expectedOutput: "Dossiê final com conclusão, evidências e recomendação.",
+  },
+];
+
+type DossierStageView = DossierPipelineStage & {
+  latest?: {
+    id: number;
+    status: string;
+    dataHora?: string;
+    jobId?: string | null;
+    request?: string | null;
+    response?: string | null;
+    quantidadeTokenEntrada?: number | null;
+    quantidadeTokenSaida?: number | null;
+    modelo?: string | null;
+    custo?: number | string | null;
+    descricaoErro?: string | null;
+    plataforma?: string | null;
+    prompt?: string | null;
+    schema?: string | null;
+    versaoPipeline?: string | null;
+  };
+  recordsCount: number;
+  loadState: "loading" | "error" | "idle";
+};
+
+function getDossierStageBadgeClass(stage: DossierStageView) {
+  if (stage.loadState === "loading") return "text-bg-secondary";
+  if (stage.loadState === "error") return "text-bg-danger";
+  if (!stage.latest) return "text-bg-light text-dark";
+  return getStatusBadgeClass(stage.latest.status);
+}
+
+function getDossierStageStatusLabel(stage: DossierStageView) {
+  if (stage.loadState === "loading") return "Consultando";
+  if (stage.loadState === "error") return "Falha na consulta";
+  if (!stage.latest) return "Não iniciada";
+  return labelStatus(stage.latest.status);
+}
+
+function hasUsefulPayload(value?: string | null) {
+  return Boolean(value && value.trim() && value.trim() !== "{}");
+}
 
 export default function MoisSalesPageLibraryDetailPage() {
   const { pageId } = useParams();
@@ -114,6 +224,10 @@ export default function MoisSalesPageLibraryDetailPage() {
   const analysisQuery = useMoisSalesLibraryPageAnalysis(validPageId);
   const executionsQuery = useMoisSalesLibraryPageExecutions(validPageId);
   const dossierPipelineQuery = useMoisDossierProductPipeline(validPageId);
+  const dossierSituacaoQueries = useMoisDossierProductSituacoes(
+    validPageId,
+    DOSSIER_PIPELINE_STAGES.map((stage) => stage.code),
+  );
   const pagesQuery = useMoisSalesLibraryPages(WORKSPACE_ID, 1, PAGE_SIZE);
   const updateStatusMutation =
     useUpdateMoisSalesLibraryPageStatus(WORKSPACE_ID);
@@ -157,71 +271,30 @@ export default function MoisSalesPageLibraryDetailPage() {
     cleanText(pageQuery.data?.hotmartProducer) ||
     cleanText(pageQuery.data?.producerName);
   const soldProductFormat = cleanText(pageQuery.data?.soldProductFormat);
-  const commercialAnalysisModel = displayText(
-    analysisQuery.data?.modelName || pageQuery.data?.modelName,
+  const dossierPipelineStages: DossierStageView[] = DOSSIER_PIPELINE_STAGES.map(
+    (stage, index) => {
+      const query = dossierSituacaoQueries[index];
+      return {
+        ...stage,
+        latest: query.data?.registros[0],
+        recordsCount: query.data?.registros.length ?? 0,
+        loadState: query.isLoading
+          ? "loading"
+          : query.isError
+            ? "error"
+            : "idle",
+      };
+    },
   );
-  const dossierPipelineStages: DossierPipelineStage[] = [
-    {
-      step: 1,
-      name: "Fatos Hotmart do produto",
-      objective:
-        "Reunir os dados básicos que identificam a oferta antes de qualquer conclusão comercial.",
-      input:
-        "Página capturada, URL final, preço, temperatura Hotmart, produtor e formato vendido.",
-      output:
-        "Bloco factual do dossiê com preço, temperatura, produtor e produto vendido.",
-      usesOpenAi: false,
-      model: "Não usa OpenAI",
-    },
-    {
-      step: 2,
-      name: "Análise comercial da página",
-      objective:
-        "Ler a página de vendas capturada e transformar a comunicação em sinais comerciais para decisão.",
-      input:
-        "HTML/texto extraído da página, URL analisada e metadados da captura persistidos pelo backend.",
-      output:
-        "Score comercial, seções identificadas, leitura de copy, visual, provas e insumos para GeraLanding.",
-      usesOpenAi: true,
-      model: commercialAnalysisModel,
-    },
-    {
-      step: 3,
-      name: "Planejamento das pesquisas públicas",
-      objective:
-        "Criar buscas mais precisas para encontrar autoridade, canais, prova social e sinais externos do produtor/produto.",
-      input:
-        "Produto, produtor, domínio, título/subtítulo, análise comercial e queries base do worker.",
-      output:
-        "Lista de termos de pesquisa auditáveis usados na busca pública do dossiê.",
-      usesOpenAi: true,
-      model: "gpt-5.2 (padrão do worker, com fallback sem OpenAI)",
-    },
-    {
-      step: 4,
-      name: "Busca pública e qualificação de fontes",
-      objective:
-        "Localizar fontes rastreáveis e descartar homônimos, páginas genéricas ou sinais sem relação com a oferta.",
-      input:
-        "Termos planejados e resultados públicos de web, YouTube, Instagram, TikTok, reviews e marketplaces.",
-      output:
-        "Tentativas de busca, fontes qualificadas, fontes rejeitadas e exemplos retornados.",
-      usesOpenAi: false,
-      model: "Não usa OpenAI",
-    },
-    {
-      step: 5,
-      name: "Consolidação do dossiê",
-      objective:
-        "Cruzar fontes e sinais para indicar aquecimento, risco, recomendação e próximo movimento comercial.",
-      input:
-        "Fontes qualificadas, sinais comerciais, dados Hotmart e análise comercial da página.",
-      output:
-        "Temperatura do mercado, recomendação, score do dossiê, dores, objeções, canais e sugestão de experimento.",
-      usesOpenAi: false,
-      model: "Não usa OpenAI",
-    },
-  ];
+  const completedDossierStages = dossierPipelineStages.filter(
+    (stage) => stage.latest?.status === "CONCLUIDO",
+  ).length;
+  const failedDossierStages = dossierPipelineStages.filter(
+    (stage) => stage.latest?.status === "FALHA",
+  ).length;
+  const currentDossierStageView = dossierPipelineStages.find(
+    (stage) => stage.code === dossierStage,
+  );
 
   const history: HistoryItem[] = (executionsQuery.data ?? []).map((item) => ({
     key: String(item.executionId),
@@ -467,63 +540,182 @@ export default function MoisSalesPageLibraryDetailPage() {
 
       <section className="card border-0 shadow-sm">
         <div className="card-body d-flex flex-column gap-3">
-          <div>
-            <h2 className="h5 mb-1">Etapas do pipeline de geração do dossiê</h2>
-            <p className="text-secondary mb-0">
-              Visão operacional do caminho que transforma a página capturada em
-              um dossiê útil para decidir se vale criar ou escalar uma oferta.
-            </p>
+          <div className="d-flex flex-wrap justify-content-between gap-3">
+            <div>
+              <h2 className="h5 mb-1">
+                Evolução do pipeline de geração do dossiê
+              </h2>
+              <p className="text-secondary mb-0">
+                Cada card consulta o endpoint de situação da etapa e mostra o
+                avanço real registrado pelo backend.
+              </p>
+            </div>
+            <div className="d-flex flex-wrap gap-2">
+              <span className="badge text-bg-success align-self-start">
+                {completedDossierStages}/{DOSSIER_PIPELINE_STAGES.length} concluídas
+              </span>
+              {failedDossierStages ? (
+                <span className="badge text-bg-danger align-self-start">
+                  {failedDossierStages} com falha
+                </span>
+              ) : null}
+              {currentDossierStageView ? (
+                <span className="badge text-bg-primary align-self-start">
+                  Atual: {currentDossierStageView.name}
+                </span>
+              ) : null}
+            </div>
           </div>
 
           <div className="d-flex flex-column gap-3">
             {dossierPipelineStages.map((stage) => (
               <div
-                className="border rounded p-3 bg-light-subtle"
-                key={stage.name}
+                className={`border rounded p-3 ${
+                  stage.latest?.status === "FALHA"
+                    ? "bg-danger-subtle"
+                    : stage.latest?.status === "CONCLUIDO"
+                      ? "bg-success-subtle"
+                      : stage.latest
+                        ? "bg-primary-subtle"
+                        : "bg-light-subtle"
+                }`}
+                key={stage.code}
               >
                 <div className="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-3">
                   <div className="d-flex align-items-start gap-2">
-                    <span className="badge text-bg-primary rounded-pill">
+                    <span className="badge text-bg-dark rounded-pill">
                       {stage.step}
                     </span>
                     <div>
-                      <h3 className="h6 mb-1">{stage.name}</h3>
-                      <p className="text-secondary mb-0">{stage.objective}</p>
+                      <div className="d-flex flex-wrap align-items-center gap-2">
+                        <h3 className="h6 mb-0">{stage.name}</h3>
+                        <code className="small">{stage.code}</code>
+                      </div>
+                      <p className="text-secondary mb-0 mt-1">
+                        {stage.objective}
+                      </p>
                     </div>
                   </div>
-                  <span
-                    className={
-                      stage.usesOpenAi
-                        ? "badge text-bg-primary"
-                        : "badge text-bg-secondary"
-                    }
-                  >
-                    {stage.usesOpenAi ? "OpenAI" : "Sem OpenAI"}
+                  <span className={`badge ${getDossierStageBadgeClass(stage)}`}>
+                    {getDossierStageStatusLabel(stage)}
                   </span>
                 </div>
 
-                <div className="row g-3">
-                  <div className="col-lg-6">
-                    <div className="border rounded p-3 h-100 bg-white">
-                      <div className="fw-semibold mb-2">
-                        O que recebe de entrada
-                      </div>
-                      <p className="mb-0 text-secondary">{stage.input}</p>
+                <div className="row g-3 mb-3">
+                  <div className="col-md-3">
+                    <div className="border rounded p-2 bg-white h-100">
+                      <div className="small text-secondary">Último registro</div>
+                      <strong>{formatDate(stage.latest?.dataHora)}</strong>
                     </div>
                   </div>
-                  <div className="col-lg-6">
-                    <div className="border rounded p-3 h-100 bg-white">
-                      <div className="fw-semibold mb-2">
-                        O que entrega de saída
-                      </div>
-                      <p className="mb-0 text-secondary">{stage.output}</p>
+                  <div className="col-md-3">
+                    <div className="border rounded p-2 bg-white h-100">
+                      <div className="small text-secondary">Job</div>
+                      <strong className="text-break">
+                        {stage.latest?.jobId || "—"}
+                      </strong>
+                    </div>
+                  </div>
+                  <div className="col-md-3">
+                    <div className="border rounded p-2 bg-white h-100">
+                      <div className="small text-secondary">Modelo</div>
+                      <strong>{displayText(stage.latest?.modelo || undefined)}</strong>
+                    </div>
+                  </div>
+                  <div className="col-md-3">
+                    <div className="border rounded p-2 bg-white h-100">
+                      <div className="small text-secondary">Auditorias</div>
+                      <strong>{stage.recordsCount}</strong>
                     </div>
                   </div>
                 </div>
 
-                <div className="small text-secondary mt-3">
-                  Modelo/execução: <strong>{stage.model}</strong>
+                <div className="border rounded p-3 bg-white mb-3">
+                  <div className="fw-semibold mb-1">Entrega esperada</div>
+                  <p className="mb-0 text-secondary">{stage.expectedOutput}</p>
                 </div>
+
+                {stage.latest?.descricaoErro ? (
+                  <div className="alert alert-danger mb-3">
+                    {stage.latest.descricaoErro}
+                  </div>
+                ) : null}
+
+                {hasUsefulPayload(stage.latest?.response) ? (
+                  <div className="border rounded p-3 bg-white mb-3">
+                    <h4 className="h6 mb-2">Última saída registrada</h4>
+                    <CollapsibleJsonViewer
+                      content={stage.latest?.response}
+                      initiallyCollapsed
+                    />
+                  </div>
+                ) : null}
+
+                {stage.latest ? (
+                  <div className="row g-3">
+                    {hasUsefulPayload(stage.latest.request) ? (
+                      <div className="col-lg-6">
+                        <div className="border rounded p-3 h-100 bg-white">
+                          <h4 className="h6 mb-2">Entrada auditada</h4>
+                          <CollapsibleJsonViewer
+                            content={stage.latest.request}
+                            initiallyCollapsed
+                          />
+                        </div>
+                      </div>
+                    ) : null}
+                    {hasUsefulPayload(stage.latest.prompt) ? (
+                      <div className="col-lg-6">
+                        <div className="border rounded p-3 h-100 bg-white">
+                          <h4 className="h6 mb-2">Prompt usado</h4>
+                          <CollapsibleJsonViewer
+                            content={stage.latest.prompt}
+                            initiallyCollapsed
+                          />
+                        </div>
+                      </div>
+                    ) : null}
+                    {hasUsefulPayload(stage.latest.schema) ? (
+                      <div className="col-lg-6">
+                        <div className="border rounded p-3 h-100 bg-white">
+                          <h4 className="h6 mb-2">Schema usado</h4>
+                          <CollapsibleJsonViewer
+                            content={stage.latest.schema}
+                            initiallyCollapsed
+                          />
+                        </div>
+                      </div>
+                    ) : null}
+                    <div className="col-lg-6">
+                      <div className="border rounded p-3 h-100 bg-white">
+                        <h4 className="h6 mb-2">Custo e execução</h4>
+                        <p className="small text-secondary mb-0">
+                          Plataforma:{" "}
+                          <strong>
+                            {displayText(stage.latest.plataforma || undefined)}
+                          </strong>{" "}
+                          • Versão:{" "}
+                          <strong>
+                            {displayText(
+                              stage.latest.versaoPipeline || undefined,
+                            )}
+                          </strong>{" "}
+                          • Tokens:{" "}
+                          <strong>
+                            {stage.latest.quantidadeTokenEntrada ?? "—"} /{" "}
+                            {stage.latest.quantidadeTokenSaida ?? "—"}
+                          </strong>{" "}
+                          • Custo: <strong>{stage.latest.custo ?? "—"}</strong>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-secondary mb-0 small">
+                    Nenhum registro encontrado no endpoint de situação desta
+                    etapa para a página atual.
+                  </p>
+                )}
               </div>
             ))}
           </div>

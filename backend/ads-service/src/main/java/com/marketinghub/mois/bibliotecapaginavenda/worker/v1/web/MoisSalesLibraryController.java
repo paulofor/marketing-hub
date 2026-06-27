@@ -172,6 +172,20 @@ public class MoisSalesLibraryController {
         }
     }
 
+
+    /**
+     * Consulta a auditoria do pipeline novo de dossiê v1 para exibição na tela.
+     */
+    @GetMapping("/pages/{pageId}/dossier-product/pipeline")
+    public MoisSalesLibraryDtos.DossierProductPipelineResponse getDossierProductPipeline(@PathVariable long pageId) {
+        try {
+            return service.getDossierProductPipeline(pageId);
+        } catch (IllegalArgumentException ex) {
+            log.warn("Biblioteca de páginas de vendas não encontrou dossiê v1 solicitado. operacao=getDossierProductPipeline, pageId={}, erro={}", pageId, ex.getMessage(), ex);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage(), ex);
+        }
+    }
+
     /**
      * Lista oportunidades priorizadas pela combinação de análise comercial e aquecimento de mercado.
      */

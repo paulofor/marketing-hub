@@ -420,6 +420,22 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SalesLibrarySnapshotCaptureResponse'
+  /pages/{pageId}/dossier-product/pipeline:
+    get:
+      summary: Consulta auditoria do pipeline novo de dossiê v1
+      description: Retorna somente dados do pipeline `dossieproduto.v1`, incluindo entradas, saídas, prompts, schemas, custos e resultado final por etapa para a tela de detalhe da página.
+      tags: [MOIS Sales Library]
+      parameters:
+        - $ref: '#/components/parameters/PageId'
+      responses:
+        '200':
+          description: Auditoria do dossiê v1 da página
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DossierProductPipelineResponse'
+        '404':
+          description: Página não encontrada
   /pages/{pageId}/market-warmup:request:
     post:
       summary: Solicita investigação de sucesso do produto para uma página
@@ -2114,3 +2130,80 @@ components:
         capturedAt:
           type: string
           format: date-time
+
+    DossierProductPipelineResponse:
+      type: object
+      properties:
+        pageId:
+          type: integer
+          format: int64
+        status:
+          type: string
+          nullable: true
+        currentStage:
+          type: string
+          nullable: true
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+        stages:
+          type: array
+          items:
+            $ref: '#/components/schemas/DossierProductPipelineStageItem'
+        finalResult:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/DossierProductPipelineStageItem'
+    DossierProductPipelineStageItem:
+      type: object
+      properties:
+        auditId:
+          type: integer
+          format: int64
+          nullable: true
+        jobId:
+          type: string
+          nullable: true
+        stageCode:
+          type: string
+          nullable: true
+        pipelineVersion:
+          type: string
+          nullable: true
+        occurredAt:
+          type: string
+          format: date-time
+          nullable: true
+        platform:
+          type: string
+          nullable: true
+        model:
+          type: string
+          nullable: true
+        inputTokens:
+          type: integer
+          format: int64
+          nullable: true
+        outputTokens:
+          type: integer
+          format: int64
+          nullable: true
+        cost:
+          type: number
+          nullable: true
+        request:
+          type: string
+          nullable: true
+        response:
+          type: string
+          nullable: true
+        prompt:
+          type: string
+          nullable: true
+        schema:
+          type: string
+          nullable: true
+        errorDescription:
+          type: string
+          nullable: true

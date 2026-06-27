@@ -8,6 +8,7 @@ import type {
   MoisMarketWarmupSignalListResponse,
   MoisMarketWarmupSourceListResponse,
   MoisMarketWarmupSummary,
+  MoisDossierProductPipelineResponse,
   MoisSalesLibraryEntryPageResponse,
   MoisSalesLibraryJobPageResponse,
   MoisSalesLibraryPage,
@@ -327,6 +328,20 @@ export function useMoisSalesLibraryPageExecutions(pageId?: number) {
   });
 }
 
+
+export function useMoisDossierProductPipeline(pageId?: number) {
+  return useQuery({
+    queryKey: ["mois", "sales-library", "dossier-product-pipeline", pageId],
+    enabled: Boolean(pageId),
+    queryFn: async () => {
+      const { data } = await axios.get<MoisDossierProductPipelineResponse>(
+        `/api/mois/sales-library/pages/${pageId}/dossier-product/pipeline`,
+      );
+      return data;
+    },
+  });
+}
+
 export function useMoisSalesLibraryMarketWarmup(pageId?: number) {
   return useQuery({
     queryKey: ["mois", "sales-library", "market-warmup", pageId],
@@ -435,22 +450,7 @@ export function useStartMoisDossierPipeline(workspaceId: string) {
     },
     onSuccess: (_, pageId) => {
       void queryClient.invalidateQueries({
-        queryKey: ["mois", "sales-library", "market-warmup", pageId],
-      });
-      void queryClient.invalidateQueries({
-        queryKey: ["mois", "sales-library", "market-warmup", pageId, "sources"],
-      });
-      void queryClient.invalidateQueries({
-        queryKey: [
-          "mois",
-          "sales-library",
-          "market-warmup",
-          pageId,
-          "search-attempts",
-        ],
-      });
-      void queryClient.invalidateQueries({
-        queryKey: ["mois", "sales-library", "market-warmup", pageId, "signals"],
+        queryKey: ["mois", "sales-library", "dossier-product-pipeline", pageId],
       });
       void queryClient.invalidateQueries({
         queryKey: ["mois", "sales-library", "pages", workspaceId],

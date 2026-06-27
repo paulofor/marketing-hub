@@ -300,6 +300,34 @@ export interface MoisSalesLibraryPage {
   dossieProdutoUpdatedAt?: string;
 }
 
+
+export interface MoisDossierProductPipelineStageItem {
+  auditId?: number;
+  jobId?: string;
+  stageCode?: string;
+  pipelineVersion?: string;
+  occurredAt?: string;
+  platform?: string;
+  model?: string;
+  inputTokens?: number;
+  outputTokens?: number;
+  cost?: number;
+  request?: string;
+  response?: string;
+  prompt?: string;
+  schema?: string;
+  errorDescription?: string;
+}
+
+export interface MoisDossierProductPipelineResponse {
+  pageId: number;
+  status?: string;
+  currentStage?: string;
+  updatedAt?: string;
+  stages: MoisDossierProductPipelineStageItem[];
+  finalResult?: MoisDossierProductPipelineStageItem;
+}
+
 export interface MoisSalesLibraryPageSummary {
   workspaceId: string;
   total: number;

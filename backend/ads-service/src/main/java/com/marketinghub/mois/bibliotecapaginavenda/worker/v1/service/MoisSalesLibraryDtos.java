@@ -912,6 +912,42 @@ public final class MoisSalesLibraryDtos {
     }
 
     /**
+     * Representa a auditoria completa do pipeline novo de dossiê v1 para a tela.
+     */
+    public record DossierProductPipelineResponse(
+            long pageId,
+            String status,
+            String currentStage,
+            Instant updatedAt,
+            List<DossierProductPipelineStageItem> stages,
+            DossierProductPipelineStageItem finalResult
+    ) {
+    }
+
+    /**
+     * Representa uma etapa auditada do pipeline novo de dossiê v1.
+     */
+    public record DossierProductPipelineStageItem(
+            Long auditId,
+            String jobId,
+            String stageCode,
+            String pipelineVersion,
+            Instant occurredAt,
+            String platform,
+            String model,
+            Long inputTokens,
+            Long outputTokens,
+            BigDecimal cost,
+            String request,
+            String response,
+            String prompt,
+            String schema,
+            String errorDescription
+    ) {
+    }
+
+
+    /**
      * Representa o payload final do worker sem JSON serializado em campos textuais funcionais.
      */
     public record MarketWarmupCompleteRequest(

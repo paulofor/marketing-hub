@@ -1887,3 +1887,9 @@ Arquivos principais:
 ## 2026-06-27 — Destravamento da fila do dossiê MOIS v1
 - Diagnosticado que o dossiê do produto 286 (`Vértuz App`) estava iniciado em `product-understanding`, mas a fila canônica da etapa retornava erro 500 antes de entregar trabalhos ao executor por causa de uma pendência legada do produto 329 sem `jobId` auditável.
 - Corrigida a causa-raiz no backend: os endpoints `pending` do pipeline `dossieproduto.v1` agora recompõem um `jobId` UUID com auditoria mínima quando encontram pendências antigas sem registro rastreável, evitando que um item legado bloqueie os demais produtos da fila.
+
+## 2026-06-27 — Tela de dossiê MOIS v1 sem endpoint legado
+
+- Removida da tela de detalhe da Biblioteca Sales Pages a dependência do endpoint legado de `market-warmup` para exibir o dossiê do produto.
+- Criado endpoint público de leitura do pipeline novo `dossieproduto.v1`, expondo auditoria de cada etapa com entrada, saída, prompt, schema, modelo, tokens, custo, erro e resultado final.
+- Atualizada a tela para apresentar o resultado final consolidado e os registros de cada etapa diretamente a partir do backend novo.

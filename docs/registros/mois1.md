@@ -1868,3 +1868,9 @@ Arquivos principais:
 - Alterado o backend do fluxo `moissaleslibraryworker.dossieproduto.v1` para criar `jobId` por UUID no `/start` de cada etapa.
 - Ajustado o `/pending` para devolver cada objeto pendente acompanhado do `jobId` ativo da etapa.
 - Ajustado o `recebeRequest` para receber o `jobId` na URL junto com o identificador do objeto, mantendo a auditoria vinculada ao mesmo job iniciado.
+
+## 2026-06-27 — Protocolo padrão módulo em dossieproduto.v1
+
+- Aplicado no módulo executor `mois-sales-library-worker` para a solicitação `dossieproduto.v1` usando o pacote canônico consolidado `com.marketinghub.pipelines.dossie.v1`.
+- Adicionado teste de contrato do executor para validar o catálogo completo de processors do dossiê v1, execução pelo `PipelineWorker`, saída estruturada, artefatos auditáveis não nulos e bloqueio de etapa sem processor registrado.
+- Mantida a decisão de não recriar pacote duplicado `dossieproduto.v1`, preservando o backend fora do protocolo padrão módulo e o worker como executor operacional.

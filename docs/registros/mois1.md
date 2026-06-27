@@ -1874,3 +1874,8 @@ Arquivos principais:
 - Redirecionado o teste arquitetural do backend para o pacote canônico `com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1`.
 - Removida a referência arquitetural ao pacote antigo `com.marketinghub.pipelines.mois.dossie.v1`.
 - O backend do dossiê de produto MOIS v1 passa a manter contratos por etapa no namespace `moissaleslibraryworker.dossieproduto.v1`, preservando o módulo executor `mois-sales-library-worker` como responsável pela execução operacional.
+
+## 2026-06-27 — Remoção do endpoint antigo dossiê v1 do código backend
+
+- Removidas do código backend as rotas internas antigas `/api/internal/mois/dossie/v1/...` do pacote `moissaleslibraryworker.dossieproduto.v1`.
+- Padronizadas as rotas internas do dossiê de produto MOIS v1 para `/api/internal/mois/dossieproduto/v1/...`, mantendo alinhamento entre pacote Java, Swagger e teste arquitetural.

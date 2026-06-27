@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 /** Expõe a borda HTTP interna da etapa extração de sinais de aquecimento do pipeline de dossiê MOIS v1. */
 @RestController
 @Slf4j
-@RequestMapping("/api/internal/mois/dossie/v1/warmup-signal-extraction/stage-executions")
+@RequestMapping("/api/internal/mois/dossieproduto/v1/warmup-signal-extraction/stage-executions")
 @RequiredArgsConstructor
 public class DossierWarmupSignalExtractionController {
 

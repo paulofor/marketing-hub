@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 /** Expõe a borda HTTP interna da etapa validação de relação fonte-produto do pipeline de dossiê MOIS v1. */
 @RestController
 @Slf4j
-@RequestMapping("/api/internal/mois/dossie/v1/source-product-match/stage-executions")
+@RequestMapping("/api/internal/mois/dossieproduto/v1/source-product-match/stage-executions")
 @RequiredArgsConstructor
 public class DossierSourceProductMatchController {
 

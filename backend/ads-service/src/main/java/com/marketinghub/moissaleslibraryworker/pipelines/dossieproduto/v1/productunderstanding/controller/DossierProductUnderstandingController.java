@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 /** Expõe a borda HTTP interna da etapa entendimento do produto do pipeline de dossiê MOIS v1. */
 @RestController
 @Slf4j
-@RequestMapping("/api/internal/mois/dossie/v1/product-understanding/stage-executions")
+@RequestMapping("/api/internal/mois/dossieproduto/v1/product-understanding/stage-executions")
 @RequiredArgsConstructor
 public class DossierProductUnderstandingController {
 

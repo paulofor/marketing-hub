@@ -389,7 +389,7 @@ class ArquiteturaTest {
                     .anyMatch(method -> method.getName().equals("pending") && method.isAnnotatedWith(PostMapping.class));
             if (!hasPending) {
                 violations.add("[ARQUITETURA] [BACKEND][MOIS Dossiê v1] etapa " + stagePackage
-                        + " deve expor endpoint pending canônico /api/internal/mois/dossie/v1/"
+                        + " deve expor endpoint pending canônico /api/internal/mois/dossieproduto/v1/"
                         + endpointSlug + "/stage-executions/pending");
             }
         });

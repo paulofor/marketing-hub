@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 import org.springframework.stereotype.Component;
 
-/** Responsabilidade: executar a etapa Texto do pipeline GeraAnuncio v2 a partir do contrato canônico do backend. */
+/** Responsabilidade: executar a etapa Texto do pipeline GeracaoAnuncios v1 a partir do contrato canônico do backend. */
 @Component
 public class GeraAnuncioTextoProcessor implements StageProcessor<GeraAnuncioTextoInput, GeraAnuncioTextoOutput> {
     /** Processa o contexto pendente e devolve saída estruturada pronta para callback ao backend. */

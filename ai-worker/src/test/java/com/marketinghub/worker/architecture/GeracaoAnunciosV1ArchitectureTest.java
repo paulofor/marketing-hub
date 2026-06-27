@@ -1,75 +1,120 @@
 package com.marketinghub.worker.architecture;
 
 import com.marketinghub.worker.pipeline.StageProcessor;
+import com.tngtech.archunit.core.domain.Dependency;
+import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
+import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
+import com.tngtech.archunit.lang.ConditionEvents;
+import com.tngtech.archunit.lang.SimpleConditionEvent;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Stream;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
-import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.slices;
 
-/** Guarda arquitetural do pipeline executor GeraAnuncio v2 no AI Worker. */
+/** Guarda arquitetural do pipeline executor GeracaoAnuncios v1 no AI Worker. */
 @AnalyzeClasses(packages = "com.marketinghub", importOptions = ImportOption.DoNotIncludeTests.class)
-class GeraAnuncioV2ArchitectureTest {
+class GeracaoAnunciosV1ArchitectureTest {
     private static final String PIPELINE_ROOT = "com.marketinghub.pipelines.geracaoanuncios.v1";
 
     @ArchTest
-    static final ArchRule nucleo_geraanuncio_v2_nao_deve_depender_de_etapas = noClasses()
+    static final ArchRule nucleo_geracaoanuncios_v1_nao_deve_depender_de_etapas = classes()
             .that()
             .resideInAPackage(PIPELINE_ROOT)
-            .should()
-            .dependOnClassesThat()
-            .resideInAPackage(PIPELINE_ROOT + ".*..")
-            .because("[ARQUITETURA] [AI Worker][GeraAnuncio v2] o núcleo genérico não pode conhecer etapas concretas");
+            .should(naoDependerDeEtapasConcretas())
+            .because("[ARQUITETURA] [AI Worker][GeracaoAnuncios v1] o núcleo genérico não pode conhecer etapas concretas");
 
     @ArchTest
-    static final ArchRule etapas_geraanuncio_v2_nao_devem_depender_umas_das_outras = slices()
+    static final ArchRule etapas_geracaoanuncios_v1_nao_devem_depender_umas_das_outras = slices()
             .matching("com.marketinghub.pipelines.geracaoanuncios.v1.(*)..")
             .should()
             .notDependOnEachOther()
-            .because("[ARQUITETURA] [AI Worker][GeraAnuncio v2] etapas concretas não podem depender umas das outras");
+            .because("[ARQUITETURA] [AI Worker][GeracaoAnuncios v1] etapas concretas não podem depender umas das outras");
 
     @ArchTest
-    static final ArchRule etapas_geraanuncio_v2_nao_devem_ter_ciclos = slices()
+    static final ArchRule etapas_geracaoanuncios_v1_nao_devem_ter_ciclos = slices()
             .matching("com.marketinghub.pipelines.geracaoanuncios.v1.(*)..")
             .should()
             .beFreeOfCycles()
-            .because("[ARQUITETURA] [AI Worker][GeraAnuncio v2] etapas do pipeline não podem formar ciclos");
+            .because("[ARQUITETURA] [AI Worker][GeracaoAnuncios v1] etapas do pipeline não podem formar ciclos");
 
     @ArchTest
-    static final ArchRule processors_geraanuncio_v2_devem_implementar_stage_processor = classes()
+    static final ArchRule processors_geracaoanuncios_v1_devem_implementar_stage_processor = classes()
             .that()
             .resideInAPackage(PIPELINE_ROOT + "..")
             .and()
             .haveSimpleNameEndingWith("Processor")
             .should()
             .implement(StageProcessor.class)
-            .because("[ARQUITETURA] [AI Worker][GeraAnuncio v2] processors concretos devem implementar StageProcessor");
+            .because("[ARQUITETURA] [AI Worker][GeracaoAnuncios v1] processors concretos devem implementar StageProcessor");
 
     @ArchTest
-    static final ArchRule nucleo_geraanuncio_v2_nao_deve_depender_de_tecnologias_concretas = noClasses()
+    static final ArchRule nucleo_geracaoanuncios_v1_nao_deve_depender_de_tecnologias_concretas = classes()
             .that()
             .resideInAPackage(PIPELINE_ROOT)
-            .should()
-            .dependOnClassesThat()
-            .resideInAnyPackage("org.springframework.web.reactive.function.client..", "org.jsoup..", "com.microsoft.playwright..", "software.amazon.awssdk..", "okhttp3..")
-            .because("[ARQUITETURA] [AI Worker][GeraAnuncio v2] o núcleo deve depender de contratos, não de tecnologias concretas");
+            .should(naoDependerDeTecnologiasConcretas())
+            .because("[ARQUITETURA] [AI Worker][GeracaoAnuncios v1] o núcleo deve depender de contratos, não de tecnologias concretas");
+
+    /** Bloqueia dependência do núcleo em qualquer subpacote de etapa concreta. */
+    private static ArchCondition<JavaClass> naoDependerDeEtapasConcretas() {
+        return new ArchCondition<>("[ARQUITETURA] não depender de etapas concretas do GeracaoAnuncios v1") {
+            /** Avalia dependências diretas da classe do núcleo contra subpacotes de etapa. */
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                for (Dependency dependency : item.getDirectDependenciesFromSelf()) {
+                    String targetPackage = dependency.getTargetClass().getPackageName();
+                    if (targetPackage.startsWith(PIPELINE_ROOT + ".")) {
+                        events.add(SimpleConditionEvent.violated(item, "[ARQUITETURA] [AI Worker][GeracaoAnuncios v1] "
+                                + item.getName() + " depende da etapa concreta " + dependency.getTargetClass().getName()));
+                    }
+                }
+            }
+        };
+    }
+
+    /** Bloqueia tecnologias concretas no núcleo declarativo do pipeline. */
+    private static ArchCondition<JavaClass> naoDependerDeTecnologiasConcretas() {
+        List<String> pacotesTecnicos = Arrays.asList(
+                "org.springframework.web.reactive.function.client",
+                "org.jsoup",
+                "com.microsoft.playwright",
+                "software.amazon.awssdk",
+                "okhttp3");
+        return new ArchCondition<>("[ARQUITETURA] não depender de tecnologias concretas no núcleo") {
+            /** Avalia se alguma dependência direta aponta para tecnologia permitida apenas em etapas/infra. */
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                for (Dependency dependency : item.getDirectDependenciesFromSelf()) {
+                    String targetPackage = dependency.getTargetClass().getPackageName();
+                    Optional<String> pacoteBloqueado = pacotesTecnicos.stream()
+                            .filter(targetPackage::startsWith)
+                            .findFirst();
+                    pacoteBloqueado.ifPresent(pacote -> events.add(SimpleConditionEvent.violated(item,
+                            "[ARQUITETURA] [AI Worker][GeracaoAnuncios v1] " + item.getName()
+                                    + " depende de tecnologia concreta " + dependency.getTargetClass().getName()
+                                    + " do pacote " + pacote)));
+                }
+            }
+        };
+    }
 
     /** Garante que o módulo externo espelhe as etapas backend e consuma o pending canônico de cada etapa. */
     @ArchTest
-    static void modulo_externo_geraanuncio_v2_deve_espelhar_subpacotes_backend_e_consumir_pending(JavaClasses importedClasses) {
+    static void modulo_externo_geracaoanuncios_v1_deve_espelhar_subpacotes_backend_e_consumir_pending(JavaClasses importedClasses) {
         importedClasses.stream().filter(javaClass -> javaClass.getPackageName().startsWith(PIPELINE_ROOT)).findAny();
         Path repositoryRoot = repositoryRoot();
         Path backendRoot = repositoryRoot.resolve(Path.of(
@@ -80,7 +125,7 @@ class GeraAnuncioV2ArchitectureTest {
         Set<String> workerStages = directSubpackages(workerRoot);
         List<String> violations = new ArrayList<>();
         if (!workerStages.equals(backendStages)) {
-            violations.add("[ARQUITETURA] [AI Worker][GeraAnuncio v2] subpacotes do módulo externo devem espelhar o backend; backend="
+            violations.add("[ARQUITETURA] [AI Worker][GeracaoAnuncios v1] subpacotes do módulo externo devem espelhar o backend; backend="
                     + backendStages + "; ai-worker=" + workerStages);
         }
         backendStages.forEach(stage -> validatePendingEndpoint(workerRoot, stage, violations));
@@ -92,13 +137,13 @@ class GeraAnuncioV2ArchitectureTest {
         Path stageDirectory = workerRoot.resolve(stage);
         String expectedEndpoint = "/internal/aiworker/geracaoanuncios/v1/" + stage + "/stage-executions/pending";
         if (!Files.isDirectory(stageDirectory)) {
-            violations.add("[ARQUITETURA] [AI Worker][GeraAnuncio v2] etapa " + stage
+            violations.add("[ARQUITETURA] [AI Worker][GeracaoAnuncios v1] etapa " + stage
                     + " deve existir no módulo externo antes de validar pending");
             return;
         }
         boolean containsPendingEndpoint = javaFiles(stageDirectory).stream().anyMatch(path -> fileContains(path, expectedEndpoint));
         if (!containsPendingEndpoint) {
-            violations.add("[ARQUITETURA] [AI Worker][GeraAnuncio v2] etapa " + stage
+            violations.add("[ARQUITETURA] [AI Worker][GeracaoAnuncios v1] etapa " + stage
                     + " deve chamar o endpoint pending canônico " + expectedEndpoint);
         }
     }
@@ -144,7 +189,7 @@ class GeraAnuncioV2ArchitectureTest {
             }
             current = current.getParent();
         }
-        throw new AssertionError("[ARQUITETURA] raiz do repositório não foi localizada para validar GeraAnuncio v2");
+        throw new AssertionError("[ARQUITETURA] raiz do repositório não foi localizada para validar GeracaoAnuncios v1");
     }
 
     /** Falha com mensagem de arquitetura consolidada quando houver violações. */

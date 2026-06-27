@@ -1,6 +1,7 @@
 package com.marketinghub.pipelines.nichocnae.v3.architecture;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
+import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.slices;
 
 import com.marketinghub.pipelines.nichocnae.v3.core.StageProcessor;
 import com.tngtech.archunit.base.DescribedPredicate;
@@ -12,12 +13,21 @@ import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 /** Garante que o pipeline NichoCNAE versão 3 siga o protocolo padrão módulo no executor OPRM. */
 class NichoCnaeV3PipelineArchitectureTest {
     private static final String BASE_PACKAGE = "com.marketinghub.pipelines.nichocnae.v3";
     private static final String CORE_PACKAGE = BASE_PACKAGE + ".core";
+    private static final Set<String> FORBIDDEN_CORE_TECH_PACKAGES = Set.of(
+            "org.springframework",
+            "org.jsoup",
+            "com.microsoft.playwright",
+            "org.openqa.selenium",
+            "software.amazon.awssdk",
+            "com.openai",
+            "java.net.http");
 
     private static final DescribedPredicate<JavaClass> ARE_IN_CONCRETE_STAGE =
             new DescribedPredicate<>("[ARQUITETURA] classes de etapas concretas em pipelines.nichocnae.v3.<etapa>") {
@@ -65,6 +75,30 @@ class NichoCnaeV3PipelineArchitectureTest {
                 .check(importedClasses);
     }
 
+    /** Valida que o núcleo genérico não depende de tecnologias concretas de execução ou integração. */
+    @Test
+    void pipelineCoreShouldNotDependOnConcreteTechnologies() {
+        JavaClasses importedClasses = importProductionClasses();
+
+        classes()
+                .that().resideInAPackage(CORE_PACKAGE)
+                .should(notDependOnConcreteTechnologies())
+                .because("[ARQUITETURA] tecnologias concretas ficam em etapas, execution ou infraestrutura compartilhada, nunca no núcleo")
+                .check(importedClasses);
+    }
+
+    /** Valida que os pacotes da v3 não formam ciclos de dependência entre etapas e núcleo. */
+    @Test
+    void nichoCnaeV3PackagesShouldBeFreeOfCycles() {
+        JavaClasses importedClasses = importProductionClasses();
+
+        slices()
+                .matching(BASE_PACKAGE + ".(*)..")
+                .should().beFreeOfCycles()
+                .because("[ARQUITETURA] pacotes NichoCNAE v3 devem permanecer plugáveis e sem ciclos")
+                .check(importedClasses);
+    }
+
     /** Importa classes de produção do pipeline versão 3. */
     private JavaClasses importProductionClasses() {
         return new ClassFileImporter()
@@ -100,6 +134,25 @@ class NichoCnaeV3PipelineArchitectureTest {
                     if (targetStage != null && !targetStage.equals(sourceStage)) {
                         events.add(SimpleConditionEvent.violated(source, "[ARQUITETURA] " + source.getName()
                                 + " pertence à etapa " + sourceStage + " mas depende da etapa " + targetStage));
+                    }
+                }
+            }
+        };
+    }
+
+    /** Cria condição explícita que bloqueia tecnologia concreta dentro do núcleo genérico. */
+    private ArchCondition<JavaClass> notDependOnConcreteTechnologies() {
+        return new ArchCondition<>("[ARQUITETURA] não depender de tecnologia concreta no núcleo NichoCNAE v3") {
+            /** Verifica dependências diretas do núcleo contra pacotes de tecnologia concreta. */
+            @Override
+            public void check(JavaClass source, ConditionEvents events) {
+                for (Dependency dependency : source.getDirectDependenciesFromSelf()) {
+                    String targetPackage = dependency.getTargetClass().getPackageName();
+                    boolean forbidden = FORBIDDEN_CORE_TECH_PACKAGES.stream().anyMatch(targetPackage::startsWith);
+                    if (forbidden) {
+                        events.add(SimpleConditionEvent.violated(source, "[ARQUITETURA] " + source.getName()
+                                + " está no núcleo NichoCNAE v3 mas depende de tecnologia concreta "
+                                + dependency.getTargetClass().getName() + " via: " + dependency.getDescription()));
                     }
                 }
             }

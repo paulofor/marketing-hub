@@ -17,11 +17,7 @@ import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.Mois
 import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.entity.MoisSalesPage;
 import com.marketinghub.repository.jpa.oprm.cnae.OprmNicheCandidateRepository;
 import com.marketinghub.repository.jpa.pipeline.geracaoanuncios.PipelineGeracaoAnunciosRepository;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
-import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -72,17 +68,21 @@ public class GeraAnuncioTextoService {
         return start(resolveExperimentId(experimentKey));
     }
 
-    /** Inicia uma solicitação da etapa Texto para o candidato CNAE informado. */
+    /** Inicia uma solicitação da etapa Texto para o candidato CNAE informado e cria o jobId UUID da execução. */
+    @Transactional
     public GeraAnuncioTextoExecutionSummaryResponse start(Long experimentId) {
         OprmNicheCandidate cnae = cnaeRepository
                 .findById(experimentId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "CNAE experiment not found"));
         cnae.setGeracaoAnunciosPipelineStatus(STATUS_STARTED);
         cnae.setGeracaoAnunciosCurrentStageCode(STAGE_CODE);
-        cnae.setUpdatedAt(Instant.now());
+        Instant now = Instant.now();
+        cnae.setUpdatedAt(now);
         OprmNicheCandidate saved = cnaeRepository.save(cnae);
+        String jobId = UUID.randomUUID().toString();
+        registrarInicioPipeline(saved, jobId, now);
         return new GeraAnuncioTextoExecutionSummaryResponse(
-                stageExecutionId(saved), saved.getId(), stageJobId(saved), STATUS_STARTED, saved.getUpdatedAt());
+                stageExecutionId(saved), saved.getId(), jobId, STATUS_STARTED, saved.getUpdatedAt());
     }
 
     /** Lista execuções da etapa Texto para relatório operacional. */
@@ -105,9 +105,12 @@ public class GeraAnuncioTextoService {
 
     /** Recebe e audita o request operacional enviado para a etapa Texto. */
     @Transactional
-    public void recebeRequest(String experimentKey, GeraAnuncioTextoRecebeRequestRequest request) {
+    public void recebeRequest(String experimentKey, String jobId, GeraAnuncioTextoRecebeRequestRequest request) {
         if (request == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "payload required");
+        }
+        if (!StringUtils.hasText(jobId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "jobId required");
         }
         Instant now = Instant.now();
         MoisSalesPage salesPage = salesPageRepository
@@ -122,7 +125,7 @@ public class GeraAnuncioTextoService {
         pipeline.setRequest(serializeRequest(request.request()));
         pipeline.setCodigoEtapa(STAGE_CODE);
         pipeline.setDataHora(now);
-        pipeline.setJobId(createJobHash(experimentKey, now));
+        pipeline.setJobId(jobId.trim());
         pipeline.setPlataforma(request.plataforma());
         pipeline.setPrompt(request.prompt());
         pipeline.setSchema(request.schema());
@@ -161,8 +164,26 @@ public class GeraAnuncioTextoService {
 
     /** Converte um candidato CNAE iniciado em unidade de trabalho fechada para o AI Worker. */
     private GeraAnuncioTextoPendingResponse toPending(OprmNicheCandidate cnae) {
-        return new GeraAnuncioTextoPendingResponse(stageExecutionId(cnae), cnae.getId(), stageJobId(cnae), cnae.getUpdatedAt(), context(cnae),
+        return new GeraAnuncioTextoPendingResponse(stageExecutionId(cnae), cnae.getId(), resolveJobId(cnae), cnae.getUpdatedAt(), context(cnae),
                 previousArtifacts(cnae));
+    }
+
+    /** Registra a criação da execução com o jobId UUID gerado pelo endpoint start. */
+    private void registrarInicioPipeline(OprmNicheCandidate cnae, String jobId, Instant now) {
+        PipelineGeracaoAnuncios pipeline = new PipelineGeracaoAnuncios();
+        pipeline.setIdExterno(String.valueOf(cnae.getId()));
+        pipeline.setCodigoEtapa(STAGE_CODE);
+        pipeline.setDataHora(now);
+        pipeline.setJobId(jobId);
+        pipeline.setVersaoPipeline(PIPELINE_VERSION);
+        pipelineRepository.save(pipeline);
+    }
+
+    /** Resolve o jobId UUID criado no start para envio junto com a pendência ao AI Worker. */
+    private String resolveJobId(OprmNicheCandidate cnae) {
+        return pipelineRepository.findTopByIdExternoAndCodigoEtapaOrderByDataHoraDesc(String.valueOf(cnae.getId()), STAGE_CODE)
+                .map(PipelineGeracaoAnuncios::getJobId)
+                .orElseGet(() -> stageJobId(cnae));
     }
 
     /** Monta o contexto funcional necessário para geração de anúncio sem consulta adicional. */
@@ -229,19 +250,6 @@ public class GeraAnuncioTextoService {
         } catch (JsonProcessingException ex) {
             log.warn("Falha ao serializar request do pipeline geracaoanuncios; etapa={}", STAGE_CODE, ex);
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "request payload invalid", ex);
-        }
-    }
-
-    /** Cria um hash único para rastrear o job recebido nesta chamada. */
-    private String createJobHash(String experimentKey, Instant now) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest((experimentKey + "|" + STAGE_CODE + "|" + now + "|" + UUID.randomUUID())
-                    .getBytes(StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(hash);
-        } catch (NoSuchAlgorithmException ex) {
-            log.error("Falha ao gerar hash jobId do pipeline geracaoanuncios; etapa={}, experimentKey={}", STAGE_CODE, experimentKey, ex);
-            throw new IllegalStateException("SHA-256 indisponível para gerar jobId", ex);
         }
     }
 

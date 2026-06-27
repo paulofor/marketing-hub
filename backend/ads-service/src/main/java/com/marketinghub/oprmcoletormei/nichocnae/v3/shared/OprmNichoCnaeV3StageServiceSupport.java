@@ -62,11 +62,16 @@ public abstract class OprmNichoCnaeV3StageServiceSupport {
 
     /** Marca no cadastro de CNAE que o pipeline NichoCNAE v3 foi iniciado na etapa atual. */
     protected void markCnaePipelineStarted(String cnaeCode, String statusStarted) {
+        markCnaePipelineStarted(cnaeCode, stageCode, statusStarted);
+    }
+
+    /** Marca no cadastro de CNAE que o pipeline NichoCNAE v3 foi iniciado na etapa informada. */
+    private void markCnaePipelineStarted(String cnaeCode, String currentStageCode, String statusStarted) {
         OprmCnpjCnaeDim cnae = cnaeRepository.findById(cnaeCode)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "CNAE não encontrado."));
         Instant now = Instant.now();
         cnae.setNichocnaePipelineStatus(statusStarted);
-        cnae.setNichocnaeCurrentStageCode(stageCode);
+        cnae.setNichocnaeCurrentStageCode(currentStageCode);
         cnae.setNichocnaePipelineUpdatedAt(now);
         cnae.setUpdatedAt(now);
         cnaeRepository.save(cnae);
@@ -168,7 +173,7 @@ public abstract class OprmNichoCnaeV3StageServiceSupport {
         return "nichocnae-v3-" + cnae.getCnaeCode();
     }
 
-    /** Registra conclusão reportada pelo executor externo. */
+    /** Registra conclusão reportada pelo executor externo e publica a próxima etapa no cadastro do CNAE. */
     protected OprmNichoCnaeV3StageExecution doComplete(Long stageExecutionId, String outputPayload, String nextStageCode) {
         OprmNichoCnaeV3StageExecution execution = find(stageExecutionId);
         execution.setStatus(OprmNichoCnaeV3StageExecutionStatus.COMPLETED);
@@ -176,7 +181,9 @@ public abstract class OprmNichoCnaeV3StageServiceSupport {
         execution.setNextStageCode(nextStageCode);
         execution.setUpdatedAt(Instant.now());
         OprmNichoCnaeV3StageExecution saved = repository.save(execution);
-        createNextStageWhenAllowed(saved, outputPayload, nextStageCode);
+        if (createNextStageWhenAllowed(saved, outputPayload, nextStageCode)) {
+            markCnaePipelineStarted(saved.getCnaeCode(), normalizedStage(nextStageCode), STATUS_STARTED);
+        }
         return saved;
     }
 
@@ -190,12 +197,12 @@ public abstract class OprmNichoCnaeV3StageServiceSupport {
     }
 
     /** Cria a próxima pendência quando o backend reconhecer avanço sequencial válido. */
-    private void createNextStageWhenAllowed(OprmNichoCnaeV3StageExecution current, String outputPayload, String nextStageCode) {
-        String normalizedNextStage = nextStageCode == null ? "" : nextStageCode.trim();
+    private boolean createNextStageWhenAllowed(OprmNichoCnaeV3StageExecution current, String outputPayload, String nextStageCode) {
+        String normalizedNextStage = normalizedStage(nextStageCode);
         if (requiresUserConfirmation(current, normalizedNextStage)
                 || !isAllowedNextStage(normalizedNextStage)
                 || repository.existsByJobIdAndStageCode(current.getJobId(), normalizedNextStage)) {
-            return;
+            return false;
         }
         OprmNichoCnaeV3StageExecution next = new OprmNichoCnaeV3StageExecution();
         next.setJobId(current.getJobId());
@@ -205,6 +212,12 @@ public abstract class OprmNichoCnaeV3StageServiceSupport {
         next.setAttemptNumber(current.getAttemptNumber());
         next.setKnowledgeVersion(current.getKnowledgeVersion());
         repository.save(next);
+        return true;
+    }
+
+    /** Normaliza o código de etapa para comparação e persistência canônica. */
+    private String normalizedStage(String nextStageCode) {
+        return nextStageCode == null ? "" : nextStageCode.trim();
     }
 
     /** Bloqueia a etapa final até a confirmação explícita do usuário na tela. */

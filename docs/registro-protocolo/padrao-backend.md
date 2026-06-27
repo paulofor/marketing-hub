@@ -36,9 +36,9 @@
 
 ## 2026-06-25 — MOIS dossiê v1
 
-- Backend protegido/criado: `com.marketinghub.moissaleslibraryworker.pipelines.dossie.v1` com pacotes por etapa.
+- Backend protegido/criado: `com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1` com pacotes por etapa.
 - Módulo executor responsável pela execução operacional: `mois-sales-library-worker`.
-- Endpoints internos pending canônicos aplicados no padrão `/api/internal/mois/dossie/v1/<etapa>/stage-executions/pending`.
+- Endpoints internos pending canônicos aplicados no padrão `/api/internal/mois/dossieproduto/v1/<etapa>/stage-executions/pending`.
 - Contratos da operação mantidos como `record` em subpacotes de `service`.
 
 - 2026-06-26 — Aplicado ao pipeline `geracaoanuncios` v1 no backend, pacote `com.marketinghub.pipelines.aiworker.geracaoanuncios.v1`, etapas `texto` e `imagem`, com endpoints pending canônicos `/api/internal/aiworker/geracaoanuncios/v1/texto/stage-executions/pending` e `/api/internal/aiworker/geracaoanuncios/v1/imagem/stage-executions/pending` e contratos DTO como `record` em subpacotes de service.
@@ -47,6 +47,6 @@
 ## 2026-06-26 — Consolidação MOIS dossiê v1
 
 - Removido o pacote backend duplicado `com.marketinghub.pipelines.mois.dossieproduto.v1`.
-- Pacote canônico mantido para o backend: `com.marketinghub.moissaleslibraryworker.pipelines.dossie.v1`.
+- Pacote canônico mantido para o backend: `com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1`.
 - Módulo executor responsável pela execução operacional: `mois-sales-library-worker`.
 - 2026-06-26 — Aplicado ao pipeline `geraanuncio` v2 no backend, pacote `com.marketinghub.geraanuncio.v2`, etapas `texto` e `imagem`, com endpoints pending canônicos `/api/internal/geraanuncio/v2/texto/stage-executions/pending` e `/api/internal/geraanuncio/v2/imagem/stage-executions/pending` e contratos DTO como `record` em subpacotes de service.

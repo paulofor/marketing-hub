@@ -1854,7 +1854,7 @@ Arquivos principais:
 ## 2026-06-26 — Consolidação dos pacotes do dossiê da Página de Vendas
 
 - Mantido no módulo executor apenas o pacote canônico `com.marketinghub.pipelines.dossie.v1` para o pipeline v1 de dossiê.
-- Ajustado o backend para usar o pacote canônico `com.marketinghub.moissaleslibraryworker.pipelines.dossie.v1`.
+- Ajustado o backend para usar o pacote canônico `com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1`.
 - Removidos os pacotes duplicados `dossieproduto.v1` do executor e do backend para evitar divergência operacional e de contratos.
 
 ## 2026-06-26 — RecebeRequest do dossiê de produto MOIS v1

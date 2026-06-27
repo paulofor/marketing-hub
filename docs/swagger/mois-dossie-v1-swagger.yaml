@@ -14,15 +14,15 @@ tags:
   - name: moissaleslibraryworker.dossieproduto.v1
     description: Pipeline v1 de dossiê de produto da biblioteca de páginas de venda MOIS
 paths:
-  /api/internal/mois/dossieproduto/v1/intake/stage-executions/start:
+  /api/internal/moissaleslibraryworker/dossieproduto/v1/intake/stage-executions/{idExterno}/start:
     post:
       tags:
         - moissaleslibraryworker.dossieproduto.v1
       summary: Inicia manualmente a etapa Entrada inicial do dossiê MOIS v1
       operationId: startMoisDossieProdutoV1IntakeStageExecution
       parameters:
-        - name: productKey
-          in: query
+        - name: idExterno
+          in: path
           required: true
           schema:
             type: string
@@ -30,7 +30,7 @@ paths:
       responses:
         '200':
           description: Etapa iniciada sem corpo de resposta
-  /api/internal/mois/dossieproduto/v1/intake/stage-executions/pending:
+  /api/internal/moissaleslibraryworker/dossieproduto/v1/intake/stage-executions/pending:
     post:
       tags:
         - moissaleslibraryworker.dossieproduto.v1
@@ -49,14 +49,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DossierIntakePendingResponse"
-  /api/internal/mois/dossieproduto/v1/intake/stage-executions/{productKey}/{jobId}/recebeRequest:
+  /api/internal/moissaleslibraryworker/dossieproduto/v1/intake/stage-executions/{idExterno}/{jobId}/recebeRequest:
     post:
       tags:
         - moissaleslibraryworker.dossieproduto.v1
       summary: Recebe request operacional da etapa intake do dossiê MOIS v1
       operationId: recebeRequestMoisDossieProdutoV1IntakeStageExecutions
       parameters:
-        - name: productKey
+        - name: idExterno
           in: path
           required: true
           schema:
@@ -79,14 +79,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DossierIntakeRecebeRequestResponse"
-  /api/internal/mois/dossieproduto/v1/intake/stage-executions/{productKey}/{jobId}/recebeResponse:
+  /api/internal/moissaleslibraryworker/dossieproduto/v1/intake/stage-executions/{idExterno}/{jobId}/recebeResponse:
     post:
       tags:
         - moissaleslibraryworker.dossieproduto.v1
       summary: Recebe resposta operacional da etapa intake do dossiê MOIS v1
       operationId: recebeResponseMoisDossieProdutoV1IntakeStageExecutions
       parameters:
-        - name: productKey
+        - name: idExterno
           in: path
           required: true
           schema:
@@ -109,15 +109,15 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DossierIntakeRecebeResponseResponse"
-  /api/internal/mois/dossieproduto/v1/product-understanding/stage-executions/start:
+  /api/internal/moissaleslibraryworker/dossieproduto/v1/product-understanding/stage-executions/{idExterno}/start:
     post:
       tags:
         - moissaleslibraryworker.dossieproduto.v1
       summary: Inicia manualmente a etapa Entendimento do produto do dossiê MOIS v1
       operationId: startMoisDossieProdutoV1ProductUnderstandingStageExecution
       parameters:
-        - name: productKey
-          in: query
+        - name: idExterno
+          in: path
           required: true
           schema:
             type: string
@@ -125,7 +125,7 @@ paths:
       responses:
         '200':
           description: Etapa iniciada sem corpo de resposta
-  /api/internal/mois/dossieproduto/v1/product-understanding/stage-executions/pending:
+  /api/internal/moissaleslibraryworker/dossieproduto/v1/product-understanding/stage-executions/pending:
     post:
       tags:
         - moissaleslibraryworker.dossieproduto.v1
@@ -144,14 +144,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DossierProductUnderstandingPendingResponse"
-  /api/internal/mois/dossieproduto/v1/product-understanding/stage-executions/{productKey}/{jobId}/recebeRequest:
+  /api/internal/moissaleslibraryworker/dossieproduto/v1/product-understanding/stage-executions/{idExterno}/{jobId}/recebeRequest:
     post:
       tags:
         - moissaleslibraryworker.dossieproduto.v1
       summary: Recebe request operacional da etapa product-understanding do dossiê MOIS v1
       operationId: recebeRequestMoisDossieProdutoV1ProductUnderstandingStageExecutions
       parameters:
-        - name: productKey
+        - name: idExterno
           in: path
           required: true
           schema:
@@ -174,14 +174,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DossierProductUnderstandingRecebeRequestResponse"
-  /api/internal/mois/dossieproduto/v1/product-understanding/stage-executions/{productKey}/{jobId}/recebeResponse:
+  /api/internal/moissaleslibraryworker/dossieproduto/v1/product-understanding/stage-executions/{idExterno}/{jobId}/recebeResponse:
     post:
       tags:
         - moissaleslibraryworker.dossieproduto.v1
       summary: Recebe resposta operacional da etapa product-understanding do dossiê MOIS v1
       operationId: recebeResponseMoisDossieProdutoV1ProductUnderstandingStageExecutions
       parameters:
-        - name: productKey
+        - name: idExterno
           in: path
           required: true
           schema:
@@ -204,15 +204,15 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DossierProductUnderstandingRecebeResponseResponse"
-  /api/internal/mois/dossieproduto/v1/investigation-anchor-builder/stage-executions/start:
+  /api/internal/moissaleslibraryworker/dossieproduto/v1/investigation-anchor-builder/stage-executions/{idExterno}/start:
     post:
       tags:
         - moissaleslibraryworker.dossieproduto.v1
       summary: Inicia manualmente a etapa Geração de âncoras de investigação do dossiê MOIS v1
       operationId: startMoisDossieProdutoV1InvestigationAnchorBuilderStageExecution
       parameters:
-        - name: productKey
-          in: query
+        - name: idExterno
+          in: path
           required: true
           schema:
             type: string
@@ -220,7 +220,7 @@ paths:
       responses:
         '200':
           description: Etapa iniciada sem corpo de resposta
-  /api/internal/mois/dossieproduto/v1/investigation-anchor-builder/stage-executions/pending:
+  /api/internal/moissaleslibraryworker/dossieproduto/v1/investigation-anchor-builder/stage-executions/pending:
     post:
       tags:
         - moissaleslibraryworker.dossieproduto.v1
@@ -239,14 +239,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DossierInvestigationAnchorBuilderPendingResponse"
-  /api/internal/mois/dossieproduto/v1/investigation-anchor-builder/stage-executions/{productKey}/{jobId}/recebeRequest:
+  /api/internal/moissaleslibraryworker/dossieproduto/v1/investigation-anchor-builder/stage-executions/{idExterno}/{jobId}/recebeRequest:
     post:
       tags:
         - moissaleslibraryworker.dossieproduto.v1
       summary: Recebe request operacional da etapa investigation-anchor-builder do dossiê MOIS v1
       operationId: recebeRequestMoisDossieProdutoV1InvestigationAnchorBuilderStageExecutions
       parameters:
-        - name: productKey
+        - name: idExterno
           in: path
           required: true
           schema:
@@ -269,14 +269,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DossierInvestigationAnchorBuilderRecebeRequestResponse"
-  /api/internal/mois/dossieproduto/v1/investigation-anchor-builder/stage-executions/{productKey}/{jobId}/recebeResponse:
+  /api/internal/moissaleslibraryworker/dossieproduto/v1/investigation-anchor-builder/stage-executions/{idExterno}/{jobId}/recebeResponse:
     post:
       tags:
         - moissaleslibraryworker.dossieproduto.v1
       summary: Recebe resposta operacional da etapa investigation-anchor-builder do dossiê MOIS v1
       operationId: recebeResponseMoisDossieProdutoV1InvestigationAnchorBuilderStageExecutions
       parameters:
-        - name: productKey
+        - name: idExterno
           in: path
           required: true
           schema:
@@ -299,15 +299,15 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DossierInvestigationAnchorBuilderRecebeResponseResponse"
-  /api/internal/mois/dossieproduto/v1/warmup-resource-discovery/stage-executions/start:
+  /api/internal/moissaleslibraryworker/dossieproduto/v1/warmup-resource-discovery/stage-executions/{idExterno}/start:
     post:
       tags:
         - moissaleslibraryworker.dossieproduto.v1
       summary: Inicia manualmente a etapa Descoberta de recursos de aquecimento do dossiê MOIS v1
       operationId: startMoisDossieProdutoV1WarmupResourceDiscoveryStageExecution
       parameters:
-        - name: productKey
-          in: query
+        - name: idExterno
+          in: path
           required: true
           schema:
             type: string
@@ -315,7 +315,7 @@ paths:
       responses:
         '200':
           description: Etapa iniciada sem corpo de resposta
-  /api/internal/mois/dossieproduto/v1/warmup-resource-discovery/stage-executions/pending:
+  /api/internal/moissaleslibraryworker/dossieproduto/v1/warmup-resource-discovery/stage-executions/pending:
     post:
       tags:
         - moissaleslibraryworker.dossieproduto.v1
@@ -334,14 +334,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DossierWarmupResourceDiscoveryPendingResponse"
-  /api/internal/mois/dossieproduto/v1/warmup-resource-discovery/stage-executions/{productKey}/{jobId}/recebeRequest:
+  /api/internal/moissaleslibraryworker/dossieproduto/v1/warmup-resource-discovery/stage-executions/{idExterno}/{jobId}/recebeRequest:
     post:
       tags:
         - moissaleslibraryworker.dossieproduto.v1
       summary: Recebe request operacional da etapa warmup-resource-discovery do dossiê MOIS v1
       operationId: recebeRequestMoisDossieProdutoV1WarmupResourceDiscoveryStageExecutions
       parameters:
-        - name: productKey
+        - name: idExterno
           in: path
           required: true
           schema:
@@ -364,14 +364,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DossierWarmupResourceDiscoveryRecebeRequestResponse"
-  /api/internal/mois/dossieproduto/v1/warmup-resource-discovery/stage-executions/{productKey}/{jobId}/recebeResponse:
+  /api/internal/moissaleslibraryworker/dossieproduto/v1/warmup-resource-discovery/stage-executions/{idExterno}/{jobId}/recebeResponse:
     post:
       tags:
         - moissaleslibraryworker.dossieproduto.v1
       summary: Recebe resposta operacional da etapa warmup-resource-discovery do dossiê MOIS v1
       operationId: recebeResponseMoisDossieProdutoV1WarmupResourceDiscoveryStageExecutions
       parameters:
-        - name: productKey
+        - name: idExterno
           in: path
           required: true
           schema:
@@ -394,15 +394,15 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DossierWarmupResourceDiscoveryRecebeResponseResponse"
-  /api/internal/mois/dossieproduto/v1/source-product-match/stage-executions/start:
+  /api/internal/moissaleslibraryworker/dossieproduto/v1/source-product-match/stage-executions/{idExterno}/start:
     post:
       tags:
         - moissaleslibraryworker.dossieproduto.v1
       summary: Inicia manualmente a etapa Validação de relação fonte-produto do dossiê MOIS v1
       operationId: startMoisDossieProdutoV1SourceProductMatchStageExecution
       parameters:
-        - name: productKey
-          in: query
+        - name: idExterno
+          in: path
           required: true
           schema:
             type: string
@@ -410,7 +410,7 @@ paths:
       responses:
         '200':
           description: Etapa iniciada sem corpo de resposta
-  /api/internal/mois/dossieproduto/v1/source-product-match/stage-executions/pending:
+  /api/internal/moissaleslibraryworker/dossieproduto/v1/source-product-match/stage-executions/pending:
     post:
       tags:
         - moissaleslibraryworker.dossieproduto.v1
@@ -429,14 +429,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DossierSourceProductMatchPendingResponse"
-  /api/internal/mois/dossieproduto/v1/source-product-match/stage-executions/{productKey}/{jobId}/recebeRequest:
+  /api/internal/moissaleslibraryworker/dossieproduto/v1/source-product-match/stage-executions/{idExterno}/{jobId}/recebeRequest:
     post:
       tags:
         - moissaleslibraryworker.dossieproduto.v1
       summary: Recebe request operacional da etapa source-product-match do dossiê MOIS v1
       operationId: recebeRequestMoisDossieProdutoV1SourceProductMatchStageExecutions
       parameters:
-        - name: productKey
+        - name: idExterno
           in: path
           required: true
           schema:
@@ -459,14 +459,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DossierSourceProductMatchRecebeRequestResponse"
-  /api/internal/mois/dossieproduto/v1/source-product-match/stage-executions/{productKey}/{jobId}/recebeResponse:
+  /api/internal/moissaleslibraryworker/dossieproduto/v1/source-product-match/stage-executions/{idExterno}/{jobId}/recebeResponse:
     post:
       tags:
         - moissaleslibraryworker.dossieproduto.v1
       summary: Recebe resposta operacional da etapa source-product-match do dossiê MOIS v1
       operationId: recebeResponseMoisDossieProdutoV1SourceProductMatchStageExecutions
       parameters:
-        - name: productKey
+        - name: idExterno
           in: path
           required: true
           schema:
@@ -489,15 +489,15 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DossierSourceProductMatchRecebeResponseResponse"
-  /api/internal/mois/dossieproduto/v1/warmup-signal-extraction/stage-executions/start:
+  /api/internal/moissaleslibraryworker/dossieproduto/v1/warmup-signal-extraction/stage-executions/{idExterno}/start:
     post:
       tags:
         - moissaleslibraryworker.dossieproduto.v1
       summary: Inicia manualmente a etapa Extração de sinais de aquecimento do dossiê MOIS v1
       operationId: startMoisDossieProdutoV1WarmupSignalExtractionStageExecution
       parameters:
-        - name: productKey
-          in: query
+        - name: idExterno
+          in: path
           required: true
           schema:
             type: string
@@ -505,7 +505,7 @@ paths:
       responses:
         '200':
           description: Etapa iniciada sem corpo de resposta
-  /api/internal/mois/dossieproduto/v1/warmup-signal-extraction/stage-executions/pending:
+  /api/internal/moissaleslibraryworker/dossieproduto/v1/warmup-signal-extraction/stage-executions/pending:
     post:
       tags:
         - moissaleslibraryworker.dossieproduto.v1
@@ -524,14 +524,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DossierWarmupSignalExtractionPendingResponse"
-  /api/internal/mois/dossieproduto/v1/warmup-signal-extraction/stage-executions/{productKey}/{jobId}/recebeRequest:
+  /api/internal/moissaleslibraryworker/dossieproduto/v1/warmup-signal-extraction/stage-executions/{idExterno}/{jobId}/recebeRequest:
     post:
       tags:
         - moissaleslibraryworker.dossieproduto.v1
       summary: Recebe request operacional da etapa warmup-signal-extraction do dossiê MOIS v1
       operationId: recebeRequestMoisDossieProdutoV1WarmupSignalExtractionStageExecutions
       parameters:
-        - name: productKey
+        - name: idExterno
           in: path
           required: true
           schema:
@@ -554,14 +554,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DossierWarmupSignalExtractionRecebeRequestResponse"
-  /api/internal/mois/dossieproduto/v1/warmup-signal-extraction/stage-executions/{productKey}/{jobId}/recebeResponse:
+  /api/internal/moissaleslibraryworker/dossieproduto/v1/warmup-signal-extraction/stage-executions/{idExterno}/{jobId}/recebeResponse:
     post:
       tags:
         - moissaleslibraryworker.dossieproduto.v1
       summary: Recebe resposta operacional da etapa warmup-signal-extraction do dossiê MOIS v1
       operationId: recebeResponseMoisDossieProdutoV1WarmupSignalExtractionStageExecutions
       parameters:
-        - name: productKey
+        - name: idExterno
           in: path
           required: true
           schema:
@@ -584,15 +584,15 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DossierWarmupSignalExtractionRecebeResponseResponse"
-  /api/internal/mois/dossieproduto/v1/warmup-map-builder/stage-executions/start:
+  /api/internal/moissaleslibraryworker/dossieproduto/v1/warmup-map-builder/stage-executions/{idExterno}/start:
     post:
       tags:
         - moissaleslibraryworker.dossieproduto.v1
       summary: Inicia manualmente a etapa Montagem do mapa de aquecimento do dossiê MOIS v1
       operationId: startMoisDossieProdutoV1WarmupMapBuilderStageExecution
       parameters:
-        - name: productKey
-          in: query
+        - name: idExterno
+          in: path
           required: true
           schema:
             type: string
@@ -600,7 +600,7 @@ paths:
       responses:
         '200':
           description: Etapa iniciada sem corpo de resposta
-  /api/internal/mois/dossieproduto/v1/warmup-map-builder/stage-executions/pending:
+  /api/internal/moissaleslibraryworker/dossieproduto/v1/warmup-map-builder/stage-executions/pending:
     post:
       tags:
         - moissaleslibraryworker.dossieproduto.v1
@@ -619,14 +619,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DossierWarmupMapBuilderPendingResponse"
-  /api/internal/mois/dossieproduto/v1/warmup-map-builder/stage-executions/{productKey}/{jobId}/recebeRequest:
+  /api/internal/moissaleslibraryworker/dossieproduto/v1/warmup-map-builder/stage-executions/{idExterno}/{jobId}/recebeRequest:
     post:
       tags:
         - moissaleslibraryworker.dossieproduto.v1
       summary: Recebe request operacional da etapa warmup-map-builder do dossiê MOIS v1
       operationId: recebeRequestMoisDossieProdutoV1WarmupMapBuilderStageExecutions
       parameters:
-        - name: productKey
+        - name: idExterno
           in: path
           required: true
           schema:
@@ -649,14 +649,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DossierWarmupMapBuilderRecebeRequestResponse"
-  /api/internal/mois/dossieproduto/v1/warmup-map-builder/stage-executions/{productKey}/{jobId}/recebeResponse:
+  /api/internal/moissaleslibraryworker/dossieproduto/v1/warmup-map-builder/stage-executions/{idExterno}/{jobId}/recebeResponse:
     post:
       tags:
         - moissaleslibraryworker.dossieproduto.v1
       summary: Recebe resposta operacional da etapa warmup-map-builder do dossiê MOIS v1
       operationId: recebeResponseMoisDossieProdutoV1WarmupMapBuilderStageExecutions
       parameters:
-        - name: productKey
+        - name: idExterno
           in: path
           required: true
           schema:
@@ -679,15 +679,15 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DossierWarmupMapBuilderRecebeResponseResponse"
-  /api/internal/mois/dossieproduto/v1/dossier-synthesis/stage-executions/start:
+  /api/internal/moissaleslibraryworker/dossieproduto/v1/dossier-synthesis/stage-executions/{idExterno}/start:
     post:
       tags:
         - moissaleslibraryworker.dossieproduto.v1
       summary: Inicia manualmente a etapa Síntese final do dossiê do dossiê MOIS v1
       operationId: startMoisDossieProdutoV1DossierSynthesisStageExecution
       parameters:
-        - name: productKey
-          in: query
+        - name: idExterno
+          in: path
           required: true
           schema:
             type: string
@@ -695,7 +695,7 @@ paths:
       responses:
         '200':
           description: Etapa iniciada sem corpo de resposta
-  /api/internal/mois/dossieproduto/v1/dossier-synthesis/stage-executions/pending:
+  /api/internal/moissaleslibraryworker/dossieproduto/v1/dossier-synthesis/stage-executions/pending:
     post:
       tags:
         - moissaleslibraryworker.dossieproduto.v1
@@ -714,14 +714,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DossierDossierSynthesisPendingResponse"
-  /api/internal/mois/dossieproduto/v1/dossier-synthesis/stage-executions/{productKey}/{jobId}/recebeRequest:
+  /api/internal/moissaleslibraryworker/dossieproduto/v1/dossier-synthesis/stage-executions/{idExterno}/{jobId}/recebeRequest:
     post:
       tags:
         - moissaleslibraryworker.dossieproduto.v1
       summary: Recebe request operacional da etapa dossier-synthesis do dossiê MOIS v1
       operationId: recebeRequestMoisDossieProdutoV1DossierSynthesisStageExecutions
       parameters:
-        - name: productKey
+        - name: idExterno
           in: path
           required: true
           schema:
@@ -744,14 +744,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DossierDossierSynthesisRecebeRequestResponse"
-  /api/internal/mois/dossieproduto/v1/dossier-synthesis/stage-executions/{productKey}/{jobId}/recebeResponse:
+  /api/internal/moissaleslibraryworker/dossieproduto/v1/dossier-synthesis/stage-executions/{idExterno}/{jobId}/recebeResponse:
     post:
       tags:
         - moissaleslibraryworker.dossieproduto.v1
       summary: Recebe resposta operacional da etapa dossier-synthesis do dossiê MOIS v1
       operationId: recebeResponseMoisDossieProdutoV1DossierSynthesisStageExecutions
       parameters:
-        - name: productKey
+        - name: idExterno
           in: path
           required: true
           schema:
@@ -871,7 +871,7 @@ components:
       type: object
       properties:
         jobId: { type: string }
-        productKey: { type: string }
+        idExterno: { type: string }
         stageCode: { type: string }
         status: { type: string }
         nextStageCode: { type: string, nullable: true }
@@ -970,7 +970,7 @@ components:
       type: object
       properties:
         jobId: { type: string }
-        productKey: { type: string }
+        idExterno: { type: string }
         stageCode: { type: string }
         status: { type: string }
         nextStageCode: { type: string, nullable: true }
@@ -1069,7 +1069,7 @@ components:
       type: object
       properties:
         jobId: { type: string }
-        productKey: { type: string }
+        idExterno: { type: string }
         stageCode: { type: string }
         status: { type: string }
         nextStageCode: { type: string, nullable: true }
@@ -1168,7 +1168,7 @@ components:
       type: object
       properties:
         jobId: { type: string }
-        productKey: { type: string }
+        idExterno: { type: string }
         stageCode: { type: string }
         status: { type: string }
         nextStageCode: { type: string, nullable: true }
@@ -1267,7 +1267,7 @@ components:
       type: object
       properties:
         jobId: { type: string }
-        productKey: { type: string }
+        idExterno: { type: string }
         stageCode: { type: string }
         status: { type: string }
         nextStageCode: { type: string, nullable: true }
@@ -1366,7 +1366,7 @@ components:
       type: object
       properties:
         jobId: { type: string }
-        productKey: { type: string }
+        idExterno: { type: string }
         stageCode: { type: string }
         status: { type: string }
         nextStageCode: { type: string, nullable: true }
@@ -1465,7 +1465,7 @@ components:
       type: object
       properties:
         jobId: { type: string }
-        productKey: { type: string }
+        idExterno: { type: string }
         stageCode: { type: string }
         status: { type: string }
         nextStageCode: { type: string, nullable: true }
@@ -1564,7 +1564,7 @@ components:
       type: object
       properties:
         jobId: { type: string }
-        productKey: { type: string }
+        idExterno: { type: string }
         stageCode: { type: string }
         status: { type: string }
         nextStageCode: { type: string, nullable: true }

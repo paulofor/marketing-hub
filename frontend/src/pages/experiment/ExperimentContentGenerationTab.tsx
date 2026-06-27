@@ -648,10 +648,6 @@ const REPORT_DOMAIN_ALIASES: Record<string, ContentGenerationSectionKey> = {
   "landing-html": "landing-html",
 };
 
-function getFrameworkSummary(value?: string) {
-  return value?.trim() || "Resumo ainda não preenchido na hipótese.";
-}
-
 function formatDateTime(value?: string) {
   if (!value) return "—";
   const date = new Date(value);
@@ -1423,59 +1419,6 @@ export default function ExperimentContentGenerationTab({
     return bySection;
   }, [mergedRequestsBySection]);
 
-  const frameworkContext = useMemo(
-    () => ({
-      pain: getFrameworkSummary(hypothesis?.framework?.pain?.summary),
-      result: getFrameworkSummary(hypothesis?.framework?.result?.summary),
-      mechanism: getFrameworkSummary(hypothesis?.framework?.mechanism?.summary),
-      proof: getFrameworkSummary(hypothesis?.framework?.proof?.summary),
-      offer: getFrameworkSummary(hypothesis?.framework?.offer?.summary),
-    }),
-    [
-      hypothesis?.framework?.mechanism?.summary,
-      hypothesis?.framework?.offer?.summary,
-      hypothesis?.framework?.pain?.summary,
-      hypothesis?.framework?.proof?.summary,
-      hypothesis?.framework?.result?.summary,
-    ],
-  );
-
-  const frameworkSummaryCards = useMemo(
-    () => [
-      {
-        key: "pain",
-        title: "Dor",
-        description: "Problema central que precisa ser resolvido.",
-        content: frameworkContext.pain,
-      },
-      {
-        key: "result",
-        title: "Resultado",
-        description: "Transformação desejada pelo público.",
-        content: frameworkContext.result,
-      },
-      {
-        key: "mechanism",
-        title: "Mecanismo",
-        description: "Como a solução funciona na prática.",
-        content: frameworkContext.mechanism,
-      },
-      {
-        key: "proof",
-        title: "Prova",
-        description: "Evidências que sustentam a promessa.",
-        content: frameworkContext.proof,
-      },
-      {
-        key: "offer",
-        title: "Oferta",
-        description: "Estrutura da entrega e chamada para ação.",
-        content: frameworkContext.offer,
-      },
-    ],
-    [frameworkContext],
-  );
-
   const persistedCampaignAngle = useMemo(
     () => parseCampaignAnglePayload(campaignAngle),
     [campaignAngle],
@@ -2132,31 +2075,6 @@ export default function ExperimentContentGenerationTab({
           )}
         </button>
       </div>
-
-      <section className="card">
-        <div className="card-body">
-          <h5 className="card-title mb-1">Contexto do framework da hipótese</h5>
-          <p className="text-muted mb-3">
-            Esses resumos de Dor, Resultado, Mecanismo, Prova e Oferta serão
-            enviados junto com cada solicitação para orientar o Worker IA.
-          </p>
-          <div className="row g-3">
-            {frameworkSummaryCards.map((card) => (
-              <div key={card.key} className="col-12 col-md-6 col-xl">
-                <div className="border rounded p-3 h-100 bg-light-subtle d-flex flex-column gap-2">
-                  <div>
-                    <h6 className="mb-1">
-                      Resumo da {card.title.toLowerCase()}
-                    </h6>
-                    <p className="mb-0 text-muted small">{card.description}</p>
-                  </div>
-                  <p className="mb-0 small lh-base">{card.content}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
       <PipelinePromptVersionsPanel
         versionsBySection={promptVersionsBySection}

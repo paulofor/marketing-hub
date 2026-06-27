@@ -36,7 +36,12 @@ public class BackendCnaeIntakeService extends OprmNichoCnaeV3StageServiceSupport
     /** Inicia pendência da etapa para o CNAE informado pela tela administrativa. */
     public CnaeIntakeCreateResponse start(String cnaeCode) {
         markCnaePipelineStarted(cnaeCode, STATUS_STARTED);
-        return create(null, cnaeCode, "{\"cnaeCode\":\"" + cnaeCode + "\"}", 1, 1);
+        return createForCnae(cnaeCode);
+    }
+
+    /** Cria a pendência inicial qualificada com código e nome completo do CNAE. */
+    public CnaeIntakeCreateResponse createForCnae(String cnaeCode) {
+        return create(null, cnaeCode, cnaeInputPayload(cnaeCode), 1, 1);
     }
 
     /** Recebe o request bruto da etapa e registra auditoria para o pipeline NichoCNAE v3. */

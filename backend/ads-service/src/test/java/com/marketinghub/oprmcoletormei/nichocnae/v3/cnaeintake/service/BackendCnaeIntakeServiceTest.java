@@ -57,8 +57,25 @@ class BackendCnaeIntakeServiceTest {
         assertThat(cnae.getNichocnaePipelineUpdatedAt()).isNotNull();
         ArgumentCaptor<OprmNichoCnaeV3StageExecution> executionCaptor = ArgumentCaptor.forClass(OprmNichoCnaeV3StageExecution.class);
         verify(repository, times(2)).save(executionCaptor.capture());
-        assertThat(executionCaptor.getAllValues().get(1).getStageCode()).isEqualTo("persona-candidate-generator");
+        OprmNichoCnaeV3StageExecution nextExecution = executionCaptor.getAllValues().get(1);
+        assertThat(nextExecution.getStageCode()).isEqualTo("persona-candidate-generator");
+        assertThat(nextExecution.getInputPayload()).isEqualTo("{\"ok\":true}");
         verify(cnaeRepository).save(cnae);
+    }
+
+    /** Garante que a etapa inicial nasce com o nome completo do CNAE no input funcional. */
+    @Test
+    void startCreatesQualifiedCnaeInputPayload() {
+        OprmCnpjCnaeDim cnae = cnae();
+        when(cnaeRepository.findById("4781400")).thenReturn(Optional.of(cnae));
+        when(repository.save(any(OprmNichoCnaeV3StageExecution.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.start("4781400");
+
+        ArgumentCaptor<OprmNichoCnaeV3StageExecution> executionCaptor = ArgumentCaptor.forClass(OprmNichoCnaeV3StageExecution.class);
+        verify(repository).save(executionCaptor.capture());
+        assertThat(executionCaptor.getValue().getStageCode()).isEqualTo("cnae-intake");
+        assertThat(executionCaptor.getValue().getInputPayload()).contains("\"cnaeDescription\":\"Comércio varejista de artigos do vestuário\"");
     }
 
     /** Monta uma execução pendente da etapa inicial. */

@@ -13,15 +13,27 @@ public final class CnaeIntakeProcessor implements StageProcessor {
     /** Executa a etapa cnae-intake produzindo saída estruturada para o backend decidir avanço. */
     @Override
     public StageResult process(StageContext context) {
+        String cnaeCode = requiredText(context.input().get("cnaeCode"), "cnaeCode");
+        String cnaeDescription = requiredText(context.input().get("cnaeDescription"), "cnaeDescription");
         Map<String, Object> output = new LinkedHashMap<>();
         output.put("stage", "cnae-intake");
         output.put("status", "CNAE_RECEBIDO");
         output.put("jobId", context.jobId());
         output.put("stageExecutionId", context.stageExecutionId());
+        output.put("cnaeCode", cnaeCode);
+        output.put("cnaeDescription", cnaeDescription);
         output.put("inputKeys", context.input().keySet());
         output.put("businessBoundary", "NAO_GERAR_OFERTA_CAMPANHA_LANDING");
         output.put("reportRole", "PERSONA_ROTINA_TAREFAS_DIARIAS");
         output.put("nextStageCode", "persona-candidate-generator");
-        return new StageResult("CNAE_RECEBIDO", output, List.of(new StageArtifact("CNAE_RECEBIDO", "inline://nichocnae-v3/cnae-intake", "Etapa cnae-intake concluída com contrato estruturado.")));
+        return new StageResult("CNAE_RECEBIDO", output, List.of(new StageArtifact("CNAE_RECEBIDO", "inline://nichocnae-v3/cnae-intake", "Etapa cnae-intake concluída com CNAE qualificado para geração de personas.")));
+    }
+
+    /** Extrai texto obrigatório do payload de entrada para impedir avanço sem contexto mínimo. */
+    private String requiredText(Object value, String fieldName) {
+        if (value == null || value.toString().isBlank()) {
+            throw new IllegalStateException("Etapa cnae-intake exige " + fieldName + " para qualificar a entrada do pipeline.");
+        }
+        return value.toString();
     }
 }

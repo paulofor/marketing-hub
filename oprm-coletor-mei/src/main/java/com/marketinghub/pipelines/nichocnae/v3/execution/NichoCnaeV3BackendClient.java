@@ -30,7 +30,7 @@ public class NichoCnaeV3BackendClient {
 
     /** Lista pendências de uma etapa v3 no endpoint canônico pending. */
     public List<NichoCnaeV3PendingExecution> listPending(NichoCnaeV3StageDefinition stage) {
-        Map<String, Object>[] response = restTemplate.getForObject(backendBaseUrl + stage.backendPath() + "/pending", Map[].class);
+        Map<String, Object>[] response = restTemplate.postForObject(backendBaseUrl + stage.backendPath() + "/pending", null, Map[].class);
         return response == null ? List.of() : Arrays.stream(response).map(this::toPending).toList();
     }
 

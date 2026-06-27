@@ -990,7 +990,7 @@ class ArquiteturaTest {
             String stageRoot = OPRM_NICHO_CNAE_V3_PACKAGE + "." + stagePackage;
             String controllerPackage = stageRoot + ".controller";
             String servicePackage = stageRoot + ".service";
-            String expectedEndpoint = "/api/internal/oprm/nichocnae/v3/" + endpointSlug + "/stage-executions";
+            String expectedEndpoint = "/api/internal/oprmcoletormei/nichocnae/v3/" + endpointSlug + "/stage-executions";
             List<JavaClass> controllerPackageClasses = directPackageClasses(importedClasses, controllerPackage);
             List<JavaClass> controllers = controllerPackageClasses.stream()
                     .filter(ArquiteturaTest::isBackendControllerClass)
@@ -1013,9 +1013,9 @@ class ArquiteturaTest {
                     violations.add("[ARQUITETURA] [BACKEND][OPRM][NichoCNAE-v3] classe="
                             + controller.getName() + " deve possuir @RequestMapping(\"" + expectedEndpoint + "\")");
                 }
-                if (!hasPendingGetMapping(controller)) {
+                if (!hasPendingPostMapping(controller)) {
                     violations.add("[ARQUITETURA] [BACKEND][OPRM][NichoCNAE-v3] classe="
-                            + controller.getName() + " deve expor @GetMapping(\"/pending\") como ponto inicial canônico do executor oprm-coletor-mei");
+                            + controller.getName() + " deve expor @PostMapping(\"/pending\") como ponto inicial canônico do executor oprm-coletor-mei");
                 }
             }
             List<JavaClass> servicePackageClasses = directPackageClasses(importedClasses, servicePackage);
@@ -1766,6 +1766,18 @@ class ArquiteturaTest {
         }
         return containsOnlyMapping(requestMapping.value(), expectedMapping)
                 || containsOnlyMapping(requestMapping.path(), expectedMapping);
+    }
+
+    /**
+     * Verifica se o controller expõe método pending com @PostMapping("/pending").
+     */
+    private static boolean hasPendingPostMapping(JavaClass javaClass) {
+        return javaClass.getMethods().stream()
+                .filter(method -> method.getName().equals("pending"))
+                .map(method -> method.reflect().getAnnotation(PostMapping.class))
+                .anyMatch(postMapping -> postMapping != null
+                        && (containsOnlyMapping(postMapping.value(), "/pending")
+                                || containsOnlyMapping(postMapping.path(), "/pending")));
     }
 
     /**

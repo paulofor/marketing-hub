@@ -5465,3 +5465,9 @@
 - Causa-raiz confirmada no Swagger publicado: a tela chamava `/api/internal/aiworker/geracaoanuncios/v1/texto/stage-executions/start` com `experimentKey` por query, mas o contrato exposto pelo backend aceita o início por caminho em `/{idExterno}/start` ou `/experiments/{experimentId}/start`.
 - Correção aplicada: o frontend passou a chamar `/api/internal/aiworker/geracaoanuncios/v1/texto/stage-executions/{experimentId}/start`, tratando o `idExterno` como o id do experimento.
 - Prevenção de recorrência: o teste da aba Criativos foi atualizado para validar exatamente a rota Swagger usada no clique do botão.
+
+## 2026-06-27 — Avanço de etapa do GeraAnuncio v1 na tabela de experimento
+
+- Solicitação: ao concluir uma etapa com sucesso no backend de `aiworker.geracaoanuncios.v1`, a tabela do experimento deve voltar o pipeline para `INICIADO`, registrar a data-hora atual e apontar a próxima etapa.
+- Ajuste aplicado: os callbacks de sucesso das etapas `texto` e `imagem` agora atualizam `mois_sales_page.status_pipeline_geracaoanuncios`, `data_pipeline_geracaoanuncios` e `etapa_pipeline_geracaoanuncios` conforme a próxima etapa funcional.
+- Prevenção de recorrência: foi adicionada coluna canônica para a etapa do pipeline no controle de experimento, evitando depender apenas do histórico técnico da tabela de auditoria.

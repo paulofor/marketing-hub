@@ -41,7 +41,6 @@ public class GeraAnuncioImagemService {
     private static final String STATUS_WAITING = "AGUARDANDO_RETORNO_MODULO";
     private static final String STATUS_AGUARDANDO_MODULO = "AGUARDANDO_MODULO";
     private static final String PIPELINE_VERSION = "v1";
-    private static final String STATUS_COMPLETED = "CONCLUIDO";
     private static final String STATUS_FAILED = "FALHA";
     private final ExperimentService experimentService;
     private final OprmNicheCandidateRepository cnaeRepository;
@@ -153,7 +152,12 @@ public class GeraAnuncioImagemService {
         MoisSalesPage salesPage = salesPageRepository
                 .findById(resolveExperimentId(experimentKey))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Sales page not found"));
-        salesPage.setStatusPipelineGeracaoAnuncios(StringUtils.hasText(descricaoErro) ? STATUS_FAILED : STATUS_COMPLETED);
+        if (StringUtils.hasText(descricaoErro)) {
+            salesPage.setStatusPipelineGeracaoAnuncios(STATUS_FAILED);
+        } else {
+            salesPage.setStatusPipelineGeracaoAnuncios(STATUS_STARTED);
+            salesPage.setEtapaPipelineGeracaoAnuncios(NEXT_STAGE);
+        }
         salesPage.setDataPipelineGeracaoAnuncios(now);
         salesPageRepository.save(salesPage);
 

@@ -212,6 +212,37 @@ class ExperimentControllerTest {
                 .andExpect(jsonPath("$.creativesToGenerate").value(0));
     }
 
+    /** Garante que o start do GeraAnuncio v2 enfileira o experimento na geração real de criativos. */
+    @Test
+    void geraAnuncioTextoStartEnqueuesExperimentCreativeGeneration() throws Exception {
+        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("Pipeline").build());
+        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(nicheRepo.findById(nicheId).orElseThrow())
+                .title("Hipótese pipeline")
+                .premiseAngle(angle)
+                .build());
+        var experiment = repository.save(com.marketinghub.experiment.Experiment.builder()
+                .niche(nicheRepo.findById(nicheId).orElseThrow())
+                .name("Experimento Pipeline")
+                .hypothesisRef(hyp)
+                .adCopy("{\"adCopy\":{\"primaryTextVariants\":[{\"primaryText\":\"Texto\",\"headline\":\"Headline\"}]}}")
+                .adImageBriefing("{\"adImageBriefing\":{\"briefings\":[{\"visualBriefing\":\"Imagem\"}]}}")
+                .build());
+
+        mockMvc.perform(post("/api/internal/aiworker/geracaoanuncios/v1/texto/stage-executions/experiments/{experimentId}/start",
+                        experiment.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.stageExecutionId").value("geracaoanuncios-v1-texto-exp-" + experiment.getId()))
+                .andExpect(jsonPath("$.status").value("REQUESTED"));
+
+        mockMvc.perform(get("/api/experiments/creatives/stage-executions/pending")
+                        .param("limit", "5"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(experiment.getId()))
+                .andExpect(jsonPath("$[0].creativeGenerationMode").value("PIPELINE_ADS"))
+                .andExpect(jsonPath("$[0].creativesToGenerate").value(3));
+    }
+
     @Test
     void createEndpointRejectsMissingJourneyTemplate() throws Exception {
         var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("A").build());

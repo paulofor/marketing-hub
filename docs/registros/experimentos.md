@@ -5479,3 +5479,10 @@
 - Correção aplicada: durante o POST de nova solicitação, a UI oculta o badge e o detalhe da falha recuperável anterior, mantendo o botão em carregamento até o backend responder.
 - Prevenção de recorrência: foi adicionado teste de frontend garantindo que a falha anterior desaparece enquanto o retry está pendente.
 - Observação operacional: a consulta aos logs via MCP retornou timeout de conexão no momento da investigação, então não houve evidência nova suficiente para confirmar uma nova falha do worker nesta rodada.
+
+## 2026-06-27 — Correção do start de criativos do Experimento 50
+
+- Problema: o botão “Gerar anúncios do pipeline” no experimento 50 podia iniciar a etapa Texto usando o identificador como CNAE, criando pendência `geracaoanuncios-v1-texto-cnae-50` em vez de enfileirar o experimento da tela.
+- Causa-raiz: o endpoint genérico `/{idExterno}/start` e o service da etapa Texto resolviam o número recebido pelo repositório de CNAE, enquanto a tela de experimento precisava gravar a fila real `creatives_to_generate` do próprio experimento.
+- Correção aplicada: a tela passou a chamar a rota explícita `/experiments/{experimentId}/start`, e o start da etapa Texto passou a usar `ExperimentService.requestPipelineCreatives`, gravando `PIPELINE_ADS`, `REQUESTED` e `creatives_to_generate=3` para consumo do AI Worker que cria os criativos.
+- Prevenção de recorrência: adicionado teste backend garantindo que o start do GeraAnuncio v2 coloca o experimento na fila `/api/experiments/creatives/stage-executions/pending`, e teste frontend atualizado para bloquear a rota ambígua.

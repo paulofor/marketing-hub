@@ -61,7 +61,7 @@ public class PipelineGeracaoAnuncios {
     @Column(name = "prompt", columnDefinition = "LONGTEXT")
     private String prompt;
 
-    @Column(name = "schema", columnDefinition = "LONGTEXT")
+    @Column(name = "schema_json", columnDefinition = "LONGTEXT")
     private String schema;
 
     @Column(name = "versao_pipeline", length = 64)

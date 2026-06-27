@@ -1,0 +1,64 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-27-01-rename-pipeline-geracaoanuncios-schema-json
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: pipeline_geracaoanuncios
+        - columnExists:
+            tableName: pipeline_geracaoanuncios
+            columnName: schema
+        - not:
+            columnExists:
+              tableName: pipeline_geracaoanuncios
+              columnName: schema_json
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE pipeline_geracaoanuncios
+                CHANGE COLUMN `schema` schema_json LONGTEXT NULL;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE pipeline_geracaoanuncios
+                CHANGE COLUMN schema_json `schema` LONGTEXT NULL;
+
+  - changeSet:
+      id: 2026-06-27-02-rename-pipeline-nichocnae-schema-json
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: pipeline_nichocnae
+        - columnExists:
+            tableName: pipeline_nichocnae
+            columnName: schema
+        - not:
+            columnExists:
+              tableName: pipeline_nichocnae
+              columnName: schema_json
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE pipeline_nichocnae
+                CHANGE COLUMN `schema` schema_json LONGTEXT NULL;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE pipeline_nichocnae
+                CHANGE COLUMN schema_json `schema` LONGTEXT NULL;

@@ -1164,6 +1164,10 @@ databaseChangeLog:
       file: changesets/2026-06-26-pipeline-geracaoanuncios.yaml
       relativeToChangelogFile: true
 
+  - include:
+      file: changesets/2026-06-27-pipeline-schema-json-column-names.yaml
+      relativeToChangelogFile: true
+
 
   - include:
       file: changesets/2026-06-26-mois-sales-page-geracaoanuncios-pipeline.yaml

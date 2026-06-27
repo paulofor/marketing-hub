@@ -1883,3 +1883,7 @@ Arquivos principais:
 
 - Ajustados os controllers do backend `moissaleslibraryworker.dossieproduto.v1` para expor os endpoints internos com domínio `moissaleslibraryworker`, etapa na URL e `idExterno` como identificador operacional no caminho.
 - Atualizada a documentação Swagger do dossiê para refletir `start`, `recebeRequest`, `recebeResponse` e `pending` no novo padrão canônico solicitado.
+
+## 2026-06-27 — Destravamento da fila do dossiê MOIS v1
+- Diagnosticado que o dossiê do produto 286 (`Vértuz App`) estava iniciado em `product-understanding`, mas a fila canônica da etapa retornava erro 500 antes de entregar trabalhos ao executor por causa de uma pendência legada do produto 329 sem `jobId` auditável.
+- Corrigida a causa-raiz no backend: os endpoints `pending` do pipeline `dossieproduto.v1` agora recompõem um `jobId` UUID com auditoria mínima quando encontram pendências antigas sem registro rastreável, evitando que um item legado bloqueie os demais produtos da fila.

@@ -5456,3 +5456,5 @@
 - Solicitação: o botão “Gerar anúncios do pipeline” deve chamar o `/start` da primeira etapa do pipeline GeraAnuncio v2 usando o código/chave do experimento.
 - Ajuste aplicado: o frontend deixou de chamar o endpoint legado por `experimentId` no caminho e passou a chamar `/api/internal/aiworker/geracaoanuncios/v1/texto/stage-executions/start` com `experimentKey` como parâmetro de query, alinhando a tela ao contrato documentado da primeira etapa.
 - Prevenção de recorrência: adicionado teste de frontend validando que o clique no botão envia a chave do experimento para o endpoint de início da etapa Texto.
+
+- 2026-06-27: identificado erro 500 no start de `/api/internal/aiworker/geracaoanuncios/v1/texto/stage-executions/start` causado por persistência JPA em coluna MySQL reservada `schema`; a correção final renomeou o mapeamento para a coluna canônica `schema_json` e adicionou migração para ambientes que já tinham a coluna antiga em `PipelineGeracaoAnuncios` e `PipelineNichoCnae`.

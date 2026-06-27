@@ -60,7 +60,7 @@ databaseChangeLog:
                   name: prompt
                   type: LONGTEXT
               - column:
-                  name: schema
+                  name: schema_json
                   type: LONGTEXT
               - column:
                   name: versao_pipeline

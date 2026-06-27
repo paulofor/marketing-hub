@@ -1585,3 +1585,5 @@
 - Objetivo: impedir crescimento desordenado dos subpacotes de etapa e manter o executor simples, auditável e plugável.
 
 - 2026-06-27 00:00:00 (UTC): removido o contrato oficial obsoleto `oprm-nicho-cnae-pipeline` do registry do backend e substituído pelo contrato único `oprm-nicho-cnae-v3-pipeline`, alinhado aos pacotes reais do executor `oprm-coletor-mei` em `com.marketinghub.pipelines.nichocnae.v3`; changelog incremental desativa o pipeline antigo no banco e cria a definição persistente v3.
+
+- 2026-06-27 00:00:00 (UTC): gerado Swagger específico `docs/swagger/oprmcoletormei-nichocnae-v3-swagger.yaml` para o contrato operacional do executor `oprm-coletor-mei` no pipeline `com.marketinghub.pipelines.nichocnae.v3`, documentando consumo de `pending`, callbacks `complete`/`fail`, health do módulo, etapas registradas e separação de responsabilidade em que o backend mantém a decisão de avanço do pipeline.

@@ -1,5 +1,8 @@
 package com.marketinghub.oprmcoletormei.nichocnae.v3.shared;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.OprmNichoCnaeV3StageExecution;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.OprmNichoCnaeV3StageExecutionStatus;
 import com.marketinghub.oprm.market.OprmCnpjCnaeDim;
@@ -41,6 +44,7 @@ public abstract class OprmNichoCnaeV3StageServiceSupport {
     private final OprmCnpjCnaeDimRepository cnaeRepository;
     private final PipelineNichoCnaeRepository pipelineNichoCnaeRepository;
     private final String stageCode;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     /** Inicializa o suporte com repository canônico e código da etapa. */
     protected OprmNichoCnaeV3StageServiceSupport(
@@ -165,7 +169,14 @@ public abstract class OprmNichoCnaeV3StageServiceSupport {
 
     /** Monta payload mínimo de entrada para um CNAE pendente quando não houver execução persistida. */
     protected String cnaeInputPayload(OprmCnpjCnaeDim cnae) {
-        return "{\"cnaeCode\":\"" + cnae.getCnaeCode() + "\"}";
+        return buildCnaeInputPayload(cnae.getCnaeCode(), cnae.getDescription());
+    }
+
+    /** Monta payload de entrada com nome completo a partir do cadastro canônico do CNAE. */
+    protected String cnaeInputPayload(String cnaeCode) {
+        OprmCnpjCnaeDim cnae = cnaeRepository.findById(cnaeCode)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "CNAE não encontrado."));
+        return cnaeInputPayload(cnae);
     }
 
     /** Monta jobId estável para uma pendência publicada diretamente pelo cadastro de CNAE. */
@@ -213,6 +224,24 @@ public abstract class OprmNichoCnaeV3StageServiceSupport {
         next.setKnowledgeVersion(current.getKnowledgeVersion());
         repository.save(next);
         return true;
+    }
+
+    /** Monta o JSON canônico com código e nome completo do CNAE. */
+    private String buildCnaeInputPayload(String cnaeCode, String cnaeDescription) {
+        ObjectNode root = objectMapper.createObjectNode();
+        root.put("cnaeCode", cnaeCode);
+        root.put("cnaeDescription", cnaeDescription);
+        try {
+            return objectMapper.writeValueAsString(root);
+        } catch (JsonProcessingException ex) {
+            return inputPayloadFallback(cnaeCode, cnaeDescription);
+        }
+    }
+
+    /** Monta fallback textual seguro para o JSON de CNAE quando a serialização falhar. */
+    private String inputPayloadFallback(String cnaeCode, String cnaeDescription) {
+        String safeDescription = cnaeDescription == null ? "" : cnaeDescription.replace("\\", "\\\\").replace("\"", "\\\"");
+        return "{\"cnaeCode\":\"" + cnaeCode + "\",\"cnaeDescription\":\"" + safeDescription + "\"}";
     }
 
     /** Normaliza o código de etapa para comparação e persistência canônica. */

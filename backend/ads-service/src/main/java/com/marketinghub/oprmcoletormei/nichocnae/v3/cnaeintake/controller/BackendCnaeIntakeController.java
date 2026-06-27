@@ -44,7 +44,7 @@ public class BackendCnaeIntakeController {
     /** Cria a primeira execução v3 diretamente a partir de um CNAE. */
     @PostMapping("/cnaes/{cnaeCode}")
     public CnaeIntakeCreateResponse createForCnae(@PathVariable String cnaeCode) {
-        return service.create(null, cnaeCode, "{\"cnaeCode\":\"" + cnaeCode + "\"}", 1, 1);
+        return service.createForCnae(cnaeCode);
     }
 
     /** Recebe o request bruto da etapa identificado pelo CNAE e jobId. */

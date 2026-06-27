@@ -1,3 +1,8 @@
+## 2026-06-27 — OPRM NichoCNAE v3: etapa 1 qualifica o CNAE antes da geração de personas
+
+- Corrigida a causa-raiz da entrada da etapa `persona-candidate-generator`: a etapa `cnae-intake` agora nasce com `cnaeCode` e `cnaeDescription` vindos da dimensão canônica de CNAE e devolve esses campos na própria saída funcional.
+- Prevenção de recorrência: testes unitários garantem que a etapa 1 bloqueia avanço sem `cnaeDescription` e que o backend cria a pendência inicial já qualificada com o nome completo do CNAE.
+
 ## 2026-06-23 — OPRM NichoCNAE v2: download de relatório do job concluído
 
 - Ajustada a tela do pipeline por CNAE para permitir baixar, em cada job concluído, um relatório Markdown com etapas executadas, entradas, saídas, processamento, falhas e próximos passos persistidos pelo backend.

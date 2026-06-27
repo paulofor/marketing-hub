@@ -1,0 +1,471 @@
+openapi: 3.0.3
+info:
+  title: AI Worker Geração de Anúncios v1 API
+  version: v1
+  description: >-
+    Contrato interno do pipeline aiworker.geracaoanuncios.v1. O backend é a fonte de verdade do avanço do pipeline e o AI Worker consome pendências por etapa,
+    registra request/prompt/response e devolve a saída funcional auditável.
+servers:
+  - url: http://191.252.181.168
+    description: Backend principal acessado pelo Codex e módulos internos
+  - url: http://191.252.181.168:8000
+    description: Backend principal em porta direta
+tags:
+  - name: Texto
+    description: Etapa de geração de textos dos anúncios.
+  - name: Imagem
+    description: Etapa de geração de imagens dos anúncios.
+paths:
+  /api/internal/aiworker/geracaoanuncios/v1/texto/stage-executions/start:
+    post:
+      tags: [Texto]
+      operationId: startAiWorkerGeracaoAnunciosV1TextoByExperimentKey
+      summary: Inicia a etapa Texto pela chave do experimento
+      parameters:
+        - $ref: '#/components/parameters/ExperimentKeyQuery'
+      responses:
+        '200':
+          description: Execução da etapa Texto registrada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StageExecutionSummary'
+  /api/internal/aiworker/geracaoanuncios/v1/texto/stage-executions/experiments/{experimentId}/start:
+    post:
+      tags: [Texto]
+      operationId: startAiWorkerGeracaoAnunciosV1TextoByExperimentId
+      summary: Inicia a etapa Texto pelo id do experimento
+      parameters:
+        - $ref: '#/components/parameters/ExperimentIdPath'
+      responses:
+        '200':
+          description: Execução da etapa Texto registrada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StageExecutionSummary'
+  /api/internal/aiworker/geracaoanuncios/v1/texto/stage-executions/experiments/{experimentId}:
+    get:
+      tags: [Texto]
+      operationId: listAiWorkerGeracaoAnunciosV1TextoStageExecutions
+      summary: Lista execuções da etapa Texto por experimento
+      parameters:
+        - $ref: '#/components/parameters/ExperimentIdPath'
+      responses:
+        '200':
+          description: Execuções da etapa Texto.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StageExecutionSummary'
+  /api/internal/aiworker/geracaoanuncios/v1/texto/stage-executions/pending:
+    post:
+      tags: [Texto]
+      operationId: pendingAiWorkerGeracaoAnunciosV1TextoStageExecutions
+      summary: Lista pendências canônicas da etapa Texto
+      description: Ponto inicial canônico para o AI Worker consumir trabalhos pendentes da etapa Texto.
+      responses:
+        '200':
+          description: Pendências disponíveis para execução.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PendingStageExecution'
+  /api/internal/aiworker/geracaoanuncios/v1/texto/stage-executions/{experimentKey}/jobs/{jobId}/recebeRequest:
+    post:
+      tags: [Texto]
+      operationId: receiveAiWorkerGeracaoAnunciosV1TextoRequestByJob
+      summary: Registra o request operacional da etapa Texto
+      parameters:
+        - $ref: '#/components/parameters/ExperimentKeyPath'
+        - $ref: '#/components/parameters/JobIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OperationalRequestAudit'
+      responses:
+        '202':
+          description: Request aceito para auditoria.
+  /api/internal/aiworker/geracaoanuncios/v1/texto/stage-executions/{experimentKey}/jobs/{jobId}/recebeResponse:
+    post:
+      tags: [Texto]
+      operationId: receiveAiWorkerGeracaoAnunciosV1TextoResponseByJob
+      summary: Registra o callback final da etapa Texto
+      description: Retorna o código da próxima etapa quando houver avanço funcional.
+      parameters:
+        - $ref: '#/components/parameters/ExperimentKeyPath'
+        - $ref: '#/components/parameters/JobIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModelResponseAudit'
+      responses:
+        '202':
+          description: Response aceito para auditoria e avanço controlado pelo backend.
+          content:
+            text/plain:
+              schema:
+                type: string
+                nullable: true
+                example: imagem
+  /api/internal/aiworker/geracaoanuncios/v1/texto/stage-executions/{stageExecutionId}/prompt:
+    post:
+      tags: [Texto]
+      operationId: receiveAiWorkerGeracaoAnunciosV1TextoPrompt
+      summary: Registra o prompt enviado ao modelo na etapa Texto
+      parameters:
+        - $ref: '#/components/parameters/StageExecutionIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PromptAudit'
+      responses:
+        '202':
+          description: Prompt aceito para auditoria.
+  /api/internal/aiworker/geracaoanuncios/v1/texto/stage-executions/{stageExecutionId}/response:
+    post:
+      tags: [Texto]
+      operationId: receiveAiWorkerGeracaoAnunciosV1TextoResponse
+      summary: Registra resposta bruta e saída estruturada da etapa Texto
+      parameters:
+        - $ref: '#/components/parameters/StageExecutionIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModelResponseAudit'
+      responses:
+        '202':
+          description: Resposta aceita para auditoria e relatório.
+  /api/internal/aiworker/geracaoanuncios/v1/texto/stage-executions/{stageExecutionId}:
+    get:
+      tags: [Texto]
+      operationId: detailAiWorkerGeracaoAnunciosV1TextoStageExecution
+      summary: Retorna detalhe auditável da etapa Texto
+      parameters:
+        - $ref: '#/components/parameters/StageExecutionIdPath'
+      responses:
+        '200':
+          description: Detalhe da execução.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StageExecutionDetail'
+  /api/internal/aiworker/geracaoanuncios/v1/imagem/stage-executions/start:
+    post:
+      tags: [Imagem]
+      operationId: startAiWorkerGeracaoAnunciosV1ImagemByExperimentKey
+      summary: Inicia a etapa Imagem pela chave do experimento
+      parameters:
+        - $ref: '#/components/parameters/ExperimentKeyQuery'
+      responses:
+        '200':
+          description: Execução da etapa Imagem registrada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StageExecutionSummary'
+  /api/internal/aiworker/geracaoanuncios/v1/imagem/stage-executions/experiments/{experimentId}/start:
+    post:
+      tags: [Imagem]
+      operationId: startAiWorkerGeracaoAnunciosV1ImagemByExperimentId
+      summary: Inicia a etapa Imagem pelo id do experimento
+      parameters:
+        - $ref: '#/components/parameters/ExperimentIdPath'
+      responses:
+        '200':
+          description: Execução da etapa Imagem registrada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StageExecutionSummary'
+  /api/internal/aiworker/geracaoanuncios/v1/imagem/stage-executions/experiments/{experimentId}:
+    get:
+      tags: [Imagem]
+      operationId: listAiWorkerGeracaoAnunciosV1ImagemStageExecutions
+      summary: Lista execuções da etapa Imagem por experimento
+      parameters:
+        - $ref: '#/components/parameters/ExperimentIdPath'
+      responses:
+        '200':
+          description: Execuções da etapa Imagem.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StageExecutionSummary'
+  /api/internal/aiworker/geracaoanuncios/v1/imagem/stage-executions/pending:
+    post:
+      tags: [Imagem]
+      operationId: pendingAiWorkerGeracaoAnunciosV1ImagemStageExecutions
+      summary: Lista pendências canônicas da etapa Imagem
+      description: Ponto inicial canônico para o AI Worker consumir trabalhos pendentes da etapa Imagem.
+      responses:
+        '200':
+          description: Pendências disponíveis para execução.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PendingStageExecution'
+  /api/internal/aiworker/geracaoanuncios/v1/imagem/stage-executions/{experimentKey}/jobs/{jobId}/recebeRequest:
+    post:
+      tags: [Imagem]
+      operationId: receiveAiWorkerGeracaoAnunciosV1ImagemRequestByJob
+      summary: Registra o request operacional da etapa Imagem
+      parameters:
+        - $ref: '#/components/parameters/ExperimentKeyPath'
+        - $ref: '#/components/parameters/JobIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OperationalRequestAudit'
+      responses:
+        '202':
+          description: Request aceito para auditoria.
+  /api/internal/aiworker/geracaoanuncios/v1/imagem/stage-executions/{experimentKey}/jobs/{jobId}/recebeResponse:
+    post:
+      tags: [Imagem]
+      operationId: receiveAiWorkerGeracaoAnunciosV1ImagemResponseByJob
+      summary: Registra o callback final da etapa Imagem
+      parameters:
+        - $ref: '#/components/parameters/ExperimentKeyPath'
+        - $ref: '#/components/parameters/JobIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModelResponseAudit'
+      responses:
+        '202':
+          description: Response aceito para auditoria e encerramento/avanço controlado pelo backend.
+          content:
+            text/plain:
+              schema:
+                type: string
+                nullable: true
+  /api/internal/aiworker/geracaoanuncios/v1/imagem/stage-executions/{stageExecutionId}/prompt:
+    post:
+      tags: [Imagem]
+      operationId: receiveAiWorkerGeracaoAnunciosV1ImagemPrompt
+      summary: Registra o prompt enviado ao modelo na etapa Imagem
+      parameters:
+        - $ref: '#/components/parameters/StageExecutionIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PromptAudit'
+      responses:
+        '202':
+          description: Prompt aceito para auditoria.
+  /api/internal/aiworker/geracaoanuncios/v1/imagem/stage-executions/{stageExecutionId}/response:
+    post:
+      tags: [Imagem]
+      operationId: receiveAiWorkerGeracaoAnunciosV1ImagemResponse
+      summary: Registra resposta bruta e saída estruturada da etapa Imagem
+      parameters:
+        - $ref: '#/components/parameters/StageExecutionIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModelResponseAudit'
+      responses:
+        '202':
+          description: Resposta aceita para auditoria e relatório.
+  /api/internal/aiworker/geracaoanuncios/v1/imagem/stage-executions/{stageExecutionId}:
+    get:
+      tags: [Imagem]
+      operationId: detailAiWorkerGeracaoAnunciosV1ImagemStageExecution
+      summary: Retorna detalhe auditável da etapa Imagem
+      parameters:
+        - $ref: '#/components/parameters/StageExecutionIdPath'
+      responses:
+        '200':
+          description: Detalhe da execução.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StageExecutionDetail'
+components:
+  parameters:
+    ExperimentKeyQuery:
+      name: experimentKey
+      in: query
+      required: true
+      schema:
+        type: string
+      description: Chave operacional do experimento; atualmente aceita o id numérico em formato textual.
+    ExperimentKeyPath:
+      name: experimentKey
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Chave operacional do experimento vinculada ao job.
+    ExperimentIdPath:
+      name: experimentId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+      description: Identificador interno do experimento.
+    JobIdPath:
+      name: jobId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Identificador auditável da execução do job.
+    StageExecutionIdPath:
+      name: stageExecutionId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Identificador canônico da execução da etapa.
+  schemas:
+    JsonObject:
+      type: object
+      additionalProperties: true
+    StageExecutionSummary:
+      type: object
+      required: [stageExecutionId, experimentId, jobId, status, updatedAt]
+      properties:
+        stageExecutionId:
+          type: string
+          example: geracaoanuncios-v1-texto-exp-123
+        experimentId:
+          type: integer
+          format: int64
+          example: 123
+        jobId:
+          type: string
+          example: exp:123|pipeline:geracaoanuncios|v:1|stage:texto
+        status:
+          type: string
+          example: PENDING
+        updatedAt:
+          type: string
+          format: date-time
+    PendingStageExecution:
+      type: object
+      required: [stageExecutionId, experimentId, jobId, requestedAt, context, previousArtifacts]
+      properties:
+        stageExecutionId:
+          type: string
+        experimentId:
+          type: integer
+          format: int64
+        jobId:
+          type: string
+        requestedAt:
+          type: string
+          format: date-time
+        context:
+          $ref: '#/components/schemas/JsonObject'
+        previousArtifacts:
+          $ref: '#/components/schemas/JsonObject'
+    OperationalRequestAudit:
+      type: object
+      properties:
+        request:
+          description: Payload operacional bruto montado pelo AI Worker.
+          nullable: true
+        plataforma:
+          type: string
+          nullable: true
+          example: openai
+        prompt:
+          type: string
+          nullable: true
+        schema:
+          type: string
+          nullable: true
+    PromptAudit:
+      type: object
+      required: [jobId, sentAt, model, requestPayload]
+      properties:
+        jobId:
+          type: string
+        sentAt:
+          type: string
+          format: date-time
+        model:
+          type: string
+          example: gpt-5.5
+        requestPayload:
+          $ref: '#/components/schemas/JsonObject'
+    ModelResponseAudit:
+      type: object
+      properties:
+        jobId:
+          type: string
+        receivedAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+          example: SUCCESS
+        response:
+          description: Resposta bruta recebida da integração/modelo.
+          nullable: true
+        responsePayload:
+          $ref: '#/components/schemas/JsonObject'
+        structuredOutput:
+          $ref: '#/components/schemas/JsonObject'
+        error:
+          type: string
+          nullable: true
+        descricaoErro:
+          type: string
+          nullable: true
+        quantidadeTokenEntrada:
+          type: integer
+          format: int64
+          nullable: true
+        quantidadeTokenSaida:
+          type: integer
+          format: int64
+          nullable: true
+        custo:
+          type: number
+          nullable: true
+        modelo:
+          type: string
+          nullable: true
+    StageExecutionDetail:
+      type: object
+      required: [stageExecutionId, jobId, status, updatedAt, reportData]
+      properties:
+        stageExecutionId:
+          type: string
+        jobId:
+          type: string
+        status:
+          type: string
+        updatedAt:
+          type: string
+          format: date-time
+        reportData:
+          $ref: '#/components/schemas/JsonObject'

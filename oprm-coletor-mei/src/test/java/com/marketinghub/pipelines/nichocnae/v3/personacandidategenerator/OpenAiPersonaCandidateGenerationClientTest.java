@@ -35,6 +35,12 @@ class OpenAiPersonaCandidateGenerationClientTest {
                 {\"candidatePersonas\":[{\"name\":\"p1\"},{\"name\":\"p2\"},{\"name\":\"p3\"}],\"personaSummary\":\"p1;p2;p3\"}
                 """.trim();
         String response = new ObjectMapper().writeValueAsString(Map.of("output_text", modelJson));
+        server.expect(once(), requestTo(URI.create("http://backend.test/api/internal/oprmcoletormei/nichocnae/v3/persona-candidate-generator/stage-executions/4781400/job-1/recebeRequest")))
+                .andExpect(jsonPath("$.plataforma").value("OPENAI_RESPONSES_API"))
+                .andExpect(jsonPath("$.request").exists())
+                .andExpect(jsonPath("$.prompt").exists())
+                .andExpect(jsonPath("$.schema").exists())
+                .andRespond(withSuccess("{}", MediaType.APPLICATION_JSON));
         server.expect(once(), requestTo(URI.create("https://api.openai.com/v1/responses")))
                 .andExpect(jsonPath("$.model").value("gpt-test"))
                 .andExpect(jsonPath("$.service_tier").value("flex"))
@@ -42,12 +48,17 @@ class OpenAiPersonaCandidateGenerationClientTest {
                 .andExpect(jsonPath("$.text.format.strict").value(true))
                 .andExpect(jsonPath("$.text.format.schema.required[6]").value("candidatePersonas"))
                 .andRespond(withSuccess(response, MediaType.APPLICATION_JSON));
+        server.expect(once(), requestTo(URI.create("http://backend.test/api/internal/oprmcoletormei/nichocnae/v3/persona-candidate-generator/stage-executions/4781400/job-1/recebeResponse")))
+                .andExpect(jsonPath("$.response").exists())
+                .andExpect(jsonPath("$.modelo").value("gpt-test"))
+                .andRespond(withSuccess("{}", MediaType.APPLICATION_JSON));
         OpenAiPersonaCandidateGenerationClient client = new OpenAiPersonaCandidateGenerationClient(
                 builder.build(),
                 new ObjectMapper(),
                 new PersonaCandidateOpenAiProperties("https://api.openai.com/v1", "direct-key", "", "gpt-test", null),
                 new PersonaCandidatePromptBuilder(),
-                new PersonaCandidateSchemaLoader(new ObjectMapper()));
+                new PersonaCandidateSchemaLoader(new ObjectMapper()),
+                "http://backend.test");
 
         Map<String, Object> output = client.generate(new PersonaCandidateGenerationRequest(
                 "job-1",
@@ -79,7 +90,8 @@ class OpenAiPersonaCandidateGenerationClientTest {
                 new ObjectMapper(),
                 new PersonaCandidateOpenAiProperties("https://api.openai.com/v1", "", apiKeyFile.toString(), "gpt-test", null),
                 new PersonaCandidatePromptBuilder(),
-                new PersonaCandidateSchemaLoader(new ObjectMapper()));
+                new PersonaCandidateSchemaLoader(new ObjectMapper()),
+                "http://backend.test");
 
         String apiKey = client.resolveApiKey(new PersonaCandidateGenerationRequest(
                 "job-1",
@@ -98,16 +110,23 @@ class OpenAiPersonaCandidateGenerationClientTest {
         RestClient.Builder builder = RestClient.builder();
         MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
         String errorBody = "{\"error\":{\"message\":\"invalid schema\",\"type\":\"invalid_request_error\"}}";
+        server.expect(once(), requestTo(URI.create("http://backend.test/api/internal/oprmcoletormei/nichocnae/v3/persona-candidate-generator/stage-executions/4781400/job-err/recebeRequest")))
+                .andRespond(withSuccess("{}", MediaType.APPLICATION_JSON));
         server.expect(once(), requestTo(URI.create("https://api.openai.com/v1/responses")))
                 .andRespond(withStatus(HttpStatus.BAD_REQUEST)
                         .contentType(MediaType.APPLICATION_JSON)
                         .body(errorBody));
+        server.expect(once(), requestTo(URI.create("http://backend.test/api/internal/oprmcoletormei/nichocnae/v3/persona-candidate-generator/stage-executions/4781400/job-err/recebeResponse")))
+                .andExpect(jsonPath("$.descricaoErro").exists())
+                .andExpect(jsonPath("$.response").exists())
+                .andRespond(withSuccess("{}", MediaType.APPLICATION_JSON));
         OpenAiPersonaCandidateGenerationClient client = new OpenAiPersonaCandidateGenerationClient(
                 builder.build(),
                 new ObjectMapper(),
                 new PersonaCandidateOpenAiProperties("https://api.openai.com/v1", "direct-key", "", "gpt-test", null),
                 new PersonaCandidatePromptBuilder(),
-                new PersonaCandidateSchemaLoader(new ObjectMapper()));
+                new PersonaCandidateSchemaLoader(new ObjectMapper()),
+                "http://backend.test");
 
         assertThatThrownBy(() -> client.generate(new PersonaCandidateGenerationRequest(
                         "job-err",

@@ -32,6 +32,17 @@ A referência oficial do módulo OPRM é o pipeline de importação por snapshot
 - `docs/novos-modulos/OPRM/oprm-plano-importacao-cnpj-market-size.md`
 - `docs/novos-modulos/OPRM/cnpj-open-data-2026-04-12.md`
 
+## Pipeline NichoCNAE v3
+
+O módulo também executa o pipeline `com.marketinghub.pipelines.nichocnae.v3` para pesquisa de rotina por CNAE. As etapas 6 a 9 devem gerar saídas funcionais compatíveis com seus objetivos:
+
+6. `source-fetcher`: transforma fontes selecionadas em `sourceSnapshots` auditáveis, com URL, título, trecho de evidência e relevância de rotina.
+7. `routine-signal-extractor`: extrai `routineSignals` com tarefa, dor operacional, sinal de compra e referência do snapshot.
+8. `daily-tasks-synthesizer`: consolida `dailyTasks` com dor, evidência, fonte e alavanca de facilidade.
+9. `quality-gate`: decide avanço por critérios persistíveis de evidência e informa causa/correção quando bloquear.
+
+A etapa `persona-candidate-generator`, quando chama OpenAI, audita o request pelo endpoint backend `recebeRequest` antes do envio ao provedor e audita o retorno pelo `recebeResponse` tanto em sucesso quanto em erro HTTP da OpenAI.
+
 ## Build Docker
 ```bash
 docker build -t oprm-coletor-mei:local .

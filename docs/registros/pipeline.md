@@ -71,3 +71,16 @@ Subpacotes principais identificados:
 - A leitura administrativa de progresso fica no pacote `com.marketinghub.oprmcoletormei.nichocnae.v3.progress`.
 - O endpoint administrativo de progresso é `/api/oprm/nichocnae/v3/cnaes/{cnaeCode}/progress`.
 - A confirmação de finalização usa `/api/oprm/nichocnae/v3/cnaes/{cnaeCode}/progress/confirm-finalization`.
+
+## 2026-06-27 — Saídas funcionais das etapas 6 a 9 do NichoCNAE v3
+
+- Causa-raiz: as etapas 6 (`source-fetcher`), 7 (`routine-signal-extractor`), 8 (`daily-tasks-synthesizer`) e 9 (`quality-gate`) do executor `oprm-coletor-mei` retornavam apenas contratos genéricos de conclusão, sem artefatos funcionais compatíveis com coleta de evidência, extração de sinais, síntese de tarefas e decisão de qualidade.
+- Correção aplicada: as etapas passaram a transformar entradas persistidas em `sourceSnapshots`, `routineSignals`, `dailyTasks` e decisão de gate com critérios, motivo e etapa recomendada de correção quando bloquear.
+- Prevenção: adicionados testes unitários específicos para cada etapa, garantindo que a saída não volte a ser apenas status genérico.
+
+## 2026-06-27 — Auditoria OpenAI em recebeRequest/recebeResponse no NichoCNAE v3
+
+- Verificação: a única etapa v3 atual que chama OpenAI diretamente é `persona-candidate-generator` no executor `oprm-coletor-mei`.
+- Causa-raiz: a etapa registrava request/response da OpenAI apenas em log local do executor, mas não enviava os payloads ao backend pelos callbacks canônicos `recebeRequest` e `recebeResponse`, deixando a auditoria persistida incompleta.
+- Correção aplicada: antes da chamada à OpenAI o executor envia o request bruto, prompt, schema e plataforma ao endpoint `recebeRequest`; após sucesso ou erro HTTP da OpenAI envia response bruto, modelo, tokens quando disponíveis e descrição de erro ao endpoint `recebeResponse`.
+- Prevenção: o teste do cliente OpenAI passou a validar a sequência backend `recebeRequest` → OpenAI `/responses` → backend `recebeResponse` nos cenários de sucesso e erro.

@@ -328,6 +328,34 @@ export interface MoisDossierProductPipelineResponse {
   finalResult?: MoisDossierProductPipelineStageItem;
 }
 
+export interface MoisDossierProductSituacaoItem {
+  id: number;
+  idExterno: string;
+  codigoEtapa: string;
+  status: string;
+  dataHora?: string;
+  jobId?: string | null;
+  request?: string | null;
+  response?: string | null;
+  quantidadeTokenEntrada?: number | null;
+  quantidadeTokenSaida?: number | null;
+  modelo?: string | null;
+  custo?: number | string | null;
+  descricaoErro?: string | null;
+  jobIdExterno?: string | null;
+  plataforma?: string | null;
+  prompt?: string | null;
+  schema?: string | null;
+  versaoPipeline?: string | null;
+}
+
+export interface MoisDossierProductSituacaoResponse {
+  idExterno: string;
+  codigoEtapa: string;
+  status: string[];
+  registros: MoisDossierProductSituacaoItem[];
+}
+
 export interface MoisSalesLibraryPageSummary {
   workspaceId: string;
   total: number;

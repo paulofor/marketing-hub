@@ -103,6 +103,9 @@ public class ExperimentPipelineGenerationService {
             ExperimentPipelineGenerationJobStatus.PENDING,
             ExperimentPipelineGenerationJobStatus.PROCESSING);
     private static final int PREVIOUS_REJECTED_EXPERIMENTS_LIMIT = 4;
+    private static final int META_AD_PRIMARY_TEXT_MAX_LENGTH = 125;
+    private static final int META_AD_HEADLINE_MAX_LENGTH = 40;
+    private static final int META_AD_DESCRIPTION_MAX_LENGTH = 25;
     private static final FacebookCampaignStopReason FORM_ZERO_REJECTION_REASON =
             FacebookCampaignStopReason.FORM_ZERO_CONVERSION_RULE_OF_THREE;
     private static final Set<ExperimentStatus> PIPELINE_ELIGIBLE_EXPERIMENT_STATUSES = Set.of(
@@ -2939,9 +2942,15 @@ public class ExperimentPipelineGenerationService {
                                                         ),
                                                         "required", List.of("curta", "media", "longa")
                                                 ),
-                                                "primaryText", Map.of("type", "string"),
-                                                "headline", Map.of("type", "string"),
-                                                "description", Map.of("type", "string"),
+                                                "primaryText", metaAdStringSchema(
+                                                        META_AD_PRIMARY_TEXT_MAX_LENGTH,
+                                                        "Texto principal do anúncio Meta Ads, limitado para evitar truncamento em mobile."),
+                                                "headline", metaAdStringSchema(
+                                                        META_AD_HEADLINE_MAX_LENGTH,
+                                                        "Headline do anúncio Meta Ads."),
+                                                "description", metaAdStringSchema(
+                                                        META_AD_DESCRIPTION_MAX_LENGTH,
+                                                        "Descrição curta de apoio do anúncio Meta Ads."),
                                                 "ctaText", Map.of("type", "string"),
                                                 "compliance", Map.of(
                                                         "type", "object",
@@ -2962,6 +2971,7 @@ public class ExperimentPipelineGenerationService {
                                                 "openingHookType",
                                                 "placementHint",
                                                 "lengthVariants",
+                                                "primaryText",
                                                 "headline",
                                                 "description",
                                                 "ctaText",
@@ -4313,6 +4323,11 @@ public class ExperimentPipelineGenerationService {
     /** Cria um schema de string com descrição comercial para orientar respostas detalhadas em modo estrito. */
     private Map<String, Object> detailedStringSchema(String description) {
         return Map.of("type", "string", "description", description);
+    }
+
+    /** Cria um schema textual com limite máximo aderente aos campos recomendados do Meta Ads. */
+    private Map<String, Object> metaAdStringSchema(int maxLength, String description) {
+        return Map.of("type", "string", "maxLength", maxLength, "description", description);
     }
 
     private Map<String, Object> stringSchema() {

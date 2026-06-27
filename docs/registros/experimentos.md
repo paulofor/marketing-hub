@@ -5486,3 +5486,9 @@
 - Causa-raiz: o endpoint genérico `/{idExterno}/start` e o service da etapa Texto resolviam o número recebido pelo repositório de CNAE, enquanto a tela de experimento precisava gravar a fila real `creatives_to_generate` do próprio experimento.
 - Correção aplicada: a tela passou a chamar a rota explícita `/experiments/{experimentId}/start`, e o start da etapa Texto passou a usar `ExperimentService.requestPipelineCreatives`, gravando `PIPELINE_ADS`, `REQUESTED` e `creatives_to_generate=3` para consumo do AI Worker que cria os criativos.
 - Prevenção de recorrência: adicionado teste backend garantindo que o start do GeraAnuncio v2 coloca o experimento na fila `/api/experiments/creatives/stage-executions/pending`, e teste frontend atualizado para bloquear a rota ambígua.
+
+## 2026-06-27 — Correção do limite de copy de anúncios Meta Ads
+
+- Sintoma: a tela de experimento falhava ao salvar criativos quando o pipeline gerava `primaryText` maior que o campo persistido.
+- Causa-raiz confirmada: o schema/prompt de `AD_COPY` não limitava `primaryText`, `headline` e `description` aos tamanhos operacionais recomendados para Meta Ads; ampliar a coluna apenas mascarava o problema e permitiria copy longa/truncada na publicação.
+- Correção: revertida a ampliação de banco e adicionados limites no prompt/schema da etapa: `primaryText` até 125 caracteres, `headline` até 40 e `description` até 25, para bloquear a recorrência na origem da geração.

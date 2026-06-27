@@ -28,10 +28,11 @@ Regras fixas da etapa:
 9. `lengthVariants.curta` deve ser direta e rápida para mobile.
 10. `lengthVariants.media` deve explicar a promessa com mecanismo e CTA.
 11. `lengthVariants.longa` deve aprofundar dor, resultado, mecanismo, prova e ação sem virar texto de landing.
-12. `headline` deve ser curta, clara e específica, sem promessa absoluta.
-13. `description` deve apoiar a headline com benefício concreto e baixo atrito.
-14. `ctaText` deve repetir a ação principal do `campaignAngle`, sem inventar ação nova.
-15. `primaryText` deve ser a melhor versão pronta para uso no anúncio, derivada das variações de tamanho.
+12. `primaryText` é o texto final que será salvo e publicado no campo Primary text do Meta Ads; deve ter no máximo 125 caracteres.
+12.1. As variações em `lengthVariants` são apenas apoio criativo; se alguma passar de 125 caracteres, reescreva `primaryText` como síntese curta, sem copiar a versão longa.
+13. `headline` deve ser curta, clara e específica, sem promessa absoluta, com no máximo 40 caracteres.
+14. `description` deve apoiar a headline com benefício concreto e baixo atrito, com no máximo 25 caracteres.
+15. `ctaText` deve repetir a ação principal do `campaignAngle`, sem inventar ação nova.
 16. Não prometa consultoria, call, acompanhamento humano, diagnóstico individualizado ou gestão manual se isso não estiver no envelope real do produto.
 17. Não use promessas absolutas, garantias individuais, linguagem de enriquecimento rápido ou alegações impossíveis de comprovar.
 18. Não crie campos técnicos, comentários internos, instruções de pipeline ou metadados fora do contrato final.
@@ -55,3 +56,4 @@ Checklist antes de responder:
 3. A copy evita promessa absoluta e promessa individual?
 4. A copy evita consultoria/call/acompanhamento se não fizer parte do produto?
 5. O JSON final contém somente `adCopy` e `experimentMetadata` na raiz?
+6. Cada `primaryText` tem até 125 caracteres, cada `headline` até 40 caracteres e cada `description` até 25 caracteres?

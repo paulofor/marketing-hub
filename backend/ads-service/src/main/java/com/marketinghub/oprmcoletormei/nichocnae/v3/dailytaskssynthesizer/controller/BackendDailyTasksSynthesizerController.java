@@ -44,10 +44,10 @@ public class BackendDailyTasksSynthesizerController {
         return service.create(null, cnaeCode, "{\"cnaeCode\":\"" + cnaeCode + "\"}", 1, 1);
     }
 
-    /** Recebe o request bruto da etapa identificado pelo CNAE. */
-    @PostMapping("/cnaes/{cnaeCode}/recebeRequest")
-    public DailyTasksSynthesizerCreateResponse recebeRequest(@PathVariable String cnaeCode, @RequestBody OprmNichoCnaeV3RecebeRequestRequest request) {
-        return service.recebeRequest(cnaeCode, request);
+    /** Recebe o request bruto da etapa identificado pelo CNAE e jobId. */
+    @PostMapping("/cnaes/{cnaeCode}/jobs/{jobId}/recebeRequest")
+    public DailyTasksSynthesizerCreateResponse recebeRequest(@PathVariable String cnaeCode, @PathVariable String jobId, @RequestBody OprmNichoCnaeV3RecebeRequestRequest request) {
+        return service.recebeRequest(cnaeCode, jobId, request);
     }
 
     /** Entrega pendências da etapa daily-tasks-synthesizer ao executor OPRM. */

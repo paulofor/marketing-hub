@@ -17,6 +17,7 @@ import com.marketinghub.repository.jpa.oprm.nichocnae.v3.OprmNichoCnaeV3StageExe
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import org.springframework.data.domain.PageRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -103,8 +104,9 @@ class BackendPersonaRoutineMaterializerServiceTest {
             return saved;
         });
 
-        service.start("4781400");
+        var response = service.start("4781400");
 
+        assertThat(UUID.fromString(response.jobId()).toString()).isEqualTo(response.jobId());
         assertThat(cnae.getNichocnaePipelineStatus()).isEqualTo("INICIADO");
         assertThat(cnae.getNichocnaeCurrentStageCode()).isEqualTo("persona-routine-materializer");
         assertThat(cnae.getNichocnaePipelineUpdatedAt()).isNotNull();

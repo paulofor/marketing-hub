@@ -97,6 +97,7 @@ type HistoryItem = {
 };
 
 type DossierPipelineStage = {
+  step: number;
   name: string;
   objective: string;
   input: string;
@@ -168,7 +169,9 @@ export default function MoisSalesPageLibraryDetailPage() {
   const dossierStatus = pageQuery.data?.dossieProdutoStatus || "";
   const dossierStage = pageQuery.data?.dossieProdutoCurrentStage || "";
   const hasWarmupDossier = Boolean(dossierStatus);
-  const hasActiveWarmupDossier = ["INICIADO", "AGUARDANDO"].includes(dossierStatus);
+  const hasActiveWarmupDossier = ["INICIADO", "AGUARDANDO"].includes(
+    dossierStatus,
+  );
   const isCommercialAnalysisDone = ["DONE", "ANALYZED"].includes(
     pageQuery.data?.analysisStatus || pageQuery.data?.currentStatus || "",
   );
@@ -198,7 +201,8 @@ export default function MoisSalesPageLibraryDetailPage() {
   );
   const dossierPipelineStages: DossierPipelineStage[] = [
     {
-      name: "1. Fatos Hotmart do produto",
+      step: 1,
+      name: "Fatos Hotmart do produto",
       objective:
         "Reunir os dados básicos que identificam a oferta antes de qualquer conclusão comercial.",
       input:
@@ -209,7 +213,8 @@ export default function MoisSalesPageLibraryDetailPage() {
       model: "Não usa OpenAI",
     },
     {
-      name: "2. Análise comercial da página",
+      step: 2,
+      name: "Análise comercial da página",
       objective:
         "Ler a página de vendas capturada e transformar a comunicação em sinais comerciais para decisão.",
       input:
@@ -220,7 +225,8 @@ export default function MoisSalesPageLibraryDetailPage() {
       model: commercialAnalysisModel,
     },
     {
-      name: "3. Planejamento das pesquisas públicas",
+      step: 3,
+      name: "Planejamento das pesquisas públicas",
       objective:
         "Criar buscas mais precisas para encontrar autoridade, canais, prova social e sinais externos do produtor/produto.",
       input:
@@ -231,7 +237,8 @@ export default function MoisSalesPageLibraryDetailPage() {
       model: "gpt-5.2 (padrão do worker, com fallback sem OpenAI)",
     },
     {
-      name: "4. Busca pública e qualificação de fontes",
+      step: 4,
+      name: "Busca pública e qualificação de fontes",
       objective:
         "Localizar fontes rastreáveis e descartar homônimos, páginas genéricas ou sinais sem relação com a oferta.",
       input:
@@ -242,7 +249,8 @@ export default function MoisSalesPageLibraryDetailPage() {
       model: "Não usa OpenAI",
     },
     {
-      name: "5. Consolidação do dossiê",
+      step: 5,
+      name: "Consolidação do dossiê",
       objective:
         "Cruzar fontes e sinais para indicar aquecimento, risco, recomendação e próximo movimento comercial.",
       input:
@@ -424,7 +432,11 @@ export default function MoisSalesPageLibraryDetailPage() {
               <div className="border rounded p-3 h-100 bg-light-subtle">
                 <div className="text-secondary small">Dossiê v1</div>
                 <strong>{labelStatus(dossierStatus)}</strong>
-                {dossierStage ? <div className="small text-secondary">Etapa: {dossierStage}</div> : null}
+                {dossierStage ? (
+                  <div className="small text-secondary">
+                    Etapa: {dossierStage}
+                  </div>
+                ) : null}
               </div>
             </div>
           </div>
@@ -463,7 +475,8 @@ export default function MoisSalesPageLibraryDetailPage() {
           Já existe uma solicitação de dossiê v1 para esta página
           {dossierStatus ? ` com status ${labelStatus(dossierStatus)}` : ""}
           {dossierStage ? ` na etapa ${dossierStage}` : ""}. Clique em
-          <strong> Reprocessar dossiê</strong> para criar uma nova fila v1 quando precisar.
+          <strong> Reprocessar dossiê</strong> para criar uma nova fila v1
+          quando precisar.
         </div>
       ) : null}
 
@@ -472,8 +485,8 @@ export default function MoisSalesPageLibraryDetailPage() {
           {hasActiveWarmupDossier ? (
             <>
               Esta página já possui dossiê em fila ou em processamento
-              {dossierStatus ? ` com status ${labelStatus(dossierStatus)}` : ""}.
-              Aguarde a conclusão para reprocessar.
+              {dossierStatus ? ` com status ${labelStatus(dossierStatus)}` : ""}
+              . Aguarde a conclusão para reprocessar.
             </>
           ) : (
             <>
@@ -509,41 +522,57 @@ export default function MoisSalesPageLibraryDetailPage() {
             </p>
           </div>
 
-          <div className="table-responsive">
-            <table className="table table-sm align-middle mb-0">
-              <thead>
-                <tr>
-                  <th>Etapa</th>
-                  <th>Objetivo</th>
-                  <th>Dado de entrada</th>
-                  <th>Dado de saída</th>
-                  <th>OpenAI</th>
-                  <th>Modelo</th>
-                </tr>
-              </thead>
-              <tbody>
-                {dossierPipelineStages.map((stage) => (
-                  <tr key={stage.name}>
-                    <td className="fw-semibold">{stage.name}</td>
-                    <td>{stage.objective}</td>
-                    <td>{stage.input}</td>
-                    <td>{stage.output}</td>
-                    <td>
-                      <span
-                        className={
-                          stage.usesOpenAi
-                            ? "badge text-bg-primary"
-                            : "badge text-bg-secondary"
-                        }
-                      >
-                        {stage.usesOpenAi ? "Sim" : "Não"}
-                      </span>
-                    </td>
-                    <td>{stage.model}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="d-flex flex-column gap-3">
+            {dossierPipelineStages.map((stage) => (
+              <div
+                className="border rounded p-3 bg-light-subtle"
+                key={stage.name}
+              >
+                <div className="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-3">
+                  <div className="d-flex align-items-start gap-2">
+                    <span className="badge text-bg-primary rounded-pill">
+                      {stage.step}
+                    </span>
+                    <div>
+                      <h3 className="h6 mb-1">{stage.name}</h3>
+                      <p className="text-secondary mb-0">{stage.objective}</p>
+                    </div>
+                  </div>
+                  <span
+                    className={
+                      stage.usesOpenAi
+                        ? "badge text-bg-primary"
+                        : "badge text-bg-secondary"
+                    }
+                  >
+                    {stage.usesOpenAi ? "OpenAI" : "Sem OpenAI"}
+                  </span>
+                </div>
+
+                <div className="row g-3">
+                  <div className="col-lg-6">
+                    <div className="border rounded p-3 h-100 bg-white">
+                      <div className="fw-semibold mb-2">
+                        O que recebe de entrada
+                      </div>
+                      <p className="mb-0 text-secondary">{stage.input}</p>
+                    </div>
+                  </div>
+                  <div className="col-lg-6">
+                    <div className="border rounded p-3 h-100 bg-white">
+                      <div className="fw-semibold mb-2">
+                        O que entrega de saída
+                      </div>
+                      <p className="mb-0 text-secondary">{stage.output}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="small text-secondary mt-3">
+                  Modelo/execução: <strong>{stage.model}</strong>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>

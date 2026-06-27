@@ -10,7 +10,7 @@ import java.util.Map;
 
 /** Processa a etapa cnae-intake do pipeline NichoCNAE v3. */
 public final class CnaeIntakeProcessor implements StageProcessor {
-    /** Executa a etapa cnae-intake produzindo saída estruturada para o backend decidir avanço. */
+    /** Executa a etapa cnae-intake qualificando o CNAE e o público MEI/autônomo antes de gerar personas. */
     @Override
     public StageResult process(StageContext context) {
         String cnaeCode = requiredText(context.input().get("cnaeCode"), "cnaeCode");
@@ -22,6 +22,9 @@ public final class CnaeIntakeProcessor implements StageProcessor {
         output.put("stageExecutionId", context.stageExecutionId());
         output.put("cnaeCode", cnaeCode);
         output.put("cnaeDescription", cnaeDescription);
+        output.put("targetAudienceType", "MEI_PROFISSIONAIS_AUTONOMOS_NAO_CLT");
+        output.put("targetAudienceDefinition", "Estamos falando de MEI e profissionais autônomos que atuam por conta própria, sem contratação direta como CLT.");
+        output.put("employmentBoundary", "NAO_ANALISAR_FUNCIONARIOS_CLT_CONTRATADOS_DIRETAMENTE");
         output.put("inputKeys", context.input().keySet());
         output.put("businessBoundary", "NAO_GERAR_OFERTA_CAMPANHA_LANDING");
         output.put("reportRole", "PERSONA_ROTINA_TAREFAS_DIARIAS");

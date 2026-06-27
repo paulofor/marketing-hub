@@ -52,11 +52,11 @@ public class GeraAnuncioImagemController {
         return service.pending();
     }
 
-    /** Recebe o request operacional gerado pelo AI Worker para a etapa. */
-    @PostMapping("/{experimentKey}/recebeRequest")
+    /** Recebe o request operacional gerado pelo AI Worker para a etapa usando o jobId da execução. */
+    @PostMapping("/{experimentKey}/jobs/{jobId}/recebeRequest")
     public ResponseEntity<Void> recebeRequest(
-            @PathVariable String experimentKey, @RequestBody GeraAnuncioImagemRecebeRequestRequest request) {
-        service.recebeRequest(experimentKey, request);
+            @PathVariable String experimentKey, @PathVariable String jobId, @RequestBody GeraAnuncioImagemRecebeRequestRequest request) {
+        service.recebeRequest(experimentKey, jobId, request);
         return ResponseEntity.accepted().build();
     }
 

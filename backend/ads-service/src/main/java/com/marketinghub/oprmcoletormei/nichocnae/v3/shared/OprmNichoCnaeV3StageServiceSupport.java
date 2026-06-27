@@ -101,6 +101,7 @@ public abstract class OprmNichoCnaeV3StageServiceSupport {
         pipeline.setRequest(request == null ? null : request.request());
         pipeline.setCodigoEtapa(stageCode);
         pipeline.setDataHora(now);
+        pipeline.setStatus(STATUS_WAITING_MODULE);
         pipeline.setJobId(jobId);
         pipeline.setPlataforma(request == null ? null : request.plataforma());
         pipeline.setPrompt(request == null ? null : request.prompt());
@@ -131,6 +132,7 @@ public abstract class OprmNichoCnaeV3StageServiceSupport {
         pipeline.setResponse(request == null ? null : request.response());
         pipeline.setCodigoEtapa(stageCode);
         pipeline.setDataHora(now);
+        pipeline.setStatus(hasFailure ? STATUS_FAILED : STATUS_COMPLETED);
         pipeline.setJobId(jobId);
         pipeline.setQuantidadeTokenEntrada(request == null ? null : request.quantidadeTokenEntrada());
         pipeline.setQuantidadeTokenSaida(request == null ? null : request.quantidadeTokenSaida());

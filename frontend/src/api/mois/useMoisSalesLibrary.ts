@@ -293,6 +293,7 @@ export function useMoisSalesLibraryPage(pageId?: number) {
   return useQuery({
     queryKey: ["mois", "sales-library", "page", pageId],
     enabled: Boolean(pageId),
+    refetchInterval: 30000,
     queryFn: async () => {
       const { data } = await axios.get<MoisSalesLibraryPage>(
         `/api/mois/sales-library/pages/${pageId}`,
@@ -333,6 +334,7 @@ export function useMoisDossierProductPipeline(pageId?: number) {
   return useQuery({
     queryKey: ["mois", "sales-library", "dossier-product-pipeline", pageId],
     enabled: Boolean(pageId),
+    refetchInterval: 30000,
     queryFn: async () => {
       const { data } = await axios.get<MoisDossierProductPipelineResponse>(
         `/api/mois/sales-library/pages/${pageId}/dossier-product/pipeline`,
@@ -449,6 +451,9 @@ export function useStartMoisDossierPipeline(workspaceId: string) {
       );
     },
     onSuccess: (_, pageId) => {
+      void queryClient.invalidateQueries({
+        queryKey: ["mois", "sales-library", "page", pageId],
+      });
       void queryClient.invalidateQueries({
         queryKey: ["mois", "sales-library", "dossier-product-pipeline", pageId],
       });

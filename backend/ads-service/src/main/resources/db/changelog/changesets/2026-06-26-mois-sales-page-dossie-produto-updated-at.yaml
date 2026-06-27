@@ -19,4 +19,4 @@ databaseChangeLog:
             stripComments: true
             sql: |
               ALTER TABLE mois_sales_page
-                ADD COLUMN dossie_produto_updated_at DATETIME NULL AFTER dossie_produto_current_stage;
+                ADD COLUMN dossie_produto_updated_at DATETIME NULL;

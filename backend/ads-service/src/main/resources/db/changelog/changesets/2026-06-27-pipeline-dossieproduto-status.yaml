@@ -1,0 +1,69 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-27-pipeline-dossieproduto-status-01
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            columnExists:
+              tableName: pipeline_dossieproduto
+              columnName: status
+      changes:
+        - addColumn:
+            tableName: pipeline_dossieproduto
+            columns:
+              - column:
+                  name: status
+                  type: VARCHAR(40)
+  - changeSet:
+      id: 2026-06-27-pipeline-dossieproduto-status-02
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - columnExists:
+            tableName: pipeline_dossieproduto
+            columnName: status
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE pipeline_dossieproduto
+                 SET status = CASE
+                   WHEN descricao_erro IS NOT NULL AND TRIM(descricao_erro) <> '' THEN 'FALHA'
+                   WHEN response IS NOT NULL AND TRIM(response) <> '' THEN 'CONCLUIDO'
+                   WHEN request IS NOT NULL AND TRIM(request) <> '' THEN 'AGUARDANDO_RETORNO_MODULO'
+                   ELSE 'INICIADO'
+                 END
+               WHERE status IS NULL;
+  - changeSet:
+      id: 2026-06-27-pipeline-dossieproduto-status-03
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            indexExists:
+              tableName: pipeline_dossieproduto
+              indexName: idx_pipeline_dossieproduto_situacao
+      changes:
+        - createIndex:
+            tableName: pipeline_dossieproduto
+            indexName: idx_pipeline_dossieproduto_situacao
+            columns:
+              - column:
+                  name: id_externo
+              - column:
+                  name: codigo_etapa
+              - column:
+                  name: status
+              - column:
+                  name: data_hora

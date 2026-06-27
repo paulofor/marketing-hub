@@ -14,4 +14,8 @@ public interface PipelineDossieProdutoRepository extends JpaRepository<PipelineD
     /** Busca o registro operacional mais recente do produto e da etapa para recuperar o jobId ativo. */
     Optional<PipelineDossieProduto> findTopByIdExternoAndCodigoEtapaOrderByDataHoraDescIdDesc(
             String idExterno, String codigoEtapa);
+
+    /** Lista auditorias filtradas por produto, etapa e lista de status, trazendo as mais recentes primeiro. */
+    List<PipelineDossieProduto> findByIdExternoAndCodigoEtapaAndStatusInOrderByDataHoraDescIdDesc(
+            String idExterno, String codigoEtapa, List<String> status);
 }

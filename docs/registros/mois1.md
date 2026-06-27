@@ -1893,3 +1893,9 @@ Arquivos principais:
 - Removida da tela de detalhe da Biblioteca Sales Pages a dependência do endpoint legado de `market-warmup` para exibir o dossiê do produto.
 - Criado endpoint público de leitura do pipeline novo `dossieproduto.v1`, expondo auditoria de cada etapa com entrada, saída, prompt, schema, modelo, tokens, custo, erro e resultado final.
 - Atualizada a tela para apresentar o resultado final consolidado e os registros de cada etapa diretamente a partir do backend novo.
+
+## 2026-06-27 — Consulta de situação do pipeline dossieproduto.v1
+
+- Criado endpoint interno `POST /api/internal/moissaleslibraryworker/dossieproduto/v1/{etapa}/stage-executions/{idExterno}/situacao` para consultar auditorias existentes por etapa, identificador externo e lista de status.
+- Adicionada coluna `status` em `pipeline_dossieproduto`, com preenchimento nas novas auditorias e backfill dos registros existentes por request/response/erro.
+- Atualizado o Swagger canônico do pipeline MOIS dossiê v1 com o contrato de entrada e resposta da consulta.

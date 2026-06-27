@@ -277,7 +277,10 @@ public final class MoisSalesLibraryDtos {
             MarketWarmupEcosystemType marketWarmupEcosystemType,
             MarketWarmupRecommendation marketWarmupRecommendation,
             MarketWarmupJobStatus marketWarmupStatus,
-            Instant marketWarmupUpdatedAt
+            Instant marketWarmupUpdatedAt,
+            String dossieProdutoStatus,
+            String dossieProdutoCurrentStage,
+            Instant dossieProdutoUpdatedAt
     ) {
     }
 

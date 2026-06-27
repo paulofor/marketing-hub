@@ -295,6 +295,9 @@ export interface MoisSalesLibraryPage {
   marketWarmupRecommendation?: MoisMarketWarmupRecommendation;
   marketWarmupStatus?: MoisMarketWarmupJobStatus;
   marketWarmupUpdatedAt?: string;
+  dossieProdutoStatus?: string;
+  dossieProdutoCurrentStage?: string;
+  dossieProdutoUpdatedAt?: string;
 }
 
 export interface MoisSalesLibraryPageSummary {

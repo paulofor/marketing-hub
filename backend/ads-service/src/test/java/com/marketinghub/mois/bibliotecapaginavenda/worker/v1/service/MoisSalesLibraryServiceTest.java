@@ -540,7 +540,7 @@ class MoisSalesLibraryServiceTest {
                 .thenReturn(List.of(99L));
         lenient().when(jdbcTemplate.query(contains("SELECT p.id, p.workspace_id, p.source"), isA(RowMapper.class), any()))
                 .thenReturn(List.of(new MoisSalesLibraryDtos.SalesLibraryPageResponse(99L, "10", "HOTMART", "https://example.com/pagina", "Title", "Produto Teste", "Produtor Teste", "R$ 5.997,00", BigDecimal.valueOf(150), "Abrantes Lima Empreendimentos LTDA", "Curso em vídeo",
-                        "ANALYSIS", "PENDING", null, "PENDING", null, null, null, 0L, BigDecimal.ZERO, null, null, null, null, null, null, null, null, null, null, null, Instant.now(), null, null, null, null, null, null, null, null)));
+                        "ANALYSIS", "PENDING", null, "PENDING", null, null, null, 0L, BigDecimal.ZERO, null, null, null, null, null, null, null, null, null, null, null, Instant.now(), null, null, null, null, null, null, null, null, null, null, null)));
         lenient().when(jdbcTemplate.update(contains("INSERT INTO mois_sales_page_job_execution"), any(), any(), any())).thenReturn(1);
         lenient().when(jdbcTemplate.queryForObject(contains("SELECT LAST_INSERT_ID()"), eq(Long.class))).thenReturn(123L);
         lenient().when(jdbcTemplate.update(contains("UPDATE mois_sales_page"), any(), any())).thenReturn(1);

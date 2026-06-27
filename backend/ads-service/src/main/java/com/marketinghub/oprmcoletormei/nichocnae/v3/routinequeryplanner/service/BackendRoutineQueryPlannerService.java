@@ -6,6 +6,8 @@ import com.marketinghub.oprmcoletormei.nichocnae.v3.routinequeryplanner.service.
 import com.marketinghub.oprmcoletormei.nichocnae.v3.routinequeryplanner.service.pending.RoutineQueryPlannerPendingResponse;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.shared.OprmNichoCnaeV3StageServiceSupport;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.shared.OprmNichoCnaeV3RecebeRequestRequest;
+import com.marketinghub.oprmcoletormei.nichocnae.v3.shared.OprmNichoCnaeV3RecebeResponseRequest;
+import com.marketinghub.oprmcoletormei.nichocnae.v3.shared.OprmNichoCnaeV3RecebeResponseResponse;
 import com.marketinghub.repository.jpa.oprm.market.OprmCnpjCnaeDimRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.PipelineNichoCnaeRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.v3.OprmNichoCnaeV3StageExecutionRepository;
@@ -40,6 +42,11 @@ public class BackendRoutineQueryPlannerService extends OprmNichoCnaeV3StageServi
     /** Recebe o request bruto da etapa e registra auditoria para o pipeline NichoCNAE v3. */
     public RoutineQueryPlannerCreateResponse recebeRequest(String cnaeCode, String jobId, OprmNichoCnaeV3RecebeRequestRequest request) {
         return new RoutineQueryPlannerCreateResponse(null, doRecebeRequest(cnaeCode, jobId, request).getJobId(), cnaeCode, STAGE_CODE, "AGUARDANDO_MODULO");
+    }
+
+    /** Recebe o response bruto da etapa e registra conclusão ou falha do pipeline NichoCNAE v3. */
+    public OprmNichoCnaeV3RecebeResponseResponse recebeResponse(String cnaeCode, String jobId, OprmNichoCnaeV3RecebeResponseRequest request) {
+        return doRecebeResponse(cnaeCode, jobId, request, NEXT_STAGE);
     }
 
     /** Lista pendências da etapa routine-query-planner para o executor OPRM. */

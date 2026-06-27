@@ -6,6 +6,8 @@ import com.marketinghub.oprmcoletormei.nichocnae.v3.sourcesearcher.service.creat
 import com.marketinghub.oprmcoletormei.nichocnae.v3.sourcesearcher.service.pending.SourceSearcherPendingResponse;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.shared.OprmNichoCnaeV3StageServiceSupport;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.shared.OprmNichoCnaeV3RecebeRequestRequest;
+import com.marketinghub.oprmcoletormei.nichocnae.v3.shared.OprmNichoCnaeV3RecebeResponseRequest;
+import com.marketinghub.oprmcoletormei.nichocnae.v3.shared.OprmNichoCnaeV3RecebeResponseResponse;
 import com.marketinghub.repository.jpa.oprm.market.OprmCnpjCnaeDimRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.PipelineNichoCnaeRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.v3.OprmNichoCnaeV3StageExecutionRepository;
@@ -40,6 +42,11 @@ public class BackendSourceSearcherV3Service extends OprmNichoCnaeV3StageServiceS
     /** Recebe o request bruto da etapa e registra auditoria para o pipeline NichoCNAE v3. */
     public SourceSearcherCreateResponse recebeRequest(String cnaeCode, String jobId, OprmNichoCnaeV3RecebeRequestRequest request) {
         return new SourceSearcherCreateResponse(null, doRecebeRequest(cnaeCode, jobId, request).getJobId(), cnaeCode, STAGE_CODE, "AGUARDANDO_MODULO");
+    }
+
+    /** Recebe o response bruto da etapa e registra conclusão ou falha do pipeline NichoCNAE v3. */
+    public OprmNichoCnaeV3RecebeResponseResponse recebeResponse(String cnaeCode, String jobId, OprmNichoCnaeV3RecebeResponseRequest request) {
+        return doRecebeResponse(cnaeCode, jobId, request, NEXT_STAGE);
     }
 
     /** Lista pendências da etapa source-searcher para o executor OPRM. */

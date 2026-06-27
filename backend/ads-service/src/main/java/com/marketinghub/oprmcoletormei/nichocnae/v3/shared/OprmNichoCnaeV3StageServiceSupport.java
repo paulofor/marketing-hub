@@ -23,6 +23,9 @@ public abstract class OprmNichoCnaeV3StageServiceSupport {
     private static final int PENDING_LIMIT = 10;
     private static final String STATUS_WAITING_MODULE = "AGUARDANDO_MODULO";
     private static final String PIPELINE_VERSION = "v3";
+    private static final String RESPONSE_PIPELINE_VERSION = "v1";
+    private static final String STATUS_COMPLETED = "CONCLUIDO";
+    private static final String STATUS_FAILED = "FALHA";
     private static final Map<String, Integer> STAGE_ORDER = Map.ofEntries(
             Map.entry("cnae-intake", 1),
             Map.entry("persona-candidate-generator", 2),
@@ -49,6 +52,12 @@ public abstract class OprmNichoCnaeV3StageServiceSupport {
         this.cnaeRepository = cnaeRepository;
         this.pipelineNichoCnaeRepository = pipelineNichoCnaeRepository;
         this.stageCode = stageCode;
+    }
+
+
+    /** Retorna o código canônico da etapa atendida pelo service. */
+    public String stageCode() {
+        return stageCode;
     }
 
     /** Marca no cadastro de CNAE que o pipeline NichoCNAE v3 foi iniciado na etapa atual. */
@@ -89,6 +98,41 @@ public abstract class OprmNichoCnaeV3StageServiceSupport {
         pipeline.setSchema(request == null ? null : request.schema());
         pipeline.setVersaoPipeline(PIPELINE_VERSION);
         return pipelineNichoCnaeRepository.save(pipeline);
+    }
+
+
+    /** Recebe o response bruto da etapa, conclui ou falha o CNAE e audita o retorno no pipeline NichoCNAE. */
+    protected OprmNichoCnaeV3RecebeResponseResponse doRecebeResponse(
+            String cnaeCode, String jobId, OprmNichoCnaeV3RecebeResponseRequest request, String nextStageCode) {
+        if (!StringUtils.hasText(jobId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "jobId é obrigatório no recebimento do response.");
+        }
+        OprmCnpjCnaeDim cnae = cnaeRepository.findById(cnaeCode)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "CNAE não encontrado."));
+        Instant now = Instant.now();
+        boolean hasFailure = request != null && StringUtils.hasText(request.descricaoErro());
+        cnae.setNichocnaePipelineStatus(hasFailure ? STATUS_FAILED : STATUS_COMPLETED);
+        cnae.setNichocnaeCurrentStageCode(stageCode);
+        cnae.setNichocnaePipelineUpdatedAt(now);
+        cnae.setUpdatedAt(now);
+        cnaeRepository.save(cnae);
+
+        PipelineNichoCnae pipeline = new PipelineNichoCnae();
+        pipeline.setIdExterno(cnaeCode);
+        pipeline.setResponse(request == null ? null : request.response());
+        pipeline.setCodigoEtapa(stageCode);
+        pipeline.setDataHora(now);
+        pipeline.setJobId(jobId);
+        pipeline.setQuantidadeTokenEntrada(request == null ? null : request.quantidadeTokenEntrada());
+        pipeline.setQuantidadeTokenSaida(request == null ? null : request.quantidadeTokenSaida());
+        pipeline.setCusto(request == null ? null : request.custo());
+        pipeline.setModelo(request == null ? null : request.modelo());
+        pipeline.setDescricaoErro(request == null ? null : request.descricaoErro());
+        pipeline.setVersaoPipeline(RESPONSE_PIPELINE_VERSION);
+        pipelineNichoCnaeRepository.save(pipeline);
+
+        String normalizedNextStage = StringUtils.hasText(nextStageCode) ? nextStageCode : null;
+        return new OprmNichoCnaeV3RecebeResponseResponse(hasFailure ? null : normalizedNextStage);
     }
 
     /** Cria uma execução pendente para a etapa canônica. */

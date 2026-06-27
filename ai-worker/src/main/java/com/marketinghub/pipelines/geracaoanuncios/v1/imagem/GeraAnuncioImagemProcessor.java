@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 import org.springframework.stereotype.Component;
 
-/** Responsabilidade: executar a etapa Imagem do pipeline GeraAnuncio v2 a partir do contrato canônico do backend. */
+/** Responsabilidade: executar a etapa Imagem do pipeline GeracaoAnuncios v1 a partir do contrato canônico do backend. */
 @Component
 public class GeraAnuncioImagemProcessor implements StageProcessor<GeraAnuncioImagemInput, GeraAnuncioImagemOutput> {
     /** Processa o contexto pendente e devolve saída estruturada pronta para callback ao backend. */

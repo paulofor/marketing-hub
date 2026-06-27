@@ -9,7 +9,7 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
-/** Responsabilidade: consumir os contratos backend da etapa Imagem do GeraAnuncio v2. */
+/** Responsabilidade: consumir os contratos backend da etapa Imagem do GeracaoAnuncios v1. */
 @Component
 public class GeraAnuncioImagemBackendClient {
     public static final String PENDING_ENDPOINT = "/internal/aiworker/geracaoanuncios/v1/imagem/stage-executions/pending";
@@ -33,13 +33,13 @@ public class GeraAnuncioImagemBackendClient {
     /** Busca execuções pendentes pelo endpoint pending canônico da etapa Imagem no backend. */
     public List<GeraAnuncioImagemInput> fetchPending() {
         String uri = UrlUtils.joinPath(backendBaseUrl, apiPrefix, PENDING_ENDPOINT);
-        log.info("Buscando pending GeraAnuncio v2 Imagem. endpoint={}", uri);
+        log.info("Buscando pending GeracaoAnuncios v1 Imagem. endpoint={}", uri);
         List<GeraAnuncioImagemInput> response = webClient.post()
                 .uri(uri)
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<List<GeraAnuncioImagemInput>>() {})
                 .doOnNext(payload -> log.info(
-                        "Resposta pending GeraAnuncio v2 Imagem recebida. endpoint={} quantidade={}",
+                        "Resposta pending GeracaoAnuncios v1 Imagem recebida. endpoint={} quantidade={}",
                         uri,
                         payload.size()))
                 .block();

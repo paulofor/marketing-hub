@@ -44,13 +44,16 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.text.Normalizer;
 import java.security.MessageDigest;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -72,6 +75,51 @@ public class FacebookCampaignService {
     private static final String IMAGE_HASH_PLATFORM = "FACEBOOK";
     private static final long MIN_REACH_LOWER_BOUND = 200_000L;
     private static final long MAX_REACH_UPPER_BOUND = 20_000_000L;
+    private static final Set<String> META_CALL_TO_ACTION_TYPES = Set.of(
+        "OPEN_LINK",
+        "LIKE_PAGE",
+        "SHOP_NOW",
+        "PLAY_GAME",
+        "INSTALL_APP",
+        "USE_APP",
+        "CALL",
+        "CALL_ME",
+        "INSTALL_MOBILE_APP",
+        "USE_MOBILE_APP",
+        "MOBILE_DOWNLOAD",
+        "BOOK_TRAVEL",
+        "LISTEN_MUSIC",
+        "WATCH_VIDEO",
+        "LEARN_MORE",
+        "SIGN_UP",
+        "DOWNLOAD",
+        "WATCH_MORE",
+        "NO_BUTTON",
+        "APPLY_NOW",
+        "BUY_NOW",
+        "GET_OFFER",
+        "GET_OFFER_VIEW",
+        "BUY_TICKETS",
+        "UPDATE_APP",
+        "GET_DIRECTIONS",
+        "BUY",
+        "MESSAGE_PAGE",
+        "DONATE",
+        "SUBSCRIBE",
+        "SELL_NOW",
+        "SHARE",
+        "DONATE_NOW",
+        "GET_QUOTE",
+        "CONTACT_US",
+        "ORDER_NOW",
+        "START_ORDER",
+        "ADD_TO_CART",
+        "GET_SHOWTIMES",
+        "LISTEN_NOW",
+        "SEE_MORE",
+        "WHATSAPP_MESSAGE"
+    );
+    private static final Map<String, String> CALL_TO_ACTION_LABEL_ALIASES = buildCallToActionLabelAliases();
 
     private static final Duration CREATIVE_IMAGE_DOWNLOAD_TIMEOUT = Duration.ofSeconds(20);
     private static final long CREATIVE_IMAGE_MAX_BYTES = 10 * 1024 * 1024L;
@@ -315,18 +363,22 @@ public class FacebookCampaignService {
 
             String defaultMessage = formatCreativeMessage(exp.name(), config);
             List<CreativePublicationPayload> creativePayloads = selectedCreatives.stream()
-                .map(creative -> new CreativePublicationPayload(
-                    creative,
-                    resolveDestinationUrl(exp, creative, config, resolvedInstantFormDestination),
-                    resolveLeadGenFormId(exp, creative, config, resolvedInstantFormDestination),
-                    StringUtils.hasText(creative.primaryText()) ? creative.primaryText() : defaultMessage,
-                    coalesce(creative.cta(), config.defaultCallToActionType()),
-                    creative.headline(),
-                    creative.description(),
-                    null,
-                    resolveCreativeImageUrl(creative.imageUrl()),
-                    coalesce(creative.instagramUserId(), fallbackInstagramActorId)
-                ))
+                .map(creative -> {
+                    String websiteUrl = resolveDestinationUrl(exp, creative, config, resolvedInstantFormDestination);
+                    String leadGenFormId = resolveLeadGenFormId(exp, creative, config, resolvedInstantFormDestination);
+                    return new CreativePublicationPayload(
+                        creative,
+                        websiteUrl,
+                        leadGenFormId,
+                        StringUtils.hasText(creative.primaryText()) ? creative.primaryText() : defaultMessage,
+                        resolveCallToActionType(creative.cta(), config.defaultCallToActionType(), StringUtils.hasText(leadGenFormId)),
+                        creative.headline(),
+                        creative.description(),
+                        null,
+                        resolveCreativeImageUrl(creative.imageUrl()),
+                        coalesce(creative.instagramUserId(), fallbackInstagramActorId)
+                    );
+                })
                 .filter(payload -> {
                     if (hasLeadFormDestination && !StringUtils.hasText(payload.leadGenFormId())) {
                         LOGGER.warn(
@@ -1456,6 +1508,88 @@ public class FacebookCampaignService {
         return null;
     }
 
+    /**
+     * Monta os aliases de labels comerciais para o enum tecnico aceito pela Meta.
+     */
+    private static Map<String, String> buildCallToActionLabelAliases() {
+        Map<String, String> aliases = new HashMap<>();
+        aliases.put("saiba mais", "LEARN_MORE");
+        aliases.put("conheca mais", "LEARN_MORE");
+        aliases.put("ver mais", "LEARN_MORE");
+        aliases.put("abrir", "LEARN_MORE");
+        aliases.put("abrir a planilha de evidencias", "LEARN_MORE");
+        aliases.put("acessar", "LEARN_MORE");
+        aliases.put("quero conhecer", "LEARN_MORE");
+        aliases.put("inscrever se", "SIGN_UP");
+        aliases.put("cadastre se", "SIGN_UP");
+        aliases.put("receber a previa", "SIGN_UP");
+        aliases.put("comprar agora", "SHOP_NOW");
+        aliases.put("comprar", "SHOP_NOW");
+        aliases.put("fale conosco", "CONTACT_US");
+        aliases.put("pedir cotacao", "GET_QUOTE");
+        aliases.put("baixar", "DOWNLOAD");
+        return Map.copyOf(aliases);
+    }
+
+    /**
+     * Resolve o tipo tecnico de CTA que sera enviado para o campo call_to_action.type da Meta.
+     */
+    private String resolveCallToActionType(String creativeCallToAction, String defaultCallToActionType, boolean leadFormDestination) {
+        Optional<String> creativeType = normalizeCallToActionCandidate(creativeCallToAction);
+        if (creativeType.isPresent()) {
+            return creativeType.get();
+        }
+        Optional<String> defaultType = normalizeCallToActionCandidate(defaultCallToActionType);
+        if (defaultType.isPresent()) {
+            return defaultType.get();
+        }
+        String fallback = leadFormDestination ? "SIGN_UP" : "LEARN_MORE";
+        if (StringUtils.hasText(creativeCallToAction) || StringUtils.hasText(defaultCallToActionType)) {
+            LOGGER.warn(
+                "CTA comercial nao corresponde a enum tecnico da Meta; usando fallback: creativeCta={}, defaultCta={}, fallback={}",
+                creativeCallToAction,
+                defaultCallToActionType,
+                fallback
+            );
+        }
+        return fallback;
+    }
+
+    /**
+     * Normaliza um candidato de CTA para enum Meta ou alias comercial conhecido.
+     */
+    private Optional<String> normalizeCallToActionCandidate(String candidate) {
+        if (!StringUtils.hasText(candidate)) {
+            return Optional.empty();
+        }
+        String trimmed = candidate.trim();
+        String enumCandidate = trimmed.toUpperCase(Locale.ROOT).replace('-', '_').replace(' ', '_');
+        if (META_CALL_TO_ACTION_TYPES.contains(enumCandidate)) {
+            return Optional.of(enumCandidate);
+        }
+        String normalizedLabel = normalizeCallToActionLabel(trimmed);
+        String alias = CALL_TO_ACTION_LABEL_ALIASES.get(normalizedLabel);
+        if (alias != null) {
+            return Optional.of(alias);
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Remove acentos e pontuacao para comparar labels comerciais de CTA.
+     */
+    private static String normalizeCallToActionLabel(String value) {
+        String withoutAccents = Normalizer.normalize(value, Normalizer.Form.NFD)
+            .replaceAll("\\p{M}", "");
+        return withoutAccents.toLowerCase(Locale.ROOT)
+            .replaceAll("[^a-z0-9]+", " ")
+            .trim()
+            .replaceAll("\\s+", " ");
+    }
+
+    /**
+     * Cria o criativo com a CTA tecnica ja normalizada e aplica fallback sem Instagram quando necessario.
+     */
     private AdCreativeCreation createAdCreativeWithFallback(
         String adAccountId,
         Experiment experiment,

@@ -75,6 +75,53 @@ class SourceSearcherProcessorTest {
         assertThat(source.containsKey("brazilRelevanceScore")).isTrue();
     }
 
+    /** Usa variações curtas para encontrar fontes mesmo quando a query planejada vem longa e ruidosa. */
+    @Test
+    void shouldSearchWithSimplifiedQueryVariants() {
+        SourceSearchClient searchClient = (query, limit) -> {
+            if (query.toLowerCase().startsWith("atendimento") && query.toLowerCase().contains("provador")) {
+                return List.of(new SourceSearchResult(
+                        "Rotina de atendimento em loja de roupas no Brasil",
+                        "https://varejo.example.com.br/rotina-loja-roupas",
+                        "Dono MEI relata rotina de atendimento, provador, clientes, estoque, caixa e reposição manual.",
+                        "TEST_PROVIDER",
+                        "<item />"));
+            }
+            return List.of();
+        };
+
+        StageResult result = new SourceSearcherProcessor(searchClient).process(new StageContext("job", "5", Map.of(
+                "plannedQueries", List.of(Map.of(
+                        "query", "Dono-operador de loja física de roupas e acessórios (MEI/pequeno varejo) MEI autônomo dono operador Atendimento presencial e suporte no provador rotina problema frequência",
+                        "intent", "TAREFA_DIARIA",
+                        "objective", "Validar tarefa recorrente e frequência operacional")))));
+
+        assertThat(result.status()).isEqualTo("FONTES_ENCONTRADAS");
+        List<?> attempts = (List<?>) result.output().get("searchAttempts");
+        Map<?, ?> attempt = (Map<?, ?>) attempts.getFirst();
+        assertThat((List<?>) attempt.get("queryVariants")).anySatisfy(query ->
+                assertThat(String.valueOf(query)).startsWith("atendimento"));
+    }
+
+    /** Registra fontes rejeitadas com motivo para diagnosticar bloqueios sem depender apenas do log técnico. */
+    @Test
+    void shouldAuditRejectedSourcesWithReason() {
+        SourceSearchClient searchClient = (query, limit) -> List.of(new SourceSearchResult(
+                "Conteúdo genérico de moda",
+                "",
+                "Texto sem fonte rastreável para rotina operacional.",
+                "TEST_PROVIDER",
+                "<item />"));
+
+        StageResult result = new SourceSearcherProcessor(searchClient).process(new StageContext("job", "5", Map.of(
+                "plannedQueries", List.of(Map.of("query", "loja roupas estoque")))));
+
+        List<?> attempts = (List<?>) result.output().get("searchAttempts");
+        Map<?, ?> attempt = (Map<?, ?>) attempts.getFirst();
+        assertThat((List<?>) attempt.get("rejectedSources")).anySatisfy(rejected ->
+                assertThat(((Map<?, ?>) rejected).get("rejectionReason")).isEqualTo("URL_AUSENTE"));
+    }
+
     /** Bloqueia avanço quando a busca retorna apenas fonte comercial ou solução contaminada. */
     @Test
     void shouldBlockCommercialSolutionSources() {

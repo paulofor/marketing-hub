@@ -5,18 +5,25 @@ import com.marketinghub.pipelines.nichocnae.v3.core.StageContext;
 import com.marketinghub.pipelines.nichocnae.v3.core.StageProcessor;
 import com.marketinghub.pipelines.nichocnae.v3.core.StageResult;
 import java.net.URI;
+import java.text.Normalizer;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 /** Processa a etapa source-searcher do pipeline NichoCNAE v3. */
 public final class SourceSearcherProcessor implements StageProcessor {
     private static final int SEARCH_RESULTS_PER_QUERY = 5;
     private static final int MAX_SELECTED_SOURCES = 8;
     private static final int MIN_ROUTINE_EVIDENCE_SCORE = 45;
+    private static final int MAX_REJECTED_SOURCES_PER_ATTEMPT = 8;
+    private static final Pattern PARENTHETICAL_TEXT = Pattern.compile("\\([^)]*\\)");
+    private static final Pattern NON_SEARCH_TEXT = Pattern.compile("[^\\p{L}\\p{N}\\s]");
+    private static final Pattern MULTIPLE_SPACES = Pattern.compile("\\s+");
     private static final SourceSearchClient EMPTY_SEARCH_CLIENT = (query, limit) -> List.of();
 
     private final SourceSearchClient searchClient;
@@ -110,25 +117,41 @@ public final class SourceSearcherProcessor implements StageProcessor {
         return new SearchOutput(selectedSources, attempts);
     }
 
-    /** Busca uma query e registra tentativa com quantidade bruta e fontes aceitas. */
+    /** Busca uma query por variações simples e registra quantidade bruta, fontes aceitas e descartes. */
     private Map<String, Object> searchOneQuery(Map<String, Object> plannedQuery, Set<String> seenUrls) {
         String originalQuery = text(plannedQuery.get("query"));
-        String query = enrichBrazilFirstQuery(originalQuery);
-        List<SourceSearchResult> rawResults = query.isBlank() ? List.of() : searchClient.search(query, SEARCH_RESULTS_PER_QUERY);
-        List<Map<String, Object>> qualifiedSources = rawResults.stream()
-                .map(result -> qualify(result, plannedQuery))
-                .filter(source -> !text(source.get("url")).isBlank())
-                .filter(source -> seenUrls.add(text(source.get("url"))))
-                .filter(this::isQualifiedRoutineSource)
+        List<String> queryVariants = queryVariants(plannedQuery);
+        List<SourceSearchResult> rawResults = queryVariants.stream()
+                .flatMap(query -> searchClient.search(query, SEARCH_RESULTS_PER_QUERY).stream())
                 .toList();
+        List<Map<String, Object>> qualifiedSources = new ArrayList<>();
+        List<Map<String, Object>> rejectedSources = new ArrayList<>();
+        for (SourceSearchResult rawResult : rawResults) {
+            Map<String, Object> source = qualify(rawResult, plannedQuery);
+            String url = text(source.get("url"));
+            String rejectionReason = rejectionReason(source, seenUrls);
+            if (rejectionReason.isBlank()) {
+                qualifiedSources.add(source);
+            } else if (rejectedSources.size() < MAX_REJECTED_SOURCES_PER_ATTEMPT) {
+                Map<String, Object> rejected = new LinkedHashMap<>(source);
+                rejected.put("rejectionReason", rejectionReason);
+                rejectedSources.add(rejected);
+            }
+            if (!url.isBlank()) {
+                seenUrls.add(url);
+            }
+        }
         Map<String, Object> attempt = new LinkedHashMap<>();
-        attempt.put("query", query);
+        attempt.put("query", queryVariants.isEmpty() ? "" : queryVariants.getFirst());
+        attempt.put("queryVariants", queryVariants);
         attempt.put("originalQuery", originalQuery);
         attempt.put("intent", text(plannedQuery.get("intent")));
         attempt.put("objective", text(plannedQuery.get("objective")));
         attempt.put("rawResultCount", rawResults.size());
         attempt.put("qualifiedSourceCount", qualifiedSources.size());
         attempt.put("qualifiedSources", qualifiedSources);
+        attempt.put("rejectedSourceCount", Math.max(0, rawResults.size() - qualifiedSources.size()));
+        attempt.put("rejectedSources", rejectedSources);
         return attempt;
     }
 
@@ -198,12 +221,87 @@ public final class SourceSearcherProcessor implements StageProcessor {
                 && score(source, "qualityScore") >= MIN_ROUTINE_EVIDENCE_SCORE;
     }
 
+    /** Gera variações curtas de busca para evitar que queries longas impeçam fontes úteis. */
+    private List<String> queryVariants(Map<String, Object> plannedQuery) {
+        String originalQuery = text(plannedQuery.get("query"));
+        String objective = text(plannedQuery.get("objective"));
+        String simplifiedQuery = simplifyQuery(originalQuery);
+        List<String> variants = new ArrayList<>();
+        addVariant(variants, enrichBrazilFirstQuery(simplifiedQuery));
+        addVariant(variants, enrichBrazilFirstQuery(operationalQuery(simplifiedQuery)));
+        addVariant(variants, enrichBrazilFirstQuery(objective));
+        return variants;
+    }
+
     /** Enriquece a consulta para priorizar Brasil e rotina real do profissional. */
     private String enrichBrazilFirstQuery(String query) {
-        if (query.isBlank()) {
+        String cleanQuery = trimWords(query, 12);
+        if (cleanQuery.isBlank()) {
             return "";
         }
-        return query + " Brasil MEI autônomo rotina problema atendimento cliente";
+        return cleanQuery + " Brasil rotina MEI autônomo";
+    }
+
+    /** Simplifica a query planejada removendo ruído que reduz a chance de resultado rastreável. */
+    private String simplifyQuery(String query) {
+        String withoutParenthetical = PARENTHETICAL_TEXT.matcher(query).replaceAll(" ");
+        String searchable = NON_SEARCH_TEXT.matcher(withoutParenthetical).replaceAll(" ");
+        return MULTIPLE_SPACES.matcher(searchable).replaceAll(" ").trim();
+    }
+
+    /** Mantém termos de operação diária mais fortes para uma variação de busca objetiva. */
+    private String operationalQuery(String query) {
+        String normalized = normalize(query);
+        List<String> terms = List.of("atendimento", "provador", "estoque", "reposicao", "reposição", "mercadoria", "vitrine", "araras", "etiquetas", "caixa", "loja", "roupas", "acessorios", "acessórios");
+        StringBuilder builder = new StringBuilder();
+        for (String term : terms) {
+            if (normalized.contains(normalize(term)) && !builder.toString().contains(term)) {
+                builder.append(term).append(' ');
+            }
+        }
+        String operational = builder.toString().trim();
+        return operational.isBlank() ? query : operational;
+    }
+
+    /** Adiciona uma variação não vazia sem duplicidade. */
+    private void addVariant(List<String> variants, String query) {
+        if (!query.isBlank() && !variants.contains(query)) {
+            variants.add(query);
+        }
+    }
+
+    /** Limita o texto aos primeiros termos relevantes para busca pública. */
+    private String trimWords(String query, int maxWords) {
+        String[] words = MULTIPLE_SPACES.matcher(query).replaceAll(" ").trim().split(" ");
+        if (words.length <= maxWords) {
+            return query.trim();
+        }
+        StringBuilder builder = new StringBuilder();
+        for (int index = 0; index < maxWords; index++) {
+            builder.append(words[index]).append(' ');
+        }
+        return builder.toString().trim();
+    }
+
+    /** Explica por que uma fonte foi recusada, preservando auditoria da decisão. */
+    private String rejectionReason(Map<String, Object> source, Set<String> seenUrls) {
+        String url = text(source.get("url"));
+        if (url.isBlank()) {
+            return "URL_AUSENTE";
+        }
+        if (seenUrls.contains(url)) {
+            return "URL_DUPLICADA";
+        }
+        if (!"ROUTINE_EVIDENCE".equals(source.get("sourceIntent"))) {
+            return "RISCO_CONTAMINACAO_SOLUCAO_OU_COMERCIAL";
+        }
+        if (score(source, "routineEvidenceScore") < MIN_ROUTINE_EVIDENCE_SCORE) {
+            return "EVIDENCIA_ROTINA_INSUFICIENTE";
+        }
+        if (score(source, "qualityScore") < MIN_ROUTINE_EVIDENCE_SCORE) {
+            return "QUALIDADE_INSUFICIENTE";
+        }
+        return "";
     }
 
     /** Calcula score de evidência de rotina operacional. */
@@ -267,6 +365,12 @@ public final class SourceSearcherProcessor implements StageProcessor {
     /** Verifica presença de qualquer termo em texto normalizado. */
     private boolean containsAny(String text, List<String> terms) {
         return terms.stream().anyMatch(text::contains);
+    }
+
+    /** Normaliza acentos para comparar termos de busca de forma estável. */
+    private String normalize(String value) {
+        return Normalizer.normalize(text(value).toLowerCase(), Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "");
     }
 
     /** Retorna o primeiro campo existente no mapa de fonte. */

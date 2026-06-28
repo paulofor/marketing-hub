@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 /** Repositório responsável por consultar auditorias do pipeline NichoCNAE. */
-public interface PipelineNichoCnaeRepository extends JpaRepository<PipelineNichoCnae, String> {
+public interface PipelineNichoCnaeRepository extends JpaRepository<PipelineNichoCnae, Long> {
     /** Verifica se já existe auditoria registrada para um job do pipeline. */
     boolean existsByJobId(String jobId);
 

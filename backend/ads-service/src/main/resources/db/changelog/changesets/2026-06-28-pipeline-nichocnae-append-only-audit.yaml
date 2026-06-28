@@ -1,0 +1,22 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-28-02-pipeline-nichocnae-append-only-audit
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: pipeline_nichocnae
+        - not:
+            - columnExists:
+                tableName: pipeline_nichocnae
+                columnName: id
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE pipeline_nichocnae DROP PRIMARY KEY;
+              ALTER TABLE pipeline_nichocnae ADD COLUMN id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY FIRST;
+              CREATE INDEX idx_pipeline_nichocnae_id_externo ON pipeline_nichocnae (id_externo);

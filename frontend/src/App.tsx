@@ -128,6 +128,7 @@ import MoisLibraryPage from "./pages/mois/MoisLibraryPage";
 import MoisSalesPagesLibraryPage from "./pages/mois/MoisSalesPagesLibraryPage";
 import MoisSalesPagesPipelinePage from "./pages/mois/MoisSalesPagesPipelinePage";
 import MoisSalesPageLibraryDetailPage from "./pages/mois/MoisSalesPageLibraryDetailPage";
+import MoisSalesPageDossierPage from "./pages/mois/MoisSalesPageDossierPage";
 import MoisComparisonPage from "./pages/mois/MoisComparisonPage";
 import MoisOfferBuilderPage from "./pages/mois/MoisOfferBuilderPage";
 import MoisResearchSourcesPage from "./pages/mois/MoisResearchSourcesPage";
@@ -383,6 +384,10 @@ export default function App() {
               <Route
                 path="/mois/sales-pages-library/:pageId"
                 element={<MoisSalesPageLibraryDetailPage />}
+              />
+              <Route
+                path="/mois/sales-pages-library/:pageId/dossier"
+                element={<MoisSalesPageDossierPage />}
               />
               <Route path="/mois/comparison" element={<MoisComparisonPage />} />
               <Route path="/mois/builder" element={<MoisOfferBuilderPage />} />

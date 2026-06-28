@@ -7,8 +7,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.marketinghub.oprm.market.OprmCnpjCnaeDim;
+import com.marketinghub.oprm.nichocnae.PipelineNichoCnae;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.OprmNichoCnaeV3StageExecution;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.OprmNichoCnaeV3StageExecutionStatus;
+import com.marketinghub.oprmcoletormei.nichocnae.v3.shared.OprmNichoCnaeV3RecebeResponseRequest;
 import com.marketinghub.repository.jpa.oprm.market.OprmCnpjCnaeDimRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.PipelineNichoCnaeRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.v3.OprmNichoCnaeV3StageExecutionRepository;
@@ -76,6 +78,38 @@ class BackendCnaeIntakeServiceTest {
         verify(repository).save(executionCaptor.capture());
         assertThat(executionCaptor.getValue().getStageCode()).isEqualTo("cnae-intake");
         assertThat(executionCaptor.getValue().getInputPayload()).contains("\"cnaeDescription\":\"Comércio varejista de artigos do vestuário\"");
+    }
+
+    /** Garante que o callback de response grava a resposta final limpa da OpenAI na auditoria. */
+    @Test
+    void recebeResponseStoresCleanFinalResponse() {
+        OprmCnpjCnaeDim cnae = cnae();
+        when(cnaeRepository.findById("4781400")).thenReturn(Optional.of(cnae));
+        when(pipelineNichoCnaeRepository.save(any(PipelineNichoCnae.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        String rawResponse = """
+                {
+                  "output": [
+                    {
+                      "content": [
+                        {
+                          "type": "output_text",
+                          "text": "resposta funcional limpa"
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """;
+
+        service.recebeResponse(
+                "4781400",
+                "job-4781400",
+                new OprmNichoCnaeV3RecebeResponseRequest(rawResponse, null, 10L, 20L, null, "gpt"));
+
+        ArgumentCaptor<PipelineNichoCnae> pipelineCaptor = ArgumentCaptor.forClass(PipelineNichoCnae.class);
+        verify(pipelineNichoCnaeRepository).save(pipelineCaptor.capture());
+        assertThat(pipelineCaptor.getValue().getResponse()).isEqualTo(rawResponse);
+        assertThat(pipelineCaptor.getValue().getRespostaFinal()).isEqualTo("resposta funcional limpa");
     }
 
     /** Monta uma execução pendente da etapa inicial. */

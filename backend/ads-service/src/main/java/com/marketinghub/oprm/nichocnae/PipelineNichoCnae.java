@@ -23,6 +23,9 @@ public class PipelineNichoCnae {
     @Column(name = "response", columnDefinition = "LONGTEXT")
     private String response;
 
+    @Column(name = "resposta_final", columnDefinition = "LONGTEXT")
+    private String respostaFinal;
+
     @Column(name = "codigo_etapa", length = 96)
     private String codigoEtapa;
 

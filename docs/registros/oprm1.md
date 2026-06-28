@@ -1622,3 +1622,9 @@
 - Causa-raiz: contrato incompleto entre `source-searcher` e `source-fetcher`; o pipeline avançava com queries planejadas como se fossem fontes reais.
 - Correção: `source-searcher` agora só libera `nextStageCode=source-fetcher` quando recebe fontes reais auditáveis; sem fontes, conclui bloqueado com `FONTES_NAO_COLETADAS`, motivo persistível e etapa recomendada de correção.
 - Prevenção: adicionado teste unitário cobrindo bloqueio sem fontes e avanço apenas com `foundSources` reais.
+
+## 2026-06-28 — NichoCNAE v3: resposta final limpa da OpenAI no backend
+
+- Causa-raiz: o backend persistia o envelope bruto da OpenAI em `pipeline_nichocnae.response`, o que deixava a tela de auditoria dependente de JSON técnico para encontrar o conteúdo funcional em `content[].text`.
+- Correção: adicionada a coluna `pipeline_nichocnae.resposta_final` e normalização compartilhada no callback de response v3 para gravar, em todas as etapas, o texto limpo retornado pela OpenAI quando o envelope trouxer `output[].content[].text` ou `content[].text`.
+- Prevenção: teste unitário cobre extração do envelope da Responses API, extração de mensagem direta e fallback para response original quando não houver texto extraível.

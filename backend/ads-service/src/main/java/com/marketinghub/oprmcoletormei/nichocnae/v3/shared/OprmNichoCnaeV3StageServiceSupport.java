@@ -45,6 +45,7 @@ public abstract class OprmNichoCnaeV3StageServiceSupport {
     private final PipelineNichoCnaeRepository pipelineNichoCnaeRepository;
     private final String stageCode;
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final OpenAiTextResponseExtractor responseExtractor = new OpenAiTextResponseExtractor(objectMapper);
 
     /** Inicializa o suporte com repository canônico e código da etapa. */
     protected OprmNichoCnaeV3StageServiceSupport(
@@ -129,7 +130,9 @@ public abstract class OprmNichoCnaeV3StageServiceSupport {
 
         PipelineNichoCnae pipeline = new PipelineNichoCnae();
         pipeline.setIdExterno(cnaeCode);
-        pipeline.setResponse(request == null ? null : request.response());
+        String rawResponse = request == null ? null : request.response();
+        pipeline.setResponse(rawResponse);
+        pipeline.setRespostaFinal(responseExtractor.extract(rawResponse));
         pipeline.setCodigoEtapa(stageCode);
         pipeline.setDataHora(now);
         pipeline.setStatus(hasFailure ? STATUS_FAILED : STATUS_COMPLETED);

@@ -2,6 +2,7 @@ package com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service;
 
 import com.marketinghub.pipelines.dossie.v1.StageContext;
 import com.marketinghub.pipelines.dossie.v1.StageResult;
+import com.marketinghub.pipelines.dossie.v1.StageResult.OpenAiInteraction;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
@@ -90,6 +91,17 @@ public class DossierV1BackendClient {
         /** Cria a resposta de sucesso a partir do resultado da etapa. */
         public static DossierRecebeResponseRequest success(String response) {
             return new DossierRecebeResponseRequest(response, null, null, null, "mois-dossie-v1-local", null);
+        }
+
+        /** Cria a resposta bruta de uma interação OpenAI preservando tokens, custo, modelo e erro informados pela etapa. */
+        public static DossierRecebeResponseRequest openAi(OpenAiInteraction interaction) {
+            return new DossierRecebeResponseRequest(
+                    interaction.rawResponseReceived(),
+                    interaction.quantidadeTokenEntrada(),
+                    interaction.quantidadeTokenSaida(),
+                    interaction.custo(),
+                    interaction.modelo(),
+                    interaction.descricaoErro());
         }
 
         /** Cria a resposta de falha operacional persistível. */

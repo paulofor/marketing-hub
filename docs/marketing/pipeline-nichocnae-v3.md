@@ -421,6 +421,83 @@ Bloqueia se:
 - faltar persona vencedora;
 - faltar tarefas diárias.
 
+
+---
+
+## Exemplo real — execução do CNAE 4781400 em 2026-06-28
+
+Execução usada como referência: `http://191.252.181.168:5173/oprm/cnaes/4781400/pipeline-v3`.
+
+### Contexto da execução
+
+- **Job:** `e38fdc95-8ce4-4405-b800-9f73ea7648b5`.
+- **CNAE:** `4781400`.
+- **Descrição:** Comércio varejista de artigos do vestuário e acessórios.
+- **Recorte correto:** MEI, dono-operador e profissional autônomo, sem analisar funcionário CLT.
+- **Fronteira comercial preservada:** não gerar oferta, campanha ou landing antes de validar rotina e evidência pública.
+
+### Caminho percorrido
+
+| Etapa | Resultado real | Observação |
+| --- | --- | --- |
+| `cnae-intake` | `COMPLETED` / `CNAE_RECEBIDO` | Recebeu CNAE e descrição corretamente. |
+| `persona-candidate-generator` | `COMPLETED` / `PERSONAS_CANDIDATAS` | Gerou 4 personas candidatas operacionais. |
+| `persona-tournament` | `COMPLETED` / `PERSONA_PRIORIZADA` | Escolheu a persona mais aderente ao recorte dono-operador. |
+| `routine-query-planner` | `COMPLETED` / `QUERIES_PLANEJADAS` | Gerou 8 buscas para validar tarefas reais da rotina. |
+| `source-searcher` | `COMPLETED` / `FONTES_NAO_COLETADAS` | Bloqueou corretamente por não encontrar fonte pública qualificada. |
+| `source-fetcher` em diante | Não executadas | O pipeline parou antes porque não havia fonte segura para buscar snapshot. |
+
+### Personas reais geradas
+
+A etapa de geração produziu quatro possibilidades coerentes com o CNAE:
+
+1. **Dono-operador de loja de roupas e acessórios (varejo físico)** — score `86`.
+2. **MEI de moda com venda por WhatsApp e retirada/entrega local** — score `83`.
+3. **Autônomo de banca/box em feira ou galeria** — score `78`.
+4. **Dono-operador de ateliê/pequena confecção com venda direta de peças e ajustes** — score `71`.
+
+A persona vencedora foi **Dono-operador de loja de roupas e acessórios (varejo físico)**, porque concentra rotina diária clara de atendimento, organização de loja, reposição, controle de recebimentos, contato com fornecedor e decisões pequenas do dono-operador.
+
+### Exemplos reais de tarefas que viraram buscas
+
+O `routine-query-planner` transformou a persona vencedora em 8 consultas de validação. Exemplos reais:
+
+- atendimento no balcão/salão, apresentação de peças, sugestão de combinações e apoio à prova;
+- reposição e organização de araras/prateleiras, separação por tamanho, cor e categoria;
+- recebimento de mercadorias, conferência básica, etiquetagem e precificação;
+- contagem pontual de itens e checagem de disponibilidade, principalmente tamanhos;
+- registro de vendas, controle de recebimentos e separação de comprovantes;
+- montagem ou ajuste de vitrine e exposição interna;
+- contato com fornecedores para reposição e acompanhamento de entregas;
+- emissão ou organização de documentos, notas, recibos, comprovantes e cadastro simples de clientes.
+
+### Observação do bloqueio no gate atual
+
+A execução está ficando bloqueada no **gate da etapa `source-searcher`**, antes de chegar ao `quality-gate` formal.
+
+O motivo persistido foi:
+
+> A etapa `source-searcher` não encontrou fontes públicas qualificadas de rotina; não é seguro avançar com queries ou fonte comercial.
+
+Na prática, o bloqueio aconteceu porque a busca retornou resultados, mas nenhum resultado passou como evidência pública segura de rotina real. Os principais motivos de rejeição observados foram:
+
+- **URLs duplicadas:** 42 rejeições.
+- **Evidência de rotina insuficiente:** 16 rejeições.
+- **Risco de contaminação comercial ou linguagem de solução:** 6 rejeições.
+
+Exemplos reais de fontes rejeitadas:
+
+- páginas de dicionário para o termo “dono”, como Dicio, Sinônimos e Michaelis, por não comprovarem rotina operacional;
+- notícia do G1 sobre “dono” de outra empresa, por não ter relação com rotina de loja de vestuário MEI/autônoma;
+- páginas comerciais como Mercado Livre, Magazine Luiza e Microsoft Store, por risco comercial ou ausência de evidência de rotina;
+- páginas genéricas de agendamento ou governo, por não sustentarem tarefa diária do dono-operador de loja de roupas.
+
+### Leitura de causa-raiz para evolução
+
+O bloqueio é correto do ponto de vista de qualidade: o pipeline não deve avançar para `source-fetcher`, `routine-signal-extractor`, `daily-tasks-synthesizer`, `quality-gate` e materialização final sem fonte pública rastreável.
+
+A causa operacional do bloqueio é que as consultas ainda estão muito presas à combinação literal **“dono-operador + MEI/autônomo + tarefa”**. Isso atrai resultados genéricos, dicionários, páginas comerciais ou conteúdos fora da rotina real. A próxima evolução deve gerar queries mais naturais e semânticas, por exemplo usando linguagem de busca como “rotina de loja de roupas pequena”, “como controlar estoque por tamanho em loja de roupa”, “dificuldade de atender cliente e organizar arara em loja de roupa”, sempre mantendo o filtro contra solução comercial prematura.
+
 ---
 
 ## Gates de negócio do pipeline

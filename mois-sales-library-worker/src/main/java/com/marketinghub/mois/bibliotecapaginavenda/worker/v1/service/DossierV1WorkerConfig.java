@@ -1,6 +1,8 @@
 package com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service;
 
+import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.pipeline.pageanalysis.OpenAiProperties;
 import com.marketinghub.pipelines.dossie.v1.PipelineWorker;
+import org.springframework.web.client.RestClient;
 import com.marketinghub.pipelines.dossie.v1.StageProcessor;
 import com.marketinghub.pipelines.dossie.v1.dossiersynthesis.DossierDossierSynthesisProcessor;
 import com.marketinghub.pipelines.dossie.v1.intake.DossierIntakeProcessor;
@@ -19,10 +21,10 @@ import org.springframework.context.annotation.Configuration;
 public class DossierV1WorkerConfig {
     /** Expõe os processors canônicos da versão v1 do dossiê. */
     @Bean
-    List<StageProcessor> dossierV1StageProcessors() {
+    List<StageProcessor> dossierV1StageProcessors(RestClient.Builder restClientBuilder, OpenAiProperties openAiProperties) {
         return List.of(
                 new DossierIntakeProcessor(),
-                new DossierProductUnderstandingProcessor(),
+                new DossierProductUnderstandingProcessor(restClientBuilder, openAiProperties),
                 new DossierSourceProductMatchProcessor(),
                 new DossierInvestigationAnchorBuilderProcessor(),
                 new DossierWarmupResourceDiscoveryProcessor(),

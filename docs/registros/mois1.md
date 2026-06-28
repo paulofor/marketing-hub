@@ -1937,3 +1937,9 @@ Arquivos principais:
 - Diagnosticado na página 400 que o reprocessamento iniciado em `28/06/2026 03:27` era exibido junto de auditorias históricas das etapas.
 - Causa-raiz tratada: os endpoints de leitura da tela consultavam registros por página/etapa/status sem fronteira da execução atual.
 - Ajuste aplicado: a situação das etapas e o resumo público do pipeline agora consideram apenas registros a partir do último `intake` iniciado, preservando histórico no banco sem contaminar os cards do fluxo atual.
+
+## 2026-06-28 — Auditoria OpenAI na etapa product-understanding do dossiê MOIS v1
+
+- Ajustada a etapa `product-understanding` do worker de biblioteca de páginas MOIS para chamar OpenAI Responses Flex quando houver chave configurada, preservando request bruto, response bruto, texto final extraído, modelo e tokens no contrato de auditoria enviado ao backend.
+- Ajustada a tela do dossiê para exibir request enviado à OpenAI, response recebido da OpenAI em JSON colapsável, texto final extraído e métricas de modelo/tokens.
+- Causa-raiz: a etapa ainda podia executar em modo local sem gerar interação OpenAI, então a auditoria técnica não recebia os dados exigidos para diagnóstico e rastreabilidade comercial.

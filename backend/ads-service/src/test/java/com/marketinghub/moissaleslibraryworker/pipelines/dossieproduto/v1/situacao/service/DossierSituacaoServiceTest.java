@@ -47,6 +47,38 @@ class DossierSituacaoServiceTest {
                 "400", "product-understanding", List.of("CONCLUIDO"), inicioAtual);
     }
 
+    /** Garante que a linha de response exiba o request correlacionado do mesmo job para auditoria completa na tela. */
+    @Test
+    void consultarCorrelacionaRequestComResponseDoMesmoJob() {
+        DossierSituacaoService service = new DossierSituacaoService(repository);
+        Instant inicioAtual = Instant.parse("2026-06-28T03:27:06Z");
+        PipelineDossieProduto intakeAtual = registro("286", "intake", "INICIADO", inicioAtual);
+        PipelineDossieProduto response = registro("286", "product-understanding", "CONCLUIDO", Instant.parse("2026-06-28T22:44:00Z"));
+        response.setResponse("{\"output\":[]}");
+        PipelineDossieProduto request = registro("286", "product-understanding", "AGUARDANDO_RETORNO_MODULO", Instant.parse("2026-06-28T22:43:00Z"));
+        request.setRequest("{\"model\":\"gpt-5.2-2025-12-11\"}");
+
+        when(repository.findTopByIdExternoAndCodigoEtapaAndStatusOrderByDataHoraDescIdDesc(
+                        "286", "intake", "INICIADO"))
+                .thenReturn(Optional.of(intakeAtual));
+        when(repository
+                        .findByIdExternoAndCodigoEtapaAndStatusInAndDataHoraGreaterThanEqualOrderByDataHoraDescIdDesc(
+                                "286",
+                                "product-understanding",
+                                List.of("AGUARDANDO_RETORNO_MODULO", "CONCLUIDO"),
+                                inicioAtual))
+                .thenReturn(List.of(response, request));
+
+        var resultado = service.consultar(
+                "product-understanding",
+                "286",
+                new DossierSituacaoRequest(List.of("AGUARDANDO_RETORNO_MODULO", "CONCLUIDO")));
+
+        assertThat(resultado.registros()).hasSize(2);
+        assertThat(resultado.registros().getFirst().response()).isEqualTo("{\"output\":[]}");
+        assertThat(resultado.registros().getFirst().request()).isEqualTo("{\"model\":\"gpt-5.2-2025-12-11\"}");
+    }
+
     /** Monta uma auditoria mínima do pipeline para validar a fronteira de reprocessamento. */
     private PipelineDossieProduto registro(String idExterno, String etapa, String status, Instant dataHora) {
         PipelineDossieProduto registro = new PipelineDossieProduto();

@@ -1671,3 +1671,11 @@
 - Ajustado o prompt da etapa `persona-candidate-generator` para orientar a OpenAI a produzir uma fotografia neutra do dia a dia da persona, sem antecipar dor, oferta, produto, mecanismo, solução ou linguagem comercial.
 - Ajustado o schema da etapa para trocar campos de interpretação comercial por campos operacionais: contexto de atuação, fluxo do dia, tarefas recorrentes, interações, ferramentas/registros, decisões pequenas e variações de rotina.
 - Prevenção: o builder e o teste funcional da etapa foram alinhados para manter a etapa 2 restrita ao entendimento da rotina antes das etapas posteriores de análise de dor/oportunidade.
+
+## 2026-06-28 — NichoCNAE v3: etapas anteriores alimentando busca de fontes
+
+- Diagnóstico: a execução 4781400 chegou ao `source-searcher` com persona vencedora do tipo cargo interno/CLT (`Estoquista / responsável por recebimento e reposição`) e com campos da IA (`recurringTasks`, `toolsAndRecords`) que as etapas seguintes não liam como `dailyTasks`, `operationalPains` e `buyingSignals`.
+- Causa-raiz: desalinhamento de contrato entre a saída real da etapa de IA `persona-candidate-generator` e as etapas determinísticas `persona-tournament`/`routine-query-planner`; isso priorizava cargo de retaguarda e gerava queries fracas para encontrar fonte pública de MEI/autônomo.
+- Correção: `persona-tournament` passou a ler aliases reais da IA, normalizar `dailyTasks` para downstream, pontuar melhor dono-operador/MEI/autônomo e penalizar cargos CLT/retaguarda; `routine-query-planner` passou a ler os mesmos aliases e reforçar MEI/autônomo/dono-operador nas queries.
+- Ajuste de IA: o prompt da etapa `persona-candidate-generator` agora proíbe escolher funcionário CLT/estoquista/retaguarda como persona central e pede nomes com sinal claro de autonomia.
+- Prevenção: adicionados testes cobrindo priorização de dono-operador sobre cargo interno e geração de queries a partir dos aliases reais da IA.

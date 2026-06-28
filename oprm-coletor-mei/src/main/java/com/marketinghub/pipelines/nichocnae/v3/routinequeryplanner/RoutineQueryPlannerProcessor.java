@@ -19,9 +19,9 @@ public final class RoutineQueryPlannerProcessor implements StageProcessor {
     public StageResult process(StageContext context) {
         Map<String, Object> winnerPersona = winnerPersona(context.input());
         String personaName = firstNonBlank(text(context.input().get("winningPersonaName")), text(winnerPersona.get("name")), "persona operacional priorizada");
-        List<String> dailyTasks = texts(winnerPersona.get("dailyTasks"));
-        List<String> operationalPains = texts(winnerPersona.get("operationalPains"));
-        List<String> buyingSignals = texts(winnerPersona.get("buyingSignals"));
+        List<String> dailyTasks = texts(firstExisting(winnerPersona, "dailyTasks", "recurringTasks", "dailyFlow"));
+        List<String> operationalPains = texts(firstExisting(winnerPersona, "operationalPains", "pains", "validationNeed"));
+        List<String> buyingSignals = texts(firstExisting(winnerPersona, "buyingSignals", "toolsAndRecords", "routineDecisions"));
         List<Map<String, Object>> plannedQueries = plannedQueries(personaName, dailyTasks, operationalPains, buyingSignals);
 
         Map<String, Object> output = new LinkedHashMap<>();
@@ -60,7 +60,7 @@ public final class RoutineQueryPlannerProcessor implements StageProcessor {
         addQueries(queries, personaName, operationalPains, "DOR_OPERACIONAL", "Confirmar dor, esforço manual e consequência prática");
         addQueries(queries, personaName, buyingSignals, "SINAL_DE_COMPRA", "Encontrar evidência de busca por solução, planilha, sistema, consultoria ou modelo pronto");
         if (queries.isEmpty()) {
-            queries.add(queryItem(personaName + " rotina diária tarefas problemas", "ROTINA_BASE", "Validar rotina e problemas recorrentes quando a persona não trouxe sinais detalhados", 1));
+            queries.add(queryItem(personaName + " MEI autônomo dono operador rotina diária tarefas problemas", "ROTINA_BASE", "Validar rotina e problemas recorrentes quando a persona não trouxe sinais detalhados", 1));
         }
         return queries.stream().limit(MAX_QUERY_ITEMS).toList();
     }
@@ -68,7 +68,7 @@ public final class RoutineQueryPlannerProcessor implements StageProcessor {
     /** Adiciona consultas mantendo prioridade de acordo com a ordem da evidência recebida. */
     private void addQueries(List<Map<String, Object>> queries, String personaName, List<String> evidences, String intent, String objective) {
         for (String evidence : evidences) {
-            queries.add(queryItem(personaName + " " + evidence + " rotina problema frequência", intent, objective, queries.size() + 1));
+            queries.add(queryItem(personaName + " MEI autônomo dono operador " + evidence + " rotina problema frequência", intent, objective, queries.size() + 1));
         }
     }
 
@@ -108,12 +108,27 @@ public final class RoutineQueryPlannerProcessor implements StageProcessor {
                 "fonte sem relação clara com a persona vencedora");
     }
 
-    /** Converte uma lista opcional em textos limpos. */
-    private List<String> texts(Object value) {
-        if (!(value instanceof List<?> list)) {
-            return List.of();
+    /** Lê o primeiro campo preenchido dentre aliases compatíveis com saídas anteriores do pipeline. */
+    private Object firstExisting(Map<String, Object> source, String... keys) {
+        for (String key : keys) {
+            Object value = source.get(key);
+            if (value instanceof List<?> list && !list.isEmpty()) {
+                return value;
+            }
+            if (value != null && !text(value).isBlank()) {
+                return value;
+            }
         }
-        return list.stream().map(this::text).filter(item -> !item.isBlank()).toList();
+        return List.of();
+    }
+
+    /** Converte uma lista ou texto opcional em textos limpos. */
+    private List<String> texts(Object value) {
+        if (value instanceof List<?> list) {
+            return list.stream().map(this::text).filter(item -> !item.isBlank()).toList();
+        }
+        String item = text(value);
+        return item.isBlank() ? List.of() : List.of(item);
     }
 
     /** Escolhe o primeiro texto preenchido de uma lista de candidatos. */

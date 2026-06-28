@@ -25,7 +25,22 @@ class PersonaTournamentProcessorTest {
         assertThat(result.output()).containsEntry("winningPersonaName", "Dono operador de loja");
         assertThat(result.output()).containsKeys("winnerPersona", "selectionRationale", "personaRanking");
         Map<?, ?> winner = (Map<?, ?>) result.output().get("winnerPersona");
-        assertThat(winner.get("tournamentScore")).isEqualTo(14);
+        assertThat(winner.get("tournamentScore")).isEqualTo(26);
+    }
+
+    /** Prioriza dono-operador MEI quando a IA também retorna cargo CLT com muitas tarefas, evitando travar a busca de fontes. */
+    @Test
+    void shouldPreferAutonomousOwnerOverEmployeeRoleFromAiOutputAliases() {
+        PersonaTournamentProcessor processor = new PersonaTournamentProcessor();
+
+        StageResult result = processor.process(new StageContext("job-4781400", "73", Map.of("candidatePersonas", List.of(
+                Map.of("name", "Estoquista / responsável por recebimento e reposição (retaguarda)", "recurringTasks", List.of("conferir mercadoria", "repor araras", "organizar estoque", "avisar divergência", "separar troca"), "toolsAndRecords", List.of("sistema interno", "planilha")),
+                Map.of("name", "Dono-operador MEI de loja de roupas", "recurringTasks", List.of("atender cliente", "responder WhatsApp", "controlar estoque", "comprar peças"), "toolsAndRecords", List.of("caderno", "WhatsApp", "Instagram"))))));
+
+        assertThat(result.output()).containsEntry("winningPersonaName", "Dono-operador MEI de loja de roupas");
+        Map<?, ?> winner = (Map<?, ?>) result.output().get("winnerPersona");
+        assertThat((List<String>) winner.get("dailyTasks")).contains("atender cliente", "responder WhatsApp");
+        assertThat(((Map<?, ?>) winner.get("scoreBreakdown")).get("employeeRolePenalty")).isEqualTo(0);
     }
 
     /** Bloqueia avanço quando a etapa anterior não forneceu candidatos para o torneio. */

@@ -37,6 +37,22 @@ class RoutineQueryPlannerProcessorTest {
         assertThat(firstQuery).containsKeys("query", "objective", "expectedEvidence", "priority");
     }
 
+    /** Usa aliases vindos da IA e reforça MEI/autônomo nas queries que alimentarão a busca de fontes. */
+    @Test
+    void shouldPlanQueriesFromAiAliasesWithAutonomousContext() {
+        RoutineQueryPlannerProcessor processor = new RoutineQueryPlannerProcessor();
+
+        StageResult result = processor.process(new StageContext("job-4781400", "137", Map.of(
+                "winnerPersona", Map.of(
+                        "name", "Dono-operador MEI de loja de roupas",
+                        "recurringTasks", List.of("responder clientes no WhatsApp"),
+                        "toolsAndRecords", List.of("caderno de estoque")))));
+
+        List<?> plannedQueries = (List<?>) result.output().get("plannedQueries");
+        assertThat(plannedQueries).hasSize(2);
+        assertThat(plannedQueries.getFirst()).asString().contains("MEI autônomo dono operador", "responder clientes no WhatsApp");
+    }
+
     /** Bloqueia uma saída genérica quando a etapa anterior não trouxe a persona vencedora. */
     @Test
     void shouldFailWithoutWinnerPersona() {

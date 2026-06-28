@@ -67,16 +67,78 @@ public final class PersonaTournamentProcessor implements StageProcessor {
                 .toList();
     }
 
-    /** Calcula pontuação simples baseada em dor, tarefas diárias e sinais de compra disponíveis. */
+    /** Calcula pontuação baseada em rotina autônoma, usando aliases reais emitidos pela etapa de IA anterior. */
     private Map<String, Object> withScore(Map<String, Object> persona) {
-        int painCount = listSize(persona.get("operationalPains"));
-        int taskCount = listSize(persona.get("dailyTasks"));
-        int signalCount = listSize(persona.get("buyingSignals"));
-        int score = painCount * 3 + taskCount * 2 + signalCount;
+        int painCount = listSize(firstExisting(persona, "operationalPains", "pains"));
+        int taskCount = listSize(firstExisting(persona, "dailyTasks", "recurringTasks", "dailyFlow"));
+        int signalCount = listSize(firstExisting(persona, "buyingSignals", "toolsAndRecords", "routineDecisions"));
+        int autonomousScore = autonomousOwnerScore(persona);
+        int employeePenalty = employeeRolePenalty(persona);
+        int score = painCount * 3 + taskCount * 2 + signalCount + autonomousScore - employeePenalty;
         Map<String, Object> scored = new LinkedHashMap<>(persona);
+        scored.putIfAbsent("dailyTasks", texts(firstExisting(persona, "dailyTasks", "recurringTasks", "dailyFlow")));
+        scored.putIfAbsent("operationalPains", texts(firstExisting(persona, "operationalPains", "pains", "validationNeed")));
+        scored.putIfAbsent("buyingSignals", texts(firstExisting(persona, "buyingSignals", "toolsAndRecords", "routineDecisions")));
         scored.put("tournamentScore", score);
-        scored.put("scoreBreakdown", Map.of("operationalPains", painCount, "dailyTasks", taskCount, "buyingSignals", signalCount));
+        scored.put("scoreBreakdown", Map.of(
+                "operationalPains", painCount,
+                "dailyTasks", taskCount,
+                "buyingSignals", signalCount,
+                "autonomousOwnerScore", autonomousScore,
+                "employeeRolePenalty", employeePenalty));
         return scored;
+    }
+
+    /** Lê o primeiro campo preenchido dentre aliases compatíveis com saídas anteriores do pipeline. */
+    private Object firstExisting(Map<String, Object> persona, String... keys) {
+        for (String key : keys) {
+            Object value = persona.get(key);
+            if (value instanceof List<?> list && !list.isEmpty()) {
+                return value;
+            }
+            if (value != null && !text(value).isBlank()) {
+                return value;
+            }
+        }
+        return List.of();
+    }
+
+    /** Pontua melhor personas de dono-operador, MEI, autônomo ou familiar por aderirem ao recorte do pipeline. */
+    private int autonomousOwnerScore(Map<String, Object> persona) {
+        String combined = combinedText(persona);
+        int score = 0;
+        if (containsAny(combined, List.of("dono", "propriet", "mei", "autônom", "autonom", "por conta própria", "conta propria", "familiar"))) {
+            score += 8;
+        }
+        if (containsAny(combined, List.of("balcão", "balcao", "whatsapp", "instagram", "cliente", "fornecedor", "caixa", "estoque"))) {
+            score += 4;
+        }
+        return score;
+    }
+
+    /** Penaliza cargos CLT/retaguarda que travam buscas públicas de rotina de MEI/autônomo. */
+    private int employeeRolePenalty(Map<String, Object> persona) {
+        String combined = combinedText(persona);
+        return containsAny(combined, List.of("estoquista", "funcionário", "funcionario", "empregado", "clt", "contratado", "retaguarda", "auxiliar", "gerente contratado")) ? 18 : 0;
+    }
+
+    /** Junta campos textuais relevantes da persona para classificação simples. */
+    private String combinedText(Map<String, Object> persona) {
+        return persona.values().stream().map(this::text).reduce("", (left, right) -> left + " " + right).toLowerCase();
+    }
+
+    /** Verifica se algum termo aparece no texto normalizado. */
+    private boolean containsAny(String text, List<String> terms) {
+        return terms.stream().anyMatch(text::contains);
+    }
+
+    /** Converte valor textual ou lista em lista de textos para manter contrato downstream. */
+    private List<String> texts(Object value) {
+        if (value instanceof List<?> list) {
+            return list.stream().map(this::text).filter(item -> !item.isBlank()).toList();
+        }
+        String item = text(value);
+        return item.isBlank() ? List.of() : List.of(item);
     }
 
     /** Monta justificativa objetiva para exibir ao usuário por que a persona venceu. */

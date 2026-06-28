@@ -180,6 +180,10 @@ public class OprmMarketImportScheduler {
     @Scheduled(cron = "0 0 11 * * *", zone = "America/Sao_Paulo")
     public void runScheduledFinalization() {
         log.info("[OPRM-TOTALIZACAO] Disparo de finalização automática iniciado via OPRM-MEI.");
+        if (!scheduleProperties.enabled()) {
+            log.info("[OPRM-TOTALIZACAO] Finalização automática ignorada porque a rotina OPRM CNPJ/CNAE está desativada.");
+            return;
+        }
         restClient.post()
                 .uri(collectorProperties.backendBaseUrl() + "/api/oprm/market/import-runs/finalize-latest-started")
                 .retrieve()

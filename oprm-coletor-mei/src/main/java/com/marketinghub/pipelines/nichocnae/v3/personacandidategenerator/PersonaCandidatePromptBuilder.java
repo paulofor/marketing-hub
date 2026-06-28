@@ -20,7 +20,7 @@ public class PersonaCandidatePromptBuilder {
                 + "cnaeCode: " + request.cnaeCode() + "\n"
                 + "cnaeDescription: " + request.cnaeDescription() + "\n"
                 + "inputKeys: " + request.input().keySet() + "\n"
-                + "\nRetorne somente JSON aderente ao schema. Gere 4 personas candidatas operacionais, com dores, tarefas diárias e sinais de compra, sem criar oferta, campanha, promessa, preço, checkout ou landing page.";
+                + "\nRetorne somente JSON aderente ao schema. Gere 4 personas candidatas operacionais, descrevendo contexto de atuação, fluxo do dia, tarefas recorrentes, interações, ferramentas, registros, decisões pequenas e variações de rotina, sem criar dor, oferta, campanha, promessa, preço, checkout, landing page, produto ou solução.";
     }
 
     /** Lê o prompt operacional do recurso versionado. */

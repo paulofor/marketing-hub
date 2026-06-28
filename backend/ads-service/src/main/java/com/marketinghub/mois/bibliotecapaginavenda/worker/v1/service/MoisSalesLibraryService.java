@@ -1612,6 +1612,14 @@ public class MoisSalesLibraryService {
                 FROM pipeline_dossieproduto
                 WHERE id_externo = ?
                   AND versao_pipeline = 'v1'
+                  AND data_hora >= COALESCE((
+                      SELECT MAX(inicio.data_hora)
+                      FROM pipeline_dossieproduto inicio
+                      WHERE inicio.id_externo = ?
+                        AND inicio.versao_pipeline = 'v1'
+                        AND inicio.codigo_etapa = 'intake'
+                        AND inicio.status = 'INICIADO'
+                  ), '1970-01-01')
                 ORDER BY data_hora ASC, id ASC
                 """, (rs, rowNum) -> new MoisSalesLibraryDtos.DossierProductPipelineStageItem(
                 rs.getLong("id"),
@@ -1629,7 +1637,7 @@ public class MoisSalesLibraryService {
                 rs.getString("prompt"),
                 rs.getString("schema"),
                 rs.getString("descricao_erro")
-        ), String.valueOf(pageId));
+        ), String.valueOf(pageId), String.valueOf(pageId));
         MoisSalesLibraryDtos.DossierProductPipelineStageItem finalResult = stages.stream()
                 .filter(stage -> "dossier-synthesis".equals(stage.stageCode()) && stage.response() != null && !stage.response().isBlank())
                 .reduce((previous, current) -> current)

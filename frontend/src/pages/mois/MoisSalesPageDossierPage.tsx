@@ -216,6 +216,29 @@ function getDossierStageMetricClassName(stage: DossierStageView) {
   return "border rounded-3 bg-white px-3 py-2";
 }
 
+function extractOpenAiOutputText(value?: string | null) {
+  if (!value) return undefined;
+  try {
+    const root = JSON.parse(value) as {
+      output_text?: unknown;
+      output?: Array<{ content?: Array<{ text?: unknown }> }>;
+    };
+    if (typeof root.output_text === "string" && root.output_text.trim()) {
+      return root.output_text;
+    }
+    for (const item of root.output || []) {
+      for (const content of item.content || []) {
+        if (typeof content.text === "string" && content.text.trim()) {
+          return content.text;
+        }
+      }
+    }
+  } catch {
+    return undefined;
+  }
+  return undefined;
+}
+
 function hasUsefulPayload(value?: string | null) {
   return Boolean(value && value.trim() && value.trim() !== "{}");
 }
@@ -498,7 +521,7 @@ export default function MoisSalesPageDossierPage() {
                             <span
                               className={`d-block small ${getDossierStageTextClassName(stage)}`}
                             >
-                              Modelo
+                              Modelo OpenAI
                             </span>
                             <strong>{displayText(stage.latest.modelo)}</strong>
                           </div>
@@ -535,7 +558,7 @@ export default function MoisSalesPageDossierPage() {
                         <div className="row g-3 mt-2">
                           <div className="col-12">
                             <div className="border rounded p-3 h-100 bg-white text-body">
-                              <h4 className="h6 mb-2">Request da etapa</h4>
+                              <h4 className="h6 mb-2">Request enviado para OpenAI</h4>
                               <CollapsibleJsonViewer
                                 content={stage.latest.request}
                                 initiallyCollapsed
@@ -544,13 +567,26 @@ export default function MoisSalesPageDossierPage() {
                           </div>
                           <div className="col-12">
                             <div className="border rounded p-3 h-100 bg-white text-body">
-                              <h4 className="h6 mb-2">Response da etapa</h4>
+                              <h4 className="h6 mb-2">Response da OpenAI</h4>
                               <CollapsibleJsonViewer
                                 content={stage.latest.response}
                                 initiallyCollapsed
                               />
                             </div>
                           </div>
+                          {extractOpenAiOutputText(stage.latest.response) ? (
+                            <div className="col-12">
+                              <div className="border rounded p-3 h-100 bg-white text-body">
+                                <h4 className="h6 mb-2">Texto final da OpenAI</h4>
+                                <CollapsibleJsonViewer
+                                  content={extractOpenAiOutputText(
+                                    stage.latest.response,
+                                  )}
+                                  initiallyCollapsed
+                                />
+                              </div>
+                            </div>
+                          ) : null}
                           {hasUsefulPayload(stage.latest.prompt) ? (
                             <div className="col-12">
                               <div className="border rounded p-3 h-100 bg-white text-body">

@@ -420,7 +420,7 @@ export default function MoisSalesPageDossierPage() {
 
           <div className="row g-3">
             {dossierPipelineStages.map((stage) => (
-              <article className="col-12 col-xl-6" key={stage.code}>
+              <article className="col-12" key={stage.code}>
                 <div className={getDossierStageCardClassName(stage)}>
                   <div className="card-body d-flex flex-column gap-3">
                     <div className="d-flex flex-wrap align-items-start justify-content-between gap-3">
@@ -480,7 +480,9 @@ export default function MoisSalesPageDossierPage() {
                     {stage.latest ? (
                       <div className="row g-2">
                         <div className="col-sm-6">
-                          <div className={getDossierStageMetricClassName(stage)}>
+                          <div
+                            className={getDossierStageMetricClassName(stage)}
+                          >
                             <span
                               className={`d-block small ${getDossierStageTextClassName(stage)}`}
                             >
@@ -490,7 +492,9 @@ export default function MoisSalesPageDossierPage() {
                           </div>
                         </div>
                         <div className="col-sm-6">
-                          <div className={getDossierStageMetricClassName(stage)}>
+                          <div
+                            className={getDossierStageMetricClassName(stage)}
+                          >
                             <span
                               className={`d-block small ${getDossierStageTextClassName(stage)}`}
                             >
@@ -500,7 +504,9 @@ export default function MoisSalesPageDossierPage() {
                           </div>
                         </div>
                         <div className="col-12">
-                          <div className={getDossierStageMetricClassName(stage)}>
+                          <div
+                            className={getDossierStageMetricClassName(stage)}
+                          >
                             <span
                               className={`d-block small ${getDossierStageTextClassName(stage)}`}
                             >
@@ -527,7 +533,7 @@ export default function MoisSalesPageDossierPage() {
                           Ver auditoria técnica
                         </summary>
                         <div className="row g-3 mt-2">
-                          <div className="col-lg-6">
+                          <div className="col-12">
                             <div className="border rounded p-3 h-100 bg-white text-body">
                               <h4 className="h6 mb-2">Request da etapa</h4>
                               <CollapsibleJsonViewer
@@ -536,7 +542,7 @@ export default function MoisSalesPageDossierPage() {
                               />
                             </div>
                           </div>
-                          <div className="col-lg-6">
+                          <div className="col-12">
                             <div className="border rounded p-3 h-100 bg-white text-body">
                               <h4 className="h6 mb-2">Response da etapa</h4>
                               <CollapsibleJsonViewer
@@ -546,7 +552,7 @@ export default function MoisSalesPageDossierPage() {
                             </div>
                           </div>
                           {hasUsefulPayload(stage.latest.prompt) ? (
-                            <div className="col-lg-6">
+                            <div className="col-12">
                               <div className="border rounded p-3 h-100 bg-white text-body">
                                 <h4 className="h6 mb-2">Prompt usado</h4>
                                 <CollapsibleJsonViewer
@@ -557,7 +563,7 @@ export default function MoisSalesPageDossierPage() {
                             </div>
                           ) : null}
                           {hasUsefulPayload(stage.latest.schema) ? (
-                            <div className="col-lg-6">
+                            <div className="col-12">
                               <div className="border rounded p-3 h-100 bg-white text-body">
                                 <h4 className="h6 mb-2">Schema usado</h4>
                                 <CollapsibleJsonViewer

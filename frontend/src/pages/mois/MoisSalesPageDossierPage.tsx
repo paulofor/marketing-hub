@@ -1,3 +1,4 @@
+import { Bot, FileText } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import CollapsibleJsonViewer from "../../components/CollapsibleJsonViewer";
 import PageTitle from "../../components/PageTitle";
@@ -179,6 +180,7 @@ function getDossierStageBadgeClass(stage: DossierStageView) {
   if (stage.loadState === "loading") return "text-bg-secondary";
   if (stage.loadState === "error") return "text-bg-danger";
   if (!stage.latest) return "text-bg-light text-dark";
+  if (stage.latest.status === "CONCLUIDO") return "text-bg-light text-success";
   return getStatusBadgeClass(stage.latest.status);
 }
 
@@ -187,6 +189,31 @@ function getDossierStageStatusLabel(stage: DossierStageView) {
   if (stage.loadState === "error") return "Falha na consulta";
   if (!stage.latest) return "Não iniciada";
   return labelStatus(stage.latest.status);
+}
+
+function getDossierStageCardClassName(stage: DossierStageView) {
+  if (stage.latest?.status === "CONCLUIDO") {
+    return "card h-100 border-success bg-success text-white shadow-sm";
+  }
+  if (stage.latest?.status === "FALHA" || stage.loadState === "error") {
+    return "card h-100 border-danger bg-danger-subtle border-2 shadow-sm";
+  }
+  if (stage.latest) {
+    return "card h-100 border-primary bg-primary-subtle border-2 shadow-sm";
+  }
+  return "card h-100 border-secondary bg-body-tertiary shadow-sm";
+}
+
+function getDossierStageTextClassName(stage: DossierStageView) {
+  if (stage.latest?.status === "CONCLUIDO") return "text-white-50";
+  return "text-secondary";
+}
+
+function getDossierStageMetricClassName(stage: DossierStageView) {
+  if (stage.latest?.status === "CONCLUIDO") {
+    return "border border-success-subtle rounded-3 bg-white bg-opacity-10 px-3 py-2";
+  }
+  return "border rounded-3 bg-white px-3 py-2";
 }
 
 function hasUsefulPayload(value?: string | null) {
@@ -391,162 +418,183 @@ export default function MoisSalesPageDossierPage() {
             </div>
           </div>
 
-          <div className="d-flex flex-column gap-3">
+          <div className="row g-3">
             {dossierPipelineStages.map((stage) => (
-              <div
-                className={`border rounded p-3 ${
-                  stage.latest?.status === "FALHA"
-                    ? "bg-danger-subtle"
-                    : stage.latest?.status === "CONCLUIDO"
-                      ? "bg-success-subtle"
-                      : stage.latest
-                        ? "bg-primary-subtle"
-                        : "bg-light-subtle"
-                }`}
-                key={stage.code}
-              >
-                <div className="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-3">
-                  <div className="d-flex align-items-start gap-2">
-                    <span className="badge text-bg-dark rounded-pill">
-                      {stage.step}
-                    </span>
-                    <div>
-                      <div className="d-flex flex-wrap align-items-center gap-2">
-                        <h3 className="h6 mb-0">{stage.name}</h3>
+              <article className="col-12 col-xl-6" key={stage.code}>
+                <div className={getDossierStageCardClassName(stage)}>
+                  <div className="card-body d-flex flex-column gap-3">
+                    <div className="d-flex flex-wrap align-items-start justify-content-between gap-3">
+                      <div>
+                        <span className="badge text-bg-light border mb-2">
+                          Etapa {stage.step}
+                        </span>
+                        <h3 className="h5 mb-1">{stage.name}</h3>
+                        <div
+                          className={`small fw-semibold ${getDossierStageTextClassName(stage)}`}
+                        >
+                          {stage.code}
+                        </div>
+                      </div>
+                      <div className="d-flex flex-wrap justify-content-end align-content-start gap-2">
                         {stage.usesAi ? (
                           <span
-                            className="badge text-bg-info"
+                            className="badge rounded-pill text-bg-primary d-inline-flex align-items-center gap-1"
                             aria-label="Etapa usa IA"
                             title="Etapa usa IA"
                           >
+                            <Bot size={14} aria-hidden="true" />
                             IA
                           </span>
                         ) : null}
-                        <code className="small">{stage.code}</code>
+                        <span
+                          className={`badge ${getDossierStageBadgeClass(stage)}`}
+                        >
+                          {getDossierStageStatusLabel(stage)}
+                        </span>
                       </div>
-                      <p className="text-secondary mb-0 mt-1">
-                        {stage.objective}
+                    </div>
+
+                    <p className="mb-0">{stage.objective}</p>
+
+                    <dl className="row small mb-0 g-2">
+                      <dt
+                        className={`col-sm-4 fw-normal ${getDossierStageTextClassName(stage)}`}
+                      >
+                        Entrega
+                      </dt>
+                      <dd className="col-sm-8 mb-0">{stage.expectedOutput}</dd>
+                      <dt
+                        className={`col-sm-4 fw-normal ${getDossierStageTextClassName(stage)}`}
+                      >
+                        Auditorias
+                      </dt>
+                      <dd className="col-sm-8 mb-0">{stage.recordsCount}</dd>
+                    </dl>
+
+                    {stage.latest?.descricaoErro ? (
+                      <div className="alert alert-danger mb-0">
+                        {stage.latest.descricaoErro}
+                      </div>
+                    ) : null}
+
+                    {stage.latest ? (
+                      <div className="row g-2">
+                        <div className="col-sm-6">
+                          <div className={getDossierStageMetricClassName(stage)}>
+                            <span
+                              className={`d-block small ${getDossierStageTextClassName(stage)}`}
+                            >
+                              Último registro
+                            </span>
+                            <strong>{formatDate(stage.latest.dataHora)}</strong>
+                          </div>
+                        </div>
+                        <div className="col-sm-6">
+                          <div className={getDossierStageMetricClassName(stage)}>
+                            <span
+                              className={`d-block small ${getDossierStageTextClassName(stage)}`}
+                            >
+                              Modelo
+                            </span>
+                            <strong>{displayText(stage.latest.modelo)}</strong>
+                          </div>
+                        </div>
+                        <div className="col-12">
+                          <div className={getDossierStageMetricClassName(stage)}>
+                            <span
+                              className={`d-block small ${getDossierStageTextClassName(stage)}`}
+                            >
+                              Job
+                            </span>
+                            <strong className="text-break">
+                              {stage.latest.jobId || "-"}
+                            </strong>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <p
+                        className={`small mb-0 ${getDossierStageTextClassName(stage)}`}
+                      >
+                        Nenhum registro encontrado para esta página.
                       </p>
-                    </div>
-                  </div>
-                  <span className={`badge ${getDossierStageBadgeClass(stage)}`}>
-                    {getDossierStageStatusLabel(stage)}
-                  </span>
-                </div>
+                    )}
 
-                <div className="row g-3 mb-3">
-                  <div className="col-md-3">
-                    <div className="border rounded p-2 bg-white h-100">
-                      <div className="small text-secondary">
-                        Último registro
-                      </div>
-                      <strong>{formatDate(stage.latest?.dataHora)}</strong>
-                    </div>
-                  </div>
-                  <div className="col-md-3">
-                    <div className="border rounded p-2 bg-white h-100">
-                      <div className="small text-secondary">Job</div>
-                      <strong className="text-break">
-                        {stage.latest?.jobId || "-"}
-                      </strong>
-                    </div>
-                  </div>
-                  <div className="col-md-3">
-                    <div className="border rounded p-2 bg-white h-100">
-                      <div className="small text-secondary">Modelo</div>
-                      <strong>{displayText(stage.latest?.modelo)}</strong>
-                    </div>
-                  </div>
-                  <div className="col-md-3">
-                    <div className="border rounded p-2 bg-white h-100">
-                      <div className="small text-secondary">Auditorias</div>
-                      <strong>{stage.recordsCount}</strong>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="border rounded p-3 bg-white mb-3">
-                  <div className="fw-semibold mb-1">Entrega esperada</div>
-                  <p className="mb-0 text-secondary">{stage.expectedOutput}</p>
-                </div>
-
-                {stage.latest?.descricaoErro ? (
-                  <div className="alert alert-danger mb-3">
-                    {stage.latest.descricaoErro}
-                  </div>
-                ) : null}
-
-                {stage.latest ? (
-                  <div className="row g-3">
-                    <div className="col-lg-6">
-                      <div className="border rounded p-3 h-100 bg-white">
-                        <h4 className="h6 mb-2">Request da etapa</h4>
-                        <CollapsibleJsonViewer
-                          content={stage.latest.request}
-                          initiallyCollapsed
-                        />
-                      </div>
-                    </div>
-                    <div className="col-lg-6">
-                      <div className="border rounded p-3 h-100 bg-white">
-                        <h4 className="h6 mb-2">Response da etapa</h4>
-                        <CollapsibleJsonViewer
-                          content={stage.latest.response}
-                          initiallyCollapsed
-                        />
-                      </div>
-                    </div>
-                    {hasUsefulPayload(stage.latest.prompt) ? (
-                      <div className="col-lg-6">
-                        <div className="border rounded p-3 h-100 bg-white">
-                          <h4 className="h6 mb-2">Prompt usado</h4>
-                          <CollapsibleJsonViewer
-                            content={stage.latest.prompt}
-                            initiallyCollapsed
-                          />
+                    {stage.latest ? (
+                      <details className="mt-auto">
+                        <summary className="btn btn-light btn-sm d-inline-flex align-items-center gap-2">
+                          <FileText size={14} aria-hidden="true" />
+                          Ver auditoria técnica
+                        </summary>
+                        <div className="row g-3 mt-2">
+                          <div className="col-lg-6">
+                            <div className="border rounded p-3 h-100 bg-white text-body">
+                              <h4 className="h6 mb-2">Request da etapa</h4>
+                              <CollapsibleJsonViewer
+                                content={stage.latest.request}
+                                initiallyCollapsed
+                              />
+                            </div>
+                          </div>
+                          <div className="col-lg-6">
+                            <div className="border rounded p-3 h-100 bg-white text-body">
+                              <h4 className="h6 mb-2">Response da etapa</h4>
+                              <CollapsibleJsonViewer
+                                content={stage.latest.response}
+                                initiallyCollapsed
+                              />
+                            </div>
+                          </div>
+                          {hasUsefulPayload(stage.latest.prompt) ? (
+                            <div className="col-lg-6">
+                              <div className="border rounded p-3 h-100 bg-white text-body">
+                                <h4 className="h6 mb-2">Prompt usado</h4>
+                                <CollapsibleJsonViewer
+                                  content={stage.latest.prompt}
+                                  initiallyCollapsed
+                                />
+                              </div>
+                            </div>
+                          ) : null}
+                          {hasUsefulPayload(stage.latest.schema) ? (
+                            <div className="col-lg-6">
+                              <div className="border rounded p-3 h-100 bg-white text-body">
+                                <h4 className="h6 mb-2">Schema usado</h4>
+                                <CollapsibleJsonViewer
+                                  content={stage.latest.schema}
+                                  initiallyCollapsed
+                                />
+                              </div>
+                            </div>
+                          ) : null}
+                          <div className="col-12">
+                            <div className="border rounded p-3 h-100 bg-white text-body">
+                              <h4 className="h6 mb-2">Custo e execução</h4>
+                              <p className="small text-secondary mb-0">
+                                Plataforma:{" "}
+                                <strong>
+                                  {displayText(stage.latest.plataforma)}
+                                </strong>{" "}
+                                | Versão:{" "}
+                                <strong>
+                                  {displayText(stage.latest.versaoPipeline)}
+                                </strong>{" "}
+                                | Tokens:{" "}
+                                <strong>
+                                  {stage.latest.quantidadeTokenEntrada ?? "-"} /{" "}
+                                  {stage.latest.quantidadeTokenSaida ?? "-"}
+                                </strong>{" "}
+                                | Custo:{" "}
+                                <strong>{stage.latest.custo ?? "-"}</strong>
+                              </p>
+                            </div>
+                          </div>
                         </div>
-                      </div>
+                      </details>
                     ) : null}
-                    {hasUsefulPayload(stage.latest.schema) ? (
-                      <div className="col-lg-6">
-                        <div className="border rounded p-3 h-100 bg-white">
-                          <h4 className="h6 mb-2">Schema usado</h4>
-                          <CollapsibleJsonViewer
-                            content={stage.latest.schema}
-                            initiallyCollapsed
-                          />
-                        </div>
-                      </div>
-                    ) : null}
-                    <div className="col-lg-6">
-                      <div className="border rounded p-3 h-100 bg-white">
-                        <h4 className="h6 mb-2">Custo e execução</h4>
-                        <p className="small text-secondary mb-0">
-                          Plataforma:{" "}
-                          <strong>
-                            {displayText(stage.latest.plataforma)}
-                          </strong>{" "}
-                          | Versão:{" "}
-                          <strong>
-                            {displayText(stage.latest.versaoPipeline)}
-                          </strong>{" "}
-                          | Tokens:{" "}
-                          <strong>
-                            {stage.latest.quantidadeTokenEntrada ?? "-"} /{" "}
-                            {stage.latest.quantidadeTokenSaida ?? "-"}
-                          </strong>{" "}
-                          | Custo: <strong>{stage.latest.custo ?? "-"}</strong>
-                        </p>
-                      </div>
-                    </div>
                   </div>
-                ) : (
-                  <p className="text-secondary mb-0 small">
-                    Nenhum registro encontrado no endpoint de situação desta
-                    etapa para a página atual.
-                  </p>
-                )}
-              </div>
+                </div>
+              </article>
             ))}
           </div>
         </div>

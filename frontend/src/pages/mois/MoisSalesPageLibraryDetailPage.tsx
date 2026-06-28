@@ -105,6 +105,7 @@ type DossierPipelineStage = {
   name: string;
   objective: string;
   expectedOutput: string;
+  usesAi?: boolean;
 };
 
 const DOSSIER_PIPELINE_STAGES: DossierPipelineStage[] = [
@@ -112,65 +113,63 @@ const DOSSIER_PIPELINE_STAGES: DossierPipelineStage[] = [
     step: 1,
     code: "intake",
     name: "Entrada inicial",
-    objective:
-      "Confirma se a página está pronta para virar dossiê e abre a execução rastreável.",
-    expectedOutput: "Execução criada com jobId, produto e contexto mínimo.",
+    objective: "Abre o dossiê e confirma contexto mínimo.",
+    expectedOutput: "Job criado com produto e contexto mínimo.",
   },
   {
     step: 2,
     code: "product-understanding",
     name: "Entendimento do produto",
-    objective:
-      "Resume a oferta, promessa, público e sinais principais da página de venda.",
-    expectedOutput: "Leitura estruturada do produto para orientar a investigação.",
+    objective: "Resume oferta, promessa e público.",
+    expectedOutput: "Produto entendido para orientar a investigação.",
+    usesAi: true,
   },
   {
     step: 3,
     code: "investigation-anchor-builder",
     name: "Âncoras de investigação",
-    objective:
-      "Define os caminhos de busca para validar prestígio, produtor, promessa e canais.",
-    expectedOutput: "Âncoras e termos que guiam a coleta de sinais públicos.",
+    objective: "Define o que pesquisar e validar.",
+    expectedOutput: "Termos e âncoras de pesquisa definidos.",
+    usesAi: true,
   },
   {
     step: 4,
     code: "warmup-resource-discovery",
     name: "Descoberta de recursos",
-    objective:
-      "Procura ativos externos que possam aquecer o público antes da oferta.",
-    expectedOutput: "Recursos, canais e evidências externas candidatos ao dossiê.",
+    objective: "Encontra fontes e ativos externos.",
+    expectedOutput: "Fontes candidatas para análise.",
   },
   {
     step: 5,
     code: "source-product-match",
     name: "Relação fonte-produto",
-    objective:
-      "Separa sinais realmente ligados ao produto de homônimos ou fontes genéricas.",
-    expectedOutput: "Fontes qualificadas e rejeições com motivo rastreável.",
+    objective: "Filtra fontes ligadas ao produto.",
+    expectedOutput: "Fontes aprovadas e rejeições justificadas.",
+    usesAi: true,
   },
   {
     step: 6,
     code: "warmup-signal-extraction",
     name: "Extração de sinais",
-    objective:
-      "Extrai sinais de prova, autoridade, demanda, objeções e distribuição.",
-    expectedOutput: "Sinais úteis para decidir potencial comercial do produto.",
+    objective: "Extrai provas, demanda e objeções.",
+    expectedOutput: "Sinais comerciais organizados.",
+    usesAi: true,
   },
   {
     step: 7,
     code: "warmup-map-builder",
     name: "Mapa de aquecimento",
-    objective:
-      "Organiza os sinais em um mapa simples de aquecimento e risco comercial.",
-    expectedOutput: "Mapa com leitura de oportunidade, risco e próximos movimentos.",
+    objective: "Mapeia oportunidade e risco.",
+    expectedOutput: "Mapa de aquecimento e próximos passos.",
+    usesAi: true,
   },
   {
     step: 8,
     code: "dossier-synthesis",
     name: "Síntese final",
-    objective:
-      "Consolida o dossiê em uma resposta final para apoiar decisão de oferta.",
-    expectedOutput: "Dossiê final com conclusão, evidências e recomendação.",
+    objective: "Gera a conclusão do dossiê.",
+    expectedOutput: "Conclusão, evidências e recomendação final.",
+    usesAi: true,
   },
 ];
 
@@ -552,7 +551,8 @@ export default function MoisSalesPageLibraryDetailPage() {
             </div>
             <div className="d-flex flex-wrap gap-2">
               <span className="badge text-bg-success align-self-start">
-                {completedDossierStages}/{DOSSIER_PIPELINE_STAGES.length} concluídas
+                {completedDossierStages}/{DOSSIER_PIPELINE_STAGES.length}{" "}
+                concluídas
               </span>
               {failedDossierStages ? (
                 <span className="badge text-bg-danger align-self-start">
@@ -589,6 +589,15 @@ export default function MoisSalesPageLibraryDetailPage() {
                     <div>
                       <div className="d-flex flex-wrap align-items-center gap-2">
                         <h3 className="h6 mb-0">{stage.name}</h3>
+                        {stage.usesAi ? (
+                          <span
+                            className="badge text-bg-info"
+                            aria-label="Etapa usa IA"
+                            title="Etapa usa IA"
+                          >
+                            ✨ IA
+                          </span>
+                        ) : null}
                         <code className="small">{stage.code}</code>
                       </div>
                       <p className="text-secondary mb-0 mt-1">
@@ -604,7 +613,9 @@ export default function MoisSalesPageLibraryDetailPage() {
                 <div className="row g-3 mb-3">
                   <div className="col-md-3">
                     <div className="border rounded p-2 bg-white h-100">
-                      <div className="small text-secondary">Último registro</div>
+                      <div className="small text-secondary">
+                        Último registro
+                      </div>
                       <strong>{formatDate(stage.latest?.dataHora)}</strong>
                     </div>
                   </div>
@@ -619,7 +630,9 @@ export default function MoisSalesPageLibraryDetailPage() {
                   <div className="col-md-3">
                     <div className="border rounded p-2 bg-white h-100">
                       <div className="small text-secondary">Modelo</div>
-                      <strong>{displayText(stage.latest?.modelo || undefined)}</strong>
+                      <strong>
+                        {displayText(stage.latest?.modelo || undefined)}
+                      </strong>
                     </div>
                   </div>
                   <div className="col-md-3">
@@ -1003,7 +1016,9 @@ export default function MoisSalesPageLibraryDetailPage() {
                         {index + 1}. {stage.stageCode || "Etapa sem código"}
                       </h3>
                       <p className="small text-secondary mb-0">
-                        jobId: {stage.jobId || "—"} • versão: {stage.pipelineVersion || "—"} • data: {formatDate(stage.occurredAt)}
+                        jobId: {stage.jobId || "—"} • versão:{" "}
+                        {stage.pipelineVersion || "—"} • data:{" "}
+                        {formatDate(stage.occurredAt)}
                       </p>
                     </div>
                     <span
@@ -1040,7 +1055,8 @@ export default function MoisSalesPageLibraryDetailPage() {
                       <div className="border rounded p-2 bg-white h-100">
                         <div className="small text-secondary">Tokens</div>
                         <strong>
-                          {stage.inputTokens ?? "—"} / {stage.outputTokens ?? "—"}
+                          {stage.inputTokens ?? "—"} /{" "}
+                          {stage.outputTokens ?? "—"}
                         </strong>
                       </div>
                     </div>

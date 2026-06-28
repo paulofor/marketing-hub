@@ -1623,6 +1623,11 @@
 - Correção: `source-searcher` agora só libera `nextStageCode=source-fetcher` quando recebe fontes reais auditáveis; sem fontes, conclui bloqueado com `FONTES_NAO_COLETADAS`, motivo persistível e etapa recomendada de correção.
 - Prevenção: adicionado teste unitário cobrindo bloqueio sem fontes e avanço apenas com `foundSources` reais.
 
+## 2026-06-28 — NichoCNAE v3: auditoria OpenAI bruta nos callbacks
+
+- Ajustada a etapa `persona-candidate-generator` para serializar uma única vez o body enviado à OpenAI e reutilizar exatamente esse conteúdo no callback `recebeRequest`.
+- Ajustado o callback `recebeResponse` para enviar exatamente o corpo bruto retornado pela OpenAI, incluindo respostas HTTP de erro, antes de qualquer extração ou transformação operacional.
+- Prevenção de recorrência: teste da etapa valida que o request auditado no backend é idêntico ao body enviado para a OpenAI e que o response auditado é o corpo bruto recebido do provedor.
 ## 2026-06-28 — NichoCNAE v3: resposta final limpa da OpenAI no backend
 
 - Causa-raiz: o backend persistia o envelope bruto da OpenAI em `pipeline_nichocnae.response`, o que deixava a tela de auditoria dependente de JSON técnico para encontrar o conteúdo funcional em `content[].text`.

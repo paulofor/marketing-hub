@@ -69,12 +69,14 @@ public class OpenAiPersonaCandidateGenerationClient implements PersonaCandidateG
         }
         String url = properties.baseUrl() + RESPONSES_PATH;
         Map<String, Object> requestBody = buildRequestBody(promptBuilder.build(request), properties.model());
-        logOpenAiRequest(url, request, requestBody);
-        sendBackendRequestAudit(request, requestBody);
+        String rawRequestBody = toJsonForLog(requestBody);
+        logOpenAiRequest(url, request, rawRequestBody);
+        sendBackendRequestAudit(request, rawRequestBody, requestBody);
         try {
-            Map<String, Object> raw = responseBody(url, requestBody, apiKey);
-            logOpenAiResponse(url, request, raw);
-            sendBackendResponseAudit(request, raw, null);
+            String rawResponseBody = responseBody(url, rawRequestBody, apiKey);
+            logOpenAiResponse(url, request, rawResponseBody);
+            sendBackendResponseAudit(request, rawResponseBody, null);
+            Map<String, Object> raw = parseOpenAiResponse(rawResponseBody);
             if (raw == null) {
                 log.error(
                         "OpenAI retornou corpo vazio para persona-candidate-generator (endpoint={}, jobId={}, stageExecutionId={}, cnaeCode={}, model={}, serviceTier={})",
@@ -90,7 +92,7 @@ public class OpenAiPersonaCandidateGenerationClient implements PersonaCandidateG
             return objectMapper.readValue(modelResponse, MAP_TYPE);
         } catch (RestClientResponseException ex) {
             logOpenAiHttpError(url, request, ex);
-            sendBackendResponseAudit(request, responseErrorPayload(ex), ex.getClass().getSimpleName() + ": " + ex.getMessage());
+            sendBackendResponseAudit(request, ex.getResponseBodyAsString(), ex.getClass().getSimpleName() + ": " + ex.getMessage());
             throw new IllegalStateException("Falha na OpenAI ao gerar personas candidatas do NichoCNAE v3.", ex);
         } catch (RestClientException | JsonProcessingException | IllegalStateException | IllegalArgumentException ex) {
             log.error(
@@ -189,32 +191,31 @@ public class OpenAiPersonaCandidateGenerationClient implements PersonaCandidateG
     }
 
     /** Registra o payload enviado à OpenAI sem expor credenciais de autenticação. */
-    private void logOpenAiRequest(String url, PersonaCandidateGenerationRequest request, Map<String, Object> requestBody) {
+    private void logOpenAiRequest(String url, PersonaCandidateGenerationRequest request, String rawRequestBody) {
         log.info(
                 "Request OpenAI persona-candidate-generator (endpoint={}, jobId={}, stageExecutionId={}, cnaeCode={}, payload={})",
                 url,
                 request.jobId(),
                 request.stageExecutionId(),
                 request.cnaeCode(),
-                toJsonForLog(requestBody));
+                rawRequestBody);
     }
 
     /** Registra a resposta bruta recebida da OpenAI para auditoria operacional. */
-    private void logOpenAiResponse(String url, PersonaCandidateGenerationRequest request, Map<String, Object> raw) {
+    private void logOpenAiResponse(String url, PersonaCandidateGenerationRequest request, String rawResponseBody) {
         log.info(
                 "Response OpenAI persona-candidate-generator (endpoint={}, jobId={}, stageExecutionId={}, cnaeCode={}, payload={})",
                 url,
                 request.jobId(),
                 request.stageExecutionId(),
                 request.cnaeCode(),
-                toJsonForLog(raw));
+                rawResponseBody);
     }
 
-
-    /** Envia ao backend o request bruto encaminhado à OpenAI pelo endpoint recebeRequest. */
-    private void sendBackendRequestAudit(PersonaCandidateGenerationRequest request, Map<String, Object> requestBody) {
+    /** Envia ao backend exatamente o request bruto encaminhado à OpenAI pelo endpoint recebeRequest. */
+    private void sendBackendRequestAudit(PersonaCandidateGenerationRequest request, String rawRequestBody, Map<String, Object> requestBody) {
         Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("request", toJsonForLog(requestBody));
+        payload.put("request", rawRequestBody);
         payload.put("plataforma", "OPENAI_RESPONSES_API");
         payload.put("prompt", String.valueOf(requestBody.getOrDefault("input", "")));
         payload.put("schema", toJsonForLog(schemaLoader.load()));
@@ -228,10 +229,11 @@ public class OpenAiPersonaCandidateGenerationClient implements PersonaCandidateG
         restClient.post().uri(URI.create(endpoint)).body(payload).retrieve().toBodilessEntity();
     }
 
-    /** Envia ao backend a resposta bruta da OpenAI ou o erro capturado pelo endpoint recebeResponse. */
-    private void sendBackendResponseAudit(PersonaCandidateGenerationRequest request, Map<String, Object> responseBody, String errorMessage) {
+    /** Envia ao backend exatamente a resposta bruta da OpenAI ou o erro capturado pelo endpoint recebeResponse. */
+    private void sendBackendResponseAudit(PersonaCandidateGenerationRequest request, String rawResponseBody, String errorMessage) {
+        Map<String, Object> responseBody = parseOpenAiResponse(rawResponseBody);
         Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("response", toJsonForLog(responseBody));
+        payload.put("response", rawResponseBody);
         payload.put("descricaoErro", errorMessage);
         payload.put("quantidadeTokenEntrada", tokenUsage(responseBody, "input_tokens"));
         payload.put("quantidadeTokenSaida", tokenUsage(responseBody, "output_tokens"));
@@ -246,15 +248,6 @@ public class OpenAiPersonaCandidateGenerationClient implements PersonaCandidateG
                 request.cnaeCode(),
                 errorMessage != null && !errorMessage.isBlank());
         restClient.post().uri(URI.create(endpoint)).body(payload).retrieve().toBodilessEntity();
-    }
-
-    /** Monta payload estruturado para auditoria de erro HTTP da OpenAI. */
-    private Map<String, Object> responseErrorPayload(RestClientResponseException ex) {
-        Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("statusCode", ex.getStatusCode().value());
-        payload.put("statusText", ex.getStatusText());
-        payload.put("responseBody", ex.getResponseBodyAsString());
-        return payload;
     }
 
     /** Monta a URL canônica do callback backend para auditoria request/response. */
@@ -286,16 +279,28 @@ public class OpenAiPersonaCandidateGenerationClient implements PersonaCandidateG
     }
 
     /** Executa a requisição HTTP para a Responses API. */
-    @SuppressWarnings("unchecked")
-    private Map<String, Object> responseBody(String url, Map<String, Object> requestBody, String apiKey) {
-        Map<?, ?> response = restClient.post()
+    private String responseBody(String url, String rawRequestBody, String apiKey) {
+        return restClient.post()
                 .uri(URI.create(url))
                 .header("Authorization", "Bearer " + apiKey)
                 .header("Content-Type", "application/json")
-                .body(requestBody)
+                .body(rawRequestBody)
                 .retrieve()
-                .body(Map.class);
-        return response == null ? null : (Map<String, Object>) response;
+                .body(String.class);
+    }
+
+    /** Converte a resposta bruta da OpenAI para mapa apenas depois da auditoria crua. */
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> parseOpenAiResponse(String rawResponseBody) {
+        if (rawResponseBody == null || rawResponseBody.isBlank()) {
+            return null;
+        }
+        try {
+            return objectMapper.readValue(rawResponseBody, MAP_TYPE);
+        } catch (JsonProcessingException ex) {
+            log.warn("Falha ao interpretar resposta bruta OpenAI para métricas/extração.", ex);
+            return null;
+        }
     }
 
     /** Registra detalhes HTTP quando a OpenAI responde com erro. */

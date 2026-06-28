@@ -1524,7 +1524,6 @@
 - Correção operacional: a etapa `persona-candidate-generator` do executor OPRM passou a registrar em log o payload enviado à OpenAI e a resposta bruta recebida, com `jobId`, `stageExecutionId`, `cnaeCode` e endpoint, sem expor a chave de autenticação.
 - Motivo: permitir diagnosticar a causa real de falhas da OpenAI no NichoCNAE v3 sem depender apenas da mensagem genérica persistida na tela.
 
-
 ## 2026-06-26 — OPRM Coletor MEI: URL correta de logs no MCP
 
 - Diagnóstico: o workflow atual publica o `oprm-coletor-mei` em `191.252.120.96`, mas o default do MCP ainda apontava o alias legado `oprm-coletor-receita` para `177.153.62.107:8094`.
@@ -1647,6 +1646,7 @@
 - Ajustada a etapa `persona-candidate-generator` para serializar uma única vez o body enviado à OpenAI e reutilizar exatamente esse conteúdo no callback `recebeRequest`.
 - Ajustado o callback `recebeResponse` para enviar exatamente o corpo bruto retornado pela OpenAI, incluindo respostas HTTP de erro, antes de qualquer extração ou transformação operacional.
 - Prevenção de recorrência: teste da etapa valida que o request auditado no backend é idêntico ao body enviado para a OpenAI e que o response auditado é o corpo bruto recebido do provedor.
+
 ## 2026-06-28 — NichoCNAE v3: resposta final limpa da OpenAI no backend
 
 - Causa-raiz: o backend persistia o envelope bruto da OpenAI em `pipeline_nichocnae.response`, o que deixava a tela de auditoria dependente de JSON técnico para encontrar o conteúdo funcional em `content[].text`.
@@ -1671,3 +1671,9 @@
 - Ajustado o prompt da etapa `persona-candidate-generator` para orientar a OpenAI a produzir uma fotografia neutra do dia a dia da persona, sem antecipar dor, oferta, produto, mecanismo, solução ou linguagem comercial.
 - Ajustado o schema da etapa para trocar campos de interpretação comercial por campos operacionais: contexto de atuação, fluxo do dia, tarefas recorrentes, interações, ferramentas/registros, decisões pequenas e variações de rotina.
 - Prevenção: o builder e o teste funcional da etapa foram alinhados para manter a etapa 2 restrita ao entendimento da rotina antes das etapas posteriores de análise de dor/oportunidade.
+
+## 2026-06-28 — NichoCNAE v3: resultado visível em etapa sem IA
+
+- Ajustada a tela do pipeline v3 para mostrar um bloco de resultado de negócio na etapa `persona-tournament`, mesmo sem integração com modelo de IA.
+- O usuário passa a ver diretamente persona vencedora, pontuação, justificativa, quantidade de personas comparadas e próxima etapa, sem depender de abrir o JSON técnico.
+- Prevenção: a apresentação continua usando somente o payload persistido pelo backend/executor, mantendo a tela como exibição da verdade registrada e não como inferência local.

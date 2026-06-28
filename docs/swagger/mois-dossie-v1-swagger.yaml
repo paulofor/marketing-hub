@@ -846,6 +846,9 @@ components:
         jobId: { type: string }
         request: { type: string }
         response: { type: string }
+        respostaFinal:
+          type: string
+          description: Texto funcional limpo extraído do campo text do envelope OpenAI, mantendo response como auditoria bruta.
         quantidadeTokenEntrada:
           type: integer
           format: int64

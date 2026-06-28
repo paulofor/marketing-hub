@@ -1,5 +1,6 @@
 package com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1.productunderstanding.service;
 
+import com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1.shared.DossierOpenAiTextResponseExtractor;
 import com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1.productunderstanding.service.pending.DossierProductUnderstandingPendingJob;
 import com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1.productunderstanding.service.pending.DossierProductUnderstandingPendingRequest;
 import com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1.productunderstanding.service.pending.DossierProductUnderstandingPendingResponse;
@@ -109,6 +110,7 @@ public class DossierProductUnderstandingService {
         PipelineDossieProduto pipeline = new PipelineDossieProduto();
         pipeline.setIdExterno(productKey);
         pipeline.setResponse(request.response());
+        pipeline.setRespostaFinal(DossierOpenAiTextResponseExtractor.extract(request.response()));
         pipeline.setCodigoEtapa(STAGE_CODE);
         pipeline.setStatus(status);
         pipeline.setDataHora(now);

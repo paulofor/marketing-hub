@@ -45,6 +45,7 @@ public class DossierSituacaoService {
                 pipeline.getJobId(),
                 pipeline.getRequest(),
                 pipeline.getResponse(),
+                pipeline.getRespostaFinal(),
                 pipeline.getQuantidadeTokenEntrada(),
                 pipeline.getQuantidadeTokenSaida(),
                 pipeline.getModelo(),

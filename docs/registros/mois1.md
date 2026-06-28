@@ -1924,3 +1924,10 @@ Arquivos principais:
 - Causa-raiz tratada: os processors das etapas retornavam status genérico de implementação futura, sem saída funcional explícita que comprovasse o objetivo de cada etapa.
 - Ajuste aplicado: cada etapa agora devolve `OBJECTIVE_FULFILLED`, decisão de negócio específica, evidências do contexto recebido e artefato auditável do objetivo executado.
 - Prevenção de recorrência: teste de contrato do `PipelineWorker` passou a validar o objetivo esperado, status funcional e artefato auditável de todas as etapas canônicas.
+
+## 2026-06-28 — Gate de qualidade na síntese final do dossiê MOIS v1
+
+- Diagnosticado que a etapa final `dossier-synthesis` encerrava o pipeline com uma resposta técnica genérica, sem dossiê comercial útil.
+- Causa-raiz tratada: o backend entregava para a síntese final apenas metadados operacionais e o worker aceitava saída sem evidência comercial como sucesso.
+- Ajuste aplicado: o backend agora inclui auditorias e respostas anteriores no `pending` da síntese final, e o worker bloqueia a conclusão quando não houver evidências comerciais suficientes para montar conclusão, evidências e próximos passos.
+- Prevenção de recorrência: teste do `PipelineWorker` valida que a síntese final falha quando recebe apenas metadados operacionais.

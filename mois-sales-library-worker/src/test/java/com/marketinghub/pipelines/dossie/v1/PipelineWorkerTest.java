@@ -25,8 +25,7 @@ class PipelineWorkerTest {
         PipelineWorker worker = new PipelineWorker(processors);
 
         for (StageProcessor processor : processors) {
-            StageContext context = new StageContext(
-                    10L, 20L, "workspace-mois", processor.stageName(), Map.of("origem", "teste"));
+            StageContext context = contextFor(processor);
 
             StageResult result = worker.execute(context);
 
@@ -37,10 +36,29 @@ class PipelineWorkerTest {
             assertThat(stageOutput).hasFieldOrProperty("businessDecision");
             assertThat(String.valueOf(stageOutput)).contains(objetivoEsperado(processor.stageName()));
             assertThat(result.artifacts()).hasSize(1);
-            assertThat(result.artifacts().get(0).type()).isEqualTo(processor.stageName() + "-objective");
-            assertThat(result.artifacts().get(0).payload()).contains("objective=", "inputAvailable=true");
+            if ("dossier-synthesis".equals(processor.stageName())) {
+                assertThat(result.artifacts().get(0).type()).isEqualTo("dossier-synthesis-final-dossier");
+                assertThat(result.artifacts().get(0).payload()).contains("O dossiê foi consolidado");
+            } else {
+                assertThat(result.artifacts().get(0).type()).isEqualTo(processor.stageName() + "-objective");
+                assertThat(result.artifacts().get(0).payload()).contains("objective=", "inputAvailable=true");
+            }
             assertThat(result.errorMessage()).isNull();
         }
+    }
+
+    /** Garante que a síntese final bloqueia conclusão falsa quando recebe apenas metadados operacionais. */
+    @Test
+    void deveBloquearSinteseFinalSemEvidenciasComerciais() {
+        PipelineWorker worker = new PipelineWorker(processorsCanonicos());
+        StageContext context = new StageContext(10L, 20L, "workspace-mois", "dossier-synthesis", Map.of(
+                "previousStageResponses", List.of("{auditDecision=ok, inputKeys=[jobId], stageExecutionId=20}")));
+
+        StageResult result = worker.execute(context);
+
+        assertThat(result.status()).isEqualTo("FAILED");
+        assertThat(result.errorMessage()).contains("Dossiê final bloqueado");
+        assertThat(String.valueOf(result.output())).contains("BLOCKED_INSUFFICIENT_CONTEXT");
     }
 
     /** Garante bloqueio explícito quando o backend enviar etapa sem processor registrado no executor. */
@@ -52,6 +70,18 @@ class PipelineWorkerTest {
         assertThatThrownBy(() -> worker.execute(context))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Etapa de dossiê não suportada");
+    }
+
+    /** Monta contexto suficiente para cada processor cumprir seu contrato funcional. */
+    private StageContext contextFor(StageProcessor processor) {
+        if ("dossier-synthesis".equals(processor.stageName())) {
+            return new StageContext(10L, 20L, "workspace-mois", processor.stageName(), Map.of(
+                    "previousStageResponses", List.of(
+                            "Produto resolve dor clara do público com promessa específica.",
+                            "Evidência externa indica prova social e autoridade.",
+                            "Recomendação: avançar com risco controlado.")));
+        }
+        return new StageContext(10L, 20L, "workspace-mois", processor.stageName(), Map.of("origem", "teste"));
     }
 
     /** Devolve trecho do objetivo que deve aparecer na saída funcional de cada etapa. */

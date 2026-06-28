@@ -24,6 +24,11 @@ public record StageResult(
         return new StageResult("DONE", output, artifacts, null, safeInteractions(openAiInteractions));
     }
 
+    /** Cria um resultado de falha funcional para impedir avanço quando a etapa não gera entrega útil. */
+    public static StageResult failed(String errorMessage, Map<String, Object> output, List<StageArtifact> artifacts) {
+        return new StageResult("FAILED", output == null ? Map.of() : Map.copyOf(output), artifacts == null ? List.of() : List.copyOf(artifacts), errorMessage, List.of());
+    }
+
     /** Normaliza interações nulas para lista vazia e evita checks defensivos no runner. */
     public StageResult {
         openAiInteractions = safeInteractions(openAiInteractions);

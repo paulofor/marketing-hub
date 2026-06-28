@@ -34,12 +34,18 @@ A referência oficial do módulo OPRM é o pipeline de importação por snapshot
 
 ## Pipeline NichoCNAE v3
 
-O módulo também executa o pipeline `com.marketinghub.pipelines.nichocnae.v3` para pesquisa de rotina por CNAE. As etapas 6 a 9 devem gerar saídas funcionais compatíveis com seus objetivos:
+O módulo também executa o pipeline `com.marketinghub.pipelines.nichocnae.v3` para pesquisa de rotina por CNAE. Todas as etapas devem gerar saídas funcionais compatíveis com seus objetivos, sem criar oferta, campanha ou landing page antes da etapa canônica apropriada:
 
+1. `cnae-intake`: qualifica o CNAE e delimita o público como MEI/profissional autônomo não CLT.
+2. `persona-candidate-generator`: gera personas operacionais candidatas com OpenAI, prompt/schema versionados e auditoria de request/response no backend.
+3. `persona-tournament`: prioriza a persona com maior evidência de dor, tarefas e sinais de compra.
+4. `routine-query-planner`: transforma a persona vencedora em plano de busca acionável para validar rotina real.
+5. `source-searcher`: só libera avanço quando recebe fontes reais auditáveis; sem fontes, bloqueia com causa persistível.
 6. `source-fetcher`: transforma fontes selecionadas em `sourceSnapshots` auditáveis, com URL, título, trecho de evidência e relevância de rotina.
 7. `routine-signal-extractor`: extrai `routineSignals` com tarefa, dor operacional, sinal de compra e referência do snapshot.
 8. `daily-tasks-synthesizer`: consolida `dailyTasks` com dor, evidência, fonte e alavanca de facilidade.
 9. `quality-gate`: decide avanço por critérios persistíveis de evidência e informa causa/correção quando bloquear.
+10. `persona-routine-materializer`: materializa o perfil aprovado com persona, rotina, dores, evidências e candidato funcional para o backend persistir em `market_niche` e `market_niche_enrichment_profile`.
 
 A etapa `persona-candidate-generator`, quando chama OpenAI, audita o request pelo endpoint backend `recebeRequest` antes do envio ao provedor e audita o retorno pelo `recebeResponse` tanto em sucesso quanto em erro HTTP da OpenAI.
 

@@ -32,7 +32,13 @@ class PipelineWorkerTest {
 
             assertThat(result.status()).isEqualTo("DONE");
             assertThat(result.output()).containsKey(processor.stageName());
-            assertThat(result.artifacts()).isNotNull();
+            Object stageOutput = result.output().get(processor.stageName());
+            assertThat(stageOutput).hasFieldOrPropertyWithValue("status", "OBJECTIVE_FULFILLED");
+            assertThat(stageOutput).hasFieldOrProperty("businessDecision");
+            assertThat(String.valueOf(stageOutput)).contains(objetivoEsperado(processor.stageName()));
+            assertThat(result.artifacts()).hasSize(1);
+            assertThat(result.artifacts().get(0).type()).isEqualTo(processor.stageName() + "-objective");
+            assertThat(result.artifacts().get(0).payload()).contains("objective=", "inputAvailable=true");
             assertThat(result.errorMessage()).isNull();
         }
     }
@@ -46,6 +52,21 @@ class PipelineWorkerTest {
         assertThatThrownBy(() -> worker.execute(context))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Etapa de dossiê não suportada");
+    }
+
+    /** Devolve trecho do objetivo que deve aparecer na saída funcional de cada etapa. */
+    private String objetivoEsperado(String stageName) {
+        return switch (stageName) {
+            case "intake" -> "contexto mínimo";
+            case "product-understanding" -> "produto, público, dor";
+            case "investigation-anchor-builder" -> "âncoras confiáveis";
+            case "warmup-resource-discovery" -> "provas sociais que aquecem";
+            case "source-product-match" -> "fonte externa";
+            case "warmup-signal-extraction" -> "sinais de autoridade";
+            case "warmup-map-builder" -> "Organizar os recursos externos";
+            case "dossier-synthesis" -> "recomendação final";
+            default -> throw new IllegalArgumentException("Etapa sem objetivo esperado: " + stageName);
+        };
     }
 
     /** Monta o catálogo mínimo de processors esperados para o dossiê de produto v1. */

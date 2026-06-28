@@ -1918,3 +1918,9 @@ Arquivos principais:
 - Adicionado o campo `resposta_final` em `pipeline_dossieproduto` para guardar o texto funcional extraído do envelope OpenAI, preservando `response` como payload bruto de auditoria.
 - Todas as etapas do backend `moissaleslibraryworker.dossieproduto.v1` passaram a preencher `resposta_final` ao receber o callback de resposta.
 - Criado extrator compartilhado para localizar o campo `text` nos formatos de resposta da OpenAI e manter fallback seguro para respostas diretas.
+## 2026-06-28 — Objetivos funcionais das etapas dossieproduto.v1 no worker
+
+- Verificado o pipeline `dossieproduto.v1` do `mois-sales-library-worker` contra o contrato canônico de etapas do dossiê.
+- Causa-raiz tratada: os processors das etapas retornavam status genérico de implementação futura, sem saída funcional explícita que comprovasse o objetivo de cada etapa.
+- Ajuste aplicado: cada etapa agora devolve `OBJECTIVE_FULFILLED`, decisão de negócio específica, evidências do contexto recebido e artefato auditável do objetivo executado.
+- Prevenção de recorrência: teste de contrato do `PipelineWorker` passou a validar o objetivo esperado, status funcional e artefato auditável de todas as etapas canônicas.

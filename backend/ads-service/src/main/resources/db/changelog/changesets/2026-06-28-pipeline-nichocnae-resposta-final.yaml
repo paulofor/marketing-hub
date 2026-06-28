@@ -1,0 +1,21 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-28-01-pipeline-nichocnae-resposta-final
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: pipeline_nichocnae
+        - not:
+            - columnExists:
+                tableName: pipeline_nichocnae
+                columnName: resposta_final
+      changes:
+        - addColumn:
+            tableName: pipeline_nichocnae
+            columns:
+              - column:
+                  name: resposta_final
+                  type: LONGTEXT

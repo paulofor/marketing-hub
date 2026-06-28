@@ -5,6 +5,7 @@ import com.marketinghub.pipelines.nichocnae.v3.personacandidategenerator.Persona
 import com.marketinghub.pipelines.nichocnae.v3.personacandidategenerator.PersonaCandidateGeneratorProcessor;
 import com.marketinghub.pipelines.nichocnae.v3.personatournament.PersonaTournamentProcessor;
 import com.marketinghub.pipelines.nichocnae.v3.routinequeryplanner.RoutineQueryPlannerProcessor;
+import com.marketinghub.pipelines.nichocnae.v3.sourcesearcher.SourceSearchClient;
 import com.marketinghub.pipelines.nichocnae.v3.sourcesearcher.SourceSearcherProcessor;
 import com.marketinghub.pipelines.nichocnae.v3.sourcefetcher.SourceFetcherProcessor;
 import com.marketinghub.pipelines.nichocnae.v3.routinesignalextractor.RoutineSignalExtractorProcessor;
@@ -19,14 +20,14 @@ import org.springframework.stereotype.Component;
 public class NichoCnaeV3StageDefinitions {
     private final List<NichoCnaeV3StageDefinition> stages;
 
-    /** Inicializa o catálogo v3 com o cliente OpenAI da etapa de personas. */
-    public NichoCnaeV3StageDefinitions(PersonaCandidateGenerationClient personaCandidateGenerationClient) {
+    /** Inicializa o catálogo v3 com os clientes externos usados pelas etapas concretas. */
+    public NichoCnaeV3StageDefinitions(PersonaCandidateGenerationClient personaCandidateGenerationClient, SourceSearchClient sourceSearchClient) {
         this.stages = List.of(
             stage("cnae-intake", new CnaeIntakeProcessor()),
             stage("persona-candidate-generator", new PersonaCandidateGeneratorProcessor(personaCandidateGenerationClient)),
             stage("persona-tournament", new PersonaTournamentProcessor()),
             stage("routine-query-planner", new RoutineQueryPlannerProcessor()),
-            stage("source-searcher", new SourceSearcherProcessor()),
+            stage("source-searcher", new SourceSearcherProcessor(sourceSearchClient)),
             stage("source-fetcher", new SourceFetcherProcessor()),
             stage("routine-signal-extractor", new RoutineSignalExtractorProcessor()),
             stage("daily-tasks-synthesizer", new DailyTasksSynthesizerProcessor()),

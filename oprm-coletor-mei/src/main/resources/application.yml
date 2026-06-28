@@ -56,7 +56,7 @@ oprm:
       backend-base-url: ${OPRM_COLLECTOR_BACKEND_BASE_URL:http://191.252.181.168}
       temp-dir: ${OPRM_MARKET_IMPORT_TEMP_DIR:/tmp/oprm-cnpj-import}
     schedule:
-      enabled: ${OPRM_MARKET_IMPORT_SCHEDULE_ENABLED:true}
+      enabled: ${OPRM_MARKET_IMPORT_SCHEDULE_ENABLED:false}
       cron: ${OPRM_MARKET_IMPORT_SCHEDULE_CRON:0 20 18 * * *}
       timezone: ${OPRM_MARKET_IMPORT_SCHEDULE_TIMEZONE:America/Sao_Paulo}
       snapshot-date: ${OPRM_MARKET_IMPORT_SNAPSHOT_DATE:2026-06-14}

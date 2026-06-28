@@ -14,7 +14,10 @@ public final class QualityGateProcessor implements StageProcessor {
     @Override
     public StageResult process(StageContext context) {
         List<Map<String, Object>> dailyTasks = maps(context.input().get("dailyTasks"));
-        boolean approved = dailyTasks.size() >= 2 && dailyTasks.stream().anyMatch(task -> !text(task.get("sourceUrl")).isBlank());
+        boolean hasTraceableSource = dailyTasks.stream().anyMatch(task -> !text(task.get("sourceUrl")).isBlank());
+        boolean hasCommercialRoutineContext = dailyTasks.stream().anyMatch(this::hasCommercialRoutineContext);
+        boolean hasRecognizableLanguage = dailyTasks.stream().anyMatch(task -> !text(task.get("evidenceText")).isBlank());
+        boolean approved = dailyTasks.size() >= 2 && hasTraceableSource && hasCommercialRoutineContext && hasRecognizableLanguage;
         String status = approved ? "QUALIDADE_APROVADA" : "QUALIDADE_BLOQUEADA";
 
         Map<String, Object> output = new LinkedHashMap<>();
@@ -25,13 +28,22 @@ public final class QualityGateProcessor implements StageProcessor {
         output.put("inputKeys", context.input().keySet());
         output.put("approved", approved);
         output.put("evidenceTaskCount", dailyTasks.size());
-        output.put("gateCriteria", List.of("mínimo de duas tarefas sintetizadas", "ao menos uma tarefa com fonte rastreável", "ausência de oferta/campanha/landing prematura"));
-        output.put("decisionReason", approved ? "Há sinais suficientes de rotina e fonte rastreável para materializar relatório da persona." : "Faltam tarefas suficientes ou fonte rastreável; reprocessar busca/coleta antes de avançar.");
+        output.put("hasTraceableSource", hasTraceableSource);
+        output.put("hasCommercialRoutineContext", hasCommercialRoutineContext);
+        output.put("hasRecognizableLanguage", hasRecognizableLanguage);
+        output.put("gateCriteria", List.of("mínimo de duas tarefas sintetizadas", "ao menos uma tarefa com fonte rastreável", "contexto MEI/autônomo com canal, atendimento, cobrança, agenda, recorrência ou cliente", "linguagem/evidência reconhecível do público", "ausência de oferta/campanha/landing prematura"));
+        output.put("decisionReason", approved ? "Há sinais suficientes de rotina, canal comercial cotidiano e fonte rastreável para materializar o brief de público." : "Faltam tarefas, fonte rastreável, linguagem reconhecível ou contexto comercial cotidiano; reprocessar busca/coleta antes de avançar.");
         output.put("recommendedCorrectionStage", approved ? "" : "source-searcher");
         output.put("businessBoundary", "NAO_GERAR_OFERTA_CAMPANHA_LANDING");
         output.put("reportRole", "PERSONA_ROTINA_TAREFAS_DIARIAS");
         output.put("nextStageCode", approved ? "persona-routine-materializer" : "");
         return new StageResult(status, output, List.of(new StageArtifact(status, "inline://nichocnae-v3/quality-gate", "Gate de qualidade executado com decisão e causa persistíveis.")));
+    }
+
+    /** Verifica se a tarefa traz canal ou situação comercial cotidiana útil para a próxima fase. */
+    private boolean hasCommercialRoutineContext(Map<String, Object> task) {
+        String combined = (text(task.get("channelContext")) + " " + text(task.get("task")) + " " + text(task.get("buyingSignal"))).toLowerCase();
+        return List.of("whatsapp", "instagram", "cliente", "agenda", "cobrança", "cobranca", "balcão", "balcao", "recorr", "indicação", "indicacao", "atendimento").stream().anyMatch(combined::contains);
     }
 
     /** Normaliza a lista de tarefas sintetizadas recebida da etapa anterior. */

@@ -17,7 +17,7 @@ import java.util.regex.Pattern;
 
 /** Processa a etapa source-searcher do pipeline NichoCNAE v3. */
 public final class SourceSearcherProcessor implements StageProcessor {
-    private static final int SEARCH_RESULTS_PER_QUERY = 5;
+    private static final int SEARCH_RESULTS_PER_QUERY = 8;
     private static final int MAX_SELECTED_SOURCES = 8;
     private static final int MIN_ROUTINE_EVIDENCE_SCORE = 45;
     private static final int MAX_REJECTED_SOURCES_PER_ATTEMPT = 8;
@@ -70,7 +70,8 @@ public final class SourceSearcherProcessor implements StageProcessor {
         output.put("searchAttempts", searchAttempts);
         output.put("selectionCriteria", List.of(
                 "fonte Brasil-first em português quando possível",
-                "fonte descreve rotina, tarefa, dúvida, atendimento, agenda, cobrança ou execução real",
+                "busca ampla separada da classificação de evidência semântica",
+                "fonte descreve rotina, tarefa, dúvida, atendimento, canal, agenda, cobrança ou execução real",
                 "fonte comercial ou de solução não avança como evidência positiva",
                 "fontes com URL duplicada ou sem URL rastreável são descartadas"));
         output.put("blocked", !hasSources);
@@ -186,17 +187,16 @@ public final class SourceSearcherProcessor implements StageProcessor {
         String combined = (title + " " + snippet + " " + url).toLowerCase();
         int routineEvidenceScore = routineEvidenceScore(combined);
         int brazilRelevanceScore = brazilRelevanceScore(url, combined);
-        boolean solutionLanguageRisk = containsAny(combined, List.of("software", "sistema", "app", "aplicativo", "plataforma", "automação", "automacao", "curso", "mentoria", "template", "funil", "landing page", "tráfego pago", "trafego pago", "crm"));
+        boolean solutionLanguageRisk = containsAny(combined, List.of("software", "sistema", "app", "aplicativo", "plataforma", "automação", "automacao", "curso", "mentoria", "funil", "landing page", "tráfego pago", "trafego pago", "crm"));
         boolean commercialPageRisk = containsAny(combined, List.of("preço", "preco", "planos", "contrate", "comprar", "teste grátis", "teste gratis", "demonstração", "demonstracao", "vendas", "marketing digital", "anúncio", "anuncio"));
         boolean structuredBusinessDriftRisk = containsAny(combined, List.of("empresa", "indústria", "industria", "corporativo", "franquia", "grande porte", "gestão empresarial"));
         int qualityScore = routineEvidenceScore + brazilRelevanceScore - (solutionLanguageRisk ? 35 : 0) - (commercialPageRisk ? 20 : 0) - (structuredBusinessDriftRisk ? 15 : 0);
-        String sourceIntent = solutionLanguageRisk || commercialPageRisk
-                ? "CONTAMINATION_RISK"
-                : "ROUTINE_EVIDENCE";
+        String sourceIntent = sourceIntent(solutionLanguageRisk, commercialPageRisk, combined);
 
         qualified.put("url", url);
         qualified.put("title", title);
         qualified.put("snippet", snippet);
+        qualified.put("semanticEvidenceClassification", sourceIntent);
         qualified.put("sourceIntent", sourceIntent);
         qualified.put("sourceType", sourceType(url, combined, sourceIntent));
         qualified.put("routineEvidenceScore", Math.max(0, Math.min(100, routineEvidenceScore)));
@@ -216,7 +216,7 @@ public final class SourceSearcherProcessor implements StageProcessor {
 
     /** Decide se a fonte pode avançar para coleta de snapshot da rotina. */
     private boolean isQualifiedRoutineSource(Map<String, Object> source) {
-        return "ROUTINE_EVIDENCE".equals(source.get("sourceIntent"))
+        return List.of("ROUTINE_EVIDENCE", "COMMUNITY_OR_QUESTION_EVIDENCE").contains(source.get("sourceIntent"))
                 && score(source, "routineEvidenceScore") >= MIN_ROUTINE_EVIDENCE_SCORE
                 && score(source, "qualityScore") >= MIN_ROUTINE_EVIDENCE_SCORE;
     }
@@ -230,6 +230,7 @@ public final class SourceSearcherProcessor implements StageProcessor {
         addVariant(variants, enrichBrazilFirstQuery(simplifiedQuery));
         addVariant(variants, enrichBrazilFirstQuery(operationalQuery(simplifiedQuery)));
         addVariant(variants, enrichBrazilFirstQuery(objective));
+        addVariant(variants, naturalRoutineQuery(simplifiedQuery));
         return variants;
     }
 
@@ -239,7 +240,13 @@ public final class SourceSearcherProcessor implements StageProcessor {
         if (cleanQuery.isBlank()) {
             return "";
         }
-        return cleanQuery + " Brasil rotina MEI autônomo";
+        return cleanQuery + " Brasil rotina cliente atendimento cobrança";
+    }
+
+    /** Cria variação semântica ampla para encontrar relatos e dúvidas reais. */
+    private String naturalRoutineQuery(String query) {
+        String cleanQuery = trimWords(query, 10);
+        return cleanQuery.isBlank() ? "" : "como é a rotina " + cleanQuery + " problemas clientes whatsapp instagram";
     }
 
     /** Simplifica a query planejada removendo ruído que reduz a chance de resultado rastreável. */
@@ -292,7 +299,7 @@ public final class SourceSearcherProcessor implements StageProcessor {
         if (seenUrls.contains(url)) {
             return "URL_DUPLICADA";
         }
-        if (!"ROUTINE_EVIDENCE".equals(source.get("sourceIntent"))) {
+        if (!List.of("ROUTINE_EVIDENCE", "COMMUNITY_OR_QUESTION_EVIDENCE").contains(source.get("sourceIntent"))) {
             return "RISCO_CONTAMINACAO_SOLUCAO_OU_COMERCIAL";
         }
         if (score(source, "routineEvidenceScore") < MIN_ROUTINE_EVIDENCE_SCORE) {
@@ -306,7 +313,7 @@ public final class SourceSearcherProcessor implements StageProcessor {
 
     /** Calcula score de evidência de rotina operacional. */
     private int routineEvidenceScore(String text) {
-        return scoreByTerms(text, List.of("rotina", "tarefa", "tarefas", "atendimento", "agenda", "cliente", "clientes", "cobrança", "cobranca", "preço", "preco", "orçamento", "orcamento", "material", "estoque", "retrabalho", "problema", "dúvida", "duvida", "pergunta", "frequência", "frequencia", "manual"), 12);
+        return scoreByTerms(text, List.of("rotina", "tarefa", "tarefas", "atendimento", "agenda", "cliente", "clientes", "cobrança", "cobranca", "preço", "preco", "orçamento", "orcamento", "material", "estoque", "retrabalho", "problema", "dúvida", "duvida", "pergunta", "frequência", "frequencia", "manual", "whatsapp", "instagram", "indicação", "indicacao", "balcão", "balcao", "delivery", "relato"), 10);
     }
 
     /** Calcula aderência ao contexto brasileiro. */
@@ -334,10 +341,27 @@ public final class SourceSearcherProcessor implements StageProcessor {
         return 45;
     }
 
+    /** Classifica semanticamente a fonte separando evidência real de contaminação comercial. */
+    private String sourceIntent(boolean solutionLanguageRisk, boolean commercialPageRisk, String text) {
+        if (solutionLanguageRisk || commercialPageRisk) {
+            return "CONTAMINATION_RISK";
+        }
+        if (containsAny(text, List.of("pergunta", "dúvida", "duvida", "relato", "comentário", "comentario", "forum", "fórum"))) {
+            return "COMMUNITY_OR_QUESTION_EVIDENCE";
+        }
+        if (containsAny(text, List.of("whatsapp", "instagram", "agenda", "cobrança", "cobranca", "cliente", "atendimento", "estoque", "balcão", "balcao"))) {
+            return "ROUTINE_EVIDENCE";
+        }
+        return "GENERIC_SECTOR_SOURCE";
+    }
+
     /** Classifica o tipo operacional da fonte. */
     private String sourceType(String url, String text, String sourceIntent) {
-        if (!"ROUTINE_EVIDENCE".equals(sourceIntent)) {
+        if ("CONTAMINATION_RISK".equals(sourceIntent)) {
             return "COMMERCIAL_OR_SOLUTION_RISK";
+        }
+        if ("COMMUNITY_OR_QUESTION_EVIDENCE".equals(sourceIntent)) {
+            return "REAL_PROFESSIONAL_QUESTION";
         }
         if (domain(url).endsWith(".gov.br")) {
             return "BRAZILIAN_OFFICIAL_SOURCE";

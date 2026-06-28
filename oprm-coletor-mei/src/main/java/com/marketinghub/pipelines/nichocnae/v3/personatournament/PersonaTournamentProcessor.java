@@ -72,9 +72,12 @@ public final class PersonaTournamentProcessor implements StageProcessor {
         int painCount = listSize(firstExisting(persona, "operationalPains", "pains"));
         int taskCount = listSize(firstExisting(persona, "dailyTasks", "recurringTasks", "dailyFlow"));
         int signalCount = listSize(firstExisting(persona, "buyingSignals", "toolsAndRecords", "routineDecisions"));
+        int channelScore = channelScore(persona);
+        int commercialUseScore = commercialUseScore(persona);
         int autonomousScore = autonomousOwnerScore(persona);
         int employeePenalty = employeeRolePenalty(persona);
-        int score = painCount * 3 + taskCount * 2 + signalCount + autonomousScore - employeePenalty;
+        int narrowOrInstitutionalPenalty = narrowOrInstitutionalPenalty(persona);
+        int score = painCount * 3 + taskCount * 2 + signalCount + channelScore + commercialUseScore + autonomousScore - employeePenalty - narrowOrInstitutionalPenalty;
         Map<String, Object> scored = new LinkedHashMap<>(persona);
         scored.putIfAbsent("dailyTasks", texts(firstExisting(persona, "dailyTasks", "recurringTasks", "dailyFlow")));
         scored.putIfAbsent("operationalPains", texts(firstExisting(persona, "operationalPains", "pains", "validationNeed")));
@@ -84,8 +87,11 @@ public final class PersonaTournamentProcessor implements StageProcessor {
                 "operationalPains", painCount,
                 "dailyTasks", taskCount,
                 "buyingSignals", signalCount,
+                "channelScore", channelScore,
+                "commercialUseScore", commercialUseScore,
                 "autonomousOwnerScore", autonomousScore,
-                "employeeRolePenalty", employeePenalty));
+                "employeeRolePenalty", employeePenalty,
+                "narrowOrInstitutionalPenalty", narrowOrInstitutionalPenalty));
         return scored;
     }
 
@@ -101,6 +107,18 @@ public final class PersonaTournamentProcessor implements StageProcessor {
             }
         }
         return List.of();
+    }
+
+    /** Pontua canais reais de aquisição, atendimento e cobrança reconhecíveis em rotina de MEI. */
+    private int channelScore(Map<String, Object> persona) {
+        String combined = combinedText(persona);
+        return scoreByTerms(combined, List.of("whatsapp", "instagram", "indicação", "indicacao", "agenda", "balcão", "balcao", "delivery", "cliente", "cobrança", "cobranca"), 2);
+    }
+
+    /** Pontua utilidade futura para anúncio amplo sem gerar oferta nesta etapa. */
+    private int commercialUseScore(Map<String, Object> persona) {
+        String combined = combinedText(persona);
+        return scoreByTerms(combined, List.of("rotina", "dor", "tempo", "retrabalho", "organização", "organizacao", "controle", "agenda", "cliente", "preço", "preco"), 2);
     }
 
     /** Pontua melhor personas de dono-operador, MEI, autônomo ou familiar por aderirem ao recorte do pipeline. */
@@ -120,6 +138,23 @@ public final class PersonaTournamentProcessor implements StageProcessor {
     private int employeeRolePenalty(Map<String, Object> persona) {
         String combined = combinedText(persona);
         return containsAny(combined, List.of("estoquista", "funcionário", "funcionario", "empregado", "clt", "contratado", "retaguarda", "auxiliar", "gerente contratado")) ? 18 : 0;
+    }
+
+    /** Penaliza recortes pequenos, institucionais, B2B ou pouco reconhecíveis no feed. */
+    private int narrowOrInstitutionalPenalty(Map<String, Object> persona) {
+        String combined = combinedText(persona);
+        return containsAny(combined, List.of("institucional", "b2b", "industrial", "corporativo", "licitação", "licitacao", "órgão público", "orgao publico", "enterprise")) ? 12 : 0;
+    }
+
+    /** Calcula score por termos para decompor o ranking comercial. */
+    private int scoreByTerms(String text, List<String> terms, int points) {
+        int score = 0;
+        for (String term : terms) {
+            if (text.contains(term)) {
+                score += points;
+            }
+        }
+        return score;
     }
 
     /** Junta campos textuais relevantes da persona para classificação simples. */

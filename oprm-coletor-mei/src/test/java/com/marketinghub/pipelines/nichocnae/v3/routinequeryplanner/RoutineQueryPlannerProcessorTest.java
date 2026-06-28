@@ -50,7 +50,7 @@ class RoutineQueryPlannerProcessorTest {
 
         List<?> plannedQueries = (List<?>) result.output().get("plannedQueries");
         assertThat(plannedQueries).hasSize(2);
-        assertThat(plannedQueries.getFirst()).asString().contains("MEI autônomo dono operador", "responder clientes no WhatsApp");
+        assertThat(plannedQueries.getFirst()).asString().contains("rotina de Dono-operador MEI", "responder clientes no WhatsApp", "atendimento cliente Brasil");
     }
 
     /** Bloqueia uma saída genérica quando a etapa anterior não trouxe a persona vencedora. */

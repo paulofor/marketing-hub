@@ -22,7 +22,8 @@ public final class RoutineQueryPlannerProcessor implements StageProcessor {
         List<String> dailyTasks = texts(firstExisting(winnerPersona, "dailyTasks", "recurringTasks", "dailyFlow"));
         List<String> operationalPains = texts(firstExisting(winnerPersona, "operationalPains", "pains", "validationNeed"));
         List<String> buyingSignals = texts(firstExisting(winnerPersona, "buyingSignals", "toolsAndRecords", "routineDecisions"));
-        List<Map<String, Object>> plannedQueries = plannedQueries(personaName, dailyTasks, operationalPains, buyingSignals);
+        List<String> channels = texts(firstExisting(winnerPersona, "channels", "serviceChannels", "acquisitionChannels", "billingRoutine", "customerAcquisition"));
+        List<Map<String, Object>> plannedQueries = plannedQueries(personaName, dailyTasks, operationalPains, buyingSignals, channels);
 
         Map<String, Object> output = new LinkedHashMap<>();
         output.put("stage", "routine-query-planner");
@@ -54,13 +55,14 @@ public final class RoutineQueryPlannerProcessor implements StageProcessor {
     }
 
     /** Monta consultas de busca acionáveis a partir das tarefas, dores e sinais da persona. */
-    private List<Map<String, Object>> plannedQueries(String personaName, List<String> dailyTasks, List<String> operationalPains, List<String> buyingSignals) {
+    private List<Map<String, Object>> plannedQueries(String personaName, List<String> dailyTasks, List<String> operationalPains, List<String> buyingSignals, List<String> channels) {
         List<Map<String, Object>> queries = new ArrayList<>();
         addQueries(queries, personaName, dailyTasks, "TAREFA_DIARIA", "Validar tarefa recorrente e frequência operacional");
         addQueries(queries, personaName, operationalPains, "DOR_OPERACIONAL", "Confirmar dor, esforço manual e consequência prática");
-        addQueries(queries, personaName, buyingSignals, "SINAL_DE_COMPRA", "Encontrar evidência de busca por solução, planilha, sistema, consultoria ou modelo pronto");
+        addQueries(queries, personaName, buyingSignals, "SINAL_DE_COMPRA", "Encontrar evidência de busca por facilidade, organização, agenda, cobrança ou modelo pronto");
+        addQueries(queries, personaName, channels, "CANAL_ATENDIMENTO_AQUISICAO", "Validar canais reais como WhatsApp, Instagram, indicação, balcão, agenda, cobrança ou atendimento local");
         if (queries.isEmpty()) {
-            queries.add(queryItem(personaName + " MEI autônomo dono operador rotina diária tarefas problemas", "ROTINA_BASE", "Validar rotina e problemas recorrentes quando a persona não trouxe sinais detalhados", 1));
+            queries.add(queryItem("rotina de " + personaName + " pequena no Brasil atendimento cliente cobrança agenda", "ROTINA_BASE", "Validar rotina e problemas recorrentes quando a persona não trouxe sinais detalhados", 1));
         }
         return queries.stream().limit(MAX_QUERY_ITEMS).toList();
     }
@@ -68,8 +70,18 @@ public final class RoutineQueryPlannerProcessor implements StageProcessor {
     /** Adiciona consultas mantendo prioridade de acordo com a ordem da evidência recebida. */
     private void addQueries(List<Map<String, Object>> queries, String personaName, List<String> evidences, String intent, String objective) {
         for (String evidence : evidences) {
-            queries.add(queryItem(personaName + " MEI autônomo dono operador " + evidence + " rotina problema frequência", intent, objective, queries.size() + 1));
+            queries.add(queryItem(naturalQuery(personaName, evidence, intent), intent, objective, queries.size() + 1));
         }
+    }
+
+    /** Monta query natural Brasil-first sem depender sempre de termos formais como dono-operador ou MEI. */
+    private String naturalQuery(String personaName, String evidence, String intent) {
+        return switch (intent) {
+            case "DOR_OPERACIONAL" -> "dificuldade de " + evidence + " na rotina de " + personaName + " Brasil";
+            case "SINAL_DE_COMPRA" -> "como organizar " + evidence + " para " + personaName + " clientes agenda cobrança";
+            case "CANAL_ATENDIMENTO_AQUISICAO" -> personaName + " usa " + evidence + " para atender conseguir cliente cobrar Brasil";
+            default -> "rotina de " + personaName + " " + evidence + " atendimento cliente Brasil";
+        };
     }
 
     /** Cria um item estruturado de consulta para a próxima etapa buscar fontes. */
@@ -79,7 +91,7 @@ public final class RoutineQueryPlannerProcessor implements StageProcessor {
         item.put("query", query);
         item.put("intent", intent);
         item.put("objective", objective);
-        item.put("expectedEvidence", List.of("relato de rotina", "tarefa concreta", "dor ou esforço", "frequência ou impacto"));
+        item.put("expectedEvidence", List.of("relato de rotina", "tarefa concreta", "dor ou esforço", "frequência ou impacto", "canal de atendimento/aquisição/cobrança"));
         return item;
     }
 

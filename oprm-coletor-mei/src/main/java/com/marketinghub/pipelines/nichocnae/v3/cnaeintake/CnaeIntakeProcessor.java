@@ -23,7 +23,10 @@ public final class CnaeIntakeProcessor implements StageProcessor {
         output.put("cnaeCode", cnaeCode);
         output.put("cnaeDescription", cnaeDescription);
         output.put("targetAudienceType", "MEI_PROFISSIONAIS_AUTONOMOS_NAO_CLT");
-        output.put("targetAudienceDefinition", "Estamos falando de MEI e profissionais autônomos que atuam por conta própria, sem contratação direta como CLT.");
+        output.put("targetAudienceDefinition", "Estamos falando de MEI, donos-operadores e profissionais autônomos que atuam por conta própria, sem contratação direta como CLT.");
+        output.put("cnaeRole", "CNAE_E_PONTO_DE_PARTIDA_ESTATISTICO_NAO_PUBLICO_FINAL");
+        output.put("discoveryFrame", "Este CNAE possui volume de MEIs, mas ainda é necessário descobrir qual pessoa real trabalha nele e em qual situação operacional cotidiana.");
+        output.put("researchMode", "REALIDADE_OPERACIONAL_DE_ROTINA_COM_CANAIS_DO_MEI");
         output.put("employmentBoundary", "NAO_ANALISAR_FUNCIONARIOS_CLT_CONTRATADOS_DIRETAMENTE");
         output.put("inputKeys", context.input().keySet());
         output.put("businessBoundary", "NAO_GERAR_OFERTA_CAMPANHA_LANDING");

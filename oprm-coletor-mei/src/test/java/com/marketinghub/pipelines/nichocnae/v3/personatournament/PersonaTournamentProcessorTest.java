@@ -25,7 +25,11 @@ class PersonaTournamentProcessorTest {
         assertThat(result.output()).containsEntry("winningPersonaName", "Dono operador de loja");
         assertThat(result.output()).containsKeys("winnerPersona", "selectionRationale", "personaRanking");
         Map<?, ?> winner = (Map<?, ?>) result.output().get("winnerPersona");
-        assertThat(winner.get("tournamentScore")).isEqualTo(26);
+        assertThat(winner.get("tournamentScore")).isEqualTo(28);
+        Map<?, ?> scoreBreakdown = (Map<?, ?>) winner.get("scoreBreakdown");
+        assertThat(scoreBreakdown.containsKey("channelScore")).isTrue();
+        assertThat(scoreBreakdown.containsKey("commercialUseScore")).isTrue();
+        assertThat(scoreBreakdown.containsKey("narrowOrInstitutionalPenalty")).isTrue();
     }
 
     /** Prioriza dono-operador MEI quando a IA também retorna cargo CLT com muitas tarefas, evitando travar a busca de fontes. */

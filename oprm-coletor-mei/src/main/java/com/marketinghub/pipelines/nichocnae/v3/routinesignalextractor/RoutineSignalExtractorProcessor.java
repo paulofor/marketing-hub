@@ -59,8 +59,17 @@ public final class RoutineSignalExtractorProcessor implements StageProcessor {
         signal.put("routineTask", inferTask(evidence));
         signal.put("painSignal", inferPain(lower));
         signal.put("buyingSignal", inferBuyingSignal(lower));
+        signal.put("channelContext", firstNonBlank(text(snapshot.get("mentionedChannel")), inferChannel(lower)));
+        signal.put("effortIntensity", inferEffortIntensity(lower));
+        signal.put("probableFrequency", inferFrequency(lower));
+        signal.put("commercialOpportunityFuture", futureOpportunity(signal));
         signal.put("confidence", evidence.isBlank() ? "BAIXA" : "MEDIA");
         return signal;
+    }
+
+    /** Resume oportunidade futura sem transformar a evidência em oferta prematura. */
+    private String futureOpportunity(Map<String, Object> signal) {
+        return "Matéria-prima para hipótese futura: " + signal.get("painSignal") + " em " + signal.get("channelContext") + ".";
     }
 
     /** Infere uma tarefa objetiva sem inventar além do trecho recebido. */
@@ -94,6 +103,42 @@ public final class RoutineSignalExtractorProcessor implements StageProcessor {
             return "PROCURA_AJUDA_ESPECIALIZADA";
         }
         return "SINAL_DE_COMPRA_A_VALIDAR";
+    }
+
+    /** Infere canal quando ele aparece literalmente no trecho de evidência. */
+    private String inferChannel(String lowerEvidence) {
+        for (String channel : List.of("whatsapp", "instagram", "agenda", "balcão", "balcao", "delivery", "cobrança", "cobranca")) {
+            if (lowerEvidence.contains(channel)) {
+                return channel;
+            }
+        }
+        return "CANAL_A_VALIDAR";
+    }
+
+    /** Infere intensidade do esforço a partir de sinais textuais simples. */
+    private String inferEffortIntensity(String lowerEvidence) {
+        return lowerEvidence.contains("difícil") || lowerEvidence.contains("dificil") || lowerEvidence.contains("problema") || lowerEvidence.contains("retrabalho") ? "ALTA" : "MEDIA";
+    }
+
+    /** Infere frequência provável sem inventar dado não sustentado. */
+    private String inferFrequency(String lowerEvidence) {
+        if (lowerEvidence.contains("diário") || lowerEvidence.contains("diaria") || lowerEvidence.contains("todo dia")) {
+            return "DIARIA";
+        }
+        if (lowerEvidence.contains("semana") || lowerEvidence.contains("recorrente")) {
+            return "RECORRENTE";
+        }
+        return "A_VALIDAR";
+    }
+
+    /** Escolhe o primeiro texto preenchido. */
+    private String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (!value.isBlank()) {
+                return value;
+            }
+        }
+        return "";
     }
 
     /** Converte valor opcional em texto seguro. */

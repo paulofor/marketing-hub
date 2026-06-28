@@ -13,16 +13,36 @@ O pipeline trabalha com o limite explícito de público:
 - não gerar oferta antes de validar rotina e evidências;
 - preservar dados auditáveis suficientes para explicar ao usuário por que o pipeline avançou ou bloqueou.
 
+## Melhoria recomendada sem alterar a quantidade de etapas
+
+A melhoria principal é transformar o pipeline de uma sequência que valida apenas **persona + rotina + fonte** em uma sequência que também entrega **contexto comportamental de compra futura**, sem sair da fase de pesquisa e sem criar oferta prematura.
+
+Como o ponto de partida são CNAEs com alto volume de MEIs, o pipeline deve aproveitar esse volume para encontrar recortes com:
+
+- pessoa executora claramente identificável;
+- rotina recorrente e observável no Brasil;
+- canais reais de aquisição e atendimento, como WhatsApp, Instagram, indicação, agenda, balcão, delivery ou atendimento local;
+- dores práticas ligadas a tempo, esforço, erro, retrabalho, organização, cobrança, cliente que some, agenda vazia ou controle manual;
+- linguagem simples que o próprio MEI/autônomo reconheceria;
+- amplitude suficiente para alimentar testes futuros em Meta Ads/Instagram, sem cair em microsegmentação difícil de anunciar.
+
+O motivo é comercial: a etapa posterior de hipótese, oferta e campanha só terá maior potencial de vendas se receber um público que não seja apenas uma ocupação do CNAE, mas um **contexto vivo de trabalho**, com tarefas, tensões, desejos e situações que possam virar criativos, promessas e produtos digitais depois.
+
+Essa melhoria não muda a ordem nem a quantidade das etapas. Ela muda a qualidade do que cada etapa deve procurar, pontuar, bloquear e materializar.
+
 ## Resultado esperado
 
 Ao final, quando todas as etapas forem aprovadas, o pipeline deve entregar um perfil materializável contendo:
 
 - CNAE e descrição;
+- distinção clara entre CNAE amplo e público MEI/autônomo real;
 - persona operacional priorizada;
 - resumo da rotina;
 - tarefas diárias ou recorrentes;
 - dores operacionais associadas;
+- canais de aquisição, atendimento, cobrança e relacionamento usados na rotina;
 - sinais de compra ou busca por facilidade;
+- vocabulário e situações reconhecíveis pelo próprio público;
 - fontes/evidências usadas;
 - alavancas de facilidade que podem orientar produto futuro;
 - candidato de nicho pronto para persistência pelo backend.
@@ -54,22 +74,30 @@ Receber o CNAE de entrada e preparar o contexto mínimo do pipeline.
 
 - Valida se o payload possui `cnaeCode`.
 - Valida se o payload possui `cnaeDescription`.
+- Registra que o CNAE é apenas ponto de partida estatístico, não definição final do público.
 - Define o recorte de público como MEI e profissionais autônomos não CLT.
 - Registra que o pipeline não deve analisar funcionários CLT contratados diretamente.
 - Registra que esta versão não deve gerar oferta, campanha ou landing page.
+- Registra o modo de pesquisa como realidade operacional de rotina, não pesquisa de produto.
 - Direciona a próxima etapa para `persona-candidate-generator`.
 
 ### Saída principal
 
 - CNAE recebido;
 - descrição do CNAE;
+- separação entre CNAE amplo e público executor esperado;
 - tipo de público alvo;
 - fronteira de emprego;
+- fronteira comercial;
 - próxima etapa.
 
 ### Critério de bloqueio
 
 Bloqueia se faltar CNAE ou descrição do CNAE.
+
+### Melhoria recomendada e motivo
+
+A etapa deve sair com um enquadramento mais forte: "este CNAE tem muitos MEIs, mas ainda precisamos descobrir qual pessoa real trabalha nele e em qual situação operacional". O motivo é evitar que o pipeline trate a descrição fiscal do CNAE como público-alvo final, o que geraria personas genéricas e menos vendáveis nas fases posteriores.
 
 ---
 
@@ -84,6 +112,8 @@ Gerar personas candidatas plausíveis para aquele CNAE, com foco em rotina opera
 - Recebe CNAE, descrição e contexto persistido.
 - Monta uma requisição para geração de personas candidatas.
 - Usa o cliente de geração com IA para produzir personas estruturadas.
+- Gera candidatas como recortes comportamentais de MEI/autônomo, não apenas cargos ou nomes de profissão.
+- Inclui, em cada candidata, contexto de trabalho, canal de atendimento, forma de conseguir clientes, rotina de cobrança e situação operacional reconhecível.
 - Completa campos técnicos de rastreabilidade, como `jobId`, `stageExecutionId`, `stage` e `status`.
 - Valida se foram geradas personas suficientes.
 - Direciona a próxima etapa para `persona-tournament`.
@@ -93,11 +123,17 @@ Gerar personas candidatas plausíveis para aquele CNAE, com foco em rotina opera
 - lista de personas candidatas;
 - quantidade de personas;
 - descrição, rotina, tarefas, interações, ferramentas e necessidades de validação de cada persona;
+- canais prováveis de aquisição/atendimento/cobrança;
+- situação comportamental que pode ser reconhecida em criativos futuros;
 - próxima etapa.
 
 ### Critério de bloqueio
 
 Bloqueia se a IA não retornar pelo menos 3 personas candidatas estruturadas.
+
+### Melhoria recomendada e motivo
+
+Gerar candidatas mais próximas de situações reais de MEI, por exemplo "dona de loja pequena que vende no balcão e pelo WhatsApp" em vez de apenas "lojista de roupas". O motivo é que campanha futura não vende para CNAE; vende para uma pessoa que se reconhece em uma cena de rotina, esforço, desejo ou frustração.
 
 ---
 
@@ -115,8 +151,13 @@ Escolher a persona mais útil para investigar rotina, dor e oportunidade de prod
   - tarefas diárias;
   - dores operacionais;
   - sinais de compra;
+  - aquisição de clientes;
+  - cobrança, preço, recorrência ou agenda;
+  - linguagem simples e reconhecível no Brasil;
+  - amplitude para anúncio em Instagram/Meta Ads;
   - perfil dono-operador, MEI, autônomo ou familiar.
 - Penaliza personas que parecem funcionário CLT, auxiliar, estoquista, empregado ou cargo de retaguarda.
+- Penaliza recortes pequenos demais, muito institucionais, muito B2B ou difíceis de reconhecer no feed.
 - Ordena o ranking.
 - Seleciona a persona vencedora.
 - Registra a justificativa da escolha.
@@ -134,6 +175,10 @@ Escolher a persona mais útil para investigar rotina, dor e oportunidade de prod
 
 Bloqueia se não houver `candidatePersonas` na entrada.
 
+### Melhoria recomendada e motivo
+
+A pontuação deve equilibrar evidência operacional com potencial de uso comercial posterior. Uma persona excelente para pesquisa, mas pequena demais ou difícil de anunciar, pode gerar um perfil correto e pouco útil para vendas. O motivo é que o Marketing Hub precisa alimentar testes futuros com públicos amplos o suficiente para criativos filtrarem a audiência.
+
 ---
 
 ## 4. `routine-query-planner`
@@ -147,11 +192,19 @@ Planejar buscas públicas para validar se a rotina, as tarefas, as dores e os si
 - Recebe a persona vencedora.
 - Extrai tarefas diárias, dores operacionais e sinais de compra.
 - Gera até 8 queries planejadas.
+- Distribui as queries em famílias de intenção:
+  - rotina e tarefas;
+  - dificuldades operacionais;
+  - aquisição de clientes;
+  - atendimento e canais usados;
+  - preço, cobrança, agenda ou recorrência;
+  - linguagem, dúvidas e perguntas reais do público.
 - Cada query recebe:
   - prioridade;
   - intenção;
   - objetivo;
   - evidências esperadas.
+- Escreve queries em português do Brasil, com linguagem natural de busca e sem depender de termos como "dono-operador" ou "MEI" em todas as consultas.
 - Registra perguntas que a busca deve responder.
 - Registra critérios mínimos de aceitação de fonte.
 - Registra critérios de descarte.
@@ -173,6 +226,10 @@ Bloqueia se não houver `winnerPersona` na entrada.
 
 Esta etapa ainda não valida a qualidade das fontes. Ela apenas planeja as buscas. A validação acontece na etapa seguinte.
 
+### Melhoria recomendada e motivo
+
+As queries devem parecer buscas que uma pessoa faria para entender o trabalho real, não combinações rígidas de palavras-chave. O motivo é reduzir o bloqueio por fontes genéricas, dicionários e páginas comerciais, aumentando a chance de encontrar relatos, dúvidas, guias operacionais, discussões e conteúdos brasileiros que descrevam a rotina.
+
 ---
 
 ## 5. `source-searcher`
@@ -191,10 +248,13 @@ Buscar fontes públicas e selecionar apenas aquelas que sustentam evidência rea
   - evidência de rotina;
   - aderência ao Brasil;
   - evidência de profissional autônomo;
+  - evidência de aquisição, atendimento, cobrança ou recorrência;
+  - presença de linguagem do próprio público;
   - atualidade;
   - risco comercial;
   - risco de linguagem de solução;
   - risco de desvio para empresa estruturada.
+- Classifica a intenção da fonte entre rotina real, pergunta/dúvida, comunidade/relato, fonte setorial, fonte comercial, fonte de solução ou fonte genérica.
 - Descarta fontes sem URL, duplicadas, comerciais/contaminadas, com evidência insuficiente ou qualidade insuficiente.
 - Registra as tentativas em `searchAttempts`.
 - Se encontrar fontes suficientes, direciona para `source-fetcher`.
@@ -221,6 +281,7 @@ Uma fonte só avança se:
 - tiver pontuação mínima de qualidade;
 - não for duplicada;
 - não apresentar risco comercial ou risco de solução prematura.
+- tiver aderência mínima ao contexto brasileiro ou explicitar que é fonte estrutural útil apesar de não brasileira.
 
 ### Critério de bloqueio
 
@@ -229,6 +290,10 @@ Bloqueia quando nenhuma fonte pública qualificada é encontrada.
 ### Observação crítica
 
 Esta etapa é hoje o principal ponto de fragilidade do pipeline. A lógica atual usa muitos sinais lexicais e pontuação por termos. Isso é útil como filtro inicial, mas é limitado para decidir se uma fonte realmente comprova rotina, dor e esforço. O ideal é evoluir esta etapa para classificação semântica mais forte, com mais diversidade de queries, mais resultados por query e relatório melhor de rejeições.
+
+### Melhoria recomendada e motivo
+
+Separar busca ampla de classificação de evidência. A busca deve trazer mais possibilidades; a classificação deve decidir se há rotina real, relato, dúvida, canal, cobrança ou contaminação por solução. O motivo é que o pipeline está bloqueando corretamente por qualidade, mas por vezes chega pouco perto das fontes certas porque procura termos formais demais. Para vendas futuras, vale mais uma fonte simples que mostre uma situação real do MEI do que uma página bonita que vende software ou fala genericamente do setor.
 
 ---
 
@@ -251,6 +316,7 @@ Transformar fontes selecionadas em snapshots auditáveis para extração posteri
   - intenção da fonte;
   - pontuações de qualificação;
   - riscos identificados.
+- Preserva também a situação de rotina observada, o canal citado e a razão pela qual a fonte foi considerada útil.
 - Registra critérios de coleta.
 - Direciona a próxima etapa para `routine-signal-extractor`.
 
@@ -264,6 +330,10 @@ Transformar fontes selecionadas em snapshots auditáveis para extração posteri
 ### Critério de bloqueio
 
 Bloqueia se não houver fonte selecionada ou se nenhuma fonte puder virar snapshot auditável.
+
+### Melhoria recomendada e motivo
+
+O snapshot deve guardar o menor trecho suficiente para provar a situação observada, não apenas título e URL. O motivo é permitir que as próximas etapas expliquem ao usuário, em linguagem de negócio, por que aquele nicho tem rotina real e onde aparecem esforço, risco, perda de tempo ou busca por facilidade.
 
 ---
 
@@ -281,6 +351,9 @@ Extrair sinais de rotina, dor e compra a partir dos snapshots coletados.
   - tarefa observada;
   - dor operacional inferida;
   - sinal de compra inferido;
+  - canal ou contexto onde a tarefa acontece;
+  - intensidade do esforço percebido;
+  - frequência provável da situação;
   - URL da fonte;
   - texto de evidência;
   - confiança.
@@ -292,6 +365,7 @@ Extrair sinais de rotina, dor e compra a partir dos snapshots coletados.
 - Classifica sinais de compra como:
   - procura por ferramenta ou modelo;
   - procura por ajuda especializada;
+  - tentativa de organizar atendimento, agenda, cobrança ou captação;
   - sinal a validar.
 - Direciona a próxima etapa para `daily-tasks-synthesizer`.
 
@@ -305,6 +379,10 @@ Extrair sinais de rotina, dor e compra a partir dos snapshots coletados.
 ### Critério de bloqueio
 
 Bloqueia se não houver `sourceSnapshots`.
+
+### Melhoria recomendada e motivo
+
+A extração deve diferenciar "dor operacional observada" de "oportunidade comercial futura". O motivo é manter o pipeline disciplinado: ele ainda não deve vender nada, mas já deve entregar matéria-prima rica para que a fase posterior crie hipótese com menos achismo.
 
 ---
 
@@ -322,6 +400,9 @@ Converter sinais extraídos em um mapa claro de tarefas diárias, dores e alavan
   - tarefa;
   - dor;
   - sinal de compra;
+  - canal envolvido;
+  - frequência estimada;
+  - impacto operacional provável;
   - texto de evidência;
   - URL da fonte.
 - Traduz a dor em uma alavanca de facilidade, como:
@@ -338,12 +419,17 @@ Converter sinais extraídos em um mapa claro de tarefas diárias, dores e alavan
 - quantidade de tarefas;
 - dores associadas;
 - sinais de compra;
+- mapa de canais, cobrança, aquisição e atendimento;
 - alavancas de facilidade;
 - leitura comercial preliminar.
 
 ### Critério de bloqueio
 
 Bloqueia se não houver `routineSignals`.
+
+### Melhoria recomendada e motivo
+
+A síntese deve organizar a rotina em blocos de ação, por exemplo "conseguir cliente", "atender", "executar o serviço", "cobrar", "organizar retorno" e "controlar operação". O motivo é que esses blocos viram depois ângulos claros de criativo, promessa e produto, sem o pipeline precisar criar a oferta agora.
 
 ---
 
@@ -358,6 +444,9 @@ Decidir se há evidência suficiente para materializar o perfil final.
 - Recebe `dailyTasks`.
 - Verifica se existem ao menos duas tarefas sintetizadas.
 - Verifica se ao menos uma tarefa tem fonte rastreável.
+- Verifica se o perfil diferencia CNAE amplo de público executor real.
+- Verifica se existe algum sinal útil de canal, aquisição, atendimento, cobrança ou recorrência.
+- Verifica se a evidência é brasileira ou, quando não for, se foi marcada como apoio secundário.
 - Reforça a ausência de oferta, campanha ou landing prematura.
 - Se aprovado, direciona para `persona-routine-materializer`.
 - Se reprovado, bloqueia e recomenda correção em `source-searcher`.
@@ -376,10 +465,18 @@ Aprova somente se:
 
 - houver pelo menos 2 tarefas sintetizadas;
 - ao menos uma tarefa tiver URL de fonte rastreável.
+- houver contexto mínimo de público executor MEI/autônomo;
+- houver sinal mínimo de operação comercial cotidiana, como aquisição, atendimento, cobrança, agenda, recorrência ou relacionamento com cliente.
 
 ### Critério de bloqueio
 
 Bloqueia quando faltam tarefas suficientes ou fonte rastreável.
+
+Também deve bloquear quando o material estiver correto tecnicamente, mas fraco comercialmente para a próxima fase: público genérico demais, fonte muito institucional, ausência de canal real, ausência de linguagem do público ou excesso de contaminação por solução.
+
+### Melhoria recomendada e motivo
+
+O gate deve medir utilidade para venda futura sem virar gate de oferta. O motivo é que materializar um nicho apenas porque há duas tarefas e uma URL pode gerar volume, mas não necessariamente gerar aprendizado acionável para produto digital. A aprovação deve exigir contexto mínimo para que a próxima fase consiga formular hipótese com base em comportamento real.
 
 ---
 
@@ -400,6 +497,8 @@ Materializar o perfil funcional final aprovado pelo gate de qualidade.
   - tarefas diárias;
   - principais dores operacionais;
   - sinais de compra;
+  - canais de aquisição, atendimento, cobrança e relacionamento;
+  - vocabulário e cenas reconhecíveis;
   - fontes de evidência;
   - alavancas de facilidade;
   - aprovação pelo gate.
@@ -420,6 +519,10 @@ Bloqueia se:
 - o quality gate não estiver aprovado;
 - faltar persona vencedora;
 - faltar tarefas diárias.
+
+### Melhoria recomendada e motivo
+
+A materialização final deve entregar um "brief de público" para a fase posterior: quem é a pessoa, em que situação ela trabalha, quais tarefas pesam, quais canais usa, que linguagem reconhece e quais alavancas de facilidade aparecem. O motivo é aumentar a chance de o pipeline seguinte criar ofertas e criativos com aderência real, em vez de partir de uma descrição genérica de CNAE.
 
 
 ---
@@ -529,9 +632,26 @@ Isso pode rejeitar fontes úteis que não usam os termos esperados ou aceitar si
 
 Para aumentar a capacidade do pipeline de chegar ao final sem perder qualidade, recomenda-se:
 
-1. aumentar a quantidade de resultados por query;
-2. diversificar queries com linguagem mais próxima da dor real;
-3. registrar mais exemplos de fontes rejeitadas por tentativa;
-4. substituir o gate principal baseado em termos por classificação semântica de evidência;
-5. diferenciar claramente fonte de rotina, fonte comercial, fonte genérica de setor e fonte de solução;
-6. manter o bloqueio de qualidade para impedir avanço com evidência fraca.
+1. manter as 10 etapas atuais, mas melhorar o contrato de cada uma para procurar comportamento comercial futuro, não só ocupação;
+2. tratar o CNAE como volume e auditoria, nunca como público final;
+3. gerar personas como situações reais de MEI/autônomo, com canal, cobrança, aquisição e rotina;
+4. pontuar a persona vencedora por utilidade para pesquisa e por potencial de alimentar criativos futuros;
+5. diversificar queries com linguagem natural, Brasil-first, incluindo rotina, dúvidas, atendimento, WhatsApp/Instagram, cobrança, agenda e aquisição;
+6. aumentar a quantidade de resultados por query quando o custo operacional permitir;
+7. registrar mais exemplos de fontes rejeitadas por tentativa, com motivo de negócio claro;
+8. substituir o gate principal baseado em termos por classificação semântica de evidência;
+9. diferenciar claramente fonte de rotina, fonte comercial, fonte genérica de setor, fonte social/comunitária pública e fonte de solução;
+10. manter o bloqueio de qualidade para impedir avanço com evidência fraca;
+11. materializar o resultado final como brief de público para a fase posterior de hipótese, oferta e campanha, sem gerar promessa comercial dentro deste pipeline.
+
+## Resumo executivo da melhoria proposta
+
+Sem alterar a quantidade de etapas, o NichoCNAE v3 deve evoluir para entregar um insumo de marketing mais forte:
+
+- de **CNAE fiscal** para **público executor real**;
+- de **persona genérica** para **situação comportamental reconhecível**;
+- de **busca literal** para **pesquisa Brasil-first por rotina, canal, cobrança e aquisição**;
+- de **fonte com palavras certas** para **evidência semântica de trabalho real**;
+- de **tarefas isoladas** para **mapa de rotina que sustenta produto, criativo e promessa futura**.
+
+O ganho esperado é aumentar a taxa de materializações úteis sem reduzir o rigor do pipeline. O pipeline continua bloqueando evidência fraca, mas passa a procurar melhor as evidências que realmente importam para vender depois: esforço recorrente, facilidade desejada, linguagem do público e contexto comercial cotidiano do MEI/autônomo.

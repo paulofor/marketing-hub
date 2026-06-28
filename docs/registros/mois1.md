@@ -1943,3 +1943,9 @@ Arquivos principais:
 - Ajustada a etapa `product-understanding` do worker de biblioteca de páginas MOIS para chamar OpenAI Responses Flex quando houver chave configurada, preservando request bruto, response bruto, texto final extraído, modelo e tokens no contrato de auditoria enviado ao backend.
 - Ajustada a tela do dossiê para exibir request enviado à OpenAI, response recebido da OpenAI em JSON colapsável, texto final extraído e métricas de modelo/tokens.
 - Causa-raiz: a etapa ainda podia executar em modo local sem gerar interação OpenAI, então a auditoria técnica não recebia os dados exigidos para diagnóstico e rastreabilidade comercial.
+
+## 2026-06-28 — Request visível junto do response no dossiê MOIS v1
+
+- Diagnosticado que a tela mostrava a response da OpenAI, mas o card mais recente ficava sem request porque request e response são persistidos em linhas de auditoria separadas do mesmo job.
+- Causa-raiz tratada: a consulta de situação devolvia cada linha isoladamente, então a linha `CONCLUIDO` usada pela tela não herdava o request registrado antes em `AGUARDANDO_RETORNO_MODULO`.
+- Ajuste aplicado: a consulta de situação agora correlaciona registros por página, etapa e `jobId`, exibindo o request auditado junto da linha de response do mesmo job.

@@ -25,7 +25,11 @@ function parseJson(content?: string | null): JsonValue | null {
 }
 
 function decodeEscapedText(value: string): string {
-  if (!value.includes("\\n") && !value.includes("\\r") && !value.includes("\\t")) {
+  if (
+    !value.includes("\\n") &&
+    !value.includes("\\r") &&
+    !value.includes("\\t")
+  ) {
     return value;
   }
 
@@ -34,6 +38,13 @@ function decodeEscapedText(value: string): string {
     .replace(/\\n/g, "\n")
     .replace(/\\r/g, "\n")
     .replace(/\\t/g, "\t");
+}
+
+function formatJsonPrimitive(value: JsonValue) {
+  if (value === null) return "null";
+  if (typeof value === "string")
+    return JSON.stringify(decodeEscapedText(value));
+  return String(value);
 }
 
 function JsonNode({
@@ -47,24 +58,15 @@ function JsonNode({
   depth?: number;
   initiallyCollapsed?: boolean;
 }) {
-  const spacing = { marginLeft: depth === 0 ? 0 : 12 };
+  const fieldLabel = label ? (
+    <span className="text-primary">{label}: </span>
+  ) : null;
 
   if (value === null || typeof value !== "object") {
-    const isString = typeof value === "string";
-
     return (
-      <div style={spacing} className="small">
-        {label ? <strong>{label}: </strong> : null}
-        {isString ? (
-          <pre
-            className="mb-0 d-inline"
-            style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
-          >
-            {decodeEscapedText(value)}
-          </pre>
-        ) : (
-          <code>{JSON.stringify(value)}</code>
-        )}
+      <div className="font-monospace small py-1">
+        {fieldLabel}
+        <span className="text-break">{formatJsonPrimitive(value)}</span>
       </div>
     );
   }
@@ -73,20 +75,29 @@ function JsonNode({
   const entries = isArray
     ? value.map((item, index) => [String(index), item] as const)
     : Object.entries(value);
+  const itemLabel = isArray
+    ? `${entries.length} item(ns)`
+    : `${entries.length} campo(s)`;
+  const bracketOpen = isArray ? "[" : "{";
+  const bracketClose = isArray ? "]" : "}";
 
   return (
-    <details open={initiallyCollapsed ? depth > 0 : depth < 1} style={spacing}>
-      <summary className="small" style={{ cursor: "pointer" }}>
-        {label ? (
-          <strong>{label}</strong>
-        ) : (
-          <strong>{isArray ? "Array" : "Object"}</strong>
-        )}{" "}
-        ({entries.length})
+    <details
+      className="json-tree-node"
+      open={initiallyCollapsed ? depth > 0 : depth < 2}
+    >
+      <summary
+        className="font-monospace small py-1"
+        style={{ cursor: "pointer" }}
+      >
+        {fieldLabel}
+        <span>{bracketOpen}</span>
+        <span className="text-muted ms-1">{itemLabel}</span>
+        <span className="ms-1">{bracketClose}</span>
       </summary>
-      <div className="mt-1 d-flex flex-column gap-1">
+      <div className="border-start ps-3 ms-2">
         {entries.length === 0 ? (
-          <div className="small text-muted">{isArray ? "[]" : "{}"}</div>
+          <div className="text-muted small py-1">Sem conteúdo.</div>
         ) : (
           entries.map(([key, child]) => (
             <JsonNode
@@ -109,7 +120,10 @@ export default function CollapsibleJsonViewer({
   initiallyCollapsed = false,
   parseAsJson = true,
 }: CollapsibleJsonViewerProps) {
-  const parsed = useMemo(() => (parseAsJson ? parseJson(content) : null), [content, parseAsJson]);
+  const parsed = useMemo(
+    () => (parseAsJson ? parseJson(content) : null),
+    [content, parseAsJson],
+  );
 
   if (!content) {
     return <p className="text-muted small mb-0">{emptyMessage}</p>;
@@ -119,7 +133,11 @@ export default function CollapsibleJsonViewer({
     return (
       <pre
         className="bg-body-tertiary p-3 rounded small mb-0"
-        style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", wordBreak: "break-word" }}
+        style={{
+          whiteSpace: "pre-wrap",
+          overflowWrap: "anywhere",
+          wordBreak: "break-word",
+        }}
       >
         {decodeEscapedText(content)}
       </pre>
@@ -127,7 +145,10 @@ export default function CollapsibleJsonViewer({
   }
 
   return (
-    <div className="bg-body-tertiary rounded p-2" style={{ overflowX: "auto" }}>
+    <div
+      className="bg-body-tertiary border rounded p-2"
+      style={{ maxHeight: "28rem", overflow: "auto" }}
+    >
       <JsonNode value={parsed} initiallyCollapsed={initiallyCollapsed} />
     </div>
   );

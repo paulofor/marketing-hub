@@ -1679,3 +1679,10 @@
 - Correção: `persona-tournament` passou a ler aliases reais da IA, normalizar `dailyTasks` para downstream, pontuar melhor dono-operador/MEI/autônomo e penalizar cargos CLT/retaguarda; `routine-query-planner` passou a ler os mesmos aliases e reforçar MEI/autônomo/dono-operador nas queries.
 - Ajuste de IA: o prompt da etapa `persona-candidate-generator` agora proíbe escolher funcionário CLT/estoquista/retaguarda como persona central e pede nomes com sinal claro de autonomia.
 - Prevenção: adicionados testes cobrindo priorização de dono-operador sobre cargo interno e geração de queries a partir dos aliases reais da IA.
+
+## 2026-06-28 — NichoCNAE v3: diagnóstico e destravamento da etapa 5 por busca curta
+
+- Diagnóstico: a execução do CNAE 4781400 chegou à etapa `source-searcher` com 8 queries planejadas, cada uma retornando resultados brutos, mas todas as fontes foram descartadas antes de formar `foundSources`/`selectedSources`.
+- Causa-raiz: as queries da etapa 5 estavam longas e ruidosas demais para busca pública, e o relatório persistido não mostrava o motivo de descarte de cada fonte, deixando o bloqueio correto sem diagnóstico acionável.
+- Correção: `source-searcher` agora gera variações curtas de busca a partir da query planejada, mantém a busca Brasil/MEI/autônomo, registra `queryVariants`, preserva fontes rejeitadas com `rejectionReason` e continua bloqueando fontes sem URL, duplicadas, comerciais/solução ou com evidência insuficiente.
+- Prevenção: adicionados testes cobrindo busca com query simplificada e auditoria de fontes rejeitadas com motivo explícito.

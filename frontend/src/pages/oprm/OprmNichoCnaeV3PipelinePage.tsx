@@ -165,13 +165,7 @@ function pickSituacaoForJob(
   };
 }
 
-function StageMetric({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
+function StageMetric({ label, value }: { label: string; value: string }) {
   return (
     <div className="border rounded-3 bg-white px-3 py-2">
       <div className="text-muted small">{label}</div>
@@ -185,51 +179,97 @@ const v3Stages = [
     code: "cnae-intake",
     title: "Entrada do CNAE",
     activity: "Lendo o CNAE e abrindo a execução.",
+    resultExplanation: [
+      "Lê cnaeCode e cnaeDescription recebidos do backend.",
+      "Bloqueia avanço se algum desses campos obrigatórios estiver vazio.",
+      "Marca o público como MEI/autônomos não CLT e envia a próxima etapa para geração de personas.",
+    ],
   },
   {
     code: "persona-candidate-generator",
     title: "Geração de personas candidatas",
     activity: "Gerando hipóteses de personas vendáveis.",
+    usesAi: true,
   },
   {
     code: "persona-tournament",
     title: "Torneio de personas",
     activity: "Comparando e priorizando as melhores personas.",
+    resultExplanation: [
+      "Recebe as personas candidatas geradas na etapa anterior.",
+      "Calcula: dores operacionais × 3 + tarefas diárias × 2 + sinais de compra × 1.",
+      "Ordena pelo maior score e usa o nome como desempate; a primeira vira a persona vencedora.",
+    ],
   },
   {
     code: "routine-query-planner",
     title: "Planejamento de buscas da rotina",
     activity: "Planejando buscas sobre rotina e tarefas reais.",
+    resultExplanation: [
+      "Usa a persona vencedora como foco da investigação.",
+      "Transforma tarefas, dores e sinais de compra em consultas de busca priorizadas.",
+      "Limita o plano a até 8 consultas e define critérios para aceitar ou descartar fontes.",
+    ],
   },
   {
     code: "source-searcher",
     title: "Busca de fontes",
     activity: "Procurando fontes úteis para entender a rotina.",
+    resultExplanation: [
+      "Verifica se a entrada já trouxe foundSources ou selectedSources reais.",
+      "Se existir fonte, libera a coleta; se não existir, bloqueia avanço para evitar resultado inventado.",
+      "Registra a quantidade de fontes e o motivo da decisão.",
+    ],
   },
   {
     code: "source-fetcher",
     title: "Coleta de fontes",
     activity: "Coletando conteúdos das fontes selecionadas.",
+    resultExplanation: [
+      "Recebe selectedSources ou foundSources.",
+      "Converte cada fonte em snapshot auditável com URL, título, trecho de evidência, tipo e relevância.",
+      "Falha se nenhuma fonte conseguir virar evidência útil.",
+    ],
   },
   {
     code: "routine-signal-extractor",
     title: "Extração de sinais da rotina",
     activity: "Extraindo dores, esforço e tarefas recorrentes.",
+    resultExplanation: [
+      "Lê os snapshots coletados e preserva a URL e o texto de evidência.",
+      "Usa o próprio trecho como tarefa da rotina, limitado a 160 caracteres.",
+      "Classifica dor e sinal de compra por palavras observáveis como erro, retrabalho, tempo, controle, sistema, software, planilha, consultoria ou curso.",
+    ],
   },
   {
     code: "daily-tasks-synthesizer",
     title: "Síntese de tarefas diárias",
     activity: "Organizando tarefas diárias em padrões claros.",
+    resultExplanation: [
+      "Recebe os sinais de rotina extraídos das evidências.",
+      "Monta uma tarefa diária com tarefa, dor, sinal de compra, evidência e fonte.",
+      "Traduz cada dor em uma alavanca de facilidade: economizar tempo, reduzir erro/retrabalho, simplificar controle ou reduzir esforço percebido.",
+    ],
   },
   {
     code: "quality-gate",
     title: "Quality gate",
     activity: "Validando qualidade antes de materializar.",
+    resultExplanation: [
+      "Conta as tarefas diárias sintetizadas.",
+      "Aprova somente se houver pelo menos 2 tarefas e ao menos uma fonte rastreável.",
+      "Se reprovar, bloqueia a materialização e recomenda voltar para busca de fontes.",
+    ],
   },
   {
     code: "persona-routine-materializer",
     title: "Materialização de persona e rotina",
     activity: "Montando a persona e a rotina final para uso comercial.",
+    resultExplanation: [
+      "Só executa se o quality gate estiver aprovado.",
+      "Combina persona vencedora e tarefas diárias em um perfil materializado.",
+      "Consolida dores, sinais de compra, fontes e alavancas de facilidade para o backend persistir como candidato de nicho.",
+    ],
   },
 ];
 
@@ -471,6 +511,14 @@ export default function OprmNichoCnaeV3PipelinePage() {
                         <span className="badge text-bg-primary">
                           {index + 1}
                         </span>
+                        {stage.usesAi ? (
+                          <span
+                            className="badge rounded-pill text-bg-dark"
+                            title="Etapa com uso de IA"
+                          >
+                            🤖 IA
+                          </span>
+                        ) : null}
                         {situacao ? (
                           <span className="badge rounded-pill text-bg-info">
                             Auditoria registrada
@@ -493,6 +541,18 @@ export default function OprmNichoCnaeV3PipelinePage() {
                         ? stage.activity
                         : "Ainda não chegou nesta etapa."}
                     </p>
+                    {stage.resultExplanation ? (
+                      <div className="alert alert-primary-subtle border border-primary-subtle py-2 px-3 mb-3">
+                        <div className="small fw-semibold mb-1">
+                          Como esta etapa chega no resultado
+                        </div>
+                        <ul className="small mb-0 ps-3">
+                          {stage.resultExplanation.map((item) => (
+                            <li key={item}>{item}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : null}
                     {stageProgress || situacao ? (
                       <div className="d-flex flex-column gap-3">
                         <div className="row g-2">

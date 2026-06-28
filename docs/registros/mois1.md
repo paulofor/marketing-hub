@@ -1904,3 +1904,11 @@ Arquivos principais:
 - Criado endpoint interno `POST /api/internal/moissaleslibraryworker/dossieproduto/v1/{etapa}/stage-executions/{idExterno}/situacao` para consultar auditorias existentes por etapa, identificador externo e lista de status.
 - Adicionada coluna `status` em `pipeline_dossieproduto`, com preenchimento nas novas auditorias e backfill dos registros existentes por request/response/erro.
 - Atualizado o Swagger canônico do pipeline MOIS dossiê v1 com o contrato de entrada e resposta da consulta.
+
+## 2026-06-27 21:56:47 UTC-3
+- ajustado o pipeline `dossieproduto.v1` do `mois-sales-library-worker` para transportar auditoria bruta de chamadas OpenAI no resultado da etapa.
+- causa-raiz tratada: o runner só enviava ao backend o input da etapa e a saída funcional consolidada, então uma etapa futura com ChatGPT poderia perder o request exato enviado à OpenAI e a resposta exata recebida.
+- registro do que foi feito: `StageResult` agora aceita `OpenAiInteraction`; quando existir interação OpenAI, o runner chama `recebeRequest` com o request bruto e `recebeResponse` com a response bruta, preservando tokens, custo, modelo e erro.
+- documentos lidos para tratar a situação:
+  - AGENTS.md
+  - mois-sales-library-worker/AGENTS.md

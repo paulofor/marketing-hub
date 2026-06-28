@@ -57,8 +57,12 @@ public class DossierV1Runner {
             backendClient.recebeRequest(stageName, job.idExterno(), job.jobId(),
                     new DossierRecebeRequestRequest(String.valueOf(job.input()), "mois-sales-library-worker", null, null));
             StageResult result = pipelineWorker.execute(job.toStageContext());
-            backendClient.recebeResponse(stageName, job.idExterno(), job.jobId(),
-                    DossierRecebeResponseRequest.success(backendClient.responseFrom(result)));
+            if (result.hasOpenAiInteractions()) {
+                registrarInteracoesOpenAi(stageName, job, result);
+            } else {
+                backendClient.recebeResponse(stageName, job.idExterno(), job.jobId(),
+                        DossierRecebeResponseRequest.success(backendClient.responseFrom(result)));
+            }
             log.info("MOIS dossie v1 job completed. stageName={}, idExterno={}, jobId={}, status={}",
                     stageName, job.idExterno(), job.jobId(), result.status());
         } catch (RuntimeException ex) {
@@ -66,6 +70,16 @@ public class DossierV1Runner {
                     stageName, job.idExterno(), job.jobId(), ex.getClass().getName(), ex.getMessage(), ex);
             backendClient.recebeResponse(stageName, job.idExterno(), job.jobId(),
                     DossierRecebeResponseRequest.failure(ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage()));
+        }
+    }
+
+    /** Envia ao backend exatamente o request e a response brutos usados em chamadas OpenAI da etapa. */
+    private void registrarInteracoesOpenAi(String stageName, DossierPendingJob job, StageResult result) {
+        for (StageResult.OpenAiInteraction interaction : result.openAiInteractions()) {
+            backendClient.recebeRequest(stageName, job.idExterno(), job.jobId(),
+                    new DossierRecebeRequestRequest(interaction.rawRequestSent(), "openai", null, null));
+            backendClient.recebeResponse(stageName, job.idExterno(), job.jobId(),
+                    DossierRecebeResponseRequest.openAi(interaction));
         }
     }
 }

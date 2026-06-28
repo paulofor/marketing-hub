@@ -427,6 +427,51 @@ class FacebookCampaignServiceTest {
     }
 
     @Test
+    // Garante que label comercial de botao nao seja enviado como enum tecnico da Meta.
+    void normalizesCommercialCallToActionLabelBeforeCreatingAdCreative() throws Exception {
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"dailyBudget\":25.0,\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"" + imageUrl + "\",\"description\":\"Desc\",\"cta\":\"Abrir a planilha de evidências\",\"destinationUrl\":\"https://exp.example/landing\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("[]")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(defaultManualTargetingPackageResponse());
+        facebook.enqueueResponse(new MockResponse().setBody("{\"images\":{\"uploaded\":{\"hash\":\"hash-preloaded\"}}}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"10\"}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"20\"}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"30\"}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"40\"}")
+            .addHeader("Content-Type", "application/json"));
+
+        service.createCampaignsFromExperiments();
+
+        takeBackendRequest("experiments ready");
+        takeBackendRequest("creatives ready");
+        takeBackendRequestMatching(
+            "playbook request",
+            request -> "/api/experiments/1/adset-playbook".equals(request.getPath())
+                && "GET".equals(request.getMethod())
+        );
+        takeBackendRequestMatching(
+            "manual targeting package request",
+            request -> "/api/facebook-adsets/experiments/1/targeting-package".equals(request.getPath())
+                && "GET".equals(request.getMethod())
+        );
+        takeFacebookRequest("facebook campaign");
+        takeFacebookRequest("facebook ad set");
+        RecordedRequest creativeRequest = takeFacebookRequest("facebook creative");
+        JsonNode creativePayload = objectMapper.readTree(creativeRequest.getBody().inputStream());
+        JsonNode callToAction = creativePayload.get("object_story_spec")
+            .get("link_data")
+            .get("call_to_action");
+        assertEquals("LEARN_MORE", callToAction.get("type").asText());
+    }
+
+    @Test
     // Garante que a ausência de limites da Meta gera aviso, mas não bloqueia teste controlado.
     void continuesCampaignCreationWhenReachBoundsAreUnavailable() throws Exception {
         reachEstimateResponseBody = "{\"data\":[{\"users\":1234}]}";

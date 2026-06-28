@@ -163,6 +163,7 @@ O cartão também lista itens operacionais que não travam o worker, mas devem s
    - se existir vínculo válido, reutilizar diretamente o `meta_image_hash` no payload do anúncio;
    - se não existir, realizar upload para a Meta em `/adimages` por **multipart/bytes** (`source`/arquivo e `filename`), capturar o `image_hash` retornado e persistir o mapeamento para reuso futuro;
    - criar o ad creative usando `image_hash`; o payload final do criativo não deve usar `picture`/URL quando houver imagem aprovada.
+   - `call_to_action.type` deve ser normalizado pelo `facebook-ads-worker` para enum técnico aceito pela Meta antes do envio. Texto comercial do botão, como "Abrir a planilha de evidências", não pode ser enviado diretamente nesse campo; deve virar um tipo técnico como `LEARN_MORE`, `SIGN_UP` ou outro enum permitido.
    - **invariante operacional obrigatório**: é proibido usar fallback de publicação por `url` externa em `/adimages` ou por `picture` no criativo para contornar falhas de upload. Se o worker não conseguir baixar a imagem, enviar bytes ou obter `image_hash`, a publicação deve falhar de forma explícita para correção da causa-raiz.
    - **invariante de eficiência**: deduplicação por conteúdo de imagem é obrigatória para reduzir custo, latência e risco de variação acidental entre anúncios com o mesmo asset.
 

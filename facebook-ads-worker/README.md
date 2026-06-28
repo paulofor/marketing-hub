@@ -210,7 +210,11 @@ O fluxo automatizado cria toda a hierarquia necessária para veiculação:
    download da imagem (`error_subcode = 3858258`) em fluxo legado, o worker só
    pode recuperar a publicação baixando a imagem e enviando bytes para obter
    `image_hash`, mantendo retentativas de criação até 3 tentativas totais antes
-   de marcar a publicação como falha definitiva.
+   de marcar a publicação como falha definitiva. O campo
+   `call_to_action.type` deve receber somente enum técnico aceito pela Meta
+   (por exemplo, `LEARN_MORE`, `SIGN_UP` ou `SHOP_NOW`); textos comerciais de
+   botão vindos do criativo são normalizados antes do envio e nunca devem ser
+   enviados como tipo da CTA.
 6. **Anúncio** (`POST /ads`) que referencia o conjunto e o criativo recém
    criados, já em `ACTIVE`, deixando somente a campanha pausada para ativação
    manual pelo time operacional no Gerenciador de Anúncios.

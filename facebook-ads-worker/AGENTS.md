@@ -64,6 +64,9 @@
 - Após a publicação completa da campanha/ad set/criativo/anúncio na Meta, o worker deve confirmar
   sucesso ao backend em `POST /api/facebook-campaigns` com `status=ACTIVE`, permitindo que o backend
   atualize `facebook_ads_campaign.status` e `experiment.status` no mesmo contrato.
+- Na criação de criativos (`POST /adcreatives`), `call_to_action.type` deve ser sempre um enum técnico aceito pela Meta
+  (ex.: `LEARN_MORE`, `SIGN_UP`, `SHOP_NOW`) e nunca o texto comercial do botão. Labels comerciais vindos do criativo
+  devem ser normalizados antes do envio, usando fallback seguro (`LEARN_MORE` para destino web e `SIGN_UP` para lead form).
 - Em testes com `MockWebServer`, utilize `takeRequest` com timeout e valide o retorno para evitar
   travamentos silenciosos no pipeline. Enfileire respostas para cada chamada esperada para
   não bloquear o `WebClient`.

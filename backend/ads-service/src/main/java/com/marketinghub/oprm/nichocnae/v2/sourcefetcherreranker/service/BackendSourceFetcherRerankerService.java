@@ -12,6 +12,7 @@ import com.marketinghub.oprm.nichocnae.v2.sourcefetcherreranker.service.failStag
 import com.marketinghub.oprm.nichocnae.v2.sourcefetcherreranker.service.failStageExecution.SourceFetcherRerankerFailureResponse;
 import com.marketinghub.oprm.nichocnae.v2.sourcefetcherreranker.service.pending.SourceFetcherRerankerPendingResponse;
 import com.marketinghub.oprm.nichocnae.v2.service.openaiinteraction.OpenAiInteractionAuditRequest;
+import com.marketinghub.oprm.nichocnae.v2.service.openaiinteraction.OpenAiInteractionCostCalculator;
 import com.marketinghub.repository.jpa.oprm.cnae.OprmNicheCandidateRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.v2.OprmNichoCnaeV2OpenAiInteractionRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.v2.OprmNichoCnaeV2StageExecutionRepository;
@@ -229,7 +230,7 @@ public class BackendSourceFetcherRerankerService {
         entity.setInputTokens(request.inputTokens());
         entity.setOutputTokens(request.outputTokens());
         entity.setTotalTokens(request.totalTokens());
-        entity.setCostUsd(request.costUsd());
+        entity.setCostUsd(OpenAiInteractionCostCalculator.resolveCostUsd(request));
         entity.setOpenAiResponseId(request.openAiResponseId());
         entity.setRawRequest(request.rawRequest());
         entity.setRawResponse(request.rawResponse());

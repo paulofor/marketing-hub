@@ -1697,3 +1697,5 @@
 
 - Implementadas melhorias recomendadas em todas as etapas do executor `oprm-coletor-mei` para o pipeline NichoCNAE v3.
 - O fluxo agora reforça CNAE como ponto estatístico, pontua persona por canais e utilidade comercial futura, gera queries mais naturais Brasil-first, separa busca ampla de classificação de evidência, preserva snapshots com situação/canal, diferencia dor operacional de oportunidade futura, sintetiza blocos de rotina, endurece o quality gate por contexto comercial cotidiano e materializa um brief de público sem criar oferta prematura.
+
+- 2026-06-28: corrigido o custo vazio das auditorias de IA no relatório OPRM NichoCNAE; o backend agora calcula `cost_usd` pelo modelo e tokens recebidos nas interações OpenAI, com preço oficial do `gpt-5.2` registrado no catálogo `openai_model` para evitar depender do custo enviado pelo executor.

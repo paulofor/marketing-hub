@@ -12,6 +12,7 @@ import com.marketinghub.oprm.nichocnae.v2.commercialevidencegate.service.failSta
 import com.marketinghub.oprm.nichocnae.v2.commercialevidencegate.service.failStageExecution.CommercialEvidenceGateFailureResponse;
 import com.marketinghub.oprm.nichocnae.v2.commercialevidencegate.service.pending.CommercialEvidenceGatePendingResponse;
 import com.marketinghub.oprm.nichocnae.v2.service.openaiinteraction.OpenAiInteractionAuditRequest;
+import com.marketinghub.oprm.nichocnae.v2.service.openaiinteraction.OpenAiInteractionCostCalculator;
 import com.marketinghub.repository.jpa.oprm.cnae.OprmNicheCandidateRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.v2.OprmNichoCnaeV2OpenAiInteractionRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.v2.OprmNichoCnaeV2StageExecutionRepository;
@@ -216,7 +217,7 @@ public class BackendCommercialEvidenceGateService {
         entity.setInputTokens(request.inputTokens());
         entity.setOutputTokens(request.outputTokens());
         entity.setTotalTokens(request.totalTokens());
-        entity.setCostUsd(request.costUsd());
+        entity.setCostUsd(OpenAiInteractionCostCalculator.resolveCostUsd(request));
         entity.setOpenAiResponseId(request.openAiResponseId());
         entity.setRawRequest(request.rawRequest());
         entity.setRawResponse(request.rawResponse());

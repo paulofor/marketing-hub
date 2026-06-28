@@ -1615,3 +1615,10 @@
 
 - Criado endpoint interno `POST /api/internal/oprmcoletormei/nichocnae/v1/<etapa>/stage-executions/{idExterno}/situacao` para consultar `pipeline_nichocnae` por etapa, identificador externo e lista de status, retornando registros ordenados por `data_hora` decrescente.
 - Adicionada coluna `status` à auditoria `pipeline_nichocnae`, preenchida nos callbacks v3 como `AGUARDANDO_MODULO`, `CONCLUIDO` ou `FALHA`, permitindo filtro direto no banco em vez de inferência por payload.
+
+## 2026-06-28 — NichoCNAE v3: revisão do source-searcher contra avanço sem fontes
+
+- Diagnóstico: os logs do `oprm-coletor-mei` mostraram falha recorrente em `source-fetcher` porque a etapa anterior concluía como `FONTES_ENCONTRADAS`, mas não entregava `selectedSources` nem `foundSources`.
+- Causa-raiz: contrato incompleto entre `source-searcher` e `source-fetcher`; o pipeline avançava com queries planejadas como se fossem fontes reais.
+- Correção: `source-searcher` agora só libera `nextStageCode=source-fetcher` quando recebe fontes reais auditáveis; sem fontes, conclui bloqueado com `FONTES_NAO_COLETADAS`, motivo persistível e etapa recomendada de correção.
+- Prevenção: adicionado teste unitário cobrindo bloqueio sem fontes e avanço apenas com `foundSources` reais.

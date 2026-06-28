@@ -1640,3 +1640,9 @@
 - Causa-raiz encontrada: a etapa final `persona-routine-materializer` ainda concluía com payload técnico mínimo, sem materializar persona, rotina, dores, evidências e candidato funcional para persistência canônica no backend.
 - Correção: `persona-routine-materializer` agora exige aprovação do `quality-gate`, `winnerPersona` e `dailyTasks`, e entrega `materializedProfile`, `marketNicheCandidate` e prontidão explícita para o backend persistir `market_niche` e `market_niche_enrichment_profile`.
 - Prevenção de recorrência: adicionado teste unitário cobrindo materialização aprovada e bloqueio quando o `quality-gate` não aprovou.
+
+## 2026-06-28 — OPRM: desativação da rotina legada de importação CNPJ/CNAE
+
+- Causa-raiz confirmada: o `oprm-coletor-mei` mantinha a rotina agendada de importação OPRM CNPJ/CNAE ativa por padrão (`OPRM_MARKET_IMPORT_SCHEDULE_ENABLED:true`), concorrendo com o executor NichoCNAE v3 no mesmo módulo.
+- Correção: o padrão da rotina foi alterado para desativado (`false`) e a finalização automática de runs antigas passou a respeitar a mesma flag.
+- Prevenção de recorrência: adicionado teste de configuração para garantir que a rotina antiga não volte a iniciar automaticamente por padrão e ajustado o Surefire do módulo para executar testes JUnit 5.

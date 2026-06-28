@@ -200,6 +200,7 @@ Evitar fechamento prematuro de `import run` que destrói a totalização de mark
 ## Regra obrigatória — ciclo 3 com snapshot canônico fixo para operação
 
 - Para operação atual da ingestão OPRM CNPJ/CNAE, o ciclo vigente é o **ciclo 3**.
+- A rotina agendada de importação OPRM CNPJ/CNAE deve permanecer desativada por padrão no `oprm-coletor-mei`; qualquer nova execução precisa de decisão operacional explícita e ativação consciente por configuração.
 - O ciclo 3 deve **apenas cadastrar emails associados a CNAEs**, usando os arquivos `Estabelecimentos*.zip`; ele não deve recalcular market size, score, enriquecimento ou materializar nichos.
 - No ciclo 3, o `snapshotDate` canônico deve permanecer **fixo em `2026-06-14`**.
 - É proibido alterar automaticamente a data do snapshot para diretórios mais novos durante execução agendada ou manual sem decisão explícita do usuário.
@@ -207,6 +208,7 @@ Evitar fechamento prematuro de `import run` que destrói a totalização de mark
 
 ## Critério de efetividade — ciclo 3 com snapshot fixo
 
+- O valor padrão de `OPRM_MARKET_IMPORT_SCHEDULE_ENABLED` deve ser `false`, e a finalização automática de runs antigas deve respeitar a mesma flag.
 - Logs de execução devem mostrar explicitamente `ciclo=3`, `snapshotDate=2026-06-14` e a `sourceUrl` usada.
 - A base de download deve ser explicitamente `https://dados-abertos-rf-cnpj.casadosdados.com.br/arquivos/2026-06-14/` enquanto o ciclo 3 estiver vigente.
 - Antes de iniciar a execução agendada/manual, deve haver validação de acesso HTTP (ex.: `HEAD`) para os arquivos de referência do snapshot (mínimo: `Estabelecimentos0.zip` e `Estabelecimentos1.zip`) com retorno `200`.

@@ -18,4 +18,7 @@ public interface PipelineDossieProdutoRepository extends JpaRepository<PipelineD
     /** Lista auditorias filtradas por produto, etapa e lista de status, trazendo as mais recentes primeiro. */
     List<PipelineDossieProduto> findByIdExternoAndCodigoEtapaAndStatusInOrderByDataHoraDescIdDesc(
             String idExterno, String codigoEtapa, List<String> status);
+
+    /** Lista auditorias de um produto e versão para enriquecer a etapa de síntese final. */
+    List<PipelineDossieProduto> findByIdExternoAndVersaoPipelineOrderByDataHoraAscIdAsc(String idExterno, String versaoPipeline);
 }

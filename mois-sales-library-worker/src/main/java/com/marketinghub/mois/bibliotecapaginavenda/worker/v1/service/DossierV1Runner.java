@@ -57,7 +57,10 @@ public class DossierV1Runner {
             backendClient.recebeRequest(stageName, job.idExterno(), job.jobId(),
                     new DossierRecebeRequestRequest(String.valueOf(job.input()), "mois-sales-library-worker", null, null));
             StageResult result = pipelineWorker.execute(job.toStageContext());
-            if (result.hasOpenAiInteractions()) {
+            if (result.errorMessage() != null && !result.errorMessage().isBlank()) {
+                backendClient.recebeResponse(stageName, job.idExterno(), job.jobId(),
+                        DossierRecebeResponseRequest.failure(result.errorMessage()));
+            } else if (result.hasOpenAiInteractions()) {
                 registrarInteracoesOpenAi(stageName, job, result);
             } else {
                 backendClient.recebeResponse(stageName, job.idExterno(), job.jobId(),

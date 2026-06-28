@@ -14,12 +14,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.mock.http.client.MockClientHttpRequest;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 
@@ -35,11 +37,17 @@ class OpenAiPersonaCandidateGenerationClientTest {
                 {\"candidatePersonas\":[{\"name\":\"p1\"},{\"name\":\"p2\"},{\"name\":\"p3\"}],\"personaSummary\":\"p1;p2;p3\"}
                 """.trim();
         String response = new ObjectMapper().writeValueAsString(Map.of("output_text", modelJson));
+        AtomicReference<String> backendRequestAudit = new AtomicReference<>();
+        AtomicReference<String> openAiRequest = new AtomicReference<>();
         server.expect(once(), requestTo(URI.create("http://backend.test/api/internal/oprmcoletormei/nichocnae/v3/persona-candidate-generator/stage-executions/4781400/job-1/recebeRequest")))
                 .andExpect(jsonPath("$.plataforma").value("OPENAI_RESPONSES_API"))
                 .andExpect(jsonPath("$.request").exists())
                 .andExpect(jsonPath("$.prompt").exists())
                 .andExpect(jsonPath("$.schema").exists())
+                .andExpect(req -> backendRequestAudit.set(new ObjectMapper()
+                        .readTree(((MockClientHttpRequest) req).getBodyAsString())
+                        .get("request")
+                        .asText()))
                 .andRespond(withSuccess("{}", MediaType.APPLICATION_JSON));
         server.expect(once(), requestTo(URI.create("https://api.openai.com/v1/responses")))
                 .andExpect(jsonPath("$.model").value("gpt-test"))
@@ -47,9 +55,10 @@ class OpenAiPersonaCandidateGenerationClientTest {
                 .andExpect(jsonPath("$.text.format.type").value("json_schema"))
                 .andExpect(jsonPath("$.text.format.strict").value(true))
                 .andExpect(jsonPath("$.text.format.schema.required[6]").value("candidatePersonas"))
+                .andExpect(req -> openAiRequest.set(((MockClientHttpRequest) req).getBodyAsString()))
                 .andRespond(withSuccess(response, MediaType.APPLICATION_JSON));
         server.expect(once(), requestTo(URI.create("http://backend.test/api/internal/oprmcoletormei/nichocnae/v3/persona-candidate-generator/stage-executions/4781400/job-1/recebeResponse")))
-                .andExpect(jsonPath("$.response").exists())
+                .andExpect(jsonPath("$.response").value(response))
                 .andExpect(jsonPath("$.modelo").value("gpt-test"))
                 .andRespond(withSuccess("{}", MediaType.APPLICATION_JSON));
         OpenAiPersonaCandidateGenerationClient client = new OpenAiPersonaCandidateGenerationClient(
@@ -68,6 +77,7 @@ class OpenAiPersonaCandidateGenerationClientTest {
                 Map.of("cnaeCode", "4781400")));
 
         assertThat((List<?>) output.get("candidatePersonas")).hasSize(3);
+        assertThat(backendRequestAudit.get()).isEqualTo(openAiRequest.get());
         assertThat(logs.getOut())
                 .contains("Request OpenAI persona-candidate-generator")
                 .contains("Response OpenAI persona-candidate-generator")
@@ -118,7 +128,7 @@ class OpenAiPersonaCandidateGenerationClientTest {
                         .body(errorBody));
         server.expect(once(), requestTo(URI.create("http://backend.test/api/internal/oprmcoletormei/nichocnae/v3/persona-candidate-generator/stage-executions/4781400/job-err/recebeResponse")))
                 .andExpect(jsonPath("$.descricaoErro").exists())
-                .andExpect(jsonPath("$.response").exists())
+                .andExpect(jsonPath("$.response").value(errorBody))
                 .andRespond(withSuccess("{}", MediaType.APPLICATION_JSON));
         OpenAiPersonaCandidateGenerationClient client = new OpenAiPersonaCandidateGenerationClient(
                 builder.build(),

@@ -1622,3 +1622,9 @@
 - Causa-raiz: contrato incompleto entre `source-searcher` e `source-fetcher`; o pipeline avançava com queries planejadas como se fossem fontes reais.
 - Correção: `source-searcher` agora só libera `nextStageCode=source-fetcher` quando recebe fontes reais auditáveis; sem fontes, conclui bloqueado com `FONTES_NAO_COLETADAS`, motivo persistível e etapa recomendada de correção.
 - Prevenção: adicionado teste unitário cobrindo bloqueio sem fontes e avanço apenas com `foundSources` reais.
+
+## 2026-06-28 — NichoCNAE v3: auditoria OpenAI bruta nos callbacks
+
+- Ajustada a etapa `persona-candidate-generator` para serializar uma única vez o body enviado à OpenAI e reutilizar exatamente esse conteúdo no callback `recebeRequest`.
+- Ajustado o callback `recebeResponse` para enviar exatamente o corpo bruto retornado pela OpenAI, incluindo respostas HTTP de erro, antes de qualquer extração ou transformação operacional.
+- Prevenção de recorrência: teste da etapa valida que o request auditado no backend é idêntico ao body enviado para a OpenAI e que o response auditado é o corpo bruto recebido do provedor.

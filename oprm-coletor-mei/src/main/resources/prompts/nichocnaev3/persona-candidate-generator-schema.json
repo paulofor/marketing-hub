@@ -15,15 +15,19 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["id", "name", "priorityScore", "description", "operationalPains", "dailyTasks", "buyingSignals", "validationNeed"],
+        "required": ["id", "name", "priorityScore", "description", "routineContext", "dailyFlow", "recurringTasks", "interactions", "toolsAndRecords", "routineDecisions", "routineVariations", "validationNeed"],
         "properties": {
           "id": { "type": "string" },
           "name": { "type": "string" },
           "priorityScore": { "type": "integer", "minimum": 0, "maximum": 100 },
           "description": { "type": "string" },
-          "operationalPains": { "type": "array", "items": { "type": "string" } },
-          "dailyTasks": { "type": "array", "items": { "type": "string" } },
-          "buyingSignals": { "type": "array", "items": { "type": "string" } },
+          "routineContext": { "type": "string" },
+          "dailyFlow": { "type": "array", "items": { "type": "string" } },
+          "recurringTasks": { "type": "array", "items": { "type": "string" } },
+          "interactions": { "type": "array", "items": { "type": "string" } },
+          "toolsAndRecords": { "type": "array", "items": { "type": "string" } },
+          "routineDecisions": { "type": "array", "items": { "type": "string" } },
+          "routineVariations": { "type": "array", "items": { "type": "string" } },
           "validationNeed": { "type": "string" }
         }
       }

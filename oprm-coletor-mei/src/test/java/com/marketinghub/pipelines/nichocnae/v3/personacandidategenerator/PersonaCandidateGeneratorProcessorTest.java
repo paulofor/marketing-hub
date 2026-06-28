@@ -63,9 +63,9 @@ class PersonaCandidateGeneratorProcessorTest {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("personaSummary", "Dono operador; vendedor digital; operação familiar");
         payload.put("candidatePersonas", List.of(
-                Map.of("name", "Dono operador de loja de vestuário", "operationalPains", List.of("falta de tempo"), "dailyTasks", List.of("atender clientes"), "buyingSignals", List.of("procura atalhos")),
-                Map.of("name", "Vendedor digital de vestuário", "operationalPains", List.of("mensagens repetidas"), "dailyTasks", List.of("responder dúvidas"), "buyingSignals", List.of("busca modelo pronto")),
-                Map.of("name", "Operação familiar de vestuário", "operationalPains", List.of("delegação informal"), "dailyTasks", List.of("conferir estoque"), "buyingSignals", List.of("quer previsibilidade"))));
+                Map.of("name", "Dono operador de loja de vestuário", "routineContext", "atua no balcão e acompanha a loja", "recurringTasks", List.of("atender clientes"), "interactions", List.of("clientes e fornecedores")),
+                Map.of("name", "Vendedor digital de vestuário", "routineContext", "atende pedidos por mensagens", "recurringTasks", List.of("responder dúvidas"), "interactions", List.of("clientes no WhatsApp")),
+                Map.of("name", "Operação familiar de vestuário", "routineContext", "divide tarefas entre familiares", "recurringTasks", List.of("conferir estoque"), "interactions", List.of("familiares e clientes"))));
         return payload;
     }
 

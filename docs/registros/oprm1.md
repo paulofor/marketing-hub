@@ -1665,3 +1665,9 @@
 - Causa-raiz confirmada: o `oprm-coletor-mei` mantinha a rotina agendada de importação OPRM CNPJ/CNAE ativa por padrão (`OPRM_MARKET_IMPORT_SCHEDULE_ENABLED:true`), concorrendo com o executor NichoCNAE v3 no mesmo módulo.
 - Correção: o padrão da rotina foi alterado para desativado (`false`) e a finalização automática de runs antigas passou a respeitar a mesma flag.
 - Prevenção de recorrência: adicionado teste de configuração para garantir que a rotina antiga não volte a iniciar automaticamente por padrão e ajustado o Surefire do módulo para executar testes JUnit 5.
+
+## 2026-06-28 — NichoCNAE v3: prompt da etapa 2 focado em rotina neutra
+
+- Ajustado o prompt da etapa `persona-candidate-generator` para orientar a OpenAI a produzir uma fotografia neutra do dia a dia da persona, sem antecipar dor, oferta, produto, mecanismo, solução ou linguagem comercial.
+- Ajustado o schema da etapa para trocar campos de interpretação comercial por campos operacionais: contexto de atuação, fluxo do dia, tarefas recorrentes, interações, ferramentas/registros, decisões pequenas e variações de rotina.
+- Prevenção: o builder e o teste funcional da etapa foram alinhados para manter a etapa 2 restrita ao entendimento da rotina antes das etapas posteriores de análise de dor/oportunidade.

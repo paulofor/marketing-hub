@@ -28,6 +28,7 @@ class BackendNichoCnaeV3PipelineSituacaoServiceTest {
     @Test
     void searchShouldFilterByStageExternalIdAndStatuses() {
         PipelineNichoCnae record = new PipelineNichoCnae();
+        record.setId(1L);
         record.setIdExterno("4781400");
         record.setCodigoEtapa("source-searcher");
         record.setStatus("CONCLUIDO");
@@ -51,5 +52,35 @@ class BackendNichoCnaeV3PipelineSituacaoServiceTest {
                 org.mockito.ArgumentMatchers.eq("4781400"),
                 statusCaptor.capture());
         assertThat(statusCaptor.getValue()).containsExactly("CONCLUIDO", "FALHA");
+    }
+
+    /** Deve retornar request e response como eventos separados para a tela montar a auditoria real da OpenAI. */
+    @Test
+    void searchShouldPreserveSeparateRequestAndResponseAuditEvents() {
+        PipelineNichoCnae requestRecord = new PipelineNichoCnae();
+        requestRecord.setId(1L);
+        requestRecord.setIdExterno("4781400");
+        requestRecord.setCodigoEtapa("persona-candidate-generator");
+        requestRecord.setStatus("AGUARDANDO_MODULO");
+        requestRecord.setDataHora(Instant.parse("2026-06-27T10:00:00Z"));
+        requestRecord.setJobId("job-1");
+        requestRecord.setRequest("{\"model\":\"gpt-5.2\",\"service_tier\":\"flex\"}");
+        PipelineNichoCnae responseRecord = new PipelineNichoCnae();
+        responseRecord.setId(2L);
+        responseRecord.setIdExterno("4781400");
+        responseRecord.setCodigoEtapa("persona-candidate-generator");
+        responseRecord.setStatus("CONCLUIDO");
+        responseRecord.setDataHora(Instant.parse("2026-06-27T10:01:00Z"));
+        responseRecord.setJobId("job-1");
+        responseRecord.setResponse("{\"status\":\"completed\"}");
+        when(repository.findByCodigoEtapaAndIdExternoAndStatusInOrderByDataHoraDesc(
+                        "persona-candidate-generator", "4781400", List.of("AGUARDANDO_MODULO", "CONCLUIDO")))
+                .thenReturn(List.of(responseRecord, requestRecord));
+
+        var response = service.search("persona-candidate-generator", "4781400", List.of("AGUARDANDO_MODULO", "CONCLUIDO"));
+
+        assertThat(response).hasSize(2);
+        assertThat(response.get(0).response()).isEqualTo("{\"status\":\"completed\"}");
+        assertThat(response.get(1).request()).isEqualTo("{\"model\":\"gpt-5.2\",\"service_tier\":\"flex\"}");
     }
 }

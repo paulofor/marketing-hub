@@ -547,6 +547,15 @@ export default function OprmNichoCnaeV3PipelinePage() {
                             payload={responsePayload}
                           />
                         </div>
+                        <div>
+                          <div className="small fw-semibold mb-1">
+                            Texto extraído do response
+                          </div>
+                          <PayloadSummary
+                            label="texto extraído"
+                            payload={situacao?.respostaFinal}
+                          />
+                        </div>
                         {situacao?.prompt || situacao?.schema ? (
                           <details className="small">
                             <summary className="fw-semibold">

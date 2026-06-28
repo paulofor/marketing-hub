@@ -12,6 +12,7 @@ public record NichoCnaeV3PipelineSituacaoResponse(
         String jobId,
         String request,
         String response,
+        String respostaFinal,
         Long quantidadeTokenEntrada,
         Long quantidadeTokenSaida,
         String modelo,

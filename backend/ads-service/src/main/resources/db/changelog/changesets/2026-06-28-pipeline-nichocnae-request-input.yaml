@@ -1,0 +1,22 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-28-01-pipeline-nichocnae-request-input
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: pipeline_nichocnae
+        - not:
+            - columnExists:
+                tableName: pipeline_nichocnae
+                columnName: request_input
+      changes:
+        - addColumn:
+            tableName: pipeline_nichocnae
+            columns:
+              - column:
+                  name: request_input
+                  type: LONGTEXT
+                  afterColumn: request

@@ -159,6 +159,7 @@ function pickSituacaoForJob(
   return {
     ...responseRecord,
     request: requestRecord?.request ?? responseRecord.request,
+    requestInput: requestRecord?.requestInput ?? responseRecord.requestInput,
     prompt: requestRecord?.prompt ?? responseRecord.prompt,
     schema: requestRecord?.schema ?? responseRecord.schema,
     plataforma: requestRecord?.plataforma ?? responseRecord.plataforma,
@@ -592,6 +593,15 @@ export default function OprmNichoCnaeV3PipelinePage() {
                           <PayloadSummary
                             label="request"
                             payload={requestPayload}
+                          />
+                        </div>
+                        <div>
+                          <div className="small fw-semibold mb-1">
+                            Input extraído do request
+                          </div>
+                          <PayloadSummary
+                            label="input extraído"
+                            payload={situacao?.requestInput}
                           />
                         </div>
                         {errorMessage ? (

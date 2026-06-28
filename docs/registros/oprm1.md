@@ -1,3 +1,9 @@
+## 2026-06-28 — OPRM NichoCNAE v3: input do request OpenAI separado na auditoria
+
+- Separado o campo `input` do request bruto da OpenAI em `pipeline_nichocnae.request_input`, mantendo o request completo para auditoria e oferecendo leitura direta do prompt enviado.
+- A tela do pipeline v3 agora exibe o input extraído em bloco próprio, alinhado ao bloco de texto extraído do response.
+- Prevenção de recorrência: teste unitário cobre extração de `input` textual, `input` estruturado e ausência de campo no request.
+
 ## 2026-06-27 — OPRM NichoCNAE v3: etapa 1 qualifica o CNAE antes da geração de personas
 
 - Corrigida a causa-raiz da entrada da etapa `persona-candidate-generator`: a etapa `cnae-intake` agora nasce com `cnaeCode` e `cnaeDescription` vindos da dimensão canônica de CNAE e devolve esses campos na própria saída funcional.

@@ -8,6 +8,7 @@ export interface OprmNichoCnaeV3Situacao {
   dataHora: string;
   jobId: string | null;
   request: string | null;
+  requestInput: string | null;
   response: string | null;
   respostaFinal: string | null;
   quantidadeTokenEntrada: number | null;

@@ -34,6 +34,7 @@ class BackendNichoCnaeV3PipelineSituacaoServiceTest {
         record.setStatus("CONCLUIDO");
         record.setDataHora(Instant.parse("2026-06-27T10:00:00Z"));
         record.setJobId("job-1");
+        record.setRequestInput("prompt operacional");
         record.setRespostaFinal("{\"persona\":\"dono de loja\"}");
         when(repository.findByCodigoEtapaAndIdExternoAndStatusInOrderByDataHoraDesc(
                         "source-searcher", "4781400", List.of("CONCLUIDO", "FALHA")))
@@ -45,6 +46,7 @@ class BackendNichoCnaeV3PipelineSituacaoServiceTest {
         assertThat(response.getFirst().idExterno()).isEqualTo("4781400");
         assertThat(response.getFirst().codigoEtapa()).isEqualTo("source-searcher");
         assertThat(response.getFirst().status()).isEqualTo("CONCLUIDO");
+        assertThat(response.getFirst().requestInput()).isEqualTo("prompt operacional");
         assertThat(response.getFirst().respostaFinal()).isEqualTo("{\"persona\":\"dono de loja\"}");
         ArgumentCaptor<List<String>> statusCaptor = ArgumentCaptor.forClass(List.class);
         verify(repository).findByCodigoEtapaAndIdExternoAndStatusInOrderByDataHoraDesc(
@@ -65,6 +67,7 @@ class BackendNichoCnaeV3PipelineSituacaoServiceTest {
         requestRecord.setDataHora(Instant.parse("2026-06-27T10:00:00Z"));
         requestRecord.setJobId("job-1");
         requestRecord.setRequest("{\"model\":\"gpt-5.2\",\"service_tier\":\"flex\"}");
+        requestRecord.setRequestInput("# prompt enviado");
         PipelineNichoCnae responseRecord = new PipelineNichoCnae();
         responseRecord.setId(2L);
         responseRecord.setIdExterno("4781400");
@@ -82,5 +85,6 @@ class BackendNichoCnaeV3PipelineSituacaoServiceTest {
         assertThat(response).hasSize(2);
         assertThat(response.get(0).response()).isEqualTo("{\"status\":\"completed\"}");
         assertThat(response.get(1).request()).isEqualTo("{\"model\":\"gpt-5.2\",\"service_tier\":\"flex\"}");
+        assertThat(response.get(1).requestInput()).isEqualTo("# prompt enviado");
     }
 }

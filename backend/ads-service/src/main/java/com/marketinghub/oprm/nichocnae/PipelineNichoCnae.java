@@ -26,6 +26,9 @@ public class PipelineNichoCnae {
     @Column(name = "request", columnDefinition = "LONGTEXT")
     private String request;
 
+    @Column(name = "request_input", columnDefinition = "LONGTEXT")
+    private String requestInput;
+
     @Column(name = "response", columnDefinition = "LONGTEXT")
     private String response;
 

@@ -14,10 +14,22 @@ class SourceFetcherProcessorTest {
     @Test
     void shouldCreateAuditableSourceSnapshots() {
         StageResult result = new SourceFetcherProcessor().process(new StageContext("job", "6", Map.of("selectedSources", List.of(Map.of(
-                "url", "https://exemplo.com/estoque", "title", "Controle de estoque", "snippet", "Gerente perde tempo com controle manual de estoque e retrabalho em planilhas.")))));
+                "url", "https://exemplo.com/estoque",
+                "title", "Controle de estoque",
+                "snippet", "Gerente perde tempo com controle manual de estoque e retrabalho em planilhas.",
+                "sourceIntent", "ROUTINE_EVIDENCE",
+                "routineEvidenceScore", 84,
+                "commercialPageRisk", false,
+                "solutionLanguageRisk", false)))));
 
         assertThat(result.status()).isEqualTo("SNAPSHOTS_COLETADOS");
         assertThat(result.output()).containsEntry("nextStageCode", "routine-signal-extractor");
-        assertThat((List<?>) result.output().get("sourceSnapshots")).hasSize(1);
+        List<?> snapshots = (List<?>) result.output().get("sourceSnapshots");
+        assertThat(snapshots).hasSize(1);
+        Map<?, ?> snapshot = (Map<?, ?>) snapshots.getFirst();
+        assertThat(snapshot.get("sourceIntent")).isEqualTo("ROUTINE_EVIDENCE");
+        assertThat(snapshot.get("routineEvidenceScore")).isEqualTo(84);
+        assertThat(snapshot.get("commercialPageRisk")).isEqualTo(false);
+        assertThat(snapshot.get("solutionLanguageRisk")).isEqualTo(false);
     }
 }

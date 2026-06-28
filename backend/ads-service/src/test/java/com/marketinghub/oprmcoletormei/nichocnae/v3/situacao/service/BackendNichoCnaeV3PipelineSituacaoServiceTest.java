@@ -33,6 +33,7 @@ class BackendNichoCnaeV3PipelineSituacaoServiceTest {
         record.setStatus("CONCLUIDO");
         record.setDataHora(Instant.parse("2026-06-27T10:00:00Z"));
         record.setJobId("job-1");
+        record.setRespostaFinal("{\"persona\":\"dono de loja\"}");
         when(repository.findByCodigoEtapaAndIdExternoAndStatusInOrderByDataHoraDesc(
                         "source-searcher", "4781400", List.of("CONCLUIDO", "FALHA")))
                 .thenReturn(List.of(record));
@@ -43,6 +44,7 @@ class BackendNichoCnaeV3PipelineSituacaoServiceTest {
         assertThat(response.getFirst().idExterno()).isEqualTo("4781400");
         assertThat(response.getFirst().codigoEtapa()).isEqualTo("source-searcher");
         assertThat(response.getFirst().status()).isEqualTo("CONCLUIDO");
+        assertThat(response.getFirst().respostaFinal()).isEqualTo("{\"persona\":\"dono de loja\"}");
         ArgumentCaptor<List<String>> statusCaptor = ArgumentCaptor.forClass(List.class);
         verify(repository).findByCodigoEtapaAndIdExternoAndStatusInOrderByDataHoraDesc(
                 org.mockito.ArgumentMatchers.eq("source-searcher"),

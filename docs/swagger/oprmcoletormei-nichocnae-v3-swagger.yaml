@@ -303,6 +303,10 @@ components:
         response:
           type: string
           nullable: true
+        respostaFinal:
+          type: string
+          nullable: true
+          description: Texto funcional extraído do campo text do response bruto da IA.
         quantidadeTokenEntrada:
           type: integer
           format: int64

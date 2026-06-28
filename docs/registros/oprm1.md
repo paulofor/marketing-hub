@@ -1686,3 +1686,9 @@
 - Causa-raiz: as queries da etapa 5 estavam longas e ruidosas demais para busca pública, e o relatório persistido não mostrava o motivo de descarte de cada fonte, deixando o bloqueio correto sem diagnóstico acionável.
 - Correção: `source-searcher` agora gera variações curtas de busca a partir da query planejada, mantém a busca Brasil/MEI/autônomo, registra `queryVariants`, preserva fontes rejeitadas com `rejectionReason` e continua bloqueando fontes sem URL, duplicadas, comerciais/solução ou com evidência insuficiente.
 - Prevenção: adicionados testes cobrindo busca com query simplificada e auditoria de fontes rejeitadas com motivo explícito.
+
+## 2026-06-28 — NichoCNAE v3: documentação da execução real 4781400
+
+- Atualizado `docs/marketing/pipeline-nichocnae-v3.md` com exemplos reais da execução do CNAE `4781400` na tela `/oprm/cnaes/4781400/pipeline-v3`.
+- Registrado que a execução avançou até `source-searcher` e bloqueou com `FONTES_NAO_COLETADAS`, antes do `quality-gate` formal, porque nenhuma fonte pública qualificada de rotina foi encontrada.
+- Documentados exemplos reais de personas, tarefas planejadas e motivos de rejeição de fontes: URLs duplicadas, evidência de rotina insuficiente e risco comercial/solução.

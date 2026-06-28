@@ -13,7 +13,7 @@ class NichoCnaeV3StageDefinitionsTest {
     /** Confirma que a v3 nasce com o fluxo completo até materialização da rotina da persona. */
     @Test
     void shouldRegisterAllVersionThreeStagesInOrder() {
-        List<String> stages = new NichoCnaeV3StageDefinitions(request -> personaPayload()).all().stream()
+        List<String> stages = new NichoCnaeV3StageDefinitions(request -> personaPayload(), (query, limit) -> List.of()).all().stream()
                 .map(NichoCnaeV3StageDefinition::stageCode)
                 .toList();
 
@@ -23,7 +23,7 @@ class NichoCnaeV3StageDefinitionsTest {
     /** Confirma que toda etapa v3 cadastrada tem endpoint pending e processor executável pelo scheduler único. */
     @Test
     void shouldRegisterBackendPathAndProcessorForEveryVersionThreeStage() {
-        List<NichoCnaeV3StageDefinition> stages = new NichoCnaeV3StageDefinitions(request -> personaPayload()).all();
+        List<NichoCnaeV3StageDefinition> stages = new NichoCnaeV3StageDefinitions(request -> personaPayload(), (query, limit) -> List.of()).all();
 
         assertEquals(expectedStages().size(), stages.size());
         for (NichoCnaeV3StageDefinition stage : stages) {

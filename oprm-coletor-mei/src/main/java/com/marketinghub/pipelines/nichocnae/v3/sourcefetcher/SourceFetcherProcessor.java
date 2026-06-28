@@ -78,7 +78,17 @@ public final class SourceFetcherProcessor implements StageProcessor {
         snapshot.put("evidenceText", evidence);
         snapshot.put("sourceType", text(first(source, "sourceType", "type", "category")));
         snapshot.put("routineRelevance", text(first(source, "routineRelevance", "objective", "whyRelevant")));
-        snapshot.put("capturedFields", List.of("url", "title", "evidenceText", "sourceType", "routineRelevance"));
+        snapshot.put("sourceIntent", text(first(source, "sourceIntent")));
+        snapshot.put("routineEvidenceScore", first(source, "routineEvidenceScore"));
+        snapshot.put("commercialPageRisk", first(source, "commercialPageRisk"));
+        snapshot.put("solutionLanguageRisk", first(source, "solutionLanguageRisk"));
+        snapshot.put("brazilRelevanceScore", first(source, "brazilRelevanceScore"));
+        snapshot.put("autonomousProfessionalEvidenceScore", first(source, "autonomousProfessionalEvidenceScore"));
+        snapshot.put("sourceFreshnessScore", first(source, "sourceFreshnessScore"));
+        snapshot.put("outdatedSourceRisk", first(source, "outdatedSourceRisk"));
+        snapshot.put("structuredBusinessDriftRisk", first(source, "structuredBusinessDriftRisk"));
+        snapshot.put("capturedFields", List.of("url", "title", "evidenceText", "sourceType", "routineRelevance",
+                "sourceIntent", "routineEvidenceScore", "commercialPageRisk", "solutionLanguageRisk"));
         return snapshot;
     }
 

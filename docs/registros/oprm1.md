@@ -1635,6 +1635,13 @@
 - Correção: `source-searcher` agora só libera `nextStageCode=source-fetcher` quando recebe fontes reais auditáveis; sem fontes, conclui bloqueado com `FONTES_NAO_COLETADAS`, motivo persistível e etapa recomendada de correção.
 - Prevenção: adicionado teste unitário cobrindo bloqueio sem fontes e avanço apenas com `foundSources` reais.
 
+## 2026-06-28 — NichoCNAE v3: source-searcher com busca e qualificação de fontes
+
+- Causa-raiz complementar: a correção anterior impedia avanço sem fontes, mas a etapa 5 ainda não executava busca pública a partir das queries planejadas; ela dependia de `foundSources` já presentes no payload, deixando a etapa 6 sem insumo de qualidade quando o fluxo normal só trazia `plannedQueries`.
+- Correção aplicada no executor `oprm-coletor-mei`: `source-searcher` passou a buscar fontes públicas rastreáveis, registrar payload bruto da busca, deduplicar URLs, priorizar Brasil/MEI/autônomo/rotina e entregar `selectedSources` + `foundSources` com `sourceIntent`, `routineEvidenceScore`, `brazilRelevanceScore`, `sourceFreshnessScore`, `commercialPageRisk`, `solutionLanguageRisk`, `outdatedSourceRisk` e riscos de desvio corporativo.
+- Contenção de contaminação: fontes comerciais, páginas de solução, software, app, automação, curso, template, funil, landing page ou página de preço são classificadas como risco e não avançam como evidência positiva para `source-fetcher`.
+- Prevenção: adicionados testes cobrindo busca a partir de queries, bloqueio de fonte comercial/solução, entrega de fontes qualificadas e preservação da classificação pela etapa `source-fetcher`.
+
 ## 2026-06-28 — NichoCNAE v3: auditoria OpenAI bruta nos callbacks
 
 - Ajustada a etapa `persona-candidate-generator` para serializar uma única vez o body enviado à OpenAI e reutilizar exatamente esse conteúdo no callback `recebeRequest`.

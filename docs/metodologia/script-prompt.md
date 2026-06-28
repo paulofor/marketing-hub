@@ -1,114 +1,90 @@
+# Catalogo de prompts para criacao de pipelines
 
-# Definição
+## Variaveis
 
-| pipeline | versao | modulo-externo | pacote-backend | pacote-modulo | objeto-associado |
-|----------|--------|----------------|----------------|---------------|------------------|
-|nichocane | v3     |oprm-coletor-mei| com.marketinhub.pipelines.moissaleslibraryworker.dossieproduto.v1|  com.marketinhub.pipelines.dossieproduto.v1|pagina de venda|
-|dossieproduto| v1  |mois-sales-library-worker|  com.marketinhub.pipelines.oprmcoletormei.nichocnae.v3|  com.marketinhub.pipelines.nichocnae.v3|cnae|
+| pipeline | versao | modulo-externo | pacote-backend | pacote-modulo | objeto-associado | objeto-chave | tabela-auditoria | endpoint-interno-base | endpoint-admin-base | objetivo-pipeline |
+|----------|--------|----------------|----------------|---------------|------------------|--------------|------------------|-----------------------|---------------------|--------------------|
+| nichocnae | v3 | oprm-coletor-mei | com.marketinghub.oprmcoletormei.nichocnae.v3 | com.marketinghub.pipelines.nichocnae.v3 | cnae | cnaeCode | pipeline_nichocnae | /api/internal/oprmcoletormei/nichocnae/v3 | /api/oprm/nichocnae/v3 | transformar um CNAE em persona, rotina diaria, tarefas, evidencias e materializacao de nicho enriquecido sem criar oferta ou landing |
+| dossieproduto | v1 | mois-sales-library-worker | com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1 | com.marketinghub.pipelines.dossie.v1 | pagina de venda | productKey | pipeline_dossieproduto | /api/internal/moissaleslibraryworker/dossieproduto/v1 | /api/mois/dossieproduto/v1 | transformar uma pagina de venda em dossie comercial auditavel para orientar decisoes de biblioteca de vendas |
 
+## Premissas de uso
 
-## Tabela de Jobs
+- Cada item iniciado com `*` e um prompt unico.
+- Os prompts devem ser enviados ao modelo na sequencia deste documento.
+- As variaveis no formato `{{variavel}}` devem ser substituidas pela tabela acima antes do envio.
+- O modelo deve priorizar o padrao do `nichocnae`, porque ele tem melhor separacao entre backend fonte de verdade, modulo executor, catalogo de etapas, saidas funcionais e acompanhamento por tela.
+- O `dossieproduto` deve ser usado como reforco para auditoria de request/response da OpenAI e para callbacks `recebeRequest`/`recebeResponse`.
+- O backend principal nao executa etapa operacional nem chama OpenAI: ele inicia, persiste, publica pendencias, recebe resultados, valida e decide o avanco.
+- O modulo externo executa as etapas, chama integracoes externas quando necessario, registra request/response no backend e nunca acessa banco diretamente.
 
-* vamos criar a tabela e classes de apoio no backend ( Repository/JPA )  pipeline_{{pipeline}}:
-id_externo ( String )
-request ( longtext )
-response ( longtext )
-codigo_etapa ( string )
-dataHora ( datetime )
-jobId ( string )
-quantidade_token_entrada ( bigint )
-quantidade_token_saida ( bigint )
-modelo ( string )
-custo ( currency )
-descricao_erro ( longtext )
-jobId_externo ( string )
-plataforma ( string )
-prompt ( longtext )
-schema_json ( longtext )
-versao_pipeline ( string )
+## 1. Descoberta e mapa do pipeline
 
+* Antes de implementar qualquer codigo, faca uma varredura no repositorio para mapear o pipeline `{{pipeline}}` `{{versao}}`. Identifique o modulo executor real `{{modulo-externo}}`, o pacote backend `{{pacote-backend}}`, o pacote executor `{{pacote-modulo}}`, as etapas existentes, a ordem real de execucao, os endpoints internos, os endpoints administrativos, as tabelas envolvidas, a tela que inicia ou acompanha o fluxo e os documentos canonicos/registros relacionados. Entregue um resumo objetivo com: etapas em ordem, responsabilidade de cada etapa, entrada esperada, saida funcional, executor, endpoint `pending`, callback de request, callback de response, persistencia e lacunas encontradas. Nao proponha implementacao ainda.
 
+* Compare o mapa encontrado com o objetivo do pipeline: `{{objetivo-pipeline}}`. Avalie se as etapas sao suficientes para transformar a entrada do `{{objeto-associado}}` em uma saida de qualidade para a etapa seguinte e em um resultado final compreensivel para o usuario. Para cada etapa, responda: o que ela recebe, o que ela transforma, o que ela entrega, por que isso ajuda a venda ou a decisao comercial, quando deve bloquear e qual proxima etapa pode receber essa saida. Se alguma etapa estiver generica demais, faltando entrada, faltando saida estruturada, faltando gate ou gerando apenas status tecnico, recomende o ajuste antes de codificar.
 
-## Start 
+* Defina o contrato funcional do pipeline `{{pipeline}}` `{{versao}}` antes da implementacao. Monte uma tabela com as colunas: posicao, codigo da etapa, nome de negocio, objetivo comercial, executor, entrada obrigatoria, saida funcional estruturada, artefatos auditaveis, criterio de conclusao, criterio de bloqueio, proxima etapa automatica, proxima acao humana quando houver e dados que precisam aparecer na tela. O contrato nao pode ter `nextStageCode` para etapa sem backend, endpoint `pending`, processor no executor e persistencia de auditoria.
 
-* agora vamos no backend dentro do pacote :  {{pacote-backend}}
-dentro de todos pacotes internos que são as etapas fazer:
-No Controller criar um endpoint com /start recebendo como parametro o codigo/chave do {{objeto-associado}} que estamos trabalhando.
-No Service um metodo start como parametro o codigo/chave do {{objeto-associado}} que estamos trabalhando
+## 2. Tabela de auditoria e modelo persistido
 
-* Todos os services dentro de {{pacote-backend}} precisa ter: 
-private static final String STAGE_CODE = "<codigo-etapa-atual>";
-private static final String NEXT_STAGE = "<codigo-etapa-proxima>";
-private static final String STATUS_STARTED = "INICIADO";
-private static final String STATUS_WAITING = "AGUARDANDO_RETORNO_MODULO";
-private static final String STATUS_COMPLETED = "CONCLUIDO";
-private static final String STATUS_FAILED = "FALHA";
+* Vamos criar ou ajustar a tabela de auditoria `{{tabela-auditoria}}` no backend para registrar cada passo do pipeline `{{pipeline}}` `{{versao}}`. A tabela deve permitir ao usuario entender pela tela o que aconteceu sem depender de logs. Ela deve conter no minimo: id, id_externo, job_id, job_id_externo, codigo_etapa, status, request, response, resposta_final, prompt, schema_json, plataforma, modelo, quantidade_token_entrada, quantidade_token_saida, custo, descricao_erro, versao_pipeline, data_hora, created_at e updated_at. Use Liquibase MySQL 5.7 em YAML, com preConditions `dbms:mysql`, `splitStatements: true`, `stripComments: true`, includes relativos com `relativeToChangelogFile: true`, e evite `UPDATE`/`DELETE` lendo a mesma tabela alvo em subconsulta para nao gerar erro 1093.
 
-* vamos agora no backend implementar os metodos start nos services das etapas em   {{pacote-backend}}
-o método start recebe como parâmetro o código/chave de {{objeto-associado}} vai usar o Repository de {{objeto-associado}} e obter o objeto usando um find
-nesse objeto vai inserir o status de pipeline {{pipeline} como INICIADO ( use a constante )
-e vai inserir tbm o nome da etapa atual ( constante STAGE_CODE )
-salvar o registro com essas mudanças se precisar crie as colunas.
-coloque tbm uma coluna de data para atualizar com data hora corrente
+* Crie ou ajuste a entidade JPA e o repository da tabela `{{tabela-auditoria}}`. Declare `@Column(name = "...")` para todos os campos em que possa haver divergencia de nomenclatura. A entidade deve separar claramente payload bruto (`request`, `response`, `prompt`, `schema_json`) de saida funcional (`resposta_final`) e de metadados tecnicos (`modelo`, tokens, custo, plataforma, erro). Adicione comentarios em portugues na classe e nos metodos alterados ou criados.
 
+* Ajuste o objeto associado `{{objeto-associado}}` para possuir campos de acompanhamento do pipeline quando ainda nao existirem: status do pipeline, etapa atual, data da ultima atualizacao, job atual e referencia do resultado final quando fizer sentido. O status do objeto associado deve ser apenas um resumo operacional; a auditoria detalhada continua em `{{tabela-auditoria}}`.
 
-## Pending
+## 3. Backend: start, pending e callbacks
 
-* vamos agora no backend implementar os métodos pending 
-nos controllers endpoint com inicio padrão e final ‘/pending’
-nos services das etapas em    {{pacote-backend}}
-o método pending vai usar o Repository de {{objeto-associado}} e nesse objeto vai pesquisar até 10 ordenados por data ascendente
-registros da etapa corrente com status de iniciado ( use a constante ) retornar 
+* No backend, dentro de `{{pacote-backend}}`, implemente ou ajuste um controller e um service por etapa do contrato do pipeline. Cada etapa deve expor endpoints internos no padrao `{{endpoint-interno-base}}/<codigo-etapa>/stage-executions`: `start` quando a etapa puder ser iniciada diretamente, `pending` para o modulo executor buscar trabalho, `recebeRequest` para registrar o request bruto antes da chamada externa ou processamento relevante, `recebeResponse` para registrar response bruto/resultado funcional/erro e endpoints de detalhe ou situacao usados pela tela. O endpoint publico/administrativo deve ficar em `{{endpoint-admin-base}}` ou no pacote administrativo ja existente do dominio.
 
+* Implemente o metodo `start` da primeira etapa. Ele recebe a chave `{{objeto-chave}}` do `{{objeto-associado}}`, valida se o objeto existe, encerra ou substitui execucoes abertas quando a regra do dominio exigir novo ciclo, gera ou reutiliza um `jobId` rastreavel, persiste uma execucao `PENDING`/`INICIADO`, atualiza o resumo no objeto associado e nao chama o modulo executor diretamente. A resposta deve retornar `jobId`, etapa inicial, status, mensagem operacional e endpoint de acompanhamento.
 
-## RecebeRequest
+* Implemente o metodo `pending` de cada etapa. Ele deve retornar ate 10 execucoes pendentes ordenadas da mais antiga para a mais nova, com contexto completo para o executor trabalhar sem consultar banco: `stageExecutionId`, `jobId`, `{{objeto-chave}}`, dados do `{{objeto-associado}}`, inputPayload da etapa, artefatos anteriores necessarios, attemptNumber quando existir, status atual e versao do pipeline. O pending deve ser o unico ponto inicial de consumo do modulo `{{modulo-externo}}`.
 
-* vamos agora no backend implementar os métodos recebeRequest em {{pacote-backend}}
-nos controllers endpoint com inicio padrão e final ‘/recebeRequest’ na url deve ter o id/chave de produto/pagina ( identificador unico )
-nos services temos que fazer o seguinte:
-em  {{objeto-associado}}: 
-atualizar status_pipeline_{{pipeline}} para aguardando modulo
-atualizar data_pipeline_{{pipeline}} para data-hora atual 
-obs: se o nome das colunas não forem esses altere
-importar os objetos do repository de pipeline_{{pipeline}}
-inserir um novo registro em pipeline_{{pipeline}} usando o repository com:
-id_externo o que veio na url id/chave de{{objeto-associado}} ( identificador unico )
-request o que veio no payload como request
-codigo_etapa o codigo da etapa corrente do service
-dataHora data hora corrente ( utc )
-jobid ( hash criado na hora )
-plataforma se vier no payload
-prompt se vier no payload
-schema se vier no payload
-versao_pipeline ‘{{versao}}’
-modelo se vier do payload
+* Implemente o callback `recebeRequest` de cada etapa. Ele deve gravar em `{{tabela-auditoria}}` o request bruto enviado ou recebido pelo executor, com `id_externo={{objeto-chave}}`, `job_id`, `codigo_etapa`, `status=AGUARDANDO_RETORNO_MODULO`, `request`, `prompt`, `schema_json`, `plataforma`, `modelo`, `versao_pipeline={{versao}}` e data-hora atual. Tambem deve atualizar o resumo do `{{objeto-associado}}` para mostrar que a etapa esta em execucao. Esse callback deve aceitar request completo, nao apenas resumo.
 
-## RecebeResponse
+* Implemente o callback `recebeResponse` de cada etapa. Ele deve gravar em `{{tabela-auditoria}}` o response bruto completo, extrair e persistir `resposta_final` limpa quando houver resposta funcional, registrar tokens, custo, modelo, plataforma e descricao de erro, atualizar o status da etapa para concluida, falha ou bloqueada, e atualizar o resumo do `{{objeto-associado}}`. Se o resultado funcional estiver valido e a proxima etapa for automatica, o backend deve enfileirar a proxima etapa. Se houver erro, contrato invalido, bloqueio comercial, ausencia de evidencia ou etapa final, nao avance automaticamente.
 
-* vamos agora no backend implementar os métodos recebeResponse em {{pacote-backend}}
-nos controllers endpoint com inicio padrão e final ‘/recebeResponse ’ na url deve ter o id/chave 
-de produto/pagina ( identificador unico ) e o jobid
-log no inicio do metodo com os dados recebidos.
-nos services temos que fazer o seguinte:
-em {{objeto-associado}}: 
-atualizar status_pipeline_dossieproduto para concluido se descricao erro estiver vazia. para falha se não estiver
-atualizar data_pipeline_dossieproduto para data-hora atual 
-importar os objetos do repository de pipeline_dossieproduto
-inserir um novo registro em pipeline_dossieproduto usando o repository com:
-id_externo o que veio na url id/chave de produto/pagina ( identificador unico )
-response que veio no payload como request
-codigo_etapa o codigo da etapa corrente do service
-dataHora data hora corrente ( utc )
-versao_pipeline ‘v1
-jobid vem da url
-quantidade_token_entrada se vier do payload
-quantidade_token_saida se vier do payload
-custo se vier do payload
-modelo se vier do payload
-Se não tiver falha retornar o codigo da proxima etapa ou nulo se for o final
+* Garanta que o backend seja a fonte de verdade da transicao. O modulo executor pode enviar `nextStageCode` apenas como sugestao/auditoria, mas o service do backend deve validar se essa proxima etapa existe no contrato, se a etapa atual concluiu com sucesso funcional, se nao ha gate pendente e se o resultado da etapa pode alimentar a etapa seguinte. Se a validacao falhar, persistir bloqueio com causa-raiz e acao recomendada.
 
-## Telas
+## 4. Modulo executor
 
-* Veja essa tela agora ela precisa chamar o endpoint da primeira etapa do pipeline {{pipeline}} {{versao}} /start passando o codigo/chave do {{objeto-associado}}
+* No modulo `{{modulo-externo}}`, crie ou ajuste o nucleo generico do pipeline no pacote `{{pacote-modulo}}` ou no pacote ja canonico do executor. O nucleo deve conter apenas contratos e orquestracao generica, como `PipelineWorker`, `StageProcessor`, `StageContext`, `StageResult`, `StageArtifact`, cliente de backend e catalogo de etapas. O nucleo nao pode depender de etapa concreta nem de tecnologia externa especifica como OpenAI, WebClient operacional, Jsoup, Playwright, Selenium ou S3.
 
-* Crie uma tela de acompanhamento com vários cards, cada card deve ser uma etapa e nela temos que mostrar entradas e saidas da execução mais recente.
+* No modulo `{{modulo-externo}}`, crie ou ajuste um processor por etapa concreta do pipeline `{{pipeline}}` `{{versao}}`. Cada processor deve implementar o contrato de etapa, consumir apenas o `StageContext` com dados vindos do backend, validar entradas obrigatorias, produzir saida funcional estruturada, gerar artefatos auditaveis e nunca importar outra etapa concreta. Quando precisar de resultado anterior, use o input persistido no backend ou artefato auditavel entregue pelo `pending`.
+
+* Crie ou ajuste o catalogo de etapas do executor em ordem operacional. O catalogo deve registrar somente etapas com contrato completo no backend e processor implementado. Para cada etapa, vincule `codigo_etapa`, endpoint `pending` em `{{endpoint-interno-base}}/<codigo-etapa>/stage-executions`, processor e regra de output. O executor deve percorrer o catalogo, chamar `pending`, executar os jobs e reportar resultado ao backend.
+
+* Para toda etapa com IA ou integracao externa, mova prompt operacional e schema JSON para arquivos versionados em `src/main/resources/prompts/{{pipeline}}{{versao}}/`. A classe deve apenas carregar prompt/schema do classpath, preencher placeholders com contexto persistido pelo backend, montar request, chamar a integracao, validar response e devolver auditoria. Nao deixe prompt longo, schema ou contrato de saida hardcoded em Java ou TypeScript. Para OpenAI, use `service_tier: "flex"` por padrao, salvo excecao funcional registrada.
+
+* Antes de qualquer chamada OpenAI ou integracao externa, o executor deve enviar ao backend o `recebeRequest` com request bruto completo, prompt final, schema, plataforma, modelo e `jobId`. Depois da resposta ou erro, deve enviar `recebeResponse` com response bruto completo, saida funcional validada, tokens, custo, modelo, erro e status. A tela deve conseguir mostrar esses dados a partir do backend, com payload bruto em detalhe colapsado e resposta funcional visivel em linguagem de negocio.
+
+## 5. Qualidade das saidas e encadeamento
+
+* Revise a saida funcional de cada etapa do pipeline `{{pipeline}}` `{{versao}}`. Ela deve ser boa o suficiente para ser entrada da etapa seguinte, nao apenas um texto livre ou status tecnico. Para cada etapa, garanta campos estruturados como: `stage`, `status`, `jobId`, `stageExecutionId`, resumo de negocio, evidencias usadas, artefatos gerados, criterios atendidos, bloqueios, causa-raiz quando houver, acao recomendada, `businessBoundary` quando houver limite de dominio, `reportRole` e sugestao de proxima etapa. Se uma resposta final for consumivel pelo usuario, grave tambem em `resposta_final`.
+
+* Inclua gates funcionais compativeis com o risco do pipeline. O gate deve bloquear avanco quando faltar evidencia, quando a resposta do modelo estiver fora do schema, quando a saida contaminar o artefato final com metadados tecnicos, quando houver baixa qualidade comercial ou quando a etapa tentar invadir uma responsabilidade de pipeline posterior. O bloqueio deve gravar causa-raiz, impacto comercial e etapa recomendada de correcao.
+
+* Garanta que o pipeline preserve o limite de dominio. Para `nichocnae`, nao gerar oferta, campanha, promessa, landing page ou hipotese; o resultado e persona, rotina, tarefas, evidencias e materializacao de nicho. Para `dossieproduto`, nao transformar o dossie em publicacao automatica sem gate; o resultado e diagnostico comercial auditavel da pagina de venda.
+
+## 6. Tela de inicio e acompanhamento
+
+* Ajuste a tela que inicia o pipeline `{{pipeline}}` `{{versao}}` para chamar o endpoint `start` da primeira etapa passando `{{objeto-chave}}` do `{{objeto-associado}}`. A tela deve mostrar claramente que o pipeline foi iniciado, o `jobId`, a etapa inicial, o status geral e um caminho direto para acompanhar o andamento. Nao chame endpoints internos de worker pelo frontend.
+
+* Crie ou ajuste a tela de acompanhamento do pipeline `{{pipeline}}` `{{versao}}`. Ela deve consumir endpoint administrativo do backend, nao logs. A tela deve ter: cabecalho com contexto do `{{objeto-associado}}`, objetivo do pipeline, status geral, proxima acao principal, lista de cards em ordem real das etapas, area final com resultado consolidado e historico de execucoes. Cada card deve mostrar nome de negocio, objetivo, status, entrada resumida, saida funcional, ultima execucao, erro/bloqueio em linguagem simples, custo quando houver, e botao para ver detalhes.
+
+* No detalhe de cada etapa da tela, mostre primeiro a decisao e o artefato funcional. Em seguida, mostre evidencias, entrada usada, resposta final limpa, custo e status. Request bruto, response bruto, prompt, schema, tokens, payload completo e stack trace devem ficar em area tecnica colapsada. O usuario precisa entender o que esta acontecendo sem ler JSON bruto.
+
+* Garanta que a tela traduza estados tecnicos para linguagem operacional: `PENDING` como "Na fila", `RUNNING` ou `AGUARDANDO_RETORNO_MODULO` como "Em execucao", `COMPLETED` ou `CONCLUIDO` como "Concluida", `FAILED` ou `FALHA` como "Falhou", `BLOCKED` como "Bloqueada" e `SUPERSEDED` como "Substituida". Nao mostre progresso falso quando o backend nao persistiu a etapa.
+
+## 7. Documentacao, testes e prevencao de recorrencia
+
+* Atualize a documentacao canonica ou o registro do tema do pipeline `{{pipeline}}` `{{versao}}` com: objetivo, pacote backend, pacote executor, modulo externo, etapas oficiais, endpoints internos, endpoint administrativo de acompanhamento, tabela de auditoria, regras de avanco, gates e como a tela apresenta request/response ao usuario. Se a mudanca alterar regra operacional, atualize o documento em `/docs/canonical`.
+
+* Adicione ou ajuste testes do backend para validar `start`, `pending`, `recebeRequest`, `recebeResponse`, persistencia em `{{tabela-auditoria}}`, preenchimento de `resposta_final`, atualizacao do status do `{{objeto-associado}}`, enfileiramento da proxima etapa e bloqueio quando houver erro ou contrato invalido. Em Java, todos os comentarios de classes e metodos alterados devem estar em portugues.
+
+* Adicione ou ajuste testes do modulo `{{modulo-externo}}` para validar que o executor consome somente `pending`, registra `recebeRequest` antes de OpenAI/integracao externa, registra `recebeResponse` depois, valida schema, gera saida funcional estruturada, nao acessa banco, nao importa etapas concretas entre si e nao coloca tecnologia externa no nucleo generico.
+
+* Adicione ou ajuste testes de frontend para validar que a tela inicia o pipeline pelo endpoint administrativo correto, mostra cards em ordem, exibe saida funcional e resposta final, mantem request/response bruto em detalhe tecnico colapsado, apresenta erro/bloqueio com causa e nao depende de logs para explicar o andamento.
+
+* Antes de concluir, revise a causa-raiz que motivou qualquer ajuste encontrado: contrato incompleto, etapa sem saida funcional, auditoria sem request/response, backend sem decisao de avanco, tela baseada em log ou pacote divergente. Corrija a causa-raiz quando estiver no escopo; se exigir decisao do usuario, registre objetivamente qual decisao falta e qual risco permanece.

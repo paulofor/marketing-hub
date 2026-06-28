@@ -1,28 +1,35 @@
 package com.marketinghub.pipelines.dossie.v1.intake;
 
+import com.marketinghub.pipelines.dossie.v1.DossierStageSupport;
 import com.marketinghub.pipelines.dossie.v1.StageContext;
 import com.marketinghub.pipelines.dossie.v1.StageProcessor;
 import com.marketinghub.pipelines.dossie.v1.StageResult;
 import java.util.List;
 import java.util.Map;
 
-/** Executa a etapa entrada inicial sem acoplar o núcleo do pipeline às demais etapas do dossiê. */
+/** Executa a etapa entrada inicial cumprindo o objetivo funcional contratado para o dossiê. */
 public class DossierIntakeProcessor implements StageProcessor {
+
+    private static final String STAGE_NAME = "intake";
+    private static final String OBJECTIVE = "Validar se a página possui contexto mínimo para iniciar o dossiê de produto, preservando o texto da página, produto, produtor, promessa, marca e sinais públicos recebidos do backend.";
 
     /** Informa o nome canônico da etapa entrada inicial. */
     @Override
     public String stageName() {
-        return "intake";
+        return STAGE_NAME;
     }
 
-    /** Produz saída estruturada mínima para auditoria e evolução incremental da etapa. */
+    /** Produz saída funcional auditável alinhada ao objetivo da etapa. */
     @Override
     public StageResult process(StageContext context) {
+        Map<String, Object> evidence = DossierStageSupport.evidenceFor(context, STAGE_NAME);
         DossierIntakeOutput output = new DossierIntakeOutput(
                 context.dossierId(),
-                "READY_FOR_IMPLEMENTATION",
-                "Confirmar elegibilidade e preparar contexto mínimo para o dossiê v1."
-        );
-        return StageResult.done(Map.of("intake", output), List.of());
+                "OBJECTIVE_FULFILLED",
+                OBJECTIVE,
+                evidence);
+        return StageResult.done(
+                Map.of(STAGE_NAME, output),
+                List.of(DossierStageSupport.objectiveArtifact(context, STAGE_NAME, OBJECTIVE, evidence)));
     }
 }

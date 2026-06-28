@@ -1,28 +1,35 @@
 package com.marketinghub.pipelines.dossie.v1.warmupmapbuilder;
 
+import com.marketinghub.pipelines.dossie.v1.DossierStageSupport;
 import com.marketinghub.pipelines.dossie.v1.StageContext;
 import com.marketinghub.pipelines.dossie.v1.StageProcessor;
 import com.marketinghub.pipelines.dossie.v1.StageResult;
 import java.util.List;
 import java.util.Map;
 
-/** Executa a etapa montagem do mapa de aquecimento sem acoplar o núcleo do pipeline às demais etapas do dossiê. */
+/** Executa a etapa montagem do mapa de aquecimento cumprindo o objetivo funcional contratado para o dossiê. */
 public class DossierWarmupMapBuilderProcessor implements StageProcessor {
+
+    private static final String STAGE_NAME = "warmup-map-builder";
+    private static final String OBJECTIVE = "Organizar os recursos externos por papel no aquecimento do público e indicar lacunas que precisam de nova evidência.";
 
     /** Informa o nome canônico da etapa montagem do mapa de aquecimento. */
     @Override
     public String stageName() {
-        return "warmup-map-builder";
+        return STAGE_NAME;
     }
 
-    /** Produz saída estruturada mínima para auditoria e evolução incremental da etapa. */
+    /** Produz saída funcional auditável alinhada ao objetivo da etapa. */
     @Override
     public StageResult process(StageContext context) {
+        Map<String, Object> evidence = DossierStageSupport.evidenceFor(context, STAGE_NAME);
         DossierWarmupMapBuilderOutput output = new DossierWarmupMapBuilderOutput(
                 context.dossierId(),
-                "READY_FOR_IMPLEMENTATION",
-                "Organizar os recursos externos que aquecem o público antes da compra."
-        );
-        return StageResult.done(Map.of("warmup-map-builder", output), List.of());
+                "OBJECTIVE_FULFILLED",
+                OBJECTIVE,
+                evidence);
+        return StageResult.done(
+                Map.of(STAGE_NAME, output),
+                List.of(DossierStageSupport.objectiveArtifact(context, STAGE_NAME, OBJECTIVE, evidence)));
     }
 }

@@ -25,6 +25,24 @@ type JsonValue =
   | JsonValue[]
   | { [key: string]: JsonValue };
 
+function asRecord(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  return value as Record<string, unknown>;
+}
+
+function asList(value: unknown): unknown[] {
+  return Array.isArray(value) ? value : [];
+}
+
+function asText(value: unknown) {
+  if (value === null || value === undefined || value === "") return "-";
+  return String(value);
+}
+
+function parsePayloadRecord(payload: string | null | undefined) {
+  return asRecord(parsePayload(payload));
+}
+
 function formatJsonPrimitive(value: JsonValue) {
   if (value === null) return "null";
   if (typeof value === "string") return JSON.stringify(value);
@@ -164,6 +182,52 @@ function pickSituacaoForJob(
     schema: requestRecord?.schema ?? responseRecord.schema,
     plataforma: requestRecord?.plataforma ?? responseRecord.plataforma,
   };
+}
+
+function StageBusinessResult({
+  stageCode,
+  payload,
+}: {
+  stageCode: string;
+  payload: string | null | undefined;
+}) {
+  const parsed = parsePayloadRecord(payload);
+
+  if (!parsed || stageCode !== "persona-tournament") {
+    return null;
+  }
+
+  const winner = asRecord(parsed.winnerPersona);
+  const ranking = asList(parsed.personaRanking);
+  const scoreBreakdown = asRecord(winner?.scoreBreakdown);
+
+  return (
+    <div className="alert alert-success-subtle border border-success-subtle py-2 px-3 mb-0">
+      <div className="small fw-semibold mb-2">Resultado para o usuário</div>
+      <div className="small">
+        <strong>Persona vencedora:</strong>{" "}
+        {asText(parsed.winningPersonaName ?? winner?.name)}
+      </div>
+      <div className="small">
+        <strong>Pontuação:</strong> {asText(winner?.tournamentScore)}
+        {scoreBreakdown ? (
+          <span className="text-muted">
+            {" "}
+            (dores: {asText(scoreBreakdown.operationalPains)}, tarefas:{" "}
+            {asText(scoreBreakdown.dailyTasks)}, sinais de compra:{" "}
+            {asText(scoreBreakdown.buyingSignals)})
+          </span>
+        ) : null}
+      </div>
+      <div className="small">
+        <strong>Justificativa:</strong> {asText(parsed.selectionRationale)}
+      </div>
+      <div className="small text-muted">
+        {ranking.length} persona(s) comparada(s). Próxima etapa:{" "}
+        {asText(parsed.nextStageCode)}.
+      </div>
+    </div>
+  );
 }
 
 function StageMetric({ label, value }: { label: string; value: string }) {
@@ -617,6 +681,10 @@ export default function OprmNichoCnaeV3PipelinePage() {
                             </div>
                           </div>
                         ) : null}
+                        <StageBusinessResult
+                          stageCode={stage.code}
+                          payload={responsePayload}
+                        />
                         <div>
                           <div className="small fw-semibold mb-1">
                             Response recebido

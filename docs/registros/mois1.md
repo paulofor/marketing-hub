@@ -1931,3 +1931,9 @@ Arquivos principais:
 - Causa-raiz tratada: o backend entregava para a síntese final apenas metadados operacionais e o worker aceitava saída sem evidência comercial como sucesso.
 - Ajuste aplicado: o backend agora inclui auditorias e respostas anteriores no `pending` da síntese final, e o worker bloqueia a conclusão quando não houver evidências comerciais suficientes para montar conclusão, evidências e próximos passos.
 - Prevenção de recorrência: teste do `PipelineWorker` valida que a síntese final falha quando recebe apenas metadados operacionais.
+
+## 2026-06-28 — Cards do reprocessamento do dossiê MOIS v1
+
+- Diagnosticado na página 400 que o reprocessamento iniciado em `28/06/2026 03:27` era exibido junto de auditorias históricas das etapas.
+- Causa-raiz tratada: os endpoints de leitura da tela consultavam registros por página/etapa/status sem fronteira da execução atual.
+- Ajuste aplicado: a situação das etapas e o resumo público do pipeline agora consideram apenas registros a partir do último `intake` iniciado, preservando histórico no banco sem contaminar os cards do fluxo atual.

@@ -5,12 +5,16 @@ import com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1.situac
 import com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1.situacao.service.situacao.DossierSituacaoResponse;
 import com.marketinghub.repository.jpa.mois.dossieproduto.PipelineDossieProdutoRepository;
 import com.marketinghub.repository.jpa.mois.dossieproduto.entity.PipelineDossieProduto;
+import java.time.Instant;
 import java.util.List;
 import org.springframework.stereotype.Service;
 
 /** Consulta a situação auditada das etapas do pipeline de dossiê de produto MOIS v1. */
 @Service
 public class DossierSituacaoService {
+    private static final String INTAKE_STAGE_CODE = "intake";
+    private static final String STATUS_STARTED = "INICIADO";
+
     private final PipelineDossieProdutoRepository repository;
 
     /** Cria o service com acesso ao repositório canônico da auditoria do pipeline. */
@@ -18,20 +22,35 @@ public class DossierSituacaoService {
         this.repository = repository;
     }
 
-    /** Pesquisa registros da auditoria pelo identificador externo, etapa e lista de status. */
+    /** Pesquisa registros da auditoria do fluxo atual pelo identificador externo, etapa e lista de status. */
     public DossierSituacaoResponse consultar(String codigoEtapa, String idExterno, DossierSituacaoRequest request) {
         List<String> status = request.status().stream()
                 .filter(valor -> valor != null && !valor.isBlank())
                 .map(String::trim)
                 .toList();
-        List<DossierSituacaoItem> registros = status.isEmpty()
-                ? List.of()
-                : repository.findByIdExternoAndCodigoEtapaAndStatusInOrderByDataHoraDescIdDesc(
-                                idExterno, codigoEtapa, status)
-                        .stream()
-                        .map(this::toItem)
-                        .toList();
+        List<DossierSituacaoItem> registros = buscarRegistrosDoFluxoAtual(codigoEtapa, idExterno, status).stream()
+                .map(this::toItem)
+                .toList();
         return new DossierSituacaoResponse(idExterno, codigoEtapa, status, registros);
+    }
+
+    /** Limita a consulta à última execução iniciada pela etapa intake, preservando histórico fora da tela atual. */
+    private List<PipelineDossieProduto> buscarRegistrosDoFluxoAtual(
+            String codigoEtapa, String idExterno, List<String> status) {
+        if (status.isEmpty()) {
+            return List.of();
+        }
+        Instant fluxoAtualIniciadoEm = repository
+                .findTopByIdExternoAndCodigoEtapaAndStatusOrderByDataHoraDescIdDesc(
+                        idExterno, INTAKE_STAGE_CODE, STATUS_STARTED)
+                .map(PipelineDossieProduto::getDataHora)
+                .orElse(null);
+        if (fluxoAtualIniciadoEm == null) {
+            return repository.findByIdExternoAndCodigoEtapaAndStatusInOrderByDataHoraDescIdDesc(
+                    idExterno, codigoEtapa, status);
+        }
+        return repository.findByIdExternoAndCodigoEtapaAndStatusInAndDataHoraGreaterThanEqualOrderByDataHoraDescIdDesc(
+                idExterno, codigoEtapa, status, fluxoAtualIniciadoEm);
     }
 
     /** Converte a entidade de auditoria para o contrato de consulta de situação. */

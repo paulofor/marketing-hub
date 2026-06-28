@@ -189,6 +189,7 @@ const v3Stages = [
     code: "persona-candidate-generator",
     title: "Geração de personas candidatas",
     activity: "Gerando hipóteses de personas vendáveis.",
+    usesAi: true,
   },
   {
     code: "persona-tournament",
@@ -510,6 +511,14 @@ export default function OprmNichoCnaeV3PipelinePage() {
                         <span className="badge text-bg-primary">
                           {index + 1}
                         </span>
+                        {stage.usesAi ? (
+                          <span
+                            className="badge rounded-pill text-bg-dark"
+                            title="Etapa com uso de IA"
+                          >
+                            🤖 IA
+                          </span>
+                        ) : null}
                         {situacao ? (
                           <span className="badge rounded-pill text-bg-info">
                             Auditoria registrada

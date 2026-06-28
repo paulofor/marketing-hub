@@ -300,6 +300,10 @@ components:
         request:
           type: string
           nullable: true
+        requestInput:
+          type: string
+          nullable: true
+          description: Campo input extraído do request bruto da OpenAI para leitura direta do prompt enviado.
         response:
           type: string
           nullable: true

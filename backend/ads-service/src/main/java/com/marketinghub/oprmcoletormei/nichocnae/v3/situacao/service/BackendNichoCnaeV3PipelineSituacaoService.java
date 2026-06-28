@@ -58,6 +58,7 @@ public class BackendNichoCnaeV3PipelineSituacaoService {
                 pipeline.getDataHora(),
                 pipeline.getJobId(),
                 pipeline.getRequest(),
+                pipeline.getRequestInput(),
                 pipeline.getResponse(),
                 pipeline.getRespostaFinal(),
                 pipeline.getQuantidadeTokenEntrada(),

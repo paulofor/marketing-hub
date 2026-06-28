@@ -107,4 +107,8 @@ custo se vier do payload
 modelo se vier do payload
 Se não tiver falha retornar o codigo da proxima etapa ou nulo se for o final
 
+## Telas
 
+* Veja essa tela agora ela precisa chamar o endpoint da primeira etapa do pipeline {{pipeline}} {{versao}} /start passando o codigo/chave do {{objeto-associado}}
+
+* Crie uma tela de acompanhamento com vários cards, cada card deve ser uma etapa e nela temos que mostrar entradas e saidas da execução mais recente.

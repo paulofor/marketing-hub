@@ -13,6 +13,7 @@ public record DossierSituacaoItem(
         String jobId,
         String request,
         String response,
+        String respostaFinal,
         Long quantidadeTokenEntrada,
         Long quantidadeTokenSaida,
         String modelo,

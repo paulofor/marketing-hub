@@ -1912,3 +1912,9 @@ Arquivos principais:
 - documentos lidos para tratar a situação:
   - AGENTS.md
   - mois-sales-library-worker/AGENTS.md
+
+## 2026-06-28 — Resposta final limpa no pipeline dossieproduto.v1
+
+- Adicionado o campo `resposta_final` em `pipeline_dossieproduto` para guardar o texto funcional extraído do envelope OpenAI, preservando `response` como payload bruto de auditoria.
+- Todas as etapas do backend `moissaleslibraryworker.dossieproduto.v1` passaram a preencher `resposta_final` ao receber o callback de resposta.
+- Criado extrator compartilhado para localizar o campo `text` nos formatos de resposta da OpenAI e manter fallback seguro para respostas diretas.

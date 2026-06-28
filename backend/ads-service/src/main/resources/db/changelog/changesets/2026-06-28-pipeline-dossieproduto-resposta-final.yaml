@@ -1,0 +1,21 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-28-01-pipeline-dossieproduto-resposta-final
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: pipeline_dossieproduto
+        - not:
+            - columnExists:
+                tableName: pipeline_dossieproduto
+                columnName: resposta_final
+      changes:
+        - addColumn:
+            tableName: pipeline_dossieproduto
+            columns:
+              - column:
+                  name: resposta_final
+                  type: LONGTEXT

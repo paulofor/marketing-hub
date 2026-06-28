@@ -30,6 +30,9 @@ public class PipelineDossieProduto {
     @Column(name = "response", columnDefinition = "LONGTEXT")
     private String response;
 
+    @Column(name = "resposta_final", columnDefinition = "LONGTEXT")
+    private String respostaFinal;
+
     @Column(name = "codigo_etapa", length = 120)
     private String codigoEtapa;
 

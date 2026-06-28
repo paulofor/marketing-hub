@@ -1,5 +1,6 @@
 package com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1.investigationanchorbuilder.service;
 
+import com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1.shared.DossierOpenAiTextResponseExtractor;
 import com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1.investigationanchorbuilder.service.pending.DossierInvestigationAnchorBuilderPendingJob;
 import com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1.investigationanchorbuilder.service.pending.DossierInvestigationAnchorBuilderPendingRequest;
 import com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1.investigationanchorbuilder.service.pending.DossierInvestigationAnchorBuilderPendingResponse;
@@ -109,6 +110,7 @@ public class DossierInvestigationAnchorBuilderService {
         PipelineDossieProduto pipeline = new PipelineDossieProduto();
         pipeline.setIdExterno(productKey);
         pipeline.setResponse(request.response());
+        pipeline.setRespostaFinal(DossierOpenAiTextResponseExtractor.extract(request.response()));
         pipeline.setCodigoEtapa(STAGE_CODE);
         pipeline.setStatus(status);
         pipeline.setDataHora(now);

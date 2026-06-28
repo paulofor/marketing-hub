@@ -148,11 +148,21 @@ function pickSituacaoForJob(
   jobId: string | null | undefined,
 ) {
   if (!records?.length) return null;
-  if (jobId) {
-    const sameJob = records.find((record) => record.jobId === jobId);
-    if (sameJob) return sameJob;
-  }
-  return records[0];
+  const candidates = jobId
+    ? records.filter((record) => record.jobId === jobId)
+    : records;
+  const scopedRecords = candidates.length > 0 ? candidates : records;
+  const responseRecord =
+    scopedRecords.find((record) => record.response || record.respostaFinal) ??
+    scopedRecords[0];
+  const requestRecord = scopedRecords.find((record) => record.request);
+  return {
+    ...responseRecord,
+    request: requestRecord?.request ?? responseRecord.request,
+    prompt: requestRecord?.prompt ?? responseRecord.prompt,
+    schema: requestRecord?.schema ?? responseRecord.schema,
+    plataforma: requestRecord?.plataforma ?? responseRecord.plataforma,
+  };
 }
 
 function StageMetric({
@@ -440,8 +450,7 @@ export default function OprmNichoCnaeV3PipelinePage() {
                   FAILED: "text-bg-danger",
                   CANCELED: "text-bg-secondary",
                 }[status] ?? "text-bg-secondary";
-              const requestPayload =
-                situacao?.request ?? stageProgress?.inputPayload ?? null;
+              const requestPayload = situacao?.request ?? null;
               const responsePayload =
                 situacao?.response ?? stageProgress?.outputPayload ?? null;
               const errorMessage =

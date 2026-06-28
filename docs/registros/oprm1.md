@@ -1576,6 +1576,12 @@
 ## 2026-06-26 — Backend: tabela de auditoria `pipeline_nichocnae`
 
 - Criada a tabela `pipeline_nichocnae` para centralizar auditoria de request/response, prompt/schema, tokens, modelo, custo, erro, etapa, plataforma e versão do pipeline NichoCNAE.
+
+## 2026-06-28 — Correção: auditoria append-only do NichoCNAE v3
+
+- Causa-raiz: `pipeline_nichocnae.id_externo` era chave primária, mas representa o CNAE. Com isso, callbacks de request/response do mesmo CNAE podiam sobrescrever a auditoria anterior e a tela podia exibir payload funcional ou input técnico como se fosse o request enviado à OpenAI.
+- Correção: adicionada chave técnica `id` auto incremental em `pipeline_nichocnae`, mantendo `id_externo` como CNAE indexado. A entidade JPA passou a inserir eventos de auditoria separados para request e response.
+- A tela v3 agora combina request e response do mesmo `jobId` e não usa mais `inputPayload` como fallback para o bloco “Request enviado”, evitando apresentar contexto de etapa como request OpenAI.
 - Criadas a entidade JPA e o repository canônico no backend para permitir persistência e consultas de custo por `jobId` sem acesso direto ao banco por módulos externos.
 
 ## 2026-06-27 — NichoCNAE v3: reforço do protocolo padrão módulo no executor

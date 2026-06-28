@@ -1633,3 +1633,10 @@
 - Causa-raiz: o backend persistia o envelope bruto da OpenAI em `pipeline_nichocnae.response`, o que deixava a tela de auditoria dependente de JSON técnico para encontrar o conteúdo funcional em `content[].text`.
 - Correção: adicionada a coluna `pipeline_nichocnae.resposta_final` e normalização compartilhada no callback de response v3 para gravar, em todas as etapas, o texto limpo retornado pela OpenAI quando o envelope trouxer `output[].content[].text` ou `content[].text`.
 - Prevenção: teste unitário cobre extração do envelope da Responses API, extração de mensagem direta e fallback para response original quando não houver texto extraível.
+
+## 2026-06-28 — NichoCNAE v3: verificação de objetivos das etapas
+
+- Verificação: revisado o executor `oprm-coletor-mei` em `com.marketinghub.pipelines.nichocnae.v3` contra o objetivo funcional de cada etapa do pipeline.
+- Causa-raiz encontrada: a etapa final `persona-routine-materializer` ainda concluía com payload técnico mínimo, sem materializar persona, rotina, dores, evidências e candidato funcional para persistência canônica no backend.
+- Correção: `persona-routine-materializer` agora exige aprovação do `quality-gate`, `winnerPersona` e `dailyTasks`, e entrega `materializedProfile`, `marketNicheCandidate` e prontidão explícita para o backend persistir `market_niche` e `market_niche_enrichment_profile`.
+- Prevenção de recorrência: adicionado teste unitário cobrindo materialização aprovada e bloqueio quando o `quality-gate` não aprovou.

@@ -78,6 +78,9 @@ public final class SourceFetcherProcessor implements StageProcessor {
         snapshot.put("evidenceText", evidence);
         snapshot.put("sourceType", text(first(source, "sourceType", "type", "category")));
         snapshot.put("routineRelevance", text(first(source, "routineRelevance", "objective", "whyRelevant")));
+        snapshot.put("observedRoutineSituation", firstNonBlank(evidence, title));
+        snapshot.put("mentionedChannel", mentionedChannel(title + " " + evidence));
+        snapshot.put("usefulnessReason", text(first(source, "routineRelevance", "objective", "whyRelevant", "matchedQuery")));
         snapshot.put("sourceIntent", text(first(source, "sourceIntent")));
         snapshot.put("routineEvidenceScore", first(source, "routineEvidenceScore"));
         snapshot.put("commercialPageRisk", first(source, "commercialPageRisk"));
@@ -88,8 +91,29 @@ public final class SourceFetcherProcessor implements StageProcessor {
         snapshot.put("outdatedSourceRisk", first(source, "outdatedSourceRisk"));
         snapshot.put("structuredBusinessDriftRisk", first(source, "structuredBusinessDriftRisk"));
         snapshot.put("capturedFields", List.of("url", "title", "evidenceText", "sourceType", "routineRelevance",
-                "sourceIntent", "routineEvidenceScore", "commercialPageRisk", "solutionLanguageRisk"));
+                "sourceIntent", "routineEvidenceScore", "commercialPageRisk", "solutionLanguageRisk", "observedRoutineSituation", "mentionedChannel", "usefulnessReason"));
         return snapshot;
+    }
+
+    /** Identifica canal operacional citado no trecho da fonte. */
+    private String mentionedChannel(String text) {
+        String lower = text.toLowerCase();
+        for (String channel : List.of("whatsapp", "instagram", "agenda", "balcão", "balcao", "delivery", "indicação", "indicacao", "cobrança", "cobranca")) {
+            if (lower.contains(channel)) {
+                return channel;
+            }
+        }
+        return "CANAL_NAO_EXPLICITO";
+    }
+
+    /** Escolhe o primeiro texto preenchido para preservar evidência mínima suficiente. */
+    private String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (!value.isBlank()) {
+                return value;
+            }
+        }
+        return "";
     }
 
     /** Retorna o primeiro campo existente no mapa de fonte. */

@@ -29,6 +29,8 @@ public final class DailyTasksSynthesizerProcessor implements StageProcessor {
         output.put("inputKeys", context.input().keySet());
         output.put("dailyTaskCount", dailyTasks.size());
         output.put("dailyTasks", dailyTasks);
+        output.put("routineActionBlocks", routineActionBlocks(dailyTasks));
+        output.put("channelMap", dailyTasks.stream().map(task -> text(task.get("channelContext"))).filter(channel -> !channel.isBlank()).distinct().toList());
         output.put("commercialReading", "Mapa de rotina pronto para orientar produto futuro em facilidade, economia de esforço e redução de dor, sem gerar oferta nesta etapa.");
         output.put("businessBoundary", "NAO_GERAR_OFERTA_CAMPANHA_LANDING");
         output.put("reportRole", "PERSONA_ROTINA_TAREFAS_DIARIAS");
@@ -56,8 +58,37 @@ public final class DailyTasksSynthesizerProcessor implements StageProcessor {
         task.put("buyingSignal", text(signal.get("buyingSignal")));
         task.put("evidenceText", text(signal.get("evidenceText")));
         task.put("sourceUrl", text(signal.get("sourceUrl")));
+        task.put("channelContext", text(signal.get("channelContext")));
+        task.put("probableFrequency", text(signal.get("probableFrequency")));
+        task.put("operationalImpact", operationalImpact(text(signal.get("painSignal")), text(signal.get("effortIntensity"))));
+        task.put("actionBlock", actionBlock(signal));
         task.put("easeLever", easeLever(text(signal.get("painSignal"))));
         return task;
+    }
+
+    /** Agrupa tarefas nos blocos que depois viram ângulos claros de criativo/produto, sem criar oferta. */
+    private Map<String, Object> routineActionBlocks(List<Map<String, Object>> tasks) {
+        Map<String, Object> blocks = new LinkedHashMap<>();
+        for (String block : List.of("CONSEGUIR_CLIENTE", "ATENDER", "EXECUTAR_SERVICO", "COBRAR", "ORGANIZAR_RETORNO", "CONTROLAR_OPERACAO")) {
+            blocks.put(block, tasks.stream().filter(task -> block.equals(task.get("actionBlock"))).toList());
+        }
+        return blocks;
+    }
+
+    /** Classifica a tarefa em bloco operacional reconhecível. */
+    private String actionBlock(Map<String, Object> signal) {
+        String combined = (text(signal.get("routineTask")) + " " + text(signal.get("channelContext")) + " " + text(signal.get("buyingSignal"))).toLowerCase();
+        if (combined.contains("cliente") || combined.contains("instagram") || combined.contains("indicação") || combined.contains("indicacao")) return "CONSEGUIR_CLIENTE";
+        if (combined.contains("atend") || combined.contains("whatsapp") || combined.contains("balcão") || combined.contains("balcao")) return "ATENDER";
+        if (combined.contains("cobr") || combined.contains("preço") || combined.contains("preco")) return "COBRAR";
+        if (combined.contains("agenda") || combined.contains("retorno") || combined.contains("recorrente")) return "ORGANIZAR_RETORNO";
+        if (combined.contains("estoque") || combined.contains("controle") || combined.contains("caixa")) return "CONTROLAR_OPERACAO";
+        return "EXECUTAR_SERVICO";
+    }
+
+    /** Resume impacto operacional provável em linguagem de negócio. */
+    private String operationalImpact(String pain, String effortIntensity) {
+        return ("ALTA".equals(effortIntensity) ? "Impacto alto" : "Impacto médio") + " associado a " + (pain.isBlank() ? "dor operacional a validar" : pain);
     }
 
     /** Traduz a dor operacional em alavanca de facilidade para uso posterior no pipeline. */

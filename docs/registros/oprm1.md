@@ -1692,3 +1692,8 @@
 - Atualizado `docs/marketing/pipeline-nichocnae-v3.md` com exemplos reais da execução do CNAE `4781400` na tela `/oprm/cnaes/4781400/pipeline-v3`.
 - Registrado que a execução avançou até `source-searcher` e bloqueou com `FONTES_NAO_COLETADAS`, antes do `quality-gate` formal, porque nenhuma fonte pública qualificada de rotina foi encontrada.
 - Documentados exemplos reais de personas, tarefas planejadas e motivos de rejeição de fontes: URLs duplicadas, evidência de rotina insuficiente e risco comercial/solução.
+
+## 2026-06-28 — NichoCNAE v3: melhorias recomendadas do documento de marketing
+
+- Implementadas melhorias recomendadas em todas as etapas do executor `oprm-coletor-mei` para o pipeline NichoCNAE v3.
+- O fluxo agora reforça CNAE como ponto estatístico, pontua persona por canais e utilidade comercial futura, gera queries mais naturais Brasil-first, separa busca ampla de classificação de evidência, preserva snapshots com situação/canal, diferencia dor operacional de oportunidade futura, sintetiza blocos de rotina, endurece o quality gate por contexto comercial cotidiano e materializa um brief de público sem criar oferta prematura.

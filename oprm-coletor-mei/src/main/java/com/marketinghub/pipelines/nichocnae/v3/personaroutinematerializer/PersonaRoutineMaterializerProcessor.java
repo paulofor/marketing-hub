@@ -47,14 +47,32 @@ public final class PersonaRoutineMaterializerProcessor implements StageProcessor
         Map<String, Object> profile = new LinkedHashMap<>();
         profile.put("personaName", firstNonBlank(text(input.get("winningPersonaName")), text(winnerPersona.get("name")), "persona operacional priorizada"));
         profile.put("personaDescription", text(winnerPersona.get("description")));
+        profile.put("cnaeAudienceDistinction", "CNAE é volume estatístico; o público materializado é o executor MEI/autônomo observado na rotina.");
         profile.put("routineSummary", routineSummary(profile.get("personaName"), dailyTasks));
         profile.put("dailyTasks", dailyTasks);
         profile.put("topOperationalPains", dailyTasks.stream().map(task -> text(task.get("pain"))).filter(pain -> !pain.isBlank()).distinct().toList());
         profile.put("buyingSignals", dailyTasks.stream().map(task -> text(task.get("buyingSignal"))).filter(signal -> !signal.isBlank()).distinct().toList());
+        profile.put("routineActionBlocks", actionBlocks(dailyTasks));
+        profile.put("channels", dailyTasks.stream().map(task -> text(task.get("channelContext"))).filter(channel -> !channel.isBlank()).distinct().toList());
+        profile.put("recognizableVocabularyAndScenes", dailyTasks.stream().map(task -> text(task.get("evidenceText"))).filter(text -> !text.isBlank()).distinct().toList());
         profile.put("evidenceSources", dailyTasks.stream().map(this::evidenceSource).filter(source -> !source.isEmpty()).toList());
         profile.put("easeLevers", dailyTasks.stream().map(task -> text(task.get("easeLever"))).filter(lever -> !lever.isBlank()).distinct().toList());
+        profile.put("futureBriefRole", "Brief de público para fase posterior de hipótese, oferta e campanha, sem promessa comercial gerada neste pipeline.");
         profile.put("approvedByQualityGate", true);
         return profile;
+    }
+
+    /** Agrupa tarefas por blocos operacionais para formar um brief de público acionável. */
+    private Map<String, Object> actionBlocks(List<Map<String, Object>> dailyTasks) {
+        Map<String, Object> blocks = new LinkedHashMap<>();
+        dailyTasks.forEach(task -> {
+            String block = firstNonBlank(text(task.get("actionBlock")), "EXECUTAR_SERVICO");
+            blocks.computeIfAbsent(block, ignored -> new java.util.ArrayList<Map<String, Object>>());
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> blockTasks = (List<Map<String, Object>>) blocks.get(block);
+            blockTasks.add(task);
+        });
+        return blocks;
     }
 
     /** Cria um candidato de nicho com campos funcionais para o backend materializar nas tabelas canônicas. */
@@ -65,6 +83,8 @@ public final class PersonaRoutineMaterializerProcessor implements StageProcessor
         candidate.put("cnaeDescription", text(input.get("cnaeDescription")));
         candidate.put("title", materializedProfile.get("personaName"));
         candidate.put("summary", materializedProfile.get("routineSummary"));
+        candidate.put("channels", materializedProfile.get("channels"));
+        candidate.put("easeLevers", materializedProfile.get("easeLevers"));
         candidate.put("targetAudienceType", "MEI_PROFISSIONAIS_AUTONOMOS_NAO_CLT");
         candidate.put("profilePayload", materializedProfile);
         return candidate;

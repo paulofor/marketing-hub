@@ -12,7 +12,7 @@
 
 ## Start 
 
-agora vamos no backend dentro do pacote :  {{pacote-backend}}
+* agora vamos no backend dentro do pacote :  {{pacote-backend}}
 dentro de todos pacotes internos que são as etapas fazer:
 No Controller criar um endpoint com /start recebendo como parametro o codigo/chave do {{objeto-associado}} que estamos trabalhando.
 No Service um metodo start como parametro o codigo/chave do {{objeto-associado}} que estamos trabalhando

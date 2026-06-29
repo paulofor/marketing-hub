@@ -12,6 +12,7 @@
 - Cada item iniciado com `*` e um prompt unico, independente e acionavel. Cada prompt deve solicitar uma tarefa completa, com entregavel proprio, sem servir apenas para preparar terreno para o prompt seguinte.
 - Os prompts devem ser enviados ao modelo na sequencia deste documento.
 - As variaveis no formato `{{variavel}}` devem ser substituidas pela tabela acima antes do envio.
+- O arquivo indicado em `{{arquivo-definicao}}` deve ser criado ou revisado seguindo `docs/metodologia/template-arquivo-definicao-pipeline.md` antes de iniciar a execucao dos prompts individuais.
 - O modelo deve priorizar o padrao do `nichocnae`, porque ele tem melhor separacao entre backend fonte de verdade, modulo executor, catalogo de etapas, saidas funcionais e acompanhamento por tela.
 - O `dossieproduto` deve ser usado como reforco para auditoria de request/response da OpenAI e para callbacks `recebeRequest`/`recebeResponse`.
 - O backend principal nao executa etapa operacional nem chama OpenAI: ele inicia, persiste, publica pendencias, recebe resultados, valida e decide o avanco.

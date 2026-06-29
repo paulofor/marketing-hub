@@ -1733,3 +1733,10 @@
 - Causa-raiz: o filtro binário exigia fonte ideal antes do `source-fetcher`; em nichos com pouco conteúdo público, isso criava loop operacional na etapa de fontes e impedia o fluxo de chegar ao `quality-gate`, onde a decisão de suficiência deve ser consolidada.
 - Correção: o executor agora mantém o bloqueio para fontes comerciais, solução, utilitárias, duplicadas ou sem URL, mas permite avanço controlado com até 3 fontes públicas fracas, não comerciais e rastreáveis, marcadas como `LOW_CONFIDENCE_ROUTINE_EVIDENCE` e `AVANCO_CONTROLADO_ATE_QUALITY_GATE`.
 - Prevenção: adicionados testes cobrindo o avanço controlado e a remoção da palavra `vendas` como contaminação isolada, porque vendas pode ser parte natural da rotina de loja e não necessariamente página comercial.
+
+## 2026-06-29 — NichoCNAE v3: persona-candidate-generator com pesquisa web OpenAI
+
+- Decisão operacional: executar o caminho 1 para destravar o fluxo, permitindo que a própria chamada OpenAI da etapa `persona-candidate-generator` use `web_search` para pesquisar fontes públicas antes de montar personas candidatas.
+- Correção: o request da Responses API agora envia `tools: [{"type":"web_search"}]` e inclui resultados de busca no payload bruto auditado; a configuração permite desligar por variável `OPRM_NICHO_CNAE_V3_PERSONA_CANDIDATE_GENERATOR_OPENAI_WEB_SEARCH_ENABLED`.
+- Contrato funcional: o prompt agora exige pesquisa web, uso de evidências de rotina e preenchimento de `webEvidence` com URL, título, sinal de rotina e limitação de confiança, sem antecipar dor, oferta, produto ou mecanismo.
+- Prevenção: adicionados testes para garantir que o payload da OpenAI sai com ferramenta de busca web, Flex Processing, schema estrito e auditoria preservada.

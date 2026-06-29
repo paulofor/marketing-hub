@@ -1,43 +1,182 @@
 {
   "type": "object",
   "additionalProperties": false,
-  "required": ["stage", "status", "jobId", "stageExecutionId", "cnaeCode", "cnaeDescription", "candidatePersonas", "personaCount", "personaSummary", "routineSummary", "personaDailyTasks", "selectionCriteria", "evidenceLimitations", "nextStageCode"],
+  "required": [
+    "stage",
+    "status",
+    "jobId",
+    "stageExecutionId",
+    "cnaeCode",
+    "cnaeDescription",
+    "candidatePersonas",
+    "personaCount",
+    "personaSummary",
+    "routineSummary",
+    "personaDailyTasks",
+    "selectionCriteria",
+    "webEvidence",
+    "evidenceLimitations",
+    "nextStageCode"
+  ],
   "properties": {
-    "stage": { "type": "string", "const": "persona-candidate-generator" },
-    "status": { "type": "string", "const": "PERSONAS_CANDIDATAS" },
-    "jobId": { "type": "string" },
-    "stageExecutionId": { "type": "string" },
-    "cnaeCode": { "type": "string" },
-    "cnaeDescription": { "type": "string" },
+    "stage": {
+      "type": "string",
+      "const": "persona-candidate-generator"
+    },
+    "status": {
+      "type": "string",
+      "const": "PERSONAS_CANDIDATAS"
+    },
+    "jobId": {
+      "type": "string"
+    },
+    "stageExecutionId": {
+      "type": "string"
+    },
+    "cnaeCode": {
+      "type": "string"
+    },
+    "cnaeDescription": {
+      "type": "string"
+    },
     "candidatePersonas": {
       "type": "array",
       "minItems": 3,
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["id", "name", "priorityScore", "description", "routineContext", "dailyFlow", "recurringTasks", "interactions", "toolsAndRecords", "routineDecisions", "routineVariations", "validationNeed"],
+        "required": [
+          "id",
+          "name",
+          "priorityScore",
+          "description",
+          "routineContext",
+          "dailyFlow",
+          "recurringTasks",
+          "interactions",
+          "toolsAndRecords",
+          "routineDecisions",
+          "routineVariations",
+          "validationNeed"
+        ],
         "properties": {
-          "id": { "type": "string" },
-          "name": { "type": "string" },
-          "priorityScore": { "type": "integer", "minimum": 0, "maximum": 100 },
-          "description": { "type": "string" },
-          "routineContext": { "type": "string" },
-          "dailyFlow": { "type": "array", "items": { "type": "string" } },
-          "recurringTasks": { "type": "array", "items": { "type": "string" } },
-          "interactions": { "type": "array", "items": { "type": "string" } },
-          "toolsAndRecords": { "type": "array", "items": { "type": "string" } },
-          "routineDecisions": { "type": "array", "items": { "type": "string" } },
-          "routineVariations": { "type": "array", "items": { "type": "string" } },
-          "validationNeed": { "type": "string" }
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "priorityScore": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "description": {
+            "type": "string"
+          },
+          "routineContext": {
+            "type": "string"
+          },
+          "dailyFlow": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "recurringTasks": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "interactions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "toolsAndRecords": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "routineDecisions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "routineVariations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "validationNeed": {
+            "type": "string"
+          }
         }
       }
     },
-    "personaCount": { "type": "integer", "minimum": 3 },
-    "personaSummary": { "type": "string" },
-    "routineSummary": { "type": "string" },
-    "personaDailyTasks": { "type": "array", "items": { "type": "string" } },
-    "selectionCriteria": { "type": "array", "items": { "type": "string" } },
-    "evidenceLimitations": { "type": "array", "items": { "type": "string" } },
-    "nextStageCode": { "type": "string", "const": "persona-tournament" }
+    "personaCount": {
+      "type": "integer",
+      "minimum": 3
+    },
+    "personaSummary": {
+      "type": "string"
+    },
+    "routineSummary": {
+      "type": "string"
+    },
+    "personaDailyTasks": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "selectionCriteria": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "evidenceLimitations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "nextStageCode": {
+      "type": "string",
+      "const": "persona-tournament"
+    },
+    "webEvidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "url",
+          "title",
+          "routineSignal",
+          "confidenceLimit"
+        ],
+        "properties": {
+          "url": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "routineSignal": {
+            "type": "string"
+          },
+          "confidenceLimit": {
+            "type": "string"
+          }
+        }
+      }
+    }
   }
 }

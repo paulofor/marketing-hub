@@ -171,7 +171,7 @@ public class OpenAiPersonaCandidateGenerationClient implements PersonaCandidateG
         }
     }
 
-    /** Monta o corpo da Responses API com JSON Schema estrito e Flex Processing. */
+    /** Monta o corpo da Responses API com JSON Schema estrito, Flex Processing e pesquisa web opcional. */
     Map<String, Object> buildRequestBody(String prompt, String model) {
         Map<String, Object> format = new LinkedHashMap<>();
         format.put("type", "json_schema");
@@ -187,6 +187,10 @@ public class OpenAiPersonaCandidateGenerationClient implements PersonaCandidateG
         body.put("input", prompt);
         body.put("text", text);
         body.put("service_tier", properties.serviceTier());
+        if (properties.webSearchEnabled()) {
+            body.put("tools", List.of(Map.of("type", "web_search")));
+            body.put("include", List.of("web_search_call.results"));
+        }
         return body;
     }
 

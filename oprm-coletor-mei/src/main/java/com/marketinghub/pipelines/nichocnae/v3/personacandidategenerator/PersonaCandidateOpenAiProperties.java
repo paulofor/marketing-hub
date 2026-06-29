@@ -9,7 +9,8 @@ public record PersonaCandidateOpenAiProperties(
         String apiKey,
         String apiKeyFile,
         String model,
-        String serviceTier) {
+        String serviceTier,
+        Boolean webSearchEnabled) {
 
     /** Normaliza padrões operacionais para Responses API em modo Flex. */
     public PersonaCandidateOpenAiProperties {
@@ -18,5 +19,6 @@ public record PersonaCandidateOpenAiProperties(
         apiKeyFile = apiKeyFile == null ? "" : apiKeyFile;
         model = model == null || model.isBlank() ? "gpt-5.2" : model;
         serviceTier = serviceTier == null || serviceTier.isBlank() ? "flex" : serviceTier;
+        webSearchEnabled = webSearchEnabled == null || webSearchEnabled;
     }
 }

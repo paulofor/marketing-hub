@@ -1,6 +1,7 @@
 package com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1.warmupresourcediscovery.service;
 
 import com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1.shared.DossierOpenAiTextResponseExtractor;
+import com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1.shared.DossierPendingInputSupport;
 import com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1.warmupresourcediscovery.service.pending.DossierWarmupResourceDiscoveryPendingJob;
 import com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1.warmupresourcediscovery.service.pending.DossierWarmupResourceDiscoveryPendingRequest;
 import com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1.warmupresourcediscovery.service.pending.DossierWarmupResourceDiscoveryPendingResponse;
@@ -14,7 +15,6 @@ import com.marketinghub.repository.jpa.mois.dossieproduto.entity.PipelineDossieP
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
-import java.util.Map;
 import org.springframework.stereotype.Service;
 
 /** Publica pendências e contratos da etapa descoberta de recursos de aquecimento do pipeline de dossiê MOIS v1. */
@@ -150,13 +150,8 @@ public class DossierWarmupResourceDiscoveryService {
                         page.getId(),
                         "mois-sales-page-" + page.getId(),
                         STAGE_CODE,
-                        Map.of(
-                                "jobId", jobId,
-                                "productKey", String.valueOf(page.getId()),
-                                "pageId", page.getId(),
-                                "stageCode", STAGE_CODE,
-                                "status", STATUS_STARTED,
-                                "nextStageCode", NEXT_STAGE));
+                        DossierPendingInputSupport.inputFor(
+                                page.getId(), jobId, STAGE_CODE, NEXT_STAGE, pipelineDossieProdutoRepository));
                 })
                 .toList();
         return new DossierWarmupResourceDiscoveryPendingResponse(!jobs.isEmpty(), jobs);

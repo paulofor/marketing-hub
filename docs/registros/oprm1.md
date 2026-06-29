@@ -1711,3 +1711,10 @@
 - O fluxo agora reforça CNAE como ponto estatístico, pontua persona por canais e utilidade comercial futura, gera queries mais naturais Brasil-first, separa busca ampla de classificação de evidência, preserva snapshots com situação/canal, diferencia dor operacional de oportunidade futura, sintetiza blocos de rotina, endurece o quality gate por contexto comercial cotidiano e materializa um brief de público sem criar oferta prematura.
 
 - 2026-06-28: corrigido o custo vazio das auditorias de IA no relatório OPRM NichoCNAE; o backend agora calcula `cost_usd` pelo modelo e tokens recebidos nas interações OpenAI, com preço oficial do `gpt-5.2` registrado no catálogo `openai_model` para evitar depender do custo enviado pelo executor.
+
+## 2026-06-29 — NichoCNAE v3: source-searcher com busca orientada a atritos reais
+
+- Diagnóstico: a execução do CNAE 4781400 bloqueou corretamente em `source-searcher` porque os resultados públicos aceitos pelas queries anteriores eram genéricos demais, com dicionários/definições de rotina e páginas duplicadas, sem fonte útil sobre rotina real.
+- Causa-raiz: as variações de busca ainda priorizavam termos amplos como rotina/atendimento e não forçavam suficientemente fontes de atrito observável, como reclamações, dúvidas, pedidos, trocas, entregas e reservas.
+- Correção: o `source-searcher` agora adiciona variações focadas em dor real, reclamações públicas e perguntas profissionais, amplia a classificação de evidência para pedidos/trocas/entregas/reservas/reclamações e rejeita dicionários comuns de rotina como fonte irrelevante.
+- Prevenção: adicionados testes cobrindo query `site:reclameaqui.com.br`, aceitação de atrito real de cliente e rejeição de dicionários comuns que mascaravam a falta de fonte operacional.

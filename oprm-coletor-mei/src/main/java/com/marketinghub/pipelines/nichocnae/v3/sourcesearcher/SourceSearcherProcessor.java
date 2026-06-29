@@ -228,9 +228,13 @@ public final class SourceSearcherProcessor implements StageProcessor {
         String originalQuery = text(plannedQuery.get("query"));
         String objective = text(plannedQuery.get("objective"));
         String simplifiedQuery = simplifyQuery(originalQuery);
+        String operationalQuery = operationalQuery(simplifiedQuery);
         List<String> variants = new ArrayList<>();
         addVariant(variants, enrichBrazilFirstQuery(simplifiedQuery));
-        addVariant(variants, enrichBrazilFirstQuery(operationalQuery(simplifiedQuery)));
+        addVariant(variants, enrichBrazilFirstQuery(operationalQuery));
+        addVariant(variants, realPainQuery(operationalQuery, simplifiedQuery));
+        addVariant(variants, complaintQuery(operationalQuery, simplifiedQuery));
+        addVariant(variants, professionalQuestionQuery(operationalQuery, simplifiedQuery));
         addVariant(variants, enrichBrazilFirstQuery(objective));
         addVariant(variants, naturalRoutineQuery(simplifiedQuery));
         return variants;
@@ -249,6 +253,24 @@ public final class SourceSearcherProcessor implements StageProcessor {
     private String naturalRoutineQuery(String query) {
         String cleanQuery = trimWords(query, 10);
         return cleanQuery.isBlank() ? "" : "como é a rotina " + cleanQuery + " problemas clientes whatsapp instagram";
+    }
+
+    /** Cria variação focada em dor real, evitando que a busca fique presa em definições genéricas de rotina. */
+    private String realPainQuery(String operationalQuery, String fallbackQuery) {
+        String base = trimWords(operationalQuery.isBlank() ? fallbackQuery : operationalQuery, 8);
+        return base.isBlank() ? "" : base + " problema cliente pedido troca entrega whatsapp Brasil";
+    }
+
+    /** Cria variação em fontes de reclamação pública para capturar atritos concretos de compra/atendimento. */
+    private String complaintQuery(String operationalQuery, String fallbackQuery) {
+        String base = trimWords(operationalQuery.isBlank() ? fallbackQuery : operationalQuery, 7);
+        return base.isBlank() ? "" : "site:reclameaqui.com.br " + base + " cliente troca entrega pedido loja roupa";
+    }
+
+    /** Cria variação em formato de pergunta para encontrar dúvidas operacionais de profissionais e clientes. */
+    private String professionalQuestionQuery(String operationalQuery, String fallbackQuery) {
+        String base = trimWords(operationalQuery.isBlank() ? fallbackQuery : operationalQuery, 7);
+        return base.isBlank() ? "" : "\"" + base + "\" dúvida cliente estoque atendimento whatsapp";
     }
 
     /** Simplifica a query planejada removendo ruído que reduz a chance de resultado rastreável. */
@@ -315,7 +337,7 @@ public final class SourceSearcherProcessor implements StageProcessor {
 
     /** Calcula score de evidência de rotina operacional. */
     private int routineEvidenceScore(String text) {
-        return scoreByTerms(text, List.of("rotina", "tarefa", "tarefas", "atendimento", "agenda", "cliente", "clientes", "cobrança", "cobranca", "preço", "preco", "orçamento", "orcamento", "material", "estoque", "retrabalho", "problema", "dúvida", "duvida", "pergunta", "frequência", "frequencia", "manual", "whatsapp", "instagram", "indicação", "indicacao", "balcão", "balcao", "delivery", "relato"), 10);
+        return scoreByTerms(text, List.of("rotina", "tarefa", "tarefas", "atendimento", "agenda", "cliente", "clientes", "cobrança", "cobranca", "preço", "preco", "orçamento", "orcamento", "material", "estoque", "retrabalho", "problema", "dúvida", "duvida", "pergunta", "frequência", "frequencia", "manual", "whatsapp", "instagram", "indicação", "indicacao", "balcão", "balcao", "delivery", "relato", "pedido", "pedidos", "troca", "trocas", "devolução", "devolucao", "entrega", "entregas", "reserva", "reservas", "reclamação", "reclamacao", "reclame aqui"), 10);
     }
 
     /** Calcula aderência ao contexto brasileiro. */
@@ -351,10 +373,10 @@ public final class SourceSearcherProcessor implements StageProcessor {
         if (solutionLanguageRisk || commercialPageRisk) {
             return "CONTAMINATION_RISK";
         }
-        if (containsAny(text, List.of("pergunta", "dúvida", "duvida", "relato", "comentário", "comentario", "forum", "fórum"))) {
+        if (containsAny(text, List.of("pergunta", "dúvida", "duvida", "relato", "comentário", "comentario", "forum", "fórum", "reclamação", "reclamacao", "reclame aqui"))) {
             return "COMMUNITY_OR_QUESTION_EVIDENCE";
         }
-        if (containsAny(text, List.of("whatsapp", "instagram", "agenda", "cobrança", "cobranca", "cliente", "atendimento", "estoque", "balcão", "balcao"))) {
+        if (containsAny(text, List.of("whatsapp", "instagram", "agenda", "cobrança", "cobranca", "cliente", "atendimento", "estoque", "balcão", "balcao", "pedido", "pedidos", "troca", "trocas", "entrega", "entregas", "reserva", "reservas"))) {
             return "ROUTINE_EVIDENCE";
         }
         return "GENERIC_SECTOR_SOURCE";
@@ -363,7 +385,7 @@ public final class SourceSearcherProcessor implements StageProcessor {
     /** Identifica resultados utilitários ou dicionários fora da rotina real do CNAE. */
     private boolean irrelevantUtilityRisk(String url, String text) {
         String domain = domain(url);
-        return containsAny(domain + " " + text, List.of("calculator", "calculadora", "dicionario", "dicionário", "sinonimos", "sinônimos", "infopedia", "lexico", "desmos", "app store"));
+        return containsAny(domain + " " + text, List.of("calculator", "calculadora", "dicionario", "dicionário", "sinonimos", "sinônimos", "infopedia", "lexico", "desmos", "app store", "dicio.com.br", "michaelis", "conceito.de", "significados", "aulete"));
     }
 
     /** Classifica o tipo operacional da fonte. */

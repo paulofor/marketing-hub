@@ -1990,3 +1990,10 @@ Arquivos principais:
 - Causa-raiz tratada: o gateway de contexto do dossiê consultava a tabela legada/inexistente `mois_sales_page_capture`; o modelo operacional atual grava captura em `mois_sales_page_job_execution`.
 - Ajuste aplicado: o start do dossiê passa a buscar HTML bruto na tabela operacional canônica de jobs, filtrando etapa `CAPTURE`, status `CAPTURED`/`DUPLICATE` e bytes positivos.
 - Prevenção de recorrência: adicionado teste de regressão garantindo que o gateway não volte a usar a tabela antiga.
+
+## 2026-06-29 — Correção do bloqueio indevido da síntese final do dossiê MOIS v1
+
+- Diagnosticado no produto 288 que a etapa `dossier-synthesis` falhou mesmo recebendo respostas anteriores com sinais comerciais.
+- Causa-raiz tratada: a validação da síntese final rejeitava qualquer resposta que também contivesse metadados técnicos de auditoria (`auditDecision`, `inputKeys`, `stageExecutionId`), anulando evidências comerciais reais presentes no mesmo payload.
+- Ajuste aplicado: a síntese final passa a bloquear somente quando não houver marcadores comerciais suficientes, mantendo os metadados técnicos como auditoria sem contaminar a decisão funcional.
+- Prevenção de recorrência: adicionado teste de regressão com evidências comerciais misturadas a metadados técnicos.

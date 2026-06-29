@@ -9,6 +9,8 @@ import com.marketinghub.oprmcoletormei.nichocnae.v3.personaroutinematerializer.s
 import com.marketinghub.repository.jpa.oprm.nichocnae.v3.OprmNichoCnaeV3StageExecutionRepository;
 import java.util.List;
 import java.util.Locale;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
@@ -17,6 +19,7 @@ import org.springframework.http.HttpStatus;
 /** Consulta o progresso persistido do pipeline NichoCNAE v3 sem inferir execução no frontend. */
 @Service
 public class BackendNichoCnaeV3ProgressService {
+    private static final Logger log = LoggerFactory.getLogger(BackendNichoCnaeV3ProgressService.class);
     private static final String QUALITY_GATE_STAGE = "quality-gate";
     private static final String FINAL_STAGE = "persona-routine-materializer";
     private final OprmNichoCnaeV3StageExecutionRepository repository;
@@ -59,6 +62,9 @@ public class BackendNichoCnaeV3ProgressService {
         if (qualityGate.getStatus() != OprmNichoCnaeV3StageExecutionStatus.COMPLETED) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Quality gate ainda não foi concluído.");
         }
+        if (!qualityGateApproved(qualityGate)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Quality gate bloqueou a materialização; reprocessar busca/coleta antes de finalizar.");
+        }
         if (!repository.existsByJobIdAndStageCode(latest.getJobId(), FINAL_STAGE)) {
             materializerService.create(latest.getJobId(), latest.getCnaeCode(), qualityGate.getOutputPayload(), qualityGate.getAttemptNumber(), qualityGate.getKnowledgeVersion());
         }
@@ -69,6 +75,9 @@ public class BackendNichoCnaeV3ProgressService {
         OprmNichoCnaeV3StageExecution qualityGate = executions.stream().filter(e -> QUALITY_GATE_STAGE.equals(e.getStageCode())).findFirst().orElse(null);
         boolean hasFinalStage = executions.stream().anyMatch(e -> FINAL_STAGE.equals(e.getStageCode()));
         if (qualityGate == null || qualityGate.getStatus() != OprmNichoCnaeV3StageExecutionStatus.COMPLETED || hasFinalStage) {
+            return null;
+        }
+        if (!qualityGateApproved(qualityGate)) {
             return null;
         }
         JsonNode output = parseOutput(qualityGate.getOutputPayload());
@@ -102,7 +111,18 @@ public class BackendNichoCnaeV3ProgressService {
     /** Converte JSON funcional ou payload livre para leitura da prévia. */
     private JsonNode parseOutput(String outputPayload) {
         if (!StringUtils.hasText(outputPayload)) return objectMapper.createObjectNode();
-        try { return objectMapper.readTree(outputPayload); } catch (java.io.IOException ex) { return objectMapper.createObjectNode().put("raw", outputPayload); }
+        try {
+            return objectMapper.readTree(outputPayload);
+        } catch (java.io.IOException ex) {
+            log.warn("Falha ao ler payload de progresso NichoCNAE v3. modulo=OPRM etapa=progress tamanhoPayload={}", outputPayload.length(), ex);
+            return objectMapper.createObjectNode().put("raw", outputPayload);
+        }
+    }
+
+    /** Verifica se o gate funcional aprovou a materialização, não apenas se terminou tecnicamente. */
+    private boolean qualityGateApproved(OprmNichoCnaeV3StageExecution qualityGate) {
+        JsonNode output = parseOutput(qualityGate.getOutputPayload());
+        return output.path("approved").asBoolean(false);
     }
 
     /** Retorna o primeiro campo textual disponível no payload. */

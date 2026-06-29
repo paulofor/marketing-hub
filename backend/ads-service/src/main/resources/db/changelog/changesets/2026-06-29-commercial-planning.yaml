@@ -1,0 +1,297 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-29-01-commercial-plan
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            - tableExists:
+                tableName: commercial_plan
+      changes:
+        - createTable:
+            tableName: commercial_plan
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(191)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: plan_type
+                  type: VARCHAR(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: niche_id
+                  type: BIGINT
+              - column:
+                  name: hypothesis_id
+                  type: BINARY(16)
+              - column:
+                  name: experiment_id
+                  type: BIGINT
+              - column:
+                  name: commercial_objective
+                  type: LONGTEXT
+              - column:
+                  name: target_audience
+                  type: VARCHAR(512)
+              - column:
+                  name: main_pain
+                  type: VARCHAR(512)
+              - column:
+                  name: main_offer
+                  type: VARCHAR(512)
+              - column:
+                  name: main_lead_magnet
+                  type: VARCHAR(512)
+              - column:
+                  name: main_channel
+                  type: VARCHAR(191)
+              - column:
+                  name: main_metric
+                  type: VARCHAR(191)
+              - column:
+                  name: success_criteria
+                  type: LONGTEXT
+              - column:
+                  name: stop_criteria
+                  type: LONGTEXT
+              - column:
+                  name: deadline
+                  type: DATE
+              - column:
+                  name: max_budget
+                  type: DECIMAL(12,2)
+              - column:
+                  name: next_action
+                  type: VARCHAR(512)
+              - column:
+                  name: current_blocker
+                  type: VARCHAR(512)
+              - column:
+                  name: root_cause
+                  type: VARCHAR(512)
+              - column:
+                  name: most_likely_scenario
+                  type: VARCHAR(512)
+              - column:
+                  name: main_future_risk
+                  type: VARCHAR(512)
+              - column:
+                  name: action_to_avoid
+                  type: VARCHAR(512)
+              - column:
+                  name: created_at
+                  type: DATETIME(6)
+              - column:
+                  name: updated_at
+                  type: DATETIME(6)
+        - addForeignKeyConstraint:
+            baseTableName: commercial_plan
+            baseColumnNames: niche_id
+            constraintName: fk_commercial_plan_niche
+            referencedTableName: market_niche
+            referencedColumnNames: id
+        - addForeignKeyConstraint:
+            baseTableName: commercial_plan
+            baseColumnNames: hypothesis_id
+            constraintName: fk_commercial_plan_hypothesis
+            referencedTableName: hypothesis
+            referencedColumnNames: id
+        - addForeignKeyConstraint:
+            baseTableName: commercial_plan
+            baseColumnNames: experiment_id
+            constraintName: fk_commercial_plan_experiment
+            referencedTableName: experiment
+            referencedColumnNames: id
+        - createIndex:
+            tableName: commercial_plan
+            indexName: idx_commercial_plan_status
+            columns:
+              - column:
+                  name: status
+        - createIndex:
+            tableName: commercial_plan
+            indexName: idx_commercial_plan_niche
+            columns:
+              - column:
+                  name: niche_id
+
+  - changeSet:
+      id: 2026-06-29-02-commercial-plan-milestone
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            - tableExists:
+                tableName: commercial_plan_milestone
+      changes:
+        - createTable:
+            tableName: commercial_plan_milestone
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: plan_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: sequence_order
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: code
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(191)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: due_date
+                  type: DATE
+              - column:
+                  name: evidence_source
+                  type: VARCHAR(512)
+              - column:
+                  name: blocker
+                  type: VARCHAR(512)
+              - column:
+                  name: recommended_next_action
+                  type: VARCHAR(512)
+              - column:
+                  name: created_at
+                  type: DATETIME(6)
+              - column:
+                  name: updated_at
+                  type: DATETIME(6)
+        - addForeignKeyConstraint:
+            baseTableName: commercial_plan_milestone
+            baseColumnNames: plan_id
+            constraintName: fk_commercial_plan_milestone_plan
+            referencedTableName: commercial_plan
+            referencedColumnNames: id
+        - createIndex:
+            tableName: commercial_plan_milestone
+            indexName: idx_commercial_plan_milestone_plan
+            columns:
+              - column:
+                  name: plan_id
+              - column:
+                  name: sequence_order
+
+  - changeSet:
+      id: 2026-06-29-03-commercial-plan-simulation
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            - tableExists:
+                tableName: commercial_plan_simulation
+      changes:
+        - createTable:
+            tableName: commercial_plan_simulation
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: plan_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: recommendation
+                  type: VARCHAR(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: most_likely_scenario
+                  type: VARCHAR(512)
+              - column:
+                  name: best_realistic_scenario
+                  type: VARCHAR(512)
+              - column:
+                  name: worst_likely_scenario
+                  type: VARCHAR(512)
+              - column:
+                  name: main_risk
+                  type: VARCHAR(512)
+              - column:
+                  name: best_next_action
+                  type: VARCHAR(512)
+              - column:
+                  name: action_to_avoid
+                  type: VARCHAR(512)
+              - column:
+                  name: continue_condition
+                  type: VARCHAR(512)
+              - column:
+                  name: stop_condition
+                  type: VARCHAR(512)
+              - column:
+                  name: evidence_7_days
+                  type: VARCHAR(512)
+              - column:
+                  name: evidence_14_days
+                  type: VARCHAR(512)
+              - column:
+                  name: evidence_30_days
+                  type: VARCHAR(512)
+              - column:
+                  name: decision_notes
+                  type: LONGTEXT
+              - column:
+                  name: created_at
+                  type: DATETIME(6)
+        - addForeignKeyConstraint:
+            baseTableName: commercial_plan_simulation
+            baseColumnNames: plan_id
+            constraintName: fk_commercial_plan_simulation_plan
+            referencedTableName: commercial_plan
+            referencedColumnNames: id
+        - createIndex:
+            tableName: commercial_plan_simulation
+            indexName: idx_commercial_plan_simulation_plan
+            columns:
+              - column:
+                  name: plan_id
+              - column:
+                  name: created_at

@@ -21,9 +21,16 @@ public final class SourceSearcherProcessor implements StageProcessor {
     private static final int MAX_SELECTED_SOURCES = 8;
     private static final int MIN_ROUTINE_EVIDENCE_SCORE = 45;
     private static final int MAX_REJECTED_SOURCES_PER_ATTEMPT = 8;
+    private static final int MAX_DOMAIN_FALLBACK_QUERIES = 6;
     private static final Pattern PARENTHETICAL_TEXT = Pattern.compile("\\([^)]*\\)");
     private static final Pattern NON_SEARCH_TEXT = Pattern.compile("[^\\p{L}\\p{N}\\s]");
     private static final Pattern MULTIPLE_SPACES = Pattern.compile("\\s+");
+    private static final List<String> DOMAIN_TERMS = List.of(
+            "loja", "roupas", "vestuario", "vestuário", "acessorios", "acessórios", "varejo", "mei", "autonomo", "autônomo",
+            "whatsapp", "instagram", "cliente", "clientes", "atendimento", "balcao", "balcão", "caixa", "estoque", "vitrine",
+            "araras", "provador", "pedido", "pedidos", "reserva", "reservas", "troca", "trocas", "devolucao", "devolução",
+            "entrega", "entregas", "cobranca", "cobrança", "pagamentos", "recebimentos", "fluxo", "planilha", "caderno",
+            "tamanho", "tamanhos", "cor", "cores", "mercadoria", "fornecedor", "fornecedores");
     private static final SourceSearchClient EMPTY_SEARCH_CLIENT = (query, limit) -> List.of();
 
     private final SourceSearchClient searchClient;
@@ -106,17 +113,29 @@ public final class SourceSearcherProcessor implements StageProcessor {
     /** Executa as queries planejadas e seleciona fontes qualificadas para a próxima etapa. */
     private SearchOutput search(List<Map<String, Object>> plannedQueries) {
         Set<String> seenUrls = new HashSet<>();
-        List<Map<String, Object>> attempts = plannedQueries.stream()
+        List<Map<String, Object>> attempts = new ArrayList<>(plannedQueries.stream()
                 .map(query -> searchOneQuery(query, seenUrls))
-                .toList();
-        List<Map<String, Object>> selectedSources = attempts.stream()
+                .toList());
+        List<Map<String, Object>> selectedSources = selectSources(attempts);
+        if (selectedSources.isEmpty()) {
+            List<Map<String, Object>> fallbackQueries = domainFallbackQueries(plannedQueries);
+            attempts.addAll(fallbackQueries.stream()
+                    .map(query -> searchOneQuery(query, seenUrls))
+                    .toList());
+            selectedSources = selectSources(attempts);
+        }
+        return new SearchOutput(selectedSources, attempts);
+    }
+
+    /** Seleciona as melhores fontes qualificadas preservando score e URL estável. */
+    private List<Map<String, Object>> selectSources(List<Map<String, Object>> attempts) {
+        return attempts.stream()
                 .flatMap(attempt -> maps(attempt.get("qualifiedSources")).stream())
                 .sorted(Comparator
                         .comparingInt((Map<String, Object> source) -> score(source, "qualityScore")).reversed()
                         .thenComparing(source -> text(source.get("url"))))
                 .limit(MAX_SELECTED_SOURCES)
                 .toList();
-        return new SearchOutput(selectedSources, attempts);
     }
 
     /** Busca uma query por variações simples e registra quantidade bruta, fontes aceitas e descartes. */
@@ -230,7 +249,10 @@ public final class SourceSearcherProcessor implements StageProcessor {
         String objective = text(plannedQuery.get("objective"));
         String simplifiedQuery = simplifyQuery(originalQuery);
         String operationalQuery = operationalQuery(simplifiedQuery);
+        String domainQuery = domainQuery(simplifiedQuery + " " + objective);
         List<String> variants = new ArrayList<>();
+        addVariant(variants, enrichBrazilFirstQuery(domainQuery));
+        addVariant(variants, retailQuestionQuery(domainQuery));
         addVariant(variants, enrichBrazilFirstQuery(simplifiedQuery));
         addVariant(variants, enrichBrazilFirstQuery(operationalQuery));
         addVariant(variants, realPainQuery(operationalQuery, simplifiedQuery));
@@ -239,6 +261,32 @@ public final class SourceSearcherProcessor implements StageProcessor {
         addVariant(variants, enrichBrazilFirstQuery(objective));
         addVariant(variants, naturalRoutineQuery(simplifiedQuery));
         return variants;
+    }
+
+    /** Cria queries fallback focadas no domínio quando as queries planejadas retornam apenas ruído. */
+    private List<Map<String, Object>> domainFallbackQueries(List<Map<String, Object>> plannedQueries) {
+        String combined = plannedQueries.stream()
+                .map(query -> text(query.get("query")) + " " + text(query.get("objective")))
+                .reduce("", (left, right) -> left + " " + right);
+        String domainQuery = domainQuery(combined);
+        if (domainQuery.isBlank()) {
+            domainQuery = "loja roupas atendimento cliente estoque whatsapp";
+        }
+        List<String> queries = new ArrayList<>();
+        addVariant(queries, domainQuery + " relato rotina atendimento cliente Brasil");
+        addVariant(queries, domainQuery + " problema estoque pedido troca entrega Brasil");
+        addVariant(queries, "site:reclameaqui.com.br " + domainQuery + " troca entrega pedido atendimento");
+        addVariant(queries, "site:sebrae.com.br " + domainQuery + " atendimento estoque cliente");
+        addVariant(queries, "\"" + domainQuery + "\" whatsapp instagram cliente estoque");
+        addVariant(queries, "dono loja roupas rotina estoque caixa atendimento clientes Brasil");
+        List<Map<String, Object>> fallback = new ArrayList<>();
+        for (String query : queries.stream().limit(MAX_DOMAIN_FALLBACK_QUERIES).toList()) {
+            fallback.add(Map.of(
+                    "query", query,
+                    "intent", "DOMAIN_FALLBACK",
+                    "objective", "Fallback determinístico para encontrar fonte de rotina do domínio quando as queries planejadas retornam ruído."));
+        }
+        return fallback;
     }
 
     /** Enriquece a consulta para priorizar Brasil e rotina real do profissional. */
@@ -254,6 +302,12 @@ public final class SourceSearcherProcessor implements StageProcessor {
     private String naturalRoutineQuery(String query) {
         String cleanQuery = trimWords(query, 10);
         return cleanQuery.isBlank() ? "" : "como é a rotina " + cleanQuery + " problemas clientes whatsapp instagram";
+    }
+
+    /** Cria variação em formato de dúvida real sem termos genéricos que atraem dicionários. */
+    private String retailQuestionQuery(String query) {
+        String cleanQuery = trimWords(query, 10);
+        return cleanQuery.isBlank() ? "" : cleanQuery + " dúvida cliente estoque atendimento whatsapp loja";
     }
 
     /** Cria variação focada em dor real, evitando que a busca fique presa em definições genéricas de rotina. */
@@ -284,7 +338,7 @@ public final class SourceSearcherProcessor implements StageProcessor {
     /** Mantém termos de operação diária mais fortes para uma variação de busca objetiva. */
     private String operationalQuery(String query) {
         String normalized = normalize(query);
-        List<String> terms = List.of("atendimento", "provador", "estoque", "reposicao", "reposição", "mercadoria", "vitrine", "araras", "etiquetas", "caixa", "loja", "roupas", "acessorios", "acessórios", "pagamentos", "comprovantes", "pedidos", "reservas", "trocas", "devolucoes", "devoluções", "entregas", "whatsapp", "instagram");
+        List<String> terms = List.of("atendimento", "provador", "estoque", "reposicao", "reposição", "mercadoria", "vitrine", "araras", "etiquetas", "caixa", "loja", "roupas", "vestuario", "vestuário", "acessorios", "acessórios", "pagamentos", "recebimentos", "fluxo", "cobrança", "cobranca", "comprovantes", "pedidos", "reservas", "trocas", "devolucoes", "devoluções", "entregas", "whatsapp", "instagram");
         StringBuilder builder = new StringBuilder();
         for (String term : terms) {
             if (normalized.contains(normalize(term)) && !builder.toString().contains(term)) {
@@ -293,6 +347,27 @@ public final class SourceSearcherProcessor implements StageProcessor {
         }
         String operational = builder.toString().trim();
         return operational.isBlank() ? query : operational;
+    }
+
+    /** Extrai núcleo de domínio para evitar buscas começando por termos ambíguos como validar, rotina ou controle. */
+    private String domainQuery(String query) {
+        String normalized = normalize(simplifyQuery(query));
+        List<String> words = new ArrayList<>();
+        for (String term : DOMAIN_TERMS) {
+            if (normalized.contains(normalize(term))) {
+                addDomainWord(words, term);
+            }
+        }
+        return String.join(" ", words.stream().limit(12).toList());
+    }
+
+    /** Adiciona termo de domínio sem duplicidade após normalização. */
+    private void addDomainWord(List<String> words, String word) {
+        String normalized = normalize(word);
+        boolean exists = words.stream().map(this::normalize).anyMatch(normalized::equals);
+        if (!exists && !normalized.isBlank()) {
+            words.add(word);
+        }
     }
 
     /** Adiciona uma variação não vazia sem duplicidade. */

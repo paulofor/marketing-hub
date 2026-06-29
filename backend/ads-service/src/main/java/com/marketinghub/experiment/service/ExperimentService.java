@@ -350,8 +350,9 @@ public class ExperimentService {
                 .freeReward(normalizeExperimentPromiseField(request.getFreeReward()))
                 .funnelPromise(normalizeExperimentPromiseField(request.getFunnelPromise()))
                 .primaryCta(normalizeExperimentPromiseField(request.getPrimaryCta()))
+                .experimentType(resolveExperimentType(request.getExperimentType()))
                 .campaignObjective(resolveCampaignObjective(
-                        request.getCampaignObjective(), request.getFreeReward()))
+                        request.getCampaignObjective(), request.getFreeReward(), request.getExperimentType()))
                 .hypothesisRef(hyp)
                 .kpiTargetCpl(request.getKpiTargetCpl())
                 .metricPreset(preset)
@@ -478,6 +479,7 @@ public class ExperimentService {
                 .freeReward(original.getFreeReward())
                 .funnelPromise(original.getFunnelPromise())
                 .primaryCta(original.getPrimaryCta())
+                .experimentType(original.getExperimentType())
                 .campaignObjective(original.getCampaignObjective())
                 .hypothesisRef(original.getHypothesisRef())
                 .kpiTargetCpl(original.getKpiTargetCpl())
@@ -592,12 +594,17 @@ public class ExperimentService {
         if (request.isPrimaryCtaPresent()) {
             exp.setPrimaryCta(normalizeExperimentPromiseField(request.getPrimaryCta()));
         }
+        if (request.isExperimentTypePresent()) {
+            exp.setExperimentType(resolveExperimentType(request.getExperimentType()));
+        }
         if (request.isCampaignObjectivePresent()) {
             exp.setCampaignObjective(resolveCampaignObjective(
                     request.getCampaignObjective(),
-                    request.isFreeRewardPresent() ? request.getFreeReward() : exp.getFreeReward()));
+                    request.isFreeRewardPresent() ? request.getFreeReward() : exp.getFreeReward(),
+                    exp.getExperimentType()));
         } else if (request.isFreeRewardPresent()) {
-            exp.setCampaignObjective(resolveCampaignObjective(exp.getCampaignObjective(), request.getFreeReward()));
+            exp.setCampaignObjective(resolveCampaignObjective(
+                    exp.getCampaignObjective(), request.getFreeReward(), exp.getExperimentType()));
         }
         exp.setKpiTargetCpl(request.getKpiTargetCpl());
         exp.setMetricPreset(preset);
@@ -972,14 +979,26 @@ public class ExperimentService {
     }
 
     /**
-     * Resolve o objetivo de campanha, mantendo Leads como padrão para recompensa gratuita.
+     * Resolve o tipo comercial do experimento mantendo compatibilidade com testes antigos.
+     */
+    private ExperimentType resolveExperimentType(ExperimentType requestedType) {
+        return requestedType != null ? requestedType : ExperimentType.NICHE_TEST;
+    }
+
+    /**
+     * Resolve o objetivo de campanha conforme o tipo comercial do experimento.
      */
     private ExperimentCampaignObjective resolveCampaignObjective(
-            ExperimentCampaignObjective requestedObjective, String freeReward) {
+            ExperimentCampaignObjective requestedObjective, String freeReward, ExperimentType experimentType) {
+        ExperimentType resolvedType = resolveExperimentType(experimentType);
         ExperimentCampaignObjective objective = requestedObjective != null
                 ? requestedObjective
-                : ExperimentCampaignObjective.LEADS;
-        if (StringUtils.hasText(freeReward) && objective != ExperimentCampaignObjective.LEADS) {
+                : resolvedType == ExperimentType.LOW_TICKET_PRODUCT
+                        ? ExperimentCampaignObjective.SALES
+                        : ExperimentCampaignObjective.LEADS;
+        if (resolvedType == ExperimentType.NICHE_TEST
+                && StringUtils.hasText(freeReward)
+                && objective != ExperimentCampaignObjective.LEADS) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "campaignObjective must be LEADS when freeReward is present");

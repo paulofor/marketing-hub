@@ -9,6 +9,7 @@ import com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1.produc
 import com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1.productunderstanding.service.receberesponse.DossierProductUnderstandingRecebeResponseRequest;
 import com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1.productunderstanding.service.receberesponse.DossierProductUnderstandingRecebeResponseResponse;
 import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageRepository;
+import com.marketinghub.repository.jpa.mois.dossieproduto.DossierProductContextGateway;
 import com.marketinghub.repository.jpa.mois.dossieproduto.PipelineDossieProdutoRepository;
 import com.marketinghub.repository.jpa.mois.dossieproduto.entity.PipelineDossieProduto;
 import java.time.Instant;
@@ -22,13 +23,16 @@ import org.springframework.stereotype.Service;
 public class DossierProductUnderstandingService {
     private final MoisSalesPageRepository salesPageRepository;
     private final PipelineDossieProdutoRepository pipelineDossieProdutoRepository;
+    private final DossierProductContextGateway productContextGateway;
 
     /** Cria o service da etapa com acesso aos repositórios canônicos da página/produto e da auditoria do pipeline. */
     public DossierProductUnderstandingService(
             MoisSalesPageRepository salesPageRepository,
-            PipelineDossieProdutoRepository pipelineDossieProdutoRepository) {
+            PipelineDossieProdutoRepository pipelineDossieProdutoRepository,
+            DossierProductContextGateway productContextGateway) {
         this.salesPageRepository = salesPageRepository;
         this.pipelineDossieProdutoRepository = pipelineDossieProdutoRepository;
+        this.productContextGateway = productContextGateway;
     }
 
     private static final String STAGE_CODE = "product-understanding";
@@ -144,19 +148,22 @@ public class DossierProductUnderstandingService {
                 .stream()
                 .map(page -> {
                     String jobId = resolveJobId(String.valueOf(page.getId()));
+                    Map<String, Object> input = new java.util.LinkedHashMap<>(productContextGateway.findContext(page.getId())
+                            .map(DossierProductContextGateway.DossierProductContext::toInputMap)
+                            .orElseGet(Map::of));
+                    input.put("jobId", jobId);
+                    input.put("productKey", String.valueOf(page.getId()));
+                    input.put("pageId", page.getId());
+                    input.put("stageCode", STAGE_CODE);
+                    input.put("status", STATUS_STARTED);
+                    input.put("nextStageCode", NEXT_STAGE);
                     return new DossierProductUnderstandingPendingJob(
                         jobId,
                         page.getId(),
                         page.getId(),
                         "mois-sales-page-" + page.getId(),
                         STAGE_CODE,
-                        Map.of(
-                                "jobId", jobId,
-                                "productKey", String.valueOf(page.getId()),
-                                "pageId", page.getId(),
-                                "stageCode", STAGE_CODE,
-                                "status", STATUS_STARTED,
-                                "nextStageCode", NEXT_STAGE));
+                        input);
                 })
                 .toList();
         return new DossierProductUnderstandingPendingResponse(!jobs.isEmpty(), jobs);

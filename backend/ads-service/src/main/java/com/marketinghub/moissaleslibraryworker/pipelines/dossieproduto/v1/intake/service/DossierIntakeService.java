@@ -9,6 +9,7 @@ import com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1.intake
 import com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1.intake.service.receberesponse.DossierIntakeRecebeResponseRequest;
 import com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1.intake.service.receberesponse.DossierIntakeRecebeResponseResponse;
 import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageRepository;
+import com.marketinghub.repository.jpa.mois.dossieproduto.DossierProductContextGateway;
 import com.marketinghub.repository.jpa.mois.dossieproduto.PipelineDossieProdutoRepository;
 import com.marketinghub.repository.jpa.mois.dossieproduto.entity.PipelineDossieProduto;
 import java.time.Instant;
@@ -22,13 +23,16 @@ import org.springframework.stereotype.Service;
 public class DossierIntakeService {
     private final MoisSalesPageRepository salesPageRepository;
     private final PipelineDossieProdutoRepository pipelineDossieProdutoRepository;
+    private final DossierProductContextGateway productContextGateway;
 
     /** Cria o service da etapa com acesso aos repositórios canônicos da página/produto e da auditoria do pipeline. */
     public DossierIntakeService(
             MoisSalesPageRepository salesPageRepository,
-            PipelineDossieProdutoRepository pipelineDossieProdutoRepository) {
+            PipelineDossieProdutoRepository pipelineDossieProdutoRepository,
+            DossierProductContextGateway productContextGateway) {
         this.salesPageRepository = salesPageRepository;
         this.pipelineDossieProdutoRepository = pipelineDossieProdutoRepository;
+        this.productContextGateway = productContextGateway;
     }
 
     private static final String STAGE_CODE = "intake";
@@ -45,6 +49,9 @@ public class DossierIntakeService {
         String jobId = UUID.randomUUID().toString();
         var page = salesPageRepository.findById(pageId)
                 .orElseThrow(() -> new IllegalArgumentException("Página/produto MOIS não encontrada: " + productKey));
+        if (!productContextGateway.hasCollectedProductContext(pageId)) {
+            throw new IllegalStateException("Dossiê de produto exige HTML, descrição ou resumo coletado antes do início: " + productKey);
+        }
         page.setDossieProdutoStatus(STATUS_STARTED);
         page.setDossieProdutoCurrentStage(STAGE_CODE);
         page.setDossieProdutoUpdatedAt(now);

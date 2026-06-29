@@ -1,6 +1,7 @@
 package com.marketinghub.oprmcoletormei.marketimport.config;
 
 import com.marketinghub.pipelines.nichocnae.v3.personacandidategenerator.PersonaCandidateOpenAiProperties;
+import com.marketinghub.pipelines.nichocnae.v3.sourcesearcher.SourceSearcherOpenAiProperties;
 import java.time.Duration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -14,7 +15,8 @@ import org.springframework.web.client.RestClient;
 @EnableConfigurationProperties({
         OprmMarketImportScheduleProperties.class,
         OprmMarketImportCollectorProperties.class,
-        PersonaCandidateOpenAiProperties.class
+        PersonaCandidateOpenAiProperties.class,
+        SourceSearcherOpenAiProperties.class
 })
 public class OprmMarketImportConfig {
     private static final Duration HTTP_CONNECT_TIMEOUT = Duration.ofSeconds(30);

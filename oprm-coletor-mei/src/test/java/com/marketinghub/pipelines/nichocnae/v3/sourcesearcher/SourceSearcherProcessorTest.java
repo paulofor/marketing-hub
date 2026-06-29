@@ -126,6 +126,60 @@ class SourceSearcherProcessorTest {
                 assertThat(String.valueOf(query)).startsWith("pedidos reservas trocas"));
     }
 
+    /** Gera buscas focadas em reclamações e aceita fonte pública com atrito real de pedido, troca e entrega. */
+    @Test
+    void shouldUseComplaintQueriesAndAcceptRealCustomerFrictionSources() {
+        SourceSearchClient searchClient = (query, limit) -> {
+            if (query.startsWith("site:reclameaqui.com.br")) {
+                return List.of(new SourceSearchResult(
+                        "Reclamação sobre troca e entrega de roupa comprada pelo WhatsApp",
+                        "https://www.reclameaqui.com.br/loja-roupas/troca-entrega-whatsapp",
+                        "Cliente relata pedido, troca, entrega, atendimento por WhatsApp e reserva de peça em loja de roupas.",
+                        "TEST_PROVIDER",
+                        "<item />"));
+            }
+            return List.of();
+        };
+
+        StageResult result = new SourceSearcherProcessor(searchClient).process(new StageContext("job", "5", Map.of(
+                "plannedQueries", List.of(Map.of(
+                        "query", "Dono-operador de loja de roupas atendimento estoque pedidos reservas trocas entrega WhatsApp Instagram Brasil",
+                        "intent", "TAREFA_DIARIA",
+                        "objective", "Confirmar atritos reais de pedido, troca e entrega")))));
+
+        assertThat(result.status()).isEqualTo("FONTES_ENCONTRADAS");
+        List<?> attempts = (List<?>) result.output().get("searchAttempts");
+        Map<?, ?> attempt = (Map<?, ?>) attempts.getFirst();
+        assertThat((List<?>) attempt.get("queryVariants")).anySatisfy(query ->
+                assertThat(String.valueOf(query)).startsWith("site:reclameaqui.com.br"));
+        List<?> selectedSources = (List<?>) result.output().get("selectedSources");
+        Map<?, ?> source = (Map<?, ?>) selectedSources.getFirst();
+        assertThat(source.get("sourceIntent")).isEqualTo("COMMUNITY_OR_QUESTION_EVIDENCE");
+    }
+
+    /** Rejeita dicionários comuns de rotina que antes consumiam resultados úteis das buscas públicas. */
+    @Test
+    void shouldRejectCommonDictionaryRoutineResults() {
+        SourceSearchClient searchClient = (query, limit) -> List.of(new SourceSearchResult(
+                "Rotina - Dicio, Dicionário Online de Português",
+                "https://www.dicio.com.br/rotina/",
+                "Significado de rotina: sequência dos procedimentos e costumes habituais.",
+                "TEST_PROVIDER",
+                "<item />"));
+
+        StageResult result = new SourceSearcherProcessor(searchClient).process(new StageContext("job", "5", Map.of(
+                "plannedQueries", List.of(Map.of("query", "rotina loja roupas atendimento")))));
+
+        assertThat(result.status()).isEqualTo("FONTES_NAO_COLETADAS");
+        List<?> attempts = (List<?>) result.output().get("searchAttempts");
+        Map<?, ?> attempt = (Map<?, ?>) attempts.getFirst();
+        assertThat((List<?>) attempt.get("rejectedSources")).anySatisfy(rejected -> {
+            Map<?, ?> source = (Map<?, ?>) rejected;
+            assertThat(source.get("sourceIntent")).isEqualTo("IRRELEVANT_UTILITY_RISK");
+            assertThat(source.get("irrelevantUtilityRisk")).isEqualTo(true);
+        });
+    }
+
     /** Rejeita resultados utilitários irrelevantes que aparecem em buscas ruidosas de cobrança ou pagamento. */
     @Test
     void shouldRejectIrrelevantUtilityResults() {

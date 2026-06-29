@@ -13,7 +13,7 @@ class NichoCnaeV3StageDefinitionsTest {
     /** Confirma que a v3 nasce com o fluxo completo até materialização da rotina da persona. */
     @Test
     void shouldRegisterAllVersionThreeStagesInOrder() {
-        List<String> stages = new NichoCnaeV3StageDefinitions(request -> personaPayload(), (query, limit) -> List.of()).all().stream()
+        List<String> stages = stageDefinitions().all().stream()
                 .map(NichoCnaeV3StageDefinition::stageCode)
                 .toList();
 
@@ -23,7 +23,7 @@ class NichoCnaeV3StageDefinitionsTest {
     /** Confirma que toda etapa v3 cadastrada tem endpoint pending e processor executável pelo scheduler único. */
     @Test
     void shouldRegisterBackendPathAndProcessorForEveryVersionThreeStage() {
-        List<NichoCnaeV3StageDefinition> stages = new NichoCnaeV3StageDefinitions(request -> personaPayload(), (query, limit) -> List.of()).all();
+        List<NichoCnaeV3StageDefinition> stages = stageDefinitions().all();
 
         assertEquals(expectedStages().size(), stages.size());
         for (NichoCnaeV3StageDefinition stage : stages) {
@@ -41,6 +41,14 @@ class NichoCnaeV3StageDefinitionsTest {
                 Map.of("name", "persona"),
                 Map.of("name", "persona 2"),
                 Map.of("name", "persona 3")));
+    }
+
+    /** Cria o catálogo com integrações fake para manter o teste isolado. */
+    private static NichoCnaeV3StageDefinitions stageDefinitions() {
+        return new NichoCnaeV3StageDefinitions(
+                request -> personaPayload(),
+                (query, limit) -> List.of(),
+                (context, plannedQueries, attempts, selectedSources) -> selectedSources);
     }
 
     /** Lista canônica das etapas v3 executadas pela varredura agendada. */

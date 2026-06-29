@@ -211,6 +211,90 @@ function getDossierStageMetricClassName(stage: DossierStageView) {
   return "border rounded-3 bg-white px-3 py-2";
 }
 
+function splitTechnicalPayload(value: string) {
+  const normalized = value.trim().replace(/^\{/, "").replace(/\}$/, "");
+  const parts: string[] = [];
+  let current = "";
+  let depth = 0;
+
+  for (const char of normalized) {
+    if (char === "{" || char === "[" || char === "(") depth += 1;
+    if (char === "}" || char === "]" || char === ")") {
+      depth = Math.max(0, depth - 1);
+    }
+    if (char === "," && depth === 0) {
+      if (current.trim()) parts.push(current.trim());
+      current = "";
+      continue;
+    }
+    current += char;
+  }
+
+  if (current.trim()) parts.push(current.trim());
+  return parts;
+}
+
+function TechnicalPayloadReader({ content }: { content?: string | null }) {
+  const text = cleanText(content);
+  if (!text) {
+    return <p className="text-muted small mb-0">Sem conteúdo registrado.</p>;
+  }
+
+  try {
+    JSON.parse(text);
+    return <CollapsibleJsonViewer content={text} initiallyCollapsed />;
+  } catch {
+    // Payloads legados chegam como Map.toString() do Java. Aqui a tela organiza
+    // a leitura sem alterar a evidência técnica original persistida pelo backend.
+  }
+
+  const parts = splitTechnicalPayload(text);
+  if (parts.length <= 1) {
+    return <CollapsibleJsonViewer content={text} parseAsJson={false} />;
+  }
+
+  return (
+    <div className="d-flex flex-column gap-2">
+      <div className="row g-2">
+        {parts.map((part, index) => {
+          const separatorIndex = part.indexOf("=");
+          const label =
+            separatorIndex > 0
+              ? part.slice(0, separatorIndex)
+              : `Item ${index + 1}`;
+          const value =
+            separatorIndex > 0 ? part.slice(separatorIndex + 1) : part;
+          const isLong =
+            value.length > 140 || value.includes("{") || value.includes("[");
+          return (
+            <div
+              className={isLong ? "col-12" : "col-md-6"}
+              key={`${label}-${index}`}
+            >
+              <div className="border rounded-3 bg-body-tertiary p-3 h-100">
+                <div className="small text-secondary text-uppercase fw-semibold mb-1">
+                  {label.trim()}
+                </div>
+                <div className="text-break" style={{ whiteSpace: "pre-wrap" }}>
+                  {value.trim() || "-"}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <details>
+        <summary className="small text-secondary" style={{ cursor: "pointer" }}>
+          Ver payload técnico original
+        </summary>
+        <div className="mt-2">
+          <CollapsibleJsonViewer content={text} parseAsJson={false} />
+        </div>
+      </details>
+    </div>
+  );
+}
+
 function extractOpenAiOutputText(value?: string | null) {
   if (!value) return undefined;
   try {
@@ -242,7 +326,9 @@ function isOpenAiAudit(stage: DossierStageView) {
   const platform = stage.latest?.plataforma?.toLowerCase() || "";
   const model = stage.latest?.modelo?.toLowerCase() || "";
   return (
-    platform === "openai" || model.startsWith("gpt-") || model.includes("openai")
+    platform === "openai" ||
+    model.startsWith("gpt-") ||
+    model.includes("openai")
   );
 }
 
@@ -282,10 +368,10 @@ export default function MoisSalesPageDossierPage() {
   ].includes(dossierStatus);
   const hasCollectedProductPayload = Boolean(
     (pageQuery.data?.htmlBytes ?? 0) > 0 ||
-      cleanText(pageQuery.data?.offerSummary) ||
-      cleanText(pageQuery.data?.mechanismSummary) ||
-      cleanText(pageQuery.data?.promiseSummary) ||
-      cleanText(pageQuery.data?.proofSummary),
+    cleanText(pageQuery.data?.offerSummary) ||
+    cleanText(pageQuery.data?.mechanismSummary) ||
+    cleanText(pageQuery.data?.promiseSummary) ||
+    cleanText(pageQuery.data?.proofSummary),
   );
   const isCommercialAnalysisDone = ["DONE", "ANALYZED"].includes(
     pageQuery.data?.analysisStatus || pageQuery.data?.currentStatus || "",
@@ -591,18 +677,18 @@ export default function MoisSalesPageDossierPage() {
                           <div className="col-12">
                             <div className="border rounded p-3 h-100 bg-white text-body">
                               <h4 className="h6 mb-2">{requestLabel(stage)}</h4>
-                              <CollapsibleJsonViewer
+                              <TechnicalPayloadReader
                                 content={stage.latest.request}
-                                initiallyCollapsed
                               />
                             </div>
                           </div>
                           <div className="col-12">
                             <div className="border rounded p-3 h-100 bg-white text-body">
-                              <h4 className="h6 mb-2">{responseLabel(stage)}</h4>
-                              <CollapsibleJsonViewer
+                              <h4 className="h6 mb-2">
+                                {responseLabel(stage)}
+                              </h4>
+                              <TechnicalPayloadReader
                                 content={stage.latest.response}
-                                initiallyCollapsed
                               />
                             </div>
                           </div>
@@ -610,7 +696,9 @@ export default function MoisSalesPageDossierPage() {
                           extractOpenAiOutputText(stage.latest.response) ? (
                             <div className="col-12">
                               <div className="border rounded p-3 h-100 bg-white text-body">
-                                <h4 className="h6 mb-2">Texto final da OpenAI</h4>
+                                <h4 className="h6 mb-2">
+                                  Texto final da OpenAI
+                                </h4>
                                 <CollapsibleJsonViewer
                                   content={extractOpenAiOutputText(
                                     stage.latest.response,

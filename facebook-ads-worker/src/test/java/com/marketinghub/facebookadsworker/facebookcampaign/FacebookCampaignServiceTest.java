@@ -741,6 +741,59 @@ class FacebookCampaignServiceTest {
     }
 
     @Test
+    void createsSalesCampaignForLowTicketProductEvenWithSecondaryReward() throws Exception {
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"dailyBudget\":25.0,\"experimentType\":\"LOW_TICKET_PRODUCT\",\"freeReward\":\"ver amostra gratuita\",\"campaignObjective\":\"SALES\",\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("{\"images\":{\"uploaded\":{\"hash\":\"hash-preloaded\"}}}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"10\"}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"20\"}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"30\"}")
+            .addHeader("Content-Type", "application/json"));
+        facebook.enqueueResponse(new MockResponse().setBody("{\"id\":\"40\"}")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":101,\"experimentId\":1,\"headline\":\"HL\",\"primaryText\":\"Texto Criativo\",\"imageUrl\":\"" + imageUrl + "\",\"description\":\"Desc\",\"cta\":\"BUY_NOW\",\"destinationUrl\":\"https://exp.example/checkout\",\"instagramUserId\":\"21\",\"status\":\"READY\"}]")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("[]")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(defaultManualTargetingPackageResponse());
+        backend.enqueueResponse(new MockResponse().setBody("{}")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("{}")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("{}")
+            .addHeader("Content-Type", "application/json"));
+        backend.enqueueResponse(new MockResponse().setBody("{}")
+            .addHeader("Content-Type", "application/json"));
+
+        service.createCampaignsFromExperiments();
+
+        takeBackendRequest("backend request"); // experiments-ready
+        takeBackendRequest("backend request"); // creatives
+        takeBackendRequestMatching(
+            "playbook request",
+            request -> "/api/experiments/1/adset-playbook".equals(request.getPath())
+                && "GET".equals(request.getMethod())
+        );
+        takeBackendRequestMatching(
+            "manual targeting request",
+            request -> "/api/facebook-adsets/experiments/1/targeting-package".equals(request.getPath())
+                && "GET".equals(request.getMethod())
+        );
+        takeFacebookRequest("facebook ad image upload");
+
+        RecordedRequest postCampaign = takeFacebookRequest("facebook campaign");
+        JsonNode campaignPayload = objectMapper.readTree(postCampaign.getBody().inputStream());
+        assertEquals("OUTCOME_SALES", campaignPayload.get("objective").asText());
+
+        RecordedRequest postAdSet = takeFacebookRequest("facebook ad set");
+        JsonNode adSetPayload = objectMapper.readTree(postAdSet.getBody().inputStream());
+        assertEquals("WEBSITE", adSetPayload.get("destination_type").asText());
+    }
+
+    @Test
     void usesExperimentStandaloneUrlAsDestinationBeforeCreativeFallback() throws Exception {
         backend.enqueueResponse(new MockResponse().setBody("""
                 [{"id":1,"name":"Exp","dailyBudget":25.0,"followUpActionUrl":"https://oportunidadebrasil.shop/api/flows/exp-1-landing-geralanding/page","facebookPage":{"id":9,"pageId":"84","name":"Estúdio"},"instagramAccount":{"id":55,"handle":"@estudio","code":"IG-EST","name":"Estúdio"}}]

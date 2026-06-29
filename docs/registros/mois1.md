@@ -1997,3 +1997,9 @@ Arquivos principais:
 - Causa-raiz tratada: a validação da síntese final rejeitava qualquer resposta que também contivesse metadados técnicos de auditoria (`auditDecision`, `inputKeys`, `stageExecutionId`), anulando evidências comerciais reais presentes no mesmo payload.
 - Ajuste aplicado: a síntese final passa a bloquear somente quando não houver marcadores comerciais suficientes, mantendo os metadados técnicos como auditoria sem contaminar a decisão funcional.
 - Prevenção de recorrência: adicionado teste de regressão com evidências comerciais misturadas a metadados técnicos.
+
+## 2026-06-29 — Leitura limpa do dossiê de produto na tela MOIS
+
+- Ajustada a tela do dossiê de produto para separar o texto gerado pela OpenAI do response técnico em cada etapa.
+- O response técnico agora mantém visão JSON com collapse sem despejar o campo textual longo dentro do card de auditoria.
+- Adicionado quadro de dossiê final do produto com a síntese limpa da etapa `dossier-synthesis`, facilitando decisão comercial sem misturar metadados de auditoria.

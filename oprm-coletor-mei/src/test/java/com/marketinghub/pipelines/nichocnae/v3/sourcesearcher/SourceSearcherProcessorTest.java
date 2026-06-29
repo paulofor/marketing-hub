@@ -223,9 +223,9 @@ class SourceSearcherProcessorTest {
     }
 
 
-    /** Avança com baixa confiança quando há fonte pública rastreável, fraca, mas não comercial, para o gate decidir depois. */
+    /** Bloqueia fonte pública rastreável, mas fraca, para impedir que o gate receba ruído como evidência. */
     @Test
-    void shouldUseControlledAdvancementForWeakNonCommercialSources() {
+    void shouldBlockWeakNonCommercialSourcesInsteadOfAdvancingToGate() {
         SourceSearchClient searchClient = (query, limit) -> List.of(new SourceSearchResult(
                 "Atendimento em loja de roupas",
                 "https://varejo.example.com.br/atendimento-loja",
@@ -236,14 +236,28 @@ class SourceSearcherProcessorTest {
         StageResult result = new SourceSearcherProcessor(searchClient).process(new StageContext("job", "5", Map.of(
                 "plannedQueries", List.of(Map.of("query", "loja roupas atendimento pedidos")))));
 
-        assertThat(result.status()).isEqualTo("FONTES_ENCONTRADAS");
-        assertThat(result.output()).containsEntry("nextStageCode", "source-fetcher");
+        assertThat(result.status()).isEqualTo("FONTES_NAO_COLETADAS");
+        assertThat(result.output()).containsEntry("nextStageCode", "");
         List<?> selectedSources = (List<?>) result.output().get("selectedSources");
-        assertThat(selectedSources).hasSize(1);
-        Map<?, ?> source = (Map<?, ?>) selectedSources.getFirst();
-        assertThat(source.get("sourceIntent")).isEqualTo("LOW_CONFIDENCE_ROUTINE_EVIDENCE");
-        assertThat(source.get("evidenceMode")).isEqualTo("AVANCO_CONTROLADO_ATE_QUALITY_GATE");
-        assertThat(source.get("confidence")).isEqualTo("BAIXA");
+        assertThat(selectedSources).isEmpty();
+    }
+
+    /** Bloqueia fonte de rotina genérica fora do domínio do CNAE para não gerar tarefa inútil nas etapas seguintes. */
+    @Test
+    void shouldBlockOffDomainCurriculumRoutineSource() {
+        SourceSearchClient searchClient = (query, limit) -> List.of(new SourceSearchResult(
+                "ROTINAS PEDAGÓGICAS RPE 2026 – Currículo do Espírito Santo",
+                "https://curriculo.sedu.es.gov.br/curriculo/rpe/",
+                "Gostaria de esclarecer uma dúvida sobre a rotina do 2º trimestre de Língua Portuguesa.",
+                "TEST_PROVIDER",
+                "<item />"));
+
+        StageResult result = new SourceSearcherProcessor(searchClient).process(new StageContext("job", "5", Map.of(
+                "plannedQueries", List.of(Map.of("query", "loja roupas atendimento pedidos whatsapp")))));
+
+        assertThat(result.status()).isEqualTo("FONTES_NAO_COLETADAS");
+        assertThat(result.output()).containsEntry("nextStageCode", "");
+        assertThat((List<?>) result.output().get("selectedSources")).isEmpty();
     }
 
     /** Não trata a palavra vendas isolada como contaminação, pois ela faz parte da rotina de loja. */

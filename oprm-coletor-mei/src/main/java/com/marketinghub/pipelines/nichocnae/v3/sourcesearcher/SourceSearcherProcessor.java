@@ -17,11 +17,13 @@ import java.util.regex.Pattern;
 
 /** Processa a etapa source-searcher do pipeline NichoCNAE v3. */
 public final class SourceSearcherProcessor implements StageProcessor {
-    private static final int SEARCH_RESULTS_PER_QUERY = 8;
+    private static final int SEARCH_RESULTS_PER_QUERY = 5;
     private static final int MAX_SELECTED_SOURCES = 8;
     private static final int MIN_ROUTINE_EVIDENCE_SCORE = 45;
     private static final int MAX_REJECTED_SOURCES_PER_ATTEMPT = 8;
-    private static final int MAX_DOMAIN_FALLBACK_QUERIES = 6;
+    private static final int MAX_PLANNED_QUERIES = 3;
+    private static final int MAX_QUERY_VARIANTS = 6;
+    private static final int MAX_DOMAIN_FALLBACK_QUERIES = 2;
     private static final Pattern PARENTHETICAL_TEXT = Pattern.compile("\\([^)]*\\)");
     private static final Pattern NON_SEARCH_TEXT = Pattern.compile("[^\\p{L}\\p{N}\\s]");
     private static final Pattern MULTIPLE_SPACES = Pattern.compile("\\s+");
@@ -32,17 +34,25 @@ public final class SourceSearcherProcessor implements StageProcessor {
             "entrega", "entregas", "cobranca", "cobrança", "pagamentos", "recebimentos", "fluxo", "planilha", "caderno",
             "tamanho", "tamanhos", "cor", "cores", "mercadoria", "fornecedor", "fornecedores");
     private static final SourceSearchClient EMPTY_SEARCH_CLIENT = (query, limit) -> List.of();
+    private static final SourceEvidenceQualifier EMPTY_EVIDENCE_QUALIFIER = (context, plannedQueries, attempts, selectedSources) -> selectedSources;
 
     private final SourceSearchClient searchClient;
+    private final SourceEvidenceQualifier evidenceQualifier;
 
     /** Inicializa o processor com cliente vazio para testes e execução sem integração externa. */
     public SourceSearcherProcessor() {
-        this(EMPTY_SEARCH_CLIENT);
+        this(EMPTY_SEARCH_CLIENT, EMPTY_EVIDENCE_QUALIFIER);
     }
 
     /** Inicializa o processor com cliente de busca pública rastreável. */
     public SourceSearcherProcessor(SourceSearchClient searchClient) {
+        this(searchClient, EMPTY_EVIDENCE_QUALIFIER);
+    }
+
+    /** Inicializa o processor com busca pública e qualificador semântico opcional. */
+    public SourceSearcherProcessor(SourceSearchClient searchClient, SourceEvidenceQualifier evidenceQualifier) {
         this.searchClient = searchClient;
+        this.evidenceQualifier = evidenceQualifier == null ? EMPTY_EVIDENCE_QUALIFIER : evidenceQualifier;
     }
 
     /** Executa a etapa source-searcher buscando e qualificando fontes reais antes de permitir snapshots. */
@@ -55,7 +65,7 @@ public final class SourceSearcherProcessor implements StageProcessor {
         List<Map<String, Object>> plannedQueries = maps(context.input().get("plannedQueries"));
         List<Map<String, Object>> searchAttempts = List.of();
         if (foundSources.isEmpty()) {
-            SearchOutput searchOutput = search(plannedQueries);
+            SearchOutput searchOutput = search(context, plannedQueries);
             foundSources = searchOutput.selectedSources();
             searchAttempts = searchOutput.searchAttempts();
         } else {
@@ -111,19 +121,23 @@ public final class SourceSearcherProcessor implements StageProcessor {
     }
 
     /** Executa as queries planejadas e seleciona fontes qualificadas para a próxima etapa. */
-    private SearchOutput search(List<Map<String, Object>> plannedQueries) {
+    private SearchOutput search(StageContext context, List<Map<String, Object>> plannedQueries) {
         Set<String> seenUrls = new HashSet<>();
-        List<Map<String, Object>> attempts = new ArrayList<>(plannedQueries.stream()
+        List<Map<String, Object>> limitedPlannedQueries = plannedQueries.stream().limit(MAX_PLANNED_QUERIES).toList();
+        List<Map<String, Object>> attempts = new ArrayList<>(limitedPlannedQueries.stream()
                 .map(query -> searchOneQuery(query, seenUrls))
                 .toList());
         List<Map<String, Object>> selectedSources = selectSources(attempts);
         if (selectedSources.isEmpty()) {
-            List<Map<String, Object>> fallbackQueries = domainFallbackQueries(plannedQueries);
+            List<Map<String, Object>> fallbackQueries = domainFallbackQueries(limitedPlannedQueries);
             attempts.addAll(fallbackQueries.stream()
                     .map(query -> searchOneQuery(query, seenUrls))
                     .toList());
             selectedSources = selectSources(attempts);
         }
+        selectedSources = evidenceQualifier.qualify(context, limitedPlannedQueries, attempts, selectedSources).stream()
+                .limit(MAX_SELECTED_SOURCES)
+                .toList();
         return new SearchOutput(selectedSources, attempts);
     }
 
@@ -260,7 +274,7 @@ public final class SourceSearcherProcessor implements StageProcessor {
         addVariant(variants, professionalQuestionQuery(operationalQuery, simplifiedQuery));
         addVariant(variants, enrichBrazilFirstQuery(objective));
         addVariant(variants, naturalRoutineQuery(simplifiedQuery));
-        return variants;
+        return variants.stream().limit(MAX_QUERY_VARIANTS).toList();
     }
 
     /** Cria queries fallback focadas no domínio quando as queries planejadas retornam apenas ruído. */

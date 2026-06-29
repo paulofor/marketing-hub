@@ -318,6 +318,59 @@ function extractOpenAiOutputText(value?: string | null) {
   return undefined;
 }
 
+function prettyPrintJsonText(value: string) {
+  const trimmed = value.trim();
+  try {
+    return JSON.stringify(JSON.parse(trimmed), null, 2);
+  } catch {
+    return trimmed;
+  }
+}
+
+function removeOpenAiTextFields(value?: string | null) {
+  if (!value) return value;
+  try {
+    const root = JSON.parse(value) as {
+      output_text?: unknown;
+      output?: Array<{ content?: Array<{ text?: unknown }> }>;
+    };
+    let removed = false;
+    if (typeof root.output_text === "string" && root.output_text.trim()) {
+      root.output_text =
+        "Texto removido da auditoria técnica e exibido no quadro separado abaixo.";
+      removed = true;
+    }
+    for (const item of root.output || []) {
+      for (const content of item.content || []) {
+        if (typeof content.text === "string" && content.text.trim()) {
+          content.text =
+            "Texto removido da auditoria técnica e exibido no quadro separado abaixo.";
+          removed = true;
+        }
+      }
+    }
+    return removed ? JSON.stringify(root, null, 2) : value;
+  } catch {
+    return value;
+  }
+}
+
+function generatedStageText(stage: DossierStageView) {
+  const text = extractOpenAiOutputText(stage.latest?.response);
+  return text ? prettyPrintJsonText(text) : undefined;
+}
+
+function finalDossierText(stages: DossierStageView[]) {
+  const finalStage = stages.find(
+    (stage) =>
+      (
+        stage.code === "dossier-synthesis" &&
+        stage.latest?.status === "CONCLUIDO"
+      ),
+  );
+  return finalStage ? generatedStageText(finalStage) : undefined;
+}
+
 function hasUsefulPayload(value?: string | null) {
   return Boolean(value && value.trim() && value.trim() !== "{}");
 }
@@ -412,6 +465,7 @@ export default function MoisSalesPageDossierPage() {
   const currentDossierStageView = dossierPipelineStages.find(
     (stage) => stage.code === dossierStage,
   );
+  const cleanFinalDossier = finalDossierText(dossierPipelineStages);
 
   return (
     <div className="d-flex flex-column gap-4">
@@ -530,6 +584,26 @@ export default function MoisSalesPageDossierPage() {
           ) : null}
         </div>
       </section>
+
+      {cleanFinalDossier ? (
+        <section className="card border-success shadow-sm">
+          <div className="card-body d-flex flex-column gap-3">
+            <div>
+              <h2 className="h5 mb-1">Dossiê final do produto</h2>
+              <p className="text-secondary mb-0">
+                Texto final limpo gerado pela síntese do pipeline, separado da
+                auditoria técnica.
+              </p>
+            </div>
+            <pre
+              className="bg-body-tertiary border rounded p-3 mb-0"
+              style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}
+            >
+              {cleanFinalDossier}
+            </pre>
+          </div>
+        </section>
+      ) : null}
 
       <section className="card border-0 shadow-sm">
         <div className="card-body d-flex flex-column gap-3">
@@ -688,21 +762,24 @@ export default function MoisSalesPageDossierPage() {
                                 {responseLabel(stage)}
                               </h4>
                               <TechnicalPayloadReader
-                                content={stage.latest.response}
+                                content={removeOpenAiTextFields(
+                                  stage.latest.response,
+                                )}
                               />
                             </div>
                           </div>
-                          {isOpenAiAudit(stage) &&
-                          extractOpenAiOutputText(stage.latest.response) ? (
+                          {isOpenAiAudit(stage) && generatedStageText(stage) ? (
                             <div className="col-12">
                               <div className="border rounded p-3 h-100 bg-white text-body">
                                 <h4 className="h6 mb-2">
-                                  Texto final da OpenAI
+                                  Texto gerado pela etapa
                                 </h4>
+                                <p className="small text-secondary mb-2">
+                                  Conteúdo textual separado do response técnico,
+                                  com visão JSON e collapse quando aplicável.
+                                </p>
                                 <CollapsibleJsonViewer
-                                  content={extractOpenAiOutputText(
-                                    stage.latest.response,
-                                  )}
+                                  content={generatedStageText(stage)}
                                   initiallyCollapsed
                                 />
                               </div>

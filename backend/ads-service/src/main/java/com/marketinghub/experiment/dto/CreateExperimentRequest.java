@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.math.BigDecimal;
 import com.marketinghub.experiment.ExperimentStage;
 import com.marketinghub.experiment.ExperimentCampaignObjective;
+import com.marketinghub.experiment.ExperimentType;
 import java.time.LocalDate;
 import java.util.List;
 import lombok.Data;
@@ -22,6 +23,7 @@ public class CreateExperimentRequest {
     private String freeReward;
     private String funnelPromise;
     private String primaryCta;
+    private ExperimentType experimentType;
     private ExperimentCampaignObjective campaignObjective;
     private ExperimentStage stage;
     private String primaryVariable;

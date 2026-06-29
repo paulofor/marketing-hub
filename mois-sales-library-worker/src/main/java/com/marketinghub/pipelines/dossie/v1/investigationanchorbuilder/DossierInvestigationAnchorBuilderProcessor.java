@@ -26,7 +26,7 @@ public class DossierInvestigationAnchorBuilderProcessor implements StageProcesso
         DossierInvestigationAnchorBuilderOutput output = new DossierInvestigationAnchorBuilderOutput(
                 context.dossierId(),
                 "OBJECTIVE_FULFILLED",
-                OBJECTIVE,
+                DossierStageSupport.businessDecision(context, STAGE_NAME, OBJECTIVE),
                 evidence);
         return StageResult.done(
                 Map.of(STAGE_NAME, output),

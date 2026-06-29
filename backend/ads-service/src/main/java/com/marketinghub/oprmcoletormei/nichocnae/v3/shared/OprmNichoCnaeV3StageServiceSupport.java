@@ -242,8 +242,15 @@ public abstract class OprmNichoCnaeV3StageServiceSupport {
         execution.setNextStageCode(nextStageCode);
         execution.setUpdatedAt(Instant.now());
         OprmNichoCnaeV3StageExecution saved = repository.save(execution);
+        String normalizedNextStage = normalizedStage(nextStageCode);
         if (createNextStageWhenAllowed(saved, outputPayload, nextStageCode)) {
-            markCnaePipelineStarted(saved.getCnaeCode(), normalizedStage(nextStageCode), STATUS_STARTED);
+            markCnaePipelineStarted(saved.getCnaeCode(), normalizedNextStage, STATUS_STARTED);
+        } else if (!requiresUserConfirmation(saved, normalizedNextStage)
+                && isAllowedNextStage(normalizedNextStage)
+                && repository.existsByJobIdAndStageCode(saved.getJobId(), normalizedNextStage)) {
+            markCnaePipelineStarted(saved.getCnaeCode(), normalizedNextStage, STATUS_STARTED);
+        } else {
+            markCnaePipelineStarted(saved.getCnaeCode(), stageCode, STATUS_COMPLETED);
         }
         return saved;
     }
@@ -254,7 +261,9 @@ public abstract class OprmNichoCnaeV3StageServiceSupport {
         execution.setStatus(OprmNichoCnaeV3StageExecutionStatus.FAILED);
         execution.setErrorMessage(errorMessage);
         execution.setUpdatedAt(Instant.now());
-        return repository.save(execution);
+        OprmNichoCnaeV3StageExecution saved = repository.save(execution);
+        markCnaePipelineStarted(saved.getCnaeCode(), stageCode, STATUS_FAILED);
+        return saved;
     }
 
     /** Cria a próxima pendência quando o backend reconhecer avanço sequencial válido. */

@@ -43,6 +43,8 @@ oprm:
         fallback-api-key-variable: OPENAI_API_KEY
         service-tier: ${OPRM_MEI_AUDIENCE_SEGMENTER_OPENAI_SERVICE_TIER:flex}
   pipelines.nichocnae.v3:
+    source-searcher:
+      max-job-duration-ms: ${OPRM_NICHO_CNAE_V3_SOURCE_SEARCHER_MAX_JOB_DURATION_MS:120000}
     persona-candidate-generator:
       openai:
         base-url: ${OPRM_NICHO_CNAE_V3_PERSONA_CANDIDATE_GENERATOR_OPENAI_BASE_URL:https://api.openai.com/v1}

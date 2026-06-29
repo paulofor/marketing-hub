@@ -26,6 +26,47 @@ public final class DossierStageSupport {
         return Map.copyOf(evidence);
     }
 
+    /** Monta decisão de negócio local, diferenciando análise útil de execução limitada por falta de histórico. */
+    public static String businessDecision(StageContext context, String stageName, String objective) {
+        String contextSummary = previousContextSummary(context);
+        if (contextSummary.isBlank()) {
+            return objective + " Execução limitada: o backend entregou apenas metadados operacionais, sem respostas funcionais anteriores suficientes para uma decisão comercial forte.";
+        }
+        return objective + " Contexto funcional usado: " + contextSummary;
+    }
+
+    /** Resume respostas anteriores para orientar etapas locais sem criar conclusão solta. */
+    private static String previousContextSummary(StageContext context) {
+        if (context.input() == null || context.input().isEmpty()) {
+            return "";
+        }
+        Object previousStageResponses = context.input().get("previousStageResponses");
+        if (previousStageResponses instanceof java.util.List<?> responses) {
+            return responses.stream()
+                    .map(String::valueOf)
+                    .filter(response -> !response.isBlank())
+                    .findFirst()
+                    .map(DossierStageSupport::shorten)
+                    .orElse("");
+        }
+        Object previousStages = context.input().get("previousStages");
+        if (previousStages instanceof Map<?, ?> stages) {
+            return stages.values().stream()
+                    .map(String::valueOf)
+                    .filter(response -> !response.isBlank())
+                    .findFirst()
+                    .map(DossierStageSupport::shorten)
+                    .orElse("");
+        }
+        return "";
+    }
+
+    /** Encurta textos longos para manter a auditoria local legível na tela. */
+    private static String shorten(String value) {
+        String normalized = value.replaceAll("\\s+", " ").trim();
+        return normalized.length() <= 600 ? normalized : normalized.substring(0, 600) + "...";
+    }
+
     /** Classifica a riqueza comercial do contexto recebido para evitar conclusões fortes com matéria-prima fraca. */
     private static String commercialContextQuality(StageContext context) {
         int signals = commercialSignalsFound(context);

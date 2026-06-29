@@ -45,6 +45,13 @@ oprm:
   pipelines.nichocnae.v3:
     source-searcher:
       max-job-duration-ms: ${OPRM_NICHO_CNAE_V3_SOURCE_SEARCHER_MAX_JOB_DURATION_MS:120000}
+      openai:
+        enabled: ${OPRM_NICHO_CNAE_V3_SOURCE_SEARCHER_OPENAI_ENABLED:true}
+        base-url: ${OPRM_NICHO_CNAE_V3_SOURCE_SEARCHER_OPENAI_BASE_URL:https://api.openai.com/v1}
+        api-key: ${OPRM_NICHO_CNAE_V3_SOURCE_SEARCHER_OPENAI_API_KEY:${OPENAI_API_KEY:}}
+        api-key-file: ${OPRM_NICHO_CNAE_V3_SOURCE_SEARCHER_OPENAI_API_KEY_FILE:${OPENAI_API_KEY_FILE:/run/secrets/openai_api_key}}
+        model: ${OPRM_NICHO_CNAE_V3_SOURCE_SEARCHER_OPENAI_MODEL:gpt-5.2}
+        service-tier: ${OPRM_NICHO_CNAE_V3_SOURCE_SEARCHER_OPENAI_SERVICE_TIER:flex}
     persona-candidate-generator:
       openai:
         base-url: ${OPRM_NICHO_CNAE_V3_PERSONA_CANDIDATE_GENERATOR_OPENAI_BASE_URL:https://api.openai.com/v1}

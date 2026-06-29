@@ -1754,3 +1754,10 @@
 - Causa-raiz: a etapa `source-searcher` podia ocupar a varredura do executor por tempo excessivo; como o scheduler evita sobreposição, um job antigo demorando bloqueava a fila e atrasava novas execuções.
 - Correção: o executor agora aplica limite operacional configurável ao `source-searcher`; ao exceder o tempo, cancela a execução, registra falha no backend e libera a fila para os próximos jobs.
 - Prevenção: adicionado teste unitário para garantir que uma execução lenta de `source-searcher` é finalizada como falha e não impede a continuidade do executor.
+
+## 2026-06-29 — NichoCNAE v3: remoção de pendência antiga após conclusão/falha
+
+- Diagnóstico: após o fluxo do CNAE `8219999` avançar até `source-searcher`, o endpoint `pending` ainda retornava a execução antiga `4781400` mesmo com `oprm_nichocnae_v3_stage_execution.status=COMPLETED`.
+- Causa-raiz: ao concluir uma etapa sem próxima etapa, ou ao falhar uma execução, o backend atualizava a tabela de execução, mas mantinha o cadastro do CNAE com `nichocnae_pipeline_status=INICIADO`; como o `pending` é publicado a partir desse cadastro, jobs antigos continuavam voltando para a fila.
+- Correção: a conclusão sem avanço agora marca o CNAE como `CONCLUIDO`, e falhas marcam como `FALHA`, removendo o registro do endpoint `pending` e liberando a fila real.
+- Prevenção: adicionado teste unitário do backend para garantir que `source-searcher` concluído sem próxima etapa e `source-searcher` com falha deixam de permanecer como pendência iniciada.

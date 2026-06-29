@@ -75,6 +75,11 @@ class BackendPersonaRoutineMaterializerServiceTest {
                 .thenReturn(Optional.empty());
         when(nicheGateway.materialize(any(PersonaRoutineMaterializerNicheGateway.MarketNicheDraft.class), any(PersonaRoutineMaterializerNicheGateway.EnrichedNicheProfileDraft.class)))
                 .thenReturn(new PersonaRoutineMaterializerNicheGateway.NicheMaterializationResult(300L, 400L, Instant.now()));
+        OprmCnpjCnaeDim cnae = new OprmCnpjCnaeDim();
+        cnae.setCnaeCode("4781400");
+        cnae.setNichocnaeCurrentStageCode("persona-routine-materializer");
+        cnae.setNichocnaePipelineStatus("INICIADO");
+        when(cnaeRepository.findById("4781400")).thenReturn(Optional.of(cnae));
 
         service.complete(19L, outputPayload, "");
 
@@ -92,6 +97,7 @@ class BackendPersonaRoutineMaterializerServiceTest {
         assertThat(profileCaptor.getValue().sourceDiversityScore()).isEqualTo(68);
         assertThat(profileCaptor.getValue().routineSummary()).contains("Compram");
         assertThat(profileCaptor.getValue().personaDailyTasks()).contains("repor peças");
+        assertThat(cnae.getNichocnaePipelineStatus()).isEqualTo("CONCLUIDO");
     }
 
     /** Garante que o start marca o status do pipeline e a etapa atual no cadastro do CNAE. */

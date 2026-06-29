@@ -1970,3 +1970,9 @@ Arquivos principais:
 - Corrigida a entrada do dossiê de produto para impedir início quando a página não possui HTML, descrição ou resumo coletado.
 - A etapa `product-understanding` agora recebe no `pending` o material real do produto: HTML bruto capturado, descrição Hotmart, URL, título, produtor, preço e resumos comerciais já analisados.
 - A tela do dossiê desabilita o botão de reprocessamento quando não existe HTML coletado, evitando gerar análise sem evidência do produto.
+
+## 2026-06-29 — Importância das informações iniciais no dossiê MOIS v1
+
+- Atualizado `docs/marketing/pipeline_dossieproduto_v1.md` para explicar que o dossiê precisa nascer de HTML, descrições, resumos e sinais reais do produto.
+- Reforçado que iniciar o pipeline sem material coletado gera dossiê genérico, decisão comercial fraca e custo operacional desnecessário.
+- Registrado o princípio de gate de evidência: sem conteúdo coletado, a execução deve ficar bloqueada até haver matéria-prima comercial suficiente.

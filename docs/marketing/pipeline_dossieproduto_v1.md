@@ -21,6 +21,20 @@ Na prática, o pipeline deve responder:
 
 ## 2. Princípios operacionais
 
+### 2.1 Importância das informações iniciais coletadas
+
+O dossiê de produto só tem valor comercial quando nasce de material real do produto. Antes de iniciar o pipeline, o Marketing Hub precisa ter pelo menos uma base concreta coletada, como HTML da página, descrição do produto, resumo da oferta, promessa, mecanismo, prova, preço, produtor, URL final e sinais capturados da página de venda.
+
+Essas informações iniciais são importantes porque impedem que o modelo de IA preencha lacunas com inferência fraca. Sem esse material, a etapa `product-understanding` até pode produzir um JSON válido, mas ele não responde ao que interessa para venda: qual dor o produto promete resolver, qual resultado o comprador deseja, qual mecanismo parece crível, que prova sustenta a promessa e por que a oferta poderia converter.
+
+Na prática, iniciar o dossiê sem conteúdo coletado gera três riscos de negócio:
+
+- **dossiê genérico:** a análise fica baseada em metadados operacionais, não no produto real;
+- **decisão comercial errada:** o sistema pode recomendar investigação, oferta ou escala sem entender a promessa concreta;
+- **perda de tempo e custo:** o pipeline consome IA e processamento para concluir que faltava matéria-prima desde o começo.
+
+Por isso, a entrada do dossiê deve funcionar como um gate de evidência. Se não houver HTML, descrição ou resumo coletado do produto, o botão de execução deve ficar desabilitado e o backend não deve liberar a execução. O fluxo correto é primeiro capturar material suficiente da página/produto e só depois permitir que o dossiê organize esse material no eixo **Dor → Resultado → Mecanismo → Prova → Oferta**.
+
 - **Backend como fonte de verdade:** o backend controla fila, status, auditoria, avanço entre etapas, callbacks e exposição dos dados para a tela.
 - **Worker como executor:** o `mois-sales-library-worker` consome o endpoint `pending`, executa a etapa e reporta request, response, saída funcional, status e artefatos ao backend.
 - **Pipeline versionado:** a versão atual é `dossieproduto.v1`; mudanças incompatíveis devem nascer como nova versão, sem sobrescrever silenciosamente a versão atual.

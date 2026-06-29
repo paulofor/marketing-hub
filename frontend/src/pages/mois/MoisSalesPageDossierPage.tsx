@@ -111,7 +111,6 @@ const DOSSIER_PIPELINE_STAGES: DossierPipelineStage[] = [
     name: "Âncoras de investigação",
     objective: "Define o que pesquisar e validar.",
     expectedOutput: "Termos e âncoras de pesquisa definidos.",
-    usesAi: true,
   },
   {
     step: 4,
@@ -126,7 +125,6 @@ const DOSSIER_PIPELINE_STAGES: DossierPipelineStage[] = [
     name: "Relação fonte-produto",
     objective: "Filtra fontes ligadas ao produto.",
     expectedOutput: "Fontes aprovadas e rejeições justificadas.",
-    usesAi: true,
   },
   {
     step: 6,
@@ -134,7 +132,6 @@ const DOSSIER_PIPELINE_STAGES: DossierPipelineStage[] = [
     name: "Extração de sinais",
     objective: "Extrai provas, demanda e objeções.",
     expectedOutput: "Sinais comerciais organizados.",
-    usesAi: true,
   },
   {
     step: 7,
@@ -142,7 +139,6 @@ const DOSSIER_PIPELINE_STAGES: DossierPipelineStage[] = [
     name: "Mapa de aquecimento",
     objective: "Mapeia oportunidade e risco.",
     expectedOutput: "Mapa de aquecimento e próximos passos.",
-    usesAi: true,
   },
   {
     step: 8,
@@ -150,7 +146,6 @@ const DOSSIER_PIPELINE_STAGES: DossierPipelineStage[] = [
     name: "Síntese final",
     objective: "Gera a conclusão do dossiê.",
     expectedOutput: "Conclusão, evidências e recomendação final.",
-    usesAi: true,
   },
 ];
 
@@ -241,6 +236,28 @@ function extractOpenAiOutputText(value?: string | null) {
 
 function hasUsefulPayload(value?: string | null) {
   return Boolean(value && value.trim() && value.trim() !== "{}");
+}
+
+function isOpenAiAudit(stage: DossierStageView) {
+  const platform = stage.latest?.plataforma?.toLowerCase() || "";
+  const model = stage.latest?.modelo?.toLowerCase() || "";
+  return (
+    platform === "openai" || model.startsWith("gpt-") || model.includes("openai")
+  );
+}
+
+function modelLabel(stage: DossierStageView) {
+  return isOpenAiAudit(stage) ? "Modelo OpenAI" : "Executor";
+}
+
+function requestLabel(stage: DossierStageView) {
+  return isOpenAiAudit(stage)
+    ? "Request enviado para OpenAI"
+    : "Entrada recebida pelo worker";
+}
+
+function responseLabel(stage: DossierStageView) {
+  return isOpenAiAudit(stage) ? "Response da OpenAI" : "Resposta da etapa";
 }
 
 export default function MoisSalesPageDossierPage() {
@@ -536,7 +553,7 @@ export default function MoisSalesPageDossierPage() {
                             <span
                               className={`d-block small ${getDossierStageTextClassName(stage)}`}
                             >
-                              Modelo OpenAI
+                              {modelLabel(stage)}
                             </span>
                             <strong>{displayText(stage.latest.modelo)}</strong>
                           </div>
@@ -573,7 +590,7 @@ export default function MoisSalesPageDossierPage() {
                         <div className="row g-3 mt-2">
                           <div className="col-12">
                             <div className="border rounded p-3 h-100 bg-white text-body">
-                              <h4 className="h6 mb-2">Request enviado para OpenAI</h4>
+                              <h4 className="h6 mb-2">{requestLabel(stage)}</h4>
                               <CollapsibleJsonViewer
                                 content={stage.latest.request}
                                 initiallyCollapsed
@@ -582,14 +599,15 @@ export default function MoisSalesPageDossierPage() {
                           </div>
                           <div className="col-12">
                             <div className="border rounded p-3 h-100 bg-white text-body">
-                              <h4 className="h6 mb-2">Response da OpenAI</h4>
+                              <h4 className="h6 mb-2">{responseLabel(stage)}</h4>
                               <CollapsibleJsonViewer
                                 content={stage.latest.response}
                                 initiallyCollapsed
                               />
                             </div>
                           </div>
-                          {extractOpenAiOutputText(stage.latest.response) ? (
+                          {isOpenAiAudit(stage) &&
+                          extractOpenAiOutputText(stage.latest.response) ? (
                             <div className="col-12">
                               <div className="border rounded p-3 h-100 bg-white text-body">
                                 <h4 className="h6 mb-2">Texto final da OpenAI</h4>

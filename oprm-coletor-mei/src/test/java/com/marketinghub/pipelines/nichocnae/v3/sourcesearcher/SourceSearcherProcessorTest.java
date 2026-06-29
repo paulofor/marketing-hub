@@ -222,6 +222,50 @@ class SourceSearcherProcessorTest {
                 assertThat(((Map<?, ?>) rejected).get("rejectionReason")).isEqualTo("URL_AUSENTE"));
     }
 
+
+    /** Avança com baixa confiança quando há fonte pública rastreável, fraca, mas não comercial, para o gate decidir depois. */
+    @Test
+    void shouldUseControlledAdvancementForWeakNonCommercialSources() {
+        SourceSearchClient searchClient = (query, limit) -> List.of(new SourceSearchResult(
+                "Atendimento em loja de roupas",
+                "https://varejo.example.com.br/atendimento-loja",
+                "Loja de roupas relata atendimento ao cliente e organização manual.",
+                "TEST_PROVIDER",
+                "<item />"));
+
+        StageResult result = new SourceSearcherProcessor(searchClient).process(new StageContext("job", "5", Map.of(
+                "plannedQueries", List.of(Map.of("query", "loja roupas atendimento pedidos")))));
+
+        assertThat(result.status()).isEqualTo("FONTES_ENCONTRADAS");
+        assertThat(result.output()).containsEntry("nextStageCode", "source-fetcher");
+        List<?> selectedSources = (List<?>) result.output().get("selectedSources");
+        assertThat(selectedSources).hasSize(1);
+        Map<?, ?> source = (Map<?, ?>) selectedSources.getFirst();
+        assertThat(source.get("sourceIntent")).isEqualTo("LOW_CONFIDENCE_ROUTINE_EVIDENCE");
+        assertThat(source.get("evidenceMode")).isEqualTo("AVANCO_CONTROLADO_ATE_QUALITY_GATE");
+        assertThat(source.get("confidence")).isEqualTo("BAIXA");
+    }
+
+    /** Não trata a palavra vendas isolada como contaminação, pois ela faz parte da rotina de loja. */
+    @Test
+    void shouldNotRejectRoutineRetailSourceOnlyBecauseItMentionsSales() {
+        SourceSearchClient searchClient = (query, limit) -> List.of(new SourceSearchResult(
+                "Rotina de vendas e atendimento em loja no Brasil",
+                "https://varejo.example.com.br/rotina-vendas-loja",
+                "MEI relata rotina de vendas, atendimento a clientes, pedidos, trocas, estoque, cobrança e WhatsApp.",
+                "TEST_PROVIDER",
+                "<item />"));
+
+        StageResult result = new SourceSearcherProcessor(searchClient).process(new StageContext("job", "5", Map.of(
+                "plannedQueries", List.of(Map.of("query", "loja roupas vendas atendimento clientes")))));
+
+        assertThat(result.status()).isEqualTo("FONTES_ENCONTRADAS");
+        List<?> selectedSources = (List<?>) result.output().get("selectedSources");
+        Map<?, ?> source = (Map<?, ?>) selectedSources.getFirst();
+        assertThat(source.get("sourceIntent")).isEqualTo("ROUTINE_EVIDENCE");
+        assertThat(source.get("commercialPageRisk")).isEqualTo(false);
+    }
+
     /** Bloqueia avanço quando a busca retorna apenas fonte comercial ou solução contaminada. */
     @Test
     void shouldBlockCommercialSolutionSources() {

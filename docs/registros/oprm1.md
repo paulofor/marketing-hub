@@ -1718,3 +1718,10 @@
 - Causa-raiz: as variações de busca ainda priorizavam termos amplos como rotina/atendimento e não forçavam suficientemente fontes de atrito observável, como reclamações, dúvidas, pedidos, trocas, entregas e reservas.
 - Correção: o `source-searcher` agora adiciona variações focadas em dor real, reclamações públicas e perguntas profissionais, amplia a classificação de evidência para pedidos/trocas/entregas/reservas/reclamações e rejeita dicionários comuns de rotina como fonte irrelevante.
 - Prevenção: adicionados testes cobrindo query `site:reclameaqui.com.br`, aceitação de atrito real de cliente e rejeição de dicionários comuns que mascaravam a falta de fonte operacional.
+
+## 2026-06-29 — NichoCNAE v3: avanço controlado quando fontes ideais não aparecem
+
+- Diagnóstico: a etapa `source-searcher` continuava bloqueando a execução 4781400 com `foundSourceCount=0` quando a busca pública encontrava apenas resultados fracos ou com termos comuns de varejo, mesmo havendo fontes rastreáveis não comerciais suficientes para uma coleta de baixa confiança.
+- Causa-raiz: o filtro binário exigia fonte ideal antes do `source-fetcher`; em nichos com pouco conteúdo público, isso criava loop operacional na etapa de fontes e impedia o fluxo de chegar ao `quality-gate`, onde a decisão de suficiência deve ser consolidada.
+- Correção: o executor agora mantém o bloqueio para fontes comerciais, solução, utilitárias, duplicadas ou sem URL, mas permite avanço controlado com até 3 fontes públicas fracas, não comerciais e rastreáveis, marcadas como `LOW_CONFIDENCE_ROUTINE_EVIDENCE` e `AVANCO_CONTROLADO_ATE_QUALITY_GATE`.
+- Prevenção: adicionados testes cobrindo o avanço controlado e a remoção da palavra `vendas` como contaminação isolada, porque vendas pode ser parte natural da rotina de loja e não necessariamente página comercial.

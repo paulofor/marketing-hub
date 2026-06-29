@@ -20,6 +20,7 @@ public final class SourceSearcherProcessor implements StageProcessor {
     private static final int SEARCH_RESULTS_PER_QUERY = 8;
     private static final int MAX_SELECTED_SOURCES = 8;
     private static final int MIN_ROUTINE_EVIDENCE_SCORE = 45;
+    private static final int MIN_CONTROLLED_ADVANCEMENT_SCORE = 30;
     private static final int MAX_REJECTED_SOURCES_PER_ATTEMPT = 8;
     private static final Pattern PARENTHETICAL_TEXT = Pattern.compile("\\([^)]*\\)");
     private static final Pattern NON_SEARCH_TEXT = Pattern.compile("[^\\p{L}\\p{N}\\s]");
@@ -73,11 +74,12 @@ public final class SourceSearcherProcessor implements StageProcessor {
                 "busca ampla separada da classificação de evidência semântica",
                 "fonte descreve rotina, tarefa, dúvida, atendimento, canal, agenda, cobrança ou execução real",
                 "fonte comercial ou de solução não avança como evidência positiva",
-                "fontes com URL duplicada ou sem URL rastreável são descartadas"));
+                "fontes com URL duplicada ou sem URL rastreável são descartadas",
+                "quando não houver fonte ideal, fonte pública fraca e não comercial pode avançar marcada como baixa confiança para evitar loop operacional"));
         output.put("blocked", !hasSources);
         output.put("decisionReason", hasSources
                 ? "Fontes públicas qualificadas disponíveis para coleta de snapshots auditáveis."
-                : "A etapa source-searcher não encontrou fontes públicas qualificadas de rotina; não é seguro avançar com queries ou fonte comercial.");
+                : "A etapa source-searcher não encontrou fontes públicas qualificadas de rotina nem fontes fracas seguras; não é seguro avançar com queries ou fonte comercial.");
         output.put("recommendedCorrectionStage", hasSources ? "" : "source-searcher");
         output.put("businessBoundary", "NAO_GERAR_OFERTA_CAMPANHA_LANDING");
         output.put("reportRole", "PERSONA_ROTINA_TAREFAS_DIARIAS");
@@ -115,6 +117,9 @@ public final class SourceSearcherProcessor implements StageProcessor {
                         .thenComparing(source -> text(source.get("url"))))
                 .limit(MAX_SELECTED_SOURCES)
                 .toList();
+        if (selectedSources.isEmpty()) {
+            selectedSources = controlledAdvancementSources(attempts);
+        }
         return new SearchOutput(selectedSources, attempts);
     }
 
@@ -156,6 +161,40 @@ public final class SourceSearcherProcessor implements StageProcessor {
         return attempt;
     }
 
+
+    /** Seleciona fontes fracas, mas rastreáveis e não comerciais, para permitir avanço controlado até o gate. */
+    private List<Map<String, Object>> controlledAdvancementSources(List<Map<String, Object>> attempts) {
+        return attempts.stream()
+                .flatMap(attempt -> maps(attempt.get("rejectedSources")).stream())
+                .filter(this::isSafeLowConfidenceSource)
+                .sorted(Comparator
+                        .comparingInt((Map<String, Object> source) -> score(source, "qualityScore")).reversed()
+                        .thenComparing(source -> text(source.get("url"))))
+                .limit(Math.min(3, MAX_SELECTED_SOURCES))
+                .map(source -> {
+                    Map<String, Object> controlled = new LinkedHashMap<>(source);
+                    controlled.put("sourceIntent", "LOW_CONFIDENCE_ROUTINE_EVIDENCE");
+                    controlled.put("sourceType", "LOW_CONFIDENCE_PUBLIC_SOURCE");
+                    controlled.put("evidenceMode", "AVANCO_CONTROLADO_ATE_QUALITY_GATE");
+                    controlled.put("confidence", "BAIXA");
+                    controlled.put("controlledAdvancementReason", "Fonte pública rastreável e não comercial usada apenas para destravar coleta e deixar o quality-gate decidir com evidência fraca explícita.");
+                    controlled.remove("rejectionReason");
+                    return controlled;
+                })
+                .toList();
+    }
+
+    /** Verifica se uma fonte rejeitada pode avançar com baixa confiança sem contaminar oferta. */
+    private boolean isSafeLowConfidenceSource(Map<String, Object> source) {
+        String rejectionReason = text(source.get("rejectionReason"));
+        return List.of("EVIDENCIA_ROTINA_INSUFICIENTE", "QUALIDADE_INSUFICIENTE").contains(rejectionReason)
+                && !text(source.get("url")).isBlank()
+                && !Boolean.TRUE.equals(source.get("commercialPageRisk"))
+                && !Boolean.TRUE.equals(source.get("solutionLanguageRisk"))
+                && !Boolean.TRUE.equals(source.get("irrelevantUtilityRisk"))
+                && score(source, "routineEvidenceScore") >= MIN_CONTROLLED_ADVANCEMENT_SCORE;
+    }
+
     /** Qualifica fontes já recebidas por contrato legado ou reprocessamento. */
     private List<Map<String, Object>> qualifyExistingSources(List<Map<String, Object>> sources) {
         return sources.stream()
@@ -188,7 +227,7 @@ public final class SourceSearcherProcessor implements StageProcessor {
         int routineEvidenceScore = routineEvidenceScore(combined);
         int brazilRelevanceScore = brazilRelevanceScore(url, combined);
         boolean solutionLanguageRisk = containsAny(combined, List.of("software", "sistema", "aplicativo", "plataforma", "automação", "automacao", "curso", "mentoria", "funil", "landing page", "tráfego pago", "trafego pago", "crm"));
-        boolean commercialPageRisk = containsAny(combined, List.of("preço", "preco", "planos", "contrate", "comprar", "teste grátis", "teste gratis", "demonstração", "demonstracao", "vendas", "marketing digital", "anúncio", "anuncio"));
+        boolean commercialPageRisk = containsAny(combined, List.of("planos", "contrate", "comprar", "teste grátis", "teste gratis", "demonstração", "demonstracao", "marketing digital", "anúncio", "anuncio"));
         boolean structuredBusinessDriftRisk = containsAny(combined, List.of("empresa", "indústria", "industria", "corporativo", "franquia", "grande porte", "gestão empresarial"));
         boolean irrelevantUtilityRisk = irrelevantUtilityRisk(url, combined);
         int qualityScore = routineEvidenceScore + brazilRelevanceScore - (solutionLanguageRisk ? 35 : 0) - (commercialPageRisk ? 20 : 0) - (structuredBusinessDriftRisk ? 15 : 0) - (irrelevantUtilityRisk ? 100 : 0);

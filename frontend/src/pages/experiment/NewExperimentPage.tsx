@@ -18,8 +18,10 @@ import { useJourneyTemplates } from "../../api/journey/useJourneyTemplates";
 import PageTitle from "../../components/PageTitle";
 import experimentIcon from "../../assets/icons/experiment-icon.svg";
 import { getStatisticsDefaultsForBudget } from "./statisticsDefaults";
+import type { ExperimentType } from "../../api/experiment/useExperiments";
 
 type FormState = {
+  experimentType: ExperimentType;
   nicheId: string;
   hypothesisId: string;
   hypothesis: string;
@@ -58,6 +60,7 @@ export default function NewExperimentPage() {
   const latestPromiseOptionsDraft = useLatestPromiseOptionsDraft();
   const { data: niches } = useNiches();
   const [form, setForm] = useState<FormState>({
+    experimentType: "LOW_TICKET_PRODUCT",
     nicheId: nicheIdParam,
     hypothesisId: hypothesisIdParam,
     hypothesis: "",
@@ -120,6 +123,17 @@ export default function NewExperimentPage() {
     promiseRequestId &&
     !["COMPLETED", "FAILED"].includes(promiseRequestStatus ?? ""),
   );
+  const isLowTicketProduct = form.experimentType === "LOW_TICKET_PRODUCT";
+  const experimentTypeLabel = isLowTicketProduct
+    ? "Produto low-ticket"
+    : "Teste de nicho";
+  const freeRewardLabel = isLowTicketProduct
+    ? "Amostra gratuita secundária"
+    : "Isca digital única";
+  const freeRewardPlaceholder = isLowTicketProduct
+    ? "Ex.: Ver uma amostra gratuita do kit"
+    : "Ex.: 3 mensagens prontas para confirmar horário, pedir sinal e reagendar sem climão";
+  const campaignObjective = isLowTicketProduct ? "SALES" : "LEADS";
 
   useEffect(() => {
     const draft = latestPromiseOptionsDraft.data;
@@ -250,7 +264,7 @@ export default function NewExperimentPage() {
         alert("Informe uma única dor do experimento");
         return;
       }
-      if (!form.freeReward.trim()) {
+      if (!isLowTicketProduct && !form.freeReward.trim()) {
         alert("Informe uma única isca digital");
         return;
       }
@@ -287,10 +301,11 @@ export default function NewExperimentPage() {
         hypothesis: form.hypothesis,
         stage: "AD",
         singlePain: form.singlePain.trim(),
-        freeReward: form.freeReward.trim(),
+        freeReward: form.freeReward.trim() || undefined,
         funnelPromise: form.funnelPromise.trim(),
         primaryCta: form.primaryCta.trim(),
-        campaignObjective: "LEADS",
+        experimentType: form.experimentType,
+        campaignObjective,
         kpiTarget: Number(form.kpiTarget),
         metricPresetId: form.metricPresetId || undefined,
         sampleSize: form.sampleSize ? Number(form.sampleSize) : undefined,
@@ -323,6 +338,7 @@ export default function NewExperimentPage() {
         });
       }
       setForm({
+        experimentType: "LOW_TICKET_PRODUCT",
         nicheId: nicheIdParam,
         hypothesisId: hypothesisIdParam,
         hypothesis: "",
@@ -363,12 +379,38 @@ export default function NewExperimentPage() {
   return (
     <div>
       <PageTitle icon={experimentIcon}>
-        {selectedNiche?.name || "Novo Teste de Nicho"}
+        {selectedNiche?.name || `Novo ${experimentTypeLabel}`}
       </PageTitle>
       <div className="mb-3">
         <Link className="btn btn-outline-secondary btn-sm" to="/experiments">
-          Voltar para Testes de Nicho
+          Voltar para Experimentos
         </Link>
+      </div>
+      <label className="form-label" htmlFor="experimentType">
+        Tipo de experimento
+      </label>
+      <select
+        id="experimentType"
+        className="form-select mb-2"
+        value={form.experimentType}
+        onChange={(e) =>
+          setForm((prev) => ({
+            ...prev,
+            experimentType: e.target.value as ExperimentType,
+            primaryCta:
+              e.target.value === "LOW_TICKET_PRODUCT"
+                ? "Comprar agora"
+                : prev.primaryCta,
+          }))
+        }
+      >
+        <option value="LOW_TICKET_PRODUCT">Produto low-ticket</option>
+        <option value="NICHE_TEST">Teste de nicho / lead</option>
+      </select>
+      <div className="form-text mb-3">
+        {isLowTicketProduct
+          ? "Fluxo principal: anúncio, página curta, checkout e entrega. Métrica central: compra ou clique no checkout."
+          : "Fluxo principal: anúncio, captura de lead e entrega de isca/amostra."}
       </div>
       {showNicheSelect && (
         <select
@@ -429,7 +471,8 @@ export default function NewExperimentPage() {
       )}
       {form.hypothesis && <h2 className="h5 mb-2">{form.hypothesis}</h2>}
       <div className="alert alert-info py-2 mb-3">
-        O nome do experimento será gerado automaticamente pelo backend com o código da hipótese e a próxima numeração.
+        O nome do experimento será gerado automaticamente pelo backend com o
+        código da hipótese e a próxima numeração.
       </div>
       <div className="card border-primary mb-3">
         <div className="card-body">
@@ -437,8 +480,9 @@ export default function NewExperimentPage() {
             <div>
               <h2 className="h6">Contrato de entrada comercial</h2>
               <p className="text-muted small mb-0">
-                Use uma dor, uma isca digital, um produto de entrada e um CTA
-                coerentes para transformar interesse em venda.
+                {isLowTicketProduct
+                  ? "Use uma dor, uma oferta comprável, uma promessa concreta e um CTA de checkout para medir compra real."
+                  : "Use uma dor, uma isca digital, um produto de entrada e um CTA coerentes para transformar interesse em venda."}
               </p>
             </div>
             <button
@@ -498,7 +542,7 @@ export default function NewExperimentPage() {
                         <strong>Dor:</strong> {option.singlePain}
                       </p>
                       <p className="small mb-1">
-                        <strong>Isca digital:</strong> {option.freeReward}
+                        <strong>{freeRewardLabel}:</strong> {option.freeReward}
                       </p>
                       <p className="small mb-1">
                         <strong>Produto de entrada:</strong>{" "}
@@ -528,7 +572,7 @@ export default function NewExperimentPage() {
             </div>
           )}
           {form.singlePain &&
-          form.freeReward &&
+          (isLowTicketProduct || form.freeReward) &&
           form.funnelPromise &&
           form.primaryCta ? (
             <div className="alert alert-success py-2 mb-3" role="status">
@@ -539,7 +583,8 @@ export default function NewExperimentPage() {
                 <strong>Dor:</strong> {form.singlePain}
               </div>
               <div className="small">
-                <strong>Isca digital:</strong> {form.freeReward}
+                <strong>{freeRewardLabel}:</strong>{" "}
+                {form.freeReward || "Sem captura antes do checkout"}
               </div>
               {selectedProductOffer && (
                 <div className="small">
@@ -555,14 +600,17 @@ export default function NewExperimentPage() {
             </div>
           ) : (
             <div className="alert alert-secondary py-2 mb-3" role="status">
-              Solicite as opções por IA e escolha uma delas para fixar a dor, a
-              isca digital, o produto de entrada, a promessa e o CTA do
-              experimento.
+              {isLowTicketProduct
+                ? "Solicite as opções por IA e escolha uma delas para fixar a dor, o produto low-ticket, a promessa e o CTA de checkout do experimento."
+                : "Solicite as opções por IA e escolha uma delas para fixar a dor, a isca digital, o produto de entrada, a promessa e o CTA do experimento."}
             </div>
           )}
           <div className="alert alert-info py-2 mb-0">
-            Objetivo da campanha fixo: <strong>Leads</strong>. Não use Tráfego
-            nem otimização para cliques neste fluxo.
+            Objetivo da campanha:{" "}
+            <strong>{isLowTicketProduct ? "Vendas" : "Leads"}</strong>.{" "}
+            {isLowTicketProduct
+              ? "Não coloque formulário antes do checkout neste fluxo."
+              : "Não use Tráfego nem otimização para cliques neste fluxo."}
           </div>
         </div>
       </div>
@@ -594,12 +642,15 @@ export default function NewExperimentPage() {
         }}
       />
       <label className="form-label" htmlFor="unitPrice">
-        Preço unitário (R$) <span className="text-danger">*</span>
+        {isLowTicketProduct ? "Preço do produto (R$)" : "Preço unitário (R$)"}{" "}
+        <span className="text-danger">*</span>
       </label>
       <input
         id="unitPrice"
         className="form-control mb-2"
-        placeholder="Valor por imagem em reais"
+        placeholder={
+          isLowTicketProduct ? "Ex.: 27.00" : "Valor por imagem em reais"
+        }
         type="number"
         min="0"
         step="0.01"
@@ -609,7 +660,9 @@ export default function NewExperimentPage() {
         }
       />
       <div className="form-text mb-2">
-        Usado para gerar o link de pagamento no Mercado Pago.
+        {isLowTicketProduct
+          ? "Use a faixa recomendada nos planos: R$ 19 a R$ 47 para a primeira venda."
+          : "Usado para gerar o link de pagamento no Mercado Pago."}
       </div>
       <label className="form-label" htmlFor="imageModel">
         Modelo de geração de imagem

@@ -1953,3 +1953,14 @@ Arquivos principais:
 ## 2026-06-29 — Documentação do pipeline dossieproduto.v1
 
 - Criado o documento de marketing `docs/marketing/pipeline_dossieproduto.md` detalhando objetivo geral, fluxo operacional, ordem das etapas, entradas, saídas, processamentos, critérios de qualidade e resultado de negócio esperado para o pipeline de geração de dossiê de produto MOIS.
+## 2026-06-29 — Enriquecimento do documento de marketing do dossiê MOIS v1
+
+- Atualizado `docs/marketing/pipeline_dossieproduto_v1.md` com exemplos reais pesquisados no banco de dados para orientar a leitura comercial do pipeline.
+- Exemplos adicionados: `BLACK MAGRA` como caso com sinais externos promissores, `PACOTE COMPLETO - Vitalício - TUDO LIBERADO + Tripé` como caso com evidência pública fraca e `Resina LAB` como caso de síntese bloqueada por falta de evidência comercial.
+- Objetivo: deixar o documento mais rico para decisão de negócio, reforçando que o dossiê deve sustentar avanço comercial apenas quando houver evidência conectada ao eixo Dor → Resultado → Mecanismo → Prova → Oferta.
+
+## 2026-06-29 — Reorganização dos exemplos por etapa do dossiê MOIS v1
+
+- Reorganizado `docs/marketing/pipeline_dossieproduto_v1.md` para que cada etapa do pipeline funcione como capítulo com exemplo real dentro do próprio capítulo.
+- Os exemplos foram distribuídos entre `intake`, `product-understanding`, `investigation-anchor-builder`, `warmup-resource-discovery`, `source-product-match`, `warmup-signal-extraction`, `warmup-map-builder` e `dossier-synthesis`, usando registros reais pesquisados no banco.
+- Objetivo: facilitar a leitura operacional e comercial de cada etapa, deixando claro o que cada capítulo deve produzir e como interpretar evidência forte, evidência fraca ou bloqueio.

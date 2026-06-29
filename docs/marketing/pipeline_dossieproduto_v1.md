@@ -43,6 +43,7 @@ Na prática, o pipeline deve responder:
 6. O backend registra auditoria e, quando a etapa conclui com sucesso, avança para a próxima etapa canônica.
 7. A tela de dossiê consulta a situação das etapas e exibe auditoria, status, request, response, resposta final e conclusão.
 
+
 ## 4. Ordem canônica das etapas
 
 | Ordem | Código | Nome de negócio | Próxima etapa |
@@ -138,6 +139,12 @@ Abrir o dossiê e confirmar que existe contexto mínimo para iniciar a análise 
 
 A etapa não deve ser tratada apenas como marcador técnico. Ela precisa garantir que o pipeline recebeu dados úteis para o dossiê. Se a entrada contiver apenas metadados operacionais, as próximas etapas tendem a produzir análise fraca ou bloqueada.
 
+### Exemplo real observado no banco
+
+No produto MOIS `400` — `Resina LAB`, a etapa `intake` registrou `OBJECTIVE_FULFILLED` e decisão de validar se a página tinha contexto mínimo, preservando texto da página, produto, produtor, promessa, marca e sinais públicos. O mesmo registro mostrou que as chaves disponíveis eram principalmente operacionais (`jobId`, `pageId`, `productKey`, `stageCode`, `status`, `nextStageCode`).
+
+Leitura de negócio: o `intake` conseguiu abrir o fluxo, mas o exemplo deixa claro que só iniciar a execução não significa que o dossiê terá matéria-prima comercial suficiente. Quando o contexto chega pobre, a etapa deve sinalizar essa limitação para não contaminar os capítulos seguintes.
+
 ## 6.2 Etapa 2 — `product-understanding` — Entendimento do produto
 
 ### Objetivo
@@ -180,6 +187,20 @@ Estruturar o entendimento comercial inicial do produto antes da pesquisa externa
 
 A etapa só é comercialmente forte se o contexto recebido tiver dados reais da página. Se receber apenas `pageId`, `jobId`, `status` e `stageCode`, o modelo tende a devolver JSON formalmente válido, mas sem entendimento de negócio confiável.
 
+### Exemplo real observado no banco
+
+No produto MOIS `400` — `Resina LAB`, a resposta da etapa `product-understanding` foi concluída, mas o próprio conteúdo indicou lacunas: público, dor, promessa, mecanismo e formato apareceram como “não informado no contexto” ou “pendente de investigação”.
+
+Leitura de negócio pelo eixo do Marketing Hub:
+
+| Eixo | O que o banco mostrou | Decisão para o dossiê |
+|---|---|---|
+| Dor | Não informada no contexto. | Não criar hipótese forte sem nova evidência. |
+| Resultado | Não consolidado. | Evitar promessa comercial ainda. |
+| Mecanismo | Não informado. | Exigir fonte ou descrição real do método. |
+| Prova | Não disponível nesta etapa. | Depender das etapas externas antes de recomendar avanço. |
+| Oferta | Produto identificado, mas entendimento incompleto. | Prosseguir com investigação, não com experimento. |
+
 ## 6.3 Etapa 3 — `investigation-anchor-builder` — Âncoras de investigação
 
 ### Objetivo
@@ -220,6 +241,12 @@ Gerar âncoras confiáveis para orientar a investigação pública do produto. E
 ### Critério de qualidade
 
 As âncoras precisam ser específicas o bastante para encontrar o ecossistema real do produto, não apenas o nicho genérico.
+
+### Exemplo real observado no banco
+
+No produto MOIS `400` — `Resina LAB`, a etapa `investigation-anchor-builder` concluiu com a decisão de gerar âncoras a partir de produto, produtor, domínio, marca, promessa e termos proprietários. Porém, como a etapa anterior não trouxe esses elementos com riqueza comercial, as âncoras ficaram dependentes de identificadores básicos do produto.
+
+Leitura de negócio: quando o banco mostra pouca informação de produto/produtor/marca, a etapa deve explicitar a lacuna. Uma âncora fraca tende a buscar palavras genéricas e aumenta o risco de trazer fontes sem relação real com a oferta.
 
 ## 6.4 Etapa 4 — `warmup-resource-discovery` — Descoberta de recursos
 
@@ -263,6 +290,12 @@ Planejar e localizar recursos externos que possam aquecer o público antes da co
 
 A etapa deve priorizar fontes que tenham relação verificável com o produto, produtor, marca ou mecanismo comercial. Fontes genéricas do nicho devem ser marcadas como fracas ou descartadas.
 
+### Exemplo real observado no banco
+
+No produto MOIS `401` — `BLACK MAGRA`, a investigação externa encontrou fontes com maior utilidade comercial: marketplace Hotmart, página de aluno do Programa Monteze, Reclame Aqui e outro produto/rede associado à marca. Já no produto MOIS `179` — `PACOTE COMPLETO - Vitalício - TUDO LIBERADO + Tripé`, o dossiê antigo encontrou fontes web genéricas, como páginas sem relação comercial forte com a oferta.
+
+Leitura de negócio: esta etapa precisa separar “fonte que aquece a decisão” de “resultado de busca que só contém palavra parecida”. O caso `401` pode alimentar capítulos de prova, autoridade e objeções; o caso `179` deve gerar alerta de evidência fraca.
+
 ## 6.5 Etapa 5 — `source-product-match` — Relação fonte-produto
 
 ### Objetivo
@@ -301,6 +334,12 @@ Classificar se cada fonte externa descoberta realmente pertence ao produto, prod
 ### Critério de qualidade
 
 Nenhuma fonte deve virar evidência final apenas por conter palavra-chave semelhante. A etapa precisa proteger o dossiê contra falso positivo.
+
+### Exemplo real observado no banco
+
+No produto MOIS `401` — `BLACK MAGRA`, as fontes externas tinham relação comercial mais plausível com marca, marketplace, reputação e área de membros. No produto MOIS `179`, parte das fontes retornadas era genérica e não explicava o sucesso da oferta.
+
+Leitura de negócio: a etapa `source-product-match` deve aprovar fontes como evidência apenas quando houver vínculo claro com produto, produtor, marca, promessa ou mecanismo. Se a relação for só por termo solto, a fonte deve ir para rejeitadas ou para evidência fraca, nunca para a conclusão final.
 
 ## 6.6 Etapa 6 — `warmup-signal-extraction` — Extração de sinais
 
@@ -345,6 +384,12 @@ Extrair sinais comerciais das fontes qualificadas, especialmente sinais de autor
 
 A saída deve conectar cada sinal à fonte que o sustenta. Sinal sem evidência não deve sustentar recomendação final.
 
+### Exemplo real observado no banco
+
+No produto MOIS `401` — `BLACK MAGRA`, os resumos de aquecimento registraram sinais de autoridade ou marca pública, canal de audiência, oferta em marketplace e presença de reviews/objeções. O score ficou entre `55` e `57`, com temperatura `WARM`.
+
+Leitura de negócio: a etapa deve transformar fontes em sinais úteis, por exemplo: marketplace indica distribuição/oferta; Reclame Aqui indica reputação e objeções; página de aluno indica área de membros ou entrega. Esses sinais ajudam a decidir se vale aprofundar, mas ainda precisam ser conectados às fontes específicas.
+
 ## 6.7 Etapa 7 — `warmup-map-builder` — Mapa de aquecimento
 
 ### Objetivo
@@ -386,6 +431,12 @@ Organizar os recursos externos por papel no aquecimento do público e indicar la
 ### Critério de qualidade
 
 O mapa deve mostrar como o público é preparado para comprar, não apenas listar links ou sinais soltos.
+
+### Exemplo real observado no banco
+
+No produto MOIS `401` — `BLACK MAGRA`, o resumo de aquecimento classificou o mercado como `WARM`, com ecossistema `CREATORS_HEATED`/`SPECIALISTS_HEATED`, canais `MARKETPLACE`, `WEB` e `REVIEW_SITE`, além de risco de saturação baixo. No produto MOIS `179`, a temperatura ficou `COLD`, mesmo havendo hipótese de oferta/afiliados/marketplace.
+
+Leitura de negócio: o mapa deve mostrar o caminho de aquecimento. Para `401`, há indícios de autoridade, distribuição e reputação que podem preparar a compra. Para `179`, falta identificar o canal real que educa ou convence o público; por isso o próximo passo é investigar produtor, especialista, creator ou marca.
 
 ## 6.8 Etapa 8 — `dossier-synthesis` — Síntese final
 
@@ -430,6 +481,12 @@ Consolidar a conclusão de negócio, evidências, recursos de aquecimento, recom
 ### Critério de qualidade
 
 A etapa final não deve encerrar como sucesso se não houver evidência comercial suficiente. O bloqueio é desejável quando evita que o usuário tome decisão com base em dossiê vazio.
+
+### Exemplo real observado no banco
+
+No produto MOIS `400` — `Resina LAB`, a etapa `dossier-synthesis` falhou com o motivo: as etapas anteriores não entregaram evidências comerciais suficientes para gerar conclusão, recomendação e próximos passos úteis. Em contraste, o produto MOIS `401` — `BLACK MAGRA` tinha conclusão antiga indicando evidência promissora de autoridade ou marca pública e canal de audiência, mas ainda recomendava cruzar sinais com análise do modelo e fontes listadas.
+
+Leitura de negócio: a síntese final deve escolher entre três caminhos claros: aprovar com evidência forte, aprovar parcialmente com investigação complementar ou bloquear por falta de evidência. O bloqueio do `400` é correto porque evita transformar uma execução técnica em recomendação comercial falsa.
 
 ## 7. Relatório esperado para o usuário
 

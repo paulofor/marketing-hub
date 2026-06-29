@@ -61,6 +61,24 @@ class PipelineWorkerTest {
         assertThat(String.valueOf(result.output())).contains("BLOCKED_INSUFFICIENT_CONTEXT");
     }
 
+
+    /** Garante que metadados de auditoria não anulam evidências comerciais reais recebidas das etapas anteriores. */
+    @Test
+    void deveAprovarSinteseFinalComEvidenciasComerciaisEAuditoriaTecnica() {
+        PipelineWorker worker = new PipelineWorker(processorsCanonicos());
+        StageContext context = new StageContext(10L, 20L, "workspace-mois", "dossier-synthesis", Map.of(
+                "previousStageResponses", List.of(
+                        "{auditDecision=ok, inputKeys=[jobId], stageExecutionId=20, promessa=resultado claro para o público}",
+                        "{auditDecision=ok, inputKeys=[jobId], stageExecutionId=20, evidência=prova social e autoridade}",
+                        "{auditDecision=ok, inputKeys=[jobId], stageExecutionId=20, recomendação=avançar com risco controlado}")));
+
+        StageResult result = worker.execute(context);
+
+        assertThat(result.status()).isEqualTo("DONE");
+        assertThat(result.errorMessage()).isNull();
+        assertThat(String.valueOf(result.output())).contains("OBJECTIVE_FULFILLED");
+    }
+
     /** Garante bloqueio explícito quando o backend enviar etapa sem processor registrado no executor. */
     @Test
     void deveBloquearEtapaSemProcessorRegistrado() {

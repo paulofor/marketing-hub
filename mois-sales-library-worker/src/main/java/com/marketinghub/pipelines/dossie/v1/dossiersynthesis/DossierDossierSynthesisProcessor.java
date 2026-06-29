@@ -91,7 +91,6 @@ public class DossierDossierSynthesisProcessor implements StageProcessor {
             return false;
         }
         String joined = String.join(" ", stageResponses).toLowerCase();
-        boolean hasOnlyOperationalMarkers = joined.contains("auditdecision") && joined.contains("inputkeys") && joined.contains("stageexecutionid");
         boolean hasBusinessMarkers = joined.contains("promessa")
                 || joined.contains("público")
                 || joined.contains("publico")
@@ -101,7 +100,7 @@ public class DossierDossierSynthesisProcessor implements StageProcessor {
                 || joined.contains("recomendacao")
                 || joined.contains("risco")
                 || joined.contains("prova");
-        return hasBusinessMarkers && !hasOnlyOperationalMarkers;
+        return hasBusinessMarkers;
     }
 
     /** Cria o artefato final separado dos metadados técnicos de auditoria. */

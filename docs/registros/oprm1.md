@@ -1,3 +1,9 @@
+## 2026-06-29 — OPRM NichoCNAE v3: queries mais próximas de busca real
+
+- Revisão feita a partir de `docs/marketing/pipeline-nichocnae-v3.md`: o documento recomenda que o `routine-query-planner` gere buscas naturais, sem termos formais ou instruções internas, e que o `source-searcher` separe busca ampla da classificação de evidência.
+- Correção complementar: a etapa `routine-query-planner` deixou de transformar necessidades de validação em queries começando por “dificuldade de Validar...”, removendo ruído analítico antes de enviar as buscas ao `source-searcher`.
+- Prevenção: teste unitário cobre o caso de `validationNeed` longo com pedidos, reservas e trocas/devoluções para impedir nova geração de query pouco natural.
+
 ## 2026-06-29 — OPRM NichoCNAE v3: diagnóstico do bloqueio no source-searcher
 
 - Diagnóstico do CNAE `4781400`: o job `0a58f188-e5be-445b-bbe4-bdb87c470f6a` não teve falha técnica; ele parou com bloqueio funcional na etapa `source-searcher`, porque nenhuma fonte pública qualificada foi encontrada para sustentar a rotina da persona antes do snapshot.

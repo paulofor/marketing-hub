@@ -53,6 +53,24 @@ class RoutineQueryPlannerProcessorTest {
         assertThat(plannedQueries.getFirst()).asString().contains("rotina de Dono-operador MEI", "responder clientes no WhatsApp", "atendimento cliente Brasil");
     }
 
+    /** Remove ruído de validação para evitar queries que começam com instruções internas em vez de termos de busca reais. */
+    @Test
+    void shouldRemoveValidationNoiseFromOperationalPainQueries() {
+        RoutineQueryPlannerProcessor processor = new RoutineQueryPlannerProcessor();
+
+        StageResult result = processor.process(new StageContext("job-4781400", "137", Map.of(
+                "winnerPersona", Map.of(
+                        "name", "MEI de moda que vende por WhatsApp",
+                        "validationNeed", "Validar o volume típico de pedidos/dia, reservas e trocas/devoluções à distância"))));
+
+        List<?> plannedQueries = (List<?>) result.output().get("plannedQueries");
+        Map<?, ?> firstQuery = (Map<?, ?>) plannedQueries.getFirst();
+
+        assertThat(String.valueOf(firstQuery.get("query")))
+                .doesNotContain("dificuldade de Validar")
+                .startsWith("o volume típico de pedidos dia, reservas e trocas devoluções à distância problema rotina");
+    }
+
     /** Bloqueia uma saída genérica quando a etapa anterior não trouxe a persona vencedora. */
     @Test
     void shouldFailWithoutWinnerPersona() {

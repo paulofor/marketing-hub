@@ -1,0 +1,72 @@
+package com.marketinghub.planning;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import java.time.Instant;
+import java.time.LocalDate;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+/** Responsabilidade: representar um marco de negocio dentro de um plano comercial. */
+@Entity
+@Table(name = "commercial_plan_milestone")
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class CommercialPlanMilestone {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
+    @JoinColumn(name = "plan_id", nullable = false)
+    private CommercialPlan plan;
+
+    @Column(name = "sequence_order", nullable = false)
+    private Integer sequenceOrder;
+
+    @Column(nullable = false, length = 64)
+    private String code;
+
+    @Column(nullable = false, length = 191)
+    private String name;
+
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 32)
+    private CommercialPlanMilestoneStatus status = CommercialPlanMilestoneStatus.PENDING;
+
+    @Column(name = "due_date")
+    private LocalDate dueDate;
+
+    @Column(name = "evidence_source", length = 512)
+    private String evidenceSource;
+
+    @Column(length = 512)
+    private String blocker;
+
+    @Column(name = "recommended_next_action", length = 512)
+    private String recommendedNextAction;
+
+    @CreationTimestamp
+    @Column(name = "created_at")
+    private Instant createdAt;
+
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    private Instant updatedAt;
+}

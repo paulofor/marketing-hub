@@ -1,3 +1,9 @@
+## 2026-06-29 — NichoCNAE v3: source-searcher híbrido com IA qualificadora
+
+- Diagnóstico: o timeout do `source-searcher` no CNAE `8219999` vinha da combinação de muitas variações de busca determinística com provedores públicos lentos/intermitentes; delegar a busca inteira ao modelo criaria risco de fonte inventada e baixa auditoria.
+- Correção: o executor `oprm-coletor-mei` passou a limitar queries/variações/fallback do `source-searcher` e adicionou uma camada OpenAI opcional para qualificar somente fontes candidatas já encontradas, com prompt/schema versionados, `service_tier=flex`, callbacks de request/response no backend e fallback determinístico quando a IA estiver indisponível.
+- Prevenção: testes cobrem que a IA só promove candidato auditado da busca, que o contrato OpenAI usa schema estrito/Flex com auditoria e que evidência insuficiente não força avanço.
+
 ## 2026-06-29 — OPRM NichoCNAE v3: correção definitiva do bloqueio por queries ruidosas
 
 - Diagnóstico confirmado pelo banco no CNAE `4781400`: jobs recentes paravam em `source-searcher` com `FONTES_NAO_COLETADAS`; execuções anteriores que avançaram levaram fonte fora do domínio (`curriculo.sedu.es.gov.br`) até o `quality-gate`, que bloqueou depois. O problema não era falta de conclusão técnica, mas baixa qualidade das queries e ausência de fallback de domínio antes do bloqueio.

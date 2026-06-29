@@ -1829,7 +1829,6 @@ export default function ExperimentDetailPage() {
     isLoadingReadiness ||
     alterationLocked;
 
-
   const hasExperimentPipelineContent = Boolean(
     data.campaignAngle ||
     data.adCopy ||
@@ -1845,11 +1844,25 @@ export default function ExperimentDetailPage() {
     readinessSummary?.geraLandingRequiredStageCount ?? 7;
   const hasAtLeastThreeApprovedCreatives = readinessCreativeCount >= 3;
   const hasAudienceSelection = hasPublisherTargeting;
+  const isLowTicketProduct = data.experimentType === "LOW_TICKET_PRODUCT";
+  const experimentTypeLabel = isLowTicketProduct
+    ? "Produto low-ticket"
+    : "Teste de nicho / lead";
+  const campaignObjectiveLabel =
+    data.campaignObjective === "LEADS"
+      ? "Leads"
+      : data.campaignObjective === "SALES"
+        ? "Vendas"
+        : data.campaignObjective || "—";
   const mainExperimentChecklist = [
     {
       id: "experiment-pipeline",
-      title: "Pipeline de experimento",
-      detail: "Aba Estrutura de conteúdo",
+      title: isLowTicketProduct
+        ? "Oferta low-ticket"
+        : "Pipeline de experimento",
+      detail: isLowTicketProduct
+        ? "Dor, produto, promessa e CTA de checkout"
+        : "Aba Estrutura de conteúdo",
       isMet: hasExperimentPipelineContent,
       isLoading: false,
       actionLabel: "Abrir estrutura",
@@ -1903,8 +1916,12 @@ export default function ExperimentDetailPage() {
       id: "landing-approval",
       title: "Aprovação da landing",
       detail: data.followUpActionUrl
-        ? "Landing aprovada com URL ativa"
-        : "Aprove a landing para liberar a URL de destino",
+        ? isLowTicketProduct
+          ? "Página de venda aprovada com checkout ativo"
+          : "Landing aprovada com URL ativa"
+        : isLowTicketProduct
+          ? "Aprove a página curta com checkout na primeira dobra"
+          : "Aprove a landing para liberar a URL de destino",
       isMet: Boolean(data.followUpActionUrl),
       isLoading: isLoadingReadiness,
       actionLabel: "Abrir landing",
@@ -1929,8 +1946,11 @@ export default function ExperimentDetailPage() {
     COMPLETED: "Concluído",
     FAILED: "Com erro",
   };
-
   const rows = [
+    {
+      label: "Tipo de experimento",
+      value: experimentTypeLabel,
+    },
     {
       label: "Nicho",
       value: <Link to={`/niches/${data.nicheId}/edit`}>{niche?.name}</Link>,
@@ -1960,8 +1980,12 @@ export default function ExperimentDetailPage() {
       value: data.singlePain || "—",
     },
     {
-      label: "Isca digital",
-      value: data.freeReward || "—",
+      label: isLowTicketProduct
+        ? "Amostra gratuita secundária"
+        : "Isca digital",
+      value:
+        data.freeReward ||
+        (isLowTicketProduct ? "Sem captura antes do checkout" : "—"),
     },
     {
       label: "Promessa do funil",
@@ -1973,10 +1997,7 @@ export default function ExperimentDetailPage() {
     },
     {
       label: "Objetivo da campanha",
-      value:
-        data.campaignObjective === "LEADS"
-          ? "Leads"
-          : data.campaignObjective || "—",
+      value: campaignObjectiveLabel,
     },
     {
       label: "Página do Facebook",
@@ -2298,7 +2319,11 @@ export default function ExperimentDetailPage() {
       <div className="card border-0 shadow-sm rounded-3 mt-3">
         <div className="card-body">
           <div className="d-flex justify-content-between align-items-start">
-            <h5 className="card-title mb-0">Campanha de Facebook Ads</h5>
+            <h5 className="card-title mb-0">
+              {isLowTicketProduct
+                ? "Campanha de Facebook Ads para venda"
+                : "Campanha de Facebook Ads"}
+            </h5>
             <span
               className={`badge ${
                 isReadyForFacebook ? "text-bg-success" : "text-bg-warning"
@@ -2308,8 +2333,9 @@ export default function ExperimentDetailPage() {
             </span>
           </div>
           <p className="card-text mt-2">
-            Checklist consolidado das regras de publicação. Ele reflete o
-            documento interno e o diagnóstico automático do worker.
+            {isLowTicketProduct
+              ? "Checklist consolidado para publicar anúncio, página curta, checkout e entrega com foco na primeira compra."
+              : "Checklist consolidado das regras de publicação. Ele reflete o documento interno e o diagnóstico automático do worker."}
           </p>
           {isLoadingReadiness ? (
             <div
@@ -2337,7 +2363,9 @@ export default function ExperimentDetailPage() {
             </button>
             <div className="small text-body-secondary">
               {isReadyForFacebook
-                ? "Ao liberar, o status muda para Planejado e o funil de vendas é zerado antes da publicação."
+                ? isLowTicketProduct
+                  ? "Ao liberar, o status muda para Planejado e a campanha será preparada para objetivo de vendas."
+                  : "Ao liberar, o status muda para Planejado e o funil de vendas é zerado antes da publicação."
                 : "Resolva os bloqueios para habilitar a liberação automática."}
               {lastReleaseLabel ? (
                 <div className="mt-1">

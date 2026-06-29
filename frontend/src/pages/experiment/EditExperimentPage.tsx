@@ -3,7 +3,10 @@ import type { ChangeEvent } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate, useParams } from "react-router-dom";
 import { useExperiment } from "../../api/experiment/useExperiment";
-import type { ExperimentStage } from "../../api/experiment/useExperiments";
+import type {
+  ExperimentStage,
+  ExperimentType,
+} from "../../api/experiment/useExperiments";
 import { useImageGenerationModels } from "../../api/ai/useImageGenerationModels";
 import {
   useUpdateExperiment,
@@ -41,6 +44,7 @@ interface FormData {
   freeReward: string;
   funnelPromise: string;
   primaryCta: string;
+  experimentType: ExperimentType;
 }
 
 function toDateInputValue(value?: string | null) {
@@ -97,6 +101,7 @@ export default function EditExperimentPage() {
       freeReward: "",
       funnelPromise: "",
       primaryCta: "",
+      experimentType: "NICHE_TEST",
     },
   });
   const { data: facebookPages, isLoading: isLoadingFacebookPages } =
@@ -149,6 +154,7 @@ export default function EditExperimentPage() {
         freeReward: data.freeReward ?? "",
         funnelPromise: data.funnelPromise ?? "",
         primaryCta: data.primaryCta ?? "",
+        experimentType: data.experimentType ?? "NICHE_TEST",
       });
     }
   }, [data, reset]);
@@ -161,6 +167,8 @@ export default function EditExperimentPage() {
   const selectedImageModelId = watch("imageModelId");
   const selectedImageQualityId = watch("imageModelQualityId");
   const imagesPerPackageValue = watch("imagesPerPackage");
+  const experimentTypeValue = watch("experimentType");
+  const isLowTicketProduct = experimentTypeValue === "LOW_TICKET_PRODUCT";
   const stageEntries = playbook ?? [];
   const stageSelectOptions =
     stageEntries.length > 0
@@ -398,7 +406,7 @@ export default function EditExperimentPage() {
         alert("Informe uma única dor do experimento");
         return;
       }
-      if (!values.freeReward.trim()) {
+      if (!isLowTicketProduct && !values.freeReward.trim()) {
         alert("Informe uma única isca digital");
         return;
       }
@@ -477,7 +485,8 @@ export default function EditExperimentPage() {
         freeReward: values.freeReward.trim(),
         funnelPromise: values.funnelPromise.trim(),
         primaryCta: values.primaryCta.trim(),
-        campaignObjective: "LEADS",
+        experimentType: values.experimentType,
+        campaignObjective: isLowTicketProduct ? "SALES" : "LEADS",
         kpiTarget: Number(values.kpiTarget),
         dailyBudget: parsedDailyBudget,
         unitPrice: parsedUnitPrice,
@@ -552,6 +561,22 @@ export default function EditExperimentPage() {
         )}
         <form onSubmit={handleSubmit(onSubmit)} noValidate>
           <fieldset disabled={isLoadingDependencies} style={{ minHeight: 0 }}>
+            <label className="form-label" htmlFor="experimentType">
+              Tipo de experimento <span className="text-danger">*</span>
+            </label>
+            <select
+              id="experimentType"
+              className="form-select mb-2"
+              {...register("experimentType")}
+            >
+              <option value="LOW_TICKET_PRODUCT">Produto low-ticket</option>
+              <option value="NICHE_TEST">Teste de nicho / lead</option>
+            </select>
+            <div className="form-text mb-3">
+              {isLowTicketProduct
+                ? "Prioriza venda direta: página curta, checkout e entrega."
+                : "Prioriza captura de lead: isca/amostra antes da venda."}
+            </div>
             <label className="form-label" htmlFor="stageSelect">
               Etapa do experimento <span className="text-danger">*</span>
             </label>
@@ -645,8 +670,9 @@ export default function EditExperimentPage() {
               <div className="card-body">
                 <h2 className="h6">Contrato de promessa única</h2>
                 <p className="text-muted small mb-3">
-                  Anúncio, botão, formulário e entrega devem repetir a mesma
-                  dor, isca digital e CTA.
+                  {isLowTicketProduct
+                    ? "Anúncio, primeira dobra, checkout e entrega devem repetir a mesma dor, promessa comprável e CTA."
+                    : "Anúncio, botão, formulário e entrega devem repetir a mesma dor, isca digital e CTA."}
                 </p>
                 <label className="form-label" htmlFor="singlePain">
                   Dor única <span className="text-danger">*</span>
@@ -658,12 +684,21 @@ export default function EditExperimentPage() {
                   {...register("singlePain")}
                 />
                 <label className="form-label" htmlFor="freeReward">
-                  Isca digital única <span className="text-danger">*</span>
+                  {isLowTicketProduct
+                    ? "Amostra gratuita secundária"
+                    : "Isca digital única"}{" "}
+                  {!isLowTicketProduct && (
+                    <span className="text-danger">*</span>
+                  )}
                 </label>
                 <input
                   id="freeReward"
                   className="form-control mb-2"
-                  placeholder="3 mensagens prontas para confirmar horário, pedir sinal e reagendar sem climão"
+                  placeholder={
+                    isLowTicketProduct
+                      ? "Ex.: Ver uma amostra gratuita do kit"
+                      : "3 mensagens prontas para confirmar horário, pedir sinal e reagendar sem climão"
+                  }
                   {...register("freeReward")}
                 />
                 <label className="form-label" htmlFor="funnelPromise">
@@ -685,8 +720,11 @@ export default function EditExperimentPage() {
                   {...register("primaryCta")}
                 />
                 <div className="alert alert-info py-2 mb-0">
-                  Objetivo da campanha fixo: <strong>Leads</strong>. Não use
-                  Tráfego nem otimização para cliques neste fluxo.
+                  Objetivo da campanha:{" "}
+                  <strong>{isLowTicketProduct ? "Vendas" : "Leads"}</strong>.{" "}
+                  {isLowTicketProduct
+                    ? "Não coloque formulário antes do checkout neste fluxo."
+                    : "Não use Tráfego nem otimização para cliques neste fluxo."}
                 </div>
               </div>
             </div>

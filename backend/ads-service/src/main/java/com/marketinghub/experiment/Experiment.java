@@ -59,6 +59,12 @@ public class Experiment {
     @Column(name = "primary_cta", length = 191)
     private String primaryCta;
 
+    /** Tipo comercial do experimento para orientar funil, objetivo e métricas. */
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(name = "experiment_type", length = 32, nullable = false)
+    private ExperimentType experimentType = ExperimentType.NICHE_TEST;
+
     /** Objetivo de campanha exigido para publicação do experimento. */
     @Builder.Default
     @Enumerated(EnumType.STRING)

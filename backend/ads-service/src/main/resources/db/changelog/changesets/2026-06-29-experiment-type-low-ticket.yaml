@@ -1,0 +1,29 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-29-experiment-type-low-ticket
+      author: marketinghub
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: experiment
+        - not:
+            - columnExists:
+                tableName: experiment
+                columnName: experiment_type
+      changes:
+        - addColumn:
+            tableName: experiment
+            columns:
+              - column:
+                  name: experiment_type
+                  type: varchar(32)
+                  defaultValue: NICHE_TEST
+                  constraints:
+                    nullable: false
+      rollback:
+        - dropColumn:
+            tableName: experiment
+            columnName: experiment_type

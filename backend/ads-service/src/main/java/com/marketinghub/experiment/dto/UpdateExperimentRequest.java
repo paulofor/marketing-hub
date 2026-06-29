@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.Nulls;
 import com.marketinghub.experiment.ExperimentStage;
 import com.marketinghub.experiment.ExperimentCampaignObjective;
+import com.marketinghub.experiment.ExperimentType;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import lombok.Data;
@@ -29,6 +30,9 @@ public class UpdateExperimentRequest {
     private String primaryCta;
     @JsonIgnore
     private boolean primaryCtaPresent;
+    private ExperimentType experimentType;
+    @JsonIgnore
+    private boolean experimentTypePresent;
     private ExperimentCampaignObjective campaignObjective;
     @JsonIgnore
     private boolean campaignObjectivePresent;
@@ -132,6 +136,13 @@ public class UpdateExperimentRequest {
     public void setPrimaryCta(String primaryCta) {
         this.primaryCta = primaryCta;
         this.primaryCtaPresent = true;
+    }
+
+    /** Registra a presença do tipo comercial do experimento no payload de atualização. */
+    @JsonSetter(value = "experimentType", nulls = Nulls.SET)
+    public void setExperimentType(ExperimentType experimentType) {
+        this.experimentType = experimentType;
+        this.experimentTypePresent = true;
     }
 
     /** Registra a presença do objetivo de campanha no payload de atualização. */

@@ -1,0 +1,98 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "enoughEvidence",
+    "decisionReason",
+    "selectedSources",
+    "rejectedEvidenceSummary"
+  ],
+  "properties": {
+    "enoughEvidence": {
+      "type": "boolean"
+    },
+    "decisionReason": {
+      "type": "string"
+    },
+    "selectedSources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "url",
+          "title",
+          "snippet",
+          "approved",
+          "sourceIntent",
+          "sourceType",
+          "routineEvidenceScore",
+          "brazilRelevanceScore",
+          "qualityScore",
+          "evidenceReason",
+          "commercialPageRisk",
+          "solutionLanguageRisk",
+          "structuredBusinessDriftRisk",
+          "matchedQuery"
+        ],
+        "properties": {
+          "url": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "snippet": {
+            "type": "string"
+          },
+          "approved": {
+            "type": "boolean"
+          },
+          "sourceIntent": {
+            "type": "string",
+            "enum": [
+              "ROUTINE_EVIDENCE",
+              "COMMUNITY_OR_QUESTION_EVIDENCE"
+            ]
+          },
+          "sourceType": {
+            "type": "string"
+          },
+          "routineEvidenceScore": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "brazilRelevanceScore": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "qualityScore": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "evidenceReason": {
+            "type": "string"
+          },
+          "commercialPageRisk": {
+            "type": "boolean"
+          },
+          "solutionLanguageRisk": {
+            "type": "boolean"
+          },
+          "structuredBusinessDriftRisk": {
+            "type": "boolean"
+          },
+          "matchedQuery": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "rejectedEvidenceSummary": {
+      "type": "string"
+    }
+  }
+}

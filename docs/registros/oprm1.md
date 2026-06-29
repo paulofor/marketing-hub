@@ -1,3 +1,11 @@
+## 2026-06-29 — OPRM NichoCNAE v3: bloqueio de materialização após quality-gate reprovado
+
+- Diagnóstico do CNAE `4781400`: a tela de conferência final estava aparecendo mesmo quando o `quality-gate` persistia `approved=false` e `status=QUALIDADE_BLOQUEADA`.
+- Causa-raiz tratada: o backend usava apenas o status técnico da execução (`COMPLETED`) para liberar a revisão final, sem conferir a decisão funcional do gate. Isso fazia metadado técnico de reprovação aparecer como "informações de nicho enriquecido" e permitia tentar materializar um resultado que o próprio pipeline declarou insuficiente.
+- Segunda causa-raiz comprovada no banco: o `source-searcher` deixou avançar fonte de baixa confiança (`curriculo.sedu.es.gov.br`, rotina pedagógica fora do CNAE de vestuário) por causa do modo `AVANCO_CONTROLADO_ATE_QUALITY_GATE`; isso produziu tarefa diária inútil e levou ruído até o gate.
+- Correção: a revisão final e o endpoint de confirmação da etapa #10 agora exigem `approved=true` no payload do `quality-gate`; no executor, fonte fraca ou fora do domínio não avança mais para `source-fetcher`.
+- Prevenção: testes unitários cobrem que `QUALIDADE_BLOQUEADA` não expõe `finalizationReview`, que a confirmação manual retorna conflito sem criar a etapa `persona-routine-materializer` e que fonte fraca/off-domain fica bloqueada no `source-searcher`.
+
 ## 2026-06-29 — OPRM NichoCNAE v3: queries mais próximas de busca real
 
 - Revisão feita a partir de `docs/marketing/pipeline-nichocnae-v3.md`: o documento recomenda que o `routine-query-planner` gere buscas naturais, sem termos formais ou instruções internas, e que o `source-searcher` separe busca ampla da classificação de evidência.

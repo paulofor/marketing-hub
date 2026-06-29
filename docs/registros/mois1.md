@@ -1949,3 +1949,7 @@ Arquivos principais:
 - Diagnosticado que a tela mostrava a response da OpenAI, mas o card mais recente ficava sem request porque request e response são persistidos em linhas de auditoria separadas do mesmo job.
 - Causa-raiz tratada: a consulta de situação devolvia cada linha isoladamente, então a linha `CONCLUIDO` usada pela tela não herdava o request registrado antes em `AGUARDANDO_RETORNO_MODULO`.
 - Ajuste aplicado: a consulta de situação agora correlaciona registros por página, etapa e `jobId`, exibindo o request auditado junto da linha de response do mesmo job.
+
+## 2026-06-29 — Documentação do pipeline dossieproduto.v1
+
+- Criado o documento de marketing `docs/marketing/pipeline_dossieproduto.md` detalhando objetivo geral, fluxo operacional, ordem das etapas, entradas, saídas, processamentos, critérios de qualidade e resultado de negócio esperado para o pipeline de geração de dossiê de produto MOIS.

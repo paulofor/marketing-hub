@@ -332,4 +332,30 @@ class SourceSearcherProcessorTest {
         assertThat(result.output()).containsEntry("nextStageCode", "");
         assertThat((List<?>) result.output().get("selectedSources")).isEmpty();
     }
+
+    /** Usa qualificação semântica externa para recuperar candidato ambíguo sem relaxar a busca determinística. */
+    @Test
+    void shouldAllowEvidenceQualifierToSelectAuditedCandidate() {
+        SourceSearchClient searchClient = (query, limit) -> List.of(new SourceSearchResult(
+                "Perguntas de clientes sobre troca por WhatsApp",
+                "https://forum.example.com.br/trocas-whatsapp",
+                "Cliente relata dúvida sobre pedido, troca, entrega e atendimento por WhatsApp em loja de roupas.",
+                "TEST_PROVIDER",
+                "<item />"));
+        SourceEvidenceQualifier qualifier = (context, plannedQueries, attempts, selectedSources) -> {
+            Map<String, Object> candidate = (Map<String, Object>) ((List<?>) attempts.getFirst().get("qualifiedSources")).getFirst();
+            Map<String, Object> promoted = new java.util.LinkedHashMap<>(candidate);
+            promoted.put("aiQualified", true);
+            promoted.put("evidenceReason", "Fonte pública rastreável com atrito real de pedido, troca e atendimento.");
+            return List.of(promoted);
+        };
+
+        StageResult result = new SourceSearcherProcessor(searchClient, qualifier).process(new StageContext("job", "5", Map.of(
+                "plannedQueries", List.of(Map.of("query", "loja roupas troca whatsapp atendimento")))));
+
+        assertThat(result.status()).isEqualTo("FONTES_ENCONTRADAS");
+        Map<?, ?> source = (Map<?, ?>) ((List<?>) result.output().get("selectedSources")).getFirst();
+        assertThat(source.get("aiQualified")).isEqualTo(true);
+        assertThat(result.output()).containsEntry("nextStageCode", "source-fetcher");
+    }
 }

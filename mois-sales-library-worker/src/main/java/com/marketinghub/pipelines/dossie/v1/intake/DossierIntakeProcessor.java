@@ -11,7 +11,7 @@ import java.util.Map;
 public class DossierIntakeProcessor implements StageProcessor {
 
     private static final String STAGE_NAME = "intake";
-    private static final String OBJECTIVE = "Validar se a página possui contexto mínimo para iniciar o dossiê de produto, preservando o texto da página, produto, produtor, promessa, marca e sinais públicos recebidos do backend.";
+    private static final String OBJECTIVE = "Validar contexto mínimo e triar comercialmente a página, classificando a matéria-prima como RICA, PARCIAL ou INSUFICIENTE e preservar headline, promessa, preço, garantia, CTA, produtor, domínio, provas, links e sinais públicos para as próximas etapas.";
 
     /** Informa o nome canônico da etapa entrada inicial. */
     @Override

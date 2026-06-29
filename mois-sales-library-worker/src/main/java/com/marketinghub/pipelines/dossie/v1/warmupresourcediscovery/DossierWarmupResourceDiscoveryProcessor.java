@@ -11,7 +11,7 @@ import java.util.Map;
 public class DossierWarmupResourceDiscoveryProcessor implements StageProcessor {
 
     private static final String STAGE_NAME = "warmup-resource-discovery";
-    private static final String OBJECTIVE = "Planejar a descoberta de canais, comunidades, aulas, lives, reviews, afiliados, matérias, páginas auxiliares e provas sociais que aquecem o público.";
+    private static final String OBJECTIVE = "Mapear canais, comunidades, aulas, lives, reviews, afiliados, matérias, páginas auxiliares e provas sociais que aquecem o público, classificando recursos externos por papel comercial no aquecimento — descoberta, educação, autoridade, comunidade, prova social, comparação, objeção, demonstração, captura, oferta direta e remarketing provável.";
 
     /** Informa o nome canônico da etapa descoberta de recursos de aquecimento. */
     @Override

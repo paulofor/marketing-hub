@@ -14,7 +14,7 @@ import java.util.Map;
 public class DossierDossierSynthesisProcessor implements StageProcessor {
 
     private static final String STAGE_NAME = "dossier-synthesis";
-    private static final String OBJECTIVE = "Consolidar conclusão de negócio, evidências, recursos de aquecimento, recomendação final e próximos passos comerciais para exibição na tela.";
+    private static final String OBJECTIVE = "Consolidar relatório executivo com recomendação final com classificação FORTE, PROMISSOR_COM_LACUNAS ou FRACO_OU_INSUFICIENTE, separando evidências, hipóteses pendentes, oportunidades acionáveis, riscos e próximos testes comerciais.";
     private static final String INSUFFICIENT_CONTEXT_ERROR = "Dossiê final bloqueado: as etapas anteriores não entregaram evidências comerciais suficientes para gerar conclusão, recomendação e próximos passos úteis.";
 
     /** Informa o nome canônico da etapa síntese final do dossiê. */

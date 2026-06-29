@@ -11,7 +11,7 @@ import java.util.Map;
 public class DossierSourceProductMatchProcessor implements StageProcessor {
 
     private static final String STAGE_NAME = "source-product-match";
-    private static final String OBJECTIVE = "Classificar se cada fonte externa pertence ao produto, produtor, marca ou recurso de aquecimento antes de virar evidência do dossiê.";
+    private static final String OBJECTIVE = "Classificar cada fonte externa por força de vínculo com produto, produtor, marca, promessa, mecanismo ou checkout, separando DIRETO, PROVAVEL, INDIRETO, NICHO_APENAS e DESCARTADO antes de virar evidência.";
 
     /** Informa o nome canônico da etapa validação de relação fonte-produto. */
     @Override

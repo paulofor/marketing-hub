@@ -11,7 +11,7 @@ import java.util.Map;
 public class DossierWarmupSignalExtractionProcessor implements StageProcessor {
 
     private static final String STAGE_NAME = "warmup-signal-extraction";
-    private static final String OBJECTIVE = "Extrair sinais de autoridade, prova social, educação pré-venda, comunidade, distribuição, objeções e intensidade de aquecimento das fontes qualificadas.";
+    private static final String OBJECTIVE = "Extrair sinais de autoridade, prova social, educação pré-venda, comunidade, distribuição e objeções como sinais de persuasão conectados às fontes: dor explorada, promessa repetida, mecanismo explicado, prova social, autoridade, demonstração, comunidade, objeções, risco, urgência, distribuição e linguagem do público.";
 
     /** Informa o nome canônico da etapa extração de sinais de aquecimento. */
     @Override

@@ -15,6 +15,7 @@ import { useNiches } from "../../api/niche/useNiches";
 import {
   CommercialPlan,
   CommercialPlanMilestoneStatus,
+  CommercialPlanSimulation,
   CommercialPlanStatus,
   SaveCommercialPlanPayload,
   useCommercialPlans,
@@ -58,6 +59,16 @@ const milestoneStatusLabel: Record<CommercialPlanMilestoneStatus, string> = {
   IN_PROGRESS: "Em andamento",
   DONE: "Concluído",
   BLOCKED: "Bloqueado",
+};
+
+const recommendationLabel: Record<
+  CommercialPlanSimulation["recommendation"],
+  string
+> = {
+  CONTINUE: "Continuar",
+  CORRECT: "Corrigir",
+  PAUSE: "Pausar",
+  END: "Encerrar",
 };
 
 function toForm(plan: CommercialPlan): SaveCommercialPlanPayload {
@@ -120,6 +131,16 @@ export default function CommercialPlanningPage() {
   );
   const [form, setForm] = useState<SaveCommercialPlanPayload>(emptyForm);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [simulationFeedback, setSimulationFeedback] = useState<{
+    planId: number;
+    simulation?: CommercialPlanSimulation;
+    error?: string;
+  } | null>(null);
+  const visibleSimulation =
+    simulationFeedback?.planId === selectedPlan?.id &&
+    simulationFeedback.simulation
+      ? simulationFeedback.simulation
+      : selectedPlan?.simulations?.[0];
 
   function updateField<K extends keyof SaveCommercialPlanPayload>(
     field: K,
@@ -156,11 +177,21 @@ export default function CommercialPlanningPage() {
   }
 
   async function handleSimulate(plan: CommercialPlan) {
-    await simulatePlan.mutateAsync({
-      id: plan.id,
-      decisionNotes: "Simulação manual solicitada na tela de Planejamento.",
-    });
-    setSelectedId(plan.id);
+    setSimulationFeedback(null);
+    try {
+      const simulation = await simulatePlan.mutateAsync({
+        id: plan.id,
+        decisionNotes: "Simulação manual solicitada na tela de Planejamento.",
+      });
+      setSelectedId(plan.id);
+      setSimulationFeedback({ planId: plan.id, simulation });
+    } catch {
+      setSimulationFeedback({
+        planId: plan.id,
+        error:
+          "Não foi possível gerar o cenário. A simulação não foi registrada.",
+      });
+    }
   }
 
   return (
@@ -258,11 +289,71 @@ export default function CommercialPlanningPage() {
                         disabled={simulatePlan.isPending}
                         onClick={() => handleSimulate(selectedPlan)}
                       >
-                        <BrainCircuit size={18} aria-hidden="true" />
-                        Simular cenários
+                        {simulatePlan.isPending ? (
+                          <span
+                            className="spinner-border spinner-border-sm"
+                            aria-hidden="true"
+                          />
+                        ) : (
+                          <BrainCircuit size={18} aria-hidden="true" />
+                        )}
+                        {simulatePlan.isPending
+                          ? "Simulando..."
+                          : "Simular cenários"}
                       </button>
                     </div>
                   </div>
+
+                  {simulationFeedback?.planId === selectedPlan.id &&
+                  simulationFeedback.error ? (
+                    <div className="alert alert-danger mb-0" role="alert">
+                      {simulationFeedback.error}
+                    </div>
+                  ) : null}
+
+                  {visibleSimulation ? (
+                    <section className="border rounded-3 p-3 bg-light">
+                      <div className="d-flex flex-wrap justify-content-between gap-2 mb-2">
+                        <h3 className="h6 mb-0">Última simulação</h3>
+                        <span className="badge text-bg-primary">
+                          {
+                            recommendationLabel[
+                              visibleSimulation.recommendation
+                            ]
+                          }
+                        </span>
+                      </div>
+                      <div className="row g-3">
+                        <div className="col-12 col-lg-4">
+                          <p className="text-secondary small mb-1">
+                            Cenário provável
+                          </p>
+                          <p className="mb-0">
+                            {visibleSimulation.mostLikelyScenario ||
+                              "Sem cenário registrado."}
+                          </p>
+                        </div>
+                        <div className="col-12 col-lg-4">
+                          <p className="text-secondary small mb-1">
+                            Risco principal
+                          </p>
+                          <p className="mb-0">
+                            {visibleSimulation.mainRisk ||
+                              "Sem risco registrado."}
+                          </p>
+                        </div>
+                        <div className="col-12 col-lg-4">
+                          <p className="text-secondary small mb-1">
+                            Próxima ação
+                          </p>
+                          <p className="mb-0">
+                            {visibleSimulation.bestNextAction ||
+                              "Sem ação recomendada."}
+                          </p>
+                        </div>
+                      </div>
+                    </section>
+                  ) : null}
 
                   <div className="row g-3">
                     <div className="col-12 col-md-3">

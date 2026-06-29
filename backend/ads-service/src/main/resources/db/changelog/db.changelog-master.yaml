@@ -1201,3 +1201,7 @@ databaseChangeLog:
   - include:
       file: changesets/2026-06-27-oprm-nichocnae-v3-only-pipeline.yaml
       relativeToChangelogFile: true
+
+  - include:
+      file: changesets/2026-06-28-openai-gpt52-pricing.yaml
+      relativeToChangelogFile: true

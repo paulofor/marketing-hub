@@ -22,6 +22,7 @@ import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.listCnaeJob
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.listCnaeJobs.CandidateGeneratorCnaeJobsResponse;
 import com.marketinghub.oprm.nichocnae.v2.candidategenerator.service.pending.CandidateGeneratorPendingResponse;
 import com.marketinghub.oprm.nichocnae.v2.service.openaiinteraction.OpenAiInteractionAuditRequest;
+import com.marketinghub.oprm.nichocnae.v2.service.openaiinteraction.OpenAiInteractionCostCalculator;
 import com.marketinghub.repository.jpa.oprm.cnae.OprmConfirmedMarketNiche;
 import com.marketinghub.repository.jpa.oprm.cnae.OprmConfirmedMarketNicheRepository;
 import com.marketinghub.repository.jpa.oprm.cnae.OprmNicheCandidateRepository;
@@ -1004,7 +1005,7 @@ public class BackendCandidateGeneratorService {
         entity.setInputTokens(request.inputTokens());
         entity.setOutputTokens(request.outputTokens());
         entity.setTotalTokens(request.totalTokens());
-        entity.setCostUsd(request.costUsd());
+        entity.setCostUsd(OpenAiInteractionCostCalculator.resolveCostUsd(request));
         entity.setOpenAiResponseId(request.openAiResponseId());
         entity.setRawRequest(request.rawRequest());
         entity.setRawResponse(request.rawResponse());

@@ -1,0 +1,41 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-28-01-openai-gpt52-official-pricing
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: openai_model
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO openai_model (
+                  name, code,
+                  price_input_standard, price_input_cached_standard, price_output_standard,
+                  price_input_batch, price_input_cached_batch, price_output_batch,
+                  accepts_image_input, pricing_source, last_pricing_sync_at, created_at, updated_at
+              )
+              SELECT 'GPT-5.2', 'gpt-5.2',
+                     1.75000, 0.17500, 14.00000,
+                     0.87500, 0.08750, 7.00000,
+                     0, 'https://developers.openai.com/api/docs/pricing', NOW(), NOW(), NOW()
+              FROM (SELECT 1) seed
+              LEFT JOIN openai_model existing ON existing.code = 'gpt-5.2'
+              WHERE existing.id IS NULL;
+
+              UPDATE openai_model
+              SET price_input_standard = 1.75000,
+                  price_input_cached_standard = 0.17500,
+                  price_output_standard = 14.00000,
+                  price_input_batch = 0.87500,
+                  price_input_cached_batch = 0.08750,
+                  price_output_batch = 7.00000,
+                  pricing_source = 'https://developers.openai.com/api/docs/pricing',
+                  last_pricing_sync_at = NOW(),
+                  updated_at = NOW()
+              WHERE code = 'gpt-5.2';

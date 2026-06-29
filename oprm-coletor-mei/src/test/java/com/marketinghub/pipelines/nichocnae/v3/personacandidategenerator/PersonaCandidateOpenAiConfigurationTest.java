@@ -21,7 +21,8 @@ class PersonaCandidateOpenAiConfigurationTest {
                 .contains("pipelines.nichocnae.v3:")
                 .contains("persona-candidate-generator:")
                 .contains("api-key: ${OPRM_NICHO_CNAE_V3_PERSONA_CANDIDATE_GENERATOR_OPENAI_API_KEY:${OPENAI_API_KEY:}}")
-                .contains("api-key-file: ${OPRM_NICHO_CNAE_V3_PERSONA_CANDIDATE_GENERATOR_OPENAI_API_KEY_FILE:${OPENAI_API_KEY_FILE:/run/secrets/openai_api_key}}");
+                .contains("api-key-file: ${OPRM_NICHO_CNAE_V3_PERSONA_CANDIDATE_GENERATOR_OPENAI_API_KEY_FILE:${OPENAI_API_KEY_FILE:/run/secrets/openai_api_key}}")
+                .contains("web-search-enabled: ${OPRM_NICHO_CNAE_V3_PERSONA_CANDIDATE_GENERATOR_OPENAI_WEB_SEARCH_ENABLED:true}");
     }
 
     /** Confirma que o compose publicado monta o segredo OpenAI para a etapa v3 e para o fallback global. */
@@ -33,11 +34,13 @@ class PersonaCandidateOpenAiConfigurationTest {
         assertThat(deployCompose)
                 .contains("OPENAI_API_KEY_FILE: ${OPENAI_API_KEY_FILE:-/run/secrets/openai_api_key}")
                 .contains("OPRM_NICHO_CNAE_V3_PERSONA_CANDIDATE_GENERATOR_OPENAI_API_KEY_FILE: ${OPRM_NICHO_CNAE_V3_PERSONA_CANDIDATE_GENERATOR_OPENAI_API_KEY_FILE:-/run/secrets/openai_api_key}")
-                .contains("OPRM_NICHO_CNAE_V3_PERSONA_CANDIDATE_GENERATOR_OPENAI_MODEL: ${OPRM_NICHO_CNAE_V3_PERSONA_CANDIDATE_GENERATOR_OPENAI_MODEL:-gpt-5.2}");
+                .contains("OPRM_NICHO_CNAE_V3_PERSONA_CANDIDATE_GENERATOR_OPENAI_MODEL: ${OPRM_NICHO_CNAE_V3_PERSONA_CANDIDATE_GENERATOR_OPENAI_MODEL:-gpt-5.2}")
+                .contains("OPRM_NICHO_CNAE_V3_PERSONA_CANDIDATE_GENERATOR_OPENAI_WEB_SEARCH_ENABLED: ${OPRM_NICHO_CNAE_V3_PERSONA_CANDIDATE_GENERATOR_OPENAI_WEB_SEARCH_ENABLED:-true}");
         assertThat(localCompose)
                 .contains("OPENAI_API_KEY_FILE=${OPENAI_API_KEY_FILE:-/run/secrets/openai_api_key}")
                 .contains("OPRM_NICHO_CNAE_V3_PERSONA_CANDIDATE_GENERATOR_OPENAI_API_KEY_FILE=${OPRM_NICHO_CNAE_V3_PERSONA_CANDIDATE_GENERATOR_OPENAI_API_KEY_FILE:-/run/secrets/openai_api_key}")
-                .contains("OPRM_NICHO_CNAE_V3_PERSONA_CANDIDATE_GENERATOR_OPENAI_MODEL=${OPRM_NICHO_CNAE_V3_PERSONA_CANDIDATE_GENERATOR_OPENAI_MODEL:-gpt-5.2}");
+                .contains("OPRM_NICHO_CNAE_V3_PERSONA_CANDIDATE_GENERATOR_OPENAI_MODEL=${OPRM_NICHO_CNAE_V3_PERSONA_CANDIDATE_GENERATOR_OPENAI_MODEL:-gpt-5.2}")
+                .contains("OPRM_NICHO_CNAE_V3_PERSONA_CANDIDATE_GENERATOR_OPENAI_WEB_SEARCH_ENABLED=${OPRM_NICHO_CNAE_V3_PERSONA_CANDIDATE_GENERATOR_OPENAI_WEB_SEARCH_ENABLED:-true}");
     }
 
     /** Lê arquivos do projeto que ficam fora do classpath de teste. */

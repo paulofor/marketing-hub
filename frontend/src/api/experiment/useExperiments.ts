@@ -16,7 +16,8 @@ export interface InstagramAccountSummary {
 }
 
 export type ExperimentStage = "AD" | "LANDING" | "SAMPLE" | "SALES";
-export type ExperimentCampaignObjective = "LEADS" | "TRAFFIC";
+export type ExperimentType = "NICHE_TEST" | "LOW_TICKET_PRODUCT";
+export type ExperimentCampaignObjective = "LEADS" | "TRAFFIC" | "SALES";
 
 export interface FacebookInstantFormSummary {
   id: number;
@@ -65,6 +66,7 @@ export interface Experiment {
   freeReward?: string | null;
   funnelPromise?: string | null;
   primaryCta?: string | null;
+  experimentType?: ExperimentType | null;
   campaignObjective?: ExperimentCampaignObjective | null;
   pageId?: string | null;
   facebookPage?: FacebookPageSummary | null;
@@ -128,12 +130,7 @@ export interface Experiment {
   stage: ExperimentStage;
   creativeGenerationMode?: "DEFAULT" | "PIPELINE_ADS";
   creativeGenerationStatus?:
-    | "IDLE"
-    | "REQUESTED"
-    | "PROCESSING"
-    | "COMPLETED"
-    | "FAILED"
-    | "TIMEOUT";
+    "IDLE" | "REQUESTED" | "PROCESSING" | "COMPLETED" | "FAILED" | "TIMEOUT";
   creativeGenerationRequestedAt?: string | null;
   creativeGenerationStartedAt?: string | null;
   creativeGenerationFinishedAt?: string | null;

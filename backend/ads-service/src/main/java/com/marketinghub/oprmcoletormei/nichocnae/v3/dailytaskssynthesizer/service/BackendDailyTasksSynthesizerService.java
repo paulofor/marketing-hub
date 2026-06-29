@@ -1,6 +1,7 @@
 package com.marketinghub.oprmcoletormei.nichocnae.v3.dailytaskssynthesizer.service;
 
 import com.marketinghub.oprmcoletormei.nichocnae.v3.OprmNichoCnaeV3StageExecution;
+import com.marketinghub.openai.service.OpenAiPricingService;
 import com.marketinghub.oprm.market.OprmCnpjCnaeDim;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.dailytaskssynthesizer.service.createStageExecution.DailyTasksSynthesizerCreateResponse;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.dailytaskssynthesizer.service.pending.DailyTasksSynthesizerPendingResponse;
@@ -24,8 +25,8 @@ public class BackendDailyTasksSynthesizerService extends OprmNichoCnaeV3StageSer
     private static final String STATUS_FAILED = "FALHA";
 
     /** Inicializa o service com repository canônico de execuções v3. */
-    public BackendDailyTasksSynthesizerService(OprmNichoCnaeV3StageExecutionRepository repository, OprmCnpjCnaeDimRepository cnaeRepository, PipelineNichoCnaeRepository pipelineNichoCnaeRepository) {
-        super(repository, cnaeRepository, pipelineNichoCnaeRepository, STAGE_CODE);
+    public BackendDailyTasksSynthesizerService(OprmNichoCnaeV3StageExecutionRepository repository, OprmCnpjCnaeDimRepository cnaeRepository, PipelineNichoCnaeRepository pipelineNichoCnaeRepository, OpenAiPricingService openAiPricingService) {
+        super(repository, cnaeRepository, pipelineNichoCnaeRepository, openAiPricingService, STAGE_CODE);
     }
 
     /** Cria pendência inicial ou encadeada para a etapa daily-tasks-synthesizer. */

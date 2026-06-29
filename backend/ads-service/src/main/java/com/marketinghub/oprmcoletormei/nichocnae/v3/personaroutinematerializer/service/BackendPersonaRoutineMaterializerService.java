@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.personaroutinematerializer.gateway.PersonaRoutineMaterializerNicheGateway;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.OprmNichoCnaeV3StageExecution;
+import com.marketinghub.openai.service.OpenAiPricingService;
 import com.marketinghub.oprm.market.OprmCnpjCnaeDim;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.personaroutinematerializer.service.createStageExecution.PersonaRoutineMaterializerCreateResponse;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.personaroutinematerializer.service.pending.PersonaRoutineMaterializerPendingResponse;
@@ -41,9 +42,10 @@ public class BackendPersonaRoutineMaterializerService extends OprmNichoCnaeV3Sta
             OprmNichoCnaeV3StageExecutionRepository repository,
             OprmCnpjCnaeDimRepository cnaeRepository,
             PipelineNichoCnaeRepository pipelineNichoCnaeRepository,
+            OpenAiPricingService openAiPricingService,
             PersonaRoutineMaterializerNicheGateway nicheGateway,
             ObjectMapper objectMapper) {
-        super(repository, cnaeRepository, pipelineNichoCnaeRepository, STAGE_CODE);
+        super(repository, cnaeRepository, pipelineNichoCnaeRepository, openAiPricingService, STAGE_CODE);
         this.nicheGateway = nicheGateway;
         this.objectMapper = objectMapper;
     }

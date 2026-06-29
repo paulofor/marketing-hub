@@ -12,7 +12,6 @@ import com.marketinghub.oprm.nichocnae.v2.knowledgeaccumulator.service.failStage
 import com.marketinghub.oprm.nichocnae.v2.knowledgeaccumulator.service.failStageExecution.KnowledgeAccumulatorFailureResponse;
 import com.marketinghub.oprm.nichocnae.v2.knowledgeaccumulator.service.pending.KnowledgeAccumulatorPendingResponse;
 import com.marketinghub.oprm.nichocnae.v2.service.openaiinteraction.OpenAiInteractionAuditRequest;
-import com.marketinghub.oprm.nichocnae.v2.service.openaiinteraction.OpenAiInteractionCostCalculator;
 import com.marketinghub.repository.jpa.oprm.cnae.OprmNicheCandidateRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.v2.OprmNichoCnaeV2OpenAiInteractionRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.v2.OprmNichoCnaeV2StageExecutionRepository;
@@ -230,7 +229,7 @@ public class BackendKnowledgeAccumulatorService {
         entity.setInputTokens(request.inputTokens());
         entity.setOutputTokens(request.outputTokens());
         entity.setTotalTokens(request.totalTokens());
-        entity.setCostUsd(OpenAiInteractionCostCalculator.resolveCostUsd(request));
+        entity.setCostUsd(request.costUsd());
         entity.setOpenAiResponseId(request.openAiResponseId());
         entity.setRawRequest(request.rawRequest());
         entity.setRawResponse(request.rawResponse());

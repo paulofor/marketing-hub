@@ -1,6 +1,7 @@
 package com.marketinghub.oprmcoletormei.nichocnae.v3.qualitygate.service;
 
 import com.marketinghub.oprmcoletormei.nichocnae.v3.OprmNichoCnaeV3StageExecution;
+import com.marketinghub.openai.service.OpenAiPricingService;
 import com.marketinghub.oprm.market.OprmCnpjCnaeDim;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.qualitygate.service.createStageExecution.QualityGateCreateResponse;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.qualitygate.service.pending.QualityGatePendingResponse;
@@ -24,8 +25,8 @@ public class BackendQualityGateService extends OprmNichoCnaeV3StageServiceSuppor
     private static final String STATUS_FAILED = "FALHA";
 
     /** Inicializa o service com repository canônico de execuções v3. */
-    public BackendQualityGateService(OprmNichoCnaeV3StageExecutionRepository repository, OprmCnpjCnaeDimRepository cnaeRepository, PipelineNichoCnaeRepository pipelineNichoCnaeRepository) {
-        super(repository, cnaeRepository, pipelineNichoCnaeRepository, STAGE_CODE);
+    public BackendQualityGateService(OprmNichoCnaeV3StageExecutionRepository repository, OprmCnpjCnaeDimRepository cnaeRepository, PipelineNichoCnaeRepository pipelineNichoCnaeRepository, OpenAiPricingService openAiPricingService) {
+        super(repository, cnaeRepository, pipelineNichoCnaeRepository, openAiPricingService, STAGE_CODE);
     }
 
     /** Cria pendência inicial ou encadeada para a etapa quality-gate. */

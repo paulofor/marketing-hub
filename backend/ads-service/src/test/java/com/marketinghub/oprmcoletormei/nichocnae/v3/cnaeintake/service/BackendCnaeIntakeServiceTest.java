@@ -8,12 +8,14 @@ import static org.mockito.Mockito.when;
 
 import com.marketinghub.oprm.market.OprmCnpjCnaeDim;
 import com.marketinghub.oprm.nichocnae.PipelineNichoCnae;
+import com.marketinghub.openai.service.OpenAiPricingService;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.OprmNichoCnaeV3StageExecution;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.OprmNichoCnaeV3StageExecutionStatus;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.shared.OprmNichoCnaeV3RecebeResponseRequest;
 import com.marketinghub.repository.jpa.oprm.market.OprmCnpjCnaeDimRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.PipelineNichoCnaeRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.v3.OprmNichoCnaeV3StageExecutionRepository;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,11 +37,14 @@ class BackendCnaeIntakeServiceTest {
     @Mock
     private PipelineNichoCnaeRepository pipelineNichoCnaeRepository;
 
+    @Mock
+    private OpenAiPricingService openAiPricingService;
+
     private BackendCnaeIntakeService service;
 
     @BeforeEach
     void setUp() {
-        service = new BackendCnaeIntakeService(repository, cnaeRepository, pipelineNichoCnaeRepository);
+        service = new BackendCnaeIntakeService(repository, cnaeRepository, pipelineNichoCnaeRepository, openAiPricingService);
     }
 
     /** Garante que a conclusão com sucesso publica a próxima etapa no cadastro canônico de CNAE. */
@@ -86,6 +91,7 @@ class BackendCnaeIntakeServiceTest {
         OprmCnpjCnaeDim cnae = cnae();
         when(cnaeRepository.findById("4781400")).thenReturn(Optional.of(cnae));
         when(pipelineNichoCnaeRepository.save(any(PipelineNichoCnae.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(openAiPricingService.estimateFlexCost("gpt-5.2", 10, 20)).thenReturn(new BigDecimal("0.0003"));
         String rawResponse = """
                 {
                   "output": [
@@ -104,12 +110,13 @@ class BackendCnaeIntakeServiceTest {
         service.recebeResponse(
                 "4781400",
                 "job-4781400",
-                new OprmNichoCnaeV3RecebeResponseRequest(rawResponse, null, 10L, 20L, null, "gpt"));
+                new OprmNichoCnaeV3RecebeResponseRequest(rawResponse, null, 10L, 20L, new BigDecimal("9.9999"), "gpt-5.2"));
 
         ArgumentCaptor<PipelineNichoCnae> pipelineCaptor = ArgumentCaptor.forClass(PipelineNichoCnae.class);
         verify(pipelineNichoCnaeRepository).save(pipelineCaptor.capture());
         assertThat(pipelineCaptor.getValue().getResponse()).isEqualTo(rawResponse);
         assertThat(pipelineCaptor.getValue().getRespostaFinal()).isEqualTo("resposta funcional limpa");
+        assertThat(pipelineCaptor.getValue().getCusto()).isEqualByComparingTo("0.0003");
     }
 
     /** Monta uma execução pendente da etapa inicial. */

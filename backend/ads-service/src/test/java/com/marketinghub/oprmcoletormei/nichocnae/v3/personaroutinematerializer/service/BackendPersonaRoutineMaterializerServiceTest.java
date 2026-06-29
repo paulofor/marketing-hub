@@ -7,6 +7,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.marketinghub.openai.service.OpenAiPricingService;
 import com.marketinghub.oprm.market.OprmCnpjCnaeDim;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.OprmNichoCnaeV3StageExecution;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.OprmNichoCnaeV3StageExecutionStatus;
@@ -41,11 +42,15 @@ class BackendPersonaRoutineMaterializerServiceTest {
     @Mock
     private PipelineNichoCnaeRepository pipelineNichoCnaeRepository;
 
+    @Mock
+    private OpenAiPricingService openAiPricingService;
+
     private BackendPersonaRoutineMaterializerService service;
 
     @BeforeEach
     void setUp() {
-        service = new BackendPersonaRoutineMaterializerService(repository, cnaeRepository, pipelineNichoCnaeRepository, nicheGateway, new ObjectMapper());
+        service = new BackendPersonaRoutineMaterializerService(
+                repository, cnaeRepository, pipelineNichoCnaeRepository, openAiPricingService, nicheGateway, new ObjectMapper());
     }
 
     /** Garante que a etapa final grava MarketNiche e perfil enriquecido para uso por outros pipelines. */

@@ -142,6 +142,7 @@ import MdsReportPage from "./pages/mds/MdsReportPage";
 import HotmartPage from "./pages/hotmart/HotmartPage";
 import ClickbasePage from "./pages/clickbase/ClickbasePage";
 import OpsMonitorPage from "./pages/OpsMonitorPage";
+import CommercialPlanningPage from "./pages/planning/CommercialPlanningPage";
 
 export default function App() {
   return (
@@ -225,6 +226,7 @@ export default function App() {
                 />
               </Route>
               <Route path="/experiments" element={<ExperimentListPage />} />
+              <Route path="/planning" element={<CommercialPlanningPage />} />
               <Route path="/experiments/new" element={<NewExperimentPage />} />
               <Route path="/experiments/:id" element={<AppLayout />}>
                 <Route index element={<ExperimentDetailPage />} />

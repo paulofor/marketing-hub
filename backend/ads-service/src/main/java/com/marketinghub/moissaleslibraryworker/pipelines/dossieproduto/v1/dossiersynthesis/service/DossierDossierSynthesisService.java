@@ -1,6 +1,5 @@
 package com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1.dossiersynthesis.service;
 
-import com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1.shared.DossierOpenAiTextResponseExtractor;
 import com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1.dossiersynthesis.service.pending.DossierDossierSynthesisPendingJob;
 import com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1.dossiersynthesis.service.pending.DossierDossierSynthesisPendingRequest;
 import com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1.dossiersynthesis.service.pending.DossierDossierSynthesisPendingResponse;
@@ -8,13 +7,14 @@ import com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1.dossie
 import com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1.dossiersynthesis.service.receberequest.DossierDossierSynthesisRecebeRequestResponse;
 import com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1.dossiersynthesis.service.receberesponse.DossierDossierSynthesisRecebeResponseRequest;
 import com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1.dossiersynthesis.service.receberesponse.DossierDossierSynthesisRecebeResponseResponse;
+import com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1.shared.DossierOpenAiTextResponseExtractor;
+import com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1.shared.DossierPendingInputSupport;
 import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageRepository;
 import com.marketinghub.repository.jpa.mois.dossieproduto.PipelineDossieProdutoRepository;
 import com.marketinghub.repository.jpa.mois.dossieproduto.entity.PipelineDossieProduto;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import org.springframework.stereotype.Service;
 
@@ -159,44 +159,8 @@ public class DossierDossierSynthesisService {
 
     /** Monta a entrada rica da síntese final com auditorias anteriores para evitar dossiê vazio. */
     private Map<String, Object> pendingInput(Long pageId, String jobId) {
-        Map<String, Object> input = new LinkedHashMap<>();
-        input.put("jobId", jobId);
-        input.put("productKey", String.valueOf(pageId));
-        input.put("pageId", pageId);
-        input.put("stageCode", STAGE_CODE);
-        input.put("status", STATUS_STARTED);
-        input.put("nextStageCode", NEXT_STAGE);
-        input.put("previousStages", previousStages(pageId));
-        input.put("previousStageResponses", previousStageResponses(pageId));
-        return input;
-    }
-
-    /** Recupera as últimas respostas por etapa já persistidas no pipeline v1. */
-    private Map<String, Object> previousStages(Long pageId) {
-        Map<String, Object> previousStages = new LinkedHashMap<>();
-        pipelineDossieProdutoRepository
-                .findByIdExternoAndVersaoPipelineOrderByDataHoraAscIdAsc(String.valueOf(pageId), "v1")
-                .forEach(audit -> {
-                    if (!STAGE_CODE.equals(audit.getCodigoEtapa()) && !isBlank(audit.getResponse())) {
-                        previousStages.put(audit.getCodigoEtapa(), Map.of(
-                                "stageCode", audit.getCodigoEtapa(),
-                                "status", audit.getStatus(),
-                                "response", audit.getResponse(),
-                                "occurredAt", String.valueOf(audit.getDataHora())));
-                    }
-                });
-        return previousStages;
-    }
-
-    /** Recupera as respostas textuais anteriores em ordem para consumo simples pelo worker. */
-    private java.util.List<String> previousStageResponses(Long pageId) {
-        return pipelineDossieProdutoRepository
-                .findByIdExternoAndVersaoPipelineOrderByDataHoraAscIdAsc(String.valueOf(pageId), "v1")
-                .stream()
-                .filter(audit -> !STAGE_CODE.equals(audit.getCodigoEtapa()))
-                .map(PipelineDossieProduto::getResponse)
-                .filter(response -> !isBlank(response))
-                .toList();
+        return DossierPendingInputSupport.inputFor(
+                pageId, jobId, STAGE_CODE, NEXT_STAGE, pipelineDossieProdutoRepository);
     }
 
     /** Recupera ou recompõe o jobId UUID para impedir que pendências antigas travem a fila da etapa. */

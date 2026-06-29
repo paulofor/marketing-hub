@@ -5,6 +5,7 @@ import com.marketinghub.pipelines.nichocnae.v3.personacandidategenerator.Persona
 import com.marketinghub.pipelines.nichocnae.v3.personacandidategenerator.PersonaCandidateGeneratorProcessor;
 import com.marketinghub.pipelines.nichocnae.v3.personatournament.PersonaTournamentProcessor;
 import com.marketinghub.pipelines.nichocnae.v3.routinequeryplanner.RoutineQueryPlannerProcessor;
+import com.marketinghub.pipelines.nichocnae.v3.sourcesearcher.SourceEvidenceQualifier;
 import com.marketinghub.pipelines.nichocnae.v3.sourcesearcher.SourceSearchClient;
 import com.marketinghub.pipelines.nichocnae.v3.sourcesearcher.SourceSearcherProcessor;
 import com.marketinghub.pipelines.nichocnae.v3.sourcefetcher.SourceFetcherProcessor;
@@ -21,13 +22,16 @@ public class NichoCnaeV3StageDefinitions {
     private final List<NichoCnaeV3StageDefinition> stages;
 
     /** Inicializa o catálogo v3 com os clientes externos usados pelas etapas concretas. */
-    public NichoCnaeV3StageDefinitions(PersonaCandidateGenerationClient personaCandidateGenerationClient, SourceSearchClient sourceSearchClient) {
+    public NichoCnaeV3StageDefinitions(
+            PersonaCandidateGenerationClient personaCandidateGenerationClient,
+            SourceSearchClient sourceSearchClient,
+            SourceEvidenceQualifier sourceEvidenceQualifier) {
         this.stages = List.of(
             stage("cnae-intake", new CnaeIntakeProcessor()),
             stage("persona-candidate-generator", new PersonaCandidateGeneratorProcessor(personaCandidateGenerationClient)),
             stage("persona-tournament", new PersonaTournamentProcessor()),
             stage("routine-query-planner", new RoutineQueryPlannerProcessor()),
-            stage("source-searcher", new SourceSearcherProcessor(sourceSearchClient)),
+            stage("source-searcher", new SourceSearcherProcessor(sourceSearchClient, sourceEvidenceQualifier)),
             stage("source-fetcher", new SourceFetcherProcessor()),
             stage("routine-signal-extractor", new RoutineSignalExtractorProcessor()),
             stage("daily-tasks-synthesizer", new DailyTasksSynthesizerProcessor()),

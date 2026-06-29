@@ -1,3 +1,10 @@
+## 2026-06-29 — OPRM NichoCNAE v3: correção definitiva do bloqueio por queries ruidosas
+
+- Diagnóstico confirmado pelo banco no CNAE `4781400`: jobs recentes paravam em `source-searcher` com `FONTES_NAO_COLETADAS`; execuções anteriores que avançaram levaram fonte fora do domínio (`curriculo.sedu.es.gov.br`) até o `quality-gate`, que bloqueou depois. O problema não era falta de conclusão técnica, mas baixa qualidade das queries e ausência de fallback de domínio antes do bloqueio.
+- Causa-raiz tratada: o `routine-query-planner` ainda produzia buscas centradas em termos ambíguos como "Validar" e "Controle", atraindo dicionários, serviços de validação, joystick/controle e e-commerce. Endurecer o filtro do `source-searcher` impediu fonte ruim, mas expôs o bloqueio recorrente.
+- Correção: o `routine-query-planner` passou a extrair núcleo operacional de domínio da persona/tarefa/sinal, removendo ruído analítico; o `source-searcher` passou a executar fallback determinístico de domínio quando a primeira rodada retorna apenas ruído, sem relaxar o filtro de fonte fraca, comercial ou fora do CNAE.
+- Prevenção: testes unitários cobrem query de `validationNeed`, query ambígua de controle de caixa, fallback de domínio no `source-searcher`, bloqueio de fonte pedagógica fora do CNAE e bloqueio de fonte fraca/comercial.
+
 ## 2026-06-29 — OPRM NichoCNAE v3: bloqueio de materialização após quality-gate reprovado
 
 - Diagnóstico do CNAE `4781400`: a tela de conferência final estava aparecendo mesmo quando o `quality-gate` persistia `approved=false` e `status=QUALIDADE_BLOQUEADA`.

@@ -8,13 +8,13 @@ import com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1.invest
 import com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1.investigationanchorbuilder.service.receberequest.DossierInvestigationAnchorBuilderRecebeRequestResponse;
 import com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1.investigationanchorbuilder.service.receberesponse.DossierInvestigationAnchorBuilderRecebeResponseRequest;
 import com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1.investigationanchorbuilder.service.receberesponse.DossierInvestigationAnchorBuilderRecebeResponseResponse;
+import com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1.shared.DossierPendingInputSupport;
 import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageRepository;
 import com.marketinghub.repository.jpa.mois.dossieproduto.PipelineDossieProdutoRepository;
 import com.marketinghub.repository.jpa.mois.dossieproduto.entity.PipelineDossieProduto;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
-import java.util.Map;
 import org.springframework.stereotype.Service;
 
 /** Publica pendências e contratos da etapa geração de âncoras de investigação do pipeline de dossiê MOIS v1. */
@@ -150,13 +150,8 @@ public class DossierInvestigationAnchorBuilderService {
                         page.getId(),
                         "mois-sales-page-" + page.getId(),
                         STAGE_CODE,
-                        Map.of(
-                                "jobId", jobId,
-                                "productKey", String.valueOf(page.getId()),
-                                "pageId", page.getId(),
-                                "stageCode", STAGE_CODE,
-                                "status", STATUS_STARTED,
-                                "nextStageCode", NEXT_STAGE));
+                        DossierPendingInputSupport.inputFor(
+                                page.getId(), jobId, STAGE_CODE, NEXT_STAGE, pipelineDossieProdutoRepository));
                 })
                 .toList();
         return new DossierInvestigationAnchorBuilderPendingResponse(!jobs.isEmpty(), jobs);

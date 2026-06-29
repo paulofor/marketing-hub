@@ -54,6 +54,7 @@ A primeira versao deve ser simples e eficaz:
 - controlar objetivo, prazo, metrica principal, criterio de sucesso e criterio de parada;
 - mostrar checklist dos marcos comerciais;
 - exibir a proxima acao mais importante;
+- simular cenarios futuros antes de aprovar a proxima acao relevante;
 - registrar bloqueios e causa-raiz;
 - gerar um relatorio simples de foco: estamos avancando para venda ou desviando para periferia?
 
@@ -79,6 +80,9 @@ Campos recomendados:
 | Status | Rascunho, em andamento, bloqueado, concluido, cancelado. |
 | Proxima acao | A acao mais importante para aproximar o plano de venda. |
 | Bloqueio atual | Causa que impede avanco, quando houver. |
+| Cenario mais provavel | Resultado esperado se o plano continuar como esta. |
+| Principal risco futuro | Ponto onde o plano tende a quebrar ou gerar conclusao errada. |
+| Acao a evitar | Acao que aumentaria esforco ou custo sem melhorar a evidencia comercial. |
 
 ## Marcos do plano
 
@@ -118,6 +122,79 @@ Antes de avancar em qualquer marco relevante, o modulo deve verificar:
 
 Se a resposta for negativa em ponto critico, o plano deve ficar bloqueado ate a decisao ser corrigida.
 
+## Simulacao de cenarios futuros
+
+O Planejamento Comercial deve usar IA para simular cenarios provaveis antes de aprovar uma proxima acao relevante. A funcao nao deve tentar "prever o futuro"; deve antecipar possibilidades praticas para reduzir desperdicio de tempo, midia e desenvolvimento.
+
+Pergunta central:
+
+```text
+Se executarmos esta proxima acao, qual cenario estamos provavelmente criando?
+```
+
+A simulacao deve comparar impacto esperado, risco, custo, prazo e evidencia comercial provavel.
+
+Cenarios padrao:
+
+| Cenario | Uso pratico |
+|---|---|
+| Conservador | Poucos cliques, baixa conversao e aprendizado limitado. Serve para definir criterio de parada. |
+| Provavel | Resultado mais esperado com base nos dados atuais. Serve para decidir orcamento, prazo e proxima acao. |
+| Otimista realista | Boa resposta do publico, sem assumir milagre. Serve para preparar continuidade se aparecer sinal positivo. |
+| Risco | Mostra onde podemos interpretar errado o mercado. Exemplo: clique barato com formulario ainda sem envio. |
+
+Entradas minimas da simulacao:
+
+- objetivo comercial do plano;
+- publico, dor, oferta, isca e canal;
+- metrica principal;
+- prazo restante;
+- orcamento disponivel;
+- marcos ja concluidos;
+- bloqueios conhecidos;
+- metricas historicas de experimentos vinculados;
+- aprendizados anteriores do mesmo nicho, canal ou tipo de oferta.
+
+Saida obrigatoria da simulacao:
+
+- cenario mais provavel;
+- melhor cenario realista;
+- pior cenario provavel;
+- principal risco;
+- melhor proxima acao;
+- acao que deve ser evitada;
+- condicao para continuar;
+- condicao para parar;
+- evidencia comercial esperada em 7, 14 e 30 dias, quando o prazo permitir.
+
+Regra de uso:
+
+```text
+Antes de aprovar uma proxima acao relevante, o Planejamento Comercial deve gerar uma simulacao simples de cenarios futuros e registrar a decisao tomada.
+```
+
+Essa capacidade e especialmente importante porque os relatorios atuais mostram campanhas com trafego e sem conversao: 575 visualizacoes de formulario somadas e 0 envios. Nesse contexto, o modulo nao deve recomendar automaticamente mais criativos, mais campanhas ou mais landings. Ele deve testar primeiro se o gargalo provavel esta em formulario, promessa, oferta, canal, publico ou mensuracao.
+
+## Decisoes apoiadas por simulacao
+
+A simulacao deve ajudar a responder:
+
+- se mantivermos este canal e esta oferta, qual resultado provavel em 7, 14 e 30 dias?
+- onde o plano tende a quebrar: anuncio, landing, formulario, oferta, preco, entrega ou publico?
+- qual pequena acao aumenta mais a chance de venda?
+- o que nao devemos fazer agora porque so aumentaria esforco sem gerar evidencia?
+- o plano esta criando aprendizado comercial ou apenas atividade operacional?
+
+Exemplos de decisao:
+
+| Situacao | Decisao recomendada |
+|---|---|
+| Cliques existem, mas formulario segue com 0 envio | Validar formulario, promessa e friccao antes de criar nova campanha. |
+| Baixo clique e baixa leitura de landing | Revisar angulo, publico e promessa antes de mexer no produto. |
+| Lead existe, mas nao compra | Revisar oferta, preco, prova e mecanismo de entrega. |
+| Gasto cresce sem nova evidencia | Pausar e corrigir causa-raiz antes de escalar. |
+| Sinal positivo pequeno aparece | Continuar com limite de orcamento e criterio claro de proximo marco. |
+
 ## Tela principal
 
 A tela de Planejamento deve responder rapidamente:
@@ -133,6 +210,9 @@ Blocos recomendados:
 - status geral;
 - proxima acao mais importante;
 - gargalo atual;
+- cenario mais provavel;
+- melhor proxima acao simulada;
+- acao a evitar;
 - marcos do plano;
 - experimentos vinculados;
 - metricas principais;
@@ -152,6 +232,8 @@ Perguntas que o relatorio deve responder:
 - qual foi a evidencia comercial ate agora?
 - o prazo ainda e realista?
 - devemos continuar, corrigir, pausar ou encerrar?
+- qual cenario futuro mais provavel se nada mudar?
+- qual acao deve ser evitada para nao desperdicarmos esforco ou midia?
 
 ## Regras de decisao
 
@@ -163,6 +245,8 @@ Regras iniciais recomendadas:
 - nao iniciar landing se a hipotese nao tiver dor, promessa, isca, produto de entrada e CTA principal;
 - nao criar novo artefato quando o bloqueio atual for conversao, formulario, entrega ou oferta;
 - priorizar sempre a menor acao capaz de gerar evidencia de compra ou intencao clara.
+- nao aprovar proxima acao relevante sem simulacao de cenario futuro registrada;
+- nao escalar midia quando o cenario de risco indicar quebra provavel em formulario, oferta ou mensuracao.
 
 ## Integracao com os pipelines existentes
 
@@ -185,6 +269,72 @@ Responsabilidade do Planejamento:
 - impedir avanco sem criterio de decisao;
 - mostrar o gargalo;
 - orientar a proxima acao de maior impacto.
+- simular cenarios futuros antes de decisoes relevantes.
+
+## Plano de implementacao da simulacao
+
+A implementacao deve ser incremental para gerar valor rapido sem criar complexidade desnecessaria.
+
+### Fase 1: simulacao manual assistida
+
+Objetivo: permitir que o usuario solicite uma simulacao para um plano ativo.
+
+Entregas:
+
+- adicionar acao "Simular cenarios" na tela do plano;
+- usar dados ja persistidos do plano, experimento e metricas vinculadas;
+- gerar os quatro cenarios padrao;
+- salvar a simulacao no historico do plano;
+- mostrar recomendacao objetiva: continuar, corrigir, pausar ou encerrar.
+
+Criterio de pronto:
+
+- o usuario consegue ver o cenario mais provavel, principal risco, melhor proxima acao, acao a evitar, condicao de continuidade e condicao de parada.
+
+### Fase 2: simulacao obrigatoria antes de decisao relevante
+
+Objetivo: impedir decisoes comerciais sem avaliacao minima de futuro provavel.
+
+Entregas:
+
+- exigir simulacao antes de aprovar publicacao, escalar orcamento, criar nova landing, criar nova campanha ou encerrar o plano como sucesso;
+- registrar qual decisao foi tomada apos a simulacao;
+- registrar quando o usuario decidir seguir contra a recomendacao;
+- destacar risco comercial quando houver trafego sem conversao.
+
+Criterio de pronto:
+
+- toda decisao relevante do plano tem uma simulacao vinculada e uma justificativa objetiva.
+
+### Fase 3: simulacao baseada em historico
+
+Objetivo: tornar a previsao mais util usando aprendizados acumulados.
+
+Entregas:
+
+- comparar o plano atual com experimentos anteriores do mesmo nicho, canal, tipo de oferta e metrica;
+- usar aprendizados registrados para indicar gargalos recorrentes;
+- apontar risco de repeticao de erro, como aumentar campanha quando o problema real e formulario, oferta ou promessa;
+- sugerir menor teste capaz de confirmar ou descartar a causa-raiz.
+
+Criterio de pronto:
+
+- a simulacao cita evidencias historicas usadas e diferencia hipotese de fato observado.
+
+### Fase 4: simulacao no relatorio executivo
+
+Objetivo: transformar a simulacao em apoio continuo de gestao.
+
+Entregas:
+
+- incluir bloco de "Cenarios futuros" no relatorio do plano;
+- mostrar tendencia em 7, 14 e 30 dias quando aplicavel;
+- apresentar impacto esperado, risco, custo, prazo e evidencia provavel;
+- recomendar proxima decisao em linguagem simples de negocio.
+
+Criterio de pronto:
+
+- o relatorio permite decidir o proximo movimento sem consultar logs tecnicos ou reconstruir contexto manualmente.
 
 ## Primeira entrega recomendada
 
@@ -196,7 +346,8 @@ Para uma primeira implementacao futura, o menor produto util do modulo e:
 4. prazo, meta, orcamento e metrica principal;
 5. campo de proxima acao;
 6. campo de bloqueio e causa-raiz;
-7. relatorio simples de foco comercial.
+7. acao manual para simular cenarios futuros;
+8. relatorio simples de foco comercial com cenario mais provavel, risco principal e acao recomendada.
 
 Essa versao ja resolve o principal problema: impedir que o Marketing Hub trabalhe em etapas soltas sem saber se esta mais perto de vender.
 

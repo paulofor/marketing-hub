@@ -1,3 +1,9 @@
+## 2026-06-29 — OPRM NichoCNAE v3: diagnóstico do bloqueio no source-searcher
+
+- Diagnóstico do CNAE `4781400`: o job `0a58f188-e5be-445b-bbe4-bdb87c470f6a` não teve falha técnica; ele parou com bloqueio funcional na etapa `source-searcher`, porque nenhuma fonte pública qualificada foi encontrada para sustentar a rotina da persona antes do snapshot.
+- Causa-raiz comprovada: queries derivadas de validações longas como “Validar volume de pedidos...” geravam buscas genéricas e traziam resultados irrelevantes, como calculadoras e dicionários; além disso, a heurística de risco comercial tratava `WhatsApp` como se contivesse o termo isolado `app`, contaminando evidências reais de rotina por canal de atendimento.
+- Correção: o `source-searcher` passou a extrair termos operacionais de comércio por WhatsApp/pedidos/trocas/devoluções, deixou de tratar `app` dentro de `WhatsApp` como risco de solução e passou a marcar resultados utilitários irrelevantes com risco próprio.
+
 ## 2026-06-28 — OPRM NichoCNAE v3: input do request OpenAI separado na auditoria
 
 - Separado o campo `input` do request bruto da OpenAI em `pipeline_nichocnae.request_input`, mantendo o request completo para auditoria e oferecendo leitura direta do prompt enviado.

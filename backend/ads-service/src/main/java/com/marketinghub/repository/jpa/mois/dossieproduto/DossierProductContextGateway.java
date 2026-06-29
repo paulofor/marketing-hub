@@ -38,12 +38,15 @@ public class DossierProductContextGateway {
                     GROUP BY workspace_id, COALESCE(sales_page_url, product_url)
                 ) cr_latest ON cr_latest.workspace_id = p.workspace_id AND cr_latest.reference_url = p.url_canonical
                 LEFT JOIN mois_collected_reference cr_url ON cr_url.id = cr_latest.latest_reference_id
-                LEFT JOIN mois_sales_page_capture cap ON cap.id = (
-                    SELECT MAX(cap2.id)
-                    FROM mois_sales_page_capture cap2
+                LEFT JOIN mois_sales_page_job_execution cap ON cap.id = (
+                    SELECT cap2.id
+                    FROM mois_sales_page_job_execution cap2
                     WHERE cap2.sales_page_id = p.id
-                      AND cap2.status = 'CAPTURED'
+                      AND cap2.stage = 'CAPTURE'
+                      AND cap2.status IN ('CAPTURED', 'DUPLICATE')
                       AND COALESCE(cap2.raw_html_bytes, 0) > 0
+                    ORDER BY cap2.finished_at DESC, cap2.id DESC
+                    LIMIT 1
                 )
                 WHERE p.id = ?
                 LIMIT 1

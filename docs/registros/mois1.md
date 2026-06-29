@@ -1976,3 +1976,10 @@ Arquivos principais:
 - Atualizado `docs/marketing/pipeline_dossieproduto_v1.md` para explicar que o dossiê precisa nascer de HTML, descrições, resumos e sinais reais do produto.
 - Reforçado que iniciar o pipeline sem material coletado gera dossiê genérico, decisão comercial fraca e custo operacional desnecessário.
 - Registrado o princípio de gate de evidência: sem conteúdo coletado, a execução deve ficar bloqueada até haver matéria-prima comercial suficiente.
+
+## 2026-06-29 — Correção do start do dossiê MOIS v1
+
+- Diagnosticado no produto 280 (`Pense Intensivo`) que o botão **Reprocessar dossiê** falhava mesmo com HTML coletado.
+- Causa-raiz tratada: o gateway de contexto do dossiê consultava a tabela legada/inexistente `mois_sales_page_capture`; o modelo operacional atual grava captura em `mois_sales_page_job_execution`.
+- Ajuste aplicado: o start do dossiê passa a buscar HTML bruto na tabela operacional canônica de jobs, filtrando etapa `CAPTURE`, status `CAPTURED`/`DUPLICATE` e bytes positivos.
+- Prevenção de recorrência: adicionado teste de regressão garantindo que o gateway não volte a usar a tabela antiga.

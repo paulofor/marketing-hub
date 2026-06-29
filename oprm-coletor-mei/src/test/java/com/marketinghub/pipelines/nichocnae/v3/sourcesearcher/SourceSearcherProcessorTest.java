@@ -103,6 +103,52 @@ class SourceSearcherProcessorTest {
                 assertThat(String.valueOf(query)).startsWith("atendimento"));
     }
 
+    /** Usa termos operacionais de pedidos e trocas para evitar buscas genéricas que retornam calculadoras/dicionários. */
+    @Test
+    void shouldSearchOperationalCommerceTermsFromValidationQuery() {
+        SourceSearchClient searchClient = (query, limit) -> List.of(new SourceSearchResult(
+                "Rotina de MEI no Brasil com atendimento por WhatsApp",
+                "https://varejo.example.com.br/whatsapp-pedidos",
+                "MEI relata pedidos, reservas, trocas, clientes, atendimento por WhatsApp e controle manual de estoque.",
+                "TEST_PROVIDER",
+                "<item />"));
+
+        StageResult result = new SourceSearcherProcessor(searchClient).process(new StageContext("job", "5", Map.of(
+                "plannedQueries", List.of(Map.of(
+                        "query", "dificuldade de Validar o volume típico de pedidos dia como a persona controla reservas e trocas devoluções à distância e quais canais digitais predominam WhatsApp Instagram Brasil",
+                        "intent", "DOR_OPERACIONAL",
+                        "objective", "Confirmar dor, esforço manual e consequência prática")))));
+
+        assertThat(result.status()).isEqualTo("FONTES_ENCONTRADAS");
+        List<?> attempts = (List<?>) result.output().get("searchAttempts");
+        Map<?, ?> attempt = (Map<?, ?>) attempts.getFirst();
+        assertThat((List<?>) attempt.get("queryVariants")).anySatisfy(query ->
+                assertThat(String.valueOf(query)).startsWith("pedidos reservas trocas"));
+    }
+
+    /** Rejeita resultados utilitários irrelevantes que aparecem em buscas ruidosas de cobrança ou pagamento. */
+    @Test
+    void shouldRejectIrrelevantUtilityResults() {
+        SourceSearchClient searchClient = (query, limit) -> List.of(new SourceSearchResult(
+                "Calculator.net: Free Online Calculators",
+                "https://www.calculator.net/",
+                "Online calculator for quick calculations, finance and math.",
+                "TEST_PROVIDER",
+                "<item />"));
+
+        StageResult result = new SourceSearcherProcessor(searchClient).process(new StageContext("job", "5", Map.of(
+                "plannedQueries", List.of(Map.of("query", "pagamentos comprovantes cobrança")))));
+
+        assertThat(result.status()).isEqualTo("FONTES_NAO_COLETADAS");
+        List<?> attempts = (List<?>) result.output().get("searchAttempts");
+        Map<?, ?> attempt = (Map<?, ?>) attempts.getFirst();
+        assertThat((List<?>) attempt.get("rejectedSources")).anySatisfy(rejected -> {
+            Map<?, ?> source = (Map<?, ?>) rejected;
+            assertThat(source.get("sourceIntent")).isEqualTo("IRRELEVANT_UTILITY_RISK");
+            assertThat(source.get("irrelevantUtilityRisk")).isEqualTo(true);
+        });
+    }
+
     /** Registra fontes rejeitadas com motivo para diagnosticar bloqueios sem depender apenas do log técnico. */
     @Test
     void shouldAuditRejectedSourcesWithReason() {

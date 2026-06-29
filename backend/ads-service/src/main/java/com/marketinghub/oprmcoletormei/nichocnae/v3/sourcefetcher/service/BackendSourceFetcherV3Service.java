@@ -1,6 +1,7 @@
 package com.marketinghub.oprmcoletormei.nichocnae.v3.sourcefetcher.service;
 
 import com.marketinghub.oprmcoletormei.nichocnae.v3.OprmNichoCnaeV3StageExecution;
+import com.marketinghub.openai.service.OpenAiPricingService;
 import com.marketinghub.oprm.market.OprmCnpjCnaeDim;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.sourcefetcher.service.createStageExecution.SourceFetcherCreateResponse;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.sourcefetcher.service.pending.SourceFetcherPendingResponse;
@@ -24,8 +25,8 @@ public class BackendSourceFetcherV3Service extends OprmNichoCnaeV3StageServiceSu
     private static final String STATUS_FAILED = "FALHA";
 
     /** Inicializa o service com repository canônico de execuções v3. */
-    public BackendSourceFetcherV3Service(OprmNichoCnaeV3StageExecutionRepository repository, OprmCnpjCnaeDimRepository cnaeRepository, PipelineNichoCnaeRepository pipelineNichoCnaeRepository) {
-        super(repository, cnaeRepository, pipelineNichoCnaeRepository, STAGE_CODE);
+    public BackendSourceFetcherV3Service(OprmNichoCnaeV3StageExecutionRepository repository, OprmCnpjCnaeDimRepository cnaeRepository, PipelineNichoCnaeRepository pipelineNichoCnaeRepository, OpenAiPricingService openAiPricingService) {
+        super(repository, cnaeRepository, pipelineNichoCnaeRepository, openAiPricingService, STAGE_CODE);
     }
 
     /** Cria pendência inicial ou encadeada para a etapa source-fetcher. */

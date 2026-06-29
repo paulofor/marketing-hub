@@ -8,6 +8,7 @@ import java.math.RoundingMode;
 import java.util.Locale;
 import org.springframework.stereotype.Component;
 
+/** Calcula custos de uso OpenAI a partir do catálogo canônico de modelos persistido no backend. */
 @Component
 public class OpenAiPricingService {
 
@@ -15,18 +16,27 @@ public class OpenAiPricingService {
 
     private final OpenAiModelRepository modelRepository;
 
+    /** Inicializa o serviço com o repositório do catálogo canônico de modelos. */
     public OpenAiPricingService(OpenAiModelRepository modelRepository) {
         this.modelRepository = modelRepository;
     }
 
+    /** Estima custo canônico de execução Flex, usando os preços standard cadastrados no catálogo OpenAI. */
+    public BigDecimal estimateFlexCost(String modelCode, Integer inputTokens, Integer outputTokens) {
+        return estimateStandardCost(modelCode, new OpenAiResponse.OpenAiUsage(inputTokens, outputTokens, null, null, null));
+    }
+
+    /** Estima custo canônico de execução Standard usando o uso retornado pela OpenAI. */
     public BigDecimal estimateStandardCost(String modelCode, OpenAiResponse.OpenAiUsage usage) {
         return estimateCost(modelCode, usage, PricingMode.STANDARD);
     }
 
+    /** Estima custo canônico de execução Batch usando o uso retornado pela OpenAI. */
     public BigDecimal estimateBatchCost(String modelCode, OpenAiResponse.OpenAiUsage usage) {
         return estimateCost(modelCode, usage, PricingMode.BATCH);
     }
 
+    /** Resolve modelo e modo de preço para calcular o custo autoritativo. */
     private BigDecimal estimateCost(String modelCode, OpenAiResponse.OpenAiUsage usage, PricingMode mode) {
         if (usage == null) {
             return BigDecimal.ZERO.setScale(4, RoundingMode.HALF_UP);
@@ -38,6 +48,7 @@ public class OpenAiPricingService {
         return calculateCost(model, usage, mode);
     }
 
+    /** Calcula o custo proporcional aos tokens informados para o modo de preço solicitado. */
     private BigDecimal calculateCost(OpenAiModel model, OpenAiResponse.OpenAiUsage usage, PricingMode mode) {
         int inputTokens = usage.effectiveInputTokens() != null ? usage.effectiveInputTokens() : 0;
         int outputTokens = usage.effectiveOutputTokens() != null ? usage.effectiveOutputTokens() : 0;
@@ -52,6 +63,7 @@ public class OpenAiPricingService {
         return inputCost.add(outputCost).setScale(4, RoundingMode.HALF_UP);
     }
 
+    /** Multiplica tokens pelo preço por um milhão de tokens. */
     private BigDecimal multiplyTokens(BigDecimal pricePerMillion, int tokens) {
         if (pricePerMillion == null || tokens <= 0) {
             return BigDecimal.ZERO;
@@ -60,6 +72,7 @@ public class OpenAiPricingService {
                 .divide(ONE_MILLION, 6, RoundingMode.HALF_UP);
     }
 
+    /** Normaliza o código do modelo para busca no catálogo persistido. */
     private String normalizeModelCode(String modelCode) {
         if (modelCode == null) {
             return null;

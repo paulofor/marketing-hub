@@ -3,6 +3,7 @@ package com.marketinghub.oprmcoletormei.nichocnae.v3.shared;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.marketinghub.openai.service.OpenAiPricingService;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.OprmNichoCnaeV3StageExecution;
 import com.marketinghub.oprmcoletormei.nichocnae.v3.OprmNichoCnaeV3StageExecutionStatus;
 import com.marketinghub.oprm.market.OprmCnpjCnaeDim;
@@ -10,11 +11,14 @@ import com.marketinghub.oprm.nichocnae.PipelineNichoCnae;
 import com.marketinghub.repository.jpa.oprm.market.OprmCnpjCnaeDimRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.v3.OprmNichoCnaeV3StageExecutionRepository;
 import com.marketinghub.repository.jpa.oprm.nichocnae.PipelineNichoCnaeRepository;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.StringUtils;
@@ -22,6 +26,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 /** Base compartilhada para services canônicos de etapas NichoCNAE v3 sem assumir execução operacional. */
 public abstract class OprmNichoCnaeV3StageServiceSupport {
+    private static final Logger LOGGER = LoggerFactory.getLogger(OprmNichoCnaeV3StageServiceSupport.class);
     protected static final String STATUS_STARTED = "INICIADO";
     private static final int PENDING_LIMIT = 10;
     private static final String STATUS_WAITING_MODULE = "AGUARDANDO_MODULO";
@@ -43,6 +48,7 @@ public abstract class OprmNichoCnaeV3StageServiceSupport {
     private final OprmNichoCnaeV3StageExecutionRepository repository;
     private final OprmCnpjCnaeDimRepository cnaeRepository;
     private final PipelineNichoCnaeRepository pipelineNichoCnaeRepository;
+    private final OpenAiPricingService openAiPricingService;
     private final String stageCode;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final OpenAiTextResponseExtractor responseExtractor = new OpenAiTextResponseExtractor(objectMapper);
@@ -53,10 +59,12 @@ public abstract class OprmNichoCnaeV3StageServiceSupport {
             OprmNichoCnaeV3StageExecutionRepository repository,
             OprmCnpjCnaeDimRepository cnaeRepository,
             PipelineNichoCnaeRepository pipelineNichoCnaeRepository,
+            OpenAiPricingService openAiPricingService,
             String stageCode) {
         this.repository = repository;
         this.cnaeRepository = cnaeRepository;
         this.pipelineNichoCnaeRepository = pipelineNichoCnaeRepository;
+        this.openAiPricingService = openAiPricingService;
         this.stageCode = stageCode;
     }
 
@@ -142,7 +150,7 @@ public abstract class OprmNichoCnaeV3StageServiceSupport {
         pipeline.setJobId(jobId);
         pipeline.setQuantidadeTokenEntrada(request == null ? null : request.quantidadeTokenEntrada());
         pipeline.setQuantidadeTokenSaida(request == null ? null : request.quantidadeTokenSaida());
-        pipeline.setCusto(request == null ? null : request.custo());
+        pipeline.setCusto(resolveAuthoritativeOpenAiCost(cnaeCode, jobId, request));
         pipeline.setModelo(request == null ? null : request.modelo());
         pipeline.setDescricaoErro(request == null ? null : request.descricaoErro());
         pipeline.setVersaoPipeline(RESPONSE_PIPELINE_VERSION);
@@ -150,6 +158,40 @@ public abstract class OprmNichoCnaeV3StageServiceSupport {
 
         String normalizedNextStage = StringUtils.hasText(nextStageCode) ? nextStageCode : null;
         return new OprmNichoCnaeV3RecebeResponseResponse(hasFailure ? null : normalizedNextStage);
+    }
+
+    /** Calcula o custo autoritativo no backend e usa custo legado apenas quando não há dados suficientes. */
+    private BigDecimal resolveAuthoritativeOpenAiCost(
+            String cnaeCode, String jobId, OprmNichoCnaeV3RecebeResponseRequest request) {
+        if (request == null) {
+            return null;
+        }
+        if (StringUtils.hasText(request.modelo())) {
+            try {
+                return openAiPricingService.estimateFlexCost(
+                        request.modelo(),
+                        toIntegerTokens(request.quantidadeTokenEntrada()),
+                        toIntegerTokens(request.quantidadeTokenSaida()));
+            } catch (RuntimeException ex) {
+                LOGGER.error(
+                        "Falha ao calcular custo OpenAI autoritativo no backend. modulo=OPRM etapa={} cnaeCode={} jobId={} modelo={}",
+                        stageCode,
+                        cnaeCode,
+                        jobId,
+                        request.modelo(),
+                        ex);
+                return request.custo();
+            }
+        }
+        return request.custo();
+    }
+
+    /** Converte contagem de tokens recebida do executor para inteiro aceito pelo serviço canônico de preços. */
+    private Integer toIntegerTokens(Long tokens) {
+        if (tokens == null) {
+            return null;
+        }
+        return tokens > Integer.MAX_VALUE ? Integer.MAX_VALUE : tokens.intValue();
     }
 
     /** Cria uma execução pendente para a etapa canônica. */

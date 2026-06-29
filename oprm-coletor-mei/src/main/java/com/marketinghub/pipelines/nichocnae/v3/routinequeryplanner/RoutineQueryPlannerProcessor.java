@@ -76,12 +76,23 @@ public final class RoutineQueryPlannerProcessor implements StageProcessor {
 
     /** Monta query natural Brasil-first sem depender sempre de termos formais como dono-operador ou MEI. */
     private String naturalQuery(String personaName, String evidence, String intent) {
+        String cleanEvidence = searchableEvidence(evidence);
         return switch (intent) {
-            case "DOR_OPERACIONAL" -> "dificuldade de " + evidence + " na rotina de " + personaName + " Brasil";
-            case "SINAL_DE_COMPRA" -> "como organizar " + evidence + " para " + personaName + " clientes agenda cobrança";
-            case "CANAL_ATENDIMENTO_AQUISICAO" -> personaName + " usa " + evidence + " para atender conseguir cliente cobrar Brasil";
-            default -> "rotina de " + personaName + " " + evidence + " atendimento cliente Brasil";
+            case "DOR_OPERACIONAL" -> cleanEvidence + " problema rotina " + personaName + " Brasil cliente atendimento";
+            case "SINAL_DE_COMPRA" -> cleanEvidence + " organizar rotina " + personaName + " clientes agenda cobrança Brasil";
+            case "CANAL_ATENDIMENTO_AQUISICAO" -> personaName + " " + cleanEvidence + " atender conseguir cliente cobrar Brasil";
+            default -> "rotina de " + personaName + " " + cleanEvidence + " atendimento cliente Brasil";
         };
+    }
+
+    /** Remove verbos de validação e ruído analítico para gerar consultas mais parecidas com buscas reais. */
+    private String searchableEvidence(String evidence) {
+        String clean = text(evidence)
+                .replaceAll("(?i)^validar\\s+", "")
+                .replaceAll("(?i)^confirmar\\s+", "")
+                .replaceAll("(?i)^como\\s+a\\s+persona\\s+", "")
+                .replace('/', ' ');
+        return clean.isBlank() ? "rotina operacional" : clean;
     }
 
     /** Cria um item estruturado de consulta para a próxima etapa buscar fontes. */

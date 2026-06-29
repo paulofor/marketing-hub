@@ -187,11 +187,12 @@ public final class SourceSearcherProcessor implements StageProcessor {
         String combined = (title + " " + snippet + " " + url).toLowerCase();
         int routineEvidenceScore = routineEvidenceScore(combined);
         int brazilRelevanceScore = brazilRelevanceScore(url, combined);
-        boolean solutionLanguageRisk = containsAny(combined, List.of("software", "sistema", "app", "aplicativo", "plataforma", "automação", "automacao", "curso", "mentoria", "funil", "landing page", "tráfego pago", "trafego pago", "crm"));
+        boolean solutionLanguageRisk = containsAny(combined, List.of("software", "sistema", "aplicativo", "plataforma", "automação", "automacao", "curso", "mentoria", "funil", "landing page", "tráfego pago", "trafego pago", "crm"));
         boolean commercialPageRisk = containsAny(combined, List.of("preço", "preco", "planos", "contrate", "comprar", "teste grátis", "teste gratis", "demonstração", "demonstracao", "vendas", "marketing digital", "anúncio", "anuncio"));
         boolean structuredBusinessDriftRisk = containsAny(combined, List.of("empresa", "indústria", "industria", "corporativo", "franquia", "grande porte", "gestão empresarial"));
-        int qualityScore = routineEvidenceScore + brazilRelevanceScore - (solutionLanguageRisk ? 35 : 0) - (commercialPageRisk ? 20 : 0) - (structuredBusinessDriftRisk ? 15 : 0);
-        String sourceIntent = sourceIntent(solutionLanguageRisk, commercialPageRisk, combined);
+        boolean irrelevantUtilityRisk = irrelevantUtilityRisk(url, combined);
+        int qualityScore = routineEvidenceScore + brazilRelevanceScore - (solutionLanguageRisk ? 35 : 0) - (commercialPageRisk ? 20 : 0) - (structuredBusinessDriftRisk ? 15 : 0) - (irrelevantUtilityRisk ? 100 : 0);
+        String sourceIntent = sourceIntent(solutionLanguageRisk, commercialPageRisk, irrelevantUtilityRisk, combined);
 
         qualified.put("url", url);
         qualified.put("title", title);
@@ -207,6 +208,7 @@ public final class SourceSearcherProcessor implements StageProcessor {
         qualified.put("commercialPageRisk", commercialPageRisk);
         qualified.put("solutionLanguageRisk", solutionLanguageRisk);
         qualified.put("structuredBusinessDriftRisk", structuredBusinessDriftRisk);
+        qualified.put("irrelevantUtilityRisk", irrelevantUtilityRisk);
         qualified.put("qualityScore", Math.max(0, qualityScore));
         qualified.putIfAbsent("matchedQuery", text(plannedQuery.get("query")));
         qualified.putIfAbsent("queryIntent", text(plannedQuery.get("intent")));
@@ -259,7 +261,7 @@ public final class SourceSearcherProcessor implements StageProcessor {
     /** Mantém termos de operação diária mais fortes para uma variação de busca objetiva. */
     private String operationalQuery(String query) {
         String normalized = normalize(query);
-        List<String> terms = List.of("atendimento", "provador", "estoque", "reposicao", "reposição", "mercadoria", "vitrine", "araras", "etiquetas", "caixa", "loja", "roupas", "acessorios", "acessórios");
+        List<String> terms = List.of("atendimento", "provador", "estoque", "reposicao", "reposição", "mercadoria", "vitrine", "araras", "etiquetas", "caixa", "loja", "roupas", "acessorios", "acessórios", "pagamentos", "comprovantes", "pedidos", "reservas", "trocas", "devolucoes", "devoluções", "entregas", "whatsapp", "instagram");
         StringBuilder builder = new StringBuilder();
         for (String term : terms) {
             if (normalized.contains(normalize(term)) && !builder.toString().contains(term)) {
@@ -342,7 +344,10 @@ public final class SourceSearcherProcessor implements StageProcessor {
     }
 
     /** Classifica semanticamente a fonte separando evidência real de contaminação comercial. */
-    private String sourceIntent(boolean solutionLanguageRisk, boolean commercialPageRisk, String text) {
+    private String sourceIntent(boolean solutionLanguageRisk, boolean commercialPageRisk, boolean irrelevantUtilityRisk, String text) {
+        if (irrelevantUtilityRisk) {
+            return "IRRELEVANT_UTILITY_RISK";
+        }
         if (solutionLanguageRisk || commercialPageRisk) {
             return "CONTAMINATION_RISK";
         }
@@ -353,6 +358,12 @@ public final class SourceSearcherProcessor implements StageProcessor {
             return "ROUTINE_EVIDENCE";
         }
         return "GENERIC_SECTOR_SOURCE";
+    }
+
+    /** Identifica resultados utilitários ou dicionários fora da rotina real do CNAE. */
+    private boolean irrelevantUtilityRisk(String url, String text) {
+        String domain = domain(url);
+        return containsAny(domain + " " + text, List.of("calculator", "calculadora", "dicionario", "dicionário", "sinonimos", "sinônimos", "infopedia", "lexico", "desmos", "app store"));
     }
 
     /** Classifica o tipo operacional da fonte. */

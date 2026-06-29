@@ -139,6 +139,15 @@ Abrir o dossiê e confirmar que existe contexto mínimo para iniciar a análise 
 
 A etapa não deve ser tratada apenas como marcador técnico. Ela precisa garantir que o pipeline recebeu dados úteis para o dossiê. Se a entrada contiver apenas metadados operacionais, as próximas etapas tendem a produzir análise fraca ou bloqueada.
 
+### Recomendações de melhoria
+
+- Tratar o `intake` como triagem comercial obrigatória, não apenas abertura técnica do job.
+- Capturar e preservar, quando existirem, headline, subheadline, promessa principal, preço, bônus, garantia, CTA, produtor, domínio, redes sociais, pixels/scripts públicos, depoimentos, comentários, imagens de prova e links externos da página.
+- Classificar a qualidade da matéria-prima em `RICA`, `PARCIAL` ou `INSUFICIENTE`, com motivo objetivo.
+- Criar um resumo inicial da hipótese comercial da página em linguagem simples: "este produto parece vender porque promete X para Y usando Z".
+- Sinalizar desde o início se a página é página de venda completa, checkout, presell, artigo, página de captura, área de membros, marketplace ou página quebrada.
+- Guardar evidências brutas suficientes para as etapas seguintes não dependerem de inferência solta do modelo.
+
 ### Exemplo real observado no banco
 
 No produto MOIS `400` — `Resina LAB`, a etapa `intake` registrou `OBJECTIVE_FULFILLED` e decisão de validar se a página tinha contexto mínimo, preservando texto da página, produto, produtor, promessa, marca e sinais públicos. O mesmo registro mostrou que as chaves disponíveis eram principalmente operacionais (`jobId`, `pageId`, `productKey`, `stageCode`, `status`, `nextStageCode`).
@@ -186,6 +195,21 @@ Estruturar o entendimento comercial inicial do produto antes da pesquisa externa
 ### Critério de qualidade
 
 A etapa só é comercialmente forte se o contexto recebido tiver dados reais da página. Se receber apenas `pageId`, `jobId`, `status` e `stageCode`, o modelo tende a devolver JSON formalmente válido, mas sem entendimento de negócio confiável.
+
+### Recomendações de melhoria
+
+- Expandir a leitura para além de produto/público/dor/promessa, incluindo nível de consciência do público, maturidade da dor, urgência, desejo dominante e transformação percebida.
+- Separar claramente:
+  - dor de superfície;
+  - dor raiz;
+  - dor emocional/social;
+  - ganho desejado;
+  - objeção principal;
+  - custo de não agir.
+- Identificar o ângulo central da oferta: emagrecimento, renda, habilidade, saúde, relacionamento, produtividade, status, segurança, economia, pertencimento ou outro.
+- Mapear a arquitetura da oferta: promessa, mecanismo, módulos, bônus, garantia, preço, escassez, urgência, CTA e redução de risco.
+- Apontar o "porquê agora": qual tensão, tendência, medo, oportunidade ou mudança de mercado torna a compra mais provável.
+- Gerar uma hipótese de sucesso do produto em formato direto: "o produto ganha força porque combina [dor forte] + [resultado desejado] + [mecanismo crível] + [prova/autoridade] + [oferta fácil de comprar]".
 
 ### Exemplo real observado no banco
 
@@ -242,6 +266,27 @@ Gerar âncoras confiáveis para orientar a investigação pública do produto. E
 
 As âncoras precisam ser específicas o bastante para encontrar o ecossistema real do produto, não apenas o nicho genérico.
 
+### Recomendações de melhoria
+
+- Gerar âncoras por intenção de investigação, não apenas por palavra-chave.
+- Separar buscas para:
+  - produto exato;
+  - produtor;
+  - marca;
+  - afiliados;
+  - reviews;
+  - reclamações;
+  - aulas/lives/webinars;
+  - comunidades;
+  - anúncios;
+  - redes sociais;
+  - páginas de captura;
+  - termos proprietários do mecanismo.
+- Criar combinações de busca que revelem aquecimento, como `produto + depoimento`, `produto + reclamação`, `produtor + live`, `marca + resultados`, `mecanismo + antes e depois`, `produto + afiliado`.
+- Definir perguntas obrigatórias da investigação: onde o público conhece o produto, quem explica a promessa, quem dá autoridade, onde aparecem provas, quais objeções surgem e qual canal empurra a decisão.
+- Atribuir prioridade a cada âncora: alta quando identifica ecossistema real do produto; média quando identifica nicho; baixa quando é genérica.
+- Registrar hipóteses concorrentes para evitar confirmação automática de uma narrativa fraca.
+
 ### Exemplo real observado no banco
 
 No produto MOIS `400` — `Resina LAB`, a etapa `investigation-anchor-builder` concluiu com a decisão de gerar âncoras a partir de produto, produtor, domínio, marca, promessa e termos proprietários. Porém, como a etapa anterior não trouxe esses elementos com riqueza comercial, as âncoras ficaram dependentes de identificadores básicos do produto.
@@ -290,6 +335,26 @@ Planejar e localizar recursos externos que possam aquecer o público antes da co
 
 A etapa deve priorizar fontes que tenham relação verificável com o produto, produtor, marca ou mecanismo comercial. Fontes genéricas do nicho devem ser marcadas como fracas ou descartadas.
 
+### Recomendações de melhoria
+
+- Tratar a descoberta de recursos como mapeamento de canais de aquecimento, não como simples busca de links.
+- Classificar cada recurso por papel comercial:
+  - descoberta;
+  - educação;
+  - autoridade;
+  - comunidade;
+  - prova social;
+  - comparação/review;
+  - objeção/reputação;
+  - demonstração;
+  - captura de lead;
+  - oferta direta;
+  - remarketing provável.
+- Buscar evidências em canais que normalmente aquecem produtos digitais: YouTube, Instagram, TikTok, Facebook, Google, blogs, páginas de afiliados, marketplaces, páginas de captura, webinars, lives, grupos, Reclame Aqui, reviews, comentários e bibliotecas de anúncios quando disponíveis.
+- Diferenciar recurso próprio, recurso de afiliado, recurso de creator, recurso de mídia espontânea e recurso de marketplace.
+- Priorizar recursos que expliquem o "como convence": aula, vídeo longo, sequência de posts, depoimento, estudo de caso, review comparativo, comunidade ou página de objeções.
+- Registrar lacunas por canal. Exemplo: "há marketplace, mas não há evidência de canal educacional"; "há review, mas não há prova social direta"; "há promessa, mas não há mecanismo demonstrado".
+
 ### Exemplo real observado no banco
 
 No produto MOIS `401` — `BLACK MAGRA`, a investigação externa encontrou fontes com maior utilidade comercial: marketplace Hotmart, página de aluno do Programa Monteze, Reclame Aqui e outro produto/rede associado à marca. Já no produto MOIS `179` — `PACOTE COMPLETO - Vitalício - TUDO LIBERADO + Tripé`, o dossiê antigo encontrou fontes web genéricas, como páginas sem relação comercial forte com a oferta.
@@ -334,6 +399,15 @@ Classificar se cada fonte externa descoberta realmente pertence ao produto, prod
 ### Critério de qualidade
 
 Nenhuma fonte deve virar evidência final apenas por conter palavra-chave semelhante. A etapa precisa proteger o dossiê contra falso positivo.
+
+### Recomendações de melhoria
+
+- Usar uma matriz de vínculo fonte-produto com critérios explícitos: nome exato, domínio, produtor, marca, identidade visual, CTA, checkout, depoimento, link afiliado, menção direta, mecanismo proprietário ou promessa específica.
+- Atribuir `matchStrength` por fonte: `DIRETO`, `PROVAVEL`, `INDIRETO`, `NICHO_APENAS` ou `DESCARTADO`.
+- Separar evidência de aquecimento real de evidência de existência. Uma página em marketplace prova que a oferta existe; não prova sozinha que o mercado foi aquecido.
+- Marcar conflitos de identidade: produto com mesmo nome, produtor diferente, marca genérica, domínio suspeito, página clonada, review sem relação ou conteúdo reaproveitado.
+- Preservar fontes rejeitadas com motivo, pois elas ajudam a explicar por que o dossiê não deve concluir com confiança excessiva.
+- Criar um score de confiança por fonte combinando relação com produto, atualidade, papel no funil, profundidade do conteúdo e independência da evidência.
 
 ### Exemplo real observado no banco
 
@@ -384,6 +458,27 @@ Extrair sinais comerciais das fontes qualificadas, especialmente sinais de autor
 
 A saída deve conectar cada sinal à fonte que o sustenta. Sinal sem evidência não deve sustentar recomendação final.
 
+### Recomendações de melhoria
+
+- Extrair sinais por mecanismo de persuasão, não apenas por presença de termos.
+- Organizar sinais em grupos:
+  - dor explorada;
+  - promessa repetida;
+  - mecanismo explicado;
+  - prova social;
+  - autoridade;
+  - demonstração;
+  - comunidade;
+  - objeções;
+  - risco percebido;
+  - urgência/escassez;
+  - distribuição;
+  - linguagem do público.
+- Identificar como o consumidor é preparado emocionalmente: medo de continuar igual, desejo de facilidade, desejo de prazer, pertencimento, status, economia de esforço ou esperança de transformação rápida.
+- Capturar frases, temas e padrões recorrentes, sem depender de uma única fonte isolada.
+- Diferenciar sinais de venda forte de sinais de alerta. Reclamações podem revelar objeções críticas; comentários positivos podem revelar promessa mais valorizada; afiliados podem revelar canais de escala.
+- Produzir uma leitura de intensidade: sinal forte quando aparece em vários canais ou em fonte de alta confiança; sinal fraco quando aparece apenas em uma fonte indireta.
+
 ### Exemplo real observado no banco
 
 No produto MOIS `401` — `BLACK MAGRA`, os resumos de aquecimento registraram sinais de autoridade ou marca pública, canal de audiência, oferta em marketplace e presença de reviews/objeções. O score ficou entre `55` e `57`, com temperatura `WARM`.
@@ -431,6 +526,19 @@ Organizar os recursos externos por papel no aquecimento do público e indicar la
 ### Critério de qualidade
 
 O mapa deve mostrar como o público é preparado para comprar, não apenas listar links ou sinais soltos.
+
+### Recomendações de melhoria
+
+- Transformar os sinais em uma narrativa de jornada: como o consumidor descobre a dor, entende a promessa, acredita no mecanismo, vê prova, supera objeções e chega à oferta.
+- Mapear os canais por função no funil:
+  - topo: descoberta da dor e captura de atenção;
+  - meio: educação, autoridade e demonstração;
+  - fundo: prova, objeções, urgência, preço e CTA;
+  - pós-compra/reputação: comunidade, suporte, reclamações e resultados.
+- Indicar o provável motor de crescimento do produto: autoridade do produtor, afiliados, creators, tráfego pago, SEO, marketplace, comunidade, lançamentos, perpétuo, presell ou reputação orgânica.
+- Avaliar a coerência entre promessa, canal e público. Um produto pode ter boa promessa, mas canal fraco; ou bom canal, mas mecanismo pouco crível.
+- Criar uma matriz de força comercial com notas separadas para demanda, clareza da promessa, credibilidade do mecanismo, prova, distribuição, objeções e facilidade de compra.
+- Apontar lacunas que impedem adaptação pelo Marketing Hub: falta de prova, falta de mecanismo claro, canal desconhecido, promessa regulatória arriscada, dependência excessiva de autoridade pessoal ou ausência de sinais recentes.
 
 ### Exemplo real observado no banco
 
@@ -481,6 +589,30 @@ Consolidar a conclusão de negócio, evidências, recursos de aquecimento, recom
 ### Critério de qualidade
 
 A etapa final não deve encerrar como sucesso se não houver evidência comercial suficiente. O bloqueio é desejável quando evita que o usuário tome decisão com base em dossiê vazio.
+
+### Recomendações de melhoria
+
+- Estruturar o dossiê final como relatório executivo de marketing, não como resumo técnico das etapas.
+- A síntese deve responder obrigatoriamente:
+  - o que o produto vende;
+  - para quem vende;
+  - qual dor/desejo movimenta a compra;
+  - qual promessa central aparece;
+  - qual mecanismo torna a promessa crível;
+  - quais provas sustentam a crença;
+  - quais canais aquecem o consumidor;
+  - como o consumidor é educado antes da compra;
+  - quais objeções aparecem;
+  - qual parece ser o motor de sucesso;
+  - o que pode ser adaptado pelo Marketing Hub;
+  - o que não deve ser copiado por risco, baixa evidência ou dependência externa.
+- Entregar uma conclusão em três níveis:
+  - `FORTE`: evidências múltiplas e canais claros de aquecimento;
+  - `PROMISSOR_COM_LACUNAS`: há sinais úteis, mas faltam provas ou canais;
+  - `FRACO_OU_INSUFICIENTE`: não há base confiável para explicar sucesso.
+- Incluir um quadro final de oportunidades acionáveis: ângulos de campanha, canais prioritários, criativos sugeridos, provas necessárias, riscos e próximos testes.
+- Separar explicitamente "o que explica o sucesso observado" de "hipóteses que ainda precisam ser validadas".
+- Evitar recomendação genérica. Toda recomendação precisa apontar evidência, impacto comercial e próximo passo.
 
 ### Exemplo real observado no banco
 

@@ -11,7 +11,7 @@ import java.util.Map;
 public class DossierInvestigationAnchorBuilderProcessor implements StageProcessor {
 
     private static final String STAGE_NAME = "investigation-anchor-builder";
-    private static final String OBJECTIVE = "Gerar âncoras confiáveis de investigação pública a partir de produto, produtor, domínio, marca, promessa e termos proprietários.";
+    private static final String OBJECTIVE = "Gerar âncoras confiáveis por intenção de investigação — produto exato, produtor, marca, reviews, reclamações, afiliados, lives, anúncios, comunidades e mecanismo proprietário — priorizando vínculo real com o ecossistema da oferta.";
 
     /** Informa o nome canônico da etapa geração de âncoras de investigação. */
     @Override

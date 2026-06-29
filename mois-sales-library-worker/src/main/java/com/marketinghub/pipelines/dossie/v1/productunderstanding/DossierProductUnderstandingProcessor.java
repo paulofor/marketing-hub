@@ -8,10 +8,13 @@ import com.marketinghub.pipelines.dossie.v1.StageContext;
 import com.marketinghub.pipelines.dossie.v1.StageProcessor;
 import com.marketinghub.pipelines.dossie.v1.StageResult;
 import com.marketinghub.pipelines.dossie.v1.StageResult.OpenAiInteraction;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.util.StringUtils;
@@ -22,7 +25,8 @@ import org.springframework.web.client.RestClient;
 public class DossierProductUnderstandingProcessor implements StageProcessor {
 
     private static final String STAGE_NAME = "product-understanding";
-    private static final String OBJECTIVE = "Estruturar produto, público, dor, promessa, mecanismo, formato, oferta e prova antes da pesquisa externa.";
+    private static final String OBJECTIVE = "Estruturar produto, público, dores, promessa, mecanismo, oferta, prova, objeções, urgência e hipótese de sucesso antes da pesquisa externa.";
+    private static final String PROMPT_PATH = "prompts/dossieproduto/v1/product-understanding/prompt.md";
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final RestClient openAiClient;
     private final OpenAiProperties openAiProperties;
@@ -102,10 +106,7 @@ public class DossierProductUnderstandingProcessor implements StageProcessor {
 
     /** Monta o request Responses Flex enviado diretamente à OpenAI para entender o produto. */
     private String buildOpenAiRequest(StageContext context) throws Exception {
-        String prompt = "Entenda o produto para orientar a investigação comercial do dossiê MOIS. "
-                + "Responda em JSON válido com: produto, publico, dor, promessa, mecanismo, formato, oferta, prova, resumo_final. "
-                + "Use Dor → Resultado → Mecanismo → Prova → Oferta. Não invente dados externos; use apenas o contexto recebido. Contexto: "
-                + objectMapper.writeValueAsString(context.input());
+        String prompt = loadPrompt().replace("{{context}}", objectMapper.writeValueAsString(context.input()));
         return objectMapper.writeValueAsString(Map.of(
                 "model", openAiProperties.normalizedModel(),
                 "service_tier", "flex",
@@ -114,9 +115,14 @@ public class DossierProductUnderstandingProcessor implements StageProcessor {
                         "stage_execution_id", Long.toString(context.stageExecutionId()),
                         "dossier_id", Long.toString(context.dossierId())),
                 "input", List.of(
-                        Map.of("role", "system", "content", "Você estrutura entendimento comercial de produto e responde exclusivamente JSON válido sem markdown."),
+                        Map.of("role", "system", "content", "Você estrutura entendimento comercial de produto, protege o dossiê contra inferência sem evidência e responde exclusivamente JSON válido sem markdown."),
                         Map.of("role", "user", "content", prompt)),
                 "text", Map.of("format", Map.of("type", "json_object"))));
+    }
+
+    /** Carrega o prompt versionado da etapa para evitar contrato hardcoded na classe Java. */
+    private String loadPrompt() throws IOException {
+        return new ClassPathResource(PROMPT_PATH).getContentAsString(StandardCharsets.UTF_8);
     }
 
     /** Extrai o texto final retornado pelo endpoint Responses da OpenAI. */

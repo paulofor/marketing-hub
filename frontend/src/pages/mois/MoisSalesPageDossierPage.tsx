@@ -263,14 +263,23 @@ export default function MoisSalesPageDossierPage() {
     "AGUARDANDO",
     "AGUARDANDO_RETORNO_MODULO",
   ].includes(dossierStatus);
+  const hasCollectedProductPayload = Boolean(
+    (pageQuery.data?.htmlBytes ?? 0) > 0 ||
+      cleanText(pageQuery.data?.offerSummary) ||
+      cleanText(pageQuery.data?.mechanismSummary) ||
+      cleanText(pageQuery.data?.promiseSummary) ||
+      cleanText(pageQuery.data?.proofSummary),
+  );
   const isCommercialAnalysisDone = ["DONE", "ANALYZED"].includes(
     pageQuery.data?.analysisStatus || pageQuery.data?.currentStatus || "",
   );
   const dossierRequestBlockReason = hasActiveDossierRequest
     ? "Esta página já possui dossiê em fila ou em processamento; aguarde o backend concluir antes de reprocessar."
-    : !isCommercialAnalysisDone
-      ? "O dossiê só pode iniciar depois que a análise comercial da página estiver concluída."
-      : undefined;
+    : !hasCollectedProductPayload
+      ? "O dossiê só pode iniciar quando existir HTML ou conteúdo coletado do produto."
+      : !isCommercialAnalysisDone
+        ? "O dossiê só pode iniciar depois que a análise comercial da página estiver concluída."
+        : undefined;
   const isDossierRequestDisabled =
     !validPageId ||
     requestDossierMutation.isPending ||
@@ -369,6 +378,12 @@ export default function MoisSalesPageDossierPage() {
               <div className="border rounded p-3 h-100 bg-light-subtle">
                 <div className="text-secondary small">Dossiê v1</div>
                 <strong>{labelStatus(dossierStatus)}</strong>
+              </div>
+            </div>
+            <div className="col-md-3">
+              <div className="border rounded p-3 h-100 bg-light-subtle">
+                <div className="text-secondary small">HTML coletado</div>
+                <strong>{pageQuery.data?.htmlBytes ?? 0} bytes</strong>
               </div>
             </div>
             <div className="col-md-3">

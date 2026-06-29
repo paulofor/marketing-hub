@@ -71,6 +71,10 @@ const recommendationLabel: Record<
   END: "Encerrar",
 };
 
+function asArray<T>(value: T[] | null | undefined): T[] {
+  return Array.isArray(value) ? value : [];
+}
+
 function toForm(plan: CommercialPlan): SaveCommercialPlanPayload {
   return {
     name: plan.name,
@@ -123,7 +127,10 @@ export default function CommercialPlanningPage() {
   const createPlan = useCreateCommercialPlan();
   const updatePlan = useUpdateCommercialPlan();
   const simulatePlan = useSimulateCommercialPlan();
-  const plans = plansQuery.data ?? [];
+  const plans = asArray(plansQuery.data);
+  const niches = asArray(nichesQuery.data);
+  const hypotheses = asArray(hypothesesQuery.data);
+  const experiments = asArray(experimentsQuery.data);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const selectedPlan = useMemo(
     () => plans.find((plan) => plan.id === selectedId) ?? plans[0],
@@ -140,7 +147,8 @@ export default function CommercialPlanningPage() {
     simulationFeedback?.planId === selectedPlan?.id &&
     simulationFeedback.simulation
       ? simulationFeedback.simulation
-      : selectedPlan?.simulations?.[0];
+      : asArray(selectedPlan?.simulations)[0];
+  const selectedMilestones = asArray(selectedPlan?.milestones);
 
   function updateField<K extends keyof SaveCommercialPlanPayload>(
     field: K,
@@ -439,7 +447,7 @@ export default function CommercialPlanningPage() {
                   <section>
                     <h3 className="h6">Marcos comerciais</h3>
                     <div className="d-flex flex-column gap-2">
-                      {selectedPlan.milestones.map((milestone) => (
+                      {selectedMilestones.map((milestone) => (
                         <div
                           className="d-flex align-items-start gap-2 border rounded-3 p-2"
                           key={milestone.id}
@@ -539,7 +547,7 @@ export default function CommercialPlanningPage() {
                 }
               >
                 <option value="">Sem vínculo</option>
-                {(nichesQuery.data ?? []).map((niche) => (
+                {niches.map((niche) => (
                   <option key={niche.id} value={niche.id}>
                     {niche.name}
                   </option>
@@ -556,7 +564,7 @@ export default function CommercialPlanningPage() {
                 }
               >
                 <option value="">Sem vínculo</option>
-                {(hypothesesQuery.data ?? []).map((hypothesis) => (
+                {hypotheses.map((hypothesis) => (
                   <option key={hypothesis.id} value={hypothesis.id}>
                     {hypothesis.title}
                   </option>
@@ -576,7 +584,7 @@ export default function CommercialPlanningPage() {
                 }
               >
                 <option value="">Sem vínculo</option>
-                {(experimentsQuery.data ?? []).map((experiment) => (
+                {experiments.map((experiment) => (
                   <option key={experiment.id} value={experiment.id}>
                     {experiment.name}
                   </option>

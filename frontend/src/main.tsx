@@ -9,6 +9,7 @@ import axios from "axios";
 import { apiBaseUrl } from "./config/api";
 import "./api/http";
 import { ensureVisitorIdCookie } from "./utils/visitorCookie";
+import { ErrorBoundary } from "./app/ErrorBoundary";
 
 axios.defaults.baseURL = apiBaseUrl;
 ensureVisitorIdCookie();
@@ -23,7 +24,18 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <App />
+        <ErrorBoundary
+          fallback={
+            <div className="container-fluid py-4">
+              <div className="alert alert-danger" role="alert">
+                Não foi possível carregar esta tela. Recarregue a página ou
+                verifique o console para identificar o erro de renderização.
+              </div>
+            </div>
+          }
+        >
+          <App />
+        </ErrorBoundary>
       </BrowserRouter>
     </QueryClientProvider>
   </React.StrictMode>,

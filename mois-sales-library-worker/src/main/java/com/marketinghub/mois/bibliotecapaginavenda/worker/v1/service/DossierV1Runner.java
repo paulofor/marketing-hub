@@ -21,9 +21,9 @@ public class DossierV1Runner {
     private static final List<String> STAGES = List.of(
             "intake",
             "product-understanding",
-            "source-product-match",
             "investigation-anchor-builder",
             "warmup-resource-discovery",
+            "source-product-match",
             "warmup-signal-extraction",
             "warmup-map-builder",
             "dossier-synthesis");

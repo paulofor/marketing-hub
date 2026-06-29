@@ -1,3 +1,10 @@
+## 2026-06-29 — MOIS dossieproduto.v1: request real e contexto entre etapas
+- Verificado no banco via MCP que o job `87c5bfcc-1a73-4c1e-aaff-d975e8379c3f` da etapa `investigation-anchor-builder` não enviou request para OpenAI; a auditoria exibida era entrada operacional local do `mois-sales-library-worker`.
+- Causa-raiz corrigida: após `product-understanding`, os endpoints `pending` das etapas intermediárias entregavam ao worker apenas `jobId/pageId/stageCode`, sem as respostas funcionais anteriores. As etapas 3 a 7 agora recebem `previousStages` e `previousStageResponses` do fluxo atual, permitindo análise contextual em vez de saída genérica.
+- Correção de tela: a página do dossiê agora diferencia auditoria OpenAI de auditoria local pelo `modelo/plataforma`, evitando rotular executor local como “Request enviado para OpenAI”.
+- Alinhamento operacional: a ordem de polling do runner `mois-sales-library-worker` foi ajustada para seguir a sequência canônica do documento `pipeline_dossieproduto_v1.md`.
+- Prevenção de recorrência: criado teste para garantir que o input pendente usa somente o fluxo iniciado pelo último `intake` e inclui respostas anteriores persistidas.
+
 ## 2026-06-27 — MOIS Biblioteca de Páginas: atualização da tela após reprocessar dossiê
 - Causa-raiz identificada na página `/mois/sales-pages-library/286`: o backend aceitou o reprocessamento e o worker concluiu o dossiê, mas a tela de detalhe não invalidava a query da própria página ao clicar em **Reprocessar dossiê** e também não fazia polling do estado do dossiê.
 - Correção aplicada no frontend: o comando agora invalida a query do detalhe da página e as consultas de detalhe/pipeline do dossiê são atualizadas periodicamente, reduzindo a chance de a tela mostrar status antigo enquanto o backend já avançou.

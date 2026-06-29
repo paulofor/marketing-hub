@@ -1747,3 +1747,10 @@
 - Correção: o request da Responses API agora envia `tools: [{"type":"web_search"}]` e inclui resultados de busca no payload bruto auditado; a configuração permite desligar por variável `OPRM_NICHO_CNAE_V3_PERSONA_CANDIDATE_GENERATOR_OPENAI_WEB_SEARCH_ENABLED`.
 - Contrato funcional: o prompt agora exige pesquisa web, uso de evidências de rotina e preenchimento de `webEvidence` com URL, título, sinal de rotina e limitação de confiança, sem antecipar dor, oferta, produto ou mecanismo.
 - Prevenção: adicionados testes para garantir que o payload da OpenAI sai com ferramenta de busca web, Flex Processing, schema estrito e auditoria preservada.
+
+## 2026-06-29 — NichoCNAE v3: cancelamento operacional do source-searcher demorado
+
+- Diagnóstico: a execução do CNAE `8219999` ficou em `cnae-intake` como pendência enquanto o executor OPRM seguia preso em uma execução antiga de `source-searcher`, com timeouts de busca pública e scheduler sem nova varredura concorrente.
+- Causa-raiz: a etapa `source-searcher` podia ocupar a varredura do executor por tempo excessivo; como o scheduler evita sobreposição, um job antigo demorando bloqueava a fila e atrasava novas execuções.
+- Correção: o executor agora aplica limite operacional configurável ao `source-searcher`; ao exceder o tempo, cancela a execução, registra falha no backend e libera a fila para os próximos jobs.
+- Prevenção: adicionado teste unitário para garantir que uma execução lenta de `source-searcher` é finalizada como falha e não impede a continuidade do executor.

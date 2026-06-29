@@ -93,6 +93,7 @@ const NAV_SECTIONS: NavSection[] = [
     title: "Testes",
     items: [
       { to: "/niches", label: "Nichos", icon: nicheIcon },
+      { to: "/planning", label: "Planejamento", icon: ClipboardCheck },
       {
         to: "/experiments",
         label: "Experimentos",

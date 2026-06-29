@@ -8,11 +8,27 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.regex.Pattern;
 
 /** Processa a etapa routine-query-planner do pipeline NichoCNAE v3. */
 public final class RoutineQueryPlannerProcessor implements StageProcessor {
     private static final String STATUS = "QUERIES_PLANEJADAS";
     private static final int MAX_QUERY_ITEMS = 8;
+    private static final Pattern PARENTHETICAL_TEXT = Pattern.compile("\\([^)]*\\)");
+    private static final Pattern NON_SEARCH_TEXT = Pattern.compile("[^\\p{L}\\p{N}\\s]");
+    private static final Pattern MULTIPLE_SPACES = Pattern.compile("\\s+");
+    private static final Set<String> STOP_WORDS = Set.of(
+            "a", "ao", "aos", "as", "com", "como", "da", "das", "de", "do", "dos", "e", "em", "na", "nas", "no", "nos",
+            "o", "os", "ou", "para", "por", "que", "quando", "qual", "quais", "se", "sem", "sobre", "sua", "suas", "seu", "seus",
+            "validar", "confirmar", "encontrar", "evidencia", "evidência", "frequencia", "frequência", "real", "tipico", "típico",
+            "persona", "cnae", "microvarejo", "operador", "dono", "diario", "diário", "rotina", "operacional", "controle", "fisica", "física");
+    private static final List<String> DOMAIN_TERMS = List.of(
+            "loja", "roupas", "vestuario", "vestuário", "acessorios", "acessórios", "varejo", "mei", "autonomo", "autônomo",
+            "whatsapp", "instagram", "cliente", "clientes", "atendimento", "balcao", "balcão", "caixa", "estoque", "vitrine",
+            "araras", "provador", "pedido", "pedidos", "reserva", "reservas", "troca", "trocas", "devolucao", "devolução",
+            "entrega", "entregas", "cobranca", "cobrança", "pagamentos", "recebimentos", "fluxo", "planilha", "caderno",
+            "tamanho", "tamanhos", "cor", "cores", "mercadoria", "fornecedor", "fornecedores");
 
     /** Executa a etapa routine-query-planner produzindo consultas úteis para validar rotina, dor e esforço reais. */
     @Override
@@ -31,6 +47,8 @@ public final class RoutineQueryPlannerProcessor implements StageProcessor {
         output.put("jobId", context.jobId());
         output.put("stageExecutionId", context.stageExecutionId());
         output.put("inputKeys", context.input().keySet());
+        output.put("cnaeCode", context.input().get("cnaeCode"));
+        output.put("cnaeDescription", context.input().get("cnaeDescription"));
         output.put("personaFocus", personaName);
         output.put("searchObjective", "Encontrar evidências públicas da rotina real, tarefas recorrentes, dores operacionais e sinais de compra da persona vencedora antes de qualquer oferta.");
         output.put("plannedQueries", plannedQueries);
@@ -76,12 +94,12 @@ public final class RoutineQueryPlannerProcessor implements StageProcessor {
 
     /** Monta query natural Brasil-first sem depender sempre de termos formais como dono-operador ou MEI. */
     private String naturalQuery(String personaName, String evidence, String intent) {
-        String cleanEvidence = searchableEvidence(evidence);
+        String cleanEvidence = searchCore(personaName, evidence);
         return switch (intent) {
-            case "DOR_OPERACIONAL" -> cleanEvidence + " problema rotina " + personaName + " Brasil cliente atendimento";
-            case "SINAL_DE_COMPRA" -> cleanEvidence + " organizar rotina " + personaName + " clientes agenda cobrança Brasil";
-            case "CANAL_ATENDIMENTO_AQUISICAO" -> personaName + " " + cleanEvidence + " atender conseguir cliente cobrar Brasil";
-            default -> "rotina de " + personaName + " " + cleanEvidence + " atendimento cliente Brasil";
+            case "DOR_OPERACIONAL" -> cleanEvidence + " problema cliente atendimento cobrança Brasil";
+            case "SINAL_DE_COMPRA" -> cleanEvidence + " organizar estoque caixa pedidos clientes Brasil";
+            case "CANAL_ATENDIMENTO_AQUISICAO" -> cleanEvidence + " whatsapp instagram indicação atender cliente cobrar Brasil";
+            default -> cleanEvidence + " rotina atendimento cliente estoque Brasil";
         };
     }
 
@@ -93,6 +111,51 @@ public final class RoutineQueryPlannerProcessor implements StageProcessor {
                 .replaceAll("(?i)^como\\s+a\\s+persona\\s+", "")
                 .replace('/', ' ');
         return clean.isBlank() ? "rotina operacional" : clean;
+    }
+
+    /** Extrai núcleo de busca com termos do domínio e evita palavras genéricas que atraem dicionários e serviços irrelevantes. */
+    private String searchCore(String personaName, String evidence) {
+        String combined = searchableText(personaName + " " + searchableEvidence(evidence));
+        List<String> words = new ArrayList<>();
+        for (String term : DOMAIN_TERMS) {
+            if (combined.contains(normalize(term))) {
+                addWord(words, term);
+            }
+        }
+        for (String word : combined.split(" ")) {
+            if (words.size() >= 12) {
+                break;
+            }
+            if (word.length() >= 4 && !STOP_WORDS.contains(word)) {
+                addWord(words, word);
+            }
+        }
+        if (words.isEmpty()) {
+            return "loja roupas atendimento cliente estoque";
+        }
+        return String.join(" ", words);
+    }
+
+    /** Adiciona palavra normalizada sem duplicidade semântica. */
+    private void addWord(List<String> words, String word) {
+        String normalized = normalize(word);
+        boolean exists = words.stream().map(this::normalize).anyMatch(normalized::equals);
+        if (!exists && !normalized.isBlank()) {
+            words.add(word);
+        }
+    }
+
+    /** Limpa texto para busca e remove parênteses/descritivos que poluem provedores públicos. */
+    private String searchableText(String value) {
+        String withoutParenthetical = PARENTHETICAL_TEXT.matcher(text(value)).replaceAll(" ");
+        String searchable = NON_SEARCH_TEXT.matcher(withoutParenthetical).replaceAll(" ");
+        return MULTIPLE_SPACES.matcher(normalize(searchable)).replaceAll(" ").trim();
+    }
+
+    /** Normaliza acentos e caixa para comparação estável de termos. */
+    private String normalize(String value) {
+        return java.text.Normalizer.normalize(text(value).toLowerCase(), java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "");
     }
 
     /** Cria um item estruturado de consulta para a próxima etapa buscar fontes. */

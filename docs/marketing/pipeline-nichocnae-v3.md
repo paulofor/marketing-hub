@@ -242,6 +242,7 @@ Buscar fontes públicas e selecionar apenas aquelas que sustentam evidência rea
 
 - Recebe as queries planejadas.
 - Para cada query, gera variações simplificadas e operacionais.
+- Quando as queries planejadas retornam apenas ruído, executa fallback determinístico com termos do domínio operacional da persona/CNAE.
 - Busca fontes públicas usando o cliente de busca configurado.
 - Qualifica cada resultado bruto.
 - Calcula sinais como:
@@ -294,6 +295,10 @@ Esta etapa é hoje o principal ponto de fragilidade do pipeline. A lógica atual
 ### Melhoria recomendada e motivo
 
 Separar busca ampla de classificação de evidência. A busca deve trazer mais possibilidades; a classificação deve decidir se há rotina real, relato, dúvida, canal, cobrança ou contaminação por solução. O motivo é que o pipeline está bloqueando corretamente por qualidade, mas por vezes chega pouco perto das fontes certas porque procura termos formais demais. Para vendas futuras, vale mais uma fonte simples que mostre uma situação real do MEI do que uma página bonita que vende software ou fala genericamente do setor.
+
+### Regra preventiva contra bloqueio recorrente
+
+O `routine-query-planner` não deve enviar termos internos ou genéricos como núcleo da busca, por exemplo "validar", "confirmar", "rotina" ou "controle". Esses termos devem ser convertidos para sinais operacionais do domínio, como loja, roupas, atendimento, cliente, estoque, caixa, WhatsApp, pedidos, reservas, trocas, entregas e cobrança. O `source-searcher` deve preservar o bloqueio contra fonte fraca, mas tentar fallback de domínio antes de concluir `FONTES_NAO_COLETADAS`.
 
 ---
 

@@ -126,6 +126,41 @@ class SourceSearcherProcessorTest {
                 assertThat(String.valueOf(query)).startsWith("pedidos reservas trocas"));
     }
 
+    /** Usa fallback de domínio quando queries planejadas atraem apenas resultados genéricos ou ambíguos. */
+    @Test
+    void shouldUseDomainFallbackWhenPlannedQueriesReturnOnlyNoise() {
+        SourceSearchClient searchClient = (query, limit) -> {
+            if (query.contains("relato rotina atendimento cliente Brasil")) {
+                return List.of(new SourceSearchResult(
+                        "Relato de rotina de loja de roupas com caixa e estoque",
+                        "https://varejo.example.com.br/relato-loja-roupas",
+                        "Dono MEI relata atendimento a clientes, pedidos por WhatsApp, trocas, cobrança, caixa e controle manual de estoque.",
+                        "TEST_PROVIDER",
+                        "<item />"));
+            }
+            return List.of(new SourceSearchResult(
+                    "Controle para videogame em oferta",
+                    "https://ecommerce.example.com.br/controle",
+                    "Controle sem fio para console com promoção e entrega.",
+                    "TEST_PROVIDER",
+                    "<item />"));
+        };
+
+        StageResult result = new SourceSearcherProcessor(searchClient).process(new StageContext("job", "5", Map.of(
+                "plannedQueries", List.of(Map.of(
+                        "query", "Controle diário de fluxo de caixa com registro de recebimentos e pagamentos loja roupas",
+                        "intent", "SINAL_DE_COMPRA",
+                        "objective", "Encontrar evidência de organização de caixa e estoque")))));
+
+        assertThat(result.status()).isEqualTo("FONTES_ENCONTRADAS");
+        List<?> selectedSources = (List<?>) result.output().get("selectedSources");
+        Map<?, ?> source = (Map<?, ?>) selectedSources.getFirst();
+        assertThat(source.get("url")).isEqualTo("https://varejo.example.com.br/relato-loja-roupas");
+        List<?> attempts = (List<?>) result.output().get("searchAttempts");
+        assertThat(attempts).anySatisfy(attempt ->
+                assertThat(String.valueOf(((Map<?, ?>) attempt).get("intent"))).isEqualTo("DOMAIN_FALLBACK"));
+    }
+
     /** Gera buscas focadas em reclamações e aceita fonte pública com atrito real de pedido, troca e entrega. */
     @Test
     void shouldUseComplaintQueriesAndAcceptRealCustomerFrictionSources() {

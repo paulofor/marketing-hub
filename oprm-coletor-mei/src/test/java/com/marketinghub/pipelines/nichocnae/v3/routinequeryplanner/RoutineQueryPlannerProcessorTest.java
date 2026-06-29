@@ -30,14 +30,14 @@ class RoutineQueryPlannerProcessorTest {
         assertThat(result.output()).containsKeys("searchObjective", "plannedQueries", "validationQuestions", "sourceAcceptanceCriteria", "discardCriteria");
         List<?> plannedQueries = (List<?>) result.output().get("plannedQueries");
         assertThat(plannedQueries).hasSize(5);
-        assertThat(plannedQueries.getFirst()).asString().contains("conferir estoque");
+        assertThat(plannedQueries.getFirst()).asString().contains("conferir", "estoque");
         @SuppressWarnings("unchecked")
         Map<String, Object> firstQuery = (Map<String, Object>) plannedQueries.getFirst();
         assertThat(firstQuery).containsEntry("intent", "TAREFA_DIARIA");
         assertThat(firstQuery).containsKeys("query", "objective", "expectedEvidence", "priority");
     }
 
-    /** Usa aliases vindos da IA e reforça MEI/autônomo nas queries que alimentarão a busca de fontes. */
+    /** Usa aliases vindos da IA e reforça termos de domínio nas queries que alimentarão a busca de fontes. */
     @Test
     void shouldPlanQueriesFromAiAliasesWithAutonomousContext() {
         RoutineQueryPlannerProcessor processor = new RoutineQueryPlannerProcessor();
@@ -50,7 +50,9 @@ class RoutineQueryPlannerProcessorTest {
 
         List<?> plannedQueries = (List<?>) result.output().get("plannedQueries");
         assertThat(plannedQueries).hasSize(2);
-        assertThat(plannedQueries.getFirst()).asString().contains("rotina de Dono-operador MEI", "responder clientes no WhatsApp", "atendimento cliente Brasil");
+        assertThat(plannedQueries.getFirst()).asString()
+                .contains("loja", "roupas", "mei", "whatsapp", "cliente", "atendimento")
+                .doesNotContain("rotina de Dono-operador");
     }
 
     /** Remove ruído de validação para evitar queries que começam com instruções internas em vez de termos de busca reais. */
@@ -68,7 +70,27 @@ class RoutineQueryPlannerProcessorTest {
 
         assertThat(String.valueOf(firstQuery.get("query")))
                 .doesNotContain("dificuldade de Validar")
-                .startsWith("o volume típico de pedidos dia, reservas e trocas devoluções à distância problema rotina");
+                .doesNotContain("Validar")
+                .contains("mei", "whatsapp", "pedidos", "reservas", "trocas")
+                .doesNotStartWith("Validar");
+    }
+
+    /** Gera query de domínio para controle de caixa sem começar por palavra ambígua que atrai joystick/dicionário. */
+    @Test
+    void shouldAvoidAmbiguousControlQueriesForCashFlowEvidence() {
+        RoutineQueryPlannerProcessor processor = new RoutineQueryPlannerProcessor();
+
+        StageResult result = processor.process(new StageContext("job-4781400", "137", Map.of(
+                "winnerPersona", Map.of(
+                        "name", "Dono-operador de loja física de roupas e acessórios",
+                        "toolsAndRecords", List.of("Controle diário de fluxo de caixa com registro de recebimentos e pagamentos")))));
+
+        List<?> plannedQueries = (List<?>) result.output().get("plannedQueries");
+        Map<?, ?> firstQuery = (Map<?, ?>) plannedQueries.getFirst();
+
+        assertThat(String.valueOf(firstQuery.get("query")))
+                .startsWith("loja roupas acessorios caixa pagamentos recebimentos fluxo")
+                .doesNotStartWith("Controle");
     }
 
     /** Bloqueia uma saída genérica quando a etapa anterior não trouxe a persona vencedora. */

@@ -2,10 +2,10 @@
 
 ## Variaveis
 
-| pipeline | versao | modulo-externo | pacote-backend | pacote-modulo | objeto-associado | objeto-chave | tabela-auditoria | endpoint-interno-base | endpoint-admin-base | objetivo-pipeline |
-|----------|--------|----------------|----------------|---------------|------------------|--------------|------------------|-----------------------|---------------------|--------------------|
-| nichocnae | v3 | oprm-coletor-mei | com.marketinghub.oprmcoletormei.nichocnae.v3 | com.marketinghub.pipelines.nichocnae.v3 | cnae | cnaeCode | pipeline_nichocnae | /api/internal/oprmcoletormei/nichocnae/v3 | /api/oprm/nichocnae/v3 | transformar um CNAE em persona, rotina diaria, tarefas, evidencias e materializacao de nicho enriquecido sem criar oferta ou landing |
-| dossieproduto | v1 | mois-sales-library-worker | com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1 | com.marketinghub.pipelines.dossie.v1 | pagina de venda | productKey | pipeline_dossieproduto | /api/internal/moissaleslibraryworker/dossieproduto/v1 | /api/mois/dossieproduto/v1 | transformar uma pagina de venda em dossie comercial auditavel para orientar decisoes de biblioteca de vendas |
+| pipeline | versao | modulo-externo | pacote-backend | pacote-modulo | objeto-associado | objeto-chave | tabela-auditoria | endpoint-interno-base | endpoint-admin-base | objetivo-pipeline | arquivo-definicao |
+|----------|--------|----------------|----------------|---------------|------------------|--------------|------------------|-----------------------|---------------------|--------------------|---------|
+| nichocnae | v3 | oprm-coletor-mei | com.marketinghub.oprmcoletormei.nichocnae.v3 | com.marketinghub.pipelines.nichocnae.v3 | cnae | cnaeCode | pipeline_nichocnae | /api/internal/oprmcoletormei/nichocnae/v3 | /api/oprm/nichocnae/v3 | transformar um CNAE em persona, rotina diaria, tarefas, evidencias e materializacao de nicho enriquecido sem criar oferta ou landing |docs/marketing/pipeline_nichocnae_v3.md|
+| dossieproduto | v1 | mois-sales-library-worker | com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1 | com.marketinghub.pipelines.dossie.v1 | pagina de venda | productKey | pipeline_dossieproduto | /api/internal/moissaleslibraryworker/dossieproduto/v1 | /api/mois/dossieproduto/v1 | transformar uma pagina de venda em dossie comercial auditavel para orientar decisoes de biblioteca de vendas |docs/marketing/pipeline_dossieproduto_v1.md|
 
 ## Premissas de uso
 

@@ -6,6 +6,7 @@ import com.marketinghub.experiment.ExperimentPlatform;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.ExperimentStage;
 import com.marketinghub.experiment.ExperimentCampaignObjective;
+import com.marketinghub.experiment.ExperimentType;
 import com.marketinghub.experiment.CreativeGenerationMode;
 import com.marketinghub.experiment.CreativeGenerationStatus;
 import java.math.BigDecimal;
@@ -27,6 +28,7 @@ public class ExperimentDto {
     private String freeReward;
     private String funnelPromise;
     private String primaryCta;
+    private ExperimentType experimentType;
     private ExperimentCampaignObjective campaignObjective;
     private FacebookPageDto facebookPage;
     private FacebookInstantFormDto facebookInstantForm;

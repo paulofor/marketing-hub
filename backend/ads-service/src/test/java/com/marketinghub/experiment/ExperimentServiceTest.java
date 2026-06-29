@@ -293,6 +293,52 @@ class ExperimentServiceTest {
         assertThat(exp.getCampaignObjective()).isEqualTo(ExperimentCampaignObjective.LEADS);
     }
 
+    /** Garante que produto low-ticket nasce com objetivo de venda mesmo com amostra secundária. */
+    @Test
+    void createLowTicketProductDefaultsToSalesObjective() {
+        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Low ticket").build());
+        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("Venda").build());
+        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(niche)
+                .title("Hipótese venda")
+                .premiseAngle(angle)
+                .promise("Promessa")
+                .problem("Problema")
+                .persona("Persona")
+                .offerType(com.marketinghub.hypothesis.OfferType.TRIPWIRE)
+                .kpiTargetCpl(new BigDecimal("1"))
+                .build());
+        metricPresetRepository.save(MetricPreset.builder()
+                .id("LEAN_LOW_TICKET")
+                .name("Lean Low Ticket")
+                .sampleSize(150)
+                .stopLossFactor(new BigDecimal("2"))
+                .defaultMdePp(new BigDecimal("12"))
+                .build());
+        CreateExperimentRequest req = new CreateExperimentRequest();
+        applyStageDefaults(req);
+        req.setMarketNicheId(niche.getId());
+        req.setHypothesisId(hyp.getId());
+        req.setName("Exp low ticket");
+        req.setHypothesis("Teste");
+        req.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
+        req.setSinglePain("cliente atrasa manutenção");
+        req.setFreeReward("ver amostra gratuita");
+        req.setFunnelPromise("organizar manutenção em 7 dias");
+        req.setPrimaryCta("Comprar por R$ 27");
+        req.setKpiTargetCpl(new BigDecimal("45"));
+        req.setMetricPresetId("LEAN_LOW_TICKET");
+        req.setJourneyTemplateId(createJourneyTemplate().getId());
+        req.setInstagramAccountId(createInstagramAccount().getId());
+        req.setLeadPortalFlowId(createLeadPortalFlow(niche));
+
+        Experiment exp = service.create(req);
+
+        assertThat(exp.getExperimentType()).isEqualTo(ExperimentType.LOW_TICKET_PRODUCT);
+        assertThat(exp.getCampaignObjective()).isEqualTo(ExperimentCampaignObjective.SALES);
+        assertThat(exp.getFreeReward()).isEqualTo("ver amostra gratuita");
+    }
+
     /** Garante que recompensa gratuita não pode nascer com objetivo Tráfego. */
     @Test
     void createRejectsTrafficObjectiveWithFreeReward() {

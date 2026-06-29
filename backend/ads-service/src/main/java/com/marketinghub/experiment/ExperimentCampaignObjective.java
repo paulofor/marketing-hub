@@ -5,5 +5,6 @@ package com.marketinghub.experiment;
  */
 public enum ExperimentCampaignObjective {
     LEADS,
-    TRAFFIC
+    TRAFFIC,
+    SALES
 }

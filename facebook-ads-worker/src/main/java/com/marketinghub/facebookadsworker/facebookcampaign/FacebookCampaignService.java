@@ -422,7 +422,7 @@ public class FacebookCampaignService {
             String resolvedOptimizationGoal = leadCampaignRequired
                 ? "LEAD_GENERATION"
                 : config.adSetOptimizationGoal();
-            String resolvedCampaignObjective = leadCampaignRequired ? "OUTCOME_LEADS" : "OUTCOME_TRAFFIC";
+            String resolvedCampaignObjective = resolveCampaignObjective(exp, leadCampaignRequired);
 
             AdSetPlaybookSpec selectedSpec = null;
             ResolvedTargeting resolvedTargeting;
@@ -1086,7 +1086,27 @@ public class FacebookCampaignService {
         }
         return (StringUtils.hasText(experiment.campaignObjective())
                 && "LEADS".equalsIgnoreCase(experiment.campaignObjective().trim()))
-            || StringUtils.hasText(experiment.freeReward());
+            || (!isLowTicketProduct(experiment) && StringUtils.hasText(experiment.freeReward()));
+    }
+
+    /** Indica se o experimento deve priorizar compra low-ticket em vez de lead. */
+    private boolean isLowTicketProduct(Experiment experiment) {
+        return experiment != null
+                && StringUtils.hasText(experiment.experimentType())
+                && "LOW_TICKET_PRODUCT".equalsIgnoreCase(experiment.experimentType().trim());
+    }
+
+    /** Resolve o objetivo Meta sem degradar experimentos de venda para tráfego. */
+    private String resolveCampaignObjective(Experiment experiment, boolean leadCampaignRequired) {
+        if (leadCampaignRequired) {
+            return "OUTCOME_LEADS";
+        }
+        if (experiment != null
+                && StringUtils.hasText(experiment.campaignObjective())
+                && "SALES".equalsIgnoreCase(experiment.campaignObjective().trim())) {
+            return "OUTCOME_SALES";
+        }
+        return "OUTCOME_TRAFFIC";
     }
 
     public record Experiment(
@@ -1096,6 +1116,7 @@ public class FacebookCampaignService {
         String freeReward,
         String funnelPromise,
         String primaryCta,
+        String experimentType,
         String campaignObjective,
         String pageId,
         BigDecimal dailyBudget,

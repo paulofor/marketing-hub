@@ -31,13 +31,16 @@ public final class PersonaTournamentProcessor implements StageProcessor {
         output.put("jobId", context.jobId());
         output.put("stageExecutionId", context.stageExecutionId());
         output.put("inputKeys", context.input().keySet());
+        output.put("cnaeCode", text(context.input().get("cnaeCode")));
+        output.put("cnaeDescription", text(context.input().get("cnaeDescription")));
         output.put("winnerPersona", winner);
         output.put("winningPersonaName", text(winner.get("name")));
         output.put("selectionRationale", selectionRationale(winner));
         output.put("personaRanking", ranking);
         output.put("businessBoundary", "NAO_GERAR_OFERTA_CAMPANHA_LANDING");
         output.put("reportRole", "PERSONA_ROTINA_TAREFAS_DIARIAS");
-        output.put("nextStageCode", "routine-query-planner");
+        output.put("materializationMode", "FAST_PERSONA_ROUTINE_PROFILE");
+        output.put("nextStageCode", "persona-routine-materializer");
         return new StageResult(STATUS, output, List.of(new StageArtifact(STATUS, "inline://nichocnae-v3/persona-tournament", "Persona vencedora selecionada para orientar rotina e tarefas diárias.")));
     }
 

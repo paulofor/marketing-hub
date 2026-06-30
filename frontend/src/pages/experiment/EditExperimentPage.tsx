@@ -685,7 +685,7 @@ export default function EditExperimentPage() {
                 />
                 <label className="form-label" htmlFor="freeReward">
                   {isLowTicketProduct
-                    ? "Amostra gratuita secundária"
+                    ? "Prova/preview da oferta"
                     : "Isca digital única"}{" "}
                   {!isLowTicketProduct && (
                     <span className="text-danger">*</span>
@@ -696,7 +696,7 @@ export default function EditExperimentPage() {
                   className="form-control mb-2"
                   placeholder={
                     isLowTicketProduct
-                      ? "Ex.: Ver uma amostra gratuita do kit"
+                      ? "Ex.: Preview com 3 mensagens do kit e mockup dos entregáveis"
                       : "3 mensagens prontas para confirmar horário, pedir sinal e reagendar sem climão"
                   }
                   {...register("freeReward")}
@@ -707,7 +707,11 @@ export default function EditExperimentPage() {
                 <input
                   id="funnelPromise"
                   className="form-control mb-2"
-                  placeholder="Receber as 3 mensagens"
+                  placeholder={
+                    isLowTicketProduct
+                      ? "Comprar um kit pronto para reduzir faltas e remarcações nesta semana"
+                      : "Receber as 3 mensagens"
+                  }
                   {...register("funnelPromise")}
                 />
                 <label className="form-label" htmlFor="primaryCta">
@@ -716,7 +720,11 @@ export default function EditExperimentPage() {
                 <input
                   id="primaryCta"
                   className="form-control mb-2"
-                  placeholder="Receber as 3 mensagens"
+                  placeholder={
+                    isLowTicketProduct
+                      ? "Comprar o kit agora"
+                      : "Receber as 3 mensagens"
+                  }
                   {...register("primaryCta")}
                 />
                 <div className="alert alert-info py-2 mb-0">

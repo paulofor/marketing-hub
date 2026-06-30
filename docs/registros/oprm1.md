@@ -1761,3 +1761,10 @@
 - Causa-raiz: ao concluir uma etapa sem próxima etapa, ou ao falhar uma execução, o backend atualizava a tabela de execução, mas mantinha o cadastro do CNAE com `nichocnae_pipeline_status=INICIADO`; como o `pending` é publicado a partir desse cadastro, jobs antigos continuavam voltando para a fila.
 - Correção: a conclusão sem avanço agora marca o CNAE como `CONCLUIDO`, e falhas marcam como `FALHA`, removendo o registro do endpoint `pending` e liberando a fila real.
 - Prevenção: adicionado teste unitário do backend para garantir que `source-searcher` concluído sem próxima etapa e `source-searcher` com falha deixam de permanecer como pendência iniciada.
+
+## 2026-06-30 — NichoCNAE v3: materialização rápida antes de busca pública
+
+- Diagnóstico: o job real do CNAE `8219999` (`076c9da0-422f-4f84-b620-fa43b5e573ef`) já tinha persona e rotina úteis, mas falhou em `source-searcher` por timeout de 120s antes de materializar o nicho enriquecido.
+- Causa-raiz: o v3 exigia busca pública, coleta, síntese, gate e confirmação mesmo quando o objetivo operacional era apenas obter uma informação de nicho enriquecida suficiente para facilitar oferta/produto.
+- Correção: `persona-tournament` passa a publicar `persona-routine-materializer` pelo modo `FAST_PERSONA_ROUTINE_PROFILE`, e a materialização aceita a persona vencedora com tarefas estruturadas sem depender do gate.
+- Prevenção: adicionados testes no executor e no backend garantindo que o caminho rápido materializa sem depender de `source-searcher`, mantendo as etapas profundas apenas como aprofundamento posterior. O cliente backend do executor também recebeu timeout explícito e isolamento de falha por etapa, evitando que uma falha transitória em `/pending` derrube a varredura inteira.

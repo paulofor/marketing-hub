@@ -31,6 +31,7 @@ import reactor.core.publisher.Mono;
 class ExperimentPipelineOpenAiClientTest {
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
+    /** Garante que a etapa CAMPAIGN_ANGLE usa o contrato comercial single-minded versionado. */
     @Test
     void prependsGlobalRulesAndCampaignAngleGuidanceForCampaignAngleSection() {
         AtomicReference<Map<String, Object>> payloadRef = new AtomicReference<>();
@@ -70,7 +71,7 @@ class ExperimentPipelineOpenAiClientTest {
         assertThat(userPrompt).contains("[CASE_DATA_BEGIN]");
         assertThat(userPrompt).contains("OUTPUT_CONTRACT");
         assertThat(userPrompt).contains("CONTRATO_PROMESSA_UNICA");
-        assertThat(userPrompt).contains("uma única dor de entrada, uma única promessa, uma única recompensa gratuita e um único CTA");
+        assertThat(userPrompt).contains("uma única dor de entrada, uma única promessa, uma única prova/entrada comercial e um único CTA");
         assertThat(userPrompt).contains("Receber as 3 mensagens");
         assertThat(userPrompt).contains("- visualAngle");
         assertThat(userPrompt).doesNotContain("- primaryPain:");

@@ -22,6 +22,11 @@ public class PipelineDefinitionRegistry {
     private static final String EXPERIMENT_CANONICAL_VERSION = "procedimento-experimento-canon.v1";
     private static final String EXPERIMENT_BACKEND_ROOT_PACKAGE = "com.marketinghub.experiment.pipeline";
     private static final String EXPERIMENT_MODULE_ROOT_PACKAGE = "com.marketinghub.worker.experimentpipeline";
+    private static final String GERA_SALES_PAGE_PIPELINE_CODE = "gera-sales-page-v1";
+    private static final String GERA_SALES_PAGE_CANONICAL_VERSION = "gerasalespage-arquitetura-canon.v1";
+    private static final String GERA_SALES_PAGE_BACKEND_ROOT_PACKAGE = "com.marketinghub.gerasalespage.v1";
+    private static final String GERA_SALES_PAGE_WORKER_ROOT_PACKAGE =
+            "com.marketinghub.worker.pipeline.gerasalespagev1";
     private static final String GERALANDING_BACKEND_ROOT_PACKAGE = "com.marketinghub.geralanding";
     private static final String GERALANDING_OPENAI_CORE_ROOT_PACKAGE = "com.marketinghub.worker.openai.core";
     private static final String GERALANDING_DELIVERABLES_MODULE_PACKAGE = "com.marketinghub.worker.geralanding.deliverables";
@@ -61,6 +66,7 @@ public class PipelineDefinitionRegistry {
     public PipelineDefinitionRegistry() {
         this.officialPipelines = List.of(
                 buildExperimentPipeline(),
+                buildGeraSalesPagePipeline(),
                 buildOprmNichoCnaePipeline(),
                 buildOprmGeneralAudienceDiscoveryPipeline(),
                 buildMoisSalesPageLibraryPipeline(),
@@ -238,6 +244,57 @@ public class PipelineDefinitionRegistry {
                 GERALANDING_BACKEND_ROOT_PACKAGE + "." + implementationPackage,
                 GERALANDING_OPENAI_CORE_ROOT_PACKAGE + "." + implementationPackage,
                 aliases);
+    }
+
+    /**
+     * Monta a definição oficial do GeraSalesPage v1 como pipeline independente para venda direta.
+     */
+    private PipelineDefinition buildGeraSalesPagePipeline() {
+        List<PipelineStageDefinition> stages = List.of(
+                geraSalesPageStage("SALES_PAGE_OFFER_BRIEF", "sales-page-offer-brief", "Sales Page Offer Brief", 1),
+                geraSalesPageStage("SALES_PAGE_WIREFRAME", "sales-page-wireframe", "Sales Page Wireframe", 2),
+                geraSalesPageStage("SALES_PAGE_COPY", "sales-page-copy", "Sales Page Copy", 3),
+                geraSalesPageStage("SALES_PAGE_VISUAL_PLAN", "sales-page-visual-plan", "Sales Page Visual Plan", 4),
+                geraSalesPageStage("SALES_PAGE_HTML", "sales-page-html", "Sales Page HTML", 5),
+                geraSalesPageStage(
+                        "SALES_PAGE_CHECKOUT_QUALITY_REVIEW",
+                        "sales-page-checkout-quality-review",
+                        "Sales Page Checkout Quality Review",
+                        6),
+                geraSalesPageStage(
+                        "SALES_PAGE_PUBLICATION_PACKAGE",
+                        "sales-page-publication-package",
+                        "Sales Page Publication Package",
+                        7));
+        return new PipelineDefinition(
+                EXPERIMENT_MODULE,
+                GERA_SALES_PAGE_PIPELINE_CODE,
+                "GeraSalesPage v1",
+                GERA_SALES_PAGE_CANONICAL_VERSION,
+                true,
+                Set.of(GERA_SALES_PAGE_PIPELINE_CODE, "gera_sales_page_v1", "sales-page-checkout-v1"),
+                PipelineFieldPolicy.officialDefault(),
+                StageFieldPolicy.officialDefault(),
+                stages);
+    }
+
+    /**
+     * Cria uma etapa oficial do GeraSalesPage v1 apontando para backend e worker próprios.
+     */
+    private PipelineStageDefinition geraSalesPageStage(
+            String canonicalCode, String operationalCode, String name, int position) {
+        return new PipelineStageDefinition(
+                canonicalCode,
+                operationalCode,
+                name,
+                position,
+                true,
+                true,
+                true,
+                "ai-worker",
+                GERA_SALES_PAGE_BACKEND_ROOT_PACKAGE,
+                GERA_SALES_PAGE_WORKER_ROOT_PACKAGE,
+                Set.of(operationalCode, canonicalCode, canonicalCode.toLowerCase(Locale.ROOT)));
     }
 
     /**

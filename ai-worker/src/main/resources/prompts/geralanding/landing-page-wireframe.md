@@ -32,7 +32,7 @@ Resultado: {{RESULT_JSON}}
 
 Contrato de promessa única:
 - Dor única: {dados-singlePain}
-- Recompensa gratuita única: {dados-freeReward}
+- Prova/preview ou recompensa única: {dados-freeReward}
 - Promessa do funil: {dados-funnelPromise}
 - CTA principal: {dados-primaryCta}
 - Objetivo da campanha: {dados-campaignObjective}
@@ -70,6 +70,7 @@ O wireframe define seções, hierarquia, elementos, intenção comercial, assets
 
 - Se houver contrato de promessa única no contexto, o wireframe deve estruturar hero, prova, entregáveis, formulário e CTAs para a mesma dor, recompensa gratuita, promessa e CTA.
 - O wireframe não pode trocar a recompensa gratuita por diagnóstico, prévia genérica, amostra vaga, consultoria, sistema completo ou outro ativo fora do contrato.
+- Se `campaignObjective` for `SALES`, substitua mentalmente “recompensa gratuita” por prova/preview da oferta paga e “formulário” por CTA de checkout. Não crie formulário de captura como etapa obrigatória antes do checkout.
 
 - Entregar somente JSON válido com raiz obrigatória: `definicoes` e `pagina`.
 - `definicoes` deve conter exatamente: `estrutura`, `posicao`, `layout`, `mistas`.
@@ -110,6 +111,8 @@ Regras obrigatórias:
 # Direção comercial obrigatória
 
 - Gere uma landing de venda/captura com percepção de produto real, não uma página técnica de gerador de arquivo.
+- Se `campaignObjective` for `SALES`, gere página curta de venda direta low-ticket: promessa clara, prova visual, entregáveis, preço/garantia quando disponíveis, CTA de checkout e recuperação por eventos. Não peça nome/e-mail antes da compra.
+- Se `campaignObjective` for `LEADS`, gere página de captura com formulário simples e entrega da isca.
 - A página precisa parecer desejável antes de parecer operacional: venda a transformação, mostre prova visual e só depois explique formato, PDF, amostra, marca d’água ou entrega.
 - A promessa principal deve ser baseada em `pain`, `result`, `mecanismo` e `campaignAngle`; amostra/PDF/mini-kit é prova ou redução de risco, nunca o centro da primeira dobra.
 - O usuário deve entender em poucos segundos: qual problema resolve, por que é diferente, o que verá antes de comprar e qual é o próximo passo.
@@ -127,7 +130,7 @@ Regras obrigatórias para estruturar a página:
 - **Mecanismo**: reservar espaço para explicar por que o produto digital resolve a dor de forma plausível, normalmente em 3 passos.
 - **Prova**: reservar pelo menos uma seção de preview/demonstração aplicada da entrega, não apenas uma imagem decorativa.
 - **Oferta**: listar entregáveis pelo benefício que geram, não apenas pelo formato do arquivo.
-- **Ação**: conduzir para o formulário com CTA orientado ao benefício imediato.
+- **Ação**: em `SALES`, conduzir para checkout com CTA de compra; em `LEADS`, conduzir para formulário com CTA orientado ao benefício imediato.
 
 Escolha a prova conforme o tipo de produto digital: roteiro/script pede antes/depois ou simulação; plano de ação pede checklist/mapa/cronograma; produto educacional pede módulo demonstrativo ou transformação aplicada; diagnóstico pede amostra de relatório/indicadores; template/ferramenta pede print conceitual ou fluxo preenchido; biblioteca/kit pede cards de exemplos e modo de uso.
 
@@ -135,12 +138,12 @@ Escolha a prova conforme o tipo de produto digital: roteiro/script pede antes/de
 
 Gerar no mínimo 5 seções quando houver dados suficientes:
 
-1. Hero: promessa + prova visual + CTA primário para formulário.
+1. Hero: promessa + prova visual + CTA primário para checkout em `SALES` ou formulário em `LEADS`.
 2. Contraste/dor: antes/depois ou problema/novo caminho.
 3. Mecanismo: 3 passos/cards com `h3` + `p`.
 4. Prova/preview: imagem ou print conceitual demonstrando a entrega.
 5. Entregáveis/recebe: lista de 3 a 5 itens concretos.
-6. Formulário: nome + email + submit.
+6. Ação: bloco de checkout/compra em `SALES` ou formulário nome + email + submit em `LEADS`.
 7. FAQ: 4 a 6 dúvidas essenciais.
 
 # Regras de hero e H1
@@ -160,7 +163,7 @@ Gerar no mínimo 5 seções quando houver dados suficientes:
 - Use `tag: "button"` somente para submit real dentro de formulário.
 - Todo `targetSectionId` deve começar com exatamente um `#`, nunca `##` e nunca sem `#`.
 - `targetSectionId` deve apontar para id real de seção existente.
-- CTA primário do hero: `tag: "a"`, `componente: "buttonPrimary"`, `targetSectionId: "#sec-form"`.
+- CTA primário do hero: `tag: "a"`, `componente: "buttonPrimary"`. Em `SALES`, apontar para seção real de checkout/oferta, como `#sec-checkout`; em `LEADS`, apontar para `#sec-form`.
 - CTA secundário relevante: `tag: "a"`, `componente: "buttonSecondary"`.
 - Links discretos de baixa prioridade podem usar `componente: "none"`, mas nunca para a ação principal de conversão.
 - Toda ação principal de hero, prova, entregáveis e formulário deve ter `componente` explícito (`buttonPrimary` ou `buttonSecondary`) para o preset design conseguir aplicar aparência real de botão.
@@ -182,9 +185,10 @@ Gerar no mínimo 5 seções quando houver dados suficientes:
 - A imagem principal do desktop deve nascer dentro de um wrapper dedicado de mídia/mockup, com intenção explícita de `max-width`, proporção e centralização; nunca deixe a imagem como bloco largo solto que possa ocupar metade da dobra com vazio.
 - Em `briefingVisual` da imagem hero, descreva que o preset deve limitar largura visual, aplicar moldura/sombra e manter preenchimento útil, sem áreas vazias grandes ao redor do mockup.
 
-# Formulário obrigatório
+# Formulário ou checkout obrigatório
 
-- Incluir seção/formulário de captura com somente os campos `nome` e `email`.
+- Se `campaignObjective` for `SALES`, incluir seção de checkout/oferta com CTA principal para compra e sem inputs de captura antes do checkout. Use link/âncora de checkout como interação principal quando a URL real ainda não estiver disponível.
+- Se `campaignObjective` for `LEADS`, incluir seção/formulário de captura com somente os campos `nome` e `email`.
 - Não incluir telefone, WhatsApp, CPF, empresa ou outros campos.
 - Campos devem ter rótulos ou microcopy visível.
 - Inputs não podem depender apenas de campos vazios para o usuário entender.

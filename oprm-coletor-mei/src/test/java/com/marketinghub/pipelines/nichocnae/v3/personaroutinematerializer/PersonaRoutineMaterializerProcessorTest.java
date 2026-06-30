@@ -1,7 +1,6 @@
 package com.marketinghub.pipelines.nichocnae.v3.personaroutinematerializer;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.marketinghub.pipelines.nichocnae.v3.core.StageContext;
 import com.marketinghub.pipelines.nichocnae.v3.core.StageResult;
@@ -50,13 +49,25 @@ class PersonaRoutineMaterializerProcessorTest {
         assertThat(result.output().get("marketNicheCandidate")).isInstanceOf(Map.class);
     }
 
-    /** Impede materialização quando o quality-gate ainda não aprovou a rotina. */
+    /** Permite materialização rápida quando há persona vencedora com tarefas suficientes. */
     @Test
-    void shouldBlockWhenQualityGateIsNotApproved() {
+    void shouldMaterializeFastPersonaRoutineProfileWithoutQualityGate() {
         PersonaRoutineMaterializerProcessor processor = new PersonaRoutineMaterializerProcessor();
 
-        assertThatThrownBy(() -> processor.process(new StageContext("job-1", "10", Map.of("approved", false))))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("quality-gate aprovado");
+        StageResult result = processor.process(new StageContext("job-1", "10", Map.of(
+                "winningPersonaName", "Prestador de apoio administrativo MEI",
+                "winnerPersona", Map.of(
+                        "name", "Prestador de apoio administrativo MEI",
+                        "description", "Dono-operador de backoffice",
+                        "dailyTasks", List.of("organizar documentos", "atualizar planilhas"),
+                        "operationalPains", List.of("retrabalho por documento incompleto"),
+                        "toolsAndRecords", List.of("WhatsApp", "planilha")))));
+
+        assertThat(result.status()).isEqualTo("PERFIL_MATERIALIZAVEL");
+        assertThat(result.output()).containsEntry("materializationMode", "FAST_PERSONA_ROUTINE_PROFILE");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> profile = (Map<String, Object>) result.output().get("materializedProfile");
+        assertThat(profile.get("dailyTasks")).asList().hasSize(2);
+        assertThat(profile).containsEntry("approvedByQualityGate", false);
     }
 }

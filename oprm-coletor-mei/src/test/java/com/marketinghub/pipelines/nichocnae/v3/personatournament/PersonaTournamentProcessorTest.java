@@ -16,12 +16,18 @@ class PersonaTournamentProcessorTest {
     void shouldSelectWinnerPersonaFromCandidates() {
         PersonaTournamentProcessor processor = new PersonaTournamentProcessor();
 
-        StageResult result = processor.process(new StageContext("job-4781400", "73", Map.of("candidatePersonas", List.of(
+        StageResult result = processor.process(new StageContext("job-4781400", "73", Map.of(
+                "cnaeCode", "4781400",
+                "cnaeDescription", "Comércio varejista de artigos do vestuário",
+                "candidatePersonas", List.of(
                 Map.of("name", "Persona fraca", "operationalPains", List.of("dor"), "dailyTasks", List.of("tarefa"), "buyingSignals", List.of()),
                 Map.of("name", "Dono operador de loja", "operationalPains", List.of("caixa", "estoque"), "dailyTasks", List.of("atender", "comprar", "conferir"), "buyingSignals", List.of("busca modelo pronto", "paga por facilidade"))))));
 
         assertThat(result.status()).isEqualTo("PERSONA_PRIORIZADA");
-        assertThat(result.output()).containsEntry("nextStageCode", "routine-query-planner");
+        assertThat(result.output()).containsEntry("nextStageCode", "persona-routine-materializer");
+        assertThat(result.output()).containsEntry("materializationMode", "FAST_PERSONA_ROUTINE_PROFILE");
+        assertThat(result.output()).containsEntry("cnaeCode", "4781400");
+        assertThat(result.output()).containsEntry("cnaeDescription", "Comércio varejista de artigos do vestuário");
         assertThat(result.output()).containsEntry("winningPersonaName", "Dono operador de loja");
         assertThat(result.output()).containsKeys("winnerPersona", "selectionRationale", "personaRanking");
         Map<?, ?> winner = (Map<?, ?>) result.output().get("winnerPersona");

@@ -42,4 +42,23 @@ class NichoCnaeV3PendingExecutionServiceTest {
                 .contains("source-searcher excedeu 25ms")
                 .contains("liberar a fila");
     }
+
+    /** Isola falha de consulta de uma etapa para manter a varredura das demais etapas ativa. */
+    @Test
+    void shouldContinueScanningWhenPendingQueryFailsForOneStage() {
+        NichoCnaeV3BackendClient backendClient = org.mockito.Mockito.mock(NichoCnaeV3BackendClient.class);
+        NichoCnaeV3StageDefinitions stageDefinitions = org.mockito.Mockito.mock(NichoCnaeV3StageDefinitions.class);
+        NichoCnaeV3StageDefinition failingStage = new NichoCnaeV3StageDefinition("cnae-intake", "/cnae-intake", context -> new StageResult("IGNORED", Map.of(), List.of()));
+        NichoCnaeV3StageDefinition nextStage = new NichoCnaeV3StageDefinition("persona-tournament", "/persona-tournament", context -> new StageResult("OK", Map.of("nextStageCode", ""), List.of()));
+        NichoCnaeV3PendingExecution pending = new NichoCnaeV3PendingExecution("18", "job-ok", "8219999", "{}", Map.of());
+        when(stageDefinitions.all()).thenReturn(List.of(failingStage, nextStage));
+        when(backendClient.listPending(failingStage)).thenThrow(new IllegalStateException("backend indisponível"));
+        when(backendClient.listPending(nextStage)).thenReturn(List.of(pending));
+        when(backendClient.parseInput("{}")).thenReturn(new LinkedHashMap<>());
+
+        int processed = new NichoCnaeV3PendingExecutionService(backendClient, stageDefinitions, 0).processAllPending();
+
+        assertThat(processed).isEqualTo(1);
+        verify(backendClient).complete(any(), any(), any());
+    }
 }

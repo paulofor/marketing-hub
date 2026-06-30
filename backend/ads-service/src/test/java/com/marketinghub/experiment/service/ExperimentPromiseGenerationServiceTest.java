@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.cost.CostAttributionService;
 import com.marketinghub.experiment.ExperimentStatus;
+import com.marketinghub.experiment.ExperimentType;
 import com.marketinghub.experiment.promise.ExperimentPromiseGenerationRequest;
 import com.marketinghub.experiment.promise.ExperimentPromiseGenerationRequestStatus;
 import com.marketinghub.experiment.service.generatepromise.GenerateExperimentPromiseOptionsRequest;
@@ -52,7 +53,7 @@ class ExperimentPromiseGenerationServiceTest {
     @Test
     void shouldRejectRequestWithoutNiche() {
         assertThatThrownBy(() -> service.generate(new GenerateExperimentPromiseOptionsRequest(
-                null, null, null, null, null, null, null)))
+                null, null, null, null, null, null, null, null)))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("Selecione um nicho");
     }
@@ -61,7 +62,7 @@ class ExperimentPromiseGenerationServiceTest {
     @Test
     void shouldRejectRequestWithoutHypothesis() {
         assertThatThrownBy(() -> service.generate(new GenerateExperimentPromiseOptionsRequest(
-                7L, null, null, null, null, null, null)))
+                7L, null, null, null, null, null, null, null)))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("Selecione uma hipótese");
     }
@@ -97,7 +98,14 @@ class ExperimentPromiseGenerationServiceTest {
         });
 
         var response = service.generate(new GenerateExperimentPromiseOptionsRequest(
-                7L, hypothesisId, "dor digitada", "recompensa digitada", "promessa digitada", "cta digitado", null));
+                7L,
+                hypothesisId,
+                null,
+                "dor digitada",
+                "recompensa digitada",
+                "promessa digitada",
+                "cta digitado",
+                null));
 
         assertThat(response.requestId()).isEqualTo(123L);
         assertThat(response.status()).isEqualTo(ExperimentPromiseGenerationRequestStatus.PENDING.name());
@@ -107,10 +115,51 @@ class ExperimentPromiseGenerationServiceTest {
         verify(requestRepository).save(requestCaptor.capture());
         ExperimentPromiseGenerationRequest persisted = requestCaptor.getValue();
         assertThat(persisted.getPrompt())
-                .contains("Nicho selecionado", "Hipótese selecionada", "Clientes somem depois do atendimento", "produto low-ticket irresistível")
+                .contains(
+                        "Nicho selecionado",
+                        "Hipótese selecionada",
+                        "Clientes somem depois do atendimento",
+                        "Tipo de experimento: Teste de nicho com isca digital")
                 .doesNotContain("evidência extensa", "Prompt bruto antigo", "dor digitada", "recompensa digitada");
         assertThat(persisted.getPrompt().length()).isLessThan(8_000);
         assertThat(persisted.getStatus()).isEqualTo(ExperimentPromiseGenerationRequestStatus.PENDING);
+    }
+
+    /** Deve orientar a IA como venda low-ticket quando a tela escolher produto low-ticket. */
+    @Test
+    void shouldBuildLowTicketPromptWhenExperimentTypeIsLowTicketProduct() {
+        UUID hypothesisId = UUID.randomUUID();
+        MarketNiche niche = MarketNiche.builder()
+                .id(8L)
+                .name("Manicure autônoma")
+                .build();
+        Hypothesis hypothesis = Hypothesis.builder()
+                .id(hypothesisId)
+                .title("Agenda blindada")
+                .problem("Cliente desmarca em cima da hora")
+                .promise("Agenda com menos buracos")
+                .build();
+        when(nicheRepository.findById(8L)).thenReturn(Optional.of(niche));
+        when(hypothesisRepository.findById(hypothesisId)).thenReturn(Optional.of(hypothesis));
+        when(requestRepository.save(any())).thenAnswer(invocation -> {
+            ExperimentPromiseGenerationRequest saved = invocation.getArgument(0);
+            saved.setId(124L);
+            return saved;
+        });
+
+        service.generate(new GenerateExperimentPromiseOptionsRequest(
+                8L, hypothesisId, ExperimentType.LOW_TICKET_PRODUCT, null, null, null, null, null));
+
+        ArgumentCaptor<ExperimentPromiseGenerationRequest> requestCaptor = ArgumentCaptor.forClass(
+                ExperimentPromiseGenerationRequest.class);
+        verify(requestRepository).save(requestCaptor.capture());
+        assertThat(requestCaptor.getValue().getPrompt())
+                .contains(
+                        "Tipo de experimento: Produto low-ticket",
+                        "checkout e entrega paga",
+                        "Metrica central: compra ou clique no checkout",
+                        "nao trate como teste de nicho")
+                .doesNotContain("Tipo de experimento: Teste de nicho com isca digital");
     }
 
     /** Deve retornar o status persistido para a tela acompanhar a solicitação até a conclusão. */

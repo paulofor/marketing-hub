@@ -45,7 +45,13 @@ public class NichoCnaeV3PendingExecutionService {
 
     /** Processa as pendências de uma etapa específica. */
     private int processStage(NichoCnaeV3StageDefinition stage) {
-        List<NichoCnaeV3PendingExecution> pendingExecutions = backendClient.listPending(stage);
+        List<NichoCnaeV3PendingExecution> pendingExecutions;
+        try {
+            pendingExecutions = backendClient.listPending(stage);
+        } catch (RuntimeException ex) {
+            log.error("Falha ao consultar pendências NichoCNAE v3 (stage={}). A varredura seguirá para as próximas etapas.", stage.stageCode(), ex);
+            return 0;
+        }
         int processed = 0;
         for (NichoCnaeV3PendingExecution pending : pendingExecutions) {
             processOne(stage, pending);

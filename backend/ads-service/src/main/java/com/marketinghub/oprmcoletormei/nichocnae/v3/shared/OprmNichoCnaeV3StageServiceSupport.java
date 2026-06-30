@@ -315,6 +315,9 @@ public abstract class OprmNichoCnaeV3StageServiceSupport {
 
     /** Valida se a próxima etapa é conhecida e vem imediatamente depois da etapa atual. */
     private boolean isAllowedNextStage(String nextStageCode) {
+        if ("persona-tournament".equals(stageCode) && "persona-routine-materializer".equals(nextStageCode)) {
+            return true;
+        }
         Integer currentOrder = STAGE_ORDER.get(stageCode);
         Integer nextOrder = STAGE_ORDER.get(nextStageCode);
         return currentOrder != null && nextOrder != null && nextOrder == currentOrder + 1;

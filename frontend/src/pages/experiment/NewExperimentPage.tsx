@@ -128,10 +128,10 @@ export default function NewExperimentPage() {
     ? "Produto low-ticket"
     : "Teste de nicho";
   const freeRewardLabel = isLowTicketProduct
-    ? "Amostra gratuita secundária"
+    ? "Prova/preview da oferta"
     : "Isca digital única";
   const freeRewardPlaceholder = isLowTicketProduct
-    ? "Ex.: Ver uma amostra gratuita do kit"
+    ? "Ex.: Preview com 3 mensagens do kit e mockup dos entregáveis"
     : "Ex.: 3 mensagens prontas para confirmar horário, pedir sinal e reagendar sem climão";
   const campaignObjective = isLowTicketProduct ? "SALES" : "LEADS";
 
@@ -482,7 +482,7 @@ export default function NewExperimentPage() {
               <h2 className="h6">Contrato de entrada comercial</h2>
               <p className="text-muted small mb-0">
                 {isLowTicketProduct
-                  ? "Use uma dor, uma oferta comprável, uma promessa concreta e um CTA de checkout para medir compra real."
+                  ? "Use uma dor, uma oferta comprável, uma prova visual, uma promessa concreta e um CTA de checkout para medir compra real."
                   : "Use uma dor, uma isca digital, um produto de entrada e um CTA coerentes para transformar interesse em venda."}
               </p>
             </div>
@@ -585,7 +585,7 @@ export default function NewExperimentPage() {
               </div>
               <div className="small">
                 <strong>{freeRewardLabel}:</strong>{" "}
-                {form.freeReward || "Sem captura antes do checkout"}
+                {form.freeReward || "Sem prova/preview informada"}
               </div>
               {selectedProductOffer && (
                 <div className="small">

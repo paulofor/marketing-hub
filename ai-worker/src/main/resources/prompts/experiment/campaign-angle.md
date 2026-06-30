@@ -22,11 +22,12 @@ Modelo conceitual interno obrigatório (não expor no output final):
 - `proofDevice`: elemento que tangibiliza a promessa antes da compra
 
 Regras fixas da etapa:
-1. O ângulo deve ser single-minded: uma única dor de entrada, uma única promessa, uma única recompensa gratuita e um único CTA.
-1.0. `CONTRATO_PROMESSA_UNICA` é o contrato comercial soberano da campanha: ele define a dor que abre a conversa, a recompensa que será oferecida, a promessa plausível do funil e o CTA que precisa aparecer em anúncio, landing, formulário e entrega.
+1. O ângulo deve ser single-minded: uma única dor de entrada, uma única promessa, uma única prova/entrada comercial e um único CTA.
+1.0. `CONTRATO_PROMESSA_UNICA` é o contrato comercial soberano da campanha: ele define a dor que abre a conversa, a prova/preview ou recompensa que será mostrada, a promessa plausível do funil e o CTA que precisa aparecer em anúncio, landing, checkout/formulário e entrega.
 1.1. Se `CONTRATO_PROMESSA_UNICA` trouxer `Dor única`, `Recompensa gratuita única`, `Promessa do funil` ou `CTA principal`, esses textos prevalecem sobre qualquer sugestão genérica do restante do contexto.
-1.2. A recompensa gratuita deve ser pequena e concreta, como mensagens prontas, checklist curto, roteiro, template ou mini-kit de vitória rápida; não ofereça “prévia”, “diagnóstico”, “sistema completo” ou promessa ampla como porta de entrada.
-1.3. `primaryCTA`, `cta`, `landingMatchLine` e `messageMatch` devem repetir a mesma ação da recompensa gratuita, por exemplo “Receber as 3 mensagens”.
+1.2. Quando `campaignObjective` for `SALES` ou o contrato indicar produto low-ticket, trate a recompensa como prova/preview da oferta paga dentro da página. Não convide para receber material gratuito, preencher formulário ou baixar amostra; conduza para compra/checkout.
+1.3. Quando `campaignObjective` for `LEADS`, a recompensa gratuita deve ser pequena e concreta, como mensagens prontas, checklist curto, roteiro, template ou mini-kit de vitória rápida; não ofereça “prévia”, “diagnóstico”, “sistema completo” ou promessa ampla como porta de entrada.
+1.4. `primaryCTA`, `cta`, `landingMatchLine` e `messageMatch` devem repetir a mesma ação do contrato. Em vendas, use compra/checkout; em leads, use a ação da recompensa gratuita, por exemplo “Receber as 3 mensagens”.
 2. Priorize transformação percebida + prova + CTA tangível da oferta; use mecanismo apenas como sustentação de credibilidade.
 3. Se houver CTA concreta em `offerCommercialSummary`, ela deve prevalecer sobre rótulos genéricos.
 4. Mapeie explicitamente, a partir dos resumos estruturados, `entryAsset`, `coreOffer`, `activationLayer` e `proofDevice`.
@@ -42,10 +43,10 @@ Regras fixas da etapa:
 14. Nunca assuma nomes fixos de oferta (ex.: kit, ciclo, plano, PDF, regeneração) como regra universal.
 15. Se `HISTORICO_EXPERIMENTOS_REPROVADOS_100_ACESSOS_MESMA_HIPOTESE` estiver presente em `CASE_DATA`, trate-o como restrição estratégica obrigatória: o novo ângulo precisa mudar radicalmente a materialização comercial da hipótese.
 16. Para diferenciar radicalmente, altere pelo menos uma alavanca de comunicação do anúncio, como framing visual, recorte de público, objeção principal, mecanismo narrativo ou CTA.
-17. Não declare a hipótese como reprovada apenas porque experimentos anteriores foram reprovados com 100 acessos sem envio de formulário; preserve a hipótese estratégica e crie uma rota de mercado nova, adequada a uma landing de isca digital e validação de interesse.
+17. Não declare a hipótese como reprovada apenas porque experimentos anteriores foram reprovados com 100 acessos sem envio de formulário; preserve a hipótese estratégica e crie uma rota de mercado nova, adequada ao objetivo da campanha. Para `SALES`, a rota deve validar compra/clique no checkout; para `LEADS`, pode validar interesse por isca digital.
 18. Evite semelhança com headlines, promessas, CTAs, mecanismos de entrada e mensagens de landing dos experimentos reprovados listados no histórico.
 19. Não transforme o contrato em tema amplo: `hook`, `primaryCTA`, `cta`, `landingMatchLine`, `audienceFilterLine` e `messageMatch` precisam carregar a mesma dor, recompensa, promessa e CTA do `CONTRATO_PROMESSA_UNICA`, apenas adaptados ao campo.
-20. Não substitua a recompensa gratuita do contrato por diagnóstico, prévia, sistema completo, consultoria, aula, oferta paga ou outro ativo que pareça mais conveniente.
+20. Não substitua a prova/recompensa do contrato por diagnóstico, prévia genérica, sistema completo, consultoria, aula ou outro ativo que pareça mais conveniente. Para `SALES`, não transforme a oferta paga em lead magnet.
 
 CASE_DATA
 {{CASE_DATA_BLOCK}}

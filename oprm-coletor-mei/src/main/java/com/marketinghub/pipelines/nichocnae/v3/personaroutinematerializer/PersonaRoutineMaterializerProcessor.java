@@ -15,11 +15,8 @@ public final class PersonaRoutineMaterializerProcessor implements StageProcessor
     /** Executa a etapa persona-routine-materializer consolidando persona, rotina, dores, evidências e prontidão para persistência final. */
     @Override
     public StageResult process(StageContext context) {
-        if (!Boolean.TRUE.equals(context.input().get("approved"))) {
-            throw new IllegalStateException("Entrada de persona-routine-materializer exige quality-gate aprovado antes da materialização.");
-        }
         Map<String, Object> winnerPersona = map(context.input().get("winnerPersona"));
-        List<Map<String, Object>> dailyTasks = maps(context.input().get("dailyTasks"));
+        List<Map<String, Object>> dailyTasks = dailyTasks(context.input(), winnerPersona);
         if (winnerPersona.isEmpty() || dailyTasks.isEmpty()) {
             throw new IllegalStateException("Entrada de persona-routine-materializer exige winnerPersona e dailyTasks para materializar o perfil.");
         }
@@ -35,6 +32,16 @@ public final class PersonaRoutineMaterializerProcessor implements StageProcessor
         output.put("cnaeDescription", text(context.input().get("cnaeDescription")));
         output.put("materializedProfile", materializedProfile);
         output.put("marketNicheCandidate", marketNicheCandidate(context.input(), materializedProfile));
+        output.put("routineSummary", materializedProfile.get("routineSummary"));
+        output.put("dailyTasks", materializedProfile.get("dailyTasks"));
+        output.put("personaSummary", materializedProfile.get("personaDescription"));
+        output.put("evidenceSummary", materializedProfile.get("recognizableVocabularyAndScenes"));
+        output.put("confidenceScore", Boolean.TRUE.equals(context.input().get("approved")) ? 80 : 55);
+        output.put("routineEvidenceScore", Boolean.TRUE.equals(context.input().get("approved")) ? 80 : 45);
+        output.put("sourceDiversityScore", Boolean.TRUE.equals(context.input().get("approved")) ? 60 : 20);
+        output.put("materializationMode", text(context.input().get("materializationMode")).isBlank()
+                ? "FAST_PERSONA_ROUTINE_PROFILE"
+                : text(context.input().get("materializationMode")));
         output.put("materializationReadiness", "PRONTO_PARA_BACKEND_PERSISTIR_MARKET_NICHE_E_PROFILE");
         output.put("businessBoundary", "NAO_GERAR_OFERTA_CAMPANHA_LANDING");
         output.put("reportRole", "PERSONA_ROTINA_TAREFAS_DIARIAS");
@@ -58,8 +65,66 @@ public final class PersonaRoutineMaterializerProcessor implements StageProcessor
         profile.put("evidenceSources", dailyTasks.stream().map(this::evidenceSource).filter(source -> !source.isEmpty()).toList());
         profile.put("easeLevers", dailyTasks.stream().map(task -> text(task.get("easeLever"))).filter(lever -> !lever.isBlank()).distinct().toList());
         profile.put("futureBriefRole", "Brief de público para fase posterior de hipótese, oferta e campanha, sem promessa comercial gerada neste pipeline.");
-        profile.put("approvedByQualityGate", true);
+        profile.put("approvedByQualityGate", Boolean.TRUE.equals(input.get("approved")));
         return profile;
+    }
+
+    /** Monta tarefas estruturadas aceitando saída completa do gate ou atalho pela persona vencedora. */
+    private List<Map<String, Object>> dailyTasks(Map<String, Object> input, Map<String, Object> winnerPersona) {
+        List<Map<String, Object>> directTasks = maps(input.get("dailyTasks"));
+        if (!directTasks.isEmpty()) {
+            return directTasks;
+        }
+        List<String> tasks = texts(firstExisting(winnerPersona, "dailyTasks", "recurringTasks", "dailyFlow"));
+        List<String> pains = texts(firstExisting(winnerPersona, "operationalPains", "pains", "validationNeed"));
+        List<String> buyingSignals = texts(firstExisting(winnerPersona, "buyingSignals", "toolsAndRecords", "routineDecisions"));
+        List<Map<String, Object>> normalizedTasks = new java.util.ArrayList<>();
+        for (int index = 0; index < tasks.size(); index++) {
+            Map<String, Object> task = new LinkedHashMap<>();
+            task.put("task", tasks.get(index));
+            task.put("pain", itemAtOrBlank(pains, index));
+            task.put("buyingSignal", itemAtOrBlank(buyingSignals, index));
+            task.put("channelContext", channelContext(winnerPersona));
+            task.put("evidenceText", tasks.get(index));
+            task.put("easeLever", "reduzir esforço manual e retrabalho na rotina operacional");
+            task.put("actionBlock", "EXECUTAR_ROTINA_ADMINISTRATIVA");
+            normalizedTasks.add(task);
+        }
+        return normalizedTasks;
+    }
+
+    /** Lê o primeiro campo preenchido dentre aliases compatíveis com saídas anteriores do pipeline. */
+    private Object firstExisting(Map<String, Object> source, String... keys) {
+        for (String key : keys) {
+            Object value = source.get(key);
+            if (value instanceof List<?> list && !list.isEmpty()) {
+                return value;
+            }
+            if (value != null && !text(value).isBlank()) {
+                return value;
+            }
+        }
+        return List.of();
+    }
+
+    /** Converte valor textual ou lista em lista de textos. */
+    private List<String> texts(Object value) {
+        if (value instanceof List<?> list) {
+            return list.stream().map(this::text).filter(item -> !item.isBlank()).toList();
+        }
+        String item = text(value);
+        return item.isBlank() ? List.of() : List.of(item);
+    }
+
+    /** Retorna item da lista ou vazio quando não existir valor correspondente. */
+    private String itemAtOrBlank(List<String> values, int index) {
+        return index >= 0 && index < values.size() ? values.get(index) : "";
+    }
+
+    /** Resume canais e ferramentas da persona para manter contexto operacional no perfil. */
+    private String channelContext(Map<String, Object> winnerPersona) {
+        List<String> channels = texts(firstExisting(winnerPersona, "interactions", "toolsAndRecords", "buyingSignals"));
+        return channels.isEmpty() ? "" : String.join("; ", channels);
     }
 
     /** Agrupa tarefas por blocos operacionais para formar um brief de público acionável. */

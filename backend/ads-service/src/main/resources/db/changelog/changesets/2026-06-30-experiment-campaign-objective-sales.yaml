@@ -1,0 +1,41 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-30-experiment-campaign-objective-sales
+      author: marketinghub
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: experiment
+        - columnExists:
+            tableName: experiment
+            columnName: campaign_objective
+        - sqlCheck:
+            expectedResult: 1
+            sql: >
+              SELECT CASE
+                WHEN COLUMN_TYPE LIKE '%SALES%' THEN 0
+                ELSE 1
+              END
+              FROM INFORMATION_SCHEMA.COLUMNS
+              WHERE TABLE_SCHEMA = DATABASE()
+                AND TABLE_NAME = 'experiment'
+                AND COLUMN_NAME = 'campaign_objective'
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: >
+              ALTER TABLE experiment
+              MODIFY campaign_objective ENUM('LEADS','TRAFFIC','SALES') NOT NULL
+      rollback:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: >
+              ALTER TABLE experiment
+              MODIFY campaign_objective ENUM('LEADS','TRAFFIC') NOT NULL

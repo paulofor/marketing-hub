@@ -5498,3 +5498,10 @@
 - Solicitação: retirar da aba Conteúdo do experimento o card “Contexto do framework da hipótese”, que ocupava espaço e repetia os resumos de Dor, Resultado, Mecanismo, Prova e Oferta.
 - Ajuste aplicado: o frontend deixou de renderizar esse card na aba de geração de conteúdo, mantendo o botão de relatório consolidado e os painéis operacionais da tela.
 - Prevenção de recorrência: removida também a montagem local dos cards, evitando manter lógica visual sem uso na tela.
+
+## 2026-06-30 — Correção da criação de experimento low ticket
+
+- solicitação: investigar erro `500 Internal Server Error` ao criar experimento do tipo low ticket pela tela `/experiments/new`.
+- causa-raiz confirmada: o backend resolvia experimento `LOW_TICKET_PRODUCT` para `campaignObjective=SALES`, mas o schema real da coluna `experiment.campaign_objective` ainda aceitava apenas `LEADS` e `TRAFFIC`, causando falha de persistência no `POST /api/experiments`.
+- correção aplicada: criado changelog incremental para ampliar o enum MySQL da coluna `campaign_objective` e aceitar `SALES`, mantendo o contrato Java já existente.
+- prevenção de recorrência: o changelog valida a coluna no `INFORMATION_SCHEMA` antes da alteração e fica incluído no master com `relativeToChangelogFile: true`.

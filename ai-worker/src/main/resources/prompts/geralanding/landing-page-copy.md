@@ -41,11 +41,13 @@ Objetivo principal desta etapa:
 Regra central de contrato:
 - O wireframe é a única fonte de verdade estrutural.
 - O contrato de promessa única em `CASE_DATA` é a fonte de verdade comercial quando trouxer `singlePain`, `freeReward`, `funnelPromise`, `primaryCta` ou `campaignObjective`.
-- Qualidade comercial obrigatória: a copy deve vender a transformação antes de explicar o formato da amostra. Evite abrir com frases como “gere uma amostra/PDF”; abra com o resultado que o público quer e o problema que ele quer remover, usando a amostra como prova concreta e sem risco.
+- Qualidade comercial obrigatória: a copy deve vender a transformação antes de explicar o formato da prova/amostra. Evite abrir com frases como “gere uma amostra/PDF”; abra com o resultado que o público quer e o problema que ele quer remover, usando a prova visual como redução de risco.
+- Quando `campaignObjective` for `SALES`, escreva como página de venda direta low-ticket: o CTA principal deve comprar/ir ao checkout, `freeReward` deve aparecer como preview/prova visual da oferta e nenhum texto deve prometer entrega gratuita por formulário antes da compra.
+- Quando `campaignObjective` for `LEADS`, escreva como página de captura: o CTA principal pode prometer a entrega gratuita definida em `freeReward`.
 - Narrativa universal obrigatória: quando o wireframe pedir textos de promessa, dor, mecanismo, prova, oferta e ação, escreva seguindo **Dor → Resultado → Mecanismo → Prova → Oferta → Ação**.
 - Especificidade obrigatória: todo texto deve parecer feito para o nicho e para a dor recebidos no contexto; evite frases que serviriam para qualquer mercado.
 - Mecanismo plausível: em passos/cards explicativos, mostre por que a solução funciona de forma simples, sem promessa mágica e sem jargão interno.
-- CTA orientado ao benefício: botões e links devem repetir a ação principal da recompensa gratuita recebida em `primaryCta`; se o CTA for “Receber as 3 mensagens”, use essa ideia em todos os botões/formulários compatíveis.
+- CTA orientado ao benefício: botões e links devem repetir a ação principal recebida em `primaryCta`. Em `SALES`, use compra/checkout; em `LEADS`, use a recompensa gratuita, como “Receber as 3 mensagens”.
 - Coerência entre CTA e formulário obrigatória: se o formulário pede somente `nome` e `email`, prometa apenas a entrega gratuita concreta de baixo esforço recebida em `freeReward`. Não prometa personalização profunda, briefing completo, diagnóstico detalhado imediato, “prévia” genérica ou sistema completo.
 - Clareza de formulário obrigatória: se o wireframe trouxer labels, placeholders, microcopy ou botão do formulário, escreva textos explícitos para `nome`, `email` e CTA, para que o usuário não veja campos vazios sem orientação.
 - CTA visualmente curto e forte: textos de botão devem ser curtos, específicos e com verbo de ação; evite frases longas que quebrem o layout, pareçam link comum ou reduzam a percepção de botão premium.

@@ -5505,3 +5505,11 @@
 - causa-raiz confirmada: o backend resolvia experimento `LOW_TICKET_PRODUCT` para `campaignObjective=SALES`, mas o schema real da coluna `experiment.campaign_objective` ainda aceitava apenas `LEADS` e `TRAFFIC`, causando falha de persistência no `POST /api/experiments`.
 - correção aplicada: criado changelog incremental para ampliar o enum MySQL da coluna `campaign_objective` e aceitar `SALES`, mantendo o contrato Java já existente.
 - prevenção de recorrência: o changelog valida a coluna no `INFORMATION_SCHEMA` antes da alteração e fica incluído no master com `relativeToChangelogFile: true`.
+
+## 2026-06-30 — Criação do GeraSalesPage v1
+
+- Decisão: criar pipeline independente para página de vendas direta para checkout, sem reaproveitar o GeraLanding de formulário.
+- Etapas: offer brief, wireframe, copy, visual plan, HTML, checkout quality review e publication package.
+- Mudança importante: prompts e schemas do GeraSalesPage v1 ficam no banco em `ai_prompt_schema_template` e são entregues ao AI Worker pelo endpoint `pending`.
+- Prevenção de recorrência: o start bloqueia experimento sem `followUpActionUrl` real, evitando gerar página com CTA falso como `#checkout_externo`.
+- Sugestão registrada: deixar a publicação final e pixel/eventos de compra como próxima integração, depois de validar o pacote final de checkout.

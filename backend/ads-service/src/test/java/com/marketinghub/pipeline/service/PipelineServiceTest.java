@@ -311,7 +311,7 @@ class PipelineServiceTest {
      */
     @Test
     void shouldExposeOfficialStageAliasesAndCanonicalCodes() {
-        assertThat(definitionRegistry.officialPipelines()).hasSize(5);
+        assertThat(definitionRegistry.officialPipelines()).hasSize(6);
         assertThat(definitionRegistry.findByPipelineCode("experiment-pipeline")).hasValueSatisfying(pipeline -> {
             assertThat(pipeline.code()).isEqualTo("experiment-pipeline");
             assertThat(pipeline.stages()).hasSize(10);
@@ -337,6 +337,27 @@ class PipelineServiceTest {
                     .singleElement()
                     .satisfies(stage -> assertThat(stage.modulePackage())
                             .isEqualTo("com.marketinghub.worker.geralanding.deliverables"));
+        });
+        assertThat(definitionRegistry.findByPipelineCode("gera-sales-page-v1")).hasValueSatisfying(pipeline -> {
+            assertThat(pipeline.code()).isEqualTo("gera-sales-page-v1");
+            assertThat(pipeline.canonicalVersion()).isEqualTo("gerasalespage-arquitetura-canon.v1");
+            assertThat(pipeline.stages()).extracting(stage -> stage.operationalCode())
+                    .containsExactly(
+                            "sales-page-offer-brief",
+                            "sales-page-wireframe",
+                            "sales-page-copy",
+                            "sales-page-visual-plan",
+                            "sales-page-html",
+                            "sales-page-checkout-quality-review",
+                            "sales-page-publication-package");
+            assertThat(pipeline.stages())
+                    .allSatisfy(stage -> {
+                        assertThat(stage.executionModule()).isEqualTo("ai-worker");
+                        assertThat(stage.rootPackage()).isEqualTo("com.marketinghub.gerasalespage.v1");
+                        assertThat(stage.modulePackage()).isEqualTo("com.marketinghub.worker.pipeline.gerasalespagev1");
+                        assertThat(definitionRegistry.findStage(pipeline, stage.canonicalCode())).contains(stage);
+                        assertThat(definitionRegistry.findStage(pipeline, stage.operationalCode())).contains(stage);
+                    });
         });
     }
 

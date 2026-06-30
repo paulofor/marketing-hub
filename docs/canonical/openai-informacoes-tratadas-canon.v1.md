@@ -25,11 +25,13 @@ O modelo canônico das informações tratadas por IA é composto por cinco grupo
 6. **Solicitações especializadas de IA por domínio**: tabelas próprias de fila/execução, como `experiment_promise_generation_request`, usadas quando o backend precisa registrar uma solicitação e o AI Worker precisa consumir via `pending`.
 
 
-## 2.0.1 Regra canônica de prompt e schema em arquivo
+## 2.0.1 Regra canônica de prompt e schema
 
 Sempre que uma informação for tratada por modelo de IA, o prompt operacional e o schema JSON de saída devem ser versionados como arquivos no módulo executor responsável, seguindo o padrão `src/main/resources/prompts/.../*.md` e `*-schema.json` quando o executor for Java/Spring. O código deve carregar esses arquivos, resolver placeholders com dados persistidos/expostos pelo backend e validar a saída pelo schema.
 
 É proibido manter prompt longo, instruções comerciais completas, exemplos de resposta ou schema JSON hardcoded dentro de classes de serviço, clients ou controllers. O backend pode persistir/expor o contexto rico necessário ao worker, mas a execução do modelo deve usar prompt/schema versionados no executor.
+
+Exceção canônica iniciada pelo GeraSalesPage v1: quando o pipeline declarar explicitamente governança de prompt/schema em banco, o prompt operacional e o schema JSON devem ficar em tabela versionada de template, administrada pelo backend e entregue ao executor pelo contrato `pending`. Nesse modo, o worker não deve carregar prompt/schema de arquivos locais nem manter conteúdo hardcoded; ele deve apenas renderizar o template recebido, montar o request, validar a resposta e devolver auditoria ao backend.
 
 Toda chamada a modelo de IA deve persistir ou registrar de forma auditável o request enviado e o response bruto recebido, vinculados ao job/execução/entidade de negócio. Para OpenAI, a requisição deve usar modo Flex por padrão (`service_tier: "flex"`), salvo exceção funcional explícita e registrada.
 

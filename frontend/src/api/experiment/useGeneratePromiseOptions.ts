@@ -1,6 +1,7 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import { toast } from "react-toastify";
+import type { ExperimentType } from "./useExperiments";
 
 export interface PromiseOption {
   singlePain: string;
@@ -14,6 +15,7 @@ export interface PromiseOption {
 interface GeneratePromiseOptionsPayload {
   nicheId: number;
   hypothesisId: string;
+  experimentType?: ExperimentType;
   currentSinglePain?: string;
   currentFreeReward?: string;
   currentFunnelPromise?: string;

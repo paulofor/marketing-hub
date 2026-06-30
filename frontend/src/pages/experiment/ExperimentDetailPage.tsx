@@ -1981,11 +1981,11 @@ export default function ExperimentDetailPage() {
     },
     {
       label: isLowTicketProduct
-        ? "Amostra gratuita secundária"
+        ? "Prova/preview da oferta"
         : "Isca digital",
       value:
         data.freeReward ||
-        (isLowTicketProduct ? "Sem captura antes do checkout" : "—"),
+        (isLowTicketProduct ? "Sem prova/preview informada" : "—"),
     },
     {
       label: "Promessa do funil",

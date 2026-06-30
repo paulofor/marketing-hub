@@ -21,14 +21,15 @@ Objetivo:
 - Responda em JSON válido e estritamente aderente ao schema da etapa.
 
 ## Regras de contrato de promessa única
-- A direção visual deve proteger o contrato escolhido: mesma dor única, mesma recompensa gratuita, mesma promessa plausível e mesmo CTA.
+- A direção visual deve proteger o contrato escolhido: mesma dor única, mesma prova/recompensa, mesma promessa plausível e mesmo CTA.
+- Se `campaignObjective` for `SALES`, trate `freeReward` como prova/preview visual da oferta paga e gere imagens que aumentem confiança no produto antes do checkout, sem prometer entrega gratuita.
 - Se o contexto trouxer conflito entre hipótese, ângulo, copy, wireframe e contrato de promessa única, preserve o contrato sem alterar a estrutura do wireframe.
 - Não gere prompts que mostrem uma oferta maior, diagnóstico, sistema completo, consultoria ou prévia genérica quando a recompensa contratada for outro ativo concreto.
 
 ## Contexto disponível
 - Contrato de promessa única: quando `CONTRATO_PROMESSA_UNICA`, `singlePain`, `freeReward`, `funnelPromise`, `primaryCta` ou `campaignObjective` aparecerem no contexto, trate esses campos como fonte de verdade comercial para dor, recompensa, promessa e CTA.
 - Dor única do contrato: {dados-singlePain}
-- Recompensa gratuita única: {dados-freeReward}
+- Prova/preview ou recompensa única: {dados-freeReward}
 - Promessa do funil: {dados-funnelPromise}
 - CTA principal: {dados-primaryCta}
 - Objetivo da campanha: {dados-campaignObjective}
@@ -54,8 +55,8 @@ Para cada `tag: img`, use obrigatoriamente os dados do próprio elemento no wire
 ## Qualidade comercial obrigatória
 - Toda imagem deve responder visualmente a uma pergunta do usuário: “o que eu vou receber?”, “isso parece útil?”, “isso serve para mim?”, “isso é confiável?”, “por que isso vale meu tempo?”.
 - Priorize tangibilidade: mockups de páginas, cards de conteúdo, telas conceituais, mapas de progresso, checklists, antes/depois visual ou demonstrações do mecanismo.
-- A prova visual deve ser adequada à recompensa gratuita do contrato de promessa única: roteiro/script pede simulação ou antes/depois; plano de ação pede checklist, mapa ou cronograma; produto educacional pede módulo demonstrativo; diagnóstico só deve aparecer se for a recompensa contratada; template/ferramenta pede print conceitual ou fluxo preenchido; biblioteca/kit pede cards de exemplos e modo de uso.
-- Cada prompt deve reforçar pelo menos uma parte da narrativa Dor → Resultado → Mecanismo → Prova → Oferta → Ação, especialmente prova, mecanismo ou oferta, sem sair da dor, recompensa gratuita, promessa e CTA definidos no contrato de promessa única.
+- A prova visual deve ser adequada à prova/recompensa do contrato de promessa única: roteiro/script pede simulação ou antes/depois; plano de ação pede checklist, mapa ou cronograma; produto educacional pede módulo demonstrativo; diagnóstico só deve aparecer se for a recompensa contratada; template/ferramenta pede print conceitual ou fluxo preenchido; biblioteca/kit pede cards de exemplos e modo de uso.
+- Cada prompt deve reforçar pelo menos uma parte da narrativa Dor → Resultado → Mecanismo → Prova → Oferta → Ação, especialmente prova, mecanismo ou oferta, sem sair da dor, prova/recompensa, promessa e CTA definidos no contrato de promessa única.
 - Evite imagens abstratas, ícones genéricos, pessoas sorrindo sem contexto, gráficos decorativos, objetos aleatórios ou ilustrações que não provem a entrega.
 - A imagem do hero deve aumentar desejo e confiança em poucos segundos: mostrar o produto/resultado de forma premium, organizada e com aparência real.
 - Imagens de prova devem mostrar a entrega como algo concreto e visualmente valioso, não apenas um documento branco com marca d’água gigante.
@@ -99,7 +100,7 @@ Antes de devolver o JSON, verifique:
 - Cada prompt é específico o suficiente para gerar uma imagem útil sem depender de explicação externa.
 - Nenhum prompt é genérico como “imagem moderna de marketing digital”.
 - Nenhum prompt pede logos reais, marcas registradas, prints reais ou texto longo.
-- Pelo menos a imagem principal tangibiliza a recompensa gratuita prometida e não apenas decora a página ou troca a entrega por outro ativo.
+- Pelo menos a imagem principal tangibiliza a prova/recompensa prometida e não apenas decora a página ou troca a entrega por outro ativo.
 - O conjunto de imagens melhora a percepção de valor da landing.
 
 OUTPUT_CONTRACT

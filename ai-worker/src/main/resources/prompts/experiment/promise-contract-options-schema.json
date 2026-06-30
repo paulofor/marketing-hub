@@ -18,7 +18,7 @@
           "freeReward": {
             "type": "string",
             "minLength": 10,
-            "description": "Isca digital simples, desejável e útil que será entregue ao lead."
+            "description": "Para teste de nicho, isca digital entregue ao lead. Para produto low-ticket, prova/preview visível da oferta na página, sem captura antes do checkout."
           },
           "productOffer": {
             "type": "string",
@@ -28,12 +28,12 @@
           "funnelPromise": {
             "type": "string",
             "minLength": 10,
-            "description": "Promessa plausível do funil, alinhada à dor, à isca e ao produto de entrada."
+            "description": "Promessa plausível do funil, alinhada à dor, à prova/preview e ao produto de entrada."
           },
           "primaryCta": {
             "type": "string",
             "minLength": 5,
-            "description": "CTA principal claro, orientado ao recebimento da isca digital."
+            "description": "CTA principal claro. Para low-ticket, orientado a compra/checkout; para teste de nicho, orientado ao recebimento da isca digital."
           },
           "reason": {
             "type": "string",

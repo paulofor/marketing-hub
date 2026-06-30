@@ -15,6 +15,11 @@ management:
       probes:
         enabled: true
 
+backend:
+  base-url: ${BACKEND_BASE_URL:http://191.252.181.168}
+  connect-timeout-ms: ${BACKEND_CONNECT_TIMEOUT_MS:10000}
+  read-timeout-ms: ${BACKEND_READ_TIMEOUT_MS:60000}
+
 oprm:
   nichocnae:
     source-searcher:

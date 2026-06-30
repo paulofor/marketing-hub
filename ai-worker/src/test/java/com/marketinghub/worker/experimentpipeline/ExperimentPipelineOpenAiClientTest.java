@@ -121,7 +121,11 @@ class ExperimentPipelineOpenAiClientTest {
         assertThat(userPrompt).contains("Prompt de anuncio");
         assertThat(userPrompt).contains(readPromptTemplateBody("prompts/experiment/ad-copy.md"));
         assertThat(userPrompt).contains("CONTRATO_PROMESSA_UNICA");
-        assertThat(userPrompt).contains("Todas as variações devem convidar para a mesma recompensa gratuita");
+        assertThat(userPrompt)
+                .contains("campaignObjective")
+                .contains("LEADS")
+                .contains("mesma recompensa gratuita")
+                .contains("não alternar entre diagnóstico, prévia, material, sistema completo ou outra entrega");
         assertThat(userPrompt).doesNotContain("template_id:");
         assertThat(userPrompt).doesNotContain("proofSummary,");
     }

@@ -224,6 +224,7 @@ export default function NewExperimentPage() {
     const response = await generatePromiseOptions.mutateAsync({
       nicheId: Number(form.nicheId),
       hypothesisId: form.hypothesisId,
+      experimentType: form.experimentType,
     });
     setPromiseRequestId(response.requestId);
     setPromiseRequestIds((prev) => [...prev, response.requestId]);

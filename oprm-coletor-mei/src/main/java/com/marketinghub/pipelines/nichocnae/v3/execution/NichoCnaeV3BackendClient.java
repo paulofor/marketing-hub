@@ -3,6 +3,7 @@ package com.marketinghub.pipelines.nichocnae.v3.execution;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -22,8 +23,13 @@ public class NichoCnaeV3BackendClient {
 
     /** Inicializa o cliente com URL base do backend. */
     public NichoCnaeV3BackendClient(RestTemplateBuilder builder, ObjectMapper objectMapper,
-            @Value("${backend.base-url:http://191.252.181.168}") String backendBaseUrl) {
-        this.restTemplate = builder.build();
+            @Value("${backend.base-url:http://191.252.181.168}") String backendBaseUrl,
+            @Value("${backend.connect-timeout-ms:10000}") long connectTimeoutMs,
+            @Value("${backend.read-timeout-ms:60000}") long readTimeoutMs) {
+        this.restTemplate = builder
+                .connectTimeout(Duration.ofMillis(connectTimeoutMs))
+                .readTimeout(Duration.ofMillis(readTimeoutMs))
+                .build();
         this.objectMapper = objectMapper;
         this.backendBaseUrl = backendBaseUrl;
     }

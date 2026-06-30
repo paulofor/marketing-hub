@@ -1,0 +1,33 @@
+# GeraSalesPage v1 — Cânone de arquitetura
+
+## Objetivo
+
+O GeraSalesPage v1 é um pipeline independente para gerar página de vendas direta para checkout. Ele não substitui o GeraLanding, que continua orientado a landing/formulário e Lead Portal.
+
+## Etapas
+
+1. `sales-page-offer-brief`
+2. `sales-page-wireframe`
+3. `sales-page-copy`
+4. `sales-page-visual-plan`
+5. `sales-page-html`
+6. `sales-page-checkout-quality-review`
+7. `sales-page-publication-package`
+
+## Regras
+
+- O pipeline só pode iniciar com `followUpActionUrl` real de checkout.
+- CTA deve apontar para checkout, não para formulário ou `#checkout_externo`.
+- O backend controla fila, status, auditoria e avanço de etapa.
+- O AI Worker executa as etapas consumindo `/api/internal/gerasalespage/v1/<etapa>/stage-executions/pending`.
+- Prompt e schema JSON ficam em `ai_prompt_schema_template` e são entregues ao worker pelo contrato `pending`.
+- O worker não carrega prompt/schema local para este pipeline.
+- Toda chamada OpenAI deve registrar request, response bruto, modelo, tokens, custo e erro quando houver.
+- A revisão de checkout deve bloquear liberação para tráfego quando checkout, promessa, preço, garantia ou CTA estiverem incoerentes.
+
+## Sugestões incorporadas
+
+- Separar página de vendas direta de página com formulário evita misturar objetivos comerciais.
+- A etapa de quality review deve ser gate comercial, não apenas revisão visual.
+- O pacote final deve informar claramente se está pronto para tráfego pago.
+- A publicação efetiva deve ser uma integração posterior, depois de validar checkout e pixel/eventos de compra.

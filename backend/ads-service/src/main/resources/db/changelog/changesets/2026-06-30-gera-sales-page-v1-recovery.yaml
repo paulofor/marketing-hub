@@ -1,0 +1,128 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-06-30-gera-sales-page-v1-recovery-01
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE IF NOT EXISTS ai_prompt_schema_template (
+                template_key VARCHAR(191) NOT NULL,
+                pipeline_code VARCHAR(100) NOT NULL,
+                stage_code VARCHAR(100) NOT NULL,
+                version VARCHAR(40) NOT NULL,
+                openai_model VARCHAR(120) NOT NULL,
+                schema_name VARCHAR(120) NOT NULL,
+                prompt_markdown_content LONGTEXT NOT NULL,
+                schema_json LONGTEXT NOT NULL,
+                active BOOLEAN NOT NULL DEFAULT TRUE,
+                created_at TIMESTAMP NOT NULL,
+                updated_at TIMESTAMP NOT NULL,
+                PRIMARY KEY (template_key),
+                KEY idx_ai_prompt_schema_pipeline_stage (pipeline_code, stage_code, active)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+              CREATE TABLE IF NOT EXISTS gera_sales_page_stage_execution (
+                id_job VARCHAR(36) NOT NULL,
+                experiment_id BIGINT NOT NULL,
+                stage_code VARCHAR(100) NOT NULL,
+                status VARCHAR(50) NOT NULL,
+                execution_requested_at TIMESTAMP NOT NULL,
+                processing_started_at TIMESTAMP NULL,
+                completed_at TIMESTAMP NULL,
+                prompt_template_key VARCHAR(191) NULL,
+                prompt LONGTEXT NULL,
+                prompt_markdown_content LONGTEXT NULL,
+                schema_json LONGTEXT NULL,
+                openai_request_body LONGTEXT NULL,
+                openai_model VARCHAR(120) NULL,
+                openai_job_id VARCHAR(120) NULL,
+                model_response LONGTEXT NULL,
+                raw_response LONGTEXT NULL,
+                error_message LONGTEXT NULL,
+                error_detail LONGTEXT NULL,
+                input_tokens INT NULL,
+                output_tokens INT NULL,
+                cost_usd DECIMAL(12,6) NULL,
+                PRIMARY KEY (id_job),
+                KEY idx_gera_sales_page_pending (stage_code, status, execution_requested_at),
+                KEY idx_gera_sales_page_experiment (experiment_id),
+                CONSTRAINT fk_gera_sales_page_stage_execution_experiment
+                  FOREIGN KEY (experiment_id) REFERENCES experiment (id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+  - changeSet:
+      id: 2026-06-30-gera-sales-page-v1-recovery-02
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: ai_prompt_schema_template
+        - tableExists:
+            tableName: gera_sales_page_stage_execution
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO pipeline (name, code, module, description, active, created_at, updated_at)
+              SELECT 'GeraSalesPage v1', 'gera-sales-page-v1', 'EXPERIMENT',
+                     'Pipeline independente para gerar página de vendas direta para checkout.',
+                     TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+              FROM DUAL
+              WHERE NOT EXISTS (
+                SELECT 1 FROM pipeline WHERE code = 'gera-sales-page-v1'
+              );
+
+              INSERT INTO ai_prompt_schema_template
+                (template_key, pipeline_code, stage_code, version, openai_model, schema_name, prompt_markdown_content, schema_json, active, created_at, updated_at)
+              VALUES
+                ('gera-sales-page-v1:sales-page-offer-brief:v1', 'gera-sales-page-v1', 'sales-page-offer-brief', 'v1', 'gpt-5.5', 'gera_sales_page_v1_offer_brief',
+                 'Você é um estrategista de vendas diretas. Gere a etapa sales-page-offer-brief do GeraSalesPage v1. Use o experimento, checkout e saídas anteriores abaixo. Responda apenas JSON válido aderente ao schema. Experimento: {{experiment}} Saídas anteriores: {{previousStageOutputs}}',
+                 '{"type":"object","additionalProperties":false,"required":["summary","promise","checkoutUrl","offerStack","risks"],"properties":{"summary":{"type":"string"},"promise":{"type":"string"},"checkoutUrl":{"type":"string"},"offerStack":{"type":"array","items":{"type":"string"}},"risks":{"type":"array","items":{"type":"string"}}}}',
+                 TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                ('gera-sales-page-v1:sales-page-wireframe:v1', 'gera-sales-page-v1', 'sales-page-wireframe', 'v1', 'gpt-5.5', 'gera_sales_page_v1_wireframe',
+                 'Você é um arquiteto de página de vendas direta. Gere a etapa sales-page-wireframe do GeraSalesPage v1, focada em checkout real e sem formulário de lead. Responda apenas JSON válido aderente ao schema. Experimento: {{experiment}} Saídas anteriores: {{previousStageOutputs}}',
+                 '{"type":"object","additionalProperties":false,"required":["sections","primaryCta","checkoutUrl"],"properties":{"sections":{"type":"array","items":{"type":"object","additionalProperties":false,"required":["id","goal","content"],"properties":{"id":{"type":"string"},"goal":{"type":"string"},"content":{"type":"string"}}}},"primaryCta":{"type":"string"},"checkoutUrl":{"type":"string"}}}',
+                 TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                ('gera-sales-page-v1:sales-page-copy:v1', 'gera-sales-page-v1', 'sales-page-copy', 'v1', 'gpt-5.5', 'gera_sales_page_v1_copy',
+                 'Você é copywriter de resposta direta. Gere a etapa sales-page-copy do GeraSalesPage v1 usando a estrutura anterior. O CTA deve apontar para checkout, não para captura. Responda apenas JSON válido aderente ao schema. Experimento: {{experiment}} Saídas anteriores: {{previousStageOutputs}}',
+                 '{"type":"object","additionalProperties":false,"required":["headline","subheadline","sections","cta"],"properties":{"headline":{"type":"string"},"subheadline":{"type":"string"},"sections":{"type":"array","items":{"type":"object","additionalProperties":false,"required":["id","title","body"],"properties":{"id":{"type":"string"},"title":{"type":"string"},"body":{"type":"string"}}}},"cta":{"type":"string"}}}',
+                 TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                ('gera-sales-page-v1:sales-page-visual-plan:v1', 'gera-sales-page-v1', 'sales-page-visual-plan', 'v1', 'gpt-5.5', 'gera_sales_page_v1_visual_plan',
+                 'Você é diretor de arte de venda direta. Gere a etapa sales-page-visual-plan do GeraSalesPage v1 com imagens apenas quando reduzem objeção, demonstram produto ou aumentam prova. Responda apenas JSON válido aderente ao schema. Experimento: {{experiment}} Saídas anteriores: {{previousStageOutputs}}',
+                 '{"type":"object","additionalProperties":false,"required":["visualDirection","imageBriefs","trustElements"],"properties":{"visualDirection":{"type":"string"},"imageBriefs":{"type":"array","items":{"type":"object","additionalProperties":false,"required":["sectionId","purpose","prompt"],"properties":{"sectionId":{"type":"string"},"purpose":{"type":"string"},"prompt":{"type":"string"}}}},"trustElements":{"type":"array","items":{"type":"string"}}}}',
+                 TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                ('gera-sales-page-v1:sales-page-html:v1', 'gera-sales-page-v1', 'sales-page-html', 'v1', 'gpt-5.5', 'gera_sales_page_v1_html',
+                 'Você é desenvolvedor front-end de landing de vendas. Gere a etapa sales-page-html do GeraSalesPage v1 em HTML responsivo, com CTAs usando a URL de checkout real. Não crie formulário. Responda apenas JSON válido aderente ao schema. Experimento: {{experiment}} Saídas anteriores: {{previousStageOutputs}}',
+                 '{"type":"object","additionalProperties":false,"required":["html","checkoutUrl","notes"],"properties":{"html":{"type":"string"},"checkoutUrl":{"type":"string"},"notes":{"type":"array","items":{"type":"string"}}}}',
+                 TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                ('gera-sales-page-v1:sales-page-checkout-quality-review:v1', 'gera-sales-page-v1', 'sales-page-checkout-quality-review', 'v1', 'gpt-5.5', 'gera_sales_page_v1_checkout_quality_review',
+                 'Você é auditor comercial. Revise a página de venda direta do GeraSalesPage v1. Bloqueie se CTA não apontar para checkout real, se houver formulário obrigatório ou se promessa/preço/garantia estiverem confusos. Responda apenas JSON válido aderente ao schema. Experimento: {{experiment}} Saídas anteriores: {{previousStageOutputs}}',
+                 '{"type":"object","additionalProperties":false,"required":["approved","blockers","recommendation"],"properties":{"approved":{"type":"boolean"},"blockers":{"type":"array","items":{"type":"string"}},"recommendation":{"type":"string"}}}',
+                 TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                ('gera-sales-page-v1:sales-page-publication-package:v1', 'gera-sales-page-v1', 'sales-page-publication-package', 'v1', 'gpt-5.5', 'gera_sales_page_v1_publication_package',
+                 'Você é responsável por empacotar a página de venda direta para publicação. Gere o pacote final, mantendo HTML publicável, checkoutUrl e checklist de liberação para mídia paga. Responda apenas JSON válido aderente ao schema. Experimento: {{experiment}} Saídas anteriores: {{previousStageOutputs}}',
+                 '{"type":"object","additionalProperties":false,"required":["readyForTraffic","html","checkoutUrl","releaseChecklist"],"properties":{"readyForTraffic":{"type":"boolean"},"html":{"type":"string"},"checkoutUrl":{"type":"string"},"releaseChecklist":{"type":"array","items":{"type":"string"}}}}',
+                 TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+              ON DUPLICATE KEY UPDATE
+                pipeline_code = VALUES(pipeline_code),
+                stage_code = VALUES(stage_code),
+                version = VALUES(version),
+                openai_model = VALUES(openai_model),
+                schema_name = VALUES(schema_name),
+                prompt_markdown_content = VALUES(prompt_markdown_content),
+                schema_json = VALUES(schema_json),
+                active = VALUES(active),
+                updated_at = CURRENT_TIMESTAMP;

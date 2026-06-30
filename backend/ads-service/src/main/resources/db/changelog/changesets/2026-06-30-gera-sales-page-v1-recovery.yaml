@@ -23,8 +23,8 @@ databaseChangeLog:
                 prompt_markdown_content LONGTEXT NOT NULL,
                 schema_json LONGTEXT NOT NULL,
                 active BOOLEAN NOT NULL DEFAULT TRUE,
-                created_at TIMESTAMP NOT NULL,
-                updated_at TIMESTAMP NOT NULL,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 PRIMARY KEY (template_key),
                 KEY idx_ai_prompt_schema_pipeline_stage (pipeline_code, stage_code, active)
               ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -34,9 +34,9 @@ databaseChangeLog:
                 experiment_id BIGINT NOT NULL,
                 stage_code VARCHAR(100) NOT NULL,
                 status VARCHAR(50) NOT NULL,
-                execution_requested_at TIMESTAMP NOT NULL,
-                processing_started_at TIMESTAMP NULL,
-                completed_at TIMESTAMP NULL,
+                execution_requested_at DATETIME NOT NULL,
+                processing_started_at DATETIME NULL,
+                completed_at DATETIME NULL,
                 prompt_template_key VARCHAR(191) NULL,
                 prompt LONGTEXT NULL,
                 prompt_markdown_content LONGTEXT NULL,

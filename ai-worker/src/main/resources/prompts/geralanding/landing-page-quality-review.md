@@ -12,22 +12,22 @@ A landing do GeraLanding não deve apenas parecer bonita. Ela precisa cumprir um
 2. tornar desejável o resultado prometido;
 3. mostrar um mecanismo plausível para chegar ao resultado;
 4. oferecer uma microprova concreta do valor da solução;
-5. fazer o visitante sentir que vale a pena enviar o e-mail para receber essa amostra;
+5. fazer o visitante sentir que vale a pena avançar para a ação principal: checkout em `SALES` ou e-mail em `LEADS`;
 6. conduzir visualmente para a ação principal sem confusão.
 
 Use as imagens como evidência principal. Avalie o que aparece na tela, não o que provavelmente estava no briefing. Não recompense intenção invisível.
 
-Além dos screenshots, você receberá o HTML final consolidado `htmlGeraLanding` e, quando disponível, o contrato de promessa única. Use os screenshots como evidência principal do que o visitante vê, use o HTML para confirmar problemas técnicos/textuais observáveis no artefato final e use o contrato para verificar coerência comercial entre dor, recompensa, promessa e CTA.
+Além dos screenshots, você receberá o HTML final consolidado `htmlGeraLanding` e, quando disponível, o contrato de promessa única. Use os screenshots como evidência principal do que o visitante vê, use o HTML para confirmar problemas técnicos/textuais observáveis no artefato final e use o contrato para verificar coerência comercial entre dor, prova/recompensa, promessa e CTA.
 
 ## Contrato de promessa única recebido
 
 - Dor única: {{singlePain}}
-- Recompensa gratuita única: {{freeReward}}
+- Prova/preview ou recompensa única: {{freeReward}}
 - Promessa do funil: {{funnelPromise}}
 - CTA principal: {{primaryCta}}
 - Objetivo da campanha: {{campaignObjective}}
 
-Se esses campos estiverem preenchidos, penalize qualquer landing que troque a recompensa por diagnóstico, prévia genérica, material vago, consultoria ou sistema completo fora do contrato.
+Se esses campos estiverem preenchidos, penalize qualquer landing que troque a prova/recompensa por diagnóstico, prévia genérica, material vago, consultoria ou sistema completo fora do contrato. Se `campaignObjective` for `SALES`, penalize formulário/captura competindo com checkout e CTA principal que prometa receber amostra gratuita.
 
 ## Arquivo enviado para avaliação de causa-raiz
 
@@ -57,7 +57,7 @@ A página deve sustentar a sequência comercial:
 
 **Dor → Resultado → Mecanismo → Prova → Oferta → Ação**
 
-A landing deve vender primeiro a transformação percebida pelo visitante. O material gratuito, diagnóstico, checklist, plano, template, preview ou amostra deve funcionar como prova de valor e redução de risco, não como um item genérico sem desejo.
+A landing deve vender primeiro a transformação percebida pelo visitante. O material gratuito, diagnóstico, checklist, plano, template, preview ou amostra deve funcionar como prova de valor e redução de risco, não como um item genérico sem desejo. Em `SALES`, essa prova deve preparar o clique no checkout, não substituir a compra.
 
 ## Critérios de avaliação
 
@@ -101,7 +101,7 @@ Penalize se a solução parecer mágica, vaga, genérica ou apenas uma promessa 
 
 ### 4. Prova e amostra de valor
 
-A landing deve mostrar uma pequena amostra do poder da solução antes de pedir o e-mail.
+A landing deve mostrar uma pequena amostra do poder da solução antes de pedir a ação principal: checkout em `SALES` ou e-mail em `LEADS`.
 
 Essa prova pode ser:
 
@@ -116,13 +116,15 @@ Essa prova pode ser:
 
 Penalize fortemente se a prova for decorativa, pequena demais, genérica, escondida, abstrata ou incapaz de aumentar confiança.
 
-### 5. Oferta de entrada e captura de e-mail
+### 5. Oferta de entrada e ação principal
 
-O formulário deve parecer um ponto natural de avanço, não uma interrupção.
+Em `SALES`, o CTA de checkout deve parecer o ponto natural de avanço, com baixo risco percebido, preço/valor claros quando disponíveis e prova suficiente antes do clique.
+
+Em `LEADS`, o formulário deve parecer um ponto natural de avanço, não uma interrupção.
 
 Verifique se fica claro:
 
-- o que o visitante recebe ao enviar o e-mail;
+- o que o visitante recebe ou compra ao avançar;
 - por que vale a pena receber;
 - qual benefício imediato ele terá;
 - se há baixo risco percebido;

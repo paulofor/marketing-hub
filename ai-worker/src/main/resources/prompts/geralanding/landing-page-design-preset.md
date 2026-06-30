@@ -32,7 +32,7 @@ Resultado: {{RESULT_JSON}}
 
 Contrato de promessa única:
 - Dor única: {dados-singlePain}
-- Recompensa gratuita única: {dados-freeReward}
+- Prova/preview ou recompensa única: {dados-freeReward}
 - Promessa do funil: {dados-funnelPromise}
 - CTA principal: {dados-primaryCta}
 - Objetivo da campanha: {dados-campaignObjective}
@@ -85,7 +85,8 @@ Aplique estas correções como prioridade máxima sobre escolhas estéticas gen�
 
 # Regras obrigatórias
 
-0. Se houver contrato de promessa única no contexto, a direção visual deve destacar a mesma dor, recompensa gratuita, promessa e CTA já escolhidos, sem reposicionar outro ativo como oferta principal.
+0. Se houver contrato de promessa única no contexto, a direção visual deve destacar a mesma dor, prova/recompensa, promessa e CTA já escolhidos, sem reposicionar outro ativo como oferta principal.
+0.1. Se `campaignObjective` for `SALES`, trate a página como venda direta low-ticket: CTAs de compra/checkout fortes, prova/preview visual da oferta, sem dar destaque a formulário ou captura antes do checkout.
 
 1. Responda somente JSON válido.
 2. Não crie, remova ou renomeie seções e elementos.

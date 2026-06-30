@@ -157,7 +157,10 @@ class ExperimentPromiseGenerationServiceTest {
                 .contains(
                         "Tipo de experimento: Produto low-ticket",
                         "checkout e entrega paga",
-                        "Metrica central: compra ou clique no checkout",
+                        "Metrica central: compra, clique no checkout e compra aprovada",
+                        "freeReward deve ser prova/preview",
+                        "nao usar CTA de receber amostra",
+                        "page_view, checkout_click, purchase",
                         "nao trate como teste de nicho")
                 .doesNotContain("Tipo de experimento: Teste de nicho com isca digital");
     }

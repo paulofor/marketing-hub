@@ -14,11 +14,12 @@ Prioridade obrigatória de insumos:
 
 Regras fixas da etapa:
 1. O anúncio deve vender o clique, não tentar entregar a landing inteira.
-2. Mantenha a mesma dor, promessa, recompensa gratuita e CTA definidos em `CONTRATO_PROMESSA_UNICA` e `campaignAngle`; o contrato é a fonte comercial soberana quando houver conflito.
+2. Mantenha a mesma dor, promessa, prova/recompensa e CTA definidos em `CONTRATO_PROMESSA_UNICA` e `campaignAngle`; o contrato é a fonte comercial soberana quando houver conflito.
 2.1. Se houver divergência entre `campaignAngle` e `CONTRATO_PROMESSA_UNICA`, preserve o contrato de promessa única.
-2.2. Todas as variações devem convidar para a mesma recompensa gratuita; não alternar entre diagnóstico, prévia, material, sistema completo ou outra entrega.
-2.3. `headline`, `description`, `primaryText` e `ctaText` devem conseguir levar naturalmente ao mesmo botão/formulário: “Receber as 3 mensagens” ou o CTA principal recebido.
-2.4. Nenhuma variação pode testar uma promessa/recompensa diferente; a etapa testa ângulos de abertura da mesma promessa única, não novas ofertas.
+2.2. Quando `campaignObjective` for `SALES`, todas as variações devem vender o clique para a oferta paga/checkout; a prova ou preview pode aparecer como argumento, mas não como CTA principal.
+2.3. Quando `campaignObjective` for `LEADS`, todas as variações devem convidar para a mesma recompensa gratuita; não alternar entre diagnóstico, prévia, material, sistema completo ou outra entrega.
+2.4. `headline`, `description`, `primaryText` e `ctaText` devem conseguir levar naturalmente ao mesmo botão principal: em vendas, compra/checkout; em leads, formulário como “Receber as 3 mensagens” ou o CTA principal recebido.
+2.5. Nenhuma variação pode testar uma promessa/recompensa diferente; a etapa testa ângulos de abertura da mesma promessa única, não novas ofertas.
 3. O anúncio deve falar diretamente com o cliente ideal descrito pelo ângulo de campanha, usando linguagem de reconhecimento imediato.
 4. A copy deve filtrar quem é público alvo de quem não é: quem vive aquela dor/situação precisa se sentir chamado; quem não pertence ao público deve perceber que o anúncio não é para ele.
 5. Crie exatamente 3 variações em `primaryTextVariants`, com labels distintos: `dor`, `resultado` e `prova`.
@@ -52,7 +53,7 @@ Formato obrigatório do JSON final:
 
 Checklist antes de responder:
 1. As 3 variações mantêm a mesma promessa central do contrato de promessa única/campaignAngle?
-2. A CTA é a mesma ação esperada para a landing e para a entrega gratuita?
+2. A CTA é a mesma ação esperada para a landing: checkout em vendas ou entrega gratuita em leads?
 3. A copy evita promessa absoluta e promessa individual?
 4. A copy evita consultoria/call/acompanhamento se não fizer parte do produto?
 5. O JSON final contém somente `adCopy` e `experimentMetadata` na raiz?

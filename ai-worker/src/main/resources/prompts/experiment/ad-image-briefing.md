@@ -17,9 +17,10 @@ Regras fixas da etapa:
 2. A imagem deve separar o público alvo do público geral: quem vive aquela dor/situação precisa se reconhecer rapidamente; quem não pertence ao público deve perceber que o anúncio não é para ele.
 3. Crie exatamente 3 briefings em `briefings`, um para cada variação de copy: `dor`, `resultado` e `prova`.
 4. `mustMatchAdVariant` deve corresponder exatamente ao label da copy que a imagem acompanha.
-5. O visual deve reforçar a mesma dor, recompensa gratuita, promessa, CTA e framing do `CONTRATO_PROMESSA_UNICA`/`campaignAngle`; não invente promessa nova.
+5. O visual deve reforçar a mesma dor, prova/recompensa, promessa, CTA e framing do `CONTRATO_PROMESSA_UNICA`/`campaignAngle`; não invente promessa nova.
 5.1. Se houver divergência entre copy, ângulo e contrato, preserve o `CONTRATO_PROMESSA_UNICA`.
-5.2. A imagem deve tornar a recompensa gratuita visualmente desejável e concreta, sem trocar a entrega por diagnóstico, prévia genérica, consultoria ou sistema completo.
+5.2. Quando `campaignObjective` for `SALES`, a imagem deve tangibilizar o produto low-ticket e a prova/preview da oferta, sem parecer anúncio de amostra gratuita ou captação de lead.
+5.3. Quando `campaignObjective` for `LEADS`, a imagem deve tornar a recompensa gratuita visualmente desejável e concreta, sem trocar a entrega por diagnóstico, prévia genérica, consultoria ou sistema completo.
 6. Priorize cena humana, concreta e de leitura rápida no mobile, evitando imagem genérica, banco de imagens sem contexto ou abstração ampla demais.
 7. O foco visual deve ser único: uma cena principal, um conflito ou resultado principal e uma hierarquia simples de texto sobreposto.
 8. Não usar dashboard, gráfico, infográfico, múltiplos cards, tela de software genérica ou composição poluída se isso não for essencial ao caso.
@@ -49,6 +50,6 @@ Checklist antes de responder:
 2. Existem sinais visuais que filtram quem é público alvo de quem não é?
 3. O texto sobreposto é uma pergunta clara, completa e objetiva que só faz sentido para quem é verdadeiramente do nicho?
 4. A pergunta menciona situação, rotina, cargo, atividade, dor ou resultado específico do nicho e não poderia servir para qualquer mercado?
-5. Cada briefing corresponde a uma variação real da copy e mantém a recompensa/CTA do contrato de promessa única?
+5. Cada briefing corresponde a uma variação real da copy e mantém a prova/recompensa e CTA do contrato de promessa única?
 6. A cena é simples, legível e forte em mobile?
 7. O JSON final contém somente `adImageBriefing` e `experimentMetadata` na raiz?

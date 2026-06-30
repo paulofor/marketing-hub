@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.marketinghub.cost.CostAttributionService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.ExperimentStatus;
+import com.marketinghub.experiment.ExperimentType;
 import com.marketinghub.experiment.promise.ExperimentPromiseGenerationRequest;
 import com.marketinghub.experiment.promise.ExperimentPromiseGenerationRequestStatus;
 import com.marketinghub.experiment.service.generatepromise.ExperimentPromiseOptionDto;
@@ -70,7 +71,7 @@ public class ExperimentPromiseGenerationService {
         MarketNiche niche = nicheRepository.findById(request.nicheId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Nicho não encontrado"));
         Hypothesis hypothesis = resolveHypothesis(request.hypothesisId());
-        String prompt = buildPrompt(niche, hypothesis);
+        String prompt = buildPrompt(niche, hypothesis, resolveExperimentType(request.experimentType()));
         ExperimentPromiseGenerationRequest entity = ExperimentPromiseGenerationRequest.builder()
                 .niche(niche)
                 .hypothesis(hypothesis)
@@ -189,20 +190,43 @@ public class ExperimentPromiseGenerationService {
     }
 
     /** Monta um contexto comercial enxuto para evitar prompts grandes demais na geração de promessa. */
-    private String buildPrompt(MarketNiche niche, Hypothesis hypothesis) {
+    private String buildPrompt(MarketNiche niche, Hypothesis hypothesis, ExperimentType experimentType) {
         StringBuilder sb = new StringBuilder();
         sb.append(
                 "Contexto enxuto para gerar exatamente 3 opções diferentes de contrato de entrada comercial para um novo experimento.\n");
+        appendExperimentTypeGuidance(sb, experimentType);
         appendCompactNicheDetails(sb, niche);
         appendCompactHypothesisDetails(sb, hypothesis);
         sb.append("\nRegras da resposta:\n");
         sb.append("- Gere uma opção direta, uma emocional e uma operacional/prática.\n");
-        sb.append(
-                "- Cada opção deve conter uma dor única, uma isca digital concreta, um produto low-ticket irresistível, uma promessa plausível e um CTA claro.\n");
-        sb.append("- A isca deve abrir desejo pelo produto pago sem virar página de vendas.\n");
+        sb.append("- Cada opção deve conter uma dor única, uma entrada concreta, ");
+        sb.append("um produto de entrada irresistível, uma promessa plausível e um CTA claro.\n");
         sb.append("- O produto deve parecer altamente necessário: reduzir dor/esforço, facilitar a rotina e aumentar a sensação de alívio, controle e felicidade, sem prometer garantia absoluta.\n");
         sb.append("- Não use campos digitados pelo usuário; a tela escolhe uma opção gerada pela IA.\n");
         return sb.toString();
+    }
+
+    /** Adiciona ao prompt o enquadramento correto do tipo comercial escolhido na tela. */
+    private void appendExperimentTypeGuidance(StringBuilder sb, ExperimentType experimentType) {
+        if (experimentType == ExperimentType.LOW_TICKET_PRODUCT) {
+            sb.append("\nTipo de experimento: Produto low-ticket.\n");
+            sb.append("Fluxo principal: anuncio, pagina curta, checkout e entrega paga. ");
+            sb.append("Metrica central: compra ou clique no checkout.\n");
+            sb.append("Regra comercial: a amostra gratuita e secundaria, apenas prova o valor e abre desejo; ");
+            sb.append("nao trate como teste de nicho, lead magnet principal ou experimento de captacao.\n");
+            sb.append("CTA principal: deve apontar para compra/checkout do produto low-ticket ");
+            sb.append("ou para ver a oferta paga quando a amostra for mencionada.\n");
+            return;
+        }
+        sb.append("\nTipo de experimento: Teste de nicho com isca digital.\n");
+        sb.append("Fluxo principal: anuncio, landing de captacao, entrega de isca e aprendizado de interesse. ");
+        sb.append("Metrica central: lead qualificado/CPL.\n");
+        sb.append("Regra comercial: a isca digital e a entrada principal do teste; o produto pago pode aparecer como continuidade natural.\n");
+    }
+
+    /** Resolve o tipo comercial mantendo compatibilidade com chamadas antigas sem esse campo. */
+    private ExperimentType resolveExperimentType(ExperimentType experimentType) {
+        return experimentType != null ? experimentType : ExperimentType.NICHE_TEST;
     }
 
     /** Adiciona ao prompt apenas os sinais de nicho necessários para gerar promessa comercial. */

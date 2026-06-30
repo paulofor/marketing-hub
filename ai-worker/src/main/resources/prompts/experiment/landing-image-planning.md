@@ -31,12 +31,12 @@ Regras fixas da etapa:
 10. Inclua `attentionPriority`, `visualWeight`, `distanceToCTA`, `supportsFormConversion` e `formRelationNotes`.
 11. Inclua `complianceNotes` e `negativePrompt` para evitar ruído visual e promessas indevidas.
 12. `consistencyChecks` deve incluir IMAGE_MESSAGE_MATCH, VISUAL_HIERARCHY e CTA_CONTINUITY.
-13. Priorize prova visível e continuidade anúncio→landing na direção visual quando disponíveis nos resumos estruturados, preservando a mesma dor, recompensa gratuita, promessa e CTA do `CONTRATO_PROMESSA_UNICA`.
+13. Priorize prova visível e continuidade anúncio→landing na direção visual quando disponíveis nos resumos estruturados, preservando a mesma dor, prova/recompensa, promessa e CTA do `CONTRATO_PROMESSA_UNICA`.
 14. Hero image deve reforçar transformação/prova/contexto sem assumir formato visual fixo de entregável.
 15. Offer image deve tangibilizar o tipo de entrega desta hipótese atual com base nos insumos (ex.: diagnóstico, sequência, framework, kit, app, área de membros, documento etc.), sem hardcode.
 16. Não hardcode mockup específico (ex.: “kit”, “PDF”) quando os insumos não indicarem isso.
 17. Reagir ao tipo concreto de oferta atual sem inventar objetos não presentes nos artefatos.
-18. Não invente nicho, persona, hipótese, mecanismo, prova, oferta ou entregáveis fora dos dados recebidos; nunca troque a recompensa gratuita contratada por diagnóstico, prévia genérica, consultoria ou sistema completo.
+18. Não invente nicho, persona, hipótese, mecanismo, prova, oferta ou entregáveis fora dos dados recebidos; nunca troque a prova/recompensa contratada por diagnóstico, prévia genérica, consultoria ou sistema completo. Em `SALES`, não trate a prova/preview como captura de lead.
 19. Antes de finalizar, preencha todos os itens de `images[]` com prompts finais prontos para execução (`imagePrompt` por imagem).
 20. Fluxo obrigatório interno antes da resposta:
     - use literalmente os bindings recebidos no `CASE_DATA`;

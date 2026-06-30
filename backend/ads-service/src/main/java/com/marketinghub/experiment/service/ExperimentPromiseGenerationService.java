@@ -211,11 +211,13 @@ public class ExperimentPromiseGenerationService {
         if (experimentType == ExperimentType.LOW_TICKET_PRODUCT) {
             sb.append("\nTipo de experimento: Produto low-ticket.\n");
             sb.append("Fluxo principal: anuncio, pagina curta, checkout e entrega paga. ");
-            sb.append("Metrica central: compra ou clique no checkout.\n");
-            sb.append("Regra comercial: a amostra gratuita e secundaria, apenas prova o valor e abre desejo; ");
+            sb.append("Metrica central: compra, clique no checkout e compra aprovada.\n");
+            sb.append("Regra comercial: nao criar isca de captacao; o campo freeReward deve ser prova/preview ");
+            sb.append("visivel da oferta dentro da pagina, como mockup, print, exemplo ou trecho demonstrativo. ");
             sb.append("nao trate como teste de nicho, lead magnet principal ou experimento de captacao.\n");
-            sb.append("CTA principal: deve apontar para compra/checkout do produto low-ticket ");
-            sb.append("ou para ver a oferta paga quando a amostra for mencionada.\n");
+            sb.append("CTA principal: deve apontar para compra/checkout do produto low-ticket; ");
+            sb.append("nao usar CTA de receber amostra, baixar material ou preencher formulario.\n");
+            sb.append("Recuperacao: prever page_view, checkout_click, purchase, remarketing e abandono de checkout quando disponivel.\n");
             return;
         }
         sb.append("\nTipo de experimento: Teste de nicho com isca digital.\n");

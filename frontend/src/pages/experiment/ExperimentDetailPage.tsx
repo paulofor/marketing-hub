@@ -1854,47 +1854,42 @@ export default function ExperimentDetailPage() {
       : data.campaignObjective === "SALES"
         ? "Vendas"
         : data.campaignObjective || "—";
-  const mainExperimentChecklist = [
+  const lowTicketSalePreparationChecklist = [
     {
-      id: "experiment-pipeline",
-      title: isLowTicketProduct
-        ? "Oferta low-ticket"
-        : "Pipeline de experimento",
-      detail: isLowTicketProduct
-        ? "Dor, produto, promessa e CTA de checkout"
-        : "Aba Estrutura de conteúdo",
+      id: "commercial-offer",
+      title: "Oferta comercial montada",
+      detail: "Dor, produto, promessa e CTA de checkout",
       isMet: hasExperimentPipelineContent,
       isLoading: false,
       actionLabel: "Abrir estrutura",
       action: () => openExperimentTab("content-structure"),
     },
     {
-      id: "geralanding-pipeline",
-      title: "Pipeline GeraLanding",
-      detail: `${geraLandingCompletedStageCount}/${geraLandingRequiredStageCount} etapas concluídas`,
-      isMet: hasGeraLandingPipelineReady,
-      isLoading:
-        isLoadingReadiness ||
-        isLoadingPendingGeraLandingExecutions ||
-        isLoadingCompletedGeraLandingExecutions ||
-        isLoadingPendingGeraLandingCopyExecutions ||
-        isLoadingCompletedGeraLandingCopyExecutions ||
-        isLoadingPendingGeraLandingDesignPresetExecutions ||
-        isLoadingCompletedGeraLandingDesignPresetExecutions ||
-        isLoadingPendingGeraLandingImagePromptsExecutions ||
-        isLoadingCompletedGeraLandingImagePromptsExecutions ||
-        isLoadingPendingGeraLandingImageGenerationExecutions ||
-        isLoadingCompletedGeraLandingImageGenerationExecutions ||
-        isLoadingPendingGeraLandingQualityReviewExecutions ||
-        isLoadingCompletedGeraLandingQualityReviewExecutions ||
-        isLoadingPendingGeraLandingDeliverablesExecutions ||
-        isLoadingCompletedGeraLandingDeliverablesExecutions,
-      actionLabel: "Abrir GeraLanding",
-      action: () => openExperimentTab("gera-landing"),
+      id: "sales-configuration",
+      title: "Experimento configurado para venda",
+      detail:
+        campaignObjectiveLabel === "Vendas"
+          ? "Objetivo de campanha marcado como vendas"
+          : "Ajuste o objetivo para vendas antes de liberar tráfego",
+      isMet: campaignObjectiveLabel === "Vendas",
+      isLoading: false,
+      actionLabel: "Ver overview",
+      action: () => openExperimentTab("overview"),
+    },
+    {
+      id: "sales-page",
+      title: "Página de venda cadastrada",
+      detail: data.followUpActionUrl
+        ? "URL final cadastrada para a campanha"
+        : "Cadastre a página de venda com checkout ativo",
+      isMet: Boolean(data.followUpActionUrl),
+      isLoading: isLoadingReadiness,
+      actionLabel: "Abrir landing",
+      action: openLandingActions,
     },
     {
       id: "approved-creatives",
-      title: "Aprovação de criativos",
+      title: "Criativos prontos",
       detail: `${readinessCreativeCount}/3 criativos aprovados`,
       isMet: hasAtLeastThreeApprovedCreatives,
       isLoading: isLoadingReadiness,
@@ -1903,7 +1898,7 @@ export default function ExperimentDetailPage() {
     },
     {
       id: "audience-selection",
-      title: "Escolha de público",
+      title: "Público salvo",
       detail: hasAudienceSelection
         ? "Público salvo atende a regra do publicador"
         : "Salve um público válido para entrar na fila do publicador",
@@ -1913,19 +1908,15 @@ export default function ExperimentDetailPage() {
       action: () => openExperimentTab("publico"),
     },
     {
-      id: "landing-approval",
-      title: "Aprovação da landing",
-      detail: data.followUpActionUrl
-        ? isLowTicketProduct
-          ? "Página de venda aprovada com checkout ativo"
-          : "Landing aprovada com URL ativa"
-        : isLowTicketProduct
-          ? "Aprove a página curta com checkout na primeira dobra"
-          : "Aprove a landing para liberar a URL de destino",
-      isMet: Boolean(data.followUpActionUrl),
+      id: "controlled-release",
+      title: "Pronto para campanha controlada",
+      detail: isReadyForFacebook
+        ? "Checklist mínimo concluído para liberação controlada"
+        : "Conclua página, criativos e público antes de liberar",
+      isMet: isReadyForFacebook,
       isLoading: isLoadingReadiness,
-      actionLabel: "Abrir landing",
-      action: openLandingActions,
+      actionLabel: "Ver liberação",
+      action: () => window.scrollTo({ top: 0, behavior: "smooth" }),
     },
   ];
   const diagnosticsVariant: Record<string, string> = {
@@ -2258,64 +2249,76 @@ export default function ExperimentDetailPage() {
           ) : null}
         </div>
       ) : null}
-      <div className="card border-0 shadow-sm rounded-3 mt-3">
-        <div className="card-body">
-          <div className="d-flex justify-content-between align-items-start gap-3 flex-wrap">
-            <div>
-              <h5 className="card-title mb-1">
-                Checklist principal do experimento
-              </h5>
-              <p className="text-muted small mb-0">
-                Visão rápida dos marcos necessários para transformar o
-                experimento em campanha publicável.
-              </p>
-            </div>
-            <span className="badge text-bg-light border text-body">
-              {mainExperimentChecklist.filter((item) => item.isMet).length}/
-              {mainExperimentChecklist.length} concluídos
-            </span>
-          </div>
-          <div className="row g-3 mt-1">
-            {mainExperimentChecklist.map((item) => (
-              <div key={item.id} className="col-12 col-md-6 col-xl">
-                <button
-                  type="button"
-                  className={`w-100 h-100 text-start border rounded-3 p-3 bg-body ${
-                    item.isMet
-                      ? "border-success-subtle"
-                      : "border-warning-subtle"
-                  }`}
-                  onClick={item.action}
-                >
-                  <div className="d-flex align-items-start gap-2">
-                    <span
-                      className={`badge rounded-pill ${
-                        item.isLoading
-                          ? "text-bg-secondary"
-                          : item.isMet
-                            ? "text-bg-success"
-                            : "text-bg-warning"
-                      }`}
-                      aria-label={item.isMet ? "Concluído" : "Pendente"}
-                    >
-                      {item.isLoading ? "…" : item.isMet ? "✓" : "!"}
-                    </span>
-                    <span>
-                      <span className="fw-semibold d-block">{item.title}</span>
-                      <span className="small text-muted d-block mt-1">
-                        {item.detail}
-                      </span>
-                      <span className="small text-primary d-block mt-2">
-                        {item.actionLabel}
-                      </span>
-                    </span>
-                  </div>
-                </button>
+      {isLowTicketProduct ? (
+        <div className="card border-0 shadow-sm rounded-3 mt-3">
+          <div className="card-body">
+            <div className="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+              <div>
+                <h5 className="card-title mb-1">
+                  Preparação da venda low-ticket
+                </h5>
+                <p className="text-muted small mb-0">
+                  Visão rápida do que já foi montado e checado antes de liberar
+                  tráfego para compra direta.
+                </p>
               </div>
-            ))}
+              <span className="badge text-bg-light border text-body">
+                {
+                  lowTicketSalePreparationChecklist.filter(
+                    (item) => item.isMet,
+                  ).length
+                }
+                /{lowTicketSalePreparationChecklist.length} concluídos
+              </span>
+            </div>
+            <div className="row g-3 mt-1">
+              {lowTicketSalePreparationChecklist.map((item) => (
+                <div key={item.id} className="col-12 col-md-6 col-xl-4">
+                  <button
+                    type="button"
+                    className={`w-100 h-100 text-start border rounded-3 p-3 bg-body ${
+                      item.isMet
+                        ? "border-success-subtle"
+                        : "border-warning-subtle"
+                    }`}
+                    onClick={item.action}
+                  >
+                    <div className="d-flex align-items-start gap-2">
+                      <span
+                        className={`badge rounded-pill ${
+                          item.isLoading
+                            ? "text-bg-secondary"
+                            : item.isMet
+                              ? "text-bg-success"
+                              : "text-bg-warning"
+                        }`}
+                        aria-label={item.isMet ? "Concluído" : "Pendente"}
+                      >
+                        {item.isLoading ? "…" : item.isMet ? "✓" : "!"}
+                      </span>
+                      <span>
+                        <span className="fw-semibold d-block">
+                          {item.title}
+                        </span>
+                        <span className="small text-muted d-block mt-1">
+                          {item.detail}
+                        </span>
+                        <span className="small text-primary d-block mt-2">
+                          {item.actionLabel}
+                        </span>
+                      </span>
+                    </div>
+                  </button>
+                </div>
+              ))}
+            </div>
+            <div className="alert alert-light border small text-muted mt-3 mb-0">
+              Página de obrigado premium e ZIP de entrega ainda dependem de
+              validação operacional fora deste contrato persistido do backend.
+            </div>
           </div>
         </div>
-      </div>
+      ) : null}
       <div className="card border-0 shadow-sm rounded-3 mt-3">
         <div className="card-body">
           <div className="d-flex justify-content-between align-items-start">

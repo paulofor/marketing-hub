@@ -7,6 +7,7 @@ services:
       MERCADO_PAGO_SUCCESS_URL: ${MERCADO_PAGO_SUCCESS_URL:-https://pagamentopalf.site/checkout}
       MERCADO_PAGO_FAILURE_URL: ${MERCADO_PAGO_FAILURE_URL:-https://pagamentopalf.site/checkout}
       MERCADO_PAGO_PENDING_URL: ${MERCADO_PAGO_PENDING_URL:-https://pagamentopalf.site/checkout}
+      DIGITAL_PRODUCT_DELIVERY_EMAIL_SERVICE_BASE_URL: ${DIGITAL_PRODUCT_DELIVERY_EMAIL_SERVICE_BASE_URL:-http://digital-product-email-service:8080}
     ports:
       - "${HOST_HTTP_PORT:-8092}:8080"
 

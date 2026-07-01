@@ -34,6 +34,8 @@ class GeraSalesPageStageServiceTest {
     @Mock
     private GeraSalesPagePromptSchemaTemplateRepository templateRepository;
     @Mock
+    private GeraSalesPagePublicationAuditService publicationAuditService;
+    @Mock
     private ObjectMapper objectMapper;
 
     @InjectMocks

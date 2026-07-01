@@ -5536,3 +5536,11 @@
 - Correção aplicada: a prontidão e a liberação para Facebook bloqueiam low-ticket sem GeraSalesPage concluído; foi criado rebuild canônico para substituir execuções antigas e gerar a página novamente pelo pipeline.
 - Decisão OpenAI: o GeraSalesPage v1 passa a usar `service_tier=default` por padrão, aceitando custo maior para reduzir falhas na criação de páginas de venda.
 - Prevenção de recorrência: testes cobrem bloqueio de campanha low-ticket sem publicação do GeraSalesPage, liberação após etapa final concluída, rebuild com status `SUBSTITUIDO` e custo Standard conforme service tier.
+
+## 2026-07-01 — Auditoria histórica de páginas GeraSalesPage
+
+- Decisão: cada página de venda publicada pelo GeraSalesPage v1 precisa manter no banco a associação com os prompts, schemas, modelo, request e respostas usados para criar aquela versão.
+- Causa-raiz: sem snapshot por publicação, uma alteração futura de prompt/schema deixaria difícil entender por que uma página antiga foi gerada daquele jeito.
+- Correção aplicada: criada auditoria de publicação por experimento, com snapshot da etapa final e das etapas concluídas usadas na página.
+- Consulta: o frontend passa a acessar as versões publicadas em `/api/experiments/{id}/gerasalespage/v1/publications` e exibe o card “Auditoria da página de venda” para experimentos low-ticket.
+- Prevenção de recorrência: o cânone do GeraSalesPage agora exige snapshot histórico por página publicada.

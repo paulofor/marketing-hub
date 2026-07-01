@@ -1,0 +1,173 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-01-gera-sales-page-publication-audit-01
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: gera_sales_page_publication_audit
+      changes:
+        - createTable:
+            tableName: gera_sales_page_publication_audit
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: experiment_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: publication_job_id
+                  type: VARCHAR(36)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: published_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: sales_page_url
+                  type: VARCHAR(1024)
+              - column:
+                  name: checkout_url
+                  type: VARCHAR(1024)
+              - column:
+                  name: html
+                  type: LONGTEXT
+              - column:
+                  name: publication_package_json
+                  type: LONGTEXT
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: gera_sales_page_publication_audit
+            baseColumnNames: experiment_id
+            constraintName: fk_gera_sales_page_publication_audit_experiment
+            referencedTableName: experiment
+            referencedColumnNames: id
+        - addForeignKeyConstraint:
+            baseTableName: gera_sales_page_publication_audit
+            baseColumnNames: publication_job_id
+            constraintName: fk_gera_sales_page_publication_audit_job
+            referencedTableName: gera_sales_page_stage_execution
+            referencedColumnNames: id_job
+        - createIndex:
+            tableName: gera_sales_page_publication_audit
+            indexName: idx_gera_sales_page_publication_experiment
+            columns:
+              - column:
+                  name: experiment_id
+              - column:
+                  name: published_at
+        - createIndex:
+            tableName: gera_sales_page_publication_audit
+            indexName: uk_gera_sales_page_publication_job
+            unique: true
+            columns:
+              - column:
+                  name: publication_job_id
+        - createTable:
+            tableName: gera_sales_page_publication_stage_audit
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: publication_audit_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: stage_order
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: id_job
+                  type: VARCHAR(36)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: stage_code
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: completed_at
+                  type: TIMESTAMP
+              - column:
+                  name: prompt_template_key
+                  type: VARCHAR(191)
+              - column:
+                  name: prompt
+                  type: LONGTEXT
+              - column:
+                  name: prompt_markdown_content
+                  type: LONGTEXT
+              - column:
+                  name: schema_json
+                  type: LONGTEXT
+              - column:
+                  name: openai_model
+                  type: VARCHAR(120)
+              - column:
+                  name: openai_request_body
+                  type: LONGTEXT
+              - column:
+                  name: model_response
+                  type: LONGTEXT
+              - column:
+                  name: raw_response
+                  type: LONGTEXT
+              - column:
+                  name: input_tokens
+                  type: INT
+              - column:
+                  name: output_tokens
+                  type: INT
+              - column:
+                  name: cost_usd
+                  type: DECIMAL(12,6)
+        - addForeignKeyConstraint:
+            baseTableName: gera_sales_page_publication_stage_audit
+            baseColumnNames: publication_audit_id
+            constraintName: fk_gera_sales_page_publication_stage_audit_publication
+            referencedTableName: gera_sales_page_publication_audit
+            referencedColumnNames: id
+        - addForeignKeyConstraint:
+            baseTableName: gera_sales_page_publication_stage_audit
+            baseColumnNames: id_job
+            constraintName: fk_gera_sales_page_publication_stage_audit_job
+            referencedTableName: gera_sales_page_stage_execution
+            referencedColumnNames: id_job
+        - createIndex:
+            tableName: gera_sales_page_publication_stage_audit
+            indexName: idx_gera_sales_page_publication_stage_audit
+            columns:
+              - column:
+                  name: publication_audit_id
+              - column:
+                  name: stage_order

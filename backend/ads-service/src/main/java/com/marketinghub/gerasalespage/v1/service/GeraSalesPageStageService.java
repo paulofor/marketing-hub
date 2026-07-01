@@ -38,6 +38,7 @@ public class GeraSalesPageStageService {
     private final ExperimentRepository experimentRepository;
     private final GeraSalesPageStageExecutionRepository executionRepository;
     private final GeraSalesPagePromptSchemaTemplateRepository templateRepository;
+    private final GeraSalesPagePublicationAuditService publicationAuditService;
     private final ObjectMapper objectMapper;
 
     /** Inicializa o service com repositórios e serializador usados pelos contratos internos. */
@@ -45,10 +46,12 @@ public class GeraSalesPageStageService {
             ExperimentRepository experimentRepository,
             GeraSalesPageStageExecutionRepository executionRepository,
             GeraSalesPagePromptSchemaTemplateRepository templateRepository,
+            GeraSalesPagePublicationAuditService publicationAuditService,
             ObjectMapper objectMapper) {
         this.experimentRepository = experimentRepository;
         this.executionRepository = executionRepository;
         this.templateRepository = templateRepository;
+        this.publicationAuditService = publicationAuditService;
         this.objectMapper = objectMapper;
     }
 
@@ -132,6 +135,7 @@ public class GeraSalesPageStageService {
             execution.setCostUsd(payload.costUsd());
             execution.setOpenAiJobId(payload.openAiJobId());
             execution.setCompletedAt(Instant.now());
+            publicationAuditService.snapshotPublication(execution);
             GeraSalesPageStageCode.nextAfter(execution.getStageCode())
                     .ifPresent(nextStage -> enqueue(execution.getExperimentId(), nextStage));
         }

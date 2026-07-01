@@ -129,6 +129,7 @@ O Marketing Hub é uma fábrica automatizada de produtos digitais: descobre dore
      1. Tema: Experimentos, registre em /docs/registros/experimentos.md
      2. Tema: Módulos Mois, registre em /docs/registros/mois1.md
      3. Tema: Módulos OPRM, regsitre em /docs/registros/oprm1.md
+- **Fechamento do dia (registro de negócio)**: quando o usuário pedir literalmente `feche o dia`, registrar em `/docs/registros/diario.md` um resumo do que foi realizado no dia em termos de negócio, marketing e operação comercial. O registro deve priorizar campanhas publicadas, experimentos criados ou avançados, produtos/ofertas estruturados, validações comerciais, aprendizados, métricas relevantes, decisões tomadas e próximos passos. Não transformar esse fechamento em changelog técnico de sistema, PRs, classes, endpoints ou detalhes internos, salvo quando algum ajuste técnico tiver impacto direto de negócio.
 
 ## 3. Orientações Práticas:
 

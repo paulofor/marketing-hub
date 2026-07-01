@@ -18,6 +18,10 @@ public interface GeraSalesPageStageExecutionRepository extends JpaRepository<Ger
     /** Lista todas as execuções de um experimento para rebuild auditável do pipeline. */
     List<GeraSalesPageStageExecution> findByExperimentIdOrderByExecutionRequestedAtAsc(Long experimentId);
 
+    /** Lista execuções concluídas de uma etapa para backfill de snapshots de publicação. */
+    List<GeraSalesPageStageExecution> findByExperimentIdAndStageCodeAndStatusOrderByExecutionRequestedAtAsc(
+            Long experimentId, String stageCode, String status);
+
     /** Lista pendências de uma etapa com experimento, nicho e hipótese carregados para montar o contrato do worker. */
     @EntityGraph(attributePaths = {"experiment", "experiment.niche", "experiment.hypothesisRef"})
     List<GeraSalesPageStageExecution> findTop20ByStageCodeAndStatusOrderByExecutionRequestedAtAsc(

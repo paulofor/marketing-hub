@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-07-01-gera-sales-page-publication-audit.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-06-30-gera-sales-page-v1-recovery.yaml
       relativeToChangelogFile: true
   - include:

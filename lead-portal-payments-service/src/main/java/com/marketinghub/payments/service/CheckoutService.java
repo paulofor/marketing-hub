@@ -30,6 +30,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.util.UriComponentsBuilder;
 
+/**
+ * Orquestra a criação de checkout e a aplicação de confirmações de pagamento.
+ */
 @Service
 public class CheckoutService {
 
@@ -41,19 +44,22 @@ public class CheckoutService {
     private final MercadoPagoProperties mercadoPagoProperties;
     private final PaymentProperties paymentProperties;
     private final PremiumDeliveryService premiumDeliveryService;
+    private final DigitalProductPostPurchaseEmailService digitalProductPostPurchaseEmailService;
 
     public CheckoutService(MercadoPagoClient mercadoPagoClient,
                            LeadPortalPackageGateway packageGateway,
                            LeadPortalPurchaseRepository purchaseRepository,
                            MercadoPagoProperties mercadoPagoProperties,
                            PaymentProperties paymentProperties,
-                           PremiumDeliveryService premiumDeliveryService) {
+                           PremiumDeliveryService premiumDeliveryService,
+                           DigitalProductPostPurchaseEmailService digitalProductPostPurchaseEmailService) {
         this.mercadoPagoClient = mercadoPagoClient;
         this.packageGateway = packageGateway;
         this.purchaseRepository = purchaseRepository;
         this.mercadoPagoProperties = mercadoPagoProperties;
         this.paymentProperties = paymentProperties;
         this.premiumDeliveryService = premiumDeliveryService;
+        this.digitalProductPostPurchaseEmailService = digitalProductPostPurchaseEmailService;
     }
 
     public Optional<MercadoPagoPaymentDetails> fetchPayment(String paymentId) {
@@ -129,6 +135,7 @@ public class CheckoutService {
         return toResponse(purchase);
     }
 
+    /** Atualiza o estado local a partir do pagamento confirmado pelo Mercado Pago. */
     @Transactional
     public LeadPortalPurchase updateFromPayment(MercadoPagoPaymentDetails paymentDetails, String rawPayload) {
         if (paymentDetails == null || !StringUtils.hasText(paymentDetails.id())) {
@@ -136,7 +143,15 @@ public class CheckoutService {
         }
         Long packageId = extractPackageId(paymentDetails.metadata());
         if (packageId == null) {
-            throw new IllegalStateException("Pagamento sem packageId na metadata");
+            digitalProductPostPurchaseEmailService.sendIfSupported(paymentDetails);
+            LeadPortalPurchase transientPurchase = new LeadPortalPurchase();
+            transientPurchase.setMercadoPagoPaymentId(paymentDetails.id());
+            transientPurchase.setMercadoPagoStatus(paymentDetails.status());
+            transientPurchase.setBuyerEmail(paymentDetails.email());
+            transientPurchase.setStatus("approved".equalsIgnoreCase(paymentDetails.status())
+                    ? PurchaseStatus.APPROVED
+                    : PurchaseStatus.PENDING_PAYMENT);
+            return transientPurchase;
         }
         LeadPortalPurchase purchase = purchaseRepository.findByMercadoPagoPaymentId(paymentDetails.id())
                 .orElseGet(() -> purchaseRepository.findTopByPackageIdOrderByCreatedAtDesc(packageId)

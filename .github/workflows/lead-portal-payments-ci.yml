@@ -105,10 +105,23 @@ jobs:
       - name: Prepare remote directory
         run: |
           ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "mkdir -p ${REMOTE_PATH}"
+      - name: Backup remote public assets
+        run: |
+          ssh ${SSH_COMMON_ARGS} "${DEPLOY_USER}@${DEPLOY_HOST}" "set -euo pipefail \
+            && cd ${REMOTE_PATH} \
+            && if [ -d docker/proxy/html ]; then \
+              mkdir -p .deploy-backups/public-assets \
+              && backup_dir=.deploy-backups/public-assets/$(date -u +%Y%m%dT%H%M%SZ) \
+              && mkdir -p \${backup_dir} \
+              && cp -a docker/proxy/html/. \${backup_dir}/; \
+            fi"
       - name: Sync service to VPS
         run: |
           rsync -az --delete \
             -e "ssh ${SSH_COMMON_ARGS}" \
+            --filter 'P docker/proxy/html/downloads/***' \
+            --filter 'P docker/proxy/html/sales-page-exp*.html' \
+            --filter 'P docker/proxy/html/obrigado-exp*.html' \
             --exclude '.git/' \
             --exclude 'target/' \
             lead-portal-payments-service/ "${DEPLOY_USER}@${DEPLOY_HOST}:${REMOTE_PATH}"

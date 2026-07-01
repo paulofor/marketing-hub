@@ -5521,3 +5521,10 @@
 - Artefatos preparados: `sales-page-exp51.html`, `obrigado-exp51.html` e `downloads/experimento-51/agenda-blindada-7d.zip`.
 - Validação: a sales page ficou sem `#checkout_externo`, sem formulário, com 5 CTAs para o checkout atual do Mercado Pago e com página de obrigado apontando para o ZIP de entrega.
 - Limite operacional: a publicação pública em `pagamentopalf.site` depende de deploy/sincronização do `lead-portal-payments-service` no VPS.
+
+## 2026-07-01 — Correção do compose de deploy do Lead Portal Payments
+
+- Problema: após publicar a experiência premium do experimento 51, o deploy automático do `lead-portal-payments-service` ainda podia falhar porque combinava o compose local com o compose de produção e tentava remover o `build` herdado usando `build: null`.
+- Causa-raiz: o compose de produção dependia de comportamento frágil de merge do Docker Compose; em produção, o serviço deve usar somente a imagem publicada no registry, sem herdar configuração de build local.
+- Correção aplicada: o `docker-compose.deploy.yml` passou a ser autônomo, com imagem publicada obrigatória e sem bloco `build`; o workflow de deploy passou a executar somente esse compose de produção.
+- Prevenção de recorrência: a documentação de CI/CD foi atualizada para registrar que o deploy usa `docker compose -f docker-compose.deploy.yml`, separando build local de publicação produtiva.

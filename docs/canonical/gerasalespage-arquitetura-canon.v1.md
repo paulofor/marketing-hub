@@ -27,6 +27,8 @@ O GeraSalesPage v1 é um pipeline independente para gerar página de vendas dire
 - Experimento `LOW_TICKET_PRODUCT` só pode ser liberado para campanha quando a etapa final `sales-page-publication-package` estiver `CONCLUIDO`; URL de página preenchida manualmente não substitui a conclusão do pipeline.
 - O GeraSalesPage v1 usa `service_tier=default` por padrão, porque página de venda é artefato comercial crítico e deve priorizar estabilidade sobre economia de Flex.
 - Quando uma página precisar ser refeita, o rebuild canônico deve marcar execuções anteriores como `SUBSTITUIDO` e enfileirar nova execução a partir de `sales-page-offer-brief`.
+- Cada página de venda publicada deve gerar um snapshot histórico em banco, associando a versão da página ao job final, HTML/pacote final, prompts renderizados, prompt markdown base, schema JSON, modelo OpenAI, request enviado e resposta bruta de cada etapa usada naquela versão.
+- A troca futura de prompt, schema ou modelo não pode sobrescrever a auditoria das páginas já publicadas; o frontend deve conseguir consultar as versões publicadas e seus prompts/schemas originais por experimento.
 
 ## Sugestões incorporadas
 

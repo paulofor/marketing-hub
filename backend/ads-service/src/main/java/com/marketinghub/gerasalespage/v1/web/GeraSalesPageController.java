@@ -1,5 +1,7 @@
 package com.marketinghub.gerasalespage.v1.web;
 
+import com.marketinghub.gerasalespage.v1.service.GeraSalesPagePublicationAuditService;
+import com.marketinghub.gerasalespage.v1.service.GeraSalesPagePublicationResponse;
 import com.marketinghub.gerasalespage.v1.service.GeraSalesPagePendingResponse;
 import com.marketinghub.gerasalespage.v1.service.GeraSalesPagePromptRequest;
 import com.marketinghub.gerasalespage.v1.service.GeraSalesPageResultRequest;
@@ -20,10 +22,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api")
 public class GeraSalesPageController {
     private final GeraSalesPageStageService service;
+    private final GeraSalesPagePublicationAuditService publicationAuditService;
 
     /** Inicializa o controller com o service do GeraSalesPage v1. */
-    public GeraSalesPageController(GeraSalesPageStageService service) {
+    public GeraSalesPageController(
+            GeraSalesPageStageService service,
+            GeraSalesPagePublicationAuditService publicationAuditService) {
         this.service = service;
+        this.publicationAuditService = publicationAuditService;
     }
 
     /** Inicia o GeraSalesPage v1 para um experimento com checkout real. */
@@ -36,6 +42,12 @@ public class GeraSalesPageController {
     @PostMapping("/experiments/{experimentId}/gerasalespage/v1/rebuild")
     public ResponseEntity<GeraSalesPageStartResponse> rebuild(@PathVariable Long experimentId) {
         return ResponseEntity.accepted().body(service.rebuild(experimentId));
+    }
+
+    /** Lista as versões publicadas da página com prompts e schemas usados em cada versão. */
+    @GetMapping("/experiments/{experimentId}/gerasalespage/v1/publications")
+    public List<GeraSalesPagePublicationResponse> publications(@PathVariable Long experimentId) {
+        return publicationAuditService.listPublications(experimentId);
     }
 
     /** Lista jobs pendentes de uma etapa para consumo canônico pelo AI Worker. */

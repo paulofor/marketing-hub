@@ -43,6 +43,7 @@ import {
   type GeraLandingStageModel,
 } from "../../api/pipeline/useGeraLandingStageModels";
 import { useExperimentCompleteMarkdownReport } from "../../api/experiment/useExperimentCompleteMarkdownReport";
+import { useGeraSalesPagePublications } from "../../api/experiment/useGeraSalesPagePublications";
 
 function formatPipelineStageModel(stageModel?: GeraLandingStageModel) {
   const name = stageModel?.openAiModelName?.trim();
@@ -286,6 +287,7 @@ export default function ExperimentDetailPage() {
   const expId = id as string;
   const navigate = useNavigate();
   const { data, isLoading } = useExperiment(expId);
+  const geraSalesPagePublications = useGeraSalesPagePublications(expId);
   const { data: geraLandingStageModels, isLoading: isLoadingStageModels } =
     useGeraLandingStageModels();
   const {
@@ -1919,6 +1921,8 @@ export default function ExperimentDetailPage() {
       action: () => window.scrollTo({ top: 0, behavior: "smooth" }),
     },
   ];
+  const salesPagePublications = geraSalesPagePublications.data ?? [];
+  const latestSalesPagePublication = salesPagePublications[0];
   const diagnosticsVariant: Record<string, string> = {
     ERROR: "danger",
     WARNING: "warning",
@@ -2316,6 +2320,163 @@ export default function ExperimentDetailPage() {
               Página de obrigado premium e ZIP de entrega ainda dependem de
               validação operacional fora deste contrato persistido do backend.
             </div>
+          </div>
+        </div>
+      ) : null}
+      {isLowTicketProduct ? (
+        <div className="card border-0 shadow-sm rounded-3 mt-3">
+          <div className="card-body">
+            <div className="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+              <div>
+                <h5 className="card-title mb-1">
+                  Auditoria da página de venda
+                </h5>
+                <p className="text-muted small mb-0">
+                  Versões publicadas pelo GeraSalesPage v1 com prompts, schemas,
+                  modelo e request usados em cada etapa.
+                </p>
+              </div>
+              <span className="badge text-bg-light border text-body">
+                {geraSalesPagePublications.isLoading
+                  ? "Carregando"
+                  : `${salesPagePublications.length} versão(ões)`}
+              </span>
+            </div>
+            {geraSalesPagePublications.isLoading ? (
+              <div className="text-muted small mt-3">
+                Carregando auditoria da página...
+              </div>
+            ) : latestSalesPagePublication ? (
+              <div className="mt-3">
+                <div className="row g-3">
+                  <div className="col-12 col-lg-4">
+                    <div className="border rounded-3 p-3 h-100">
+                      <div className="text-muted small">Última publicação</div>
+                      <div className="fw-semibold">
+                        {formatDateTimeValue(
+                          latestSalesPagePublication.publishedAt,
+                        )}
+                      </div>
+                      <div className="text-muted small mt-2">Job final</div>
+                      <code className="small text-break">
+                        {latestSalesPagePublication.publicationJobId}
+                      </code>
+                    </div>
+                  </div>
+                  <div className="col-12 col-lg-4">
+                    <div className="border rounded-3 p-3 h-100">
+                      <div className="text-muted small">Página de venda</div>
+                      {latestSalesPagePublication.salesPageUrl ? (
+                        <a
+                          href={latestSalesPagePublication.salesPageUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="small text-break"
+                        >
+                          {latestSalesPagePublication.salesPageUrl}
+                        </a>
+                      ) : (
+                        <span className="text-muted small">Não registrada</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="col-12 col-lg-4">
+                    <div className="border rounded-3 p-3 h-100">
+                      <div className="text-muted small">Checkout usado</div>
+                      {latestSalesPagePublication.checkoutUrl ? (
+                        <a
+                          href={latestSalesPagePublication.checkoutUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="small text-break"
+                        >
+                          {latestSalesPagePublication.checkoutUrl}
+                        </a>
+                      ) : (
+                        <span className="text-muted small">Não registrado</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="accordion mt-3" id="gera-sales-page-audit">
+                  {latestSalesPagePublication.stages.map((stage, index) => (
+                    <div className="accordion-item" key={stage.idJob}>
+                      <h2
+                        className="accordion-header"
+                        id={`audit-stage-${stage.idJob}`}
+                      >
+                        <button
+                          className={`accordion-button ${index === 0 ? "" : "collapsed"}`}
+                          type="button"
+                          data-bs-toggle="collapse"
+                          data-bs-target={`#audit-stage-body-${stage.idJob}`}
+                          aria-expanded={index === 0}
+                          aria-controls={`audit-stage-body-${stage.idJob}`}
+                        >
+                          <span className="fw-semibold me-2">
+                            {stage.stageCode}
+                          </span>
+                          <span className="badge text-bg-light border text-body me-2">
+                            {stage.openAiModel || "modelo não registrado"}
+                          </span>
+                          <span className="text-muted small">
+                            {stage.completedAt
+                              ? formatDateTimeValue(stage.completedAt)
+                              : "sem data"}
+                          </span>
+                        </button>
+                      </h2>
+                      <div
+                        id={`audit-stage-body-${stage.idJob}`}
+                        className={`accordion-collapse collapse ${index === 0 ? "show" : ""}`}
+                        aria-labelledby={`audit-stage-${stage.idJob}`}
+                      >
+                        <div className="accordion-body">
+                          <div className="row g-3">
+                            <div className="col-12 col-xl-6">
+                              <h6>Prompt renderizado</h6>
+                              <CollapsibleJsonViewer
+                                content={stage.prompt}
+                                parseAsJson={false}
+                                initiallyCollapsed
+                              />
+                            </div>
+                            <div className="col-12 col-xl-6">
+                              <h6>Schema JSON</h6>
+                              <CollapsibleJsonViewer
+                                content={stage.schemaJson}
+                                initiallyCollapsed
+                              />
+                            </div>
+                            <div className="col-12 col-xl-6">
+                              <h6>Prompt markdown base</h6>
+                              <CollapsibleJsonViewer
+                                content={stage.promptMarkdownContent}
+                                parseAsJson={false}
+                                initiallyCollapsed
+                              />
+                            </div>
+                            <div className="col-12 col-xl-6">
+                              <h6>Request enviado</h6>
+                              <CollapsibleJsonViewer
+                                content={stage.openAiRequestBody}
+                                initiallyCollapsed
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="alert alert-light border small text-muted mt-3 mb-0">
+                Ainda não existe página publicada pelo GeraSalesPage v1 com
+                snapshot de prompts e schemas. Execute ou refaça o pipeline para
+                registrar a auditoria.
+              </div>
+            )}
           </div>
         </div>
       ) : null}

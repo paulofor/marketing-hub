@@ -126,7 +126,7 @@ O workflow `CI – Lead Portal Payments Service` (`.github/workflows/lead-portal
 
 1. **Testes** – roda `mvn test` com Java 21.
 2. **Build da imagem** – monta a imagem multi-stage e publica no GitHub Container Registry (`ghcr.io/<owner>/lead-portal-payments-service`) com tags `latest` e o SHA do commit, reaproveitando cache remoto.
-3. **Deploy** – apenas em pushes para `main`, o GitHub Actions acessa o VPS `191.252.102.54`, sincroniza este diretório via `rsync`, força o login no GHCR, garante que a network Docker (`public-net` por padrão) exista, aplica `docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d --remove-orphans` e finaliza com `docker image prune -af` para remover imagens antigas.
+3. **Deploy** – apenas em pushes para `main`, o GitHub Actions acessa o VPS `191.252.102.54`, sincroniza este diretório via `rsync`, força o login no GHCR, garante que a network Docker (`public-net` por padrão) exista, aplica `docker compose -f docker-compose.deploy.yml up -d --remove-orphans` e finaliza com `docker image prune -af` para remover imagens antigas. O compose de deploy é autônomo e usa somente a imagem publicada, sem herdar o `build` do compose local.
 
 ### Segredos necessários no GitHub
 

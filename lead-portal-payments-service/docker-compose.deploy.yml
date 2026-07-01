@@ -1,15 +1,48 @@
 services:
   lead-portal-payments-service:
-    image: ${LEAD_PORTAL_PAYMENTS_IMAGE}
-    build: null
+    container_name: lead-portal-payments-service
+    image: ${LEAD_PORTAL_PAYMENTS_IMAGE:?LEAD_PORTAL_PAYMENTS_IMAGE is required}
+    restart: unless-stopped
     environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      MERCADO_PAGO_ACCESS_TOKEN: ${MERCADO_PAGO_ACCESS_TOKEN:-APP_USR-6371948622467215-020511-5317ef62bbd997d52c2979a29f2c8419-133771061}
       MERCADO_PAGO_NOTIFICATION_URL: ${MERCADO_PAGO_NOTIFICATION_URL:-https://pagamentopalf.site/api/v1/mercadopago/webhook}
       MERCADO_PAGO_SUCCESS_URL: ${MERCADO_PAGO_SUCCESS_URL:-https://pagamentopalf.site/checkout}
       MERCADO_PAGO_FAILURE_URL: ${MERCADO_PAGO_FAILURE_URL:-https://pagamentopalf.site/checkout}
       MERCADO_PAGO_PENDING_URL: ${MERCADO_PAGO_PENDING_URL:-https://pagamentopalf.site/checkout}
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:mysql://d555d.vps-kinghost.net:3306/marketinghubdb?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&connectTimeout=60000&socketTimeout=60000&tcpKeepAlive=true}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-marketing_hub_user}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-${MYSQL_PASS:-Ab9!rG4wX8_tMq2Bz7#HpK5V}}
+      SPRING_DATASOURCE_DRIVER: ${SPRING_DATASOURCE_DRIVER:-com.mysql.cj.jdbc.Driver}
+      LEAD_PORTAL_STORAGE_BUCKET: ${LEAD_PORTAL_STORAGE_BUCKET:-leadportal}
+      LEAD_PORTAL_STORAGE_ENDPOINT: ${LEAD_PORTAL_STORAGE_ENDPOINT:-https://95b059f4f73518a658d07a19438f38c9.r2.cloudflarestorage.com}
+      LEAD_PORTAL_STORAGE_ACCESS_KEY_ID: ${LEAD_PORTAL_STORAGE_ACCESS_KEY_ID:-fafc943bd27d2a1c55c84f80778994a0}
+      LEAD_PORTAL_STORAGE_SECRET_ACCESS_KEY: ${LEAD_PORTAL_STORAGE_SECRET_ACCESS_KEY:-4ee618dd20bb752711ee0242469a70fadb9bdc0c921ded7e1177eeb681ddfc54}
+      LEAD_PORTAL_STORAGE_REGION: ${LEAD_PORTAL_STORAGE_REGION:-auto}
+      LEAD_PORTAL_STORAGE_PUBLIC_BASE_URL: ${LEAD_PORTAL_STORAGE_PUBLIC_BASE_URL:-https://pub-37cb222fbfe5470da56cce789c5beec1.r2.dev}
+      LEAD_PORTAL_ORIGINALS_PREFIX: ${LEAD_PORTAL_ORIGINALS_PREFIX:-originals}
+      EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS:-imagens@oportunidadebrasil.shop}
+      EMAIL_REPLY_TO: ${EMAIL_REPLY_TO:-}
+      SPRING_MAIL_HOST: ${SPRING_MAIL_HOST:-smtp.hostinger.com}
+      SPRING_MAIL_PORT: ${SPRING_MAIL_PORT:-465}
+      SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME:-imagens@oportunidadebrasil.shop}
+      SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD:-changeme}
+      SPRING_MAIL_SMTP_AUTH: ${SPRING_MAIL_SMTP_AUTH:-true}
+      SPRING_MAIL_SMTP_STARTTLS_ENABLE: ${SPRING_MAIL_SMTP_STARTTLS_ENABLE:-false}
+      SPRING_MAIL_SMTP_SSL_ENABLE: ${SPRING_MAIL_SMTP_SSL_ENABLE:-true}
+      PAYMENTS_DEFAULT_AMOUNT: ${PAYMENTS_DEFAULT_AMOUNT:-49.90}
+      PAYMENTS_DEFAULT_CURRENCY: ${PAYMENTS_DEFAULT_CURRENCY:-BRL}
+      DELIVERY_ENABLED: ${DELIVERY_ENABLED:-true}
+      DELIVERY_BATCH_SIZE: ${DELIVERY_BATCH_SIZE:-3}
+      DELIVERY_INITIAL_DELAY: ${DELIVERY_INITIAL_DELAY:-20000}
+      DELIVERY_FIXED_DELAY: ${DELIVERY_FIXED_DELAY:-60000}
       DIGITAL_PRODUCT_DELIVERY_EMAIL_SERVICE_BASE_URL: ${DIGITAL_PRODUCT_DELIVERY_EMAIL_SERVICE_BASE_URL:-http://digital-product-email-service:8080}
     ports:
       - "${HOST_HTTP_PORT:-8092}:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - lead-portal-payments-net
 
   proxy:
     image: nginx:1.25-alpine
@@ -43,20 +76,20 @@ services:
       CERTBOT_EMAIL: "paulofore@gmail.com.br"
     command: >-
       sh -c "
-        PRIMARY_DOMAIN="${CERTBOT_PRIMARY_DOMAIN:-pagamentopalf.site}"
-        DOMAIN_ARGS="-d ${PRIMARY_DOMAIN} -d www.${PRIMARY_DOMAIN}"
-        if [ -n "${CERTBOT_SECONDARY_DOMAIN:-}" ]; then
-          DOMAIN_ARGS="${DOMAIN_ARGS} -d ${CERTBOT_SECONDARY_DOMAIN} -d www.${CERTBOT_SECONDARY_DOMAIN}"
+        PRIMARY_DOMAIN="$${CERTBOT_PRIMARY_DOMAIN:-pagamentopalf.site}"
+        DOMAIN_ARGS="-d $${PRIMARY_DOMAIN} -d www.$${PRIMARY_DOMAIN}"
+        if [ -n "$${CERTBOT_SECONDARY_DOMAIN:-}" ]; then
+          DOMAIN_ARGS="$${DOMAIN_ARGS} -d $${CERTBOT_SECONDARY_DOMAIN} -d www.$${CERTBOT_SECONDARY_DOMAIN}"
         fi
-        if [ -n "${CERTBOT_EXTRA_DOMAINS:-}" ]; then
-          for extra in ${CERTBOT_EXTRA_DOMAINS}; do
-            DOMAIN_ARGS="${DOMAIN_ARGS} -d ${extra}"
+        if [ -n "$${CERTBOT_EXTRA_DOMAINS:-}" ]; then
+          for extra in $${CERTBOT_EXTRA_DOMAINS}; do
+            DOMAIN_ARGS="$${DOMAIN_ARGS} -d $${extra}"
           done
         fi
         certbot certonly --non-interactive --agree-tos --no-eff-email \
-          --email "${CERTBOT_EMAIL}" \
+          --email "$${CERTBOT_EMAIL}" \
           --webroot --webroot-path=/var/www/certbot \
-          ${DOMAIN_ARGS}
+          $${DOMAIN_ARGS}
       "
     volumes:
       - ./docker/proxy/html:/var/www/certbot
@@ -66,6 +99,7 @@ services:
     restart: "no"
     networks:
       - lead-portal-payments-net
+
 networks:
   lead-portal-payments-net:
     external: true

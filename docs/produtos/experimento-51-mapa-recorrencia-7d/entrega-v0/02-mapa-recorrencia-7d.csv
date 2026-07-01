@@ -1,0 +1,4 @@
+cliente,telefone,bairro,ultimo_atendimento,servico,valor_medio,frequencia_ideal_dias,proxima_sugestao,status_confirmacao,risco_furo,acao_hoje,observacoes
+Exemplo Ana,11999990001,Centro,2026-06-20,manicure e pedicure,70,14,2026-07-04,pendente,medio,enviar confirmacao 24h antes,cliente costuma remarcar
+Exemplo Carla,11999990002,Jardim Sul,2026-06-18,gel,95,21,2026-07-09,pendente,baixo,oferecer horario recorrente,prefere manha
+Exemplo Renata,11999990003,Vila Nova,2026-06-10,manutencao,85,15,2026-07-02,pendente,alto,pedir sinal antes de reservar,ja faltou sem avisar

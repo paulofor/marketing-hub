@@ -121,6 +121,7 @@ jobs:
             && export LEAD_PORTAL_PAYMENTS_IMAGE='${IMAGE_NAMESPACE}/lead-portal-payments-service:${IMAGE_TAG}' \
             && export LEAD_PORTAL_PAYMENTS_NETWORK='${LEAD_PORTAL_PAYMENTS_NETWORK}' \
             && docker compose -f docker-compose.deploy.yml pull \
+            && (docker rm -f lead-portal-payments-service-proxy-1 lead-portal-payments-service_proxy_1 >/dev/null 2>&1 || true) \
             && docker compose -f docker-compose.deploy.yml up -d --remove-orphans \
             && docker image prune -af"
       - name: Clean build artifacts from repository

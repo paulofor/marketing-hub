@@ -120,8 +120,8 @@ jobs:
             && (docker network inspect ${LEAD_PORTAL_PAYMENTS_NETWORK} >/dev/null 2>&1 || docker network create ${LEAD_PORTAL_PAYMENTS_NETWORK}) \
             && export LEAD_PORTAL_PAYMENTS_IMAGE='${IMAGE_NAMESPACE}/lead-portal-payments-service:${IMAGE_TAG}' \
             && export LEAD_PORTAL_PAYMENTS_NETWORK='${LEAD_PORTAL_PAYMENTS_NETWORK}' \
-            && docker compose -f docker-compose.yml -f docker-compose.deploy.yml pull \
-            && docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d --remove-orphans \
+            && docker compose -f docker-compose.deploy.yml pull \
+            && docker compose -f docker-compose.deploy.yml up -d --remove-orphans \
             && docker image prune -af"
       - name: Clean build artifacts from repository
         if: always()

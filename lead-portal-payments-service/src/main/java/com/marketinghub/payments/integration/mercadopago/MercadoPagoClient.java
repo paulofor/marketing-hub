@@ -20,6 +20,9 @@ import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
+/**
+ * Integra o serviço de pagamentos com as APIs de preferência e pagamento do Mercado Pago.
+ */
 @Component
 public class MercadoPagoClient {
 
@@ -137,6 +140,7 @@ public class MercadoPagoClient {
         }
     }
 
+    /** Converte a resposta bruta do Mercado Pago para o contrato interno de pagamento. */
     private MercadoPagoPaymentDetails parsePayment(JsonNode node, String rawPayload) {
         String id = node.path("id").asText(null);
         String status = node.path("status").asText(null);
@@ -146,10 +150,11 @@ public class MercadoPagoClient {
         String currency = node.path("currency_id").asText(null);
         String description = node.path("description").asText(null);
         String email = node.path("payer").path("email").asText(null);
+        String externalReference = node.path("external_reference").asText(null);
         Instant approvedAt = parseInstant(node.path("date_approved").asText(null));
         Map<String, Object> metadata = toMap(node.path("metadata"));
-        return new MercadoPagoPaymentDetails(id, status, amount, currency, description, email, approvedAt, metadata,
-                rawPayload);
+        return new MercadoPagoPaymentDetails(id, status, amount, currency, description, email, externalReference,
+                approvedAt, metadata, rawPayload);
     }
 
     private MercadoPagoPreferenceDetails parsePreference(JsonNode node) {

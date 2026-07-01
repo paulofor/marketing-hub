@@ -59,6 +59,7 @@ class MercadoPagoWebhookControllerTest {
                 "BRL",
                 "Pagamento teste",
                 "client@example.com",
+                null,
                 Instant.now(),
                 Map.of("packageId", 1L),
                 "{\"id\":\"123\"}"

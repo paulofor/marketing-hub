@@ -49,6 +49,9 @@ class CheckoutServiceTest {
     @Mock
     private PremiumDeliveryService premiumDeliveryService;
 
+    @Mock
+    private DigitalProductPostPurchaseEmailService digitalProductPostPurchaseEmailService;
+
     private PaymentProperties paymentProperties;
     private MercadoPagoProperties mercadoPagoProperties;
     private CheckoutService checkoutService;
@@ -63,7 +66,8 @@ class CheckoutServiceTest {
                 purchaseRepository,
                 mercadoPagoProperties,
                 paymentProperties,
-                premiumDeliveryService);
+                premiumDeliveryService,
+                digitalProductPostPurchaseEmailService);
     }
 
     @Test
@@ -411,6 +415,7 @@ class CheckoutServiceTest {
                 "BRL",
                 "Pagamento teste",
                 null,
+                null,
                 approvalDate,
                 Map.of(
                         "package_id", 1234,
@@ -445,6 +450,7 @@ class CheckoutServiceTest {
                 "BRL",
                 "Pagamento teste",
                 null,
+                null,
                 Instant.now(),
                 Map.of("package_id", 999),
                 "{\"id\":\"pay-keep-email\"}");
@@ -468,6 +474,7 @@ class CheckoutServiceTest {
                 "Pagamento teste",
                 "payer@example.com",
                 null,
+                null,
                 Map.of(
                         "package_id", "5678",
                         "submission_id", "sub-002",
@@ -485,6 +492,28 @@ class CheckoutServiceTest {
         assertThat(purchase.getSubmissionId()).isEqualTo("sub-002");
         assertThat(purchase.getBuyerEmail()).isEqualTo("payer@example.com");
         assertThat(purchase.getStatus()).isEqualTo(PurchaseStatus.PENDING_PAYMENT);
+    }
+
+    @Test
+    void shouldDispatchDigitalProductEmailWhenPaymentHasNoPackageId() {
+        MercadoPagoPaymentDetails paymentDetails = new MercadoPagoPaymentDetails(
+                "pay-exp51",
+                "approved",
+                new BigDecimal("29.90"),
+                "BRL",
+                "Mapa de Recorrência 7D",
+                "buyer@example.com",
+                "marketinghub-experiment-51",
+                Instant.now(),
+                Map.of("delivery_url", "https://pagamentopalf.site/downloads/produto.zip"),
+                "{\"id\":\"pay-exp51\"}");
+
+        LeadPortalPurchase purchase = checkoutService.updateFromPayment(paymentDetails, paymentDetails.rawPayload());
+
+        assertThat(purchase.getMercadoPagoPaymentId()).isEqualTo("pay-exp51");
+        assertThat(purchase.getStatus()).isEqualTo(PurchaseStatus.APPROVED);
+        verify(digitalProductPostPurchaseEmailService).sendIfSupported(paymentDetails);
+        verify(purchaseRepository, never()).save(any());
     }
 
     private LeadPortalPackageSummary buildSummary(long packageId,

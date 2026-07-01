@@ -5513,3 +5513,11 @@
 - Mudança importante: prompts e schemas do GeraSalesPage v1 ficam no banco em `ai_prompt_schema_template` e são entregues ao AI Worker pelo endpoint `pending`.
 - Prevenção de recorrência: o start bloqueia experimento sem `followUpActionUrl` real, evitando gerar página com CTA falso como `#checkout_externo`.
 - Sugestão registrada: deixar a publicação final e pixel/eventos de compra como próxima integração, depois de validar o pacote final de checkout.
+
+## 2026-07-01 — Experimento 51 preparado para publicação via Sales Page
+
+- Decisão operacional: o novo teste de simulação de compra do experimento 51 deve usar o fluxo Sales Page/GeraSalesPage, não a landing do Lead Portal.
+- Foi feito: extraído o pacote final `sales-page-publication-package`, substituído o checkout antigo pelo `follow_up_action_url` atual do experimento e criados os artefatos públicos no proxy de pagamentos.
+- Artefatos preparados: `sales-page-exp51.html`, `obrigado-exp51.html` e `downloads/experimento-51/agenda-blindada-7d.zip`.
+- Validação: a sales page ficou sem `#checkout_externo`, sem formulário, com 5 CTAs para o checkout atual do Mercado Pago e com página de obrigado apontando para o ZIP de entrega.
+- Limite operacional: a publicação pública em `pagamentopalf.site` depende de deploy/sincronização do `lead-portal-payments-service` no VPS.

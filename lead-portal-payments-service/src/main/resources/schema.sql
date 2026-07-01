@@ -128,3 +128,23 @@ CREATE TABLE IF NOT EXISTS mercadopago_webhook_log (
     INDEX idx_mp_webhook_resource (resource_id),
     INDEX idx_mp_webhook_created_at (created_at)
 );
+
+CREATE TABLE IF NOT EXISTS digital_product_delivery_email (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    payment_id VARCHAR(150) NOT NULL,
+    external_reference VARCHAR(150) NOT NULL,
+    recipient_email VARCHAR(320) NOT NULL,
+    recipient_name VARCHAR(255),
+    product_name VARCHAR(255) NOT NULL,
+    delivery_page_url VARCHAR(1200),
+    download_url VARCHAR(1200),
+    status VARCHAR(30) NOT NULL,
+    email_request_id VARCHAR(64),
+    sent_at TIMESTAMP NULL,
+    attempts INT NOT NULL DEFAULT 0,
+    last_error LONGTEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_digital_product_delivery_payment (payment_id),
+    INDEX idx_digital_product_delivery_status (status, updated_at)
+);

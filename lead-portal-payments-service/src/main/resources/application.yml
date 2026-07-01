@@ -54,6 +54,19 @@ delivery:
   max-attempts: ${DELIVERY_MAX_ATTEMPTS:5}
   initial-delay: ${DELIVERY_INITIAL_DELAY:20000}
   fixed-delay: ${DELIVERY_FIXED_DELAY:60000}
+
+digital-product:
+  delivery:
+    email:
+      enabled: ${DIGITAL_PRODUCT_DELIVERY_EMAIL_ENABLED:true}
+      email-service-base-url: ${DIGITAL_PRODUCT_DELIVERY_EMAIL_SERVICE_BASE_URL:http://191.252.120.96:8086}
+      send-path: ${DIGITAL_PRODUCT_DELIVERY_EMAIL_SEND_PATH:/api/v1/product-deliveries/send}
+      connect-timeout: ${DIGITAL_PRODUCT_DELIVERY_EMAIL_CONNECT_TIMEOUT:PT3S}
+      read-timeout: ${DIGITAL_PRODUCT_DELIVERY_EMAIL_READ_TIMEOUT:PT20S}
+      experiment51-reference: ${DIGITAL_PRODUCT_EXP51_REFERENCE:marketinghub-experiment-51}
+      experiment51-product-name: ${DIGITAL_PRODUCT_EXP51_PRODUCT_NAME:Mapa de Recorrência 7D}
+      experiment51-delivery-page-url: ${DIGITAL_PRODUCT_EXP51_DELIVERY_PAGE_URL:https://pagamentopalf.site/obrigado-exp51-mapa-recorrencia-7d.html}
+      experiment51-download-url: ${DIGITAL_PRODUCT_EXP51_DOWNLOAD_URL:https://pagamentopalf.site/downloads/mapa-recorrencia-7d-entrega-v0-7xQ9mR4pL2.zip}
 ---
 spring:
   config:

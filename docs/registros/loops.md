@@ -50,8 +50,29 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
 | `LOOP-HYPOTHESIS-PIPELINE` | ALTO | Em formação | Pipeline Dor → Resultado → Mecanismo → Prova → Oferta | etapas completas + pré-requisitos + finalização separada + lease |
 | `LOOP-ARTIFACT-CONTAMINATION` | ALTO | Estabilizado com risco | Metadado técnico em artefato final | separação auditoria vs artefato publicável + whitelist de DTO final |
 | `LOOP-COST-MODEL-AUDIT` | MÉDIO | Em observação | Custos OpenAI e modelo por etapa | preço vindo do catálogo backend + modelo efetivo auditado por etapa |
+| `LOOP-LOW-TICKET-SALES-PAGE-BYPASS` | CRÍTICO | Fechado em 2026-07-01 | Low-ticket/GeraSalesPage | campanha bloqueada sem etapa final do pipeline concluída |
 
 ---
+
+## LOOP-LOW-TICKET-SALES-PAGE-BYPASS — Low-ticket sem página criada pelo pipeline
+
+- **Severidade**: CRÍTICO.
+- **Status**: fechado em 2026-07-01.
+- **Sintomas recorrentes ou risco observado**:
+  - experimento low-ticket com página publicada por ponte operacional, fora da execução completa do GeraSalesPage;
+  - liberação de campanha baseada apenas em `followUpActionUrl` preenchido;
+  - aprendizado de qualidade da página ficando fora do pipeline;
+  - risco de tráfego pago apontar para artefato não auditado pela etapa de quality review/publication package.
+- **Causa-raiz sistêmica confirmada**:
+  - a prontidão de campanha validava destino de venda como URL, não como artefato concluído pelo pipeline responsável;
+  - o GeraSalesPage usava Flex, que reduzia custo, mas aumentava indisponibilidade em artefato comercial crítico.
+- **Correção efetiva**:
+  - bloquear prontidão e liberação de campanha para `LOW_TICKET_PRODUCT` sem `sales-page-publication-package=CONCLUIDO`;
+  - adicionar rebuild canônico para substituir execuções antigas por `SUBSTITUIDO` e recriar a página pelo pipeline;
+  - usar `service_tier=default` no GeraSalesPage v1 por padrão;
+  - calcular custo OpenAI conforme o service tier usado.
+- **Regra preventiva**:
+  - nunca liberar campanha low-ticket apenas porque existe URL pública; a URL deve ser resultado auditável do GeraSalesPage v1 concluído.
 
 ## LOOP-FB-PUBLICATION — Publicação Facebook Ads
 

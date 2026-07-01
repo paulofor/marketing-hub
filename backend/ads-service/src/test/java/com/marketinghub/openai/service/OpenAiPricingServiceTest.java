@@ -9,65 +9,59 @@ import com.marketinghub.openai.OpenAiResponse;
 import com.marketinghub.repository.jpa.openai.OpenAiModelRepository;
 import java.math.BigDecimal;
 import java.util.Optional;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
-@ExtendWith(MockitoExtension.class)
+/** Valida cálculo de custo OpenAI conforme o modo de preço usado. */
 class OpenAiPricingServiceTest {
 
-    @Mock
-    private OpenAiModelRepository modelRepository;
+    private final OpenAiModelRepository repository = org.mockito.Mockito.mock(OpenAiModelRepository.class);
+    private final OpenAiPricingService service = new OpenAiPricingService(repository);
 
-    private OpenAiPricingService service;
-
-    @BeforeEach
-    void setUp() {
-        service = new OpenAiPricingService(modelRepository);
-    }
-
+    /** Deve calcular Flex pelas tarifas Batch/Flex do catálogo. */
     @Test
-    void estimateStandardCostUsesPricesPerMillionTokens() {
-        OpenAiModel model = OpenAiModel.builder()
-                .code("gpt-5.3-codex")
-                .priceInputStandard(new BigDecimal("2.00000"))
-                .priceOutputStandard(new BigDecimal("10.00000"))
-                .build();
-        when(modelRepository.findByCode("gpt-5.3-codex")).thenReturn(Optional.of(model));
+    void estimateFlexCostShouldUseBatchPrices() {
+        when(repository.findByCode("gpt-test")).thenReturn(Optional.of(model()));
 
-        OpenAiResponse.OpenAiUsage usage = new OpenAiResponse.OpenAiUsage(250_000, 125_000, null, null, 375_000);
-        BigDecimal cost = service.estimateStandardCost("gpt-5.3-codex", usage);
+        BigDecimal cost = service.estimateFlexCost("gpt-test", 1_000_000, 1_000_000);
 
-        assertThat(cost).isEqualByComparingTo("1.7500");
+        assertThat(cost).isEqualByComparingTo("8.7500");
     }
 
+    /** Deve calcular Standard pelas tarifas Standard do catálogo. */
     @Test
-    void estimateBatchCostUsesBatchColumnsPerMillionTokens() {
-        OpenAiModel model = OpenAiModel.builder()
-                .code("gpt-5.3-codex")
-                .priceInputBatch(new BigDecimal("1.00000"))
-                .priceOutputBatch(new BigDecimal("4.00000"))
-                .build();
-        when(modelRepository.findByCode("gpt-5.3-codex")).thenReturn(Optional.of(model));
+    void estimateStandardCostShouldUseStandardPrices() {
+        when(repository.findByCode("gpt-test")).thenReturn(Optional.of(model()));
 
-        OpenAiResponse.OpenAiUsage usage = new OpenAiResponse.OpenAiUsage(300_000, 50_000, null, null, 350_000);
-        BigDecimal cost = service.estimateBatchCost("gpt-5.3-codex", usage);
+        BigDecimal cost = service.estimateStandardCost(
+                "gpt-test",
+                new OpenAiResponse.OpenAiUsage(1_000_000, 1_000_000, null, null, null));
 
-        assertThat(cost).isEqualByComparingTo("0.5000");
+        assertThat(cost).isEqualByComparingTo("17.5000");
     }
 
+    /** Deve falhar claramente quando o modelo não existe no catálogo. */
     @Test
     void estimateCostFailsWhenModelIsMissingFromCatalog() {
-        when(modelRepository.findByCode("missing-model")).thenReturn(Optional.empty());
-
-        OpenAiResponse.OpenAiUsage usage = new OpenAiResponse.OpenAiUsage(1000, 1000, null, null, 2000);
+        when(repository.findByCode("missing-model")).thenReturn(Optional.empty());
 
         IllegalStateException error = assertThrows(
                 IllegalStateException.class,
-                () -> service.estimateStandardCost("missing-model", usage));
+                () -> service.estimateStandardCost(
+                        "missing-model",
+                        new OpenAiResponse.OpenAiUsage(1000, 1000, null, null, 2000)));
 
         assertThat(error.getMessage()).contains("Modelo OpenAI não encontrado no catálogo");
+    }
+
+    /** Cria modelo com preços diferentes para provar a escolha do modo. */
+    private OpenAiModel model() {
+        return OpenAiModel.builder()
+                .code("gpt-test")
+                .name("GPT Test")
+                .priceInputStandard(new BigDecimal("2.50"))
+                .priceOutputStandard(new BigDecimal("15.00"))
+                .priceInputBatch(new BigDecimal("1.25"))
+                .priceOutputBatch(new BigDecimal("7.50"))
+                .build();
     }
 }

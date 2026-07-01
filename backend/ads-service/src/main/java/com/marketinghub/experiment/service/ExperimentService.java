@@ -13,6 +13,7 @@ import com.marketinghub.experiment.*;
 import com.marketinghub.finance.CurrencyConversionService;
 import com.marketinghub.experiment.dto.CreateExperimentRequest;
 import com.marketinghub.experiment.dto.UpdateExperimentRequest;
+import com.marketinghub.gerasalespage.v1.GeraSalesPageStageCode;
 import com.marketinghub.repository.jpa.experiment.ExperimentPromiseGenerationRequestRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.experiment.funnel.ExperimentFunnelEventRepository;
@@ -20,6 +21,7 @@ import com.marketinghub.repository.jpa.experiment.funnel.ExperimentLandingAnalyt
 import com.marketinghub.repository.jpa.facebookads.FacebookAdsAdRepository;
 import com.marketinghub.repository.jpa.facebookads.FacebookAdsAdSetRepository;
 import com.marketinghub.repository.jpa.facebookads.FacebookAdsCampaignRepository;
+import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPageStageExecutionRepository;
 import com.marketinghub.journey.model.JourneyTemplate;
 import com.marketinghub.repository.jpa.journey.JourneyTemplateRepository;
 import com.marketinghub.leadportal.LeadPortalFlow;
@@ -72,6 +74,7 @@ public class ExperimentService {
     private final FacebookAdsCampaignRepository facebookAdsCampaignRepository;
     private final FacebookAdsAdSetRepository facebookAdsAdSetRepository;
     private final FacebookAdsAdRepository facebookAdsAdRepository;
+    private final GeraSalesPageStageExecutionRepository geraSalesPageStageExecutionRepository;
     private final ObjectMapper objectMapper;
     private final CurrencyConversionService currencyConversionService;
 
@@ -95,6 +98,7 @@ public class ExperimentService {
                              FacebookAdsCampaignRepository facebookAdsCampaignRepository,
                              FacebookAdsAdSetRepository facebookAdsAdSetRepository,
                              FacebookAdsAdRepository facebookAdsAdRepository,
+                             GeraSalesPageStageExecutionRepository geraSalesPageStageExecutionRepository,
                              ObjectMapper objectMapper,
                              CurrencyConversionService currencyConversionService) {
         this.repository = repository;
@@ -117,6 +121,7 @@ public class ExperimentService {
         this.facebookAdsCampaignRepository = facebookAdsCampaignRepository;
         this.facebookAdsAdSetRepository = facebookAdsAdSetRepository;
         this.facebookAdsAdRepository = facebookAdsAdRepository;
+        this.geraSalesPageStageExecutionRepository = geraSalesPageStageExecutionRepository;
         this.objectMapper = objectMapper;
         this.currencyConversionService = currencyConversionService;
     }
@@ -851,6 +856,7 @@ public class ExperimentService {
         if (experiment.getPlatform() != ExperimentPlatform.FACEBOOK) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Experiment platform must be Facebook");
         }
+        ensureLowTicketSalesPageWasBuiltByPipeline(experiment);
         experiment.setStatus(ExperimentStatus.PLANNED);
         experiment.setFacebookReleaseRequestedAt(Instant.now());
         experiment.setFunnelResetAt(experiment.getFacebookReleaseRequestedAt());
@@ -858,6 +864,24 @@ public class ExperimentService {
         experimentLandingAnalyticsEventRepository.deleteByExperimentId(id);
         experimentFunnelEventRepository.deleteByExperimentId(id);
         return experiment;
+    }
+
+    /** Bloqueia venda low-ticket quando a página de venda não veio do GeraSalesPage v1. */
+    private void ensureLowTicketSalesPageWasBuiltByPipeline(Experiment experiment) {
+        if (experiment.getExperimentType() != ExperimentType.LOW_TICKET_PRODUCT) {
+            return;
+        }
+        boolean pipelineCompleted = geraSalesPageStageExecutionRepository
+                .findTopByExperimentIdAndStageCodeOrderByExecutionRequestedAtDesc(
+                        experiment.getId(), GeraSalesPageStageCode.PUBLICATION_PACKAGE.code())
+                .map(com.marketinghub.gerasalespage.v1.GeraSalesPageStageExecution::getStatus)
+                .map("CONCLUIDO"::equalsIgnoreCase)
+                .orElse(false);
+        if (!pipelineCompleted) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Experimento low-ticket exige página de venda criada pelo GeraSalesPage v1 antes da campanha.");
+        }
     }
 
     /**

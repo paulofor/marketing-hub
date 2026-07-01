@@ -32,6 +32,12 @@ public class GeraSalesPageController {
         return ResponseEntity.accepted().body(service.start(experimentId));
     }
 
+    /** Refaz o GeraSalesPage v1 substituindo execuções antigas por uma geração limpa. */
+    @PostMapping("/experiments/{experimentId}/gerasalespage/v1/rebuild")
+    public ResponseEntity<GeraSalesPageStartResponse> rebuild(@PathVariable Long experimentId) {
+        return ResponseEntity.accepted().body(service.rebuild(experimentId));
+    }
+
     /** Lista jobs pendentes de uma etapa para consumo canônico pelo AI Worker. */
     @GetMapping("/internal/gerasalespage/v1/{stageCode}/stage-executions/pending")
     public List<GeraSalesPagePendingResponse> pending(@PathVariable String stageCode) {

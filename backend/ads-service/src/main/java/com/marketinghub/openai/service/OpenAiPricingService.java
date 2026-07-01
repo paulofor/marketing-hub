@@ -21,9 +21,9 @@ public class OpenAiPricingService {
         this.modelRepository = modelRepository;
     }
 
-    /** Estima custo canônico de execução Flex, usando os preços standard cadastrados no catálogo OpenAI. */
+    /** Estima custo canônico de execução Flex, usando os preços batch/flex cadastrados no catálogo OpenAI. */
     public BigDecimal estimateFlexCost(String modelCode, Integer inputTokens, Integer outputTokens) {
-        return estimateStandardCost(modelCode, new OpenAiResponse.OpenAiUsage(inputTokens, outputTokens, null, null, null));
+        return estimateBatchCost(modelCode, new OpenAiResponse.OpenAiUsage(inputTokens, outputTokens, null, null, null));
     }
 
     /** Estima custo canônico de execução Standard usando o uso retornado pela OpenAI. */

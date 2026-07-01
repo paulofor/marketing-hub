@@ -33,6 +33,7 @@ public class GeraSalesPageStageService {
     private static final String STATUS_WAITING_OPENAI = "AGUARDANDO_RETORNO_OPENAI";
     private static final String STATUS_COMPLETED = "CONCLUIDO";
     private static final String STATUS_FAILED = "FALHA";
+    private static final String STATUS_REPLACED = "SUBSTITUIDO";
 
     private final ExperimentRepository experimentRepository;
     private final GeraSalesPageStageExecutionRepository executionRepository;
@@ -56,12 +57,27 @@ public class GeraSalesPageStageService {
     public GeraSalesPageStartResponse start(Long experimentId) {
         Experiment experiment = experimentRepository.findById(experimentId)
                 .orElseThrow(() -> new EntityNotFoundException("Experiment not found: " + experimentId));
-        if (!isRealCheckoutUrl(experiment.getFollowUpActionUrl())) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "GeraSalesPage v1 exige followUpActionUrl com URL real de checkout antes de iniciar.");
-        }
+        validateCheckoutUrl(experiment);
         GeraSalesPageStageExecution execution = enqueue(experimentId, GeraSalesPageStageCode.OFFER_BRIEF.code());
+        return new GeraSalesPageStartResponse(experimentId, execution.getStageCode(), idJobText(execution), execution.getStatus());
+    }
+
+    /** Substitui execuções anteriores e reinicia o GeraSalesPage v1 desde a primeira etapa. */
+    @Transactional
+    public GeraSalesPageStartResponse rebuild(Long experimentId) {
+        Experiment experiment = experimentRepository.findById(experimentId)
+                .orElseThrow(() -> new EntityNotFoundException("Experiment not found: " + experimentId));
+        validateCheckoutUrl(experiment);
+        List<GeraSalesPageStageExecution> executions =
+                executionRepository.findByExperimentIdOrderByExecutionRequestedAtAsc(experimentId);
+        executions.forEach(execution -> {
+            if (!STATUS_REPLACED.equalsIgnoreCase(execution.getStatus())) {
+                execution.setStatus(STATUS_REPLACED);
+                execution.setErrorMessage("Execução substituída por rebuild manual do GeraSalesPage v1.");
+            }
+        });
+        executionRepository.saveAll(executions);
+        GeraSalesPageStageExecution execution = createNewExecution(experimentId, GeraSalesPageStageCode.OFFER_BRIEF.code());
         return new GeraSalesPageStartResponse(experimentId, execution.getStageCode(), idJobText(execution), execution.getStatus());
     }
 
@@ -126,18 +142,24 @@ public class GeraSalesPageStageService {
     private GeraSalesPageStageExecution enqueue(Long experimentId, String stageCode) {
         return executionRepository.findTopByExperimentIdAndStageCodeOrderByExecutionRequestedAtDesc(experimentId, stageCode)
                 .filter(existing -> !STATUS_FAILED.equals(existing.getStatus()))
+                .filter(existing -> !STATUS_REPLACED.equals(existing.getStatus()))
                 .orElseGet(() -> {
-                    GeraSalesPagePromptSchemaTemplate template = loadTemplate(stageCode);
-                    GeraSalesPageStageExecution execution = GeraSalesPageStageExecution.builder()
-                            .idJob(UUID.randomUUID().toString())
-                            .experimentId(experimentId)
-                            .stageCode(stageCode)
-                            .status(STATUS_STARTED)
-                            .executionRequestedAt(Instant.now())
-                            .promptTemplateKey(template.getTemplateKey())
-                            .build();
-                    return executionRepository.save(execution);
+                    return createNewExecution(experimentId, stageCode);
                 });
+    }
+
+    /** Cria uma nova execução de etapa com template ativo e idJob único. */
+    private GeraSalesPageStageExecution createNewExecution(Long experimentId, String stageCode) {
+        GeraSalesPagePromptSchemaTemplate template = loadTemplate(stageCode);
+        GeraSalesPageStageExecution execution = GeraSalesPageStageExecution.builder()
+                .idJob(UUID.randomUUID().toString())
+                .experimentId(experimentId)
+                .stageCode(stageCode)
+                .status(STATUS_STARTED)
+                .executionRequestedAt(Instant.now())
+                .promptTemplateKey(template.getTemplateKey())
+                .build();
+        return executionRepository.save(execution);
     }
 
     /** Converte uma execução persistida no payload de pendência consumido pelo worker. */
@@ -225,6 +247,15 @@ public class GeraSalesPageStageService {
         return StringUtils.hasText(url)
                 && (url.startsWith("http://") || url.startsWith("https://"))
                 && !url.contains("#checkout");
+    }
+
+    /** Bloqueia início ou rebuild sem checkout real persistido no experimento. */
+    private void validateCheckoutUrl(Experiment experiment) {
+        if (!isRealCheckoutUrl(experiment.getFollowUpActionUrl())) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "GeraSalesPage v1 exige followUpActionUrl com URL real de checkout antes de iniciar.");
+        }
     }
 
     /** Converte JSON textual quando possível, preservando texto simples quando não for JSON. */

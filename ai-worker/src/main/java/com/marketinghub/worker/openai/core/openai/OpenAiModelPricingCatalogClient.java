@@ -90,9 +90,11 @@ public class OpenAiModelPricingCatalogClient {
         return modelCode.trim().toLowerCase(Locale.ROOT);
     }
 
-    /** DTO mínimo do catálogo backend com preços batch/flex por milhão de tokens. */
+    /** DTO mínimo do catálogo backend com preços standard e batch/flex por milhão de tokens. */
     public record OpenAiModelPricing(
             String code,
+            BigDecimal priceInputStandard,
+            BigDecimal priceOutputStandard,
             BigDecimal priceInputBatch,
             BigDecimal priceOutputBatch
     ) {}

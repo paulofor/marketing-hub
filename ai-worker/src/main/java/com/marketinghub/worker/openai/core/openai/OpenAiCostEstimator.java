@@ -19,24 +19,31 @@ public class OpenAiCostEstimator {
 
     /** Estima o custo usando o modelo efetivo do request e os preços batch/flex cadastrados no banco. */
     public BigDecimal estimate(String model, Integer inputTokens, Integer outputTokens) {
+        return estimate(model, inputTokens, outputTokens, "flex");
+    }
+
+    /** Estima o custo usando o modo de preço correspondente ao service tier da etapa. */
+    public BigDecimal estimate(String model, Integer inputTokens, Integer outputTokens, String serviceTier) {
         OpenAiModelPricingCatalogClient.OpenAiModelPricing pricing = pricingCatalogClient.findByCode(model)
                 .orElseThrow(() -> new StageWorkerException(
                         "Modelo OpenAI não encontrado no catálogo persistido para cálculo de custo: " + model));
-        return estimateWithPricing(pricing, inputTokens, outputTokens);
+        return estimateWithPricing(pricing, inputTokens, outputTokens, serviceTier);
     }
 
     /** Aplica a tarifa por milhão de tokens aos totais de entrada e saída retornados pela OpenAI. */
     private BigDecimal estimateWithPricing(
             OpenAiModelPricingCatalogClient.OpenAiModelPricing pricing,
             Integer inputTokens,
-            Integer outputTokens
+            Integer outputTokens,
+            String serviceTier
     ) {
+        boolean standard = "default".equalsIgnoreCase(serviceTier) || "standard".equalsIgnoreCase(serviceTier);
         BigDecimal input = BigDecimal.valueOf(inputTokens == null ? 0 : inputTokens)
-                .multiply(nullToZero(pricing.priceInputBatch()))
+                .multiply(nullToZero(standard ? pricing.priceInputStandard() : pricing.priceInputBatch()))
                 .divide(ONE_MILLION, 8, RoundingMode.HALF_UP);
 
         BigDecimal output = BigDecimal.valueOf(outputTokens == null ? 0 : outputTokens)
-                .multiply(nullToZero(pricing.priceOutputBatch()))
+                .multiply(nullToZero(standard ? pricing.priceOutputStandard() : pricing.priceOutputBatch()))
                 .divide(ONE_MILLION, 8, RoundingMode.HALF_UP);
 
         return input.add(output).setScale(8, RoundingMode.HALF_UP);

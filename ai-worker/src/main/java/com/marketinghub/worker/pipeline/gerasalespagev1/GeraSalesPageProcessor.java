@@ -26,17 +26,20 @@ public class GeraSalesPageProcessor implements StageProcessor<GeraSalesPageInput
     private final GeraSalesPageResponseValidator responseValidator;
     private final GeraSalesPageBackendClient backendClient;
     private final PromptTemplateResolver promptTemplateResolver;
+    private final String serviceTier;
 
     /** Inicializa o processor com dependências de OpenAI, validação e auditoria no backend. */
     public GeraSalesPageProcessor(
             ObjectMapper objectMapper,
             OpenAiClientPort openAiClient,
             GeraSalesPageResponseValidator responseValidator,
-            GeraSalesPageBackendClient backendClient) {
+            GeraSalesPageBackendClient backendClient,
+            String serviceTier) {
         this.objectMapper = objectMapper;
         this.openAiClient = openAiClient;
         this.responseValidator = responseValidator;
         this.backendClient = backendClient;
+        this.serviceTier = normalizeServiceTier(serviceTier);
         this.promptTemplateResolver = new PromptTemplateResolver(path -> "", this::toJsonOrText);
     }
 
@@ -103,7 +106,7 @@ public class GeraSalesPageProcessor implements StageProcessor<GeraSalesPageInput
                         "stageCode", context.execution().stageCode(),
                         "idJob", context.execution().idJob(),
                         "experimentId", context.execution().aggregateId()),
-                "flex");
+                serviceTier);
     }
 
     /** Serializa o corpo compatível com Responses API usando schema JSON estrito. */
@@ -121,7 +124,7 @@ public class GeraSalesPageProcessor implements StageProcessor<GeraSalesPageInput
             body.put("model", model);
             body.put("input", prompt);
             body.put("text", text);
-            body.put("service_tier", "flex");
+            body.put("service_tier", serviceTier);
             return objectMapper.writeValueAsString(body);
         } catch (JsonProcessingException ex) {
             log.error("Could not build OpenAI request for GeraSalesPage v1. schemaName={}", schemaName, ex);
@@ -143,5 +146,14 @@ public class GeraSalesPageProcessor implements StageProcessor<GeraSalesPageInput
             log.warn("Could not serialize GeraSalesPage prompt value; using toString fallback.", ex);
             return value.toString();
         }
+    }
+
+    /** Normaliza o tier OpenAI aceito pela Responses API. */
+    private String normalizeServiceTier(String value) {
+        if (value == null || value.isBlank()) {
+            return "default";
+        }
+        String normalized = value.trim().toLowerCase();
+        return "standard".equals(normalized) ? "default" : normalized;
     }
 }

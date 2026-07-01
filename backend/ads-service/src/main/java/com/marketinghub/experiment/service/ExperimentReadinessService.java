@@ -4,14 +4,17 @@ import com.marketinghub.creative.CreativeStatus;
 import com.marketinghub.repository.jpa.creative.CreativeRepository;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.ExperimentType;
 import com.marketinghub.experiment.dto.ExperimentReadinessIssueDto;
 import com.marketinghub.experiment.dto.ExperimentReadinessIssueType;
 import com.marketinghub.experiment.dto.ExperimentReadinessSummaryDto;
+import com.marketinghub.gerasalespage.v1.GeraSalesPageStageCode;
 import com.marketinghub.targeting.TargetingElement;
 import com.marketinghub.targeting.TargetingElementStatus;
 import com.marketinghub.targeting.TargetingElementType;
 import com.marketinghub.repository.jpa.experiment.ExperimentTargetingSelectionRepository;
 import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
+import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPageStageExecutionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,16 +49,19 @@ public class ExperimentReadinessService {
     private static final Set<TargetingElementType> PUBLISHABLE_TARGETING_TYPE_SET = Set.copyOf(PUBLISHABLE_TARGETING_TYPES);
 
     private final GeraLandingStageExecutionRepository geraLandingStageExecutionRepository;
+    private final GeraSalesPageStageExecutionRepository geraSalesPageStageExecutionRepository;
 
     /** Cria o serviço com as fontes canônicas de prontidão do experimento. */
     public ExperimentReadinessService(ExperimentService experimentService,
                                       CreativeRepository creativeRepository,
                                       ExperimentTargetingSelectionRepository targetingSelectionRepository,
-                                      GeraLandingStageExecutionRepository geraLandingStageExecutionRepository) {
+                                      GeraLandingStageExecutionRepository geraLandingStageExecutionRepository,
+                                      GeraSalesPageStageExecutionRepository geraSalesPageStageExecutionRepository) {
         this.experimentService = experimentService;
         this.creativeRepository = creativeRepository;
         this.targetingSelectionRepository = targetingSelectionRepository;
         this.geraLandingStageExecutionRepository = geraLandingStageExecutionRepository;
+        this.geraSalesPageStageExecutionRepository = geraSalesPageStageExecutionRepository;
     }
 
     /** Resume a prontidão do experimento usando apenas dados canônicos aprovados para publicação. */
@@ -74,6 +80,8 @@ public class ExperimentReadinessService {
                 : PUBLISHABLE_TARGETING_TYPES;
         long geraLandingCompletedStageCount = countCompletedGeraLandingStages(experimentId);
         boolean hasGeraLandingPipeline = geraLandingCompletedStageCount == GERA_LANDING_REQUIRED_STAGES.size();
+        boolean lowTicket = isLowTicketProduct(experiment);
+        boolean hasGeraSalesPagePipeline = hasCompletedGeraSalesPagePipeline(experimentId);
 
         List<ExperimentReadinessIssueDto> issues = new ArrayList<>();
         if (!hasCreatives) {
@@ -85,7 +93,7 @@ public class ExperimentReadinessService {
                     List.of()
             ));
         }
-        if (!hasLeadPortalFlow) {
+        if (!lowTicket && !hasLeadPortalFlow) {
             issues.add(new ExperimentReadinessIssueDto(
                     ExperimentReadinessIssueType.LEAD_PORTAL_FLOW,
                     "Sem fluxo do portal do lead",
@@ -104,7 +112,17 @@ public class ExperimentReadinessService {
             ));
         }
 
-        if (!hasGeraLandingPipeline) {
+        if (lowTicket && !hasGeraSalesPagePipeline) {
+            issues.add(new ExperimentReadinessIssueDto(
+                    ExperimentReadinessIssueType.GERA_SALES_PAGE,
+                    "Página de venda não foi criada pelo pipeline",
+                    "Experimentos low-ticket só podem ser liberados quando o GeraSalesPage v1 concluir a publicação.",
+                    "Execute ou refaça o GeraSalesPage v1 e use a página de venda gerada pelo pipeline.",
+                    List.of()
+            ));
+        }
+
+        if (!lowTicket && !hasGeraLandingPipeline) {
             issues.add(new ExperimentReadinessIssueDto(
                     ExperimentReadinessIssueType.GERA_LANDING,
                     "GeraLanding incompleto",
@@ -141,6 +159,9 @@ public class ExperimentReadinessService {
         }
         if (!hasApprovedLandingDestination(experiment)) {
             missing.add("landingDestination");
+        }
+        if (isLowTicketProduct(experiment) && !hasCompletedGeraSalesPagePipeline(experiment != null ? experiment.getId() : null)) {
+            missing.add("geraSalesPagePipeline");
         }
         if (!hasConfiguredTargeting(experiment)) {
             missing.add("approvedTargetingPackage");
@@ -207,6 +228,24 @@ public class ExperimentReadinessService {
         return experiment != null
                 && experiment.getFollowUpActionUrl() != null
                 && !experiment.getFollowUpActionUrl().isBlank();
+    }
+
+    /** Identifica experimento de venda direta low-ticket. */
+    private boolean isLowTicketProduct(Experiment experiment) {
+        return experiment != null && experiment.getExperimentType() == ExperimentType.LOW_TICKET_PRODUCT;
+    }
+
+    /** Verifica a conclusão da etapa final que publica a página de venda canônica. */
+    private boolean hasCompletedGeraSalesPagePipeline(Long experimentId) {
+        if (experimentId == null) {
+            return false;
+        }
+        return geraSalesPageStageExecutionRepository
+                .findTopByExperimentIdAndStageCodeOrderByExecutionRequestedAtDesc(
+                        experimentId, GeraSalesPageStageCode.PUBLICATION_PACKAGE.code())
+                .map(com.marketinghub.gerasalespage.v1.GeraSalesPageStageExecution::getStatus)
+                .map(STATUS_COMPLETED::equalsIgnoreCase)
+                .orElse(false);
     }
 
 }

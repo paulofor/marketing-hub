@@ -57,8 +57,9 @@ public class GeraSalesPageWorkerConfiguration {
             ObjectMapper objectMapper,
             OpenAiClientPort openAiClient,
             GeraSalesPageResponseValidator responseValidator,
-            GeraSalesPageBackendClient backendClient) {
-        return new GeraSalesPageProcessor(objectMapper, openAiClient, responseValidator, backendClient);
+            GeraSalesPageBackendClient backendClient,
+            GeraSalesPageWorkerProperties properties) {
+        return new GeraSalesPageProcessor(objectMapper, openAiClient, responseValidator, backendClient, properties.serviceTier());
     }
 
     /** Compõe o worker genérico com o adapter e processor do GeraSalesPage v1. */

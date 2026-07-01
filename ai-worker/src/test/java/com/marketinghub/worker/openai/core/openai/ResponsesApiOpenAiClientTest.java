@@ -117,7 +117,7 @@ class ResponsesApiOpenAiClientTest {
                           "usage": {"input_tokens": 10, "output_tokens": 5}
                         }
                         """));
-        enqueuePricingCatalog("gpt-test", "1.00", "4.00");
+        enqueuePricingCatalog("gpt-test", "2.00", "8.00", "1.00", "4.00");
         ResponsesApiOpenAiClient client = new ResponsesApiOpenAiClient(
                 WebClient.builder(),
                 new ObjectMapper(),
@@ -133,6 +133,7 @@ class ResponsesApiOpenAiClientTest {
                 "default");
 
         var dispatch = client.dispatch(request);
+        var result = client.awaitResult(dispatch);
 
         Map<String, Object> sentPayload = new ObjectMapper().readValue(
                 server.takeRequest().getBody().readUtf8(),
@@ -145,6 +146,7 @@ class ResponsesApiOpenAiClientTest {
                 dispatch.requestBodyJson(),
                 new TypeReference<>() {});
         assertThat(dispatchPayload).containsEntry("service_tier", "default");
+        assertThat(result.costUsd()).isEqualByComparingTo(new BigDecimal("0.00006000"));
     }
 
     /** Deve estimar custo em modo flex pelo modelo do request quando a configuração não informa tarifa explícita. */
@@ -167,7 +169,7 @@ class ResponsesApiOpenAiClientTest {
                           "usage": {"input_tokens": 1000000, "output_tokens": 1000000}
                         }
                         """));
-        enqueuePricingCatalog("gpt-5.4", "1.25", "7.50");
+        enqueuePricingCatalog("gpt-5.4", "2.50", "15.00", "1.25", "7.50");
         ResponsesApiOpenAiClient client = new ResponsesApiOpenAiClient(
                 WebClient.builder(),
                 new ObjectMapper(),
@@ -202,7 +204,7 @@ class ResponsesApiOpenAiClientTest {
                           "usage": {"input_tokens": 1000, "output_tokens": 2000}
                         }
                         """));
-        enqueuePricingCatalog("gpt-other", "10", "20");
+        enqueuePricingCatalog("gpt-other", "20", "40", "10", "20");
         ResponsesApiOpenAiClient client = new ResponsesApiOpenAiClient(
                 WebClient.builder(),
                 new ObjectMapper(),
@@ -236,7 +238,12 @@ class ResponsesApiOpenAiClientTest {
     }
 
     /** Simula o endpoint backend que lista os modelos persistidos na tabela openai_model. */
-    private void enqueuePricingCatalog(String code, String inputBatchPrice, String outputBatchPrice) {
+    private void enqueuePricingCatalog(
+            String code,
+            String inputStandardPrice,
+            String outputStandardPrice,
+            String inputBatchPrice,
+            String outputBatchPrice) {
         server.enqueue(new MockResponse()
                 .setResponseCode(200)
                 .setHeader("Content-Type", "application/json")
@@ -244,11 +251,13 @@ class ResponsesApiOpenAiClientTest {
                         [
                           {
                             "code": "%s",
+                            "priceInputStandard": %s,
+                            "priceOutputStandard": %s,
                             "priceInputBatch": %s,
                             "priceOutputBatch": %s
                           }
                         ]
-                        """.formatted(code, inputBatchPrice, outputBatchPrice)));
+                        """.formatted(code, inputStandardPrice, outputStandardPrice, inputBatchPrice, outputBatchPrice)));
     }
 
 }

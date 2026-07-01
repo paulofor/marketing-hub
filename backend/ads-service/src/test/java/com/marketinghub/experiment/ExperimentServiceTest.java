@@ -26,7 +26,10 @@ import com.marketinghub.repository.jpa.ads.InstagramAccountRepository;
 import com.marketinghub.facebookads.BudgetMode;
 import com.marketinghub.facebookads.FacebookAdStatus;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
+import com.marketinghub.gerasalespage.v1.GeraSalesPageStageCode;
+import com.marketinghub.gerasalespage.v1.GeraSalesPageStageExecution;
 import com.marketinghub.repository.jpa.facebookads.FacebookAdsCampaignRepository;
+import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPageStageExecutionRepository;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -71,6 +74,8 @@ class ExperimentServiceTest {
     FacebookAccountRepository facebookAccountRepository;
     @Autowired
     FacebookAdsCampaignRepository facebookAdsCampaignRepository;
+    @Autowired
+    GeraSalesPageStageExecutionRepository geraSalesPageStageExecutionRepository;
     @Autowired
     com.marketinghub.repository.jpa.leadportal.LeadPortalFlowRepository leadPortalFlowRepository;
     @Autowired
@@ -791,6 +796,95 @@ class ExperimentServiceTest {
         assertThat(released.getStatus()).isEqualTo(ExperimentStatus.PLANNED);
         MarketNiche refreshed = nicheRepository.findById(niche.getId()).orElseThrow();
         assertThat(refreshed.getFacebookPixelId()).isNull();
+        assertThat(released.getFacebookReleaseRequestedAt()).isNotNull();
+    }
+
+    /** Garante que venda low-ticket não entra na fila sem página criada pelo pipeline. */
+    @Test
+    void releaseForFacebookRejectsLowTicketWithoutGeraSalesPagePipeline() {
+        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Low Ticket Release").build());
+        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("ALT").build());
+        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(niche)
+                .title("HLT")
+                .premiseAngle(angle)
+                .promise("Promessa")
+                .problem("Problema")
+                .persona("Persona")
+                .offerType(com.marketinghub.hypothesis.OfferType.TRIPWIRE)
+                .kpiTargetCpl(new BigDecimal("1"))
+                .build());
+        metricPresetRepository.save(MetricPreset.builder()
+                .id("LEAN_LOW_RELEASE")
+                .name("Lean Low Release")
+                .sampleSize(150)
+                .stopLossFactor(new BigDecimal("2"))
+                .defaultMdePp(new BigDecimal("12"))
+                .build());
+        CreateExperimentRequest req = new CreateExperimentRequest();
+        applyStageDefaults(req);
+        req.setMarketNicheId(niche.getId());
+        req.setHypothesisId(hyp.getId());
+        req.setName("Exp Low Release");
+        req.setHypothesis("H");
+        req.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
+        req.setKpiTargetCpl(new BigDecimal("45"));
+        req.setMetricPresetId("LEAN_LOW_RELEASE");
+        req.setJourneyTemplateId(createJourneyTemplate().getId());
+        req.setLeadPortalFlowId(createLeadPortalFlow(niche));
+        req.setInstagramAccountId(createInstagramAccount().getId());
+        Experiment experiment = service.create(req);
+
+        assertThatThrownBy(() -> service.releaseForFacebook(experiment.getId()))
+                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+                .hasMessageContaining("low-ticket exige página de venda criada pelo GeraSalesPage");
+    }
+
+    /** Garante que venda low-ticket só entra na fila após a etapa final do GeraSalesPage. */
+    @Test
+    void releaseForFacebookAllowsLowTicketAfterGeraSalesPagePipeline() {
+        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Low Ticket Release Ok").build());
+        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("ALTOk").build());
+        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(niche)
+                .title("HLTOk")
+                .premiseAngle(angle)
+                .promise("Promessa")
+                .problem("Problema")
+                .persona("Persona")
+                .offerType(com.marketinghub.hypothesis.OfferType.TRIPWIRE)
+                .kpiTargetCpl(new BigDecimal("1"))
+                .build());
+        metricPresetRepository.save(MetricPreset.builder()
+                .id("LEAN_LOW_RELEASE_OK")
+                .name("Lean Low Release Ok")
+                .sampleSize(150)
+                .stopLossFactor(new BigDecimal("2"))
+                .defaultMdePp(new BigDecimal("12"))
+                .build());
+        CreateExperimentRequest req = new CreateExperimentRequest();
+        applyStageDefaults(req);
+        req.setMarketNicheId(niche.getId());
+        req.setHypothesisId(hyp.getId());
+        req.setName("Exp Low Release Ok");
+        req.setHypothesis("H");
+        req.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
+        req.setKpiTargetCpl(new BigDecimal("45"));
+        req.setMetricPresetId("LEAN_LOW_RELEASE_OK");
+        req.setJourneyTemplateId(createJourneyTemplate().getId());
+        req.setLeadPortalFlowId(createLeadPortalFlow(niche));
+        req.setInstagramAccountId(createInstagramAccount().getId());
+        Experiment experiment = service.create(req);
+        geraSalesPageStageExecutionRepository.save(GeraSalesPageStageExecution.builder()
+                .idJob(java.util.UUID.randomUUID().toString())
+                .experimentId(experiment.getId())
+                .stageCode(GeraSalesPageStageCode.PUBLICATION_PACKAGE.code())
+                .status("CONCLUIDO")
+                .executionRequestedAt(Instant.now())
+                .build());
+
+        Experiment released = service.releaseForFacebook(experiment.getId());
+
         assertThat(released.getFacebookReleaseRequestedAt()).isNotNull();
     }
 

@@ -17,7 +17,8 @@ public record GeraSalesPageWorkerProperties(
         @NotBlank String backendBaseUrl,
         String apiPrefix,
         @NotNull List<String> stageCodes,
-        @NotNull Duration timeout
+        @NotNull Duration timeout,
+        String serviceTier
 ) {
     /** Normaliza valores opcionais usados pelo ciclo operacional do GeraSalesPage v1. */
     public GeraSalesPageWorkerProperties {
@@ -39,5 +40,15 @@ public record GeraSalesPageWorkerProperties(
         if (timeout == null) {
             timeout = Duration.ofMinutes(30);
         }
+        serviceTier = normalizeServiceTier(serviceTier);
+    }
+
+    /** Normaliza o tier OpenAI do GeraSalesPage, que usa Standard por decisão comercial. */
+    private static String normalizeServiceTier(String value) {
+        if (value == null || value.isBlank()) {
+            return "default";
+        }
+        String normalized = value.trim().toLowerCase();
+        return "standard".equals(normalized) ? "default" : normalized;
     }
 }

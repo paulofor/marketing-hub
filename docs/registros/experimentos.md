@@ -5528,3 +5528,11 @@
 - Causa-raiz: o compose de produção dependia de comportamento frágil de merge do Docker Compose; em produção, o serviço deve usar somente a imagem publicada no registry, sem herdar configuração de build local.
 - Correção aplicada: o `docker-compose.deploy.yml` passou a ser autônomo, com imagem publicada obrigatória e sem bloco `build`; o workflow de deploy passou a executar somente esse compose de produção.
 - Prevenção de recorrência: a documentação de CI/CD foi atualizada para registrar que o deploy usa `docker compose -f docker-compose.deploy.yml`, separando build local de publicação produtiva.
+
+## 2026-07-01 — Trava de pipeline para página de venda low-ticket
+
+- Decisão: experimento `LOW_TICKET_PRODUCT` não pode ser liberado para campanha apenas com URL manual de página de venda; precisa ter a etapa final `sales-page-publication-package` do GeraSalesPage v1 concluída.
+- Causa-raiz: durante o experimento 53, a indisponibilidade/rate limit da OpenAI levou a conclusão operacional por ponte controlada, mas isso enfraquece o aprendizado do pipeline de criação de páginas.
+- Correção aplicada: a prontidão e a liberação para Facebook bloqueiam low-ticket sem GeraSalesPage concluído; foi criado rebuild canônico para substituir execuções antigas e gerar a página novamente pelo pipeline.
+- Decisão OpenAI: o GeraSalesPage v1 passa a usar `service_tier=default` por padrão, aceitando custo maior para reduzir falhas na criação de páginas de venda.
+- Prevenção de recorrência: testes cobrem bloqueio de campanha low-ticket sem publicação do GeraSalesPage, liberação após etapa final concluída, rebuild com status `SUBSTITUIDO` e custo Standard conforme service tier.

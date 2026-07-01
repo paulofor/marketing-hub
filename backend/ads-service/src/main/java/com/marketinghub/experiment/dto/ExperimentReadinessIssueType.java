@@ -7,5 +7,6 @@ public enum ExperimentReadinessIssueType {
     CREATIVE,
     LEAD_PORTAL_FLOW,
     TARGETING,
-    GERA_LANDING
+    GERA_LANDING,
+    GERA_SALES_PAGE
 }

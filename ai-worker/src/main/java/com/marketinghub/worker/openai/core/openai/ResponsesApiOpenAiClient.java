@@ -89,7 +89,7 @@ public class ResponsesApiOpenAiClient implements OpenAiClientPort {
                     modelResponse,
                     inputTokens,
                     outputTokens,
-                    costEstimator.estimate(request.model(), inputTokens, outputTokens)
+                    costEstimator.estimate(request.model(), inputTokens, outputTokens, request.serviceTier())
             );
 
             if (openAiJobId != null) {

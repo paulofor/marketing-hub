@@ -4,10 +4,13 @@ import com.marketinghub.repository.jpa.creative.CreativeRepository;
 import com.marketinghub.creative.CreativeStatus;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentTargetingSelection;
+import com.marketinghub.experiment.ExperimentType;
 import com.marketinghub.experiment.dto.ExperimentReadinessIssueDto;
 import com.marketinghub.experiment.dto.ExperimentReadinessIssueType;
 import com.marketinghub.experiment.dto.ExperimentReadinessSummaryDto;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
+import com.marketinghub.gerasalespage.v1.GeraSalesPageStageCode;
+import com.marketinghub.gerasalespage.v1.GeraSalesPageStageExecution;
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.niche.MarketNiche;
@@ -17,6 +20,7 @@ import com.marketinghub.targeting.TargetingElementStatus;
 import com.marketinghub.targeting.TargetingElementType;
 import com.marketinghub.repository.jpa.experiment.ExperimentTargetingSelectionRepository;
 import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
+import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPageStageExecutionRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -41,6 +45,8 @@ class ExperimentReadinessServiceTest {
     private ExperimentTargetingSelectionRepository targetingSelectionRepository;
     @Mock
     private GeraLandingStageExecutionRepository geraLandingStageExecutionRepository;
+    @Mock
+    private GeraSalesPageStageExecutionRepository geraSalesPageStageExecutionRepository;
 
     @InjectMocks
     private ExperimentReadinessService service;
@@ -215,6 +221,34 @@ class ExperimentReadinessServiceTest {
         assertThat(service.isReadyForCampaign(experiment)).isFalse();
     }
 
+    @Test
+    void shouldRequireGeraSalesPagePipelineForLowTicketCampaign() {
+        Experiment experiment = buildExperiment(52L, 62L);
+        experiment.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
+        experiment.setFollowUpActionUrl("https://pagamentopalf.site/sales-page-exp52.html");
+
+        when(creativeRepository.existsByExperimentIdAndStatus(52L, CreativeStatus.READY)).thenReturn(true);
+        mockPublishableSelection(52L, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
+
+        assertThat(service.computeMissingConfiguration(experiment))
+                .containsExactly("geraSalesPagePipeline");
+        assertThat(service.isReadyForCampaign(experiment)).isFalse();
+    }
+
+    @Test
+    void shouldAllowLowTicketCampaignOnlyAfterGeraSalesPagePublicationPackage() {
+        Experiment experiment = buildExperiment(53L, 63L);
+        experiment.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
+        experiment.setFollowUpActionUrl("https://pagamentopalf.site/sales-page-exp53.html");
+
+        when(creativeRepository.existsByExperimentIdAndStatus(53L, CreativeStatus.READY)).thenReturn(true);
+        mockPublishableSelection(53L, TargetingCandidateType.BEHAVIOR, TargetingElementType.BEHAVIOR);
+        mockCompletedGeraSalesPagePublication(53L);
+
+        assertThat(service.computeMissingConfiguration(experiment)).isEmpty();
+        assertThat(service.isReadyForCampaign(experiment)).isTrue();
+    }
+
 
     /** Simula uma seleção de público aprovada e identificável pela Meta. */
     private void mockPublishableSelection(Long experimentId, TargetingCandidateType candidateType, TargetingElementType elementType) {
@@ -262,6 +296,17 @@ class ExperimentReadinessServiceTest {
                 .stageCode(stageCode)
                 .status(status)
                 .build();
+    }
+
+    /** Simula a etapa final do GeraSalesPage como concluída para low-ticket. */
+    private void mockCompletedGeraSalesPagePublication(Long experimentId) {
+        when(geraSalesPageStageExecutionRepository.findTopByExperimentIdAndStageCodeOrderByExecutionRequestedAtDesc(
+                experimentId, GeraSalesPageStageCode.PUBLICATION_PACKAGE.code()))
+                .thenReturn(Optional.of(GeraSalesPageStageExecution.builder()
+                        .experimentId(experimentId)
+                        .stageCode(GeraSalesPageStageCode.PUBLICATION_PACKAGE.code())
+                        .status("CONCLUIDO")
+                        .build()));
     }
 
     /** Cria um experimento base para os testes de prontidão. */

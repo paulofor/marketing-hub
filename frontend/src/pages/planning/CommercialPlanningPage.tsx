@@ -177,6 +177,10 @@ function formatNumber(value?: number | null) {
   return value == null ? "Não definido" : String(value);
 }
 
+function formatExecutedNumber(value?: number | null) {
+  return value == null ? "0" : String(value);
+}
+
 function numberOrNull(value?: number | null) {
   return value == null ? null : Number(value);
 }
@@ -552,6 +556,10 @@ export default function CommercialPlanningPage() {
                             Custo máximo
                           </p>
                           <strong>{formatCurrency(selectedPlan.maxBudget)}</strong>
+                          <div className="text-secondary small">
+                            Executado:{" "}
+                            {formatCurrency(selectedPlan.actualTotalCost)}
+                          </div>
                         </div>
                       </div>
                       <div className="col-12 col-md-3">
@@ -562,6 +570,10 @@ export default function CommercialPlanningPage() {
                           <strong>
                             {formatCurrency(selectedPlan.targetRevenue)}
                           </strong>
+                          <div className="text-secondary small">
+                            Executado:{" "}
+                            {formatCurrency(selectedPlan.actualRevenue)}
+                          </div>
                         </div>
                       </div>
                       <div className="col-12 col-md-3">
@@ -574,6 +586,10 @@ export default function CommercialPlanningPage() {
                               selectedPlan.operationalRevenueTarget,
                             )}
                           </strong>
+                          <div className="text-secondary small">
+                            Realizado vs operacional:{" "}
+                            {formatCurrency(selectedPlan.actualRevenue)}
+                          </div>
                         </div>
                       </div>
                       <div className="col-12 col-md-3">
@@ -586,6 +602,53 @@ export default function CommercialPlanningPage() {
                             criados /{" "}
                             {formatNumber(selectedPlan.experimentsToPublish)}{" "}
                             publicados
+                          </strong>
+                          <div className="text-secondary small">
+                            Executado:{" "}
+                            {formatExecutedNumber(
+                              selectedPlan.actualExperimentsCreated,
+                            )}{" "}
+                            criados /{" "}
+                            {formatExecutedNumber(
+                              selectedPlan.actualExperimentsPublished,
+                            )}{" "}
+                            publicados
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="row g-3 mt-1">
+                      <div className="col-12 col-md-4">
+                        <div className="border rounded-3 p-3 h-100">
+                          <p className="text-secondary small mb-1">
+                            Custo de campanha executado
+                          </p>
+                          <strong>
+                            {formatCurrency(selectedPlan.actualCampaignCost)}
+                          </strong>
+                        </div>
+                      </div>
+                      <div className="col-12 col-md-4">
+                        <div className="border rounded-3 p-3 h-100">
+                          <p className="text-secondary small mb-1">
+                            Custo de IA executado
+                          </p>
+                          <strong>
+                            {formatCurrency(selectedPlan.actualAiCost)}
+                          </strong>
+                        </div>
+                      </div>
+                      <div className="col-12 col-md-4">
+                        <div className="border rounded-3 p-3 h-100">
+                          <p className="text-secondary small mb-1">
+                            Última sincronização
+                          </p>
+                          <strong>
+                            {selectedPlan.executionSyncedAt
+                              ? new Date(
+                                  selectedPlan.executionSyncedAt,
+                                ).toLocaleString("pt-BR")
+                              : "Não sincronizado"}
                           </strong>
                         </div>
                       </div>
@@ -683,12 +746,31 @@ export default function CommercialPlanningPage() {
                                   "sem ação recomendada"}
                               </div>
                               <div className="text-secondary small">
-                                Custo {formatCurrency(milestone.targetCost)} ·
-                                Receita{" "}
+                                Planejado: custo{" "}
+                                {formatCurrency(milestone.targetCost)} · receita{" "}
                                 {formatCurrency(milestone.targetRevenue)} ·
                                 Exp.{" "}
                                 {formatNumber(milestone.experimentsToCreate)}
                                 /{formatNumber(milestone.experimentsToPublish)}
+                              </div>
+                              <div className="text-secondary small">
+                                Executado: custo{" "}
+                                {formatCurrency(milestone.actualTotalCost)}{" "}
+                                (campanha{" "}
+                                {formatCurrency(
+                                  milestone.actualCampaignCost,
+                                )}{" "}
+                                + IA {formatCurrency(milestone.actualAiCost)}) ·
+                                receita{" "}
+                                {formatCurrency(milestone.actualRevenue)} ·
+                                Exp.{" "}
+                                {formatExecutedNumber(
+                                  milestone.actualExperimentsCreated,
+                                )}
+                                /
+                                {formatExecutedNumber(
+                                  milestone.actualExperimentsPublished,
+                                )}
                               </div>
                             </div>
                           </div>

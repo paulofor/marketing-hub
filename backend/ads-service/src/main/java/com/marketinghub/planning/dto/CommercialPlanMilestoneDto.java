@@ -16,6 +16,13 @@ public record CommercialPlanMilestoneDto(
         BigDecimal targetRevenue,
         Integer experimentsToCreate,
         Integer experimentsToPublish,
+        BigDecimal actualCampaignCost,
+        BigDecimal actualAiCost,
+        BigDecimal actualTotalCost,
+        BigDecimal actualRevenue,
+        Integer actualExperimentsCreated,
+        Integer actualExperimentsPublished,
+        java.time.Instant executionSyncedAt,
         String evidenceSource,
         String blocker,
         String recommendedNextAction) {}

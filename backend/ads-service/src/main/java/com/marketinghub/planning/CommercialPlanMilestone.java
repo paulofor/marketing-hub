@@ -66,6 +66,27 @@ public class CommercialPlanMilestone {
     @Column(name = "experiments_to_publish")
     private Integer experimentsToPublish;
 
+    @Column(name = "actual_campaign_cost", precision = 12, scale = 2)
+    private BigDecimal actualCampaignCost;
+
+    @Column(name = "actual_ai_cost", precision = 12, scale = 2)
+    private BigDecimal actualAiCost;
+
+    @Column(name = "actual_total_cost", precision = 12, scale = 2)
+    private BigDecimal actualTotalCost;
+
+    @Column(name = "actual_revenue", precision = 12, scale = 2)
+    private BigDecimal actualRevenue;
+
+    @Column(name = "actual_experiments_created")
+    private Integer actualExperimentsCreated;
+
+    @Column(name = "actual_experiments_published")
+    private Integer actualExperimentsPublished;
+
+    @Column(name = "execution_synced_at")
+    private Instant executionSyncedAt;
+
     @Column(name = "evidence_source", length = 512)
     private String evidenceSource;
 

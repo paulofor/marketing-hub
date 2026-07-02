@@ -9,17 +9,22 @@ import com.marketinghub.experiment.dto.ExperimentReadinessIssueDto;
 import com.marketinghub.experiment.dto.ExperimentReadinessIssueType;
 import com.marketinghub.experiment.dto.ExperimentReadinessSummaryDto;
 import com.marketinghub.gerasalespage.v1.GeraSalesPageStageCode;
+import com.marketinghub.gerasalespage.v1.GeraSalesPagePublicationAudit;
 import com.marketinghub.targeting.TargetingElement;
 import com.marketinghub.targeting.TargetingElementStatus;
 import com.marketinghub.targeting.TargetingElementType;
 import com.marketinghub.repository.jpa.experiment.ExperimentTargetingSelectionRepository;
 import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
+import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPagePublicationAuditRepository;
 import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPageStageExecutionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -50,18 +55,21 @@ public class ExperimentReadinessService {
 
     private final GeraLandingStageExecutionRepository geraLandingStageExecutionRepository;
     private final GeraSalesPageStageExecutionRepository geraSalesPageStageExecutionRepository;
+    private final GeraSalesPagePublicationAuditRepository geraSalesPagePublicationAuditRepository;
 
     /** Cria o serviço com as fontes canônicas de prontidão do experimento. */
     public ExperimentReadinessService(ExperimentService experimentService,
                                       CreativeRepository creativeRepository,
                                       ExperimentTargetingSelectionRepository targetingSelectionRepository,
                                       GeraLandingStageExecutionRepository geraLandingStageExecutionRepository,
-                                      GeraSalesPageStageExecutionRepository geraSalesPageStageExecutionRepository) {
+                                      GeraSalesPageStageExecutionRepository geraSalesPageStageExecutionRepository,
+                                      GeraSalesPagePublicationAuditRepository geraSalesPagePublicationAuditRepository) {
         this.experimentService = experimentService;
         this.creativeRepository = creativeRepository;
         this.targetingSelectionRepository = targetingSelectionRepository;
         this.geraLandingStageExecutionRepository = geraLandingStageExecutionRepository;
         this.geraSalesPageStageExecutionRepository = geraSalesPageStageExecutionRepository;
+        this.geraSalesPagePublicationAuditRepository = geraSalesPagePublicationAuditRepository;
     }
 
     /** Resume a prontidão do experimento usando apenas dados canônicos aprovados para publicação. */
@@ -82,6 +90,7 @@ public class ExperimentReadinessService {
         boolean hasGeraLandingPipeline = geraLandingCompletedStageCount == GERA_LANDING_REQUIRED_STAGES.size();
         boolean lowTicket = isLowTicketProduct(experiment);
         boolean hasGeraSalesPagePipeline = hasCompletedGeraSalesPagePipeline(experimentId);
+        Optional<GeraSalesPagePublicationAudit> salesPagePublication = latestSalesPagePublication(experimentId);
 
         List<ExperimentReadinessIssueDto> issues = new ArrayList<>();
         if (!hasCreatives) {
@@ -112,12 +121,32 @@ public class ExperimentReadinessService {
             ));
         }
 
-        if (lowTicket && !hasGeraSalesPagePipeline) {
+        if (lowTicket && (!hasGeraSalesPagePipeline || salesPagePublication.isEmpty())) {
             issues.add(new ExperimentReadinessIssueDto(
                     ExperimentReadinessIssueType.GERA_SALES_PAGE,
                     "Página de venda não foi criada pelo pipeline",
-                    "Experimentos low-ticket só podem ser liberados quando o GeraSalesPage v1 concluir a publicação.",
+                    "Experimentos low-ticket só podem ser liberados quando o GeraSalesPage v1 concluir e auditar a publicação da página de venda.",
                     "Execute ou refaça o GeraSalesPage v1 e use a página de venda gerada pelo pipeline.",
+                    List.of()
+            ));
+        }
+        if (lowTicket && salesPagePublication.isPresent()
+                && !hasAdDestinationPointingToSalesPage(experiment, salesPagePublication.get())) {
+            issues.add(new ExperimentReadinessIssueDto(
+                    ExperimentReadinessIssueType.GERA_SALES_PAGE,
+                    "Link do anúncio não aponta para a página de venda",
+                    "O destino atual da campanha precisa ser a página de venda auditada pelo GeraSalesPage, não o checkout direto nem outra URL.",
+                    "Atualize a URL do anúncio para a página de venda publicada e mantenha o checkout apenas nos CTAs da página.",
+                    List.of()
+            ));
+        }
+        if (lowTicket && salesPagePublication.isPresent()
+                && !hasRequiredSalesPageAnalyticsCollectors(salesPagePublication.get())) {
+            issues.add(new ExperimentReadinessIssueDto(
+                    ExperimentReadinessIssueType.GERA_SALES_PAGE,
+                    "Página de venda sem coletores de métricas",
+                    "A página publicada não possui todos os coletores obrigatórios: page_view, page_load_metric, section_view_time e checkout_click.",
+                    "Republique a página pelo GeraSalesPage v1 atualizado antes de liberar tráfego pago.",
                     List.of()
             ));
         }
@@ -160,8 +189,21 @@ public class ExperimentReadinessService {
         if (!hasApprovedLandingDestination(experiment)) {
             missing.add("landingDestination");
         }
-        if (isLowTicketProduct(experiment) && !hasCompletedGeraSalesPagePipeline(experiment != null ? experiment.getId() : null)) {
-            missing.add("geraSalesPagePipeline");
+        if (isLowTicketProduct(experiment)) {
+            Optional<GeraSalesPagePublicationAudit> salesPagePublication =
+                    latestSalesPagePublication(experiment != null ? experiment.getId() : null);
+            if (!hasCompletedGeraSalesPagePipeline(experiment != null ? experiment.getId() : null)
+                    || salesPagePublication.isEmpty()) {
+                missing.add("geraSalesPagePipeline");
+            } else {
+                GeraSalesPagePublicationAudit publication = salesPagePublication.get();
+                if (!hasAdDestinationPointingToSalesPage(experiment, publication)) {
+                    missing.add("salesPageAdDestination");
+                }
+                if (!hasRequiredSalesPageAnalyticsCollectors(publication)) {
+                    missing.add("salesPageAnalyticsCollectors");
+                }
+            }
         }
         if (isLowTicketProduct(experiment) && !hasFacebookPixel(experiment)) {
             missing.add("facebookPixel");
@@ -257,6 +299,55 @@ public class ExperimentReadinessService {
                 .map(com.marketinghub.gerasalespage.v1.GeraSalesPageStageExecution::getStatus)
                 .map(STATUS_COMPLETED::equalsIgnoreCase)
                 .orElse(false);
+    }
+
+    /** Busca a página de venda publicada mais recente do experimento. */
+    private Optional<GeraSalesPagePublicationAudit> latestSalesPagePublication(Long experimentId) {
+        if (experimentId == null) {
+            return Optional.empty();
+        }
+        return geraSalesPagePublicationAuditRepository.findTopByExperimentIdOrderByPublishedAtDesc(experimentId);
+    }
+
+    /** Confirma que o anúncio levará para a página de venda auditada, não para o checkout. */
+    private boolean hasAdDestinationPointingToSalesPage(
+            Experiment experiment,
+            GeraSalesPagePublicationAudit publication) {
+        if (experiment == null || publication == null) {
+            return false;
+        }
+        String destinationUrl = normalizeUrl(experiment.getFollowUpActionUrl());
+        String salesPageUrl = normalizeUrl(publication.getSalesPageUrl());
+        String checkoutUrl = normalizeUrl(publication.getCheckoutUrl());
+        return StringUtils.hasText(destinationUrl)
+                && StringUtils.hasText(salesPageUrl)
+                && destinationUrl.equals(salesPageUrl)
+                && (!StringUtils.hasText(checkoutUrl) || !destinationUrl.equals(checkoutUrl));
+    }
+
+    /** Confirma que a página publicada possui todos os coletores mínimos de venda low-ticket. */
+    private boolean hasRequiredSalesPageAnalyticsCollectors(GeraSalesPagePublicationAudit publication) {
+        if (publication == null || !StringUtils.hasText(publication.getHtml())) {
+            return false;
+        }
+        String html = publication.getHtml();
+        return html.contains("data-mh-sales-page-analytics")
+                && html.contains("page_view")
+                && html.contains("page_load_metric")
+                && html.contains("section_view_time")
+                && html.contains("checkout_click");
+    }
+
+    /** Normaliza URL para comparação de destino sem depender de barra final. */
+    private String normalizeUrl(String url) {
+        if (!StringUtils.hasText(url)) {
+            return "";
+        }
+        String normalized = url.trim().toLowerCase(Locale.ROOT);
+        while (normalized.endsWith("/")) {
+            normalized = normalized.substring(0, normalized.length() - 1);
+        }
+        return normalized;
     }
 
 }

@@ -25,6 +25,8 @@ O GeraSalesPage v1 é um pipeline independente para gerar página de vendas dire
 - Toda chamada OpenAI deve registrar request, response bruto, modelo, tokens, custo e erro quando houver.
 - A revisão de checkout deve bloquear liberação para tráfego quando checkout, promessa, preço, garantia ou CTA estiverem incoerentes.
 - Experimento `LOW_TICKET_PRODUCT` só pode ser liberado para campanha quando a etapa final `sales-page-publication-package` estiver `CONCLUIDO`; URL de página preenchida manualmente não substitui a conclusão do pipeline.
+- A liberação de campanha low-ticket também exige snapshot auditado da página publicada em banco. O link do anúncio deve apontar para essa página de venda, nunca direto para checkout; o checkout permanece apenas dentro dos CTAs da página.
+- O HTML publicável da página de venda deve conter os coletores `page_view`, `page_load_metric`, `section_view_time` e `checkout_click`. Página sem qualquer um desses coletores deve ser republicada antes de receber tráfego pago.
 - O GeraSalesPage v1 usa `service_tier=default` por padrão, porque página de venda é artefato comercial crítico e deve priorizar estabilidade sobre economia de Flex.
 - Quando uma página precisar ser refeita, o rebuild canônico deve marcar execuções anteriores como `SUBSTITUIDO` e enfileirar nova execução a partir de `sales-page-offer-brief`.
 - Cada página de venda publicada deve gerar um snapshot histórico em banco, associando a versão da página ao job final, HTML/pacote final, prompts renderizados, prompt markdown base, schema JSON, modelo OpenAI, request enviado e resposta bruta de cada etapa usada naquela versão.

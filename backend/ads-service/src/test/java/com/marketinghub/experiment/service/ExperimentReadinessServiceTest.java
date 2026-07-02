@@ -8,6 +8,7 @@ import com.marketinghub.experiment.ExperimentType;
 import com.marketinghub.experiment.dto.ExperimentReadinessIssueDto;
 import com.marketinghub.experiment.dto.ExperimentReadinessIssueType;
 import com.marketinghub.experiment.dto.ExperimentReadinessSummaryDto;
+import com.marketinghub.gerasalespage.v1.GeraSalesPagePublicationAudit;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.gerasalespage.v1.GeraSalesPageStageCode;
 import com.marketinghub.gerasalespage.v1.GeraSalesPageStageExecution;
@@ -20,6 +21,7 @@ import com.marketinghub.targeting.TargetingElementStatus;
 import com.marketinghub.targeting.TargetingElementType;
 import com.marketinghub.repository.jpa.experiment.ExperimentTargetingSelectionRepository;
 import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
+import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPagePublicationAuditRepository;
 import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPageStageExecutionRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -47,6 +49,8 @@ class ExperimentReadinessServiceTest {
     private GeraLandingStageExecutionRepository geraLandingStageExecutionRepository;
     @Mock
     private GeraSalesPageStageExecutionRepository geraSalesPageStageExecutionRepository;
+    @Mock
+    private GeraSalesPagePublicationAuditRepository geraSalesPagePublicationAuditRepository;
 
     @InjectMocks
     private ExperimentReadinessService service;
@@ -237,6 +241,67 @@ class ExperimentReadinessServiceTest {
     }
 
     @Test
+    // Verifica que low-ticket com pipeline concluído ainda precisa de auditoria da página publicada.
+    void shouldRequirePublishedSalesPageAuditForLowTicketCampaign() {
+        Experiment experiment = buildExperiment(55L, 65L);
+        experiment.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
+        experiment.setFollowUpActionUrl("https://pagamentopalf.site/sales-page-exp55.html");
+        experiment.getNiche().setFacebookPixelId("pixel-exp55");
+
+        when(creativeRepository.existsByExperimentIdAndStatus(55L, CreativeStatus.READY)).thenReturn(true);
+        mockPublishableSelection(55L, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
+        mockCompletedGeraSalesPagePublication(55L);
+
+        assertThat(service.computeMissingConfiguration(experiment))
+                .containsExactly("geraSalesPagePipeline");
+        assertThat(service.isReadyForCampaign(experiment)).isFalse();
+    }
+
+    @Test
+    // Verifica que low-ticket não pode enviar o clique do anúncio direto para checkout.
+    void shouldRequireAdDestinationToPointToSalesPageForLowTicketCampaign() {
+        Experiment experiment = buildExperiment(56L, 66L);
+        experiment.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
+        experiment.setFollowUpActionUrl("https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=abc");
+        experiment.getNiche().setFacebookPixelId("pixel-exp56");
+
+        when(creativeRepository.existsByExperimentIdAndStatus(56L, CreativeStatus.READY)).thenReturn(true);
+        mockPublishableSelection(56L, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
+        mockCompletedGeraSalesPagePublication(56L);
+        mockSalesPageAudit(
+                56L,
+                "https://pagamentopalf.site/sales-page-exp56.html",
+                "https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=abc",
+                trackedSalesPageHtml());
+
+        assertThat(service.computeMissingConfiguration(experiment))
+                .containsExactly("salesPageAdDestination");
+        assertThat(service.isReadyForCampaign(experiment)).isFalse();
+    }
+
+    @Test
+    // Verifica que low-ticket não publica página antiga sem coletores mínimos de funil.
+    void shouldRequireSalesPageAnalyticsCollectorsForLowTicketCampaign() {
+        Experiment experiment = buildExperiment(57L, 67L);
+        experiment.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
+        experiment.setFollowUpActionUrl("https://pagamentopalf.site/sales-page-exp57.html");
+        experiment.getNiche().setFacebookPixelId("pixel-exp57");
+
+        when(creativeRepository.existsByExperimentIdAndStatus(57L, CreativeStatus.READY)).thenReturn(true);
+        mockPublishableSelection(57L, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
+        mockCompletedGeraSalesPagePublication(57L);
+        mockSalesPageAudit(
+                57L,
+                "https://pagamentopalf.site/sales-page-exp57.html",
+                "https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=def",
+                "<html><body><a href=\"https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=def\">Comprar</a></body></html>");
+
+        assertThat(service.computeMissingConfiguration(experiment))
+                .containsExactly("salesPageAnalyticsCollectors");
+        assertThat(service.isReadyForCampaign(experiment)).isFalse();
+    }
+
+    @Test
     // Verifica que low-ticket sem pixel não entra na fila de campanha de venda.
     void shouldRequireFacebookPixelForLowTicketCampaign() {
         Experiment experiment = buildExperiment(54L, 64L);
@@ -246,6 +311,11 @@ class ExperimentReadinessServiceTest {
         when(creativeRepository.existsByExperimentIdAndStatus(54L, CreativeStatus.READY)).thenReturn(true);
         mockPublishableSelection(54L, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
         mockCompletedGeraSalesPagePublication(54L);
+        mockSalesPageAudit(
+                54L,
+                "https://pagamentopalf.site/sales-page-exp54.html",
+                "https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=exp54",
+                trackedSalesPageHtml());
 
         assertThat(service.computeMissingConfiguration(experiment))
                 .containsExactly("facebookPixel");
@@ -263,6 +333,11 @@ class ExperimentReadinessServiceTest {
         when(creativeRepository.existsByExperimentIdAndStatus(53L, CreativeStatus.READY)).thenReturn(true);
         mockPublishableSelection(53L, TargetingCandidateType.BEHAVIOR, TargetingElementType.BEHAVIOR);
         mockCompletedGeraSalesPagePublication(53L);
+        mockSalesPageAudit(
+                53L,
+                "https://pagamentopalf.site/sales-page-exp53.html",
+                "https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=exp53",
+                trackedSalesPageHtml());
 
         assertThat(service.computeMissingConfiguration(experiment)).isEmpty();
         assertThat(service.isReadyForCampaign(experiment)).isTrue();
@@ -326,6 +401,31 @@ class ExperimentReadinessServiceTest {
                         .stageCode(GeraSalesPageStageCode.PUBLICATION_PACKAGE.code())
                         .status("CONCLUIDO")
                         .build()));
+    }
+
+    /** Simula o snapshot auditado da página de venda publicada. */
+    private void mockSalesPageAudit(Long experimentId, String salesPageUrl, String checkoutUrl, String html) {
+        when(geraSalesPagePublicationAuditRepository.findTopByExperimentIdOrderByPublishedAtDesc(experimentId))
+                .thenReturn(Optional.of(GeraSalesPagePublicationAudit.builder()
+                        .experimentId(experimentId)
+                        .salesPageUrl(salesPageUrl)
+                        .checkoutUrl(checkoutUrl)
+                        .html(html)
+                        .build()));
+    }
+
+    /** Retorna HTML com todos os coletores mínimos esperados no funil low-ticket. */
+    private String trackedSalesPageHtml() {
+        return """
+                <html><body>
+                <script data-mh-sales-page-analytics="true">
+                sendEvent('page_view');
+                sendEvent('page_load_metric');
+                sendEvent('section_view_time');
+                sendEvent('checkout_click');
+                </script>
+                </body></html>
+                """;
     }
 
     /** Cria um experimento base para os testes de prontidão. */

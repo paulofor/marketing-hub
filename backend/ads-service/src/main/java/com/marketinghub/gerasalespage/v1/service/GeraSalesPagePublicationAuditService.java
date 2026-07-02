@@ -95,6 +95,11 @@ public class GeraSalesPagePublicationAuditService {
         Map<String, Object> packagePayload = parseObject(packageJson);
         String html = stringValue(packagePayload.get("html"));
         String checkoutUrl = stringValue(packagePayload.get("checkoutUrl"));
+        String salesPageUrl = firstText(
+                packagePayload.get("salesPageUrl"),
+                packagePayload.get("publicUrl"),
+                packagePayload.get("publishedUrl"),
+                packagePayload.get("pageUrl"));
         Instant publishedAt = publicationExecution.getCompletedAt() != null
                 ? publicationExecution.getCompletedAt()
                 : Instant.now();
@@ -102,13 +107,24 @@ public class GeraSalesPagePublicationAuditService {
                 .experimentId(experiment.getId())
                 .publicationJobId(publicationExecution.getIdJob())
                 .publishedAt(publishedAt)
-                .salesPageUrl(experiment.getFollowUpActionUrl())
+                .salesPageUrl(StringUtils.hasText(salesPageUrl) ? salesPageUrl : experiment.getFollowUpActionUrl())
                 .checkoutUrl(StringUtils.hasText(checkoutUrl) ? checkoutUrl : experiment.getFollowUpActionUrl())
                 .html(html)
                 .publicationPackageJson(packageJson)
                 .createdAt(Instant.now())
                 .build());
         publicationStageRepository.saveAll(toStageAudits(audit.getId(), stageExecutions));
+    }
+
+    /** Retorna o primeiro texto preenchido entre os campos candidatos. */
+    private String firstText(Object... values) {
+        for (Object value : values) {
+            String text = stringValue(value);
+            if (StringUtils.hasText(text)) {
+                return text;
+            }
+        }
+        return null;
     }
 
     /** Converte execuções concluídas em linhas auditáveis da publicação. */

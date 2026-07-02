@@ -113,12 +113,19 @@ public class BackendPersonaRoutineMaterializerService extends OprmNichoCnaeV3Sta
         if (!StringUtils.hasText(cnaeDescription)) {
             cnaeDescription = "CNAE " + execution.getCnaeCode();
         }
-        String neutralNicheName = buildCnaeNicheName(execution.getCnaeCode(), cnaeDescription);
+        String neutralNicheName = textOrDefault(
+                firstText(output,
+                        "marketNicheCandidate.title",
+                        "materializedProfile.personaName",
+                        "neutralNicheName",
+                        "winningPersonaName",
+                        "personaName"),
+                buildCnaeNicheName(execution.getCnaeCode(), cnaeDescription));
         String routineSummary = textOrDefault(
-                firstText(output, "routineSummary", "routine", "rotina"),
+                firstText(output, "routineSummary", "materializedProfile.routineSummary", "marketNicheCandidate.summary", "routine", "rotina"),
                 "Rotina operacional materializada pelo NichoCNAE v3.");
         String dailyTasks = textOrDefault(
-                firstText(output, "personaDailyTasks", "dailyTasks", "tarefasDiarias", "tasks"),
+                firstText(output, "personaDailyTasks", "dailyTasks", "materializedProfile.dailyTasks", "tarefasDiarias", "tasks"),
                 "Tarefas diárias materializadas pelo NichoCNAE v3.");
         Instant now = Instant.now();
         Long existingMarketNicheId = nicheGateway
@@ -164,9 +171,9 @@ public class BackendPersonaRoutineMaterializerService extends OprmNichoCnaeV3Sta
                         dailyTasks,
                         textOrDefault(firstText(output, "evidenceSummary", "evidences"), execution.getOutputPayload()),
                         firstText(output, "sourceDomains", "sources"),
-                        firstText(output, "personaSummary", "persona"),
-                        firstText(output, "languagePatterns", "language"),
-                        firstText(output, "commercialTriggers", "triggers"),
+                        firstText(output, "personaSummary", "materializedProfile.personaDescription", "persona"),
+                        firstText(output, "languagePatterns", "materializedProfile.recognizableVocabularyAndScenes", "language"),
+                        firstText(output, "commercialTriggers", "materializedProfile.buyingSignals", "triggers"),
                         firstText(output, "objections"),
                         execution.getOutputPayload(),
                         CREATED_BY,
@@ -186,13 +193,13 @@ public class BackendPersonaRoutineMaterializerService extends OprmNichoCnaeV3Sta
         }
     }
 
-    /** Retorna o primeiro campo textual disponível no payload. */
+    /** Retorna o primeiro campo textual disponível no payload, aceitando caminhos aninhados com ponto. */
     private String firstText(JsonNode root, String... fieldNames) {
         if (root == null || root.isMissingNode() || root.isNull()) {
             return null;
         }
         for (String fieldName : fieldNames) {
-            JsonNode value = root.path(fieldName);
+            JsonNode value = path(root, fieldName);
             if (value.isMissingNode() || value.isNull()) {
                 continue;
             }
@@ -202,6 +209,18 @@ public class BackendPersonaRoutineMaterializerService extends OprmNichoCnaeV3Sta
             }
         }
         return null;
+    }
+
+    /** Lê um campo simples ou aninhado de um payload JSON da etapa final. */
+    private JsonNode path(JsonNode root, String fieldName) {
+        JsonNode current = root;
+        for (String segment : fieldName.split("\\.")) {
+            current = current.path(segment);
+            if (current.isMissingNode() || current.isNull()) {
+                return current;
+            }
+        }
+        return current;
     }
 
     /** Retorna texto padrão quando o campo final ainda não veio no payload do executor. */

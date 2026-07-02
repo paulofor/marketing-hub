@@ -19,6 +19,9 @@ import java.util.regex.Pattern;
 public final class SourceSearcherProcessor implements StageProcessor {
     private static final int SEARCH_RESULTS_PER_QUERY = 8;
     private static final int MAX_SELECTED_SOURCES = 8;
+    private static final int MIN_EARLY_STOP_SOURCES = 3;
+    private static final int MAX_PLANNED_QUERY_ATTEMPTS = 3;
+    private static final int MAX_QUERY_VARIANTS_PER_ATTEMPT = 4;
     private static final int MIN_ROUTINE_EVIDENCE_SCORE = 45;
     private static final int MAX_REJECTED_SOURCES_PER_ATTEMPT = 8;
     private static final int MAX_DOMAIN_FALLBACK_QUERIES = 6;
@@ -113,15 +116,22 @@ public final class SourceSearcherProcessor implements StageProcessor {
     /** Executa as queries planejadas e seleciona fontes qualificadas para a próxima etapa. */
     private SearchOutput search(List<Map<String, Object>> plannedQueries) {
         Set<String> seenUrls = new HashSet<>();
-        List<Map<String, Object>> attempts = new ArrayList<>(plannedQueries.stream()
-                .map(query -> searchOneQuery(query, seenUrls))
-                .toList());
+        List<Map<String, Object>> attempts = new ArrayList<>();
+        for (Map<String, Object> query : plannedQueries.stream().limit(MAX_PLANNED_QUERY_ATTEMPTS).toList()) {
+            attempts.add(searchOneQuery(query, seenUrls));
+            if (selectSources(attempts).size() >= MIN_EARLY_STOP_SOURCES) {
+                break;
+            }
+        }
         List<Map<String, Object>> selectedSources = selectSources(attempts);
         if (selectedSources.isEmpty()) {
             List<Map<String, Object>> fallbackQueries = domainFallbackQueries(plannedQueries);
-            attempts.addAll(fallbackQueries.stream()
-                    .map(query -> searchOneQuery(query, seenUrls))
-                    .toList());
+            for (Map<String, Object> query : fallbackQueries) {
+                attempts.add(searchOneQuery(query, seenUrls));
+                if (selectSources(attempts).size() >= MIN_EARLY_STOP_SOURCES) {
+                    break;
+                }
+            }
             selectedSources = selectSources(attempts);
         }
         return new SearchOutput(selectedSources, attempts);
@@ -141,7 +151,9 @@ public final class SourceSearcherProcessor implements StageProcessor {
     /** Busca uma query por variações simples e registra quantidade bruta, fontes aceitas e descartes. */
     private Map<String, Object> searchOneQuery(Map<String, Object> plannedQuery, Set<String> seenUrls) {
         String originalQuery = text(plannedQuery.get("query"));
-        List<String> queryVariants = queryVariants(plannedQuery);
+        List<String> queryVariants = queryVariants(plannedQuery).stream()
+                .limit(MAX_QUERY_VARIANTS_PER_ATTEMPT)
+                .toList();
         List<SourceSearchResult> rawResults = queryVariants.stream()
                 .flatMap(query -> searchClient.search(query, SEARCH_RESULTS_PER_QUERY).stream())
                 .toList();
@@ -251,12 +263,15 @@ public final class SourceSearcherProcessor implements StageProcessor {
         String operationalQuery = operationalQuery(simplifiedQuery);
         String domainQuery = domainQuery(simplifiedQuery + " " + objective);
         List<String> variants = new ArrayList<>();
+        if ("DOMAIN_FALLBACK".equals(text(plannedQuery.get("intent")))) {
+            addVariant(variants, originalQuery);
+        }
         addVariant(variants, enrichBrazilFirstQuery(domainQuery));
+        addVariant(variants, complaintQuery(operationalQuery, simplifiedQuery));
+        addVariant(variants, enrichBrazilFirstQuery(operationalQuery));
         addVariant(variants, retailQuestionQuery(domainQuery));
         addVariant(variants, enrichBrazilFirstQuery(simplifiedQuery));
-        addVariant(variants, enrichBrazilFirstQuery(operationalQuery));
         addVariant(variants, realPainQuery(operationalQuery, simplifiedQuery));
-        addVariant(variants, complaintQuery(operationalQuery, simplifiedQuery));
         addVariant(variants, professionalQuestionQuery(operationalQuery, simplifiedQuery));
         addVariant(variants, enrichBrazilFirstQuery(objective));
         addVariant(variants, naturalRoutineQuery(simplifiedQuery));

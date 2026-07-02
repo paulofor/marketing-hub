@@ -6,6 +6,7 @@ import com.marketinghub.pipelines.nichocnae.v3.core.StageContext;
 import com.marketinghub.pipelines.nichocnae.v3.core.StageResult;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 
 /** Valida a decisão de avanço da etapa source-searcher no pipeline NichoCNAE v3. */
@@ -73,6 +74,35 @@ class SourceSearcherProcessorTest {
         assertThat(source.get("searchProvider")).isEqualTo("TEST_PROVIDER");
         assertThat(source.containsKey("routineEvidenceScore")).isTrue();
         assertThat(source.containsKey("brazilRelevanceScore")).isTrue();
+    }
+
+    /** Para cedo quando já encontrou fontes suficientes, reduzindo timeout operacional do executor. */
+    @Test
+    void shouldStopSearchingAfterEnoughQualifiedSources() {
+        AtomicInteger calls = new AtomicInteger();
+        SourceSearchClient searchClient = (query, limit) -> {
+            calls.incrementAndGet();
+            return List.of(new SourceSearchResult(
+                    "Rotina de loja com pedidos e estoque",
+                    "https://varejo.example.com.br/" + calls.get(),
+                    "Dono MEI relata atendimento a clientes, pedidos por WhatsApp, trocas, cobrança e controle manual de estoque.",
+                    "TEST_PROVIDER",
+                    "<item />"));
+        };
+
+        StageResult result = new SourceSearcherProcessor(searchClient).process(new StageContext("job", "5", Map.of(
+                "plannedQueries", List.of(
+                        Map.of("query", "loja roupas atendimento pedidos"),
+                        Map.of("query", "loja roupas estoque caixa"),
+                        Map.of("query", "loja roupas trocas entrega"),
+                        Map.of("query", "loja roupas cobrança cliente"),
+                        Map.of("query", "loja roupas instagram whatsapp")))));
+
+        assertThat(result.status()).isEqualTo("FONTES_ENCONTRADAS");
+        assertThat(calls.get()).isLessThanOrEqualTo(4);
+        assertThat((List<?>) result.output().get("selectedSources")).hasSize(4);
+        List<?> attempts = (List<?>) result.output().get("searchAttempts");
+        assertThat(attempts).hasSize(1);
     }
 
     /** Usa variações curtas para encontrar fontes mesmo quando a query planejada vem longa e ruidosa. */

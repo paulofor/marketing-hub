@@ -32,9 +32,11 @@ import com.marketinghub.facebookads.service.publicationstep.FacebookCampaignPubl
 import com.marketinghub.repository.jpa.facebookads.FacebookAdsAdSetRepository;
 import com.marketinghub.creative.Creative;
 import com.marketinghub.creative.CreativeStatus;
+import com.marketinghub.gerasalespage.v1.GeraSalesPagePublicationAudit;
 import com.marketinghub.gerasalespage.v1.GeraSalesPageStageCode;
 import com.marketinghub.gerasalespage.v1.GeraSalesPageStageExecution;
 import com.marketinghub.repository.jpa.creative.CreativeRepository;
+import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPagePublicationAuditRepository;
 import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPageStageExecutionRepository;
 import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.leadportal.dto.LeadPortalExperimentMetricsDto;
@@ -110,6 +112,8 @@ class FacebookAdsCampaignControllerTest {
     CreativeRepository creativeRepository;
     @MockBean
     GeraSalesPageStageExecutionRepository geraSalesPageStageExecutionRepository;
+    @MockBean
+    GeraSalesPagePublicationAuditRepository geraSalesPagePublicationAuditRepository;
     @MockBean
     FacebookCampaignPublicationJobStepService publicationJobStepService;
 
@@ -339,6 +343,16 @@ class FacebookAdsCampaignControllerTest {
                         .stageCode(GeraSalesPageStageCode.PUBLICATION_PACKAGE.code())
                         .status("CONCLUIDO")
                         .executionRequestedAt(Instant.parse("2026-07-01T20:05:00Z"))
+                        .build()));
+        when(geraSalesPagePublicationAuditRepository.findTopByExperimentIdOrderByPublishedAtDesc(53L))
+                .thenReturn(Optional.of(GeraSalesPagePublicationAudit.builder()
+                        .experimentId(53L)
+                        .publicationJobId("job-exp53-publication")
+                        .salesPageUrl("https://pagamentopalf.site/sales-page-exp53.html")
+                        .checkoutUrl("https://mpago.la/checkout-exp53")
+                        .html("data-mh-sales-page-analytics page_view page_load_metric section_view_time checkout_click")
+                        .publishedAt(Instant.parse("2026-07-01T20:06:00Z"))
+                        .createdAt(Instant.parse("2026-07-01T20:06:00Z"))
                         .build()));
         when(leadPortalMetricsService.listExperimentMetrics()).thenReturn(List.of());
 

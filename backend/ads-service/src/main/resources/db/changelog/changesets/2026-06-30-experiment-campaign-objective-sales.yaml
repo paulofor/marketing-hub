@@ -39,3 +39,76 @@ databaseChangeLog:
             sql: >
               ALTER TABLE experiment
               MODIFY campaign_objective ENUM('LEADS','TRAFFIC') NOT NULL
+
+  - changeSet:
+      id: 2026-07-02-experiment-campaign-metric-cascade-campaign
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: experiment_campaign_metric
+        - tableExists:
+            tableName: facebook_ads_campaign
+        - columnExists:
+            tableName: experiment_campaign_metric
+            columnName: campaign_id
+        - sqlCheck:
+            expectedResult: 1
+            sql: >
+              SELECT CASE WHEN COUNT(*) > 0 THEN 1 ELSE 0 END
+              FROM information_schema.KEY_COLUMN_USAGE k
+              JOIN information_schema.REFERENTIAL_CONSTRAINTS rc
+                ON rc.CONSTRAINT_SCHEMA = k.CONSTRAINT_SCHEMA
+               AND rc.CONSTRAINT_NAME = k.CONSTRAINT_NAME
+               AND rc.TABLE_NAME = k.TABLE_NAME
+              WHERE k.TABLE_SCHEMA = DATABASE()
+                AND k.TABLE_NAME = 'experiment_campaign_metric'
+                AND k.COLUMN_NAME = 'campaign_id'
+                AND k.REFERENCED_TABLE_NAME = 'facebook_ads_campaign'
+                AND rc.DELETE_RULE <> 'CASCADE'
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              SET @experiment_campaign_metric_fk := (
+                SELECT k.CONSTRAINT_NAME
+                FROM information_schema.KEY_COLUMN_USAGE k
+                JOIN information_schema.REFERENTIAL_CONSTRAINTS rc
+                  ON rc.CONSTRAINT_SCHEMA = k.CONSTRAINT_SCHEMA
+                 AND rc.CONSTRAINT_NAME = k.CONSTRAINT_NAME
+                 AND rc.TABLE_NAME = k.TABLE_NAME
+                WHERE k.TABLE_SCHEMA = DATABASE()
+                  AND k.TABLE_NAME = 'experiment_campaign_metric'
+                  AND k.COLUMN_NAME = 'campaign_id'
+                  AND k.REFERENCED_TABLE_NAME = 'facebook_ads_campaign'
+                  AND rc.DELETE_RULE <> 'CASCADE'
+                LIMIT 1
+              );
+              SET @experiment_campaign_metric_drop_fk_sql := IF(
+                @experiment_campaign_metric_fk IS NULL,
+                'SELECT 1',
+                CONCAT('ALTER TABLE experiment_campaign_metric DROP FOREIGN KEY `', @experiment_campaign_metric_fk, '`')
+              );
+              PREPARE experiment_campaign_metric_drop_fk_stmt FROM @experiment_campaign_metric_drop_fk_sql;
+              EXECUTE experiment_campaign_metric_drop_fk_stmt;
+              DEALLOCATE PREPARE experiment_campaign_metric_drop_fk_stmt;
+              ALTER TABLE experiment_campaign_metric
+                ADD CONSTRAINT fk_experiment_campaign_metric_campaign_cascade
+                FOREIGN KEY (campaign_id) REFERENCES facebook_ads_campaign(id)
+                ON DELETE CASCADE;
+      rollback:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE experiment_campaign_metric
+                DROP FOREIGN KEY fk_experiment_campaign_metric_campaign_cascade;
+              ALTER TABLE experiment_campaign_metric
+                ADD CONSTRAINT fk_experiment_campaign_metric_campaign
+                FOREIGN KEY (campaign_id) REFERENCES facebook_ads_campaign(id);

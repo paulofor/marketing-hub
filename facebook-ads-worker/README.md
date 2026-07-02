@@ -110,12 +110,11 @@ o valor aponta para o próprio container do worker e pode causar `Connection ref
 
 ## Pixels e eventos
 
-A sincronização de pixels e o envio de eventos ficam **desabilitados por padrão** enquanto a operação
-publica campanhas sem depender de Pixel da Meta. O agendador `FacebookPixelScheduler` continua
-condicionado à propriedade `facebookpixel.enabled`; defina `FACEBOOKPIXEL_ENABLED=true` apenas
-quando a estratégia de pixels por vertical/conta estiver pronta para voltar. A publicação de campanhas
-continua liberada sem pixel, usando a landing aprovada como destino e sem bloquear vendas por rastreamento.
-Quando o job está ativo o worker consulta `/api/facebook-pixels/pending`
+A sincronização de pixels e o envio de eventos ficam **habilitados por padrão** porque campanhas
+`LOW_TICKET_PRODUCT` com objetivo `SALES` dependem de Pixel da Meta para otimização de compra.
+O agendador `FacebookPixelScheduler` continua condicionado à propriedade `facebookpixel.enabled`;
+defina `FACEBOOKPIXEL_ENABLED=false` apenas em contingência operacional explícita. Quando o job
+está ativo o worker consulta `/api/facebook-pixels/pending`
 e cria os pixels solicitados como pendência no banco antes de enviar os eventos de conversão.
 Para evitar que uma solicitação fique parada por falta de configuração complementar, a criação de pixel
 usa primeiro `systemUserAccessToken`; se ele não existir, usa o `accessToken` principal já validado.
@@ -127,7 +126,7 @@ O fluxo automatizado cria toda a hierarquia necessária para veiculação:
    experimento trouxer `campaignObjective=LEADS`, `freeReward` ou criativo
    direcionado para formulário de leads; use `OUTCOME_TRAFFIC` apenas para
    experimentos sem contrato de recompensa gratuita e sem objetivo Leads. A
-   campanha sempre nasce com status inicial `PAUSED` e
+   campanha nasce com status inicial `ACTIVE` e
    `special_ad_categories = []`, conforme documentado na
    [Marketing API](https://developers.facebook.com/docs/marketing-api/reference/ad-campaign-group#Creating) para contas que
    não se enquadram em categorias especiais.
@@ -216,8 +215,8 @@ O fluxo automatizado cria toda a hierarquia necessária para veiculação:
    botão vindos do criativo são normalizados antes do envio e nunca devem ser
    enviados como tipo da CTA.
 6. **Anúncio** (`POST /ads`) que referencia o conjunto e o criativo recém
-   criados, já em `ACTIVE`, deixando somente a campanha pausada para ativação
-   manual pelo time operacional no Gerenciador de Anúncios.
+   criados, já em `ACTIVE`, permitindo que o experimento comece a rodar sem
+   ativação manual no Gerenciador de Anúncios.
 
 As chamadas ao backend utilizam o prefixo `/api`. O worker consome
 `/api/facebook-campaigns/experiments-ready`, tratando respostas `404` como

@@ -200,6 +200,8 @@ Todo experimento criado a partir de hipótese gerada por IA deve preservar assoc
 
 Regras obrigatórias:
 - templates ativos de prompt/schema devem ficar em `ai_prompt_schema_template`;
+- a entidade e o repository desses templates pertencem à infraestrutura comum de IA (`aiprompt`), nunca a um pipeline específico;
+- pipelines como Hipótese e GeraSalesPage podem consumir essa infraestrutura comum, mas não podem importar classes internas um do outro para reutilizar prompt/schema;
 - execuções devem registrar o `template_key` efetivo usado;
 - experimentos devem registrar em `experiment_ai_prompt_schema_usage` todos os templates de hipótese e de página de venda associados ao teste;
 - troca futura de prompt, schema ou modelo não pode apagar nem sobrescrever a associação histórica de experimentos já criados;

@@ -78,11 +78,16 @@ class ArquiteturaTest {
             "com.marketinghub.repository.jpa.hypothesis.HypothesisPainStageExecutionRepository";
     private static final String MARKET_NICHE_REPOSITORY_CLASS =
             "com.marketinghub.repository.jpa.niche.MarketNicheRepository";
+    private static final String AI_PROMPT_SCHEMA_TEMPLATE_CLASS =
+            "com.marketinghub.aiprompt.AiPromptSchemaTemplate";
+    private static final String AI_PROMPT_SCHEMA_TEMPLATE_REPOSITORY_CLASS =
+            "com.marketinghub.repository.jpa.aiprompt.AiPromptSchemaTemplateRepository";
     private static final String HYPOTHESIS_CLASS = "com.marketinghub.hypothesis.Hypothesis";
     private static final String MARKET_NICHE_CLASS = "com.marketinghub.niche.MarketNiche";
     private static final List<String> ALLOWED_HYPOTHESIS_STAGE_SERVICE_REPOSITORIES = List.of(
             HYPOTHESIS_PAIN_STAGE_EXECUTION_REPOSITORY_CLASS,
-            MARKET_NICHE_REPOSITORY_CLASS);
+            MARKET_NICHE_REPOSITORY_CLASS,
+            AI_PROMPT_SCHEMA_TEMPLATE_REPOSITORY_CLASS);
     private static final Pattern BACKEND_CONTROLLER_NAME_PATTERN = Pattern.compile("^Backend([A-Za-z0-9]+)Controller$");
     private static final Pattern BACKEND_SERVICE_NAME_PATTERN = Pattern.compile("^Backend([A-Za-z0-9]+)Service$");
     private static final Pattern EPM_CONTROLLER_PACKAGE_PATTERN = Pattern.compile("^com\\.marketinghub\\.epm\\.controller$");
@@ -2900,6 +2905,7 @@ class ArquiteturaTest {
                             || isSameStageHypothesisDomainDependency(item, targetClass)
                             || targetName.equals(HYPOTHESIS_CLASS)
                             || targetName.equals(MARKET_NICHE_CLASS)
+                            || isAiPromptSchemaTemplateClass(targetName)
                             || isAllowedHypothesisStageServiceRepository(targetName)) {
                         return;
                     }
@@ -2910,7 +2916,8 @@ class ArquiteturaTest {
                             + "pacotes internos hypothesis.<etapa>.service.*, hypothesis.<etapa>.provisorio.* "
                             + "e entidades da mesma etapa, "
                             + HYPOTHESIS_CLASS + ", "
-                            + MARKET_NICHE_CLASS
+                            + MARKET_NICHE_CLASS + ", "
+                            + AI_PROMPT_SCHEMA_TEMPLATE_CLASS
                             + " e somente repositories canônicos explicitamente liberados: "
                             + ALLOWED_HYPOTHESIS_STAGE_SERVICE_REPOSITORIES;
                     events.add(SimpleConditionEvent.violated(item, message));
@@ -2924,6 +2931,14 @@ class ArquiteturaTest {
      */
     private static boolean isAllowedHypothesisStageServiceRepository(String targetName) {
         return ALLOWED_HYPOTHESIS_STAGE_SERVICE_REPOSITORIES.contains(targetName);
+    }
+
+    /**
+     * Verifica se a dependência alvo é a entidade comum de prompt/schema ou classe interna gerada por Lombok.
+     */
+    private static boolean isAiPromptSchemaTemplateClass(String targetName) {
+        return targetName.equals(AI_PROMPT_SCHEMA_TEMPLATE_CLASS)
+                || targetName.startsWith(AI_PROMPT_SCHEMA_TEMPLATE_CLASS + "$");
     }
 
     /**

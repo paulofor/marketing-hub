@@ -8,7 +8,7 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.marketinghub.gerasalespage.v1.GeraSalesPagePromptSchemaTemplate;
+import com.marketinghub.aiprompt.AiPromptSchemaTemplate;
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.hypothesis.pain.HypothesisPainCostCalculator;
 import com.marketinghub.hypothesis.pain.HypothesisPainStageExecution;
@@ -16,7 +16,7 @@ import com.marketinghub.hypothesis.pain.provisorio.HypothesisPainEnrichmentProfi
 import com.marketinghub.hypothesis.pain.provisorio.HypothesisPainEnrichmentProfileSnapshot;
 import com.marketinghub.hypothesis.pain.service.recebeResposta.RecebeRespostaRequest;
 import com.marketinghub.niche.MarketNiche;
-import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPagePromptSchemaTemplateRepository;
+import com.marketinghub.repository.jpa.aiprompt.AiPromptSchemaTemplateRepository;
 import com.marketinghub.repository.jpa.hypothesis.HypothesisPainStageExecutionRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import java.math.BigDecimal;
@@ -45,7 +45,7 @@ class HypothesisPainStageServiceTest {
     private HypothesisPainStageExecutionRepository executionRepository;
 
     @Mock
-    private GeraSalesPagePromptSchemaTemplateRepository templateRepository;
+    private AiPromptSchemaTemplateRepository templateRepository;
 
     @Mock
     private HypothesisPainCostCalculator costCalculator;
@@ -73,7 +73,7 @@ class HypothesisPainStageServiceTest {
         lenient().when(templateRepository.findFirstByPipelineCodeAndStageCodeAndActiveTrueOrderByVersionDesc(
                         "hypothesis-pipeline",
                         stageCode))
-                .thenReturn(Optional.of(GeraSalesPagePromptSchemaTemplate.builder()
+                .thenReturn(Optional.of(AiPromptSchemaTemplate.builder()
                         .templateKey("hypothesis-pipeline:" + stageCode + ":v1")
                         .pipelineCode("hypothesis-pipeline")
                         .stageCode(stageCode)

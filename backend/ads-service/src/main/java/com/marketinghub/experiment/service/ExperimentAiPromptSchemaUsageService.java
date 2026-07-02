@@ -2,11 +2,11 @@ package com.marketinghub.experiment.service;
 
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentAiPromptSchemaUsage;
-import com.marketinghub.gerasalespage.v1.GeraSalesPagePromptSchemaTemplate;
+import com.marketinghub.aiprompt.AiPromptSchemaTemplate;
 import com.marketinghub.hypothesis.pain.HypothesisPainStageExecution;
 import com.marketinghub.repository.jpa.experiment.ExperimentAiPromptSchemaUsageRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
-import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPagePromptSchemaTemplateRepository;
+import com.marketinghub.repository.jpa.aiprompt.AiPromptSchemaTemplateRepository;
 import com.marketinghub.repository.jpa.hypothesis.HypothesisPainStageExecutionRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
@@ -25,14 +25,14 @@ public class ExperimentAiPromptSchemaUsageService {
 
     private final ExperimentRepository experimentRepository;
     private final HypothesisPainStageExecutionRepository hypothesisExecutionRepository;
-    private final GeraSalesPagePromptSchemaTemplateRepository templateRepository;
+    private final AiPromptSchemaTemplateRepository templateRepository;
     private final ExperimentAiPromptSchemaUsageRepository usageRepository;
 
     /** Inicializa o serviço com os repositórios de experimento, execuções e templates. */
     public ExperimentAiPromptSchemaUsageService(
             ExperimentRepository experimentRepository,
             HypothesisPainStageExecutionRepository hypothesisExecutionRepository,
-            GeraSalesPagePromptSchemaTemplateRepository templateRepository,
+            AiPromptSchemaTemplateRepository templateRepository,
             ExperimentAiPromptSchemaUsageRepository usageRepository) {
         this.experimentRepository = experimentRepository;
         this.hypothesisExecutionRepository = hypothesisExecutionRepository;
@@ -64,7 +64,7 @@ public class ExperimentAiPromptSchemaUsageService {
 
     /** Associa ao experimento o template ativo usado por uma etapa do GeraSalesPage. */
     @Transactional
-    public void linkSalesPageTemplate(Long experimentId, GeraSalesPagePromptSchemaTemplate template, String stageCode, String sourceJobId) {
+    public void linkSalesPageTemplate(Long experimentId, AiPromptSchemaTemplate template, String stageCode, String sourceJobId) {
         Experiment experiment = findExperiment(experimentId);
         upsertUsage(experiment, template, SALES_PAGE_USAGE_CONTEXT, stageCode, sourceJobId, Instant.now());
     }
@@ -78,7 +78,7 @@ public class ExperimentAiPromptSchemaUsageService {
     /** Cria ou atualiza o uso do template para o experimento informado. */
     private void upsertUsage(
             Experiment experiment,
-            GeraSalesPagePromptSchemaTemplate template,
+            AiPromptSchemaTemplate template,
             String usageContext,
             String stageCode,
             String sourceJobId,

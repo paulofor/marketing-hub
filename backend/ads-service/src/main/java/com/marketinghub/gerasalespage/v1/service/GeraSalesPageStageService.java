@@ -4,11 +4,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.service.ExperimentAiPromptSchemaUsageService;
-import com.marketinghub.gerasalespage.v1.GeraSalesPagePromptSchemaTemplate;
+import com.marketinghub.aiprompt.AiPromptSchemaTemplate;
 import com.marketinghub.gerasalespage.v1.GeraSalesPageStageCode;
 import com.marketinghub.gerasalespage.v1.GeraSalesPageStageExecution;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
-import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPagePromptSchemaTemplateRepository;
+import com.marketinghub.repository.jpa.aiprompt.AiPromptSchemaTemplateRepository;
 import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPageStageExecutionRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
@@ -38,7 +38,7 @@ public class GeraSalesPageStageService {
 
     private final ExperimentRepository experimentRepository;
     private final GeraSalesPageStageExecutionRepository executionRepository;
-    private final GeraSalesPagePromptSchemaTemplateRepository templateRepository;
+    private final AiPromptSchemaTemplateRepository templateRepository;
     private final GeraSalesPagePublicationAuditService publicationAuditService;
     private final ExperimentAiPromptSchemaUsageService promptSchemaUsageService;
     private final ObjectMapper objectMapper;
@@ -47,7 +47,7 @@ public class GeraSalesPageStageService {
     public GeraSalesPageStageService(
             ExperimentRepository experimentRepository,
             GeraSalesPageStageExecutionRepository executionRepository,
-            GeraSalesPagePromptSchemaTemplateRepository templateRepository,
+            AiPromptSchemaTemplateRepository templateRepository,
             GeraSalesPagePublicationAuditService publicationAuditService,
             ExperimentAiPromptSchemaUsageService promptSchemaUsageService,
             ObjectMapper objectMapper) {
@@ -92,7 +92,7 @@ public class GeraSalesPageStageService {
     @Transactional(readOnly = true)
     public List<GeraSalesPagePendingResponse> pending(String stageCode) {
         validateStage(stageCode);
-        GeraSalesPagePromptSchemaTemplate template = loadTemplate(stageCode);
+        AiPromptSchemaTemplate template = loadTemplate(stageCode);
         return executionRepository.findTop20ByStageCodeAndStatusOrderByExecutionRequestedAtAsc(stageCode, STATUS_STARTED)
                 .stream()
                 .map(execution -> toPendingResponse(execution, template))
@@ -158,7 +158,7 @@ public class GeraSalesPageStageService {
 
     /** Cria uma nova execução de etapa com template ativo e idJob único. */
     private GeraSalesPageStageExecution createNewExecution(Long experimentId, String stageCode) {
-        GeraSalesPagePromptSchemaTemplate template = loadTemplate(stageCode);
+        AiPromptSchemaTemplate template = loadTemplate(stageCode);
         GeraSalesPageStageExecution execution = GeraSalesPageStageExecution.builder()
                 .idJob(UUID.randomUUID().toString())
                 .experimentId(experimentId)
@@ -175,7 +175,7 @@ public class GeraSalesPageStageService {
     /** Converte uma execução persistida no payload de pendência consumido pelo worker. */
     private GeraSalesPagePendingResponse toPendingResponse(
             GeraSalesPageStageExecution execution,
-            GeraSalesPagePromptSchemaTemplate template) {
+            AiPromptSchemaTemplate template) {
         Experiment experiment = execution.getExperiment();
         return new GeraSalesPagePendingResponse(
                 execution.getExperimentId(),
@@ -209,7 +209,7 @@ public class GeraSalesPageStageService {
     }
 
     /** Monta o bloco de template ativo entregue ao worker. */
-    private Map<String, Object> templatePayload(GeraSalesPagePromptSchemaTemplate template) {
+    private Map<String, Object> templatePayload(AiPromptSchemaTemplate template) {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("templateKey", template.getTemplateKey());
         payload.put("version", template.getVersion());
@@ -232,7 +232,7 @@ public class GeraSalesPageStageService {
     }
 
     /** Carrega o template ativo da etapa e falha cedo se ele não existir. */
-    private GeraSalesPagePromptSchemaTemplate loadTemplate(String stageCode) {
+    private AiPromptSchemaTemplate loadTemplate(String stageCode) {
         return templateRepository.findFirstByPipelineCodeAndStageCodeAndActiveTrueOrderByVersionDesc(PIPELINE_CODE, stageCode)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.CONFLICT,

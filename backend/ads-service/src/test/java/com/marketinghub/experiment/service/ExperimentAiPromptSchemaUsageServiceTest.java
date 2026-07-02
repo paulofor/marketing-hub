@@ -6,12 +6,12 @@ import static org.mockito.Mockito.when;
 
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentAiPromptSchemaUsage;
-import com.marketinghub.gerasalespage.v1.GeraSalesPagePromptSchemaTemplate;
+import com.marketinghub.aiprompt.AiPromptSchemaTemplate;
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.hypothesis.pain.HypothesisPainStageExecution;
 import com.marketinghub.repository.jpa.experiment.ExperimentAiPromptSchemaUsageRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
-import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPagePromptSchemaTemplateRepository;
+import com.marketinghub.repository.jpa.aiprompt.AiPromptSchemaTemplateRepository;
 import com.marketinghub.repository.jpa.hypothesis.HypothesisPainStageExecutionRepository;
 import java.nio.ByteBuffer;
 import java.time.Instant;
@@ -33,7 +33,7 @@ class ExperimentAiPromptSchemaUsageServiceTest {
     @Mock
     private HypothesisPainStageExecutionRepository hypothesisExecutionRepository;
     @Mock
-    private GeraSalesPagePromptSchemaTemplateRepository templateRepository;
+    private AiPromptSchemaTemplateRepository templateRepository;
     @Mock
     private ExperimentAiPromptSchemaUsageRepository usageRepository;
     @InjectMocks
@@ -56,7 +56,7 @@ class ExperimentAiPromptSchemaUsageServiceTest {
                 .idJob(toBytes(jobId))
                 .completedAt(Instant.parse("2026-07-02T12:00:00Z"))
                 .build();
-        GeraSalesPagePromptSchemaTemplate template = GeraSalesPagePromptSchemaTemplate.builder()
+        AiPromptSchemaTemplate template = AiPromptSchemaTemplate.builder()
                 .templateKey("hypothesis-pipeline:hypothesis-pain:v1")
                 .pipelineCode("hypothesis-pipeline")
                 .stageCode("hypothesis-pain")

@@ -1,0 +1,184 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-02-gera-sales-page-publication-audit-fks-01-align-id-job-collation
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: gera_sales_page_stage_execution
+        - tableExists:
+            tableName: gera_sales_page_publication_audit
+        - tableExists:
+            tableName: gera_sales_page_publication_stage_audit
+        - columnExists:
+            tableName: gera_sales_page_publication_audit
+            columnName: publication_job_id
+        - columnExists:
+            tableName: gera_sales_page_publication_stage_audit
+            columnName: id_job
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE gera_sales_page_publication_audit
+                MODIFY publication_job_id VARCHAR(36)
+                  CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL;
+
+              ALTER TABLE gera_sales_page_publication_stage_audit
+                MODIFY id_job VARCHAR(36)
+                  CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL;
+
+  - changeSet:
+      id: 2026-07-02-gera-sales-page-publication-audit-fks-02-index-publication-job
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: gera_sales_page_publication_audit
+        - not:
+            indexExists:
+              tableName: gera_sales_page_publication_audit
+              indexName: uk_gera_sales_page_publication_job
+        - sqlCheck:
+            expectedResult: "0"
+            sql: |
+              SELECT COUNT(*)
+              FROM (
+                SELECT publication_job_id
+                FROM gera_sales_page_publication_audit
+                GROUP BY publication_job_id
+                HAVING COUNT(*) > 1
+              ) duplicated_publication_jobs
+      changes:
+        - createIndex:
+            tableName: gera_sales_page_publication_audit
+            indexName: uk_gera_sales_page_publication_job
+            unique: true
+            columns:
+              - column:
+                  name: publication_job_id
+
+  - changeSet:
+      id: 2026-07-02-gera-sales-page-publication-audit-fks-03-index-publication-experiment
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: gera_sales_page_publication_audit
+        - not:
+            indexExists:
+              tableName: gera_sales_page_publication_audit
+              indexName: idx_gera_sales_page_publication_experiment
+      changes:
+        - createIndex:
+            tableName: gera_sales_page_publication_audit
+            indexName: idx_gera_sales_page_publication_experiment
+            columns:
+              - column:
+                  name: experiment_id
+              - column:
+                  name: published_at
+
+  - changeSet:
+      id: 2026-07-02-gera-sales-page-publication-audit-fks-04-index-stage-audit-order
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: gera_sales_page_publication_stage_audit
+        - not:
+            indexExists:
+              tableName: gera_sales_page_publication_stage_audit
+              indexName: idx_gera_sales_page_publication_stage_audit
+      changes:
+        - createIndex:
+            tableName: gera_sales_page_publication_stage_audit
+            indexName: idx_gera_sales_page_publication_stage_audit
+            columns:
+              - column:
+                  name: publication_audit_id
+              - column:
+                  name: stage_order
+
+  - changeSet:
+      id: 2026-07-02-gera-sales-page-publication-audit-fks-05-index-stage-job
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: gera_sales_page_publication_stage_audit
+        - not:
+            indexExists:
+              tableName: gera_sales_page_publication_stage_audit
+              indexName: idx_gera_sales_page_publication_stage_job
+      changes:
+        - createIndex:
+            tableName: gera_sales_page_publication_stage_audit
+            indexName: idx_gera_sales_page_publication_stage_job
+            columns:
+              - column:
+                  name: id_job
+
+  - changeSet:
+      id: 2026-07-02-gera-sales-page-publication-audit-fks-06-fk-publication-job
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: gera_sales_page_stage_execution
+        - tableExists:
+            tableName: gera_sales_page_publication_audit
+        - not:
+            foreignKeyConstraintExists:
+              foreignKeyTableName: gera_sales_page_publication_audit
+              foreignKeyName: fk_gera_sales_page_publication_audit_job
+      changes:
+        - addForeignKeyConstraint:
+            baseTableName: gera_sales_page_publication_audit
+            baseColumnNames: publication_job_id
+            constraintName: fk_gera_sales_page_publication_audit_job
+            referencedTableName: gera_sales_page_stage_execution
+            referencedColumnNames: id_job
+
+  - changeSet:
+      id: 2026-07-02-gera-sales-page-publication-audit-fks-07-fk-stage-job
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: gera_sales_page_stage_execution
+        - tableExists:
+            tableName: gera_sales_page_publication_stage_audit
+        - not:
+            foreignKeyConstraintExists:
+              foreignKeyTableName: gera_sales_page_publication_stage_audit
+              foreignKeyName: fk_gera_sales_page_publication_stage_audit_job
+      changes:
+        - addForeignKeyConstraint:
+            baseTableName: gera_sales_page_publication_stage_audit
+            baseColumnNames: id_job
+            constraintName: fk_gera_sales_page_publication_stage_audit_job
+            referencedTableName: gera_sales_page_stage_execution
+            referencedColumnNames: id_job

@@ -12,3 +12,9 @@
 - Causa-raiz: validar apenas a conclusão da etapa final do pipeline ainda permitia publicar anúncio com destino direto para checkout ou página antiga sem métricas, impedindo leitura real do funil.
 - Correção aplicada: o checklist de prontidão e o endpoint de liberação para Facebook bloqueiam separadamente falta de página auditada, destino incorreto do anúncio e ausência de coletores.
 - Prevenção de recorrência: regras registradas nos cânones `facebook-campaign-publication-canon.v1.md` e `gerasalespage-arquitetura-canon.v1.md`, com testes cobrindo bloqueios e cenário positivo.
+
+## Correção do schema de auditoria GeraSalesPage v1
+
+- Sintoma pós-deploy: o backend subia saudável, mas o bootstrap registrava `Cannot add foreign key constraint` ao tentar criar FKs de `gera_sales_page_publication_audit.publication_job_id` e `gera_sales_page_publication_stage_audit.id_job` para `gera_sales_page_stage_execution.id_job`.
+- Causa-raiz confirmada via MCP/banco: as tabelas de auditoria foram criadas com `utf8mb4_unicode_ci`, enquanto `gera_sales_page_stage_execution.id_job` estava em `utf8mb4_general_ci`; no MySQL 5.7, FK entre `VARCHAR` com collation diferente é recusada. O changeset original estava `MARK_RAN`, deixando índices e FKs de job incompletos.
+- Correção aplicada: novo changelog alinha a collation das colunas-filhas para `utf8mb4_general_ci`, recria os índices previstos e adiciona as FKs de job de forma idempotente.

@@ -164,14 +164,14 @@ public class FacebookAdsService {
     }
 
     /**
-     * Cria uma campanha pausada de Instagram usando objetivo de tráfego quando nenhum objetivo específico é informado.
+     * Cria uma campanha ativa de Instagram usando objetivo de tráfego quando nenhum objetivo específico é informado.
      */
     public String createInstagramCampaign(String adAccountId, String name) {
         return createInstagramCampaign(adAccountId, name, "OUTCOME_TRAFFIC");
     }
 
     /**
-     * Cria uma campanha pausada na Meta sem orçamento de campanha, declarando explicitamente o compartilhamento de orçamento dos ad sets.
+     * Cria uma campanha ativa na Meta sem orçamento de campanha, declarando explicitamente o compartilhamento de orçamento dos ad sets.
      */
     public String createInstagramCampaign(String adAccountId, String name, String objective) {
         String path = buildVersionedPath("/act_" + adAccountId + "/campaigns");
@@ -179,7 +179,7 @@ public class FacebookAdsService {
         Map<String, Object> body = new HashMap<>();
         body.put("name", name);
         body.put("objective", resolvedObjective);
-        body.put("status", "PAUSED");
+        body.put("status", "ACTIVE");
         body.put("special_ad_categories", List.of());
         body.put("is_adset_budget_sharing_enabled", false);
         body.put("access_token", requireAccessToken());

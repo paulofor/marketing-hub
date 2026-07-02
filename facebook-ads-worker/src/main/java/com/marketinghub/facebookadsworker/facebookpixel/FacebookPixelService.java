@@ -45,7 +45,7 @@ public class FacebookPixelService {
                                 @Value("${backend.base-url:http://localhost:8000}") String backendBaseUrl,
                                 @Value("${backend.api-prefix:/api}") String apiPrefix,
                                 ObjectMapper objectMapper,
-                                @Value("${facebookpixel.enabled:false}") boolean pixelsEnabled) {
+                                @Value("${facebookpixel.enabled:true}") boolean pixelsEnabled) {
         this.facebookAdsService = facebookAdsService;
         this.backendClient = builder.build();
         this.backendBaseUrl = backendBaseUrl;

@@ -149,6 +149,57 @@ class ResponsesApiOpenAiClientTest {
         assertThat(result.costUsd()).isEqualByComparingTo(new BigDecimal("0.00006000"));
     }
 
+    /** Deve repetir chamadas transitórias antes de falhar a etapa por limite momentâneo da OpenAI. */
+    @Test
+    void dispatchShouldRetryTransientOpenAiHttpFailuresBeforeReturningSuccess() throws Exception {
+        server.enqueue(new MockResponse()
+                .setResponseCode(429)
+                .setHeader("Content-Type", "application/json")
+                .setBody("{\"error\":{\"message\":\"too many requests\"}}"));
+        server.enqueue(new MockResponse()
+                .setResponseCode(429)
+                .setHeader("Content-Type", "application/json")
+                .setBody("{\"error\":{\"message\":\"still busy\"}}"));
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "application/json")
+                .setBody("""
+                        {
+                          "id": "resp-retry",
+                          "output_text": "{\\"ok\\":true}",
+                          "usage": {"input_tokens": 10, "output_tokens": 5}
+                        }
+                        """));
+        enqueuePricingCatalog("gpt-test", "2.00", "8.00", "1.00", "4.00");
+        ResponsesApiOpenAiClient client = new ResponsesApiOpenAiClient(
+                WebClient.builder(),
+                new ObjectMapper(),
+                properties("gpt-test"),
+                delay -> {});
+        OpenAiRequest request = new OpenAiRequest(
+                "gpt-test",
+                "Prompt",
+                "{\"model\":\"gpt-test\",\"input\":\"Prompt\"}",
+                "schema-wireframe",
+                "{\"type\":\"object\"}",
+                "# Prompt markdown bruto",
+                Map.of("idJob", "job-retry"));
+
+        var dispatch = client.dispatch(request);
+        var result = client.awaitResult(dispatch);
+
+        assertThat(dispatch.openAiJobId()).isEqualTo("resp-retry");
+        assertThat(result.modelResponse()).isEqualTo("{\"ok\":true}");
+        assertThat(server.getRequestCount()).isEqualTo(4);
+        assertThat(appender.list)
+                .extracting(ILoggingEvent::getFormattedMessage)
+                .anySatisfy(message -> assertThat(message)
+                        .contains("Falha HTTP transitória na OpenAI Responses API")
+                        .contains("jobId=job-retry")
+                        .contains("status=429")
+                        .contains("attempt=1"));
+    }
+
     /** Deve estimar custo em modo flex pelo modelo do request quando a configuração não informa tarifa explícita. */
     @Test
     void dispatchShouldEstimateFlexCostFromRequestModelWhenPricingPropertiesAreUnset() throws Exception {

@@ -1975,9 +1975,7 @@ export default function ExperimentDetailPage() {
       value: data.singlePain || "—",
     },
     {
-      label: isLowTicketProduct
-        ? "Prova/preview da oferta"
-        : "Isca digital",
+      label: isLowTicketProduct ? "Prova/preview da oferta" : "Isca digital",
       value:
         data.freeReward ||
         (isLowTicketProduct ? "Sem prova/preview informada" : "—"),
@@ -2268,9 +2266,8 @@ export default function ExperimentDetailPage() {
               </div>
               <span className="badge text-bg-light border text-body">
                 {
-                  lowTicketSalePreparationChecklist.filter(
-                    (item) => item.isMet,
-                  ).length
+                  lowTicketSalePreparationChecklist.filter((item) => item.isMet)
+                    .length
                 }
                 /{lowTicketSalePreparationChecklist.length} concluídos
               </span>
@@ -2607,6 +2604,7 @@ export default function ExperimentDetailPage() {
           <Tabs.Content value="funnel" asChild>
             <ExperimentFunnelTab
               experimentId={expId}
+              experimentType={data?.experimentType}
               totalSpend={data?.campaignMetric?.spend}
               spendLastSyncedAt={data?.campaignMetric?.lastSyncedAt}
               alterationLocked={alterationLocked}

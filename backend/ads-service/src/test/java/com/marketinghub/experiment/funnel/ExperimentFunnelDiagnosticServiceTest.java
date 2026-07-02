@@ -1,5 +1,7 @@
 package com.marketinghub.experiment.funnel;
 
+import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.ExperimentType;
 import com.marketinghub.experiment.funnel.dto.ExperimentFunnelDiagnosticsResponseDto;
 import com.marketinghub.experiment.funnel.dto.ExperimentFunnelStageDto;
 import com.marketinghub.experiment.funnel.dto.FunnelDiagnosticStatus;
@@ -8,11 +10,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 /** Testa os diagnósticos estatísticos das transições do funil de experimentos. */
@@ -21,12 +26,18 @@ class ExperimentFunnelDiagnosticServiceTest {
 
     @Mock
     private ExperimentFunnelService funnelService;
+    @Mock
+    private ExperimentRepository experimentRepository;
 
     private ExperimentFunnelDiagnosticService service;
 
     @BeforeEach
     void setUp() {
-        service = new ExperimentFunnelDiagnosticService(funnelService, new ExperimentFunnelDiagnosticConfig());
+        service = new ExperimentFunnelDiagnosticService(funnelService, new ExperimentFunnelDiagnosticConfig(), experimentRepository);
+        lenient().when(experimentRepository.findById(10L)).thenReturn(Optional.of(Experiment.builder().id(10L).build()));
+        lenient().when(experimentRepository.findById(20L)).thenReturn(Optional.of(Experiment.builder().id(20L).build()));
+        lenient().when(experimentRepository.findById(30L)).thenReturn(Optional.of(Experiment.builder().id(30L).build()));
+        lenient().when(experimentRepository.findById(40L)).thenReturn(Optional.of(Experiment.builder().id(40L).build()));
     }
 
     @Test
@@ -110,6 +121,32 @@ class ExperimentFunnelDiagnosticServiceTest {
                         assertThat(item.upper95RateIfZero()).isLessThanOrEqualTo(item.minAcceptableRate());
                     }
                 });
+    }
+
+    /** Garante que venda low-ticket diagnostica página de venda e checkout, sem formulário. */
+    @Test
+    void usesDirectSalesRulesForLowTicketProduct() {
+        when(experimentRepository.findById(50L)).thenReturn(Optional.of(Experiment.builder()
+                .id(50L)
+                .experimentType(ExperimentType.LOW_TICKET_PRODUCT)
+                .build()));
+        when(funnelService.summarize(50L)).thenReturn(stageList(
+                stage(ExperimentFunnelStage.VISUALIZACAO_ANUNCIO, 1000),
+                stage(ExperimentFunnelStage.ACESSO_FORM_LEAD, 50),
+                stage(ExperimentFunnelStage.VISUALIZACAO_FORM, 40),
+                stage(ExperimentFunnelStage.ACESSO_CHECKOUT, 0),
+                stage(ExperimentFunnelStage.COMPRA, 0)
+        ));
+
+        ExperimentFunnelDiagnosticsResponseDto response = service.diagnose(50L);
+
+        assertThat(response.diagnostics())
+                .extracting(item -> item.stageKey())
+                .containsExactly(
+                        ExperimentFunnelStage.ACESSO_FORM_LEAD,
+                        ExperimentFunnelStage.ACESSO_CHECKOUT,
+                        ExperimentFunnelStage.COMPRA)
+                .doesNotContain(ExperimentFunnelStage.ENVIO_FORM);
     }
 
     private List<ExperimentFunnelStageDto> stageList(ExperimentFunnelStageDto... stages) {

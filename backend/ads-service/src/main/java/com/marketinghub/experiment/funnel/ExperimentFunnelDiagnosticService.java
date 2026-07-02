@@ -1,11 +1,14 @@
 package com.marketinghub.experiment.funnel;
 
+import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.ExperimentType;
 import com.marketinghub.experiment.funnel.dto.ExperimentFunnelDiagnosticsResponseDto;
 import com.marketinghub.experiment.funnel.dto.ExperimentFunnelStageDiagnosticDto;
 import com.marketinghub.experiment.funnel.dto.ExperimentFunnelStageDto;
 import com.marketinghub.experiment.funnel.dto.FunnelDiagnosticReasonCode;
 import com.marketinghub.experiment.funnel.dto.FunnelDiagnosticStatus;
 import com.marketinghub.experiment.funnel.dto.FunnelThresholdCheckDto;
+import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.Comparator;
@@ -22,25 +25,29 @@ public class ExperimentFunnelDiagnosticService {
 
     private final ExperimentFunnelService funnelService;
     private final ExperimentFunnelDiagnosticConfig config;
+    private final ExperimentRepository experimentRepository;
 
     /**
      * Cria o serviço com a fonte de métricas do funil e a configuração canônica dos limites.
      */
     public ExperimentFunnelDiagnosticService(ExperimentFunnelService funnelService,
-                                             ExperimentFunnelDiagnosticConfig config) {
+                                             ExperimentFunnelDiagnosticConfig config,
+                                             ExperimentRepository experimentRepository) {
         this.funnelService = funnelService;
         this.config = config;
+        this.experimentRepository = experimentRepository;
     }
 
     /**
      * Diagnostica as transições prioritárias do funil para um experimento.
      */
     public ExperimentFunnelDiagnosticsResponseDto diagnose(Long experimentId) {
+        Experiment experiment = experimentRepository.findById(experimentId).orElseThrow();
         List<ExperimentFunnelStageDto> stages = funnelService.summarize(experimentId);
         Map<ExperimentFunnelStage, ExperimentFunnelStageDto> byStage = stages.stream()
                 .collect(Collectors.toMap(ExperimentFunnelStageDto::getStage, stage -> stage));
 
-        List<ExperimentFunnelStageDiagnosticDto> diagnostics = config.prioritizedRules().stream()
+        List<ExperimentFunnelStageDiagnosticDto> diagnostics = rulesFor(experiment).stream()
                 .map(rule -> diagnoseRule(byStage, rule))
                 .sorted(Comparator.comparing(dto -> dto.stageKey().getOrder()))
                 .toList();
@@ -53,6 +60,16 @@ public class ExperimentFunnelDiagnosticService {
                 : null;
 
         return new ExperimentFunnelDiagnosticsResponseDto(diagnostics, contextualAlert);
+    }
+
+    /**
+     * Seleciona as transições estatísticas compatíveis com o tipo comercial do experimento.
+     */
+    private List<ExperimentFunnelDiagnosticConfig.ConversionRuleSpec> rulesFor(Experiment experiment) {
+        if (experiment != null && experiment.getExperimentType() == ExperimentType.LOW_TICKET_PRODUCT) {
+            return config.lowTicketPrioritizedRules();
+        }
+        return config.prioritizedRules();
     }
 
     /**

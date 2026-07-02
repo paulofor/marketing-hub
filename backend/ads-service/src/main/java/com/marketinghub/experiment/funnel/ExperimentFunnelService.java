@@ -1,6 +1,7 @@
 package com.marketinghub.experiment.funnel;
 
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.ExperimentType;
 import com.marketinghub.experiment.funnel.dto.ExperimentFunnelStageDto;
 import com.marketinghub.experiment.funnel.dto.RegisterExperimentFunnelEventRequest;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsDeviceDto;
@@ -81,9 +82,11 @@ public class ExperimentFunnelService {
 
         applyManualEvents(experiment.getId(), baseline, stages);
         applyAutomaticMetrics(experiment.getId(), baseline, stages);
+        adaptStagesForExperimentType(experiment, stages);
         fillDefaultSourceWhenMissing(stages);
 
         return stages.values().stream()
+                .filter(stage -> shouldExposeStage(experiment, stage.getStage()))
                 .sorted(Comparator.comparingInt(ExperimentFunnelStageDto::getOrder))
                 .toList();
     }
@@ -396,7 +399,7 @@ public class ExperimentFunnelService {
                 request.userAgent(),
                 normalizeLandingAnalyticsDeviceType(request.deviceType(), request.userAgent()));
 
-        ExperimentFunnelStage stage = resolveStageForLandingAnalyticsEvent(eventType);
+        ExperimentFunnelStage stage = resolveStageForLandingAnalyticsEvent(experiment, eventType);
         if (stage != null) {
             ExperimentFunnelEvent event = ExperimentFunnelEvent.builder()
                     .experiment(experiment)
@@ -437,6 +440,10 @@ public class ExperimentFunnelService {
         if ("page_load_metric".equalsIgnoreCase(eventType)) {
             validateRequiredLandingAnalyticsField(request.sessionId(), "sessionId é obrigatório para page_load_metric");
             validateRequiredLandingAnalyticsField(request.pageUrl(), "pageUrl é obrigatório para page_load_metric");
+        }
+        if ("checkout_click".equalsIgnoreCase(eventType)) {
+            validateRequiredLandingAnalyticsField(request.sessionId(), "sessionId é obrigatório para checkout_click");
+            validateRequiredLandingAnalyticsField(request.pageUrl(), "pageUrl é obrigatório para checkout_click");
         }
     }
 
@@ -547,7 +554,7 @@ public class ExperimentFunnelService {
     /**
      * Mapeia eventos de analytics da landing para a etapa consolidada do funil.
      */
-    private ExperimentFunnelStage resolveStageForLandingAnalyticsEvent(String eventType) {
+    private ExperimentFunnelStage resolveStageForLandingAnalyticsEvent(Experiment experiment, String eventType) {
         if ("page_view".equalsIgnoreCase(eventType)) {
             return ExperimentFunnelStage.VISUALIZACAO_FORM;
         }
@@ -556,6 +563,9 @@ public class ExperimentFunnelService {
         }
         if ("page_load_metric".equalsIgnoreCase(eventType)) {
             return ExperimentFunnelStage.VISUALIZACAO_FORM;
+        }
+        if ("checkout_click".equalsIgnoreCase(eventType) && isLowTicketProduct(experiment)) {
+            return ExperimentFunnelStage.ACESSO_CHECKOUT;
         }
         return null;
     }
@@ -744,16 +754,27 @@ public class ExperimentFunnelService {
         mergeMetric(stages, ExperimentFunnelStage.ACESSO_CHECKOUT,
                 fetchSingleMetric("""
                         SELECT COUNT(*) AS total,
-                               COUNT(DISTINCT p.submission_id) AS unique_count,
-                               MAX(p.checkout_accessed_at) AS last_event
-                        FROM lead_portal_purchase p
-                        JOIN flow_submissions s ON s.id = p.submission_id
-                        JOIN lead_portal_flow f ON f.slug = s.flow_slug
-                        WHERE %s
-                          AND p.checkout_accessed_at IS NOT NULL
-                          AND (? IS NULL OR p.checkout_accessed_at > ?)
-                        """.formatted(FLOW_SCOPE_CONDITION), experimentId, experimentId, baseline, baseline),
-                "Acessos ao checkout registrados via tracking público (lead_portal_purchase.checkout_accessed_at)");
+                               NULL AS unique_count,
+                               MAX(event_at) AS last_event
+                        FROM (
+                            SELECT p.checkout_accessed_at AS event_at
+                            FROM lead_portal_purchase p
+                            JOIN flow_submissions s ON s.id = p.submission_id
+                            JOIN lead_portal_flow f ON f.slug = s.flow_slug
+                            WHERE %s
+                              AND p.checkout_accessed_at IS NOT NULL
+                            UNION ALL
+                            SELECT efe.occurred_at AS event_at
+                            FROM experiment_funnel_event efe
+                            WHERE efe.experiment_id = ?
+                              AND efe.stage = 'ACESSO_CHECKOUT'
+                              AND efe.source = ?
+                              AND efe.payload LIKE '%%eventType=checkout_click%%'
+                        ) checkout_access
+                        WHERE (? IS NULL OR event_at > ?)
+                        """.formatted(FLOW_SCOPE_CONDITION), experimentId, experimentId, experimentId,
+                        ExperimentFunnelEventRepository.LANDING_PAGE_ANALYTICS_SOURCE, baseline, baseline),
+                "Acessos ao checkout registrados via tracking público e clique real no checkout (checkout_click)");
 
         mergeMetric(stages, ExperimentFunnelStage.COMPRA,
                 fetchSingleMetric("""
@@ -820,6 +841,62 @@ public class ExperimentFunnelService {
         dto.setUniqueCount(sum(dto.getUniqueCount(), metric.uniqueCount()));
         dto.setLastEventAt(max(dto.getLastEventAt(), metric.lastEvent()));
         dto.setSource(source);
+    }
+
+    /**
+     * Adapta nomes e fontes do funil quando o experimento é venda direta low-ticket, sem alterar chaves históricas.
+     */
+    private void adaptStagesForExperimentType(Experiment experiment,
+                                              Map<ExperimentFunnelStage, ExperimentFunnelStageDto> stages) {
+        if (!isLowTicketProduct(experiment)) {
+            return;
+        }
+        renameStage(stages, ExperimentFunnelStage.ACESSO_FORM_LEAD,
+                "Clique para a página de venda",
+                "Cliques do anúncio para a página de venda (experiment_campaign_metric)");
+        renameStage(stages, ExperimentFunnelStage.VISUALIZACAO_FORM,
+                "Visualização da página de venda",
+                "Visualizações da página de venda publicadas pelo GeraSalesPage (page_view)");
+        renameStage(stages, ExperimentFunnelStage.ACESSO_CHECKOUT,
+                "Clique no checkout",
+                "Cliques reais no checkout da página de venda (checkout_click)");
+    }
+
+    /**
+     * Troca label e fonte da etapa quando a métrica já foi consolidada para outro tipo comercial.
+     */
+    private void renameStage(Map<ExperimentFunnelStage, ExperimentFunnelStageDto> stages,
+                             ExperimentFunnelStage stage,
+                             String label,
+                             String source) {
+        ExperimentFunnelStageDto dto = stages.get(stage);
+        if (dto == null) {
+            return;
+        }
+        dto.setLabel(label);
+        dto.setSource(source);
+    }
+
+    /**
+     * Decide quais etapas aparecem para o tipo comercial do experimento.
+     */
+    private boolean shouldExposeStage(Experiment experiment, ExperimentFunnelStage stage) {
+        if (!isLowTicketProduct(experiment)) {
+            return true;
+        }
+        return stage == ExperimentFunnelStage.VISUALIZACAO_ANUNCIO
+                || stage == ExperimentFunnelStage.ACESSO_FORM_LEAD
+                || stage == ExperimentFunnelStage.VISUALIZACAO_FORM
+                || stage == ExperimentFunnelStage.ACESSO_CHECKOUT
+                || stage == ExperimentFunnelStage.COMPRA
+                || stage == ExperimentFunnelStage.DOWNLOAD_MATERIAL_PAGO;
+    }
+
+    /**
+     * Identifica se o experimento segue o fluxo comercial de venda direta low-ticket.
+     */
+    private boolean isLowTicketProduct(Experiment experiment) {
+        return experiment != null && experiment.getExperimentType() == ExperimentType.LOW_TICKET_PRODUCT;
     }
 
     /**

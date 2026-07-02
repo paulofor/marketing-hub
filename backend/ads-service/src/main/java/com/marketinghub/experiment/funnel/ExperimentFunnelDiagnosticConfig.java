@@ -29,11 +29,33 @@ public class ExperimentFunnelDiagnosticConfig {
             new ConversionRuleSpec(ExperimentFunnelStage.ACESSO_CHECKOUT, ExperimentFunnelStage.COMPRA, 0.03)
     );
 
+    private static final List<ConversionRuleSpec> LOW_TICKET_PRIORITIZED_RULES = List.of(
+            new ConversionRuleSpec(
+                    ExperimentFunnelStage.VISUALIZACAO_ANUNCIO,
+                    ExperimentFunnelStage.ACESSO_FORM_LEAD,
+                    0.015
+            ),
+            new ConversionRuleSpec(
+                    ExperimentFunnelStage.VISUALIZACAO_FORM,
+                    ExperimentFunnelStage.ACESSO_CHECKOUT,
+                    0.03,
+                    List.of(0.02, 0.01)
+            ),
+            new ConversionRuleSpec(ExperimentFunnelStage.ACESSO_CHECKOUT, ExperimentFunnelStage.COMPRA, 0.03)
+    );
+
     /**
      * Retorna as transições do funil que devem ser diagnosticadas pelo backend.
      */
     public List<ConversionRuleSpec> prioritizedRules() {
         return PRIORITIZED_RULES;
+    }
+
+    /**
+     * Retorna as transições de venda direta low-ticket, sem etapas de formulário.
+     */
+    public List<ConversionRuleSpec> lowTicketPrioritizedRules() {
+        return LOW_TICKET_PRIORITIZED_RULES;
     }
 
     /**

@@ -5,6 +5,7 @@ import {
   useExperimentFunnel,
   type ExperimentFunnelStageSummary,
 } from "../../api/experiment/useExperimentFunnel";
+import type { ExperimentType } from "../../api/experiment/useExperiments";
 import { useRegisterExperimentFunnelEvent } from "../../api/experiment/useRegisterExperimentFunnelEvent";
 import { useResetExperimentFunnel } from "../../api/experiment/useResetExperimentFunnel";
 import {
@@ -26,6 +27,7 @@ function formatPercentage(value: number) {
 
 interface ExperimentFunnelTabProps {
   experimentId: string;
+  experimentType?: ExperimentType | null;
   totalSpend?: number | null;
   spendLastSyncedAt?: string | null;
   alterationLocked?: boolean;
@@ -50,16 +52,18 @@ function formatDate(value?: string | null) {
 
 export default function ExperimentFunnelTab({
   experimentId,
+  experimentType,
   totalSpend,
   spendLastSyncedAt,
   alterationLocked = false,
 }: ExperimentFunnelTabProps) {
+  const isLowTicketProduct = experimentType === "LOW_TICKET_PRODUCT";
   const { data, isLoading, isError } = useExperimentFunnel(experimentId);
   const diagnosticsQuery = useExperimentFunnelDiagnostics(experimentId);
   const stages = (data ?? []).slice().sort((a, b) => a.order - b.order);
   const normalizedTotalSpend = normalizeSpend(totalSpend);
   const canResetFunnelMetrics = normalizedTotalSpend === 0;
-  const fallbackStages: ExperimentFunnelStageSummary[] = [
+  const leadFunnelFallbackStages: ExperimentFunnelStageSummary[] = [
     {
       stage: "VISUALIZACAO_ANUNCIO",
       label: "Visualização do anúncio",
@@ -160,6 +164,77 @@ export default function ExperimentFunnelTab({
       source: null,
     },
   ];
+  const lowTicketFallbackStages: ExperimentFunnelStageSummary[] = [
+    {
+      stage: "VISUALIZACAO_ANUNCIO",
+      label: "Visualização do anúncio",
+      order: 1,
+      autoCount: 0,
+      manualCount: 0,
+      totalCount: 0,
+      uniqueCount: null,
+      lastEventAt: null,
+      source: null,
+    },
+    {
+      stage: "ACESSO_FORM_LEAD",
+      label: "Clique para a página de venda",
+      order: 2,
+      autoCount: 0,
+      manualCount: 0,
+      totalCount: 0,
+      uniqueCount: null,
+      lastEventAt: null,
+      source: null,
+    },
+    {
+      stage: "VISUALIZACAO_FORM",
+      label: "Visualização da página de venda",
+      order: 3,
+      autoCount: 0,
+      manualCount: 0,
+      totalCount: 0,
+      uniqueCount: null,
+      lastEventAt: null,
+      source: null,
+    },
+    {
+      stage: "ACESSO_CHECKOUT",
+      label: "Clique no checkout",
+      order: 6,
+      autoCount: 0,
+      manualCount: 0,
+      totalCount: 0,
+      uniqueCount: null,
+      lastEventAt: null,
+      source: null,
+    },
+    {
+      stage: "COMPRA",
+      label: "Compra",
+      order: 7,
+      autoCount: 0,
+      manualCount: 0,
+      totalCount: 0,
+      uniqueCount: null,
+      lastEventAt: null,
+      source: null,
+    },
+    {
+      stage: "DOWNLOAD_MATERIAL_PAGO",
+      label: "Download do material pago",
+      order: 9,
+      autoCount: 0,
+      manualCount: 0,
+      totalCount: 0,
+      uniqueCount: null,
+      lastEventAt: null,
+      source: null,
+    },
+  ];
+  const fallbackStages = isLowTicketProduct
+    ? lowTicketFallbackStages
+    : leadFunnelFallbackStages;
   const selectableStages = stages.length > 0 ? stages : fallbackStages;
   const outcomeQuantities = selectableStages.map((stage) => ({
     label: stage.label,
@@ -231,9 +306,9 @@ export default function ExperimentFunnelTab({
           <div>
             <h5 className="card-title mb-1">Funil de vendas do experimento</h5>
             <p className="text-muted small mb-0">
-              Cada etapa consolida os eventos da jornada (anúncios, Lead Portal
-              e e-mails) para dar visibilidade ao avanço das leads no
-              experimento.
+              {isLowTicketProduct
+                ? "Venda direta low-ticket: anúncio, página de venda, clique no checkout, compra e entrega paga."
+                : "Cada etapa consolida os eventos da jornada (anúncios, Lead Portal e e-mails) para dar visibilidade ao avanço das leads no experimento."}
             </p>
           </div>
           {canResetFunnelMetrics ? (
@@ -556,20 +631,31 @@ export default function ExperimentFunnelTab({
 
         <div className="alert alert-info mb-0 mt-4" role="alert">
           <div className="fw-semibold mb-1">O que cada etapa representa</div>
-          <ul className="mb-0 small ps-3">
-            <li>1) Impressões do anúncio.</li>
-            <li>2) Cliques que levaram ao formulário do experimento.</li>
-            <li>
-              3) Renderizações completas do formulário (evento
-              lead-portal-render-complete).
-            </li>
-            <li>4) Envios de formulário (lead_portal_submission).</li>
-            <li>5) Abertura do e-mail de amostra.</li>
-            <li>6) Acessos ao checkout no Mercado Pago.</li>
-            <li>7) Compras aprovadas.</li>
-            <li>8) Abertura do e-mail de entrega da compra.</li>
-            <li>9) Visualização/download do material pago.</li>
-          </ul>
+          {isLowTicketProduct ? (
+            <ul className="mb-0 small ps-3">
+              <li>1) Impressões do anúncio.</li>
+              <li>2) Cliques que levaram para a página de venda.</li>
+              <li>3) Visualizações reais da página de venda.</li>
+              <li>4) Cliques reais no checkout.</li>
+              <li>5) Compras aprovadas.</li>
+              <li>6) Visualização/download do material pago.</li>
+            </ul>
+          ) : (
+            <ul className="mb-0 small ps-3">
+              <li>1) Impressões do anúncio.</li>
+              <li>2) Cliques que levaram ao formulário do experimento.</li>
+              <li>
+                3) Renderizações completas do formulário (evento
+                lead-portal-render-complete).
+              </li>
+              <li>4) Envios de formulário (lead_portal_submission).</li>
+              <li>5) Abertura do e-mail de amostra.</li>
+              <li>6) Acessos ao checkout no Mercado Pago.</li>
+              <li>7) Compras aprovadas.</li>
+              <li>8) Abertura do e-mail de entrega da compra.</li>
+              <li>9) Visualização/download do material pago.</li>
+            </ul>
+          )}
         </div>
       </div>
     </div>

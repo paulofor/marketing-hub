@@ -201,4 +201,34 @@ describe("ExperimentFunnelTab", () => {
     const secondStageCells = within(secondStageRow).getAllByRole("cell");
     expect(secondStageCells[3]).toHaveTextContent("—");
   });
+
+  it("explains the direct-sales funnel for low-ticket products without form steps", () => {
+    (useExperimentFunnel as unknown as Mock).mockReturnValue({
+      data: [],
+      isLoading: false,
+      isError: false,
+    });
+    (useExperimentFunnelDiagnostics as unknown as Mock).mockReturnValue({
+      data: { diagnostics: [], contextualAlert: null },
+      isLoading: false,
+      isError: false,
+    });
+
+    renderWithClient(
+      <ExperimentFunnelTab
+        experimentId="52"
+        experimentType="LOW_TICKET_PRODUCT"
+        totalSpend={0}
+      />,
+    );
+
+    expect(screen.getByText(/Venda direta low-ticket/)).toBeInTheDocument();
+    expect(
+      screen.getAllByText("Clique para a página de venda").length,
+    ).toBeGreaterThan(0);
+    expect(screen.getAllByText("Clique no checkout").length).toBeGreaterThan(0);
+    expect(
+      screen.queryByText("Acesso ao formulário de lead"),
+    ).not.toBeInTheDocument();
+  });
 });

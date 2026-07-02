@@ -1,6 +1,7 @@
 package com.marketinghub.experiment.funnel;
 
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.ExperimentType;
 import com.marketinghub.experiment.funnel.service.analytics.ExperimentLandingAnalyticsDeviceDto;
 import com.marketinghub.repository.jpa.experiment.funnel.ExperimentFunnelEventRepository;
 import com.marketinghub.repository.jpa.experiment.funnel.ExperimentLandingAnalyticsEventRepository;
@@ -147,6 +148,47 @@ class ExperimentFunnelServiceRenderCompleteTest {
         assertEquals(ExperimentFunnelStage.VISUALIZACAO_FORM, saved.getStage());
         assertEquals(ExperimentFunnelEventRepository.LANDING_PAGE_ANALYTICS_SOURCE, saved.getSource());
         assertEquals(Instant.parse("2026-06-04T21:00:00Z"), saved.getOccurredAt());
+    }
+
+    /**
+     * Valida que venda low-ticket registra clique real no checkout sem depender de formulário.
+     */
+    @Test
+    void registerLandingPageAnalyticsSavesCheckoutClickForLowTicketProduct() {
+        Experiment experiment = Experiment.builder()
+                .id(52L)
+                .experimentType(ExperimentType.LOW_TICKET_PRODUCT)
+                .build();
+        when(experimentRepository.findFirstByLeadPortalFlowSlug("sales-page-exp52"))
+                .thenReturn(Optional.empty());
+        when(experimentRepository.findFirstByFollowUpActionUrlFlowSlug("sales-page-exp52"))
+                .thenReturn(Optional.of(experiment));
+        when(eventRepository.save(any(ExperimentFunnelEvent.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.registerLandingPageAnalyticsEvent("sales-page-exp52",
+                new RegisterLandingPageAnalyticsEventRequest(
+                        "checkout-event-1",
+                        "checkout_click",
+                        "visitor-1",
+                        "session-1",
+                        null,
+                        null,
+                        null,
+                        "https://pagamentopalf.site/sales-page-exp52.html",
+                        Instant.parse("2026-07-01T21:00:00Z"),
+                        "JUnit",
+                        "desktop",
+                        "other",
+                        1366,
+                        768));
+
+        ArgumentCaptor<ExperimentFunnelEvent> eventCaptor = ArgumentCaptor.forClass(ExperimentFunnelEvent.class);
+        verify(eventRepository).save(eventCaptor.capture());
+
+        ExperimentFunnelEvent saved = eventCaptor.getValue();
+        assertEquals(experiment, saved.getExperiment());
+        assertEquals(ExperimentFunnelStage.ACESSO_CHECKOUT, saved.getStage());
+        assertEquals(ExperimentFunnelEventRepository.LANDING_PAGE_ANALYTICS_SOURCE, saved.getSource());
     }
 
 

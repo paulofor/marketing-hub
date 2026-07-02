@@ -4,6 +4,8 @@
 
 O planejamento comercial do Marketing Hub deve transformar objetivos de venda em metas mensais e semanais mensuraveis, conectando produto, experimento, campanha, funil, custo e receita.
 
+As metas devem respeitar os tipos de produto definidos em `docs/canonical/product-types-canon.v1.md`: low-ticket como pacote de infoprodutos de baixo custo produzido por IA, e Produto IA como infoproduto/ferramenta com integracao OpenAI por tras e experiencia simples para o usuario.
+
 ## Regra canonica de metas numericas
 
 Todo plano comercial mensal deve persistir metas numericas planejadas em campos estruturados, nao apenas em texto livre:

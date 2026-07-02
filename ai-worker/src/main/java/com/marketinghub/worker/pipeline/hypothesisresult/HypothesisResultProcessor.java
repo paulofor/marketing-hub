@@ -8,6 +8,7 @@ import com.marketinghub.worker.openai.core.model.OpenAiRequest;
 import com.marketinghub.worker.openai.core.model.OpenAiResult;
 import com.marketinghub.worker.openai.core.port.OpenAiClientPort;
 import com.marketinghub.worker.openai.core.prompt.PromptTemplateResolver;
+import com.marketinghub.worker.pipeline.BackendPromptSchemaTemplate;
 import com.marketinghub.worker.pipeline.StageArtifact;
 import com.marketinghub.worker.pipeline.StageContext;
 import com.marketinghub.worker.pipeline.StageProcessor;
@@ -88,17 +89,21 @@ public class HypothesisResultProcessor implements StageProcessor<HypothesisResul
     private OpenAiRequest buildOpenAiRequest(StageContext<HypothesisResultInput> context) {
         Map<String, Object> data = context.input().promptData();
         String promptResource = properties.promptResource();
-        String promptMarkdownContent = loadResource(promptResource);
-        String prompt = promptTemplateResolver.resolve(promptMarkdownContent, data, promptResource);
-        String schemaJson = loadResource(properties.schemaResource());
-        String requestBodyJson = buildResponsesApiRequest(prompt, schemaJson);
-        return new OpenAiRequest(
+        BackendPromptSchemaTemplate template = BackendPromptSchemaTemplate.fromPromptData(
+                data,
                 properties.model(),
+                properties.schemaName(),
+                loadResource(promptResource),
+                loadResource(properties.schemaResource()));
+        String prompt = promptTemplateResolver.resolve(template.promptMarkdownContent(), data, promptResource);
+        String requestBodyJson = buildResponsesApiRequest(prompt, template.schemaJson(), template.schemaName(), template.model());
+        return new OpenAiRequest(
+                template.model(),
                 prompt,
                 requestBodyJson,
-                properties.schemaName(),
-                schemaJson,
-                promptMarkdownContent,
+                template.schemaName(),
+                template.schemaJson(),
+                template.promptMarkdownContent(),
                 Map.of(
                         "stageCode", context.execution().stageCode(),
                         "idJob", context.execution().idJob(),
@@ -106,23 +111,23 @@ public class HypothesisResultProcessor implements StageProcessor<HypothesisResul
     }
 
     /** Serializa o corpo compatível com Responses API usando schema JSON estrito. */
-    private String buildResponsesApiRequest(String prompt, String schemaJson) {
+    private String buildResponsesApiRequest(String prompt, String schemaJson, String schemaName, String model) {
         try {
             Object schema = objectMapper.readValue(schemaJson, Object.class);
             Map<String, Object> format = new LinkedHashMap<>();
             format.put("type", "json_schema");
-            format.put("name", properties.schemaName());
+            format.put("name", schemaName);
             format.put("schema", schema);
             format.put("strict", true);
             Map<String, Object> text = new LinkedHashMap<>();
             text.put("format", format);
             Map<String, Object> body = new LinkedHashMap<>();
-            body.put("model", properties.model());
+            body.put("model", model);
             body.put("input", prompt);
             body.put("text", text);
             return objectMapper.writeValueAsString(body);
         } catch (JsonProcessingException ex) {
-            log.error("Could not build OpenAI Responses API request for hypothesis result. schemaName={}", properties.schemaName(), ex);
+            log.error("Could not build OpenAI Responses API request for hypothesis result. schemaName={}", schemaName, ex);
             throw new StageWorkerException("Could not build OpenAI Responses API request for hypothesis result", ex);
         }
     }

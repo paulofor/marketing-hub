@@ -180,6 +180,8 @@ Regra mandatória para `AD_IMAGE_BRIEFING`: cada briefing de imagem de criativo 
 
 ### 4.2.1 Regra mandatória — oferta low-ticket da hipótese
 
+A definição canônica dos tipos de produto fica em `docs/canonical/product-types-canon.v1.md` e deve orientar decisões de hipótese, oferta, página, campanha, custo, preço, tracking e escala.
+
 A etapa `hypothesis-offer` do pipeline de hipótese deve materializar uma oferta low-ticket digital, não uma oferta genérica. O objetivo é entregar um produto de entrada simples, vendável e aplicável rapidamente, que depois possa alimentar página de vendas, isca digital e campanha sem precisar redescobrir a oferta.
 
 Regras obrigatórias:
@@ -189,6 +191,19 @@ Regras obrigatórias:
 - a etapa pode sugerir faixa de preço compatível com low-ticket, mas não deve criar checkout, desconto falso, urgência artificial, campanha de anúncios, página de vendas, headline completa de landing ou estratégia de Facebook;
 - a oferta deve preservar limites de plausibilidade: sem renda garantida, sem agenda cheia garantida, sem cura, sem automação total e sem depender de acesso interno ao negócio do cliente;
 - quando a solução ficar ampla demais, o prompt deve reduzir o escopo para o menor kit capaz de atacar a causa-raiz prioritária da dor.
+- produto low-ticket deve ser interpretado como pacote de infoprodutos de baixo custo, produzido majoritariamente por IA e financeiramente viável;
+- Produto IA deve ser interpretado como infoproduto/ferramenta com integração OpenAI por trás, vendido pela facilidade e pelo resultado prático no dia a dia, não pelo jargão de IA.
+
+### 4.2.1.1 Regra mandatória — prompt/schema por experimento
+
+Todo experimento criado a partir de hipótese gerada por IA deve preservar associação aos prompts e schemas usados nas etapas Dor, Resultado, Mecanismo, Prova e Oferta. Todo experimento que gerar página pelo GeraSalesPage v1 também deve preservar associação aos prompts e schemas usados nas etapas da página de venda.
+
+Regras obrigatórias:
+- templates ativos de prompt/schema devem ficar em `ai_prompt_schema_template`;
+- execuções devem registrar o `template_key` efetivo usado;
+- experimentos devem registrar em `experiment_ai_prompt_schema_usage` todos os templates de hipótese e de página de venda associados ao teste;
+- troca futura de prompt, schema ou modelo não pode apagar nem sobrescrever a associação histórica de experimentos já criados;
+- decisões comerciais, auditorias e relatórios devem conseguir distinguir qual versão de prompt/schema gerou cada hipótese, oferta e página.
 
 ### 4.2.2 Regra operacional — fluxo completo da hipótese
 

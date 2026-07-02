@@ -23,10 +23,20 @@ class HypothesisPainProcessorTest {
                 org.mockito.Mockito.mock(OpenAiClientPort.class),
                 new HypothesisPainResponseValidator(objectMapper),
                 org.mockito.Mockito.mock(HypothesisPainBackendClient.class));
-        Method method = HypothesisPainProcessor.class.getDeclaredMethod("buildResponsesApiRequest", String.class, String.class);
+        Method method = HypothesisPainProcessor.class.getDeclaredMethod(
+                "buildResponsesApiRequest",
+                String.class,
+                String.class,
+                String.class,
+                String.class);
         method.setAccessible(true);
 
-        String requestJson = (String) method.invoke(processor, "Prompt", "{\"type\":\"object\"}");
+        String requestJson = (String) method.invoke(
+                processor,
+                "Prompt",
+                "{\"type\":\"object\"}",
+                "hypothesis_pipeline_pain",
+                "gpt-5.5");
 
         Map<String, Object> request = objectMapper.readValue(requestJson, new TypeReference<>() {});
         assertThat(request)

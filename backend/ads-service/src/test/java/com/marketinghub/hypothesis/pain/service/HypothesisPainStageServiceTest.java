@@ -4,9 +4,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.marketinghub.gerasalespage.v1.GeraSalesPagePromptSchemaTemplate;
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.hypothesis.pain.HypothesisPainCostCalculator;
 import com.marketinghub.hypothesis.pain.HypothesisPainStageExecution;
@@ -14,6 +16,7 @@ import com.marketinghub.hypothesis.pain.provisorio.HypothesisPainEnrichmentProfi
 import com.marketinghub.hypothesis.pain.provisorio.HypothesisPainEnrichmentProfileSnapshot;
 import com.marketinghub.hypothesis.pain.service.recebeResposta.RecebeRespostaRequest;
 import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPagePromptSchemaTemplateRepository;
 import com.marketinghub.repository.jpa.hypothesis.HypothesisPainStageExecutionRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import java.math.BigDecimal;
@@ -42,6 +45,9 @@ class HypothesisPainStageServiceTest {
     private HypothesisPainStageExecutionRepository executionRepository;
 
     @Mock
+    private GeraSalesPagePromptSchemaTemplateRepository templateRepository;
+
+    @Mock
     private HypothesisPainCostCalculator costCalculator;
 
     private HypothesisPainStageService service;
@@ -53,7 +59,33 @@ class HypothesisPainStageServiceTest {
                 marketNicheRepository,
                 enrichmentProfileReader,
                 executionRepository,
+                templateRepository,
                 costCalculator);
+        mockActiveTemplate("hypothesis-pain");
+        mockActiveTemplate("hypothesis-result");
+        mockActiveTemplate("hypothesis-mechanism");
+        mockActiveTemplate("hypothesis-proof");
+        mockActiveTemplate("hypothesis-offer");
+    }
+
+    /** Prepara template ativo do banco para a etapa informada. */
+    private void mockActiveTemplate(String stageCode) {
+        lenient().when(templateRepository.findFirstByPipelineCodeAndStageCodeAndActiveTrueOrderByVersionDesc(
+                        "hypothesis-pipeline",
+                        stageCode))
+                .thenReturn(Optional.of(GeraSalesPagePromptSchemaTemplate.builder()
+                        .templateKey("hypothesis-pipeline:" + stageCode + ":v1")
+                        .pipelineCode("hypothesis-pipeline")
+                        .stageCode(stageCode)
+                        .version("v1")
+                        .openAiModel("gpt-5.5")
+                        .schemaName(stageCode.replace('-', '_'))
+                        .promptMarkdownContent("Prompt {{CASE_DATA_BLOCK}}")
+                        .schemaJson("{\"type\":\"object\"}")
+                        .active(true)
+                        .createdAt(Instant.now())
+                        .updatedAt(Instant.now())
+                        .build()));
     }
 
     /** Deve atribuir ao nicho somente o delta de custo calculado para evitar soma duplicada em reprocessamentos. */
@@ -127,6 +159,7 @@ class HypothesisPainStageServiceTest {
         assertEquals(1, pending.size());
         assertEquals(idJob, pending.getFirst().jobid());
         assertEquals("INICIADO", pending.getFirst().status());
+        assertEquals("hypothesis-pipeline:hypothesis-pain:v1", pending.getFirst().promptTemplate().get("templateKey"));
         assertNull(pending.getFirst().processingStartedAt());
         ArgumentCaptor<List<HypothesisPainStageExecution>> captor = ArgumentCaptor.forClass(List.class);
         verify(executionRepository).saveAll(captor.capture());

@@ -135,6 +135,7 @@ public class HypothesisResultBackendClient implements StageBackendPort<Hypothesi
         Map<String, Object> enrichmentProfile = asMap(pending.get("enrichmentProfile"));
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("marketNicheId", pending.get("marketNicheId"));
+        payload.put("__promptTemplate", asMap(pending.get("promptTemplate")));
         payload.put("nicheName", optionalText(niche.get("name")));
         payload.put("nicheDescription", optionalText(niche.get("description")));
         payload.put("demandVolume", optionalText(niche.get("demandVolume")));

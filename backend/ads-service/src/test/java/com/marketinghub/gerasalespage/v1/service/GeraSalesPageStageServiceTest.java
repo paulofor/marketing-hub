@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.service.ExperimentAiPromptSchemaUsageService;
 import com.marketinghub.gerasalespage.v1.GeraSalesPagePromptSchemaTemplate;
 import com.marketinghub.gerasalespage.v1.GeraSalesPageStageCode;
 import com.marketinghub.gerasalespage.v1.GeraSalesPageStageExecution;
@@ -36,6 +37,8 @@ class GeraSalesPageStageServiceTest {
     @Mock
     private GeraSalesPagePublicationAuditService publicationAuditService;
     @Mock
+    private ExperimentAiPromptSchemaUsageService promptSchemaUsageService;
+    @Mock
     private ObjectMapper objectMapper;
 
     @InjectMocks
@@ -57,9 +60,10 @@ class GeraSalesPageStageServiceTest {
 
         when(experimentRepository.findById(53L)).thenReturn(Optional.of(experiment));
         when(executionRepository.findByExperimentIdOrderByExecutionRequestedAtAsc(53L)).thenReturn(List.of(previous));
+        GeraSalesPagePromptSchemaTemplate activeTemplate = template(GeraSalesPageStageCode.OFFER_BRIEF.code());
         when(templateRepository.findFirstByPipelineCodeAndStageCodeAndActiveTrueOrderByVersionDesc(
                 "gera-sales-page-v1", GeraSalesPageStageCode.OFFER_BRIEF.code()))
-                .thenReturn(Optional.of(template(GeraSalesPageStageCode.OFFER_BRIEF.code())));
+                .thenReturn(Optional.of(activeTemplate));
         when(executionRepository.save(any(GeraSalesPageStageExecution.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -73,6 +77,11 @@ class GeraSalesPageStageServiceTest {
         verify(executionRepository).save(newExecution.capture());
         assertThat(newExecution.getValue().getStageCode()).isEqualTo(GeraSalesPageStageCode.OFFER_BRIEF.code());
         assertThat(newExecution.getValue().getStatus()).isEqualTo("INICIADO");
+        verify(promptSchemaUsageService).linkSalesPageTemplate(
+                53L,
+                activeTemplate,
+                GeraSalesPageStageCode.OFFER_BRIEF.code(),
+                newExecution.getValue().getIdJob());
         assertThat(response.stageCode()).isEqualTo(GeraSalesPageStageCode.OFFER_BRIEF.code());
     }
 

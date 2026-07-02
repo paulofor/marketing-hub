@@ -3,6 +3,7 @@ package com.marketinghub.gerasalespage.v1.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.service.ExperimentAiPromptSchemaUsageService;
 import com.marketinghub.gerasalespage.v1.GeraSalesPagePromptSchemaTemplate;
 import com.marketinghub.gerasalespage.v1.GeraSalesPageStageCode;
 import com.marketinghub.gerasalespage.v1.GeraSalesPageStageExecution;
@@ -39,6 +40,7 @@ public class GeraSalesPageStageService {
     private final GeraSalesPageStageExecutionRepository executionRepository;
     private final GeraSalesPagePromptSchemaTemplateRepository templateRepository;
     private final GeraSalesPagePublicationAuditService publicationAuditService;
+    private final ExperimentAiPromptSchemaUsageService promptSchemaUsageService;
     private final ObjectMapper objectMapper;
 
     /** Inicializa o service com repositórios e serializador usados pelos contratos internos. */
@@ -47,11 +49,13 @@ public class GeraSalesPageStageService {
             GeraSalesPageStageExecutionRepository executionRepository,
             GeraSalesPagePromptSchemaTemplateRepository templateRepository,
             GeraSalesPagePublicationAuditService publicationAuditService,
+            ExperimentAiPromptSchemaUsageService promptSchemaUsageService,
             ObjectMapper objectMapper) {
         this.experimentRepository = experimentRepository;
         this.executionRepository = executionRepository;
         this.templateRepository = templateRepository;
         this.publicationAuditService = publicationAuditService;
+        this.promptSchemaUsageService = promptSchemaUsageService;
         this.objectMapper = objectMapper;
     }
 
@@ -163,7 +167,9 @@ public class GeraSalesPageStageService {
                 .executionRequestedAt(Instant.now())
                 .promptTemplateKey(template.getTemplateKey())
                 .build();
-        return executionRepository.save(execution);
+        GeraSalesPageStageExecution saved = executionRepository.save(execution);
+        promptSchemaUsageService.linkSalesPageTemplate(experimentId, template, stageCode, saved.getIdJob());
+        return saved;
     }
 
     /** Converte uma execução persistida no payload de pendência consumido pelo worker. */

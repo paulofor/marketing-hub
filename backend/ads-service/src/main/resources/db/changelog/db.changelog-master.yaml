@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-07-02-experiment-ai-prompt-schema-usage.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-07-02-commercial-planning-actual-goals.yaml
       relativeToChangelogFile: true
   - include:

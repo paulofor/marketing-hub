@@ -1,3 +1,11 @@
+## 2026-07-02 — Definição canônica de tipos de produto e rastreio de prompt/schema por experimento
+
+- decisão registrada: produto low-ticket passa a significar pacote de infoprodutos de baixo custo produzido majoritariamente por IA; Produto IA passa a significar infoproduto/ferramenta com integração OpenAI por trás, entregue ao usuário como solução simples e prática, sem exigir entendimento de IA.
+- regra financeira: qualquer produto precisa ter caminho plausível de lucro considerando mídia, custo de IA, taxas, operação, preço e margem.
+- foi feito: criado cânone `docs/canonical/product-types-canon.v1.md` e referenciado nos cânones de experimento, GeraSalesPage e planejamento.
+- foi feito: experimentos passam a registrar associação aos templates de prompt/schema usados pela hipótese e pelo GeraSalesPage v1 em `experiment_ai_prompt_schema_usage`.
+- prevenção de recorrência: futuras decisões de hipótese, oferta, página, campanha e escala devem considerar tipo de produto, viabilidade financeira e rastreabilidade do prompt/schema que gerou o ativo comercial.
+
 ## 2026-06-26 — GeraLanding Quality Review em processamento default/standard da OpenAI
 
 - solicitação: testar a etapa `landing-page-quality-review` fora do modo Flex após falhas repetidas `HTTP 429 rate_limit_exceeded` em requisições multimodais grandes.

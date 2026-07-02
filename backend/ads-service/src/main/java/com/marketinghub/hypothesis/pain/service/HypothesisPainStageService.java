@@ -13,8 +13,10 @@ import com.marketinghub.hypothesis.pain.service.pending.HypothesisPainPendingNic
 import com.marketinghub.hypothesis.pain.service.recebeResposta.RecebeRespostaRequest;
 import com.marketinghub.hypothesis.pain.service.start.HypothesisPainStartResponse;
 import com.marketinghub.hypothesis.pain.service.summary.HypothesisStageFinalSummaryResponse;
+import com.marketinghub.gerasalespage.v1.GeraSalesPagePromptSchemaTemplate;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.hypothesis.Hypothesis;
+import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPagePromptSchemaTemplateRepository;
 import com.marketinghub.repository.jpa.hypothesis.HypothesisPainStageExecutionRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -22,20 +24,25 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import org.springframework.web.server.ResponseStatusException;
 
 /** Responsabilidade: orquestrar execuções auditáveis das etapas do pipeline de hipótese por nicho. */
 @Service
 public class HypothesisPainStageService {
     private static final Logger log = LoggerFactory.getLogger(HypothesisPainStageService.class);
     private static final String STAGE_CODE = "hypothesis-pain";
+    private static final String PIPELINE_CODE = "hypothesis-pipeline";
     private static final String RESULT_STAGE_CODE = "hypothesis-result";
     private static final String MECHANISM_STAGE_CODE = "hypothesis-mechanism";
     private static final String PROOF_STAGE_CODE = "hypothesis-proof";
@@ -65,6 +72,7 @@ public class HypothesisPainStageService {
     private final MarketNicheRepository marketNicheRepository;
     private final HypothesisPainEnrichmentProfileReader enrichmentProfileReader;
     private final HypothesisPainStageExecutionRepository executionRepository;
+    private final GeraSalesPagePromptSchemaTemplateRepository templateRepository;
     private final HypothesisPainCostCalculator costCalculator;
 
     /** Inicializa o serviço com os repositórios canônicos e o calculador interno de custo da etapa. */
@@ -72,10 +80,12 @@ public class HypothesisPainStageService {
             MarketNicheRepository marketNicheRepository,
             HypothesisPainEnrichmentProfileReader enrichmentProfileReader,
             HypothesisPainStageExecutionRepository executionRepository,
+            GeraSalesPagePromptSchemaTemplateRepository templateRepository,
             HypothesisPainCostCalculator costCalculator) {
         this.marketNicheRepository = marketNicheRepository;
         this.enrichmentProfileReader = enrichmentProfileReader;
         this.executionRepository = executionRepository;
+        this.templateRepository = templateRepository;
         this.costCalculator = costCalculator;
     }
 
@@ -174,13 +184,14 @@ public class HypothesisPainStageService {
             Instant now,
             String promptTemplateId,
             String promptContent) {
+        GeraSalesPagePromptSchemaTemplate template = loadTemplate(stageCode);
         return HypothesisPainStageExecution.builder()
                 .marketNicheId(niche.getId())
                 .marketNiche(niche)
                 .stageCode(stageCode)
                 .executionRequestedAt(now)
                 .createdAt(now)
-                .promptTemplateId(promptTemplateId)
+                .promptTemplateId(template.getTemplateKey())
                 .promptContent(promptContent)
                 .status(STATUS_STARTED)
                 .idJob(toDatabaseIdJob(UUID.randomUUID().toString()))
@@ -400,12 +411,33 @@ public class HypothesisPainStageService {
                         execution.getProcessingStartedAt(),
                         toPendingNiche(execution.getMarketNiche()),
                         toPendingEnrichmentProfile(execution.getMarketNicheId()),
+                        templatePayload(loadTemplate(execution.getStageCode())),
                         toExistingHypotheses(execution.getMarketNicheId()),
                         pendingPainResponse(execution),
                         pendingResultResponse(execution),
                         pendingMechanismResponse(execution),
                         pendingProofResponse(execution)))
                 .toList();
+    }
+
+    /** Carrega o template ativo do banco para a etapa do pipeline de hipótese. */
+    private GeraSalesPagePromptSchemaTemplate loadTemplate(String stageCode) {
+        return templateRepository.findFirstByPipelineCodeAndStageCodeAndActiveTrueOrderByVersionDesc(PIPELINE_CODE, stageCode)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.CONFLICT,
+                        "Template ativo de prompt/schema não encontrado para " + stageCode));
+    }
+
+    /** Monta o bloco de prompt/schema enviado ao Worker AI. */
+    private Map<String, Object> templatePayload(GeraSalesPagePromptSchemaTemplate template) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("templateKey", template.getTemplateKey());
+        payload.put("version", template.getVersion());
+        payload.put("model", template.getOpenAiModel());
+        payload.put("schemaName", template.getSchemaName());
+        payload.put("promptMarkdownContent", template.getPromptMarkdownContent());
+        payload.put("schemaJson", template.getSchemaJson());
+        return payload;
     }
 
     /** Resume as hipóteses já geradas para o mesmo nicho antes de criar uma nova variação. */

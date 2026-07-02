@@ -80,6 +80,7 @@ public class ExperimentService {
     private final GeraSalesPagePublicationAuditRepository geraSalesPagePublicationAuditRepository;
     private final ObjectMapper objectMapper;
     private final CurrencyConversionService currencyConversionService;
+    private final ExperimentAiPromptSchemaUsageService promptSchemaUsageService;
 
     public ExperimentService(ExperimentRepository repository,
                              ExperimentPromiseGenerationRequestRepository promiseGenerationRequestRepository,
@@ -104,7 +105,8 @@ public class ExperimentService {
                              GeraSalesPageStageExecutionRepository geraSalesPageStageExecutionRepository,
                              GeraSalesPagePublicationAuditRepository geraSalesPagePublicationAuditRepository,
                              ObjectMapper objectMapper,
-                             CurrencyConversionService currencyConversionService) {
+                             CurrencyConversionService currencyConversionService,
+                             ExperimentAiPromptSchemaUsageService promptSchemaUsageService) {
         this.repository = repository;
         this.promiseGenerationRequestRepository = promiseGenerationRequestRepository;
         this.nicheRepository = nicheRepository;
@@ -129,6 +131,7 @@ public class ExperimentService {
         this.geraSalesPagePublicationAuditRepository = geraSalesPagePublicationAuditRepository;
         this.objectMapper = objectMapper;
         this.currencyConversionService = currencyConversionService;
+        this.promptSchemaUsageService = promptSchemaUsageService;
     }
 
     /**
@@ -406,6 +409,7 @@ public class ExperimentService {
                 .creativeImagePrompt(normalizePrompt(request.getCreativeImagePrompt()))
                 .build();
         Experiment savedExperiment = repository.save(exp);
+        promptSchemaUsageService.linkHypothesisTemplates(savedExperiment.getId());
         dismissPromiseGenerationDrafts(request.getPromiseGenerationRequestIds());
         synchronizeLeadPortalFlow(savedExperiment);
         return savedExperiment;

@@ -42,6 +42,9 @@ public interface HypothesisPainStageExecutionRepository extends JpaRepository<Hy
     @EntityGraph(attributePaths = {"hypothesis"})
     List<HypothesisPainStageExecution> findByMarketNicheIdAndStageCodeOrderByExecutionRequestedAtDesc(Long marketNicheId, String stageCode);
 
+    /** Lista execuções vinculadas a uma hipótese para rastrear prompts/schemas usados no experimento. */
+    List<HypothesisPainStageExecution> findByHypothesisIdOrderByExecutionRequestedAtAsc(UUID hypothesisId);
+
     /** Lista execuções ainda não vinculadas a uma hipótese fechada para a tela de criação limpa. */
     List<HypothesisPainStageExecution> findByMarketNicheIdAndStageCodeAndHypothesisIdIsNullOrderByExecutionRequestedAtDesc(
             Long marketNicheId,

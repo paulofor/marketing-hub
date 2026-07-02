@@ -35,6 +35,7 @@ class HypothesisPainBackendClientTest {
         pending.put("marketNicheId", 18L);
         pending.put("niche", niche);
         pending.put("enrichmentProfile", enrichmentProfile);
+        pending.put("promptTemplate", Map.of("templateKey", "hypothesis-pipeline:hypothesis-pain:v1"));
         pending.put("existingHypotheses", java.util.List.of(existingHypothesis));
 
         Map<String, Object> promptData = client.buildPromptDataFromPending(pending);
@@ -42,6 +43,8 @@ class HypothesisPainBackendClientTest {
 
         assertThat(promptData).containsEntry("promises", "");
         assertThat(promptData).containsEntry("offers", "");
+        assertThat((Map<String, Object>) promptData.get("__promptTemplate"))
+                .containsEntry("templateKey", "hypothesis-pipeline:hypothesis-pain:v1");
         assertThat(input.promptData()).containsEntry("promises", "");
         assertThat(input.promptData()).containsEntry("offers", "");
         assertThat(promptData.get("CASE_DATA_BLOCK")).asString()

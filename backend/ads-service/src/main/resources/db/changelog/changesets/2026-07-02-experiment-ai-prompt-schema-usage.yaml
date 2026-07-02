@@ -1,0 +1,150 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-02-experiment-ai-prompt-schema-usage-01
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: experiment_ai_prompt_schema_usage
+      changes:
+        - createTable:
+            tableName: experiment_ai_prompt_schema_usage
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: experiment_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: template_key
+                  type: VARCHAR(191)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: pipeline_code
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: stage_code
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: template_version
+                  type: VARCHAR(40)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: openai_model
+                  type: VARCHAR(120)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: schema_name
+                  type: VARCHAR(120)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: usage_context
+                  type: VARCHAR(80)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: source_job_id
+                  type: VARCHAR(191)
+              - column:
+                  name: used_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: experiment_ai_prompt_schema_usage
+            columnNames: experiment_id, template_key, usage_context, stage_code
+            constraintName: uk_experiment_ai_prompt_schema_usage
+        - createIndex:
+            tableName: experiment_ai_prompt_schema_usage
+            indexName: idx_exp_ai_prompt_usage_experiment
+            columns:
+              - column:
+                  name: experiment_id
+        - createIndex:
+            tableName: experiment_ai_prompt_schema_usage
+            indexName: idx_exp_ai_prompt_usage_pipeline
+            columns:
+              - column:
+                  name: pipeline_code
+              - column:
+                  name: stage_code
+        - addForeignKeyConstraint:
+            baseTableName: experiment_ai_prompt_schema_usage
+            baseColumnNames: experiment_id
+            referencedTableName: experiment
+            referencedColumnNames: id
+            constraintName: fk_exp_ai_prompt_usage_experiment
+            onDelete: CASCADE
+
+  - changeSet:
+      id: 2026-07-02-experiment-ai-prompt-schema-usage-02
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO ai_prompt_schema_template
+                (template_key, pipeline_code, stage_code, version, openai_model, schema_name, prompt_markdown_content, schema_json, active, created_at, updated_at)
+              VALUES
+                ('hypothesis-pipeline:hypothesis-pain:v1', 'hypothesis-pipeline', 'hypothesis-pain', 'v1', 'gpt-5.5', 'hypothesis_pain',
+                 'Voce gera a etapa Dor do pipeline de hipotese. Use o CASE_DATA_BLOCK para descrever uma dor real, especifica e reconhecivel do nicho, sem criar oferta, pagina ou campanha. Responda somente JSON valido aderente ao schema. Contexto: {{CASE_DATA_BLOCK}}',
+                 '{"type":"object","additionalProperties":false,"required":["surface","root","emotional","social","cost","summary","evidenceSignals"],"properties":{"surface":{"type":"string"},"root":{"type":"string"},"emotional":{"type":"string"},"social":{"type":"string"},"cost":{"type":"string"},"summary":{"type":"string"},"evidenceSignals":{"type":"array","items":{"type":"string"}}}}',
+                 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                ('hypothesis-pipeline:hypothesis-result:v1', 'hypothesis-pipeline', 'hypothesis-result', 'v1', 'gpt-5.5', 'hypothesis_result',
+                 'Voce gera a etapa Resultado do pipeline de hipotese. Transforme a dor concluida em resultado desejado, mudanca mensuravel, contraste antes/depois e ganho de negocio plausivel. Responda somente JSON valido aderente ao schema. Contexto: {{CASE_DATA_BLOCK}} Dor: {{painModelResponse}}',
+                 '{"type":"object","additionalProperties":false,"required":["desiredOutcome","measurableChange","beforeAfterContrast","fastWin","businessValue","plausibilityLimits","summary","evidenceSignals"],"properties":{"desiredOutcome":{"type":"string"},"measurableChange":{"type":"string"},"beforeAfterContrast":{"type":"string"},"fastWin":{"type":"string"},"businessValue":{"type":"string"},"plausibilityLimits":{"type":"string"},"summary":{"type":"string"},"evidenceSignals":{"type":"array","items":{"type":"string"}}}}',
+                 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                ('hypothesis-pipeline:hypothesis-mechanism:v1', 'hypothesis-pipeline', 'hypothesis-mechanism', 'v1', 'gpt-5.5', 'hypothesis_mechanism',
+                 'Voce gera a etapa Mecanismo do pipeline de hipotese. Crie um mecanismo simples, plausivel e aplicavel que reduza esforco e aumente facilidade percebida, sem prometer automacao total. Responda somente JSON valido aderente ao schema. Contexto: {{CASE_DATA_BLOCK}} Dor: {{painModelResponse}} Resultado: {{resultModelResponse}}',
+                 '{"type":"object","additionalProperties":false,"required":["mechanismName","coreMechanism","howItWorks","steps","aiLeverage","effortReduction","whyBelievable","boundaryConditions","summary","evidenceSignals"],"properties":{"mechanismName":{"type":"string"},"coreMechanism":{"type":"string"},"howItWorks":{"type":"string"},"steps":{"type":"array","items":{"type":"string"}},"aiLeverage":{"type":"string"},"effortReduction":{"type":"string"},"whyBelievable":{"type":"string"},"boundaryConditions":{"type":"string"},"summary":{"type":"string"},"evidenceSignals":{"type":"array","items":{"type":"string"}}}}',
+                 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                ('hypothesis-pipeline:hypothesis-proof:v1', 'hypothesis-pipeline', 'hypothesis-proof', 'v1', 'gpt-5.5', 'hypothesis_proof',
+                 'Voce gera a etapa Prova do pipeline de hipotese. Defina uma prova demonstravel e barata de produzir que reduza ceticismo sem prometer resultado garantido. Responda somente JSON valido aderente ao schema. Contexto: {{CASE_DATA_BLOCK}} Dor: {{painModelResponse}} Resultado: {{resultModelResponse}} Mecanismo: {{mechanismModelResponse}}',
+                 '{"type":"object","additionalProperties":false,"required":["proofType","proofAsset","proofMessage","proofSignals","collectionMethod","credibilityRationale","objectionReduced","boundaryConditions","summary"],"properties":{"proofType":{"type":"string"},"proofAsset":{"type":"string"},"proofMessage":{"type":"string"},"proofSignals":{"type":"array","items":{"type":"string"}},"collectionMethod":{"type":"string"},"credibilityRationale":{"type":"string"},"objectionReduced":{"type":"string"},"boundaryConditions":{"type":"string"},"summary":{"type":"string"}}}',
+                 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                ('hypothesis-pipeline:hypothesis-offer:v1', 'hypothesis-pipeline', 'hypothesis-offer', 'v1', 'gpt-5.5', 'hypothesis_offer',
+                 'Voce gera a etapa Oferta do pipeline de hipotese. Converta dor, resultado, mecanismo e prova em produto low-ticket digital: pacote de infoprodutos barato, produzido por IA, aplicavel rapidamente e financeiramente viavel. Responda somente JSON valido aderente ao schema. Contexto: {{CASE_DATA_BLOCK}} Dor: {{painModelResponse}} Resultado: {{resultModelResponse}} Mecanismo: {{mechanismModelResponse}} Prova: {{proofModelResponse}}',
+                 '{"type":"object","additionalProperties":false,"required":["offerName","offerPositioning","entryPromise","pricePositioning","coreOffer","howItWorks","deliverables","valueStack","valuePerception","quickWinAsset","productionFormat","steps","aiLeverage","effortReduction","whyBelievable","boundaryConditions","nextStageReadiness","summary","evidenceSignals"],"properties":{"offerName":{"type":"string"},"offerPositioning":{"type":"string"},"entryPromise":{"type":"string"},"pricePositioning":{"type":"string"},"coreOffer":{"type":"string"},"howItWorks":{"type":"string"},"deliverables":{"type":"array","items":{"type":"string"}},"valueStack":{"type":"array","items":{"type":"string"}},"valuePerception":{"type":"string"},"quickWinAsset":{"type":"string"},"productionFormat":{"type":"string"},"steps":{"type":"array","items":{"type":"string"}},"aiLeverage":{"type":"string"},"effortReduction":{"type":"string"},"whyBelievable":{"type":"string"},"boundaryConditions":{"type":"string"},"nextStageReadiness":{"type":"string"},"summary":{"type":"string"},"evidenceSignals":{"type":"array","items":{"type":"string"}}}}',
+                 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+              ON DUPLICATE KEY UPDATE
+                openai_model = VALUES(openai_model),
+                schema_name = VALUES(schema_name),
+                prompt_markdown_content = VALUES(prompt_markdown_content),
+                schema_json = VALUES(schema_json),
+                active = VALUES(active),
+                updated_at = CURRENT_TIMESTAMP;

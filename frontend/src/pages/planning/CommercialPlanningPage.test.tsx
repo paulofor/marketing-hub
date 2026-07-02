@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import CommercialPlanningPage from "./CommercialPlanningPage";
 
@@ -52,5 +53,22 @@ describe("CommercialPlanningPage", () => {
     expect(screen.getByText("Planejamento")).toBeTruthy();
     expect(screen.getAllByText("Plano sem marcos").length).toBeGreaterThan(0);
     expect(screen.getByText("Novo Plano de Primeira Venda")).toBeTruthy();
+    expect(
+      screen.getByText("Nenhum marco cadastrado para este plano."),
+    ).toBeTruthy();
+  });
+
+  it("preenche o formulario com o planejamento de julho em tres cenarios", async () => {
+    render(<CommercialPlanningPage />);
+
+    await userEvent.click(screen.getAllByText("Usar planejamento de julho")[0]);
+
+    expect(
+      screen.getByDisplayValue("Planejamento Julho 2026 - Primeira venda"),
+    ).toBeTruthy();
+    expect(screen.getByDisplayValue("2026-07-31")).toBeTruthy();
+    expect(screen.getByDisplayValue("300")).toBeTruthy();
+    expect(screen.getByDisplayValue(/Compra aprovada/)).toBeTruthy();
+    expect(screen.getByDisplayValue(/Cenario venda direta/)).toBeTruthy();
   });
 });

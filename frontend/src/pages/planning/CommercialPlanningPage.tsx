@@ -46,6 +46,40 @@ const emptyForm: SaveCommercialPlanPayload = {
   rootCause: "",
 };
 
+const julyPlanningForm: SaveCommercialPlanPayload = {
+  name: "Planejamento Julho 2026 - Primeira venda",
+  status: "IN_PROGRESS",
+  nicheId: null,
+  hypothesisId: null,
+  experimentId: null,
+  commercialObjective:
+    "Chegar ate 31/07/2026 com a primeira venda validada de um produto digital low-ticket, usando Meta Ads com controle de aprendizado por tres cenarios.",
+  targetAudience:
+    "Nail designers, manicures e profissionais de alongamento que atendem em domicilio e dependem do WhatsApp para retorno, manutencao e encaixes.",
+  mainPain:
+    "A cliente sai satisfeita, mas some da manutencao, volta atrasada ou chama apenas quando quebra, descola ou precisa de urgencia.",
+  mainOffer:
+    "Kit Manutencao Guiada para Alongamento em Domicilio por R$ 19,90, com mensagens prontas, checklist e mini-calculadora de janela de manutencao.",
+  mainLeadMagnet:
+    "Amostra gratuita com 3 mensagens prontas de WhatsApp para recuperar clientes atrasadas na manutencao.",
+  mainChannel:
+    "Meta Ads com pagina propria de venda direta, captura secundaria e comparativo futuro com Instant Form.",
+  mainMetric:
+    "Compra aprovada; se ainda nao houver compra, clique no checkout como sinal intermediario.",
+  successCriteria:
+    "Cenario venda direta: ao menos 1 compra aprovada ate 31/07/2026. Cenario captura: lead-to-checkout indicando recuperacao real. Cenario Instant Form: leads que avancam para checkout apos a amostra.",
+  stopCriteria:
+    "Parar ou corrigir se houver CTR bom sem clique no checkout, clique no checkout sem compra, ou leads sem evolucao para checkout apos a amostra.",
+  deadline: "2026-07-31",
+  maxBudget: 300,
+  nextAction:
+    "Preparar produto compravel, pagina curta com checkout na primeira dobra e 3 criativos: dor, prova visual do kit e oferta direta.",
+  currentBlocker:
+    "Historico recente indicou clique e visualizacao sem envio/conversao, entao o gargalo esta depois do clique.",
+  rootCause:
+    "O funil mediu interesse antes de provar disposicao de pagamento; julho deve priorizar compra real e usar captura apenas como recuperacao.",
+};
+
 const statusLabel: Record<CommercialPlanStatus, string> = {
   DRAFT: "Rascunho",
   IN_PROGRESS: "Em andamento",
@@ -167,11 +201,17 @@ export default function CommercialPlanningPage() {
     setForm(emptyForm);
   }
 
+  function useJulyPlanning() {
+    setEditingId(null);
+    setForm(julyPlanningForm);
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const payload = {
       ...form,
       nicheId: form.nicheId ? Number(form.nicheId) : null,
+      hypothesisId: form.hypothesisId ? String(form.hypothesisId) : null,
       experimentId: form.experimentId ? Number(form.experimentId) : null,
       maxBudget: form.maxBudget ? Number(form.maxBudget) : null,
     };
@@ -343,6 +383,26 @@ export default function CommercialPlanningPage() {
                         </div>
                         <div className="col-12 col-lg-4">
                           <p className="text-secondary small mb-1">
+                            Melhor realista
+                          </p>
+                          <p className="mb-0">
+                            {visibleSimulation.bestRealisticScenario ||
+                              "Sem melhor cenário registrado."}
+                          </p>
+                        </div>
+                        <div className="col-12 col-lg-4">
+                          <p className="text-secondary small mb-1">
+                            Pior provável
+                          </p>
+                          <p className="mb-0">
+                            {visibleSimulation.worstLikelyScenario ||
+                              "Sem pior cenário registrado."}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="row g-3 mt-1">
+                        <div className="col-12 col-lg-4">
+                          <p className="text-secondary small mb-1">
                             Risco principal
                           </p>
                           <p className="mb-0">
@@ -359,9 +419,60 @@ export default function CommercialPlanningPage() {
                               "Sem ação recomendada."}
                           </p>
                         </div>
+                        <div className="col-12 col-lg-4">
+                          <p className="text-secondary small mb-1">
+                            Condição de parada
+                          </p>
+                          <p className="mb-0">
+                            {visibleSimulation.stopCondition ||
+                              "Sem condição registrada."}
+                          </p>
+                        </div>
                       </div>
                     </section>
                   ) : null}
+
+                  <section>
+                    <h3 className="h6">Direção de julho em 3 cenários</h3>
+                    <div className="row g-3">
+                      <div className="col-12 col-lg-4">
+                        <div className="border rounded-3 p-3 h-100">
+                          <p className="text-secondary small mb-1">
+                            Prioridade
+                          </p>
+                          <strong>Venda direta</strong>
+                          <p className="mb-0 mt-2">
+                            Produto pronto, baixo preco, checkout visivel e
+                            compra como principal sinal de validacao.
+                          </p>
+                        </div>
+                      </div>
+                      <div className="col-12 col-lg-4">
+                        <div className="border rounded-3 p-3 h-100">
+                          <p className="text-secondary small mb-1">
+                            Recuperação
+                          </p>
+                          <strong>Captura secundaria</strong>
+                          <p className="mb-0 mt-2">
+                            Amostra gratuita para recuperar quem nao comprou,
+                            sem competir com a venda principal.
+                          </p>
+                        </div>
+                      </div>
+                      <div className="col-12 col-lg-4">
+                        <div className="border rounded-3 p-3 h-100">
+                          <p className="text-secondary small mb-1">
+                            Comparativo
+                          </p>
+                          <strong>Instant Form</strong>
+                          <p className="mb-0 mt-2">
+                            Teste controlado quando a amostra personalizada
+                            puder aumentar desejo e avanco para checkout.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </section>
 
                   <div className="row g-3">
                     <div className="col-12 col-md-3">
@@ -444,28 +555,61 @@ export default function CommercialPlanningPage() {
                     </div>
                   </section>
 
+                  <section className="border rounded-3 p-3 bg-light">
+                    <h3 className="h6">Pronto para ligar com IA</h3>
+                    <div className="row g-3">
+                      <div className="col-12 col-lg-4">
+                        <p className="text-secondary small mb-1">Entrada</p>
+                        <p className="mb-0">
+                          objetivo, prazo, nicho, dor, oferta, canal, historico
+                          e restricoes do plano.
+                        </p>
+                      </div>
+                      <div className="col-12 col-lg-4">
+                        <p className="text-secondary small mb-1">Saída</p>
+                        <p className="mb-0">
+                          tres cenarios comparaveis com risco, acao, evidencia
+                          esperada e criterio de parada.
+                        </p>
+                      </div>
+                      <div className="col-12 col-lg-4">
+                        <p className="text-secondary small mb-1">Gate</p>
+                        <p className="mb-0">
+                          IA recomenda, mas gasto, publicacao e mudanca de rota
+                          ficam condicionados a aprovacao e dados persistidos.
+                        </p>
+                      </div>
+                    </div>
+                  </section>
+
                   <section>
                     <h3 className="h6">Marcos comerciais</h3>
-                    <div className="d-flex flex-column gap-2">
-                      {selectedMilestones.map((milestone) => (
-                        <div
-                          className="d-flex align-items-start gap-2 border rounded-3 p-2"
-                          key={milestone.id}
-                        >
-                          {milestoneIcon(milestone.status)}
-                          <div>
-                            <strong>
-                              {milestone.sequenceOrder}. {milestone.name}
-                            </strong>
-                            <div className="text-secondary small">
-                              {milestoneStatusLabel[milestone.status]} ·{" "}
-                              {milestone.recommendedNextAction ||
-                                "sem ação recomendada"}
+                    {selectedMilestones.length > 0 ? (
+                      <div className="d-flex flex-column gap-2">
+                        {selectedMilestones.map((milestone) => (
+                          <div
+                            className="d-flex align-items-start gap-2 border rounded-3 p-2"
+                            key={milestone.id}
+                          >
+                            {milestoneIcon(milestone.status)}
+                            <div>
+                              <strong>
+                                {milestone.sequenceOrder}. {milestone.name}
+                              </strong>
+                              <div className="text-secondary small">
+                                {milestoneStatusLabel[milestone.status]} ·{" "}
+                                {milestone.recommendedNextAction ||
+                                  "sem ação recomendada"}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-secondary mb-0">
+                        Nenhum marco cadastrado para este plano.
+                      </p>
+                    )}
                   </section>
                 </div>
               ) : (
@@ -484,15 +628,24 @@ export default function CommercialPlanningPage() {
             <h2 className="h5 mb-0">
               {editingId ? "Editar plano" : "Novo Plano de Primeira Venda"}
             </h2>
-            {editingId ? (
+            <div className="d-flex flex-wrap gap-2">
               <button
                 type="button"
-                className="btn btn-outline-secondary btn-sm"
-                onClick={resetForm}
+                className="btn btn-outline-primary btn-sm"
+                onClick={useJulyPlanning}
               >
-                Cancelar edição
+                Usar planejamento de julho
               </button>
-            ) : null}
+              {editingId ? (
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary btn-sm"
+                  onClick={resetForm}
+                >
+                  Cancelar edição
+                </button>
+              ) : null}
+            </div>
           </div>
           <form className="row g-3" onSubmit={handleSubmit}>
             <div className="col-12 col-md-6">

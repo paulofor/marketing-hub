@@ -10,6 +10,7 @@ import com.marketinghub.worker.openai.core.model.OpenAiRequest;
 import com.marketinghub.worker.openai.core.model.OpenAiResult;
 import com.marketinghub.worker.openai.core.port.OpenAiClientPort;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -25,12 +26,17 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 public class ResponsesApiOpenAiClient implements OpenAiClientPort {
 
     private static final Logger log = LoggerFactory.getLogger(ResponsesApiOpenAiClient.class);
+    private static final int MAX_TRANSIENT_HTTP_ATTEMPTS = 3;
+    private static final List<Duration> TRANSIENT_HTTP_RETRY_DELAYS = List.of(
+            Duration.ofSeconds(5),
+            Duration.ofSeconds(15));
 
     private final WebClient webClient;
     private final ObjectMapper objectMapper;
     private final OpenAiClientProperties properties;
     private final OpenAiCostEstimator costEstimator;
     private final Map<String, OpenAiResult<String>> resultCache = new ConcurrentHashMap<>();
+    private final RetrySleeper retrySleeper;
 
     /** Inicializa o cliente com WebClient, ObjectMapper, propriedades e estimador de custo. */
     public ResponsesApiOpenAiClient(
@@ -38,8 +44,19 @@ public class ResponsesApiOpenAiClient implements OpenAiClientPort {
             ObjectMapper objectMapper,
             OpenAiClientProperties properties
     ) {
+        this(builder, objectMapper, properties, RetrySleeper.threadSleep());
+    }
+
+    /** Inicializa o cliente com sleeper injetável para testes de retry sem espera real. */
+    ResponsesApiOpenAiClient(
+            WebClient.Builder builder,
+            ObjectMapper objectMapper,
+            OpenAiClientProperties properties,
+            RetrySleeper retrySleeper
+    ) {
         this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper must not be null");
         this.properties = Objects.requireNonNull(properties, "properties must not be null");
+        this.retrySleeper = Objects.requireNonNull(retrySleeper, "retrySleeper must not be null");
         this.costEstimator = new OpenAiCostEstimator(new OpenAiModelPricingCatalogClient(builder.clone(), properties));
         this.webClient = builder.clone()
                 .baseUrl(properties.baseUrl())
@@ -57,19 +74,12 @@ public class ResponsesApiOpenAiClient implements OpenAiClientPort {
         try {
             Map<String, Object> requestBody = buildServiceTierRequestBody(originalRequestBodyJson, request.serviceTier());
             requestBodyJson = objectMapper.writeValueAsString(requestBody);
-            log.info(
-                    "Enviando request final para OpenAI Responses API [jobId={}, schemaName={}, serviceTier={}, requestBodyJson={}]",
+            Map<String, Object> raw = postResponsesWithTransientRetry(
                     marketingHubJobId,
                     request.schemaName(),
                     request.serviceTier(),
+                    requestBody,
                     requestBodyJson);
-
-            Map<String, Object> raw = webClient.post()
-                    .uri("/responses")
-                    .bodyValue(requestBody)
-                    .retrieve()
-                    .bodyToMono(Map.class)
-                    .block(properties.timeout());
 
             if (raw == null) {
                 throw new StageWorkerException("OpenAI returned an empty response");
@@ -124,6 +134,63 @@ public class ResponsesApiOpenAiClient implements OpenAiClientPort {
                     error);
             throw new StageWorkerException("Invalid OpenAI request JSON", error);
         }
+    }
+
+    /** Executa a chamada OpenAI com retry local para falhas transitórias de capacidade ou transporte HTTP. */
+    private Map<String, Object> postResponsesWithTransientRetry(
+            String marketingHubJobId,
+            String schemaName,
+            String serviceTier,
+            Map<String, Object> requestBody,
+            String requestBodyJson) {
+        for (int attempt = 1; attempt <= MAX_TRANSIENT_HTTP_ATTEMPTS; attempt++) {
+            try {
+                log.info(
+                        "Enviando request final para OpenAI Responses API [jobId={}, schemaName={}, serviceTier={}, attempt={}, requestBodyJson={}]",
+                        marketingHubJobId,
+                        schemaName,
+                        serviceTier,
+                        attempt,
+                        requestBodyJson);
+                return webClient.post()
+                        .uri("/responses")
+                        .bodyValue(requestBody)
+                        .retrieve()
+                        .bodyToMono(Map.class)
+                        .block(properties.timeout());
+            } catch (WebClientResponseException error) {
+                if (shouldRetry(error) && attempt < MAX_TRANSIENT_HTTP_ATTEMPTS) {
+                    Duration delay = TRANSIENT_HTTP_RETRY_DELAYS.get(attempt - 1);
+                    log.warn(
+                            "Falha HTTP transitória na OpenAI Responses API; nova tentativa será feita [jobId={}, schemaName={}, status={}, attempt={}, nextDelayMs={}, responseBody={}]",
+                            marketingHubJobId,
+                            schemaName,
+                            error.getStatusCode().value(),
+                            attempt,
+                            delay.toMillis(),
+                            error.getResponseBodyAsString(),
+                            error);
+                    retrySleeper.sleep(delay);
+                    continue;
+                }
+                log.error(
+                        "Falha HTTP na OpenAI Responses API [jobId={}, schemaName={}, status={}, responseBody={}, requestBodyJson={}]",
+                        marketingHubJobId,
+                        schemaName,
+                        error.getStatusCode().value(),
+                        error.getResponseBodyAsString(),
+                        requestBodyJson,
+                        error);
+                throw new OpenAiHttpException(error.getStatusCode().value(), error.getResponseBodyAsString(), error);
+            }
+        }
+        throw new StageWorkerException("OpenAI Responses API retry loop finished without response");
+    }
+
+    /** Identifica erros HTTP que representam indisponibilidade temporária ou limite de capacidade. */
+    private boolean shouldRetry(WebClientResponseException error) {
+        int status = error.getStatusCode().value();
+        return status == 408 || status == 429 || (status >= 500 && status < 600);
     }
 
     /** Monta o payload final da Responses API aplicando o service_tier solicitado pela etapa. */
@@ -212,5 +279,23 @@ public class ResponsesApiOpenAiClient implements OpenAiClientPort {
     /** Converte valores recebidos da OpenAI para texto quando presentes. */
     private String stringValue(Object value) {
         return value != null ? value.toString() : null;
+    }
+
+    /** Abstrai a espera entre tentativas para manter testes rápidos e previsíveis. */
+    interface RetrySleeper {
+        /** Aguarda o intervalo indicado antes de uma nova tentativa. */
+        void sleep(Duration delay);
+
+        /** Cria sleeper real baseado em Thread.sleep para uso operacional. */
+        static RetrySleeper threadSleep() {
+            return delay -> {
+                try {
+                    Thread.sleep(delay.toMillis());
+                } catch (InterruptedException ex) {
+                    Thread.currentThread().interrupt();
+                    throw new StageWorkerException("Retry OpenAI interrompido", ex);
+                }
+            };
+        }
     }
 }

@@ -90,7 +90,7 @@ public class GeraSalesPageProcessor implements StageProcessor<GeraSalesPageInput
                         effectiveRawResult.outputTokens() == null ? 0 : effectiveRawResult.outputTokens()));
     }
 
-    /** Injeta tracking de clique no checkout no HTML final publicado pelo GeraSalesPage v1. */
+    /** Injeta analytics de pagina e clique no checkout no HTML final publicado pelo GeraSalesPage v1. */
     private OpenAiResult<String> enrichFinalSalesPageResponse(
             StageContext<GeraSalesPageInput> context,
             OpenAiResult<String> rawResult,
@@ -99,11 +99,11 @@ public class GeraSalesPageProcessor implements StageProcessor<GeraSalesPageInput
             return rawResult;
         }
         Object htmlValue = output.payload().get("html");
-        if (!(htmlValue instanceof String html) || html.isBlank() || html.contains("checkout_click")) {
+        if (!(htmlValue instanceof String html) || html.isBlank() || html.contains("data-mh-sales-page-analytics")) {
             return rawResult;
         }
         Map<String, Object> enrichedPayload = new LinkedHashMap<>(output.payload());
-        enrichedPayload.put("html", injectCheckoutClickTracking(html));
+        enrichedPayload.put("html", injectSalesPageAnalyticsTracking(html));
         try {
             String enrichedModelResponse = objectMapper.writeValueAsString(enrichedPayload);
             return new OpenAiResult<>(
@@ -115,50 +115,100 @@ public class GeraSalesPageProcessor implements StageProcessor<GeraSalesPageInput
                     rawResult.outputTokens(),
                     rawResult.costUsd());
         } catch (JsonProcessingException ex) {
-            log.error("Falha ao injetar tracking de checkout no GeraSalesPage v1. jobId={}",
+            log.error("Falha ao injetar analytics de pagina de venda no GeraSalesPage v1. jobId={}",
                     context.execution().idJob(), ex);
-            throw new StageWorkerException("Falha ao injetar tracking de checkout no GeraSalesPage v1", ex);
+            throw new StageWorkerException("Falha ao injetar analytics de pagina de venda no GeraSalesPage v1", ex);
         }
     }
 
-    /** Adiciona script pequeno de analytics para registrar clique em links de checkout. */
-    private String injectCheckoutClickTracking(String html) {
+    /** Adiciona script de analytics para registrar page view, tempo de secao e clique em links de checkout. */
+    private String injectSalesPageAnalyticsTracking(String html) {
         String script = """
-                <script>
+                <script data-mh-sales-page-analytics="true">
                 (function(){
-                  function uid(prefix){return prefix+'-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10);}
+                  function uid(prefix){
+                    try{if(window.crypto&&typeof window.crypto.randomUUID==='function'){return prefix+'-'+window.crypto.randomUUID();}}catch(e){}
+                    return prefix+'-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10);
+                  }
                   function storageGet(key){try{return localStorage.getItem(key);}catch(e){return null;}}
                   function storageSet(key,value){try{localStorage.setItem(key,value);}catch(e){}}
                   var visitorKey='mhub_visitor_id';
                   var visitorId=storageGet(visitorKey)||uid('visitor');
                   storageSet(visitorKey,visitorId);
-                  var sessionId=storageGet('mhub_session_id')||uid('session');
-                  storageSet('mhub_session_id',sessionId);
+                  var sessionKey='mhub_session_id_'+(location.pathname||'sales-page');
+                  var sessionId=(function(){try{return sessionStorage.getItem(sessionKey);}catch(e){return null;}})()||uid('session');
+                  try{sessionStorage.setItem(sessionKey,sessionId);}catch(e){}
                   var slug=(location.pathname.split('/').pop()||'').replace(/\\.html$/,'');
-                  function sendCheckoutClick(){
+                  var endpoint='/mh-api/public/lead-portal/flows/'+encodeURIComponent(slug)+'/page-analytics';
+                  function deviceType(){return window.innerWidth<768?'mobile':(/ipad|tablet/i.test(navigator.userAgent||'')?'tablet':'desktop');}
+                  function operatingSystem(){
+                    var userAgent=navigator.userAgent||'';
+                    if(/iphone|ipad|ipod/i.test(userAgent)){return 'ios';}
+                    if(/android/i.test(userAgent)){return 'android';}
+                    return 'other';
+                  }
+                  function sendEvent(eventType, sectionId, elapsedMs, extra){
                     if(!slug){return;}
-                    var payload={
-                      eventId:uid('checkout-click'),
-                      eventType:'checkout_click',
+                    var payload=Object.assign({
+                      eventId:uid(eventType.replace(/_/g,'-')),
+                      eventType:eventType,
                       visitorId:visitorId,
                       sessionId:sessionId,
+                      sectionId:sectionId||null,
+                      elapsedMs:typeof elapsedMs==='number'?Math.max(0,Math.round(elapsedMs)):null,
                       pageUrl:location.href,
                       occurredAt:new Date().toISOString(),
                       userAgent:navigator.userAgent,
-                      deviceType:window.innerWidth<768?'mobile':'desktop',
-                      operatingSystem:navigator.platform||''
-                    };
+                      deviceType:deviceType(),
+                      operatingSystem:operatingSystem(),
+                      screenWidth:Math.round(window.innerWidth||document.documentElement.clientWidth||0)||null,
+                      screenHeight:Math.round(window.innerHeight||document.documentElement.clientHeight||0)||null
+                    }, extra||{});
                     try{
-                      navigator.sendBeacon('/api/public/lead-portal/flows/'+encodeURIComponent(slug)+'/page-analytics', new Blob([JSON.stringify(payload)], {type:'application/json'}));
+                      navigator.sendBeacon(endpoint, new Blob([JSON.stringify(payload)], {type:'application/json'}));
                     }catch(e){
-                      fetch('/api/public/lead-portal/flows/'+encodeURIComponent(slug)+'/page-analytics',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),keepalive:true}).catch(function(){});
+                      fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),keepalive:true}).catch(function(){});
                     }
                   }
+                  function sendPageLoadMetric(){
+                    var timing=performance&&performance.getEntriesByType?performance.getEntriesByType('navigation')[0]:null;
+                    sendEvent('page_load_metric',null,null,{
+                      loadDurationMs:timing&&typeof timing.duration==='number'?Math.round(timing.duration):null,
+                      domContentLoadedMs:timing&&typeof timing.domContentLoadedEventEnd==='number'?Math.round(timing.domContentLoadedEventEnd):null
+                    });
+                  }
+                  sendEvent('page_view',null,null);
+                  if(document.readyState==='complete'){sendPageLoadMetric();}else{window.addEventListener('load',sendPageLoadMetric,{once:true});}
+                  var visibleSince=new Map();
+                  var sections=Array.prototype.slice.call(document.querySelectorAll('section[id], [data-track-section]'));
+                  if('IntersectionObserver' in window){
+                    var observer=new IntersectionObserver(function(entries){
+                      entries.forEach(function(entry){
+                        var id=entry.target.getAttribute('data-track-section')||entry.target.id;
+                        if(!id){return;}
+                        if(entry.isIntersecting&&entry.intersectionRatio>=0.35){
+                          if(!visibleSince.has(id)){visibleSince.set(id,Date.now());}
+                        }else if(visibleSince.has(id)){
+                          var startedAt=visibleSince.get(id);
+                          visibleSince.delete(id);
+                          sendEvent('section_view_time',id,Date.now()-startedAt);
+                        }
+                      });
+                    },{threshold:[0,0.35,0.75]});
+                    sections.forEach(function(section){observer.observe(section);});
+                  }
+                  function flushVisibleSections(){
+                    var now=Date.now();
+                    visibleSince.forEach(function(startedAt,id){sendEvent('section_view_time',id,now-startedAt);});
+                    visibleSince.clear();
+                  }
+                  document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden'){flushVisibleSections();}});
+                  window.addEventListener('beforeunload',flushVisibleSections);
                   document.addEventListener('click',function(event){
                     var link=event.target&&event.target.closest?event.target.closest('a[href]'):null;
                     if(!link){return;}
                     var href=link.getAttribute('href')||'';
-                    if(/mercadopago|checkout|pref_id/i.test(href)){sendCheckoutClick();}
+                    if(/mercadopago|checkout|pref_id/i.test(href)){sendEvent('checkout_click',null,null);}
                   },true);
                 })();
                 </script>

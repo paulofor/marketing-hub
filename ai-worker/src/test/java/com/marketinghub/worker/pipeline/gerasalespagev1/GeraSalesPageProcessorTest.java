@@ -11,19 +11,22 @@ import org.junit.jupiter.api.Test;
 /** Responsabilidade: validar enriquecimentos técnicos aplicados pelo processor do GeraSalesPage v1. */
 class GeraSalesPageProcessorTest {
 
-    /** Garante que o HTML final registre clique real no checkout para métricas de low-ticket. */
+    /** Garante que o HTML final registre page view, tempo de secao e clique real no checkout para metricas de low-ticket. */
     @Test
-    void injectsCheckoutClickTrackingIntoFinalHtml() throws Exception {
+    void injectsSalesPageAnalyticsTrackingIntoFinalHtml() throws Exception {
         GeraSalesPageProcessor processor = processor();
-        Method method = GeraSalesPageProcessor.class.getDeclaredMethod("injectCheckoutClickTracking", String.class);
+        Method method = GeraSalesPageProcessor.class.getDeclaredMethod("injectSalesPageAnalyticsTracking", String.class);
         method.setAccessible(true);
 
         String html = (String) method.invoke(processor,
-                "<!doctype html><html><body><a href=\"https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=abc\">Comprar</a></body></html>");
+                "<!doctype html><html><body><section id=\"hero\"><a href=\"https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=abc\">Comprar</a></section></body></html>");
 
         assertThat(html)
+                .contains("data-mh-sales-page-analytics")
+                .contains("page_view")
+                .contains("section_view_time")
                 .contains("checkout_click")
-                .contains("/api/public/lead-portal/flows/")
+                .contains("/mh-api/public/lead-portal/flows/")
                 .contains("sendBeacon")
                 .contains("</body>");
     }

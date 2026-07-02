@@ -43,6 +43,31 @@ class ExperimentRepositoryTest {
     @Autowired
     JourneyTemplateRepository journeyTemplateRepository;
 
+    /** Garante que analytics de pagina de venda estatica encontra o experimento pelo slug publicado. */
+    @Test
+    void findFirstByFollowUpActionUrlFlowSlugAcceptsStaticSalesPageSlug() {
+        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Sales page niche").build());
+        Hypothesis hypothesis = hypothesisRepository.save(Hypothesis.builder()
+                .marketNiche(niche)
+                .title("Sales page hypothesis")
+                .build());
+        JourneyTemplate template = journeyTemplateRepository.save(JourneyTemplate.builder().name("Venda direta").build());
+        Experiment experiment = repository.save(Experiment.builder()
+                .name("Static sales page")
+                .niche(niche)
+                .hypothesisRef(hypothesis)
+                .journeyTemplate(template)
+                .followUpActionUrl("https://pagamentopalf.site/sales-page-exp52-protocolo-manutencao-segura-7d.html")
+                .build());
+
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(repository.findFirstByFollowUpActionUrlFlowSlug(
+                "sales-page-exp52-protocolo-manutencao-segura-7d"))
+                .hasValueSatisfying(found -> assertThat(found.getId()).isEqualTo(experiment.getId()));
+    }
+
     @Test
     void findAllToGenerateCreativesFetchesHypothesis() {
         MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("N1").build());

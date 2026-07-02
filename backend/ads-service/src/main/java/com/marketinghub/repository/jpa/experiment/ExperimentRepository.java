@@ -63,6 +63,7 @@ public interface ExperimentRepository extends JpaRepository<Experiment, Long> {
     @Query("""
             select e from Experiment e
             where e.followUpActionUrl like concat(concat('%/api/flows/', :slug), '/page%')
+               or e.followUpActionUrl like concat(concat('%/', :slug), '.html%')
             """)
     Optional<Experiment> findFirstByFollowUpActionUrlFlowSlug(@Param("slug") String slug);
 

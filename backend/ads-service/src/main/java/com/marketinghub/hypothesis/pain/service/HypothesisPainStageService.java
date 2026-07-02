@@ -13,10 +13,10 @@ import com.marketinghub.hypothesis.pain.service.pending.HypothesisPainPendingNic
 import com.marketinghub.hypothesis.pain.service.recebeResposta.RecebeRespostaRequest;
 import com.marketinghub.hypothesis.pain.service.start.HypothesisPainStartResponse;
 import com.marketinghub.hypothesis.pain.service.summary.HypothesisStageFinalSummaryResponse;
-import com.marketinghub.gerasalespage.v1.GeraSalesPagePromptSchemaTemplate;
+import com.marketinghub.aiprompt.AiPromptSchemaTemplate;
 import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.hypothesis.Hypothesis;
-import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPagePromptSchemaTemplateRepository;
+import com.marketinghub.repository.jpa.aiprompt.AiPromptSchemaTemplateRepository;
 import com.marketinghub.repository.jpa.hypothesis.HypothesisPainStageExecutionRepository;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -72,7 +72,7 @@ public class HypothesisPainStageService {
     private final MarketNicheRepository marketNicheRepository;
     private final HypothesisPainEnrichmentProfileReader enrichmentProfileReader;
     private final HypothesisPainStageExecutionRepository executionRepository;
-    private final GeraSalesPagePromptSchemaTemplateRepository templateRepository;
+    private final AiPromptSchemaTemplateRepository templateRepository;
     private final HypothesisPainCostCalculator costCalculator;
 
     /** Inicializa o serviço com os repositórios canônicos e o calculador interno de custo da etapa. */
@@ -80,7 +80,7 @@ public class HypothesisPainStageService {
             MarketNicheRepository marketNicheRepository,
             HypothesisPainEnrichmentProfileReader enrichmentProfileReader,
             HypothesisPainStageExecutionRepository executionRepository,
-            GeraSalesPagePromptSchemaTemplateRepository templateRepository,
+            AiPromptSchemaTemplateRepository templateRepository,
             HypothesisPainCostCalculator costCalculator) {
         this.marketNicheRepository = marketNicheRepository;
         this.enrichmentProfileReader = enrichmentProfileReader;
@@ -184,7 +184,7 @@ public class HypothesisPainStageService {
             Instant now,
             String promptTemplateId,
             String promptContent) {
-        GeraSalesPagePromptSchemaTemplate template = loadTemplate(stageCode);
+        AiPromptSchemaTemplate template = loadTemplate(stageCode);
         return HypothesisPainStageExecution.builder()
                 .marketNicheId(niche.getId())
                 .marketNiche(niche)
@@ -421,7 +421,7 @@ public class HypothesisPainStageService {
     }
 
     /** Carrega o template ativo do banco para a etapa do pipeline de hipótese. */
-    private GeraSalesPagePromptSchemaTemplate loadTemplate(String stageCode) {
+    private AiPromptSchemaTemplate loadTemplate(String stageCode) {
         return templateRepository.findFirstByPipelineCodeAndStageCodeAndActiveTrueOrderByVersionDesc(PIPELINE_CODE, stageCode)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.CONFLICT,
@@ -429,7 +429,7 @@ public class HypothesisPainStageService {
     }
 
     /** Monta o bloco de prompt/schema enviado ao Worker AI. */
-    private Map<String, Object> templatePayload(GeraSalesPagePromptSchemaTemplate template) {
+    private Map<String, Object> templatePayload(AiPromptSchemaTemplate template) {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("templateKey", template.getTemplateKey());
         payload.put("version", template.getVersion());

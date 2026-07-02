@@ -8,11 +8,11 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.service.ExperimentAiPromptSchemaUsageService;
-import com.marketinghub.gerasalespage.v1.GeraSalesPagePromptSchemaTemplate;
+import com.marketinghub.aiprompt.AiPromptSchemaTemplate;
 import com.marketinghub.gerasalespage.v1.GeraSalesPageStageCode;
 import com.marketinghub.gerasalespage.v1.GeraSalesPageStageExecution;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
-import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPagePromptSchemaTemplateRepository;
+import com.marketinghub.repository.jpa.aiprompt.AiPromptSchemaTemplateRepository;
 import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPageStageExecutionRepository;
 import java.time.Instant;
 import java.util.List;
@@ -33,7 +33,7 @@ class GeraSalesPageStageServiceTest {
     @Mock
     private GeraSalesPageStageExecutionRepository executionRepository;
     @Mock
-    private GeraSalesPagePromptSchemaTemplateRepository templateRepository;
+    private AiPromptSchemaTemplateRepository templateRepository;
     @Mock
     private GeraSalesPagePublicationAuditService publicationAuditService;
     @Mock
@@ -60,7 +60,7 @@ class GeraSalesPageStageServiceTest {
 
         when(experimentRepository.findById(53L)).thenReturn(Optional.of(experiment));
         when(executionRepository.findByExperimentIdOrderByExecutionRequestedAtAsc(53L)).thenReturn(List.of(previous));
-        GeraSalesPagePromptSchemaTemplate activeTemplate = template(GeraSalesPageStageCode.OFFER_BRIEF.code());
+        AiPromptSchemaTemplate activeTemplate = template(GeraSalesPageStageCode.OFFER_BRIEF.code());
         when(templateRepository.findFirstByPipelineCodeAndStageCodeAndActiveTrueOrderByVersionDesc(
                 "gera-sales-page-v1", GeraSalesPageStageCode.OFFER_BRIEF.code()))
                 .thenReturn(Optional.of(activeTemplate));
@@ -86,8 +86,8 @@ class GeraSalesPageStageServiceTest {
     }
 
     /** Cria template mínimo de prompt/schema para etapa de teste. */
-    private GeraSalesPagePromptSchemaTemplate template(String stageCode) {
-        return GeraSalesPagePromptSchemaTemplate.builder()
+    private AiPromptSchemaTemplate template(String stageCode) {
+        return AiPromptSchemaTemplate.builder()
                 .templateKey("template-" + stageCode)
                 .pipelineCode("gera-sales-page-v1")
                 .stageCode(stageCode)

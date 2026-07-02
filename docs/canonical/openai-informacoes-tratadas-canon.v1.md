@@ -31,7 +31,9 @@ Sempre que uma informação for tratada por modelo de IA, o prompt operacional e
 
 É proibido manter prompt longo, instruções comerciais completas, exemplos de resposta ou schema JSON hardcoded dentro de classes de serviço, clients ou controllers. O backend pode persistir/expor o contexto rico necessário ao worker, mas a execução do modelo deve usar prompt/schema versionados no executor.
 
-Exceção canônica iniciada pelo GeraSalesPage v1: quando o pipeline declarar explicitamente governança de prompt/schema em banco, o prompt operacional e o schema JSON devem ficar em tabela versionada de template, administrada pelo backend e entregue ao executor pelo contrato `pending`. Nesse modo, o worker não deve carregar prompt/schema de arquivos locais nem manter conteúdo hardcoded; ele deve apenas renderizar o template recebido, montar o request, validar a resposta e devolver auditoria ao backend.
+Exceção canônica iniciada pelo GeraSalesPage v1 e estendida ao pipeline de hipótese: quando o pipeline declarar explicitamente governança de prompt/schema em banco, o prompt operacional e o schema JSON devem ficar em tabela versionada de template, administrada pelo backend e entregue ao executor pelo contrato `pending`. Nesse modo, o worker não deve carregar prompt/schema de arquivos locais nem manter conteúdo hardcoded; ele deve apenas renderizar o template recebido, montar o request, validar a resposta e devolver auditoria ao backend.
+
+A infraestrutura de prompt/schema em banco é compartilhada por domínio de IA e deve ficar em pacote comum, como `aiprompt`. Essa infraestrutura comum não autoriza dependência direta entre pipelines: Hipótese, GeraSalesPage, GeraLanding ou qualquer pipeline futuro devem permanecer blocos independentes e coesos, consumindo apenas contratos comuns, repositories canônicos e artefatos persistidos.
 
 Toda chamada a modelo de IA deve persistir ou registrar de forma auditável o request enviado e o response bruto recebido, vinculados ao job/execução/entidade de negócio. Para OpenAI, a requisição deve usar modo Flex por padrão (`service_tier: "flex"`), salvo exceção funcional explícita e registrada.
 

@@ -1,4 +1,4 @@
-package com.marketinghub.gerasalespage.v1;
+package com.marketinghub.aiprompt;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -19,7 +19,7 @@ import lombok.Setter;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class GeraSalesPagePromptSchemaTemplate {
+public class AiPromptSchemaTemplate {
     @Id
     @Column(name = "template_key", nullable = false, length = 191)
     private String templateKey;

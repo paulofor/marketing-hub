@@ -21,6 +21,7 @@ O GeraSalesPage v1 é um pipeline independente para gerar página de vendas dire
 - O backend controla fila, status, auditoria e avanço de etapa.
 - O AI Worker executa as etapas consumindo `/api/internal/gerasalespage/v1/<etapa>/stage-executions/pending`.
 - Prompt e schema JSON ficam em `ai_prompt_schema_template` e são entregues ao worker pelo contrato `pending`.
+- A entidade/repository de prompt/schema deve ficar na infraestrutura comum `aiprompt`, para preservar o GeraSalesPage v1 como pipeline coeso e impedir que outros pipelines dependam de classes internas dele.
 - O worker não carrega prompt/schema local para este pipeline.
 - Toda chamada OpenAI deve registrar request, response bruto, modelo, tokens, custo e erro quando houver.
 - A revisão de checkout deve bloquear liberação para tráfego quando checkout, promessa, preço, garantia ou CTA estiverem incoerentes.

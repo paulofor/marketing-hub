@@ -17,6 +17,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestClientResponseException;
+import org.springframework.web.client.ResourceAccessException;
 
 /** Integra a etapa persona-candidate-generator com a OpenAI Responses API usando saída estruturada. */
 @Component
@@ -106,6 +107,7 @@ public class OpenAiPersonaCandidateGenerationClient implements PersonaCandidateG
                     ex.getClass().getName(),
                     ex.getMessage(),
                     ex);
+            safeSendBackendResponseAudit(request, "", ex.getClass().getSimpleName() + ": " + ex.getMessage());
             throw new IllegalStateException("Falha na OpenAI ao gerar personas candidatas do NichoCNAE v3.", ex);
         }
     }
@@ -189,7 +191,7 @@ public class OpenAiPersonaCandidateGenerationClient implements PersonaCandidateG
         body.put("service_tier", properties.serviceTier());
         if (properties.webSearchEnabled()) {
             body.put("tools", List.of(Map.of("type", "web_search")));
-            body.put("include", List.of("web_search_call.results"));
+            body.put("include", List.of("web_search_call.action.sources"));
         }
         return body;
     }
@@ -231,6 +233,20 @@ public class OpenAiPersonaCandidateGenerationClient implements PersonaCandidateG
                 request.stageExecutionId(),
                 request.cnaeCode());
         restClient.post().uri(URI.create(endpoint)).body(payload).retrieve().toBodilessEntity();
+    }
+
+    /** Tenta auditar a falha sem esconder a causa original da integração OpenAI. */
+    private void safeSendBackendResponseAudit(PersonaCandidateGenerationRequest request, String rawResponseBody, String errorMessage) {
+        try {
+            sendBackendResponseAudit(request, rawResponseBody, errorMessage);
+        } catch (RestClientException ex) {
+            log.error(
+                    "Erro ao auditar falha OpenAI da etapa persona-candidate-generator (jobId={}, stageExecutionId={}, cnaeCode={})",
+                    request.jobId(),
+                    request.stageExecutionId(),
+                    request.cnaeCode(),
+                    ex);
+        }
     }
 
     /** Envia ao backend exatamente a resposta bruta da OpenAI ou o erro capturado pelo endpoint recebeResponse. */
@@ -282,15 +298,24 @@ public class OpenAiPersonaCandidateGenerationClient implements PersonaCandidateG
         }
     }
 
-    /** Executa a requisição HTTP para a Responses API. */
+    /** Executa a requisição HTTP para a Responses API com retry curto para falhas transitórias de transporte. */
     private String responseBody(String url, String rawRequestBody, String apiKey) {
-        return restClient.post()
-                .uri(URI.create(url))
-                .header("Authorization", "Bearer " + apiKey)
-                .header("Content-Type", "application/json")
-                .body(rawRequestBody)
-                .retrieve()
-                .body(String.class);
+        ResourceAccessException lastException = null;
+        for (int attempt = 1; attempt <= 2; attempt++) {
+            try {
+                return restClient.post()
+                        .uri(URI.create(url))
+                        .header("Authorization", "Bearer " + apiKey)
+                        .header("Content-Type", "application/json")
+                        .body(rawRequestBody)
+                        .retrieve()
+                        .body(String.class);
+            } catch (ResourceAccessException ex) {
+                lastException = ex;
+                log.warn("Falha transitória ao enviar request OpenAI persona-candidate-generator (attempt={}, endpoint={})", attempt, url, ex);
+            }
+        }
+        throw lastException;
     }
 
     /** Converte a resposta bruta da OpenAI para mapa apenas depois da auditoria crua. */

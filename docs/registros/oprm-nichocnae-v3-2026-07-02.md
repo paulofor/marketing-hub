@@ -8,3 +8,10 @@
 - Correção: o `source-searcher` limita queries/variações e para cedo quando encontra fontes qualificadas suficientes.
 - Correção: o backend passa a ler `marketNicheCandidate.title` e `materializedProfile.personaName` antes do fallback fiscal do CNAE.
 - Prevenção: testes cobrem parada antecipada da busca e materialização com payload funcional aninhado do executor.
+
+## Retry OpenAI no persona-candidate-generator
+
+- Diagnóstico: ao executar o CNAE `5620104`, a etapa `persona-candidate-generator` falhou na execução `293` com `ResourceAccessException` antes de receber resposta HTTP da OpenAI.
+- Causa-raiz: a chamada de integração tratava falha transitória de transporte como falha definitiva e usava `include` de resultados de web search mais pesado que o necessário para a auditoria funcional.
+- Correção: o cliente OpenAI da etapa passou a tentar novamente falhas de I/O e a solicitar `web_search_call.action.sources`.
+- Prevenção: teste unitário cobre retry de falha de transporte antes de resposta HTTP.

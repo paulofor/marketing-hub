@@ -18,6 +18,7 @@ import com.marketinghub.journey.model.JourneyTemplate;
 import com.marketinghub.repository.jpa.journey.JourneyTemplateRepository;
 import com.marketinghub.repository.jpa.ads.InstagramAccountRepository;
 import com.marketinghub.repository.jpa.ads.CampaignRepository;
+import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPagePublicationAuditRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,7 +40,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Integration tests for {@link ExperimentController}.
+ * Responsabilidade: validar os contratos HTTP de criação e atualização de experimentos.
  */
 @SpringBootTest(classes = AdsServiceApplication.class)
 @AutoConfigureMockMvc
@@ -81,6 +82,8 @@ class ExperimentControllerTest {
     private com.marketinghub.repository.jpa.leadportal.LeadPortalFlowRepository leadPortalFlowRepository;
     @Autowired
     private CampaignRepository campaignRepository;
+    @Autowired
+    private GeraSalesPagePublicationAuditRepository geraSalesPagePublicationAuditRepository;
 
     Long nicheId;
 
@@ -108,9 +111,11 @@ class ExperimentControllerTest {
     }
 
     @BeforeEach
+    // Limpa dados dependentes antes dos experimentos para preservar as FKs do schema real.
     void cleanDb() {
         creativeRepo.deleteAll();
         campaignRepository.deleteAll();
+        geraSalesPagePublicationAuditRepository.deleteAll();
 
         var experiments = repository.findAll();
         experiments.forEach(experiment -> experiment.setLeadPortalFlow(null));

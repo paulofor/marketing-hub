@@ -60,3 +60,11 @@ Próxima validação recomendada:
 - comparar enum/tamanho de `event_type` no código Java vs definição da coluna no MySQL;
 - reprocessar um job de teste e confirmar se passa a aparecer no banco (eventos + estado final);
 - revisar transação/rollback no fluxo que registra evento após resposta da OpenAI.
+
+## Confirmação posterior em 2026-07-02
+
+Durante a validação pós-merge do PR 4196, o backend voltou a registrar `Data truncated for column 'event_type' at row 1` no retry automático de Sales Video.
+
+Consulta via MCP (`db_query`) confirmou a causa-raiz: no banco real, `sales_video_job_event.event_type` ainda estava como `ENUM('CREATED','CLAIMED','HEARTBEAT','PROGRESS','STATUS_CHANGED','COMPLETED','FAILED','EXPIRED')`, sem o valor `RETRIED`, enquanto o código Java atual já registra `SalesVideoJobEventType.RETRIED`.
+
+Correção preparada: changeset Liquibase `sales-video-hardening-007-event-type-varchar` para converter `event_type` em `VARCHAR(64) NOT NULL`, alinhando o banco real à entidade JPA e ao documento de modelo de dados do módulo.

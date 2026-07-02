@@ -140,3 +140,32 @@ databaseChangeLog:
               UPDATE sales_video_script SET created_by = COALESCE(created_by, 'system@marketinghub.io');
               UPDATE sales_video_job SET tenant_id = COALESCE(tenant_id, 'default'), retry_attempt = COALESCE(retry_attempt, 1);
               UPDATE landing_video_slot SET tenant_id = COALESCE(tenant_id, 'default');
+  - changeSet:
+      id: sales-video-hardening-007-event-type-varchar
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: sales_video_job_event
+        - columnExists:
+            tableName: sales_video_job_event
+            columnName: event_type
+      changes:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE sales_video_job_event
+                MODIFY event_type VARCHAR(64) NOT NULL;
+      rollback:
+        - sql:
+            dbms: mysql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE sales_video_job_event
+                MODIFY event_type VARCHAR(64) NOT NULL;

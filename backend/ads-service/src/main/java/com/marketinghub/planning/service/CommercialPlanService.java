@@ -49,6 +49,7 @@ public class CommercialPlanService {
     private final MarketNicheRepository nicheRepository;
     private final HypothesisRepository hypothesisRepository;
     private final ExperimentRepository experimentRepository;
+    private final CommercialPlanExecutionSyncService executionSyncService;
 
     public CommercialPlanService(
             CommercialPlanRepository planRepository,
@@ -56,13 +57,15 @@ public class CommercialPlanService {
             CommercialPlanSimulationRepository simulationRepository,
             MarketNicheRepository nicheRepository,
             HypothesisRepository hypothesisRepository,
-            ExperimentRepository experimentRepository) {
+            ExperimentRepository experimentRepository,
+            CommercialPlanExecutionSyncService executionSyncService) {
         this.planRepository = planRepository;
         this.milestoneRepository = milestoneRepository;
         this.simulationRepository = simulationRepository;
         this.nicheRepository = nicheRepository;
         this.hypothesisRepository = hypothesisRepository;
         this.experimentRepository = experimentRepository;
+        this.executionSyncService = executionSyncService;
     }
 
     /** Cria um plano de primeira venda e seus marcos comerciais padrao. */
@@ -97,7 +100,7 @@ public class CommercialPlanService {
                 .build();
         CommercialPlan saved = planRepository.save(plan);
         createDefaultMilestones(saved);
-        return saved;
+        return syncExecution(saved);
     }
 
     /** Atualiza os campos comerciais e vinculos principais de um plano. */
@@ -128,23 +131,24 @@ public class CommercialPlanService {
         plan.setNextAction(request.nextAction());
         plan.setCurrentBlocker(request.currentBlocker());
         plan.setRootCause(request.rootCause());
-        return planRepository.save(plan);
+        return syncExecution(planRepository.save(plan));
     }
 
     /** Lista planos comerciais, com filtro opcional por status. */
-    @Transactional(readOnly = true)
+    @Transactional
     public List<CommercialPlan> list(CommercialPlanStatus status) {
-        if (status != null) {
-            return planRepository.findByStatusOrderByUpdatedAtDesc(status);
-        }
-        return planRepository.findAll(Sort.by(Sort.Direction.DESC, "updatedAt"));
+        List<CommercialPlan> plans = status != null
+                ? planRepository.findByStatusOrderByUpdatedAtDesc(status)
+                : planRepository.findAll(Sort.by(Sort.Direction.DESC, "updatedAt"));
+        return plans.stream().map(this::syncExecution).toList();
     }
 
     /** Busca um plano comercial pelo identificador. */
-    @Transactional(readOnly = true)
+    @Transactional
     public CommercialPlan getPlan(Long id) {
-        return planRepository.findById(id)
+        CommercialPlan plan = planRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Plano comercial nao encontrado: " + id));
+        return syncExecution(plan);
     }
 
     /** Lista marcos de um plano na ordem comercial. */
@@ -183,7 +187,9 @@ public class CommercialPlanService {
         milestone.setBlocker(request.blocker());
         milestone.setRecommendedNextAction(request.recommendedNextAction());
         syncPlanBlockerFromMilestones(milestone.getPlan());
-        return milestoneRepository.save(milestone);
+        milestoneRepository.save(milestone);
+        syncExecution(milestone.getPlan());
+        return milestone;
     }
 
     /** Gera e persiste uma simulacao manual assistida com base no estado atual do plano. */
@@ -214,6 +220,18 @@ public class CommercialPlanService {
                     .recommendedNextAction(defaultMilestone.name())
                     .build());
         }
+    }
+
+    /** Sincroniza os valores executados do plano e dos marcos antes de expor o estado comercial. */
+    private CommercialPlan syncExecution(CommercialPlan plan) {
+        List<CommercialPlanMilestone> milestones = milestoneRepository.findByPlanIdOrderBySequenceOrderAsc(plan.getId());
+        if (milestones == null) {
+            milestones = List.of();
+        }
+        executionSyncService.sync(plan, milestones);
+        milestoneRepository.saveAll(milestones);
+        planRepository.save(plan);
+        return plan;
     }
 
     /** Define o status inicial do plano conforme seus campos obrigatorios de foco comercial. */

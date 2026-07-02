@@ -49,6 +49,9 @@ class CommercialPlanServiceTest {
     @Mock
     private ExperimentRepository experimentRepository;
 
+    @Mock
+    private CommercialPlanExecutionSyncService executionSyncService;
+
     private CommercialPlanService service;
 
     /** Prepara o servico com repositorios simulados antes de cada teste. */
@@ -60,7 +63,8 @@ class CommercialPlanServiceTest {
                 simulationRepository,
                 nicheRepository,
                 hypothesisRepository,
-                experimentRepository);
+                experimentRepository,
+                executionSyncService);
     }
 
     /** Deve bloquear planos sem os gates comerciais minimos. */
@@ -132,6 +136,6 @@ class CommercialPlanServiceTest {
 
         assertThat(simulation.getRecommendation()).isEqualTo(CommercialPlanRecommendation.CORRECT);
         assertThat(simulation.getBestNextAction()).contains("Completar objetivo");
-        verify(planRepository).save(plan);
+        verify(planRepository, times(2)).save(plan);
     }
 }

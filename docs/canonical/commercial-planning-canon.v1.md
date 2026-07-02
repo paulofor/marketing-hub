@@ -6,7 +6,7 @@ O planejamento comercial do Marketing Hub deve transformar objetivos de venda em
 
 ## Regra canonica de metas numericas
 
-Todo plano comercial mensal deve persistir metas numericas em campos estruturados, nao apenas em texto livre:
+Todo plano comercial mensal deve persistir metas numericas planejadas em campos estruturados, nao apenas em texto livre:
 
 - `max_budget`: custo maximo permitido no periodo.
 - `target_revenue`: receita minima que valida o objetivo principal.
@@ -14,12 +14,28 @@ Todo plano comercial mensal deve persistir metas numericas em campos estruturado
 - `experiments_to_create`: quantidade de experimentos que devem ser criados no periodo.
 - `experiments_to_publish`: quantidade de experimentos que devem ser publicados e validados no periodo.
 
-Todo marco semanal do plano pode persistir metas numericas proprias:
+Todo marco semanal do plano pode persistir metas numericas planejadas proprias:
 
 - `target_cost`: custo maximo da semana ou acumulado definido para o marco.
 - `target_revenue`: receita esperada da semana ou acumulada.
 - `experiments_to_create`: quantidade de experimentos que devem ser criados ate o marco.
 - `experiments_to_publish`: quantidade de experimentos que devem ser publicados/validados ate o marco.
+
+## Regra canonica de executado
+
+O planejamento deve separar claramente planejado de executado. O usuario edita as metas planejadas; o backend atualiza os valores executados a partir das fontes operacionais persistidas.
+
+Todo plano mensal e todo marco semanal devem expor:
+
+- `actual_campaign_cost`: custo executado de campanha.
+- `actual_ai_cost`: custo executado de IA.
+- `actual_total_cost`: soma de campanha e IA.
+- `actual_revenue`: receita executada.
+- `actual_experiments_created`: quantidade de experimentos criados no periodo.
+- `actual_experiments_published`: quantidade de experimentos publicados no periodo.
+- `execution_synced_at`: data/hora da ultima sincronizacao.
+
+Custos de campanha devem vir de metricas de campanha persistidas. Custos de IA devem considerar geracoes e execucoes de IA persistidas, convertidas para BRL quando a origem estiver em USD. Receita deve vir de metricas financeiras persistidas. Quantidades de experimentos devem vir das tabelas operacionais de experimento e publicacao/campanha, nunca de texto livre.
 
 ## Regra de interpretacao
 

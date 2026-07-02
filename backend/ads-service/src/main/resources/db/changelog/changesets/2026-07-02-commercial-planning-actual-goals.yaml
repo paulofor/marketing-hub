@@ -1,0 +1,78 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-02-03-commercial-plan-actual-goals
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: commercial_plan
+        - not:
+            - columnExists:
+                tableName: commercial_plan
+                columnName: actual_campaign_cost
+      changes:
+        - addColumn:
+            tableName: commercial_plan
+            columns:
+              - column:
+                  name: actual_campaign_cost
+                  type: DECIMAL(12,2)
+              - column:
+                  name: actual_ai_cost
+                  type: DECIMAL(12,2)
+              - column:
+                  name: actual_total_cost
+                  type: DECIMAL(12,2)
+              - column:
+                  name: actual_revenue
+                  type: DECIMAL(12,2)
+              - column:
+                  name: actual_experiments_created
+                  type: INT
+              - column:
+                  name: actual_experiments_published
+                  type: INT
+              - column:
+                  name: execution_synced_at
+                  type: DATETIME(6)
+
+  - changeSet:
+      id: 2026-07-02-04-commercial-plan-milestone-actual-goals
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: commercial_plan_milestone
+        - not:
+            - columnExists:
+                tableName: commercial_plan_milestone
+                columnName: actual_campaign_cost
+      changes:
+        - addColumn:
+            tableName: commercial_plan_milestone
+            columns:
+              - column:
+                  name: actual_campaign_cost
+                  type: DECIMAL(12,2)
+              - column:
+                  name: actual_ai_cost
+                  type: DECIMAL(12,2)
+              - column:
+                  name: actual_total_cost
+                  type: DECIMAL(12,2)
+              - column:
+                  name: actual_revenue
+                  type: DECIMAL(12,2)
+              - column:
+                  name: actual_experiments_created
+                  type: INT
+              - column:
+                  name: actual_experiments_published
+                  type: INT
+              - column:
+                  name: execution_synced_at
+                  type: DATETIME(6)

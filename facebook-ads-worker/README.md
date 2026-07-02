@@ -256,7 +256,10 @@ e reutiliza o identificador resolvido ao montar criativos com
 `call_to_action.value.lead_gen_form_id`, mantendo o destino `ON_AD` e o objetivo
 `OUTCOME_LEADS` conforme as regras mais recentes da Graph API. A mesma política
 de Leads também vale para experimentos com recompensa gratuita (`freeReward`),
-mesmo quando a captura usa landing própria em vez de Instant Form. Identificadores
+mesmo quando a captura usa landing própria em vez de Instant Form. A exceção
+obrigatória é `experimentType=LOW_TICKET_PRODUCT` com `campaignObjective=SALES`:
+nesse caso o worker deve preservar campanha de venda (`OUTCOME_SALES`), ainda
+que exista algum `freeReward` secundário no contrato. Identificadores
 temporários no formato `ai_form_*` são normalizados para o padrão `form_*`
 antes da publicação, e o share link é reconstruído com o identificador final
 quando disponível.

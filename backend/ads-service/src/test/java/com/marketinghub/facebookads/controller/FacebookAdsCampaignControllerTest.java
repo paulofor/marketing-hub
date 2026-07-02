@@ -11,9 +11,11 @@ import com.marketinghub.ads.InstagramAccount;
 import com.marketinghub.repository.jpa.experiment.ExperimentTargetingSelectionRepository;
 import com.marketinghub.experiment.AdSet;
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.experiment.ExperimentCampaignObjective;
 import com.marketinghub.experiment.ExperimentTargetingSelection;
 import com.marketinghub.experiment.ExperimentPlatform;
 import com.marketinghub.experiment.ExperimentStatus;
+import com.marketinghub.experiment.ExperimentType;
 import com.marketinghub.experiment.funnel.ExperimentFunnelAutoStopService;
 import com.marketinghub.journey.model.JourneyTemplate;
 import com.marketinghub.hypothesis.Hypothesis;
@@ -26,10 +28,14 @@ import com.marketinghub.repository.jpa.facebookads.FacebookAdsAdRepository;
 import com.marketinghub.facebookads.FacebookAdsAdSet;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
 import com.marketinghub.facebookads.FacebookAdStatus;
+import com.marketinghub.facebookads.service.publicationstep.FacebookCampaignPublicationJobStepService;
 import com.marketinghub.repository.jpa.facebookads.FacebookAdsAdSetRepository;
 import com.marketinghub.creative.Creative;
 import com.marketinghub.creative.CreativeStatus;
+import com.marketinghub.gerasalespage.v1.GeraSalesPageStageCode;
+import com.marketinghub.gerasalespage.v1.GeraSalesPageStageExecution;
 import com.marketinghub.repository.jpa.creative.CreativeRepository;
+import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPageStageExecutionRepository;
 import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.leadportal.dto.LeadPortalExperimentMetricsDto;
 import com.marketinghub.leadportal.dto.LeadPortalExperimentUserDto;
@@ -102,6 +108,10 @@ class FacebookAdsCampaignControllerTest {
     ExperimentTargetingSelectionRepository targetingSelectionRepository;
     @MockBean
     CreativeRepository creativeRepository;
+    @MockBean
+    GeraSalesPageStageExecutionRepository geraSalesPageStageExecutionRepository;
+    @MockBean
+    FacebookCampaignPublicationJobStepService publicationJobStepService;
 
     @MockBean
     LeadPortalMetricsService leadPortalMetricsService;
@@ -284,6 +294,54 @@ class FacebookAdsCampaignControllerTest {
         mockMvc.perform(get("/api/facebook-campaigns/experiments-ready"))
                 .andExpect(status().isOk())
                 .andExpect(content().json("[]"));
+    }
+
+    @Test
+    void experimentsReadyIncludesExperimentTypeForLowTicketSalesCampaigns() throws Exception {
+        var experiment = Experiment.builder()
+                .id(53L)
+                .name("Experimento 53")
+                .platform(ExperimentPlatform.FACEBOOK)
+                .status(ExperimentStatus.PLANNED)
+                .experimentType(ExperimentType.LOW_TICKET_PRODUCT)
+                .campaignObjective(ExperimentCampaignObjective.SALES)
+                .freeReward("preview da ferramenta")
+                .facebookReleaseRequestedAt(Instant.parse("2026-07-01T20:00:00Z"))
+                .followUpActionUrl("https://pagamentopalf.site/sales-page-exp53.html")
+                .creativeApproved(true)
+                .build();
+        when(experimentService.listByStatusAndPlatform(ExperimentStatus.PLANNED, ExperimentPlatform.FACEBOOK))
+                .thenReturn(List.of(experiment));
+        when(campaignRepository.existsByExperimentId(53L)).thenReturn(false);
+        when(creativeRepository.existsByExperimentIdAndStatus(53L, CreativeStatus.READY)).thenReturn(true);
+        when(targetingSelectionRepository.findByExperimentIdWithTargetingElement(53L)).thenReturn(List.of(
+                ExperimentTargetingSelection.builder()
+                        .candidateType(TargetingCandidateType.INTEREST)
+                        .term("Loja de roupas")
+                        .targetingElement(TargetingElement.builder()
+                                .type(TargetingElementType.INTEREST)
+                                .term("Loja de roupas")
+                                .status(TargetingElementStatus.APPROVED)
+                                .metaId("meta-interest-vestuario")
+                                .build())
+                        .build()));
+        when(geraSalesPageStageExecutionRepository.findTopByExperimentIdAndStageCodeOrderByExecutionRequestedAtDesc(
+                53L, GeraSalesPageStageCode.PUBLICATION_PACKAGE.code()))
+                .thenReturn(Optional.of(GeraSalesPageStageExecution.builder()
+                        .idJob("job-exp53-publication")
+                        .experimentId(53L)
+                        .stageCode(GeraSalesPageStageCode.PUBLICATION_PACKAGE.code())
+                        .status("CONCLUIDO")
+                        .executionRequestedAt(Instant.parse("2026-07-01T20:05:00Z"))
+                        .build()));
+        when(leadPortalMetricsService.listExperimentMetrics()).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/facebook-campaigns/experiments-ready"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(53))
+                .andExpect(jsonPath("$[0].experimentType").value("LOW_TICKET_PRODUCT"))
+                .andExpect(jsonPath("$[0].campaignObjective").value("SALES"))
+                .andExpect(jsonPath("$[0].freeReward").value("preview da ferramenta"));
     }
 
     @Test

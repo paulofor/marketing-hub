@@ -575,6 +575,9 @@ public class FacebookAdsCampaignController {
                 experiment.getFreeReward(),
                 experiment.getFunnelPromise(),
                 experiment.getPrimaryCta(),
+                experiment.getExperimentType() != null
+                        ? experiment.getExperimentType().name()
+                        : null,
                 experiment.getCampaignObjective() != null
                         ? experiment.getCampaignObjective().name()
                         : null,
@@ -750,6 +753,7 @@ public class FacebookAdsCampaignController {
             String freeReward,
             String funnelPromise,
             String primaryCta,
+            String experimentType,
             String campaignObjective,
             String followUpActionUrl,
             String pageId,

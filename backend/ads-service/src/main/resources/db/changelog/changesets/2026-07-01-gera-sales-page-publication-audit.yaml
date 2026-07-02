@@ -33,7 +33,8 @@ databaseChangeLog:
                     nullable: false
               - column:
                   name: published_at
-                  type: TIMESTAMP
+                  type: DATETIME(6)
+                  defaultValueComputed: CURRENT_TIMESTAMP(6)
                   constraints:
                     nullable: false
               - column:
@@ -50,7 +51,8 @@ databaseChangeLog:
                   type: LONGTEXT
               - column:
                   name: created_at
-                  type: TIMESTAMP
+                  type: DATETIME(6)
+                  defaultValueComputed: CURRENT_TIMESTAMP(6)
                   constraints:
                     nullable: false
         - addForeignKeyConstraint:
@@ -117,7 +119,7 @@ databaseChangeLog:
                     nullable: false
               - column:
                   name: completed_at
-                  type: TIMESTAMP
+                  type: DATETIME(6)
               - column:
                   name: prompt_template_key
                   type: VARCHAR(191)

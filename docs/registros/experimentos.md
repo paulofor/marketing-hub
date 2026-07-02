@@ -5544,3 +5544,10 @@
 - Correção aplicada: criada auditoria de publicação por experimento, com snapshot da etapa final e das etapas concluídas usadas na página.
 - Consulta: o frontend passa a acessar as versões publicadas em `/api/experiments/{id}/gerasalespage/v1/publications` e exibe o card “Auditoria da página de venda” para experimentos low-ticket.
 - Prevenção de recorrência: o cânone do GeraSalesPage agora exige snapshot histórico por página publicada.
+
+## 2026-07-01 — Hotfix MySQL 5.7 da auditoria GeraSalesPage
+
+- Problema: o backend não subiu em produção porque o changelog de auditoria do GeraSalesPage criava colunas `TIMESTAMP NOT NULL` sem valor padrão, gerando `Invalid default value for 'created_at'` no MySQL 5.7.
+- Causa-raiz: o changelog não seguiu o padrão seguro do projeto para datas em MySQL 5.7 e ainda estava incluído antes das tabelas base do GeraSalesPage.
+- Correção aplicada: `published_at` e `created_at` passaram para `DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)`, `completed_at` passou para `DATETIME(6)` e o include da auditoria foi movido para depois dos changelogs base do GeraSalesPage.
+- Prevenção de recorrência: o diff foi revisado contra as regras de Liquibase/MySQL 5.7, mantendo `relativeToChangelogFile: true` no changelog mestre.

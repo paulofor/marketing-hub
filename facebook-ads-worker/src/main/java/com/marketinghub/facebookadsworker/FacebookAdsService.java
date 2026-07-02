@@ -341,8 +341,9 @@ public class FacebookAdsService {
                 body.put("bid_amount", bidAmount);
             }
         }
-        if (request.pageId() != null && !request.pageId().isBlank()) {
-            body.put("promoted_object", Map.of("page_id", request.pageId()));
+        Map<String, Object> promotedObject = buildPromotedObject(request);
+        if (!promotedObject.isEmpty()) {
+            body.put("promoted_object", promotedObject);
         }
         body.put("access_token", requireAccessToken());
 
@@ -350,6 +351,21 @@ public class FacebookAdsService {
 
         JsonNode response = executeAdSetPost(path, body, request.name());
         return response.path("id").asText();
+    }
+
+    /** Monta o objeto promovido do ad set com página e, quando aplicável, pixel/evento de conversão. */
+    private Map<String, Object> buildPromotedObject(AdSetRequest request) {
+        Map<String, Object> promotedObject = new HashMap<>();
+        if (request.pageId() != null && !request.pageId().isBlank()) {
+            promotedObject.put("page_id", request.pageId());
+        }
+        if (request.pixelId() != null && !request.pixelId().isBlank()) {
+            promotedObject.put("pixel_id", request.pixelId());
+        }
+        if (request.customEventType() != null && !request.customEventType().isBlank()) {
+            promotedObject.put("custom_event_type", request.customEventType());
+        }
+        return promotedObject;
     }
 
     private JsonNode executeAdSetPost(String path, Map<String, Object> body, String adSetName) {
@@ -3168,6 +3184,8 @@ private FacebookInterest searchInterest(String interestName, String locale) {
         String bidStrategy,
         String bidAmount,
         String pageId,
+        String pixelId,
+        String customEventType,
         String targetCountry,
         String targetingJson,
         List<TargetingOption> targetingOptions

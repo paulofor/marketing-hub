@@ -163,6 +163,9 @@ public class ExperimentReadinessService {
         if (isLowTicketProduct(experiment) && !hasCompletedGeraSalesPagePipeline(experiment != null ? experiment.getId() : null)) {
             missing.add("geraSalesPagePipeline");
         }
+        if (isLowTicketProduct(experiment) && !hasFacebookPixel(experiment)) {
+            missing.add("facebookPixel");
+        }
         if (!hasConfiguredTargeting(experiment)) {
             missing.add("approvedTargetingPackage");
         }
@@ -228,6 +231,14 @@ public class ExperimentReadinessService {
         return experiment != null
                 && experiment.getFollowUpActionUrl() != null
                 && !experiment.getFollowUpActionUrl().isBlank();
+    }
+
+    /** Verifica se o nicho do experimento já possui pixel da Meta para otimização de compra. */
+    private boolean hasFacebookPixel(Experiment experiment) {
+        return experiment != null
+                && experiment.getNiche() != null
+                && experiment.getNiche().getFacebookPixelId() != null
+                && !experiment.getNiche().getFacebookPixelId().isBlank();
     }
 
     /** Identifica experimento de venda direta low-ticket. */

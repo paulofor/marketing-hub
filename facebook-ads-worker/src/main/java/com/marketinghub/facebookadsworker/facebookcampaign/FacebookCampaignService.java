@@ -418,9 +418,18 @@ public class FacebookCampaignService {
                 );
             }
             boolean leadCampaignRequired = requiresLeadCampaign(exp) || hasLeadFormDestination;
+            boolean salesConversionRequired = requiresPurchaseConversionCampaign(exp, leadCampaignRequired);
+            if (salesConversionRequired && !StringUtils.hasText(exp.facebookPixelId())) {
+                String reason = "low-ticket sales campaign requires facebookPixelId for Purchase optimization";
+                LOGGER.warn("Skipping experiment {} because {}", exp.id(), reason);
+                markExperimentAsFailed(exp.id(), reason);
+                return;
+            }
             String resolvedDestinationType = hasLeadFormDestination ? "ON_AD" : config.adSetDestinationType();
             String resolvedOptimizationGoal = leadCampaignRequired
                 ? "LEAD_GENERATION"
+                : salesConversionRequired
+                    ? "OFFSITE_CONVERSIONS"
                 : config.adSetOptimizationGoal();
             String resolvedCampaignObjective = resolveCampaignObjective(exp, leadCampaignRequired);
 
@@ -476,6 +485,8 @@ public class FacebookCampaignService {
                 config.adSetBidStrategy(),
                 config.adSetBidAmount(),
                 resolvedPageId,
+                salesConversionRequired ? exp.facebookPixelId() : null,
+                salesConversionRequired ? "PURCHASE" : null,
                 FacebookAdsService.BRAZIL_COUNTRY_CODE,
                 resolvedTargeting.targetingJson(),
                 resolvedTargeting.options()
@@ -563,6 +574,8 @@ public class FacebookCampaignService {
                     adSetRequest.targetCountry(),
                     adSetRequest.destinationType(),
                     adSetRequest.pageId(),
+                    adSetRequest.pixelId(),
+                    adSetRequest.customEventType(),
                     resolvedTargeting.targetingJson(),
                     null
                 ),
@@ -1109,6 +1122,15 @@ public class FacebookCampaignService {
         return "OUTCOME_TRAFFIC";
     }
 
+    /** Indica se a campanha deve ser otimizada para compra fora do site. */
+    private boolean requiresPurchaseConversionCampaign(Experiment experiment, boolean leadCampaignRequired) {
+        return !leadCampaignRequired
+                && isLowTicketProduct(experiment)
+                && experiment != null
+                && StringUtils.hasText(experiment.campaignObjective())
+                && "SALES".equalsIgnoreCase(experiment.campaignObjective().trim());
+    }
+
     public record Experiment(
         long id,
         String name,
@@ -1119,6 +1141,7 @@ public class FacebookCampaignService {
         String experimentType,
         String campaignObjective,
         String pageId,
+        String facebookPixelId,
         BigDecimal dailyBudget,
         @JsonAlias({ "page", "associatedFacebookPage", "facebookPageAssociation" })
         FacebookPage facebookPage,
@@ -1176,6 +1199,8 @@ public class FacebookCampaignService {
             String targetCountry,
             String destinationType,
             String pageId,
+            String pixelId,
+            String customEventType,
             String targetingJson,
             Long experimentAdSetId
         ) {}

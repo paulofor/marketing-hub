@@ -741,8 +741,9 @@ class FacebookCampaignServiceTest {
     }
 
     @Test
+    // Garante que low-ticket com recompensa secundária continua como venda otimizada para Purchase.
     void createsSalesCampaignForLowTicketProductEvenWithSecondaryReward() throws Exception {
-        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"dailyBudget\":25.0,\"experimentType\":\"LOW_TICKET_PRODUCT\",\"freeReward\":\"ver amostra gratuita\",\"campaignObjective\":\"SALES\",\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
+        backend.enqueueResponse(new MockResponse().setBody("[{\"id\":1,\"name\":\"Exp\",\"dailyBudget\":25.0,\"experimentType\":\"LOW_TICKET_PRODUCT\",\"freeReward\":\"ver amostra gratuita\",\"campaignObjective\":\"SALES\",\"facebookPixelId\":\"pixel-123\",\"facebookPage\":{\"id\":9,\"pageId\":\"84\",\"name\":\"Estúdio\"},\"instagramAccount\":{\"id\":55,\"handle\":\"@estudio\",\"code\":\"IG-EST\",\"name\":\"Estúdio\"}}]")
             .addHeader("Content-Type", "application/json"));
         facebook.enqueueResponse(new MockResponse().setBody("{\"images\":{\"uploaded\":{\"hash\":\"hash-preloaded\"}}}")
             .addHeader("Content-Type", "application/json"));
@@ -791,6 +792,9 @@ class FacebookCampaignServiceTest {
         RecordedRequest postAdSet = takeFacebookRequest("facebook ad set");
         JsonNode adSetPayload = objectMapper.readTree(postAdSet.getBody().inputStream());
         assertEquals("WEBSITE", adSetPayload.get("destination_type").asText());
+        assertEquals("OFFSITE_CONVERSIONS", adSetPayload.get("optimization_goal").asText());
+        assertEquals("pixel-123", adSetPayload.get("promoted_object").get("pixel_id").asText());
+        assertEquals("PURCHASE", adSetPayload.get("promoted_object").get("custom_event_type").asText());
     }
 
     @Test

@@ -102,6 +102,8 @@ class FacebookAdsServiceTest {
             "LOWEST_COST_WITHOUT_CAP",
             "200",
             "42",
+            null,
+            null,
             "BR",
             null,
             Collections.emptyList()
@@ -147,6 +149,8 @@ class FacebookAdsServiceTest {
             "COST_CAP",
             "200",
             "42",
+            null,
+            null,
             "BR",
             null,
             Collections.emptyList()
@@ -156,6 +160,36 @@ class FacebookAdsServiceTest {
         JsonNode body = objectMapper.readTree(recorded.getBody().inputStream());
         assertEquals("COST_CAP", body.get("bid_strategy").asText());
         assertEquals("200", body.get("bid_amount").asText());
+    }
+
+    @Test
+    // Garante que campanhas de compra enviam pixel e evento Purchase no promoted_object.
+    void createAdSetIncludesPixelPurchasePromotedObject() throws Exception {
+        server.enqueueResponse(new MockResponse().setBody("{\"id\":\"334\"}")
+            .addHeader("Content-Type", "application/json"));
+        FacebookAdsService.AdSetRequest request = new FacebookAdsService.AdSetRequest(
+            "Camp - Sales Ad Set",
+            "123",
+            "1500",
+            "IMPRESSIONS",
+            "OFFSITE_CONVERSIONS",
+            "WEBSITE",
+            "LOWEST_COST_WITHOUT_CAP",
+            null,
+            "42",
+            "pixel-123",
+            "PURCHASE",
+            "BR",
+            null,
+            Collections.emptyList()
+        );
+        service.createAdSet("1", request);
+        RecordedRequest recorded = takeRequest("request");
+        JsonNode body = objectMapper.readTree(recorded.getBody().inputStream());
+        assertEquals("OFFSITE_CONVERSIONS", body.get("optimization_goal").asText());
+        assertEquals("42", body.get("promoted_object").get("page_id").asText());
+        assertEquals("pixel-123", body.get("promoted_object").get("pixel_id").asText());
+        assertEquals("PURCHASE", body.get("promoted_object").get("custom_event_type").asText());
     }
 
     @Test
@@ -173,6 +207,8 @@ class FacebookAdsServiceTest {
             "LOWEST_COST_WITHOUT_CAP",
             "200",
             "42",
+            null,
+            null,
             "BR",
             targetingJson,
             Collections.emptyList()
@@ -206,6 +242,8 @@ class FacebookAdsServiceTest {
             "LOWEST_COST_WITHOUT_CAP",
             "200",
             "42",
+            null,
+            null,
             "BR",
             targetingJson,
             Collections.emptyList()
@@ -238,6 +276,8 @@ class FacebookAdsServiceTest {
             "LOWEST_COST_WITHOUT_CAP",
             "200",
             "42",
+            null,
+            null,
             "BR",
             targetingJson,
             Collections.emptyList()
@@ -269,6 +309,8 @@ class FacebookAdsServiceTest {
             "LOWEST_COST_WITHOUT_CAP",
             "200",
             "42",
+            null,
+            null,
             "BR",
             targetingJson,
             Collections.emptyList()
@@ -300,6 +342,8 @@ class FacebookAdsServiceTest {
             "LOWEST_COST_WITHOUT_CAP",
             "200",
             "42",
+            null,
+            null,
             "BR",
             targetingJson,
             Collections.emptyList()
@@ -334,6 +378,8 @@ class FacebookAdsServiceTest {
             "LOWEST_COST_WITHOUT_CAP",
             null,
             "42",
+            null,
+            null,
             "BR",
             targetingJson,
             Collections.emptyList()
@@ -432,6 +478,8 @@ class FacebookAdsServiceTest {
             "LOWEST_COST_WITHOUT_CAP",
             "200",
             "42",
+            null,
+            null,
             "BR",
             targetingJson,
             Collections.emptyList()
@@ -481,6 +529,8 @@ class FacebookAdsServiceTest {
             "LOWEST_COST_WITHOUT_CAP",
             "200",
             "42",
+            null,
+            null,
             "BR",
             targetingJson,
             Collections.emptyList()
@@ -523,6 +573,8 @@ class FacebookAdsServiceTest {
             "LOWEST_COST_WITHOUT_CAP",
             "200",
             "42",
+            null,
+            null,
             "BR",
             targetingJson,
             Collections.emptyList()

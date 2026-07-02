@@ -226,6 +226,7 @@ class ExperimentReadinessServiceTest {
         Experiment experiment = buildExperiment(52L, 62L);
         experiment.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
         experiment.setFollowUpActionUrl("https://pagamentopalf.site/sales-page-exp52.html");
+        experiment.getNiche().setFacebookPixelId("pixel-exp52");
 
         when(creativeRepository.existsByExperimentIdAndStatus(52L, CreativeStatus.READY)).thenReturn(true);
         mockPublishableSelection(52L, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
@@ -236,10 +237,28 @@ class ExperimentReadinessServiceTest {
     }
 
     @Test
+    // Verifica que low-ticket sem pixel não entra na fila de campanha de venda.
+    void shouldRequireFacebookPixelForLowTicketCampaign() {
+        Experiment experiment = buildExperiment(54L, 64L);
+        experiment.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
+        experiment.setFollowUpActionUrl("https://pagamentopalf.site/sales-page-exp54.html");
+
+        when(creativeRepository.existsByExperimentIdAndStatus(54L, CreativeStatus.READY)).thenReturn(true);
+        mockPublishableSelection(54L, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
+        mockCompletedGeraSalesPagePublication(54L);
+
+        assertThat(service.computeMissingConfiguration(experiment))
+                .containsExactly("facebookPixel");
+        assertThat(service.isReadyForCampaign(experiment)).isFalse();
+    }
+
+    @Test
+    // Verifica que low-ticket completo com página e pixel pode ser publicado.
     void shouldAllowLowTicketCampaignOnlyAfterGeraSalesPagePublicationPackage() {
         Experiment experiment = buildExperiment(53L, 63L);
         experiment.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
         experiment.setFollowUpActionUrl("https://pagamentopalf.site/sales-page-exp53.html");
+        experiment.getNiche().setFacebookPixelId("pixel-exp53");
 
         when(creativeRepository.existsByExperimentIdAndStatus(53L, CreativeStatus.READY)).thenReturn(true);
         mockPublishableSelection(53L, TargetingCandidateType.BEHAVIOR, TargetingElementType.BEHAVIOR);

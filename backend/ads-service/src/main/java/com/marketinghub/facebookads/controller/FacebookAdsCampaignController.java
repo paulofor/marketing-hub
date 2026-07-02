@@ -394,7 +394,10 @@ public class FacebookAdsCampaignController {
         adSet.setDailyBudgetMinor(parseLong(adSetReq.dailyBudget()));
         adSet.setLifetimeBudgetMinor(parseLong(adSetReq.lifetimeBudget()));
         adSet.setBidAmountMinor(parseLong(adSetReq.bidAmount()));
-        adSet.setPromotedObjectJson(buildPromotedObjectJson(adSetReq.pageId()));
+        adSet.setPromotedObjectJson(buildPromotedObjectJson(
+                adSetReq.pageId(),
+                adSetReq.pixelId(),
+                adSetReq.customEventType()));
         adSet.setTargetingJson(buildTargetingJson(adSetReq.targetCountry(), adSetReq.targetingJson(), adSetReq.savedAudienceId()));
         return adSet;
     }
@@ -492,12 +495,20 @@ public class FacebookAdsCampaignController {
     }
 
     // Executa a operação buildPromotedObjectJson da integração Facebook Ads.
-    private String buildPromotedObjectJson(String pageId) {
-        if (!StringUtils.hasText(pageId)) {
+    private String buildPromotedObjectJson(String pageId, String pixelId, String customEventType) {
+        if (!StringUtils.hasText(pageId) && !StringUtils.hasText(pixelId) && !StringUtils.hasText(customEventType)) {
             return null;
         }
         ObjectNode node = objectMapper.createObjectNode();
-        node.put("page_id", pageId);
+        if (StringUtils.hasText(pageId)) {
+            node.put("page_id", pageId);
+        }
+        if (StringUtils.hasText(pixelId)) {
+            node.put("pixel_id", pixelId);
+        }
+        if (StringUtils.hasText(customEventType)) {
+            node.put("custom_event_type", customEventType);
+        }
         return node.toString();
     }
 
@@ -583,6 +594,7 @@ public class FacebookAdsCampaignController {
                         : null,
                 experiment.getFollowUpActionUrl(),
                 pageId,
+                experiment.getNiche() != null ? experiment.getNiche().getFacebookPixelId() : null,
                 experiment.getKpiTargetCpl(),
                 experiment.getDailyBudget(),
                 experiment.getStartDate(),
@@ -757,6 +769,7 @@ public class FacebookAdsCampaignController {
             String campaignObjective,
             String followUpActionUrl,
             String pageId,
+            String facebookPixelId,
             BigDecimal kpiTargetCpl,
             BigDecimal dailyBudget,
             LocalDate startDate,
@@ -863,6 +876,8 @@ public class FacebookAdsCampaignController {
                 String targetCountry,
                 String destinationType,
                 String pageId,
+                String pixelId,
+                String customEventType,
                 String targetingJson,
                 String savedAudienceId,
                 String savedAudienceName,

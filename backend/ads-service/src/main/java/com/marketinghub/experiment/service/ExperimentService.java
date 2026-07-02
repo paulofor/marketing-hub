@@ -13,6 +13,7 @@ import com.marketinghub.experiment.*;
 import com.marketinghub.finance.CurrencyConversionService;
 import com.marketinghub.experiment.dto.CreateExperimentRequest;
 import com.marketinghub.experiment.dto.UpdateExperimentRequest;
+import com.marketinghub.gerasalespage.v1.GeraSalesPagePublicationAudit;
 import com.marketinghub.gerasalespage.v1.GeraSalesPageStageCode;
 import com.marketinghub.repository.jpa.experiment.ExperimentPromiseGenerationRequestRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
@@ -21,6 +22,7 @@ import com.marketinghub.repository.jpa.experiment.funnel.ExperimentLandingAnalyt
 import com.marketinghub.repository.jpa.facebookads.FacebookAdsAdRepository;
 import com.marketinghub.repository.jpa.facebookads.FacebookAdsAdSetRepository;
 import com.marketinghub.repository.jpa.facebookads.FacebookAdsCampaignRepository;
+import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPagePublicationAuditRepository;
 import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPageStageExecutionRepository;
 import com.marketinghub.journey.model.JourneyTemplate;
 import com.marketinghub.repository.jpa.journey.JourneyTemplateRepository;
@@ -75,6 +77,7 @@ public class ExperimentService {
     private final FacebookAdsAdSetRepository facebookAdsAdSetRepository;
     private final FacebookAdsAdRepository facebookAdsAdRepository;
     private final GeraSalesPageStageExecutionRepository geraSalesPageStageExecutionRepository;
+    private final GeraSalesPagePublicationAuditRepository geraSalesPagePublicationAuditRepository;
     private final ObjectMapper objectMapper;
     private final CurrencyConversionService currencyConversionService;
 
@@ -99,6 +102,7 @@ public class ExperimentService {
                              FacebookAdsAdSetRepository facebookAdsAdSetRepository,
                              FacebookAdsAdRepository facebookAdsAdRepository,
                              GeraSalesPageStageExecutionRepository geraSalesPageStageExecutionRepository,
+                             GeraSalesPagePublicationAuditRepository geraSalesPagePublicationAuditRepository,
                              ObjectMapper objectMapper,
                              CurrencyConversionService currencyConversionService) {
         this.repository = repository;
@@ -122,6 +126,7 @@ public class ExperimentService {
         this.facebookAdsAdSetRepository = facebookAdsAdSetRepository;
         this.facebookAdsAdRepository = facebookAdsAdRepository;
         this.geraSalesPageStageExecutionRepository = geraSalesPageStageExecutionRepository;
+        this.geraSalesPagePublicationAuditRepository = geraSalesPagePublicationAuditRepository;
         this.objectMapper = objectMapper;
         this.currencyConversionService = currencyConversionService;
     }
@@ -866,7 +871,7 @@ public class ExperimentService {
         return experiment;
     }
 
-    /** Bloqueia venda low-ticket quando a página de venda não veio do GeraSalesPage v1. */
+    /** Bloqueia venda low-ticket quando página, destino ou métricas não estão prontos para tráfego. */
     private void ensureLowTicketSalesPageWasBuiltByPipeline(Experiment experiment) {
         if (experiment.getExperimentType() != ExperimentType.LOW_TICKET_PRODUCT) {
             return;
@@ -882,6 +887,59 @@ public class ExperimentService {
                     HttpStatus.CONFLICT,
                     "Experimento low-ticket exige página de venda criada pelo GeraSalesPage v1 antes da campanha.");
         }
+        GeraSalesPagePublicationAudit publication = geraSalesPagePublicationAuditRepository
+                .findTopByExperimentIdOrderByPublishedAtDesc(experiment.getId())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.CONFLICT,
+                        "Experimento low-ticket exige página de venda publicada e auditada pelo GeraSalesPage v1 antes da campanha."));
+        if (!hasAdDestinationPointingToSalesPage(experiment, publication)) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Experimento low-ticket exige que o link do anúncio aponte para a página de venda publicada, não para o checkout direto.");
+        }
+        if (!hasRequiredSalesPageAnalyticsCollectors(publication)) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Experimento low-ticket exige página de venda com coletores page_view, page_load_metric, section_view_time e checkout_click antes da campanha.");
+        }
+    }
+
+    /** Confirma que o destino do anúncio é a página auditada e não o checkout. */
+    private boolean hasAdDestinationPointingToSalesPage(
+            Experiment experiment,
+            GeraSalesPagePublicationAudit publication) {
+        String destinationUrl = normalizeUrl(experiment.getFollowUpActionUrl());
+        String salesPageUrl = normalizeUrl(publication.getSalesPageUrl());
+        String checkoutUrl = normalizeUrl(publication.getCheckoutUrl());
+        return StringUtils.hasText(destinationUrl)
+                && StringUtils.hasText(salesPageUrl)
+                && destinationUrl.equals(salesPageUrl)
+                && (!StringUtils.hasText(checkoutUrl) || !destinationUrl.equals(checkoutUrl));
+    }
+
+    /** Confirma que o HTML publicado possui os coletores mínimos para ler o funil de venda. */
+    private boolean hasRequiredSalesPageAnalyticsCollectors(GeraSalesPagePublicationAudit publication) {
+        if (publication == null || !StringUtils.hasText(publication.getHtml())) {
+            return false;
+        }
+        String html = publication.getHtml();
+        return html.contains("data-mh-sales-page-analytics")
+                && html.contains("page_view")
+                && html.contains("page_load_metric")
+                && html.contains("section_view_time")
+                && html.contains("checkout_click");
+    }
+
+    /** Normaliza URL para comparação de destino sem depender de barra final. */
+    private String normalizeUrl(String url) {
+        if (!StringUtils.hasText(url)) {
+            return "";
+        }
+        String normalized = url.trim().toLowerCase(Locale.ROOT);
+        while (normalized.endsWith("/")) {
+            normalized = normalized.substring(0, normalized.length() - 1);
+        }
+        return normalized;
     }
 
     /**

@@ -6,6 +6,22 @@ export interface MissingConfigurationInfo {
 const missingConfigurationInfo: Record<string, MissingConfigurationInfo> = {
   creativeApproval: { label: "Aprovar pelo menos um criativo" },
   landingDestination: { label: "Aprovar a landing para definir URL de destino" },
+  geraSalesPagePipeline: {
+    label: "Publicar página de venda pelo GeraSalesPage",
+    helperText:
+      "Experimentos low-ticket precisam de uma página de venda publicada e auditada pelo GeraSalesPage antes de entrar em campanha.",
+  },
+  salesPageAdDestination: {
+    label: "Apontar o anúncio para a página de venda",
+    helperText:
+      "O anúncio low-ticket deve enviar o clique para a página de venda publicada, não direto para o checkout.",
+  },
+  salesPageAnalyticsCollectors: {
+    label: "Republicar página com coletores de métricas",
+    helperText:
+      "A página de venda precisa coletar page_view, page_load_metric, section_view_time e checkout_click antes de receber tráfego pago.",
+  },
+  facebookPixel: { label: "Configurar pixel do nicho para venda low-ticket" },
   kpiTargetCpl: { label: "Definir o KPI alvo (CPL)" },
   stopLossCpl: { label: "Definir o stop-loss de CPL" },
   sampleSize: { label: "Informar o tamanho da amostra" },

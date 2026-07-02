@@ -26,9 +26,11 @@ import com.marketinghub.repository.jpa.ads.InstagramAccountRepository;
 import com.marketinghub.facebookads.BudgetMode;
 import com.marketinghub.facebookads.FacebookAdStatus;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
+import com.marketinghub.gerasalespage.v1.GeraSalesPagePublicationAudit;
 import com.marketinghub.gerasalespage.v1.GeraSalesPageStageCode;
 import com.marketinghub.gerasalespage.v1.GeraSalesPageStageExecution;
 import com.marketinghub.repository.jpa.facebookads.FacebookAdsCampaignRepository;
+import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPagePublicationAuditRepository;
 import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPageStageExecutionRepository;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
@@ -77,6 +79,8 @@ class ExperimentServiceTest {
     @Autowired
     GeraSalesPageStageExecutionRepository geraSalesPageStageExecutionRepository;
     @Autowired
+    GeraSalesPagePublicationAuditRepository geraSalesPagePublicationAuditRepository;
+    @Autowired
     com.marketinghub.repository.jpa.leadportal.LeadPortalFlowRepository leadPortalFlowRepository;
     @Autowired
     ExperimentFunnelEventRepository experimentFunnelEventRepository;
@@ -107,6 +111,20 @@ class ExperimentServiceTest {
                         .slug(slug)
                         .marketNiche(niche)
                         .build()).getId();
+    }
+
+    /** Retorna HTML com todos os coletores mínimos da página de venda low-ticket. */
+    private String trackedSalesPageHtml() {
+        return """
+                <html><body>
+                <script data-mh-sales-page-analytics="true">
+                sendEvent('page_view');
+                sendEvent('page_load_metric');
+                sendEvent('section_view_time');
+                sendEvent('checkout_click');
+                </script>
+                </body></html>
+                """;
     }
 
     @Test
@@ -875,17 +893,88 @@ class ExperimentServiceTest {
         req.setLeadPortalFlowId(createLeadPortalFlow(niche));
         req.setInstagramAccountId(createInstagramAccount().getId());
         Experiment experiment = service.create(req);
-        geraSalesPageStageExecutionRepository.save(GeraSalesPageStageExecution.builder()
+        String salesPageUrl = "https://pagamentopalf.site/sales-page-exp-low-release-ok.html";
+        String checkoutUrl = "https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=low-ok";
+        experiment.setFollowUpActionUrl(salesPageUrl);
+        experimentRepository.save(experiment);
+        GeraSalesPageStageExecution execution = geraSalesPageStageExecutionRepository.save(GeraSalesPageStageExecution.builder()
                 .idJob(java.util.UUID.randomUUID().toString())
                 .experimentId(experiment.getId())
                 .stageCode(GeraSalesPageStageCode.PUBLICATION_PACKAGE.code())
                 .status("CONCLUIDO")
                 .executionRequestedAt(Instant.now())
                 .build());
+        geraSalesPagePublicationAuditRepository.save(GeraSalesPagePublicationAudit.builder()
+                .experimentId(experiment.getId())
+                .publicationJobId(execution.getIdJob())
+                .publishedAt(Instant.now())
+                .salesPageUrl(salesPageUrl)
+                .checkoutUrl(checkoutUrl)
+                .html(trackedSalesPageHtml())
+                .createdAt(Instant.now())
+                .build());
 
         Experiment released = service.releaseForFacebook(experiment.getId());
 
         assertThat(released.getFacebookReleaseRequestedAt()).isNotNull();
+    }
+
+    /** Garante que venda low-ticket não publica quando o anúncio aponta direto para checkout. */
+    @Test
+    void releaseForFacebookRejectsLowTicketWhenAdDestinationBypassesSalesPage() {
+        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Low Ticket Checkout Direto").build());
+        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("ALTCheckout").build());
+        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(niche)
+                .title("HLTCheckout")
+                .premiseAngle(angle)
+                .promise("Promessa")
+                .problem("Problema")
+                .persona("Persona")
+                .offerType(com.marketinghub.hypothesis.OfferType.TRIPWIRE)
+                .kpiTargetCpl(new BigDecimal("1"))
+                .build());
+        metricPresetRepository.save(MetricPreset.builder()
+                .id("LEAN_LOW_CHECKOUT_DIRECT")
+                .name("Lean Low Checkout Direct")
+                .sampleSize(150)
+                .stopLossFactor(new BigDecimal("2"))
+                .defaultMdePp(new BigDecimal("12"))
+                .build());
+        CreateExperimentRequest req = new CreateExperimentRequest();
+        applyStageDefaults(req);
+        req.setMarketNicheId(niche.getId());
+        req.setHypothesisId(hyp.getId());
+        req.setName("Exp Low Checkout Direct");
+        req.setHypothesis("H");
+        req.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
+        req.setFollowUpActionUrl("https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=direct");
+        req.setKpiTargetCpl(new BigDecimal("45"));
+        req.setMetricPresetId("LEAN_LOW_CHECKOUT_DIRECT");
+        req.setJourneyTemplateId(createJourneyTemplate().getId());
+        req.setLeadPortalFlowId(createLeadPortalFlow(niche));
+        req.setInstagramAccountId(createInstagramAccount().getId());
+        Experiment experiment = service.create(req);
+        GeraSalesPageStageExecution execution = geraSalesPageStageExecutionRepository.save(GeraSalesPageStageExecution.builder()
+                .idJob(java.util.UUID.randomUUID().toString())
+                .experimentId(experiment.getId())
+                .stageCode(GeraSalesPageStageCode.PUBLICATION_PACKAGE.code())
+                .status("CONCLUIDO")
+                .executionRequestedAt(Instant.now())
+                .build());
+        geraSalesPagePublicationAuditRepository.save(GeraSalesPagePublicationAudit.builder()
+                .experimentId(experiment.getId())
+                .publicationJobId(execution.getIdJob())
+                .publishedAt(Instant.now())
+                .salesPageUrl("https://pagamentopalf.site/sales-page-exp-direct.html")
+                .checkoutUrl("https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=direct")
+                .html(trackedSalesPageHtml())
+                .createdAt(Instant.now())
+                .build());
+
+        assertThatThrownBy(() -> service.releaseForFacebook(experiment.getId()))
+                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+                .hasMessageContaining("link do anúncio aponte para a página de venda");
     }
 
     @Test

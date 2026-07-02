@@ -66,17 +66,17 @@ databaseChangeLog:
                   type: VARCHAR(191)
               - column:
                   name: used_at
-                  type: TIMESTAMP
+                  type: DATETIME
                   constraints:
                     nullable: false
               - column:
                   name: created_at
-                  type: TIMESTAMP
+                  type: DATETIME
                   constraints:
                     nullable: false
               - column:
                   name: updated_at
-                  type: TIMESTAMP
+                  type: DATETIME
                   constraints:
                     nullable: false
         - addUniqueConstraint:

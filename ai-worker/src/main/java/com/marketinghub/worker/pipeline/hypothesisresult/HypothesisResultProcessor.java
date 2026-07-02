@@ -107,7 +107,8 @@ public class HypothesisResultProcessor implements StageProcessor<HypothesisResul
                 Map.of(
                         "stageCode", context.execution().stageCode(),
                         "idJob", context.execution().idJob(),
-                        "marketNicheId", context.execution().aggregateId()));
+                        "marketNicheId", context.execution().aggregateId()),
+                properties.serviceTier());
     }
 
     /** Serializa o corpo compatível com Responses API usando schema JSON estrito. */

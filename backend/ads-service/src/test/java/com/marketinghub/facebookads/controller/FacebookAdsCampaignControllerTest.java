@@ -297,10 +297,16 @@ class FacebookAdsCampaignControllerTest {
     }
 
     @Test
+    // Garante que o contrato do worker recebe tipo, objetivo e pixel de low-ticket.
     void experimentsReadyIncludesExperimentTypeForLowTicketSalesCampaigns() throws Exception {
         var experiment = Experiment.builder()
                 .id(53L)
                 .name("Experimento 53")
+                .niche(MarketNiche.builder()
+                        .id(23L)
+                        .name("Vestuário")
+                        .facebookPixelId("pixel-exp53")
+                        .build())
                 .platform(ExperimentPlatform.FACEBOOK)
                 .status(ExperimentStatus.PLANNED)
                 .experimentType(ExperimentType.LOW_TICKET_PRODUCT)
@@ -341,6 +347,7 @@ class FacebookAdsCampaignControllerTest {
                 .andExpect(jsonPath("$[0].id").value(53))
                 .andExpect(jsonPath("$[0].experimentType").value("LOW_TICKET_PRODUCT"))
                 .andExpect(jsonPath("$[0].campaignObjective").value("SALES"))
+                .andExpect(jsonPath("$[0].facebookPixelId").value("pixel-exp53"))
                 .andExpect(jsonPath("$[0].freeReward").value("preview da ferramenta"));
     }
 

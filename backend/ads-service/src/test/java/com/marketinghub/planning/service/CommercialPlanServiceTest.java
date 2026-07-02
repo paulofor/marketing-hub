@@ -18,6 +18,7 @@ import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import com.marketinghub.repository.jpa.planning.CommercialPlanMilestoneRepository;
 import com.marketinghub.repository.jpa.planning.CommercialPlanRepository;
 import com.marketinghub.repository.jpa.planning.CommercialPlanSimulationRepository;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -87,11 +88,19 @@ class CommercialPlanServiceTest {
                 "100 acessos sem envio",
                 LocalDate.now().plusDays(14),
                 null,
+                BigDecimal.valueOf(27),
+                BigDecimal.valueOf(81),
+                2,
+                3,
                 "Validar formulario",
                 null,
                 null));
 
         assertThat(plan.getStatus()).isEqualTo(CommercialPlanStatus.BLOCKED);
+        assertThat(plan.getTargetRevenue()).isEqualByComparingTo("27");
+        assertThat(plan.getOperationalRevenueTarget()).isEqualByComparingTo("81");
+        assertThat(plan.getExperimentsToCreate()).isEqualTo(2);
+        assertThat(plan.getExperimentsToPublish()).isEqualTo(3);
         verify(milestoneRepository, times(9)).save(any());
     }
 

@@ -17,6 +17,10 @@ export interface CommercialPlanMilestone {
   name: string;
   status: CommercialPlanMilestoneStatus;
   dueDate?: string | null;
+  targetCost?: number | null;
+  targetRevenue?: number | null;
+  experimentsToCreate?: number | null;
+  experimentsToPublish?: number | null;
   evidenceSource?: string | null;
   blocker?: string | null;
   recommendedNextAction?: string | null;
@@ -62,6 +66,10 @@ export interface CommercialPlan {
   stopCriteria?: string | null;
   deadline?: string | null;
   maxBudget?: number | null;
+  targetRevenue?: number | null;
+  operationalRevenueTarget?: number | null;
+  experimentsToCreate?: number | null;
+  experimentsToPublish?: number | null;
   daysRemaining: number;
   nextAction?: string | null;
   currentBlocker?: string | null;
@@ -92,6 +100,10 @@ export interface SaveCommercialPlanPayload {
   stopCriteria?: string;
   deadline?: string;
   maxBudget?: number | null;
+  targetRevenue?: number | null;
+  operationalRevenueTarget?: number | null;
+  experimentsToCreate?: number | null;
+  experimentsToPublish?: number | null;
   nextAction?: string;
   currentBlocker?: string;
   rootCause?: string;

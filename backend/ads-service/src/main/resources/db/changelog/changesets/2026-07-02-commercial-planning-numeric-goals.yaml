@@ -1,0 +1,60 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-02-01-commercial-plan-numeric-goals
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: commercial_plan
+        - not:
+            - columnExists:
+                tableName: commercial_plan
+                columnName: target_revenue
+      changes:
+        - addColumn:
+            tableName: commercial_plan
+            columns:
+              - column:
+                  name: target_revenue
+                  type: DECIMAL(12,2)
+              - column:
+                  name: operational_revenue_target
+                  type: DECIMAL(12,2)
+              - column:
+                  name: experiments_to_create
+                  type: INT
+              - column:
+                  name: experiments_to_publish
+                  type: INT
+
+  - changeSet:
+      id: 2026-07-02-02-commercial-plan-milestone-numeric-goals
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: commercial_plan_milestone
+        - not:
+            - columnExists:
+                tableName: commercial_plan_milestone
+                columnName: target_cost
+      changes:
+        - addColumn:
+            tableName: commercial_plan_milestone
+            columns:
+              - column:
+                  name: target_cost
+                  type: DECIMAL(12,2)
+              - column:
+                  name: target_revenue
+                  type: DECIMAL(12,2)
+              - column:
+                  name: experiments_to_create
+                  type: INT
+              - column:
+                  name: experiments_to_publish
+                  type: INT

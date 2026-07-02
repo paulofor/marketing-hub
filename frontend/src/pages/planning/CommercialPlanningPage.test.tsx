@@ -17,6 +17,11 @@ vi.mock("../../api/planning/useCommercialPlans", async () => {
           name: "Plano sem marcos",
           planType: "FIRST_SALE",
           status: "DRAFT",
+          maxBudget: 300,
+          targetRevenue: 27,
+          operationalRevenueTarget: 81,
+          experimentsToCreate: 2,
+          experimentsToPublish: 3,
           daysRemaining: 7,
           milestones: null,
           simulations: null,
@@ -68,6 +73,10 @@ describe("CommercialPlanningPage", () => {
     ).toBeTruthy();
     expect(screen.getByDisplayValue("2026-07-31")).toBeTruthy();
     expect(screen.getByDisplayValue("300")).toBeTruthy();
+    expect(screen.getByDisplayValue("27")).toBeTruthy();
+    expect(screen.getByDisplayValue("81")).toBeTruthy();
+    expect(screen.getByDisplayValue("2")).toBeTruthy();
+    expect(screen.getByDisplayValue("3")).toBeTruthy();
     expect(screen.getByDisplayValue(/Compra aprovada/)).toBeTruthy();
     expect(screen.getByDisplayValue(/Cenario venda direta/)).toBeTruthy();
   });

@@ -103,6 +103,18 @@ public class CommercialPlan {
     @Column(name = "max_budget", precision = 12, scale = 2)
     private BigDecimal maxBudget;
 
+    @Column(name = "target_revenue", precision = 12, scale = 2)
+    private BigDecimal targetRevenue;
+
+    @Column(name = "operational_revenue_target", precision = 12, scale = 2)
+    private BigDecimal operationalRevenueTarget;
+
+    @Column(name = "experiments_to_create")
+    private Integer experimentsToCreate;
+
+    @Column(name = "experiments_to_publish")
+    private Integer experimentsToPublish;
+
     @Column(name = "next_action", length = 512)
     private String nextAction;
 

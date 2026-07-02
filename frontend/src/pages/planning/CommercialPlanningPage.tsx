@@ -41,6 +41,10 @@ const emptyForm: SaveCommercialPlanPayload = {
   stopCriteria: "",
   deadline: "",
   maxBudget: null,
+  targetRevenue: null,
+  operationalRevenueTarget: null,
+  experimentsToCreate: null,
+  experimentsToPublish: null,
   nextAction: "",
   currentBlocker: "",
   rootCause: "",
@@ -72,6 +76,10 @@ const julyPlanningForm: SaveCommercialPlanPayload = {
     "Parar ou corrigir se houver CTR bom sem clique no checkout, clique no checkout sem compra, ou leads sem evolucao para checkout apos a amostra.",
   deadline: "2026-07-31",
   maxBudget: 300,
+  targetRevenue: 27,
+  operationalRevenueTarget: 81,
+  experimentsToCreate: 2,
+  experimentsToPublish: 3,
   nextAction:
     "Preparar produto compravel, pagina curta com checkout na primeira dobra e 3 criativos: dor, prova visual do kit e oferta direta.",
   currentBlocker:
@@ -127,6 +135,10 @@ function toForm(plan: CommercialPlan): SaveCommercialPlanPayload {
     stopCriteria: plan.stopCriteria ?? "",
     deadline: plan.deadline ?? "",
     maxBudget: plan.maxBudget ?? null,
+    targetRevenue: plan.targetRevenue ?? null,
+    operationalRevenueTarget: plan.operationalRevenueTarget ?? null,
+    experimentsToCreate: plan.experimentsToCreate ?? null,
+    experimentsToPublish: plan.experimentsToPublish ?? null,
     nextAction: plan.nextAction ?? "",
     currentBlocker: plan.currentBlocker ?? "",
     rootCause: plan.rootCause ?? "",
@@ -151,6 +163,22 @@ function milestoneIcon(status: CommercialPlanMilestoneStatus) {
   if (status === "BLOCKED")
     return <PauseCircle size={18} className="text-danger" aria-hidden="true" />;
   return <Circle size={18} className="text-secondary" aria-hidden="true" />;
+}
+
+function formatCurrency(value?: number | null) {
+  if (value == null) return "Não definido";
+  return value.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
+}
+
+function formatNumber(value?: number | null) {
+  return value == null ? "Não definido" : String(value);
+}
+
+function numberOrNull(value?: number | null) {
+  return value == null ? null : Number(value);
 }
 
 export default function CommercialPlanningPage() {
@@ -213,7 +241,11 @@ export default function CommercialPlanningPage() {
       nicheId: form.nicheId ? Number(form.nicheId) : null,
       hypothesisId: form.hypothesisId ? String(form.hypothesisId) : null,
       experimentId: form.experimentId ? Number(form.experimentId) : null,
-      maxBudget: form.maxBudget ? Number(form.maxBudget) : null,
+      maxBudget: numberOrNull(form.maxBudget),
+      targetRevenue: numberOrNull(form.targetRevenue),
+      operationalRevenueTarget: numberOrNull(form.operationalRevenueTarget),
+      experimentsToCreate: numberOrNull(form.experimentsToCreate),
+      experimentsToPublish: numberOrNull(form.experimentsToPublish),
     };
     if (editingId) {
       await updatePlan.mutateAsync({ id: editingId, payload });
@@ -512,6 +544,55 @@ export default function CommercialPlanningPage() {
                   </div>
 
                   <section>
+                    <h3 className="h6">Metas numéricas do mês</h3>
+                    <div className="row g-3">
+                      <div className="col-12 col-md-3">
+                        <div className="border rounded-3 p-3 h-100">
+                          <p className="text-secondary small mb-1">
+                            Custo máximo
+                          </p>
+                          <strong>{formatCurrency(selectedPlan.maxBudget)}</strong>
+                        </div>
+                      </div>
+                      <div className="col-12 col-md-3">
+                        <div className="border rounded-3 p-3 h-100">
+                          <p className="text-secondary small mb-1">
+                            Receita mínima
+                          </p>
+                          <strong>
+                            {formatCurrency(selectedPlan.targetRevenue)}
+                          </strong>
+                        </div>
+                      </div>
+                      <div className="col-12 col-md-3">
+                        <div className="border rounded-3 p-3 h-100">
+                          <p className="text-secondary small mb-1">
+                            Receita operacional
+                          </p>
+                          <strong>
+                            {formatCurrency(
+                              selectedPlan.operationalRevenueTarget,
+                            )}
+                          </strong>
+                        </div>
+                      </div>
+                      <div className="col-12 col-md-3">
+                        <div className="border rounded-3 p-3 h-100">
+                          <p className="text-secondary small mb-1">
+                            Experimentos
+                          </p>
+                          <strong>
+                            {formatNumber(selectedPlan.experimentsToCreate)}{" "}
+                            criados /{" "}
+                            {formatNumber(selectedPlan.experimentsToPublish)}{" "}
+                            publicados
+                          </strong>
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+
+                  <section>
                     <h3 className="h6">Próxima ação</h3>
                     <p className="mb-1">
                       {selectedPlan.nextAction || "Sem próxima ação definida."}
@@ -600,6 +681,14 @@ export default function CommercialPlanningPage() {
                                 {milestoneStatusLabel[milestone.status]} ·{" "}
                                 {milestone.recommendedNextAction ||
                                   "sem ação recomendada"}
+                              </div>
+                              <div className="text-secondary small">
+                                Custo {formatCurrency(milestone.targetCost)} ·
+                                Receita{" "}
+                                {formatCurrency(milestone.targetRevenue)} ·
+                                Exp.{" "}
+                                {formatNumber(milestone.experimentsToCreate)}
+                                /{formatNumber(milestone.experimentsToPublish)}
                               </div>
                             </div>
                           </div>
@@ -826,6 +915,70 @@ export default function CommercialPlanningPage() {
                 onChange={(event) =>
                   updateField(
                     "maxBudget",
+                    event.target.value ? Number(event.target.value) : null,
+                  )
+                }
+              />
+            </div>
+            <div className="col-12 col-md-4">
+              <label className="form-label">Receita mínima</label>
+              <input
+                className="form-control"
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.targetRevenue ?? ""}
+                onChange={(event) =>
+                  updateField(
+                    "targetRevenue",
+                    event.target.value ? Number(event.target.value) : null,
+                  )
+                }
+              />
+            </div>
+            <div className="col-12 col-md-4">
+              <label className="form-label">Meta operacional de receita</label>
+              <input
+                className="form-control"
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.operationalRevenueTarget ?? ""}
+                onChange={(event) =>
+                  updateField(
+                    "operationalRevenueTarget",
+                    event.target.value ? Number(event.target.value) : null,
+                  )
+                }
+              />
+            </div>
+            <div className="col-12 col-md-4">
+              <label className="form-label">Experimentos criados</label>
+              <input
+                className="form-control"
+                type="number"
+                min="0"
+                step="1"
+                value={form.experimentsToCreate ?? ""}
+                onChange={(event) =>
+                  updateField(
+                    "experimentsToCreate",
+                    event.target.value ? Number(event.target.value) : null,
+                  )
+                }
+              />
+            </div>
+            <div className="col-12 col-md-4">
+              <label className="form-label">Experimentos publicados</label>
+              <input
+                className="form-control"
+                type="number"
+                min="0"
+                step="1"
+                value={form.experimentsToPublish ?? ""}
+                onChange={(event) =>
+                  updateField(
+                    "experimentsToPublish",
                     event.target.value ? Number(event.target.value) : null,
                   )
                 }

@@ -87,6 +87,10 @@ public class CommercialPlanService {
                 .stopCriteria(request.stopCriteria())
                 .deadline(request.deadline())
                 .maxBudget(request.maxBudget())
+                .targetRevenue(request.targetRevenue())
+                .operationalRevenueTarget(request.operationalRevenueTarget())
+                .experimentsToCreate(request.experimentsToCreate())
+                .experimentsToPublish(request.experimentsToPublish())
                 .nextAction(request.nextAction())
                 .currentBlocker(request.currentBlocker())
                 .rootCause(request.rootCause())
@@ -117,6 +121,10 @@ public class CommercialPlanService {
         plan.setStopCriteria(request.stopCriteria());
         plan.setDeadline(request.deadline());
         plan.setMaxBudget(request.maxBudget());
+        plan.setTargetRevenue(request.targetRevenue());
+        plan.setOperationalRevenueTarget(request.operationalRevenueTarget());
+        plan.setExperimentsToCreate(request.experimentsToCreate());
+        plan.setExperimentsToPublish(request.experimentsToPublish());
         plan.setNextAction(request.nextAction());
         plan.setCurrentBlocker(request.currentBlocker());
         plan.setRootCause(request.rootCause());
@@ -167,6 +175,10 @@ public class CommercialPlanService {
         }
         milestone.setStatus(request.status() != null ? request.status() : milestone.getStatus());
         milestone.setDueDate(request.dueDate());
+        milestone.setTargetCost(request.targetCost());
+        milestone.setTargetRevenue(request.targetRevenue());
+        milestone.setExperimentsToCreate(request.experimentsToCreate());
+        milestone.setExperimentsToPublish(request.experimentsToPublish());
         milestone.setEvidenceSource(request.evidenceSource());
         milestone.setBlocker(request.blocker());
         milestone.setRecommendedNextAction(request.recommendedNextAction());

@@ -23,6 +23,10 @@ public record UpdateCommercialPlanRequest(
         String stopCriteria,
         LocalDate deadline,
         BigDecimal maxBudget,
+        BigDecimal targetRevenue,
+        BigDecimal operationalRevenueTarget,
+        Integer experimentsToCreate,
+        Integer experimentsToPublish,
         String nextAction,
         String currentBlocker,
         String rootCause) {}

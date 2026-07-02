@@ -11,6 +11,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import lombok.AllArgsConstructor;
@@ -52,6 +53,18 @@ public class CommercialPlanMilestone {
 
     @Column(name = "due_date")
     private LocalDate dueDate;
+
+    @Column(name = "target_cost", precision = 12, scale = 2)
+    private BigDecimal targetCost;
+
+    @Column(name = "target_revenue", precision = 12, scale = 2)
+    private BigDecimal targetRevenue;
+
+    @Column(name = "experiments_to_create")
+    private Integer experimentsToCreate;
+
+    @Column(name = "experiments_to_publish")
+    private Integer experimentsToPublish;
 
     @Column(name = "evidence_source", length = 512)
     private String evidenceSource;

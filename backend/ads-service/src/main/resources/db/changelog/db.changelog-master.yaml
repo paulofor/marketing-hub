@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-07-02-commercial-planning-numeric-goals.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-06-30-gera-sales-page-v1-recovery.yaml
       relativeToChangelogFile: true
   - include:

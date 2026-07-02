@@ -71,7 +71,7 @@ class BackendPersonaRoutineMaterializerServiceTest {
         when(repository.findById(19L)).thenReturn(Optional.of(execution));
         when(repository.save(any(OprmNichoCnaeV3StageExecution.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(nicheGateway.findPersonaRoutineMaterializedNiche(
-                eq("4781400"), eq("cnae 4781400 — comércio varejista de artigos do vestuário")))
+                eq("4781400"), eq("lojistas de roupas infantis com rotina de reposição")))
                 .thenReturn(Optional.empty());
         when(nicheGateway.materialize(any(PersonaRoutineMaterializerNicheGateway.MarketNicheDraft.class), any(PersonaRoutineMaterializerNicheGateway.EnrichedNicheProfileDraft.class)))
                 .thenReturn(new PersonaRoutineMaterializerNicheGateway.NicheMaterializationResult(300L, 400L, Instant.now()));
@@ -86,7 +86,7 @@ class BackendPersonaRoutineMaterializerServiceTest {
         ArgumentCaptor<PersonaRoutineMaterializerNicheGateway.MarketNicheDraft> nicheCaptor = ArgumentCaptor.forClass(PersonaRoutineMaterializerNicheGateway.MarketNicheDraft.class);
         ArgumentCaptor<PersonaRoutineMaterializerNicheGateway.EnrichedNicheProfileDraft> profileCaptor = ArgumentCaptor.forClass(PersonaRoutineMaterializerNicheGateway.EnrichedNicheProfileDraft.class);
         verify(nicheGateway).materialize(nicheCaptor.capture(), profileCaptor.capture());
-        assertThat(nicheCaptor.getValue().name()).isEqualTo("CNAE 4781400 — Comércio varejista de artigos do vestuário");
+        assertThat(nicheCaptor.getValue().name()).isEqualTo("Lojistas de roupas infantis com rotina de reposição");
         assertThat(nicheCaptor.getValue().sourceCnaeCode()).isEqualTo("4781400");
         assertThat(nicheCaptor.getValue().sourceCnaeDescription()).isEqualTo("Comércio varejista de artigos do vestuário");
         assertThat(nicheCaptor.getValue().description()).contains("Compram, organizam vitrines");
@@ -98,6 +98,50 @@ class BackendPersonaRoutineMaterializerServiceTest {
         assertThat(profileCaptor.getValue().routineSummary()).contains("Compram");
         assertThat(profileCaptor.getValue().personaDailyTasks()).contains("repor peças");
         assertThat(cnae.getNichocnaePipelineStatus()).isEqualTo("CONCLUIDO");
+    }
+
+    /** Garante que payload funcional aninhado do executor vira nicho com nome de persona real. */
+    @Test
+    void completeUsesNestedPersonaNameInsteadOfGenericCnaeName() {
+        OprmNichoCnaeV3StageExecution execution = execution();
+        String outputPayload = """
+                {
+                  "cnaeDescription":"Comércio varejista de artigos do vestuário",
+                  "materializedProfile":{
+                    "personaName":"Dona de loja pequena de roupas que vende por WhatsApp e controla estoque manualmente",
+                    "routineSummary":"Atende clientes no balcão e no WhatsApp, separa peças e registra reservas em caderno.",
+                    "dailyTasks":["responder clientes", "separar pedidos", "controlar trocas"],
+                    "personaDescription":"Dona-operadora MEI de loja de roupas."
+                  },
+                  "marketNicheCandidate":{
+                    "title":"Dona de loja pequena de roupas que vende por WhatsApp e controla estoque manualmente"
+                  }
+                }
+                """;
+        when(repository.findById(19L)).thenReturn(Optional.of(execution));
+        when(repository.save(any(OprmNichoCnaeV3StageExecution.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(nicheGateway.findPersonaRoutineMaterializedNiche(
+                eq("4781400"),
+                eq("dona de loja pequena de roupas que vende por whatsapp e controla estoque manualmente")))
+                .thenReturn(Optional.empty());
+        when(nicheGateway.materialize(any(PersonaRoutineMaterializerNicheGateway.MarketNicheDraft.class), any(PersonaRoutineMaterializerNicheGateway.EnrichedNicheProfileDraft.class)))
+                .thenReturn(new PersonaRoutineMaterializerNicheGateway.NicheMaterializationResult(300L, 400L, Instant.now()));
+        OprmCnpjCnaeDim cnae = new OprmCnpjCnaeDim();
+        cnae.setCnaeCode("4781400");
+        cnae.setNichocnaeCurrentStageCode("persona-routine-materializer");
+        cnae.setNichocnaePipelineStatus("INICIADO");
+        when(cnaeRepository.findById("4781400")).thenReturn(Optional.of(cnae));
+
+        service.complete(19L, outputPayload, "");
+
+        ArgumentCaptor<PersonaRoutineMaterializerNicheGateway.MarketNicheDraft> nicheCaptor = ArgumentCaptor.forClass(PersonaRoutineMaterializerNicheGateway.MarketNicheDraft.class);
+        ArgumentCaptor<PersonaRoutineMaterializerNicheGateway.EnrichedNicheProfileDraft> profileCaptor = ArgumentCaptor.forClass(PersonaRoutineMaterializerNicheGateway.EnrichedNicheProfileDraft.class);
+        verify(nicheGateway).materialize(nicheCaptor.capture(), profileCaptor.capture());
+        assertThat(nicheCaptor.getValue().name()).isEqualTo("Dona de loja pequena de roupas que vende por WhatsApp e controla estoque manualmente");
+        assertThat(nicheCaptor.getValue().description()).contains("Atende clientes no balcão");
+        assertThat(profileCaptor.getValue().neutralNicheName()).isEqualTo("Dona de loja pequena de roupas que vende por WhatsApp e controla estoque manualmente");
+        assertThat(profileCaptor.getValue().personaSummary()).contains("Dona-operadora MEI");
+        assertThat(profileCaptor.getValue().personaDailyTasks()).contains("responder clientes");
     }
 
     /** Garante que o start marca o status do pipeline e a etapa atual no cadastro do CNAE. */

@@ -14,7 +14,10 @@ import com.marketinghub.gerasalespage.v1.GeraSalesPageStageCode;
 import com.marketinghub.gerasalespage.v1.GeraSalesPageStageExecution;
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.leadportal.LeadPortalFlow;
+import com.marketinghub.leadportal.LeadPortalFlowQuestion;
+import com.marketinghub.leadportal.LeadPortalQuestionType;
 import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.productai.ProductAiSubtype;
 import com.marketinghub.targeting.TargetingCandidateType;
 import com.marketinghub.targeting.TargetingElement;
 import com.marketinghub.targeting.TargetingElementStatus;
@@ -323,6 +326,60 @@ class ExperimentReadinessServiceTest {
     }
 
     @Test
+    // Verifica que Produto IA personalizado não publica sem coleta prévia dos dados do lead.
+    void shouldRequirePersonalizedSampleFunnelForProductAiCampaign() {
+        Experiment experiment = buildExperiment(58L, 68L);
+        experiment.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
+        experiment.setProductAiSubtype(ProductAiSubtype.AI_PERSONALIZED_SAMPLE);
+        experiment.setFollowUpActionUrl("https://pagamentopalf.site/sales-page-exp58.html");
+        experiment.getNiche().setFacebookPixelId("pixel-exp58");
+
+        when(creativeRepository.existsByExperimentIdAndStatus(58L, CreativeStatus.READY)).thenReturn(true);
+        mockPublishableSelection(58L, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
+        mockCompletedGeraSalesPagePublication(58L);
+        mockSalesPageAudit(
+                58L,
+                "https://pagamentopalf.site/sales-page-exp58.html",
+                "https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=exp58",
+                trackedSalesPageHtml());
+
+        assertThat(service.computeMissingConfiguration(experiment))
+                .containsExactly("productAiPersonalizedSampleFunnel");
+        assertThat(service.isReadyForCampaign(experiment)).isFalse();
+    }
+
+    @Test
+    // Verifica que Produto IA personalizado completo exige funil aprovado com campos mínimos de personalização.
+    void shouldAllowPersonalizedSampleCampaignWhenFunnelCollectsRequiredData() {
+        Experiment experiment = buildExperiment(59L, 69L);
+        experiment.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
+        experiment.setProductAiSubtype(ProductAiSubtype.AI_PERSONALIZED_SAMPLE);
+        experiment.setFollowUpActionUrl("https://pagamentopalf.site/sales-page-exp59.html");
+        experiment.getNiche().setFacebookPixelId("pixel-exp59");
+        experiment.setLeadPortalFlow(productAiFlow(
+                "nome",
+                "email",
+                "whatsapp",
+                "negocio_projeto",
+                "contexto_atual",
+                "objetivo_visual",
+                "dados_personalizacao",
+                "preferencias_visuais"));
+
+        when(creativeRepository.existsByExperimentIdAndStatus(59L, CreativeStatus.READY)).thenReturn(true);
+        mockPublishableSelection(59L, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
+        mockCompletedGeraSalesPagePublication(59L);
+        mockSalesPageAudit(
+                59L,
+                "https://pagamentopalf.site/sales-page-exp59.html",
+                "https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=exp59",
+                trackedSalesPageHtml());
+
+        assertThat(service.computeMissingConfiguration(experiment)).isEmpty();
+        assertThat(service.isReadyForCampaign(experiment)).isTrue();
+    }
+
+    @Test
     // Verifica que low-ticket completo com página e pixel pode ser publicado.
     void shouldAllowLowTicketCampaignOnlyAfterGeraSalesPagePublicationPackage() {
         Experiment experiment = buildExperiment(53L, 63L);
@@ -426,6 +483,23 @@ class ExperimentReadinessServiceTest {
                 </script>
                 </body></html>
                 """;
+    }
+
+    /** Cria um funil aprovado de Produto IA com as chaves informadas. */
+    private LeadPortalFlow productAiFlow(String... dataKeys) {
+        LeadPortalFlow flow = new LeadPortalFlow();
+        flow.setApproved(true);
+        for (int i = 0; i < dataKeys.length; i++) {
+            flow.getQuestions().add(LeadPortalFlowQuestion.builder()
+                    .flow(flow)
+                    .title("Pergunta " + i)
+                    .dataKey(dataKeys[i])
+                    .type(LeadPortalQuestionType.TEXT)
+                    .required(true)
+                    .position(i)
+                    .build());
+        }
+        return flow;
     }
 
     /** Cria um experimento base para os testes de prontidão. */

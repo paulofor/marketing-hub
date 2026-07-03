@@ -10,6 +10,7 @@ import com.marketinghub.experiment.dto.ExperimentReadinessIssueType;
 import com.marketinghub.experiment.dto.ExperimentReadinessSummaryDto;
 import com.marketinghub.gerasalespage.v1.GeraSalesPageStageCode;
 import com.marketinghub.gerasalespage.v1.GeraSalesPagePublicationAudit;
+import com.marketinghub.productai.ProductAiSubtype;
 import com.marketinghub.targeting.TargetingElement;
 import com.marketinghub.targeting.TargetingElementStatus;
 import com.marketinghub.targeting.TargetingElementType;
@@ -52,6 +53,15 @@ public class ExperimentReadinessService {
             TargetingElementType.BEHAVIOR
     );
     private static final Set<TargetingElementType> PUBLISHABLE_TARGETING_TYPE_SET = Set.copyOf(PUBLISHABLE_TARGETING_TYPES);
+    private static final Set<String> PRODUCT_AI_PERSONALIZED_SAMPLE_REQUIRED_KEYS = Set.of(
+            "nome",
+            "email",
+            "whatsapp",
+            "negocio_projeto",
+            "contexto_atual",
+            "objetivo_visual",
+            "dados_personalizacao"
+    );
 
     private final GeraLandingStageExecutionRepository geraLandingStageExecutionRepository;
     private final GeraSalesPageStageExecutionRepository geraSalesPageStageExecutionRepository;
@@ -108,6 +118,15 @@ public class ExperimentReadinessService {
                     "Sem fluxo do portal do lead",
                     "Ainda não há um fluxo do portal vinculado a este experimento.",
                     "Solicite a geração de um fluxo ou associe um existente na aba Portal do Lead.",
+                    List.of()
+            ));
+        }
+        if (isPersonalizedSampleProductAi(experiment) && !hasProductAiPersonalizationFunnel(experiment)) {
+            issues.add(new ExperimentReadinessIssueDto(
+                    ExperimentReadinessIssueType.PRODUCT_AI_FUNNEL,
+                    "Sem funil de coleta para personalização",
+                    "Produto IA com amostra personalizada precisa coletar dados do lead antes de prometer uma entrega exclusiva.",
+                    "Crie o funil pelo comando de Produto IA antes de liberar campanha ou venda.",
                     List.of()
             ));
         }
@@ -208,6 +227,9 @@ public class ExperimentReadinessService {
         if (isLowTicketProduct(experiment) && !hasFacebookPixel(experiment)) {
             missing.add("facebookPixel");
         }
+        if (isPersonalizedSampleProductAi(experiment) && !hasProductAiPersonalizationFunnel(experiment)) {
+            missing.add("productAiPersonalizedSampleFunnel");
+        }
         if (!hasConfiguredTargeting(experiment)) {
             missing.add("approvedTargetingPackage");
         }
@@ -286,6 +308,22 @@ public class ExperimentReadinessService {
     /** Identifica experimento de venda direta low-ticket. */
     private boolean isLowTicketProduct(Experiment experiment) {
         return experiment != null && experiment.getExperimentType() == ExperimentType.LOW_TICKET_PRODUCT;
+    }
+
+    /** Identifica Produto IA que depende de dados do lead para gerar amostra personalizada. */
+    private boolean isPersonalizedSampleProductAi(Experiment experiment) {
+        return experiment != null && experiment.getProductAiSubtype() == ProductAiSubtype.AI_PERSONALIZED_SAMPLE;
+    }
+
+    /** Verifica se o funil de personalização está aprovado e possui os campos mínimos de coleta. */
+    private boolean hasProductAiPersonalizationFunnel(Experiment experiment) {
+        if (experiment == null || experiment.getLeadPortalFlow() == null || !experiment.getLeadPortalFlow().isApproved()) {
+            return false;
+        }
+        Set<String> keys = experiment.getLeadPortalFlow().getQuestions().stream()
+                .map(question -> question.getDataKey() == null ? "" : question.getDataKey().toLowerCase(Locale.ROOT))
+                .collect(java.util.stream.Collectors.toSet());
+        return keys.containsAll(PRODUCT_AI_PERSONALIZED_SAMPLE_REQUIRED_KEYS);
     }
 
     /** Verifica a conclusão da etapa final que publica a página de venda canônica. */

@@ -239,6 +239,7 @@ Regras obrigatórias:
 - prompts, schemas, custos, entradas, saídas e decisões devem permanecer auditáveis;
 - padrões da Biblioteca de Páginas de Vendas podem enriquecer o briefing, mas não substituem as etapas de hipótese, dor, mecanismo, prova, oferta e validação;
 - Produto IA com subtipo declarado deve passar pelo preparo sistêmico antes da criação do experimento. Para `AI_PERSONALIZED_SAMPLE`, o backend deve bloquear a criação se faltar nicho/contexto, dor principal, persona, promessa, mecanismo, preço, pacote de oferta, entregáveis ou descrição da amostra;
+- Produto IA `AI_PERSONALIZED_SAMPLE` deve possuir funil de coleta de dados do lead criado pelo backend antes da publicação. O funil deve estar aprovado, vinculado ao experimento e coletar dados suficientes para gerar algo personalizado; sem isso, a campanha deve permanecer bloqueada;
 - se algum ativo for criado emergencialmente fora do fluxo, ele deve ser tratado como material provisório não canônico e não pode ser publicado ou escalado até ser reconstruído pelo sistema.
 
 ### 4.2.1.1 Regra mandatória — prompt/schema por experimento

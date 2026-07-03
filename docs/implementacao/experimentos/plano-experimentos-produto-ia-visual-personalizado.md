@@ -73,6 +73,19 @@ O backend só libera rascunho de experimento quando a hipótese possui:
 
 Quando pronta, a tela aplica o rascunho canônico: `LOW_TICKET_PRODUCT`, `AI_PERSONALIZED_SAMPLE`, etapa `SAMPLE`, objetivo `SALES`, variável “Amostra visual personalizada” e métrica “Compra aprovada e custo de IA por compra”.
 
+Depois da criação do experimento, o sistema deve criar ou reaproveitar o funil de coleta pelo endpoint `POST /api/product-ai/experiments/{experimentId}/personalized-sample-funnel`. Esse funil é obrigatório antes de publicar campanha porque a personalização depende dos dados do lead.
+
+Campos mínimos do funil:
+
+- nome;
+- e-mail;
+- WhatsApp;
+- negócio/projeto;
+- contexto atual;
+- objetivo visual;
+- dados de personalização;
+- preferências visuais.
+
 ## Desenho experimental inicial
 
 Fluxo:

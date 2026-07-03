@@ -15,6 +15,7 @@ import com.marketinghub.repository.jpa.creative.label.AngleRepository;
 import com.marketinghub.repository.jpa.hypothesis.HypothesisRepository;
 import com.marketinghub.FixtureUtils;
 import com.marketinghub.journey.model.JourneyTemplate;
+import com.marketinghub.leadportal.integration.LeadPortalFlowPublisher;
 import com.marketinghub.productai.ProductAiSubtype;
 import com.marketinghub.repository.jpa.journey.JourneyTemplateRepository;
 import com.marketinghub.repository.jpa.ads.InstagramAccountRepository;
@@ -26,6 +27,7 @@ import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPageStageExecut
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
@@ -42,6 +44,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 
 /**
  * Responsabilidade: validar os contratos HTTP de criação e atualização de experimentos.
@@ -94,6 +98,8 @@ class ExperimentControllerTest {
     private DeliverablePackageRepository deliverablePackageRepository;
     @Autowired
     private DeliverableRepository deliverableRepository;
+    @MockBean
+    private LeadPortalFlowPublisher leadPortalFlowPublisher;
 
     Long nicheId;
 
@@ -296,6 +302,45 @@ class ExperimentControllerTest {
         assertThat(deliverablePackageRepository.findByHypothesisIdOrderByCreatedAtDesc(hyp.getId())).hasSize(1);
         assertThat(deliverableRepository.findAll()).hasSize(1);
         assertThat(prepared.getEntrega()).contains("Amostra visual personalizada");
+    }
+
+    /** Garante que o Produto IA cria pelo sistema um funil aprovado para coletar dados de personalização. */
+    @Test
+    void personalizedSampleFunnelEndpointCreatesApprovedLeadPortalFlow() throws Exception {
+        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("AI funil").build());
+        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(nicheRepo.findById(nicheId).orElseThrow())
+                .title("Hipótese funil")
+                .premiseAngle(angle)
+                .promise("Gerar uma prévia exclusiva")
+                .problem("O cliente não visualiza o resultado")
+                .persona("Dono de marmitaria")
+                .mechanism("Amostra visual personalizada")
+                .productAiSubtype(ProductAiSubtype.AI_PERSONALIZED_SAMPLE)
+                .build());
+        var experiment = repository.save(com.marketinghub.experiment.Experiment.builder()
+                .niche(nicheRepo.findById(nicheId).orElseThrow())
+                .name("Experimento Produto IA")
+                .hypothesis("Prévia exclusiva")
+                .funnelPromise("Visualize seu painel personalizado antes de comprar")
+                .hypothesisRef(hyp)
+                .productAiSubtype(ProductAiSubtype.AI_PERSONALIZED_SAMPLE)
+                .experimentType(com.marketinghub.experiment.ExperimentType.LOW_TICKET_PRODUCT)
+                .build());
+
+        mockMvc.perform(post("/api/product-ai/experiments/{experimentId}/personalized-sample-funnel", experiment.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.experimentId").value(experiment.getId()))
+                .andExpect(jsonPath("$.approved").value(true))
+                .andExpect(jsonPath("$.leadPortalFlowSlug")
+                        .value("product-ai-exp-" + experiment.getId() + "-personalized-sample"))
+                .andExpect(jsonPath("$.dataKeys[0]").value("nome"))
+                .andExpect(jsonPath("$.dataKeys[6]").value("dados_personalizacao"));
+
+        var updated = repository.findById(experiment.getId()).orElseThrow();
+        assertThat(updated.getLeadPortalFlow()).isNotNull();
+        assertThat(updated.getLeadPortalFlow().isApproved()).isTrue();
+        verify(leadPortalFlowPublisher).publish(any(com.marketinghub.leadportal.LeadPortalFlow.class));
     }
 
     /** Garante que Produto IA incompleto não vira experimento por chamada direta de API. */

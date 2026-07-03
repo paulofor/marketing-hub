@@ -1235,3 +1235,7 @@ databaseChangeLog:
   - include:
       file: changesets/2026-06-28-openai-gpt52-pricing.yaml
       relativeToChangelogFile: true
+
+  - include:
+      file: changesets/2026-07-03-mois-sales-library-two-dossier-pipelines.yaml
+      relativeToChangelogFile: true

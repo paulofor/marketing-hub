@@ -346,6 +346,8 @@ public final class MoisSalesLibraryDtos {
      */
     public record HotProductDossierCandidateResponse(
             String workspaceId,
+            String pipelineCode,
+            String pipelineName,
             BigDecimal minTemperature,
             int limit,
             int totalReturned,
@@ -369,6 +371,8 @@ public final class MoisSalesLibraryDtos {
     public record HotProductDossierEnqueueItem(
             long pageId,
             String jobId,
+            String pipelineCode,
+            String pipelineName,
             String status,
             String stageCode
     ) {
@@ -379,6 +383,8 @@ public final class MoisSalesLibraryDtos {
      */
     public record HotProductDossierEnqueueResponse(
             String workspaceId,
+            String pipelineCode,
+            String pipelineName,
             BigDecimal minTemperature,
             int requestedLimit,
             int candidatesFound,

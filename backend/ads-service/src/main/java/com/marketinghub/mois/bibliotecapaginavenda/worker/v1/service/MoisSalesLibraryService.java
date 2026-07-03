@@ -43,6 +43,18 @@ public class MoisSalesLibraryService {
     private static final int COLLECTED_REFERENCE_HTML_CANDIDATE_SCAN_LIMIT = 2000;
     private static final BigDecimal DEFAULT_HOT_PRODUCT_MIN_TEMPERATURE = BigDecimal.valueOf(80);
     private static final String DOSSIE_PRODUTO_PIPELINE_VERSION = "v1";
+    private static final PipelineSpec SALES_PAGE_PATTERNS_PIPELINE = new PipelineSpec(
+            "salespagepatterns.v1",
+            "Padrões de Página de Venda",
+            "status_pipeline_salespagepatterns",
+            "salespagepatterns_current_stage",
+            "data_pipeline_salespagepatterns");
+    private static final PipelineSpec WARMUP_ECOSYSTEM_PIPELINE = new PipelineSpec(
+            "warmupecosystem.v1",
+            "Aquecimento e Ecossistema",
+            "status_pipeline_warmupecosystem",
+            "warmupecosystem_current_stage",
+            "data_pipeline_warmupecosystem");
     private static final String DOSSIE_PRODUTO_INTAKE_STAGE = "intake";
     private static final String DOSSIE_PRODUTO_STATUS_STARTED = "INICIADO";
 
@@ -226,11 +238,14 @@ public class MoisSalesLibraryService {
                 UPDATE mois_sales_page
                 SET current_stage = 'ANALYSIS', current_status = 'DONE', analysis_status = 'DONE', score_total = ?,
                     model_name = ?, input_tokens = ?, output_tokens = ?, model_cost_usd = ?,
+                    total_model_cost_usd = COALESCE(total_model_cost_usd, 0) + COALESCE(?, 0),
                     last_error_category = NULL, last_error_message = NULL, last_job_execution_id = ?,
                     last_analyzed_at = ?, updated_at = UTC_TIMESTAMP()
                 WHERE id = ?
                 """, request.scoreTotal(), request.modelName(), request.inputTokens(), request.outputTokens(), modelCostUsd,
+                modelCostUsd,
                 jobId, Timestamp.from(analyzedAt), salesPageId);
+        accumulateLibraryCost(salesPageId, modelCostUsd);
         log.info(
                 "MOIS sales-library análise concluída no modelo operacional novo. modulo=MOIS, operacao=completeJob, "
                         + "pageId={}, executionId={}, scoreTotal={}, modelName={}, inputTokens={}, outputTokens={}, modelCostUsd={}",
@@ -265,6 +280,24 @@ public class MoisSalesLibraryService {
                     ex);
             return null;
         }
+    }
+
+    /**
+     * Acumula custo de IA no total da biblioteca por workspace quando há custo conhecido.
+     */
+    private void accumulateLibraryCost(Long salesPageId, BigDecimal costUsd) {
+        if (salesPageId == null || costUsd == null || costUsd.compareTo(BigDecimal.ZERO) <= 0) {
+            return;
+        }
+        jdbcTemplate.update("""
+                INSERT INTO mois_sales_library_cost_total (workspace_id, total_cost_usd, updated_at)
+                SELECT workspace_id, ?, UTC_TIMESTAMP(6)
+                FROM mois_sales_page
+                WHERE id = ?
+                ON DUPLICATE KEY UPDATE
+                    total_cost_usd = total_cost_usd + VALUES(total_cost_usd),
+                    updated_at = VALUES(updated_at)
+                """, costUsd, salesPageId);
     }
 
     /**
@@ -1667,15 +1700,52 @@ public class MoisSalesLibraryService {
             BigDecimal minTemperature,
             int limit
     ) {
+        return listHotProductWarmupEcosystemCandidates(workspaceId, minTemperature, limit);
+    }
+
+    /**
+     * Lista produtos quentes elegíveis para o pipeline de padrões visuais/copy da página de venda.
+     */
+    public MoisSalesLibraryDtos.HotProductDossierCandidateResponse listHotProductSalesPagePatternCandidates(
+            String workspaceId,
+            BigDecimal minTemperature,
+            int limit
+    ) {
+        return listHotProductDossierCandidates(workspaceId, minTemperature, limit, SALES_PAGE_PATTERNS_PIPELINE);
+    }
+
+    /**
+     * Lista produtos quentes elegíveis para o pipeline de aquecimento e ecossistema de canais.
+     */
+    public MoisSalesLibraryDtos.HotProductDossierCandidateResponse listHotProductWarmupEcosystemCandidates(
+            String workspaceId,
+            BigDecimal minTemperature,
+            int limit
+    ) {
+        return listHotProductDossierCandidates(workspaceId, minTemperature, limit, WARMUP_ECOSYSTEM_PIPELINE);
+    }
+
+    /**
+     * Lista candidatos quentes aplicando o estado independente do pipeline solicitado.
+     */
+    private MoisSalesLibraryDtos.HotProductDossierCandidateResponse listHotProductDossierCandidates(
+            String workspaceId,
+            BigDecimal minTemperature,
+            int limit,
+            PipelineSpec pipeline
+    ) {
         BigDecimal normalizedTemperature = normalizeHotProductTemperature(minTemperature);
         int normalizedLimit = Math.max(1, Math.min(limit, 200));
-        List<MoisSalesLibraryDtos.HotProductDossierCandidateItem> items = jdbcTemplate.query(hotProductDossierCandidateSql(),
+        List<MoisSalesLibraryDtos.HotProductDossierCandidateItem> items = jdbcTemplate.query(hotProductDossierCandidateSql(pipeline),
                 this::mapHotProductDossierCandidate,
                 workspaceId,
                 normalizedTemperature,
+                pipeline.code(),
                 normalizedLimit);
         return new MoisSalesLibraryDtos.HotProductDossierCandidateResponse(
                 workspaceId,
+                pipeline.code(),
+                pipeline.name(),
                 normalizedTemperature,
                 normalizedLimit,
                 items.size(),
@@ -1690,28 +1760,67 @@ public class MoisSalesLibraryService {
     public MoisSalesLibraryDtos.HotProductDossierEnqueueResponse enqueueHotProductDossierCandidates(
             MoisSalesLibraryDtos.HotProductDossierEnqueueRequest request
     ) {
+        return enqueueHotProductWarmupEcosystemCandidates(request);
+    }
+
+    /**
+     * Enfileira produtos quentes no pipeline salespagepatterns.v1, sem misturar com aquecimento de canais.
+     */
+    @Transactional
+    public MoisSalesLibraryDtos.HotProductDossierEnqueueResponse enqueueHotProductSalesPagePatternCandidates(
+            MoisSalesLibraryDtos.HotProductDossierEnqueueRequest request
+    ) {
+        return enqueueHotProductDossierCandidates(request, SALES_PAGE_PATTERNS_PIPELINE);
+    }
+
+    /**
+     * Enfileira produtos quentes no pipeline warmupecosystem.v1, compatível com a execução legada do dossiê.
+     */
+    @Transactional
+    public MoisSalesLibraryDtos.HotProductDossierEnqueueResponse enqueueHotProductWarmupEcosystemCandidates(
+            MoisSalesLibraryDtos.HotProductDossierEnqueueRequest request
+    ) {
+        return enqueueHotProductDossierCandidates(request, WARMUP_ECOSYSTEM_PIPELINE);
+    }
+
+    /**
+     * Enfileira candidatos quentes na etapa inicial do pipeline informado sem executar IA no backend.
+     */
+    private MoisSalesLibraryDtos.HotProductDossierEnqueueResponse enqueueHotProductDossierCandidates(
+            MoisSalesLibraryDtos.HotProductDossierEnqueueRequest request,
+            PipelineSpec pipeline
+    ) {
         BigDecimal normalizedTemperature = normalizeHotProductTemperature(request.minTemperature());
         int requestedLimit = request.limit() == null ? 50 : Math.max(1, Math.min(request.limit(), 200));
         MoisSalesLibraryDtos.HotProductDossierCandidateResponse candidates =
-                listHotProductDossierCandidates(request.workspaceId(), normalizedTemperature, requestedLimit);
+                listHotProductDossierCandidates(request.workspaceId(), normalizedTemperature, requestedLimit, pipeline);
         List<MoisSalesLibraryDtos.HotProductDossierEnqueueItem> enqueuedItems = new ArrayList<>();
         int skipped = 0;
         for (MoisSalesLibraryDtos.HotProductDossierCandidateItem candidate : candidates.items()) {
             String jobId = UUID.randomUUID().toString();
             int updated = jdbcTemplate.update("""
                     UPDATE mois_sales_page
-                    SET status_pipeline_dossieproduto = ?,
-                        dossie_produto_current_stage = ?,
-                        data_pipeline_dossieproduto = UTC_TIMESTAMP(),
+                    SET %s = ?,
+                        %s = ?,
+                        %s = UTC_TIMESTAMP(6),
                         updated_at = UTC_TIMESTAMP()
                     WHERE id = ?
-                      AND (status_pipeline_dossieproduto IS NULL
-                           OR status_pipeline_dossieproduto NOT IN ('INICIADO', 'AGUARDANDO_RETORNO_MODULO', 'CONCLUIDO'))
-                    """, DOSSIE_PRODUTO_STATUS_STARTED, DOSSIE_PRODUTO_INTAKE_STAGE, candidate.pageId());
+                      AND (%s IS NULL
+                           OR %s NOT IN ('INICIADO', 'AGUARDANDO_RETORNO_MODULO', 'CONCLUIDO'))
+                    """.formatted(
+                            pipeline.statusColumn(),
+                            pipeline.stageColumn(),
+                            pipeline.updatedAtColumn(),
+                            pipeline.statusColumn(),
+                            pipeline.statusColumn()),
+                    DOSSIE_PRODUTO_STATUS_STARTED,
+                    DOSSIE_PRODUTO_INTAKE_STAGE,
+                    candidate.pageId());
             if (updated == 0) {
                 skipped++;
                 continue;
             }
+            mirrorWarmupPipelineToLegacyDossierColumns(candidate.pageId(), pipeline);
             jdbcTemplate.update("""
                     INSERT INTO pipeline_dossieproduto (
                         id_externo,
@@ -1719,23 +1828,29 @@ public class MoisSalesLibraryService {
                         status,
                         data_hora,
                         job_id,
-                        versao_pipeline
-                    ) VALUES (?, ?, ?, UTC_TIMESTAMP(6), ?, ?)
+                        versao_pipeline,
+                        pipeline_code
+                    ) VALUES (?, ?, ?, UTC_TIMESTAMP(6), ?, ?, ?)
                     """,
                     String.valueOf(candidate.pageId()),
                     DOSSIE_PRODUTO_INTAKE_STAGE,
                     DOSSIE_PRODUTO_STATUS_STARTED,
                     jobId,
-                    DOSSIE_PRODUTO_PIPELINE_VERSION);
+                    DOSSIE_PRODUTO_PIPELINE_VERSION,
+                    pipeline.code());
             enqueuedItems.add(new MoisSalesLibraryDtos.HotProductDossierEnqueueItem(
                     candidate.pageId(),
                     jobId,
+                    pipeline.code(),
+                    pipeline.name(),
                     DOSSIE_PRODUTO_STATUS_STARTED,
                     DOSSIE_PRODUTO_INTAKE_STAGE
             ));
         }
         return new MoisSalesLibraryDtos.HotProductDossierEnqueueResponse(
                 request.workspaceId(),
+                pipeline.code(),
+                pipeline.name(),
                 normalizedTemperature,
                 requestedLimit,
                 candidates.totalReturned(),
@@ -1743,6 +1858,23 @@ public class MoisSalesLibraryService {
                 skipped,
                 enqueuedItems
         );
+    }
+
+    /**
+     * Mantém o pipeline warmupecosystem.v1 visível para os controllers internos legados do dossieproduto.v1.
+     */
+    private void mirrorWarmupPipelineToLegacyDossierColumns(long pageId, PipelineSpec pipeline) {
+        if (!WARMUP_ECOSYSTEM_PIPELINE.code().equals(pipeline.code())) {
+            return;
+        }
+        jdbcTemplate.update("""
+                UPDATE mois_sales_page
+                SET status_pipeline_dossieproduto = ?,
+                    dossie_produto_current_stage = ?,
+                    data_pipeline_dossieproduto = UTC_TIMESTAMP(6),
+                    updated_at = UTC_TIMESTAMP()
+                WHERE id = ?
+                """, DOSSIE_PRODUTO_STATUS_STARTED, DOSSIE_PRODUTO_INTAKE_STAGE, pageId);
     }
 
     /**
@@ -1758,7 +1890,7 @@ public class MoisSalesLibraryService {
     /**
      * Mantém a consulta de candidatos em SQL fixo para evitar variações perigosas de ordenação/filtro.
      */
-    private String hotProductDossierCandidateSql() {
+    private String hotProductDossierCandidateSql(PipelineSpec pipeline) {
         return """
                 SELECT p.id AS page_id,
                        p.workspace_id,
@@ -1768,9 +1900,9 @@ public class MoisSalesLibraryService {
                        p.product_name,
                        COALESCE(cr_direct.hotmart_temperature, cr_url.hotmart_temperature) AS hotmart_temperature,
                        p.score_total,
-                       p.status_pipeline_dossieproduto AS dossie_produto_status,
-                       p.dossie_produto_current_stage,
-                       p.data_pipeline_dossieproduto AS dossie_produto_updated_at,
+                       p.%s AS dossie_produto_status,
+                       p.%s AS dossie_produto_current_stage,
+                       p.%s AS dossie_produto_updated_at,
                        p.last_analyzed_at
                 FROM mois_sales_page p
                 LEFT JOIN mois_collected_reference cr_direct ON cr_direct.id = p.collected_reference_id
@@ -1787,13 +1919,14 @@ public class MoisSalesLibraryService {
                   AND COALESCE(p.html_bytes, 0) > 0
                   AND COALESCE(p.analysis_status, p.current_status) IN ('DONE', 'ANALYZED')
                   AND p.score_total IS NOT NULL
-                  AND (p.status_pipeline_dossieproduto IS NULL
-                       OR p.status_pipeline_dossieproduto NOT IN ('INICIADO', 'AGUARDANDO_RETORNO_MODULO', 'CONCLUIDO'))
+                  AND (p.%s IS NULL
+                       OR p.%s NOT IN ('INICIADO', 'AGUARDANDO_RETORNO_MODULO', 'CONCLUIDO'))
                   AND NOT EXISTS (
                       SELECT 1
                       FROM pipeline_dossieproduto pd
                       WHERE pd.id_externo = CAST(p.id AS CHAR)
                         AND pd.versao_pipeline = 'v1'
+                        AND pd.pipeline_code = ?
                         AND pd.status IN ('INICIADO', 'AGUARDANDO_RETORNO_MODULO', 'CONCLUIDO')
                   )
                 ORDER BY COALESCE(cr_direct.hotmart_temperature, cr_url.hotmart_temperature) DESC,
@@ -1801,7 +1934,12 @@ public class MoisSalesLibraryService {
                          p.last_analyzed_at DESC,
                          p.id DESC
                 LIMIT ?
-                """;
+                """.formatted(
+                pipeline.statusColumn(),
+                pipeline.stageColumn(),
+                pipeline.updatedAtColumn(),
+                pipeline.statusColumn(),
+                pipeline.statusColumn());
     }
 
     /**
@@ -1822,6 +1960,18 @@ public class MoisSalesLibraryService {
                 toInstant(rs, "dossie_produto_updated_at"),
                 toInstant(rs, "last_analyzed_at")
         );
+    }
+
+    /**
+     * Define os nomes canônicos e colunas seguras usadas por cada pipeline da biblioteca.
+     */
+    private record PipelineSpec(
+            String code,
+            String name,
+            String statusColumn,
+            String stageColumn,
+            String updatedAtColumn
+    ) {
     }
 
     /**

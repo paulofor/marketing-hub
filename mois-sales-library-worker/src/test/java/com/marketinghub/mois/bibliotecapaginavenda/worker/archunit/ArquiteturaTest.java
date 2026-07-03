@@ -4,6 +4,8 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.slices;
 
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.pipeline.StageProcessor;
+import com.marketinghub.pipelines.salespagepatterns.v1.SalesPagePatternsPipelineDefinition;
+import com.marketinghub.pipelines.warmupecosystem.v1.WarmupEcosystemPipelineDefinition;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
@@ -29,6 +31,8 @@ class ArquiteturaTest {
     private static final String PIPELINE_ROOT = "com.marketinghub.mois.bibliotecapaginavenda.worker.v1.pipeline";
     private static final String DOSSIER_V1_PIPELINE_ROOT = "com.marketinghub.pipelines.dossie.v1";
     private static final String DOSSIE_PRODUTO_V1_PIPELINE_ROOT = "com.marketinghub.pipelines.dossieproduto.v1";
+    private static final String SALES_PAGE_PATTERNS_V1_ROOT = "com.marketinghub.pipelines.salespagepatterns.v1";
+    private static final String WARMUP_ECOSYSTEM_V1_ROOT = "com.marketinghub.pipelines.warmupecosystem.v1";
     private static final List<String> DOSSIE_PRODUTO_STAGE_SUFFIXES = List.of(
             "BackendClient",
             "ExecutionScheduler",
@@ -136,6 +140,40 @@ class ArquiteturaTest {
             .resideInAPackage(DOSSIER_V1_PIPELINE_ROOT)
             .should(notDependOnConcreteTechnologies())
             .because("[ARQUITETURA] o núcleo do dossiê MOIS v1 deve depender de abstrações, não de tecnologias concretas");
+
+    /** Garante que os dois pipelines de dossiê da biblioteca existem com nomes versionados e comunicáveis. */
+    @ArchTest
+    static void dois_pipelines_da_biblioteca_devem_ter_codigos_canonicos(JavaClasses classes) {
+        boolean hasSalesPagePatterns = classes.stream()
+                .anyMatch(javaClass -> javaClass.getName().equals(SalesPagePatternsPipelineDefinition.class.getName()));
+        boolean hasWarmupEcosystem = classes.stream()
+                .anyMatch(javaClass -> javaClass.getName().equals(WarmupEcosystemPipelineDefinition.class.getName()));
+        if (!hasSalesPagePatterns || !hasWarmupEcosystem) {
+            throw new AssertionError("[ARQUITETURA] a biblioteca deve declarar os pipelines salespagepatterns.v1 e warmupecosystem.v1");
+        }
+        if (!"salespagepatterns.v1".equals(SalesPagePatternsPipelineDefinition.CODE)) {
+            throw new AssertionError("[ARQUITETURA] código canônico do pipeline de padrões deve ser salespagepatterns.v1");
+        }
+        if (!"warmupecosystem.v1".equals(WarmupEcosystemPipelineDefinition.CODE)) {
+            throw new AssertionError("[ARQUITETURA] código canônico do pipeline de aquecimento deve ser warmupecosystem.v1");
+        }
+    }
+
+    /** Garante desacoplamento direto entre os dois pipelines de dossiê da biblioteca. */
+    @ArchTest
+    static final ArchRule salespagepatterns_nao_deve_depender_de_warmupecosystem = classes()
+            .that()
+            .resideInAPackage(SALES_PAGE_PATTERNS_V1_ROOT + "..")
+            .should(notDependOnPackage(WARMUP_ECOSYSTEM_V1_ROOT))
+            .because("[ARQUITETURA] salespagepatterns.v1 deve ser coeso e não depender do pipeline warmupecosystem.v1");
+
+    /** Garante desacoplamento direto entre os dois pipelines de dossiê da biblioteca. */
+    @ArchTest
+    static final ArchRule warmupecosystem_nao_deve_depender_de_salespagepatterns = classes()
+            .that()
+            .resideInAPackage(WARMUP_ECOSYSTEM_V1_ROOT + "..")
+            .should(notDependOnPackage(SALES_PAGE_PATTERNS_V1_ROOT))
+            .because("[ARQUITETURA] warmupecosystem.v1 deve ser coeso e não depender do pipeline salespagepatterns.v1");
 
 
     /** Garante que cada subpacote de dossieproduto.v1 tenha somente as 9 classes canônicas da etapa. */
@@ -268,6 +306,20 @@ class ArquiteturaTest {
                     events.add(new SimpleConditionEvent(dependency, valid,
                             "[ARQUITETURA] " + javaClass.getName() + " da etapa " + sourceStage
                                     + " não pode depender de " + target.getName() + " da etapa " + targetStage));
+                }
+            }
+        };
+    }
+
+    private static ArchCondition<JavaClass> notDependOnPackage(String forbiddenPackagePrefix) {
+        return new ArchCondition<>("[ARQUITETURA] não depender de " + forbiddenPackagePrefix) {
+            @Override
+            public void check(JavaClass javaClass, ConditionEvents events) {
+                for (Dependency dependency : javaClass.getDirectDependenciesFromSelf()) {
+                    JavaClass target = dependency.getTargetClass();
+                    boolean valid = !target.getPackageName().startsWith(forbiddenPackagePrefix);
+                    events.add(new SimpleConditionEvent(dependency, valid,
+                            "[ARQUITETURA] " + javaClass.getName() + " não pode depender de " + target.getName()));
                 }
             }
         };

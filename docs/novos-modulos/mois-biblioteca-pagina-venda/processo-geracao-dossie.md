@@ -1,10 +1,40 @@
-# Processo simples — geração do dossiê da Biblioteca de Páginas de Vendas
+# Processo simples — dossiês da Biblioteca de Páginas de Vendas
 
-Data: 2026-06-25
+Data: 2026-07-03
 
 ## Objetivo
 
-Gerar um dossiê simples para entender o prestígio e o aquecimento público de um produto a partir da página de venda já capturada na biblioteca.
+A Biblioteca de Páginas de Vendas passa a ter dois dossiês separados, com objetivos diferentes e pipelines independentes:
+
+1. `salespagepatterns.v1` — **Padrões de Página de Venda**
+   - foco: design, visual, estrutura da página, copy, oferta, prova, garantia e CTA;
+   - uso: melhorar páginas próprias, GeraSalesPage, GeraLanding, wireframes, prompts de imagem e presets de design.
+
+2. `warmupecosystem.v1` — **Aquecimento e Ecossistema**
+   - foco: redes sociais, vídeos, reviews, afiliados, comunidades, páginas auxiliares, canais do produtor e outros sinais externos que aquecem leads;
+   - uso: entender se produtos vencedores dependem de pré-venda, autoridade externa ou distribuição além da página.
+
+Os dois pipelines usam produtos quentes como fonte inicial, começando por Hotmart com temperatura `>= 80`, mas não compartilham estado operacional. Um dossiê concluído não deve bloquear o outro.
+
+## Pipeline `salespagepatterns.v1`
+
+Este pipeline deve responder:
+
+- quais padrões de design aparecem em páginas de produtos quentes;
+- quais padrões de hierarquia visual e densidade ajudam a venda;
+- quais fórmulas de copy são recorrentes;
+- quais blocos de prova, garantia, oferta e CTA aparecem;
+- quais padrões podem virar insumo abstrato para páginas próprias sem copiar conteúdo, marca ou identidade visual.
+
+Etapas planejadas:
+
+1. `intake`;
+2. `page-pattern-extraction`;
+3. `pattern-synthesis`.
+
+## Pipeline `warmupecosystem.v1`
+
+Este pipeline substitui o nome genérico anterior `dossieproduto.v1` para o objetivo de aquecimento.
 
 O dossiê deve responder:
 
@@ -13,7 +43,7 @@ O dossiê deve responder:
 - quais recursos, além da própria página de venda, estão aquecendo o público;
 - qual conclusão final deve ficar disponível na tela do item da biblioteca.
 
-## Etapas do processo
+## Etapas do processo de aquecimento
 
 ### Etapa 1 — Extrair termos de pesquisa
 
@@ -59,3 +89,5 @@ Esse dossiê passa a ficar disponível na tela do item da biblioteca para apoiar
 - O worker não acessa o banco diretamente.
 - Cada etapa deve deixar evidência persistida suficiente para auditoria e exibição ao usuário.
 - A tela deve mostrar o dossiê final vindo do backend, sem recomputar conclusões no frontend.
+- Chamadas OpenAI devem usar três tentativas: tentativa 1 Flex, tentativa 2 Flex e tentativa 3 Standard/default.
+- Todo custo retornado por OpenAI deve ser persistido no registro da etapa, somado ao custo individual da página e somado ao custo total da biblioteca.

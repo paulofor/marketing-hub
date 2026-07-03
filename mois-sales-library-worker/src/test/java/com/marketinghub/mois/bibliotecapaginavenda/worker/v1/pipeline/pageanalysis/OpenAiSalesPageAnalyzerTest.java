@@ -15,7 +15,7 @@ class OpenAiSalesPageAnalyzerTest {
                 RestClient.builder(),
                 new OpenAiProperties("test-key", "http://localhost", "gpt-test", 900000, null));
 
-        String payload = analyzer.buildResponsesRequestPayload(10L, "https://example.com", "Resumo visual extraído do HTML: total_img=12");
+        String payload = analyzer.buildResponsesRequestPayload(10L, "https://example.com", "Resumo visual extraído do HTML: total_img=12", 1);
 
         assertTrue(payload.contains("identificar por que este produto alcançou sucesso"));
         assertTrue(payload.contains("não inclua sugestões"));
@@ -25,5 +25,18 @@ class OpenAiSalesPageAnalyzerTest {
         assertTrue(payload.contains("padrões vencedores observados como insumo reutilizável"));
         assertFalse(payload.contains("recommended_images"));
         assertTrue(payload.contains("\"service_tier\":\"flex\""));
+    }
+
+    /** Garante que a terceira tentativa representa Standard/default omitindo service_tier explícito. */
+    @Test
+    void shouldUseStandardDefaultOnThirdOpenAiAttempt() {
+        OpenAiSalesPageAnalyzer analyzer = new OpenAiSalesPageAnalyzer(
+                RestClient.builder(),
+                new OpenAiProperties("test-key", "http://localhost", "gpt-test", 900000, null));
+
+        String payload = analyzer.buildResponsesRequestPayload(10L, "https://example.com", "Resumo visual extraído do HTML", 3);
+
+        assertFalse(payload.contains("\"service_tier\":\""));
+        assertTrue(payload.contains("\"service_tier_effective\":\"default\""));
     }
 }

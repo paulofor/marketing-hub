@@ -50,3 +50,10 @@
 - Pacote canônico mantido para o backend: `com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1`.
 - Módulo executor responsável pela execução operacional: `mois-sales-library-worker`.
 - 2026-06-26 — Aplicado ao pipeline `geraanuncio` v2 no backend, pacote `com.marketinghub.geraanuncio.v2`, etapas `texto` e `imagem`, com endpoints pending canônicos `/api/internal/geraanuncio/v2/texto/stage-executions/pending` e `/api/internal/geraanuncio/v2/imagem/stage-executions/pending` e contratos DTO como `record` em subpacotes de service.
+
+## 2026-07-03 — MOIS Biblioteca de Páginas de Vendas — dois dossiês
+
+- Pacote backend protegido: `com.marketinghub.mois.bibliotecapaginavenda.worker.v1`.
+- Módulo executor externo: `mois-sales-library-worker`.
+- Pipelines expostos para enfileiramento: `salespagepatterns.v1` e `warmupecosystem.v1`.
+- Aplicação: ArchUnit no backend para impedir que a biblioteca vire executor runtime de OpenAI; backend mantém leitura/escrita, custos e contratos.

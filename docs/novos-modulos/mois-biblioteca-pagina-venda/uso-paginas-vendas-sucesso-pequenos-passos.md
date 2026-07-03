@@ -48,16 +48,24 @@ insumos por etapa de geração
 
 A partir de 2026-07-03, produtos Hotmart com temperatura `>= 80` são o primeiro critério operacional para alimentar o aprendizado comercial recorrente.
 
-O processo não deve recapturar ou reanalisar páginas sem necessidade. A captura já existe como HTML bruto e a análise comercial já existe na Biblioteca de Páginas de Vendas. O novo passo é promover, de forma recorrente, os produtos quentes já capturados e analisados para o pipeline `dossieproduto.v1`.
+O processo não deve recapturar ou reanalisar páginas sem necessidade. A captura já existe como HTML bruto e a análise comercial já existe na Biblioteca de Páginas de Vendas. O novo passo é promover, de forma recorrente, os produtos quentes já capturados e analisados para dois pipelines separados:
+
+- `salespagepatterns.v1`: extrai padrões de design, visual, estrutura e copy.
+- `warmupecosystem.v1`: investiga aquecimento de leads por canais e sinais externos.
 
 Fluxo canônico:
 
-1. Listar candidatos em `GET /api/mois/sales-library/hot-products/dossier-candidates`.
+1. Listar candidatos em:
+   - `GET /api/mois/sales-library/hot-products/salespagepatterns/v1/candidates`;
+   - `GET /api/mois/sales-library/hot-products/warmupecosystem/v1/candidates`.
 2. Exigir Hotmart, temperatura mínima, HTML útil, análise concluída e ausência de dossiê ativo/concluído.
-3. Enfileirar lote em `POST /api/mois/sales-library/hot-products/dossier-candidates:enqueue`.
-4. O backend apenas marca a página como `INICIADO/intake` e registra auditoria em `pipeline_dossieproduto`.
-5. O `mois-sales-library-worker` consome o endpoint `pending` do `dossieproduto.v1` e executa IA, pesquisa externa, síntese e validação.
-6. O resultado deve virar padrões abstratos para melhorar páginas próprias, nunca cópia literal de páginas externas.
+3. Enfileirar lote em:
+   - `POST /api/mois/sales-library/hot-products/salespagepatterns/v1/candidates:enqueue`;
+   - `POST /api/mois/sales-library/hot-products/warmupecosystem/v1/candidates:enqueue`.
+4. O backend apenas marca a página como `INICIADO/intake` no estado do pipeline correto e registra auditoria em `pipeline_dossieproduto` com `pipeline_code`.
+5. O `mois-sales-library-worker` consome o endpoint `pending` do pipeline aplicável e executa IA, pesquisa externa, síntese e validação.
+6. O resultado de `salespagepatterns.v1` deve virar padrões abstratos para melhorar páginas próprias, nunca cópia literal de páginas externas.
+7. O resultado de `warmupecosystem.v1` deve explicar quais canais e evidências externas parecem aquecer leads antes da venda.
 
 Essa separação mantém o backend como fonte de verdade de leitura/escrita e o worker como executor da inteligência principal.
 

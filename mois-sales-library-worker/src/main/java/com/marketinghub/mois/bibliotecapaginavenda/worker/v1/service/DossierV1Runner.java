@@ -7,26 +7,19 @@ import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service.DossierV1Ba
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service.DossierV1BackendClient.DossierRecebeResponseRequest;
 import com.marketinghub.pipelines.dossie.v1.PipelineWorker;
 import com.marketinghub.pipelines.dossie.v1.StageResult;
+import com.marketinghub.pipelines.warmupecosystem.v1.WarmupEcosystemPipelineDefinition;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-/** Executa somente o pipeline canônico de dossiê MOIS v1, substituindo o fluxo legado de market-warmup. */
+/** Executa somente o pipeline canônico warmupecosystem.v1, substituindo o fluxo legado de market-warmup. */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class DossierV1Runner {
-    private static final List<String> STAGES = List.of(
-            "intake",
-            "product-understanding",
-            "investigation-anchor-builder",
-            "warmup-resource-discovery",
-            "source-product-match",
-            "warmup-signal-extraction",
-            "warmup-map-builder",
-            "dossier-synthesis");
+    private static final List<String> STAGES = WarmupEcosystemPipelineDefinition.stages();
 
     private final DossierV1BackendClient backendClient;
     private final PipelineWorker pipelineWorker;

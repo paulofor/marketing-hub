@@ -78,3 +78,11 @@
 - Pacote protegido: `com.marketinghub.pipelines.geracaoanuncios.v1`.
 - Etapas protegidas: `texto` e `imagem`.
 - Aplicação: protocolo padrão módulo reforçado com conjunto completo de classes por etapa (`BackendClient`, `ExecutionScheduler`, `Input`, `Output`, `Processor`, `PromptBuilder`, `ResponseHandler`, `ResponseValidator`, `WorkerConfiguration` e `WorkerProperties`), mantendo consumo pelo endpoint `pending` canônico e backend fora do escopo do protocolo módulo.
+
+## 2026-07-03 — MOIS Sales Library Worker — dois dossiês
+
+- Módulo executor: `mois-sales-library-worker`.
+- Pipelines nomeados: `salespagepatterns.v1` para padrões de design/visual/copy e `warmupecosystem.v1` para aquecimento/ecossistema.
+- Pacotes protegidos: `com.marketinghub.pipelines.salespagepatterns.v1` e `com.marketinghub.pipelines.warmupecosystem.v1`.
+- Aplicação: reforço ArchUnit para existência dos dois códigos canônicos e bloqueio de dependência direta entre os pipelines.
+- Backend permanece como fonte de verdade de contratos, pendências, callbacks e custos; inteligência principal permanece no worker.

@@ -5589,3 +5589,10 @@
 - Correção aplicada: criado endpoint `POST /api/product-ai/hypotheses/{hypothesisId}/personalized-sample-preparation`.
 - Regra operacional: o comando exige rastreabilidade mínima de nicho, dor, persona, promessa e mecanismo; depois completa subtipo Produto IA, preço inicial, descrição da amostra, pacote de oferta e entregável mínimo.
 - Prevenção de recorrência: o comando não cria hipótese nova nem experimento; a criação do experimento continua bloqueada pelo diagnóstico `/api/product-ai/experiment-preparations/{hypothesisId}`.
+
+## 2026-07-03 — Funil de coleta para AI Personalized Sample
+
+- Decisão: o experimento `AI_PERSONALIZED_SAMPLE` precisa coletar dados do lead antes de publicar campanha, porque a promessa de amostra exclusiva depende de insumos individuais.
+- Correção aplicada: criado endpoint `POST /api/product-ai/experiments/{experimentId}/personalized-sample-funnel` para criar ou reaproveitar um `LeadPortalFlow` aprovado e vinculado ao experimento.
+- Regra operacional: a prontidão de campanha passa a bloquear Produto IA personalizado sem funil aprovado contendo nome, e-mail, WhatsApp, negócio/projeto, contexto atual, objetivo visual e dados de personalização.
+- Prevenção de recorrência: a coleta fica como ativo sistêmico auditável do experimento, evitando criar produto ou amostra personalizada fora do fluxo oficial.

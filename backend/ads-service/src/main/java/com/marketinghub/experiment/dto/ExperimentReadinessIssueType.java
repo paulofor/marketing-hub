@@ -6,6 +6,7 @@ package com.marketinghub.experiment.dto;
 public enum ExperimentReadinessIssueType {
     CREATIVE,
     LEAD_PORTAL_FLOW,
+    PRODUCT_AI_FUNNEL,
     TARGETING,
     GERA_LANDING,
     GERA_SALES_PAGE

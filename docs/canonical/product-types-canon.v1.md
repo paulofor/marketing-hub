@@ -103,6 +103,8 @@ Antes de criar o experimento, o backend deve validar o preparo da hipotese Produ
 
 Quando uma hipotese criada pelo sistema ja possuir nicho/contexto, dor principal, persona, promessa e mecanismo, mas ainda nao possuir os campos operacionais do MVP, o backend pode executar o comando sistemico `POST /api/product-ai/hypotheses/{hypothesisId}/personalized-sample-preparation`. Esse comando apenas completa a hipotese existente com `AI_PERSONALIZED_SAMPLE`, preco inicial, pacote de oferta e entregavel minimo de amostra personalizada. Ele nao cria hipotese nova, nao cria experimento e nao autoriza atalho manual fora do fluxo.
 
+Depois que o experimento `AI_PERSONALIZED_SAMPLE` existir, a publicacao de campanha deve continuar bloqueada ate o backend criar ou reaproveitar o funil canonico de coleta pelo endpoint `POST /api/product-ai/experiments/{experimentId}/personalized-sample-funnel`. Esse funil deve ser um `LeadPortalFlow` aprovado e vinculado ao experimento, coletando no minimo nome, e-mail, WhatsApp, negocio/projeto, contexto atual, objetivo visual e dados de personalizacao. Sem esses dados, o produto nao tem insumo suficiente para prometer amostra exclusiva.
+
 Criar o mesmo conceito para outro nicho exige nova execucao do fluxo com novo contexto de nicho. Variar um produto para melhora exige nova versao ou novo experimento com variavel primaria declarada.
 
 Padroes externos, como os dossies da Biblioteca de Paginas de Vendas, podem ser usados como insumo de briefing e aprendizado. Eles nao podem substituir a geracao rastreavel de hipotese, dor, mecanismo, prova, oferta e experimento pelo sistema.

@@ -3,6 +3,7 @@ package com.marketinghub.experiment.funnel;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentCampaignMetric;
 import com.marketinghub.experiment.ExperimentStatus;
+import com.marketinghub.experiment.ExperimentType;
 import com.marketinghub.experiment.funnel.dto.ExperimentFunnelDiagnosticsResponseDto;
 import com.marketinghub.experiment.funnel.dto.ExperimentFunnelStageDiagnosticDto;
 import com.marketinghub.experiment.funnel.dto.FunnelDiagnosticReasonCode;
@@ -249,6 +250,152 @@ class ExperimentFunnelAutoStopServiceTest {
         assertThat(campaign.getStopLastError()).isNull();
     }
 
+    /**
+     * Garante invalidação de produto low-ticket quando zero compras já têm amostra e custo acima de 3x o ticket.
+     */
+    @Test
+    void stopsLowTicketExperimentWhenZeroPurchasesReachTicketFinancialLimit() {
+        experiment.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
+        experiment.setUnitPrice(new BigDecimal("27.00"));
+        experiment.setTotalCost(new BigDecimal("129.04"));
+        ExperimentFunnelStageDiagnosticDto checkoutStage = new ExperimentFunnelStageDiagnosticDto(
+                ExperimentFunnelStage.ACESSO_CHECKOUT,
+                "Acesso checkout",
+                212,
+                1,
+                0.0047,
+                0.03,
+                null,
+                List.of(new FunnelThresholdCheckDto(0.03, 100, 0.0142, false, true)),
+                FunnelDiagnosticStatus.WEAK_SIGNAL,
+                FunnelDiagnosticReasonCode.BELOW_MIN_RATE,
+                "",
+                false
+        );
+        ExperimentFunnelStageDiagnosticDto purchaseStage = new ExperimentFunnelStageDiagnosticDto(
+                ExperimentFunnelStage.COMPRA,
+                "Compra",
+                1,
+                0,
+                0.0,
+                0.03,
+                3.0,
+                List.of(new FunnelThresholdCheckDto(0.03, 100, 3.0, false, false)),
+                FunnelDiagnosticStatus.INSUFFICIENT_DATA,
+                FunnelDiagnosticReasonCode.LOW_SAMPLE_SIZE,
+                "",
+                false
+        );
+        when(diagnosticService.diagnose(99L))
+                .thenReturn(new ExperimentFunnelDiagnosticsResponseDto(List.of(checkoutStage, purchaseStage), null));
+        when(campaignMetricRepository.findByExperiment(experiment))
+                .thenReturn(Optional.of(metricWithSpendAndClicks("47.99", 262L)));
+        FacebookAdsCampaign campaign = new FacebookAdsCampaign();
+        campaign.setId("camp-low-ticket-zero-sale");
+        when(campaignRepository.findByExperimentId(99L)).thenReturn(List.of(campaign));
+
+        boolean stopped = service.stopIfLowTicketZeroPurchasesAfterStatisticalFinancialLimit(experiment);
+
+        assertThat(stopped).isTrue();
+        assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.INVALIDATED);
+        assertThat(campaign.getStopReason())
+                .isEqualTo(FacebookCampaignStopReason.LOW_TICKET_ZERO_PURCHASE_STATISTICAL_FINANCIAL);
+        assertThat(campaign.getStopRequestedAt()).isNotNull();
+        assertThat(campaign.getStopLastError()).isNull();
+    }
+
+    /**
+     * Garante que produto low-ticket com amostra, mas custo abaixo do limite financeiro, continue em execução.
+     */
+    @Test
+    void keepsLowTicketExperimentRunningBeforeFinancialLimit() {
+        experiment.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
+        experiment.setUnitPrice(new BigDecimal("37.00"));
+        experiment.setTotalCost(new BigDecimal("66.88"));
+        ExperimentFunnelStageDiagnosticDto checkoutStage = new ExperimentFunnelStageDiagnosticDto(
+                ExperimentFunnelStage.ACESSO_CHECKOUT,
+                "Acesso checkout",
+                145,
+                1,
+                0.0069,
+                0.03,
+                null,
+                List.of(new FunnelThresholdCheckDto(0.03, 100, 0.0207, false, true)),
+                FunnelDiagnosticStatus.WEAK_SIGNAL,
+                FunnelDiagnosticReasonCode.BELOW_MIN_RATE,
+                "",
+                false
+        );
+        ExperimentFunnelStageDiagnosticDto purchaseStage = new ExperimentFunnelStageDiagnosticDto(
+                ExperimentFunnelStage.COMPRA,
+                "Compra",
+                1,
+                0,
+                0.0,
+                0.03,
+                3.0,
+                List.of(new FunnelThresholdCheckDto(0.03, 100, 3.0, false, false)),
+                FunnelDiagnosticStatus.INSUFFICIENT_DATA,
+                FunnelDiagnosticReasonCode.LOW_SAMPLE_SIZE,
+                "",
+                false
+        );
+        when(diagnosticService.diagnose(99L))
+                .thenReturn(new ExperimentFunnelDiagnosticsResponseDto(List.of(checkoutStage, purchaseStage), null));
+        when(campaignMetricRepository.findByExperiment(experiment))
+                .thenReturn(Optional.of(metricWithSpendAndClicks("33.45", 182L)));
+
+        boolean stopped = service.stopIfLowTicketZeroPurchasesAfterStatisticalFinancialLimit(experiment);
+
+        assertThat(stopped).isFalse();
+        assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.RUNNING);
+    }
+
+    /**
+     * Garante que uma compra registrada impede a invalidação automática por zero vendas.
+     */
+    @Test
+    void keepsLowTicketExperimentRunningWhenPurchaseExists() {
+        experiment.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
+        experiment.setUnitPrice(new BigDecimal("27.00"));
+        experiment.setTotalCost(new BigDecimal("129.04"));
+        ExperimentFunnelStageDiagnosticDto checkoutStage = new ExperimentFunnelStageDiagnosticDto(
+                ExperimentFunnelStage.ACESSO_CHECKOUT,
+                "Acesso checkout",
+                212,
+                5,
+                0.0236,
+                0.03,
+                null,
+                List.of(),
+                FunnelDiagnosticStatus.WEAK_SIGNAL,
+                FunnelDiagnosticReasonCode.BELOW_MIN_RATE,
+                "",
+                false
+        );
+        ExperimentFunnelStageDiagnosticDto purchaseStage = new ExperimentFunnelStageDiagnosticDto(
+                ExperimentFunnelStage.COMPRA,
+                "Compra",
+                5,
+                1,
+                0.20,
+                0.03,
+                null,
+                List.of(),
+                FunnelDiagnosticStatus.HEALTHY_OR_INCONCLUSIVE,
+                FunnelDiagnosticReasonCode.HEALTHY_OR_INCONCLUSIVE,
+                "",
+                false
+        );
+        when(diagnosticService.diagnose(99L))
+                .thenReturn(new ExperimentFunnelDiagnosticsResponseDto(List.of(checkoutStage, purchaseStage), null));
+
+        boolean stopped = service.stopIfLowTicketZeroPurchasesAfterStatisticalFinancialLimit(experiment);
+
+        assertThat(stopped).isFalse();
+        assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.RUNNING);
+    }
+
     @Test
     void doesNothingWhenThresholdNotReached() {
         ExperimentFunnelStageDiagnosticDto stage = new ExperimentFunnelStageDiagnosticDto(
@@ -319,6 +466,15 @@ class ExperimentFunnelAutoStopServiceTest {
         ExperimentCampaignMetric metric = new ExperimentCampaignMetric();
         metric.setExperiment(experiment);
         metric.setSpend(new BigDecimal(spend));
+        return metric;
+    }
+
+    /**
+     * Cria uma métrica de campanha com gasto e cliques para os cenários de produto low-ticket.
+     */
+    private ExperimentCampaignMetric metricWithSpendAndClicks(String spend, Long clicks) {
+        ExperimentCampaignMetric metric = metricWithSpend(spend);
+        metric.setClicks(clicks);
         return metric;
     }
 

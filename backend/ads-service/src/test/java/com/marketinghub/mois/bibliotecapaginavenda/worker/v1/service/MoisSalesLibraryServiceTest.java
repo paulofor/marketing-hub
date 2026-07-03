@@ -535,7 +535,7 @@ class MoisSalesLibraryServiceTest {
      */
     @Test
     void shouldListHotProductDossierCandidates() throws Exception {
-        given(jdbcTemplate.query(contains("pipeline_dossieproduto pd"), isA(RowMapper.class), eq("workspace-001"), eq(BigDecimal.valueOf(80)), eq(10)))
+        given(jdbcTemplate.query(contains("pipeline_dossieproduto pd"), isA(RowMapper.class), eq("workspace-001"), eq(BigDecimal.valueOf(80)), eq("warmupecosystem.v1"), eq(10)))
                 .willAnswer(invocation -> {
                     RowMapper<?> mapper = invocation.getArgument(1);
                     return List.of(mapper.mapRow(hotProductDossierCandidateRow(), 0));
@@ -545,6 +545,7 @@ class MoisSalesLibraryServiceTest {
                 service.listHotProductDossierCandidates("workspace-001", BigDecimal.valueOf(80), 10);
 
         org.assertj.core.api.Assertions.assertThat(response.totalReturned()).isEqualTo(1);
+        org.assertj.core.api.Assertions.assertThat(response.pipelineCode()).isEqualTo("warmupecosystem.v1");
         org.assertj.core.api.Assertions.assertThat(response.items().get(0).pageId()).isEqualTo(401L);
         org.assertj.core.api.Assertions.assertThat(response.items().get(0).hotmartTemperature()).isEqualByComparingTo("127.07");
     }
@@ -554,7 +555,7 @@ class MoisSalesLibraryServiceTest {
      */
     @Test
     void shouldEnqueueHotProductDossierCandidates() {
-        given(jdbcTemplate.query(contains("pipeline_dossieproduto pd"), isA(RowMapper.class), eq("workspace-001"), eq(BigDecimal.valueOf(80)), eq(5)))
+        given(jdbcTemplate.query(contains("pipeline_dossieproduto pd"), isA(RowMapper.class), eq("workspace-001"), eq(BigDecimal.valueOf(80)), eq("warmupecosystem.v1"), eq(5)))
                 .willReturn(List.of(new MoisSalesLibraryDtos.HotProductDossierCandidateItem(
                         401L,
                         "workspace-001",
@@ -570,7 +571,7 @@ class MoisSalesLibraryServiceTest {
                         Instant.parse("2026-07-01T10:00:00Z")
                 )));
         given(jdbcTemplate.update(contains("UPDATE mois_sales_page"), any(), any(), any())).willReturn(1);
-        given(jdbcTemplate.update(contains("INSERT INTO pipeline_dossieproduto"), any(), any(), any(), any(), any())).willReturn(1);
+        given(jdbcTemplate.update(contains("INSERT INTO pipeline_dossieproduto"), any(), any(), any(), any(), any(), any())).willReturn(1);
 
         MoisSalesLibraryDtos.HotProductDossierEnqueueResponse response =
                 service.enqueueHotProductDossierCandidates(new MoisSalesLibraryDtos.HotProductDossierEnqueueRequest(
@@ -580,8 +581,45 @@ class MoisSalesLibraryServiceTest {
                 ));
 
         org.assertj.core.api.Assertions.assertThat(response.enqueued()).isEqualTo(1);
+        org.assertj.core.api.Assertions.assertThat(response.pipelineCode()).isEqualTo("warmupecosystem.v1");
         org.assertj.core.api.Assertions.assertThat(response.items().get(0).stageCode()).isEqualTo("intake");
-        verify(jdbcTemplate).update(contains("INSERT INTO pipeline_dossieproduto"), eq("401"), eq("intake"), eq("INICIADO"), any(), eq("v1"));
+        verify(jdbcTemplate).update(contains("INSERT INTO pipeline_dossieproduto"), eq("401"), eq("intake"), eq("INICIADO"), any(), eq("v1"), eq("warmupecosystem.v1"));
+        verify(jdbcTemplate).update(contains("status_pipeline_dossieproduto"), eq("INICIADO"), eq("intake"), eq(401L));
+    }
+
+    /**
+     * Garante que o pipeline de padrões de página não disputa a fila legada do dossiê de aquecimento.
+     */
+    @Test
+    void shouldEnqueueSalesPagePatternsWithoutTouchingWarmupLegacyQueue() {
+        given(jdbcTemplate.query(contains("pipeline_dossieproduto pd"), isA(RowMapper.class), eq("workspace-001"), eq(BigDecimal.valueOf(80)), eq("salespagepatterns.v1"), eq(5)))
+                .willReturn(List.of(new MoisSalesLibraryDtos.HotProductDossierCandidateItem(
+                        401L,
+                        "workspace-001",
+                        "HOTMART",
+                        "https://example.com/oferta",
+                        "BLACK MAGRA",
+                        "BLACK MAGRA",
+                        BigDecimal.valueOf(127.07),
+                        BigDecimal.valueOf(86),
+                        null,
+                        null,
+                        null,
+                        Instant.parse("2026-07-01T10:00:00Z")
+                )));
+        given(jdbcTemplate.update(contains("UPDATE mois_sales_page"), any(), any(), any())).willReturn(1);
+        given(jdbcTemplate.update(contains("INSERT INTO pipeline_dossieproduto"), any(), any(), any(), any(), any(), any())).willReturn(1);
+
+        MoisSalesLibraryDtos.HotProductDossierEnqueueResponse response =
+                service.enqueueHotProductSalesPagePatternCandidates(new MoisSalesLibraryDtos.HotProductDossierEnqueueRequest(
+                        "workspace-001",
+                        BigDecimal.valueOf(80),
+                        5
+                ));
+
+        org.assertj.core.api.Assertions.assertThat(response.pipelineCode()).isEqualTo("salespagepatterns.v1");
+        verify(jdbcTemplate).update(contains("INSERT INTO pipeline_dossieproduto"), eq("401"), eq("intake"), eq("INICIADO"), any(), eq("v1"), eq("salespagepatterns.v1"));
+        verify(jdbcTemplate, never()).update(contains("status_pipeline_dossieproduto"), any(), any(), any());
     }
 
     /**

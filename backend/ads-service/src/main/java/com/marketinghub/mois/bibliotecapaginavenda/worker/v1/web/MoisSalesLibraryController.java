@@ -199,6 +199,30 @@ public class MoisSalesLibraryController {
     }
 
     /**
+     * Lista produtos quentes para o pipeline salespagepatterns.v1 de padrões de design, visual e copy.
+     */
+    @GetMapping("/hot-products/salespagepatterns/v1/candidates")
+    public MoisSalesLibraryDtos.HotProductDossierCandidateResponse listHotProductSalesPagePatternCandidates(
+            @RequestParam String workspaceId,
+            @RequestParam(defaultValue = "80") java.math.BigDecimal minTemperature,
+            @RequestParam(defaultValue = "50") int limit
+    ) {
+        return service.listHotProductSalesPagePatternCandidates(workspaceId, minTemperature, limit);
+    }
+
+    /**
+     * Lista produtos quentes para o pipeline warmupecosystem.v1 de aquecimento e canais externos.
+     */
+    @GetMapping("/hot-products/warmupecosystem/v1/candidates")
+    public MoisSalesLibraryDtos.HotProductDossierCandidateResponse listHotProductWarmupEcosystemCandidates(
+            @RequestParam String workspaceId,
+            @RequestParam(defaultValue = "80") java.math.BigDecimal minTemperature,
+            @RequestParam(defaultValue = "50") int limit
+    ) {
+        return service.listHotProductWarmupEcosystemCandidates(workspaceId, minTemperature, limit);
+    }
+
+    /**
      * Enfileira produtos Hotmart quentes na etapa intake do pipeline dossieproduto.v1.
      */
     @PostMapping("/hot-products/dossier-candidates:enqueue")
@@ -207,6 +231,28 @@ public class MoisSalesLibraryController {
             @Valid @RequestBody MoisSalesLibraryDtos.HotProductDossierEnqueueRequest request
     ) {
         return service.enqueueHotProductDossierCandidates(request);
+    }
+
+    /**
+     * Enfileira produtos quentes no pipeline salespagepatterns.v1 sem executar IA no backend.
+     */
+    @PostMapping("/hot-products/salespagepatterns/v1/candidates:enqueue")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public MoisSalesLibraryDtos.HotProductDossierEnqueueResponse enqueueHotProductSalesPagePatternCandidates(
+            @Valid @RequestBody MoisSalesLibraryDtos.HotProductDossierEnqueueRequest request
+    ) {
+        return service.enqueueHotProductSalesPagePatternCandidates(request);
+    }
+
+    /**
+     * Enfileira produtos quentes no pipeline warmupecosystem.v1 sem executar IA no backend.
+     */
+    @PostMapping("/hot-products/warmupecosystem/v1/candidates:enqueue")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public MoisSalesLibraryDtos.HotProductDossierEnqueueResponse enqueueHotProductWarmupEcosystemCandidates(
+            @Valid @RequestBody MoisSalesLibraryDtos.HotProductDossierEnqueueRequest request
+    ) {
+        return service.enqueueHotProductWarmupEcosystemCandidates(request);
     }
 
     /**

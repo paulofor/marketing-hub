@@ -143,6 +143,8 @@ class MoisSalesLibraryControllerTest {
         when(service.listHotProductDossierCandidates("workspace-001", BigDecimal.valueOf(80), 10))
                 .thenReturn(new MoisSalesLibraryDtos.HotProductDossierCandidateResponse(
                         "workspace-001",
+                        "warmupecosystem.v1",
+                        "Aquecimento e Ecossistema",
                         BigDecimal.valueOf(80),
                         10,
                         1,
@@ -167,6 +169,7 @@ class MoisSalesLibraryControllerTest {
                         .param("minTemperature", "80")
                         .param("limit", "10"))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.pipelineCode").value("warmupecosystem.v1"))
                 .andExpect(jsonPath("$.totalReturned").value(1))
                 .andExpect(jsonPath("$.items[0].pageId").value(401))
                 .andExpect(jsonPath("$.items[0].hotmartTemperature").value(127.07));
@@ -180,12 +183,15 @@ class MoisSalesLibraryControllerTest {
         when(service.enqueueHotProductDossierCandidates(any(MoisSalesLibraryDtos.HotProductDossierEnqueueRequest.class)))
                 .thenReturn(new MoisSalesLibraryDtos.HotProductDossierEnqueueResponse(
                         "workspace-001",
+                        "warmupecosystem.v1",
+                        "Aquecimento e Ecossistema",
                         BigDecimal.valueOf(80),
                         5,
                         1,
                         1,
                         0,
-                        List.of(new MoisSalesLibraryDtos.HotProductDossierEnqueueItem(401L, "job-1", "INICIADO", "intake"))
+                        List.of(new MoisSalesLibraryDtos.HotProductDossierEnqueueItem(
+                                401L, "job-1", "warmupecosystem.v1", "Aquecimento e Ecossistema", "INICIADO", "intake"))
                 ));
 
         mockMvc.perform(post("/api/mois/sales-library/hot-products/dossier-candidates:enqueue")
@@ -198,8 +204,57 @@ class MoisSalesLibraryControllerTest {
                                 }
                                 """))
                 .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.pipelineCode").value("warmupecosystem.v1"))
                 .andExpect(jsonPath("$.enqueued").value(1))
                 .andExpect(jsonPath("$.items[0].stageCode").value("intake"));
+    }
+
+    /**
+     * Garante que o endpoint nomeado de padrões de página consulta o pipeline correto.
+     */
+    @Test
+    void shouldExposeSalesPagePatternsCandidatesEndpoint() throws Exception {
+        when(service.listHotProductSalesPagePatternCandidates("workspace-001", BigDecimal.valueOf(80), 10))
+                .thenReturn(new MoisSalesLibraryDtos.HotProductDossierCandidateResponse(
+                        "workspace-001",
+                        "salespagepatterns.v1",
+                        "Padrões de Página de Venda",
+                        BigDecimal.valueOf(80),
+                        10,
+                        0,
+                        List.of()
+                ));
+
+        mockMvc.perform(get("/api/mois/sales-library/hot-products/salespagepatterns/v1/candidates")
+                        .param("workspaceId", "workspace-001")
+                        .param("minTemperature", "80")
+                        .param("limit", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.pipelineCode").value("salespagepatterns.v1"));
+    }
+
+    /**
+     * Garante que o endpoint nomeado de aquecimento consulta o pipeline correto.
+     */
+    @Test
+    void shouldExposeWarmupEcosystemCandidatesEndpoint() throws Exception {
+        when(service.listHotProductWarmupEcosystemCandidates("workspace-001", BigDecimal.valueOf(80), 10))
+                .thenReturn(new MoisSalesLibraryDtos.HotProductDossierCandidateResponse(
+                        "workspace-001",
+                        "warmupecosystem.v1",
+                        "Aquecimento e Ecossistema",
+                        BigDecimal.valueOf(80),
+                        10,
+                        0,
+                        List.of()
+                ));
+
+        mockMvc.perform(get("/api/mois/sales-library/hot-products/warmupecosystem/v1/candidates")
+                        .param("workspaceId", "workspace-001")
+                        .param("minTemperature", "80")
+                        .param("limit", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.pipelineCode").value("warmupecosystem.v1"));
     }
 
     /**

@@ -2,6 +2,8 @@ package com.marketinghub.pipelines.dossie.v1.productunderstanding;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.openai.OpenAiServiceTierRetryPolicy;
 import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.pipeline.pageanalysis.OpenAiProperties;
 import com.marketinghub.pipelines.dossie.v1.DossierStageSupport;
 import com.marketinghub.pipelines.dossie.v1.StageContext;
@@ -68,14 +70,9 @@ public class DossierProductUnderstandingProcessor implements StageProcessor {
     /** Executa a etapa usando OpenAI e preserva request, response, texto final, modelo e tokens para auditoria. */
     private StageResult processWithOpenAi(StageContext context) {
         try {
-            String rawRequest = buildOpenAiRequest(context);
-            log.info("MOIS dossie v1 product-understanding enviando request cru para OpenAI. jobId={}, requestPayload={}",
-                    context.stageExecutionId(), rawRequest);
-            String rawResponse = openAiClient.post().uri("/responses")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(rawRequest)
-                    .retrieve()
-                    .body(String.class);
+            OpenAiCallResult callResult = executeOpenAiWithCanonicalRetry(context);
+            String rawRequest = callResult.rawRequest();
+            String rawResponse = callResult.rawResponse();
             if (!StringUtils.hasText(rawResponse)) {
                 throw new IllegalStateException("OpenAI Responses Flex retornou corpo vazio em product-understanding");
             }
@@ -105,19 +102,53 @@ public class DossierProductUnderstandingProcessor implements StageProcessor {
     }
 
     /** Monta o request Responses Flex enviado diretamente à OpenAI para entender o produto. */
-    private String buildOpenAiRequest(StageContext context) throws Exception {
+    private String buildOpenAiRequest(StageContext context, int attempt) throws Exception {
         String prompt = loadPrompt().replace("{{context}}", objectMapper.writeValueAsString(context.input()));
-        return objectMapper.writeValueAsString(Map.of(
-                "model", openAiProperties.normalizedModel(),
-                "service_tier", "flex",
-                "metadata", Map.of(
-                        "stage", STAGE_NAME,
-                        "stage_execution_id", Long.toString(context.stageExecutionId()),
-                        "dossier_id", Long.toString(context.dossierId())),
-                "input", List.of(
-                        Map.of("role", "system", "content", "Você estrutura entendimento comercial de produto, protege o dossiê contra inferência sem evidência e responde exclusivamente JSON válido sem markdown."),
-                        Map.of("role", "user", "content", prompt)),
-                "text", Map.of("format", Map.of("type", "json_object"))));
+        ObjectNode request = objectMapper.valueToTree(Map.of(
+            "model", openAiProperties.normalizedModel(),
+            "metadata", Map.of(
+                    "stage", STAGE_NAME,
+                    "stage_execution_id", Long.toString(context.stageExecutionId()),
+                    "dossier_id", Long.toString(context.dossierId()),
+                    "openai_attempt", Integer.toString(attempt),
+                    "service_tier_effective", OpenAiServiceTierRetryPolicy.serviceTierForAttempt(attempt)),
+            "input", List.of(
+                    Map.of("role", "system", "content", "Você estrutura entendimento comercial de produto, protege o dossiê contra inferência sem evidência e responde exclusivamente JSON válido sem markdown."),
+                    Map.of("role", "user", "content", prompt)),
+            "text", Map.of("format", Map.of("type", "json_object"))));
+        if (!OpenAiServiceTierRetryPolicy.shouldOmitServiceTier(attempt)) {
+            request.put("service_tier", OpenAiServiceTierRetryPolicy.serviceTierForAttempt(attempt));
+        }
+        return objectMapper.writeValueAsString(request);
+    }
+
+    /** Executa OpenAI com duas tentativas Flex e terceira Standard/default, preservando o último request bruto. */
+    private OpenAiCallResult executeOpenAiWithCanonicalRetry(StageContext context) throws Exception {
+        RuntimeException lastFailure = null;
+        String lastRequest = null;
+        for (int attempt = 1; attempt <= OpenAiServiceTierRetryPolicy.MAX_ATTEMPTS; attempt++) {
+            lastRequest = buildOpenAiRequest(context, attempt);
+            String tier = OpenAiServiceTierRetryPolicy.serviceTierForAttempt(attempt);
+            try {
+                log.info("MOIS dossie v1 product-understanding enviando request cru para OpenAI. jobId={}, attempt={}, serviceTier={}, requestPayload={}",
+                        context.stageExecutionId(), attempt, tier, lastRequest);
+                String rawResponse = openAiClient.post().uri("/responses")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body(lastRequest)
+                        .retrieve()
+                        .body(String.class);
+                return new OpenAiCallResult(lastRequest, rawResponse);
+            } catch (RuntimeException ex) {
+                lastFailure = ex;
+                log.warn("Falha transitória OpenAI product-understanding. jobId={}, attempt={}, serviceTier={}",
+                        context.stageExecutionId(), attempt, tier, ex);
+            }
+        }
+        throw lastFailure == null ? new IllegalStateException("OpenAI não executou nenhuma tentativa") : lastFailure;
+    }
+
+    /** Guarda o último request enviado e a resposta recebida da OpenAI. */
+    private record OpenAiCallResult(String rawRequest, String rawResponse) {
     }
 
     /** Carrega o prompt versionado da etapa para evitar contrato hardcoded na classe Java. */

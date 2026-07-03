@@ -3,6 +3,8 @@ package com.marketinghub.mois.bibliotecapaginavenda.worker.v1.pipeline.pageanaly
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.marketinghub.mois.bibliotecapaginavenda.worker.v1.openai.OpenAiServiceTierRetryPolicy;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.List;
@@ -15,7 +17,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
 
 /**
- * Executa a análise comercial de páginas de venda via OpenAI Responses em modo Flex e normaliza o JSON retornado.
+ * Executa a análise comercial de páginas de venda via OpenAI Responses e normaliza o JSON retornado.
  */
 @Component
 @Slf4j
@@ -40,33 +42,35 @@ public class OpenAiSalesPageAnalyzer {
     }
 
     /**
-     * Envia o texto capturado da página para análise comercial em modo Flex e retorna o diagnóstico estruturado.
+     * Envia o texto capturado da página para análise comercial com retry Flex/Flex/Standard e retorna o diagnóstico estruturado.
      */
     public SalesPageAnalysisResult analyze(long jobId, long pageId, String canonicalUrl, String htmlBodyText) {
         if (!StringUtils.hasText(properties.resolvedApiKey())) {
             throw new IllegalStateException("OpenAI api key não configurada para análise de sales page");
         }
-        String requestPayload = buildResponsesRequestPayload(pageId, canonicalUrl, htmlBodyText);
-        log.info("MOIS sales-library enviando request cru para OpenAI. jobId={}, requestPayload={}", jobId, requestPayload);
-        String responsePayload = executeFlexResponsesRequest(requestPayload);
+        OpenAiCallResult callResult = executeResponsesRequestWithCanonicalRetry(jobId, pageId, canonicalUrl, htmlBodyText);
+        String requestPayload = callResult.requestPayload();
+        String responsePayload = callResult.responsePayload();
         log.info("MOIS sales-library recebeu resposta crua da OpenAI. jobId={}, rawResponse={}", jobId, responsePayload);
         return parseResponsesOutput(responsePayload, requestPayload);
     }
 
     /**
-     * Monta o JSON enviado diretamente ao endpoint Responses da OpenAI em modo Flex.
+     * Monta o JSON enviado diretamente ao endpoint Responses da OpenAI com o tier da tentativa.
      */
-    String buildResponsesRequestPayload(long pageId, String canonicalUrl, String htmlBodyText) {
+    String buildResponsesRequestPayload(long pageId, String canonicalUrl, String htmlBodyText, int attempt) {
         String prompt = "Analise a página de vendas para identificar por que este produto alcançou sucesso e devolva JSON válido com os campos: score_total (0-100), sections_json (objeto), copy_json (objeto), visual_json (objeto), image_json (objeto), geralanding_wireframe_json (objeto), geralanding_copy_json (objeto), geralanding_image_prompt_json (objeto), geralanding_design_preset_json (objeto), analysis_notes (texto curto). "
                 + "A análise é diagnóstico de sucesso, não consultoria de melhoria: não inclua sugestões, recomendações, próximos passos, itens a adicionar/remover, nem chaves como recommended, suggestions, melhorias ou lacunas em nenhum campo. "
                 + "No campo image_json, explique somente a função persuasiva das imagens existentes no fluxo real: densidade visual, repetição de depoimentos/antes-e-depois, provas visuais, risco assumido de poluição visual e como isso sustenta ou prejudica a clareza da oferta já vencedora. Nos campos geralanding_* extraia somente padrões observados que sirvam de insumo para o pipeline GeraLanding: wireframe deve mapear estrutura/seções/CTAs/formulário; copy deve mapear promessa, dor, mecanismo, prova, oferta e CTA; image_prompt deve mapear funções comerciais das imagens, tipo visual, objeção removida e padrão de prompt reaproveitável; design_preset deve mapear direção visual, hierarquia, CTAs, cards, mockups, mobile e confiança. Não proponha melhorias para a página analisada; descreva padrões vencedores observados como insumo reutilizável. "
                 + "Use o eixo Dor → Resultado → Mecanismo → Prova → Oferta apenas para explicar a fórmula observada que parece ter levado à venda, nunca para propor mudanças. URL: "
                 + canonicalUrl + "\nConteúdo e resumo visual: " + htmlBodyText;
         try {
-            return objectMapper.writeValueAsString(Map.of(
+            ObjectNode request = objectMapper.valueToTree(Map.of(
                     "model", properties.normalizedModel(),
-                    "service_tier", "flex",
-                    "metadata", Map.of("page_id", Long.toString(pageId)),
+                    "metadata", Map.of(
+                            "page_id", Long.toString(pageId),
+                            "openai_attempt", Integer.toString(attempt),
+                            "service_tier_effective", OpenAiServiceTierRetryPolicy.serviceTierForAttempt(attempt)),
                     "input", List.of(
                             Map.of("role", "system", "content", "Você analisa páginas de venda e responde exclusivamente em JSON válido sem markdown."),
                             Map.of("role", "user", "content", prompt)
@@ -75,24 +79,46 @@ public class OpenAiSalesPageAnalyzer {
                             "format", Map.of("type", "json_object")
                     )
             ));
+            if (!OpenAiServiceTierRetryPolicy.shouldOmitServiceTier(attempt)) {
+                request.put("service_tier", OpenAiServiceTierRetryPolicy.serviceTierForAttempt(attempt));
+            }
+            return objectMapper.writeValueAsString(request);
         } catch (JsonProcessingException e) {
-            throw new IllegalStateException("Falha ao serializar request Responses Flex", e);
+            throw new IllegalStateException("Falha ao serializar request Responses OpenAI", e);
         }
     }
 
     /**
-     * Executa a chamada síncrona ao endpoint Responses usando service_tier flex.
+     * Executa a chamada síncrona ao endpoint Responses usando duas tentativas Flex e terceira Standard/default.
      */
-    private String executeFlexResponsesRequest(String requestPayload) {
-        String response = restClient.post().uri("/responses")
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(requestPayload)
-                .retrieve()
-                .body(String.class);
-        if (!StringUtils.hasText(response)) {
-            throw new IllegalStateException("OpenAI Responses Flex retornou corpo vazio");
+    private OpenAiCallResult executeResponsesRequestWithCanonicalRetry(long jobId, long pageId, String canonicalUrl, String htmlBodyText) {
+        RuntimeException lastFailure = null;
+        for (int attempt = 1; attempt <= OpenAiServiceTierRetryPolicy.MAX_ATTEMPTS; attempt++) {
+            String requestPayload = buildResponsesRequestPayload(pageId, canonicalUrl, htmlBodyText, attempt);
+            String tier = OpenAiServiceTierRetryPolicy.serviceTierForAttempt(attempt);
+            try {
+                log.info("MOIS sales-library enviando request cru para OpenAI. jobId={}, attempt={}, serviceTier={}, requestPayload={}",
+                        jobId, attempt, tier, requestPayload);
+                String response = restClient.post().uri("/responses")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body(requestPayload)
+                        .retrieve()
+                        .body(String.class);
+                if (!StringUtils.hasText(response)) {
+                    throw new IllegalStateException("OpenAI Responses retornou corpo vazio");
+                }
+                return new OpenAiCallResult(requestPayload, response);
+            } catch (RuntimeException ex) {
+                lastFailure = ex;
+                log.warn("Falha transitória OpenAI sales-library. jobId={}, attempt={}, serviceTier={}",
+                        jobId, attempt, tier, ex);
+            }
         }
-        return response;
+        throw lastFailure == null ? new IllegalStateException("OpenAI não executou nenhuma tentativa") : lastFailure;
+    }
+
+    /** Guarda o request e a response brutos da tentativa OpenAI bem-sucedida. */
+    private record OpenAiCallResult(String requestPayload, String responsePayload) {
     }
 
     /**

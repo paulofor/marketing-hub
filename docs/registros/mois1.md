@@ -2010,3 +2010,12 @@ Arquivos principais:
 - Criado comando de enfileiramento em lote que publica os candidatos na etapa `intake` do `dossieproduto.v1`, mantendo IA e pesquisa externa no `mois-sales-library-worker`.
 - Causa-raiz tratada: produtos de sucesso já capturados/analisados ficavam como informação passiva na biblioteca, sem processo recorrente para virar aprendizado comercial reutilizável.
 - Prevenção de recorrência: endpoint e Swagger tornam a seleção/enfileiramento repetíveis para novos produtos quentes que surgirem nas coletas futuras.
+
+## 2026-07-03 — Separação dos dois dossiês da Biblioteca de Páginas de Vendas
+
+- Separados os objetivos em dois pipelines nomeados:
+  - `salespagepatterns.v1`: padrões de design, visual, estrutura e copy.
+  - `warmupecosystem.v1`: aquecimento de leads, canais externos e ecossistema público.
+- O backend passou a enfileirar candidatos por pipeline, registrando `pipeline_code` na auditoria e mantendo custos por página e no total da biblioteca.
+- Regra OpenAI consolidada: tentativa 1 Flex, tentativa 2 Flex e tentativa 3 Standard/default.
+- Prevenção de recorrência: testes ArchUnit protegem separação entre pipelines no worker e impedem que o backend da biblioteca vire executor runtime de OpenAI.

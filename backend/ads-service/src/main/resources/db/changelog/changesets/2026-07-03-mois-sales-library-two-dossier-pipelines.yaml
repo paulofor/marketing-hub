@@ -1,0 +1,80 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-03-mois-sales-library-two-dossier-pipelines-01
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: mois_sales_page
+        - not:
+            columnExists:
+              tableName: mois_sales_page
+              columnName: status_pipeline_salespagepatterns
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE mois_sales_page
+                ADD COLUMN status_pipeline_salespagepatterns VARCHAR(40) NULL AFTER data_pipeline_dossieproduto,
+                ADD COLUMN salespagepatterns_current_stage VARCHAR(80) NULL AFTER status_pipeline_salespagepatterns,
+                ADD COLUMN data_pipeline_salespagepatterns DATETIME(6) NULL AFTER salespagepatterns_current_stage,
+                ADD COLUMN status_pipeline_warmupecosystem VARCHAR(40) NULL AFTER data_pipeline_salespagepatterns,
+                ADD COLUMN warmupecosystem_current_stage VARCHAR(80) NULL AFTER status_pipeline_warmupecosystem,
+                ADD COLUMN data_pipeline_warmupecosystem DATETIME(6) NULL AFTER warmupecosystem_current_stage,
+                ADD COLUMN total_model_cost_usd DECIMAL(19,6) NULL AFTER model_cost_usd;
+              CREATE INDEX idx_mois_sales_page_salespagepatterns_pipeline
+                ON mois_sales_page (status_pipeline_salespagepatterns, salespagepatterns_current_stage, data_pipeline_salespagepatterns);
+              CREATE INDEX idx_mois_sales_page_warmupecosystem_pipeline
+                ON mois_sales_page (status_pipeline_warmupecosystem, warmupecosystem_current_stage, data_pipeline_warmupecosystem);
+  - changeSet:
+      id: 2026-07-03-mois-sales-library-two-dossier-pipelines-02
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: pipeline_dossieproduto
+        - not:
+            columnExists:
+              tableName: pipeline_dossieproduto
+              columnName: pipeline_code
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE pipeline_dossieproduto
+                ADD COLUMN pipeline_code VARCHAR(80) NULL AFTER versao_pipeline;
+              UPDATE pipeline_dossieproduto
+                 SET pipeline_code = 'warmupecosystem.v1'
+               WHERE pipeline_code IS NULL;
+              CREATE INDEX idx_pipeline_dossieproduto_pipeline_status
+                ON pipeline_dossieproduto (pipeline_code, id_externo, status, data_hora);
+  - changeSet:
+      id: 2026-07-03-mois-sales-library-two-dossier-pipelines-03
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: mois_sales_library_cost_total
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE mois_sales_library_cost_total (
+                workspace_id VARCHAR(120) NOT NULL,
+                total_cost_usd DECIMAL(19,6) NOT NULL DEFAULT 0,
+                updated_at DATETIME(6) NOT NULL,
+                PRIMARY KEY (workspace_id)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

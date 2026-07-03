@@ -57,6 +57,7 @@ public class DossierWarmupResourceDiscoveryService {
         pipeline.setDataHora(now);
         pipeline.setJobId(jobId);
         pipeline.setVersaoPipeline("v1");
+        pipeline.setPipelineCode("warmupecosystem.v1");
         pipelineDossieProdutoRepository.save(pipeline);
     }
 
@@ -83,6 +84,7 @@ public class DossierWarmupResourceDiscoveryService {
         pipeline.setPrompt(request.prompt());
         pipeline.setSchema(request.schema());
         pipeline.setVersaoPipeline("v1");
+        pipeline.setPipelineCode("warmupecosystem.v1");
         pipelineDossieProdutoRepository.save(pipeline);
 
         return new DossierWarmupResourceDiscoveryRecebeRequestResponse(jobId, productKey, STAGE_CODE, STATUS_WAITING);
@@ -121,6 +123,7 @@ public class DossierWarmupResourceDiscoveryService {
         pipeline.setModelo(request.modelo());
         pipeline.setDescricaoErro(request.descricaoErro());
         pipeline.setVersaoPipeline("v1");
+        pipeline.setPipelineCode("warmupecosystem.v1");
         pipelineDossieProdutoRepository.save(pipeline);
 
         return new DossierWarmupResourceDiscoveryRecebeResponseResponse(jobId, productKey, STAGE_CODE, status, nextStageCode);
@@ -175,6 +178,7 @@ public class DossierWarmupResourceDiscoveryService {
         pipeline.setDataHora(Instant.now());
         pipeline.setJobId(jobId);
         pipeline.setVersaoPipeline("v1");
+        pipeline.setPipelineCode("warmupecosystem.v1");
         pipelineDossieProdutoRepository.save(pipeline);
         return jobId;
     }

@@ -74,4 +74,7 @@ public class PipelineDossieProduto {
 
     @Column(name = "versao_pipeline", length = 80)
     private String versaoPipeline;
+
+    @Column(name = "pipeline_code", length = 80)
+    private String pipelineCode;
 }

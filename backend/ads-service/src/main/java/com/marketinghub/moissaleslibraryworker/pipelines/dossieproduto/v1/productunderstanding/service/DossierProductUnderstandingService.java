@@ -12,10 +12,12 @@ import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.Mois
 import com.marketinghub.repository.jpa.mois.dossieproduto.DossierProductContextGateway;
 import com.marketinghub.repository.jpa.mois.dossieproduto.PipelineDossieProdutoRepository;
 import com.marketinghub.repository.jpa.mois.dossieproduto.entity.PipelineDossieProduto;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.Map;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 /** Publica pendências e contratos da etapa entendimento do produto do pipeline de dossiê MOIS v1. */
@@ -24,15 +26,18 @@ public class DossierProductUnderstandingService {
     private final MoisSalesPageRepository salesPageRepository;
     private final PipelineDossieProdutoRepository pipelineDossieProdutoRepository;
     private final DossierProductContextGateway productContextGateway;
+    private final JdbcTemplate jdbcTemplate;
 
     /** Cria o service da etapa com acesso aos repositórios canônicos da página/produto e da auditoria do pipeline. */
     public DossierProductUnderstandingService(
             MoisSalesPageRepository salesPageRepository,
             PipelineDossieProdutoRepository pipelineDossieProdutoRepository,
-            DossierProductContextGateway productContextGateway) {
+            DossierProductContextGateway productContextGateway,
+            JdbcTemplate jdbcTemplate) {
         this.salesPageRepository = salesPageRepository;
         this.pipelineDossieProdutoRepository = pipelineDossieProdutoRepository;
         this.productContextGateway = productContextGateway;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     private static final String STAGE_CODE = "product-understanding";
@@ -61,6 +66,7 @@ public class DossierProductUnderstandingService {
         pipeline.setDataHora(now);
         pipeline.setJobId(jobId);
         pipeline.setVersaoPipeline("v1");
+        pipeline.setPipelineCode("warmupecosystem.v1");
         pipelineDossieProdutoRepository.save(pipeline);
     }
 
@@ -87,6 +93,7 @@ public class DossierProductUnderstandingService {
         pipeline.setPrompt(request.prompt());
         pipeline.setSchema(request.schema());
         pipeline.setVersaoPipeline("v1");
+        pipeline.setPipelineCode("warmupecosystem.v1");
         pipelineDossieProdutoRepository.save(pipeline);
 
         return new DossierProductUnderstandingRecebeRequestResponse(jobId, productKey, STAGE_CODE, STATUS_WAITING);
@@ -125,9 +132,33 @@ public class DossierProductUnderstandingService {
         pipeline.setModelo(request.modelo());
         pipeline.setDescricaoErro(request.descricaoErro());
         pipeline.setVersaoPipeline("v1");
+        pipeline.setPipelineCode("warmupecosystem.v1");
         pipelineDossieProdutoRepository.save(pipeline);
+        accumulateCosts(pageId, request.custo());
 
         return new DossierProductUnderstandingRecebeResponseResponse(jobId, productKey, STAGE_CODE, status, nextStageCode);
+    }
+
+    /** Acumula custo OpenAI no total individual da página e no total da biblioteca. */
+    private void accumulateCosts(long pageId, BigDecimal costUsd) {
+        if (costUsd == null || costUsd.compareTo(BigDecimal.ZERO) <= 0) {
+            return;
+        }
+        jdbcTemplate.update("""
+                UPDATE mois_sales_page
+                   SET total_model_cost_usd = COALESCE(total_model_cost_usd, 0) + ?,
+                       updated_at = UTC_TIMESTAMP()
+                 WHERE id = ?
+                """, costUsd, pageId);
+        jdbcTemplate.update("""
+                INSERT INTO mois_sales_library_cost_total (workspace_id, total_cost_usd, updated_at)
+                SELECT workspace_id, ?, UTC_TIMESTAMP(6)
+                FROM mois_sales_page
+                WHERE id = ?
+                ON DUPLICATE KEY UPDATE
+                    total_cost_usd = total_cost_usd + VALUES(total_cost_usd),
+                    updated_at = VALUES(updated_at)
+                """, costUsd, pageId);
     }
 
     /** Normaliza a próxima etapa para nulo quando a etapa atual encerra o pipeline. */
@@ -187,6 +218,7 @@ public class DossierProductUnderstandingService {
         pipeline.setDataHora(Instant.now());
         pipeline.setJobId(jobId);
         pipeline.setVersaoPipeline("v1");
+        pipeline.setPipelineCode("warmupecosystem.v1");
         pipelineDossieProdutoRepository.save(pipeline);
         return jobId;
     }

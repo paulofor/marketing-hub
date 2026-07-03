@@ -438,8 +438,8 @@ paths:
           description: Página não encontrada
   /hot-products/dossier-candidates:
     get:
-      summary: Lista produtos quentes prontos para dossiê comercial
-      description: Retorna páginas Hotmart com temperatura acima do limite, HTML útil capturado, análise comercial concluída e sem dossiê v1 ativo/concluído.
+      summary: Lista produtos quentes prontos para o dossiê de aquecimento
+      description: Endpoint compatível que aponta para `warmupecosystem.v1`.
       tags: [MOIS Sales Library]
       parameters:
         - in: query
@@ -468,8 +468,8 @@ paths:
                 $ref: '#/components/schemas/HotProductDossierCandidateResponse'
   /hot-products/dossier-candidates:enqueue:
     post:
-      summary: Enfileira produtos quentes no intake do dossiê v1
-      description: Marca páginas elegíveis como `INICIADO/intake` e registra auditoria mínima em `pipeline_dossieproduto`; a execução de IA permanece no worker externo.
+      summary: Enfileira produtos quentes no intake do dossiê de aquecimento
+      description: Endpoint compatível que aponta para `warmupecosystem.v1`; a execução de IA permanece no worker externo.
       tags: [MOIS Sales Library]
       requestBody:
         required: true
@@ -479,7 +479,99 @@ paths:
               $ref: '#/components/schemas/HotProductDossierEnqueueRequest'
       responses:
         '202':
-          description: Candidatos promovidos para o pipeline dossieproduto.v1
+          description: Candidatos promovidos para o pipeline warmupecosystem.v1
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HotProductDossierEnqueueResponse'
+  /hot-products/salespagepatterns/v1/candidates:
+    get:
+      summary: Lista produtos quentes para padrões de página
+      description: Retorna páginas Hotmart elegíveis para o pipeline `salespagepatterns.v1`.
+      tags: [MOIS Sales Library]
+      parameters:
+        - in: query
+          name: workspaceId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: minTemperature
+          schema:
+            type: number
+            default: 80
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: Candidatos do pipeline salespagepatterns.v1
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HotProductDossierCandidateResponse'
+  /hot-products/salespagepatterns/v1/candidates:enqueue:
+    post:
+      summary: Enfileira produtos quentes para padrões de página
+      description: Marca páginas elegíveis no intake de `salespagepatterns.v1`.
+      tags: [MOIS Sales Library]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HotProductDossierEnqueueRequest'
+      responses:
+        '202':
+          description: Candidatos promovidos para salespagepatterns.v1
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HotProductDossierEnqueueResponse'
+  /hot-products/warmupecosystem/v1/candidates:
+    get:
+      summary: Lista produtos quentes para aquecimento e ecossistema
+      description: Retorna páginas Hotmart elegíveis para o pipeline `warmupecosystem.v1`.
+      tags: [MOIS Sales Library]
+      parameters:
+        - in: query
+          name: workspaceId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: minTemperature
+          schema:
+            type: number
+            default: 80
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: Candidatos do pipeline warmupecosystem.v1
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HotProductDossierCandidateResponse'
+  /hot-products/warmupecosystem/v1/candidates:enqueue:
+    post:
+      summary: Enfileira produtos quentes para aquecimento e ecossistema
+      description: Marca páginas elegíveis no intake de `warmupecosystem.v1`.
+      tags: [MOIS Sales Library]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HotProductDossierEnqueueRequest'
+      responses:
+        '202':
+          description: Candidatos promovidos para warmupecosystem.v1
           content:
             application/json:
               schema:
@@ -2184,6 +2276,12 @@ components:
       properties:
         workspaceId:
           type: string
+        pipelineCode:
+          type: string
+          example: salespagepatterns.v1
+        pipelineName:
+          type: string
+          example: Padrões de Página de Venda
         minTemperature:
           type: number
         limit:
@@ -2236,6 +2334,12 @@ components:
       properties:
         workspaceId:
           type: string
+        pipelineCode:
+          type: string
+          example: warmupecosystem.v1
+        pipelineName:
+          type: string
+          example: Aquecimento e Ecossistema
         minTemperature:
           type: number
           default: 80
@@ -2270,6 +2374,10 @@ components:
           type: integer
           format: int64
         jobId:
+          type: string
+        pipelineCode:
+          type: string
+        pipelineName:
           type: string
         status:
           type: string

@@ -64,10 +64,10 @@ O worker seleciona a fonte por ciclo com a seguinte ordem canônica:
 - `openai.model` → `${OPENAI_MODEL:gpt-5.2}`
 - `openai.request-timeout-ms` → `${OPENAI_REQUEST_TIMEOUT_MS:900000}`
 - Para payload de `/v1/responses`, o formato estruturado deve usar `text.format` (não usar `response_format`).
-- Toda análise comercial OpenAI do MOIS Sales Library deve enviar `service_tier: "flex"` no payload auditado.
+- Toda análise comercial OpenAI do MOIS Sales Library deve seguir a sequência de tentativas: tentativa 1 com `service_tier: "flex"`, tentativa 2 com `service_tier: "flex"` e tentativa 3 em Standard/default.
 
 ## 8. Regra canônica de processamento OpenAI Flex (MOIS Worker)
-Para análises comerciais OpenAI no contexto do MOIS Worker, o modo canônico é **Responses API com `service_tier: "flex"`**, sem criação de Batch API. O timeout canônico da chamada síncrona Flex é de **15 minutos** (`900000 ms` / `PT15M`), alinhado ao caráter assíncrono/baixo custo da etapa.
+Para análises comerciais OpenAI no contexto do MOIS Worker, o modo canônico é **Responses API com Flex nas duas primeiras tentativas e Standard/default na terceira**, sem criação de Batch API. O timeout canônico da chamada síncrona é de **15 minutos** (`900000 ms` / `PT15M`), alinhado ao caráter assíncrono/baixo custo da etapa.
 
 
 ## 8.1 Taxonomia canônica de status (monitoramento de fetching)
@@ -155,6 +155,17 @@ Portanto, rankings, scores e pesquisas complementares da biblioteca devem respon
 5. **Receber resultado OpenAI e persistir no banco**
    - Em sucesso: worker chama `jobs/{jobId}:complete`; backend atualiza `mois_sales_page_job_execution` e consolida `mois_sales_page` como `DONE`.
    - Em falha: worker chama `jobs/{jobId}:fail`; backend marca a execução e o estado consolidado da página como `FAILED` com categoria/mensagem para diagnóstico.
+
+### 12.3 Pipelines de dossiê de produtos quentes
+
+Produtos Hotmart com temperatura `>= 80` alimentam dois pipelines separados no `mois-sales-library-worker`:
+
+- `salespagepatterns.v1`: padrões de página de venda para design, visual, estrutura e copy.
+- `warmupecosystem.v1`: aquecimento e ecossistema para canais externos, sinais de autoridade, prova social e pré-venda.
+
+O backend apenas lista candidatos, enfileira o `intake`, persiste auditoria, recebe callbacks e acumula custo. A inteligência principal, chamadas OpenAI, pesquisa externa e síntese ficam no worker.
+
+Todo custo OpenAI deve ser persistido no registro da etapa, somado em `mois_sales_page.total_model_cost_usd` e somado em `mois_sales_library_cost_total.total_cost_usd`.
 
 ### 12.2 Diagrama (sequência ponta a ponta)
 ```mermaid

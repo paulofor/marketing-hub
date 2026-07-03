@@ -1,0 +1,43 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-03-product-ai-subtype-01
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: hypothesis
+        - not:
+            columnExists:
+              tableName: hypothesis
+              columnName: product_ai_subtype
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE hypothesis
+                ADD COLUMN product_ai_subtype VARCHAR(48) NULL AFTER kpi_target_cpl;
+  - changeSet:
+      id: 2026-07-03-product-ai-subtype-02
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: experiment
+        - not:
+            columnExists:
+              tableName: experiment
+              columnName: product_ai_subtype
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE experiment
+                ADD COLUMN product_ai_subtype VARCHAR(48) NULL AFTER experiment_type;

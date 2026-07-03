@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.Nulls;
 import com.marketinghub.experiment.ExperimentStage;
 import com.marketinghub.experiment.ExperimentCampaignObjective;
 import com.marketinghub.experiment.ExperimentType;
+import com.marketinghub.productai.ProductAiSubtype;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import lombok.Data;
@@ -33,6 +34,9 @@ public class UpdateExperimentRequest {
     private ExperimentType experimentType;
     @JsonIgnore
     private boolean experimentTypePresent;
+    private ProductAiSubtype productAiSubtype;
+    @JsonIgnore
+    private boolean productAiSubtypePresent;
     private ExperimentCampaignObjective campaignObjective;
     @JsonIgnore
     private boolean campaignObjectivePresent;
@@ -143,6 +147,13 @@ public class UpdateExperimentRequest {
     public void setExperimentType(ExperimentType experimentType) {
         this.experimentType = experimentType;
         this.experimentTypePresent = true;
+    }
+
+    /** Registra a presença do subtipo de Produto IA no payload de atualização. */
+    @JsonSetter(value = "productAiSubtype", nulls = Nulls.SET)
+    public void setProductAiSubtype(ProductAiSubtype productAiSubtype) {
+        this.productAiSubtype = productAiSubtype;
+        this.productAiSubtypePresent = true;
     }
 
     /** Registra a presença do objetivo de campanha no payload de atualização. */

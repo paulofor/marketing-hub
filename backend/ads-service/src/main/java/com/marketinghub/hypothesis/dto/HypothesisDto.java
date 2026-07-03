@@ -2,6 +2,7 @@ package com.marketinghub.hypothesis.dto;
 
 import com.marketinghub.hypothesis.HypothesisStatus;
 import com.marketinghub.hypothesis.OfferType;
+import com.marketinghub.productai.ProductAiSubtype;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -29,6 +30,7 @@ public class HypothesisDto {
     private OfferType offerType;
     private BigDecimal price;
     private BigDecimal kpiTargetCpl;
+    private ProductAiSubtype productAiSubtype;
     private Long offerPackageId;
     private String offerPackageName;
     private BigDecimal costUsd;

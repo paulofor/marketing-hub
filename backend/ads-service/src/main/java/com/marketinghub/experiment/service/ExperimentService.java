@@ -364,6 +364,7 @@ public class ExperimentService {
                 .funnelPromise(normalizeExperimentPromiseField(request.getFunnelPromise()))
                 .primaryCta(normalizeExperimentPromiseField(request.getPrimaryCta()))
                 .experimentType(resolveExperimentType(request.getExperimentType()))
+                .productAiSubtype(resolveProductAiSubtype(request.getProductAiSubtype(), hyp))
                 .campaignObjective(resolveCampaignObjective(
                         request.getCampaignObjective(), request.getFreeReward(), request.getExperimentType()))
                 .hypothesisRef(hyp)
@@ -494,6 +495,7 @@ public class ExperimentService {
                 .funnelPromise(original.getFunnelPromise())
                 .primaryCta(original.getPrimaryCta())
                 .experimentType(original.getExperimentType())
+                .productAiSubtype(original.getProductAiSubtype())
                 .campaignObjective(original.getCampaignObjective())
                 .hypothesisRef(original.getHypothesisRef())
                 .kpiTargetCpl(original.getKpiTargetCpl())
@@ -610,6 +612,9 @@ public class ExperimentService {
         }
         if (request.isExperimentTypePresent()) {
             exp.setExperimentType(resolveExperimentType(request.getExperimentType()));
+        }
+        if (request.isProductAiSubtypePresent()) {
+            exp.setProductAiSubtype(resolveProductAiSubtype(request.getProductAiSubtype(), exp.getHypothesisRef()));
         }
         if (request.isCampaignObjectivePresent()) {
             exp.setCampaignObjective(resolveCampaignObjective(
@@ -1069,6 +1074,18 @@ public class ExperimentService {
      */
     private ExperimentType resolveExperimentType(ExperimentType requestedType) {
         return requestedType != null ? requestedType : ExperimentType.NICHE_TEST;
+    }
+
+    /**
+     * Resolve o subtipo de Produto IA priorizando o experimento e herdando da hipótese quando ausente.
+     */
+    private com.marketinghub.productai.ProductAiSubtype resolveProductAiSubtype(
+            com.marketinghub.productai.ProductAiSubtype requestedSubtype,
+            com.marketinghub.hypothesis.Hypothesis hypothesis) {
+        if (requestedSubtype != null) {
+            return requestedSubtype;
+        }
+        return hypothesis != null ? hypothesis.getProductAiSubtype() : null;
     }
 
     /**

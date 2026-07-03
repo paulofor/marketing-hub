@@ -15,6 +15,7 @@ import com.marketinghub.repository.jpa.creative.label.AngleRepository;
 import com.marketinghub.repository.jpa.hypothesis.HypothesisRepository;
 import com.marketinghub.FixtureUtils;
 import com.marketinghub.journey.model.JourneyTemplate;
+import com.marketinghub.productai.ProductAiSubtype;
 import com.marketinghub.repository.jpa.journey.JourneyTemplateRepository;
 import com.marketinghub.repository.jpa.ads.InstagramAccountRepository;
 import com.marketinghub.repository.jpa.ads.CampaignRepository;
@@ -154,6 +155,7 @@ class ExperimentControllerTest {
                 .persona("Persona")
                 .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
                 .kpiTargetCpl(BigDecimal.ONE)
+                .productAiSubtype(ProductAiSubtype.AI_PERSONALIZED_SAMPLE)
                 .build());
         metricPresetRepository.save(com.marketinghub.experiment.MetricPreset.builder()
                 .id("LEAN_150")
@@ -184,12 +186,14 @@ class ExperimentControllerTest {
         mockMvc.perform(post("/api/niches/" + nicheId + "/experiments")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(mapper.writeValueAsString(req)))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.productAiSubtype").value("AI_PERSONALIZED_SAMPLE"));
 
         var saved = repository.findAll();
         assertThat(saved).hasSize(1);
         assertThat(saved.get(0).getJourneyTemplate()).isNotNull();
         assertThat(saved.get(0).getJourneyTemplate().getId()).isEqualTo(template.getId());
+        assertThat(saved.get(0).getProductAiSubtype()).isEqualTo(ProductAiSubtype.AI_PERSONALIZED_SAMPLE);
     }
 
     /** Garante que o contrato do AI Worker lista e conclui geração pendente de criativos. */

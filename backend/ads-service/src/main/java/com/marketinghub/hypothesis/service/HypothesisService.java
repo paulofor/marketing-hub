@@ -193,6 +193,7 @@ public class HypothesisService {
                 .offerType(req.getOfferType() == null ? null : OfferType.valueOf(req.getOfferType()))
                 .price(req.getPrice())
                 .kpiTargetCpl(req.getKpiTargetCpl())
+                .productAiSubtype(req.getProductAiSubtype())
                 .build();
         h.setOfferPackage(resolveOfferPackage(req.getOfferPackageId(), h.getMarketNiche()));
         frameworkMapperSupport.applyPartial(h, req.getFramework());
@@ -253,6 +254,7 @@ public class HypothesisService {
         h.setOfferType(req.getOfferType() == null ? null : OfferType.valueOf(req.getOfferType()));
         h.setPrice(req.getPrice());
         h.setKpiTargetCpl(req.getKpiTargetCpl());
+        h.setProductAiSubtype(req.getProductAiSubtype());
         h.setOfferPackage(resolveOfferPackage(req.getOfferPackageId(), h.getMarketNiche()));
         frameworkMapperSupport.applyPartial(h, req.getFramework());
         return h;

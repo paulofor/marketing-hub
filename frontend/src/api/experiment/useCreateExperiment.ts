@@ -5,6 +5,7 @@ import type {
   ExperimentCampaignObjective,
   ExperimentStage,
   ExperimentType,
+  ProductAiSubtype,
 } from "./useExperiments";
 
 export interface CreateExperiment {
@@ -17,6 +18,7 @@ export interface CreateExperiment {
   funnelPromise?: string;
   primaryCta?: string;
   experimentType?: ExperimentType;
+  productAiSubtype?: ProductAiSubtype | null;
   campaignObjective?: ExperimentCampaignObjective;
   stage: ExperimentStage;
   primaryVariable?: string;

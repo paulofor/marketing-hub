@@ -9,6 +9,7 @@ import com.marketinghub.experiment.ExperimentCampaignObjective;
 import com.marketinghub.experiment.ExperimentType;
 import com.marketinghub.experiment.CreativeGenerationMode;
 import com.marketinghub.experiment.CreativeGenerationStatus;
+import com.marketinghub.productai.ProductAiSubtype;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -29,6 +30,7 @@ public class ExperimentDto {
     private String funnelPromise;
     private String primaryCta;
     private ExperimentType experimentType;
+    private ProductAiSubtype productAiSubtype;
     private ExperimentCampaignObjective campaignObjective;
     private FacebookPageDto facebookPage;
     private FacebookInstantFormDto facebookInstantForm;

@@ -18,10 +18,23 @@ import { useJourneyTemplates } from "../../api/journey/useJourneyTemplates";
 import PageTitle from "../../components/PageTitle";
 import experimentIcon from "../../assets/icons/experiment-icon.svg";
 import { getStatisticsDefaultsForBudget } from "./statisticsDefaults";
-import type { ExperimentType } from "../../api/experiment/useExperiments";
+import type {
+  ExperimentType,
+  ProductAiSubtype,
+} from "../../api/experiment/useExperiments";
+
+const productAiSubtypeLabels: Record<ProductAiSubtype, string> = {
+  AI_VISUAL_PREVIEW: "Prévia visual IA",
+  AI_PERSONALIZED_SAMPLE: "Amostra personalizada IA",
+  AI_TRANSFORMATION_SIMULATOR: "Simulador de transformação IA",
+  AI_VISUAL_ASSET_PACK: "Pacote visual IA",
+  AI_IDENTITY_AVATAR_PRODUCT: "Identidade/avatar IA",
+  AI_REPORT_VISUAL_EVIDENCE: "Relatório com evidência visual IA",
+};
 
 type FormState = {
   experimentType: ExperimentType;
+  productAiSubtype: ProductAiSubtype | "";
   nicheId: string;
   hypothesisId: string;
   hypothesis: string;
@@ -61,6 +74,7 @@ export default function NewExperimentPage() {
   const { data: niches } = useNiches();
   const [form, setForm] = useState<FormState>({
     experimentType: "LOW_TICKET_PRODUCT",
+    productAiSubtype: "AI_PERSONALIZED_SAMPLE",
     nicheId: nicheIdParam,
     hypothesisId: hypothesisIdParam,
     hypothesis: "",
@@ -167,7 +181,12 @@ export default function NewExperimentPage() {
 
   useEffect(() => {
     if (selectedHypothesis?.title) {
-      setForm((f) => ({ ...f, hypothesis: selectedHypothesis.title }));
+      setForm((f) => ({
+        ...f,
+        hypothesis: selectedHypothesis.title,
+        productAiSubtype:
+          selectedHypothesis.productAiSubtype ?? f.productAiSubtype,
+      }));
     }
   }, [selectedHypothesis]);
 
@@ -306,6 +325,10 @@ export default function NewExperimentPage() {
         funnelPromise: form.funnelPromise.trim(),
         primaryCta: form.primaryCta.trim(),
         experimentType: form.experimentType,
+        productAiSubtype:
+          form.experimentType === "LOW_TICKET_PRODUCT"
+            ? form.productAiSubtype || undefined
+            : undefined,
         campaignObjective,
         kpiTarget: Number(form.kpiTarget),
         metricPresetId: form.metricPresetId || undefined,
@@ -340,6 +363,7 @@ export default function NewExperimentPage() {
       }
       setForm({
         experimentType: "LOW_TICKET_PRODUCT",
+        productAiSubtype: "AI_PERSONALIZED_SAMPLE",
         nicheId: nicheIdParam,
         hypothesisId: hypothesisIdParam,
         hypothesis: "",
@@ -398,6 +422,10 @@ export default function NewExperimentPage() {
           setForm((prev) => ({
             ...prev,
             experimentType: e.target.value as ExperimentType,
+            productAiSubtype:
+              e.target.value === "LOW_TICKET_PRODUCT"
+                ? prev.productAiSubtype || "AI_PERSONALIZED_SAMPLE"
+                : "",
             primaryCta:
               e.target.value === "LOW_TICKET_PRODUCT"
                 ? "Comprar agora"
@@ -413,6 +441,30 @@ export default function NewExperimentPage() {
           ? "Fluxo principal: anúncio, página curta, checkout e entrega. Métrica central: compra ou clique no checkout."
           : "Fluxo principal: anúncio, captura de lead e entrega de isca/amostra."}
       </div>
+      {isLowTicketProduct && (
+        <>
+          <label className="form-label" htmlFor="productAiSubtype">
+            Mecanismo de Produto IA
+          </label>
+          <select
+            id="productAiSubtype"
+            className="form-select mb-3"
+            value={form.productAiSubtype}
+            onChange={(e) =>
+              setForm((prev) => ({
+                ...prev,
+                productAiSubtype: e.target.value as ProductAiSubtype,
+              }))
+            }
+          >
+            {Object.entries(productAiSubtypeLabels).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </>
+      )}
       {showNicheSelect && (
         <select
           className="form-select mb-2"

@@ -17,6 +17,13 @@ export interface InstagramAccountSummary {
 
 export type ExperimentStage = "AD" | "LANDING" | "SAMPLE" | "SALES";
 export type ExperimentType = "NICHE_TEST" | "LOW_TICKET_PRODUCT";
+export type ProductAiSubtype =
+  | "AI_VISUAL_PREVIEW"
+  | "AI_PERSONALIZED_SAMPLE"
+  | "AI_TRANSFORMATION_SIMULATOR"
+  | "AI_VISUAL_ASSET_PACK"
+  | "AI_IDENTITY_AVATAR_PRODUCT"
+  | "AI_REPORT_VISUAL_EVIDENCE";
 export type ExperimentCampaignObjective = "LEADS" | "TRAFFIC" | "SALES";
 
 export interface FacebookInstantFormSummary {
@@ -67,6 +74,7 @@ export interface Experiment {
   funnelPromise?: string | null;
   primaryCta?: string | null;
   experimentType?: ExperimentType | null;
+  productAiSubtype?: ProductAiSubtype | null;
   campaignObjective?: ExperimentCampaignObjective | null;
   pageId?: string | null;
   facebookPage?: FacebookPageSummary | null;

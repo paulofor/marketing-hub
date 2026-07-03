@@ -238,6 +238,7 @@ Regras obrigatórias:
 - melhorar um produto existente significa criar nova versão ou novo experimento com variável primária declarada;
 - prompts, schemas, custos, entradas, saídas e decisões devem permanecer auditáveis;
 - padrões da Biblioteca de Páginas de Vendas podem enriquecer o briefing, mas não substituem as etapas de hipótese, dor, mecanismo, prova, oferta e validação;
+- Produto IA com subtipo declarado deve passar pelo preparo sistêmico antes da criação do experimento. Para `AI_PERSONALIZED_SAMPLE`, o backend deve bloquear a criação se faltar nicho/contexto, dor principal, persona, promessa, mecanismo, preço, pacote de oferta, entregáveis ou descrição da amostra;
 - se algum ativo for criado emergencialmente fora do fluxo, ele deve ser tratado como material provisório não canônico e não pode ser publicado ou escalado até ser reconstruído pelo sistema.
 
 ### 4.2.1.1 Regra mandatória — prompt/schema por experimento

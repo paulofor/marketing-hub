@@ -31,6 +31,7 @@ import com.marketinghub.leadportal.integration.LeadPortalFlowPublisher;
 import com.marketinghub.leadportal.integration.LeadPortalPublicationException;
 import com.marketinghub.repository.jpa.leadportal.LeadPortalFlowRepository;
 import com.marketinghub.niche.MarketNiche;
+import com.marketinghub.productai.service.ProductAiExperimentPreparationService;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
 import com.marketinghub.imagegeneration.ImageGenerationModel;
 import com.marketinghub.imagegeneration.ImageGenerationQuality;
@@ -81,6 +82,7 @@ public class ExperimentService {
     private final ObjectMapper objectMapper;
     private final CurrencyConversionService currencyConversionService;
     private final ExperimentAiPromptSchemaUsageService promptSchemaUsageService;
+    private final ProductAiExperimentPreparationService productAiExperimentPreparationService;
 
     public ExperimentService(ExperimentRepository repository,
                              ExperimentPromiseGenerationRequestRepository promiseGenerationRequestRepository,
@@ -106,7 +108,8 @@ public class ExperimentService {
                              GeraSalesPagePublicationAuditRepository geraSalesPagePublicationAuditRepository,
                              ObjectMapper objectMapper,
                              CurrencyConversionService currencyConversionService,
-                             ExperimentAiPromptSchemaUsageService promptSchemaUsageService) {
+                             ExperimentAiPromptSchemaUsageService promptSchemaUsageService,
+                             ProductAiExperimentPreparationService productAiExperimentPreparationService) {
         this.repository = repository;
         this.promiseGenerationRequestRepository = promiseGenerationRequestRepository;
         this.nicheRepository = nicheRepository;
@@ -132,6 +135,7 @@ public class ExperimentService {
         this.objectMapper = objectMapper;
         this.currencyConversionService = currencyConversionService;
         this.promptSchemaUsageService = promptSchemaUsageService;
+        this.productAiExperimentPreparationService = productAiExperimentPreparationService;
     }
 
     /**
@@ -312,6 +316,8 @@ public class ExperimentService {
         if (!hyp.getMarketNiche().getId().equals(nicheId)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "hypothesis and experiment niche mismatch");
         }
+        var resolvedProductAiSubtype = resolveProductAiSubtype(request.getProductAiSubtype(), hyp);
+        validateProductAiPreparation(request.getHypothesisId(), resolvedProductAiSubtype);
         if (request.getStartDate() != null && request.getEndDate() != null &&
                 request.getStartDate().isAfter(request.getEndDate())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "startDate must be before endDate");
@@ -364,7 +370,7 @@ public class ExperimentService {
                 .funnelPromise(normalizeExperimentPromiseField(request.getFunnelPromise()))
                 .primaryCta(normalizeExperimentPromiseField(request.getPrimaryCta()))
                 .experimentType(resolveExperimentType(request.getExperimentType()))
-                .productAiSubtype(resolveProductAiSubtype(request.getProductAiSubtype(), hyp))
+                .productAiSubtype(resolvedProductAiSubtype)
                 .campaignObjective(resolveCampaignObjective(
                         request.getCampaignObjective(), request.getFreeReward(), request.getExperimentType()))
                 .hypothesisRef(hyp)
@@ -1086,6 +1092,18 @@ public class ExperimentService {
             return requestedSubtype;
         }
         return hypothesis != null ? hypothesis.getProductAiSubtype() : null;
+    }
+
+    /**
+     * Impede que Produto IA avance para experimento sem preparo sistêmico da hipótese.
+     */
+    private void validateProductAiPreparation(
+            java.util.UUID hypothesisId,
+            com.marketinghub.productai.ProductAiSubtype productAiSubtype) {
+        if (productAiSubtype == null) {
+            return;
+        }
+        productAiExperimentPreparationService.assertReadyForExperiment(hypothesisId);
     }
 
     /**

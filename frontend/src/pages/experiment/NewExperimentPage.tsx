@@ -12,6 +12,7 @@ import { useImageGenerationModels } from "../../api/ai/useImageGenerationModels"
 import { useNiches } from "../../api/niche/useNiches";
 import { useHypothesesByNiche } from "../../api/hypothesis/useHypothesesByNiche";
 import { useHypothesis } from "../../api/hypothesis/useHypothesis";
+import { useProductAiExperimentPreparation } from "../../api/product-ai/useProductAiExperimentPreparation";
 import { useAllFacebookPages } from "../../api/useAllFacebookPages";
 import { useInstagramAccounts } from "../../api/useInstagramAccounts";
 import { useJourneyTemplates } from "../../api/journey/useJourneyTemplates";
@@ -138,6 +139,13 @@ export default function NewExperimentPage() {
     !["COMPLETED", "FAILED"].includes(promiseRequestStatus ?? ""),
   );
   const isLowTicketProduct = form.experimentType === "LOW_TICKET_PRODUCT";
+  const isProductAiExperiment = isLowTicketProduct && Boolean(form.productAiSubtype);
+  const productAiPreparation = useProductAiExperimentPreparation(
+    isProductAiExperiment ? form.hypothesisId : undefined,
+  );
+  const productAiPreparationData = productAiPreparation.data;
+  const productAiReady =
+    !isProductAiExperiment || Boolean(productAiPreparationData?.ready);
   const experimentTypeLabel = isLowTicketProduct
     ? "Produto low-ticket"
     : "Teste de nicho";
@@ -261,6 +269,25 @@ export default function NewExperimentPage() {
     setSelectedProductOffer(option.productOffer || "");
   };
 
+  const applyProductAiDraft = () => {
+    const draft = productAiPreparationData?.draft;
+    if (!draft) {
+      return;
+    }
+    setForm((prev) => ({
+      ...prev,
+      experimentType: draft.experimentType,
+      productAiSubtype: draft.productAiSubtype,
+      stage: draft.stage,
+      primaryVariable: draft.primaryVariable,
+      primaryMetric: draft.primaryMetric,
+      unitPrice:
+        draft.unitPrice != null && draft.unitPrice > 0
+          ? String(draft.unitPrice)
+          : prev.unitPrice,
+    }));
+  };
+
   const submit = async () => {
     try {
       if (noInstagramAccounts) {
@@ -271,6 +298,10 @@ export default function NewExperimentPage() {
       }
       if (!form.instagramAccountId) {
         alert("Selecione uma conta do Instagram");
+        return;
+      }
+      if (!productAiReady) {
+        alert("Complete o preparo do Produto IA antes de criar o experimento.");
         return;
       }
       const defaultJourneyTemplateId = journeyTemplates?.content?.[0]?.id;
@@ -523,6 +554,46 @@ export default function NewExperimentPage() {
         </>
       )}
       {form.hypothesis && <h2 className="h5 mb-2">{form.hypothesis}</h2>}
+      {isProductAiExperiment && form.hypothesisId && (
+        <div
+          className={`alert ${
+            productAiPreparation.isLoading
+              ? "alert-secondary"
+              : productAiPreparationData?.ready
+                ? "alert-success"
+                : "alert-warning"
+          } py-2 mb-3`}
+          role="status"
+        >
+          <div className="d-flex flex-column flex-md-row align-items-md-start justify-content-between gap-2">
+            <div>
+              <div className="fw-semibold">Preparo do Produto IA</div>
+              {productAiPreparation.isLoading ? (
+                <div className="small">Verificando hipótese e oferta...</div>
+              ) : productAiPreparationData?.ready ? (
+                <div className="small">
+                  Hipótese pronta para experimento com amostra personalizada.
+                </div>
+              ) : (
+                <div className="small">
+                  Complete os itens pendentes antes de criar o experimento:{" "}
+                  {(productAiPreparationData?.blockers ?? []).join(", ") ||
+                    "preparo indisponível"}
+                </div>
+              )}
+            </div>
+            {productAiPreparationData?.ready && (
+              <button
+                type="button"
+                className="btn btn-outline-primary btn-sm"
+                onClick={applyProductAiDraft}
+              >
+                Aplicar rascunho
+              </button>
+            )}
+          </div>
+        </div>
+      )}
       <div className="alert alert-info py-2 mb-3">
         O nome do experimento será gerado automaticamente pelo backend com o
         código da hipótese e a próxima numeração.
@@ -844,6 +915,7 @@ export default function NewExperimentPage() {
         disabled={
           create.isPending ||
           noInstagramAccounts ||
+          !productAiReady ||
           (!isLoadingJourneyTemplates && !journeyTemplates?.content?.length)
         }
       >

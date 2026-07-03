@@ -1,0 +1,163 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-03-product-ai-paid-delivery-001
+      author: codex
+      preConditions:
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: product_ai_paid_delivery_stage_execution
+      changes:
+        - createTable:
+            tableName: product_ai_paid_delivery_stage_execution
+            columns:
+              - column:
+                  name: id_job
+                  type: varchar(36)
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: purchase_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: package_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: experiment_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: pipeline_code
+                  type: varchar(80)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: stage_code
+                  type: varchar(80)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(40)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: execution_requested_at
+                  type: datetime(6)
+                  defaultValueComputed: CURRENT_TIMESTAMP(6)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: processing_started_at
+                  type: datetime(6)
+              - column:
+                  name: completed_at
+                  type: datetime(6)
+              - column:
+                  name: prompt_template_key
+                  type: varchar(191)
+              - column:
+                  name: prompt_template_version
+                  type: varchar(40)
+              - column:
+                  name: schema_name
+                  type: varchar(191)
+              - column:
+                  name: prompt
+                  type: longtext
+              - column:
+                  name: schema_json
+                  type: longtext
+              - column:
+                  name: openai_request_body
+                  type: longtext
+              - column:
+                  name: openai_response_body
+                  type: longtext
+              - column:
+                  name: functional_output
+                  type: longtext
+              - column:
+                  name: artifact_url
+                  type: varchar(1024)
+              - column:
+                  name: openai_model
+                  type: varchar(120)
+              - column:
+                  name: service_tier
+                  type: varchar(40)
+              - column:
+                  name: input_tokens
+                  type: int
+              - column:
+                  name: output_tokens
+                  type: int
+              - column:
+                  name: cost_usd
+                  type: decimal(12,6)
+              - column:
+                  name: error_message
+                  type: longtext
+        - createIndex:
+            tableName: product_ai_paid_delivery_stage_execution
+            indexName: idx_product_ai_paid_delivery_pending
+            columns:
+              - column:
+                  name: pipeline_code
+              - column:
+                  name: stage_code
+              - column:
+                  name: status
+              - column:
+                  name: execution_requested_at
+        - createIndex:
+            tableName: product_ai_paid_delivery_stage_execution
+            indexName: idx_product_ai_paid_delivery_purchase
+            columns:
+              - column:
+                  name: purchase_id
+        - addForeignKeyConstraint:
+            baseTableName: product_ai_paid_delivery_stage_execution
+            baseColumnNames: experiment_id
+            constraintName: fk_product_ai_paid_delivery_experiment
+            referencedTableName: experiment
+            referencedColumnNames: id
+
+  - changeSet:
+      id: 2026-07-03-product-ai-paid-delivery-template-001
+      author: codex
+      preConditions:
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO ai_prompt_schema_template (
+                template_key, pipeline_code, stage_code, version, openai_model, schema_name,
+                prompt_markdown_content, schema_json, active, created_at, updated_at
+              )
+              SELECT
+                'product-ai.personalizedsample.v1.paid-delivery.v1',
+                'personalizedsample.v1',
+                'paid-delivery',
+                'v1',
+                'gpt-5.2',
+                'product_ai_personalized_sample_paid_delivery_v1',
+                'Você gera a entrega paga de um Produto IA do tipo AI_PERSONALIZED_SAMPLE. Use os dados do experimento, comprador e respostas de personalização para criar uma especificação visual exclusiva, clara e entregável. Separe preview gratuito de produto pago. Responda apenas JSON válido aderente ao schema.',
+                '{"type":"object","additionalProperties":false,"required":["title","personalizedVisualBrief","deliveryText","artifactPlan","customerInstructions"],"properties":{"title":{"type":"string"},"personalizedVisualBrief":{"type":"string"},"deliveryText":{"type":"string"},"artifactPlan":{"type":"array","items":{"type":"string"}},"customerInstructions":{"type":"string"}}}',
+                TRUE,
+                CURRENT_TIMESTAMP(6),
+                CURRENT_TIMESTAMP(6)
+              WHERE NOT EXISTS (
+                SELECT 1 FROM ai_prompt_schema_template
+                WHERE template_key = 'product-ai.personalizedsample.v1.paid-delivery.v1'
+              );

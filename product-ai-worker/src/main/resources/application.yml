@@ -1,0 +1,19 @@
+server:
+  port: ${SERVER_PORT:8095}
+
+spring:
+  application:
+    name: product-ai-worker
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,loggers
+
+product-ai-worker:
+  enabled: ${PRODUCT_AI_WORKER_ENABLED:true}
+  backend-base-url: ${PRODUCT_AI_BACKEND_BASE_URL:http://191.252.181.168}
+  pending-limit: ${PRODUCT_AI_PENDING_LIMIT:10}
+  open-ai-base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
+  open-ai-api-key: ${OPENAI_API_KEY:}

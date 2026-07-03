@@ -67,6 +67,12 @@ digital-product:
       experiment51-product-name: ${DIGITAL_PRODUCT_EXP51_PRODUCT_NAME:Mapa de Recorrência 7D}
       experiment51-delivery-page-url: ${DIGITAL_PRODUCT_EXP51_DELIVERY_PAGE_URL:https://pagamentopalf.site/obrigado-exp51-mapa-recorrencia-7d.html}
       experiment51-download-url: ${DIGITAL_PRODUCT_EXP51_DOWNLOAD_URL:https://pagamentopalf.site/downloads/mapa-recorrencia-7d-entrega-v0-7xQ9mR4pL2.zip}
+
+product-ai:
+  delivery:
+    enabled: ${PRODUCT_AI_DELIVERY_ENABLED:true}
+    backend-base-url: ${PRODUCT_AI_DELIVERY_BACKEND_BASE_URL:http://191.252.181.168}
+    approved-purchase-path: ${PRODUCT_AI_DELIVERY_APPROVED_PURCHASE_PATH:/api/internal/product-ai/personalizedsample/v1/paid-delivery/stage-executions/approved-purchase}
 ---
 spring:
   config:

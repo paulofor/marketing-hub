@@ -105,6 +105,8 @@ Quando uma hipotese criada pelo sistema ja possuir nicho/contexto, dor principal
 
 Depois que o experimento `AI_PERSONALIZED_SAMPLE` existir, a publicacao de campanha deve continuar bloqueada ate o backend criar ou reaproveitar o funil canonico de coleta pelo endpoint `POST /api/product-ai/experiments/{experimentId}/personalized-sample-funnel`. Esse funil deve ser um `LeadPortalFlow` aprovado e vinculado ao experimento, coletando no minimo nome, e-mail, WhatsApp, negocio/projeto, contexto atual, objetivo visual e dados de personalizacao. Sem esses dados, o produto nao tem insumo suficiente para prometer amostra exclusiva.
 
+Depois da compra aprovada, a entrega paga do `AI_PERSONALIZED_SAMPLE` deve ser executada pelo módulo externo `product-ai-worker`, no pipeline versionado `personalizedsample.v1` e etapa `paid-delivery`. O backend deve enfileirar a entrega, entregar prompt/schema versionados pelo `pending`, receber `recebeRequest` antes da chamada OpenAI, receber `recebeResponse` com saída funcional, tokens, service tier e artefato, calcular o custo autoritativo e marcar a compra como entregue. E proibido vender Produto IA dependendo de entrega manual ou de worker que acesse banco diretamente.
+
 Criar o mesmo conceito para outro nicho exige nova execucao do fluxo com novo contexto de nicho. Variar um produto para melhora exige nova versao ou novo experimento com variavel primaria declarada.
 
 Padroes externos, como os dossies da Biblioteca de Paginas de Vendas, podem ser usados como insumo de briefing e aprendizado. Eles nao podem substituir a geracao rastreavel de hipotese, dor, mecanismo, prova, oferta e experimento pelo sistema.

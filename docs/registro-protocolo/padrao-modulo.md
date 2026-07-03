@@ -86,3 +86,13 @@
 - Pacotes protegidos: `com.marketinghub.pipelines.salespagepatterns.v1` e `com.marketinghub.pipelines.warmupecosystem.v1`.
 - Aplicação: reforço ArchUnit para existência dos dois códigos canônicos e bloqueio de dependência direta entre os pipelines.
 - Backend permanece como fonte de verdade de contratos, pendências, callbacks e custos; inteligência principal permanece no worker.
+
+## 2026-07-03 — Product AI Worker — personalizedsample.v1
+
+- Módulo executor: `product-ai-worker`.
+- Pipeline nomeado: `personalizedsample.v1`.
+- Etapa inicial: `paid-delivery`.
+- Pacotes protegidos: núcleo `com.marketinghub.productaiworker.core` e etapa concreta `com.marketinghub.productaiworker.personalizedsample.v1.paiddelivery`.
+- Ponto inicial canônico: `/api/internal/product-ai/personalizedsample/v1/paid-delivery/stage-executions/pending`.
+- Aplicação: protocolo padrão módulo aplicado no executor novo, com ArchUnit bloqueando banco direto, prompt/schema local e dependência do núcleo em etapa concreta/infra.
+- Backend permanece como fonte de verdade para contrato, prompt/schema em banco, custo autoritativo, compra aprovada e marcação de entrega.

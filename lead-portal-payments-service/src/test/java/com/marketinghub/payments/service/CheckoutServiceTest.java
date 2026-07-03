@@ -52,6 +52,9 @@ class CheckoutServiceTest {
     @Mock
     private DigitalProductPostPurchaseEmailService digitalProductPostPurchaseEmailService;
 
+    @Mock
+    private ProductAiPaidDeliveryBackendClient productAiPaidDeliveryBackendClient;
+
     private PaymentProperties paymentProperties;
     private MercadoPagoProperties mercadoPagoProperties;
     private CheckoutService checkoutService;
@@ -67,7 +70,8 @@ class CheckoutServiceTest {
                 mercadoPagoProperties,
                 paymentProperties,
                 premiumDeliveryService,
-                digitalProductPostPurchaseEmailService);
+                digitalProductPostPurchaseEmailService,
+                productAiPaidDeliveryBackendClient);
     }
 
     @Test
@@ -435,6 +439,7 @@ class CheckoutServiceTest {
         assertThat(purchase.getBuyerEmail()).isEqualTo("submission@example.com");
         assertThat(purchase.getStatus()).isEqualTo(PurchaseStatus.APPROVED);
         assertThat(purchase.getPaymentApprovedAt()).isEqualTo(approvalDate);
+        verify(productAiPaidDeliveryBackendClient).notifyApprovedPurchase(purchase);
     }
 
     @Test

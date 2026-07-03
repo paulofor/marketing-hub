@@ -68,6 +68,18 @@ Subtipos iniciais:
 
 O subtipo nao substitui o tipo principal `Produto IA`. Ele especializa a experiencia para que o sistema consiga comparar resultados, custos e aprendizados entre produtos parecidos.
 
+### Persistencia operacional do subtipo
+
+O subtipo de Produto IA deve ser persistido como `product_ai_subtype` na hipotese e no experimento.
+
+Regra operacional:
+
+- a hipotese pode declarar o subtipo quando o fluxo sistemico identificar que a oferta e Produto IA;
+- o experimento herda o subtipo da hipotese quando nasce pelo fluxo normal;
+- se o experimento declarar um subtipo explicitamente, esse valor deve ficar registrado para rastrear a variacao testada;
+- o primeiro MVP visual/personalizado usa `AI_PERSONALIZED_SAMPLE` como subtipo inicial;
+- relatórios, custos, prompts, schemas e aprendizados devem sempre conseguir voltar ao tipo/subtipo do produto testado.
+
 ### Regra mandatória — Produto IA nasce pelo sistema
 
 Nenhum Produto IA, low-ticket, oferta, pagina, checkout, amostra, promessa ou variacao deve ser criado manualmente como atalho fora dos recursos do Marketing Hub.

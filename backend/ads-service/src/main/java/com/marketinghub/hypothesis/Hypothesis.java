@@ -5,6 +5,7 @@ import com.marketinghub.deliverable.DeliverablePackage;
 import com.marketinghub.creative.label.Angle;
 import com.marketinghub.prompt.PromptAttributeDescription;
 import com.marketinghub.ads.FacebookInstantForm;
+import com.marketinghub.productai.ProductAiSubtype;
 import com.marketinghub.targeting.TargetingElement;
 import jakarta.persistence.*;
 import lombok.*;
@@ -130,6 +131,11 @@ public class Hypothesis {
 
     @Column(precision = 7, scale = 2)
     private BigDecimal kpiTargetCpl;
+
+    /** Subtipo de Produto IA que esta hipótese pretende materializar no fluxo sistêmico. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "product_ai_subtype", length = 48)
+    private ProductAiSubtype productAiSubtype;
 
     @Enumerated(EnumType.STRING)
     @Builder.Default

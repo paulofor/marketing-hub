@@ -1,5 +1,6 @@
 package com.marketinghub.hypothesis.dto;
 
+import com.marketinghub.productai.ProductAiSubtype;
 import java.math.BigDecimal;
 
 public class UpdateHypothesisRequest {
@@ -20,6 +21,7 @@ public class UpdateHypothesisRequest {
     private String offerType;
     private BigDecimal price;
     private BigDecimal kpiTargetCpl;
+    private ProductAiSubtype productAiSubtype;
     private Long offerPackageId;
     private HypothesisFrameworkDto framework;
 
@@ -71,6 +73,10 @@ public class UpdateHypothesisRequest {
 
     public BigDecimal getKpiTargetCpl() { return kpiTargetCpl; }
     public void setKpiTargetCpl(BigDecimal kpiTargetCpl) { this.kpiTargetCpl = kpiTargetCpl; }
+    /** Retorna o subtipo de Produto IA associado à hipótese. */
+    public ProductAiSubtype getProductAiSubtype() { return productAiSubtype; }
+    /** Define o subtipo de Produto IA associado à hipótese. */
+    public void setProductAiSubtype(ProductAiSubtype productAiSubtype) { this.productAiSubtype = productAiSubtype; }
 
     public Long getOfferPackageId() { return offerPackageId; }
     public void setOfferPackageId(Long offerPackageId) { this.offerPackageId = offerPackageId; }

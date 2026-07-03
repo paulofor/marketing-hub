@@ -1,5 +1,8 @@
 databaseChangeLog:
   - include:
+      file: changesets/2026-07-03-product-ai-subtype.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-07-03-mois-dossier-prompt-schema-templates.yaml
       relativeToChangelogFile: true
   - include:

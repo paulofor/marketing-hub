@@ -3,6 +3,7 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import { Hypothesis } from "./useHypothesisBoard";
 import type { HypothesisFramework } from "./types";
+import type { ProductAiSubtype } from "../experiment/useExperiments";
 
 export interface CreateHypothesis {
   marketNicheId: number;
@@ -20,6 +21,7 @@ export interface CreateHypothesis {
   model?: string;
   offerType?: string;
   kpiTargetCpl?: number;
+  productAiSubtype?: ProductAiSubtype | null;
   price?: number;
   offerPackageId?: number;
   costUsd?: number;

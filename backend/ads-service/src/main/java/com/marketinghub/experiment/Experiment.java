@@ -13,6 +13,7 @@ import com.marketinghub.ads.InstagramAccount;
 import com.marketinghub.leadportal.LeadPortalFlow;
 import com.marketinghub.imagegeneration.ImageGenerationModel;
 import com.marketinghub.imagegeneration.ImageGenerationQuality;
+import com.marketinghub.productai.ProductAiSubtype;
 import com.marketinghub.sampleemail.SampleEmail;
 
 import java.time.Instant;
@@ -64,6 +65,11 @@ public class Experiment {
     @Enumerated(EnumType.STRING)
     @Column(name = "experiment_type", length = 32, nullable = false)
     private ExperimentType experimentType = ExperimentType.NICHE_TEST;
+
+    /** Subtipo de Produto IA herdado da hipótese ou definido explicitamente para rastrear o experimento. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "product_ai_subtype", length = 48)
+    private ProductAiSubtype productAiSubtype;
 
     /** Objetivo de campanha exigido para publicação do experimento. */
     @Builder.Default

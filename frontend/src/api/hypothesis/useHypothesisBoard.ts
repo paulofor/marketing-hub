@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import type { HypothesisFramework } from "./types";
+import type { ProductAiSubtype } from "../experiment/useExperiments";
 
 export interface Hypothesis {
   id: string;
@@ -21,6 +22,7 @@ export interface Hypothesis {
   offerType?: string;
   price?: number;
   kpiTargetCpl?: number;
+  productAiSubtype?: ProductAiSubtype | null;
   offerPackageId?: number | null;
   offerPackageName?: string | null;
   costUsd?: number;

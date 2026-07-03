@@ -6,6 +6,7 @@ import java.math.BigDecimal;
 import com.marketinghub.experiment.ExperimentStage;
 import com.marketinghub.experiment.ExperimentCampaignObjective;
 import com.marketinghub.experiment.ExperimentType;
+import com.marketinghub.productai.ProductAiSubtype;
 import java.time.LocalDate;
 import java.util.List;
 import lombok.Data;
@@ -24,6 +25,7 @@ public class CreateExperimentRequest {
     private String funnelPromise;
     private String primaryCta;
     private ExperimentType experimentType;
+    private ProductAiSubtype productAiSubtype;
     private ExperimentCampaignObjective campaignObjective;
     private ExperimentStage stage;
     private String primaryVariable;

@@ -5567,3 +5567,11 @@
 - MVP recomendado: `AI_PERSONALIZED_SAMPLE`, por testar impacto visual e personalizacao no mesmo fluxo.
 - Regra registrada: nenhum produto, oferta, pagina, amostra, checkout ou variacao deve ser criado manualmente como atalho; tudo precisa nascer por recursos oficiais do sistema com rastreabilidade de nicho, hipotese, dor, resultado, mecanismo, prova, oferta, prompts/schemas, custos e experimento.
 - Prevenção de recorrência: padrões externos e ideias estratégicas podem enriquecer o briefing, mas não substituem o fluxo sistêmico de criação e validação.
+
+## 2026-07-03 — Subtipo operacional de Produto IA em hipótese e experimento
+
+- Decisão: o subtipo de Produto IA passa a ser dado operacional persistido em `hypothesis.product_ai_subtype` e `experiment.product_ai_subtype`.
+- Regra: experimento criado pelo fluxo normal herda o subtipo da hipótese quando o payload não informar valor explícito.
+- Primeiro MVP: a criação de experimento low-ticket no frontend inicia com `AI_PERSONALIZED_SAMPLE`, preservando o teste das hipóteses de impacto visual e personalização.
+- Correção de CI incluída: o changelog de templates MOIS foi normalizado para YAML válido, mantendo prompts/schemas versionados no backend.
+- Prevenção de recorrência: o sistema passa a conseguir filtrar custos, aprendizados e resultados por subtipo, evitando que Produto IA fique como categoria genérica sem comparação operacional.

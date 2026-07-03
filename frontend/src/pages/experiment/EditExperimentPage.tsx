@@ -6,6 +6,7 @@ import { useExperiment } from "../../api/experiment/useExperiment";
 import type {
   ExperimentStage,
   ExperimentType,
+  ProductAiSubtype,
 } from "../../api/experiment/useExperiments";
 import { useImageGenerationModels } from "../../api/ai/useImageGenerationModels";
 import {
@@ -20,6 +21,15 @@ import { useInstagramAccounts } from "../../api/useInstagramAccounts";
 import PageTitle from "../../components/PageTitle";
 import experimentIcon from "../../assets/icons/experiment-icon.svg";
 import { experimentStageLabels } from "./stageLabels";
+
+const productAiSubtypeLabels: Record<ProductAiSubtype, string> = {
+  AI_VISUAL_PREVIEW: "Prévia visual IA",
+  AI_PERSONALIZED_SAMPLE: "Amostra personalizada IA",
+  AI_TRANSFORMATION_SIMULATOR: "Simulador de transformação IA",
+  AI_VISUAL_ASSET_PACK: "Pacote visual IA",
+  AI_IDENTITY_AVATAR_PRODUCT: "Identidade/avatar IA",
+  AI_REPORT_VISUAL_EVIDENCE: "Relatório com evidência visual IA",
+};
 
 interface FormData {
   name: string;
@@ -45,6 +55,7 @@ interface FormData {
   funnelPromise: string;
   primaryCta: string;
   experimentType: ExperimentType;
+  productAiSubtype: ProductAiSubtype | "";
 }
 
 function toDateInputValue(value?: string | null) {
@@ -102,6 +113,7 @@ export default function EditExperimentPage() {
       funnelPromise: "",
       primaryCta: "",
       experimentType: "NICHE_TEST",
+      productAiSubtype: "",
     },
   });
   const { data: facebookPages, isLoading: isLoadingFacebookPages } =
@@ -155,6 +167,11 @@ export default function EditExperimentPage() {
         funnelPromise: data.funnelPromise ?? "",
         primaryCta: data.primaryCta ?? "",
         experimentType: data.experimentType ?? "NICHE_TEST",
+        productAiSubtype:
+          data.productAiSubtype ??
+          (data.experimentType === "LOW_TICKET_PRODUCT"
+            ? "AI_PERSONALIZED_SAMPLE"
+            : ""),
       });
     }
   }, [data, reset]);
@@ -168,6 +185,7 @@ export default function EditExperimentPage() {
   const selectedImageQualityId = watch("imageModelQualityId");
   const imagesPerPackageValue = watch("imagesPerPackage");
   const experimentTypeValue = watch("experimentType");
+  const productAiSubtypeValue = watch("productAiSubtype");
   const isLowTicketProduct = experimentTypeValue === "LOW_TICKET_PRODUCT";
   const stageEntries = playbook ?? [];
   const stageSelectOptions =
@@ -486,6 +504,9 @@ export default function EditExperimentPage() {
         funnelPromise: values.funnelPromise.trim(),
         primaryCta: values.primaryCta.trim(),
         experimentType: values.experimentType,
+        productAiSubtype: isLowTicketProduct
+          ? values.productAiSubtype || "AI_PERSONALIZED_SAMPLE"
+          : null,
         campaignObjective: isLowTicketProduct ? "SALES" : "LEADS",
         kpiTarget: Number(values.kpiTarget),
         dailyBudget: parsedDailyBudget,
@@ -568,6 +589,18 @@ export default function EditExperimentPage() {
               id="experimentType"
               className="form-select mb-2"
               {...register("experimentType")}
+              onChange={(event) => {
+                register("experimentType").onChange(event);
+                if (event.target.value === "LOW_TICKET_PRODUCT") {
+                  setValue(
+                    "productAiSubtype",
+                    productAiSubtypeValue || "AI_PERSONALIZED_SAMPLE",
+                    { shouldDirty: true },
+                  );
+                } else {
+                  setValue("productAiSubtype", "", { shouldDirty: true });
+                }
+              }}
             >
               <option value="LOW_TICKET_PRODUCT">Produto low-ticket</option>
               <option value="NICHE_TEST">Teste de nicho / lead</option>
@@ -577,6 +610,26 @@ export default function EditExperimentPage() {
                 ? "Prioriza venda direta: página curta, checkout e entrega."
                 : "Prioriza captura de lead: isca/amostra antes da venda."}
             </div>
+            {isLowTicketProduct && (
+              <>
+                <label className="form-label" htmlFor="productAiSubtype">
+                  Mecanismo de Produto IA
+                </label>
+                <select
+                  id="productAiSubtype"
+                  className="form-select mb-3"
+                  {...register("productAiSubtype")}
+                >
+                  {Object.entries(productAiSubtypeLabels).map(
+                    ([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ),
+                  )}
+                </select>
+              </>
+            )}
             <label className="form-label" htmlFor="stageSelect">
               Etapa do experimento <span className="text-danger">*</span>
             </label>

@@ -52,71 +52,71 @@ databaseChangeLog:
                   'sales_page_patterns_v1',
                   'Você está analisando uma página de venda de produto com sinais de sucesso.
 
-Objetivo: extrair padrões abstratos que possam melhorar páginas próprias do Marketing Hub, sem copiar conteúdo, marca, layout literal, imagens, depoimentos ou promessa exclusiva de terceiros.
+                  Objetivo: extrair padrões abstratos que possam melhorar páginas próprias do Marketing Hub, sem copiar conteúdo, marca, layout literal, imagens, depoimentos ou promessa exclusiva de terceiros.
 
-Contexto coletado da página:
+                  Contexto coletado da página:
 
-{{context}}
+                  {{context}}
 
-Extraia padrões reutilizáveis sobre:
-- estrutura da página;
-- hierarquia visual;
-- paleta, tipografia e densidade visual;
-- sequência de copy;
-- promessa, dor, mecanismo e oferta;
-- prova, autoridade, garantia, CTA e objeções;
-- tipos de imagem ou mídia usados;
-- riscos de cópia literal que devem ser evitados;
-- recomendações práticas para GeraLanding/GeraSalesPage.
+                  Extraia padrões reutilizáveis sobre:
+                  - estrutura da página;
+                  - hierarquia visual;
+                  - paleta, tipografia e densidade visual;
+                  - sequência de copy;
+                  - promessa, dor, mecanismo e oferta;
+                  - prova, autoridade, garantia, CTA e objeções;
+                  - tipos de imagem ou mídia usados;
+                  - riscos de cópia literal que devem ser evitados;
+                  - recomendações práticas para GeraLanding/GeraSalesPage.
 
-Responda em JSON válido aderente ao schema.',
+                  Responda em JSON válido aderente ao schema.',
                   '{
-  "type": "object",
-  "additionalProperties": false,
-  "required": [
-    "status",
-    "page_pattern_summary",
-    "design_patterns",
-    "copy_patterns",
-    "offer_patterns",
-    "proof_patterns",
-    "cta_patterns",
-    "adaptation_recommendations",
-    "do_not_copy"
-  ],
-  "properties": {
-    "status": { "type": "string" },
-    "page_pattern_summary": { "type": "string" },
-    "design_patterns": {
-      "type": "array",
-      "items": { "type": "string" }
-    },
-    "copy_patterns": {
-      "type": "array",
-      "items": { "type": "string" }
-    },
-    "offer_patterns": {
-      "type": "array",
-      "items": { "type": "string" }
-    },
-    "proof_patterns": {
-      "type": "array",
-      "items": { "type": "string" }
-    },
-    "cta_patterns": {
-      "type": "array",
-      "items": { "type": "string" }
-    },
-    "adaptation_recommendations": {
-      "type": "array",
-      "items": { "type": "string" }
-    },
-    "do_not_copy": {
-      "type": "array",
-      "items": { "type": "string" }
-    }
-  }
-}',
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "status",
+                      "page_pattern_summary",
+                      "design_patterns",
+                      "copy_patterns",
+                      "offer_patterns",
+                      "proof_patterns",
+                      "cta_patterns",
+                      "adaptation_recommendations",
+                      "do_not_copy"
+                    ],
+                    "properties": {
+                      "status": { "type": "string" },
+                      "page_pattern_summary": { "type": "string" },
+                      "design_patterns": {
+                        "type": "array",
+                        "items": { "type": "string" }
+                      },
+                      "copy_patterns": {
+                        "type": "array",
+                        "items": { "type": "string" }
+                      },
+                      "offer_patterns": {
+                        "type": "array",
+                        "items": { "type": "string" }
+                      },
+                      "proof_patterns": {
+                        "type": "array",
+                        "items": { "type": "string" }
+                      },
+                      "cta_patterns": {
+                        "type": "array",
+                        "items": { "type": "string" }
+                      },
+                      "adaptation_recommendations": {
+                        "type": "array",
+                        "items": { "type": "string" }
+                      },
+                      "do_not_copy": {
+                        "type": "array",
+                        "items": { "type": "string" }
+                      }
+                    }
+                  }',
                   TRUE,
                   UTC_TIMESTAMP(6),
                   UTC_TIMESTAMP(6)
@@ -130,43 +130,43 @@ Responda em JSON válido aderente ao schema.',
                   'warmup_ecosystem_product_understanding_v1',
                   'Entenda o produto para orientar a investigação comercial do dossiê MOIS.
 
-Use exclusivamente o contexto recebido. Não invente dados externos.
+                  Use exclusivamente o contexto recebido. Não invente dados externos.
 
-Organize a análise pelo eixo Dor → Resultado → Mecanismo → Prova → Oferta e responda em JSON válido com os campos:
-- produto
-- publico
-- dor_superficie
-- dor_raiz
-- dor_emocional_social
-- ganho_desejado
-- promessa
-- mecanismo
-- formato
-- arquitetura_oferta
-- prova
-- objecao_principal
-- custo_de_nao_agir
-- nivel_consciencia_publico
-- maturidade_dor
-- urgencia
-- desejo_dominante
-- angulo_central
-- porque_agora
-- hipotese_sucesso
-- lacunas
-- resumo_final
+                  Organize a análise pelo eixo Dor → Resultado → Mecanismo → Prova → Oferta e responda em JSON válido com os campos:
+                  - produto
+                  - publico
+                  - dor_superficie
+                  - dor_raiz
+                  - dor_emocional_social
+                  - ganho_desejado
+                  - promessa
+                  - mecanismo
+                  - formato
+                  - arquitetura_oferta
+                  - prova
+                  - objecao_principal
+                  - custo_de_nao_agir
+                  - nivel_consciencia_publico
+                  - maturidade_dor
+                  - urgencia
+                  - desejo_dominante
+                  - angulo_central
+                  - porque_agora
+                  - hipotese_sucesso
+                  - lacunas
+                  - resumo_final
 
-A hipótese de sucesso deve seguir o formato: "o produto ganha força porque combina [dor forte] + [resultado desejado] + [mecanismo crível] + [prova/autoridade] + [oferta fácil de comprar]".
+                  A hipótese de sucesso deve seguir o formato: "o produto ganha força porque combina [dor forte] + [resultado desejado] + [mecanismo crível] + [prova/autoridade] + [oferta fácil de comprar]".
 
-Se o contexto não sustentar algum campo, informe claramente "não informado no contexto" e registre a lacuna. Não transforme metadados operacionais em conclusão comercial.
+                  Se o contexto não sustentar algum campo, informe claramente "não informado no contexto" e registre a lacuna. Não transforme metadados operacionais em conclusão comercial.
 
-Contexto:
-{{context}}',
+                  Contexto:
+                  {{context}}',
                   '{
-  "type": "object",
-  "required": ["produto", "publico", "promessa", "mecanismo", "prova", "lacunas", "resumo_final"],
-  "additionalProperties": true
-}',
+                    "type": "object",
+                    "required": ["produto", "publico", "promessa", "mecanismo", "prova", "lacunas", "resumo_final"],
+                    "additionalProperties": true
+                  }',
                   TRUE,
                   UTC_TIMESTAMP(6),
                   UTC_TIMESTAMP(6)

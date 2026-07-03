@@ -1850,6 +1850,14 @@ export default function ExperimentDetailPage() {
   const experimentTypeLabel = isLowTicketProduct
     ? "Produto low-ticket"
     : "Teste de nicho / lead";
+  const productAiSubtypeLabel: Record<string, string> = {
+    AI_VISUAL_PREVIEW: "Prévia visual IA",
+    AI_PERSONALIZED_SAMPLE: "Amostra personalizada IA",
+    AI_TRANSFORMATION_SIMULATOR: "Simulador de transformação IA",
+    AI_VISUAL_ASSET_PACK: "Pacote visual IA",
+    AI_IDENTITY_AVATAR_PRODUCT: "Identidade/avatar IA",
+    AI_REPORT_VISUAL_EVIDENCE: "Relatório com evidência visual IA",
+  };
   const campaignObjectiveLabel =
     data.campaignObjective === "LEADS"
       ? "Leads"
@@ -1945,6 +1953,12 @@ export default function ExperimentDetailPage() {
     {
       label: "Tipo de experimento",
       value: experimentTypeLabel,
+    },
+    {
+      label: "Mecanismo de Produto IA",
+      value: data.productAiSubtype
+        ? productAiSubtypeLabel[data.productAiSubtype] ?? data.productAiSubtype
+        : "-",
     },
     {
       label: "Nicho",

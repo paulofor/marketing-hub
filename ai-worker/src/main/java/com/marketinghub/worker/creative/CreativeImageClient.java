@@ -32,7 +32,7 @@ import reactor.core.publisher.Mono;
 import reactor.netty.http.client.HttpClient;
 
 /**
- * Simple wrapper around OpenAI image-capable APIs for creative image generation.
+ * Cliente responsável por gerar imagens de criativos usando APIs de imagem da OpenAI.
  */
 @Component
 public class CreativeImageClient {
@@ -47,11 +47,12 @@ public class CreativeImageClient {
     private final boolean enabled;
     private static final Logger log = LoggerFactory.getLogger(CreativeImageClient.class);
     private static final int DEFAULT_MAX_IN_MEMORY_SIZE = 10 * 1024 * 1024; // 10 MB
+    private static final int MAX_TRANSIENT_ATTEMPTS = 3;
     private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(10);
     private static final Duration DEFAULT_REQUEST_TIMEOUT = Duration.ofMinutes(15);
 
     /**
-     * Builds the OpenAI image client with the default Flex-compatible timeout and service tier.
+     * Monta o cliente de imagem da OpenAI com timeout e tier compatíveis com Flex.
      */
     public CreativeImageClient(WebClient.Builder builder,
                                BackendAssetClient assetClient,
@@ -90,21 +91,21 @@ public class CreativeImageClient {
     }
 
     /**
-     * Generates an image for a prompt without an intermediate prompt.
+     * Gera uma imagem para um prompt sem prompt intermediário.
      */
     public String generateImage(String prompt) {
         return generateImage(prompt, null, "creative-default");
     }
 
     /**
-     * Generates an image and returns a usable URL or fails when generation cannot run.
+     * Gera uma imagem e retorna uma URL utilizável ou falha quando a geração não puder executar.
      */
     public String generateImage(String prompt, String intermediatePrompt) {
         return generateImage(prompt, intermediatePrompt, "creative");
     }
 
     /**
-     * Generates an image with operational context so logs can isolate OpenAI, upload or configuration failures.
+     * Gera uma imagem com contexto operacional para isolar falhas de OpenAI, upload ou configuração.
      */
     public String generateImage(String prompt, String intermediatePrompt, String operationContext) {
         String context = normalizeContext(operationContext);
@@ -145,18 +146,36 @@ public class CreativeImageClient {
     }
 
     /**
-     * Calls the OpenAI image-capable endpoint and extracts the generated image payload.
+     * Chama o endpoint de imagem da OpenAI e extrai o payload de imagem gerado.
      */
     private OpenAiImageResult callOpenAiForImage(String prompt, String context) {
-        return isFlexTier(serviceTier)
-                ? callResponsesImageTool(prompt, context)
-                : callImageApi(prompt, context);
+        RuntimeException lastFailure = null;
+        for (int attempt = 1; attempt <= MAX_TRANSIENT_ATTEMPTS; attempt++) {
+            String effectiveTier = effectiveServiceTierForAttempt(attempt);
+            try {
+                return isFlexTier(effectiveTier)
+                        ? callResponsesImageTool(prompt, context, effectiveTier, attempt)
+                        : callImageApi(prompt, context, effectiveTier, attempt);
+            } catch (RuntimeException ex) {
+                lastFailure = ex;
+                if (!isTransientOpenAiFailure(ex) || attempt == MAX_TRANSIENT_ATTEMPTS) {
+                    throw ex;
+                }
+                log.warn(
+                        "OpenAI creative image generation failed with transient error. context={} attempt={} nextAttemptTier={} error={}",
+                        context,
+                        attempt,
+                        effectiveServiceTierForAttempt(attempt + 1),
+                        ex.getMessage());
+            }
+        }
+        throw lastFailure != null ? lastFailure : new RuntimeException("No image returned from OpenAI");
     }
 
     /**
-     * Calls the Responses API image generation tool using Flex processing.
+     * Chama a ferramenta de imagem da Responses API usando o tier efetivo da tentativa.
      */
-    private OpenAiImageResult callResponsesImageTool(String prompt, String context) {
+    private OpenAiImageResult callResponsesImageTool(String prompt, String context, String effectiveTier, int attempt) {
         Map<String, Object> imageTool = new LinkedHashMap<>();
         imageTool.put("type", "image_generation");
         imageTool.put("action", "generate");
@@ -166,10 +185,14 @@ public class CreativeImageClient {
         payload.put("model", responsesModel);
         payload.put("input", prompt);
         payload.put("tools", List.of(imageTool));
-        payload.put("service_tier", serviceTier);
+        payload.put("service_tier", effectiveTier);
 
-        log.info("Sending creative image request to OpenAI Responses API. context={} timeoutSeconds={} payload={}",
-                context, requestTimeout.getSeconds(), payload);
+        log.info(
+                "Sending creative image request to OpenAI Responses API. context={} attempt={} timeoutSeconds={} payload={}",
+                context,
+                attempt,
+                requestTimeout.getSeconds(),
+                payload);
         ResponsesImageResponse response;
         try {
             response = webClient.post()
@@ -188,9 +211,9 @@ public class CreativeImageClient {
     }
 
     /**
-     * Calls the direct Image API for non-Flex image generation modes.
+     * Chama a Image API direta para modos de geração que não usam Flex.
      */
-    private OpenAiImageResult callImageApi(String prompt, String context) {
+    private OpenAiImageResult callImageApi(String prompt, String context, String effectiveTier, int attempt) {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("model", model);
         payload.put("prompt", prompt);
@@ -198,8 +221,13 @@ public class CreativeImageClient {
             payload.put("response_format", "b64_json");
         }
 
-        log.info("Sending creative image request to OpenAI Image API. context={} timeoutSeconds={} payload={}",
-                context, requestTimeout.getSeconds(), payload);
+        log.info(
+                "Sending creative image request to OpenAI Image API. context={} attempt={} serviceTier={} timeoutSeconds={} payload={}",
+                context,
+                attempt,
+                effectiveTier,
+                requestTimeout.getSeconds(),
+                payload);
         ImageResponse response;
         try {
             response = webClient.post()
@@ -218,7 +246,7 @@ public class CreativeImageClient {
     }
 
     /**
-     * Extracts the first generated image from an Image API response.
+     * Extrai a primeira imagem gerada de uma resposta da Image API.
      */
     private OpenAiImageResult extractImageApiImage(ImageResponse response) {
         if (response == null) {
@@ -238,7 +266,7 @@ public class CreativeImageClient {
     }
 
     /**
-     * Extracts the first generated image from a Responses API image generation tool response.
+     * Extrai a primeira imagem gerada de uma resposta da ferramenta de imagem da Responses API.
      */
     private OpenAiImageResult extractResponsesImage(ResponsesImageResponse response) {
         if (response == null) {
@@ -262,7 +290,7 @@ public class CreativeImageClient {
     }
 
     /**
-     * Reads and logs the raw OpenAI response before parsing the image contract.
+     * Lê e registra a resposta bruta da OpenAI antes de interpretar o contrato de imagem.
      */
     private Mono<ImageResponse> readImageResponse(ClientResponse response, String context) {
         HttpStatusCode status = response.statusCode();
@@ -274,7 +302,7 @@ public class CreativeImageClient {
     }
 
     /**
-     * Copies a reactive data buffer to a byte array and releases it.
+     * Copia um buffer reativo para array de bytes e libera o buffer.
      */
     private byte[] toByteArray(DataBuffer buffer) {
         try {
@@ -287,7 +315,7 @@ public class CreativeImageClient {
     }
 
     /**
-     * Appends a response chunk while enforcing the configured memory limit.
+     * Adiciona um trecho de resposta respeitando o limite de memória configurado.
      */
     private ByteArrayOutputStream appendChunk(ByteArrayOutputStream output, byte[] chunk) {
         if (output.size() + chunk.length > DEFAULT_MAX_IN_MEMORY_SIZE) {
@@ -298,7 +326,7 @@ public class CreativeImageClient {
     }
 
     /**
-     * Reads and logs the raw OpenAI Responses API response before parsing the image tool contract.
+     * Lê e registra a resposta bruta da Responses API antes de interpretar o contrato da ferramenta de imagem.
      */
     private Mono<ResponsesImageResponse> readResponsesImageResponse(ClientResponse response, String context) {
         HttpStatusCode status = response.statusCode();
@@ -310,7 +338,7 @@ public class CreativeImageClient {
     }
 
     /**
-     * Parses the raw OpenAI image response after recording status and body for root-cause analysis.
+     * Interpreta a resposta bruta de imagem após registrar status e corpo para análise de causa-raiz.
      */
     private ImageResponse parseResponse(byte[] bytes, HttpStatusCode status, String context) {
         String rawResponse = new String(bytes, StandardCharsets.UTF_8);
@@ -326,7 +354,7 @@ public class CreativeImageClient {
     }
 
     /**
-     * Parses the raw OpenAI Responses API response after recording status and body for root-cause analysis.
+     * Interpreta a resposta bruta da Responses API após registrar status e corpo para causa-raiz.
      */
     private ResponsesImageResponse parseResponsesImageResponse(byte[] bytes, HttpStatusCode status, String context) {
         String rawResponse = new String(bytes, StandardCharsets.UTF_8);
@@ -342,7 +370,7 @@ public class CreativeImageClient {
     }
 
     /**
-     * Indicates whether the selected model supports an explicit response_format request field.
+     * Indica se o modelo selecionado aceita campo explícito de response_format.
      */
     private boolean supportsResponseFormat(String selectedModel) {
         if (selectedModel == null || selectedModel.isBlank()) {
@@ -352,14 +380,42 @@ public class CreativeImageClient {
     }
 
     /**
-     * Determines whether the configured service tier should use the Responses API Flex path.
+     * Determina se o tier configurado deve usar o caminho Flex da Responses API.
      */
     private boolean isFlexTier(String selectedServiceTier) {
         return "flex".equalsIgnoreCase(selectedServiceTier);
     }
 
     /**
-     * Resolves the request timeout, keeping Flex-compatible defaults for invalid configuration.
+     * Mantém as duas primeiras tentativas em Flex e usa Standard na terceira para erro transitório.
+     */
+    private String effectiveServiceTierForAttempt(int attempt) {
+        if (!isFlexTier(serviceTier)) {
+            return serviceTier;
+        }
+        return attempt >= MAX_TRANSIENT_ATTEMPTS ? "default" : "flex";
+    }
+
+    /**
+     * Identifica falhas transitórias da OpenAI que merecem nova tentativa em outro tier.
+     */
+    private boolean isTransientOpenAiFailure(RuntimeException ex) {
+        String message = ex.getMessage();
+        if (message == null) {
+            return false;
+        }
+        String normalized = message.toLowerCase(Locale.ROOT);
+        return normalized.contains("429")
+                || normalized.contains("408")
+                || normalized.contains("5xx")
+                || normalized.contains("rate_limit")
+                || normalized.contains("too many requests")
+                || normalized.contains("temporarily unavailable")
+                || normalized.contains("timeout");
+    }
+
+    /**
+     * Resolve o timeout da requisição mantendo padrão compatível com Flex para configuração inválida.
      */
     private Duration resolveRequestTimeout(long requestTimeoutSeconds) {
         if (requestTimeoutSeconds <= 0) {
@@ -369,7 +425,7 @@ public class CreativeImageClient {
     }
 
     /**
-     * Normalizes blank configuration values to explicit operational defaults.
+     * Normaliza valores de configuração vazios para padrões operacionais explícitos.
      */
     private String normalizeConfig(String value, String defaultValue) {
         if (value == null || value.isBlank()) {
@@ -379,7 +435,7 @@ public class CreativeImageClient {
     }
 
     /**
-     * Normalizes absent context values to keep logs queryable.
+     * Normaliza contexto ausente para manter logs pesquisáveis.
      */
     private String normalizeContext(String operationContext) {
         if (operationContext == null || operationContext.isBlank()) {

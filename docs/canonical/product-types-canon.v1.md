@@ -101,6 +101,8 @@ Todo Produto IA deve nascer por uma execucao rastreavel do sistema, preservando 
 
 Antes de criar o experimento, o backend deve validar o preparo da hipotese Produto IA por endpoint sistemico. Para o MVP `AI_PERSONALIZED_SAMPLE`, a hipotese so pode virar experimento quando possuir nicho/contexto, dor principal, persona, promessa, mecanismo, preco, pacote de oferta, entregaveis do pacote e descricao da amostra personalizada. A tela pode exibir bloqueios e aplicar um rascunho canonico, mas a trava definitiva fica no backend.
 
+Quando uma hipotese criada pelo sistema ja possuir nicho/contexto, dor principal, persona, promessa e mecanismo, mas ainda nao possuir os campos operacionais do MVP, o backend pode executar o comando sistemico `POST /api/product-ai/hypotheses/{hypothesisId}/personalized-sample-preparation`. Esse comando apenas completa a hipotese existente com `AI_PERSONALIZED_SAMPLE`, preco inicial, pacote de oferta e entregavel minimo de amostra personalizada. Ele nao cria hipotese nova, nao cria experimento e nao autoriza atalho manual fora do fluxo.
+
 Criar o mesmo conceito para outro nicho exige nova execucao do fluxo com novo contexto de nicho. Variar um produto para melhora exige nova versao ou novo experimento com variavel primaria declarada.
 
 Padroes externos, como os dossies da Biblioteca de Paginas de Vendas, podem ser usados como insumo de briefing e aprendizado. Eles nao podem substituir a geracao rastreavel de hipotese, dor, mecanismo, prova, oferta e experimento pelo sistema.

@@ -24,8 +24,59 @@ paths:
                 $ref: '#/components/schemas/ProductAiExperimentPreparation'
         '404':
           description: Hipótese não encontrada.
+  /api/product-ai/hypotheses/{hypothesisId}/personalized-sample-preparation:
+    post:
+      summary: Prepara hipótese para AI Personalized Sample
+      description: Completa uma hipótese já criada pelo sistema com subtipo, preço inicial, pacote de oferta e entregável mínimo para o MVP de amostra personalizada. Não cria experimento.
+      parameters:
+        - name: hypothesisId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Hipótese preparada e diagnóstico de experimento retornado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersonalizedSamplePreparation'
+        '400':
+          description: Hipótese ainda não possui rastreabilidade mínima de nicho, dor, persona, promessa e mecanismo.
+        '404':
+          description: Hipótese não encontrada.
 components:
   schemas:
+    PersonalizedSamplePreparation:
+      type: object
+      properties:
+        hypothesisId:
+          type: string
+          format: uuid
+        hypothesisTitle:
+          type: string
+        productAiSubtype:
+          type: string
+          example: AI_PERSONALIZED_SAMPLE
+        price:
+          type: number
+          format: decimal
+          example: 27.00
+        offerPackageId:
+          type: integer
+          format: int64
+        offerPackageName:
+          type: string
+          example: Pacote inicial de amostra personalizada
+        deliverableId:
+          type: integer
+          format: int64
+        deliverableTitle:
+          type: string
+          example: Amostra visual personalizada
+        experimentPreparation:
+          $ref: '#/components/schemas/ProductAiExperimentPreparation'
     ProductAiExperimentPreparation:
       type: object
       required: [hypothesisId, hypothesisTitle, ready, blockers]

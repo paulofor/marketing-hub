@@ -261,6 +261,43 @@ class ExperimentControllerTest {
                 .andExpect(jsonPath("$.draft.campaignObjective").value("SALES"));
     }
 
+    /** Garante que o comando sistêmico completa uma hipótese rastreada para o MVP de amostra personalizada. */
+    @Test
+    void personalizedSamplePreparationCompletesTraceableHypothesis() throws Exception {
+        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("AI preparo").build());
+        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(nicheRepo.findById(nicheId).orElseThrow())
+                .title("Hipótese para preparo")
+                .premiseAngle(angle)
+                .promise("Mostrar uma prévia visual personalizada da melhoria")
+                .problem("O cliente não enxerga o resultado antes de comprar")
+                .persona("Dono de pequeno negócio")
+                .mechanism("Prévia visual gerada por IA com dados do lead")
+                .build());
+
+        mockMvc.perform(get("/api/product-ai/experiment-preparations/{hypothesisId}", hyp.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.ready").value(false));
+
+        mockMvc.perform(post("/api/product-ai/hypotheses/{hypothesisId}/personalized-sample-preparation", hyp.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.productAiSubtype").value("AI_PERSONALIZED_SAMPLE"))
+                .andExpect(jsonPath("$.price").value(27.00))
+                .andExpect(jsonPath("$.offerPackageName").value("Pacote inicial de amostra personalizada"))
+                .andExpect(jsonPath("$.deliverableTitle").value("Amostra visual personalizada"))
+                .andExpect(jsonPath("$.experimentPreparation.ready").value(true))
+                .andExpect(jsonPath("$.experimentPreparation.draft.experimentType").value("LOW_TICKET_PRODUCT"))
+                .andExpect(jsonPath("$.experimentPreparation.draft.stage").value("SAMPLE"));
+
+        var prepared = hypothesisRepository.findById(hyp.getId()).orElseThrow();
+        assertThat(prepared.getProductAiSubtype()).isEqualTo(ProductAiSubtype.AI_PERSONALIZED_SAMPLE);
+        assertThat(prepared.getPrice()).isEqualByComparingTo("27.00");
+        assertThat(prepared.getOfferPackage()).isNotNull();
+        assertThat(deliverablePackageRepository.findByHypothesisIdOrderByCreatedAtDesc(hyp.getId())).hasSize(1);
+        assertThat(deliverableRepository.findAll()).hasSize(1);
+        assertThat(prepared.getEntrega()).contains("Amostra visual personalizada");
+    }
+
     /** Garante que Produto IA incompleto não vira experimento por chamada direta de API. */
     @Test
     void createEndpointRejectsIncompleteProductAiHypothesis() throws Exception {

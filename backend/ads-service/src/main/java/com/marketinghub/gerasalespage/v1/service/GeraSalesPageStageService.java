@@ -139,6 +139,13 @@ public class GeraSalesPageStageService {
             execution.setCostUsd(payload.costUsd());
             execution.setOpenAiJobId(payload.openAiJobId());
             execution.setCompletedAt(Instant.now());
+            if (isRejectedQualityReview(execution)) {
+                execution.setStatus(STATUS_FAILED);
+                execution.setErrorMessage("Quality review reprovou a página; publicação bloqueada.");
+                execution.setErrorDetail(extractQualityReviewBlockers(execution.getModelResponse()));
+                executionRepository.save(execution);
+                return;
+            }
             publicationAuditService.snapshotPublication(execution);
             GeraSalesPageStageCode.nextAfter(execution.getStageCode())
                     .ifPresent(nextStage -> enqueue(execution.getExperimentId(), nextStage));
@@ -265,6 +272,31 @@ public class GeraSalesPageStageService {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
                     "GeraSalesPage v1 exige followUpActionUrl com URL real de checkout antes de iniciar.");
+        }
+    }
+
+    /** Verifica se a etapa de revisão comercial reprovou a página. */
+    private boolean isRejectedQualityReview(GeraSalesPageStageExecution execution) {
+        if (!GeraSalesPageStageCode.CHECKOUT_QUALITY_REVIEW.code().equals(execution.getStageCode())) {
+            return false;
+        }
+        try {
+            Object approved = objectMapper.readValue(execution.getModelResponse(), Map.class).get("approved");
+            return Boolean.FALSE.equals(approved);
+        } catch (Exception ex) {
+            log.warn("Falha ao interpretar quality review do GeraSalesPage job {}", execution.getIdJob(), ex);
+            return true;
+        }
+    }
+
+    /** Extrai os bloqueios de revisão para deixar a causa da falha auditável. */
+    private String extractQualityReviewBlockers(String modelResponse) {
+        try {
+            Object blockers = objectMapper.readValue(modelResponse, Map.class).get("blockers");
+            return objectMapper.writeValueAsString(blockers);
+        } catch (Exception ex) {
+            log.warn("Falha ao extrair bloqueios do quality review do GeraSalesPage.", ex);
+            return modelResponse;
         }
     }
 

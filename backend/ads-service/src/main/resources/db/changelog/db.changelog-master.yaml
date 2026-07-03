@@ -1245,3 +1245,7 @@ databaseChangeLog:
   - include:
       file: changesets/2026-07-03-mois-sales-library-two-dossier-pipelines.yaml
       relativeToChangelogFile: true
+
+  - include:
+      file: changesets/2026-07-03-product-ai-paid-delivery.yaml
+      relativeToChangelogFile: true

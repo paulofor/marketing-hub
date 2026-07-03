@@ -45,6 +45,7 @@ public class CheckoutService {
     private final PaymentProperties paymentProperties;
     private final PremiumDeliveryService premiumDeliveryService;
     private final DigitalProductPostPurchaseEmailService digitalProductPostPurchaseEmailService;
+    private final ProductAiPaidDeliveryBackendClient productAiPaidDeliveryBackendClient;
 
     public CheckoutService(MercadoPagoClient mercadoPagoClient,
                            LeadPortalPackageGateway packageGateway,
@@ -52,7 +53,8 @@ public class CheckoutService {
                            MercadoPagoProperties mercadoPagoProperties,
                            PaymentProperties paymentProperties,
                            PremiumDeliveryService premiumDeliveryService,
-                           DigitalProductPostPurchaseEmailService digitalProductPostPurchaseEmailService) {
+                           DigitalProductPostPurchaseEmailService digitalProductPostPurchaseEmailService,
+                           ProductAiPaidDeliveryBackendClient productAiPaidDeliveryBackendClient) {
         this.mercadoPagoClient = mercadoPagoClient;
         this.packageGateway = packageGateway;
         this.purchaseRepository = purchaseRepository;
@@ -60,6 +62,7 @@ public class CheckoutService {
         this.paymentProperties = paymentProperties;
         this.premiumDeliveryService = premiumDeliveryService;
         this.digitalProductPostPurchaseEmailService = digitalProductPostPurchaseEmailService;
+        this.productAiPaidDeliveryBackendClient = productAiPaidDeliveryBackendClient;
     }
 
     public Optional<MercadoPagoPaymentDetails> fetchPayment(String paymentId) {
@@ -185,6 +188,7 @@ public class CheckoutService {
             } catch (Exception ex) {
                 log.error("Falha ao registrar entrega premium para a compra {}", saved.getId(), ex);
             }
+            productAiPaidDeliveryBackendClient.notifyApprovedPurchase(saved);
         }
         return saved;
     }

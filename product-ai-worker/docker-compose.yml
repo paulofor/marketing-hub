@@ -1,0 +1,13 @@
+services:
+  product-ai-worker:
+    image: ghcr.io/paulofor/marketing-hub/product-ai-worker:latest
+    container_name: product-ai-worker
+    restart: unless-stopped
+    ports:
+      - "${PRODUCT_AI_WORKER_PORT:-8095}:8095"
+    environment:
+      SERVER_PORT: 8095
+      PRODUCT_AI_WORKER_ENABLED: ${PRODUCT_AI_WORKER_ENABLED:-true}
+      PRODUCT_AI_BACKEND_BASE_URL: ${PRODUCT_AI_BACKEND_BASE_URL:-http://191.252.181.168}
+      PRODUCT_AI_PENDING_LIMIT: ${PRODUCT_AI_PENDING_LIMIT:-10}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}

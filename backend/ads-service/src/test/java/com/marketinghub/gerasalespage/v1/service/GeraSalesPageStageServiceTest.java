@@ -2,6 +2,7 @@ package com.marketinghub.gerasalespage.v1.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -17,10 +18,10 @@ import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPageStageExecut
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -38,11 +39,22 @@ class GeraSalesPageStageServiceTest {
     private GeraSalesPagePublicationAuditService publicationAuditService;
     @Mock
     private ExperimentAiPromptSchemaUsageService promptSchemaUsageService;
-    @Mock
-    private ObjectMapper objectMapper;
 
-    @InjectMocks
+    private ObjectMapper objectMapper = new ObjectMapper();
+
     private GeraSalesPageStageService service;
+
+    /** Inicializa service com ObjectMapper real para validar parsing do quality review. */
+    @BeforeEach
+    void setUp() {
+        service = new GeraSalesPageStageService(
+                experimentRepository,
+                executionRepository,
+                templateRepository,
+                publicationAuditService,
+                promptSchemaUsageService,
+                objectMapper);
+    }
 
     /** Deve substituir execuções antigas e criar uma primeira etapa nova. */
     @Test
@@ -83,6 +95,42 @@ class GeraSalesPageStageServiceTest {
                 GeraSalesPageStageCode.OFFER_BRIEF.code(),
                 newExecution.getValue().getIdJob());
         assertThat(response.stageCode()).isEqualTo(GeraSalesPageStageCode.OFFER_BRIEF.code());
+    }
+
+    /** Deve bloquear a publicação quando a revisão comercial reprova a página. */
+    @Test
+    void receiveResultShouldFailQualityReviewWhenNotApproved() {
+        GeraSalesPageStageExecution execution = GeraSalesPageStageExecution.builder()
+                .idJob("review-job")
+                .experimentId(55L)
+                .stageCode(GeraSalesPageStageCode.CHECKOUT_QUALITY_REVIEW.code())
+                .status("AGUARDANDO_RETORNO_OPENAI")
+                .executionRequestedAt(Instant.now())
+                .build();
+        when(executionRepository.findTopByIdJobOrderByExecutionRequestedAtDesc("review-job"))
+                .thenReturn(Optional.of(execution));
+
+        service.receiveResult(
+                "review-job",
+                new GeraSalesPageResultRequest(
+                        55L,
+                        GeraSalesPageStageCode.CHECKOUT_QUALITY_REVIEW.code(),
+                        "{\"approved\":false,\"blockers\":[\"amostra e produto pago estão confusos\"],\"recommendation\":\"refazer\"}",
+                        "{\"raw\":true}",
+                        120,
+                        80,
+                        java.math.BigDecimal.valueOf(0.01),
+                        "openai-job",
+                        null,
+                        null));
+
+        assertThat(execution.getStatus()).isEqualTo("FALHA");
+        assertThat(execution.getErrorMessage()).contains("Quality review reprovou");
+        assertThat(execution.getErrorDetail()).contains("amostra e produto pago");
+        verify(publicationAuditService, never()).snapshotPublication(any());
+        verify(executionRepository, never()).findTopByExperimentIdAndStageCodeOrderByExecutionRequestedAtDesc(
+                55L,
+                GeraSalesPageStageCode.PUBLICATION_PACKAGE.code());
     }
 
     /** Cria template mínimo de prompt/schema para etapa de teste. */

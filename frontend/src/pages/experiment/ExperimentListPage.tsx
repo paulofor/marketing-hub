@@ -44,10 +44,10 @@ function resolveExperimentCost(experiment: {
   campaignMetric?: { spend?: number | null } | null;
 }) {
   return (
-    experiment.cost ??
     experiment.totalCost ??
-    experiment.expense ??
     experiment.campaignMetric?.spend ??
+    experiment.cost ??
+    experiment.expense ??
     null
   );
 }

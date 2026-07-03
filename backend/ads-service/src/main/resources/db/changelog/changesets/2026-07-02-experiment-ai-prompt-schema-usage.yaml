@@ -148,3 +148,22 @@ databaseChangeLog:
                 schema_json = VALUES(schema_json),
                 active = VALUES(active),
                 updated_at = CURRENT_TIMESTAMP;
+
+  - changeSet:
+      id: 2026-07-03-experiment-ai-prompt-schema-usage-proof-evidence-signals
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE ai_prompt_schema_template
+              SET schema_json = '{"type":"object","additionalProperties":false,"required":["proofType","proofAsset","proofMessage","evidenceSignals","collectionMethod","credibilityRationale","objectionReduced","boundaryConditions","summary"],"properties":{"proofType":{"type":"string"},"proofAsset":{"type":"string"},"proofMessage":{"type":"string"},"evidenceSignals":{"type":"array","items":{"type":"string"}},"collectionMethod":{"type":"string"},"credibilityRationale":{"type":"string"},"objectionReduced":{"type":"string"},"boundaryConditions":{"type":"string"},"summary":{"type":"string"}}}',
+                  updated_at = CURRENT_TIMESTAMP
+              WHERE template_key = 'hypothesis-pipeline:hypothesis-proof:v1'
+                AND stage_code = 'hypothesis-proof';

@@ -187,6 +187,29 @@ public class MoisSalesLibraryController {
     }
 
     /**
+     * Lista produtos Hotmart quentes com página capturada e analisada que podem alimentar o dossiê v1.
+     */
+    @GetMapping("/hot-products/dossier-candidates")
+    public MoisSalesLibraryDtos.HotProductDossierCandidateResponse listHotProductDossierCandidates(
+            @RequestParam String workspaceId,
+            @RequestParam(defaultValue = "80") java.math.BigDecimal minTemperature,
+            @RequestParam(defaultValue = "50") int limit
+    ) {
+        return service.listHotProductDossierCandidates(workspaceId, minTemperature, limit);
+    }
+
+    /**
+     * Enfileira produtos Hotmart quentes na etapa intake do pipeline dossieproduto.v1.
+     */
+    @PostMapping("/hot-products/dossier-candidates:enqueue")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public MoisSalesLibraryDtos.HotProductDossierEnqueueResponse enqueueHotProductDossierCandidates(
+            @Valid @RequestBody MoisSalesLibraryDtos.HotProductDossierEnqueueRequest request
+    ) {
+        return service.enqueueHotProductDossierCandidates(request);
+    }
+
+    /**
      * Lista oportunidades priorizadas pela combinação de análise comercial e aquecimento de mercado.
      */
     @GetMapping("/market-warmup/opportunity-ranking")

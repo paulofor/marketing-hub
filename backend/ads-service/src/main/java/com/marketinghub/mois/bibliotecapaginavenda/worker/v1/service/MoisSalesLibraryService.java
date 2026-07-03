@@ -41,6 +41,10 @@ public class MoisSalesLibraryService {
     private static final String JOB_STATUS_PENDING = "PENDING";
     private static final String ANALYSIS_STATUS_CANCELED = "ANULADO";
     private static final int COLLECTED_REFERENCE_HTML_CANDIDATE_SCAN_LIMIT = 2000;
+    private static final BigDecimal DEFAULT_HOT_PRODUCT_MIN_TEMPERATURE = BigDecimal.valueOf(80);
+    private static final String DOSSIE_PRODUTO_PIPELINE_VERSION = "v1";
+    private static final String DOSSIE_PRODUTO_INTAKE_STAGE = "intake";
+    private static final String DOSSIE_PRODUTO_STATUS_STARTED = "INICIADO";
 
     private final JdbcTemplate jdbcTemplate;
     private final MoisSalesLibraryPricingService pricingService;
@@ -1652,6 +1656,171 @@ public class MoisSalesLibraryService {
                 page.dossieProdutoUpdatedAt(),
                 stages,
                 finalResult
+        );
+    }
+
+    /**
+     * Lista produtos Hotmart quentes que já possuem material suficiente para iniciar dossiê comercial.
+     */
+    public MoisSalesLibraryDtos.HotProductDossierCandidateResponse listHotProductDossierCandidates(
+            String workspaceId,
+            BigDecimal minTemperature,
+            int limit
+    ) {
+        BigDecimal normalizedTemperature = normalizeHotProductTemperature(minTemperature);
+        int normalizedLimit = Math.max(1, Math.min(limit, 200));
+        List<MoisSalesLibraryDtos.HotProductDossierCandidateItem> items = jdbcTemplate.query(hotProductDossierCandidateSql(),
+                this::mapHotProductDossierCandidate,
+                workspaceId,
+                normalizedTemperature,
+                normalizedLimit);
+        return new MoisSalesLibraryDtos.HotProductDossierCandidateResponse(
+                workspaceId,
+                normalizedTemperature,
+                normalizedLimit,
+                items.size(),
+                items
+        );
+    }
+
+    /**
+     * Enfileira candidatos quentes na etapa intake do pipeline dossieproduto.v1 sem executar IA no backend.
+     */
+    @Transactional
+    public MoisSalesLibraryDtos.HotProductDossierEnqueueResponse enqueueHotProductDossierCandidates(
+            MoisSalesLibraryDtos.HotProductDossierEnqueueRequest request
+    ) {
+        BigDecimal normalizedTemperature = normalizeHotProductTemperature(request.minTemperature());
+        int requestedLimit = request.limit() == null ? 50 : Math.max(1, Math.min(request.limit(), 200));
+        MoisSalesLibraryDtos.HotProductDossierCandidateResponse candidates =
+                listHotProductDossierCandidates(request.workspaceId(), normalizedTemperature, requestedLimit);
+        List<MoisSalesLibraryDtos.HotProductDossierEnqueueItem> enqueuedItems = new ArrayList<>();
+        int skipped = 0;
+        for (MoisSalesLibraryDtos.HotProductDossierCandidateItem candidate : candidates.items()) {
+            String jobId = UUID.randomUUID().toString();
+            int updated = jdbcTemplate.update("""
+                    UPDATE mois_sales_page
+                    SET status_pipeline_dossieproduto = ?,
+                        dossie_produto_current_stage = ?,
+                        data_pipeline_dossieproduto = UTC_TIMESTAMP(),
+                        updated_at = UTC_TIMESTAMP()
+                    WHERE id = ?
+                      AND (status_pipeline_dossieproduto IS NULL
+                           OR status_pipeline_dossieproduto NOT IN ('INICIADO', 'AGUARDANDO_RETORNO_MODULO', 'CONCLUIDO'))
+                    """, DOSSIE_PRODUTO_STATUS_STARTED, DOSSIE_PRODUTO_INTAKE_STAGE, candidate.pageId());
+            if (updated == 0) {
+                skipped++;
+                continue;
+            }
+            jdbcTemplate.update("""
+                    INSERT INTO pipeline_dossieproduto (
+                        id_externo,
+                        codigo_etapa,
+                        status,
+                        data_hora,
+                        job_id,
+                        versao_pipeline
+                    ) VALUES (?, ?, ?, UTC_TIMESTAMP(6), ?, ?)
+                    """,
+                    String.valueOf(candidate.pageId()),
+                    DOSSIE_PRODUTO_INTAKE_STAGE,
+                    DOSSIE_PRODUTO_STATUS_STARTED,
+                    jobId,
+                    DOSSIE_PRODUTO_PIPELINE_VERSION);
+            enqueuedItems.add(new MoisSalesLibraryDtos.HotProductDossierEnqueueItem(
+                    candidate.pageId(),
+                    jobId,
+                    DOSSIE_PRODUTO_STATUS_STARTED,
+                    DOSSIE_PRODUTO_INTAKE_STAGE
+            ));
+        }
+        return new MoisSalesLibraryDtos.HotProductDossierEnqueueResponse(
+                request.workspaceId(),
+                normalizedTemperature,
+                requestedLimit,
+                candidates.totalReturned(),
+                enqueuedItems.size(),
+                skipped,
+                enqueuedItems
+        );
+    }
+
+    /**
+     * Define a temperatura mínima segura para priorizar produtos com tração real de marketplace.
+     */
+    private BigDecimal normalizeHotProductTemperature(BigDecimal minTemperature) {
+        if (minTemperature == null || minTemperature.compareTo(BigDecimal.ZERO) <= 0) {
+            return DEFAULT_HOT_PRODUCT_MIN_TEMPERATURE;
+        }
+        return minTemperature;
+    }
+
+    /**
+     * Mantém a consulta de candidatos em SQL fixo para evitar variações perigosas de ordenação/filtro.
+     */
+    private String hotProductDossierCandidateSql() {
+        return """
+                SELECT p.id AS page_id,
+                       p.workspace_id,
+                       p.source,
+                       p.url_canonical,
+                       p.title,
+                       p.product_name,
+                       COALESCE(cr_direct.hotmart_temperature, cr_url.hotmart_temperature) AS hotmart_temperature,
+                       p.score_total,
+                       p.status_pipeline_dossieproduto AS dossie_produto_status,
+                       p.dossie_produto_current_stage,
+                       p.data_pipeline_dossieproduto AS dossie_produto_updated_at,
+                       p.last_analyzed_at
+                FROM mois_sales_page p
+                LEFT JOIN mois_collected_reference cr_direct ON cr_direct.id = p.collected_reference_id
+                LEFT JOIN (
+                    SELECT workspace_id, COALESCE(sales_page_url, product_url) AS reference_url, MAX(id) AS latest_reference_id
+                    FROM mois_collected_reference
+                    WHERE source = 'HOTMART' AND COALESCE(sales_page_url, product_url) IS NOT NULL
+                    GROUP BY workspace_id, COALESCE(sales_page_url, product_url)
+                ) cr_latest ON cr_latest.workspace_id = p.workspace_id AND cr_latest.reference_url = p.url_canonical
+                LEFT JOIN mois_collected_reference cr_url ON cr_url.id = cr_latest.latest_reference_id
+                WHERE p.workspace_id = ?
+                  AND p.source = 'HOTMART'
+                  AND COALESCE(cr_direct.hotmart_temperature, cr_url.hotmart_temperature) >= ?
+                  AND COALESCE(p.html_bytes, 0) > 0
+                  AND COALESCE(p.analysis_status, p.current_status) IN ('DONE', 'ANALYZED')
+                  AND p.score_total IS NOT NULL
+                  AND (p.status_pipeline_dossieproduto IS NULL
+                       OR p.status_pipeline_dossieproduto NOT IN ('INICIADO', 'AGUARDANDO_RETORNO_MODULO', 'CONCLUIDO'))
+                  AND NOT EXISTS (
+                      SELECT 1
+                      FROM pipeline_dossieproduto pd
+                      WHERE pd.id_externo = CAST(p.id AS CHAR)
+                        AND pd.versao_pipeline = 'v1'
+                        AND pd.status IN ('INICIADO', 'AGUARDANDO_RETORNO_MODULO', 'CONCLUIDO')
+                  )
+                ORDER BY COALESCE(cr_direct.hotmart_temperature, cr_url.hotmart_temperature) DESC,
+                         p.score_total DESC,
+                         p.last_analyzed_at DESC,
+                         p.id DESC
+                LIMIT ?
+                """;
+    }
+
+    /**
+     * Converte a linha SQL do candidato quente para contrato estável da API.
+     */
+    private MoisSalesLibraryDtos.HotProductDossierCandidateItem mapHotProductDossierCandidate(ResultSet rs, int rowNum) throws SQLException {
+        return new MoisSalesLibraryDtos.HotProductDossierCandidateItem(
+                rs.getLong("page_id"),
+                rs.getString("workspace_id"),
+                rs.getString("source"),
+                rs.getString("url_canonical"),
+                rs.getString("title"),
+                rs.getString("product_name"),
+                rs.getBigDecimal("hotmart_temperature"),
+                rs.getBigDecimal("score_total"),
+                rs.getString("dossie_produto_status"),
+                rs.getString("dossie_produto_current_stage"),
+                toInstant(rs, "dossie_produto_updated_at"),
+                toInstant(rs, "last_analyzed_at")
         );
     }
 

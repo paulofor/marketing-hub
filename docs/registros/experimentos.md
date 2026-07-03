@@ -5575,3 +5575,10 @@
 - Primeiro MVP: a criação de experimento low-ticket no frontend inicia com `AI_PERSONALIZED_SAMPLE`, preservando o teste das hipóteses de impacto visual e personalização.
 - Correção de CI incluída: o changelog de templates MOIS foi normalizado para YAML válido, mantendo prompts/schemas versionados no backend.
 - Prevenção de recorrência: o sistema passa a conseguir filtrar custos, aprendizados e resultados por subtipo, evitando que Produto IA fique como categoria genérica sem comparação operacional.
+
+## 2026-07-03 — Preparo sistêmico para experimento Produto IA
+
+- Decisão: Produto IA `AI_PERSONALIZED_SAMPLE` passa por preparo sistêmico antes de virar experimento.
+- Correção aplicada: criado endpoint `/api/product-ai/experiment-preparations/{hypothesisId}` para expor bloqueios e rascunho canônico; o backend bloqueia criação direta de experimento Produto IA incompleto.
+- Regra operacional: a hipótese precisa ter nicho, dor, persona, promessa, mecanismo, preço, pacote de oferta, entregáveis e descrição da amostra personalizada.
+- Prevenção de recorrência: a tela mostra os bloqueios, mas a trava definitiva fica no backend para impedir produto manual fora do fluxo.

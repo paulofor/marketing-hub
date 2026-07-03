@@ -55,6 +55,24 @@ Motivos:
 - pode ser comparado contra uma rota sem amostra;
 - cria aprendizado reutilizavel para outros nichos.
 
+## Preparo sistêmico antes do experimento
+
+O primeiro experimento não deve ser criado manualmente. A hipótese `AI_PERSONALIZED_SAMPLE` precisa passar pelo preparo sistêmico exposto em `/api/product-ai/experiment-preparations/{hypothesisId}`.
+
+O backend só libera rascunho de experimento quando a hipótese possui:
+
+- nicho/contexto;
+- dor principal;
+- persona;
+- promessa;
+- mecanismo;
+- preço;
+- pacote de oferta;
+- entregáveis do pacote;
+- descrição da amostra personalizada.
+
+Quando pronta, a tela aplica o rascunho canônico: `LOW_TICKET_PRODUCT`, `AI_PERSONALIZED_SAMPLE`, etapa `SAMPLE`, objetivo `SALES`, variável “Amostra visual personalizada” e métrica “Compra aprovada e custo de IA por compra”.
+
 ## Desenho experimental inicial
 
 Fluxo:

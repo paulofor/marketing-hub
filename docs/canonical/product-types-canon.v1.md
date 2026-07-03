@@ -99,6 +99,8 @@ Todo Produto IA deve nascer por uma execucao rastreavel do sistema, preservando 
 - experimento de validacao;
 - versao ou variavel primaria quando for uma variacao.
 
+Antes de criar o experimento, o backend deve validar o preparo da hipotese Produto IA por endpoint sistemico. Para o MVP `AI_PERSONALIZED_SAMPLE`, a hipotese so pode virar experimento quando possuir nicho/contexto, dor principal, persona, promessa, mecanismo, preco, pacote de oferta, entregaveis do pacote e descricao da amostra personalizada. A tela pode exibir bloqueios e aplicar um rascunho canonico, mas a trava definitiva fica no backend.
+
 Criar o mesmo conceito para outro nicho exige nova execucao do fluxo com novo contexto de nicho. Variar um produto para melhora exige nova versao ou novo experimento com variavel primaria declarada.
 
 Padroes externos, como os dossies da Biblioteca de Paginas de Vendas, podem ser usados como insumo de briefing e aprendizado. Eles nao podem substituir a geracao rastreavel de hipotese, dor, mecanismo, prova, oferta e experimento pelo sistema.

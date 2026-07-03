@@ -1,0 +1,74 @@
+openapi: 3.0.3
+info:
+  title: Product AI Experiment Preparation API
+  version: 1.0.0
+  description: Contrato para validar se uma hipótese Produto IA pode virar experimento rastreável.
+paths:
+  /api/product-ai/experiment-preparations/{hypothesisId}:
+    get:
+      summary: Consulta preparo sistêmico de Produto IA
+      description: Retorna bloqueios e rascunho canônico para criar experimento somente quando a hipótese possui nicho, dor, persona, promessa, mecanismo, preço, pacote de oferta, entregáveis e descrição da amostra.
+      parameters:
+        - name: hypothesisId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Preparo retornado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductAiExperimentPreparation'
+        '404':
+          description: Hipótese não encontrada.
+components:
+  schemas:
+    ProductAiExperimentPreparation:
+      type: object
+      required: [hypothesisId, hypothesisTitle, ready, blockers]
+      properties:
+        hypothesisId:
+          type: string
+          format: uuid
+        hypothesisTitle:
+          type: string
+        productAiSubtype:
+          type: string
+          nullable: true
+          example: AI_PERSONALIZED_SAMPLE
+        ready:
+          type: boolean
+        blockers:
+          type: array
+          items:
+            type: string
+        draft:
+          nullable: true
+          $ref: '#/components/schemas/ProductAiExperimentDraft'
+    ProductAiExperimentDraft:
+      type: object
+      properties:
+        experimentType:
+          type: string
+          example: LOW_TICKET_PRODUCT
+        productAiSubtype:
+          type: string
+          example: AI_PERSONALIZED_SAMPLE
+        stage:
+          type: string
+          example: SAMPLE
+        campaignObjective:
+          type: string
+          example: SALES
+        primaryVariable:
+          type: string
+          example: Amostra visual personalizada
+        primaryMetric:
+          type: string
+          example: Compra aprovada e custo de IA por compra
+        unitPrice:
+          type: number
+          format: decimal

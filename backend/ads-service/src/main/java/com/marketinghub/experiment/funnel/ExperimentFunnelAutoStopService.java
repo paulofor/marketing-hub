@@ -3,6 +3,7 @@ package com.marketinghub.experiment.funnel;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentCampaignMetric;
 import com.marketinghub.experiment.ExperimentStatus;
+import com.marketinghub.experiment.ExperimentType;
 import com.marketinghub.experiment.funnel.dto.ExperimentFunnelDiagnosticsResponseDto;
 import com.marketinghub.experiment.funnel.dto.ExperimentFunnelStageDiagnosticDto;
 import com.marketinghub.experiment.funnel.dto.FunnelDiagnosticStatus;
@@ -30,6 +31,10 @@ public class ExperimentFunnelAutoStopService {
     private static final BigDecimal LOW_FORM_ENTRY_NO_SUBMISSION_MINIMUM_SPEND = new BigDecimal("20.00");
     private static final long LOW_FORM_ENTRY_NO_SUBMISSION_MINIMUM_IMPRESSIONS = 1500L;
     private static final double LOW_FORM_ENTRY_NO_SUBMISSION_MAX_ACCESS_RATE = 0.012d;
+    private static final BigDecimal LOW_TICKET_TICKET_MULTIPLIER_STOP = new BigDecimal("3.00");
+    private static final long LOW_TICKET_MINIMUM_SESSIONS = 100L;
+    private static final long LOW_TICKET_MINIMUM_LINK_CLICKS = 150L;
+    private static final double LOW_TICKET_STRONG_CHECKOUT_INTENT_RATE = 0.03d;
     private static final Duration LOW_IMPRESSIONS_MIN_CAMPAIGN_AGE = Duration.ofHours(48);
     private static final long LOW_IMPRESSIONS_MINIMUM = 100L;
 
@@ -200,6 +205,66 @@ public class ExperimentFunnelAutoStopService {
     }
 
     /**
+     * Avalia experimento low-ticket e invalida quando zero compras já têm amostra e custo incompatíveis com o ticket.
+     *
+     * @return {@code true} quando o experimento foi parado automaticamente, {@code false} caso contrário.
+     */
+    public boolean stopIfLowTicketZeroPurchasesAfterStatisticalFinancialLimit(Experiment experiment) {
+        if (experiment == null
+                || experiment.getStatus() != ExperimentStatus.RUNNING
+                || experiment.getExperimentType() != ExperimentType.LOW_TICKET_PRODUCT) {
+            return false;
+        }
+        ExperimentFunnelDiagnosticsResponseDto diagnostics = diagnosticService.diagnose(experiment.getId());
+        ExperimentFunnelStageDiagnosticDto checkoutIntentStage = findStageDiagnostic(
+                diagnostics,
+                ExperimentFunnelStage.ACESSO_CHECKOUT
+        );
+        ExperimentFunnelStageDiagnosticDto purchaseStage = findStageDiagnostic(
+                diagnostics,
+                ExperimentFunnelStage.COMPRA
+        );
+        if (checkoutIntentStage == null || purchaseStage == null || purchaseStage.successes() > 0) {
+            return false;
+        }
+        ExperimentCampaignMetric metric = campaignMetricRepository.findByExperiment(experiment).orElse(null);
+        long sessions = checkoutIntentStage.attempts();
+        long linkClicks = metric != null && metric.getClicks() != null ? metric.getClicks() : 0L;
+        boolean sampleReached = sessions >= LOW_TICKET_MINIMUM_SESSIONS || linkClicks >= LOW_TICKET_MINIMUM_LINK_CLICKS;
+        if (!sampleReached) {
+            return false;
+        }
+        BigDecimal totalCost = resolveTotalExperimentCost(experiment, metric);
+        BigDecimal ticketStopLimit = resolveTicketStopLimit(experiment);
+        BigDecimal stopLossLimit = positiveOrNull(experiment.getStopLossCpl());
+        boolean reachedTicketLimit = ticketStopLimit != null && totalCost.compareTo(ticketStopLimit) >= 0;
+        boolean reachedStopLossWithoutStrongIntent = stopLossLimit != null
+                && totalCost.compareTo(stopLossLimit) >= 0
+                && !hasStrongCheckoutIntent(checkoutIntentStage);
+        if (!reachedTicketLimit && !reachedStopLossWithoutStrongIntent) {
+            return false;
+        }
+        LOGGER.warn(
+                "Automatic stop triggered for low-ticket experiment {} due to zero purchases after statistical-financial limit: sessions={}, linkClicks={}, checkouts={}, purchases={}, checkoutRate={}, totalCost={}, ticketStopLimit={}, stopLossLimit={}",
+                experiment.getId(),
+                sessions,
+                linkClicks,
+                checkoutIntentStage.successes(),
+                purchaseStage.successes(),
+                checkoutIntentStage.observedRate(),
+                totalCost,
+                ticketStopLimit,
+                stopLossLimit
+        );
+        invalidateExperimentAndRequestStops(
+                experiment,
+                FacebookCampaignStopReason.LOW_TICKET_ZERO_PURCHASE_STATISTICAL_FINANCIAL,
+                "produto low-ticket com zero compras após amostra mínima e custo total acima de 3x o ticket ou stop-loss sem intenção forte de checkout"
+        );
+        return true;
+    }
+
+    /**
      * Avalia se a campanha rodou tempo suficiente com impressões muito baixas e invalida o experimento.
      */
     public boolean stopIfLowImpressionsAfterRunningTime(Experiment experiment, Long impressions, Instant campaignCreatedAt) {
@@ -260,6 +325,42 @@ public class ExperimentFunnelAutoStopService {
             return false;
         }
         return Math.abs(check.minAcceptableRate() - THREE_PERCENT) < 1e-9 && check.statisticallyFailed();
+    }
+
+    /**
+     * Resolve o custo total do experimento priorizando o acumulado do experimento e usando mídia como fallback.
+     */
+    private BigDecimal resolveTotalExperimentCost(Experiment experiment, ExperimentCampaignMetric metric) {
+        BigDecimal totalCost = positiveOrNull(experiment.getTotalCost());
+        if (totalCost != null) {
+            return totalCost;
+        }
+        BigDecimal mediaSpend = metric != null ? positiveOrNull(metric.getSpend()) : null;
+        return mediaSpend != null ? mediaSpend : BigDecimal.ZERO;
+    }
+
+    /**
+     * Calcula o limite financeiro de 3x o ticket do produto low-ticket quando o preço está configurado.
+     */
+    private BigDecimal resolveTicketStopLimit(Experiment experiment) {
+        BigDecimal unitPrice = positiveOrNull(experiment.getUnitPrice());
+        return unitPrice != null ? unitPrice.multiply(LOW_TICKET_TICKET_MULTIPLIER_STOP) : null;
+    }
+
+    /**
+     * Confirma se a taxa de checkout é forte o bastante para aguardar mais dados antes de parar por stop-loss.
+     */
+    private boolean hasStrongCheckoutIntent(ExperimentFunnelStageDiagnosticDto checkoutIntentStage) {
+        return checkoutIntentStage != null
+                && checkoutIntentStage.observedRate() != null
+                && checkoutIntentStage.observedRate() >= LOW_TICKET_STRONG_CHECKOUT_INTENT_RATE;
+    }
+
+    /**
+     * Normaliza valores monetários positivos e descarta nulos, zero e negativos.
+     */
+    private BigDecimal positiveOrNull(BigDecimal value) {
+        return value != null && value.compareTo(BigDecimal.ZERO) > 0 ? value : null;
     }
 
     /**

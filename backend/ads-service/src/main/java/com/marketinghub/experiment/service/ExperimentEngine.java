@@ -42,6 +42,9 @@ public class ExperimentEngine {
             if (funnelAutoStopService.stopIfFormSubmissionZeroConversions(exp)) {
                 continue;
             }
+            if (funnelAutoStopService.stopIfLowTicketZeroPurchasesAfterStatisticalFinancialLimit(exp)) {
+                continue;
+            }
             var stats = fetcher.fetch(exp.getId());
             BigDecimal cpl = stats.getCpl();
             if (stats.clicks() >= 300 && cpl.compareTo(exp.getStopLossCpl()) > 0) {

@@ -5596,3 +5596,10 @@
 - Correção aplicada: criado endpoint `POST /api/product-ai/experiments/{experimentId}/personalized-sample-funnel` para criar ou reaproveitar um `LeadPortalFlow` aprovado e vinculado ao experimento.
 - Regra operacional: a prontidão de campanha passa a bloquear Produto IA personalizado sem funil aprovado contendo nome, e-mail, WhatsApp, negócio/projeto, contexto atual, objetivo visual e dados de personalização.
 - Prevenção de recorrência: a coleta fica como ativo sistêmico auditável do experimento, evitando criar produto ou amostra personalizada fora do fluxo oficial.
+
+## 2026-07-03 — GeraSalesPage dentro do funil Produto IA
+
+- Problema: o experimento 55 podia concluir GeraSalesPage com uma página separada que tratava a URL do Lead Portal como checkout direto, sem garantir a coleta dos dados necessários para a amostra personalizada.
+- Causa-raiz: o snapshot final da página não tinha regra específica para `AI_PERSONALIZED_SAMPLE`; ele apenas auditava a página, sem publicá-la dentro do funil canônico de coleta.
+- Correção aplicada: para Produto IA personalizado, a publicação final do GeraSalesPage grava o HTML aprovado no `LeadPortalFlow` já vinculado ao experimento, injeta formulário gerenciado com as perguntas do funil e atualiza o destino da campanha para esse funil-página.
+- Prevenção de recorrência: Produto IA personalizado passa a ter um único destino público antes da compra: página de venda + coleta no mesmo fluxo, nunca página isolada nem checkout direto.

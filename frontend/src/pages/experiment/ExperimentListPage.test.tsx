@@ -205,4 +205,63 @@ describe("ExperimentListPage", () => {
     expect(screen.queryByText("R$ 99,81")).toBeNull();
   });
 
+  it("prioritizes totalCost when the legacy cost field is zero", async () => {
+    const experiments = [
+      {
+        id: "54",
+        nicheId: 29,
+        hypothesisId: "hypothesis-54",
+        name: "Experimento 54",
+        hypothesis: "Painel do Almoço para Marmitas",
+        cost: 0,
+        totalCost: 0.08,
+        campaignMetric: { spend: 0 },
+        startDate: "2026-07-03",
+        endDate: null,
+        creativeApproved: true,
+        status: "RUNNING",
+        platform: "FACEBOOK",
+        stage: "AD",
+        createdAt: "2026-07-03T00:00:00Z",
+        updatedAt: "2026-07-03T00:00:00Z",
+      },
+    ];
+
+    (axios.get as any).mockImplementation((url: string) => {
+      if (url === "/api/experiments")
+        return Promise.resolve({ data: experiments });
+      if (url === "/api/niches") {
+        return Promise.resolve({
+          data: [
+            {
+              id: 29,
+              name: "Marmitarias",
+              description: "",
+              demandVolume: "",
+              promises: "",
+              offers: "",
+              baseSegmentation: "",
+              interests: "",
+              demographicFilters: "",
+              extraTips: "",
+            },
+          ],
+        });
+      }
+      return Promise.resolve({ data: [] });
+    });
+
+    renderPage();
+
+    const row = (await screen.findByText("Experimento 54")).closest("tr");
+
+    expect(row).not.toBeNull();
+    expect(
+      within(row as HTMLTableRowElement).getByText("R$ 0,08"),
+    ).toBeTruthy();
+    expect(
+      within(row as HTMLTableRowElement).queryByText("R$ 0,00"),
+    ).toBeNull();
+  });
+
 });

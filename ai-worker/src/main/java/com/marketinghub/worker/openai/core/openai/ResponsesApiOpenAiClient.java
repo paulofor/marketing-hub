@@ -65,21 +65,23 @@ public class ResponsesApiOpenAiClient implements OpenAiClientPort {
                 .build();
     }
 
-    /** Envia o request final com o service tier da etapa para a OpenAI e devolve os dados de despacho para auditoria no backend. */
+    /** Envia o request final com fallback de service tier por tentativa e devolve os dados de despacho para auditoria no backend. */
     @Override
     public OpenAiDispatch dispatch(OpenAiRequest request) {
         String originalRequestBodyJson = request.requestBodyJson();
         String marketingHubJobId = marketingHubJobId(request);
         String requestBodyJson = originalRequestBodyJson;
+        String finalServiceTier = request.serviceTier();
         try {
             Map<String, Object> requestBody = buildServiceTierRequestBody(originalRequestBodyJson, request.serviceTier());
-            requestBodyJson = objectMapper.writeValueAsString(requestBody);
-            Map<String, Object> raw = postResponsesWithTransientRetry(
+            OpenAiPostResponse response = postResponsesWithTransientRetry(
                     marketingHubJobId,
                     request.schemaName(),
                     request.serviceTier(),
-                    requestBody,
-                    requestBodyJson);
+                    requestBody);
+            Map<String, Object> raw = response.raw();
+            requestBodyJson = response.requestBodyJson();
+            finalServiceTier = response.serviceTier();
 
             if (raw == null) {
                 throw new StageWorkerException("OpenAI returned an empty response");
@@ -99,7 +101,7 @@ public class ResponsesApiOpenAiClient implements OpenAiClientPort {
                     modelResponse,
                     inputTokens,
                     outputTokens,
-                    costEstimator.estimate(request.model(), inputTokens, outputTokens, request.serviceTier())
+                    costEstimator.estimate(request.model(), inputTokens, outputTokens, finalServiceTier)
             );
 
             if (openAiJobId != null) {
@@ -136,28 +138,32 @@ public class ResponsesApiOpenAiClient implements OpenAiClientPort {
         }
     }
 
-    /** Executa a chamada OpenAI com retry local para falhas transitórias de capacidade ou transporte HTTP. */
-    private Map<String, Object> postResponsesWithTransientRetry(
+    /** Executa a chamada OpenAI com retry local e troca Flex por Standard somente na terceira tentativa. */
+    private OpenAiPostResponse postResponsesWithTransientRetry(
             String marketingHubJobId,
             String schemaName,
             String serviceTier,
-            Map<String, Object> requestBody,
-            String requestBodyJson) {
+            Map<String, Object> baseRequestBody) throws JsonProcessingException {
         for (int attempt = 1; attempt <= MAX_TRANSIENT_HTTP_ATTEMPTS; attempt++) {
+            String effectiveServiceTier = serviceTierForAttempt(serviceTier, attempt);
+            Map<String, Object> requestBody = new ConcurrentHashMap<>(baseRequestBody);
+            requestBody.put("service_tier", effectiveServiceTier);
+            String requestBodyJson = objectMapper.writeValueAsString(requestBody);
             try {
                 log.info(
                         "Enviando request final para OpenAI Responses API [jobId={}, schemaName={}, serviceTier={}, attempt={}, requestBodyJson={}]",
                         marketingHubJobId,
                         schemaName,
-                        serviceTier,
+                        effectiveServiceTier,
                         attempt,
                         requestBodyJson);
-                return webClient.post()
+                Map<String, Object> raw = webClient.post()
                         .uri("/responses")
                         .bodyValue(requestBody)
                         .retrieve()
                         .bodyToMono(Map.class)
                         .block(properties.timeout());
+                return new OpenAiPostResponse(raw, requestBodyJson, effectiveServiceTier);
             } catch (WebClientResponseException error) {
                 if (shouldRetry(error) && attempt < MAX_TRANSIENT_HTTP_ATTEMPTS) {
                     Duration delay = TRANSIENT_HTTP_RETRY_DELAYS.get(attempt - 1);
@@ -193,11 +199,23 @@ public class ResponsesApiOpenAiClient implements OpenAiClientPort {
         return status == 408 || status == 429 || (status >= 500 && status < 600);
     }
 
+    /** Define o service tier efetivo: Flex nas duas primeiras tentativas e Standard na terceira. */
+    private String serviceTierForAttempt(String requestedServiceTier, int attempt) {
+        if ("flex".equals(requestedServiceTier) && attempt >= MAX_TRANSIENT_HTTP_ATTEMPTS) {
+            return "default";
+        }
+        return requestedServiceTier;
+    }
+
     /** Monta o payload final da Responses API aplicando o service_tier solicitado pela etapa. */
     private Map<String, Object> buildServiceTierRequestBody(String requestBodyJson, String serviceTier) throws JsonProcessingException {
         Map<String, Object> requestBody = objectMapper.readValue(requestBodyJson, new TypeReference<>() {});
         requestBody.put("service_tier", serviceTier);
         return requestBody;
+    }
+
+    /** Resultado da chamada OpenAI com payload e tier efetivos usados na tentativa bem-sucedida. */
+    private record OpenAiPostResponse(Map<String, Object> raw, String requestBodyJson, String serviceTier) {
     }
 
     /** Recupera o idJob do Marketing Hub a partir dos metadados do request para correlacionar logs operacionais. */

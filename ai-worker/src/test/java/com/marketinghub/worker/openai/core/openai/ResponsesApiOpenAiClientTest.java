@@ -149,9 +149,9 @@ class ResponsesApiOpenAiClientTest {
         assertThat(result.costUsd()).isEqualByComparingTo(new BigDecimal("0.00006000"));
     }
 
-    /** Deve repetir chamadas transitórias antes de falhar a etapa por limite momentâneo da OpenAI. */
+    /** Deve tentar Flex duas vezes e usar Standard na terceira tentativa após falhas transitórias. */
     @Test
-    void dispatchShouldRetryTransientOpenAiHttpFailuresBeforeReturningSuccess() throws Exception {
+    void dispatchShouldFallbackToStandardOnThirdTransientOpenAiAttempt() throws Exception {
         server.enqueue(new MockResponse()
                 .setResponseCode(429)
                 .setHeader("Content-Type", "application/json")
@@ -191,6 +191,24 @@ class ResponsesApiOpenAiClientTest {
         assertThat(dispatch.openAiJobId()).isEqualTo("resp-retry");
         assertThat(result.modelResponse()).isEqualTo("{\"ok\":true}");
         assertThat(server.getRequestCount()).isEqualTo(4);
+        Map<String, Object> firstAttemptPayload = new ObjectMapper().readValue(
+                server.takeRequest().getBody().readUtf8(),
+                new TypeReference<>() {});
+        Map<String, Object> secondAttemptPayload = new ObjectMapper().readValue(
+                server.takeRequest().getBody().readUtf8(),
+                new TypeReference<>() {});
+        Map<String, Object> thirdAttemptPayload = new ObjectMapper().readValue(
+                server.takeRequest().getBody().readUtf8(),
+                new TypeReference<>() {});
+        server.takeRequest();
+        assertThat(firstAttemptPayload).containsEntry("service_tier", "flex");
+        assertThat(secondAttemptPayload).containsEntry("service_tier", "flex");
+        assertThat(thirdAttemptPayload).containsEntry("service_tier", "default");
+        Map<String, Object> dispatchPayload = new ObjectMapper().readValue(
+                dispatch.requestBodyJson(),
+                new TypeReference<>() {});
+        assertThat(dispatchPayload).containsEntry("service_tier", "default");
+        assertThat(result.costUsd()).isEqualByComparingTo(new BigDecimal("0.00006000"));
         assertThat(appender.list)
                 .extracting(ILoggingEvent::getFormattedMessage)
                 .anySatisfy(message -> assertThat(message)

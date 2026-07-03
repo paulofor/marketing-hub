@@ -19,7 +19,6 @@ public record HypothesisResultWorkerProperties(
         @NotBlank String schemaResource,
         @NotBlank String schemaName,
         @NotBlank String model,
-        @NotBlank String serviceTier,
         @NotNull Duration timeout
 ) {
     /** Normaliza valores opcionais usados pelo worker quando a configuração externa omite o campo. */
@@ -29,13 +28,6 @@ public record HypothesisResultWorkerProperties(
         }
         if (model == null || model.isBlank()) {
             model = "gpt-5.5";
-        }
-        if (serviceTier == null || serviceTier.isBlank()) {
-            serviceTier = "standard";
-        }
-        serviceTier = serviceTier.trim().toLowerCase();
-        if ("standard".equals(serviceTier)) {
-            serviceTier = "default";
         }
         if (timeout == null) {
             timeout = Duration.ofMinutes(30);

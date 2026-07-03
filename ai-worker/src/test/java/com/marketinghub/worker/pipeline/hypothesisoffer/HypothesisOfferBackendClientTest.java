@@ -51,6 +51,7 @@ class HypothesisOfferBackendClientTest {
                 "prompts/hypothesis-pipeline/hypothesis-offer-schema.json",
                 "hypothesis_pipeline_offer",
                 "gpt-5.5",
+                "default",
                 Duration.ofMinutes(30));
         return new HypothesisOfferBackendClient(WebClient.builder(), properties, new ObjectMapper());
     }

@@ -5559,3 +5559,10 @@
 - Causa-raiz: o changelog não seguiu o padrão seguro do projeto para datas em MySQL 5.7 e ainda estava incluído antes das tabelas base do GeraSalesPage.
 - Correção aplicada: `published_at` e `created_at` passaram para `DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)`, `completed_at` passou para `DATETIME(6)` e o include da auditoria foi movido para depois dos changelogs base do GeraSalesPage.
 - Prevenção de recorrência: o diff foi revisado contra as regras de Liquibase/MySQL 5.7, mantendo `relativeToChangelogFile: true` no changelog mestre.
+
+## 2026-07-03 — Standard no bloco final do pipeline de hipótese
+
+- Contexto: no nicho 29, a etapa Dor concluiu e Resultado só avançou após mudança para `service_tier=default`; em seguida, Mecanismo repetiu falhas `429 rate_limit_exceeded` em Flex.
+- Decisão: manter Dor em Flex e executar Resultado, Mecanismo, Prova e Oferta em modo standard/default, configurável por etapa no AI Worker.
+- Impacto esperado: reduzir bloqueios operacionais do pipeline de hipótese para criar o próximo experimento sem trocar a tese de nicho.
+- Prevenção de recorrência: testes unitários cobrem o `serviceTier` enviado por Resultado, Mecanismo, Prova e Oferta.

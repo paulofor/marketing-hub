@@ -48,6 +48,7 @@ class HypothesisProofBackendClientTest {
                 "prompts/hypothesis-pipeline/hypothesis-proof-schema.json",
                 "hypothesis_pipeline_proof",
                 "gpt-5.5",
+                "default",
                 Duration.ofMinutes(30));
         return new HypothesisProofBackendClient(WebClient.builder(), properties, new ObjectMapper());
     }

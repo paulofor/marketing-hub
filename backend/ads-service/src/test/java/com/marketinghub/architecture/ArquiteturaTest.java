@@ -172,6 +172,8 @@ class ArquiteturaTest {
             GERALANDING_STAGE_EXECUTION_REPOSITORY_CLASS);
     private static final String MOIS_DOSSIE_V1_EXECUTOR_MODULE = "mois-sales-library-worker";
     private static final String MOIS_DOSSIE_V1_PACKAGE = "com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1";
+    private static final String MOIS_SALES_PAGE_PATTERNS_V1_PACKAGE =
+            "com.marketinghub.moissaleslibraryworker.pipelines.salespagepatterns.v1";
     private static final String GERAANUNCIO_V2_PACKAGE = "com.marketinghub.pipelines.aiworker.geracaoanuncios.v1";
     private static final Map<String, String> GERAANUNCIO_V2_STAGE_ENDPOINT_SLUGS = Map.ofEntries(
             Map.entry("texto", "texto"),
@@ -185,6 +187,8 @@ class ArquiteturaTest {
             Map.entry("warmupsignalextraction", "warmup-signal-extraction"),
             Map.entry("warmupmapbuilder", "warmup-map-builder"),
             Map.entry("dossiersynthesis", "dossier-synthesis"));
+    private static final Map<String, String> MOIS_SALES_PAGE_PATTERNS_V1_STAGE_ENDPOINT_SLUGS = Map.ofEntries(
+            Map.entry("pagepatternextraction", "page-pattern-extraction"));
 
     @ArchTest
     static final ArchRule experimentPromiseGenerationMustNotAccessOpenAiDirectly = classes()
@@ -200,7 +204,7 @@ class ArquiteturaTest {
             .resideInAPackage("com.marketinghub.mois..")
             .should()
             .dependOnClassesThat(otherMarketingHubPackagesExcept(
-                    "com.marketinghub.mois", "com.marketinghub.repository.jpa.mois"))
+                    "com.marketinghub.mois", "com.marketinghub.repository.jpa.mois", "com.marketinghub.openai"))
             .because("[ARQUITETURA][MOIS] o módulo MOIS não deve depender de outros pacotes internos do sistema");
 
     @ArchTest
@@ -344,7 +348,8 @@ class ArquiteturaTest {
             .resideInAPackage(MOIS_SALES_LIBRARY_PACKAGE + "..")
             .should()
             .dependOnClassesThat(otherMarketingHubPackagesExcept(
-                    MOIS_SALES_LIBRARY_PACKAGE, "com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1"))
+                    MOIS_SALES_LIBRARY_PACKAGE, "com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1",
+                    "com.marketinghub.openai"))
             .because("[ARQUITETURA][MOIS] o pacote de biblioteca de páginas de vendas do MOIS deve ficar isolado dos demais pacotes internos");
 
     @ArchTest
@@ -407,6 +412,65 @@ class ArquiteturaTest {
             .resideInAPackage("com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1.*.service..")
             .should(beRecordWhenInsideMoisDossieV1ServiceSubpackage())
             .because("[ARQUITETURA] [BACKEND][MOIS Dossiê v1] DTOs/contratos de service devem ser records em subpacotes da operação");
+
+    @ArchTest
+    static final ArchRule moisSalesPagePatternsV1BackendMustRemainReadWriteOnly = classes()
+            .that()
+            .resideInAPackage("com.marketinghub.moissaleslibraryworker.pipelines.salespagepatterns.v1..")
+            .should(notAssumeOperationalExecutionResponsibilityForMoisDossieV1())
+            .because("[ARQUITETURA] [BACKEND][MOIS salespagepatterns.v1] o backend deve publicar pendências e receber callbacks; "
+                    + "o controle operacional pertence ao módulo executor " + MOIS_DOSSIE_V1_EXECUTOR_MODULE);
+
+    /**
+     * Garante a estrutura canônica das etapas do pipeline salespagepatterns.v1 no backend.
+     */
+    @ArchTest
+    static void moisSalesPagePatternsV1StagesMustExposeCanonicalStructure(JavaClasses importedClasses) {
+        List<String> violations = new ArrayList<>();
+        MOIS_SALES_PAGE_PATTERNS_V1_STAGE_ENDPOINT_SLUGS.forEach((stagePackage, endpointSlug) -> {
+            String controllerPackage = MOIS_SALES_PAGE_PATTERNS_V1_PACKAGE + "." + stagePackage + ".controller";
+            String servicePackage = MOIS_SALES_PAGE_PATTERNS_V1_PACKAGE + "." + stagePackage + ".service";
+            List<JavaClass> controllerClasses = directPackageClasses(importedClasses, controllerPackage);
+            List<JavaClass> serviceClasses = directPackageClasses(importedClasses, servicePackage);
+            long controllers = controllerClasses.stream().filter(javaClass -> javaClass.isAnnotatedWith(RestController.class)).count();
+            long services = serviceClasses.stream().filter(javaClass -> javaClass.isAnnotatedWith(Service.class)).count();
+            if (controllers != 1) {
+                violations.add("[ARQUITETURA] [BACKEND][MOIS salespagepatterns.v1] etapa " + stagePackage
+                        + " deve possuir exatamente um controller canônico em " + controllerPackage
+                        + "; encontrados=" + controllers);
+            }
+            if (services != 1) {
+                violations.add("[ARQUITETURA] [BACKEND][MOIS salespagepatterns.v1] etapa " + stagePackage
+                        + " deve possuir exatamente um service canônico em " + servicePackage
+                        + "; encontrados=" + services);
+            }
+            boolean hasPending = controllerClasses.stream()
+                    .flatMap(javaClass -> javaClass.getMethods().stream())
+                    .anyMatch(method -> method.getName().equals("pending") && method.isAnnotatedWith(PostMapping.class));
+            if (!hasPending) {
+                violations.add("[ARQUITETURA] [BACKEND][MOIS salespagepatterns.v1] etapa " + stagePackage
+                        + " deve expor endpoint pending canônico /api/internal/moissaleslibraryworker/salespagepatterns/v1/"
+                        + endpointSlug + "/stage-executions/pending");
+            }
+        });
+        failWithArchitectureViolations(violations);
+    }
+
+    @ArchTest
+    static final ArchRule moisSalesPagePatternsV1ServiceContractsMustBeRecords = classes()
+            .that()
+            .resideInAPackage("com.marketinghub.moissaleslibraryworker.pipelines.salespagepatterns.v1.*.service..")
+            .should(beRecordWhenInsideMoisDossieV1ServiceSubpackage())
+            .because("[ARQUITETURA] [BACKEND][MOIS salespagepatterns.v1] DTOs/contratos de service devem ser records em subpacotes da operação");
+
+    @ArchTest
+    static final ArchRule moisSalesPagePatternsV1MustNotDependOnWarmupBackend = noClasses()
+            .that()
+            .resideInAPackage("com.marketinghub.moissaleslibraryworker.pipelines.salespagepatterns.v1..")
+            .should()
+            .dependOnClassesThat()
+            .resideInAPackage("com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1..")
+            .because("[ARQUITETURA] salespagepatterns.v1 deve permanecer desacoplado do pipeline warmupecosystem/dossieproduto.v1 no backend");
 
     /**
      * Garante a estrutura canônica do pipeline GeraAnuncio v2 no backend.

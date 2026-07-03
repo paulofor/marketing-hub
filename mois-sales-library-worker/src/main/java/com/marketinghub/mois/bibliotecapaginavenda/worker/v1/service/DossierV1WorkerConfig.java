@@ -12,6 +12,7 @@ import com.marketinghub.pipelines.dossie.v1.sourceproductmatch.DossierSourceProd
 import com.marketinghub.pipelines.dossie.v1.warmupmapbuilder.DossierWarmupMapBuilderProcessor;
 import com.marketinghub.pipelines.dossie.v1.warmupresourcediscovery.DossierWarmupResourceDiscoveryProcessor;
 import com.marketinghub.pipelines.dossie.v1.warmupsignalextraction.DossierWarmupSignalExtractionProcessor;
+import com.marketinghub.pipelines.salespagepatterns.v1.pagepatternextraction.SalesPagePatternsPagePatternExtractionProcessor;
 import java.util.List;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -30,7 +31,8 @@ public class DossierV1WorkerConfig {
                 new DossierWarmupResourceDiscoveryProcessor(),
                 new DossierWarmupSignalExtractionProcessor(),
                 new DossierWarmupMapBuilderProcessor(),
-                new DossierDossierSynthesisProcessor());
+                new DossierDossierSynthesisProcessor(),
+                new SalesPagePatternsPagePatternExtractionProcessor(restClientBuilder, openAiProperties));
     }
 
     /** Cria o executor genérico que seleciona o processor pelo nome da etapa. */

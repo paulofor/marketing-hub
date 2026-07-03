@@ -48,13 +48,15 @@ public class MoisSalesLibraryService {
             "Padrões de Página de Venda",
             "status_pipeline_salespagepatterns",
             "salespagepatterns_current_stage",
-            "data_pipeline_salespagepatterns");
+            "data_pipeline_salespagepatterns",
+            "page-pattern-extraction");
     private static final PipelineSpec WARMUP_ECOSYSTEM_PIPELINE = new PipelineSpec(
             "warmupecosystem.v1",
             "Aquecimento e Ecossistema",
             "status_pipeline_warmupecosystem",
             "warmupecosystem_current_stage",
-            "data_pipeline_warmupecosystem");
+            "data_pipeline_warmupecosystem",
+            "intake");
     private static final String DOSSIE_PRODUTO_INTAKE_STAGE = "intake";
     private static final String DOSSIE_PRODUTO_STATUS_STARTED = "INICIADO";
 
@@ -1814,7 +1816,7 @@ public class MoisSalesLibraryService {
                             pipeline.statusColumn(),
                             pipeline.statusColumn()),
                     DOSSIE_PRODUTO_STATUS_STARTED,
-                    DOSSIE_PRODUTO_INTAKE_STAGE,
+                    pipeline.initialStage(),
                     candidate.pageId());
             if (updated == 0) {
                 skipped++;
@@ -1833,7 +1835,7 @@ public class MoisSalesLibraryService {
                     ) VALUES (?, ?, ?, UTC_TIMESTAMP(6), ?, ?, ?)
                     """,
                     String.valueOf(candidate.pageId()),
-                    DOSSIE_PRODUTO_INTAKE_STAGE,
+                    pipeline.initialStage(),
                     DOSSIE_PRODUTO_STATUS_STARTED,
                     jobId,
                     DOSSIE_PRODUTO_PIPELINE_VERSION,
@@ -1844,7 +1846,7 @@ public class MoisSalesLibraryService {
                     pipeline.code(),
                     pipeline.name(),
                     DOSSIE_PRODUTO_STATUS_STARTED,
-                    DOSSIE_PRODUTO_INTAKE_STAGE
+                    pipeline.initialStage()
             ));
         }
         return new MoisSalesLibraryDtos.HotProductDossierEnqueueResponse(
@@ -1970,7 +1972,8 @@ public class MoisSalesLibraryService {
             String name,
             String statusColumn,
             String stageColumn,
-            String updatedAtColumn
+            String updatedAtColumn,
+            String initialStage
     ) {
     }
 

@@ -211,6 +211,35 @@ Regras obrigatórias:
 - produto low-ticket deve ser interpretado como pacote de infoprodutos de baixo custo, produzido majoritariamente por IA e financeiramente viável;
 - Produto IA deve ser interpretado como infoproduto/ferramenta com integração OpenAI por trás, vendido pela facilidade e pelo resultado prático no dia a dia, não pelo jargão de IA.
 
+### 4.2.1.0 Regra mandatória — criação sistêmica de produto e variação
+
+Nenhum produto, oferta, página, amostra, checkout, campanha ou variação comercial deve ser criado por decisão manual isolada fora do fluxo do sistema.
+
+Toda criação precisa preservar a trilha:
+
+```text
+Nicho/contexto
+→ Hipótese
+→ Dor
+→ Resultado
+→ Mecanismo
+→ Prova
+→ Oferta
+→ Tipo/subtipo de produto
+→ Página/amostra/checkout
+→ Experimento
+→ Métrica e aprendizado
+```
+
+Regras obrigatórias:
+
+- Produto IA, low-ticket e suas variações devem nascer de recursos oficiais do sistema, nunca de documentos soltos ou criação manual direta;
+- criar para outro nicho significa executar novamente o fluxo com novo contexto de nicho;
+- melhorar um produto existente significa criar nova versão ou novo experimento com variável primária declarada;
+- prompts, schemas, custos, entradas, saídas e decisões devem permanecer auditáveis;
+- padrões da Biblioteca de Páginas de Vendas podem enriquecer o briefing, mas não substituem as etapas de hipótese, dor, mecanismo, prova, oferta e validação;
+- se algum ativo for criado emergencialmente fora do fluxo, ele deve ser tratado como material provisório não canônico e não pode ser publicado ou escalado até ser reconstruído pelo sistema.
+
 ### 4.2.1.1 Regra mandatória — prompt/schema por experimento
 
 Todo experimento criado a partir de hipótese gerada por IA deve preservar associação aos prompts e schemas usados nas etapas Dor, Resultado, Mecanismo, Prova e Oferta. Todo experimento que gerar página pelo GeraSalesPage v1 também deve preservar associação aos prompts e schemas usados nas etapas da página de venda.

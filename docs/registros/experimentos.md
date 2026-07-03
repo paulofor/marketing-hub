@@ -5559,3 +5559,11 @@
 - Causa-raiz: o changelog não seguiu o padrão seguro do projeto para datas em MySQL 5.7 e ainda estava incluído antes das tabelas base do GeraSalesPage.
 - Correção aplicada: `published_at` e `created_at` passaram para `DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)`, `completed_at` passou para `DATETIME(6)` e o include da auditoria foi movido para depois dos changelogs base do GeraSalesPage.
 - Prevenção de recorrência: o diff foi revisado contra as regras de Liquibase/MySQL 5.7, mantendo `relativeToChangelogFile: true` no changelog mestre.
+
+## 2026-07-03 — Produto IA visual e personalizacao
+
+- Decisão: o tipo `Produto IA` passa a ter subtipos canonicos para separar mecanismos de valor visual e personalizacao: `AI_VISUAL_PREVIEW`, `AI_PERSONALIZED_SAMPLE`, `AI_TRANSFORMATION_SIMULATOR`, `AI_VISUAL_ASSET_PACK`, `AI_IDENTITY_AVATAR_PRODUCT` e `AI_REPORT_VISUAL_EVIDENCE`.
+- Hipótese inicial: imagens geradas pela OpenAI podem aumentar impacto, desejo e tangibilizacao do resultado; personalizacao visual pode aumentar valor percebido por entregar algo exclusivo ao lead ou cliente.
+- MVP recomendado: `AI_PERSONALIZED_SAMPLE`, por testar impacto visual e personalizacao no mesmo fluxo.
+- Regra registrada: nenhum produto, oferta, pagina, amostra, checkout ou variacao deve ser criado manualmente como atalho; tudo precisa nascer por recursos oficiais do sistema com rastreabilidade de nicho, hipotese, dor, resultado, mecanismo, prova, oferta, prompts/schemas, custos e experimento.
+- Prevenção de recorrência: padrões externos e ideias estratégicas podem enriquecer o briefing, mas não substituem o fluxo sistêmico de criação e validação.

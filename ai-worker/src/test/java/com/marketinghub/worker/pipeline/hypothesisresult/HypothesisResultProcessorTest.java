@@ -18,13 +18,13 @@ import org.junit.jupiter.api.Test;
 /** Responsabilidade: validar a montagem do request OpenAI da etapa Resultado da hipótese. */
 class HypothesisResultProcessorTest {
 
-    /** Deve usar modo standard como default operacional da etapa Resultado. */
+    /** Deve montar request auditável em Flex, deixando fallback Standard para o client comum. */
     @Test
-    void shouldBuildAuditableResponsesApiRequestWithStandardServiceTier() throws Exception {
+    void shouldBuildAuditableResponsesApiRequestWithFlexServiceTier() throws Exception {
         ObjectMapper objectMapper = new ObjectMapper();
         HypothesisResultProcessor processor = new HypothesisResultProcessor(
                 objectMapper,
-                properties("standard"),
+                properties(),
                 org.mockito.Mockito.mock(OpenAiClientPort.class),
                 new HypothesisResultResponseValidator(objectMapper),
                 org.mockito.Mockito.mock(HypothesisResultBackendClient.class));
@@ -35,14 +35,14 @@ class HypothesisResultProcessorTest {
         var openAiRequest = (com.marketinghub.worker.openai.core.model.OpenAiRequest) request;
         Map<String, Object> requestBody = objectMapper.readValue(openAiRequest.requestBodyJson(), new TypeReference<>() {});
 
-        assertThat(openAiRequest.serviceTier()).isEqualTo("default");
+        assertThat(openAiRequest.serviceTier()).isEqualTo("flex");
         assertThat(requestBody)
                 .containsEntry("model", "gpt-5.5")
                 .containsKey("text");
     }
 
     /** Cria propriedades mínimas para montar o request OpenAI em teste unitário. */
-    private HypothesisResultWorkerProperties properties(String serviceTier) {
+    private HypothesisResultWorkerProperties properties() {
         return new HypothesisResultWorkerProperties(
                 true,
                 5,
@@ -52,7 +52,6 @@ class HypothesisResultProcessorTest {
                 "prompts/hypothesis-pipeline/hypothesis-result-schema.json",
                 "hypothesis_pipeline_result",
                 "gpt-5.5",
-                serviceTier,
                 Duration.ofMinutes(30));
     }
 

@@ -4,19 +4,20 @@
 
 O pipeline de hipótese deve usar OpenAI com auditoria completa de request, response, modelo, tokens, custo e `jobId`.
 
-O padrão operacional continua sendo `service_tier=flex`, exceto quando houver falha recorrente comprovada, risco direto ao avanço comercial do pipeline ou decisão funcional registrada.
+O padrão operacional continua sendo `service_tier=flex`.
 
-## Exceção ativa — etapa Resultado
+## Fallback operacional
 
-A etapa `hypothesis-result` está autorizada a usar modo standard, enviado à Responses API como `service_tier=default`.
+Quando uma chamada OpenAI do pipeline de hipótese falhar por erro transitório de capacidade ou transporte (`408`, `429` ou `5xx`), o worker deve aplicar a seguinte sequência:
 
-Justificativa:
+- primeira tentativa: `service_tier=flex`;
+- segunda tentativa: `service_tier=flex`;
+- terceira tentativa: `service_tier=default` (modo standard).
 
-- em 2026-07-02, o nicho 29 teve seis falhas consecutivas em `hypothesis-result` com `429 rate_limit_exceeded` no Flex;
-- a etapa Dor já estava concluída;
-- insistir em Flex bloqueava Mecanismo, Prova, Oferta e a criação do próximo experimento;
-- o custo maior do standard é aceitável para remover o gargalo operacional nesta etapa.
+O payload auditável e o cálculo de custo devem refletir o `service_tier` efetivamente usado na tentativa bem-sucedida.
+
+Essa regra evita trocar uma etapa inteira para Standard antes de saber se Flex está disponível, mas remove o bloqueio operacional quando Flex falha repetidamente.
 
 ## Prevenção
 
-Toda exceção de service tier deve ficar configurável por etapa, ter registro de causa-raiz e teste de contrato cobrindo o valor enviado à Responses API.
+Toda exceção fixa de service tier por etapa deve ter justificativa comercial explícita, registro de causa-raiz e teste de contrato. Na ausência dessa exceção, vale o fallback operacional por tentativa descrito acima.

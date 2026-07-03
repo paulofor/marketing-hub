@@ -10,4 +10,8 @@ public interface MoisSalesPageRepository extends JpaRepository<MoisSalesPage, Lo
     /** Lista até dez páginas/produtos iniciados na etapa atual, priorizando os registros mais antigos. */
     List<MoisSalesPage> findTop10ByDossieProdutoStatusAndDossieProdutoCurrentStageOrderByDossieProdutoUpdatedAtAscIdAsc(
             String status, String currentStage);
+
+    /** Lista até dez páginas/produtos iniciados no pipeline de padrões, priorizando os registros mais antigos. */
+    List<MoisSalesPage> findTop10BySalesPagePatternsStatusAndSalesPagePatternsCurrentStageOrderBySalesPagePatternsUpdatedAtAscIdAsc(
+            String status, String currentStage);
 }

@@ -618,7 +618,8 @@ class MoisSalesLibraryServiceTest {
                 ));
 
         org.assertj.core.api.Assertions.assertThat(response.pipelineCode()).isEqualTo("salespagepatterns.v1");
-        verify(jdbcTemplate).update(contains("INSERT INTO pipeline_dossieproduto"), eq("401"), eq("intake"), eq("INICIADO"), any(), eq("v1"), eq("salespagepatterns.v1"));
+        org.assertj.core.api.Assertions.assertThat(response.items().get(0).stageCode()).isEqualTo("page-pattern-extraction");
+        verify(jdbcTemplate).update(contains("INSERT INTO pipeline_dossieproduto"), eq("401"), eq("page-pattern-extraction"), eq("INICIADO"), any(), eq("v1"), eq("salespagepatterns.v1"));
         verify(jdbcTemplate, never()).update(contains("status_pipeline_dossieproduto"), any(), any(), any());
     }
 

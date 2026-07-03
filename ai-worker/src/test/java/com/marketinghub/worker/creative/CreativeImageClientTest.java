@@ -17,12 +17,14 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,7 +44,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 /**
- * Validates creative image generation client behavior against OpenAI and backend upload contracts.
+ * Valida o comportamento do cliente de imagens contra os contratos da OpenAI e do upload no backend.
  */
 class CreativeImageClientTest {
     private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -55,7 +57,7 @@ class CreativeImageClientTest {
     AtomicReference<Map<String, Object>> lastRequestPayload;
 
     /**
-     * Creates the image client fixture with a stubbed successful OpenAI response.
+     * Cria a fixture do cliente de imagem com resposta OpenAI simulada com sucesso.
      */
     @BeforeEach
     void setup() throws Exception {
@@ -71,7 +73,7 @@ class CreativeImageClientTest {
     }
 
     /**
-     * Ensures a base64 image returned by OpenAI is optimized and uploaded to the backend.
+     * Garante que a imagem base64 retornada pela OpenAI seja otimizada e enviada ao backend.
      */
     @Test
     void uploadsReturnedImageToBackend() {
@@ -92,7 +94,7 @@ class CreativeImageClientTest {
     }
 
     /**
-     * Ensures large base64 image payloads are accepted within the configured memory limit.
+     * Garante que payloads grandes em base64 sejam aceitos dentro do limite de memória configurado.
      */
     @Test
     void supportsLargeBase64Payloads() {
@@ -114,7 +116,7 @@ class CreativeImageClientTest {
     }
 
     /**
-     * Ensures OpenAI error messages are surfaced when the response has no image data.
+     * Garante que mensagens de erro da OpenAI sejam expostas quando a resposta não tem imagem.
      */
     @Test
     void surfacesErrorMessageWhenResponseLacksData() {
@@ -131,7 +133,7 @@ class CreativeImageClientTest {
     }
 
     /**
-     * Ensures non GPT image models request a base64 response explicitly.
+     * Garante que modelos de imagem não GPT peçam resposta base64 explicitamente.
      */
     @Test
     void requestsBase64PayloadExplicitlyForNonGptModels() {
@@ -157,7 +159,7 @@ class CreativeImageClientTest {
     }
 
     /**
-     * Ensures Flex service tier uses the Responses API image generation tool.
+     * Garante que o tier Flex use a ferramenta de geração de imagem da Responses API.
      */
     @Test
     void usesResponsesApiImageToolForFlexTier() {
@@ -195,9 +197,62 @@ class CreativeImageClientTest {
                 isNull());
     }
 
+    /**
+     * Deve tentar Flex duas vezes e cair para Standard/default na terceira tentativa quando a OpenAI retorna 429.
+     */
+    @Test
+    void retriesTransientFlexImageErrorWithStandardTierOnThirdAttempt() {
+        String imagePayload;
+        try {
+            imagePayload = Base64.getEncoder().encodeToString(createSolidPng(64, 64));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        String transientBody = "{\"error\":{\"message\":\"We're currently processing too many requests — please try again later.\",\"code\":\"rate_limit_exceeded\"}}";
+        String successBody = "{\"data\":[{\"b64_json\":\"" + imagePayload + "\"}]}";
+        AtomicInteger calls = new AtomicInteger();
+        List<Map<String, Object>> payloads = new ArrayList<>();
+        ExchangeFunction exchange = request -> {
+            int attempt = calls.incrementAndGet();
+            MockClientHttpRequest httpRequest = new MockClientHttpRequest(request.method(), request.url());
+            request.body().insert(httpRequest, BODY_INSERTER_CONTEXT).block();
+            String requestBody = httpRequest.getBodyAsString().block();
+            try {
+                payloads.add(MAPPER.readValue(requestBody, new TypeReference<Map<String, Object>>() { }));
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+            String expectedPath = attempt < 3 ? "/responses" : "/images/generations";
+            assertThat(request.url().toString()).endsWith(expectedPath);
+            return Mono.just(ClientResponse.create(attempt < 3 ? HttpStatus.TOO_MANY_REQUESTS : HttpStatus.OK)
+                    .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                    .body(attempt < 3 ? transientBody : successBody)
+                    .build());
+        };
+        CreativeImageClient retryClient = new CreativeImageClient(
+                WebClient.builder().exchangeFunction(exchange),
+                backendAssetClient,
+                optimizer,
+                "key",
+                "http://openai",
+                "gpt-image-2",
+                "gpt-5.5",
+                "flex",
+                900);
+        when(backendAssetClient.uploadImage(any(), any(), any(), any(), any())).thenReturn("/uploads/retry.jpg");
+
+        String result = retryClient.generateImage("prompt", null, "creative-experiment-54");
+
+        assertThat(result).isEqualTo("/uploads/retry.jpg");
+        assertThat(calls).hasValue(3);
+        assertThat(payloads.get(0)).containsEntry("service_tier", "flex");
+        assertThat(payloads.get(1)).containsEntry("service_tier", "flex");
+        assertThat(payloads.get(2)).doesNotContainKey("service_tier");
+    }
+
 
     /**
-     * Ensures missing OpenAI credentials fail image generation instead of returning a null URL.
+     * Garante que ausência de credencial OpenAI falhe em vez de retornar URL nula.
      */
     @Test
     void failsWhenOpenAiKeyIsMissing() {
@@ -218,7 +273,7 @@ class CreativeImageClientTest {
     }
 
     /**
-     * Builds an ExchangeFunction that captures OpenAI request payloads and returns a canned response.
+     * Monta um ExchangeFunction que captura payloads da OpenAI e retorna resposta simulada.
      */
     private ExchangeFunction stubImageApi(AtomicReference<Map<String, Object>> capturedPayload,
                                           String responseBody,
@@ -227,7 +282,7 @@ class CreativeImageClientTest {
     }
 
     /**
-     * Builds an ExchangeFunction that captures OpenAI request payloads for a specific endpoint.
+     * Monta um ExchangeFunction que captura payloads da OpenAI para um endpoint específico.
      */
     private ExchangeFunction stubOpenAiApi(AtomicReference<Map<String, Object>> capturedPayload,
                                            String responseBody,
@@ -273,7 +328,7 @@ class CreativeImageClientTest {
     };
 
     /**
-     * Creates a small deterministic PNG image for upload tests.
+     * Cria uma imagem PNG pequena e determinística para testes de upload.
      */
     private static byte[] createSolidPng(int width, int height) throws IOException {
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
@@ -289,7 +344,7 @@ class CreativeImageClientTest {
     }
 
     /**
-     * Creates a deterministic pseudo-random PNG image for payload size tests.
+     * Cria uma imagem PNG pseudoaleatória determinística para testes de tamanho de payload.
      */
     private static byte[] createRandomPng(int width, int height) {
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
@@ -308,7 +363,7 @@ class CreativeImageClientTest {
     }
 
     /**
-     * Encodes a buffered image as PNG bytes.
+     * Codifica uma imagem em memória como bytes PNG.
      */
     private static byte[] writePng(BufferedImage image) {
         try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {

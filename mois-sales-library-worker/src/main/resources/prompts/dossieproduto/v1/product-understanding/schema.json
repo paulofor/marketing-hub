@@ -1,5 +1,0 @@
-{
-  "type": "object",
-  "required": ["produto", "publico", "promessa", "mecanismo", "prova", "lacunas", "resumo_final"],
-  "additionalProperties": true
-}

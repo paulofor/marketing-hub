@@ -9,5 +9,8 @@ public record SalesPagePatternsPagePatternExtractionRecebeResponseRequest(
         Integer quantidadeTokenSaida,
         BigDecimal custo,
         String modelo,
-        String descricaoErro) {
+        String descricaoErro,
+        String promptTemplateKey,
+        String promptTemplateVersion,
+        String schemaName) {
 }

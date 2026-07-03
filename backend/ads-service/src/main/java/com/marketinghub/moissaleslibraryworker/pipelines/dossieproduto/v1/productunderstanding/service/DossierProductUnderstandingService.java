@@ -8,6 +8,8 @@ import com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1.produc
 import com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1.productunderstanding.service.receberequest.DossierProductUnderstandingRecebeRequestResponse;
 import com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1.productunderstanding.service.receberesponse.DossierProductUnderstandingRecebeResponseRequest;
 import com.marketinghub.moissaleslibraryworker.pipelines.dossieproduto.v1.productunderstanding.service.receberesponse.DossierProductUnderstandingRecebeResponseResponse;
+import com.marketinghub.moissaleslibraryworker.pipelines.shared.service.PipelinePromptSchemaTemplatePayload;
+import com.marketinghub.repository.jpa.aiprompt.AiPromptSchemaTemplateRepository;
 import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageRepository;
 import com.marketinghub.repository.jpa.mois.dossieproduto.DossierProductContextGateway;
 import com.marketinghub.repository.jpa.mois.dossieproduto.PipelineDossieProdutoRepository;
@@ -23,9 +25,11 @@ import org.springframework.stereotype.Service;
 /** Publica pendências e contratos da etapa entendimento do produto do pipeline de dossiê MOIS v1. */
 @Service
 public class DossierProductUnderstandingService {
+    private static final String PIPELINE_CODE = "warmupecosystem.v1";
     private final MoisSalesPageRepository salesPageRepository;
     private final PipelineDossieProdutoRepository pipelineDossieProdutoRepository;
     private final DossierProductContextGateway productContextGateway;
+    private final AiPromptSchemaTemplateRepository templateRepository;
     private final JdbcTemplate jdbcTemplate;
 
     /** Cria o service da etapa com acesso aos repositórios canônicos da página/produto e da auditoria do pipeline. */
@@ -33,10 +37,12 @@ public class DossierProductUnderstandingService {
             MoisSalesPageRepository salesPageRepository,
             PipelineDossieProdutoRepository pipelineDossieProdutoRepository,
             DossierProductContextGateway productContextGateway,
+            AiPromptSchemaTemplateRepository templateRepository,
             JdbcTemplate jdbcTemplate) {
         this.salesPageRepository = salesPageRepository;
         this.pipelineDossieProdutoRepository = pipelineDossieProdutoRepository;
         this.productContextGateway = productContextGateway;
+        this.templateRepository = templateRepository;
         this.jdbcTemplate = jdbcTemplate;
     }
 
@@ -66,7 +72,7 @@ public class DossierProductUnderstandingService {
         pipeline.setDataHora(now);
         pipeline.setJobId(jobId);
         pipeline.setVersaoPipeline("v1");
-        pipeline.setPipelineCode("warmupecosystem.v1");
+        pipeline.setPipelineCode(PIPELINE_CODE);
         pipelineDossieProdutoRepository.save(pipeline);
     }
 
@@ -93,7 +99,10 @@ public class DossierProductUnderstandingService {
         pipeline.setPrompt(request.prompt());
         pipeline.setSchema(request.schema());
         pipeline.setVersaoPipeline("v1");
-        pipeline.setPipelineCode("warmupecosystem.v1");
+        pipeline.setPipelineCode(PIPELINE_CODE);
+        pipeline.setPromptTemplateKey(request.promptTemplateKey());
+        pipeline.setPromptTemplateVersion(request.promptTemplateVersion());
+        pipeline.setSchemaName(request.schemaName());
         pipelineDossieProdutoRepository.save(pipeline);
 
         return new DossierProductUnderstandingRecebeRequestResponse(jobId, productKey, STAGE_CODE, STATUS_WAITING);
@@ -132,7 +141,10 @@ public class DossierProductUnderstandingService {
         pipeline.setModelo(request.modelo());
         pipeline.setDescricaoErro(request.descricaoErro());
         pipeline.setVersaoPipeline("v1");
-        pipeline.setPipelineCode("warmupecosystem.v1");
+        pipeline.setPipelineCode(PIPELINE_CODE);
+        pipeline.setPromptTemplateKey(request.promptTemplateKey());
+        pipeline.setPromptTemplateVersion(request.promptTemplateVersion());
+        pipeline.setSchemaName(request.schemaName());
         pipelineDossieProdutoRepository.save(pipeline);
         accumulateCosts(pageId, request.custo());
 
@@ -194,10 +206,19 @@ public class DossierProductUnderstandingService {
                         page.getId(),
                         "mois-sales-page-" + page.getId(),
                         STAGE_CODE,
-                        input);
+                        input,
+                        loadPromptSchemaTemplate());
                 })
                 .toList();
         return new DossierProductUnderstandingPendingResponse(!jobs.isEmpty(), jobs);
+    }
+
+    /** Carrega o prompt/schema ativo da etapa para o worker depender apenas do contrato do backend. */
+    private PipelinePromptSchemaTemplatePayload loadPromptSchemaTemplate() {
+        return templateRepository.findFirstByPipelineCodeAndStageCodeAndActiveTrueOrderByVersionDesc(PIPELINE_CODE, STAGE_CODE)
+                .map(PipelinePromptSchemaTemplatePayload::from)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Template ativo não encontrado para " + PIPELINE_CODE + "/" + STAGE_CODE));
     }
     /** Recupera ou recompõe o jobId UUID para impedir que pendências antigas travem a fila da etapa. */
     private String resolveJobId(String productKey) {
@@ -218,7 +239,7 @@ public class DossierProductUnderstandingService {
         pipeline.setDataHora(Instant.now());
         pipeline.setJobId(jobId);
         pipeline.setVersaoPipeline("v1");
-        pipeline.setPipelineCode("warmupecosystem.v1");
+        pipeline.setPipelineCode(PIPELINE_CODE);
         pipelineDossieProdutoRepository.save(pipeline);
         return jobId;
     }

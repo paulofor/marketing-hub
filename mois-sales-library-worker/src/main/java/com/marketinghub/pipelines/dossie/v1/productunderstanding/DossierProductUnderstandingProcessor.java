@@ -10,13 +10,10 @@ import com.marketinghub.pipelines.dossie.v1.StageContext;
 import com.marketinghub.pipelines.dossie.v1.StageProcessor;
 import com.marketinghub.pipelines.dossie.v1.StageResult;
 import com.marketinghub.pipelines.dossie.v1.StageResult.OpenAiInteraction;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.util.StringUtils;
@@ -28,7 +25,6 @@ public class DossierProductUnderstandingProcessor implements StageProcessor {
 
     private static final String STAGE_NAME = "product-understanding";
     private static final String OBJECTIVE = "Estruturar produto, público, dores, promessa, mecanismo, oferta, prova, objeções, urgência e hipótese de sucesso antes da pesquisa externa.";
-    private static final String PROMPT_PATH = "prompts/dossieproduto/v1/product-understanding/prompt.md";
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final RestClient openAiClient;
     private final OpenAiProperties openAiProperties;
@@ -103,19 +99,28 @@ public class DossierProductUnderstandingProcessor implements StageProcessor {
 
     /** Monta o request Responses Flex enviado diretamente à OpenAI para entender o produto. */
     private String buildOpenAiRequest(StageContext context, int attempt) throws Exception {
-        String prompt = loadPrompt().replace("{{context}}", objectMapper.writeValueAsString(context.input()));
+        StageContext.PromptSchemaTemplate template = requirePromptSchemaTemplate(context);
+        String prompt = template.promptMarkdownContent().replace("{{context}}", objectMapper.writeValueAsString(context.input()));
+        JsonNode schema = objectMapper.readTree(template.schemaJson());
         ObjectNode request = objectMapper.valueToTree(Map.of(
             "model", openAiProperties.normalizedModel(),
             "metadata", Map.of(
                     "stage", STAGE_NAME,
                     "stage_execution_id", Long.toString(context.stageExecutionId()),
                     "dossier_id", Long.toString(context.dossierId()),
+                    "prompt_template_key", template.templateKey(),
+                    "prompt_template_version", template.version(),
+                    "schema_name", template.schemaName(),
                     "openai_attempt", Integer.toString(attempt),
                     "service_tier_effective", OpenAiServiceTierRetryPolicy.serviceTierForAttempt(attempt)),
             "input", List.of(
                     Map.of("role", "system", "content", "Você estrutura entendimento comercial de produto, protege o dossiê contra inferência sem evidência e responde exclusivamente JSON válido sem markdown."),
                     Map.of("role", "user", "content", prompt)),
-            "text", Map.of("format", Map.of("type", "json_object"))));
+            "text", Map.of("format", Map.of(
+                    "type", "json_schema",
+                    "name", template.schemaName(),
+                    "schema", schema,
+                    "strict", false))));
         if (!OpenAiServiceTierRetryPolicy.shouldOmitServiceTier(attempt)) {
             request.put("service_tier", OpenAiServiceTierRetryPolicy.serviceTierForAttempt(attempt));
         }
@@ -151,9 +156,14 @@ public class DossierProductUnderstandingProcessor implements StageProcessor {
     private record OpenAiCallResult(String rawRequest, String rawResponse) {
     }
 
-    /** Carrega o prompt versionado da etapa para evitar contrato hardcoded na classe Java. */
-    private String loadPrompt() throws IOException {
-        return new ClassPathResource(PROMPT_PATH).getContentAsString(StandardCharsets.UTF_8);
+    /** Exige o template enviado pelo backend para impedir prompt/schema local sem rastreabilidade. */
+    private StageContext.PromptSchemaTemplate requirePromptSchemaTemplate(StageContext context) {
+        StageContext.PromptSchemaTemplate template = context.promptSchemaTemplate();
+        if (template == null || !StringUtils.hasText(template.promptMarkdownContent())
+                || !StringUtils.hasText(template.schemaJson())) {
+            throw new IllegalStateException("Backend não enviou prompt/schema ativo para warmupecosystem.v1");
+        }
+        return template;
     }
 
     /** Extrai o texto final retornado pelo endpoint Responses da OpenAI. */

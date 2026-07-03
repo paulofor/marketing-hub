@@ -1,0 +1,183 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-03-mois-dossier-prompt-schema-templates-01
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: pipeline_dossieproduto
+        - not:
+            columnExists:
+              tableName: pipeline_dossieproduto
+              columnName: prompt_template_key
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE pipeline_dossieproduto
+                ADD COLUMN prompt_template_key VARCHAR(191) NULL AFTER pipeline_code,
+                ADD COLUMN prompt_template_version VARCHAR(40) NULL AFTER prompt_template_key,
+                ADD COLUMN schema_name VARCHAR(120) NULL AFTER prompt_template_version;
+              CREATE INDEX idx_pipeline_dossieproduto_prompt_template
+                ON pipeline_dossieproduto (prompt_template_key, prompt_template_version, schema_name);
+  - changeSet:
+      id: 2026-07-03-mois-dossier-prompt-schema-templates-02
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: ai_prompt_schema_template
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              INSERT INTO ai_prompt_schema_template
+                (template_key, pipeline_code, stage_code, version, openai_model, schema_name,
+                 prompt_markdown_content, schema_json, active, created_at, updated_at)
+              VALUES
+                (
+                  'mois-sales-library:salespagepatterns.v1:page-pattern-extraction:v1',
+                  'salespagepatterns.v1',
+                  'page-pattern-extraction',
+                  'v1',
+                  'gpt-5.2',
+                  'sales_page_patterns_v1',
+                  'Você está analisando uma página de venda de produto com sinais de sucesso.
+
+Objetivo: extrair padrões abstratos que possam melhorar páginas próprias do Marketing Hub, sem copiar conteúdo, marca, layout literal, imagens, depoimentos ou promessa exclusiva de terceiros.
+
+Contexto coletado da página:
+
+{{context}}
+
+Extraia padrões reutilizáveis sobre:
+- estrutura da página;
+- hierarquia visual;
+- paleta, tipografia e densidade visual;
+- sequência de copy;
+- promessa, dor, mecanismo e oferta;
+- prova, autoridade, garantia, CTA e objeções;
+- tipos de imagem ou mídia usados;
+- riscos de cópia literal que devem ser evitados;
+- recomendações práticas para GeraLanding/GeraSalesPage.
+
+Responda em JSON válido aderente ao schema.',
+                  '{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "status",
+    "page_pattern_summary",
+    "design_patterns",
+    "copy_patterns",
+    "offer_patterns",
+    "proof_patterns",
+    "cta_patterns",
+    "adaptation_recommendations",
+    "do_not_copy"
+  ],
+  "properties": {
+    "status": { "type": "string" },
+    "page_pattern_summary": { "type": "string" },
+    "design_patterns": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "copy_patterns": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "offer_patterns": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "proof_patterns": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "cta_patterns": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "adaptation_recommendations": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "do_not_copy": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}',
+                  TRUE,
+                  UTC_TIMESTAMP(6),
+                  UTC_TIMESTAMP(6)
+                ),
+                (
+                  'mois-sales-library:warmupecosystem.v1:product-understanding:v1',
+                  'warmupecosystem.v1',
+                  'product-understanding',
+                  'v1',
+                  'gpt-5.2',
+                  'warmup_ecosystem_product_understanding_v1',
+                  'Entenda o produto para orientar a investigação comercial do dossiê MOIS.
+
+Use exclusivamente o contexto recebido. Não invente dados externos.
+
+Organize a análise pelo eixo Dor → Resultado → Mecanismo → Prova → Oferta e responda em JSON válido com os campos:
+- produto
+- publico
+- dor_superficie
+- dor_raiz
+- dor_emocional_social
+- ganho_desejado
+- promessa
+- mecanismo
+- formato
+- arquitetura_oferta
+- prova
+- objecao_principal
+- custo_de_nao_agir
+- nivel_consciencia_publico
+- maturidade_dor
+- urgencia
+- desejo_dominante
+- angulo_central
+- porque_agora
+- hipotese_sucesso
+- lacunas
+- resumo_final
+
+A hipótese de sucesso deve seguir o formato: "o produto ganha força porque combina [dor forte] + [resultado desejado] + [mecanismo crível] + [prova/autoridade] + [oferta fácil de comprar]".
+
+Se o contexto não sustentar algum campo, informe claramente "não informado no contexto" e registre a lacuna. Não transforme metadados operacionais em conclusão comercial.
+
+Contexto:
+{{context}}',
+                  '{
+  "type": "object",
+  "required": ["produto", "publico", "promessa", "mecanismo", "prova", "lacunas", "resumo_final"],
+  "additionalProperties": true
+}',
+                  TRUE,
+                  UTC_TIMESTAMP(6),
+                  UTC_TIMESTAMP(6)
+                )
+              ON DUPLICATE KEY UPDATE
+                pipeline_code = VALUES(pipeline_code),
+                stage_code = VALUES(stage_code),
+                version = VALUES(version),
+                openai_model = VALUES(openai_model),
+                schema_name = VALUES(schema_name),
+                prompt_markdown_content = VALUES(prompt_markdown_content),
+                schema_json = VALUES(schema_json),
+                active = VALUES(active),
+                updated_at = VALUES(updated_at);

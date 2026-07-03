@@ -10,6 +10,8 @@ import com.marketinghub.moissaleslibraryworker.pipelines.salespagepatterns.v1.pa
 import com.marketinghub.moissaleslibraryworker.pipelines.salespagepatterns.v1.pagepatternextraction.service.receberequest.SalesPagePatternsPagePatternExtractionRecebeRequestResponse;
 import com.marketinghub.moissaleslibraryworker.pipelines.salespagepatterns.v1.pagepatternextraction.service.receberesponse.SalesPagePatternsPagePatternExtractionRecebeResponseRequest;
 import com.marketinghub.moissaleslibraryworker.pipelines.salespagepatterns.v1.pagepatternextraction.service.receberesponse.SalesPagePatternsPagePatternExtractionRecebeResponseResponse;
+import com.marketinghub.moissaleslibraryworker.pipelines.shared.service.PipelinePromptSchemaTemplatePayload;
+import com.marketinghub.repository.jpa.aiprompt.AiPromptSchemaTemplateRepository;
 import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageRepository;
 import com.marketinghub.repository.jpa.mois.dossieproduto.DossierProductContextGateway;
 import com.marketinghub.repository.jpa.mois.dossieproduto.PipelineDossieProdutoRepository;
@@ -38,6 +40,7 @@ public class SalesPagePatternsPagePatternExtractionService {
     private final MoisSalesPageRepository salesPageRepository;
     private final PipelineDossieProdutoRepository pipelineDossieProdutoRepository;
     private final DossierProductContextGateway productContextGateway;
+    private final AiPromptSchemaTemplateRepository templateRepository;
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -46,10 +49,12 @@ public class SalesPagePatternsPagePatternExtractionService {
             MoisSalesPageRepository salesPageRepository,
             PipelineDossieProdutoRepository pipelineDossieProdutoRepository,
             DossierProductContextGateway productContextGateway,
+            AiPromptSchemaTemplateRepository templateRepository,
             JdbcTemplate jdbcTemplate) {
         this.salesPageRepository = salesPageRepository;
         this.pipelineDossieProdutoRepository = pipelineDossieProdutoRepository;
         this.productContextGateway = productContextGateway;
+        this.templateRepository = templateRepository;
         this.jdbcTemplate = jdbcTemplate;
     }
 
@@ -64,7 +69,8 @@ public class SalesPagePatternsPagePatternExtractionService {
         page.setSalesPagePatternsCurrentStage(STAGE_CODE);
         page.setSalesPagePatternsUpdatedAt(now);
         salesPageRepository.save(page);
-        savePipelineAudit(productKey, jobId, STAGE_CODE, STATUS_STARTED, null, null, null, null, null, null, null, null);
+        savePipelineAudit(productKey, jobId, STAGE_CODE, STATUS_STARTED, null, null, null, null, null, null, null, null,
+                null, null, null);
     }
 
     /** Recebe o request bruto do worker e coloca a etapa em estado de espera por resposta. */
@@ -81,7 +87,8 @@ public class SalesPagePatternsPagePatternExtractionService {
         page.setSalesPagePatternsUpdatedAt(now);
         salesPageRepository.save(page);
         savePipelineAudit(productKey, jobId, STAGE_CODE, STATUS_WAITING, request.request(), null, null,
-                request.plataforma(), request.prompt(), request.schema(), null, null);
+                request.plataforma(), request.prompt(), request.schema(), request.promptTemplateKey(),
+                request.promptTemplateVersion(), request.schemaName(), null, null);
         return new SalesPagePatternsPagePatternExtractionRecebeRequestResponse(jobId, productKey, STAGE_CODE, STATUS_WAITING);
     }
 
@@ -100,7 +107,8 @@ public class SalesPagePatternsPagePatternExtractionService {
         page.setSalesPagePatternsUpdatedAt(now);
         salesPageRepository.save(page);
         savePipelineAudit(productKey, jobId, STAGE_CODE, status, null, request.response(),
-                extractOpenAiTextResponse(request.response()), null, null, null, request, request.descricaoErro());
+                extractOpenAiTextResponse(request.response()), null, null, null, request.promptTemplateKey(),
+                request.promptTemplateVersion(), request.schemaName(), request, request.descricaoErro());
         accumulateCosts(pageId, request.custo());
         return new SalesPagePatternsPagePatternExtractionRecebeResponseResponse(jobId, productKey, STAGE_CODE, status, null);
     }
@@ -136,7 +144,16 @@ public class SalesPagePatternsPagePatternExtractionService {
                 pageId,
                 "mois-sales-page-" + pageId,
                 STAGE_CODE,
-                input);
+                input,
+                loadPromptSchemaTemplate());
+    }
+
+    /** Carrega o prompt/schema ativo da etapa para o worker nunca consultar arquivos locais. */
+    private PipelinePromptSchemaTemplatePayload loadPromptSchemaTemplate() {
+        return templateRepository.findFirstByPipelineCodeAndStageCodeAndActiveTrueOrderByVersionDesc(PIPELINE_CODE, STAGE_CODE)
+                .map(PipelinePromptSchemaTemplatePayload::from)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Template ativo não encontrado para " + PIPELINE_CODE + "/" + STAGE_CODE));
     }
 
     /** Recupera ou cria jobId para pendências antigas não travarem a fila. */
@@ -151,7 +168,8 @@ public class SalesPagePatternsPagePatternExtractionService {
     /** Cria auditoria mínima quando o enfileiramento não deixou jobId recuperável. */
     private String rebuildJobId(String productKey) {
         String jobId = UUID.randomUUID().toString();
-        savePipelineAudit(productKey, jobId, STAGE_CODE, STATUS_STARTED, null, null, null, null, null, null, null, null);
+        savePipelineAudit(productKey, jobId, STAGE_CODE, STATUS_STARTED, null, null, null, null, null, null, null, null,
+                null, null, null);
         return jobId;
     }
 
@@ -167,6 +185,9 @@ public class SalesPagePatternsPagePatternExtractionService {
             String platform,
             String prompt,
             String schema,
+            String promptTemplateKey,
+            String promptTemplateVersion,
+            String schemaName,
             SalesPagePatternsPagePatternExtractionRecebeResponseRequest responseRequest,
             String errorDescription) {
         PipelineDossieProduto pipeline = new PipelineDossieProduto();
@@ -183,6 +204,9 @@ public class SalesPagePatternsPagePatternExtractionService {
         pipeline.setPlataforma(platform);
         pipeline.setPrompt(prompt);
         pipeline.setSchema(schema);
+        pipeline.setPromptTemplateKey(promptTemplateKey);
+        pipeline.setPromptTemplateVersion(promptTemplateVersion);
+        pipeline.setSchemaName(schemaName);
         pipeline.setDescricaoErro(errorDescription);
         if (responseRequest != null) {
             pipeline.setQuantidadeTokenEntrada(toLong(responseRequest.quantidadeTokenEntrada()));

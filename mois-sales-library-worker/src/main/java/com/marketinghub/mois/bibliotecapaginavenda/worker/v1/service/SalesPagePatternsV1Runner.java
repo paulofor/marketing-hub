@@ -48,16 +48,17 @@ public class SalesPagePatternsV1Runner {
     private void processJob(String stageName, DossierPendingJob job) {
         try {
             backendClient.recebeRequest(stageName, job.idExterno(), job.jobId(),
-                    new DossierRecebeRequestRequest(String.valueOf(job.input()), "mois-sales-library-worker", null, null));
+                    DossierRecebeRequestRequest.fromTemplate(
+                            String.valueOf(job.input()), "mois-sales-library-worker", job.promptSchemaTemplate()));
             StageResult result = pipelineWorker.execute(job.toStageContext());
             if (result.errorMessage() != null && !result.errorMessage().isBlank()) {
                 backendClient.recebeResponse(stageName, job.idExterno(), job.jobId(),
-                        DossierRecebeResponseRequest.failure(result.errorMessage()));
+                        DossierRecebeResponseRequest.failure(result.errorMessage(), job.promptSchemaTemplate()));
             } else if (result.hasOpenAiInteractions()) {
                 registrarInteracoesOpenAi(stageName, job, result);
             } else {
                 backendClient.recebeResponse(stageName, job.idExterno(), job.jobId(),
-                        DossierRecebeResponseRequest.success(String.valueOf(result.output())));
+                        DossierRecebeResponseRequest.success(String.valueOf(result.output()), job.promptSchemaTemplate()));
             }
             log.info("MOIS salespagepatterns.v1 job completed. stageName={}, idExterno={}, jobId={}, status={}",
                     stageName, job.idExterno(), job.jobId(), result.status());
@@ -65,7 +66,9 @@ public class SalesPagePatternsV1Runner {
             log.warn("MOIS salespagepatterns.v1 job failed. stageName={}, idExterno={}, jobId={}, errorClass={}, errorMessage={}",
                     stageName, job.idExterno(), job.jobId(), ex.getClass().getName(), ex.getMessage(), ex);
             backendClient.recebeResponse(stageName, job.idExterno(), job.jobId(),
-                    DossierRecebeResponseRequest.failure(ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage()));
+                    DossierRecebeResponseRequest.failure(
+                            ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage(),
+                            job.promptSchemaTemplate()));
         }
     }
 
@@ -73,9 +76,10 @@ public class SalesPagePatternsV1Runner {
     private void registrarInteracoesOpenAi(String stageName, DossierPendingJob job, StageResult result) {
         for (StageResult.OpenAiInteraction interaction : result.openAiInteractions()) {
             backendClient.recebeRequest(stageName, job.idExterno(), job.jobId(),
-                    new DossierRecebeRequestRequest(interaction.rawRequestSent(), "openai", null, null));
+                    DossierRecebeRequestRequest.fromTemplate(
+                            interaction.rawRequestSent(), "openai", job.promptSchemaTemplate()));
             backendClient.recebeResponse(stageName, job.idExterno(), job.jobId(),
-                    DossierRecebeResponseRequest.openAi(interaction));
+                    DossierRecebeResponseRequest.openAi(interaction, job.promptSchemaTemplate()));
         }
     }
 }

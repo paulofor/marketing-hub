@@ -10,13 +10,10 @@ import com.marketinghub.pipelines.dossie.v1.StageContext;
 import com.marketinghub.pipelines.dossie.v1.StageProcessor;
 import com.marketinghub.pipelines.dossie.v1.StageResult;
 import com.marketinghub.pipelines.dossie.v1.StageResult.OpenAiInteraction;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.util.StringUtils;
@@ -27,8 +24,6 @@ import org.springframework.web.client.RestClient;
 public class SalesPagePatternsPagePatternExtractionProcessor implements StageProcessor {
 
     private static final String STAGE_NAME = "page-pattern-extraction";
-    private static final String PROMPT_PATH = "prompts/salespagepatterns/v1/page-pattern-extraction/prompt.md";
-    private static final String SCHEMA_PATH = "prompts/salespagepatterns/v1/page-pattern-extraction/schema.json";
     private static final String LOCAL_OBJECTIVE = "Extrair padrões abstratos de estrutura, visual, copy, prova, oferta e CTA sem copiar conteúdo externo.";
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -98,8 +93,9 @@ public class SalesPagePatternsPagePatternExtractionProcessor implements StagePro
 
     /** Monta o request Responses API com prompt e schema versionados. */
     private String buildOpenAiRequest(StageContext context, int attempt) throws Exception {
-        String prompt = loadPrompt().replace("{{context}}", objectMapper.writeValueAsString(context.input()));
-        JsonNode schema = objectMapper.readTree(loadSchema());
+        StageContext.PromptSchemaTemplate template = requirePromptSchemaTemplate(context);
+        String prompt = template.promptMarkdownContent().replace("{{context}}", objectMapper.writeValueAsString(context.input()));
+        JsonNode schema = objectMapper.readTree(template.schemaJson());
         ObjectNode request = objectMapper.valueToTree(Map.of(
                 "model", openAiProperties.normalizedModel(),
                 "metadata", Map.of(
@@ -107,6 +103,9 @@ public class SalesPagePatternsPagePatternExtractionProcessor implements StagePro
                         "stage", STAGE_NAME,
                         "stage_execution_id", Long.toString(context.stageExecutionId()),
                         "page_id", Long.toString(context.dossierId()),
+                        "prompt_template_key", template.templateKey(),
+                        "prompt_template_version", template.version(),
+                        "schema_name", template.schemaName(),
                         "openai_attempt", Integer.toString(attempt),
                         "service_tier_effective", OpenAiServiceTierRetryPolicy.serviceTierForAttempt(attempt)),
                 "input", List.of(
@@ -114,7 +113,7 @@ public class SalesPagePatternsPagePatternExtractionProcessor implements StagePro
                         Map.of("role", "user", "content", prompt)),
                 "text", Map.of("format", Map.of(
                         "type", "json_schema",
-                        "name", "sales_page_patterns_v1",
+                        "name", template.schemaName(),
                         "schema", schema,
                         "strict", true))));
         if (!OpenAiServiceTierRetryPolicy.shouldOmitServiceTier(attempt)) {
@@ -152,14 +151,14 @@ public class SalesPagePatternsPagePatternExtractionProcessor implements StagePro
     private record OpenAiCallResult(String rawRequest, String rawResponse) {
     }
 
-    /** Carrega o prompt versionado da etapa. */
-    private String loadPrompt() throws IOException {
-        return new ClassPathResource(PROMPT_PATH).getContentAsString(StandardCharsets.UTF_8);
-    }
-
-    /** Carrega o schema JSON versionado da etapa. */
-    private String loadSchema() throws IOException {
-        return new ClassPathResource(SCHEMA_PATH).getContentAsString(StandardCharsets.UTF_8);
+    /** Exige o template enviado pelo backend para impedir prompt/schema local sem rastreabilidade. */
+    private StageContext.PromptSchemaTemplate requirePromptSchemaTemplate(StageContext context) {
+        StageContext.PromptSchemaTemplate template = context.promptSchemaTemplate();
+        if (template == null || !StringUtils.hasText(template.promptMarkdownContent())
+                || !StringUtils.hasText(template.schemaJson())) {
+            throw new IllegalStateException("Backend não enviou prompt/schema ativo para salespagepatterns.v1");
+        }
+        return template;
     }
 
     /** Extrai o texto final retornado pela Responses API. */

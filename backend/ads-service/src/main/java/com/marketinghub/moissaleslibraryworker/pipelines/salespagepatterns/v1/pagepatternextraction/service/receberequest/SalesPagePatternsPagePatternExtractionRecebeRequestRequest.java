@@ -5,5 +5,8 @@ public record SalesPagePatternsPagePatternExtractionRecebeRequestRequest(
         String request,
         String plataforma,
         String prompt,
-        String schema) {
+        String schema,
+        String promptTemplateKey,
+        String promptTemplateVersion,
+        String schemaName) {
 }

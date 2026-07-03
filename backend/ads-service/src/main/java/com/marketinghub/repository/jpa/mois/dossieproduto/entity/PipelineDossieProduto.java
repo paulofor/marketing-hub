@@ -77,4 +77,13 @@ public class PipelineDossieProduto {
 
     @Column(name = "pipeline_code", length = 80)
     private String pipelineCode;
+
+    @Column(name = "prompt_template_key", length = 191)
+    private String promptTemplateKey;
+
+    @Column(name = "prompt_template_version", length = 40)
+    private String promptTemplateVersion;
+
+    @Column(name = "schema_name", length = 120)
+    private String schemaName;
 }

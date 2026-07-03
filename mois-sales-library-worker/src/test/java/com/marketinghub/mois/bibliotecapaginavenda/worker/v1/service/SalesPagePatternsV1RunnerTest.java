@@ -32,8 +32,10 @@ class SalesPagePatternsV1RunnerTest {
         PipelineWorker pipelineWorker = org.mockito.Mockito.mock(PipelineWorker.class);
         WorkerProperties properties = new WorkerProperties(null, "workspace-mois", null, null, null, null, 0L, 0L, 0L, null, null, false, 0L, null, null, null, null, 10);
         SalesPagePatternsV1Runner runner = new SalesPagePatternsV1Runner(backendClient, pipelineWorker, properties);
+        StageContext.PromptSchemaTemplate template = template();
         DossierPendingJob job = new DossierPendingJob(
-                "job-patterns", 31L, 401L, "workspace-mois", "page-pattern-extraction", Map.of("productKey", "401"));
+                "job-patterns", 31L, 401L, "workspace-mois", "page-pattern-extraction", Map.of("productKey", "401"),
+                template);
         String rawRequest = "{\"model\":\"gpt-5.2\",\"service_tier\":\"flex\"}";
         String rawResponse = "{\"id\":\"resp_1\",\"output_text\":\"{\\\"status\\\":\\\"ok\\\"}\"}";
         StageResult result = StageResult.doneWithOpenAiInteractions(
@@ -56,7 +58,24 @@ class SalesPagePatternsV1RunnerTest {
 
         org.assertj.core.api.Assertions.assertThat(requestCaptor.getValue().plataforma()).isEqualTo("openai");
         org.assertj.core.api.Assertions.assertThat(requestCaptor.getValue().request()).isEqualTo(rawRequest);
+        org.assertj.core.api.Assertions.assertThat(requestCaptor.getValue().promptTemplateKey()).isEqualTo(template.templateKey());
+        org.assertj.core.api.Assertions.assertThat(requestCaptor.getValue().schema()).isEqualTo(template.schemaJson());
         org.assertj.core.api.Assertions.assertThat(responseCaptor.getValue().response()).isEqualTo(rawResponse);
+        org.assertj.core.api.Assertions.assertThat(responseCaptor.getValue().promptTemplateVersion()).isEqualTo(template.version());
+        org.assertj.core.api.Assertions.assertThat(responseCaptor.getValue().schemaName()).isEqualTo(template.schemaName());
         org.assertj.core.api.Assertions.assertThat(responseCaptor.getValue().custo()).isEqualByComparingTo("0.02");
+    }
+
+    /** Monta um template canônico para validar propagação de auditoria. */
+    private StageContext.PromptSchemaTemplate template() {
+        return new StageContext.PromptSchemaTemplate(
+                "mois-sales-library:salespagepatterns.v1:page-pattern-extraction:v1",
+                "salespagepatterns.v1",
+                "page-pattern-extraction",
+                "v1",
+                "gpt-5.2",
+                "sales_page_patterns_v1",
+                "prompt banco",
+                "{\"type\":\"object\"}");
     }
 }

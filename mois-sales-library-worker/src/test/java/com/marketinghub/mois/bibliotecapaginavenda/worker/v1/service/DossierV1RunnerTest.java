@@ -32,8 +32,10 @@ class DossierV1RunnerTest {
         PipelineWorker pipelineWorker = org.mockito.Mockito.mock(PipelineWorker.class);
         WorkerProperties properties = new WorkerProperties(null, "workspace-mois", null, null, null, null, 0L, 0L, 0L, null, null, false, 0L, null, null, null, null, 10);
         DossierV1Runner runner = new DossierV1Runner(backendClient, pipelineWorker, properties);
+        StageContext.PromptSchemaTemplate template = template();
         DossierPendingJob job = new DossierPendingJob(
-                "job-openai", 11L, 22L, "workspace-mois", "product-understanding", Map.of("productKey", "produto-1"));
+                "job-openai", 11L, 22L, "workspace-mois", "product-understanding", Map.of("productKey", "produto-1"),
+                template);
         String rawRequest = "{\"model\":\"gpt-5.2\",\"input\":\"prompt exato\"}";
         String rawResponse = "{\"id\":\"resp_1\",\"output_text\":\"resposta exata\"}";
         StageResult result = StageResult.doneWithOpenAiInteractions(
@@ -64,7 +66,11 @@ class DossierV1RunnerTest {
 
         org.assertj.core.api.Assertions.assertThat(openAiRequestCaptor.getValue().request()).isEqualTo(rawRequest);
         org.assertj.core.api.Assertions.assertThat(openAiRequestCaptor.getValue().plataforma()).isEqualTo("openai");
+        org.assertj.core.api.Assertions.assertThat(openAiRequestCaptor.getValue().promptTemplateKey()).isEqualTo(template.templateKey());
+        org.assertj.core.api.Assertions.assertThat(openAiRequestCaptor.getValue().prompt()).isEqualTo(template.promptMarkdownContent());
         org.assertj.core.api.Assertions.assertThat(openAiResponseCaptor.getValue().response()).isEqualTo(rawResponse);
+        org.assertj.core.api.Assertions.assertThat(openAiResponseCaptor.getValue().promptTemplateVersion()).isEqualTo(template.version());
+        org.assertj.core.api.Assertions.assertThat(openAiResponseCaptor.getValue().schemaName()).isEqualTo(template.schemaName());
         org.assertj.core.api.Assertions.assertThat(openAiResponseCaptor.getValue().quantidadeTokenEntrada()).isEqualTo(10);
         org.assertj.core.api.Assertions.assertThat(openAiResponseCaptor.getValue().quantidadeTokenSaida()).isEqualTo(20);
         org.assertj.core.api.Assertions.assertThat(openAiResponseCaptor.getValue().modelo()).isEqualTo("gpt-5.2");
@@ -74,5 +80,18 @@ class DossierV1RunnerTest {
     private void stubSemPendencia(DossierV1BackendClient backendClient, String stageName) {
         when(backendClient.pending(eq(stageName), any(DossierPendingRequest.class)))
                 .thenReturn(new DossierPendingResponse(false, List.of()));
+    }
+
+    /** Monta um template canônico para validar propagação de auditoria. */
+    private StageContext.PromptSchemaTemplate template() {
+        return new StageContext.PromptSchemaTemplate(
+                "mois-sales-library:warmupecosystem.v1:product-understanding:v1",
+                "warmupecosystem.v1",
+                "product-understanding",
+                "v1",
+                "gpt-5.2",
+                "warmup_ecosystem_product_understanding_v1",
+                "prompt banco",
+                "{\"type\":\"object\"}");
     }
 }

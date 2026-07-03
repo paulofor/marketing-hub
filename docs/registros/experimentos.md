@@ -5582,3 +5582,10 @@
 - Correção aplicada: criado endpoint `/api/product-ai/experiment-preparations/{hypothesisId}` para expor bloqueios e rascunho canônico; o backend bloqueia criação direta de experimento Produto IA incompleto.
 - Regra operacional: a hipótese precisa ter nicho, dor, persona, promessa, mecanismo, preço, pacote de oferta, entregáveis e descrição da amostra personalizada.
 - Prevenção de recorrência: a tela mostra os bloqueios, mas a trava definitiva fica no backend para impedir produto manual fora do fluxo.
+
+## 2026-07-03 — Comando de preparo AI Personalized Sample
+
+- Decisão: uma hipótese já criada pelo sistema pode receber preparo operacional para o MVP `AI_PERSONALIZED_SAMPLE` sem virar experimento automaticamente.
+- Correção aplicada: criado endpoint `POST /api/product-ai/hypotheses/{hypothesisId}/personalized-sample-preparation`.
+- Regra operacional: o comando exige rastreabilidade mínima de nicho, dor, persona, promessa e mecanismo; depois completa subtipo Produto IA, preço inicial, descrição da amostra, pacote de oferta e entregável mínimo.
+- Prevenção de recorrência: o comando não cria hipótese nova nem experimento; a criação do experimento continua bloqueada pelo diagnóstico `/api/product-ai/experiment-preparations/{hypothesisId}`.

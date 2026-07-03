@@ -136,6 +136,73 @@ class MoisSalesLibraryControllerTest {
     }
 
     /**
+     * Garante que o endpoint lista candidatos quentes ao dossiê de produto.
+     */
+    @Test
+    void shouldExposeHotProductDossierCandidatesEndpoint() throws Exception {
+        when(service.listHotProductDossierCandidates("workspace-001", BigDecimal.valueOf(80), 10))
+                .thenReturn(new MoisSalesLibraryDtos.HotProductDossierCandidateResponse(
+                        "workspace-001",
+                        BigDecimal.valueOf(80),
+                        10,
+                        1,
+                        List.of(new MoisSalesLibraryDtos.HotProductDossierCandidateItem(
+                                401L,
+                                "workspace-001",
+                                "HOTMART",
+                                "https://example.com/oferta",
+                                "BLACK MAGRA",
+                                "BLACK MAGRA",
+                                BigDecimal.valueOf(127.07),
+                                BigDecimal.valueOf(86),
+                                null,
+                                null,
+                                null,
+                                Instant.parse("2026-07-01T10:00:00Z")
+                        ))
+                ));
+
+        mockMvc.perform(get("/api/mois/sales-library/hot-products/dossier-candidates")
+                        .param("workspaceId", "workspace-001")
+                        .param("minTemperature", "80")
+                        .param("limit", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalReturned").value(1))
+                .andExpect(jsonPath("$.items[0].pageId").value(401))
+                .andExpect(jsonPath("$.items[0].hotmartTemperature").value(127.07));
+    }
+
+    /**
+     * Garante que o endpoint aceita enfileirar candidatos quentes no intake do dossiê.
+     */
+    @Test
+    void shouldExposeHotProductDossierEnqueueEndpoint() throws Exception {
+        when(service.enqueueHotProductDossierCandidates(any(MoisSalesLibraryDtos.HotProductDossierEnqueueRequest.class)))
+                .thenReturn(new MoisSalesLibraryDtos.HotProductDossierEnqueueResponse(
+                        "workspace-001",
+                        BigDecimal.valueOf(80),
+                        5,
+                        1,
+                        1,
+                        0,
+                        List.of(new MoisSalesLibraryDtos.HotProductDossierEnqueueItem(401L, "job-1", "INICIADO", "intake"))
+                ));
+
+        mockMvc.perform(post("/api/mois/sales-library/hot-products/dossier-candidates:enqueue")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "workspaceId": "workspace-001",
+                                  "minTemperature": 80,
+                                  "limit": 5
+                                }
+                                """))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.enqueued").value(1))
+                .andExpect(jsonPath("$.items[0].stageCode").value("intake"));
+    }
+
+    /**
      * Garante que o resumo global consolidado da Fase 4 seja exposto ao frontend.
      */
     @Test

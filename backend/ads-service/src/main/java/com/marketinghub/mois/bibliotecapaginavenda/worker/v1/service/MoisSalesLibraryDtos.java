@@ -322,6 +322,72 @@ public final class MoisSalesLibraryDtos {
     ) {
     }
 
+    /**
+     * Representa uma página quente já analisada e elegível para virar dossiê comercial.
+     */
+    public record HotProductDossierCandidateItem(
+            long pageId,
+            String workspaceId,
+            String source,
+            String urlCanonical,
+            String title,
+            String productName,
+            BigDecimal hotmartTemperature,
+            BigDecimal scoreTotal,
+            String dossieProdutoStatus,
+            String dossieProdutoCurrentStage,
+            Instant dossieProdutoUpdatedAt,
+            Instant lastAnalyzedAt
+    ) {
+    }
+
+    /**
+     * Representa a fila consultiva de produtos quentes prontos para dossiê.
+     */
+    public record HotProductDossierCandidateResponse(
+            String workspaceId,
+            BigDecimal minTemperature,
+            int limit,
+            int totalReturned,
+            List<HotProductDossierCandidateItem> items
+    ) {
+    }
+
+    /**
+     * Representa o pedido de enfileiramento recorrente de produtos quentes no dossiê v1.
+     */
+    public record HotProductDossierEnqueueRequest(
+            @NotBlank String workspaceId,
+            BigDecimal minTemperature,
+            Integer limit
+    ) {
+    }
+
+    /**
+     * Representa um item promovido para a etapa inicial do pipeline dossieproduto.v1.
+     */
+    public record HotProductDossierEnqueueItem(
+            long pageId,
+            String jobId,
+            String status,
+            String stageCode
+    ) {
+    }
+
+    /**
+     * Representa o resultado do comando de enfileiramento de dossiês de produtos quentes.
+     */
+    public record HotProductDossierEnqueueResponse(
+            String workspaceId,
+            BigDecimal minTemperature,
+            int requestedLimit,
+            int candidatesFound,
+            int enqueued,
+            int skipped,
+            List<HotProductDossierEnqueueItem> items
+    ) {
+    }
+
 
     /**
      * Representa a cobertura de URLs únicas vindas da origem bruta mois_collected_reference.

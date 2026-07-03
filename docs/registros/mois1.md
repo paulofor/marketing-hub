@@ -2003,3 +2003,10 @@ Arquivos principais:
 - Ajustada a tela do dossiê de produto para separar o texto gerado pela OpenAI do response técnico em cada etapa.
 - O response técnico agora mantém visão JSON com collapse sem despejar o campo textual longo dentro do card de auditoria.
 - Adicionado quadro de dossiê final do produto com a síntese limpa da etapa `dossier-synthesis`, facilitando decisão comercial sem misturar metadados de auditoria.
+
+## 2026-07-03 — Processo recorrente de produtos quentes para dossiê MOIS v1
+
+- Criados contratos para listar produtos Hotmart com temperatura `>= 80`, HTML útil, análise concluída e sem dossiê ativo/concluído.
+- Criado comando de enfileiramento em lote que publica os candidatos na etapa `intake` do `dossieproduto.v1`, mantendo IA e pesquisa externa no `mois-sales-library-worker`.
+- Causa-raiz tratada: produtos de sucesso já capturados/analisados ficavam como informação passiva na biblioteca, sem processo recorrente para virar aprendizado comercial reutilizável.
+- Prevenção de recorrência: endpoint e Swagger tornam a seleção/enfileiramento repetíveis para novos produtos quentes que surgirem nas coletas futuras.

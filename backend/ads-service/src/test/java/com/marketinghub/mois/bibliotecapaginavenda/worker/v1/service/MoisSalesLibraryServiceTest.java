@@ -531,6 +531,60 @@ class MoisSalesLibraryServiceTest {
     }
 
     /**
+     * Garante que a fila consultiva prioriza produtos Hotmart quentes já analisados para o dossiê v1.
+     */
+    @Test
+    void shouldListHotProductDossierCandidates() throws Exception {
+        given(jdbcTemplate.query(contains("pipeline_dossieproduto pd"), isA(RowMapper.class), eq("workspace-001"), eq(BigDecimal.valueOf(80)), eq(10)))
+                .willAnswer(invocation -> {
+                    RowMapper<?> mapper = invocation.getArgument(1);
+                    return List.of(mapper.mapRow(hotProductDossierCandidateRow(), 0));
+                });
+
+        MoisSalesLibraryDtos.HotProductDossierCandidateResponse response =
+                service.listHotProductDossierCandidates("workspace-001", BigDecimal.valueOf(80), 10);
+
+        org.assertj.core.api.Assertions.assertThat(response.totalReturned()).isEqualTo(1);
+        org.assertj.core.api.Assertions.assertThat(response.items().get(0).pageId()).isEqualTo(401L);
+        org.assertj.core.api.Assertions.assertThat(response.items().get(0).hotmartTemperature()).isEqualByComparingTo("127.07");
+    }
+
+    /**
+     * Garante que o comando promove candidatos quentes para o intake do dossiê sem executar o worker.
+     */
+    @Test
+    void shouldEnqueueHotProductDossierCandidates() {
+        given(jdbcTemplate.query(contains("pipeline_dossieproduto pd"), isA(RowMapper.class), eq("workspace-001"), eq(BigDecimal.valueOf(80)), eq(5)))
+                .willReturn(List.of(new MoisSalesLibraryDtos.HotProductDossierCandidateItem(
+                        401L,
+                        "workspace-001",
+                        "HOTMART",
+                        "https://example.com/oferta",
+                        "BLACK MAGRA",
+                        "BLACK MAGRA",
+                        BigDecimal.valueOf(127.07),
+                        BigDecimal.valueOf(86),
+                        null,
+                        null,
+                        null,
+                        Instant.parse("2026-07-01T10:00:00Z")
+                )));
+        given(jdbcTemplate.update(contains("UPDATE mois_sales_page"), any(), any(), any())).willReturn(1);
+        given(jdbcTemplate.update(contains("INSERT INTO pipeline_dossieproduto"), any(), any(), any(), any(), any())).willReturn(1);
+
+        MoisSalesLibraryDtos.HotProductDossierEnqueueResponse response =
+                service.enqueueHotProductDossierCandidates(new MoisSalesLibraryDtos.HotProductDossierEnqueueRequest(
+                        "workspace-001",
+                        BigDecimal.valueOf(80),
+                        5
+                ));
+
+        org.assertj.core.api.Assertions.assertThat(response.enqueued()).isEqualTo(1);
+        org.assertj.core.api.Assertions.assertThat(response.items().get(0).stageCode()).isEqualTo("intake");
+        verify(jdbcTemplate).update(contains("INSERT INTO pipeline_dossieproduto"), eq("401"), eq("intake"), eq("INICIADO"), any(), eq("v1"));
+    }
+
+    /**
      * Configura mocks comuns da ingestão operacional principal em mois_sales_page.
      */
     private void stubOperationalIngest(int... upsertResults) {
@@ -624,6 +678,28 @@ class MoisSalesLibraryServiceTest {
                 .willReturn(Timestamp.from(Instant.parse("2026-06-02T10:00:00Z")));
         given(resultSet.getTimestamp(eq("updated_at"), any(Calendar.class)))
                 .willReturn(Timestamp.from(Instant.parse("2026-06-03T10:00:00Z")));
+        return resultSet;
+    }
+
+    /**
+     * Monta uma linha simulada de candidato quente ao dossiê de produto.
+     */
+    private ResultSet hotProductDossierCandidateRow() throws Exception {
+        ResultSet resultSet = org.mockito.Mockito.mock(ResultSet.class);
+        given(resultSet.getLong("page_id")).willReturn(401L);
+        given(resultSet.getString("workspace_id")).willReturn("workspace-001");
+        given(resultSet.getString("source")).willReturn("HOTMART");
+        given(resultSet.getString("url_canonical")).willReturn("https://example.com/oferta");
+        given(resultSet.getString("title")).willReturn("BLACK MAGRA");
+        given(resultSet.getString("product_name")).willReturn("BLACK MAGRA");
+        given(resultSet.getBigDecimal("hotmart_temperature")).willReturn(BigDecimal.valueOf(127.07));
+        given(resultSet.getBigDecimal("score_total")).willReturn(BigDecimal.valueOf(86));
+        given(resultSet.getString("dossie_produto_status")).willReturn(null);
+        given(resultSet.getString("dossie_produto_current_stage")).willReturn(null);
+        given(resultSet.getTimestamp(eq("dossie_produto_updated_at"), any(Calendar.class))).willReturn(null);
+        given(resultSet.getTimestamp("dossie_produto_updated_at")).willReturn(null);
+        given(resultSet.getTimestamp(eq("last_analyzed_at"), any(Calendar.class)))
+                .willReturn(Timestamp.from(Instant.parse("2026-07-01T10:00:00Z")));
         return resultSet;
     }
 

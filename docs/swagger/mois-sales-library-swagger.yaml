@@ -436,6 +436,54 @@ paths:
                 $ref: '#/components/schemas/DossierProductPipelineResponse'
         '404':
           description: Página não encontrada
+  /hot-products/dossier-candidates:
+    get:
+      summary: Lista produtos quentes prontos para dossiê comercial
+      description: Retorna páginas Hotmart com temperatura acima do limite, HTML útil capturado, análise comercial concluída e sem dossiê v1 ativo/concluído.
+      tags: [MOIS Sales Library]
+      parameters:
+        - in: query
+          name: workspaceId
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: minTemperature
+          schema:
+            type: number
+            default: 80
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 200
+      responses:
+        '200':
+          description: Candidatos priorizados para alimentar o dossiê v1
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HotProductDossierCandidateResponse'
+  /hot-products/dossier-candidates:enqueue:
+    post:
+      summary: Enfileira produtos quentes no intake do dossiê v1
+      description: Marca páginas elegíveis como `INICIADO/intake` e registra auditoria mínima em `pipeline_dossieproduto`; a execução de IA permanece no worker externo.
+      tags: [MOIS Sales Library]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HotProductDossierEnqueueRequest'
+      responses:
+        '202':
+          description: Candidatos promovidos para o pipeline dossieproduto.v1
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HotProductDossierEnqueueResponse'
   /pages/{pageId}/market-warmup:request:
     post:
       summary: Solicita investigação de sucesso do produto para uma página
@@ -2130,6 +2178,103 @@ components:
         capturedAt:
           type: string
           format: date-time
+
+    HotProductDossierCandidateResponse:
+      type: object
+      properties:
+        workspaceId:
+          type: string
+        minTemperature:
+          type: number
+        limit:
+          type: integer
+        totalReturned:
+          type: integer
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/HotProductDossierCandidateItem'
+    HotProductDossierCandidateItem:
+      type: object
+      properties:
+        pageId:
+          type: integer
+          format: int64
+        workspaceId:
+          type: string
+        source:
+          type: string
+        urlCanonical:
+          type: string
+        title:
+          type: string
+          nullable: true
+        productName:
+          type: string
+          nullable: true
+        hotmartTemperature:
+          type: number
+        scoreTotal:
+          type: number
+        dossieProdutoStatus:
+          type: string
+          nullable: true
+        dossieProdutoCurrentStage:
+          type: string
+          nullable: true
+        dossieProdutoUpdatedAt:
+          type: string
+          format: date-time
+          nullable: true
+        lastAnalyzedAt:
+          type: string
+          format: date-time
+          nullable: true
+    HotProductDossierEnqueueRequest:
+      type: object
+      required: [workspaceId]
+      properties:
+        workspaceId:
+          type: string
+        minTemperature:
+          type: number
+          default: 80
+        limit:
+          type: integer
+          default: 50
+          minimum: 1
+          maximum: 200
+    HotProductDossierEnqueueResponse:
+      type: object
+      properties:
+        workspaceId:
+          type: string
+        minTemperature:
+          type: number
+        requestedLimit:
+          type: integer
+        candidatesFound:
+          type: integer
+        enqueued:
+          type: integer
+        skipped:
+          type: integer
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/HotProductDossierEnqueueItem'
+    HotProductDossierEnqueueItem:
+      type: object
+      properties:
+        pageId:
+          type: integer
+          format: int64
+        jobId:
+          type: string
+        status:
+          type: string
+        stageCode:
+          type: string
 
     DossierProductPipelineResponse:
       type: object

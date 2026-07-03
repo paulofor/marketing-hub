@@ -9,5 +9,8 @@ public record DossierProductUnderstandingRecebeResponseRequest(
         Long quantidadeTokenEntrada,
         Long quantidadeTokenSaida,
         BigDecimal custo,
-        String modelo) {
+        String modelo,
+        String promptTemplateKey,
+        String promptTemplateVersion,
+        String schemaName) {
 }

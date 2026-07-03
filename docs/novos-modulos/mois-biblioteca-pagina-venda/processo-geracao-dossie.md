@@ -87,6 +87,9 @@ Esse dossiê passa a ficar disponível na tela do item da biblioteca para apoiar
 
 - O worker executa OpenAI e pesquisas externas; o backend controla estado, persistência e exposição para a tela.
 - O worker não acessa o banco diretamente.
+- Prompts e schemas dos pipelines de dossiê ficam no banco do backend em `ai_prompt_schema_template`.
+- O worker recebe prompt/schema pelo endpoint `pending`; não deve carregar prompt/schema local do próprio módulo.
+- Cada dossiê gerado deve ficar vinculado ao `prompt_template_key`, `prompt_template_version` e `schema_name` usados na execução.
 - Cada etapa deve deixar evidência persistida suficiente para auditoria e exibição ao usuário.
 - A tela deve mostrar o dossiê final vindo do backend, sem recomputar conclusões no frontend.
 - Chamadas OpenAI devem usar três tentativas: tentativa 1 Flex, tentativa 2 Flex e tentativa 3 Standard/default.

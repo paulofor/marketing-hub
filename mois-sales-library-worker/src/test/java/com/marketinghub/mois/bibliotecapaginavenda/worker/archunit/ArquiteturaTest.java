@@ -175,6 +175,14 @@ class ArquiteturaTest {
             .should(notDependOnPackage(SALES_PAGE_PATTERNS_V1_ROOT))
             .because("[ARQUITETURA] warmupecosystem.v1 deve ser coeso e não depender do pipeline salespagepatterns.v1");
 
+    /** Garante que prompts/schemas dos dossiês sejam recebidos do backend, nunca carregados de arquivos locais. */
+    @ArchTest
+    static final ArchRule pipelines_de_dossie_nao_devem_carregar_prompt_schema_local = classes()
+            .that()
+            .resideInAnyPackage(DOSSIER_V1_PIPELINE_ROOT + "..", SALES_PAGE_PATTERNS_V1_ROOT + "..")
+            .should(notDependOnLocalPromptSchemaLoaders())
+            .because("[ARQUITETURA] prompts e schemas dos dossiês devem vir do backend pelo contrato pending");
+
 
     /** Garante que cada subpacote de dossieproduto.v1 tenha somente as 9 classes canônicas da etapa. */
     @ArchTest
@@ -320,6 +328,24 @@ class ArquiteturaTest {
                     boolean valid = !target.getPackageName().startsWith(forbiddenPackagePrefix);
                     events.add(new SimpleConditionEvent(dependency, valid,
                             "[ARQUITETURA] " + javaClass.getName() + " não pode depender de " + target.getName()));
+                }
+            }
+        };
+    }
+
+    private static ArchCondition<JavaClass> notDependOnLocalPromptSchemaLoaders() {
+        return new ArchCondition<>("[ARQUITETURA] não carregar prompt/schema local") {
+            @Override
+            public void check(JavaClass javaClass, ConditionEvents events) {
+                for (Dependency dependency : javaClass.getDirectDependenciesFromSelf()) {
+                    String targetName = dependency.getTargetClass().getName();
+                    boolean forbidden = targetName.equals("org.springframework.core.io.ClassPathResource")
+                            || targetName.equals("java.nio.file.Files")
+                            || targetName.equals("java.nio.file.Path")
+                            || targetName.equals("java.nio.file.Paths");
+                    events.add(new SimpleConditionEvent(dependency, !forbidden,
+                            "[ARQUITETURA] " + javaClass.getName()
+                                    + " não pode carregar prompt/schema local via " + targetName));
                 }
             }
         };

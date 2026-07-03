@@ -19,6 +19,7 @@ import com.marketinghub.repository.jpa.journey.JourneyTemplateRepository;
 import com.marketinghub.repository.jpa.ads.InstagramAccountRepository;
 import com.marketinghub.repository.jpa.ads.CampaignRepository;
 import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPagePublicationAuditRepository;
+import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPageStageExecutionRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -84,6 +85,8 @@ class ExperimentControllerTest {
     private CampaignRepository campaignRepository;
     @Autowired
     private GeraSalesPagePublicationAuditRepository geraSalesPagePublicationAuditRepository;
+    @Autowired
+    private GeraSalesPageStageExecutionRepository geraSalesPageStageExecutionRepository;
 
     Long nicheId;
 
@@ -116,6 +119,7 @@ class ExperimentControllerTest {
         creativeRepo.deleteAll();
         campaignRepository.deleteAll();
         geraSalesPagePublicationAuditRepository.deleteAll();
+        geraSalesPageStageExecutionRepository.deleteAll();
 
         var experiments = repository.findAll();
         experiments.forEach(experiment -> experiment.setLeadPortalFlow(null));

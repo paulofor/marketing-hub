@@ -167,6 +167,20 @@ O backend apenas lista candidatos, enfileira o `intake`, persiste auditoria, rec
 
 Todo custo OpenAI deve ser persistido no registro da etapa, somado em `mois_sales_page.total_model_cost_usd` e somado em `mois_sales_library_cost_total.total_cost_usd`.
 
+### 12.4 Prompts e schemas dos dossiês
+
+Nos pipelines `salespagepatterns.v1` e `warmupecosystem.v1`, prompts e schemas de etapas com OpenAI devem ficar em `ai_prompt_schema_template`, no backend principal.
+
+Regras obrigatórias:
+
+- o worker nunca acessa o banco diretamente;
+- o worker nunca carrega prompt/schema local por `ClassPathResource` ou arquivo do próprio módulo para esses dossiês;
+- o endpoint `pending` do backend deve entregar `promptSchemaTemplate` com `templateKey`, `version`, `schemaName`, prompt e schema ativos;
+- cada callback `recebeRequest`/`recebeResponse` deve registrar `prompt_template_key`, `prompt_template_version` e `schema_name` em `pipeline_dossieproduto`;
+- ao alterar prompt ou schema, criar nova versão ativa no backend, preservando rastreabilidade de dossiês antigos.
+
+Essa regra evita que o dossiê seja gerado por contrato invisível no worker e permite comparar resultado comercial por versão de prompt/schema.
+
 ### 12.2 Diagrama (sequência ponta a ponta)
 ```mermaid
 sequenceDiagram

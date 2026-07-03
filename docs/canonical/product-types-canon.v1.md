@@ -51,6 +51,46 @@ Caracteristicas obrigatorias:
 
 Produto IA pode nascer como teste controlado dentro do planejamento, mas so deve virar campanha ou produto principal quando o ganho percebido for claro e o custo por uso permitir lucro.
 
+### Subtipos canonicos de Produto IA
+
+Produto IA nao deve ser tratado como uma categoria unica. O sistema deve classificar o subtipo porque cada um possui promessa, custo, experiencia, metrica e risco operacional diferentes.
+
+Subtipos iniciais:
+
+| Subtipo | Nome operacional | Objetivo comercial | Uso recomendado |
+|---|---|---|---|
+| `AI_VISUAL_PREVIEW` | AI Visual Preview | Mostrar uma previa visual do resultado, do depois ou da entrega. | Quando a imagem ajuda o lead a entender rapidamente o beneficio prometido. |
+| `AI_PERSONALIZED_SAMPLE` | AI Personalized Sample | Gerar uma amostra visual ou textual exclusiva para o lead antes da compra. | Primeiro MVP recomendado para testar impacto visual e personalizacao. |
+| `AI_TRANSFORMATION_SIMULATOR` | AI Transformation Simulator | Simular visualmente uma transformacao desejada. | Quando a promessa depende de comparar estado atual e estado desejado. |
+| `AI_VISUAL_ASSET_PACK` | AI Visual Asset Pack | Entregar pacote de imagens, criativos, mockups ou materiais visuais personalizados. | Quando o cliente compra ativos prontos para usar. |
+| `AI_IDENTITY_AVATAR_PRODUCT` | AI Identity / Avatar Product | Criar representacao visual de pessoa, marca, persona, avatar ou estilo. | Quando identidade, pertencimento ou expressao visual forem parte central do valor. |
+| `AI_REPORT_VISUAL_EVIDENCE` | AI Report + Visual Evidence | Combinar diagnostico textual com imagens, graficos ou quadros visuais. | Quando o visual aumenta clareza, prova ou urgencia da decisao. |
+
+O subtipo nao substitui o tipo principal `Produto IA`. Ele especializa a experiencia para que o sistema consiga comparar resultados, custos e aprendizados entre produtos parecidos.
+
+### Regra mandatória — Produto IA nasce pelo sistema
+
+Nenhum Produto IA, low-ticket, oferta, pagina, checkout, amostra, promessa ou variacao deve ser criado manualmente como atalho fora dos recursos do Marketing Hub.
+
+Todo Produto IA deve nascer por uma execucao rastreavel do sistema, preservando no minimo:
+
+- nicho ou contexto de origem;
+- hipotese;
+- dor principal;
+- resultado desejado;
+- mecanismo plausivel;
+- prova ou evidencia usada;
+- oferta;
+- tipo e subtipo de produto;
+- prompts e schemas usados;
+- custos estimados e realizados de IA;
+- experimento de validacao;
+- versao ou variavel primaria quando for uma variacao.
+
+Criar o mesmo conceito para outro nicho exige nova execucao do fluxo com novo contexto de nicho. Variar um produto para melhora exige nova versao ou novo experimento com variavel primaria declarada.
+
+Padroes externos, como os dossies da Biblioteca de Paginas de Vendas, podem ser usados como insumo de briefing e aprendizado. Eles nao podem substituir a geracao rastreavel de hipotese, dor, mecanismo, prova, oferta e experimento pelo sistema.
+
 ## Decisao entre tipos
 
 Use low-ticket quando o problema pode ser resolvido por um pacote digital estatico ou semi-estatico, barato, rapido de produzir e vendavel por pagina curta.

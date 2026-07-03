@@ -1700,3 +1700,65 @@ O primeiro PR deve entregar:
 8. testes.
 
 Isso cria o vocabulário necessário para todas as fases seguintes e reduz o risco de adicionar novas automações sobre estados implícitos.
+
+---
+
+## 24. Produto IA visual e personalizado
+
+### 24.1 Decisão
+
+O tipo `Produto IA` deve ser subdividido para que o Marketing Hub consiga testar mecanismos diferentes sem misturar aprendizado comercial.
+
+Subtipos iniciais:
+
+- `AI_VISUAL_PREVIEW`;
+- `AI_PERSONALIZED_SAMPLE`;
+- `AI_TRANSFORMATION_SIMULATOR`;
+- `AI_VISUAL_ASSET_PACK`;
+- `AI_IDENTITY_AVATAR_PRODUCT`;
+- `AI_REPORT_VISUAL_EVIDENCE`.
+
+O primeiro MVP recomendado e `AI_PERSONALIZED_SAMPLE`, porque testa duas hipoteses importantes ao mesmo tempo:
+
+- imagens geradas por IA podem aumentar impacto, desejo e tangibilizacao do resultado;
+- personalizacao visual pode aumentar valor percebido porque o lead recebe algo criado para ele.
+
+### 24.2 Alternativas avaliadas
+
+| Alternativa | Beneficio | Risco | Esforco | Decisao |
+|---|---|---|---|---|
+| Usar imagens bonitas apenas em anuncio ou pagina | Rapido e barato | Pode melhorar CTR sem melhorar venda | Baixo | Nao e suficiente como estrategia principal |
+| Criar exemplos manuais de Produto IA | Ajuda a visualizar possibilidades | Quebra rastreabilidade e dificulta repetir em outro nicho | Baixo/medio | Rejeitado |
+| Criar produtos pelo fluxo sistemico com subtipo, hipotese e experimento | Repetivel, auditavel e comparavel | Exige evoluir contratos e telas | Medio | Escolhido |
+
+### 24.3 Regra operacional
+
+Produto nenhum deve nascer por conta propria. O sistema deve ser capaz de explicar como ele foi criado e de recria-lo para outro nicho ou varia-lo para melhoria.
+
+Todo Produto IA visual ou personalizado precisa registrar:
+
+- nicho/contexto;
+- hipotese;
+- dor;
+- resultado;
+- mecanismo;
+- prova;
+- oferta;
+- subtipo;
+- entrada solicitada ao lead;
+- saida prometida;
+- prompts/schemas;
+- custo estimado por lead ou cliente;
+- experimento de validacao;
+- metrica primaria;
+- regra de parada ou invalidacao.
+
+### 24.4 Experimentos a preparar
+
+Sequencia recomendada:
+
+1. Criar suporte sistemico para declarar subtipo de Produto IA na criacao/estrategia do experimento.
+2. Permitir que o fluxo de hipotese/oferta gere um Produto IA `AI_PERSONALIZED_SAMPLE` sem criar ativos manualmente.
+3. Criar contrato de amostra personalizada com entrada minima do lead, saida gerada, custo e status.
+4. Publicar experimento pequeno comparando amostra personalizada contra rota sem amostra, mantendo uma unica variavel primaria.
+5. Medir custo por lead, taxa de visualizacao da amostra, clique para checkout, compra, custo de IA por compra e margem.

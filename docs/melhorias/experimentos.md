@@ -42,6 +42,8 @@ Antes de escalar ou lançar o experimento 56, a prioridade passou a ser corrigir
 
 Após a publicação da correção de CTA/tracking, o experimento 55 ficou `PAUSED` no Hub, mas a campanha Meta vinculada continuou ativa porque a pausa administrativa não criava solicitação operacional para o worker. A correção sistêmica é fazer `updateStatus(PAUSED)` registrar `stop_requested_at` nas campanhas Facebook vinculadas com motivo `ADMIN_EXPERIMENT_PAUSED`, mantendo o backend como fonte da decisão e o worker como executor da pausa na Meta.
 
+Após o deploy dessa correção, a nova pausa expôs um bloqueio de schema: `facebook_ads_campaign.stop_reason` ainda estava como `ENUM` no banco real, rejeitando o motivo `ADMIN_EXPERIMENT_PAUSED`. O reparo necessário é garantir via Liquibase incremental que a coluna fique como `VARCHAR(100)`, porque motivos de parada são contrato operacional extensível e não devem depender de enum físico antigo em produção.
+
 ### Hipótese de melhoria
 
 Se o visitante enxergar prova visual e for conduzido para uma ação de menor atrito antes do checkout, a perda entre visualização da página e intenção deve diminuir. O próximo julgamento do 55 deve separar:

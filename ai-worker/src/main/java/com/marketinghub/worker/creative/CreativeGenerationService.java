@@ -21,6 +21,8 @@ import org.springframework.util.StringUtils;
 @Service
 public class CreativeGenerationService {
     private static final Logger log = LoggerFactory.getLogger(CreativeGenerationService.class);
+    private static final int META_CALL_TO_ACTION_MAX_LENGTH = 32;
+    private static final String DEFAULT_META_CALL_TO_ACTION = "LEARN_MORE";
 
     private final CreativeGenerationBackendClient backendClient;
     private final CreativeChatGptClient textClient;
@@ -99,7 +101,7 @@ public class CreativeGenerationService {
             request.setHeadline(plan.headline());
             request.setPrimaryText(plan.primaryText());
             request.setDescription(plan.description());
-            request.setCta(plan.ctaText());
+            request.setCta(normalizeMetaCallToAction(plan.ctaText()));
             request.setFormat(StringUtils.hasText(plan.format()) ? plan.format() : "IMAGE");
             request.setImageUrl(imageUrl);
             request.setStatus(CreativeStatus.DRAFT);
@@ -120,6 +122,7 @@ public class CreativeGenerationService {
             if (creative.getStatus() == null) {
                 creative.setStatus(CreativeStatus.DRAFT);
             }
+            creative.setCta(normalizeMetaCallToAction(creative.getCta()));
         }
         return creatives;
     }
@@ -165,6 +168,18 @@ public class CreativeGenerationService {
             return dto.getCreativeImagePrompt();
         }
         return "Crie uma imagem de anúncio para Meta Ads alinhada ao texto: " + creative.getPrimaryText();
+    }
+
+    /** Normaliza CTA livre para o tipo canônico aceito pelo backend e pela Meta. */
+    private String normalizeMetaCallToAction(String value) {
+        if (!StringUtils.hasText(value)) {
+            return value;
+        }
+        String normalized = value.trim();
+        if (normalized.length() <= META_CALL_TO_ACTION_MAX_LENGTH) {
+            return normalized;
+        }
+        return DEFAULT_META_CALL_TO_ACTION;
     }
 
     /** Extrai a mensagem raiz para gravar erro operacional legível no backend. */

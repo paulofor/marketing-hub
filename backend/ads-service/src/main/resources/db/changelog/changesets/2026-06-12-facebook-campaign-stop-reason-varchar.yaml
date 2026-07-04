@@ -17,3 +17,31 @@ databaseChangeLog:
             sql: |
               ALTER TABLE facebook_ads_campaign
               MODIFY stop_reason VARCHAR(100) NULL;
+  - changeSet:
+      id: 2026-07-04-facebook-campaign-stop-reason-varchar-repair
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - columnExists:
+            tableName: facebook_ads_campaign
+            columnName: stop_reason
+        - sqlCheck:
+            expectedResult: 0
+            sql: |
+              SELECT COUNT(*)
+              FROM information_schema.columns
+              WHERE table_schema = DATABASE()
+                AND table_name = 'facebook_ads_campaign'
+                AND column_name = 'stop_reason'
+                AND data_type = 'varchar'
+                AND character_maximum_length >= 100
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE facebook_ads_campaign
+              MODIFY stop_reason VARCHAR(100) NULL;

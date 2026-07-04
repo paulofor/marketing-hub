@@ -189,6 +189,50 @@ export async function registerFlowRenderComplete(
   }
 }
 
+export interface FlowPageAnalyticsPayload {
+  eventId: string;
+  eventType: string;
+  visitorId?: string | null;
+  sessionId?: string | null;
+  sectionId?: string | null;
+  visibleMs?: number | null;
+  elapsedMs?: number | null;
+  pageUrl?: string | null;
+  occurredAt?: string | null;
+  userAgent?: string | null;
+  deviceType?: string | null;
+  operatingSystem?: string | null;
+  screenWidth?: number | null;
+  screenHeight?: number | null;
+  loadDurationMs?: number | null;
+  domContentLoadedMs?: number | null;
+  firstContentfulPaintMs?: number | null;
+  resourceErrorCount?: number | null;
+  connectionType?: string | null;
+}
+
+export async function registerFlowPageAnalytics(
+  slug: string,
+  payload: FlowPageAnalyticsPayload
+): Promise<void> {
+  const normalizedSlug = slug?.trim();
+  if (!normalizedSlug) {
+    throw new Error("Slug do fluxo é obrigatório");
+  }
+  const response = await fetch(
+    buildUrl(`/flows/${encodeURIComponent(normalizedSlug)}/page-analytics`),
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    }
+  );
+  if (!response.ok) {
+    const message = await extractError(response);
+    throw new Error(message);
+  }
+}
+
 async function extractError(response: Response): Promise<string> {
   try {
     const body = await response.json();

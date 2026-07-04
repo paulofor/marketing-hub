@@ -445,6 +445,10 @@ public class ExperimentFunnelService {
             validateRequiredLandingAnalyticsField(request.sessionId(), "sessionId é obrigatório para checkout_click");
             validateRequiredLandingAnalyticsField(request.pageUrl(), "pageUrl é obrigatório para checkout_click");
         }
+        if ("form_start".equalsIgnoreCase(eventType) || "form_submit".equalsIgnoreCase(eventType)) {
+            validateRequiredLandingAnalyticsField(request.sessionId(), "sessionId é obrigatório para eventos de formulário");
+            validateRequiredLandingAnalyticsField(request.pageUrl(), "pageUrl é obrigatório para eventos de formulário");
+        }
     }
 
     /**
@@ -563,6 +567,12 @@ public class ExperimentFunnelService {
         }
         if ("page_load_metric".equalsIgnoreCase(eventType)) {
             return ExperimentFunnelStage.VISUALIZACAO_FORM;
+        }
+        if ("form_start".equalsIgnoreCase(eventType)) {
+            return ExperimentFunnelStage.VISUALIZACAO_FORM;
+        }
+        if ("form_submit".equalsIgnoreCase(eventType)) {
+            return ExperimentFunnelStage.ENVIO_FORM;
         }
         if ("checkout_click".equalsIgnoreCase(eventType) && isLowTicketProduct(experiment)) {
             return ExperimentFunnelStage.ACESSO_CHECKOUT;

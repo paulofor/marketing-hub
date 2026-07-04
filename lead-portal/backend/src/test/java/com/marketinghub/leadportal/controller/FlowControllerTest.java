@@ -282,7 +282,10 @@ class FlowControllerTest {
                 .andExpect(content().string(containsString("screenWidth")))
                 .andExpect(content().string(containsString("page_load_metric")))
                 .andExpect(content().string(containsString("loadDurationMs")))
-                .andExpect(content().string(containsString("resourceErrorCount")));
+                .andExpect(content().string(containsString("resourceErrorCount")))
+                .andExpect(content().string(containsString("isSelfReferentialLink")))
+                .andExpect(content().string(containsString("form_start")))
+                .andExpect(content().string(containsString("form_submit")));
     }
 
     /**

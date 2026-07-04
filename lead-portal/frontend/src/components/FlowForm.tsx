@@ -13,12 +13,14 @@ type AnswerValue = string | string[] | File | null;
 interface FlowFormProps {
   flow: LeadPortalFlow;
   campaignCode?: string | null;
+  onStarted?: () => void;
   onSubmitted?: (result: FlowSubmissionResponse) => void;
 }
 
 export default function FlowForm({
   flow,
   campaignCode,
+  onStarted,
   onSubmitted,
 }: FlowFormProps) {
   const {
@@ -48,6 +50,7 @@ export default function FlowForm({
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submissionResult, setSubmissionResult] =
     useState<FlowSubmissionResponse | null>(null);
+  const [hasStarted, setHasStarted] = useState(false);
 
   const visibleQuestions = useMemo(() => {
     if (!contactFollowUpConfig) {
@@ -76,6 +79,7 @@ export default function FlowForm({
     setErrors({});
     setSubmitError(null);
     setSubmissionResult(null);
+    setHasStarted(false);
   }, [initialAnswers]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -171,6 +175,10 @@ export default function FlowForm({
   };
 
   const updateAnswer = (question: FlowQuestion, value: AnswerValue) => {
+    if (!hasStarted) {
+      setHasStarted(true);
+      onStarted?.();
+    }
     setAnswers((current) => {
       const next = {
         ...current,

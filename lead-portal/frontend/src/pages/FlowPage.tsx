@@ -4,6 +4,7 @@ import { useParams } from "react-router-dom";
 import {
   API_BASE_URL,
   fetchLeadPortalFlow,
+  registerFlowPageAnalytics,
   registerFlowRenderComplete,
   submitFlowSubmission,
 } from "../api";
@@ -29,15 +30,36 @@ export default function FlowPage() {
   const campaignCode = useCampaignCode();
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [hasTrackedRenderComplete, setHasTrackedRenderComplete] = useState(false);
+  const [hasTrackedFormStart, setHasTrackedFormStart] = useState(false);
   const [submissionResult, setSubmissionResult] = useState<FlowSubmissionResponse | null>(null);
 
   useEffect(() => {
     setHasSubmitted(false);
     setHasTrackedRenderComplete(false);
+    setHasTrackedFormStart(false);
     setSubmissionResult(null);
   }, [slug]);
 
+  const trackFormEvent = (eventType: "form_start" | "form_submit") => {
+    if (!resolvedFlowSlug) {
+      return;
+    }
+    const eventPayload = buildFlowPageAnalyticsPayload(eventType);
+    registerFlowPageAnalytics(resolvedFlowSlug, eventPayload).catch((trackError) => {
+      console.warn(`Falha ao registrar ${eventType} do fluxo`, trackError);
+    });
+  };
+
+  const handleFormStarted = () => {
+    if (hasTrackedFormStart) {
+      return;
+    }
+    setHasTrackedFormStart(true);
+    trackFormEvent("form_start");
+  };
+
   const handleSubmissionComplete = (result: FlowSubmissionResponse) => {
+    trackFormEvent("form_submit");
     setSubmissionResult(result);
     setHasSubmitted(true);
   };
@@ -292,6 +314,7 @@ export default function FlowPage() {
         <FlowForm
           flow={flowForForm}
           campaignCode={campaignCode}
+          onStarted={handleFormStarted}
           onSubmitted={handleSubmissionComplete}
         />
       </div>
@@ -628,7 +651,7 @@ function attachCustomTemplateBridgeToDocument(
 
   const handleAnchorClick = (event: MouseEvent) => {
     const target = event.target as Element | null;
-    const anchor = target?.closest?.('a[href^="#"]') as HTMLAnchorElement | null;
+    const anchor = target?.closest?.("a[href]") as HTMLAnchorElement | null;
     if (!anchor) {
       return;
     }
@@ -637,6 +660,20 @@ function attachCustomTemplateBridgeToDocument(
     }
     const href = anchor.getAttribute("href");
     if (!href || href === "#") {
+      return;
+    }
+    if (isSelfReferentialFlowLink(anchor, options.flowSlug)) {
+      const formTarget = resolveManagedFormTarget(doc, options.formSpec);
+      if (!formTarget) {
+        return;
+      }
+      event.preventDefault();
+      const behaviorAttr = anchor.getAttribute("data-scroll-behavior");
+      const behavior: ScrollBehavior = behaviorAttr === "auto" ? "auto" : "smooth";
+      scrollToElement(formTarget, behavior);
+      return;
+    }
+    if (!href.startsWith("#")) {
       return;
     }
     const anchorTargetId = href.slice(1);
@@ -654,6 +691,32 @@ function attachCustomTemplateBridgeToDocument(
   };
 
   doc.addEventListener("click", handleAnchorClick, true);
+
+  const startedForms = new WeakSet<HTMLFormElement>();
+  const trackTemplateFormEvent = (eventType: "form_start" | "form_submit") => {
+    registerFlowPageAnalytics(options.flowSlug, buildFlowPageAnalyticsPayload(eventType)).catch((trackError) => {
+      console.warn(`Falha ao registrar ${eventType} do template`, trackError);
+    });
+  };
+
+  const handleFormStart = (event: Event) => {
+    const target = event.target as Element | null;
+    const form = target?.closest?.("form") as HTMLFormElement | null;
+    if (!form) {
+      return;
+    }
+    if (options.rootElement && !options.rootElement.contains(form)) {
+      return;
+    }
+    if (startedForms.has(form)) {
+      return;
+    }
+    startedForms.add(form);
+    trackTemplateFormEvent("form_start");
+  };
+
+  doc.addEventListener("input", handleFormStart, true);
+  doc.addEventListener("change", handleFormStart, true);
 
   const handleFormSubmit = async (event: Event) => {
     const target = event.target as HTMLFormElement | null;
@@ -675,6 +738,7 @@ function attachCustomTemplateBridgeToDocument(
     try {
       const parsed = parseTemplateSubmissionPayload(target, options.campaignCode);
       const response = await submitFlowSubmission(options.flowSlug, parsed.payload, parsed.image);
+      trackTemplateFormEvent("form_submit");
       target.dataset.leadPortalSubmitted = "true";
       writeManagedTemplateFeedback(
         target,
@@ -725,8 +789,86 @@ function attachCustomTemplateBridgeToDocument(
 
   return () => {
     doc.removeEventListener("click", handleAnchorClick, true);
+    doc.removeEventListener("input", handleFormStart, true);
+    doc.removeEventListener("change", handleFormStart, true);
     doc.removeEventListener("submit", handleFormSubmit, true);
   };
+}
+
+function buildFlowPageAnalyticsPayload(eventType: "form_start" | "form_submit") {
+  const now = new Date().toISOString();
+  return {
+    eventId: typeof crypto !== "undefined" && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`,
+    eventType,
+    visitorId: getVisitorIdCookie(),
+    sessionId: resolveLeadPortalSessionId(),
+    pageUrl: window.location.href,
+    occurredAt: now,
+    userAgent: navigator.userAgent,
+    deviceType: resolveDeviceType(),
+    operatingSystem: resolveOperatingSystem(),
+    screenWidth: Math.round(window.innerWidth || document.documentElement.clientWidth || screen.width || 0),
+    screenHeight: Math.round(window.innerHeight || document.documentElement.clientHeight || screen.height || 0),
+  };
+}
+
+function resolveLeadPortalSessionId() {
+  const key = "mh_lp_react_session";
+  const current = sessionStorage.getItem(key);
+  if (current) {
+    return current;
+  }
+  const created = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+  sessionStorage.setItem(key, created);
+  return created;
+}
+
+function resolveDeviceType() {
+  const userAgent = navigator.userAgent || "";
+  const isTablet = /ipad|tablet/i.test(userAgent) || (/android/i.test(userAgent) && !/mobile/i.test(userAgent));
+  if (isTablet) {
+    return "tablet";
+  }
+  return /mobi|iphone|ipod|android/i.test(userAgent) ? "mobile" : "desktop";
+}
+
+function resolveOperatingSystem() {
+  const userAgent = navigator.userAgent || "";
+  if (/iphone|ipad|ipod/i.test(userAgent)) {
+    return "ios";
+  }
+  if (/android/i.test(userAgent)) {
+    return "android";
+  }
+  return "other";
+}
+
+function isSelfReferentialFlowLink(anchor: HTMLAnchorElement, flowSlug: string) {
+  try {
+    const targetUrl = new URL(anchor.href, window.location.href);
+    const currentUrl = new URL(window.location.href);
+    const normalizedTargetPath = targetUrl.pathname.replace(/\/$/, "");
+    const normalizedCurrentPath = currentUrl.pathname.replace(/\/$/, "");
+    if (targetUrl.origin === currentUrl.origin && normalizedTargetPath === normalizedCurrentPath) {
+      return true;
+    }
+    return normalizedTargetPath.endsWith(`/flows/${flowSlug}`)
+      || normalizedTargetPath.endsWith(`/flows/${flowSlug}/page`);
+  } catch {
+    return false;
+  }
+}
+
+function resolveManagedFormTarget(doc: Document, formSpec?: CustomTemplateFormSpec) {
+  if (formSpec?.formId) {
+    const byId = doc.getElementById(formSpec.formId);
+    if (byId) {
+      return byId;
+    }
+  }
+  return doc.querySelector("form");
 }
 
 function toggleTemplateSubmitButtons(form: HTMLFormElement, isSubmitting: boolean) {

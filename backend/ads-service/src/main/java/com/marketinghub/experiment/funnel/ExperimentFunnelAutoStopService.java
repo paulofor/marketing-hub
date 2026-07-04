@@ -35,6 +35,8 @@ public class ExperimentFunnelAutoStopService {
     private static final long LOW_TICKET_MINIMUM_SESSIONS = 100L;
     private static final long LOW_TICKET_MINIMUM_LINK_CLICKS = 150L;
     private static final double LOW_TICKET_STRONG_CHECKOUT_INTENT_RATE = 0.03d;
+    private static final long LOW_TICKET_EXPENSIVE_TRAFFIC_MINIMUM_LINK_CLICKS = 5L;
+    private static final BigDecimal LOW_TICKET_EXPENSIVE_TRAFFIC_CPC_TICKET_RATE = new BigDecimal("0.10");
     private static final Duration LOW_IMPRESSIONS_MIN_CAMPAIGN_AGE = Duration.ofHours(48);
     private static final long LOW_IMPRESSIONS_MINIMUM = 100L;
 
@@ -265,6 +267,64 @@ public class ExperimentFunnelAutoStopService {
     }
 
     /**
+     * Avalia produto low-ticket com tráfego caro antes da amostra completa e invalida quando o CPC já torna a economia
+     * inviável sem sinal forte de checkout.
+     *
+     * @return {@code true} quando o experimento foi parado automaticamente, {@code false} caso contrário.
+     */
+    public boolean stopIfLowTicketTrafficCostEconomicallyUnviable(Experiment experiment) {
+        if (experiment == null
+                || experiment.getStatus() != ExperimentStatus.RUNNING
+                || experiment.getExperimentType() != ExperimentType.LOW_TICKET_PRODUCT) {
+            return false;
+        }
+        ExperimentFunnelDiagnosticsResponseDto diagnostics = diagnosticService.diagnose(experiment.getId());
+        ExperimentFunnelStageDiagnosticDto checkoutIntentStage = findStageDiagnostic(
+                diagnostics,
+                ExperimentFunnelStage.ACESSO_CHECKOUT
+        );
+        ExperimentFunnelStageDiagnosticDto purchaseStage = findStageDiagnostic(
+                diagnostics,
+                ExperimentFunnelStage.COMPRA
+        );
+        if (checkoutIntentStage == null || purchaseStage == null || purchaseStage.successes() > 0) {
+            return false;
+        }
+        ExperimentCampaignMetric metric = campaignMetricRepository.findByExperiment(experiment).orElse(null);
+        long linkClicks = metric != null && metric.getClicks() != null ? metric.getClicks() : 0L;
+        BigDecimal totalCost = resolveTotalExperimentCost(experiment, metric);
+        BigDecimal stopLossLimit = positiveOrNull(experiment.getStopLossCpl());
+        BigDecimal unitPrice = positiveOrNull(experiment.getUnitPrice());
+        BigDecimal cpc = resolveCpc(metric, linkClicks);
+        if (linkClicks < LOW_TICKET_EXPENSIVE_TRAFFIC_MINIMUM_LINK_CLICKS
+                || stopLossLimit == null
+                || totalCost.compareTo(stopLossLimit) < 0
+                || unitPrice == null
+                || cpc == null
+                || cpc.compareTo(unitPrice.multiply(LOW_TICKET_EXPENSIVE_TRAFFIC_CPC_TICKET_RATE)) < 0
+                || hasStrongCheckoutIntent(checkoutIntentStage)) {
+            return false;
+        }
+        LOGGER.warn(
+                "Automatic stop triggered for low-ticket experiment {} due to economically unviable traffic cost: linkClicks={}, cpc={}, unitPrice={}, totalCost={}, stopLossLimit={}, checkouts={}, checkoutRate={}",
+                experiment.getId(),
+                linkClicks,
+                cpc,
+                unitPrice,
+                totalCost,
+                stopLossLimit,
+                checkoutIntentStage.successes(),
+                checkoutIntentStage.observedRate()
+        );
+        invalidateExperimentAndRequestStops(
+                experiment,
+                FacebookCampaignStopReason.LOW_TICKET_TRAFFIC_COST_ECONOMICALLY_UNVIABLE,
+                "produto low-ticket com tráfego caro, zero compras, custo acima do stop-loss e sem intenção forte de checkout"
+        );
+        return true;
+    }
+
+    /**
      * Avalia se a campanha rodou tempo suficiente com impressões muito baixas e invalida o experimento.
      */
     public boolean stopIfLowImpressionsAfterRunningTime(Experiment experiment, Long impressions, Instant campaignCreatedAt) {
@@ -354,6 +414,20 @@ public class ExperimentFunnelAutoStopService {
         return checkoutIntentStage != null
                 && checkoutIntentStage.observedRate() != null
                 && checkoutIntentStage.observedRate() >= LOW_TICKET_STRONG_CHECKOUT_INTENT_RATE;
+    }
+
+    /**
+     * Resolve o CPC sincronizado e usa gasto por clique como fallback quando o campo calculado não veio preenchido.
+     */
+    private BigDecimal resolveCpc(ExperimentCampaignMetric metric, long linkClicks) {
+        BigDecimal cpc = metric != null ? positiveOrNull(metric.getCpc()) : null;
+        BigDecimal spend = metric != null ? positiveOrNull(metric.getSpend()) : null;
+        if (cpc != null) {
+            return cpc;
+        }
+        return spend != null && linkClicks > 0
+                ? spend.divide(BigDecimal.valueOf(linkClicks), 4, java.math.RoundingMode.HALF_UP)
+                : null;
     }
 
     /**

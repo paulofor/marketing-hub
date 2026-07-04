@@ -117,10 +117,32 @@ function asArray<T>(value: T[] | null | undefined): T[] {
   return Array.isArray(value) ? value : [];
 }
 
+function resolvePlanStatus(status?: string | null): CommercialPlanStatus {
+  return status && status in statusLabel
+    ? (status as CommercialPlanStatus)
+    : "DRAFT";
+}
+
+function resolveMilestoneStatus(
+  status?: string | null,
+): CommercialPlanMilestoneStatus {
+  return status && status in milestoneStatusLabel
+    ? (status as CommercialPlanMilestoneStatus)
+    : "PENDING";
+}
+
+function resolveRecommendation(
+  recommendation?: string | null,
+): CommercialPlanSimulation["recommendation"] {
+  return recommendation && recommendation in recommendationLabel
+    ? (recommendation as CommercialPlanSimulation["recommendation"])
+    : "CORRECT";
+}
+
 function toForm(plan: CommercialPlan): SaveCommercialPlanPayload {
   return {
     name: plan.name,
-    status: plan.status,
+    status: resolvePlanStatus(plan.status),
     nicheId: plan.nicheId ?? null,
     hypothesisId: plan.hypothesisId ?? null,
     experimentId: plan.experimentId ?? null,
@@ -153,6 +175,14 @@ function statusClass(status: CommercialPlanStatus) {
   return "text-bg-warning";
 }
 
+function planStatusLabel(status?: string | null) {
+  return statusLabel[resolvePlanStatus(status)];
+}
+
+function planStatusClass(status?: string | null) {
+  return statusClass(resolvePlanStatus(status));
+}
+
 function milestoneIcon(status: CommercialPlanMilestoneStatus) {
   if (status === "DONE")
     return (
@@ -163,6 +193,10 @@ function milestoneIcon(status: CommercialPlanMilestoneStatus) {
   if (status === "BLOCKED")
     return <PauseCircle size={18} className="text-danger" aria-hidden="true" />;
   return <Circle size={18} className="text-secondary" aria-hidden="true" />;
+}
+
+function milestoneStatusText(status?: string | null) {
+  return milestoneStatusLabel[resolveMilestoneStatus(status)];
 }
 
 function formatCurrency(value?: number | null) {
@@ -327,8 +361,8 @@ export default function CommercialPlanningPage() {
                   >
                     <div className="d-flex justify-content-between gap-2">
                       <strong>{plan.name}</strong>
-                      <span className={`badge ${statusClass(plan.status)}`}>
-                        {statusLabel[plan.status]}
+                      <span className={`badge ${planStatusClass(plan.status)}`}>
+                        {planStatusLabel(plan.status)}
                       </span>
                     </div>
                     <small>
@@ -349,9 +383,9 @@ export default function CommercialPlanningPage() {
                   <div className="d-flex flex-wrap justify-content-between gap-3">
                     <div>
                       <span
-                        className={`badge ${statusClass(selectedPlan.status)} mb-2`}
+                        className={`badge ${planStatusClass(selectedPlan.status)} mb-2`}
                       >
-                        {statusLabel[selectedPlan.status]}
+                        {planStatusLabel(selectedPlan.status)}
                       </span>
                       <h2 className="h4 mb-1">{selectedPlan.name}</h2>
                       <p className="text-secondary mb-0">
@@ -402,7 +436,9 @@ export default function CommercialPlanningPage() {
                         <span className="badge text-bg-primary">
                           {
                             recommendationLabel[
-                              visibleSimulation.recommendation
+                              resolveRecommendation(
+                                visibleSimulation.recommendation,
+                              )
                             ]
                           }
                         </span>
@@ -555,7 +591,9 @@ export default function CommercialPlanningPage() {
                           <p className="text-secondary small mb-1">
                             Custo máximo
                           </p>
-                          <strong>{formatCurrency(selectedPlan.maxBudget)}</strong>
+                          <strong>
+                            {formatCurrency(selectedPlan.maxBudget)}
+                          </strong>
                           <div className="text-secondary small">
                             Executado:{" "}
                             {formatCurrency(selectedPlan.actualTotalCost)}
@@ -735,35 +773,33 @@ export default function CommercialPlanningPage() {
                             className="d-flex align-items-start gap-2 border rounded-3 p-2"
                             key={milestone.id}
                           >
-                            {milestoneIcon(milestone.status)}
+                            {milestoneIcon(
+                              resolveMilestoneStatus(milestone.status),
+                            )}
                             <div>
                               <strong>
                                 {milestone.sequenceOrder}. {milestone.name}
                               </strong>
                               <div className="text-secondary small">
-                                {milestoneStatusLabel[milestone.status]} ·{" "}
+                                {milestoneStatusText(milestone.status)} ·{" "}
                                 {milestone.recommendedNextAction ||
                                   "sem ação recomendada"}
                               </div>
                               <div className="text-secondary small">
                                 Planejado: custo{" "}
                                 {formatCurrency(milestone.targetCost)} · receita{" "}
-                                {formatCurrency(milestone.targetRevenue)} ·
-                                Exp.{" "}
-                                {formatNumber(milestone.experimentsToCreate)}
-                                /{formatNumber(milestone.experimentsToPublish)}
+                                {formatCurrency(milestone.targetRevenue)} · Exp.{" "}
+                                {formatNumber(milestone.experimentsToCreate)}/
+                                {formatNumber(milestone.experimentsToPublish)}
                               </div>
                               <div className="text-secondary small">
                                 Executado: custo{" "}
                                 {formatCurrency(milestone.actualTotalCost)}{" "}
                                 (campanha{" "}
-                                {formatCurrency(
-                                  milestone.actualCampaignCost,
-                                )}{" "}
-                                + IA {formatCurrency(milestone.actualAiCost)}) ·
+                                {formatCurrency(milestone.actualCampaignCost)} +
+                                IA {formatCurrency(milestone.actualAiCost)}) ·
                                 receita{" "}
-                                {formatCurrency(milestone.actualRevenue)} ·
-                                Exp.{" "}
+                                {formatCurrency(milestone.actualRevenue)} · Exp.{" "}
                                 {formatExecutedNumber(
                                   milestone.actualExperimentsCreated,
                                 )}

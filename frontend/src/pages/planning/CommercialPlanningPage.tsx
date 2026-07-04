@@ -244,7 +244,9 @@ export default function CommercialPlanningPage() {
     error?: string;
   } | null>(null);
   const visibleSimulation =
-    simulationFeedback?.planId === selectedPlan?.id &&
+    simulationFeedback &&
+    selectedPlan &&
+    simulationFeedback.planId === selectedPlan.id &&
     simulationFeedback.simulation
       ? simulationFeedback.simulation
       : asArray(selectedPlan?.simulations)[0];

@@ -191,6 +191,78 @@ class ExperimentFunnelServiceRenderCompleteTest {
         assertEquals(ExperimentFunnelEventRepository.LANDING_PAGE_ANALYTICS_SOURCE, saved.getSource());
     }
 
+    /**
+     * Valida que início do formulário vira sinal de visualização qualificada do formulário.
+     */
+    @Test
+    void registerLandingPageAnalyticsSavesFormStartAsFormVisualization() {
+        Experiment experiment = Experiment.builder().id(55L).build();
+        when(experimentRepository.findFirstByLeadPortalFlowSlug("product-ai-exp-55-personalized-sample"))
+                .thenReturn(Optional.of(experiment));
+        when(eventRepository.save(any(ExperimentFunnelEvent.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.registerLandingPageAnalyticsEvent("product-ai-exp-55-personalized-sample",
+                new RegisterLandingPageAnalyticsEventRequest(
+                        "form-start-1",
+                        "form_start",
+                        "visitor-1",
+                        "session-1",
+                        null,
+                        null,
+                        null,
+                        "https://oportunidadebrasil.shop/flows/product-ai-exp-55-personalized-sample",
+                        Instant.parse("2026-07-04T12:00:00Z"),
+                        "JUnit",
+                        "mobile",
+                        "android",
+                        390,
+                        844));
+
+        ArgumentCaptor<ExperimentFunnelEvent> eventCaptor = ArgumentCaptor.forClass(ExperimentFunnelEvent.class);
+        verify(eventRepository).save(eventCaptor.capture());
+
+        ExperimentFunnelEvent saved = eventCaptor.getValue();
+        assertEquals(experiment, saved.getExperiment());
+        assertEquals(ExperimentFunnelStage.VISUALIZACAO_FORM, saved.getStage());
+        assertEquals(ExperimentFunnelEventRepository.LANDING_PAGE_ANALYTICS_SOURCE, saved.getSource());
+    }
+
+    /**
+     * Valida que envio do formulário vira sinal de envio no funil para diagnóstico do experimento.
+     */
+    @Test
+    void registerLandingPageAnalyticsSavesFormSubmitAsFormSubmission() {
+        Experiment experiment = Experiment.builder().id(55L).build();
+        when(experimentRepository.findFirstByLeadPortalFlowSlug("product-ai-exp-55-personalized-sample"))
+                .thenReturn(Optional.of(experiment));
+        when(eventRepository.save(any(ExperimentFunnelEvent.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.registerLandingPageAnalyticsEvent("product-ai-exp-55-personalized-sample",
+                new RegisterLandingPageAnalyticsEventRequest(
+                        "form-submit-1",
+                        "form_submit",
+                        "visitor-1",
+                        "session-1",
+                        null,
+                        null,
+                        null,
+                        "https://oportunidadebrasil.shop/flows/product-ai-exp-55-personalized-sample",
+                        Instant.parse("2026-07-04T12:01:00Z"),
+                        "JUnit",
+                        "mobile",
+                        "android",
+                        390,
+                        844));
+
+        ArgumentCaptor<ExperimentFunnelEvent> eventCaptor = ArgumentCaptor.forClass(ExperimentFunnelEvent.class);
+        verify(eventRepository).save(eventCaptor.capture());
+
+        ExperimentFunnelEvent saved = eventCaptor.getValue();
+        assertEquals(experiment, saved.getExperiment());
+        assertEquals(ExperimentFunnelStage.ENVIO_FORM, saved.getStage());
+        assertEquals(ExperimentFunnelEventRepository.LANDING_PAGE_ANALYTICS_SOURCE, saved.getSource());
+    }
+
 
 
     /**

@@ -270,6 +270,22 @@ public class FlowController {
                       .then(function(response){ debugLog('fetch concluído', {eventId: payload.eventId, eventType: eventType, status: response.status}); })
                       .catch(function(error){ debugLog('fetch falhou', {eventId: payload.eventId, eventType: eventType, error: error && error.message ? error.message : String(error)}); });
                   };
+                  const resolveFormTarget = function(){
+                    return document.querySelector('form');
+                  };
+                  const isSelfReferentialLink = function(anchor){
+                    if (!anchor || !anchor.href) return false;
+                    try {
+                      const targetUrl = new URL(anchor.href, window.location.href);
+                      const currentUrl = new URL(window.location.href);
+                      const targetPath = targetUrl.pathname.replace(/\\/$/, '');
+                      const currentPath = currentUrl.pathname.replace(/\\/$/, '');
+                      if (targetUrl.origin === currentUrl.origin && targetPath === currentPath) return true;
+                      return targetPath.endsWith('/flows/' + slugValue) || targetPath.endsWith('/flows/' + slugValue + '/page');
+                    } catch (error) {
+                      return false;
+                    }
+                  };
                   const startTracking = function(){
                     debugLog('tracking iniciado', {slug: slugValue});
                     sendEvent('page_view', null, null);
@@ -304,6 +320,28 @@ public class FlowController {
                     const trackedSections = document.querySelectorAll('section[id], [data-section-id], [data-track-section]');
                     debugLog('seções monitoradas', {count: trackedSections.length});
                     trackedSections.forEach(function(el){ observer.observe(el); });
+                    document.addEventListener('click', function(event){
+                      const anchor = event.target && event.target.closest ? event.target.closest('a[href]') : null;
+                      if (!anchor || !isSelfReferentialLink(anchor)) return;
+                      const formTarget = resolveFormTarget();
+                      if (!formTarget) return;
+                      event.preventDefault();
+                      formTarget.scrollIntoView({behavior:'smooth', block:'start'});
+                    }, true);
+                    const startedForms = new WeakSet();
+                    const trackFormStart = function(event){
+                      const form = event.target && event.target.closest ? event.target.closest('form') : null;
+                      if (!form || startedForms.has(form)) return;
+                      startedForms.add(form);
+                      sendEvent('form_start', null, null);
+                    };
+                    document.addEventListener('input', trackFormStart, true);
+                    document.addEventListener('change', trackFormStart, true);
+                    document.addEventListener('submit', function(event){
+                      const form = event.target && event.target.tagName && event.target.tagName.toLowerCase() === 'form' ? event.target : null;
+                      if (!form) return;
+                      sendEvent('form_submit', null, null);
+                    }, true);
                     window.addEventListener('beforeunload', function(){
                       const now = performance.now();
                       debugLog('beforeunload processando seções visíveis', {count: visibleSince.size});

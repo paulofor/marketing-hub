@@ -400,18 +400,27 @@ public class CreativeImageClient {
      * Identifica falhas transitórias da OpenAI que merecem nova tentativa em outro tier.
      */
     private boolean isTransientOpenAiFailure(RuntimeException ex) {
-        String message = ex.getMessage();
-        if (message == null) {
-            return false;
+        StringBuilder details = new StringBuilder();
+        Throwable current = ex;
+        while (current != null) {
+            if (current.getMessage() != null) {
+                details.append(' ').append(current.getMessage());
+            }
+            details.append(' ').append(current.getClass().getName());
+            current = current.getCause();
         }
-        String normalized = message.toLowerCase(Locale.ROOT);
+        String normalized = details.toString().toLowerCase(Locale.ROOT);
         return normalized.contains("429")
                 || normalized.contains("408")
                 || normalized.contains("5xx")
                 || normalized.contains("rate_limit")
                 || normalized.contains("too many requests")
                 || normalized.contains("temporarily unavailable")
-                || normalized.contains("timeout");
+                || normalized.contains("timeout")
+                || normalized.contains("connection prematurely closed")
+                || normalized.contains("prematurecloseexception")
+                || normalized.contains("connection reset")
+                || normalized.contains("webclientrequestexception");
     }
 
     /**

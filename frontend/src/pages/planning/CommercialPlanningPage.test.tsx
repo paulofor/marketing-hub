@@ -3,6 +3,48 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import CommercialPlanningPage from "./CommercialPlanningPage";
 
+const defaultPlans = [
+  {
+    id: 1,
+    name: "Plano sem marcos",
+    planType: "FIRST_SALE",
+    status: "DRAFT",
+    maxBudget: 300,
+    targetRevenue: 27,
+    operationalRevenueTarget: 81,
+    experimentsToCreate: 2,
+    experimentsToPublish: 3,
+    daysRemaining: 7,
+    milestones: null,
+    simulations: null,
+  },
+  {
+    id: 2,
+    name: "Plano com dados inesperados",
+    planType: "FIRST_SALE",
+    status: "UNKNOWN_STATUS",
+    daysRemaining: null,
+    milestones: [
+      {
+        id: 10,
+        sequenceOrder: 1,
+        code: "UNKNOWN",
+        name: "Marco com status inesperado",
+        status: "UNKNOWN_MILESTONE_STATUS",
+      },
+    ],
+    simulations: [
+      {
+        id: 20,
+        recommendation: "UNKNOWN_RECOMMENDATION",
+        mostLikelyScenario: "Cenario com valor inesperado.",
+      },
+    ],
+  },
+];
+
+let mockPlans: unknown[] = defaultPlans;
+
 vi.mock("../../api/planning/useCommercialPlans", async () => {
   const actual = await vi.importActual<
     typeof import("../../api/planning/useCommercialPlans")
@@ -11,45 +53,7 @@ vi.mock("../../api/planning/useCommercialPlans", async () => {
   return {
     ...actual,
     useCommercialPlans: () => ({
-      data: [
-        {
-          id: 1,
-          name: "Plano sem marcos",
-          planType: "FIRST_SALE",
-          status: "DRAFT",
-          maxBudget: 300,
-          targetRevenue: 27,
-          operationalRevenueTarget: 81,
-          experimentsToCreate: 2,
-          experimentsToPublish: 3,
-          daysRemaining: 7,
-          milestones: null,
-          simulations: null,
-        },
-        {
-          id: 2,
-          name: "Plano com dados inesperados",
-          planType: "FIRST_SALE",
-          status: "UNKNOWN_STATUS",
-          daysRemaining: null,
-          milestones: [
-            {
-              id: 10,
-              sequenceOrder: 1,
-              code: "UNKNOWN",
-              name: "Marco com status inesperado",
-              status: "UNKNOWN_MILESTONE_STATUS",
-            },
-          ],
-          simulations: [
-            {
-              id: 20,
-              recommendation: "UNKNOWN_RECOMMENDATION",
-              mostLikelyScenario: "Cenario com valor inesperado.",
-            },
-          ],
-        },
-      ],
+      data: mockPlans,
       isLoading: false,
       isError: false,
     }),
@@ -75,6 +79,7 @@ vi.mock("../../api/experiment/useExperiments", () => ({
 }));
 
 afterEach(() => {
+  mockPlans = defaultPlans;
   cleanup();
 });
 
@@ -117,5 +122,15 @@ describe("CommercialPlanningPage", () => {
     expect(screen.getByText("Corrigir")).toBeTruthy();
     expect(screen.getByText(/Marco com status inesperado/)).toBeTruthy();
     expect(screen.getByText(/Pendente/)).toBeTruthy();
+  });
+
+  it("renderiza a tela quando a API ainda nao retorna planos", () => {
+    mockPlans = [];
+
+    render(<CommercialPlanningPage />);
+
+    expect(screen.getByText("Planejamento")).toBeTruthy();
+    expect(screen.getByText("Novo Plano de Primeira Venda")).toBeTruthy();
+    expect(screen.getByText("Nenhum plano cadastrado ainda.")).toBeTruthy();
   });
 });

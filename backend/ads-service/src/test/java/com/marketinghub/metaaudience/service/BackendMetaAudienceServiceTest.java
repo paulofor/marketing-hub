@@ -91,6 +91,41 @@ class BackendMetaAudienceServiceTest {
         assertThat(response.decisionSnapshotJson()).contains("uniqueEmails");
     }
 
+    /** Deve preservar snapshot grande para manter a evidência usada na decisão do piloto CNAE. */
+    @Test
+    void linkExperimentPreservesLargeDecisionSnapshot() {
+        MarketNiche niche = niche(10L);
+        MetaAudience audience = audience(20L, niche);
+        MetaAudienceSegment segment = segment(30L, audience, niche);
+        Experiment experiment = experiment(40L, niche);
+        String largeSnapshot = "{\"evidences\":\"" + "volume-cnae-".repeat(7000) + "\"}";
+
+        when(audienceRepository.findById(20L)).thenReturn(Optional.of(audience));
+        when(experimentRepository.findById(40L)).thenReturn(Optional.of(experiment));
+        when(segmentRepository.findById(30L)).thenReturn(Optional.of(segment));
+        when(experimentAudienceRepository.findByExperimentIdAndMetaAudienceIdAndMetaAudienceSegmentId(40L, 20L, 30L))
+                .thenReturn(Optional.empty());
+        when(experimentAudienceRepository.save(any(ExperimentMetaAudience.class))).thenAnswer(invocation -> {
+            ExperimentMetaAudience saved = invocation.getArgument(0);
+            saved.setId(51L);
+            return saved;
+        });
+
+        ExperimentMetaAudienceResponse response = service.linkExperiment(new LinkMetaAudienceExperimentRequest(
+                20L,
+                30L,
+                40L,
+                "Meta Ads",
+                "agenda lotada no WhatsApp",
+                "organizar agenda sem perder cliente",
+                "produto low-ticket",
+                "PLANNED",
+                largeSnapshot));
+
+        assertThat(response.decisionSnapshotJson()).isEqualTo(largeSnapshot);
+        assertThat(response.decisionSnapshotJson().length()).isGreaterThan(65_535);
+    }
+
     /** Deve bloquear vínculo quando a audiência e o experimento pertencem a nichos diferentes. */
     @Test
     void linkExperimentRejectsDifferentNiches() {

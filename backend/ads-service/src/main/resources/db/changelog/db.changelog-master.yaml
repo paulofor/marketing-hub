@@ -3,6 +3,9 @@ databaseChangeLog:
       file: changesets/2026-07-04-experiment-meta-audience.yaml
       relativeToChangelogFile: true
   - include:
+      file: changesets/2026-07-04-experiment-meta-audience-snapshot-mediumtext.yaml
+      relativeToChangelogFile: true
+  - include:
       file: changesets/2026-07-04-gera-sales-page-product-ai-templates-v3.yaml
       relativeToChangelogFile: true
   - include:

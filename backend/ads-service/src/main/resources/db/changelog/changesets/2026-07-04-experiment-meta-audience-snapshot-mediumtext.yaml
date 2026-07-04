@@ -1,0 +1,29 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-04-02-experiment-meta-audience-snapshot-mediumtext
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: experiment_meta_audience
+        - columnExists:
+            tableName: experiment_meta_audience
+            columnName: decision_snapshot_json
+        - sqlCheck:
+            expectedResult: 0
+            sql: |
+              SELECT COUNT(*)
+              FROM information_schema.columns
+              WHERE table_schema = DATABASE()
+                AND table_name = 'experiment_meta_audience'
+                AND column_name = 'decision_snapshot_json'
+                AND data_type = 'mediumtext'
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              ALTER TABLE experiment_meta_audience
+                MODIFY COLUMN decision_snapshot_json MEDIUMTEXT NULL;

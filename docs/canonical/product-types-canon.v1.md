@@ -109,6 +109,8 @@ A pagina de venda aprovada pelo GeraSalesPage para `AI_PERSONALIZED_SAMPLE` deve
 
 Os prompts ativos do GeraSalesPage devem receber contexto suficiente para diferenciar venda direta de funil de personalização. Para `AI_PERSONALIZED_SAMPLE`, o destino comercial da página deve ser o funil-pagina do Lead Portal, deixando claro para o worker que a primeira ação pública é coleta de dados, não checkout direto. O quality review deve aceitar formulário somente nesse subtipo e deve bloquear qualquer ambiguidade entre amostra gratuita, produto pago, preço e entrega paga.
 
+Para `AI_PERSONALIZED_SAMPLE`, a pagina publicada dentro do Lead Portal nunca deve embutir o proprio Lead Portal, flow ou funil em `iframe`. O backend deve remover iframe autorreferente antes de publicar e os prompts/schemas ativos devem instruir o worker a usar bloco de formulario gerenciado, nao iframe, para evitar recursao visual e perda de experiencia do lead.
+
 Depois da compra aprovada, a entrega paga do `AI_PERSONALIZED_SAMPLE` deve ser executada pelo módulo externo `product-ai-worker`, no pipeline versionado `personalizedsample.v1` e etapa `paid-delivery`. O backend deve enfileirar a entrega, entregar prompt/schema versionados pelo `pending`, receber `recebeRequest` antes da chamada OpenAI, receber `recebeResponse` com saída funcional, tokens, service tier e artefato, calcular o custo autoritativo e marcar a compra como entregue. E proibido vender Produto IA dependendo de entrega manual ou de worker que acesse banco diretamente.
 
 Criar o mesmo conceito para outro nicho exige nova execucao do fluxo com novo contexto de nicho. Variar um produto para melhora exige nova versao ou novo experimento com variavel primaria declarada.

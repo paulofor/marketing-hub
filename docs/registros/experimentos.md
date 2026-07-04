@@ -5611,3 +5611,10 @@
 - Correção aplicada: o sync de métricas passa a avaliar a regra estatístico-financeira low-ticket imediatamente após atualizar gasto/cliques e também aplica uma regra complementar para tráfego caro antes da amostra completa.
 - Regra nova: com `0` compras, pelo menos `5` cliques, custo total acima do `stopLossCpl`, CPC maior ou igual a `10%` do ticket e checkout abaixo de `3%`, o experimento é invalidado por `LOW_TICKET_TRAFFIC_COST_ECONOMICALLY_UNVIABLE`.
 - Prevenção de recorrência: teste de controller cobre a execução da regra low-ticket no POST de métricas, e teste de service cobre o caso de tráfego caro como o experimento 54.
+
+## 2026-07-04 — Produto IA sem iframe autorreferente no funil
+
+- Problema: a página aprovada do experimento 55 podia incluir um `iframe` apontando para o próprio funil do Lead Portal, causando risco de recursão visual e experiência ruim antes da coleta da personalização.
+- Causa-raiz: os templates do GeraSalesPage ainda deixavam margem para o worker tratar o funil-página como recurso a ser embutido, e o backend não removia iframe autorreferente antes da publicação.
+- Correção aplicada: o `pending` do GeraSalesPage agora declara `productAiSubtype` e `salesPageDestination`; os templates `v3` proíbem iframe para Lead Portal/flow/funil; e a publicação de `AI_PERSONALIZED_SAMPLE` remove iframe autorreferente antes de salvar o HTML no `LeadPortalFlow`.
+- Prevenção de recorrência: teste unitário cobre publicação de Produto IA com iframe para o próprio funil e valida que o HTML auditado/publicado fica sem iframe.

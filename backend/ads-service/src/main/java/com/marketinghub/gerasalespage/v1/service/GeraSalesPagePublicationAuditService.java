@@ -24,6 +24,8 @@ import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -37,6 +39,8 @@ import org.springframework.web.server.ResponseStatusException;
 public class GeraSalesPagePublicationAuditService {
     private static final Logger log = LoggerFactory.getLogger(GeraSalesPagePublicationAuditService.class);
     private static final String STATUS_COMPLETED = "CONCLUIDO";
+    private static final Pattern IFRAME_BLOCK_PATTERN =
+            Pattern.compile("(?is)<iframe\\b[^>]*>.*?</iframe>");
 
     private final ExperimentRepository experimentRepository;
     private final GeraSalesPageStageExecutionRepository executionRepository;
@@ -166,6 +170,7 @@ public class GeraSalesPagePublicationAuditService {
                     "Produto IA personalizado exige funil Lead Portal aprovado antes da publicacao da pagina.");
         }
         String htmlWithManagedForm = ensureManagedFormAnchor(html);
+        htmlWithManagedForm = removeSelfReferentialLeadPortalIframes(htmlWithManagedForm, flow);
         flow.setCustomFormHtml(buildPersonalizedSampleTemplatePayload(flow, htmlWithManagedForm));
         flow.setSchemaFirst(true);
         flow.setApproved(true);
@@ -189,6 +194,36 @@ public class GeraSalesPagePublicationAuditService {
         String publicUrl = leadPortalPublicUrlResolver.resolve(flow);
         experiment.setFollowUpActionUrl(publicUrl);
         return new PersonalizedSamplePublication(publicUrl, htmlWithManagedForm);
+    }
+
+    /** Remove iframe que aponta para o proprio funil e causaria recursao visual no Lead Portal. */
+    private String removeSelfReferentialLeadPortalIframes(String html, LeadPortalFlow flow) {
+        if (!StringUtils.hasText(html)) {
+            return html;
+        }
+        Matcher matcher = IFRAME_BLOCK_PATTERN.matcher(html);
+        StringBuffer cleaned = new StringBuffer();
+        while (matcher.find()) {
+            String iframe = matcher.group();
+            if (isSelfReferentialLeadPortalIframe(iframe, flow)) {
+                matcher.appendReplacement(cleaned, "");
+            } else {
+                matcher.appendReplacement(cleaned, Matcher.quoteReplacement(iframe));
+            }
+        }
+        matcher.appendTail(cleaned);
+        return cleaned.toString();
+    }
+
+    /** Identifica iframes que tentam embutir o mesmo fluxo publicado pelo Lead Portal. */
+    private boolean isSelfReferentialLeadPortalIframe(String iframe, LeadPortalFlow flow) {
+        String normalized = iframe.toLowerCase(java.util.Locale.ROOT);
+        String slug = flow != null && StringUtils.hasText(flow.getSlug())
+                ? flow.getSlug().toLowerCase(java.util.Locale.ROOT)
+                : "";
+        return (StringUtils.hasText(slug) && normalized.contains(slug))
+                || normalized.contains("/flows/")
+                || normalized.contains("lead-portal");
     }
 
     /** Garante que o runtime publico tenha um form alvo para renderizar as perguntas do Lead Portal. */

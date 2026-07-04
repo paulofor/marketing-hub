@@ -131,7 +131,9 @@ class GeraSalesPagePublicationAuditServiceTest {
         GeraSalesPageStageExecution publication = execution(
                 "job-publication",
                 GeraSalesPageStageCode.PUBLICATION_PACKAGE.code(),
-                "{\"html\":\"<html><body><main>Venda Produto IA</main></body></html>\",\"checkoutUrl\":\"https://pagamentopalf.site/checkout\"}",
+                "{\"html\":\"<html><body><main>Venda Produto IA</main>"
+                        + "<iframe src='https://oportunidadebrasil.shop/flows/product-ai-exp-55-personalized-sample'></iframe>"
+                        + "</body></html>\",\"checkoutUrl\":\"https://pagamentopalf.site/checkout\"}",
                 Instant.parse("2026-07-01T10:10:00Z"));
 
         when(publicationRepository.existsByPublicationJobId("job-publication")).thenReturn(false);
@@ -162,6 +164,8 @@ class GeraSalesPagePublicationAuditServiceTest {
 
         Map<?, ?> customPayload = objectMapper.readValue(flow.getCustomFormHtml(), Map.class);
         assertThat(customPayload.get("htmlDocument").toString()).contains("Venda Produto IA");
+        assertThat(customPayload.get("htmlDocument").toString()).doesNotContain("<iframe");
+        assertThat(audit.getValue().getHtml()).doesNotContain("<iframe");
         Map<?, ?> formSpec = (Map<?, ?>) customPayload.get("formSpec");
         assertThat(formSpec.get("formId")).isEqualTo("lead-portal-personalized-sample-form");
         assertThat((List<?>) formSpec.get("fields")).hasSize(2);

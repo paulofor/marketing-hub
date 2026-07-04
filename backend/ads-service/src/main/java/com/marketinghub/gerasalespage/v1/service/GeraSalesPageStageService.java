@@ -10,6 +10,7 @@ import com.marketinghub.gerasalespage.v1.GeraSalesPageStageExecution;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.aiprompt.AiPromptSchemaTemplateRepository;
 import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPageStageExecutionRepository;
+import com.marketinghub.productai.ProductAiSubtype;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
 import java.util.LinkedHashMap;
@@ -210,9 +211,19 @@ public class GeraSalesPageStageService {
         payload.put("adCopy", parseJsonOrText(experiment.getAdCopy()));
         payload.put("adImageBriefing", parseJsonOrText(experiment.getAdImageBriefing()));
         payload.put("checkoutUrl", experiment.getFollowUpActionUrl());
+        payload.put("productAiSubtype", experiment.getProductAiSubtype());
+        payload.put("salesPageDestination", salesPageDestination(experiment));
         payload.put("unitPrice", experiment.getUnitPrice());
         payload.put("hypothesisFramework", parseJsonOrText(experiment.getHypothesisFrameworkJsonForPending()));
         return payload;
+    }
+
+    /** Classifica o destino comercial para o worker nao confundir funil Produto IA com checkout direto. */
+    private String salesPageDestination(Experiment experiment) {
+        if (experiment.getProductAiSubtype() == ProductAiSubtype.AI_PERSONALIZED_SAMPLE) {
+            return "LEAD_PORTAL_PERSONALIZED_SAMPLE_FUNNEL";
+        }
+        return "DIRECT_CHECKOUT";
     }
 
     /** Monta o bloco de template ativo entregue ao worker. */

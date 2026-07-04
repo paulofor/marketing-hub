@@ -1,25 +1,36 @@
 package com.marketinghub.gerasalespage.v1.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.gerasalespage.v1.GeraSalesPagePublicationAudit;
 import com.marketinghub.gerasalespage.v1.GeraSalesPagePublicationStageAudit;
 import com.marketinghub.gerasalespage.v1.GeraSalesPageStageCode;
 import com.marketinghub.gerasalespage.v1.GeraSalesPageStageExecution;
+import com.marketinghub.leadportal.LeadPortalFlow;
+import com.marketinghub.leadportal.LeadPortalFlowQuestion;
+import com.marketinghub.leadportal.LeadPortalQuestionType;
+import com.marketinghub.leadportal.integration.LeadPortalFlowPublisher;
+import com.marketinghub.leadportal.integration.LeadPortalPublicationException;
+import com.marketinghub.leadportal.support.LeadPortalPublicUrlResolver;
+import com.marketinghub.productai.ProductAiSubtype;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPagePublicationAuditRepository;
 import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPagePublicationStageAuditRepository;
 import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPageStageExecutionRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import org.springframework.web.server.ResponseStatusException;
 
 /** Responsabilidade: criar e consultar snapshots historicos das paginas publicadas pelo GeraSalesPage v1. */
 @Service
@@ -31,6 +42,8 @@ public class GeraSalesPagePublicationAuditService {
     private final GeraSalesPageStageExecutionRepository executionRepository;
     private final GeraSalesPagePublicationAuditRepository publicationRepository;
     private final GeraSalesPagePublicationStageAuditRepository publicationStageRepository;
+    private final LeadPortalFlowPublisher leadPortalFlowPublisher;
+    private final LeadPortalPublicUrlResolver leadPortalPublicUrlResolver;
     private final ObjectMapper objectMapper;
 
     /** Inicializa o service com repositorios e serializador usados nos snapshots. */
@@ -39,11 +52,15 @@ public class GeraSalesPagePublicationAuditService {
             GeraSalesPageStageExecutionRepository executionRepository,
             GeraSalesPagePublicationAuditRepository publicationRepository,
             GeraSalesPagePublicationStageAuditRepository publicationStageRepository,
+            LeadPortalFlowPublisher leadPortalFlowPublisher,
+            LeadPortalPublicUrlResolver leadPortalPublicUrlResolver,
             ObjectMapper objectMapper) {
         this.experimentRepository = experimentRepository;
         this.executionRepository = executionRepository;
         this.publicationRepository = publicationRepository;
         this.publicationStageRepository = publicationStageRepository;
+        this.leadPortalFlowPublisher = leadPortalFlowPublisher;
+        this.leadPortalPublicUrlResolver = leadPortalPublicUrlResolver;
         this.objectMapper = objectMapper;
     }
 
@@ -100,6 +117,14 @@ public class GeraSalesPagePublicationAuditService {
                 packagePayload.get("publicUrl"),
                 packagePayload.get("publishedUrl"),
                 packagePayload.get("pageUrl"));
+        PersonalizedSamplePublication personalizedSamplePublication =
+                publishPersonalizedSampleSalesPageIfNeeded(experiment, html);
+        boolean personalizedSampleSalesPage = personalizedSamplePublication != null;
+        if (personalizedSamplePublication != null) {
+            html = personalizedSamplePublication.html();
+            salesPageUrl = personalizedSamplePublication.salesPageUrl();
+            checkoutUrl = null;
+        }
         Instant publishedAt = publicationExecution.getCompletedAt() != null
                 ? publicationExecution.getCompletedAt()
                 : Instant.now();
@@ -108,12 +133,137 @@ public class GeraSalesPagePublicationAuditService {
                 .publicationJobId(publicationExecution.getIdJob())
                 .publishedAt(publishedAt)
                 .salesPageUrl(StringUtils.hasText(salesPageUrl) ? salesPageUrl : experiment.getFollowUpActionUrl())
-                .checkoutUrl(StringUtils.hasText(checkoutUrl) ? checkoutUrl : experiment.getFollowUpActionUrl())
+                .checkoutUrl(resolveAuditCheckoutUrl(checkoutUrl, experiment, personalizedSampleSalesPage))
                 .html(html)
                 .publicationPackageJson(packageJson)
                 .createdAt(Instant.now())
                 .build());
         publicationStageRepository.saveAll(toStageAudits(audit.getId(), stageExecutions));
+    }
+
+    /** Define o checkout auditado sem confundir funil Produto IA com checkout direto. */
+    private String resolveAuditCheckoutUrl(
+            String checkoutUrl,
+            Experiment experiment,
+            boolean personalizedSampleSalesPage) {
+        if (personalizedSampleSalesPage) {
+            return StringUtils.hasText(checkoutUrl) ? checkoutUrl : null;
+        }
+        return StringUtils.hasText(checkoutUrl) ? checkoutUrl : experiment.getFollowUpActionUrl();
+    }
+
+    /** Publica a pagina aprovada dentro do funil canonico quando o produto exige personalizacao. */
+    private PersonalizedSamplePublication publishPersonalizedSampleSalesPageIfNeeded(
+            Experiment experiment,
+            String html) {
+        if (experiment.getProductAiSubtype() != ProductAiSubtype.AI_PERSONALIZED_SAMPLE) {
+            return null;
+        }
+        LeadPortalFlow flow = experiment.getLeadPortalFlow();
+        if (flow == null || flow.getId() == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Produto IA personalizado exige funil Lead Portal aprovado antes da publicacao da pagina.");
+        }
+        String htmlWithManagedForm = ensureManagedFormAnchor(html);
+        flow.setCustomFormHtml(buildPersonalizedSampleTemplatePayload(flow, htmlWithManagedForm));
+        flow.setSchemaFirst(true);
+        flow.setApproved(true);
+        if (flow.getApprovedAt() == null) {
+            flow.setApprovedAt(Instant.now());
+        }
+        flow.setModel("AI_PERSONALIZED_SAMPLE_GERA_SALES_PAGE");
+        if (!StringUtils.hasText(flow.getPrompt())) {
+            flow.setPrompt("Pipeline: gera-sales-page-v1/publication-package -> product-ai personalized sample funnel");
+        }
+        try {
+            leadPortalFlowPublisher.publish(flow);
+        } catch (LeadPortalPublicationException ex) {
+            log.error("Falha ao publicar pagina GeraSalesPage no funil Produto IA: experimentId={}, flowId={}, slug={}",
+                    experiment.getId(), flow.getId(), flow.getSlug(), ex);
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_GATEWAY,
+                    "Falha ao publicar pagina de venda no funil Produto IA.",
+                    ex);
+        }
+        String publicUrl = leadPortalPublicUrlResolver.resolve(flow);
+        experiment.setFollowUpActionUrl(publicUrl);
+        return new PersonalizedSamplePublication(publicUrl, htmlWithManagedForm);
+    }
+
+    /** Garante que o runtime publico tenha um form alvo para renderizar as perguntas do Lead Portal. */
+    private String ensureManagedFormAnchor(String html) {
+        String normalized = StringUtils.hasText(html) ? html : "";
+        if (normalized.toLowerCase().contains("<form")) {
+            return normalized;
+        }
+        String formAnchor = """
+                <section id="personalized-sample-form-section">
+                  <form id="lead-portal-personalized-sample-form"></form>
+                </section>
+                """;
+        if (normalized.toLowerCase().contains("</body>")) {
+            return normalized.replaceFirst("(?i)</body>", formAnchor + "\n</body>");
+        }
+        return normalized + "\n" + formAnchor;
+    }
+
+    /** Serializa HTML e especificacao de formulario no contrato reconhecido pelo Lead Portal. */
+    private String buildPersonalizedSampleTemplatePayload(LeadPortalFlow flow, String html) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("htmlDocument", html);
+        payload.put("formSpec", buildFormSpec(flow));
+        try {
+            return objectMapper.writeValueAsString(payload);
+        } catch (JsonProcessingException ex) {
+            log.error("Falha ao serializar template da pagina Produto IA: flowId={}, slug={}",
+                    flow.getId(), flow.getSlug(), ex);
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Falha ao preparar template da pagina Produto IA.",
+                    ex);
+        }
+    }
+
+    /** Converte as perguntas canonicas do fluxo em campos gerenciados pelo runtime publico. */
+    private Map<String, Object> buildFormSpec(LeadPortalFlow flow) {
+        Map<String, Object> formSpec = new LinkedHashMap<>();
+        formSpec.put("formId", "lead-portal-personalized-sample-form");
+        formSpec.put("title", "Receba sua amostra personalizada");
+        formSpec.put("submitLabel", "Gerar minha amostra personalizada");
+        formSpec.put("fields", flow.getQuestions().stream()
+                .map(this::toManagedFormField)
+                .toList());
+        formSpec.put("successState", Map.of(
+                "title", "Dados recebidos",
+                "message", "Vamos preparar sua amostra personalizada com base nas suas respostas."));
+        formSpec.put("consent", Map.of(
+                "enabled", true,
+                "required", true,
+                "label", "Autorizo o uso das minhas respostas para gerar minha amostra personalizada."));
+        return formSpec;
+    }
+
+    /** Converte uma pergunta do Lead Portal em campo aceito pelo template gerenciado. */
+    private Map<String, Object> toManagedFormField(LeadPortalFlowQuestion question) {
+        Map<String, Object> field = new LinkedHashMap<>();
+        field.put("name", question.getDataKey());
+        field.put("type", toManagedFieldType(question.getType()));
+        field.put("label", question.getTitle());
+        field.put("required", question.isRequired());
+        field.put("placeholder", question.getPlaceholder());
+        return field;
+    }
+
+    /** Mapeia tipos do Lead Portal para os tipos simples suportados pelo runtime customizado. */
+    private String toManagedFieldType(LeadPortalQuestionType type) {
+        if (type == LeadPortalQuestionType.EMAIL) {
+            return "email";
+        }
+        if (type == LeadPortalQuestionType.PHONE) {
+            return "tel";
+        }
+        return "text";
     }
 
     /** Retorna o primeiro texto preenchido entre os campos candidatos. */
@@ -221,5 +371,9 @@ public class GeraSalesPagePublicationAuditService {
     /** Extrai string de campo opcional do pacote final. */
     private String stringValue(Object value) {
         return value instanceof String text ? text : null;
+    }
+
+    /** Resultado interno da publicacao no funil Produto IA personalizado. */
+    private record PersonalizedSamplePublication(String salesPageUrl, String html) {
     }
 }

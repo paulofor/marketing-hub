@@ -23,6 +23,7 @@ import {
   useSimulateCommercialPlan,
   useUpdateCommercialPlan,
 } from "../../api/planning/useCommercialPlans";
+import "./CommercialPlanningPage.css";
 
 const emptyForm: SaveCommercialPlanPayload = {
   name: "",
@@ -315,7 +316,7 @@ export default function CommercialPlanningPage() {
   }
 
   return (
-    <div className="d-flex flex-column gap-4">
+    <div className="commercial-planning-page d-flex flex-column gap-4">
       <header className="d-flex flex-column flex-xl-row justify-content-between gap-3">
         <div>
           <PageTitle>Planejamento</PageTitle>
@@ -338,8 +339,8 @@ export default function CommercialPlanningPage() {
         </div>
       ) : null}
 
-      <section className="row g-3">
-        <div className="col-12 col-xl-4">
+      <section className="commercial-planning-workspace">
+        <aside className="commercial-planning-sidebar">
           <div className="card border-0 shadow-sm h-100">
             <div className="card-body">
               <h2 className="h6 mb-3">Planos de Primeira Venda</h2>
@@ -358,16 +359,20 @@ export default function CommercialPlanningPage() {
                   <button
                     type="button"
                     key={plan.id}
-                    className={`list-group-item list-group-item-action px-0 ${selectedPlan?.id === plan.id ? "active" : ""}`}
+                    className={`commercial-planning-plan-item list-group-item list-group-item-action px-0 ${selectedPlan?.id === plan.id ? "active" : ""}`}
                     onClick={() => setSelectedId(plan.id)}
                   >
-                    <div className="d-flex justify-content-between gap-2">
-                      <strong>{plan.name}</strong>
-                      <span className={`badge ${planStatusClass(plan.status)}`}>
+                    <div className="d-flex align-items-start justify-content-between gap-2">
+                      <strong className="commercial-planning-plan-name">
+                        {plan.name}
+                      </strong>
+                      <span
+                        className={`commercial-planning-plan-status badge ${planStatusClass(plan.status)}`}
+                      >
                         {planStatusLabel(plan.status)}
                       </span>
                     </div>
-                    <small>
+                    <small className="commercial-planning-plan-action">
                       {plan.nextAction || "Defina a próxima ação comercial"}
                     </small>
                   </button>
@@ -375,9 +380,9 @@ export default function CommercialPlanningPage() {
               </div>
             </div>
           </div>
-        </div>
+        </aside>
 
-        <div className="col-12 col-xl-8">
+        <main className="commercial-planning-main">
           <div className="card border-0 shadow-sm h-100">
             <div className="card-body">
               {selectedPlan ? (
@@ -828,7 +833,7 @@ export default function CommercialPlanningPage() {
               )}
             </div>
           </div>
-        </div>
+        </main>
       </section>
 
       <section className="card border-0 shadow-sm">

@@ -5603,3 +5603,11 @@
 - Causa-raiz: o snapshot final da página não tinha regra específica para `AI_PERSONALIZED_SAMPLE`; ele apenas auditava a página, sem publicá-la dentro do funil canônico de coleta.
 - Correção aplicada: para Produto IA personalizado, a publicação final do GeraSalesPage grava o HTML aprovado no `LeadPortalFlow` já vinculado ao experimento, injeta formulário gerenciado com as perguntas do funil e atualiza o destino da campanha para esse funil-página.
 - Prevenção de recorrência: Produto IA personalizado passa a ter um único destino público antes da compra: página de venda + coleta no mesmo fluxo, nunca página isolada nem checkout direto.
+
+## 2026-07-04 — Parada automática low-ticket no sync de métricas
+
+- Problema: experimentos low-ticket 53 e 54 continuaram consumindo orçamento mesmo após cruzarem limites financeiros, porque o sync de métricas acionava regras antigas e não avaliava a regra estatístico-financeira nova.
+- Causa-raiz: a regra `LOW_TICKET_ZERO_PURCHASE_STATISTICAL_FINANCIAL` existia no motor do experimento, mas não estava conectada ao endpoint operacional que recebe métricas da campanha.
+- Correção aplicada: o sync de métricas passa a avaliar a regra estatístico-financeira low-ticket imediatamente após atualizar gasto/cliques e também aplica uma regra complementar para tráfego caro antes da amostra completa.
+- Regra nova: com `0` compras, pelo menos `5` cliques, custo total acima do `stopLossCpl`, CPC maior ou igual a `10%` do ticket e checkout abaixo de `3%`, o experimento é invalidado por `LOW_TICKET_TRAFFIC_COST_ECONOMICALLY_UNVIABLE`.
+- Prevenção de recorrência: teste de controller cobre a execução da regra low-ticket no POST de métricas, e teste de service cobre o caso de tráfego caro como o experimento 54.

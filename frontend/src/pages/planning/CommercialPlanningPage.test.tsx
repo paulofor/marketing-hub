@@ -1,6 +1,6 @@
-import { render, screen } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import CommercialPlanningPage from "./CommercialPlanningPage";
 
 vi.mock("../../api/planning/useCommercialPlans", async () => {
@@ -26,6 +26,29 @@ vi.mock("../../api/planning/useCommercialPlans", async () => {
           milestones: null,
           simulations: null,
         },
+        {
+          id: 2,
+          name: "Plano com dados inesperados",
+          planType: "FIRST_SALE",
+          status: "UNKNOWN_STATUS",
+          daysRemaining: null,
+          milestones: [
+            {
+              id: 10,
+              sequenceOrder: 1,
+              code: "UNKNOWN",
+              name: "Marco com status inesperado",
+              status: "UNKNOWN_MILESTONE_STATUS",
+            },
+          ],
+          simulations: [
+            {
+              id: 20,
+              recommendation: "UNKNOWN_RECOMMENDATION",
+              mostLikelyScenario: "Cenario com valor inesperado.",
+            },
+          ],
+        },
       ],
       isLoading: false,
       isError: false,
@@ -50,6 +73,10 @@ vi.mock("../../api/hypothesis/useHypotheses", () => ({
 vi.mock("../../api/experiment/useExperiments", () => ({
   useExperiments: () => ({ data: null }),
 }));
+
+afterEach(() => {
+  cleanup();
+});
 
 describe("CommercialPlanningPage", () => {
   it("renderiza o planejamento mesmo quando listas auxiliares ou marcos vêm vazios", () => {
@@ -79,5 +106,16 @@ describe("CommercialPlanningPage", () => {
     expect(screen.getByDisplayValue("3")).toBeTruthy();
     expect(screen.getByDisplayValue(/Compra aprovada/)).toBeTruthy();
     expect(screen.getByDisplayValue(/Cenario venda direta/)).toBeTruthy();
+  });
+
+  it("renderiza plano mesmo quando status e recomendacao vêm fora do contrato", async () => {
+    render(<CommercialPlanningPage />);
+
+    await userEvent.click(screen.getByText("Plano com dados inesperados"));
+
+    expect(screen.getAllByText("Rascunho").length).toBeGreaterThan(0);
+    expect(screen.getByText("Corrigir")).toBeTruthy();
+    expect(screen.getByText(/Marco com status inesperado/)).toBeTruthy();
+    expect(screen.getByText(/Pendente/)).toBeTruthy();
   });
 });

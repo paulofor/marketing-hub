@@ -6,6 +6,7 @@ import com.marketinghub.ads.FacebookAccount;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentCampaignMetric;
 import com.marketinghub.experiment.ExperimentStatus;
+import com.marketinghub.experiment.ExperimentType;
 import com.marketinghub.experiment.funnel.ExperimentFunnelAutoStopService;
 import com.marketinghub.experiment.funnel.ExperimentFunnelDiagnosticService;
 import com.marketinghub.experiment.funnel.ExperimentFunnelStage;
@@ -221,6 +222,81 @@ class FacebookAdsCampaignMetricsAutoStopControllerTest {
         verify(campaignRepository).findByExperimentId(123L);
     }
 
+    /**
+     * Simula o sync de métricas e confirma que a regra low-ticket estatístico-financeira roda imediatamente.
+     */
+    @Test
+    void postMetricsRunsLowTicketStatisticalFinancialStopRule() throws Exception {
+        Experiment experiment = new Experiment();
+        experiment.setId(124L);
+        experiment.setStatus(ExperimentStatus.RUNNING);
+        experiment.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
+        experiment.setUnitPrice(new BigDecimal("37.00"));
+        experiment.setStopLossCpl(new BigDecimal("74.00"));
+        experiment.setTotalCost(new BigDecimal("100.22"));
+
+        FacebookAdsCampaign campaign = new FacebookAdsCampaign();
+        campaign.setId(CAMPAIGN_ID);
+        campaign.setExperiment(experiment);
+        campaign.setFacebookAccount(new FacebookAccount());
+        campaign.setAdAccountId("act_123");
+        campaign.setName("Campanha low-ticket");
+        campaign.setObjective("OUTCOME_SALES");
+        campaign.setStatus(FacebookAdStatus.ACTIVE);
+        campaign.setCreatedAt(Instant.now());
+
+        ExperimentCampaignMetric metric = ExperimentCampaignMetric.builder()
+                .campaign(campaign)
+                .experiment(experiment)
+                .dateStart(LocalDate.parse("2026-07-04"))
+                .dateStop(LocalDate.parse("2026-07-04"))
+                .reach(1800L)
+                .impressions(2400L)
+                .clicks(299L)
+                .leads(0L)
+                .spend(new BigDecimal("50.23"))
+                .cpc(new BigDecimal("0.17"))
+                .build();
+
+        when(campaignMetricService.upsert(
+                eq(CAMPAIGN_ID),
+                eq(LocalDate.parse("2026-07-04")),
+                eq(LocalDate.parse("2026-07-04")),
+                eq(1800L),
+                eq(2400L),
+                eq(299L),
+                eq(0L),
+                eq(new BigDecimal("50.23"))
+        )).thenReturn(metric);
+        when(diagnosticService.diagnose(124L)).thenReturn(new ExperimentFunnelDiagnosticsResponseDto(
+                List.of(lowTicketCheckoutStage(593, 1, 0.0017), lowTicketPurchaseStage(1, 0)),
+                null
+        ));
+        when(campaignMetricRepository.findByExperiment(experiment)).thenReturn(Optional.of(metric));
+        when(campaignRepository.findByExperimentId(124L)).thenReturn(List.of(campaign));
+
+        String payload = """
+                {
+                  "dateStart": "2026-07-04",
+                  "dateStop": "2026-07-04",
+                  "reach": 1800,
+                  "impressions": 2400,
+                  "clicks": 299,
+                  "leads": 0,
+                  "spend": 50.23
+                }
+                """;
+
+        mockMvc.perform(post("/api/facebook-campaigns/{campaignId}/metrics", CAMPAIGN_ID)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isOk());
+
+        assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.INVALIDATED);
+        assertThat(campaign.getStopReason())
+                .isEqualTo(FacebookCampaignStopReason.LOW_TICKET_ZERO_PURCHASE_STATISTICAL_FINANCIAL);
+    }
+
     /** Cria diagnóstico de interesse baixo com reprovação estatística na etapa de acesso ao formulário. */
     private ExperimentFunnelStageDiagnosticDto lowInterestFailedStage() {
         return new ExperimentFunnelStageDiagnosticDto(
@@ -234,6 +310,42 @@ class FacebookAdsCampaignMetricsAutoStopControllerTest {
                 List.of(new FunnelThresholdCheckDto(0.015, 200, 0.0025, false, true)),
                 FunnelDiagnosticStatus.STATISTICALLY_FAILED,
                 FunnelDiagnosticReasonCode.BELOW_MIN_RATE,
+                "",
+                false
+        );
+    }
+
+    /** Cria diagnóstico de intenção de checkout para experimentos low-ticket. */
+    private ExperimentFunnelStageDiagnosticDto lowTicketCheckoutStage(long attempts, long successes, double rate) {
+        return new ExperimentFunnelStageDiagnosticDto(
+                ExperimentFunnelStage.ACESSO_CHECKOUT,
+                "Acesso checkout",
+                attempts,
+                successes,
+                rate,
+                0.03,
+                null,
+                List.of(new FunnelThresholdCheckDto(0.03, 100, rate, false, successes == 0)),
+                FunnelDiagnosticStatus.WEAK_SIGNAL,
+                FunnelDiagnosticReasonCode.BELOW_MIN_RATE,
+                "",
+                false
+        );
+    }
+
+    /** Cria diagnóstico de compra para experimentos low-ticket. */
+    private ExperimentFunnelStageDiagnosticDto lowTicketPurchaseStage(long attempts, long successes) {
+        return new ExperimentFunnelStageDiagnosticDto(
+                ExperimentFunnelStage.COMPRA,
+                "Compra",
+                attempts,
+                successes,
+                attempts > 0 ? (double) successes / attempts : 0.0,
+                0.03,
+                null,
+                List.of(),
+                FunnelDiagnosticStatus.INSUFFICIENT_DATA,
+                FunnelDiagnosticReasonCode.LOW_SAMPLE_SIZE,
                 "",
                 false
         );

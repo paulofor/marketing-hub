@@ -114,8 +114,10 @@ Regra canônica:
 - considerar a regra apenas para experimento em `RUNNING` e tipo `LOW_TICKET_PRODUCT`;
 - invalidar quando houver `0` compras aprovadas, pelo menos `100` sessões qualificadas na página/formulário ou `150` cliques de link, e o custo total do experimento atingir `3x` o ticket configurado;
 - também invalidar quando o custo total atingir o `stopLossCpl` configurado e não houver intenção forte de checkout, definida inicialmente como taxa de acesso ao checkout abaixo de `3%`;
+- antes da amostra completa, também invalidar por inviabilidade econômica inicial quando houver `0` compras, pelo menos `5` cliques de link, custo total acima do `stopLossCpl`, CPC maior ou igual a `10%` do ticket e ausência de intenção forte de checkout;
 - usar `experiment.total_cost` como custo total principal; quando esse campo ainda não estiver disponível, usar o gasto de mídia sincronizado em `experiment_campaign_metric.spend` como fallback operacional;
 - registrar `experiment.status = INVALIDATED` e solicitar pausa das campanhas vinculadas com motivo `LOW_TICKET_ZERO_PURCHASE_STATISTICAL_FINANCIAL`;
+- quando a parada ocorrer por tráfego caro antes da amostra completa, usar o motivo `LOW_TICKET_TRAFFIC_COST_ECONOMICALLY_UNVIABLE`;
 - não invalidar por essa regra quando já existir compra aprovada, quando a amostra mínima não tiver sido atingida ou quando o custo ainda estiver abaixo dos limites financeiros.
 
 Interpretação de negócio:

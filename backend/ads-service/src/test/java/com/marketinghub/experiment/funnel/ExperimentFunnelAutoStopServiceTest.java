@@ -396,6 +396,62 @@ class ExperimentFunnelAutoStopServiceTest {
         assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.RUNNING);
     }
 
+    /**
+     * Garante parada quando o tráfego low-ticket já fica economicamente inviável antes da amostra completa.
+     */
+    @Test
+    void stopsLowTicketExperimentWhenTrafficCostIsEconomicallyUnviable() {
+        experiment.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
+        experiment.setUnitPrice(new BigDecimal("27.00"));
+        experiment.setStopLossCpl(new BigDecimal("54.00"));
+        experiment.setTotalCost(new BigDecimal("58.02"));
+        ExperimentFunnelStageDiagnosticDto checkoutStage = new ExperimentFunnelStageDiagnosticDto(
+                ExperimentFunnelStage.ACESSO_CHECKOUT,
+                "Acesso checkout",
+                22,
+                0,
+                0.0,
+                0.03,
+                null,
+                List.of(new FunnelThresholdCheckDto(0.03, 100, 0.1364, false, false)),
+                FunnelDiagnosticStatus.INSUFFICIENT_DATA,
+                FunnelDiagnosticReasonCode.LOW_SAMPLE_SIZE,
+                "",
+                false
+        );
+        ExperimentFunnelStageDiagnosticDto purchaseStage = new ExperimentFunnelStageDiagnosticDto(
+                ExperimentFunnelStage.COMPRA,
+                "Compra",
+                0,
+                0,
+                0.0,
+                0.03,
+                null,
+                List.of(),
+                FunnelDiagnosticStatus.INSUFFICIENT_DATA,
+                FunnelDiagnosticReasonCode.LOW_SAMPLE_SIZE,
+                "",
+                false
+        );
+        when(diagnosticService.diagnose(99L))
+                .thenReturn(new ExperimentFunnelDiagnosticsResponseDto(List.of(checkoutStage, purchaseStage), null));
+        ExperimentCampaignMetric metric = metricWithSpendAndClicks("29.06", 8L);
+        metric.setCpc(new BigDecimal("3.63"));
+        when(campaignMetricRepository.findByExperiment(experiment)).thenReturn(Optional.of(metric));
+        FacebookAdsCampaign campaign = new FacebookAdsCampaign();
+        campaign.setId("camp-low-ticket-expensive-traffic");
+        when(campaignRepository.findByExperimentId(99L)).thenReturn(List.of(campaign));
+
+        boolean stopped = service.stopIfLowTicketTrafficCostEconomicallyUnviable(experiment);
+
+        assertThat(stopped).isTrue();
+        assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.INVALIDATED);
+        assertThat(campaign.getStopReason())
+                .isEqualTo(FacebookCampaignStopReason.LOW_TICKET_TRAFFIC_COST_ECONOMICALLY_UNVIABLE);
+        assertThat(campaign.getStopRequestedAt()).isNotNull();
+        assertThat(campaign.getStopLastError()).isNull();
+    }
+
     @Test
     void doesNothingWhenThresholdNotReached() {
         ExperimentFunnelStageDiagnosticDto stage = new ExperimentFunnelStageDiagnosticDto(

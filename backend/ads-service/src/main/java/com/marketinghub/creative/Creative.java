@@ -8,7 +8,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 /**
- * Creative linked to an experiment.
+ * Responsabilidade: representar um criativo vinculado a um experimento.
  */
 @Entity
 @Table(name = "creative")
@@ -47,7 +47,7 @@ public class Creative {
     @Column(name = "description")
     private String description;
 
-    @Column(name = "call_to_action")
+    @Column(name = "call_to_action", length = 32)
     private String cta;
 
     @Column(name = "destination_url")

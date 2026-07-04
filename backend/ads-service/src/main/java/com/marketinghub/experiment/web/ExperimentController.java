@@ -8,14 +8,17 @@ import com.marketinghub.experiment.dto.ExperimentReadinessSummaryDto;
 import com.marketinghub.experiment.dto.UpdateSelectedSampleEmailRequest;
 import com.marketinghub.experiment.mapper.ExperimentMapper;
 import com.marketinghub.experiment.service.ExperimentDiagnosticsService;
+import com.marketinghub.experiment.service.ExperimentCampaignDestinationPolicy;
 import com.marketinghub.experiment.service.ExperimentService;
 import com.marketinghub.experiment.service.ExperimentReadinessService;
 import com.marketinghub.experiment.service.ExperimentPromiseGenerationService;
 import com.marketinghub.experiment.service.generatepromise.GenerateExperimentPromiseOptionsRequest;
 import com.marketinghub.experiment.service.generatepromise.GenerateExperimentPromiseOptionsResponse;
 import com.marketinghub.experiment.service.generatepromise.latestdraft.ExperimentPromiseOptionsDraftResponse;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.stream.StreamSupport;
@@ -31,17 +34,20 @@ public class ExperimentController {
     private final ExperimentDiagnosticsService diagnosticsService;
     private final ExperimentReadinessService readinessService;
     private final ExperimentPromiseGenerationService promiseGenerationService;
+    private final ExperimentCampaignDestinationPolicy campaignDestinationPolicy;
 
     /** Inicializa o controller com serviços de experimento, diagnóstico, prontidão e geração de promessas. */
     public ExperimentController(ExperimentService service, ExperimentMapper mapper,
                                 ExperimentDiagnosticsService diagnosticsService,
                                 ExperimentReadinessService readinessService,
-                                ExperimentPromiseGenerationService promiseGenerationService) {
+                                ExperimentPromiseGenerationService promiseGenerationService,
+                                ExperimentCampaignDestinationPolicy campaignDestinationPolicy) {
         this.service = service;
         this.mapper = mapper;
         this.diagnosticsService = diagnosticsService;
         this.readinessService = readinessService;
         this.promiseGenerationService = promiseGenerationService;
+        this.campaignDestinationPolicy = campaignDestinationPolicy;
     }
 
     /** Cria um novo experimento com os dados comerciais informados na tela. */
@@ -181,7 +187,28 @@ public class ExperimentController {
     /** Libera o experimento para publicação no Facebook Ads. */
     @PostMapping("/{id}/facebook-release")
     public ExperimentDto releaseForFacebook(@PathVariable Long id) {
+        ensurePurchaseIntentDoesNotBypassSalesPage(id);
         return mapper.toDto(service.releaseForFacebook(id));
+    }
+
+    /** Bloqueia liberação de tráfego frio com intenção de compra direto para checkout. */
+    private void ensurePurchaseIntentDoesNotBypassSalesPage(Long id) {
+        List<String> missing = campaignDestinationPolicy.missingConfiguration(service.get(id));
+        if (missing.contains("geraSalesPagePipeline")) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Experimento com intenção de compra exige página de venda criada pelo GeraSalesPage v1 antes da campanha.");
+        }
+        if (missing.contains("salesPageAdDestination")) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Experimento com intenção de compra exige que o link do anúncio aponte para a página de venda publicada, não para o checkout direto.");
+        }
+        if (missing.contains("salesPageAnalyticsCollectors")) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Experimento com intenção de compra exige página de venda com coletores page_view, page_load_metric, section_view_time e checkout_click antes da campanha.");
+        }
     }
 
     /** Registra uma solicitação para o AI Worker gerar três opções de contrato de promessa única. */

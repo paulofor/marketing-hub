@@ -26,6 +26,7 @@ import com.marketinghub.repository.jpa.ads.InstagramAccountRepository;
 import com.marketinghub.facebookads.BudgetMode;
 import com.marketinghub.facebookads.FacebookAdStatus;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
+import com.marketinghub.facebookads.FacebookCampaignStopReason;
 import com.marketinghub.gerasalespage.v1.GeraSalesPagePublicationAudit;
 import com.marketinghub.gerasalespage.v1.GeraSalesPageStageCode;
 import com.marketinghub.gerasalespage.v1.GeraSalesPageStageExecution;
@@ -693,6 +694,66 @@ class ExperimentServiceTest {
         assertThat(paused.getFacebookReleaseRequestedAt()).isNotNull();
         assertThat(paused.getFacebookReleaseRequestedAt().toEpochMilli())
                 .isEqualTo(releaseTimestamp.toEpochMilli());
+    }
+
+    @Test
+    void updateStatusPausedRequestsStopForLinkedFacebookCampaigns() {
+        MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Niche Pause Stop").build());
+        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("APS").build());
+        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(niche)
+                .title("HPS")
+                .premiseAngle(angle)
+                .promise("Promessa")
+                .problem("Problema")
+                .persona("Persona")
+                .offerType(com.marketinghub.hypothesis.OfferType.LEAD)
+                .kpiTargetCpl(new BigDecimal("1"))
+                .build());
+        metricPresetRepository.save(MetricPreset.builder()
+                .id("LEAN_150_PAUSE_STOP")
+                .name("Lean-Startup 150 Pause Stop")
+                .sampleSize(150)
+                .stopLossFactor(new BigDecimal("2"))
+                .defaultMdePp(new BigDecimal("12"))
+                .build());
+        CreateExperimentRequest req = new CreateExperimentRequest();
+        applyStageDefaults(req);
+        req.setMarketNicheId(niche.getId());
+        req.setHypothesisId(hyp.getId());
+        req.setName("ExpPauseStop");
+        req.setHypothesis("H");
+        req.setKpiTargetCpl(new BigDecimal("45"));
+        req.setMetricPresetId("LEAN_150_PAUSE_STOP");
+        req.setJourneyTemplateId(createJourneyTemplate().getId());
+        req.setLeadPortalFlowId(createLeadPortalFlow(niche));
+        req.setInstagramAccountId(createInstagramAccount().getId());
+        Experiment experiment = service.create(req);
+        experimentRepository.save(experiment);
+
+        FacebookAccount facebookAccount = facebookAccountRepository.save(FacebookAccount.builder()
+                .name("Conta Facebook Pause")
+                .adAccountId("act_pause")
+                .build());
+        FacebookAdsCampaign campaign = new FacebookAdsCampaign();
+        campaign.setId("campaign-pause-stop");
+        campaign.setExternalId("meta-pause-stop");
+        campaign.setAdAccountId("act_pause");
+        campaign.setExperiment(experiment);
+        campaign.setFacebookAccount(facebookAccount);
+        campaign.setName("Campanha para pausar");
+        campaign.setObjective("OUTCOME_LEADS");
+        campaign.setStatus(FacebookAdStatus.ACTIVE);
+        campaign.setBudgetMode(BudgetMode.CAMPAIGN);
+        facebookAdsCampaignRepository.save(campaign);
+
+        service.updateStatus(experiment.getId(), ExperimentStatus.PAUSED);
+
+        FacebookAdsCampaign stored = facebookAdsCampaignRepository.findById(campaign.getId()).orElseThrow();
+        assertThat(stored.getStopRequestedAt()).isNotNull();
+        assertThat(stored.getStopCompletedAt()).isNull();
+        assertThat(stored.getStopLastError()).isNull();
+        assertThat(stored.getStopReason()).isEqualTo(FacebookCampaignStopReason.ADMIN_EXPERIMENT_PAUSED);
     }
 
     @Test

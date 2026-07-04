@@ -13,6 +13,8 @@ import com.marketinghub.experiment.*;
 import com.marketinghub.finance.CurrencyConversionService;
 import com.marketinghub.experiment.dto.CreateExperimentRequest;
 import com.marketinghub.experiment.dto.UpdateExperimentRequest;
+import com.marketinghub.experiment.funnel.ExperimentFunnelStandbyService;
+import com.marketinghub.facebookads.FacebookCampaignStopReason;
 import com.marketinghub.gerasalespage.v1.GeraSalesPagePublicationAudit;
 import com.marketinghub.gerasalespage.v1.GeraSalesPageStageCode;
 import com.marketinghub.repository.jpa.experiment.ExperimentPromiseGenerationRequestRepository;
@@ -83,6 +85,7 @@ public class ExperimentService {
     private final CurrencyConversionService currencyConversionService;
     private final ExperimentAiPromptSchemaUsageService promptSchemaUsageService;
     private final ProductAiExperimentPreparationService productAiExperimentPreparationService;
+    private final ExperimentFunnelStandbyService experimentFunnelStandbyService;
 
     public ExperimentService(ExperimentRepository repository,
                              ExperimentPromiseGenerationRequestRepository promiseGenerationRequestRepository,
@@ -109,7 +112,8 @@ public class ExperimentService {
                              ObjectMapper objectMapper,
                              CurrencyConversionService currencyConversionService,
                              ExperimentAiPromptSchemaUsageService promptSchemaUsageService,
-                             ProductAiExperimentPreparationService productAiExperimentPreparationService) {
+                             ProductAiExperimentPreparationService productAiExperimentPreparationService,
+                             ExperimentFunnelStandbyService experimentFunnelStandbyService) {
         this.repository = repository;
         this.promiseGenerationRequestRepository = promiseGenerationRequestRepository;
         this.nicheRepository = nicheRepository;
@@ -136,6 +140,7 @@ public class ExperimentService {
         this.currencyConversionService = currencyConversionService;
         this.promptSchemaUsageService = promptSchemaUsageService;
         this.productAiExperimentPreparationService = productAiExperimentPreparationService;
+        this.experimentFunnelStandbyService = experimentFunnelStandbyService;
     }
 
     /**
@@ -549,7 +554,7 @@ public class ExperimentService {
     }
 
     /**
-     * Updates the status of an experiment.
+     * Atualiza o status do experimento e solicita pausa operacional das campanhas Meta quando aplicável.
      */
     @Transactional
     public Experiment updateStatus(Long id, ExperimentStatus status) {
@@ -563,6 +568,13 @@ public class ExperimentService {
             }
         }
         exp.setStatus(status);
+        if (status == ExperimentStatus.PAUSED) {
+            experimentFunnelStandbyService.requestFacebookCampaignStops(
+                    exp.getId(),
+                    FacebookCampaignStopReason.ADMIN_EXPERIMENT_PAUSED,
+                    "pausa administrativa do experimento"
+            );
+        }
         return exp;
     }
 

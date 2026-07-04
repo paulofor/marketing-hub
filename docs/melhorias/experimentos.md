@@ -38,6 +38,10 @@ Antes de escalar ou lançar o experimento 56, a prioridade passou a ser corrigir
 - manter `page_view` e `page_load_metric` como sinais de saúde da página;
 - preservar o relatório do funil com dados persistidos, não apenas logs.
 
+### Correção operacional complementar
+
+Após a publicação da correção de CTA/tracking, o experimento 55 ficou `PAUSED` no Hub, mas a campanha Meta vinculada continuou ativa porque a pausa administrativa não criava solicitação operacional para o worker. A correção sistêmica é fazer `updateStatus(PAUSED)` registrar `stop_requested_at` nas campanhas Facebook vinculadas com motivo `ADMIN_EXPERIMENT_PAUSED`, mantendo o backend como fonte da decisão e o worker como executor da pausa na Meta.
+
 ### Hipótese de melhoria
 
 Se o visitante enxergar prova visual e for conduzido para uma ação de menor atrito antes do checkout, a perda entre visualização da página e intenção deve diminuir. O próximo julgamento do 55 deve separar:
@@ -57,4 +61,3 @@ Se o visitante enxergar prova visual e for conduzido para uma ação de menor at
 - Colocar prova visual antes do checkout.
 - Só levar ao checkout depois de demonstrar valor concreto.
 - Não lançar o experimento 56 até validar que o gargalo de página/formulário do 55 foi corrigido.
-

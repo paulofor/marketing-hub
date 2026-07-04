@@ -508,29 +508,65 @@ databaseChangeLog:
   - include:
       file: V20250825__sales_funnel_multichannel.xml
       relativeToChangelogFile: true
+
   - include:
-      file: V20250825__sales_funnel_template.xml
+      file: V20250901__link_experiment_sales_funnel.xml
+      relativeToChangelogFile: true
+
+  - include:
+      file: V2026_10_01__experiment_journey_template.sql
+      relativeToChangelogFile: true
+
+  - include:
+      file: V2026_10_02__experiment_journey_template_not_null.sql
+      relativeToChangelogFile: true
+
+  - include:
+      file: changesets/2026-10-30-facebook-release-reset.yaml
+      relativeToChangelogFile: true
+
+  - include:
+      file: V2025_08_06__create_chat_tables.sql
       relativeToChangelogFile: true
   - include:
-      file: V20250905__rename_hypothesis_value_proposition.sql
+      file: V2025_08_14__add_unique_mechanism_to_hypothesis.sql
       relativeToChangelogFile: true
   - include:
-      file: V20250910__create_experiment_pipeline_job.sql
+      file: V2025_09_15__create_chat_dialog_table.sql
       relativeToChangelogFile: true
   - include:
-      file: V20250915__journey_step_form_fields.sql
+      file: V2025_09_16__add_mechanism_to_hypothesis.sql
       relativeToChangelogFile: true
   - include:
-      file: V20250920__add_selected_email_to_experiment.sql
+      file: V2025_09_20__add_chat_dialog_fk_to_market_niche.sql
       relativeToChangelogFile: true
   - include:
-      file: V20250925__journey_template.sql
+      file: V2025_09_21__add_generated_at_to_hypothesis.sql
       relativeToChangelogFile: true
   - include:
-      file: V20251001__social_calendar.sql
+      file: V2025_09_22__allow_null_premise_angle.sql
       relativeToChangelogFile: true
   - include:
-      file: V20251005__add_selected_journey_to_experiment.sql
+      file: changesets/2025-08-20-rename-lead-response-value-to-payload.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: V2025_09_26__relax_hypothesis_constraints.sql
+      relativeToChangelogFile: true
+  - include:
+      file: V2025_09_27__add_active_to_prompt_descriptions.sql
+      relativeToChangelogFile: true
+
+  - include:
+      file: V2025_09_28__drop_version_from_prompt_tables.sql
+      relativeToChangelogFile: true
+  - include:
+      file: V2025_09_29__link_hypothesis_prompt_attribute_description.sql
+      relativeToChangelogFile: true
+  - include:
+      file: V2025_09_30__create_creative_table.sql
+      relativeToChangelogFile: true
+  - include:
+      file: V2025_10_05__create_facebook_ads_tables.sql
       relativeToChangelogFile: true
   - include:
       file: V2025_10_06__add_audiences_to_generate_to_niche.sql
@@ -539,55 +575,97 @@ databaseChangeLog:
       file: V2025_10_10__move_audience_approval.sql
       relativeToChangelogFile: true
   - include:
-      file: V2025_10_15__event_campaign.sql
+      file: V2025_10_15__create_journey_tables.sql
       relativeToChangelogFile: true
   - include:
-      file: V2025_10_20__manual_media_plan.sql
+      file: V2025_10_20__journey_execution_runtime.sql
       relativeToChangelogFile: true
   - include:
-      file: V2025_11_01__add_budget_and_schedule_to_campaign.sql
+      file: V2025_10_21__rename_journey_event_value_column.sql
       relativeToChangelogFile: true
   - include:
-      file: V2025_11_10__create_experiment_sample_email.sql
+      file: V2025_10_29__increase_journey_step_stimulus_length.sql
       relativeToChangelogFile: true
   - include:
-      file: V2025_12_01__add_selected_sample_email_to_experiment.sql
+      file: V2025_10_30__create_asset_table.sql
       relativeToChangelogFile: true
   - include:
-      file: V2026_01_01__add_creative_variants.sql
+      file: V2025_11_05__widen_asset_provider.sql
       relativeToChangelogFile: true
   - include:
-      file: V2026_02_01__social_calendar_visual_plan.sql
+      file: V2025_12_04__convert_asset_provider_to_varchar.sql
       relativeToChangelogFile: true
   - include:
-      file: V2026_02_15__create_facebook_page.sql
+      file: V2026_03_21__ensure_asset_provider_user_upload.sql
       relativeToChangelogFile: true
   - include:
-      file: V2026_03_05__rename_fb_page_status.sql
+      file: V2025_11_10__widen_asset_type.sql
       relativeToChangelogFile: true
   - include:
-      file: V2026_03_10__facebook_page_permissions.sql
+      file: V2025_11_15__widen_asset_prompt.sql
       relativeToChangelogFile: true
   - include:
-      file: V2026_04_15__create_instagram_account.sql
+      file: V2025_11_20__ensure_asset_prompt_longtext.sql
       relativeToChangelogFile: true
   - include:
-      file: V2026_04_20__instagram_account_status.sql
+      file: V2025_11_26__extend_creative_with_meta_fields.sql
       relativeToChangelogFile: true
   - include:
-      file: V2026_05_01__create_adset.sql
+      file: V2025_11_30__widen_journey_step_stimulus_type.sql
       relativeToChangelogFile: true
   - include:
-      file: V2026_05_15__link_creative_to_adset.sql
+      file: V2025_12_05__create_fb_page_table.sql
       relativeToChangelogFile: true
   - include:
-      file: V2026_06_20__adset_publication.sql
+      file: V2025_12_10__move_page_id_to_experiment.sql
       relativeToChangelogFile: true
   - include:
-      file: V2026_07_10__adset_daily_budget.sql
+      file: V2025_12_20__extend_fb_account_with_token.sql
       relativeToChangelogFile: true
   - include:
-      file: V2026_08_01__adset_effective_status.sql
+      file: V2026_01_05__add_fb_account_token_renewal.sql
+      relativeToChangelogFile: true
+  - include:
+      file: V2026_02_15__add_fb_account_business_manager_app_id.sql
+      relativeToChangelogFile: true
+  - include:
+      file: V2026_02_18__experiment_facebook_api_log.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: V2026_03_20__extend_fb_account_worker_config.sql
+      relativeToChangelogFile: true
+  - include:
+      file: V2026_01_17__ensure_hypothesis_mechanism_longtext.sql
+      relativeToChangelogFile: true
+  - include:
+      file: V2026_04_05__link_facebook_ads_campaign_to_experiment_and_account.sql
+      relativeToChangelogFile: true
+  - include:
+      file: V2026_04_10__drop_fb_account_business_manager_app_id.sql
+      relativeToChangelogFile: true
+  - include:
+      file: V2026_04_15__add_fb_account_pixel_owner_business_id.sql
+      relativeToChangelogFile: true
+  - include:
+      file: V2026_05_01__track_fb_worker_config_errors.sql
+      relativeToChangelogFile: true
+  - include:
+      file: V2026_09_12__add_worker_requests_to_experiment.sql
+      relativeToChangelogFile: true
+  - include:
+      file: V2026_05_10__support_lead_forms.sql
+      relativeToChangelogFile: true
+  - include:
+      file: V2026_11_30__add_fb_account_system_user_token.sql
+      relativeToChangelogFile: true
+  - include:
+      file: V2026_05_20__link_experiment_to_fb_page.sql
+      relativeToChangelogFile: true
+  - include:
+      file: V2026_06_01__extend_instagram_account.sql
+      relativeToChangelogFile: true
+  - include:
+      file: V2026_07_05__simplify_instagram_account.sql
       relativeToChangelogFile: true
   - include:
       file: V2026_08_20__add_instagram_account_to_experiment.sql

@@ -1,0 +1,65 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-04-gera-sales-page-product-ai-templates-v3-001
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: ai_prompt_schema_template
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE ai_prompt_schema_template
+              SET active = false, updated_at = CURRENT_TIMESTAMP
+              WHERE pipeline_code = 'gera-sales-page-v1'
+                AND stage_code IN (
+                  'sales-page-offer-brief',
+                  'sales-page-wireframe',
+                  'sales-page-copy',
+                  'sales-page-visual-plan',
+                  'sales-page-html',
+                  'sales-page-checkout-quality-review',
+                  'sales-page-publication-package'
+                );
+
+              INSERT INTO ai_prompt_schema_template
+                (template_key, pipeline_code, stage_code, version, openai_model, schema_name, prompt_markdown_content, schema_json, active, created_at, updated_at)
+              VALUES
+                ('gera-sales-page-v1:sales-page-offer-brief:v3', 'gera-sales-page-v1', 'sales-page-offer-brief', 'v3', 'gpt-5.5', 'gera_sales_page_v1_offer_brief',
+                 'Você é um estrategista de vendas diretas. Gere a etapa sales-page-offer-brief do GeraSalesPage v1. Use experiment.productAiSubtype e experiment.salesPageDestination como fonte soberana do destino. Se salesPageDestination=LEAD_PORTAL_PERSONALIZED_SAMPLE_FUNNEL, a página vende a promessa e conduz o lead ao formulário de personalização antes do checkout; não trate essa URL como checkout direto. Explique claramente amostra gratuita, produto pago, preço e entrega. Se salesPageDestination=DIRECT_CHECKOUT, mantenha venda direta para checkout. Responda apenas JSON válido aderente ao schema. Experimento: {{experiment}} Saídas anteriores: {{previousStageOutputs}}',
+                 '{"type":"object","additionalProperties":false,"required":["summary","promise","checkoutUrl","offerStack","risks"],"properties":{"summary":{"type":"string"},"promise":{"type":"string"},"checkoutUrl":{"type":"string"},"offerStack":{"type":"array","items":{"type":"string"}},"risks":{"type":"array","items":{"type":"string"}}}}',
+                 true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                ('gera-sales-page-v1:sales-page-wireframe:v3', 'gera-sales-page-v1', 'sales-page-wireframe', 'v3', 'gpt-5.5', 'gera_sales_page_v1_wireframe',
+                 'Você é um arquiteto de página de vendas. Gere a etapa sales-page-wireframe do GeraSalesPage v1. Se salesPageDestination=LEAD_PORTAL_PERSONALIZED_SAMPLE_FUNNEL, a página deve conter promessa, prova, explicação da amostra personalizada e bloco de coleta pelo formulário gerenciado antes da compra; os CTAs devem avançar para esse formulário, não para checkout direto. Nunca proponha iframe para embutir o próprio Lead Portal, flow ou funil. Se salesPageDestination=DIRECT_CHECKOUT, foque em checkout. Responda apenas JSON válido aderente ao schema. Experimento: {{experiment}} Saídas anteriores: {{previousStageOutputs}}',
+                 '{"type":"object","additionalProperties":false,"required":["sections","primaryCta","checkoutUrl"],"properties":{"sections":{"type":"array","items":{"type":"object","additionalProperties":false,"required":["id","goal","content"],"properties":{"id":{"type":"string"},"goal":{"type":"string"},"content":{"type":"string"}}}},"primaryCta":{"type":"string"},"checkoutUrl":{"type":"string"}}}',
+                 true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                ('gera-sales-page-v1:sales-page-copy:v3', 'gera-sales-page-v1', 'sales-page-copy', 'v3', 'gpt-5.5', 'gera_sales_page_v1_copy',
+                 'Você é copywriter de resposta direta. Gere a etapa sales-page-copy do GeraSalesPage v1. Se salesPageDestination=LEAD_PORTAL_PERSONALIZED_SAMPLE_FUNNEL, deixe explícito: a primeira ação é enviar dados para receber uma amostra personalizada; a compra de preço informado libera a entrega paga completa; a amostra não é o produto inteiro. O CTA deve vender o benefício de preencher o formulário. Se salesPageDestination=DIRECT_CHECKOUT, o CTA aponta para checkout. Responda apenas JSON válido aderente ao schema. Experimento: {{experiment}} Saídas anteriores: {{previousStageOutputs}}',
+                 '{"type":"object","additionalProperties":false,"required":["headline","subheadline","sections","cta"],"properties":{"headline":{"type":"string"},"subheadline":{"type":"string"},"sections":{"type":"array","items":{"type":"object","additionalProperties":false,"required":["id","title","body"],"properties":{"id":{"type":"string"},"title":{"type":"string"},"body":{"type":"string"}}}},"cta":{"type":"string"}}}',
+                 true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                ('gera-sales-page-v1:sales-page-visual-plan:v3', 'gera-sales-page-v1', 'sales-page-visual-plan', 'v3', 'gpt-5.5', 'gera_sales_page_v1_visual_plan',
+                 'Você é diretor de arte de venda direta. Gere a etapa sales-page-visual-plan do GeraSalesPage v1. Para salesPageDestination=LEAD_PORTAL_PERSONALIZED_SAMPLE_FUNNEL, use visuais que materializem personalização, antes/depois, exemplo de amostra e diferença entre preview gratuito e entrega paga. Para checkout direto, use imagens que reduzem objeção, demonstram produto ou aumentam prova. Nunca recomende iframe para o próprio Lead Portal. Responda apenas JSON válido aderente ao schema. Experimento: {{experiment}} Saídas anteriores: {{previousStageOutputs}}',
+                 '{"type":"object","additionalProperties":false,"required":["visualDirection","imageBriefs","trustElements"],"properties":{"visualDirection":{"type":"string"},"imageBriefs":{"type":"array","items":{"type":"object","additionalProperties":false,"required":["sectionId","purpose","prompt"],"properties":{"sectionId":{"type":"string"},"purpose":{"type":"string"},"prompt":{"type":"string"}}}},"trustElements":{"type":"array","items":{"type":"string"}}}}',
+                 true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                ('gera-sales-page-v1:sales-page-html:v3', 'gera-sales-page-v1', 'sales-page-html', 'v3', 'gpt-5.5', 'gera_sales_page_v1_html',
+                 'Você é desenvolvedor front-end de landing de vendas. Gere a etapa sales-page-html do GeraSalesPage v1 em HTML responsivo. Se salesPageDestination=LEAD_PORTAL_PERSONALIZED_SAMPLE_FUNNEL, os CTAs devem apontar para o bloco de formulário gerenciado; não crie checkout direto como primeira ação, não crie campos próprios fora do formulário gerenciado e nunca use iframe para carregar o Lead Portal, flow ou a própria URL do funil. Explique amostra, preço e entrega paga com clareza. Se salesPageDestination=DIRECT_CHECKOUT, use a URL de checkout real e não crie formulário. Responda apenas JSON válido aderente ao schema. Experimento: {{experiment}} Saídas anteriores: {{previousStageOutputs}}',
+                 '{"type":"object","additionalProperties":false,"required":["html","checkoutUrl","notes"],"properties":{"html":{"type":"string"},"checkoutUrl":{"type":"string"},"notes":{"type":"array","items":{"type":"string"}}}}',
+                 true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                ('gera-sales-page-v1:sales-page-checkout-quality-review:v3', 'gera-sales-page-v1', 'sales-page-checkout-quality-review', 'v3', 'gpt-5.5', 'gera_sales_page_v1_checkout_quality_review',
+                 'Você é auditor comercial. Revise a página do GeraSalesPage v1. Se salesPageDestination=LEAD_PORTAL_PERSONALIZED_SAMPLE_FUNNEL, aprove formulário e CTA para coleta de personalização, mas bloqueie se a página confundir amostra gratuita, compra paga, preço, entrega completa ou limites da amostra. Bloqueie sempre que houver iframe apontando para Lead Portal, flow, funil ou para a própria página. Não exija checkout direto nesse caso. Se salesPageDestination=DIRECT_CHECKOUT, bloqueie se CTA não apontar para checkout real ou se houver formulário obrigatório. Responda apenas JSON válido aderente ao schema. Experimento: {{experiment}} Saídas anteriores: {{previousStageOutputs}}',
+                 '{"type":"object","additionalProperties":false,"required":["approved","blockers","recommendation"],"properties":{"approved":{"type":"boolean"},"blockers":{"type":"array","items":{"type":"string"}},"recommendation":{"type":"string"}}}',
+                 true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                ('gera-sales-page-v1:sales-page-publication-package:v3', 'gera-sales-page-v1', 'sales-page-publication-package', 'v3', 'gpt-5.5', 'gera_sales_page_v1_publication_package',
+                 'Você é responsável por empacotar a página para publicação. Para salesPageDestination=LEAD_PORTAL_PERSONALIZED_SAMPLE_FUNNEL, mantenha HTML publicável no funil-página, CTAs para o formulário gerenciado, clareza de amostra gratuita, produto pago, preço e entrega; o checklist deve confirmar que não há checkout direto como primeira ação e que não existe iframe para Lead Portal, flow ou a própria página. Para checkout real, mantenha checkoutUrl e checklist de liberação para mídia paga. Responda apenas JSON válido aderente ao schema. Experimento: {{experiment}} Saídas anteriores: {{previousStageOutputs}}',
+                 '{"type":"object","additionalProperties":false,"required":["readyForTraffic","html","checkoutUrl","releaseChecklist"],"properties":{"readyForTraffic":{"type":"boolean"},"html":{"type":"string"},"checkoutUrl":{"type":"string"},"releaseChecklist":{"type":"array","items":{"type":"string"}}}}',
+                 true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+              ON DUPLICATE KEY UPDATE
+                prompt_markdown_content = VALUES(prompt_markdown_content),
+                schema_json = VALUES(schema_json),
+                active = true,
+                updated_at = CURRENT_TIMESTAMP;

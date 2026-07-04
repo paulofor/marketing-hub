@@ -15,6 +15,57 @@ paths:
       responses:
         '200':
           description: Audiência persistida no backend conforme decisão do OPRM.
+  /api/meta-audiences/niches/{nicheId}:
+    get:
+      summary: Lista planos de audiência CNAE vinculados a um nicho.
+      parameters:
+        - in: path
+          name: nicheId
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Planos de audiência do nicho.
+  /api/meta-audiences/experiment-links:
+    post:
+      summary: Vincula uma audiência CNAE a um experimento.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LinkMetaAudienceExperimentRequest'
+      responses:
+        '200':
+          description: Vínculo persistido entre experimento e audiência.
+  /api/meta-audiences/experiments/{experimentId}:
+    get:
+      summary: Lista audiências CNAE usadas por um experimento.
+      parameters:
+        - in: path
+          name: experimentId
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Audiências vinculadas ao experimento.
+  /api/meta-audiences/niches/{nicheId}/experiment-links:
+    get:
+      summary: Lista vínculos de audiência CNAE por nicho.
+      parameters:
+        - in: path
+          name: nicheId
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Vínculos de audiência e experimento do nicho.
   /api/internal/meta-audiences/pending:
     get:
       summary: Lista audiências prontas para o Facebook Ads Worker criar na Meta.
@@ -62,3 +113,34 @@ components:
         totalContacts: { type: integer, format: int64 }
         uniqueEmails: { type: integer, format: int64 }
         estimatedContacts: { type: integer, format: int64 }
+    LinkMetaAudienceExperimentRequest:
+      type: object
+      required: [metaAudienceId, metaAudienceSegmentId, experimentId]
+      properties:
+        metaAudienceId: { type: integer, format: int64 }
+        metaAudienceSegmentId: { type: integer, format: int64 }
+        experimentId: { type: integer, format: int64 }
+        channel: { type: string }
+        painAngle: { type: string }
+        promise: { type: string }
+        offer: { type: string }
+        activationStatus: { type: string }
+        decisionSnapshotJson: { type: string }
+    ExperimentMetaAudienceResponse:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        experimentId: { type: integer, format: int64 }
+        marketNicheId: { type: integer, format: int64 }
+        metaAudienceId: { type: integer, format: int64 }
+        metaAudienceSegmentId: { type: integer, format: int64 }
+        cnaeCode: { type: string }
+        audienceName: { type: string }
+        segmentName: { type: string }
+        activationStatus: { type: string }
+        channel: { type: string }
+        painAngle: { type: string }
+        promise: { type: string }
+        offer: { type: string }
+        decisionSnapshotJson: { type: string }
+        analysisSummary: { type: string }

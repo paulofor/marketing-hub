@@ -4,6 +4,7 @@ import {
   AlertTriangle,
   CalendarDays,
   CheckCircle2,
+  FileText,
   FlaskConical,
   Flag,
   Gauge,
@@ -20,6 +21,17 @@ import "./FacebookExperimentsReadyPage.css";
 import { useFacebookCampaignExperiments } from "../../api/useFacebookCampaignExperiments";
 import { MissingConfigurationList } from "./MissingConfigurationList";
 
+interface CommercialFlowExperiment {
+  singlePain?: string | null;
+  freeReward?: string | null;
+  funnelPromise?: string | null;
+  primaryCta?: string | null;
+  experimentType?: string | null;
+  campaignObjective?: string | null;
+  followUpActionUrl?: string | null;
+  missingConfiguration: string[];
+}
+
 function formatCurrency(value: number | null) {
   if (value === null) return "Sem KPI";
   return new Intl.NumberFormat("pt-BR", {
@@ -34,6 +46,72 @@ function formatDate(value: string | null) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleDateString("pt-BR");
+}
+
+function commercialFlowSteps(experiment: CommercialFlowExperiment) {
+  const missing = new Set(experiment.missingConfiguration);
+  const pageMissing =
+    missing.has("geraSalesPagePipeline") ||
+    missing.has("salesPageAdDestination") ||
+    missing.has("salesPageAnalyticsCollectors");
+  const contractMissing = missing.has("commercialContract");
+  const ready = experiment.missingConfiguration.length === 0;
+
+  return [
+    {
+      label: "Contrato comercial",
+      status: contractMissing ? "current" : "done",
+      detail: contractMissing
+        ? "Completar Oferta: dor, prova/preview, promessa, CTA e preço."
+        : "Oferta preenchida e usada como fonte do funil.",
+    },
+    {
+      label: "Página de venda",
+      status: contractMissing ? "pending" : pageMissing ? "current" : "done",
+      detail: pageMissing
+        ? "Gerar, auditar e apontar o anúncio para a página, não para o checkout."
+        : "Página GeraSalesPage auditada ou sem bloqueio pendente.",
+    },
+    {
+      label: "Campanha",
+      status: ready ? "done" : contractMissing || pageMissing ? "pending" : "current",
+      detail: ready
+        ? "Pronto para o worker publicar."
+        : "Resolver criativo, público, pixel e demais pendências antes de mídia.",
+    },
+  ];
+}
+
+function CommercialFlowGuide({
+  experiment,
+}: {
+  experiment: CommercialFlowExperiment;
+}) {
+  const steps = commercialFlowSteps(experiment);
+  return (
+    <div className="experiments-ready-flow" aria-label="Fluxo comercial">
+      {steps.map((step) => (
+        <div
+          key={step.label}
+          className={`experiments-ready-flow__step experiments-ready-flow__step--${step.status}`}
+        >
+          <span className="experiments-ready-flow__icon">
+            {step.status === "done" ? (
+              <CheckCircle2 size={15} />
+            ) : step.status === "current" ? (
+              <FileText size={15} />
+            ) : (
+              <ListChecks size={15} />
+            )}
+          </span>
+          <span>
+            <strong>{step.label}</strong>
+            <small>{step.detail}</small>
+          </span>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export default function FacebookExperimentsReadyPage() {
@@ -215,6 +293,7 @@ export default function FacebookExperimentsReadyPage() {
                   </>
                 )}
               </div>
+              <CommercialFlowGuide experiment={experiment} />
               <div className="d-flex justify-content-end">
                 <Link
                   className="btn btn-link p-0"
@@ -301,6 +380,7 @@ export default function FacebookExperimentsReadyPage() {
                     className="mb-0"
                   />
                 </div>
+                <CommercialFlowGuide experiment={experiment} />
 
                 <dl className="experiments-ready-pending__meta">
                   <div>

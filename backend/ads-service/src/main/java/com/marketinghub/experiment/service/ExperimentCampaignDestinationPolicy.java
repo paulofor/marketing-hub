@@ -45,6 +45,10 @@ public class ExperimentCampaignDestinationPolicy {
             return List.of();
         }
         List<String> missing = new ArrayList<>();
+        if (!hasCompleteCommercialContract(experiment)) {
+            missing.add("commercialContract");
+            return List.copyOf(missing);
+        }
         Optional<GeraSalesPagePublicationAudit> salesPagePublication =
                 latestSalesPagePublication(experiment != null ? experiment.getId() : null);
         if (!hasCompletedGeraSalesPagePipeline(experiment != null ? experiment.getId() : null)
@@ -110,6 +114,17 @@ public class ExperimentCampaignDestinationPolicy {
                 && html.contains("page_load_metric")
                 && html.contains("section_view_time")
                 && html.contains("checkout_click");
+    }
+
+    /** Confirma se a etapa Oferta deixou um contrato comercial mínimo para venda. */
+    public boolean hasCompleteCommercialContract(Experiment experiment) {
+        return experiment != null
+                && StringUtils.hasText(experiment.getSinglePain())
+                && StringUtils.hasText(experiment.getFreeReward())
+                && StringUtils.hasText(experiment.getFunnelPromise())
+                && StringUtils.hasText(experiment.getPrimaryCta())
+                && experiment.getUnitPrice() != null
+                && experiment.getUnitPrice().signum() > 0;
     }
 
     /** Normaliza URL para comparação de destino sem depender de barra final. */

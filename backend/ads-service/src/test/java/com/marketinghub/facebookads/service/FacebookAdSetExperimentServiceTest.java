@@ -11,6 +11,7 @@ import com.marketinghub.experiment.ExperimentPlatform;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.ExperimentTargetingSelection;
 import com.marketinghub.experiment.mapper.ExperimentMapper;
+import com.marketinghub.experiment.service.ExperimentReadinessService;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentTargetingSelectionRepository;
 import com.marketinghub.facebookads.dto.ExperimentReadyForAdSetDto;
@@ -48,6 +49,8 @@ class FacebookAdSetExperimentServiceTest {
     private ExperimentTargetingSelectionRepository targetingSelectionRepository;
     @Mock
     private TargetingElementRepository targetingElementRepository;
+    @Mock
+    private ExperimentReadinessService readinessService;
 
     private FacebookAdSetExperimentService service;
 
@@ -69,7 +72,8 @@ class FacebookAdSetExperimentServiceTest {
                 experimentMapper,
                 marketNicheMapper,
                 hypothesisMapper,
-                targetingElementMapper);
+                targetingElementMapper,
+                readinessService);
     }
 
     /**
@@ -148,6 +152,7 @@ class FacebookAdSetExperimentServiceTest {
 
         when(experimentRepository.findAllReadyForAdSets(eq(ExperimentPlatform.FACEBOOK), any()))
                 .thenReturn(List.of(experiment));
+        when(readinessService.isReadyForCampaign(experiment)).thenReturn(true);
 
         TargetingElement interest = TargetingElement.builder()
                 .id(1L)
@@ -223,6 +228,7 @@ class FacebookAdSetExperimentServiceTest {
 
         when(experimentRepository.findAllReadyForAdSets(eq(ExperimentPlatform.FACEBOOK), any()))
                 .thenReturn(List.of(experiment));
+        when(readinessService.isReadyForCampaign(experiment)).thenReturn(true);
         when(targetingElementRepository.findApprovedForExperiment(5L, TargetingElementType.INTEREST, hypothesisId))
                 .thenReturn(List.of());
 
@@ -291,6 +297,7 @@ class FacebookAdSetExperimentServiceTest {
 
         when(experimentRepository.findForAdSetTargetingById(13L, ExperimentPlatform.FACEBOOK))
                 .thenReturn(Optional.of(experiment));
+        when(readinessService.isReadyForCampaign(experiment)).thenReturn(true);
         when(targetingSelectionRepository.findByExperimentIdWithTargetingElement(13L))
                 .thenReturn(List.of(
                         ExperimentTargetingSelection.builder()
@@ -350,6 +357,7 @@ class FacebookAdSetExperimentServiceTest {
 
         when(experimentRepository.findForAdSetTargetingById(38L, ExperimentPlatform.FACEBOOK))
                 .thenReturn(Optional.of(experiment));
+        when(readinessService.isReadyForCampaign(experiment)).thenReturn(true);
         when(targetingSelectionRepository.findByExperimentIdWithTargetingElement(38L))
                 .thenReturn(List.of(
                         ExperimentTargetingSelection.builder()
@@ -391,6 +399,7 @@ class FacebookAdSetExperimentServiceTest {
 
         when(experimentRepository.findAllReadyForAdSets(eq(ExperimentPlatform.FACEBOOK), any()))
                 .thenReturn(List.of(experiment));
+        when(readinessService.isReadyForCampaign(experiment)).thenReturn(true);
         TargetingElement interest = TargetingElement.builder()
                 .id(9L)
                 .niche(niche)
@@ -415,5 +424,33 @@ class FacebookAdSetExperimentServiceTest {
                 .extracting(TargetingElementDto::getMetaId)
                 .containsExactly("6003139266461");
         assertThat(result.getFirst().getTargeting().getJobTitles()).isEmpty();
+    }
+
+    /**
+     * Garante que o endpoint não expõe adset quando o readiness bloqueia contrato, página ou campanha.
+     */
+    @Test
+    void listExperimentsReadySkipsExperimentBlockedByReadinessGate() {
+        MarketNiche niche = new MarketNiche();
+        niche.setId(5L);
+
+        Hypothesis hypothesis = new Hypothesis();
+        hypothesis.setId(UUID.randomUUID());
+        hypothesis.setMarketNiche(niche);
+
+        Experiment experiment = new Experiment();
+        experiment.setId(56L);
+        experiment.setNiche(niche);
+        experiment.setHypothesisRef(hypothesis);
+        experiment.setStatus(ExperimentStatus.PLANNED);
+        experiment.setPlatform(ExperimentPlatform.FACEBOOK);
+
+        when(experimentRepository.findAllReadyForAdSets(eq(ExperimentPlatform.FACEBOOK), any()))
+                .thenReturn(List.of(experiment));
+        when(readinessService.isReadyForCampaign(experiment)).thenReturn(false);
+
+        List<ExperimentReadyForAdSetDto> result = service.listExperimentsReadyForAdSets();
+
+        assertThat(result).isEmpty();
     }
 }

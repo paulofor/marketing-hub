@@ -898,10 +898,15 @@ public class ExperimentService {
         return experiment;
     }
 
-    /** Bloqueia venda low-ticket quando página, destino ou métricas não estão prontos para tráfego. */
+    /** Bloqueia venda quando contrato, página, destino ou métricas não estão prontos para tráfego. */
     private void ensureLowTicketSalesPageWasBuiltByPipeline(Experiment experiment) {
-        if (experiment.getExperimentType() != ExperimentType.LOW_TICKET_PRODUCT) {
+        if (!requiresSalesPageBeforePurchase(experiment)) {
             return;
+        }
+        if (!hasCompleteCommercialContract(experiment)) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Experimento com intenção de compra exige contrato comercial completo da etapa Oferta antes da campanha.");
         }
         boolean pipelineCompleted = geraSalesPageStageExecutionRepository
                 .findTopByExperimentIdAndStageCodeOrderByExecutionRequestedAtDesc(
@@ -912,23 +917,41 @@ public class ExperimentService {
         if (!pipelineCompleted) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
-                    "Experimento low-ticket exige página de venda criada pelo GeraSalesPage v1 antes da campanha.");
+                    "Experimento com intenção de compra exige página de venda criada pelo GeraSalesPage v1 antes da campanha.");
         }
         GeraSalesPagePublicationAudit publication = geraSalesPagePublicationAuditRepository
                 .findTopByExperimentIdOrderByPublishedAtDesc(experiment.getId())
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.CONFLICT,
-                        "Experimento low-ticket exige página de venda publicada e auditada pelo GeraSalesPage v1 antes da campanha."));
+                        "Experimento com intenção de compra exige página de venda publicada e auditada pelo GeraSalesPage v1 antes da campanha."));
         if (!hasAdDestinationPointingToSalesPage(experiment, publication)) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
-                    "Experimento low-ticket exige que o link do anúncio aponte para a página de venda publicada, não para o checkout direto.");
+                    "Experimento com intenção de compra exige que o link do anúncio aponte para a página de venda publicada, não para o checkout direto.");
         }
         if (!hasRequiredSalesPageAnalyticsCollectors(publication)) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
-                    "Experimento low-ticket exige página de venda com coletores page_view, page_load_metric, section_view_time e checkout_click antes da campanha.");
+                    "Experimento com intenção de compra exige página de venda com coletores page_view, page_load_metric, section_view_time e checkout_click antes da campanha.");
         }
+    }
+
+    /** Informa se o experimento precisa de página de venda antes do checkout. */
+    private boolean requiresSalesPageBeforePurchase(Experiment experiment) {
+        return experiment != null
+                && (experiment.getExperimentType() == ExperimentType.LOW_TICKET_PRODUCT
+                || experiment.getCampaignObjective() == ExperimentCampaignObjective.SALES);
+    }
+
+    /** Confirma se a etapa Oferta preencheu o contrato comercial mínimo de venda. */
+    private boolean hasCompleteCommercialContract(Experiment experiment) {
+        return experiment != null
+                && StringUtils.hasText(experiment.getSinglePain())
+                && StringUtils.hasText(experiment.getFreeReward())
+                && StringUtils.hasText(experiment.getFunnelPromise())
+                && StringUtils.hasText(experiment.getPrimaryCta())
+                && experiment.getUnitPrice() != null
+                && experiment.getUnitPrice().signum() > 0;
     }
 
     /** Confirma que o destino do anúncio é a página auditada e não o checkout. */

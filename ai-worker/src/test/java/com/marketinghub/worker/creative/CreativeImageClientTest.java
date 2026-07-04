@@ -250,6 +250,47 @@ class CreativeImageClientTest {
         assertThat(payloads.get(2)).doesNotContainKey("service_tier");
     }
 
+    /**
+     * Deve tentar novamente quando a conexão com a OpenAI fecha antes da resposta.
+     */
+    @Test
+    void retriesPrematureClosedConnectionBeforeFailingCreativeGeneration() {
+        String imagePayload;
+        try {
+            imagePayload = Base64.getEncoder().encodeToString(createSolidPng(64, 64));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        String successBody = "{\"output\":[{\"type\":\"image_generation_call\",\"result\":\"" + imagePayload + "\"}]}";
+        AtomicInteger calls = new AtomicInteger();
+        ExchangeFunction exchange = request -> {
+            int attempt = calls.incrementAndGet();
+            if (attempt == 1) {
+                return Mono.error(new RuntimeException("Connection prematurely closed BEFORE response"));
+            }
+            return Mono.just(ClientResponse.create(HttpStatus.OK)
+                    .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                    .body(successBody)
+                    .build());
+        };
+        CreativeImageClient retryClient = new CreativeImageClient(
+                WebClient.builder().exchangeFunction(exchange),
+                backendAssetClient,
+                optimizer,
+                "key",
+                "http://openai",
+                "gpt-image-2",
+                "gpt-5.5",
+                "flex",
+                900);
+        when(backendAssetClient.uploadImage(any(), any(), any(), any(), any())).thenReturn("/uploads/retry.jpg");
+
+        String result = retryClient.generateImage("prompt", null, "creative-experiment-55");
+
+        assertThat(result).isEqualTo("/uploads/retry.jpg");
+        assertThat(calls).hasValue(2);
+    }
+
 
     /**
      * Garante que ausência de credencial OpenAI falhe em vez de retornar URL nula.

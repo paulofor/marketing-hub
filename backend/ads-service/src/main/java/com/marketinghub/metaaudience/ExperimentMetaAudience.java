@@ -56,7 +56,7 @@ public class ExperimentMetaAudience {
     private String offer;
 
     @Lob
-    @Column(name = "decision_snapshot_json")
+    @Column(name = "decision_snapshot_json", columnDefinition = "MEDIUMTEXT")
     private String decisionSnapshotJson;
 
     @Lob

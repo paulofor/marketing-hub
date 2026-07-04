@@ -4,6 +4,7 @@ package com.marketinghub.facebookads;
  * Motivos que disparam uma solicitação automática de pausa para uma campanha Facebook.
  */
 public enum FacebookCampaignStopReason {
+    ADMIN_EXPERIMENT_PAUSED,
     FIRST_FORM_SUBMISSION_STANDBY,
     FORM_ZERO_CONVERSION_RULE_OF_THREE,
     LOW_TICKET_ZERO_PURCHASE_STATISTICAL_FINANCIAL,

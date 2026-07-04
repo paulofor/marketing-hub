@@ -1,0 +1,40 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-04-01-experiment-meta-audience
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: experiment_meta_audience
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE experiment_meta_audience (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                experiment_id BIGINT NOT NULL,
+                meta_audience_id BIGINT NOT NULL,
+                meta_audience_segment_id BIGINT NOT NULL,
+                market_niche_id BIGINT NOT NULL,
+                activation_status VARCHAR(32) NOT NULL,
+                channel VARCHAR(64) NULL,
+                pain_angle TEXT NULL,
+                promise TEXT NULL,
+                offer TEXT NULL,
+                decision_snapshot_json TEXT NULL,
+                analysis_summary TEXT NULL,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL,
+                CONSTRAINT pk_experiment_meta_audience PRIMARY KEY (id),
+                CONSTRAINT fk_experiment_meta_audience_experiment FOREIGN KEY (experiment_id) REFERENCES experiment(id),
+                CONSTRAINT fk_experiment_meta_audience_audience FOREIGN KEY (meta_audience_id) REFERENCES meta_audience(id),
+                CONSTRAINT fk_experiment_meta_audience_segment FOREIGN KEY (meta_audience_segment_id) REFERENCES meta_audience_segment(id),
+                CONSTRAINT fk_experiment_meta_audience_niche FOREIGN KEY (market_niche_id) REFERENCES market_niche(id),
+                CONSTRAINT uk_experiment_meta_audience UNIQUE (experiment_id, meta_audience_id, meta_audience_segment_id)
+              );
+              CREATE INDEX idx_experiment_meta_audience_experiment ON experiment_meta_audience (experiment_id, updated_at);
+              CREATE INDEX idx_experiment_meta_audience_niche ON experiment_meta_audience (market_niche_id, updated_at);

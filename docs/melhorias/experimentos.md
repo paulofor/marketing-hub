@@ -22,6 +22,17 @@ Leitura prática:
 - CTA frio direto para compra tende a desperdiçar tráfego quando a promessa exige demonstração visual ou personalização.
 - Tracking incompleto reduz a capacidade de diferenciar problema de criativo, página, formulário ou checkout.
 
+### Trava sistêmica contra compra direta com tráfego frio
+
+Decisão de melhoria aplicada em 2026-07-04: todo experimento com intenção de compra deve passar por página de venda auditada antes de checkout. A regra vale para `LOW_TICKET_PRODUCT` e para qualquer campanha futura com `campaignObjective = SALES`.
+
+Impacto esperado:
+
+- impedir liberação manual de experimento que mande anúncio direto para checkout;
+- impedir que a fila do Facebook Ads Worker receba experimentos irregulares;
+- forçar prova de valor e coleta de métricas antes da intenção de compra;
+- reduzir desperdício de mídia em tráfego frio sem contexto suficiente para compra.
+
 ## Experimento 55
 
 ### Problema identificado

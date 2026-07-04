@@ -34,6 +34,7 @@ class CreativeGenerationServiceTest {
         CreateCreativeRequest generated = new CreateCreativeRequest();
         generated.setHeadline("Headline");
         generated.setPrimaryText("Texto principal");
+        generated.setCta("Gerar minha amostra personalizada");
         generated.setStatus(CreativeStatus.DRAFT);
 
         when(backendClient.listPending(5)).thenReturn(List.of(experiment));
@@ -54,6 +55,7 @@ class CreativeGenerationServiceTest {
         ArgumentCaptor<CreateCreativeRequest> captor = ArgumentCaptor.forClass(CreateCreativeRequest.class);
         verify(backendClient).createCreative(org.mockito.ArgumentMatchers.eq(49L), captor.capture());
         assertThat(captor.getValue().getImageUrl()).isEqualTo("/assets/creative.jpg");
+        assertThat(captor.getValue().getCta()).isEqualTo("LEARN_MORE");
         verify(backendClient).markCompleted(49L);
     }
 

@@ -153,6 +153,24 @@ class CreativeServiceTest {
         assertThat(afterApproval.isCreativeApproved()).isTrue();
     }
 
+    /** Garante que CTAs livres longos não quebram o limite físico da coluna. */
+    @Test
+    void normalizesLongCallToActionBeforePersisting() {
+        MarketNiche niche = fixtures.createAndSaveNiche();
+        Experiment exp = fixtures.createAndSaveExperiment(niche);
+
+        CreateCreativeRequest createRequest = new CreateCreativeRequest();
+        createRequest.setHeadline("Headline");
+        createRequest.setPrimaryText("Primary");
+        createRequest.setImageUrl("/img.png");
+        createRequest.setCta("Gerar minha amostra personalizada");
+        createRequest.setStatus(CreativeStatus.DRAFT);
+
+        Creative creative = service.create(exp.getId(), createRequest);
+
+        assertThat(creative.getCta()).isEqualTo("LEARN_MORE");
+    }
+
     @Test
     void deletingLastApprovedCreativeResetsFlag() {
         MarketNiche niche = fixtures.createAndSaveNiche();

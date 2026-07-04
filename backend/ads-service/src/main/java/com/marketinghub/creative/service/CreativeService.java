@@ -48,6 +48,8 @@ import java.util.Map;
 @RequiredArgsConstructor
 @Slf4j
 public class CreativeService {
+    private static final int META_CALL_TO_ACTION_MAX_LENGTH = 32;
+    private static final String DEFAULT_META_CALL_TO_ACTION = "LEARN_MORE";
 
     private final CreativeRepository repository;
     private final ExperimentRepository experimentRepository;
@@ -74,7 +76,7 @@ public class CreativeService {
                     .primaryText(request.getPrimaryText())
                     .imageUrl(request.getImageUrl())
                     .description(request.getDescription())
-                    .cta(request.getCta())
+                    .cta(normalizeMetaCallToAction(request.getCta()))
                     .destinationUrl(request.getDestinationUrl())
                     .leadGenFormId(request.getLeadGenFormId())
                     .instagramUserId(request.getInstagramUserId())
@@ -111,7 +113,7 @@ public class CreativeService {
         creative.setPrimaryText(request.getPrimaryText());
         creative.setImageUrl(request.getImageUrl());
         creative.setDescription(request.getDescription());
-        creative.setCta(request.getCta());
+        creative.setCta(normalizeMetaCallToAction(request.getCta()));
         creative.setDestinationUrl(request.getDestinationUrl());
         creative.setLeadGenFormId(request.getLeadGenFormId());
         creative.setInstagramUserId(request.getInstagramUserId());
@@ -119,6 +121,20 @@ public class CreativeService {
         Creative saved = repository.save(creative);
         refreshExperimentApproval(saved.getExperiment());
         return saved;
+    }
+
+    /**
+     * Mantem o CTA compatível com a coluna e com o tipo canônico aceito pela Meta.
+     */
+    private String normalizeMetaCallToAction(String value) {
+        if (!StringUtils.hasText(value)) {
+            return value;
+        }
+        String normalized = value.trim();
+        if (normalized.length() <= META_CALL_TO_ACTION_MAX_LENGTH) {
+            return normalized;
+        }
+        return DEFAULT_META_CALL_TO_ACTION;
     }
 
     /**

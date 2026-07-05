@@ -241,7 +241,7 @@ class MoisSalesLibraryServiceTest {
         verify(jdbcTemplate).query(sqlCaptor.capture(), isA(RowMapper.class), eq("workspace-001"), eq(20), eq(0));
         org.assertj.core.api.Assertions.assertThat(sqlCaptor.getValue())
                 .contains("LEFT JOIN mois_sales_page_market_warmup_summary mws")
-                .contains("cr_latest.workspace_id = p.workspace_id AND cr_latest.reference_url = p.url_canonical")
+                .contains("cr_latest.reference_url = CONVERT(p.url_canonical USING utf8mb4) COLLATE utf8mb4_unicode_ci")
                 .contains("COALESCE(cr_direct.hotmart_temperature, cr_url.hotmart_temperature) AS hotmart_temperature")
                 .contains("ORDER BY p.last_analyzed_at DESC, p.updated_at DESC, p.id DESC LIMIT ? OFFSET ?");
     }
@@ -548,6 +548,25 @@ class MoisSalesLibraryServiceTest {
         org.assertj.core.api.Assertions.assertThat(response.pipelineCode()).isEqualTo("warmupecosystem.v1");
         org.assertj.core.api.Assertions.assertThat(response.items().get(0).pageId()).isEqualTo(401L);
         org.assertj.core.api.Assertions.assertThat(response.items().get(0).hotmartTemperature()).isEqualByComparingTo("127.07");
+    }
+
+    /**
+     * Garante que a consulta de candidatos evita conflito de collation no MySQL 5.7.
+     */
+    @Test
+    void shouldNormalizeCollationWhenListingHotProductDossierCandidates() {
+        given(jdbcTemplate.query(contains("pipeline_dossieproduto pd"), isA(RowMapper.class), eq("workspace-001"), eq(BigDecimal.valueOf(80)), eq("warmupecosystem.v1"), eq(10)))
+                .willReturn(List.of());
+
+        service.listHotProductDossierCandidates("workspace-001", BigDecimal.valueOf(80), 10);
+
+        ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+        verify(jdbcTemplate).query(sqlCaptor.capture(), isA(RowMapper.class), eq("workspace-001"), eq(BigDecimal.valueOf(80)), eq("warmupecosystem.v1"), eq(10));
+        org.assertj.core.api.Assertions.assertThat(sqlCaptor.getValue())
+                .contains("CONVERT(COALESCE(sales_page_url, product_url) USING utf8mb4) COLLATE utf8mb4_unicode_ci")
+                .contains("cr_latest.reference_url = CONVERT(p.url_canonical USING utf8mb4) COLLATE utf8mb4_unicode_ci")
+                .contains("pd.id_externo COLLATE utf8mb4_unicode_ci = CONVERT(CAST(p.id AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci")
+                .contains("pd.pipeline_code COLLATE utf8mb4_unicode_ci = CONVERT(? USING utf8mb4) COLLATE utf8mb4_unicode_ci");
     }
 
     /**

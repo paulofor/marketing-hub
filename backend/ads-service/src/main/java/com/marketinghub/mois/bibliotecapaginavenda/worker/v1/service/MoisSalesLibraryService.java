@@ -658,11 +658,14 @@ public class MoisSalesLibraryService {
                 LEFT JOIN mois_sales_page_market_warmup_summary mws ON mws.job_id = mwj.id
                 LEFT JOIN mois_collected_reference cr_direct ON cr_direct.id = p.collected_reference_id
                 LEFT JOIN (
-                    SELECT workspace_id, COALESCE(sales_page_url, product_url) AS reference_url, MAX(id) AS latest_reference_id
+                    SELECT workspace_id,
+                           CONVERT(COALESCE(sales_page_url, product_url) USING utf8mb4) COLLATE utf8mb4_unicode_ci AS reference_url,
+                           MAX(id) AS latest_reference_id
                     FROM mois_collected_reference
                     WHERE source = 'HOTMART' AND COALESCE(sales_page_url, product_url) IS NOT NULL
-                    GROUP BY workspace_id, COALESCE(sales_page_url, product_url)
-                ) cr_latest ON cr_latest.workspace_id = p.workspace_id AND cr_latest.reference_url = p.url_canonical
+                    GROUP BY workspace_id, CONVERT(COALESCE(sales_page_url, product_url) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                ) cr_latest ON cr_latest.workspace_id = p.workspace_id
+                   AND cr_latest.reference_url = CONVERT(p.url_canonical USING utf8mb4) COLLATE utf8mb4_unicode_ci
                 LEFT JOIN mois_collected_reference cr_url ON cr_url.id = cr_latest.latest_reference_id
                 WHERE p.workspace_id = ?
                 """ + warmupCondition;
@@ -865,11 +868,14 @@ public class MoisSalesLibraryService {
                 LEFT JOIN mois_sales_page_market_warmup_summary mws ON mws.job_id = mwj.id
                 LEFT JOIN mois_collected_reference cr_direct ON cr_direct.id = p.collected_reference_id
                 LEFT JOIN (
-                    SELECT workspace_id, COALESCE(sales_page_url, product_url) AS reference_url, MAX(id) AS latest_reference_id
+                    SELECT workspace_id,
+                           CONVERT(COALESCE(sales_page_url, product_url) USING utf8mb4) COLLATE utf8mb4_unicode_ci AS reference_url,
+                           MAX(id) AS latest_reference_id
                     FROM mois_collected_reference
                     WHERE source = 'HOTMART' AND COALESCE(sales_page_url, product_url) IS NOT NULL
-                    GROUP BY workspace_id, COALESCE(sales_page_url, product_url)
-                ) cr_latest ON cr_latest.workspace_id = p.workspace_id AND cr_latest.reference_url = p.url_canonical
+                    GROUP BY workspace_id, CONVERT(COALESCE(sales_page_url, product_url) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                ) cr_latest ON cr_latest.workspace_id = p.workspace_id
+                   AND cr_latest.reference_url = CONVERT(p.url_canonical USING utf8mb4) COLLATE utf8mb4_unicode_ci
                 LEFT JOIN mois_collected_reference cr_url ON cr_url.id = cr_latest.latest_reference_id
                 WHERE p.id = ? LIMIT 1
                 """, this::mapSalesPageResponse, pageId);
@@ -1909,11 +1915,14 @@ public class MoisSalesLibraryService {
                 FROM mois_sales_page p
                 LEFT JOIN mois_collected_reference cr_direct ON cr_direct.id = p.collected_reference_id
                 LEFT JOIN (
-                    SELECT workspace_id, COALESCE(sales_page_url, product_url) AS reference_url, MAX(id) AS latest_reference_id
+                    SELECT workspace_id,
+                           CONVERT(COALESCE(sales_page_url, product_url) USING utf8mb4) COLLATE utf8mb4_unicode_ci AS reference_url,
+                           MAX(id) AS latest_reference_id
                     FROM mois_collected_reference
                     WHERE source = 'HOTMART' AND COALESCE(sales_page_url, product_url) IS NOT NULL
-                    GROUP BY workspace_id, COALESCE(sales_page_url, product_url)
-                ) cr_latest ON cr_latest.workspace_id = p.workspace_id AND cr_latest.reference_url = p.url_canonical
+                    GROUP BY workspace_id, CONVERT(COALESCE(sales_page_url, product_url) USING utf8mb4) COLLATE utf8mb4_unicode_ci
+                ) cr_latest ON cr_latest.workspace_id = p.workspace_id
+                   AND cr_latest.reference_url = CONVERT(p.url_canonical USING utf8mb4) COLLATE utf8mb4_unicode_ci
                 LEFT JOIN mois_collected_reference cr_url ON cr_url.id = cr_latest.latest_reference_id
                 WHERE p.workspace_id = ?
                   AND p.source = 'HOTMART'
@@ -1926,9 +1935,9 @@ public class MoisSalesLibraryService {
                   AND NOT EXISTS (
                       SELECT 1
                       FROM pipeline_dossieproduto pd
-                      WHERE pd.id_externo = CAST(p.id AS CHAR)
+                      WHERE pd.id_externo COLLATE utf8mb4_unicode_ci = CONVERT(CAST(p.id AS CHAR) USING utf8mb4) COLLATE utf8mb4_unicode_ci
                         AND pd.versao_pipeline = 'v1'
-                        AND pd.pipeline_code = ?
+                        AND pd.pipeline_code COLLATE utf8mb4_unicode_ci = CONVERT(? USING utf8mb4) COLLATE utf8mb4_unicode_ci
                         AND pd.status IN ('INICIADO', 'AGUARDANDO_RETORNO_MODULO', 'CONCLUIDO')
                   )
                 ORDER BY COALESCE(cr_direct.hotmart_temperature, cr_url.hotmart_temperature) DESC,

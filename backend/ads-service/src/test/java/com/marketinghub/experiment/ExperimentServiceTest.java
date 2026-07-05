@@ -128,6 +128,16 @@ class ExperimentServiceTest {
                 """;
     }
 
+    /** Preenche o contrato comercial mínimo gerado pela etapa Oferta. */
+    private void completeCommercialContract(Experiment experiment) {
+        experiment.setSinglePain("Cliente some depois da manutenção");
+        experiment.setFreeReward("Preview visual da agenda preenchida");
+        experiment.setFunnelPromise("Enxergar riscos e encaixes em 7 dias");
+        experiment.setPrimaryCta("Comprar o Mapa 7D");
+        experiment.setUnitPrice(new BigDecimal("29.90"));
+        experimentRepository.save(experiment);
+    }
+
     @Test
     void requestPipelineCreativesQueuesPipelineAdsForWorker() {
         MarketNiche niche = nicheRepository.save(MarketNiche.builder().name("Teste").build());
@@ -913,10 +923,11 @@ class ExperimentServiceTest {
         req.setLeadPortalFlowId(createLeadPortalFlow(niche));
         req.setInstagramAccountId(createInstagramAccount().getId());
         Experiment experiment = service.create(req);
+        completeCommercialContract(experiment);
 
         assertThatThrownBy(() -> service.releaseForFacebook(experiment.getId()))
                 .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
-                .hasMessageContaining("low-ticket exige página de venda criada pelo GeraSalesPage");
+                .hasMessageContaining("página de venda criada pelo GeraSalesPage v1");
     }
 
     /** Garante que venda low-ticket só entra na fila após a etapa final do GeraSalesPage. */
@@ -954,6 +965,7 @@ class ExperimentServiceTest {
         req.setLeadPortalFlowId(createLeadPortalFlow(niche));
         req.setInstagramAccountId(createInstagramAccount().getId());
         Experiment experiment = service.create(req);
+        completeCommercialContract(experiment);
         String salesPageUrl = "https://pagamentopalf.site/sales-page-exp-low-release-ok.html";
         String checkoutUrl = "https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=low-ok";
         experiment.setFollowUpActionUrl(salesPageUrl);
@@ -1016,6 +1028,7 @@ class ExperimentServiceTest {
         req.setLeadPortalFlowId(createLeadPortalFlow(niche));
         req.setInstagramAccountId(createInstagramAccount().getId());
         Experiment experiment = service.create(req);
+        completeCommercialContract(experiment);
         GeraSalesPageStageExecution execution = geraSalesPageStageExecutionRepository.save(GeraSalesPageStageExecution.builder()
                 .idJob(java.util.UUID.randomUUID().toString())
                 .experimentId(experiment.getId())

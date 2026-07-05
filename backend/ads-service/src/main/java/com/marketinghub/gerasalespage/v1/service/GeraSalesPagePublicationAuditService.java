@@ -23,6 +23,7 @@ import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -55,372 +56,4 @@ public class GeraSalesPagePublicationAuditService {
             ExperimentRepository experimentRepository,
             GeraSalesPageStageExecutionRepository executionRepository,
             GeraSalesPagePublicationAuditRepository publicationRepository,
-            GeraSalesPagePublicationStageAuditRepository publicationStageRepository,
-            LeadPortalFlowPublisher leadPortalFlowPublisher,
-            LeadPortalPublicUrlResolver leadPortalPublicUrlResolver,
-            ObjectMapper objectMapper) {
-        this.experimentRepository = experimentRepository;
-        this.executionRepository = executionRepository;
-        this.publicationRepository = publicationRepository;
-        this.publicationStageRepository = publicationStageRepository;
-        this.leadPortalFlowPublisher = leadPortalFlowPublisher;
-        this.leadPortalPublicUrlResolver = leadPortalPublicUrlResolver;
-        this.objectMapper = objectMapper;
-    }
-
-    /** Cria snapshot da publicacao final quando a etapa de pacote termina com sucesso. */
-    @Transactional
-    public void snapshotPublication(GeraSalesPageStageExecution publicationExecution) {
-        if (!isCompletedPublication(publicationExecution)
-                || publicationRepository.existsByPublicationJobId(publicationExecution.getIdJob())) {
-            return;
-        }
-        Experiment experiment = experimentRepository.findById(publicationExecution.getExperimentId())
-                .orElseThrow(() -> new EntityNotFoundException(
-                        "Experiment not found: " + publicationExecution.getExperimentId()));
-        saveAudit(experiment, publicationExecution);
-    }
-
-    /** Lista publicacoes historicas e faz backfill quando houver execucao final antiga sem snapshot. */
-    @Transactional
-    public List<GeraSalesPagePublicationResponse> listPublications(Long experimentId) {
-        Experiment experiment = experimentRepository.findById(experimentId)
-                .orElseThrow(() -> new EntityNotFoundException("Experiment not found: " + experimentId));
-        backfillMissingSnapshots(experiment);
-        return publicationRepository.findByExperimentIdOrderByPublishedAtDesc(experimentId).stream()
-                .map(this::toResponse)
-                .toList();
-    }
-
-    /** Retorna o checkout auditado mais recente para rebuild sem confundir com a URL pÃºblica da pÃ¡gina. */
-    @Transactional(readOnly = true)
-    public String latestCheckoutUrl(Long experimentId) {
-        if (experimentId == null) {
-            return null;
-        }
-        return publicationRepository.findTopByExperimentIdOrderByPublishedAtDesc(experimentId)
-                .map(GeraSalesPagePublicationAudit::getCheckoutUrl)
-                .filter(StringUtils::hasText)
-                .orElse(null);
-    }
-
-    /** Cria snapshots para publicacoes antigas que ainda possuem execucoes auditaveis no banco. */
-    private void backfillMissingSnapshots(Experiment experiment) {
-        executionRepository.findByExperimentIdAndStageCodeAndStatusOrderByExecutionRequestedAtAsc(
-                        experiment.getId(), GeraSalesPageStageCode.PUBLICATION_PACKAGE.code(), STATUS_COMPLETED)
-                .stream()
-                .filter(execution -> !publicationRepository.existsByPublicationJobId(execution.getIdJob()))
-                .forEach(execution -> saveAudit(experiment, execution));
-    }
-
-    /** Salva uma publicaÃ§Ã£o e suas etapas auditadas em tabelas normalizadas. */
-    private void saveAudit(
-            Experiment experiment,
-            GeraSalesPageStageExecution publicationExecution) {
-        List<GeraSalesPageStageExecution> stageExecutions =
-                executionRepository.findByExperimentIdOrderByExecutionRequestedAtAsc(experiment.getId()).stream()
-                        .filter(execution -> GeraSalesPageStageCode.contains(execution.getStageCode()))
-                        .filter(execution -> STATUS_COMPLETED.equals(execution.getStatus()))
-                        .filter(execution -> !execution.getExecutionRequestedAt()
-                                .isAfter(publicationExecution.getExecutionRequestedAt()))
-                        .toList();
-        String packageJson = publicationExecution.getModelResponse();
-        Map<String, Object> packagePayload = parseObject(packageJson);
-        String html = stringValue(packagePayload.get("html"));
-        String checkoutUrl = stringValue(packagePayload.get("checkoutUrl"));
-        String salesPageUrl = firstText(
-                packagePayload.get("salesPageUrl"),
-                packagePayload.get("publicUrl"),
-                packagePayload.get("publishedUrl"),
-                packagePayload.get("pageUrl"));
-        PersonalizedSamplePublication personalizedSamplePublication =
-                publishPersonalizedSampleSalesPageIfNeeded(experiment, html);
-        boolean personalizedSampleSalesPage = personalizedSamplePublication != null;
-        if (personalizedSamplePublication != null) {
-            html = personalizedSamplePublication.html();
-            salesPageUrl = personalizedSamplePublication.salesPageUrl();
-            checkoutUrl = null;
-        }
-        Instant publishedAt = publicationExecution.getCompletedAt() != null
-                ? publicationExecution.getCompletedAt()
-                : Instant.now();
-        GeraSalesPagePublicationAudit audit = publicationRepository.save(GeraSalesPagePublicationAudit.builder()
-                .experimentId(experiment.getId())
-                .publicationJobId(publicationExecution.getIdJob())
-                .publishedAt(publishedAt)
-                .salesPageUrl(StringUtils.hasText(salesPageUrl) ? salesPageUrl : experiment.getFollowUpActionUrl())
-                .checkoutUrl(resolveAuditCheckoutUrl(checkoutUrl, experiment, personalizedSampleSalesPage))
-                .html(html)
-                .publicationPackageJson(packageJson)
-                .createdAt(Instant.now())
-                .build());
-        publicationStageRepository.saveAll(toStageAudits(audit.getId(), stageExecutions));
-    }
-
-    /** Define o checkout auditado sem confundir funil Produto IA com checkout direto. */
-    private String resolveAuditCheckoutUrl(
-            String checkoutUrl,
-            Experiment experiment,
-            boolean personalizedSampleSalesPage) {
-        if (personalizedSampleSalesPage) {
-            return StringUtils.hasText(checkoutUrl) ? checkoutUrl : null;
-        }
-        return StringUtils.hasText(checkoutUrl) ? checkoutUrl : experiment.getFollowUpActionUrl();
-    }
-
-    /** Publica a pagina aprovada dentro do funil canonico quando o produto exige personalizacao. */
-    private PersonalizedSamplePublication publishPersonalizedSampleSalesPageIfNeeded(
-            Experiment experiment,
-            String html) {
-        if (experiment.getProductAiSubtype() != ProductAiSubtype.AI_PERSONALIZED_SAMPLE) {
-            return null;
-        }
-        LeadPortalFlow flow = experiment.getLeadPortalFlow();
-        if (flow == null || flow.getId() == null) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "Produto IA personalizado exige funil Lead Portal aprovado antes da publicacao da pagina.");
-        }
-        String htmlWithManagedForm = ensureManagedFormAnchor(html);
-        htmlWithManagedForm = removeSelfReferentialLeadPortalIframes(htmlWithManagedForm, flow);
-        flow.setCustomFormHtml(buildPersonalizedSampleTemplatePayload(flow, htmlWithManagedForm));
-        flow.setSchemaFirst(true);
-        flow.setApproved(true);
-        if (flow.getApprovedAt() == null) {
-            flow.setApprovedAt(Instant.now());
-        }
-        flow.setModel("AI_PERSONALIZED_SAMPLE_GERA_SALES_PAGE");
-        if (!StringUtils.hasText(flow.getPrompt())) {
-            flow.setPrompt("Pipeline: gera-sales-page-v1/publication-package -> product-ai personalized sample funnel");
-        }
-        try {
-            leadPortalFlowPublisher.publish(flow);
-        } catch (LeadPortalPublicationException ex) {
-            log.error("Falha ao publicar pagina GeraSalesPage no funil Produto IA: experimentId={}, flowId={}, slug={}",
-                    experiment.getId(), flow.getId(), flow.getSlug(), ex);
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_GATEWAY,
-                    "Falha ao publicar pagina de venda no funil Produto IA.",
-                    ex);
-        }
-        String publicUrl = leadPortalPublicUrlResolver.resolve(flow);
-        experiment.setFollowUpActionUrl(publicUrl);
-        return new PersonalizedSamplePublication(publicUrl, htmlWithManagedForm);
-    }
-
-    /** Remove iframe que aponta para o proprio funil e causaria recursao visual no Lead Portal. */
-    private String removeSelfReferentialLeadPortalIframes(String html, LeadPortalFlow flow) {
-        if (!StringUtils.hasText(html)) {
-            return html;
-        }
-        Matcher matcher = IFRAME_BLOCK_PATTERN.matcher(html);
-        StringBuffer cleaned = new StringBuffer();
-        while (matcher.find()) {
-            String iframe = matcher.group();
-            if (isSelfReferentialLeadPortalIframe(iframe, flow)) {
-                matcher.appendReplacement(cleaned, "");
-            } else {
-                matcher.appendReplacement(cleaned, Matcher.quoteReplacement(iframe));
-            }
-        }
-        matcher.appendTail(cleaned);
-        return cleaned.toString();
-    }
-
-    /** Identifica iframes que tentam embutir o mesmo fluxo publicado pelo Lead Portal. */
-    private boolean isSelfReferentialLeadPortalIframe(String iframe, LeadPortalFlow flow) {
-        String normalized = iframe.toLowerCase(java.util.Locale.ROOT);
-        String slug = flow != null && StringUtils.hasText(flow.getSlug())
-                ? flow.getSlug().toLowerCase(java.util.Locale.ROOT)
-                : "";
-        return (StringUtils.hasText(slug) && normalized.contains(slug))
-                || normalized.contains("/flows/")
-                || normalized.contains("lead-portal");
-    }
-
-    /** Garante que o runtime publico tenha um form alvo para renderizar as perguntas do Lead Portal. */
-    private String ensureManagedFormAnchor(String html) {
-        String normalized = StringUtils.hasText(html) ? html : "";
-        if (normalized.toLowerCase().contains("<form")) {
-            return normalized;
-        }
-        String formAnchor = """
-                <section id="personalized-sample-form-section">
-                  <form id="lead-portal-personalized-sample-form"></form>
-                </section>
-                """;
-        if (normalized.toLowerCase().contains("</body>")) {
-            return normalized.replaceFirst("(?i)</body>", formAnchor + "\n</body>");
-        }
-        return normalized + "\n" + formAnchor;
-    }
-
-    /** Serializa HTML e especificacao de formulario no contrato reconhecido pelo Lead Portal. */
-    private String buildPersonalizedSampleTemplatePayload(LeadPortalFlow flow, String html) {
-        Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("htmlDocument", html);
-        payload.put("formSpec", buildFormSpec(flow));
-        try {
-            return objectMapper.writeValueAsString(payload);
-        } catch (JsonProcessingException ex) {
-            log.error("Falha ao serializar template da pagina Produto IA: flowId={}, slug={}",
-                    flow.getId(), flow.getSlug(), ex);
-            throw new ResponseStatusException(
-                    HttpStatus.INTERNAL_SERVER_ERROR,
-                    "Falha ao preparar template da pagina Produto IA.",
-                    ex);
-        }
-    }
-
-    /** Converte as perguntas canonicas do fluxo em campos gerenciados pelo runtime publico. */
-    private Map<String, Object> buildFormSpec(LeadPortalFlow flow) {
-        Map<String, Object> formSpec = new LinkedHashMap<>();
-        formSpec.put("formId", "lead-portal-personalized-sample-form");
-        formSpec.put("title", "Receba sua amostra personalizada");
-        formSpec.put("submitLabel", "Gerar minha amostra personalizada");
-        formSpec.put("fields", flow.getQuestions().stream()
-                .map(this::toManagedFormField)
-                .toList());
-        formSpec.put("successState", Map.of(
-                "title", "Dados recebidos",
-                "message", "Vamos preparar sua amostra personalizada com base nas suas respostas."));
-        formSpec.put("consent", Map.of(
-                "enabled", true,
-                "required", true,
-                "label", "Autorizo o uso das minhas respostas para gerar minha amostra personalizada."));
-        return formSpec;
-    }
-
-    /** Converte uma pergunta do Lead Portal em campo aceito pelo template gerenciado. */
-    private Map<String, Object> toManagedFormField(LeadPortalFlowQuestion question) {
-        Map<String, Object> field = new LinkedHashMap<>();
-        field.put("name", question.getDataKey());
-        field.put("type", toManagedFieldType(question.getType()));
-        field.put("label", question.getTitle());
-        field.put("required", question.isRequired());
-        field.put("placeholder", question.getPlaceholder());
-        return field;
-    }
-
-    /** Mapeia tipos do Lead Portal para os tipos simples suportados pelo runtime customizado. */
-    private String toManagedFieldType(LeadPortalQuestionType type) {
-        if (type == LeadPortalQuestionType.EMAIL) {
-            return "email";
-        }
-        if (type == LeadPortalQuestionType.PHONE) {
-            return "tel";
-        }
-        return "text";
-    }
-
-    /** Retorna o primeiro texto preenchido entre os campos candidatos. */
-    private String firstText(Object... values) {
-        for (Object value : values) {
-            String text = stringValue(value);
-            if (StringUtils.hasText(text)) {
-                return text;
-            }
-        }
-        return null;
-    }
-
-    /** Converte execuÃ§Ãµes concluÃ­das em linhas auditÃ¡veis da publicaÃ§Ã£o. */
-    private List<GeraSalesPagePublicationStageAudit> toStageAudits(
-            Long publicationAuditId,
-            List<GeraSalesPageStageExecution> executions) {
-        return java.util.stream.IntStream.range(0, executions.size())
-                .mapToObj(index -> toStageAudit(publicationAuditId, executions.get(index), index + 1))
-                .toList();
-    }
-
-    /** Converte uma execuÃ§Ã£o de etapa em snapshot normalizado. */
-    private GeraSalesPagePublicationStageAudit toStageAudit(
-            Long publicationAuditId,
-            GeraSalesPageStageExecution execution,
-            int stageOrder) {
-        return GeraSalesPagePublicationStageAudit.builder()
-                .publicationAuditId(publicationAuditId)
-                .stageOrder(stageOrder)
-                .idJob(execution.getIdJob())
-                .stageCode(execution.getStageCode())
-                .status(execution.getStatus())
-                .completedAt(execution.getCompletedAt())
-                .promptTemplateKey(execution.getPromptTemplateKey())
-                .prompt(execution.getPrompt())
-                .promptMarkdownContent(execution.getPromptMarkdownContent())
-                .schemaJson(execution.getSchemaJson())
-                .openAiModel(execution.getOpenAiModel())
-                .openAiRequestBody(execution.getOpenAiRequestBody())
-                .modelResponse(execution.getModelResponse())
-                .rawResponse(execution.getRawResponse())
-                .inputTokens(execution.getInputTokens())
-                .outputTokens(execution.getOutputTokens())
-                .costUsd(execution.getCostUsd())
-                .build();
-    }
-
-    /** Converte entidade persistida em resposta usada pelo frontend. */
-    private GeraSalesPagePublicationResponse toResponse(GeraSalesPagePublicationAudit audit) {
-        return new GeraSalesPagePublicationResponse(
-                audit.getId(),
-                audit.getExperimentId(),
-                audit.getPublicationJobId(),
-                audit.getPublishedAt(),
-                audit.getSalesPageUrl(),
-                audit.getCheckoutUrl(),
-                audit.getHtml(),
-                audit.getPublicationPackageJson(),
-                publicationStageRepository.findByPublicationAuditIdOrderByStageOrderAsc(audit.getId()).stream()
-                        .map(this::toStageResponse)
-                        .toList());
-    }
-
-    /** Converte snapshot normalizado de etapa em contrato de leitura. */
-    private GeraSalesPagePublicationStageResponse toStageResponse(GeraSalesPagePublicationStageAudit stage) {
-        return new GeraSalesPagePublicationStageResponse(
-                stage.getIdJob(),
-                stage.getStageCode(),
-                stage.getStatus(),
-                stage.getCompletedAt(),
-                stage.getPromptTemplateKey(),
-                stage.getPrompt(),
-                stage.getPromptMarkdownContent(),
-                stage.getSchemaJson(),
-                stage.getOpenAiModel(),
-                stage.getOpenAiRequestBody(),
-                stage.getModelResponse(),
-                stage.getRawResponse(),
-                stage.getInputTokens(),
-                stage.getOutputTokens(),
-                stage.getCostUsd());
-    }
-
-    /** Indica se a execuÃ§Ã£o Ã© a etapa final concluÃ­da. */
-    private boolean isCompletedPublication(GeraSalesPageStageExecution execution) {
-        return execution != null
-                && GeraSalesPageStageCode.PUBLICATION_PACKAGE.code().equals(execution.getStageCode())
-                && STATUS_COMPLETED.equals(execution.getStatus());
-    }
-
-    /** Converte JSON textual em mapa quando possÃ­vel. */
-    private Map<String, Object> parseObject(String json) {
-        if (!StringUtils.hasText(json)) {
-            return Map.of();
-        }
-        try {
-            return objectMapper.readValue(json, new TypeReference<>() {});
-        } catch (Exception ex) {
-            log.debug("Pacote de publicacao do GeraSalesPage v1 nao estava em JSON.", ex);
-            return Map.of();
-        }
-    }
-
-    /** Extrai string de campo opcional do pacote final. */
-    private String stringValue(Object value) {
-        return value instanceof String text ? text : null;
-    }
-
-    /** Resultado interno da publicacao no funil Produto IA personalizado. */
-    private record PersonalizedSamplePublication(String salesPageUrl, String html) {
-    }
-}
+            GeraSalesPagePublicatiom¹MÑ…•Õ‘¥ÑI•Á½Í¥Ñ½ÉäÁÕ‰±¥…Ñ¥½¹MÑ…•I•Á½Í¥Ñ½Éä°(€€€€€€€€€€€1•…‘A½ÉÑ…±±½ÝAÕ‰±¥Í¡•È±•…‘A½ÉÑ…±±½ÝAÕ‰±¥Í¡•È°(€€€€€€€€€€€1•…‘A½ÉÑ…±AÕ‰±¥UÉ±I•Í½±Ù•È±•…‘A½ÉÑ…±AÕ‰±¥UÉ±I•Í½±Ù•È°(€€€€€€€€€€€=‰©•Ñ5…ÁÁ•È½‰©•Ñ5…ÁÁ•È¤ì(€€€€€€€Ñ¡¥Ì¹•áÁ•É¥µ•¹ÑI•Á½Í¥Ñ½Éä€ô•áÁ•É¥µ•¹ÑI•Á½Í¥Ñ½Éäì(€€€€€€€Ñ¡¥Ì¹•á•ÕÑ¥½¹I•Á½Í¥Ñ½Éä€ô•á•ÕÑ¥½¹I•Á½Í¥Ñ½Éäì(€€€€€€€Ñ¡¥Ì¹ÁÕ‰±¥…Ñ¥½¹I•Á½Í¥Ñ½Éä€ôÁÕ‰±¥…Ñ¥½¹I•Á½Í¥Ñ½Éäì(€€€€€€€Ñ¡¥Ì¹ÁÕ‰±¥…Ñ¥½¹MÑ…•I•Á½Í¥Ñ½Éä€ôÁÕ‰±¥…Ñ¥½¹MÑ…•I•Á½Í¥Ñ½Éäì(€€€€€€€Ñ¡¥Ì¹±•…‘A½ÉÑ…±±½ÝAÕ‰±¥Í¡•È€ô±•…‘A½ÉÑ…±±½ÝAÕ‰±¥Í¡•Èì(€€€€€€€Ñ¡¥Ì¹±•…‘A½ÉÑ…±AÕ‰±¥UÉ±I•Í½±Ù•È€ô±•…‘A½ÉÑ…±AÕ‰±¥UÉ±I•Í½±Ù•Èì(€€€€€€€Ñ¡¥Ì¹½‰©•Ñ5…ÁÁ•È€ô½‰©•Ñ5…ÁÁ•Èì(€€€ô((€€€€¼¨¨É¥„Í¹…ÁÍ¡½Ð‘„ÁÕ‰±¥……¼™¥¹…°ÅÕ…¹‘¼„•Ñ…Á„‘”Á…½Ñ”Ñ•Éµ¥¹„½´ÍÕ•ÍÍ¼¸€¨¼(€€€QÉ…¹Í…Ñ¥½¹…°(€€€ÁÕ‰±¥ŒÙ½¥Í¹…ÁÍ¡½ÑAÕ‰±¥…Ñ¥½¸¡•É…M…±•ÍA…•MÑ…•á•ÕÑ¥½¸ÁÕ‰±¥…Ñ¥½¹á•ÕÑ¥½¸¤ì(€€€€€€€¥˜€ …¥Í½µÁ±•Ñ•‘AÕ‰±¥…Ñ¥½¸¡ÁÕ‰±¥…Ñ¥½¹á•ÕÑ¥½¸¤(€€€€€€€€€€€€€€€ñðÁÕ‰±¥…Ñ¥½¹I•Á½Í¥Ñ½Éä¹•á¥ÍÑÍ	åAÕ‰±¥…Ñ¥½¹)½‰%¡ÁÕ‰±¥…Ñ¥½¹á•ÕÑ¥½¸¹•Ñ%‘)½ˆ ¤¤¤ì(€€€€€€€€€€€É•ÑÕÉ¸ì(€€€€€€€ô(€€€€€€€áÁ•É¥µ•¹Ð•áÁ•É¥µ•¹Ð€ô•áÁ•É¥µ•¹ÑI•Á½Í¥Ñ½Éä¹™¥¹‘	å%¡ÁÕ‰±¥…Ñ¥½¹á•ÕÑ¥½¸¹•ÑáÁ•É¥µ•¹Ñ% ¤¤(€€€€€€€€€€€€€€€€¹½É±Í•Q¡É½Ü  ¤€´ø¹•Ü¹Ñ¥Ñå9½Ñ½Õ¹‘á•ÁÑ¥½¸ (€€€€€€€€€€€€€€€€€€€€€€€€‰áÁ•É¥µ•¹Ð¹½Ð™½Õ¹è€ˆ€¬ÁÕ‰±¥…Ñ¥½¹á•ÕÑ¥½¸¹•ÑáÁ•É¥µ•¹Ñ% ¤¤¤ì(€€€€€€€Í…Ù•Õ‘¥Ð¡•áÁ•É¥µ•¹Ð°ÁÕ‰±¥…Ñ¥½¹á•ÕÑ¥½¸¤ì(€€€ô((€€€€¼¨¨1¥ÍÑ„ÁÕ‰±¥…½•Ì¡¥ÍÑ½É¥…Ì”™…è‰…­™¥±°ÅÕ…¹‘¼¡½ÕÙ•È•á•Õ…¼™¥¹…°…¹Ñ¥„Í•´Í¹…ÁÍ¡½Ð¸€¨¼(€€€QÉ…¹Í…Ñ¥½¹…°(€€€ÁÕ‰±¥Œ1¥ÍÐñ•É…M…±•ÍA…•AÕ‰±¥…Ñ¥½¹I•ÍÁ½¹Í”ø±¥ÍÑAÕ‰±¥…Ñ¥½¹Ì¡1½¹œ•áÁ•É¥µ•¹Ñ%¤ì(€€€€€€€áÁ•É¥µ•¹Ð•áÁ•É¥µ•¹Ð€ô•áÁ•É¥µ•¹ÑI•Á½Í¥Ñ½Éä¹™¥¹‘	å%¡•áÁ•É¥µ•¹Ñ%¤(€€€€€€€€€€€€€€€€¹½É±Í•Q¡É½Ü  ¤€´ø¹•Ü¹Ñ¥Ñå9½Ñ½Õ¹‘á•ÁÑ¥½¸ ‰áÁ•É¥µ•¹Ð¹½Ð™½Õ¹è€ˆ€¬•áÁ•É¥µ•¹Ñ%¤¤ì(€€€€€€€‰…­™¥±±5¥ÍÍ¥¹M¹…ÁÍ¡½ÑÌ¡•áÁ•É¥µ•¹Ð¤ì(€€€€€€€É•ÑÕÉ¸ÁÕ‰±¥…Ñ¥½¹I•Á½Í¥Ñ½Éä¹™¥¹‘	åáÁ•É¥µ•¹Ñ%‘=É‘•É	åAÕ‰±¥Í¡•‘Ñ•ÍŒ¡•áÁ•É¥µ•¹Ñ%¤¹ÍÑÉ•…´ ¤(€€€€€€€€€€€€€€€€¹µ…À¡Ñ¡¥ÌèéÑ½I•ÍÁ½¹Í”¤(€€€€€€€€€€€€€€€€¹Ñ½1¥ÍÐ ¤ì(€€€ô((€€€€¼¨¨I•Ñ½É¹„¼¡•­½ÕÐ…Õ‘¥Ñ…‘¼µ…¥ÌÉ••¹Ñ”Á…É„É•‰Õ¥±Í•´½¹™Õ¹‘¥È½´„UI0Ãé‰±¥„‘„Ã…¥¹„¸€¨¼(€€€QÉ…¹Í…Ñ¥½¹…°¡É•…‘=¹±ä€ôÑÉÕ”¤(€€€ÁÕ‰±¥ŒMÑÉ¥¹œ±…Ñ•ÍÑ¡•­½ÕÑUÉ°¡1½¹œ•áÁ•É¥µ•¹Ñ%¤ì(€€€€€€€¥˜€¡•áÁ•É¥µ•¹Ñ%€ôô¹Õ±°¤ì(€€€€€€€€€€€É•ÑÕÉ¸¹Õ±°ì(€€€€€€€ô(€€€€€€€É•ÑÕÉ¸ÁÕ‰±¥…Ñ¥½¹I•Á½Í¥Ñ½Éä¹™¥¹‘Q½Á	åáÁ•É¥µ•¹Ñ%‘=É‘•É	åAÕ‰±¥Í¡•‘Ñ•ÍŒ¡•áÁ•É¥µ•¹Ñ%¤(€€€€€€€€€€€€€€€€¹µ…À¡•É…M…±•ÍA…•AÕ‰±¥…Ñ¥½¹Õ‘¥Ðèé•Ñ¡•­½ÕÑUÉ°¤(€€€€€€€€€€€€€€€€¹™¥±Ñ•È¡MÑÉ¥¹UÑ¥±Ìèé¡…ÍQ•áÐ¤(€€€€€€€€€€€€€€€€¹½É±Í”¡¹Õ±°¤ì(€€€ô((€€€€¼¨¨É¥„Í¹…ÁÍ¡½ÑÌÁ…É„ÁÕ‰±¥…½•Ì…¹Ñ¥…ÌÅÕ”…¥¹‘„Á½ÍÍÕ•´•á•Õ½•Ì…Õ‘¥Ñ…Ù•¥Ì¹¼‰…¹¼¸€¨¼(€€€ÁÉ¥Ù…Ñ”Ù½¥‰…­™¥±±5¥ÍÍ¥¹M¹…ÁÍ¡½ÑÌ¡áÁ•É¥µ•¹Ð•áÁ•É¥µ•¹Ð¤ì(€€€€€€€•á•ÕÑ¥½¹I•Á½Í¥Ñ½Éä¹™¥¹‘	åáÁ•É¥µ•¹Ñ%‘¹‘MÑ…•½‘•¹‘MÑ…ÑÕÍ=É‘•É	åá•ÕÑ¥½¹I•ÅÕ•ÍÑ•‘ÑÍŒ (€€€€€€€€€€€€€€€€€€€€€€€•áÁ•É¥µ•¹Ð¹•Ñ% ¤°•É…M…±•ÍA…•MÑ…•½‘”¹AU	1%Q%=9}A-¹½‘” ¤°MQQUM}=5A1Q¤(€€€€€€€€€€€€€€€€¹ÍÑÉ•…´ ¤(€€€€€€€€€€€€€€€€¹™¥±Ñ•È¡•á•ÕÑ¥½¸€´ø€…ÁÕ‰±¥…Ñ¥½¹I•Á½Í¥Ñ½Éä¹•á¥ÍÑÍ	åAÕ‰±¥…Ñ¥½¹)½‰%¡•á•ÕÑ¥½¸¹•Ñ%‘)½ˆ ¤¤¤(€€€€€€€€€€€€€€€€¹™½É… ¡•á•ÕÑ¥½¸€´øÍ…Ù•Õ‘¥Ð¡•áÁ•É¥µ•¹Ð°•á•ÕÑ¥½¸¤¤ì(€€€ô((€€€€¼¨¨M…±Ù„Õµ„ÁÕ‰±¥‡Ÿ¼”ÍÕ…Ì•Ñ…Á…Ì…Õ‘¥Ñ…‘…Ì•´Ñ…‰•±…Ì¹½Éµ…±¥é…‘…Ì¸€¨¼(€€€ÁÉ¥Ù…Ñ”Ù½¥Í…Ù•Õ‘¥Ð (€€€€€€€€€€€áÁ•É¥µ•¹Ð•áÁ•É¥µ•¹Ð°(€€€€€€€€€€€•É…M…±•ÍA…•MÑ…•á•ÕÑ¥½¸ÁÕ‰±¥…Ñ¥½¹á•ÕÑ¥½¸¤ì(€€€€€€€1¥ÍÐñ•É…M…±•ÍA…•MÑ…•á•ÕÑ¥½¸øÍÑ…•á•ÕÑ¥½¹Ì€ô(€€€€€€€€€€€€€€€•á•ÕÑ¥½¹I•Á½Í¥Ñ½Éä¹™¥¹‘	åáÁ•É¥µ•¹Ñ%‘=É‘•É	åá•ÕÑ¥½¹I•ÅÕ•ÍÑ•‘ÑÍŒ¡•áÁ•É¥µ•¹Ð¹•Ñ% ¤¤¹ÍÑÉ•…´ ¤(€€€€€€€€€€€€€€€€€€€€€€€€¹™¥±Ñ•È¡•á•ÕÑ¥½¸€´ø•É…M…±•ÍA…•MÑ…•½‘”¹½¹Ñ…¥¹Ì¡•á•ÕÑ¥½¸¹•ÑMÑ…•½‘” ¤¤¤(€€€€€€€€€€€€€€€€€€€€€€€€¹™¥±Ñ•È¡•á•ÕÑ¥½¸€´øMQQUM}=5A1Q¹•ÅÕ…±Ì¡•á•ÕÑ¥½¸¹•ÑMÑ…ÑÕÌ ¤¤¤(€€€€€€€€€€€€€€€€€€€€€€€€¹™¥±Ñ•È¡•á•ÕÑ¥½¸€´ø€…•á•ÕÑ¥½¸¹•Ñá•ÕÑ¥½¹I•ÅÕ•ÍÑ•‘Ð ¤(€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€¹¥Í™Ñ•È¡ÁÕ‰±¥…Ñ¥½¹á•ÕÑ¥½¸¹•Ñá•ÕÑ¥½¹I•ÅÕ•ÍÑ•‘Ð ¤¤¤(€€€€€€€€€€€€€€€€€€€€€€€€¹Ñ½1¥ÍÐ ¤ì(€€€€€€€MÑÉ¥¹œÁ…­…•)Í½¸€ôÁÕ‰±¥…Ñ¥½¹á•ÕÑ¥½¸¹•Ñ5½‘•±I•ÍÁ½¹Í” ¤ì(€€€€€€€5…ÀñMÑÉ¥¹œ°=‰©•ÐøÁ…­…•A…å±½…€ôÁ…ÉÍ•=‰©•Ð¡Á…­…•)Í½¸¤ì(€€€€€€€MÑÉ¥¹œ¡Ñµ°€ôÍÑÉ¥¹Y…±Õ”¡Á…­…•A…å±½…¹•Ð ‰¡Ñµ°ˆ¤¤ì(€€€€€€€MÑÉ¥¹œ¡•­½ÕÑUÉ°€ôÍÑÉ¥¹Y…±Õ”¡Á…­…•A…å±½…¹•Ð ‰¡•­½ÕÑUÉ°ˆ¤¤ì(€€€€€€€MÑÉ¥¹œÍ…±•ÍA…•UÉ°€ô™¥ÉÍÑQ•áÐ (€€€€€€€€€€€€€€€Á…­…•A…å±½…¹•Ð ‰Í…±•ÍA…•UÉ°ˆ¤°(€€€€€€€€€€€€€€€Á…­…•A…å±½…¹•Ð ‰ÁÕ‰±¥UÉ°ˆ¤°(€€€€€€€€€€€€€€€Á…­…•A…å±½…¹•Ð ‰ÁÕ‰±¥Í¡•‘UÉ°ˆ¤°(€€€€€€€€€€€€€€€Á…­…•A…å±½…¹•Ð ‰Á…•UÉ°ˆ¤¤ì(€€€€€€€A•ÉÍ½¹…±¥é•‘M…µÁ±•AÕ‰±¥…Ñ¥½¸Á•ÉÍ½¹…±¥é•‘M…µÁ±•AÕ‰±¥…Ñ¥½¸€ô(€€€€€€€€€€€€€€€ÁÕ‰±¥Í¡A•ÉÍ½¹…±¥é•‘M…µÁ±•M…±•ÍA…•%™9••‘•¡•áÁ•É¥µ•¹Ð°¡Ñµ°¤ì(€€€€€€€‰½½±•…¸Á•ÉÍ½¹…±¥é•‘M…µÁ±•M…±•ÍA…”€ôÁ•ÉÍ½¹…±¥é•‘M…µÁ±•AÕ‰±¥…Ñ¥½¸€„ô¹Õ±°ì(€€€€€€€¥˜€¡Á•ÉÍ½¹…±¥é•‘M…µÁ±•AÕ‰±¥…Ñ¥½¸€„ô¹Õ±°¤ì(€€€€€€€€€€€¡Ñµ°€ôÁ•ÉÍ½¹…±¥é•‘M…µÁ±•AÕ‰±¥…Ñ¥½¸¹¡Ñµ° ¤ì(€€€€€€€€€€€Í…±•ÍA…•UÉ°€ôÁ•ÉÍ½¹…±¥é•‘M…µÁ±•AÕ‰±¥…Ñ¥½¸¹Í…±•ÍA…•UÉ° ¤ì(€€€€€€€€€€€¡•­½ÕÑUÉ°€ô¹Õ±°ì(€€€€€€€ô•±Í”ì(€€€€€€€€€€€MÑ…¹‘…±½¹•M…±•ÍA…•AÕ‰±¥…Ñ¥½¸ÍÑ…¹‘…±½¹•AÕ‰±¥…Ñ¥½¸€ô(€€€€€€€€€€€€€€€€€€€ÁÕ‰±¥Í¡MÑ…¹‘…±½¹•M…±•ÍA…•%™9••‘•¡•áÁ•É¥µ•¹Ð°¡Ñµ°¤ì(€€€€€€€€€€€¥˜€¡ÍÑ…¹‘…±½¹•AÕ‰±¥…Ñ¥½¸€„ô¹Õ±°¤ì(€€€€€€€€€€€€€€€Í…±•ÍA…•UÉ°€ôÍÑ…¹‘…±½¹•AÕ‰±¥…Ñ¥½¸¹Í…±•ÍA…•UÉ° ¤ì(€€€€€€€€€€€€€€€¡Ñµ°€ôÍÑ…¹‘…±½¹•AÕ‰±¥…Ñ¥½¸¹¡Ñµ° ¤ì(€€€€€€€€€€€ô(€€€€€€€ô(€€€€€€€%¹ÍÑ…¹ÐÁÕ‰±¥Í¡•‘Ð€ôÁÕ‰±¥…Ñ¥½¹á•ÕÑ¥½¸¹•Ñ½µÁ±•Ñ•‘Ð ¤€„ô¹Õ±°(€€€€€€€€€€€€€€€€üÁÕ‰±¥…Ñ¥½¹á•ÕÑ¥½¸¹•Ñ½µÁ±•Ñ•‘Ð ¤(€€€€€€€€€€€€€€€€è%¹ÍÑ…¹Ð¹¹½Ü ¤ì(€€€€€€€•É…M…±•ÍA…•AÕ‰±¥…Ñ¥½¹Õ‘¥Ð…Õ‘¥Ð€ôÁÕ‰±¥…Ñ¥½¹I•Á½Í¥Ñ½Éä¹Í…Ù”¡•É…M…±•ÍA…•AÕ‰±¥…Ñ¥½¹Õ‘¥Ð¹‰Õ¥±‘•È ¤(€€€€€€€€€€€€€€€€¹•áÁ•É¥µ•¹Ñ%¡•áÁ•É¥µ•¹Ð¹•Ñ% ¤¤(€€€€€€€€€€€€€€€€¹ÁÕ‰±¥…Ñ¥½¹)½‰%¡ÁÕ‰±¥…Ñ¥½¹á•ÕÑ¥½¸¹•Ñ%‘)½ˆ ¤¤(€€€€€€€€€€€€€€€€¹ÁÕ‰±¥Í¡•‘Ð¡ÁÕ‰±¥Í¡•‘Ð¤(€€€€€€€€€€€€€€€€¹Í…±•ÍA…•UÉ°¡MÑÉ¥¹UÑ¥±Ì¹¡…ÍQ•áÐ¡Í…±•ÍA…•UÉ°¤€üÍ…±•ÍA…•UÉ°€è•áÁ•É¥µ•¹Ð¹•Ñ½±±½ÝUÁÑ¥½¹UÉ° ¤¤(€€€€€€€€€€€€€€€€¹¡•­½ÕÑUÉ°¡É•Í½±Ù•Õ‘¥Ñ¡•­½ÕÑUÉ°¡¡•­½ÕÑUÉ°°•áÁ•É¥µ•¹Ð°Á•ÉÍ½¹…±¥é•‘M…µÁ±•M…±•ÍA…”¤¤(€€€€€€€€€€€€€€€€¹¡Ñµ°¡¡Ñµ°¤(€€€€€€€€€€€€€€€€¹ÁÕ‰±¥…Ñ¥½¹A…­…•)Í½¸¡Á…­…•)Í½¸¤(€€€€€€€€€€€€€€€€¹É•…Ñ•‘Ð¡%¹ÍÑ…¹Ð¹¹½Ü ¤¤(€€€€€€€€€€€€€€€€¹‰Õ¥± ¤¤ì(€€€€€€€ÁÕ‰±¥…Ñ¥½¹MÑ…•I•Á½Í¥Ñ½Éä¹Í…Ù•±°¡Ñ½MÑ…•Õ‘¥ÑÌ¡…Õ‘¥Ð¹•Ñ% ¤°ÍÑ…•á•ÕÑ¥½¹Ì¤¤ì(€€€ô((€€€€¼¨¨•™¥¹”¼¡•­½ÕÐ…Õ‘¥Ñ…‘¼Í•´½¹™Õ¹‘¥È™Õ¹¥°AÉ½‘ÕÑ¼%½´¡•­½ÕÐ‘¥É•Ñ¼¸€¨¼(€€€ÁÉ¥Ù…Ñ”MÑÉ¥¹œÉ•Í½±Ù•Õ‘¥Ñ¡•­½ÕÑUÉ° (€€€€€€€€€€€MÑÉ¥¹œ¡•­½ÕÑUÉ°°(€€€€€€€€€€€áÁ•É¥µ•¹Ð•áÁ•É¥µ•¹Ð°(€€€€€€€€€€€‰½½±•…¸Á•ÉÍ½¹…±¥é•‘M…µÁ±•M…±•ÍA…”¤ì(€€€€€€€¥˜€¡Á•ÉÍ½¹…±¥é•‘M…µÁ±•M…±•ÍA…”¤ì(€€€€€€€€€€€É•ÑÕÉ¸MÑÉ¥¹UÑ¥±Ì¹¡…ÍQ•áÐ¡¡•­½ÕÑUÉ°¤€ü¡•­½ÕÑUÉ°€è¹Õ±°ì(€€€€€€€ô(€€€€€€€É•ÑÕÉ¸MÑÉ¥¹UÑ¥±Ì¹¡…ÍQ•áÐ¡¡•­½ÕÑUÉ°¤€ü¡•­½ÕÑUÉ°€è•áÁ•É¥µ•¹Ð¹•Ñ½±±½ÝUÁÑ¥½¹UÉ° ¤ì(€€€ô((€€€€¼¨¨AÕ‰±¥„Á…¥¹„‘”Ù•¹‘„‘¥É•Ñ„½µ¼±…¹‘¥¹œÍÑ…¹‘…±½¹”Á…É„¥µÁ•‘¥ÈÑÉ…™•¼™É¥¼‘¥É•Ñ¼…¼¡•­½ÕÐ¸€¨¼(€€€ÁÉ¥Ù…Ñ”MÑ…¹‘…±½¹•M…±•ÍA…•AÕ‰±¥…Ñ¥½¸ÁÕ‰±¥Í¡MÑ…¹‘…±½¹•M…±•ÍA…•%™9••‘• (€€€€€€€€€€€áÁ•É¥µ•¹Ð•áÁ•É¥µ•¹Ð°(€€€€€€€€€€€MÑÉ¥¹œ¡Ñµ°¤ì(€€€€€€€¥˜€¡•áÁ•É¥µ•¹Ð¹•ÑAÉ½‘ÕÑ¥MÕ‰ÑåÁ” ¤€ôôAÉ½‘ÕÑ¥MÕ‰ÑåÁ”¹%}AIM=91%i}M5A1(€€€€€€€€€€€€€€€ñð€…MÑÉ¥¹UÑ¥±Ì¹¡…ÍQ•áÐ¡¡Ñµ°¤¤ì(€€€€€€€€€€€É•ÑÕÉ¸¹Õ±°ì(€€€€€€€ô(€€€€€€€1•…‘A½ÉÑ…±±½Ü™±½Ü€ô1•…‘A½ÉÑ…±±½Ü¹‰Õ¥±‘•È ¤(€€€€€€€€€€€€€€€€¹¹…µ”¡ÍÑ…¹‘…±½¹•M…±•ÍA…•9…µ”¡•áÁ•É¥µ•¹Ð¤¤(€€€€€€€€€€€€€€€€¹Í±Õœ¡ÍÑ…¹‘…±½¹•M…±•ÍA…•M±Õœ¡•áÁ•É¥µ•¹Ð¤¤(€€€€€€€€€€€€€€€€¹‘•ÍÉ¥ÁÑ¥½¸ ‰A…¥¹„‘”Ù•¹‘„ÍÑ…¹‘…±½¹”•É…‘„Á•±¼•É…M…±•ÍA…”ØÄ¸ˆ¤(€€€€€€€€€€€€€€€€¹µ½‘•° ‰I}M1M}A}XÅ}%IQ}!-=UPˆ¤(€€€€€€€€€€€€€€€€¹ÁÉ½µÁÐ ‰A¥Á•±¥¹”è•É„µÍ…±•ÌµÁ…”µØÄ½ÁÕ‰±¥…Ñ¥½¸µÁ…­…”€´ø‘¥É•Ð¡•­½ÕÐÍ…±•ÌÁ…”ˆ¤(€€€€€€€€€€€€€€€€¹ÕÍÑ½µ½Éµ!Ñµ°¡¡Ñµ°¤(€€€€€€€€€€€€€€€€¹Í¡•µ…¥ÉÍÐ¡ÑÉÕ”¤(€€€€€€€€€€€€€€€€¹…ÁÁÉ½Ù•¡ÑÉÕ”¤(€€€€€€€€€€€€€€€€¹…ÁÁÉ½Ù•‘Ð¡%¹ÍÑ…¹Ð¹¹½Ü ¤¤(€€€€€€€€€€€€€€€€¹•áÁ•É¥µ•¹Ð¡•áÁ•É¥µ•¹Ð¤(€€€€€€€€€€€€€€€€¹‰Õ¥± ¤ì(€€€€€€€ÑÉäì(€€€€€€€€€€€±•…‘A½ÉÑ…±±½ÝAÕ‰±¥Í¡•È¹ÁÕ‰±¥Í ¡™±½Ü¤ì(€€€€€€€ô…Ñ €¡1•…‘A½ÉÑ…±AÕ‰±¥…Ñ¥½¹á•ÁÑ¥½¸•à¤ì(€€€€€€€€€€€±½œ¹•ÉÉ½È ‰…±¡„…¼ÁÕ‰±¥…ÈÁ…¥¹„•É…M…±•ÍA…”ÍÑ…¹‘…±½¹”è•áÁ•É¥µ•¹Ñ%õíô°Í±Õœõíôˆ°(€€€€€€€€€€€€€€€€€€€•áÁ•É¥µ•¹Ð¹•Ñ% ¤°™±½Ü¹•ÑM±Õœ ¤°•à¤ì(€€€€€€€€€€€Ñ¡É½Ü¹•ÜI•ÍÁ½¹Í•MÑ…ÑÕÍá•ÁÑ¥½¸ (€€€€€€€€€€€€€€€€€€€!ÑÑÁMÑ…ÑÕÌ¹	}Q]d°(€€€€€€€€€€€€€€€€€€€€‰…±¡„…¼ÁÕ‰±¥…ÈÁ…¥¹„‘”Ù•¹‘„ÍÑ…¹‘…±½¹”¸ˆ°(€€€€€€€€€€€€€€€€€€€•à¤ì(€€€€€€€ô(€€€€€€€MÑÉ¥¹œÁÕ‰±¥UÉ°€ô±•…‘A½ÉÑ…±AÕ‰±¥UÉ±I•Í½±Ù•È¹É•Í½±Ù”¡™±½Ü¤ì(€€€€€€€¥˜€ …MÑÉ¥¹UÑ¥±Ì¹¡…ÍQ•áÐ¡ÁÕ‰±¥UÉ°¤¤ì(€€€€€€€€€€€Ñ¡É½Ü¹•ÜI•ÍÁ½¹Í•MÑ…ÑÕÍá•ÁÑ¥½¸ (€€€€€€€€€€€€€€€€€€€!ÑÑÁMÑ…ÑÕÌ¹=91%P°(€€€€€€€€€€€€€€€€€€€€‰1•…A½ÉÑ…°»¼É•Ñ½É¹½ÔUI0Ãé‰±¥„Á…É„„Ã…¥¹„‘”Ù•¹‘„ÍÑ…¹‘…±½¹”¸ˆ¤ì(€€€€€€€ô(€€€€€€€•áÁ•É¥µ•¹Ð¹Í•Ñ½±±½ÝUÁÑ¥½¹UÉ°¡ÁÕ‰±¥UÉ°¤ì(€€€€€€€É•ÑÕÉ¸¹•ÜMÑ…¹‘…±½¹•M…±•ÍA…•AÕ‰±¥…Ñ¥½¸¡ÁÕ‰±¥UÉ°°¡Ñµ°¤ì(€€€ô((€€€€¼¨¨5½¹Ñ„¹½µ”±•¥Ù•°Á…É„„Á…¥¹„ÍÑ…¹‘…±½¹”ÁÕ‰±¥…‘„¹¼1•…A½ÉÑ…°¸€¨¼(€€€ÁÉ¥Ù…Ñ”MÑÉ¥¹œÍÑ…¹‘…±½¹•M…±•ÍA…•9…µ”¡áÁ•É¥µ•¹Ð•áÁ•É¥µ•¹Ð¤ì(€€€€€€€MÑÉ¥¹œ‰…Í•9…µ”€ôMÑÉ¥¹UÑ¥±Ì¹¡…ÍQ•áÐ¡•áÁ•É¥µ•¹Ð¹•Ñ9…µ” ¤¤(€€€€€€€€€€€€€€€€ü•áÁ•É¥µ•¹Ð¹•Ñ9…µ” ¤(€€€€€€€€€€€€€€€€è€‰áÁ•É¥µ•¹Ñ¼€ˆ€¬•áÁ•É¥µ•¹Ð¹•Ñ% ¤ì(€€€€€€€É•ÑÕÉ¸€‰•É…M…±•ÍA…”€´€ˆ€¬‰…Í•9…µ”ì(€€€ô((€€€€¼¨¨5½¹Ñ„Í±Õœ•ÍÑ…Ù•°Á…É„Í½‰É•ÍÉ•Ù•È„Á…¥¹„ÍÑ…¹‘…±½¹”‘¼•áÁ•É¥µ•¹Ñ¼•´É•‰Õ¥±‘Ì¸€¨¼(€€€ÁÉ¥Ù…Ñ”MÑÉ¥¹œÍÑ…¹‘…±½¹•M…±•ÍA…•M±Õœ¡áÁ•É¥µ•¹Ð•áÁ•É¥µ•¹Ð¤ì(€€€€€€€MÑÉ¥¹œ‰…Í•9…µ”€ôMÑÉ¥¹UÑ¥±Ì¹¡…ÍQ•áÐ¡•áÁ•É¥µ•¹Ð¹•Ñ9…µ” ¤¤(€€€€€€€€€€€€€€€€ü•áÁ•É¥µ•¹Ð¹•Ñ9…µ” ¤(€€€€€€€€€€€€€€€€è€‰•áÁ•É¥µ•¹Ñ¼´ˆ€¬•áÁ•É¥µ•¹Ð¹•Ñ% ¤ì(€€€€€€€MÑÉ¥¹œ¹½Éµ…±¥é•€ô‰…Í•9…µ”¹Ñ½1½Ý•É…Í”¡1½…±”¹I==P¤(€€€€€€€€€€€€€€€€¹É•Á±…•±° ‰my„µèÀ´åt¬ˆ°€ˆ´ˆ¤(€€€€€€€€€€€€€€€€¹É•Á±…•±° ˆ¡xµð´¤ˆ°€ˆˆ¤ì(€€€€€€€¥˜€ …MÑÉ¥¹UÑ¥±Ì¹¡…ÍQ•áÐ¡¹½Éµ…±¥é•¤¤ì(€€€€€€€€€€€¹½Éµ…±¥é•€ô€‰•áÁ•É¥µ•¹Ñ¼´ˆ€¬•áÁ•É¥µ•¹Ð¹•Ñ% ¤ì(€€€€€€€ô(€€€€€€€É•ÑÕÉ¸€‰•É…Í…±•ÍÁ…”µ•áÀ´ˆ€¬•áÁ•É¥µ•¹Ð¹•Ñ% ¤€¬€ˆ´ˆ€¬¹½Éµ…±¥é•ì(€€€ô((€€€€¼¨¨AÕ‰±¥„„Á…¥¹„…ÁÉ½Ù…‘„‘•¹ÑÉ¼‘¼™Õ¹¥°…¹½¹¥¼ÅÕ…¹‘¼¼ÁÉ½‘ÕÑ¼•á¥”Á•ÉÍ½¹…±¥é……¼¸€¨¼(€€€ÁÉ¥Ù…Ñ”A•ÉÍ½¹…±¥é•‘M…µÁ±•AÕ‰±¥…Ñ¥½¸ÁÕ‰±¥Í¡A•ÉÍ½¹…±¥é•‘M…µÁ±•M…±•ÍA…•%™9••‘• (€€€€€€€€€€€áÁ•É¥µ•¹Ð•áÁ•É¥µ•¹Ð°(€€€€€€€€€€€MÑÉ¥¹œ¡Ñµ°¤ì(€€€€€€€¥˜€¡•áÁ•É¥µ•¹Ð¹•ÑAÉ½‘ÕÑ¥MÕ‰ÑåÁ” ¤€„ôAÉ½‘ÕÑ¥MÕ‰ÑåÁ”¹%}AIM=91%i}M5A1¤ì(€€€€€€€€€€€É•ÑÕÉ¸¹Õ±°ì(€€€€€€€ô(€€€€€€€1•…‘A½ÉÑ…±±½Ü™±½Ü€ô•áÁ•É¥µ•¹Ð¹•Ñ1•…‘A½ÉÑ…±±½Ü ¤ì(€€€€€€€¥˜€¡™±½Ü€ôô¹Õ±°ñð™±½Ü¹•Ñ% ¤€ôô¹Õ±°¤ì(€€€€€€€€€€€Ñ¡É½Ü¹•ÜI•ÍÁ½¹Í•MÑ…ÑÕÍá•ÁÑ¥½¸ (€€€€€€€€€€€€€€€€€€€!ÑÑÁMÑ…ÑÕÌ¹=91%P°(€€€€€€€€€€€€€€€€€€€€‰AÉ½‘ÕÑ¼%Á•ÉÍ½¹…±¥é…‘¼•á¥”™Õ¹¥°1•…A½ÉÑ…°…ÁÉ½Ù…‘¼…¹Ñ•Ì‘„ÁÕ‰±¥……¼‘„Á…¥¹„¸ˆ¤ì(€€€€€€€ô(€€€€€€€MÑÉ¥¹œ¡Ñµ±]¥Ñ¡5…¹…•‘½É´€ô•¹ÍÕÉ•5…¹…•‘½Éµ¹¡½È¡¡Ñµ°¤ì(€€€€€€€¡Ñµ±]¥Ñ¡5…¹…•‘½É´€ôÉ•µ½Ù•M•±™I•™•É•¹Ñ¥…±1•…‘A½ÉÑ…±%™É…µ•Ì¡¡Ñµ±]¥Ñ¡5…¹…•‘½É´°™±½Ü¤ì(€€€€€€€™±½Ü¹Í•ÑÕÍÑ½µ½Éµ!Ñµ°¡‰Õ¥±‘A•ÉÍ½¹…±¥é•‘M…µÁ±•Q•µÁ±…Ñ•A…å±½…¡™±½Ü°¡Ñµ±]¥Ñ¡5…¹…•‘½É´¤¤ì(€€€€€€€™±½Ü¹Í•ÑM¡•µ…¥ÉÍÐ¡ÑÉÕ”¤ì(€€€€€€€™±½Ü¹Í•ÑÁÁÉ½Ù•¡ÑÉÕ”¤ì(€€€€€€€¥˜€¡™±½Ü¹•ÑÁÁÉ½Ù•‘Ð ¤€ôô¹Õ±°¤ì(€€€€€€€€€€€™±½Ü¹Í•ÑÁÁÉ½Ù•‘Ð¡%¹ÍÑ…¹Ð¹¹½Ü ¤¤ì(€€€€€€€ô(€€€€€€€™±½Ü¹Í•Ñ5½‘•° ‰%}AIM=91%i}M5A1}I}M1M}Aˆ¤ì(€€€€€€€¥˜€ …MÑÉ¥¹UÑ¥±Ì¹¡…ÍQ•áÐ¡™±½Ü¹•ÑAÉ½µÁÐ ¤¤¤ì(€€€€€€€€€€€™±½Ü¹Í•ÑAÉ½µÁÐ ‰A¥Á•±¥¹”è•É„µÍ…±•ÌµÁ…”µØÄ½ÁÕ‰±¥…Ñ¥½¸µÁ…­…”€´øÁÉ½‘ÕÐµ…¤Á•ÉÍ½¹…±¥é•Í…µÁ±”™Õ¹¹•°ˆ¤ì(€€€€€€€ô(€€€€€€€ÑÉäì(€€€€€€€€€€€±•…‘A½ÉÑ…±±½ÝAÕ‰±¥Í¡•È¹ÁÕ‰±¥Í ¡™±½Ü¤ì(€€€€€€€ô…Ñ €¡1•…‘A½ÉÑ…±AÕ‰±¥…Ñ¥½¹á•ÁÑ¥½¸•à¤ì(€€€€€€€€€€€±½œ¹•ÉÉ½È ‰…±¡„…¼ÁÕ‰±¥…ÈÁ…¥¹„•É…M…±•ÍA…”¹¼™Õ¹¥°AÉ½‘ÕÑ¼%è•áÁ•É¥µ•¹Ñ%õíô°™±½Ý%õíô°Í±Õœõíôˆ°(€€€€€€€€€€€€€€€€€€€•áÁ•É¥µ•¹Ð¹•Ñ% ¤°™±½Ü¹•Ñ% ¤°™±½Ü¹•ÑM±Õœ ¤°•à¤ì(€€€€€€€€€€€Ñ¡É½Ü¹•ÜI•ÍÁ½¹Í•MÑ…ÑÕÍá•ÁÑ¥½¸ (€€€€€€€€€€€€€€€€€€€!ÑÑÁMÑ…ÑÕÌ¹	}Q]d°(€€€€€€€€€€€€€€€€€€€€‰…±¡„…¼ÁÕ‰±¥…ÈÁ…¥¹„‘”Ù•¹‘„¹¼™Õ¹¥°AÉ½‘ÕÑ¼%¸ˆ°(€€€€€€€€€€€€€€€€€€€•à¤ì(€€€€€€€ô(€€€€€€€MÑÉ¥¹œÁÕ‰±¥UÉ°€ô±•…‘A½ÉÑ…±AÕ‰±¥UÉ±I•Í½±Ù•È¹É•Í½±Ù”¡™±½Ü¤ì(€€€€€€€•áÁ•É¥µ•¹Ð¹Í•Ñ½±±½ÝUÁÑ¥½¹UÉ°¡ÁÕ‰±¥UÉ°¤ì(€€€€€€€É•ÑÕÉ¸¹•ÜA•ÉÍ½¹…±¥é•‘M…µÁ±•AÕ‰±¥…Ñ¥½¸¡ÁÕ‰±¥UÉ°°¡Ñµ±]¥Ñ¡5…¹…•‘½É´¤ì(€€€ô((€€€€¼¨¨I•µ½Ù”¥™É…µ”ÅÕ”…Á½¹Ñ„Á…É„¼ÁÉ½ÁÉ¥¼™Õ¹¥°”…ÕÍ…É¥„É•ÕÉÍ…¼Ù¥ÍÕ…°¹¼1•…A½ÉÑ…°¸€¨¼(€€€ÁÉ¥Ù…Ñ”MÑÉ¥¹œÉ•µ½Ù•M•±™I•™•É•¹Ñ¥…±1•…‘A½ÉÑ…±%™É…µ•Ì¡MÑÉ¥¹œ¡Ñµ°°1•…‘A½ÉÑ…±±½Ü™±½Ü¤ì(€€€€€€€¥˜€ …MÑÉ¥¹UÑ¥±Ì¹¡…ÍQ•áÐ¡¡Ñµ°¤¤ì(€€€€€€€€€€€É•ÑÕÉ¸¡Ñµ°ì(€€€€€€€ô(€€€€€€€5…Ñ¡•Èµ…Ñ¡•È€ô%I5}	1=-}AQQI8¹µ…Ñ¡•È¡¡Ñµ°¤ì(€€€€€€€MÑÉ¥¹	Õ™™•È±•…¹•€ô¹•ÜMÑÉ¥¹	Õ™™•È ¤ì(€€€€€€€Ý¡¥±”€¡µ…Ñ¡•È¹™¥¹ ¤¤ì(€€€€€€€€€€€MÑÉ¥¹œ¥™É…µ”€ôµ…Ñ¡•È¹É½ÕÀ ¤ì(€€€€€€€€€€€¥˜€¡¥ÍM•±™I•™•É•¹Ñ¥…±1•…‘A½ÉÑ…±%™É…µ”¡¥™É…µ”°™±½Ü¤¤ì(€€€€€€€€€€€€€€€µ…Ñ¡•È¹…ÁÁ•¹‘I•Á±…•µ•¹Ð¡±•…¹•°€ˆˆ¤ì(€€€€€€€€€€€ô•±Í”ì(€€€€€€€€€€€€€€€µ…Ñ¡•È¹…ÁÁ•¹‘I•Á±…•µ•¹Ð¡±•…¹•°5…Ñ¡•È¹ÅÕ½Ñ•I•Á±…•µ•¹Ð¡¥™É…µ”¤¤ì(€€€€€€€€€€€ô(€€€€€€€ô(€€€€€€€µ…Ñ¡•È¹…ÁÁ•¹‘Q…¥°¡±•…¹•¤ì(€€€€€€€É•ÑÕÉ¸±•…¹•¹Ñ½MÑÉ¥¹œ ¤ì(€€€ô((€€€€¼¨¨%‘•¹Ñ¥™¥„¥™É…µ•ÌÅÕ”Ñ•¹Ñ…´•µ‰ÕÑ¥È¼µ•Íµ¼™±Õá¼ÁÕ‰±¥…‘¼Á•±¼1•…A½ÉÑ…°¸€¨¼(€€€ÁÉ¥Ù…Ñ”‰½½±•…¸¥ÍM•±™I•™•É•¹Ñ¥…±1•…‘A½ÉÑ…±%™É…µ”¡MÑÉ¥¹œ¥™É…µ”°1•…‘A½ÉÑ…±±½Ü™±½Ü¤ì(€€€€€€€MÑÉ¥¹œ¹½Éµ…±¥é•€ô¥™É…µ”¹Ñ½1½Ý•É…Í”¡©…Ù„¹ÕÑ¥°¹1½…±”¹I==P¤ì(€€€€€€€MÑÉ¥¹œÍ±Õœ€ô™±½Ü€„ô¹Õ±°€˜˜MÑÉ¥¹UÑ¥±Ì¹¡…ÍQ•áÐ¡™±½Ü¹•ÑM±Õœ ¤¤(€€€€€€€€€€€€€€€€ü™±½Ü¹•ÑM±Õœ ¤¹Ñ½1½Ý•É…Í”¡©…Ù„¹ÕÑ¥°¹1½…±”¹I==P¤(€€€€€€€€€€€€€€€€è€ˆˆì(€€€€€€€É•ÑÕÉ¸€¡MÑÉ¥¹UÑ¥±Ì¹¡…ÍQ•áÐ¡Í±Õœ¤€˜˜¹½Éµ…±¥é•¹½¹Ñ…¥¹Ì¡Í±Õœ¤¤(€€€€€€€€€€€€€€€ñð¹½Éµ…±¥é•¹½¹Ñ…¥¹Ì ˆ½™±½ÝÌ¼ˆ¤(€€€€€€€€€€€€€€€ñð¹½Éµ…±¥é•¹½¹Ñ…¥¹Ì ‰±•…µÁ½ÉÑ…°ˆ¤ì(€€€ô((€€€€¼¨¨…É…¹Ñ”ÅÕ”¼ÉÕ¹Ñ¥µ”ÁÕ‰±¥¼Ñ•¹¡„Õ´™½É´…±Ù¼Á…É„É•¹‘•É¥é…È…ÌÁ•ÉÕ¹Ñ…Ì‘¼1•…A½ÉÑ…°¸€¨¼(€€€ÁÉ¥Ù…Ñ”MÑÉ¥¹œ•¹ÍÕÉ•5…¹…•‘½Éµ¹¡½È¡MÑÉ¥¹œ¡Ñµ°¤ì(€€€€€€€MÑÉ¥¹œ¹½Éµ…±¥é•€ôMÑÉ¥¹UÑ¥±Ì¹¡…ÍQ•áÐ¡¡Ñµ°¤€ü¡Ñµ°€è€ˆˆì(€€€€€€€¥˜€¡¹½Éµ…±¥é•¹Ñ½1½Ý•É…Í” ¤¹½¹Ñ…¥¹Ì ˆñ™½É´ˆ¤¤ì(€€€€€€€€€€€É•ÑÕÉ¸¹½Éµ…±¥é•ì(€€€€€€€ô(€€€€€€€MÑÉ¥¹œ™½Éµ¹¡½È€ô€ˆˆˆ(€€€€€€€€€€€€€€€€ñÍ•Ñ¥½¸¥ô‰Á•ÉÍ½¹…±¥é•µÍ…µÁ±”µ™½É´µÍ•Ñ¥½¸ˆø(€€€€€€€€€€€€€€€€€€ñ™½É´¥ô‰±•…µÁ½ÉÑ…°µÁ•ÉÍ½¹…±¥é•µÍ…µÁ±”µ™½É´ˆøð½™½É´ø(€€€€€€€€€€€€€€€€ð½Í•Ñ¥½¸ø(€€€€€€€€€€€€€€€€ˆˆˆì(€€€€€€€¥˜€¡¹½Éµ…±¥é•¹Ñ½1½Ý•É…Í” ¤¹½¹Ñ…¥¹Ì ˆð½‰½‘äøˆ¤¤ì(€€€€€€€€€€€É•ÑÕÉ¸¹½Éµ…±¥é•¹É•Á±…•¥ÉÍÐ ˆ ý¤¤ð½‰½‘äøˆ°™½Éµ¹¡½È€¬€‰q¸ð½‰½‘äøˆ¤ì(€€€€€€€ô(€€€€€€€É•ÑÕÉ¸¹½Éµ…±¥é•€¬€‰q¸ˆ€¬™½Éµ¹¡½Èì(€€€ô((€€€€¼¨¨M•É¥…±¥é„!Q50”•ÍÁ•¥™¥……¼‘”™½ÉµÕ±…É¥¼¹¼½¹ÑÉ…Ñ¼É•½¹¡•¥‘¼Á•±¼1•…A½ÉÑ…°¸€¨¼(€€€ÁÉ¥Ù…Ñ”MÑÉ¥¹œ‰Õ¥±‘A•ÉÍ½¹…±¥é•‘M…µÁ±•Q•µÁ±…Ñ•A…å±½…¡1•…‘A½ÉÑ…±±½Ü™±½Ü°MÑÉ¥¹œ¡Ñµ°¤ì(€€€€€€€5…ÀñMÑÉ¥¹œ°=‰©•ÐøÁ…å±½…€ô¹•Ü1¥¹­•‘!…Í¡5…Àðø ¤ì(€€€€€€€Á…å±½…¹ÁÕÐ ‰¡Ñµ±½Õµ•¹Ðˆ°¡Ñµ°¤ì(€€€€€€€Á…å±½…¹ÁÕÐ ‰™½ÉµMÁ•Œˆ°‰Õ¥±‘½ÉµMÁ•Œ¡™±½Ü¤¤ì(€€€€€€€ÑÉäì(€€€€€€€€€€€É•ÑÕÉ¸½‰©•Ñ5…ÁÁ•È¹ÝÉ¥Ñ•Y…±Õ•ÍMÑÉ¥¹œ¡Á…å±½…¤ì(€€€€€€€ô…Ñ €¡)Í½¹AÉ½•ÍÍ¥¹á•ÁÑ¥½¸•à¤ì(€€€€€€€€€€€±½œ¹•ÉÉ½È ‰…±¡„…¼Í•É¥…±¥é…ÈÑ•µÁ±…Ñ”‘„Á…¥¹„AÉ½‘ÕÑ¼%è™±½Ý%õíô°Í±Õœõíôˆ°(€€€€€€€€€€€€€€€€€€€™±½Ü¹•Ñ% ¤°™±½Ü¹•ÑM±Õœ ¤°•à¤ì(€€€€€€€€€€€Ñ¡É½Ü¹•ÜI•ÍÁ½¹Í•MÑ…ÑÕÍá•ÁÑ¥½¸ (€€€€€€€€€€€€€€€€€€€!ÑÑÁMÑ…ÑÕÌ¹%9QI91}MIYI}II=H°(€€€€€€€€€€€€€€€€€€€€‰…±¡„…¼ÁÉ•Á…É…ÈÑ•µÁ±…Ñ”‘„Á…¥¹„AÉ½‘ÕÑ¼%¸ˆ°(€€€€€€€€€€€€€€€€€€€•à¤ì(€€€€€€€ô(€€€ô((€€€€¼¨¨½¹Ù•ÉÑ”…ÌÁ•ÉÕ¹Ñ…Ì…¹½¹¥…Ì‘¼™±Õá¼•´…µÁ½Ì•É•¹¥…‘½ÌÁ•±¼ÉÕ¹Ñ¥µ”ÁÕ‰±¥¼¸€¨¼(€€€ÁÉ¥Ù…Ñ”5…ÀñMÑÉ¥¹œ°=‰©•Ðø‰Õ¥±‘½ÉµMÁ•Œ¡1•…‘A½ÉÑ…±±½Ü™±½Ü¤ì(€€€€€€€5…ÀñMÑÉ¥¹œ°=‰©•Ðø™½ÉµMÁ•Œ€ô¹•Ü1¥¹­•‘!…Í¡5…Àðø ¤ì(€€€€€€€™½ÉµMÁ•Œ¹ÁÕÐ ‰™½Éµ%ˆ°€‰±•…µÁ½ÉÑ…°µÁ•ÉÍ½¹…±¥é•µÍ…µÁ±”µ™½É´ˆ¤ì(€€€€€€€™½ÉµMÁ•Œ¹ÁÕÐ ‰Ñ¥Ñ±”ˆ°€‰I••‰„ÍÕ„…µ½ÍÑÉ„Á•ÉÍ½¹…±¥é…‘„ˆ¤ì(€€€€€€€™½ÉµMÁ•Œ¹ÁÕÐ ‰ÍÕ‰µ¥Ñ1…‰•°ˆ°€‰•É…Èµ¥¹¡„…µ½ÍÑÉ„Á•ÉÍ½¹…±¥é…‘„ˆ¤ì(€€€€€€€™½ÉµMÁ•Œ¹ÁÕÐ ‰™¥•±‘Ìˆ°™±½Ü¹•ÑEÕ•ÍÑ¥½¹Ì ¤¹ÍÑÉ•…´ ¤(€€€€€€€€€€€€€€€€¹µ…À¡Ñ¡¥ÌèéÑ½5…¹…•‘½Éµ¥•±¤(€€€€€€€€€€€€€€€€¹Ñ½1¥ÍÐ ¤¤ì(€€€€€€€™½ÉµMÁ•Œ¹ÁÕÐ ‰ÍÕ•ÍÍMÑ…Ñ”ˆ°5…À¹½˜ (€€€€€€€€€€€€€€€€‰Ñ¥Ñ±”ˆ°€‰…‘½ÌÉ••‰¥‘½Ìˆ°(€€€€€€€€€€€€€€€€‰µ•ÍÍ…”ˆ°€‰Y…µ½ÌÁÉ•Á…É…ÈÍÕ„…µ½ÍÑÉ„Á•ÉÍ½¹…±¥é…‘„½´‰…Í”¹…ÌÍÕ…ÌÉ•ÍÁ½ÍÑ…Ì¸ˆ¤¤ì(€€€€€€€™½ÉµMÁ•Œ¹ÁÕÐ ‰½¹Í•¹Ðˆ°5…À¹½˜ (€€€€€€€€€€€€€€€€‰•¹…‰±•ˆ°ÑÉÕ”°(€€€€€€€€€€€€€€€€‰É•ÅÕ¥É•ˆ°ÑÉÕ”°(€€€€€€€€€€€€€€€€‰±…‰•°ˆ°€‰ÕÑ½É¥é¼¼ÕÍ¼‘…Ìµ¥¹¡…ÌÉ•ÍÁ½ÍÑ…ÌÁ…É„•É…Èµ¥¹¡„…µ½ÍÑÉ„Á•ÉÍ½¹…±¥é…‘„¸ˆ¤¤ì(€€€€€€€É•ÑÕÉ¸™½ÉµMÁ•Œì(€€€ô((€€€€¼¨¨½¹Ù•ÉÑ”Õµ„Á•ÉÕ¹Ñ„‘¼1•…A½ÉÑ…°•´…µÁ¼…•¥Ñ¼Á•±¼Ñ•µÁ±…Ñ”•É•¹¥…‘¼¸€¨¼(€€€ÁÉ¥Ù…Ñ”5…ÀñMÑÉ¥¹œ°=‰©•ÐøÑ½5…¹…•‘½Éµ¥•±¡1•…‘A½ÉÑ…±±½ÝEÕ•ÍÑ¥½¸ÅÕ•ÍÑ¥½¸¤ì(€€€€€€€5…ÀñMÑÉ¥¹œ°=‰©•Ðø™¥•±€ô¹•Ü1¥¹­•‘!…Í¡5…Àðø ¤ì(€€€€€€€™¥•±¹ÁÕÐ ‰¹…µ”ˆ°ÅÕ•ÍÑ¥½¸¹•Ñ…Ñ…-•ä ¤¤ì(€€€€€€€™¥•±¹ÁÕÐ ‰ÑåÁ”ˆ°Ñ½5…¹…•‘¥•±‘QåÁ”¡ÅÕ•ÍÑ¥½¸¹•ÑQåÁ” ¤¤¤ì(€€€€€€€™¥•±¹ÁÕÐ ‰±…‰•°ˆ°ÅÕ•ÍÑ¥½¸¹•ÑQ¥Ñ±” ¤¤ì(€€€€€€€™¥•±¹ÁÕÐ ‰É•ÅÕ¥É•ˆ°ÅÕ•ÍÑ¥½¸¹¥ÍI•ÅÕ¥É• ¤¤ì(€€€€€€€™¥•±¹ÁÕÐ ‰Á±…•¡½±‘•Èˆ°ÅÕ•ÍÑ¥½¸¹•ÑA±…•¡½±‘•È ¤¤ì(€€€€€€€É•ÑÕÉ¸™¥•±ì(€€€ô((€€€€¼¨¨5…Á•¥„Ñ¥Á½Ì‘¼1•…A½ÉÑ…°Á…É„½ÌÑ¥Á½ÌÍ¥µÁ±•ÌÍÕÁ½ÉÑ…‘½ÌÁ•±¼ÉÕ¹Ñ¥µ”ÕÍÑ½µ¥é…‘¼¸€¨¼(€€€ÁÉ¥Ù…Ñ”MÑÉ¥¹œÑ½5…¹…•‘¥•±‘QåÁ”¡1•…‘A½ÉÑ…±EÕ•ÍÑ¥½¹QåÁ”ÑåÁ”¤ì(€€€€€€€¥˜€¡ÑåÁ”€ôô1•…‘A½ÉÑ…±EÕ•ÍÑ¥½¹QåÁ”¹5%0¤ì(€€€€€€€€€€€É•ÑÕÉ¸€‰•µ…¥°ˆì(€€€€€€€ô(€€€€€€€¥˜€¡ÑåÁ”€ôô1•…‘A½ÉÑ…±EÕ•ÍÑ¥½¹QåÁ”¹A!=9¤ì(€€€€€€€€€€€É•ÑÕÉ¸€‰Ñ•°ˆì(€€€€€€€ô(€€€€€€€É•ÑÕÉ¸€‰Ñ•áÐˆì(€€€ô((€€€€¼¨¨I•Ñ½É¹„¼ÁÉ¥µ•¥É¼Ñ•áÑ¼ÁÉ••¹¡¥‘¼•¹ÑÉ”½Ì…µÁ½Ì…¹‘¥‘…Ñ½Ì¸€¨¼(€€€ÁÉ¥Ù…Ñ”MÑÉ¥¹œ™¥ÉÍÑQ•áÐ¡=‰©•Ð¸¸¸Ù…±Õ•Ì¤ì(€€€€€€€™½È€¡=‰©•ÐÙ…±Õ”€èÙ…±Õ•Ì¤ì(€€€€€€€€€€€MÑÉ¥¹œÑ•áÐ€ôÍÑÉ¥¹Y…±Õ”¡Ù…±Õ”¤ì(€€€€€€€€€€€¥˜€¡MÑÉ¥¹UÑ¥±Ì¹¡…ÍQ•áÐ¡Ñ•áÐ¤¤ì(€€€€€€€€€€€€€€€É•ÑÕÉ¸Ñ•áÐì(€€€€€€€€€€€ô(€€€€€€€ô(€€€€€€€É•ÑÕÉ¸¹Õ±°ì(€€€ô((€€€€¼¨¨½¹Ù•ÉÑ”•á•×ŸÕ•Ì½¹±×µ‘…Ì•´±¥¹¡…Ì…Õ‘¥Ó…Ù•¥Ì‘„ÁÕ‰±¥‡Ÿ¼¸€¨¼(€€€ÁÉ¥Ù…Ñ”1¥ÍÐñ•É…M…±•ÍA…•AÕ‰±¥…Ñ¥½¹MÑ…•Õ‘¥ÐøÑ½MÑ…•Õ‘¥ÑÌ (€€€€€€€€€€€1½¹œÁÕ‰±¥…Ñ¥½¹Õ‘¥Ñ%°(€€€€€€€€€€€1¥ÍÐñ•É…M…±•ÍA…•MÑ…•á•ÕÑ¥½¸ø•á•ÕÑ¥½¹Ì¤ì(€€€€€€€É•ÑÕÉ¸©…Ù„¹ÕÑ¥°¹ÍÑÉ•…´¹%¹ÑMÑÉ•…´¹É…¹” À°•á•ÕÑ¥½¹Ì¹Í¥é” ¤¤(€€€€€€€€€€€€€€€€¹µ…ÁQ½=‰¨¡¥¹‘•à€´øÑ½MÑ…•Õ‘¥Ð¡ÁÕ‰±¥…Ñ¥½¹Õ‘¥Ñ%°•á•ÕÑ¥½¹Ì¹•Ð¡¥¹‘•à¤°¥¹‘•à€¬€Ä¤¤(€€€€€€€€€€€€€€€€¹Ñ½1¥ÍÐ ¤ì(€€€ô((€€€€¼¨¨½¹Ù•ÉÑ”Õµ„•á•×Ÿ¼‘”•Ñ…Á„•´Í¹…ÁÍ¡½Ð¹½Éµ…±¥é…‘¼¸€¨¼(€€€ÁÉ¥Ù…Ñ”•É…M…±•ÍA…•AÕ‰±¥…Ñ¥½¹MÑ…•Õ‘¥ÐÑ½MÑ…•Õ‘¥Ð (€€€€€€€€€€€1½¹œÁÕ‰±¥…Ñ¥½¹Õ‘¥Ñ%°(€€€€€€€€€€€•É…M…±•ÍA…•MÑ…•á•ÕÑ¥½¸•á•ÕÑ¥½¸°(€€€€€€€€€€€¥¹ÐÍÑ…•=É‘•È¤ì(€€€€€€€É•ÑÕÉ¸•É…M…±•ÍA…•AÕ‰±¥…Ñ¥½¹MÑ…•Õ‘¥Ð¹‰Õ¥±‘•È ¤(€€€€€€€€€€€€€€€€¹ÁÕ‰±¥…Ñ¥½¹Õ‘¥Ñ%¡ÁÕ‰±¥…Ñ¥½¹Õ‘¥Ñ%¤(€€€€€€€€€€€€€€€€¹ÍÑ…•=É‘•È¡ÍÑ…•=É‘•È¤(€€€€€€€€€€€€€€€€¹¥‘)½ˆ¡•á•ÕÑ¥½¸¹•Ñ%‘)½ˆ ¤¤(€€€€€€€€€€€€€€€€¹ÍÑ…•½‘”¡•á•ÕÑ¥½¸¹•ÑMÑ…•½‘” ¤¤(€€€€€€€€€€€€€€€€¹ÍÑ…ÑÕÌ¡•á•ÕÑ¥½¸¹•ÑMÑ…ÑÕÌ ¤¤(€€€€€€€€€€€€€€€€¹½µÁ±•Ñ•‘Ð¡•á•ÕÑ¥½¸¹•Ñ½µÁ±•Ñ•‘Ð ¤¤(€€€€€€€€€€€€€€€€¹ÁÉ½µÁÑQ•µÁ±…Ñ•-•ä¡•á•ÕÑ¥½¸¹•ÑAÉ½µÁÑQ•µÁ±…Ñ•-•ä ¤¤(€€€€€€€€€€€€€€€€¹ÁÉ½µÁÐ¡•á•ÕÑ¥½¸¹•ÑAÉ½µÁÐ ¤¤(€€€€€€€€€€€€€€€€¹ÁÉ½µÁÑ5…É­‘½Ý¹½¹Ñ•¹Ð¡•á•ÕÑ¥½¸¹•ÑAÉ½µÁÑ5…É­‘½Ý¹½¹Ñ•¹Ð ¤¤(€€€€€€€€€€€€€€€€¹Í¡•µ…)Í½¸¡•á•ÕÑ¥½¸¹•ÑM¡•µ…)Í½¸ ¤¤(€€€€€€€€€€€€€€€€¹½Á•¹¥5½‘•°¡•á•ÕÑ¥½¸¹•Ñ=Á•¹¥5½‘•° ¤¤(€€€€€€€€€€€€€€€€¹½Á•¹¥I•ÅÕ•ÍÑ	½‘ä¡•á•ÕÑ¥½¸¹•Ñ=Á•¹¥I•ÅÕ•ÍÑ	½‘ä ¤¤(€€€€€€€€€€€€€€€€¹µ½‘•±I•ÍÁ½¹Í”¡•á•ÕÑ¥½¸¹•Ñ5½‘•±I•ÍÁ½¹Í” ¤¤(€€€€€€€€€€€€€€€€¹É…ÝI•ÍÁ½¹Í”¡•á•ÕÑ¥½¸¹•ÑI…ÝI•ÍÁ½¹Í” ¤¤(€€€€€€€€€€€€€€€€¹¥¹ÁÕÑQ½­•¹Ì¡•á•ÕÑ¥½¸¹•Ñ%¹ÁÕÑQ½­•¹Ì ¤¤(€€€€€€€€€€€€€€€€¹½ÕÑÁÕÑQ½­•¹Ì¡•á•ÕÑ¥½¸¹•Ñ=ÕÑÁÕÑQ½­•¹Ì ¤¤(€€€€€€€€€€€€€€€€¹½ÍÑUÍ¡•á•ÕÑ¥½¸¹•Ñ½ÍÑUÍ ¤¤(€€€€€€€€€€€€€€€€¹‰Õ¥± ¤ì(€€€ô((€€€€¼¨¨½¹Ù•ÉÑ”•¹Ñ¥‘…‘”Á•ÉÍ¥ÍÑ¥‘„•´É•ÍÁ½ÍÑ„ÕÍ…‘„Á•±¼™É½¹Ñ•¹¸€¨¼(€€€ÁÉ¥Ù…Ñ”•É…M…±•ÍA…•AÕ‰±¥…Ñ¥½¹I•ÍÁ½¹Í”Ñ½I•ÍÁ½¹Í”¡•É…M…±•ÍA…•AÕ‰±¥…Ñ¥½¹Õ‘¥Ð…Õ‘¥Ð¤ì(€€€€€€€É•ÑÕÉ¸¹•Ü•É…M…±•ÍA…•AÕ‰±¥…Ñ¥½¹I•ÍÁ½¹Í” (€€€€€€€€€€€€€€€…Õ‘¥Ð¹•Ñ% ¤°(€€€€€€€€€€€€€€€…Õ‘¥Ð¹•ÑáÁ•É¥µ•¹Ñ% ¤°(€€€€€€€€€€€€€€€…Õ‘¥Ð¹•ÑAÕ‰±¥…Ñ¥½¹)½‰% ¤°(€€€€€€€€€€€€€€€…Õ‘¥Ð¹•ÑAÕ‰±¥Í¡•‘Ð ¤°(€€€€€€€€€€€€€€€…Õ‘¥Ð¹•ÑM…±•ÍA…•UÉ° ¤°(€€€€€€€€€€€€€€€…Õ‘¥Ð¹•Ñ¡•­½ÕÑUÉ° ¤°(€€€€€€€€€€€€€€€…Õ‘¥Ð¹•Ñ!Ñµ° ¤°(€€€€€€€€€€€€€€€…Õ‘¥Ð¹•ÑAÕ‰±¥…Ñ¥½¹A…­…•)Í½¸ ¤°(€€€€€€€€€€€€€€€ÁÕ‰±¥…Ñ¥½¹MÑ…•I•Á½Í¥Ñ½Éä¹™¥¹‘	åAÕ‰±¥…Ñ¥½¹Õ‘¥Ñ%‘=É‘•É	åMÑ…•=É‘•ÉÍŒ¡…Õ‘¥Ð¹•Ñ% ¤¤¹ÍÑÉ•…´ ¤(€€€€€€€€€€€€€€€€€€€€€€€€¹µ…À¡Ñ¡¥ÌèéÑ½MÑ…•I•ÍÁ½¹Í”¤(€€€€€€€€€€€€€€€€€€€€€€€€¹Ñ½1¥ÍÐ ¤¤ì(€€€ô((€€€€¼¨¨½¹Ù•ÉÑ”Í¹…ÁÍ¡½Ð¹½Éµ…±¥é…‘¼‘”•Ñ…Á„•´½¹ÑÉ…Ñ¼‘”±•¥ÑÕÉ„¸€¨¼(€€€ÁÉ¥Ù…Ñ”•É…M…±•ÍA…•AÕ‰±¥…Ñ¥½¹MÑ…•I•ÍÁ½¹Í”Ñ½MÑ…•I•ÍÁ½¹Í”¡•É…M…±•ÍA…•AÕ‰±¥…Ñ¥½¹MÑ…•Õ‘¥ÐÍÑ…”¤ì(€€€€€€€É•ÑÕÉ¸¹•Ü•É…M…±•ÍA…•AÕ‰±¥…Ñ¥½¹MÑ…•I•ÍÁ½¹Í” (€€€€€€€€€€€€€€€ÍÑ…”¹•Ñ%‘)½ˆ ¤°(€€€€€€€€€€€€€€€ÍÑ…”¹•ÑMÑ…•½‘” ¤°(€€€€€€€€€€€€€€€ÍÑ…”¹•ÑMÑ…ÑÕÌ ¤°(€€€€€€€€€€€€€€€ÍÑ…”¹•Ñ½µÁ±•Ñ•‘Ð ¤°(€€€€€€€€€€€€€€€ÍÑ…”¹•ÑAÉ½µÁÑQ•µÁ±…Ñ•-•ä ¤°(€€€€€€€€€€€€€€€ÍÑ…”¹•ÑAÉ½µÁÐ ¤°(€€€€€€€€€€€€€€€ÍÑ…”¹•ÑAÉ½µÁÑ5…É­‘½Ý¹½¹Ñ•¹Ð ¤°(€€€€€€€€€€€€€€€ÍÑ…”¹•ÑM¡•µ…)Í½¸ ¤°(€€€€€€€€€€€€€€€ÍÑ…”¹•Ñ=Á•¹¥5½‘•° ¤°(€€€€€€€€€€€€€€€ÍÑ…”¹•Ñ=Á•¹¥I•ÅÕ•ÍÑ	½‘ä ¤°(€€€€€€€€€€€€€€€ÍÑ…”¹•Ñ5½‘•±I•ÍÁ½¹Í” ¤°(€€€€€€€€€€€€€€€ÍÑ…”¹•ÑI…ÝI•ÍÁ½¹Í” ¤°(€€€€€€€€€€€€€€€ÍÑ…”¹•Ñ%¹ÁÕÑQ½­•¹Ì ¤°(€€€€€€€€€€€€€€€ÍÑ…”¹•Ñ=ÕÑÁÕÑQ½­•¹Ì ¤°(€€€€€€€€€€€€€€€ÍÑ…”¹•Ñ½ÍÑUÍ ¤¤ì(€€€ô((€€€€¼¨¨%¹‘¥„Í”„•á•×Ÿ¼ƒ¤„•Ñ…Á„™¥¹…°½¹±×µ‘„¸€¨¼(€€€ÁÉ¥Ù…Ñ”‰½½±•…¸¥Í½µÁ±•Ñ•‘AÕ‰±¥…Ñ¥½¸¡•É…M…±•ÍA…•MÑ…•á•ÕÑ¥½¸•á•ÕÑ¥½¸¤ì(€€€€€€€É•ÑÕÉ¸•á•ÕÑ¥½¸€„ô¹Õ±°(€€€€€€€€€€€€€€€€˜˜•É…M…±•ÍA…•MÑ…•½‘”¹AU	1%Q%=9}A-¹½‘” ¤¹•ÅÕ…±Ì¡•á•ÕÑ¥½¸¹•ÑMÑ…•½‘” ¤¤(€€€€€€€€€€€€€€€€˜˜MQQUM}=5A1Q¹•ÅÕ…±Ì¡•á•ÕÑ¥½¸¹•ÑMÑ…ÑÕÌ ¤¤ì(€€€ô((€€€€¼¨¨½¹Ù•ÉÑ”)M=8Ñ•áÑÕ…°•´µ…Á„ÅÕ…¹‘¼Á½ÍÏµÙ•°¸€¨¼(€€€ÁÉ¥Ù…Ñ”5…ÀñMÑÉ¥¹œ°=‰©•ÐøÁ…ÉÍ•=‰©•Ð¡MÑÉ¥¹œ©Í½¸¤ì(€€€€€€€¥˜€ …MÑÉ¥¹UÑ¥±Ì¹¡…ÍQ•áÐ¡©Í½¸¤¤ì(€€€€€€€€€€€É•ÑÕÉ¸5…À¹½˜ ¤ì(€€€€€€€ô(€€€€€€€ÑÉäì(€€€€€€€€€€€É•ÑÕÉ¸½‰©•Ñ5…ÁÁ•È¹É•…‘Y…±Õ”¡©Í½¸°¹•ÜQåÁ•I•™•É•¹”ðø ¤íô¤ì(€€€€€€€ô…Ñ €¡á•ÁÑ¥½¸•à¤ì(€€€€€€€€€€€±½œ¹‘•‰Õœ ‰A…½Ñ”‘”ÁÕ‰±¥……¼‘¼•É…M…±•ÍA…”ØÄ¹…¼•ÍÑ…Ù„•´)M=8¸ˆ°•à¤ì(€€€€€€€€€€€É•ÑÕÉ¸5…À¹½˜ ¤ì(€€€€€€€ô(€€€ô((€€€€¼¨¨áÑÉ…¤ÍÑÉ¥¹œ‘”…µÁ¼½Á¥½¹…°‘¼Á…½Ñ”™¥¹…°¸€¨¼(€€€ÁÉ¥Ù…Ñ”MÑÉ¥¹œÍÑÉ¥¹Y…±Õ”¡=‰©•ÐÙ…±Õ”¤ì(€€€€€€€É•ÑÕÉ¸Ù…±Õ”¥¹ÍÑ…¹•½˜MÑÉ¥¹œÑ•áÐ€üÑ•áÐ€è¹Õ±°ì(€€€ô((€€€€¼¨¨I•ÍÕ±Ñ…‘¼¥¹Ñ•É¹¼‘„ÁÕ‰±¥……¼¹¼™Õ¹¥°AÉ½‘ÕÑ¼%Á•ÉÍ½¹…±¥é…‘¼¸€¨¼(€€€ÁÉ¥Ù…Ñ”É•½ÉA•ÉÍ½¹…±¥é•‘M…µÁ±•AÕ‰±¥…Ñ¥½¸¡MÑÉ¥¹œÍ…±•ÍA…•UÉ°°MÑÉ¥¹œ¡Ñµ°¤ì(€€€ô((€€€€¼¨¨I•ÍÕ±Ñ…‘¼¥¹Ñ•É¹¼‘„ÁÕ‰±¥……¼ÍÑ…¹‘…±½¹”Á…É„Ù•¹‘„‘¥É•Ñ„¸€¨¼(€€€ÁÉ¥Ù…Ñ”É•½ÉMÑ…¹‘…±½¹•M…±•ÍA…•AÕ‰±¥…Ñ¥½¸¡MÑÉ¥¹œÍ…±•ÍA…•UÉ°°MÑÉ¥¹œ¡Ñµ°¤ì(€€€ô)ô(

@@ -43,10 +43,10 @@ public record GeraSalesPageWorkerProperties(
         serviceTier = normalizeServiceTier(serviceTier);
     }
 
-    /** Normaliza o tier OpenAI do GeraSalesPage, que usa Standard por decisão comercial. */
+    /** Normaliza o tier OpenAI do GeraSalesPage, usando Flex por padrão operacional. */
     private static String normalizeServiceTier(String value) {
-        if (value == null || value.isBlank()) {
-            return "default";
+        if (value == null || value.isBlank() || "default".equalsIgnoreCase(value.trim())) {
+            return "flex";
         }
         String normalized = value.trim().toLowerCase();
         return "standard".equals(normalized) ? "default" : normalized;

@@ -17,7 +17,7 @@ class GeraSalesPageWorkerPropertiesTest {
 
         assertEquals("/api", properties.apiPrefix());
         assertEquals(Duration.ofMinutes(30), properties.timeout());
-        assertEquals("default", properties.serviceTier());
+        assertEquals("flex", properties.serviceTier());
         assertEquals(7, properties.stageCodes().size());
         assertTrue(properties.stageCodes().contains("sales-page-checkout-quality-review"));
     }

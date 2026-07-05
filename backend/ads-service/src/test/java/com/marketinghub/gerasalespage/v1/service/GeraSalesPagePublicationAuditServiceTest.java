@@ -74,6 +74,8 @@ class GeraSalesPagePublicationAuditServiceTest {
         when(experimentRepository.findById(53L)).thenReturn(Optional.of(experiment));
         when(executionRepository.findByExperimentIdOrderByExecutionRequestedAtAsc(53L))
                 .thenReturn(List.of(offer, publication));
+        when(leadPortalPublicUrlResolver.resolve(any(LeadPortalFlow.class)))
+                .thenReturn("https://pagamentopalf.site/sales-page-exp53.html");
         when(publicationRepository.save(any(GeraSalesPagePublicationAudit.class)))
                 .thenAnswer(invocation -> {
                     GeraSalesPagePublicationAudit audit = invocation.getArgument(0);
@@ -97,6 +99,55 @@ class GeraSalesPagePublicationAuditServiceTest {
         assertThat(stages.getValue().getFirst().getStageCode()).isEqualTo("sales-page-offer-brief");
         assertThat(stages.getValue().getFirst().getPrompt()).isEqualTo("prompt job-offer");
         assertThat(stages.getValue().getFirst().getSchemaJson()).isEqualTo("{\"type\":\"object\"}");
+    }
+
+    /** Deve publicar venda direta como pagina standalone e manter checkout separado do destino do anuncio. */
+    @Test
+    void shouldPublishDirectCheckoutSalesPageAsStandaloneLeadPortalPage() {
+        Experiment experiment = new Experiment();
+        experiment.setId(56L);
+        experiment.setName("Mapa de Recorrencia 7D");
+        experiment.setFollowUpActionUrl("https://www.mercadopago.com.br/checkout/56");
+        GeraSalesPageStageExecution publication = execution(
+                "job-publication-direct",
+                GeraSalesPageStageCode.PUBLICATION_PACKAGE.code(),
+                "{\"html\":\"<html><body data-mh-sales-page-analytics='true'>Venda direta</body></html>\","
+                        + "\"checkoutUrl\":\"https://www.mercadopago.com.br/checkout/56\","
+                        + "\"salesPageUrl\":\"https://www.mercadopago.com.br/checkout/56\"}",
+                Instant.parse("2026-07-01T10:10:00Z"));
+        publication.setExperimentId(56L);
+
+        when(publicationRepository.existsByPublicationJobId("job-publication-direct")).thenReturn(false);
+        when(experimentRepository.findById(56L)).thenReturn(Optional.of(experiment));
+        when(executionRepository.findByExperimentIdOrderByExecutionRequestedAtAsc(56L))
+                .thenReturn(List.of(publication));
+        when(leadPortalPublicUrlResolver.resolve(any(LeadPortalFlow.class)))
+                .thenReturn("https://oportunidadebrasil.shop/flows/gerasalespage-exp-56-mapa-de-recorrencia-7d");
+        when(publicationRepository.save(any(GeraSalesPagePublicationAudit.class)))
+                .thenAnswer(invocation -> {
+                    GeraSalesPagePublicationAudit audit = invocation.getArgument(0);
+                    audit.setId(12L);
+                    return audit;
+                });
+
+        service.snapshotPublication(publication);
+
+        ArgumentCaptor<LeadPortalFlow> flowCaptor = ArgumentCaptor.forClass(LeadPortalFlow.class);
+        verify(leadPortalFlowPublisher).publish(flowCaptor.capture());
+        assertThat(flowCaptor.getValue().getSlug())
+                .isEqualTo("gerasalespage-exp-56-mapa-de-recorrencia-7d");
+        assertThat(flowCaptor.getValue().getCustomFormHtml()).contains("Venda direta");
+        assertThat(flowCaptor.getValue().isApproved()).isTrue();
+
+        ArgumentCaptor<GeraSalesPagePublicationAudit> audit =
+                ArgumentCaptor.forClass(GeraSalesPagePublicationAudit.class);
+        verify(publicationRepository).save(audit.capture());
+        assertThat(experiment.getFollowUpActionUrl())
+                .isEqualTo("https://oportunidadebrasil.shop/flows/gerasalespage-exp-56-mapa-de-recorrencia-7d");
+        assertThat(audit.getValue().getSalesPageUrl())
+                .isEqualTo("https://oportunidadebrasil.shop/flows/gerasalespage-exp-56-mapa-de-recorrencia-7d");
+        assertThat(audit.getValue().getCheckoutUrl())
+                .isEqualTo("https://www.mercadopago.com.br/checkout/56");
     }
 
     /** Deve publicar Produto IA personalizado dentro do funil de coleta já vinculado ao experimento. */

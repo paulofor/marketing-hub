@@ -2,7 +2,7 @@ name: Build & Deploy containers
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
 
 concurrency:
   group: deploy-containers-${{ github.ref }}
@@ -225,17 +225,56 @@ jobs:
         run: ssh-keyscan -4 -p 22 -t rsa,ecdsa,ed25519 -H ${VIDEO_VPS_IP} >> ~/.ssh/known_hosts
 
       - name: Copy deployment descriptors
+        env:
+          SSH_OPTS: -o ServerAliveInterval=30 -o ServerAliveCountMax=10 -o ConnectTimeout=30 -o TCPKeepAlive=yes
         run: |
-          ssh ${VPS_USER}@${VIDEO_VPS_IP} "mkdir -p ${DEPLOY_DIR}"
-          rsync -az --delete deploy/ ${VPS_USER}@${VIDEO_VPS_IP}:${DEPLOY_DIR}/
+          retry() {
+            local attempt=1
+            until "$@"; do
+              if [ "${attempt}" -ge 3 ]; then
+                return 1
+              fi
+              sleep $((attempt * 10))
+              attempt=$((attempt + 1))
+            done
+          }
+
+          retry ssh ${SSH_OPTS} ${VPS_USER}@${VIDEO_VPS_IP} "mkdir -p ${DEPLOY_DIR}"
+          retry rsync -az --delete -e "ssh ${SSH_OPTS}" deploy/ ${VPS_USER}@${VIDEO_VPS_IP}:${DEPLOY_DIR}/
 
       - name: Upload image to VIDEO VPS
-        run: scp artifacts/video-management-image.tar ${VPS_USER}@${VIDEO_VPS_IP}:/tmp/video-management-image.tar
+        env:
+          SSH_OPTS: -o ServerAliveInterval=30 -o ServerAliveCountMax=10 -o ConnectTimeout=30 -o TCPKeepAlive=yes
+        run: |
+          retry() {
+            local attempt=1
+            until "$@"; do
+              if [ "${attempt}" -ge 3 ]; then
+                return 1
+              fi
+              sleep $((attempt * 10))
+              attempt=$((attempt + 1))
+            done
+          }
+
+          retry scp ${SSH_OPTS} artifacts/video-management-image.tar ${VPS_USER}@${VIDEO_VPS_IP}:/tmp/video-management-image.tar
 
       - name: Apply video-management stack
         env:
           GIT_SHA: ${{ github.sha }}
+          SSH_OPTS: -o ServerAliveInterval=30 -o ServerAliveCountMax=10 -o ConnectTimeout=30 -o TCPKeepAlive=yes
         run: |
-          ssh ${VPS_USER}@${VIDEO_VPS_IP} "chmod +x ${DEPLOY_DIR}/bin/apply-video-only.sh"
-          ssh ${VPS_USER}@${VIDEO_VPS_IP} \
+          retry() {
+            local attempt=1
+            until "$@"; do
+              if [ "${attempt}" -ge 3 ]; then
+                return 1
+              fi
+              sleep $((attempt * 10))
+              attempt=$((attempt + 1))
+            done
+          }
+
+          retry ssh ${SSH_OPTS} ${VPS_USER}@${VIDEO_VPS_IP} "chmod +x ${DEPLOY_DIR}/bin/apply-video-only.sh"
+          retry timeout 30m ssh ${SSH_OPTS} ${VPS_USER}@${VIDEO_VPS_IP} \
             "IMAGE_TAG=${GIT_SHA} VIDEO_TAR=/tmp/video-management-image.tar VIDEO_IMAGE=${VIDEO_IMAGE} VIDEO_BACKEND_BASE_URL=http://${APP_VPS_IP}:8000 DEPLOY_DIR=${DEPLOY_DIR} /bin/bash ${DEPLOY_DIR}/bin/apply-video-only.sh"

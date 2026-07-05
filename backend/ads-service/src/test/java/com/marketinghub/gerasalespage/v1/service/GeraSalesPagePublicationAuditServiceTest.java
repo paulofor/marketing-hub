@@ -21,6 +21,7 @@ import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPagePublicationAuditRepository;
 import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPagePublicationStageAuditRepository;
 import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPageStageExecutionRepository;
+import com.marketinghub.repository.jpa.leadportal.LeadPortalFlowRepository;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +45,8 @@ class GeraSalesPagePublicationAuditServiceTest {
     private GeraSalesPagePublicationAuditRepository publicationRepository;
     @Mock
     private GeraSalesPagePublicationStageAuditRepository publicationStageRepository;
+    @Mock
+    private LeadPortalFlowRepository leadPortalFlowRepository;
     @Mock
     private LeadPortalFlowPublisher leadPortalFlowPublisher;
     @Mock
@@ -74,6 +77,15 @@ class GeraSalesPagePublicationAuditServiceTest {
         when(experimentRepository.findById(53L)).thenReturn(Optional.of(experiment));
         when(executionRepository.findByExperimentIdOrderByExecutionRequestedAtAsc(53L))
                 .thenReturn(List.of(offer, publication));
+        when(leadPortalFlowRepository.findBySlug("exp-53-gerasalespage-v1")).thenReturn(Optional.empty());
+        when(leadPortalFlowRepository.save(any(LeadPortalFlow.class)))
+                .thenAnswer(invocation -> {
+                    LeadPortalFlow flow = invocation.getArgument(0);
+                    flow.setId(53L);
+                    return flow;
+                });
+        when(leadPortalPublicUrlResolver.resolve(any(LeadPortalFlow.class)))
+                .thenReturn("https://oportunidadebrasil.shop/flows/exp-53-gerasalespage-v1");
         when(publicationRepository.save(any(GeraSalesPagePublicationAudit.class)))
                 .thenAnswer(invocation -> {
                     GeraSalesPagePublicationAudit audit = invocation.getArgument(0);
@@ -86,10 +98,17 @@ class GeraSalesPagePublicationAuditServiceTest {
         ArgumentCaptor<GeraSalesPagePublicationAudit> audit =
                 ArgumentCaptor.forClass(GeraSalesPagePublicationAudit.class);
         verify(publicationRepository).save(audit.capture());
+        ArgumentCaptor<LeadPortalFlow> flow = ArgumentCaptor.forClass(LeadPortalFlow.class);
+        verify(leadPortalFlowPublisher).publish(flow.capture());
         ArgumentCaptor<List<GeraSalesPagePublicationStageAudit>> stages = ArgumentCaptor.forClass(List.class);
         verify(publicationStageRepository).saveAll(stages.capture());
+        assertThat(flow.getValue().getSlug()).isEqualTo("exp-53-gerasalespage-v1");
+        assertThat(flow.getValue().getCustomFormHtml()).contains("Venda");
+        assertThat(experiment.getFollowUpActionUrl())
+                .isEqualTo("https://oportunidadebrasil.shop/flows/exp-53-gerasalespage-v1");
         assertThat(audit.getValue().getPublicationJobId()).isEqualTo("job-publication");
-        assertThat(audit.getValue().getSalesPageUrl()).isEqualTo("https://pagamentopalf.site/sales-page-exp53.html");
+        assertThat(audit.getValue().getSalesPageUrl())
+                .isEqualTo("https://oportunidadebrasil.shop/flows/exp-53-gerasalespage-v1");
         assertThat(audit.getValue().getCheckoutUrl()).isEqualTo("https://mp.test/checkout");
         assertThat(audit.getValue().getHtml()).contains("Venda");
         assertThat(stages.getValue()).hasSize(2);

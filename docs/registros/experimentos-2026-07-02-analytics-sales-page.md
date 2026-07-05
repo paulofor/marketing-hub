@@ -18,3 +18,10 @@
 - Sintoma pós-deploy: o backend subia saudável, mas o bootstrap registrava `Cannot add foreign key constraint` ao tentar criar FKs de `gera_sales_page_publication_audit.publication_job_id` e `gera_sales_page_publication_stage_audit.id_job` para `gera_sales_page_stage_execution.id_job`.
 - Causa-raiz confirmada via MCP/banco: as tabelas de auditoria foram criadas com `utf8mb4_unicode_ci`, enquanto `gera_sales_page_stage_execution.id_job` estava em `utf8mb4_general_ci`; no MySQL 5.7, FK entre `VARCHAR` com collation diferente é recusada. O changeset original estava `MARK_RAN`, deixando índices e FKs de job incompletos.
 - Correção aplicada: novo changelog alinha a collation das colunas-filhas para `utf8mb4_general_ci`, recria os índices previstos e adiciona as FKs de job de forma idempotente.
+
+## 2026-07-05 — Publicação standalone low-ticket no GeraSalesPage
+
+- Problema: o experimento 56 concluiu a página no GeraSalesPage, mas a publicação manteve `salesPageUrl`/destino da campanha apontando para checkout Mercado Pago.
+- Causa-raiz: a publicação final tinha tratamento especial apenas para Produto IA personalizado; no low-ticket comum, o snapshot auditava o pacote e fazia fallback para `followUpActionUrl`, que ainda era a URL interna de checkout usada para montar a página.
+- Correção aplicada: a etapa final do GeraSalesPage agora publica o HTML aprovado como fluxo standalone no Lead Portal, grava a URL pública como `salesPageUrl` e `followUpActionUrl`, mantendo `checkoutUrl` separado para os botões da página.
+- Prevenção de recorrência: teste unitário cobre página de venda direta com checkout separado e garante que a campanha passa a usar a URL pública do Lead Portal, não o checkout frio.

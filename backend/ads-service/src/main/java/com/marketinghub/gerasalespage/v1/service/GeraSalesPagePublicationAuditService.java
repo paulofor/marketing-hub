@@ -19,6 +19,7 @@ import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPagePublicationAuditRepository;
 import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPagePublicationStageAuditRepository;
 import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPageStageExecutionRepository;
+import com.marketinghub.repository.jpa.leadportal.LeadPortalFlowRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
 import java.util.LinkedHashMap;
@@ -46,6 +47,7 @@ public class GeraSalesPagePublicationAuditService {
     private final GeraSalesPageStageExecutionRepository executionRepository;
     private final GeraSalesPagePublicationAuditRepository publicationRepository;
     private final GeraSalesPagePublicationStageAuditRepository publicationStageRepository;
+    private final LeadPortalFlowRepository leadPortalFlowRepository;
     private final LeadPortalFlowPublisher leadPortalFlowPublisher;
     private final LeadPortalPublicUrlResolver leadPortalPublicUrlResolver;
     private final ObjectMapper objectMapper;
@@ -56,6 +58,7 @@ public class GeraSalesPagePublicationAuditService {
             GeraSalesPageStageExecutionRepository executionRepository,
             GeraSalesPagePublicationAuditRepository publicationRepository,
             GeraSalesPagePublicationStageAuditRepository publicationStageRepository,
+            LeadPortalFlowRepository leadPortalFlowRepository,
             LeadPortalFlowPublisher leadPortalFlowPublisher,
             LeadPortalPublicUrlResolver leadPortalPublicUrlResolver,
             ObjectMapper objectMapper) {
@@ -63,6 +66,7 @@ public class GeraSalesPagePublicationAuditService {
         this.executionRepository = executionRepository;
         this.publicationRepository = publicationRepository;
         this.publicationStageRepository = publicationStageRepository;
+        this.leadPortalFlowRepository = leadPortalFlowRepository;
         this.leadPortalFlowPublisher = leadPortalFlowPublisher;
         this.leadPortalPublicUrlResolver = leadPortalPublicUrlResolver;
         this.objectMapper = objectMapper;
@@ -140,6 +144,11 @@ public class GeraSalesPagePublicationAuditService {
             html = personalizedSamplePublication.html();
             salesPageUrl = personalizedSamplePublication.salesPageUrl();
             checkoutUrl = null;
+        } else {
+            DirectCheckoutPublication directCheckoutPublication =
+                    publishDirectCheckoutSalesPage(experiment, html);
+            html = directCheckoutPublication.html();
+            salesPageUrl = directCheckoutPublication.salesPageUrl();
         }
         Instant publishedAt = publicationExecution.getCompletedAt() != null
                 ? publicationExecution.getCompletedAt()
@@ -166,6 +175,62 @@ public class GeraSalesPagePublicationAuditService {
             return StringUtils.hasText(checkoutUrl) ? checkoutUrl : null;
         }
         return StringUtils.hasText(checkoutUrl) ? checkoutUrl : experiment.getFollowUpActionUrl();
+    }
+
+    /** Publica pagina low-ticket standalone no Lead Portal e usa essa URL como destino oficial da campanha. */
+    private DirectCheckoutPublication publishDirectCheckoutSalesPage(
+            Experiment experiment,
+            String html) {
+        if (!StringUtils.hasText(html)) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "GeraSalesPage v1 exige HTML final para publicar pagina de venda standalone.");
+        }
+        LeadPortalFlow flow = upsertDirectCheckoutFlow(experiment, html);
+        try {
+            leadPortalFlowPublisher.publish(flow);
+        } catch (LeadPortalPublicationException ex) {
+            log.error("Falha ao publicar pagina GeraSalesPage standalone: experimentId={}, flowId={}, slug={}",
+                    experiment.getId(), flow.getId(), flow.getSlug(), ex);
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_GATEWAY,
+                    "Falha ao publicar pagina de venda standalone.",
+                    ex);
+        }
+        String publicUrl = leadPortalPublicUrlResolver.resolve(flow);
+        if (!StringUtils.hasText(publicUrl)) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Lead Portal nao retornou URL publica para a pagina de venda standalone.");
+        }
+        experiment.setLeadPortalFlow(flow);
+        experiment.setSchemaFirstLeadPortalEnabled(true);
+        experiment.setFollowUpActionUrl(publicUrl);
+        return new DirectCheckoutPublication(publicUrl, html);
+    }
+
+    /** Cria ou atualiza o fluxo publico usado exclusivamente como pagina de venda standalone. */
+    private LeadPortalFlow upsertDirectCheckoutFlow(Experiment experiment, String html) {
+        String slug = "exp-" + experiment.getId() + "-gerasalespage-v1";
+        LeadPortalFlow flow = leadPortalFlowRepository.findBySlug(slug).orElseGet(() -> LeadPortalFlow.builder()
+                .name("GeraSalesPage v1 - Experimento " + experiment.getId())
+                .slug(slug)
+                .description("Pagina de venda standalone gerada automaticamente pelo GeraSalesPage v1.")
+                .prompt("Pipeline: gera-sales-page-v1/publication-package")
+                .schemaFirst(true)
+                .experiment(experiment)
+                .marketNiche(experiment.getNiche())
+                .build());
+        flow.setCustomFormHtml(html.trim());
+        flow.setSchemaFirst(true);
+        flow.setApproved(true);
+        if (flow.getApprovedAt() == null) {
+            flow.setApprovedAt(Instant.now());
+        }
+        flow.setModel("GERA_SALES_PAGE_V1_STANDALONE");
+        flow.setExperiment(experiment);
+        flow.setMarketNiche(experiment.getNiche());
+        return leadPortalFlowRepository.save(flow);
     }
 
     /** Publica a pagina aprovada dentro do funil canonico quando o produto exige personalizacao. */
@@ -422,5 +487,9 @@ public class GeraSalesPagePublicationAuditService {
 
     /** Resultado interno da publicacao no funil Produto IA personalizado. */
     private record PersonalizedSamplePublication(String salesPageUrl, String html) {
+    }
+
+    /** Resultado interno da publicacao standalone para venda direta low-ticket. */
+    private record DirectCheckoutPublication(String salesPageUrl, String html) {
     }
 }

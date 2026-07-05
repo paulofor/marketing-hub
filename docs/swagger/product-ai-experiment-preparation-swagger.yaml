@@ -49,7 +49,7 @@ paths:
   /api/product-ai/experiments/{experimentId}/personalized-sample-funnel:
     post:
       summary: Cria funil de coleta para AI Personalized Sample
-      description: Cria ou reaproveita o Lead Portal Flow canônico que coleta os dados mínimos do lead para gerar uma amostra personalizada. O fluxo fica aprovado e vinculado ao experimento.
+      description: Cria ou reaproveita o Lead Portal Flow canônico que coleta os dados mínimos do lead para gerar uma amostra personalizada. Quando o contexto indicar DecoraIA, decoração ou melhoria de ambiente por foto, o funil exige upload da foto do ambiente e campos específicos do piloto visual. O fluxo fica aprovado e vinculado ao experimento.
       parameters:
         - name: experimentId
           in: path

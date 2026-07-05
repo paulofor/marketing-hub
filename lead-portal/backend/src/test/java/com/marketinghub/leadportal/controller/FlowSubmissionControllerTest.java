@@ -177,6 +177,86 @@ class FlowSubmissionControllerTest {
     }
 
     @Test
+    void submissionWithReferenceImageCreatesPackageWhenFlowHasImagePrompt() throws Exception {
+        Flow visualSampleFlow = new Flow(
+                "decoraia-express",
+                "DecoraIA Express",
+                "Amostra personalizada por foto",
+                null,
+                null,
+                null,
+                "gpt-image-1.5",
+                "Transforme o ambiente de {{nome}} com estilo {{estilo}}. Dados: {{dados_json}}",
+                3,
+                List.of(
+                        new FlowQuestion(
+                                "Nome",
+                                "nome",
+                                FlowQuestionType.TEXT,
+                                true,
+                                "", null,
+                                List.of()),
+                        new FlowQuestion(
+                                "E-mail",
+                                "email",
+                                FlowQuestionType.EMAIL,
+                                true,
+                                "", null,
+                                List.of()),
+                        new FlowQuestion(
+                                "Estilo desejado",
+                                "estilo",
+                                FlowQuestionType.TEXT,
+                                true,
+                                "", null,
+                                List.of()),
+                        new FlowQuestion(
+                                "Foto do ambiente",
+                                "foto_ambiente",
+                                FlowQuestionType.IMAGE_UPLOAD,
+                                true,
+                                "", null,
+                                List.of())),
+                null, null, null, null);
+        flowService.save(visualSampleFlow);
+
+        Map<String, Object> payload = Map.of(
+                "name", "Cliente Premium",
+                "email", "cliente.premium@example.com",
+                "imageKey", "foto_ambiente",
+                "answers",
+                Map.of(
+                        "nome", "Cliente Premium",
+                        "email", "cliente.premium@example.com",
+                        "estilo", "moderno aconchegante"));
+
+        MockMultipartFile payloadPart = new MockMultipartFile(
+                "payload", "payload", MediaType.APPLICATION_JSON_VALUE, objectMapper.writeValueAsBytes(payload));
+        MockMultipartFile imagePart = new MockMultipartFile(
+                "image", "sala.png", MediaType.IMAGE_PNG_VALUE, "conteudo".getBytes());
+
+        mockMvc.perform(multipart("/api/flows/decoraia-express/submissions")
+                        .file(payloadPart)
+                        .file(imagePart))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.flowSlug").value("decoraia-express"));
+
+        assertThat(imagePackageRepository.findAll())
+                .hasSize(1)
+                .first()
+                .satisfies(pack -> {
+                    assertThat(pack.getStatus()).isEqualTo("RECENT");
+                    assertThat(pack.getModel()).isEqualTo("gpt-image-1.5");
+                    assertThat(pack.getPlannedOutputs()).isEqualTo(3);
+                    assertThat(pack.getFreeImages()).isEqualTo(1);
+                    assertThat(pack.getPrompt())
+                            .contains("moderno aconchegante")
+                            .contains("foto enviada pelo lead")
+                            .contains("sala.png");
+                });
+    }
+
+    @Test
     void acceptsMultipartWithoutPayloadAndPersistsCustomFields() throws Exception {
         MockMultipartFile imagePart = new MockMultipartFile(
                 "image", "referencia.png", MediaType.IMAGE_PNG_VALUE, "conteudo".getBytes());

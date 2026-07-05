@@ -1,6 +1,7 @@
 package com.marketinghub.gerasalespage.v1.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -33,6 +34,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.server.ResponseStatusException;
 
 /** Valida o snapshot historico de publicacoes do GeraSalesPage v1. */
 @ExtendWith(MockitoExtension.class)
@@ -188,6 +190,33 @@ class GeraSalesPagePublicationAuditServiceTest {
         Map<?, ?> formSpec = (Map<?, ?>) customPayload.get("formSpec");
         assertThat(formSpec.get("formId")).isEqualTo("lead-portal-personalized-sample-form");
         assertThat((List<?>) formSpec.get("fields")).hasSize(2);
+    }
+
+    /** Deve bloquear HTML publico com termos comerciais comuns em portugues sem acentuacao. */
+    @Test
+    void shouldBlockPublicationWithCommonUnaccentedPortugueseTerms() {
+        Experiment experiment = new Experiment();
+        experiment.setId(53L);
+        experiment.setFollowUpActionUrl("https://pagamentopalf.site/checkout");
+        GeraSalesPageStageExecution publication = execution(
+                "job-publication",
+                GeraSalesPageStageCode.PUBLICATION_PACKAGE.code(),
+                "{\"html\":\"<html><body><h1>Voce nao precisa perder o almoco</h1>"
+                        + "<p>Receba informacao no proximo endereco.</p></body></html>\","
+                        + "\"checkoutUrl\":\"https://mp.test/checkout\"}",
+                Instant.parse("2026-07-01T10:10:00Z"));
+
+        when(publicationRepository.existsByPublicationJobId("job-publication")).thenReturn(false);
+        when(experimentRepository.findById(53L)).thenReturn(Optional.of(experiment));
+        when(executionRepository.findByExperimentIdOrderByExecutionRequestedAtAsc(53L))
+                .thenReturn(List.of(publication));
+
+        assertThatThrownBy(() -> service.snapshotPublication(publication))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("voce")
+                .hasMessageContaining("nao")
+                .hasMessageContaining("informacao")
+                .hasMessageContaining("endereco");
     }
 
     /** Cria execução concluída mínima para snapshot de teste. */

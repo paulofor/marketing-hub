@@ -23,8 +23,11 @@ import com.marketinghub.repository.jpa.leadportal.LeadPortalFlowRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
@@ -42,6 +45,10 @@ public class GeraSalesPagePublicationAuditService {
     private static final String STATUS_COMPLETED = "CONCLUIDO";
     private static final Pattern IFRAME_BLOCK_PATTERN =
             Pattern.compile("(?is)<iframe\\b[^>]*>.*?</iframe>");
+    private static final Pattern COMMON_UNACCENTED_PORTUGUESE_PATTERN = Pattern.compile(
+            "(?iu)(?<![\\p{L}])(" 
+                    + "nao|voce|informacao|producao|pendencia|endereco|proximo|almoco|atencao|solucao"
+                    + ")(?![\\p{L}@-])");
 
     private final ExperimentRepository experimentRepository;
     private final GeraSalesPageStageExecutionRepository executionRepository;
@@ -137,6 +144,7 @@ public class GeraSalesPagePublicationAuditService {
                 packagePayload.get("publicUrl"),
                 packagePayload.get("publishedUrl"),
                 packagePayload.get("pageUrl"));
+        validatePublicPortugueseAccentuation(experiment, publicationExecution, html);
         PersonalizedSamplePublication personalizedSamplePublication =
                 publishPersonalizedSampleSalesPageIfNeeded(experiment, html);
         boolean personalizedSampleSalesPage = personalizedSamplePublication != null;
@@ -175,6 +183,39 @@ public class GeraSalesPagePublicationAuditService {
             return StringUtils.hasText(checkoutUrl) ? checkoutUrl : null;
         }
         return StringUtils.hasText(checkoutUrl) ? checkoutUrl : experiment.getFollowUpActionUrl();
+    }
+
+    /** Bloqueia publicacao de pagina publica com termos comerciais comuns sem acentuacao. */
+    private void validatePublicPortugueseAccentuation(
+            Experiment experiment,
+            GeraSalesPageStageExecution publicationExecution,
+            String html) {
+        Set<String> unaccentedTerms = findCommonUnaccentedPortugueseTerms(html);
+        if (unaccentedTerms.isEmpty()) {
+            return;
+        }
+        String terms = String.join(", ", unaccentedTerms);
+        log.warn(
+                "GeraSalesPage bloqueou HTML publico sem acentuacao: experimentId={}, idJob={}, termos={}",
+                experiment.getId(),
+                publicationExecution.getIdJob(),
+                terms);
+        throw new ResponseStatusException(
+                HttpStatus.CONFLICT,
+                "GeraSalesPage bloqueou a publicacao por portugues sem acentuacao em termos comuns: " + terms);
+    }
+
+    /** Localiza termos comuns sem acento preservando a ordem em que aparecem no HTML. */
+    private Set<String> findCommonUnaccentedPortugueseTerms(String html) {
+        Set<String> terms = new LinkedHashSet<>();
+        if (!StringUtils.hasText(html)) {
+            return terms;
+        }
+        Matcher matcher = COMMON_UNACCENTED_PORTUGUESE_PATTERN.matcher(html);
+        while (matcher.find()) {
+            terms.add(matcher.group(1).toLowerCase(Locale.ROOT));
+        }
+        return terms;
     }
 
     /** Publica pagina low-ticket standalone no Lead Portal e usa essa URL como destino oficial da campanha. */

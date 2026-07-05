@@ -63,3 +63,47 @@ databaseChangeLog:
                 schema_json = VALUES(schema_json),
                 active = true,
                 updated_at = CURRENT_TIMESTAMP;
+  - changeSet:
+      id: 2026-07-05-gera-sales-page-accentuation-templates-v4-001
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - dbms:
+            type: mysql
+        - tableExists:
+            tableName: ai_prompt_schema_template
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              UPDATE ai_prompt_schema_template
+              SET active = false, updated_at = CURRENT_TIMESTAMP
+              WHERE pipeline_code = 'gera-sales-page-v1'
+                AND stage_code IN (
+                  'sales-page-html',
+                  'sales-page-checkout-quality-review',
+                  'sales-page-publication-package'
+                );
+
+              INSERT INTO ai_prompt_schema_template
+                (template_key, pipeline_code, stage_code, version, openai_model, schema_name, prompt_markdown_content, schema_json, active, created_at, updated_at)
+              VALUES
+                ('gera-sales-page-v1:sales-page-html:v4', 'gera-sales-page-v1', 'sales-page-html', 'v4', 'gpt-5.5', 'gera_sales_page_v1_html',
+                 'Você é desenvolvedor front-end de landing de vendas. Gere a etapa sales-page-html do GeraSalesPage v1 em HTML responsivo e português brasileiro profissional, com acentuação correta em todo texto público, incluindo títulos, botões, bullets, placeholders e mensagens de formulário. É proibido entregar termos comuns sem acento como nao, voce, informacao, producao, pendencia, endereco, proximo, almoco, atencao ou solucao. Se salesPageDestination=LEAD_PORTAL_PERSONALIZED_SAMPLE_FUNNEL, os CTAs devem apontar para o bloco de formulário gerenciado; não crie checkout direto como primeira ação, não crie campos próprios fora do formulário gerenciado e nunca use iframe para carregar o Lead Portal, flow ou a própria URL do funil. Explique amostra, preço e entrega paga com clareza. Se salesPageDestination=DIRECT_CHECKOUT, use a URL de checkout real e não crie formulário. Responda apenas JSON válido aderente ao schema. Experimento: {{experiment}} Saídas anteriores: {{previousStageOutputs}}',
+                 '{"type":"object","additionalProperties":false,"required":["html","checkoutUrl","notes"],"properties":{"html":{"type":"string"},"checkoutUrl":{"type":"string"},"notes":{"type":"array","items":{"type":"string"}}}}',
+                 true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                ('gera-sales-page-v1:sales-page-checkout-quality-review:v4', 'gera-sales-page-v1', 'sales-page-checkout-quality-review', 'v4', 'gpt-5.5', 'gera_sales_page_v1_checkout_quality_review',
+                 'Você é auditor comercial. Revise a página do GeraSalesPage v1 como material que receberá tráfego pago. Bloqueie sempre que o HTML público tiver português brasileiro sem acentuação em termos comuns de venda, atendimento ou entrega, incluindo nao, voce, informacao, producao, pendencia, endereco, proximo, almoco, atencao e solucao. Esse erro reduz confiança antes do checkout e invalida a página para mídia paga. Se salesPageDestination=LEAD_PORTAL_PERSONALIZED_SAMPLE_FUNNEL, aprove formulário e CTA para coleta de personalização, mas bloqueie se a página confundir amostra gratuita, compra paga, preço, entrega completa ou limites da amostra. Bloqueie sempre que houver iframe apontando para Lead Portal, flow, funil ou para a própria página. Não exija checkout direto nesse caso. Se salesPageDestination=DIRECT_CHECKOUT, bloqueie se CTA não apontar para checkout real ou se houver formulário obrigatório. Responda apenas JSON válido aderente ao schema. Experimento: {{experiment}} Saídas anteriores: {{previousStageOutputs}}',
+                 '{"type":"object","additionalProperties":false,"required":["approved","blockers","recommendation"],"properties":{"approved":{"type":"boolean"},"blockers":{"type":"array","items":{"type":"string"}},"recommendation":{"type":"string"}}}',
+                 true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                ('gera-sales-page-v1:sales-page-publication-package:v4', 'gera-sales-page-v1', 'sales-page-publication-package', 'v4', 'gpt-5.5', 'gera_sales_page_v1_publication_package',
+                 'Você é responsável por empacotar a página para publicação. Antes de retornar readyForTraffic=true, revise o HTML final e bloqueie qualquer português brasileiro sem acentuação em texto público, como nao, voce, informacao, producao, pendencia, endereco, proximo, almoco, atencao ou solucao. Para salesPageDestination=LEAD_PORTAL_PERSONALIZED_SAMPLE_FUNNEL, mantenha HTML publicável no funil-página, CTAs para o formulário gerenciado, clareza de amostra gratuita, produto pago, preço e entrega; o checklist deve confirmar acentuação correta, ausência de checkout direto como primeira ação e ausência de iframe para Lead Portal, flow ou a própria página. Para checkout real, mantenha checkoutUrl e checklist de liberação para mídia paga. Responda apenas JSON válido aderente ao schema. Experimento: {{experiment}} Saídas anteriores: {{previousStageOutputs}}',
+                 '{"type":"object","additionalProperties":false,"required":["readyForTraffic","html","checkoutUrl","releaseChecklist"],"properties":{"readyForTraffic":{"type":"boolean"},"html":{"type":"string"},"checkoutUrl":{"type":"string"},"releaseChecklist":{"type":"array","items":{"type":"string"}}}}',
+                 true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+              ON DUPLICATE KEY UPDATE
+                prompt_markdown_content = VALUES(prompt_markdown_content),
+                schema_json = VALUES(schema_json),
+                active = true,
+                updated_at = CURRENT_TIMESTAMP;

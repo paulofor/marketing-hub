@@ -481,12 +481,12 @@ Essa separação evita acoplamento indevido: Experimentos mantém a responsabili
 Toda chamada para OpenAI no contexto deste fluxo é mediada pelo Worker AI. O frontend e demais módulos não devem chamar OpenAI diretamente para essas etapas.
 
 ### 8.2 Modo de processamento OpenAI
-No fluxo de **Gera Landing**, a integração canônica com OpenAI deve usar **Flex processing** na API de `responses`, definindo `service_tier=flex` em cada requisição do Worker AI.
+No fluxo de **Gera Landing**, a integração canônica com OpenAI deve usar a política de retry por `service_tier` definida em `docs/canonical/openai-service-tier-retry-canon.v1.md`: primeira tentativa em Flex, segunda tentativa em Flex e terceira tentativa em Standard/default quando a chamada suportar fallback sem quebrar o contrato.
 
 Para outros fluxos que ainda usam lote assíncrono (ex.: alguns jobs de criativos/imagem), o modo batch continua permitido quando o contrato operacional exigir processamento em arquivo JSONL com polling.
 
-Regras obrigatórias do modo Flex no Gera Landing:
-- usar endpoint síncrono `/v1/responses` com `service_tier=flex`;
+Regras obrigatórias do modo Flex com fallback no Gera Landing:
+- usar endpoint síncrono `/v1/responses`, enviando `service_tier=flex` nas duas primeiras tentativas e Standard/default na terceira tentativa quando suportado;
 - configurar timeout de cliente compatível com latência maior do Flex;
 - tratar indisponibilidade de capacidade (`429`) como falha de integração com contexto operacional em log.
 

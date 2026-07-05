@@ -12,6 +12,8 @@ import com.marketinghub.experiment.service.ExperimentAiPromptSchemaUsageService;
 import com.marketinghub.aiprompt.AiPromptSchemaTemplate;
 import com.marketinghub.gerasalespage.v1.GeraSalesPageStageCode;
 import com.marketinghub.gerasalespage.v1.GeraSalesPageStageExecution;
+import com.marketinghub.leadportal.LeadPortalFlow;
+import com.marketinghub.productai.ProductAiSubtype;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.aiprompt.AiPromptSchemaTemplateRepository;
 import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPageStageExecutionRepository;
@@ -97,6 +99,56 @@ class GeraSalesPageStageServiceTest {
                 GeraSalesPageStageCode.OFFER_BRIEF.code(),
                 newExecution.getValue().getIdJob());
         assertThat(response.stageCode()).isEqualTo(GeraSalesPageStageCode.OFFER_BRIEF.code());
+    }
+
+    /** Deve permitir Produto IA personalizado quando o destino é o funil aprovado de amostra. */
+    @Test
+    void startShouldAllowPersonalizedSampleFunnelWithoutDirectCheckout() {
+        Experiment experiment = new Experiment();
+        experiment.setId(57L);
+        experiment.setProductAiSubtype(ProductAiSubtype.AI_PERSONALIZED_SAMPLE);
+        experiment.setFollowUpActionUrl("https://oportunidadebrasil.shop/flows/decoraia-express-exp-57");
+        experiment.setLeadPortalFlow(LeadPortalFlow.builder()
+                .id(39L)
+                .slug("decoraia-express-exp-57")
+                .approved(true)
+                .build());
+        completeCommercialContract(experiment);
+
+        when(experimentRepository.findById(57L)).thenReturn(Optional.of(experiment));
+        AiPromptSchemaTemplate activeTemplate = template(GeraSalesPageStageCode.OFFER_BRIEF.code());
+        when(templateRepository.findFirstByPipelineCodeAndStageCodeAndActiveTrueOrderByVersionDesc(
+                "gera-sales-page-v1", GeraSalesPageStageCode.OFFER_BRIEF.code()))
+                .thenReturn(Optional.of(activeTemplate));
+        when(executionRepository.findTopByExperimentIdAndStageCodeOrderByExecutionRequestedAtDesc(
+                57L,
+                GeraSalesPageStageCode.OFFER_BRIEF.code()))
+                .thenReturn(Optional.empty());
+        when(executionRepository.save(any(GeraSalesPageStageExecution.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        GeraSalesPageStartResponse response = service.start(57L);
+
+        assertThat(response.stageCode()).isEqualTo(GeraSalesPageStageCode.OFFER_BRIEF.code());
+        verify(promptSchemaUsageService).linkSalesPageTemplate(
+                57L,
+                activeTemplate,
+                GeraSalesPageStageCode.OFFER_BRIEF.code(),
+                response.jobid());
+    }
+
+    /** Deve continuar bloqueando venda direta sem checkout real. */
+    @Test
+    void startShouldRejectDirectSalesPageWithoutCheckout() {
+        Experiment experiment = new Experiment();
+        experiment.setId(58L);
+        experiment.setFollowUpActionUrl("#checkout");
+        completeCommercialContract(experiment);
+        when(experimentRepository.findById(58L)).thenReturn(Optional.of(experiment));
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.start(58L))
+                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+                .hasMessageContaining("checkout");
     }
 
     /** Deve bloquear o início quando a etapa Oferta ainda não preencheu contrato comercial. */

@@ -381,6 +381,7 @@ public class FacebookAdsCampaignController {
         );
     }
 
+    // Converte o ad set reportado pelo worker e preserva o status publicado na Meta.
     private FacebookAdsAdSet mapAdSet(CreateCampaignRequest.AdSet adSetReq,
                                       FacebookAdsCampaign campaign,
                                       AdSet experimentAdSet) {
@@ -396,6 +397,7 @@ public class FacebookAdsCampaignController {
         adSet.setDailyBudgetMinor(parseLong(adSetReq.dailyBudget()));
         adSet.setLifetimeBudgetMinor(parseLong(adSetReq.lifetimeBudget()));
         adSet.setBidAmountMinor(parseLong(adSetReq.bidAmount()));
+        adSet.setStatus(resolveCampaignPublicationStatus(adSetReq.status()));
         adSet.setPromotedObjectJson(buildPromotedObjectJson(
                 adSetReq.pageId(),
                 adSetReq.pixelId(),
@@ -415,6 +417,7 @@ public class FacebookAdsCampaignController {
         return creative;
     }
 
+    // Converte o anúncio reportado pelo worker e preserva o status publicado na Meta.
     private FacebookAdsAd mapAd(CreateCampaignRequest.Ad adReq,
                                  FacebookAdsAdSet adSet,
                                  FacebookAdsAdCreative creative) {
@@ -424,6 +427,7 @@ public class FacebookAdsCampaignController {
         ad.setName(adReq.name());
         ad.setAdSet(adSet);
         ad.setCreative(creative);
+        ad.setStatus(resolveCampaignPublicationStatus(adReq.status()));
         return ad;
     }
 
@@ -883,7 +887,8 @@ public class FacebookAdsCampaignController {
                 String targetingJson,
                 String savedAudienceId,
                 String savedAudienceName,
-                Long experimentAdSetId) {}
+                Long experimentAdSetId,
+                FacebookAdStatus status) {}
 
         public record AdCreative(
                 String id,
@@ -901,6 +906,7 @@ public class FacebookAdsCampaignController {
                 String externalId,
                 String name,
                 String adSetId,
-                String creativeId) {}
+                String creativeId,
+                FacebookAdStatus status) {}
     }
 }

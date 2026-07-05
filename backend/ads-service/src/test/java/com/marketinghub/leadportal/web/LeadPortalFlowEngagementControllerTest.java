@@ -20,7 +20,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Testa os endpoints públicos do backend que recebem eventos de engajamento do Lead Portal.
+ * Testa os eventos internos do backend que recebem eventos de engajamento do Lead Portal.
  */
 @WebMvcTest(LeadPortalFlowEngagementController.class)
 class LeadPortalFlowEngagementControllerTest {
@@ -42,7 +42,7 @@ class LeadPortalFlowEngagementControllerTest {
      */
     @Test
     void registerRenderCompleteAcceptsPayload() throws Exception {
-        mockMvc.perform(post("/api/public/lead-portal/flows/flow-slug/render-complete")
+        mockMvc.perform(post("/api/internal/lead-portal/flows/flow-slug/render-complete")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"visitorId\":\"visitor-123\"}"))
                 .andExpect(status().isOk());
@@ -55,7 +55,7 @@ class LeadPortalFlowEngagementControllerTest {
      */
     @Test
     void registerRenderCompleteAcceptsEmptyBody() throws Exception {
-        mockMvc.perform(post("/api/public/lead-portal/flows/flow-slug/render-complete")
+        mockMvc.perform(post("/api/internal/lead-portal/flows/flow-slug/render-complete")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
 
@@ -71,7 +71,7 @@ class LeadPortalFlowEngagementControllerTest {
                 eq("flow-slug"),
                 any(LeadPortalSubmissionEngagementContractV1.class)))
                 .thenReturn(true);
-        mockMvc.perform(post("/api/public/lead-portal/flows/flow-slug/submission")
+        mockMvc.perform(post("/api/internal/lead-portal/flows/flow-slug/submission")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -94,7 +94,7 @@ class LeadPortalFlowEngagementControllerTest {
      */
     @Test
     void registerPageAnalyticsForwardsRawPayload() throws Exception {
-        mockMvc.perform(post("/api/public/lead-portal/flows/flow-slug/page-analytics")
+        mockMvc.perform(post("/api/internal/lead-portal/flows/flow-slug/page-analytics")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {

@@ -304,54 +304,6 @@ class ExperimentControllerTest {
         assertThat(prepared.getEntrega()).contains("Amostra visual personalizada");
     }
 
-    /** Garante que o Produto IA cria pelo sistema um funil aprovado para coletar dados de personalização. */
-    @Test
-    void personalizedSampleFunnelEndpointCreatesApprovedLeadPortalFlow() throws Exception {
-        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("AI funil").build());
-        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
-                .marketNiche(nicheRepo.findById(nicheId).orElseThrow())
-                .title("DecoraIA Express")
-                .premiseAngle(angle)
-                .promise("Gerar um plano visual de decoração por foto")
-                .problem("O cliente não sabe como melhorar a sala")
-                .persona("Pessoa insatisfeita com a decoração de casa")
-                .mechanism("Diagnóstico visual personalizado por foto do ambiente")
-                .productAiSubtype(ProductAiSubtype.AI_PERSONALIZED_SAMPLE)
-                .build());
-        var experiment = repository.save(com.marketinghub.experiment.Experiment.builder()
-                .niche(nicheRepo.findById(nicheId).orElseThrow())
-                .name("DecoraIA Express - Transforme seu ambiente por foto")
-                .hypothesis("Plano de decoração personalizado por foto do ambiente")
-                .funnelPromise("Envie uma foto do ambiente e receba uma amostra personalizada")
-                .hypothesisRef(hyp)
-                .productAiSubtype(ProductAiSubtype.AI_PERSONALIZED_SAMPLE)
-                .experimentType(com.marketinghub.experiment.ExperimentType.LOW_TICKET_PRODUCT)
-                .build());
-
-        mockMvc.perform(post("/api/product-ai/experiments/{experimentId}/personalized-sample-funnel", experiment.getId()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.experimentId").value(experiment.getId()))
-                .andExpect(jsonPath("$.approved").value(true))
-                .andExpect(jsonPath("$.leadPortalFlowSlug")
-                        .value("product-ai-exp-" + experiment.getId() + "-personalized-sample"))
-                .andExpect(jsonPath("$.dataKeys[0]").value("nome"))
-                .andExpect(jsonPath("$.dataKeys[3]").value("foto_ambiente"))
-                .andExpect(jsonPath("$.dataKeys[4]").value("ambiente_a_transformar"))
-                .andExpect(jsonPath("$.dataKeys[5]").value("incomodo_principal"));
-
-        var updated = repository.findById(experiment.getId()).orElseThrow();
-        assertThat(updated.getLeadPortalFlow()).isNotNull();
-        assertThat(updated.getLeadPortalFlow().isApproved()).isTrue();
-        var flowWithQuestions = leadPortalFlowRepository.findBySlug(updated.getLeadPortalFlow().getSlug()).orElseThrow();
-        assertThat(flowWithQuestions.getQuestions())
-                .anySatisfy(question -> {
-                    assertThat(question.getDataKey()).isEqualTo("foto_ambiente");
-                    assertThat(question.getType()).isEqualTo(com.marketinghub.leadportal.LeadPortalQuestionType.IMAGE_UPLOAD);
-                    assertThat(question.isRequired()).isTrue();
-                });
-        verify(leadPortalFlowPublisher).publish(any(com.marketinghub.leadportal.LeadPortalFlow.class));
-    }
-
     /** Garante que Produto IA incompleto não vira experimento por chamada direta de API. */
     @Test
     void createEndpointRejectsIncompleteProductAiHypothesis() throws Exception {

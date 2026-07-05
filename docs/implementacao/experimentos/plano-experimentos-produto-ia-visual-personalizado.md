@@ -73,7 +73,7 @@ O backend só libera rascunho de experimento quando a hipótese possui:
 
 Quando pronta, a tela aplica o rascunho canônico: `LOW_TICKET_PRODUCT`, `AI_PERSONALIZED_SAMPLE`, etapa `SAMPLE`, objetivo `SALES`, variável “Amostra visual personalizada” e métrica “Compra aprovada e custo de IA por compra”.
 
-Depois da criação do experimento, o sistema deve criar ou reaproveitar o funil de coleta pelo endpoint `POST /api/product-ai/experiments/{experimentId}/personalized-sample-funnel`. Esse funil é obrigatório antes de publicar campanha porque a personalização depende dos dados do lead.
+Depois da criação do experimento, o sistema deve criar ou reaproveitar o funil de coleta no `lead-portal`. Esse funil é obrigatório antes de publicar campanha porque a personalização depende dos dados do lead. O backend principal do Marketing Hub não deve expor endpoint de atendimento de lead/cliente para esse fluxo.
 
 A página de venda do GeraSalesPage deve ser incorporada ao mesmo funil de coleta. O anúncio não deve enviar o lead para uma página separada nem para checkout direto: primeiro ele vê a promessa, informa os dados de personalização e só então o sistema segue para amostra/oferta/pagamento conforme o fluxo do Lead Portal.
 

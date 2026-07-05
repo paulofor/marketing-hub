@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS lead_portal_purchase (
     mp_status VARCHAR(80),
     checkout_url VARCHAR(1200),
     checkout_expires_at TIMESTAMP NULL,
+    checkout_accessed_at TIMESTAMP NULL,
     amount DECIMAL(12,2),
     currency VARCHAR(8),
     notification_payload CLOB,
@@ -28,6 +29,7 @@ CREATE TABLE IF NOT EXISTS lead_portal_purchase (
 
 CREATE INDEX IF NOT EXISTS idx_lead_portal_purchase_package ON lead_portal_purchase(package_id);
 CREATE INDEX IF NOT EXISTS idx_lead_portal_purchase_payment ON lead_portal_purchase(mp_payment_id);
+CREATE INDEX IF NOT EXISTS idx_lead_portal_purchase_checkout_accessed_at ON lead_portal_purchase(checkout_accessed_at);
 
 CREATE TABLE IF NOT EXISTS lead_portal_premium_delivery (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,

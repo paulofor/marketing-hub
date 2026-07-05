@@ -17,10 +17,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Endpoints públicos para registrar sinais de engajamento do formulário no Lead Portal.
+ * Endpoints internos para receber sinais de engajamento enviados pelo backend do Lead Portal.
  */
 @RestController
-@RequestMapping("/api/public/lead-portal/flows")
+@RequestMapping("/api/internal/lead-portal/flows")
 public class LeadPortalFlowEngagementController {
 
     private static final Logger log = LoggerFactory.getLogger(LeadPortalFlowEngagementController.class);

@@ -4,17 +4,25 @@ Versão: `lead-portal-submission-engagement.v1`
 
 ## Objetivo
 
-Padronizar os eventos públicos enviados do runtime do portal para o backend de marketing, cobrindo:
+Padronizar os eventos públicos recebidos pelo Lead Portal e os callbacks internos enviados ao backend de marketing, cobrindo:
 
 - render completo do formulário;
 - submit do formulário;
 - campos obrigatórios para submit;
 - comportamento idempotente e tratamento de falha.
 
-## Endpoints públicos
+## Endpoints públicos do Lead Portal
 
 - Render completo: `POST /api/public/lead-portal/flows/{slug}/render-complete`
 - Submit: `POST /api/public/lead-portal/flows/{slug}/submission`
+
+## Callbacks internos para o Marketing Hub
+
+- Render completo: `POST /api/internal/lead-portal/flows/{slug}/render-complete`
+- Submit: `POST /api/internal/lead-portal/flows/{slug}/submission`
+- Analytics de página: `POST /api/internal/lead-portal/flows/{slug}/page-analytics`
+
+O front público, lead ou cliente nunca deve chamar o backend principal do Marketing Hub diretamente. Ele chama o Lead Portal; o Lead Portal encaminha eventos internos ao Marketing Hub apenas para métricas, funil e auditoria.
 
 ## Payload de submit (v1)
 

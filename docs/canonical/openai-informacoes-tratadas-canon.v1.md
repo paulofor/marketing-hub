@@ -35,7 +35,7 @@ Exceção canônica iniciada pelo GeraSalesPage v1 e estendida ao pipeline de hi
 
 A infraestrutura de prompt/schema em banco é compartilhada por domínio de IA e deve ficar em pacote comum, como `aiprompt`. Essa infraestrutura comum não autoriza dependência direta entre pipelines: Hipótese, GeraSalesPage, GeraLanding ou qualquer pipeline futuro devem permanecer blocos independentes e coesos, consumindo apenas contratos comuns, repositories canônicos e artefatos persistidos.
 
-Toda chamada a modelo de IA deve persistir ou registrar de forma auditável o request enviado e o response bruto recebido, vinculados ao job/execução/entidade de negócio. Para OpenAI, a requisição deve usar modo Flex por padrão (`service_tier: "flex"`), salvo exceção funcional explícita e registrada.
+Toda chamada a modelo de IA deve persistir ou registrar de forma auditável o request enviado e o response bruto recebido, vinculados ao job/execução/entidade de negócio. Para OpenAI, a política canônica de `service_tier` deve seguir `docs/canonical/openai-service-tier-retry-canon.v1.md`: primeira tentativa em Flex, segunda tentativa em Flex e terceira tentativa em Standard/default quando a chamada suportar fallback sem quebrar o contrato. Exceções funcionais precisam ser explícitas e registradas.
 
 ## 2.1 Regra canônica de execução OpenAI
 

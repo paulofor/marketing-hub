@@ -219,6 +219,8 @@ Documente qualquer alteração cross-módulo no cânone correspondente e sincron
 
 - Nunca commite `.env` ou credenciais. Use GitHub Actions secrets.
 - Revise variáveis sensíveis nos pipelines antes de publicar artefatos.
+- Pull Requests só devem ser criados quando o usuário pedir explicitamente. Para abrir PR, use branch/commit/push pela autenticação padrão do ambiente e crie PR draft pelo fluxo normal do GitHub/CLI ou conector disponível; não use token restrito de pacote para publicar branch ou PR.
+- Token GitHub fornecido para testes deve ser usado exclusivamente para baixar o pacote `ads-service` necessário a testes do `ai-worker` e de outros módulos dependentes. Não reutilize esse token para push, criação de PR, configuração de remoto, acesso genérico ao GitHub ou qualquer operação fora desse escopo.
 
 - 🚨 **CONTAMINAÇÃO DE ARTEFATO FINAL COM METADADO TÉCNICO (OBRIGATÓRIO)**:
   - **Definição**: é proibido inserir no artefato final publicado qualquer marcador técnico/operacional que não faça parte do contrato funcional do cliente (ex.: comentários `<!-- AUTO: ... -->`, flags internas de pipeline, observações de debug, metadados de regeneração).

@@ -8,6 +8,7 @@ import java.time.ZoneId;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+/** Responsabilidade: registrar o histórico funcional de status dos pacotes de imagem do Lead Portal. */
 @Service
 public class FlowSubmissionImagePackageStatusHistoryService {
 
@@ -15,12 +16,19 @@ public class FlowSubmissionImagePackageStatusHistoryService {
 
     private final FlowSubmissionImagePackageStatusHistoryRepository repository;
 
+    /** Inicializa o serviço com o repositório de histórico de status. */
     public FlowSubmissionImagePackageStatusHistoryService(
             FlowSubmissionImagePackageStatusHistoryRepository repository) {
         this.repository = repository;
     }
 
+    /** Registra uma mudança de status usando o enum canônico do pacote de imagem. */
     public void recordStatusChange(Long packageId, FlowSubmissionImagePackageEntity.Status status, String reason) {
+        recordStatusChange(packageId, status == null ? null : status.name(), reason);
+    }
+
+    /** Registra uma mudança de status textual recebida de integrações de engajamento. */
+    public void recordStatusChange(Long packageId, String status, String reason) {
         if (packageId == null || status == null) {
             return;
         }
@@ -29,7 +37,7 @@ public class FlowSubmissionImagePackageStatusHistoryService {
         FlowSubmissionImagePackageStatusHistoryEntity history =
                 new FlowSubmissionImagePackageStatusHistoryEntity();
         history.setPackageId(packageId);
-        history.setStatus(status.name());
+        history.setStatus(status);
         history.setFailureReason(normalizedReason);
         history.setCreatedAt(LocalDateTime.now(SAO_PAULO_ZONE));
 

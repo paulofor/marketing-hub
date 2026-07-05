@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS lead_portal_purchase (
     mp_status VARCHAR(80),
     checkout_url VARCHAR(1200),
     checkout_expires_at TIMESTAMP NULL,
+    checkout_accessed_at TIMESTAMP NULL,
     amount DECIMAL(12,2),
     currency VARCHAR(8),
     notification_payload LONGTEXT,
@@ -24,7 +25,8 @@ CREATE TABLE IF NOT EXISTS lead_portal_purchase (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_lead_portal_purchase_package (package_id),
-    INDEX idx_lead_portal_purchase_payment (mp_payment_id)
+    INDEX idx_lead_portal_purchase_payment (mp_payment_id),
+    INDEX idx_lead_portal_purchase_checkout_accessed_at (checkout_accessed_at)
 );
 
 SET @mp_payment_payload_exists = (
@@ -44,6 +46,42 @@ SET @add_mp_payment_payload_column = IF(
 PREPARE add_mp_payment_payload_stmt FROM @add_mp_payment_payload_column;
 EXECUTE add_mp_payment_payload_stmt;
 DEALLOCATE PREPARE add_mp_payment_payload_stmt;
+
+SET @checkout_accessed_at_exists = (
+    SELECT COUNT(*)
+    FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'lead_portal_purchase'
+      AND column_name = 'checkout_accessed_at'
+);
+
+SET @add_checkout_accessed_at_column = IF(
+    @checkout_accessed_at_exists = 0,
+    'ALTER TABLE lead_portal_purchase ADD COLUMN checkout_accessed_at TIMESTAMP NULL AFTER checkout_expires_at',
+    'SELECT 1'
+);
+
+PREPARE add_checkout_accessed_at_stmt FROM @add_checkout_accessed_at_column;
+EXECUTE add_checkout_accessed_at_stmt;
+DEALLOCATE PREPARE add_checkout_accessed_at_stmt;
+
+SET @checkout_accessed_at_idx_exists = (
+    SELECT COUNT(*)
+    FROM information_schema.statistics
+    WHERE table_schema = DATABASE()
+      AND table_name = 'lead_portal_purchase'
+      AND index_name = 'idx_lead_portal_purchase_checkout_accessed_at'
+);
+
+SET @create_checkout_accessed_at_idx = IF(
+    @checkout_accessed_at_idx_exists = 0,
+    'CREATE INDEX idx_lead_portal_purchase_checkout_accessed_at ON lead_portal_purchase(checkout_accessed_at)',
+    'SELECT 1'
+);
+
+PREPARE create_checkout_accessed_at_idx_stmt FROM @create_checkout_accessed_at_idx;
+EXECUTE create_checkout_accessed_at_idx_stmt;
+DEALLOCATE PREPARE create_checkout_accessed_at_idx_stmt;
 
 
 CREATE TABLE IF NOT EXISTS lead_portal_premium_delivery (

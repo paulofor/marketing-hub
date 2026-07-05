@@ -5618,3 +5618,10 @@
 - Causa-raiz: os templates do GeraSalesPage ainda deixavam margem para o worker tratar o funil-página como recurso a ser embutido, e o backend não removia iframe autorreferente antes da publicação.
 - Correção aplicada: o `pending` do GeraSalesPage agora declara `productAiSubtype` e `salesPageDestination`; os templates `v3` proíbem iframe para Lead Portal/flow/funil; e a publicação de `AI_PERSONALIZED_SAMPLE` remove iframe autorreferente antes de salvar o HTML no `LeadPortalFlow`.
 - Prevenção de recorrência: teste unitário cobre publicação de Produto IA com iframe para o próprio funil e valida que o HTML auditado/publicado fica sem iframe.
+
+## 2026-07-05 — Fronteira pública do Lead Portal fora do backend principal
+
+- Decisão: todo front público, lead, cliente, formulário, upload, landing standalone, pacote de imagem e checkout público deve bater no `lead-portal` ou no `lead-portal-payments-service`; o único front que chama o backend principal é o frontend administrativo do Marketing Hub.
+- Causa-raiz: o `ads-service` ainda mantinha endpoints públicos do Lead Portal, criando ambiguidade entre atendimento ao cliente e gestão interna do Marketing Hub.
+- Correção aplicada: removidos do `ads-service` os controllers públicos `/api/flows`, `/api/public/lead-portal/image-packages` e `/api/public/lead-portal/purchases`; o tracking de funil no Marketing Hub passou a ser callback interno em `/api/internal/lead-portal/flows`; a borda pública de pacotes ficou no `lead-portal`; e o redirecionamento público de checkout ficou no `lead-portal-payments-service`.
+- Prevenção de recorrência: regra ArchUnit bloqueia controllers de cliente do Lead Portal no pacote `leadportal.web` do `ads-service`, e a documentação canônica foi atualizada para não apontar atendimento de lead/cliente no backend principal.

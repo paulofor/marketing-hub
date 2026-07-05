@@ -46,61 +46,8 @@ paths:
           description: Hipótese ainda não possui rastreabilidade mínima de nicho, dor, persona, promessa e mecanismo.
         '404':
           description: Hipótese não encontrada.
-  /api/product-ai/experiments/{experimentId}/personalized-sample-funnel:
-    post:
-      summary: Cria funil de coleta para AI Personalized Sample
-      description: Cria ou reaproveita o Lead Portal Flow canônico que coleta os dados mínimos do lead para gerar uma amostra personalizada. Quando o contexto indicar DecoraIA, decoração ou melhoria de ambiente por foto, o funil exige upload da foto do ambiente e campos específicos do piloto visual. O fluxo fica aprovado e vinculado ao experimento.
-      parameters:
-        - name: experimentId
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-      responses:
-        '200':
-          description: Funil criado ou normalizado.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PersonalizedSampleFunnel'
-        '400':
-          description: Experimento não é AI_PERSONALIZED_SAMPLE ou não possui nicho.
-        '404':
-          description: Experimento não encontrado.
 components:
   schemas:
-    PersonalizedSampleFunnel:
-      type: object
-      properties:
-        experimentId:
-          type: integer
-          format: int64
-        leadPortalFlowId:
-          type: integer
-          format: int64
-        leadPortalFlowSlug:
-          type: string
-          example: product-ai-exp-55-personalized-sample
-        approved:
-          type: boolean
-          example: true
-        approvedAt:
-          type: string
-          format: date-time
-        dataKeys:
-          type: array
-          items:
-            type: string
-          example:
-            - nome
-            - email
-            - whatsapp
-            - negocio_projeto
-            - contexto_atual
-            - objetivo_visual
-            - dados_personalizacao
-            - preferencias_visuais
     PersonalizedSamplePreparation:
       type: object
       properties:

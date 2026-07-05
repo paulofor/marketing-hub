@@ -1,6 +1,6 @@
-package com.marketinghub.leadportal.web;
+package com.marketinghub.leadportal.controller;
 
-import com.marketinghub.leadportal.service.LeadPortalImagePackageEngagementService;
+import com.marketinghub.leadportal.service.ImagePackageEngagementService;
 import java.net.URI;
 import java.util.Base64;
 import org.springframework.http.CacheControl;
@@ -14,25 +14,26 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * Public endpoints used to track engagement with Lead Portal image packages.
- */
+/** Responsabilidade: expor a borda pública de engajamento dos pacotes de imagem do Lead Portal. */
 @RestController
 @RequestMapping("/api/public/lead-portal/image-packages")
-public class LeadPortalImagePackageEngagementController {
+public class ImagePackageEngagementController {
 
     private static final byte[] TRANSPARENT_PIXEL = Base64.getDecoder()
             .decode("R0lGODlhAQABAPAAAAAAAP///ywAAAAAAQABAAACAUwAOw==");
 
-    private final LeadPortalImagePackageEngagementService engagementService;
+    private final ImagePackageEngagementService engagementService;
 
-    public LeadPortalImagePackageEngagementController(LeadPortalImagePackageEngagementService engagementService) {
+    /** Inicializa o controller com o serviço de engajamento público. */
+    public ImagePackageEngagementController(ImagePackageEngagementService engagementService) {
         this.engagementService = engagementService;
     }
 
+    /** Registra abertura de e-mail e devolve pixel transparente sem cache. */
     @GetMapping("/{id}/open.gif")
-    public ResponseEntity<byte[]> trackEmailOpen(@PathVariable("id") long packageId,
-                                                 @RequestParam(name = "sid", required = false) String submissionId) {
+    public ResponseEntity<byte[]> trackEmailOpen(
+            @PathVariable("id") long packageId,
+            @RequestParam(name = "sid", required = false) String submissionId) {
         engagementService.markEmailOpened(packageId, submissionId);
         CacheControl cacheHeaders = CacheControl.noStore()
                 .cachePrivate()
@@ -46,9 +47,11 @@ public class LeadPortalImagePackageEngagementController {
                 .body(TRANSPARENT_PIXEL);
     }
 
+    /** Registra clique para visualizar imagens e redireciona para o ZIP público. */
     @GetMapping("/{id}/previews")
-    public ResponseEntity<Void> trackImagesViewed(@PathVariable("id") long packageId,
-                                                  @RequestParam(name = "sid", required = false) String submissionId) {
+    public ResponseEntity<Void> trackImagesViewed(
+            @PathVariable("id") long packageId,
+            @RequestParam(name = "sid", required = false) String submissionId) {
         return engagementService.markImagesViewed(packageId, submissionId)
                 .map(url -> ResponseEntity.status(HttpStatus.FOUND)
                         .location(URI.create(url))

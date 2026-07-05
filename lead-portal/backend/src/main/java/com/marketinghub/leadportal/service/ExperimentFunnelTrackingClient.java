@@ -41,7 +41,7 @@ public class ExperimentFunnelTrackingClient {
     private final URI baseUri;
 
     /**
-     * Configura o cliente HTTP com a URL base pública de tracking do Marketing Hub.
+     * Configura o cliente HTTP com a URL base interna de tracking do Marketing Hub.
      */
     public ExperimentFunnelTrackingClient(
             RestTemplateBuilder restTemplateBuilder,

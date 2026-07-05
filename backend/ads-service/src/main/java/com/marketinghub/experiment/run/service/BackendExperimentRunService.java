@@ -16,6 +16,7 @@ import com.marketinghub.experiment.run.service.create.CreateExperimentRunRequest
 import com.marketinghub.experiment.run.service.get.ExperimentRunResponse;
 import com.marketinghub.experiment.run.service.preflight.ExperimentRunGateResultResponse;
 import com.marketinghub.experiment.run.service.preflight.ExperimentRunPreflightResponse;
+import com.marketinghub.experiment.run.service.MoisCommercialDossierPreflightService.CommercialDossierPreflightResult;
 import com.marketinghub.hypothesis.Hypothesis;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRunGateResultRepository;
@@ -37,14 +38,17 @@ public class BackendExperimentRunService {
 
     private final ExperimentRunRepository experimentRunRepository;
     private final ExperimentRunGateResultRepository gateResultRepository;
+    private final MoisCommercialDossierPreflightService moisCommercialDossierPreflightService;
 
     /** Inicializa o serviço com os repositórios canônicos de experimento e run. */
     public BackendExperimentRunService(ExperimentRepository experimentRepository,
                                        ExperimentRunRepository experimentRunRepository,
-                                       ExperimentRunGateResultRepository gateResultRepository) {
+                                       ExperimentRunGateResultRepository gateResultRepository,
+                                       MoisCommercialDossierPreflightService moisCommercialDossierPreflightService) {
         this.experimentRepository = experimentRepository;
         this.experimentRunRepository = experimentRunRepository;
         this.gateResultRepository = gateResultRepository;
+        this.moisCommercialDossierPreflightService = moisCommercialDossierPreflightService;
     }
 
     /** Cria um novo run sequencial para o experimento sem alterar o status legado do experimento. */
@@ -121,6 +125,8 @@ public class BackendExperimentRunService {
         Experiment experiment = run.getExperiment();
         Hypothesis hypothesis = experiment.getHypothesisRef();
         Instant evaluatedAt = Instant.now();
+        CommercialDossierPreflightResult commercialDossierPreflight =
+                moisCommercialDossierPreflightService.evaluate(experiment);
         return List.of(
                 gate(run, "HYPOTHESIS_ARTIFACT_APPROVED", ExperimentRunGateGroup.UPSTREAM_QUALITY,
                         hypothesis != null, "Hipótese vinculada ao experimento.",
@@ -134,6 +140,7 @@ public class BackendExperimentRunService {
                         "Dor, promessa, mecanismo e entrega estão preenchidos.",
                         "Framework Dor → Resultado → Mecanismo → Prova → Oferta incompleto.",
                         "COMPLETE_DRPO_FRAMEWORK", evaluatedAt),
+                commercialDossierGate(run, commercialDossierPreflight, evaluatedAt),
                 gate(run, "PRIMARY_VARIABLE_DEFINED", ExperimentRunGateGroup.EXPERIMENT_DESIGN,
                         hasUsefulText(experiment.getPrimaryVariable()), "Variável primária definida.",
                         "Variável primária ausente.", "DEFINE_PRIMARY_VARIABLE", evaluatedAt),
@@ -153,6 +160,25 @@ public class BackendExperimentRunService {
                 pendingGate(run, "DATA_FRESHNESS_VALID", ExperimentRunGateGroup.MEASUREMENT,
                         "Freshness de dados comerciais será calculado em incremento posterior.", evaluatedAt)
         );
+    }
+
+    /** Cria o gate que exige dossiê comercial MOIS aderente antes de liberar mídia. */
+    private ExperimentRunGateResult commercialDossierGate(ExperimentRun run,
+                                                          CommercialDossierPreflightResult result,
+                                                          Instant evaluatedAt) {
+        return ExperimentRunGateResult.builder()
+                .experimentRun(run)
+                .gateCode("MOIS_COMMERCIAL_DOSSIER_PREFLIGHT")
+                .gateGroup(ExperimentRunGateGroup.COMMERCIAL_EVIDENCE)
+                .status(result.approved() ? ExperimentRunGateStatus.PASS : ExperimentRunGateStatus.FAIL)
+                .severity(result.approved() ? ExperimentRunGateSeverity.INFO : ExperimentRunGateSeverity.BLOCKER)
+                .summary(result.summary())
+                .evidenceReference(result.evidenceReference())
+                .remediationCode(result.approved() ? null : "GENERATE_MOIS_COMMERCIAL_DOSSIER")
+                .evaluatedAt(evaluatedAt)
+                .evaluatorType(ExperimentRunGateEvaluatorType.DETERMINISTIC)
+                .evaluatorVersion(EVALUATOR_VERSION)
+                .build();
     }
 
     /** Cria um gate determinístico com PASS ou FAIL conforme a condição objetiva. */

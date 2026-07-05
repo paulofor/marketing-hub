@@ -239,7 +239,7 @@ public class FacebookAdsCampaignController {
                 throw new ResponseStatusException(HttpStatus.CONFLICT,
                         "Facebook campaign already belongs to another experiment: " + req.id());
             }
-            existingCampaign.get().setStatus(resolveCampaignPublicationStatus(req.status()));
+            reconcileExistingCampaignPublication(existingCampaign.get(), req);
             experiment.setStatus(ExperimentStatus.RUNNING);
             return;
         }
@@ -300,6 +300,86 @@ public class FacebookAdsCampaignController {
     // Resolve o status canônico da campanha após confirmação de publicação completa pelo worker.
     private FacebookAdStatus resolveCampaignPublicationStatus(FacebookAdStatus status) {
         return status != null ? status : FacebookAdStatus.ACTIVE;
+    }
+
+    // Reconcilia status de publicação quando o worker reporta novamente uma campanha já persistida.
+    private void reconcileExistingCampaignPublication(FacebookAdsCampaign campaign, CreateCampaignRequest req) {
+        campaign.setStatus(resolveCampaignPublicationStatus(req.status()));
+        if (req.adSet() != null && StringUtils.hasText(req.adSet().id())) {
+            adSetRepository.findById(req.adSet().id())
+                    .ifPresent(adSet -> adSet.setStatus(resolveCampaignPublicationStatus(req.adSet().status())));
+        }
+        for (CreateCampaignRequest.Ad adRequest : resolveAdRequests(req)) {
+            if (adRequest == null || !StringUtils.hasText(adRequest.id())) {
+                continue;
+            }
+            adRepository.findById(adRequest.id())
+                    .ifPresent(ad -> ad.setStatus(resolveCampaignPublicationStatus(adRequest.status())));
+        }
+    }
+
+    /**
+     * Atualiza o status de campanha, ad sets e anúncios com o retrato efetivo recebido da Meta.
+     */
+    @PostMapping("/{campaignId}/status-sync")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    @Transactional
+    public void syncStatus(
+            @PathVariable String campaignId,
+            @RequestBody CampaignStatusSyncRequest request) {
+        FacebookAdsCampaign campaign = campaignRepository.findById(campaignId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Facebook campaign not found: " + campaignId));
+        campaign.setStatus(resolveMetaStatus(request.status(), request.effectiveStatus(), campaign.getStatus()));
+        if (request.adSets() != null) {
+            for (CampaignStatusSyncRequest.AdSetStatus adSetStatus : request.adSets()) {
+                if (adSetStatus == null || !StringUtils.hasText(adSetStatus.id())) {
+                    continue;
+                }
+                adSetRepository.findById(adSetStatus.id())
+                        .ifPresent(adSet -> adSet.setStatus(resolveMetaStatus(
+                                adSetStatus.status(),
+                                adSetStatus.effectiveStatus(),
+                                adSet.getStatus())));
+            }
+        }
+        if (request.ads() != null) {
+            for (CampaignStatusSyncRequest.AdStatus adStatus : request.ads()) {
+                if (adStatus == null || !StringUtils.hasText(adStatus.id())) {
+                    continue;
+                }
+                adRepository.findById(adStatus.id())
+                        .ifPresent(ad -> ad.setStatus(resolveMetaStatus(
+                                adStatus.status(),
+                                adStatus.effectiveStatus(),
+                                ad.getStatus())));
+            }
+        }
+    }
+
+    // Resolve o status vindo da Meta preferindo o status efetivo quando ele estiver disponível.
+    private FacebookAdStatus resolveMetaStatus(String status, String effectiveStatus, FacebookAdStatus fallback) {
+        FacebookAdStatus effective = parseFacebookStatus(effectiveStatus);
+        if (effective != null) {
+            return effective;
+        }
+        FacebookAdStatus configured = parseFacebookStatus(status);
+        if (configured != null) {
+            return configured;
+        }
+        return fallback != null ? fallback : FacebookAdStatus.ACTIVE;
+    }
+
+    // Converte texto de status da Meta para o enum interno quando existir correspondência.
+    private FacebookAdStatus parseFacebookStatus(String value) {
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        try {
+            return FacebookAdStatus.valueOf(value.trim().toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            return null;
+        }
     }
 
     /**
@@ -834,6 +914,17 @@ public class FacebookAdsCampaignController {
             BigDecimal spend) {}
 
     public record CampaignMetricsErrorRequest(String message) {}
+
+    public record CampaignStatusSyncRequest(
+            String status,
+            String effectiveStatus,
+            List<AdSetStatus> adSets,
+            List<AdStatus> ads) {
+
+        public record AdSetStatus(String id, String status, String effectiveStatus) {}
+
+        public record AdStatus(String id, String status, String effectiveStatus) {}
+    }
 
 
     /**

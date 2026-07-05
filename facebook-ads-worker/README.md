@@ -218,6 +218,14 @@ O fluxo automatizado cria toda a hierarquia necessária para veiculação:
    criados, já em `ACTIVE`, permitindo que o experimento comece a rodar sem
    ativação manual no Gerenciador de Anúncios.
 
+No ciclo periódico de métricas, o worker também consulta `status` e
+`effective_status` da campanha, dos conjuntos de anúncios e dos anúncios na
+Graph API e envia o snapshot ao backend por
+`POST /api/facebook-campaigns/{campaignId}/status-sync`. Com isso, o painel
+administrativo passa a refletir o estado efetivo da Meta mesmo quando a
+publicação inicial foi repetida ou quando algum filho teve status alterado fora
+do Marketing Hub.
+
 As chamadas ao backend utilizam o prefixo `/api`. O worker consome
 `/api/facebook-campaigns/experiments-ready`, tratando respostas `404` como
 "nenhum experimento disponível" para evitar falhas no agendamento. Quando não

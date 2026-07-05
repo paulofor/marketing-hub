@@ -88,16 +88,46 @@ Campos mínimos do funil:
 - dados de personalização;
 - preferências visuais.
 
+## Funil de valor para `AI_PERSONALIZED_SAMPLE`
+
+O experimento precisa deixar claro que a personalizacao e parte da entrega inteira. A amostra gratuita e uma prova pequena do mecanismo; o produto pago e a versao completa personalizada. Nao deve haver amostra personalizada seguida de produto final generico.
+
+Fluxo recomendado para o primeiro teste:
+
+```text
+Anuncio
+→ Lead Portal com formulario curto
+→ Amostra personalizada gerada por IA
+→ E-mail 1: entrega da amostra + oferta leve
+→ E-mail 2: follow-up de conversao
+→ Checkout
+→ Produto final personalizado
+```
+
+O primeiro e-mail deve entregar a amostra, reforcar o principal diagnostico e apresentar a oferta paga sem pressao. O segundo e-mail deve sair depois de aproximadamente 24 horas, reativar a dor, mostrar aplicacao pratica e chamar para o checkout. Quatro ou mais e-mails so fazem sentido em uma otimizacao posterior, quando o funil ja tiver sinais de abertura, clique ou resposta sem compra.
+
+O valor oferecido nao deve ser "usar IA". O valor deve ser reduzir esforco e dor com uma solucao aplicada ao contexto do lead. A entrega paga deve usar uma base padrao para escalar, mas adaptar diagnostico, plano, mensagens, ativos ou recomendacoes aos dados capturados no Lead Portal.
+
+Exemplo de referencia:
+
+- nicho: manicures autonomas que atendem em domicilio;
+- dor: faltas, atrasos, cancelamentos e deslocamentos perdidos;
+- amostra gratuita: `Agenda Blindada 7D` parcial com diagnostico e 1 ou 2 mensagens personalizadas;
+- produto pago: `Kit Personalizado Agenda Blindada 7D`;
+- entrega paga: diagnostico completo da agenda, plano dos proximos 7 dias, mensagens para confirmar horario, cobrar sinal, reagendar, lidar com atraso e cliente que some, no tom escolhido pela lead.
+
 ## Desenho experimental inicial
 
 Fluxo:
 
 ```text
 Anuncio
-→ Pagina/formulario com promessa unica
-→ Entrada minima do lead
+→ Lead Portal com promessa unica e formulario curto
 → Amostra personalizada gerada por IA
-→ Oferta paga para pacote completo
+→ E-mail de entrega com oferta leve
+→ E-mail de follow-up
+→ Checkout
+→ Entrega paga personalizada
 → Compra/nao compra
 ```
 

@@ -45,3 +45,11 @@
 > ```md
 > ## YYYY-MM-DD HH:mm:ss UTC-3
 > ```
+
+## 2026-07-05 20:27:59 UTC-3
+- problema identificado: a resposta final da síntese dos dossiês MOIS podia chegar ao backend como representação técnica de record (`DossierDossierSynthesisOutput[...]`) em vez de JSON funcional limpo.
+- causa-raiz: o worker `mois-sales-library-worker` usava `String.valueOf(result.output())` ao montar o callback de resposta local do pipeline `warmupecosystem.v1`, contaminando `resposta_final` com formato técnico.
+- correção aplicada: o client do backend do dossiê MOIS v1 passou a serializar `StageResult.output()` com `ObjectMapper`, preservando a saída funcional como JSON consumível por preflight, oferta, página, criativos e relatório.
+- prevenção de recorrência: adicionado teste de regressão garantindo que `DossierDossierSynthesisOutput` seja enviado como JSON e não como `record.toString()`.
+- documentos lidos para tratar a situação:
+  - `docs/registros/mois2.md`

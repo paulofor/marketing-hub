@@ -64,12 +64,56 @@ class FacebookCampaignMetricsServiceTest {
         assertThat(payload.spend()).isEqualByComparingTo(new BigDecimal("25.00"));
     }
 
+    /** Garante que o retrato de status da Meta inclui campanha, ad set e anúncios. */
+    @Test
+    void mapStatusSnapshotCopiesCampaignChildrenStatus() throws Exception {
+        FacebookCampaignMetricsService service = service();
+        JsonNode row = objectMapper.readTree("""
+                {
+                  "id": "cmp-1",
+                  "status": "ACTIVE",
+                  "effective_status": "ACTIVE",
+                  "adsets": {
+                    "data": [
+                      {
+                        "id": "adset-1",
+                        "status": "ACTIVE",
+                        "effective_status": "ACTIVE",
+                        "ads": {
+                          "data": [
+                            {
+                              "id": "ad-1",
+                              "status": "ACTIVE",
+                              "effective_status": "ACTIVE"
+                            }
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                }
+                """);
+
+        Method method = FacebookCampaignMetricsService.class.getDeclaredMethod("mapStatusSnapshot", JsonNode.class);
+        method.setAccessible(true);
+        FacebookCampaignMetricsService.CampaignStatusSyncRequest payload =
+                (FacebookCampaignMetricsService.CampaignStatusSyncRequest) method.invoke(service, row);
+
+        assertThat(payload.status()).isEqualTo("ACTIVE");
+        assertThat(payload.effectiveStatus()).isEqualTo("ACTIVE");
+        assertThat(payload.adSets()).hasSize(1);
+        assertThat(payload.adSets().get(0).id()).isEqualTo("adset-1");
+        assertThat(payload.ads()).hasSize(1);
+        assertThat(payload.ads().get(0).id()).isEqualTo("ad-1");
+    }
+
     /** Cria o serviço com dependências simuladas para testar apenas o mapeamento local. */
     private FacebookCampaignMetricsService service() {
         return new FacebookCampaignMetricsService(
                 mock(FacebookAdsService.class),
                 mock(FacebookAccessTokenManager.class),
                 mock(FacebookWorkerConfigurationClient.class),
+                mock(FacebookCampaignStatusSnapshotClient.class),
                 WebClient.builder(),
                 "http://backend.test",
                 "/api"

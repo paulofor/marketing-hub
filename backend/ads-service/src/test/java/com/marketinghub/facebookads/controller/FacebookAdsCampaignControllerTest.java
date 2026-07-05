@@ -513,7 +513,15 @@ class FacebookAdsCampaignControllerTest {
         existingCampaign.setId("cmp-existente");
         existingCampaign.setExperiment(experiment);
         existingCampaign.setStatus(FacebookAdStatus.PAUSED);
+        var existingAdSet = new FacebookAdsAdSet();
+        existingAdSet.setId("adset-existente");
+        existingAdSet.setStatus(FacebookAdStatus.PAUSED);
+        var existingAd = new FacebookAdsAd();
+        existingAd.setId("ad-existente");
+        existingAd.setStatus(FacebookAdStatus.PAUSED);
         when(campaignRepository.findById("cmp-existente")).thenReturn(Optional.of(existingCampaign));
+        when(adSetRepository.findById("adset-existente")).thenReturn(Optional.of(existingAdSet));
+        when(adRepository.findById("ad-existente")).thenReturn(Optional.of(existingAd));
 
         String payload = """
             {
@@ -524,7 +532,17 @@ class FacebookAdsCampaignControllerTest {
               "status": "ACTIVE",
               "budgetMode": "CAMPAIGN",
               "experimentId": 37,
-              "facebookAccountId": 88
+              "facebookAccountId": 88,
+              "adSet": {
+                "id": "adset-existente",
+                "status": "ACTIVE"
+              },
+              "ads": [
+                {
+                  "id": "ad-existente",
+                  "status": "ACTIVE"
+                }
+              ]
             }
             """;
 
@@ -534,8 +552,56 @@ class FacebookAdsCampaignControllerTest {
                 .andExpect(status().isCreated());
 
         assertThat(existingCampaign.getStatus()).isEqualTo(FacebookAdStatus.ACTIVE);
+        assertThat(existingAdSet.getStatus()).isEqualTo(FacebookAdStatus.ACTIVE);
+        assertThat(existingAd.getStatus()).isEqualTo(FacebookAdStatus.ACTIVE);
         assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.RUNNING);
         verify(campaignRepository, never()).save(any());
+    }
+
+    @Test
+    void syncStatusUpdatesCampaignAdSetAndAdsFromMetaSnapshot() throws Exception {
+        var campaign = new FacebookAdsCampaign();
+        campaign.setId("cmp-sync");
+        campaign.setStatus(FacebookAdStatus.PAUSED);
+        var adSet = new FacebookAdsAdSet();
+        adSet.setId("adset-sync");
+        adSet.setStatus(FacebookAdStatus.PAUSED);
+        var ad = new FacebookAdsAd();
+        ad.setId("ad-sync");
+        ad.setStatus(FacebookAdStatus.PAUSED);
+        when(campaignRepository.findById("cmp-sync")).thenReturn(Optional.of(campaign));
+        when(adSetRepository.findById("adset-sync")).thenReturn(Optional.of(adSet));
+        when(adRepository.findById("ad-sync")).thenReturn(Optional.of(ad));
+
+        String payload = """
+            {
+              "status": "ACTIVE",
+              "effectiveStatus": "ACTIVE",
+              "adSets": [
+                {
+                  "id": "adset-sync",
+                  "status": "ACTIVE",
+                  "effectiveStatus": "ACTIVE"
+                }
+              ],
+              "ads": [
+                {
+                  "id": "ad-sync",
+                  "status": "ACTIVE",
+                  "effectiveStatus": "ACTIVE"
+                }
+              ]
+            }
+            """;
+
+        mockMvc.perform(post("/api/facebook-campaigns/cmp-sync/status-sync")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isAccepted());
+
+        assertThat(campaign.getStatus()).isEqualTo(FacebookAdStatus.ACTIVE);
+        assertThat(adSet.getStatus()).isEqualTo(FacebookAdStatus.ACTIVE);
+        assertThat(ad.getStatus()).isEqualTo(FacebookAdStatus.ACTIVE);
     }
 
     @Test

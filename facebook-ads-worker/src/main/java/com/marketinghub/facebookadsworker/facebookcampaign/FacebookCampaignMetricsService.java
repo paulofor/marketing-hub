@@ -40,6 +40,7 @@ public class FacebookCampaignMetricsService {
     private final FacebookAccessTokenManager accessTokenManager;
     private final WebClient backendClient;
     private final FacebookWorkerConfigurationClient configurationClient;
+    private final FacebookCampaignStatusSnapshotClient statusSnapshotClient;
     private final String backendBaseUrl;
     private final String apiPrefix;
     private final AtomicBoolean configurationUnavailableWarningLogged = new AtomicBoolean(false);
@@ -50,12 +51,14 @@ public class FacebookCampaignMetricsService {
     public FacebookCampaignMetricsService(FacebookAdsService facebookAdsService,
                                           FacebookAccessTokenManager accessTokenManager,
                                           FacebookWorkerConfigurationClient configurationClient,
+                                          FacebookCampaignStatusSnapshotClient statusSnapshotClient,
                                           WebClient.Builder builder,
                                           @Value("${backend.base-url:http://localhost:8000}") String backendBaseUrl,
                                           @Value("${backend.api-prefix:/api}") String apiPrefix) {
         this.facebookAdsService = facebookAdsService;
         this.accessTokenManager = accessTokenManager;
         this.configurationClient = configurationClient;
+        this.statusSnapshotClient = statusSnapshotClient;
         this.backendClient = builder.build();
         this.backendBaseUrl = backendBaseUrl;
         this.apiPrefix = apiPrefix;
@@ -96,6 +99,7 @@ public class FacebookCampaignMetricsService {
      */
     private void processTarget(CampaignMetricsSyncTarget target) {
         try {
+            syncStatusSnapshot(target.campaignId());
             JsonNode insights = facebookAdsService.getCampaignInsights(target.campaignId(), buildInsightsQuery());
             JsonNode data = insights.path("data");
             if (!data.isArray() || data.isEmpty()) {
@@ -123,6 +127,57 @@ public class FacebookCampaignMetricsService {
             LOGGER.warn("Unexpected error while syncing metrics for campaign {}: {}", target.campaignId(), ex.getMessage(), ex);
             reportMetricsError(target.campaignId(), "Unexpected error: " + ex.getMessage());
         }
+    }
+
+    /**
+     * Consulta status efetivo na Meta e envia o retrato ao backend para manter o painel coerente.
+     */
+    private void syncStatusSnapshot(String campaignId) {
+        try {
+            JsonNode snapshot = statusSnapshotClient.fetch(campaignId, facebookAdsService.getCurrentAccessToken());
+            if (snapshot == null || snapshot.isNull()) {
+                return;
+            }
+            CampaignStatusSyncRequest payload = mapStatusSnapshot(snapshot);
+            sendStatusSync(campaignId, payload);
+        } catch (Exception ex) {
+            LOGGER.warn("Could not sync Facebook status snapshot for campaign {}: {}", campaignId, ex.getMessage(), ex);
+        }
+    }
+
+    /**
+     * Converte o retrato bruto da Meta em contrato enxuto de status para o backend.
+     */
+    private CampaignStatusSyncRequest mapStatusSnapshot(JsonNode snapshot) {
+        List<CampaignStatusSyncRequest.AdSetStatus> adSets = new java.util.ArrayList<>();
+        List<CampaignStatusSyncRequest.AdStatus> ads = new java.util.ArrayList<>();
+        JsonNode adSetData = snapshot.path("adsets").path("data");
+        if (adSetData.isArray()) {
+            for (JsonNode adSetNode : adSetData) {
+                String adSetId = adSetNode.path("id").asText(null);
+                adSets.add(new CampaignStatusSyncRequest.AdSetStatus(
+                    adSetId,
+                    adSetNode.path("status").asText(null),
+                    adSetNode.path("effective_status").asText(null)
+                ));
+                JsonNode adData = adSetNode.path("ads").path("data");
+                if (adData.isArray()) {
+                    for (JsonNode adNode : adData) {
+                        ads.add(new CampaignStatusSyncRequest.AdStatus(
+                            adNode.path("id").asText(null),
+                            adNode.path("status").asText(null),
+                            adNode.path("effective_status").asText(null)
+                        ));
+                    }
+                }
+            }
+        }
+        return new CampaignStatusSyncRequest(
+            snapshot.path("status").asText(null),
+            snapshot.path("effective_status").asText(null),
+            adSets,
+            ads
+        );
     }
 
     /**
@@ -247,6 +302,23 @@ public class FacebookCampaignMetricsService {
     }
 
     /**
+     * Envia ao backend o status efetivo sincronizado da campanha e seus filhos.
+     */
+    private void sendStatusSync(String campaignId, CampaignStatusSyncRequest payload) {
+        String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/facebook-campaigns/" + campaignId + "/status-sync");
+        backendClient.post()
+            .uri(url)
+            .bodyValue(payload)
+            .retrieve()
+            .onStatus(HttpStatusCode::isError, response -> response.createException().flatMap(e -> {
+                LOGGER.warn("Backend rejected status sync for campaign {}: status={} message={}", campaignId, response.statusCode(), e.getMessage());
+                return Mono.error(e);
+            }))
+            .toBodilessEntity()
+            .block();
+    }
+
+    /**
      * Registra no backend uma falha de sincronização de métricas da campanha.
      */
     private void reportMetricsError(String campaignId, String message) {
@@ -334,4 +406,15 @@ public class FacebookCampaignMetricsService {
             BigDecimal spend) {}
 
     public record CampaignMetricsErrorRequest(String message) {}
+
+    public record CampaignStatusSyncRequest(
+            String status,
+            String effectiveStatus,
+            List<AdSetStatus> adSets,
+            List<AdStatus> ads) {
+
+        public record AdSetStatus(String id, String status, String effectiveStatus) {}
+
+        public record AdStatus(String id, String status, String effectiveStatus) {}
+    }
 }

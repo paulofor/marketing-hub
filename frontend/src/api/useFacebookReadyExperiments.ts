@@ -6,6 +6,13 @@ export interface FacebookReadyExperiment {
   id: number;
   name: string;
   hypothesis: string;
+  singlePain?: string | null;
+  freeReward?: string | null;
+  funnelPromise?: string | null;
+  primaryCta?: string | null;
+  experimentType?: string | null;
+  campaignObjective?: string | null;
+  followUpActionUrl?: string | null;
   kpiTargetCpl: number | null;
   startDate: string | null;
   endDate: string | null;

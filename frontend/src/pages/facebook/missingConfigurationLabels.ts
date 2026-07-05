@@ -4,6 +4,11 @@ export interface MissingConfigurationInfo {
 }
 
 const missingConfigurationInfo: Record<string, MissingConfigurationInfo> = {
+  commercialContract: {
+    label: "Completar contrato comercial da etapa Oferta",
+    helperText:
+      "Venda low-ticket precisa de dor única, prova/preview, promessa, CTA e preço antes de página, criativos e campanha.",
+  },
   creativeApproval: { label: "Aprovar pelo menos um criativo" },
   landingDestination: { label: "Aprovar a landing para definir URL de destino" },
   geraSalesPagePipeline: {

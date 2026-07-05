@@ -194,6 +194,11 @@ public class ExperimentController {
     /** Bloqueia liberação de tráfego frio com intenção de compra direto para checkout. */
     private void ensurePurchaseIntentDoesNotBypassSalesPage(Long id) {
         List<String> missing = campaignDestinationPolicy.missingConfiguration(service.get(id));
+        if (missing.contains("commercialContract")) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Experimento com intenção de compra exige contrato comercial completo da etapa Oferta antes da página e da campanha.");
+        }
         if (missing.contains("geraSalesPagePipeline")) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,

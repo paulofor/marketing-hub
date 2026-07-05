@@ -92,6 +92,18 @@ public class GeraSalesPagePublicationAuditService {
                 .toList();
     }
 
+    /** Retorna o checkout auditado mais recente para rebuild sem confundir com a URL pública da página. */
+    @Transactional(readOnly = true)
+    public String latestCheckoutUrl(Long experimentId) {
+        if (experimentId == null) {
+            return null;
+        }
+        return publicationRepository.findTopByExperimentIdOrderByPublishedAtDesc(experimentId)
+                .map(GeraSalesPagePublicationAudit::getCheckoutUrl)
+                .filter(StringUtils::hasText)
+                .orElse(null);
+    }
+
     /** Cria snapshots para publicacoes antigas que ainda possuem execucoes auditaveis no banco. */
     private void backfillMissingSnapshots(Experiment experiment) {
         executionRepository.findByExperimentIdAndStageCodeAndStatusOrderByExecutionRequestedAtAsc(

@@ -91,6 +91,7 @@ public class ExperimentReadinessService {
         long geraLandingCompletedStageCount = countCompletedGeraLandingStages(experimentId);
         boolean hasGeraLandingPipeline = geraLandingCompletedStageCount == GERA_LANDING_REQUIRED_STAGES.size();
         boolean purchaseIntent = campaignDestinationPolicy.requiresSalesPageBeforePurchase(experiment);
+        boolean hasCommercialContract = campaignDestinationPolicy.hasCompleteCommercialContract(experiment);
         boolean hasGeraSalesPagePipeline = campaignDestinationPolicy.hasCompletedGeraSalesPagePipeline(experimentId);
         Optional<GeraSalesPagePublicationAudit> salesPagePublication =
                 campaignDestinationPolicy.latestSalesPagePublication(experimentId);
@@ -133,7 +134,16 @@ public class ExperimentReadinessService {
             ));
         }
 
-        if (purchaseIntent && (!hasGeraSalesPagePipeline || salesPagePublication.isEmpty())) {
+        if (purchaseIntent && !hasCommercialContract) {
+            issues.add(new ExperimentReadinessIssueDto(
+                    ExperimentReadinessIssueType.GERA_SALES_PAGE,
+                    "Contrato comercial incompleto",
+                    "Experimentos com intenção de compra precisam da etapa Oferta preenchida antes de página, criativos e campanha.",
+                    "Complete dor única, prova/preview, promessa, CTA e preço para o sistema gerar a página de venda como fonte soberana.",
+                    List.of()
+            ));
+        }
+        if (purchaseIntent && hasCommercialContract && (!hasGeraSalesPagePipeline || salesPagePublication.isEmpty())) {
             issues.add(new ExperimentReadinessIssueDto(
                     ExperimentReadinessIssueType.GERA_SALES_PAGE,
                     "Página de venda não foi criada pelo pipeline",
@@ -142,7 +152,7 @@ public class ExperimentReadinessService {
                     List.of()
             ));
         }
-        if (purchaseIntent && salesPagePublication.isPresent()
+        if (purchaseIntent && hasCommercialContract && salesPagePublication.isPresent()
                 && !campaignDestinationPolicy.hasAdDestinationPointingToSalesPage(experiment, salesPagePublication.get())) {
             issues.add(new ExperimentReadinessIssueDto(
                     ExperimentReadinessIssueType.GERA_SALES_PAGE,
@@ -152,7 +162,7 @@ public class ExperimentReadinessService {
                     List.of()
             ));
         }
-        if (purchaseIntent && salesPagePublication.isPresent()
+        if (purchaseIntent && hasCommercialContract && salesPagePublication.isPresent()
                 && !campaignDestinationPolicy.hasRequiredSalesPageAnalyticsCollectors(salesPagePublication.get())) {
             issues.add(new ExperimentReadinessIssueDto(
                     ExperimentReadinessIssueType.GERA_SALES_PAGE,

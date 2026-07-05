@@ -65,6 +65,7 @@ public class GeraSalesPageStageService {
     public GeraSalesPageStartResponse start(Long experimentId) {
         Experiment experiment = experimentRepository.findById(experimentId)
                 .orElseThrow(() -> new EntityNotFoundException("Experiment not found: " + experimentId));
+        validateCommercialContract(experiment);
         validateCheckoutUrl(experiment);
         GeraSalesPageStageExecution execution = enqueue(experimentId, GeraSalesPageStageCode.OFFER_BRIEF.code());
         return new GeraSalesPageStartResponse(experimentId, execution.getStageCode(), idJobText(execution), execution.getStatus());
@@ -75,6 +76,7 @@ public class GeraSalesPageStageService {
     public GeraSalesPageStartResponse rebuild(Long experimentId) {
         Experiment experiment = experimentRepository.findById(experimentId)
                 .orElseThrow(() -> new EntityNotFoundException("Experiment not found: " + experimentId));
+        validateCommercialContract(experiment);
         validateCheckoutUrl(experiment);
         List<GeraSalesPageStageExecution> executions =
                 executionRepository.findByExperimentIdOrderByExecutionRequestedAtAsc(experimentId);
@@ -210,7 +212,7 @@ public class GeraSalesPageStageService {
         payload.put("campaignAngle", parseJsonOrText(experiment.getCampaignAngle()));
         payload.put("adCopy", parseJsonOrText(experiment.getAdCopy()));
         payload.put("adImageBriefing", parseJsonOrText(experiment.getAdImageBriefing()));
-        payload.put("checkoutUrl", experiment.getFollowUpActionUrl());
+        payload.put("checkoutUrl", resolveCheckoutUrl(experiment));
         payload.put("productAiSubtype", experiment.getProductAiSubtype());
         payload.put("salesPageDestination", salesPageDestination(experiment));
         payload.put("unitPrice", experiment.getUnitPrice());
@@ -279,10 +281,33 @@ public class GeraSalesPageStageService {
 
     /** Bloqueia início ou rebuild sem checkout real persistido no experimento. */
     private void validateCheckoutUrl(Experiment experiment) {
-        if (!isRealCheckoutUrl(experiment.getFollowUpActionUrl())) {
+        if (!isRealCheckoutUrl(resolveCheckoutUrl(experiment))) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
-                    "GeraSalesPage v1 exige followUpActionUrl com URL real de checkout antes de iniciar.");
+                    "GeraSalesPage v1 exige URL real de checkout antes de iniciar.");
+        }
+    }
+
+    /** Resolve o checkout interno priorizando auditoria anterior quando followUpActionUrl já virou página. */
+    private String resolveCheckoutUrl(Experiment experiment) {
+        String auditedCheckoutUrl = publicationAuditService.latestCheckoutUrl(experiment.getId());
+        if (StringUtils.hasText(auditedCheckoutUrl)) {
+            return auditedCheckoutUrl;
+        }
+        return experiment.getFollowUpActionUrl();
+    }
+
+    /** Bloqueia página de venda sem contrato comercial mínimo da etapa Oferta. */
+    private void validateCommercialContract(Experiment experiment) {
+        if (!StringUtils.hasText(experiment.getSinglePain())
+                || !StringUtils.hasText(experiment.getFreeReward())
+                || !StringUtils.hasText(experiment.getFunnelPromise())
+                || !StringUtils.hasText(experiment.getPrimaryCta())
+                || experiment.getUnitPrice() == null
+                || experiment.getUnitPrice().signum() <= 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "GeraSalesPage v1 exige contrato comercial completo: dor, prova/preview, promessa, CTA e preço.");
         }
     }
 

@@ -5,6 +5,7 @@ import com.marketinghub.experiment.ExperimentPlatform;
 import com.marketinghub.experiment.ExperimentStatus;
 import com.marketinghub.experiment.ExperimentTargetingSelection;
 import com.marketinghub.experiment.mapper.ExperimentMapper;
+import com.marketinghub.experiment.service.ExperimentReadinessService;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentTargetingSelectionRepository;
 import com.marketinghub.facebookads.dto.ExperimentReadyForAdSetDto;
@@ -42,6 +43,7 @@ public class FacebookAdSetExperimentService {
     private final MarketNicheMapper marketNicheMapper;
     private final HypothesisMapper hypothesisMapper;
     private final TargetingElementMapper targetingElementMapper;
+    private final ExperimentReadinessService readinessService;
 
     /**
      * Inicializa o serviço com repositórios e mapeadores usados para montar o contrato do worker.
@@ -52,7 +54,8 @@ public class FacebookAdSetExperimentService {
                                           ExperimentMapper experimentMapper,
                                           MarketNicheMapper marketNicheMapper,
                                           HypothesisMapper hypothesisMapper,
-                                          TargetingElementMapper targetingElementMapper) {
+                                          TargetingElementMapper targetingElementMapper,
+                                          ExperimentReadinessService readinessService) {
         this.experimentRepository = experimentRepository;
         this.targetingSelectionRepository = targetingSelectionRepository;
         this.targetingElementRepository = targetingElementRepository;
@@ -60,6 +63,7 @@ public class FacebookAdSetExperimentService {
         this.marketNicheMapper = marketNicheMapper;
         this.hypothesisMapper = hypothesisMapper;
         this.targetingElementMapper = targetingElementMapper;
+        this.readinessService = readinessService;
     }
 
     /**
@@ -112,6 +116,9 @@ public class FacebookAdSetExperimentService {
      * Converte um experimento em contrato de ad set quando existe pacote de segmentação publicável.
      */
     private ExperimentReadyForAdSetDto toReadyForAdSetDto(Experiment experiment) {
+        if (!readinessService.isReadyForCampaign(experiment)) {
+            return null;
+        }
         TargetingPackageDto targeting = buildTargetingPackage(experiment);
         if (targeting == null) {
             return null;

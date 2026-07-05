@@ -15,6 +15,7 @@ import com.marketinghub.gerasalespage.v1.GeraSalesPageStageExecution;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.aiprompt.AiPromptSchemaTemplateRepository;
 import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPageStageExecutionRepository;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -62,6 +63,7 @@ class GeraSalesPageStageServiceTest {
         Experiment experiment = new Experiment();
         experiment.setId(53L);
         experiment.setFollowUpActionUrl("https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=abc");
+        completeCommercialContract(experiment);
         GeraSalesPageStageExecution previous = GeraSalesPageStageExecution.builder()
                 .idJob("old-job")
                 .experimentId(53L)
@@ -95,6 +97,19 @@ class GeraSalesPageStageServiceTest {
                 GeraSalesPageStageCode.OFFER_BRIEF.code(),
                 newExecution.getValue().getIdJob());
         assertThat(response.stageCode()).isEqualTo(GeraSalesPageStageCode.OFFER_BRIEF.code());
+    }
+
+    /** Deve bloquear o início quando a etapa Oferta ainda não preencheu contrato comercial. */
+    @Test
+    void rebuildShouldRejectExperimentWithoutCommercialContract() {
+        Experiment experiment = new Experiment();
+        experiment.setId(56L);
+        experiment.setFollowUpActionUrl("https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=abc");
+        when(experimentRepository.findById(56L)).thenReturn(Optional.of(experiment));
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.rebuild(56L))
+                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+                .hasMessageContaining("contrato comercial completo");
     }
 
     /** Deve bloquear a publicação quando a revisão comercial reprova a página. */
@@ -148,5 +163,14 @@ class GeraSalesPageStageServiceTest {
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
                 .build();
+    }
+
+    /** Preenche o contrato comercial mínimo exigido antes da página de vendas. */
+    private void completeCommercialContract(Experiment experiment) {
+        experiment.setSinglePain("Cliente some depois da manutenção");
+        experiment.setFreeReward("Preview visual da agenda preenchida");
+        experiment.setFunnelPromise("Enxergar riscos e encaixes em 7 dias");
+        experiment.setPrimaryCta("Comprar o Mapa 7D");
+        experiment.setUnitPrice(BigDecimal.valueOf(29.90));
     }
 }

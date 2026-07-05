@@ -33,6 +33,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -143,6 +144,7 @@ class ExperimentReadinessServiceTest {
         experiment.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
         experiment.setFollowUpActionUrl("https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=abc");
         experiment.getNiche().setFacebookPixelId("pixel-exp56");
+        completeCommercialContract(experiment);
 
         when(creativeRepository.existsByExperimentIdAndStatus(56L, CreativeStatus.READY)).thenReturn(true);
         mockPublishableSelection(56L, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
@@ -164,6 +166,7 @@ class ExperimentReadinessServiceTest {
         experiment.setCampaignObjective(ExperimentCampaignObjective.SALES);
         experiment.setFollowUpActionUrl("https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=sales-direct");
         experiment.getNiche().setFacebookPixelId("pixel-exp60");
+        completeCommercialContract(experiment);
 
         when(creativeRepository.existsByExperimentIdAndStatus(60L, CreativeStatus.READY)).thenReturn(true);
         mockPublishableSelection(60L, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
@@ -185,6 +188,7 @@ class ExperimentReadinessServiceTest {
         experiment.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
         experiment.setFollowUpActionUrl("https://pagamentopalf.site/sales-page-exp53.html");
         experiment.getNiche().setFacebookPixelId("pixel-exp53");
+        completeCommercialContract(experiment);
 
         when(creativeRepository.existsByExperimentIdAndStatus(53L, CreativeStatus.READY)).thenReturn(true);
         mockPublishableSelection(53L, TargetingCandidateType.BEHAVIOR, TargetingElementType.BEHAVIOR);
@@ -197,6 +201,21 @@ class ExperimentReadinessServiceTest {
 
         assertThat(service.computeMissingConfiguration(experiment)).isEmpty();
         assertThat(service.isReadyForCampaign(experiment)).isTrue();
+    }
+
+    @Test
+    void shouldRequireCommercialContractBeforeSalesPageForPurchaseIntent() {
+        Experiment experiment = buildExperiment(56L, 66L);
+        experiment.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
+        experiment.setFollowUpActionUrl("https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=abc");
+        experiment.getNiche().setFacebookPixelId("pixel-exp56");
+
+        when(creativeRepository.existsByExperimentIdAndStatus(56L, CreativeStatus.READY)).thenReturn(true);
+        mockPublishableSelection(56L, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
+
+        assertThat(service.computeMissingConfiguration(experiment))
+                .containsExactly("commercialContract");
+        assertThat(service.isReadyForCampaign(experiment)).isFalse();
     }
 
     /** Simula uma seleção de público aprovada e identificável pela Meta. */
@@ -315,6 +334,15 @@ class ExperimentReadinessServiceTest {
         experiment.setHypothesisRef(hypothesis);
         experiment.setCreativeApproved(true);
         return experiment;
+    }
+
+    /** Preenche o contrato comercial mínimo gerado pela etapa Oferta. */
+    private void completeCommercialContract(Experiment experiment) {
+        experiment.setSinglePain("Cliente some depois da manutenção");
+        experiment.setFreeReward("Preview visual da agenda preenchida");
+        experiment.setFunnelPromise("Enxergar riscos e encaixes em 7 dias");
+        experiment.setPrimaryCta("Comprar o Mapa 7D");
+        experiment.setUnitPrice(BigDecimal.valueOf(29.90));
     }
 
 }

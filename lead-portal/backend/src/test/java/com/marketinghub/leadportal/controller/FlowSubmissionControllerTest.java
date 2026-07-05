@@ -20,6 +20,7 @@ import com.marketinghub.leadportal.service.ExperimentFunnelTrackingClient.Tracki
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Executor;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,6 +29,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
@@ -41,10 +44,21 @@ import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 
-@SpringBootTest
+@SpringBootTest(properties = "spring.main.allow-bean-definition-overriding=true")
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class FlowSubmissionControllerTest {
+
+    /** Responsabilidade: executar tarefas assíncronas de imagem no mesmo thread durante testes de controller. */
+    @TestConfiguration
+    static class DirectExecutorTestConfig {
+
+        /** Cria executor direto para tornar determinística a criação de pacote de imagem nos testes. */
+        @Bean(name = "leadPortalImageUploadExecutor")
+        Executor leadPortalImageUploadExecutor() {
+            return Runnable::run;
+        }
+    }
 
     @Autowired
     private MockMvc mockMvc;

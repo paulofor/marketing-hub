@@ -21,6 +21,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.Executor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -67,6 +69,7 @@ public class FlowSubmissionService {
     private final FlowSubmissionImagePackageStatusHistoryService statusHistoryService;
     private final FlowImagePromptService imagePromptService;
     private final ExperimentFunnelTrackingClient trackingClient;
+    private final Executor imageUploadExecutor;
     private final boolean imagePipelineEnabled;
 
     public FlowSubmissionService(
@@ -77,6 +80,7 @@ public class FlowSubmissionService {
             FlowSubmissionImagePackageStatusHistoryService statusHistoryService,
             FlowImagePromptService imagePromptService,
             ExperimentFunnelTrackingClient trackingClient,
+            @Qualifier("leadPortalImageUploadExecutor") Executor imageUploadExecutor,
             @Value("${lead-portal.image-pipeline.enabled:false}") boolean imagePipelineEnabled) {
         this.flowService = flowService;
         this.repository = repository;
@@ -85,6 +89,7 @@ public class FlowSubmissionService {
         this.statusHistoryService = statusHistoryService;
         this.imagePromptService = imagePromptService;
         this.trackingClient = trackingClient;
+        this.imageUploadExecutor = imageUploadExecutor;
         this.imagePipelineEnabled = imagePipelineEnabled;
     }
 
@@ -100,8 +105,9 @@ public class FlowSubmissionService {
         String originalFileName = null;
         String contentType = null;
         boolean hasImage = imageFile != null && !imageFile.isEmpty();
+        boolean asyncImagePackage = hasImage && shouldCreateImagePackageForFlow(flow, true);
 
-        if (hasImage) {
+        if (hasImage && !asyncImagePackage) {
             storedFileName = fileStorageService.store(imageFile, id.toString());
             originalFileName = imageFile.getOriginalFilename();
             contentType = imageFile.getContentType();
@@ -123,8 +129,12 @@ public class FlowSubmissionService {
                 normalizeCampaignCode(request.getCampaignCode()));
 
         repository.save(com.marketinghub.leadportal.entity.FlowSubmissionEntity.fromModel(submission));
-        registerImagePackage(flow, submission, hasImage);
         notifyExperimentFunnel(flow, submission);
+        if (asyncImagePackage) {
+            scheduleImageUploadAndPackage(flow, submission, imageFile);
+        } else {
+            registerImagePackage(flow, submission, hasImage);
+        }
         return submission;
     }
 
@@ -318,6 +328,62 @@ public class FlowSubmissionService {
 
         FlowSubmissionImagePackageEntity savedPackage = imagePackageRepository.save(imagePackage);
         statusHistoryService.recordStatusChange(savedPackage.getId(), FlowSubmissionImagePackageEntity.Status.RECENT, null);
+    }
+
+    /** Agenda upload da foto e criação do pacote sem prender a confirmação enviada ao lead. */
+    private void scheduleImageUploadAndPackage(Flow flow, FlowSubmission submission, MultipartFile imageFile) {
+        try {
+            byte[] imageBytes = imageFile.getBytes();
+            String originalFileName = imageFile.getOriginalFilename();
+            String contentType = imageFile.getContentType();
+            imageUploadExecutor.execute(() ->
+                    uploadImageAndRegisterPackage(flow, submission, imageBytes, originalFileName, contentType));
+        } catch (Exception ex) {
+            log.error(
+                    "Falha ao preparar upload assíncrono da imagem. flow={}, submissionId={}",
+                    flow.slug(),
+                    submission.id(),
+                    ex);
+        }
+    }
+
+    /** Faz o upload da imagem, atualiza a submissão e cria o pacote para o AI Worker. */
+    private void uploadImageAndRegisterPackage(
+            Flow flow,
+            FlowSubmission submission,
+            byte[] imageBytes,
+            String originalFileName,
+            String contentType) {
+        try {
+            String storedFileName = fileStorageService.store(
+                    imageBytes, submission.id().toString(), originalFileName, contentType);
+            repository.findById(submission.id()).ifPresent(entity -> {
+                entity.setStoredFileName(storedFileName);
+                entity.setOriginalFileName(originalFileName);
+                entity.setContentType(contentType);
+                repository.save(entity);
+            });
+
+            FlowSubmission submissionWithImage = new FlowSubmission(
+                    submission.id(),
+                    submission.flowSlug(),
+                    submission.name(),
+                    submission.email(),
+                    submission.answers(),
+                    submission.imageQuestionKey(),
+                    storedFileName,
+                    originalFileName,
+                    contentType,
+                    submission.createdAt(),
+                    submission.campaignCode());
+            registerImagePackage(flow, submissionWithImage, true);
+        } catch (Exception ex) {
+            log.error(
+                    "Falha no upload assíncrono da imagem da submissão. flow={}, submissionId={}",
+                    flow.slug(),
+                    submission.id(),
+                    ex);
+        }
     }
 
     /**

@@ -59,6 +59,52 @@ class CreativeGenerationServiceTest {
         verify(backendClient).markCompleted(49L);
     }
 
+    /**
+     * Garante que textos longos gerados pela IA sejam ajustados antes do envio ao backend.
+     */
+    @Test
+    void shouldNormalizeGeneratedCreativeTextBeforeSaving() {
+        CreativeGenerationBackendClient backendClient = mock(CreativeGenerationBackendClient.class);
+        CreativeChatGptClient textClient = mock(CreativeChatGptClient.class);
+        CreativeImageClient imageClient = mock(CreativeImageClient.class);
+        CreativeGenerationService service =
+                new CreativeGenerationService(backendClient, textClient, imageClient, new ObjectMapper());
+        ExperimentDto experiment = pendingExperiment();
+        experiment.setCreativeImagePrompt(null);
+        CreateCreativeRequest generated = new CreateCreativeRequest();
+        generated.setHeadline(repeat("Headline longa", 30));
+        generated.setPrimaryText(repeat("Texto principal persuasivo", 30));
+        generated.setDescription(repeat("Descricao complementar", 30));
+        generated.setCta("Gerar minha amostra personalizada agora");
+
+        when(backendClient.listPending(5)).thenReturn(List.of(experiment));
+        when(textClient.generateCreatives(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq(1)))
+                .thenReturn(new CreativeChatGptClient.Generation(List.of(generated), null, null));
+        when(imageClient.generateImage(
+                org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.isNull(),
+                org.mockito.ArgumentMatchers.anyString()))
+                .thenReturn("/assets/creative.jpg");
+
+        CreativeGenerationService.ProcessingSummary summary = service.processPending(5);
+
+        assertThat(summary.failed()).isZero();
+        ArgumentCaptor<CreateCreativeRequest> creativeCaptor = ArgumentCaptor.forClass(CreateCreativeRequest.class);
+        verify(backendClient).createCreative(org.mockito.ArgumentMatchers.eq(49L), creativeCaptor.capture());
+        CreateCreativeRequest saved = creativeCaptor.getValue();
+        assertThat(saved.getHeadline()).hasSizeLessThanOrEqualTo(255);
+        assertThat(saved.getPrimaryText()).hasSizeLessThanOrEqualTo(255);
+        assertThat(saved.getDescription()).hasSizeLessThanOrEqualTo(255);
+        assertThat(saved.getCta()).isEqualTo("LEARN_MORE");
+        ArgumentCaptor<String> promptCaptor = ArgumentCaptor.forClass(String.class);
+        verify(imageClient).generateImage(
+                promptCaptor.capture(),
+                org.mockito.ArgumentMatchers.isNull(),
+                org.mockito.ArgumentMatchers.anyString());
+        assertThat(promptCaptor.getValue()).contains(saved.getPrimaryText());
+        assertThat(promptCaptor.getValue()).contains("Nao incluir texto, letras, numeros");
+    }
+
     /** Cria um experimento pendente mínimo para o cenário de teste. */
     private ExperimentDto pendingExperiment() {
         ExperimentDto dto = new ExperimentDto();
@@ -70,5 +116,10 @@ class CreativeGenerationServiceTest {
         dto.setCreativesToGenerate(1);
         dto.setCreativeImagePrompt("Prompt visual");
         return dto;
+    }
+
+    /** Repete um texto de base para montar entradas maiores que o contrato persistivel. */
+    private String repeat(String text, int times) {
+        return String.join(" ", java.util.Collections.nCopies(times, text));
     }
 }

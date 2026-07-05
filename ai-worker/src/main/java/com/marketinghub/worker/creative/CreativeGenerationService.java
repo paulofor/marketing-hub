@@ -21,8 +21,11 @@ import org.springframework.util.StringUtils;
 @Service
 public class CreativeGenerationService {
     private static final Logger log = LoggerFactory.getLogger(CreativeGenerationService.class);
+    private static final int CREATIVE_TEXT_MAX_LENGTH = 255;
     private static final int META_CALL_TO_ACTION_MAX_LENGTH = 32;
     private static final String DEFAULT_META_CALL_TO_ACTION = "LEARN_MORE";
+    private static final String IMAGE_TEXT_GUARD =
+            "Nao incluir texto, letras, numeros, palavras, logotipos ou interface legivel dentro da imagem.";
 
     private final CreativeGenerationBackendClient backendClient;
     private final CreativeChatGptClient textClient;
@@ -94,15 +97,16 @@ public class CreativeGenerationService {
         }
         List<CreateCreativeRequest> result = new ArrayList<>();
         for (PipelineAdCreativePlan plan : plans) {
-            String prompt = buildPipelineImagePrompt(plan);
-            String imageUrl = imageClient.generateImage(prompt, null,
-                    "pipeline-creative-experiment-" + dto.getId() + "-" + plan.variantKey());
             CreateCreativeRequest request = new CreateCreativeRequest();
             request.setHeadline(plan.headline());
             request.setPrimaryText(plan.primaryText());
             request.setDescription(plan.description());
             request.setCta(normalizeMetaCallToAction(plan.ctaText()));
             request.setFormat(StringUtils.hasText(plan.format()) ? plan.format() : "IMAGE");
+            normalizeCreativeContract(request);
+            String prompt = buildPipelineImagePrompt(plan, request);
+            String imageUrl = imageClient.generateImage(prompt, null,
+                    "pipeline-creative-experiment-" + dto.getId() + "-" + plan.variantKey());
             request.setImageUrl(imageUrl);
             request.setStatus(CreativeStatus.DRAFT);
             result.add(request);
@@ -117,12 +121,12 @@ public class CreativeGenerationService {
                 .limit(Math.max(1, quantity))
                 .toList();
         for (CreateCreativeRequest creative : creatives) {
+            normalizeCreativeContract(creative);
             String prompt = defaultImagePrompt(dto, creative);
             creative.setImageUrl(imageClient.generateImage(prompt, null, "creative-experiment-" + dto.getId()));
             if (creative.getStatus() == null) {
                 creative.setStatus(CreativeStatus.DRAFT);
             }
-            creative.setCta(normalizeMetaCallToAction(creative.getCta()));
         }
         return creatives;
     }
@@ -147,27 +151,42 @@ public class CreativeGenerationService {
     }
 
     /** Monta o prompt visual final de um criativo do pipeline. */
-    private String buildPipelineImagePrompt(PipelineAdCreativePlan plan) {
+    private String buildPipelineImagePrompt(PipelineAdCreativePlan plan, CreateCreativeRequest creative) {
         StringBuilder prompt = new StringBuilder();
         prompt.append("Crie uma imagem de anúncio para Meta Ads. ");
         if (plan.imageBriefing() != null && StringUtils.hasText(plan.imageBriefing().visualBriefing())) {
             prompt.append(plan.imageBriefing().visualBriefing()).append(' ');
         }
-        if (StringUtils.hasText(plan.primaryText())) {
-            prompt.append("Mensagem do anúncio: ").append(plan.primaryText()).append(' ');
+        if (StringUtils.hasText(creative.getPrimaryText())) {
+            prompt.append("Mensagem do anúncio: ").append(creative.getPrimaryText()).append(' ');
         }
-        if (StringUtils.hasText(plan.headline())) {
-            prompt.append("Headline: ").append(plan.headline()).append(' ');
+        if (StringUtils.hasText(creative.getHeadline())) {
+            prompt.append("Headline: ").append(creative.getHeadline()).append(' ');
         }
+        prompt.append(IMAGE_TEXT_GUARD);
         return prompt.toString().trim();
+    }
+
+    /** Normaliza o criativo para respeitar o contrato persistivel do backend e da Meta. */
+    private void normalizeCreativeContract(CreateCreativeRequest creative) {
+        if (creative == null) {
+            return;
+        }
+        creative.setHeadline(limitText(creative.getHeadline(), CREATIVE_TEXT_MAX_LENGTH));
+        creative.setPrimaryText(limitText(creative.getPrimaryText(), CREATIVE_TEXT_MAX_LENGTH));
+        creative.setDescription(limitText(creative.getDescription(), CREATIVE_TEXT_MAX_LENGTH));
+        creative.setCta(normalizeMetaCallToAction(creative.getCta()));
     }
 
     /** Define o prompt de imagem do modo padrão usando prompt customizado ou texto do criativo. */
     private String defaultImagePrompt(ExperimentDto dto, CreateCreativeRequest creative) {
         if (StringUtils.hasText(dto.getCreativeImagePrompt())) {
-            return dto.getCreativeImagePrompt();
+            return dto.getCreativeImagePrompt().trim() + " " + IMAGE_TEXT_GUARD;
         }
-        return "Crie uma imagem de anúncio para Meta Ads alinhada ao texto: " + creative.getPrimaryText();
+        return "Crie uma imagem de anúncio para Meta Ads alinhada ao texto: "
+                + creative.getPrimaryText()
+                + " "
+                + IMAGE_TEXT_GUARD;
     }
 
     /** Normaliza CTA livre para o tipo canônico aceito pelo backend e pela Meta. */
@@ -180,6 +199,22 @@ public class CreativeGenerationService {
             return normalized;
         }
         return DEFAULT_META_CALL_TO_ACTION;
+    }
+
+    /** Limita texto em fronteira de palavra para impedir falha de persistencia por coluna curta. */
+    private String limitText(String value, int maxLength) {
+        if (!StringUtils.hasText(value) || value.length() <= maxLength) {
+            return value;
+        }
+        String trimmed = value.trim();
+        if (trimmed.length() <= maxLength) {
+            return trimmed;
+        }
+        int boundary = trimmed.lastIndexOf(' ', maxLength);
+        if (boundary < maxLength / 2) {
+            boundary = maxLength;
+        }
+        return trimmed.substring(0, boundary).trim();
     }
 
     /** Extrai a mensagem raiz para gravar erro operacional legível no backend. */

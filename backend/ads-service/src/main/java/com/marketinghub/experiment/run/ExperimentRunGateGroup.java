@@ -5,6 +5,7 @@ package com.marketinghub.experiment.run;
  */
 public enum ExperimentRunGateGroup {
     UPSTREAM_QUALITY,
+    COMMERCIAL_EVIDENCE,
     EXPERIMENT_DESIGN,
     ASSET_QUALITY,
     FUNCTIONAL_E2E,

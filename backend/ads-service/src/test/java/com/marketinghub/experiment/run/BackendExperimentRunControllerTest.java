@@ -15,7 +15,10 @@ import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRunGateResultRepository;
 import com.marketinghub.repository.jpa.experiment.ExperimentRunRepository;
 import com.marketinghub.repository.jpa.hypothesis.HypothesisRepository;
+import com.marketinghub.repository.jpa.mois.dossieproduto.PipelineDossieProdutoRepository;
+import com.marketinghub.repository.jpa.mois.dossieproduto.entity.PipelineDossieProduto;
 import com.marketinghub.repository.jpa.niche.MarketNicheRepository;
+import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,6 +66,8 @@ class BackendExperimentRunControllerTest {
     private HypothesisRepository hypothesisRepository;
     @Autowired
     private AngleRepository angleRepository;
+    @Autowired
+    private PipelineDossieProdutoRepository pipelineDossieProdutoRepository;
 
     /** Limpa dados persistidos para manter a ordem sequencial dos runs previsível. */
     @BeforeEach
@@ -73,6 +78,7 @@ class BackendExperimentRunControllerTest {
         hypothesisRepository.deleteAll();
         angleRepository.deleteAll();
         marketNicheRepository.deleteAll();
+        pipelineDossieProdutoRepository.deleteAll();
     }
 
     /** Deve criar runs sequenciais com validade inicial neutra e sem alterar o experimento legado. */
@@ -135,12 +141,15 @@ class BackendExperimentRunControllerTest {
     @Test
     void runPreflightWithoutBlockers() throws Exception {
         Long experimentId = createExperiment();
+        createRelevantCommercialDossier();
         Long runId = createRun(experimentId);
 
         mockMvc.perform(post("/api/experiment-runs/{runId}/preflight", runId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.runStatus").value("READY_TO_PUBLISH"))
                 .andExpect(jsonPath("$.hasBlockers").value(false))
+                .andExpect(jsonPath("$.gates[?(@.gateCode == 'MOIS_COMMERCIAL_DOSSIER_PREFLIGHT')].status").value(hasItem("PASS")))
+                .andExpect(jsonPath("$.gates[?(@.gateCode == 'MOIS_COMMERCIAL_DOSSIER_PREFLIGHT')].evidenceReference").value(hasItem(org.hamcrest.Matchers.containsString("mois-dossiers:"))))
                 .andExpect(jsonPath("$.gates[?(@.gateCode == 'PRIMARY_VARIABLE_DEFINED')].status").value(hasItem("PASS")))
                 .andExpect(jsonPath("$.gates[?(@.gateCode == 'FORM_CAN_BE_SUBMITTED')].status").value(hasItem("PENDING")));
 
@@ -149,10 +158,25 @@ class BackendExperimentRunControllerTest {
                 .andExpect(jsonPath("$.runStatus").value("READY_TO_PUBLISH"));
     }
 
+    /** Deve bloquear preflight quando não existir dossiê MOIS aderente à hipótese. */
+    @Test
+    void runPreflightBlocksWithoutCommercialDossier() throws Exception {
+        Long experimentId = createExperiment();
+        Long runId = createRun(experimentId);
+
+        mockMvc.perform(post("/api/experiment-runs/{runId}/preflight", runId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.runStatus").value("PREFLIGHT_FAILED"))
+                .andExpect(jsonPath("$.hasBlockers").value(true))
+                .andExpect(jsonPath("$.gates[?(@.gateCode == 'MOIS_COMMERCIAL_DOSSIER_PREFLIGHT')].status").value(hasItem("FAIL")))
+                .andExpect(jsonPath("$.gates[?(@.gateCode == 'MOIS_COMMERCIAL_DOSSIER_PREFLIGHT')].remediationCode").value(hasItem("GENERATE_MOIS_COMMERCIAL_DOSSIER")));
+    }
+
     /** Deve bloquear preflight quando desenho experimental ou persona estiverem incompletos. */
     @Test
     void runPreflightWithStrategicBlockers() throws Exception {
         Long experimentId = createExperimentWithMissingDesign();
+        createRelevantCommercialDossier();
         Long runId = createRun(experimentId);
 
         mockMvc.perform(post("/api/experiment-runs/{runId}/preflight", runId))
@@ -166,25 +190,25 @@ class BackendExperimentRunControllerTest {
 
     /** Cria o experimento mínimo necessário para vincular runs nos testes. */
     private Long createExperiment() {
-        MarketNiche niche = marketNicheRepository.save(MarketNiche.builder().name("Nicho Run").build());
+        MarketNiche niche = marketNicheRepository.save(MarketNiche.builder().name("Doces Finos Premium").build());
         Angle angle = angleRepository.save(Angle.builder().name("Ângulo Run").build());
         Hypothesis hypothesis = hypothesisRepository.save(Hypothesis.builder()
                 .marketNiche(niche)
-                .title("Hipótese Run")
+                .title("Especialista em doces finos")
                 .premiseAngle(angle)
-                .promise("Promessa")
-                .problem("Problema")
-                .persona("Persona")
+                .promise("Cobrar mais por doces finos premium")
+                .problem("Confeiteiras trabalham muito e cobram pouco")
+                .persona("Confeiteira autônoma")
                 .offerType(OfferType.LEAD)
                 .kpiTargetCpl(new BigDecimal("1"))
-                .mechanism("Mecanismo")
-                .entrega("Entrega")
+                .mechanism("Reposicionamento premium")
+                .entrega("Plano de precificação")
                 .build());
         Experiment experiment = Experiment.builder()
                 .niche(niche)
-                .name("Experimento Run")
+                .name("Experimento Doces Finos")
                 .hypothesisRef(hypothesis)
-                .hypothesis("Resumo")
+                .hypothesis("Doces finos premium")
                 .status(ExperimentStatus.PLANNED)
                 .platform(ExperimentPlatform.FACEBOOK)
                 .primaryVariable("Ângulo de dor")
@@ -192,6 +216,23 @@ class BackendExperimentRunControllerTest {
                 .kpiTargetCpl(new BigDecimal("45"))
                 .build();
         return experimentRepository.save(experiment).getId();
+    }
+
+    /** Cria dossiê concluído aderente ao experimento para liberar o gate comercial. */
+    private void createRelevantCommercialDossier() {
+        PipelineDossieProduto dossier = new PipelineDossieProduto();
+        dossier.setIdExterno("101");
+        dossier.setCodigoEtapa("dossier-synthesis");
+        dossier.setStatus("CONCLUIDO");
+        dossier.setPipelineCode("warmupecosystem.v1");
+        dossier.setVersaoPipeline("v1");
+        dossier.setDataHora(Instant.now());
+        dossier.setJobId("job-doces-finos");
+        dossier.setRespostaFinal("""
+                Produto quente de doces finos premium: confeiteira autônoma usa reposicionamento premium
+                para cobrar mais, trabalhar menos e vender oferta com autoridade e prova social.
+                """);
+        pipelineDossieProdutoRepository.save(dossier);
     }
 
     /** Cria um run e retorna seu identificador para os testes de preflight. */

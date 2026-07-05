@@ -4,7 +4,10 @@ import com.marketinghub.repository.jpa.mois.dossieproduto.entity.PipelineDossieP
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 /** Repositório JPA responsável por consultar e salvar auditorias do pipeline de dossiê de produto. */
 public interface PipelineDossieProdutoRepository extends JpaRepository<PipelineDossieProduto, Long> {
@@ -34,4 +37,16 @@ public interface PipelineDossieProdutoRepository extends JpaRepository<PipelineD
     /** Lista auditorias de um produto e versão a partir do início do fluxo atual. */
     List<PipelineDossieProduto> findByIdExternoAndVersaoPipelineAndDataHoraGreaterThanEqualOrderByDataHoraAscIdAsc(
             String idExterno, String versaoPipeline, Instant dataHora);
+
+    /** Lista dossiês comerciais concluídos para uso como evidência prévia de experimento. */
+    @Query("""
+            select pipeline
+            from PipelineDossieProduto pipeline
+            where pipeline.status = 'CONCLUIDO'
+              and pipeline.pipelineCode in :pipelineCodes
+              and pipeline.respostaFinal is not null
+            order by pipeline.dataHora desc, pipeline.id desc
+            """)
+    List<PipelineDossieProduto> findCompletedCommercialDossiers(
+            @Param("pipelineCodes") List<String> pipelineCodes, Pageable pageable);
 }

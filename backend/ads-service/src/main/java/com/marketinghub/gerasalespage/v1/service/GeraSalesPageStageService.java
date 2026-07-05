@@ -12,9 +12,11 @@ import com.marketinghub.repository.jpa.aiprompt.AiPromptSchemaTemplateRepository
 import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPageStageExecutionRepository;
 import com.marketinghub.productai.ProductAiSubtype;
 import jakarta.persistence.EntityNotFoundException;
+import java.net.URI;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import org.slf4j.Logger;
@@ -60,7 +62,7 @@ public class GeraSalesPageStageService {
         this.objectMapper = objectMapper;
     }
 
-    /** Inicia o pipeline na primeira etapa, bloqueando experimento sem checkout real. */
+    /** Inicia o pipeline na primeira etapa, bloqueando experimento sem destino comercial válido. */
     @Transactional
     public GeraSalesPageStartResponse start(Long experimentId) {
         Experiment experiment = experimentRepository.findById(experimentId)
@@ -279,13 +281,55 @@ public class GeraSalesPageStageService {
                 && !url.contains("#checkout");
     }
 
-    /** Bloqueia início ou rebuild sem checkout real persistido no experimento. */
+    /** Bloqueia início ou rebuild sem checkout real ou funil de amostra personalizada aprovado. */
     private void validateCheckoutUrl(Experiment experiment) {
+        if (usesPersonalizedSampleFunnelAsDestination(experiment)) {
+            return;
+        }
         if (!isRealCheckoutUrl(resolveCheckoutUrl(experiment))) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
                     "GeraSalesPage v1 exige URL real de checkout antes de iniciar.");
         }
+    }
+
+    /** Confirma que Produto IA personalizado usa o funil aprovado do Lead Portal como primeiro destino. */
+    private boolean usesPersonalizedSampleFunnelAsDestination(Experiment experiment) {
+        if (experiment == null || experiment.getProductAiSubtype() != ProductAiSubtype.AI_PERSONALIZED_SAMPLE) {
+            return false;
+        }
+        if (experiment.getLeadPortalFlow() == null
+                || !experiment.getLeadPortalFlow().isApproved()
+                || !StringUtils.hasText(experiment.getLeadPortalFlow().getSlug())) {
+            return false;
+        }
+        String destinationPath = destinationPath(experiment.getFollowUpActionUrl());
+        String expectedPath = "/flows/" + experiment.getLeadPortalFlow().getSlug().trim().toLowerCase(Locale.ROOT);
+        return expectedPath.equals(destinationPath);
+    }
+
+    /** Extrai o caminho da URL pública para comparar com o slug do funil. */
+    private String destinationPath(String url) {
+        if (!StringUtils.hasText(url)) {
+            return "";
+        }
+        try {
+            return normalizeUrl(URI.create(url.trim()).getPath());
+        } catch (IllegalArgumentException ex) {
+            return "";
+        }
+    }
+
+    /** Normaliza caminho ou URL removendo espaços, caixa e barra final. */
+    private String normalizeUrl(String url) {
+        if (!StringUtils.hasText(url)) {
+            return "";
+        }
+        String normalized = url.trim().toLowerCase(Locale.ROOT);
+        while (normalized.endsWith("/")) {
+            normalized = normalized.substring(0, normalized.length() - 1);
+        }
+        return normalized;
     }
 
     /** Resolve o checkout interno priorizando auditoria anterior quando followUpActionUrl já virou página. */

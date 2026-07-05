@@ -29,6 +29,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+/**
+ * Registra submissões públicas do Lead Portal, arquivos enviados e pacotes de imagem derivados do fluxo.
+ */
 @Service
 public class FlowSubmissionService {
 
@@ -85,6 +88,9 @@ public class FlowSubmissionService {
         this.imagePipelineEnabled = imagePipelineEnabled;
     }
 
+    /**
+     * Cria uma submissão do fluxo público e inicia o pacote de imagem quando o fluxo exige amostra visual.
+     */
     public FlowSubmission create(String slug, FlowSubmissionRequest request, MultipartFile imageFile) {
         Flow flow = flowService.get(slug);
         validateRequiredQuestions(flow, request, imageFile);
@@ -274,26 +280,25 @@ public class FlowSubmissionService {
                 .orElse(null);
     }
 
+    /**
+     * Cria o pacote de imagem que será consumido pelo worker quando houver configuração funcional no fluxo.
+     */
     private void registerImagePackage(Flow flow, FlowSubmission submission, boolean hasImage) {
-        if (!imagePipelineEnabled) {
+        Optional<FlowImagePrompt> promptSpec = imagePromptService.buildPrompt(flow, submission);
+        if (promptSpec.isEmpty()) {
+            log.info("Skipping image package for submission {} in flow {} because there is no prompt/template.",
+                    submission.id(), flow.slug());
+            return;
+        }
+        if (!imagePipelineEnabled && !shouldCreateImagePackageForFlow(flow, hasImage)) {
             log.info(
                     "Image pipeline disabled. Submission {} from flow {} will only register lead data.",
                     submission.id(),
                     flow.slug());
             return;
         }
-        Optional<FlowImagePrompt> promptSpec = imagePromptService.buildPrompt(flow, submission);
-        if (promptSpec.isEmpty() && !hasImage) {
-            log.info("Skipping image package for submission {} in flow {} because there is no prompt/template.",
-                    submission.id(), flow.slug());
-            return;
-        }
 
-        FlowImagePrompt spec = promptSpec.orElseGet(() -> new FlowImagePrompt(
-                Optional.ofNullable(flow.prompt()).orElse(""),
-                flow.model(),
-                null,
-                null));
+        FlowImagePrompt spec = promptSpec.get();
 
         FlowSubmissionImagePackageEntity imagePackage = new FlowSubmissionImagePackageEntity();
         imagePackage.setSubmissionId(submission.id());
@@ -313,6 +318,18 @@ public class FlowSubmissionService {
 
         FlowSubmissionImagePackageEntity savedPackage = imagePackageRepository.save(imagePackage);
         statusHistoryService.recordStatusChange(savedPackage.getId(), FlowSubmissionImagePackageEntity.Status.RECENT, null);
+    }
+
+    /**
+     * Permite amostras com foto de referência mesmo quando a flag global legada permanece desligada.
+     */
+    private boolean shouldCreateImagePackageForFlow(Flow flow, boolean hasImage) {
+        if (!hasImage || flow == null) {
+            return false;
+        }
+        return StringUtils.hasText(flow.imagePromptTemplate())
+                || StringUtils.hasText(flow.imagePromptModel())
+                || flow.imageBatchSize() != null;
     }
 
     private String normalizeCampaignCode(String value) {

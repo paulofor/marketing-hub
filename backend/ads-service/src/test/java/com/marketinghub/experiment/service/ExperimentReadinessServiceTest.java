@@ -183,6 +183,38 @@ class ExperimentReadinessServiceTest {
     }
 
     @Test
+    void shouldAllowPersonalizedSampleProductAiCampaignAfterGeraSalesPagePublishesLeadPortalFunnel() {
+        Experiment experiment = buildExperiment(57L, 30L);
+        experiment.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
+        experiment.setCampaignObjective(ExperimentCampaignObjective.SALES);
+        experiment.setProductAiSubtype(ProductAiSubtype.AI_PERSONALIZED_SAMPLE);
+        experiment.setLeadPortalFlow(productAiFlow(
+                "nome",
+                "email",
+                "whatsapp",
+                "negocio_projeto",
+                "contexto_atual",
+                "objetivo_visual",
+                "dados_personalizacao"));
+        experiment.getLeadPortalFlow().setSlug("decoraia-express-exp-57");
+        experiment.setFollowUpActionUrl("https://oportunidadebrasil.shop/flows/decoraia-express-exp-57");
+        experiment.getNiche().setFacebookPixelId("pixel-exp57");
+        completeCommercialContract(experiment);
+
+        when(creativeRepository.existsByExperimentIdAndStatus(57L, CreativeStatus.READY)).thenReturn(true);
+        mockPublishableSelection(57L, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
+        mockCompletedGeraSalesPagePublication(57L);
+        mockSalesPageAudit(
+                57L,
+                "https://oportunidadebrasil.shop/flows/decoraia-express-exp-57",
+                null,
+                trackedSalesPageHtml());
+
+        assertThat(service.computeMissingConfiguration(experiment)).isEmpty();
+        assertThat(service.isReadyForCampaign(experiment)).isTrue();
+    }
+
+    @Test
     void shouldAllowLowTicketCampaignOnlyAfterGeraSalesPagePublicationPackage() {
         Experiment experiment = buildExperiment(53L, 63L);
         experiment.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);

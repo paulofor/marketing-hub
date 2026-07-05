@@ -107,6 +107,26 @@ Depois que o experimento `AI_PERSONALIZED_SAMPLE` existir, a publicacao de campa
 
 A pagina de venda aprovada pelo GeraSalesPage para `AI_PERSONALIZED_SAMPLE` deve ser publicada dentro desse mesmo `LeadPortalFlow` de coleta, com formulario gerenciado pelo Lead Portal. O link de campanha deve apontar para esse funil-pagina unico. E proibido publicar uma pagina separada que trate o funil como checkout direto ou que pule a coleta de dados de personalizacao.
 
+O valor central de `AI_PERSONALIZED_SAMPLE` e vender uma solucao aplicada a realidade do lead, nao vender "IA", template generico ou PDF estatico. A amostra gratuita deve provar a personalizacao com um recorte pequeno e util; o produto pago deve entregar a versao completa tambem personalizada, usando os dados capturados no Lead Portal. Se a amostra for personalizada e a entrega paga for generica, o funil quebra a promessa, reduz valor percebido e aumenta risco de frustracao.
+
+Funil canonico recomendado para o primeiro teste:
+
+```text
+Anuncio
+→ Lead Portal com promessa e formulario curto
+→ Amostra personalizada gratuita
+→ E-mail 1: entrega da amostra e oferta leve
+→ E-mail 2: follow-up de conversao
+→ Checkout
+→ Entrega paga personalizada
+```
+
+Para o primeiro experimento, a sequencia deve ser simples: dois e-mails sao suficientes para validar interesse, clique e compra sem aumentar complexidade operacional. Sequencias maiores so devem ser usadas depois, quando houver evidencia de abertura, clique, resposta ou interesse sem compra.
+
+O produto pago deve ser uma entrega hibrida personalizada: estrutura-base padronizada para escalar, com conteudo final adaptado aos dados do lead. A entrega deve conter diagnostico, plano ou materiais aplicaveis ao contexto declarado, separando claramente o que foi recebido como amostra gratuita e o que foi liberado apos pagamento.
+
+Exemplo canonico de aplicacao: para manicures em domicilio, a amostra gratuita pode ser uma `Agenda Blindada 7D` parcial com diagnostico da agenda e 1 ou 2 mensagens personalizadas. A compra deve entregar o `Kit Personalizado Agenda Blindada 7D`, com diagnostico completo, plano dos proximos 7 dias, mensagens de confirmacao, cobranca de sinal, reagendamento, atraso e cliente que some, adaptadas ao tom escolhido e aos dados de agenda informados.
+
 Os prompts ativos do GeraSalesPage devem receber contexto suficiente para diferenciar venda direta de funil de personalização. Para `AI_PERSONALIZED_SAMPLE`, o destino comercial da página deve ser o funil-pagina do Lead Portal, deixando claro para o worker que a primeira ação pública é coleta de dados, não checkout direto. O quality review deve aceitar formulário somente nesse subtipo e deve bloquear qualquer ambiguidade entre amostra gratuita, produto pago, preço e entrega paga.
 
 Para `AI_PERSONALIZED_SAMPLE`, a pagina publicada dentro do Lead Portal nunca deve embutir o proprio Lead Portal, flow ou funil em `iframe`. O backend deve remover iframe autorreferente antes de publicar e os prompts/schemas ativos devem instruir o worker a usar bloco de formulario gerenciado, nao iframe, para evitar recursao visual e perda de experiencia do lead.

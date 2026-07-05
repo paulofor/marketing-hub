@@ -147,7 +147,7 @@ class FlowImagePromptServiceTest {
     }
 
     @Test
-    void shouldSkipPromptWhenSubmissionHasReferenceImage() {
+    void shouldBuildPromptWhenSubmissionHasReferenceImage() {
         Flow flow = new Flow(
                 "formulario-simples-personal-trainer",
                 "Formulário simples",
@@ -175,7 +175,11 @@ class FlowImagePromptServiceTest {
                 null);
 
         Optional<FlowImagePrompt> prompt = service.buildPrompt(flow, submission);
-        assertTrue(prompt.isEmpty());
+        assertTrue(prompt.isPresent());
+        assertEquals(Integer.valueOf(6), prompt.get().plannedOutputs());
+        assertEquals(Integer.valueOf(1), prompt.get().freeImages());
+        assertTrue(prompt.get().prompt().contains("Template: João"));
+        assertTrue(prompt.get().prompt().contains("foto enviada pelo lead"));
+        assertTrue(prompt.get().prompt().contains("upload.png"));
     }
 }
-

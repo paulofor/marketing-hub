@@ -1,5 +1,7 @@
 package com.marketinghub.mois.bibliotecapaginavenda.worker.v1.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.pipelines.dossie.v1.StageContext;
 import com.marketinghub.pipelines.dossie.v1.StageResult;
 import com.marketinghub.pipelines.dossie.v1.StageResult.OpenAiInteraction;
@@ -16,10 +18,12 @@ import org.springframework.web.client.RestClient;
 @Slf4j
 public class DossierV1BackendClient {
     private final RestClient restClient;
+    private final ObjectMapper objectMapper;
 
     /** Cria o cliente do pipeline usando o RestClient configurado com a URL base do backend. */
-    public DossierV1BackendClient(RestClient restClient) {
+    public DossierV1BackendClient(RestClient restClient, ObjectMapper objectMapper) {
         this.restClient = restClient;
+        this.objectMapper = objectMapper;
     }
 
     /** Busca trabalhos pendentes da etapa informada no endpoint pending canônico do backend. */
@@ -185,8 +189,14 @@ public class DossierV1BackendClient {
         }
     }
 
-    /** Serializa de forma simples o resultado da etapa para o contrato textual do backend. */
+    /** Serializa a saída funcional da etapa como JSON limpo para o contrato textual do backend. */
     public String responseFrom(StageResult result) {
-        return String.valueOf(result.output());
+        try {
+            return objectMapper.writeValueAsString(result.output());
+        } catch (JsonProcessingException ex) {
+            log.warn("MOIS dossie v1 failed to serialize functional stage output. status={}, output={}",
+                    result == null ? null : result.status(), result == null ? null : result.output(), ex);
+            throw new IllegalStateException("Falha ao serializar saída funcional da etapa MOIS dossiê v1", ex);
+        }
     }
 }

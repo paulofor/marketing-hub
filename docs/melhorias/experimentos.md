@@ -26,6 +26,8 @@ Leitura prática:
 
 Decisão de melhoria aplicada em 2026-07-04: todo experimento com intenção de compra deve passar por página de venda auditada antes de checkout. A regra vale para `LOW_TICKET_PRODUCT` e para qualquer campanha futura com `campaignObjective = SALES`.
 
+Interpretação aplicada em 2026-07-05: Produto IA `AI_PERSONALIZED_SAMPLE` não precisa ter checkout real antes da página quando o primeiro passo comercial é a amostra personalizada. Nesse caso, o GeraSalesPage v1 usa o funil aprovado do Lead Portal como destino intermediário, publica a página dentro dele e só depois a campanha pode ser liberada.
+
 Impacto esperado:
 
 - impedir liberação manual de experimento que mande anúncio direto para checkout;

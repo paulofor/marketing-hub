@@ -1,8 +1,5 @@
 package com.marketinghub.moissaleslibraryworker.pipelines.salespagepatterns.v1.pagepatternextraction.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.marketinghub.moissaleslibraryworker.pipelines.salespagepatterns.v1.pagepatternextraction.service.pending.SalesPagePatternsPagePatternExtractionPendingJob;
 import com.marketinghub.moissaleslibraryworker.pipelines.salespagepatterns.v1.pagepatternextraction.service.pending.SalesPagePatternsPagePatternExtractionPendingRequest;
 import com.marketinghub.moissaleslibraryworker.pipelines.salespagepatterns.v1.pagepatternextraction.service.pending.SalesPagePatternsPagePatternExtractionPendingResponse;
@@ -10,6 +7,7 @@ import com.marketinghub.moissaleslibraryworker.pipelines.salespagepatterns.v1.pa
 import com.marketinghub.moissaleslibraryworker.pipelines.salespagepatterns.v1.pagepatternextraction.service.receberequest.SalesPagePatternsPagePatternExtractionRecebeRequestResponse;
 import com.marketinghub.moissaleslibraryworker.pipelines.salespagepatterns.v1.pagepatternextraction.service.receberesponse.SalesPagePatternsPagePatternExtractionRecebeResponseRequest;
 import com.marketinghub.moissaleslibraryworker.pipelines.salespagepatterns.v1.pagepatternextraction.service.receberesponse.SalesPagePatternsPagePatternExtractionRecebeResponseResponse;
+import com.marketinghub.moissaleslibraryworker.pipelines.shared.service.OpenAiTextResponseExtractor;
 import com.marketinghub.moissaleslibraryworker.pipelines.shared.service.PipelinePromptSchemaTemplatePayload;
 import com.marketinghub.repository.jpa.aiprompt.AiPromptSchemaTemplateRepository;
 import com.marketinghub.repository.jpa.mois.bibliotecapaginavenda.worker.v1.MoisSalesPageRepository;
@@ -24,11 +22,9 @@ import java.util.Map;
 import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
-import lombok.extern.slf4j.Slf4j;
 
 /** Publica pendências e callbacks da extração de padrões do pipeline salespagepatterns.v1. */
 @Service
-@Slf4j
 public class SalesPagePatternsPagePatternExtractionService {
     private static final String PIPELINE_CODE = "salespagepatterns.v1";
     private static final String STAGE_CODE = "page-pattern-extraction";
@@ -42,7 +38,6 @@ public class SalesPagePatternsPagePatternExtractionService {
     private final DossierProductContextGateway productContextGateway;
     private final AiPromptSchemaTemplateRepository templateRepository;
     private final JdbcTemplate jdbcTemplate;
-    private final ObjectMapper objectMapper = new ObjectMapper();
 
     /** Cria o service com os repositórios canônicos de página e auditoria do pipeline. */
     public SalesPagePatternsPagePatternExtractionService(
@@ -107,7 +102,7 @@ public class SalesPagePatternsPagePatternExtractionService {
         page.setSalesPagePatternsUpdatedAt(now);
         salesPageRepository.save(page);
         savePipelineAudit(productKey, jobId, STAGE_CODE, status, null, request.response(),
-                extractOpenAiTextResponse(request.response()), null, null, null, request.promptTemplateKey(),
+                OpenAiTextResponseExtractor.extract(request.response()), null, null, null, request.promptTemplateKey(),
                 request.promptTemplateVersion(), request.schemaName(), request, request.descricaoErro());
         accumulateCosts(pageId, request.custo());
         return new SalesPagePatternsPagePatternExtractionRecebeResponseResponse(jobId, productKey, STAGE_CODE, status, null);
@@ -249,22 +244,4 @@ public class SalesPagePatternsPagePatternExtractionService {
         return value == null || value.isBlank();
     }
 
-    /** Extrai o texto funcional de respostas OpenAI sem depender do pipeline de aquecimento. */
-    private String extractOpenAiTextResponse(String response) {
-        if (response == null || response.isBlank()) {
-            return null;
-        }
-        try {
-            JsonNode root = objectMapper.readTree(response);
-            JsonNode outputText = root.path("output_text");
-            if (!outputText.isMissingNode() && !outputText.asText().isBlank()) {
-                return outputText.asText();
-            }
-        } catch (JsonProcessingException ex) {
-            log.warn("Falha ao extrair output_text de salespagepatterns.v1; mantendo response bruto. stageCode={}, responseLength={}",
-                    STAGE_CODE, response.length(), ex);
-            return response;
-        }
-        return response;
-    }
 }

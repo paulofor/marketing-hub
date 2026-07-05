@@ -422,6 +422,8 @@ class FacebookCampaignServiceTest {
         JsonNode backendPayload = objectMapper.readTree(postBackend.getBody().inputStream());
         assertEquals("ACTIVE", backendPayload.get("status").asText());
         assertEquals("ADSET", backendPayload.get("budgetMode").asText());
+        assertEquals("ACTIVE", backendPayload.get("adSet").get("status").asText());
+        assertEquals("ACTIVE", backendPayload.get("ad").get("status").asText());
         assertEquals("2500", backendPayload.get("adSet").get("dailyBudget").asText());
         assertTrue(backend.getRequestCount() >= 4);
     }

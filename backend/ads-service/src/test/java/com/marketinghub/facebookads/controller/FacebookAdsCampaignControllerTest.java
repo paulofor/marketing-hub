@@ -428,7 +428,8 @@ class FacebookAdsCampaignControllerTest {
               "targetingJson": "{\\"geo_locations\\":{\\"countries\\":[\\"BR\\"]}}",
               "savedAudienceId": "AUD-1",
               "savedAudienceName": "Audience",
-              "experimentAdSetId": 101
+              "experimentAdSetId": 101,
+              "status": "ACTIVE"
             },
               "adCreative": {
                 "id": "creative123",
@@ -445,7 +446,8 @@ class FacebookAdsCampaignControllerTest {
                 "externalId": "meta-ad-123",
                 "name": "Exp - Ad",
                 "adSetId": "adset123",
-                "creativeId": "creative123"
+                "creativeId": "creative123",
+                "status": "ACTIVE"
               }
             }
             """;
@@ -470,6 +472,7 @@ class FacebookAdsCampaignControllerTest {
         assertThat(savedAdSet.getId()).isEqualTo("adset123");
         assertThat(savedAdSet.getCampaign().getId()).isEqualTo("cmp123");
         assertThat(savedAdSet.getExternalId()).isEqualTo("meta-adset-123");
+        assertThat(savedAdSet.getStatus()).isEqualTo(FacebookAdStatus.ACTIVE);
         assertThat(savedAdSet.getExperimentAdSet()).isNotNull();
         assertThat(savedAdSet.getExperimentAdSet().getId()).isEqualTo(101L);
         JsonNode targetingJson = objectMapper.readTree(savedAdSet.getTargetingJson());
@@ -496,6 +499,7 @@ class FacebookAdsCampaignControllerTest {
         assertThat(savedAd.getExternalId()).isEqualTo("meta-ad-123");
         assertThat(savedAd.getAdSet().getId()).isEqualTo("adset123");
         assertThat(savedAd.getCreative().getId()).isEqualTo("creative123");
+        assertThat(savedAd.getStatus()).isEqualTo(FacebookAdStatus.ACTIVE);
     }
 
     @Test

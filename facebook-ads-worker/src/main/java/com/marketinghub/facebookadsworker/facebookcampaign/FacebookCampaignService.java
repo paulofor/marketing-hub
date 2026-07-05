@@ -549,7 +549,8 @@ public class FacebookCampaignService {
                     createdAdId,
                     adRequest.name(),
                     adRequest.adSetId(),
-                    adRequest.creativeId()
+                    adRequest.creativeId(),
+                    "ACTIVE"
                 ));
                 creativeIndex++;
             }
@@ -577,7 +578,8 @@ public class FacebookCampaignService {
                     adSetRequest.pixelId(),
                     adSetRequest.customEventType(),
                     resolvedTargeting.targetingJson(),
-                    null
+                    null,
+                    "ACTIVE"
                 ),
                 reportedAdCreatives.isEmpty() ? null : reportedAdCreatives.get(0),
                 reportedAds.isEmpty() ? null : reportedAds.get(0),
@@ -1202,7 +1204,8 @@ public class FacebookCampaignService {
             String pixelId,
             String customEventType,
             String targetingJson,
-            Long experimentAdSetId
+            Long experimentAdSetId,
+            String status
         ) {}
 
         public record AdCreative(
@@ -1223,7 +1226,8 @@ public class FacebookCampaignService {
             String id,
             String name,
             String adSetId,
-            String creativeId
+            String creativeId,
+            String status
         ) {}
     }
 

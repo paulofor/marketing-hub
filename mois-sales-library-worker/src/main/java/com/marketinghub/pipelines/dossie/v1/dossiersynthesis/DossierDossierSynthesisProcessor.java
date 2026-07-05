@@ -7,8 +7,10 @@ import com.marketinghub.pipelines.dossie.v1.StageProcessor;
 import com.marketinghub.pipelines.dossie.v1.StageResult;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /** Executa a etapa síntese final do dossiê gerando uma entrega de negócio ou bloqueando saída fraca. */
 public class DossierDossierSynthesisProcessor implements StageProcessor {
@@ -28,19 +30,21 @@ public class DossierDossierSynthesisProcessor implements StageProcessor {
     public StageResult process(StageContext context) {
         Map<String, Object> auditEvidence = DossierStageSupport.evidenceFor(context, STAGE_NAME);
         List<String> stageResponses = stageResponses(context);
-        if (!hasBusinessEvidence(stageResponses)) {
+        BusinessEvidenceGate gate = evaluateBusinessEvidence(stageResponses);
+        Map<String, Object> enrichedEvidence = enrichedEvidence(auditEvidence, gate);
+        if (!gate.approved()) {
             DossierDossierSynthesisOutput blockedOutput = new DossierDossierSynthesisOutput(
                     context.dossierId(),
                     "BLOCKED_INSUFFICIENT_CONTEXT",
                     OBJECTIVE,
-                    "Não foi possível gerar um dossiê comercial confiável porque o backend/etapas anteriores entregaram apenas metadados operacionais, sem evidências de produto, promessa, prova, risco e recomendação.",
+                    "Não foi possível gerar um dossiê comercial confiável porque as etapas anteriores não provaram todos os pilares mínimos: produto/público, dor-promessa-mecanismo, prova, fonte/aquecimento, oferta/risco e recomendação.",
                     stageResponses,
                     List.of(
-                            "Reexecutar o dossiê após corrigir as etapas anteriores para retornarem evidências comerciais estruturadas.",
-                            "Garantir que a etapa final receba produto, promessa, público, fontes qualificadas, sinais de aquecimento e riscos.",
+                            "Reexecutar o dossiê após corrigir as etapas anteriores para retornarem evidências comerciais estruturadas e rastreáveis.",
+                            "Garantir que a etapa final receba produto, público, promessa, mecanismo, prova, fontes qualificadas, sinais de aquecimento, oferta/risco e recomendação.",
                             "Não usar este resultado para decisão de oferta enquanto o gate estiver bloqueado."),
                     "BLOCKED",
-                    auditEvidence);
+                    enrichedEvidence);
             return StageResult.failed(
                     INSUFFICIENT_CONTEXT_ERROR,
                     Map.of(STAGE_NAME, blockedOutput),
@@ -58,7 +62,7 @@ public class DossierDossierSynthesisProcessor implements StageProcessor {
                         "Transformar os sinais de dor, prova e mecanismo em hipótese de oferta.",
                         "Registrar decisão comercial no relatório da página."),
                 "APPROVED",
-                auditEvidence);
+                enrichedEvidence);
         return StageResult.done(Map.of(STAGE_NAME, output), List.of(finalArtifact(context, output)));
     }
 
@@ -85,22 +89,43 @@ public class DossierDossierSynthesisProcessor implements StageProcessor {
         return List.of();
     }
 
-    /** Verifica se as respostas anteriores contêm sinais de negócio além de metadados operacionais. */
-    private boolean hasBusinessEvidence(List<String> stageResponses) {
-        if (stageResponses.size() < 3) {
-            return false;
+    /** Avalia se as respostas anteriores sustentam conclusão comercial comparável e acionável. */
+    private BusinessEvidenceGate evaluateBusinessEvidence(List<String> stageResponses) {
+        if (stageResponses.size() < 4) {
+            return new BusinessEvidenceGate(false, List.of(), List.of("historico_minimo_de_etapas"));
         }
         String joined = String.join(" ", stageResponses).toLowerCase();
-        boolean hasBusinessMarkers = joined.contains("promessa")
-                || joined.contains("público")
-                || joined.contains("publico")
-                || joined.contains("evidência")
-                || joined.contains("evidencia")
-                || joined.contains("recomendação")
-                || joined.contains("recomendacao")
-                || joined.contains("risco")
-                || joined.contains("prova");
-        return hasBusinessMarkers;
+        List<String> matchedCategories = requiredCommercialCategories().entrySet().stream()
+                .filter(entry -> entry.getValue().stream().anyMatch(joined::contains))
+                .map(Map.Entry::getKey)
+                .toList();
+        List<String> missingCategories = requiredCommercialCategories().keySet().stream()
+                .filter(category -> !matchedCategories.contains(category))
+                .toList();
+        boolean approved = matchedCategories.size() >= 6
+                && matchedCategories.containsAll(Set.of("produto_publico", "dor_promessa_mecanismo", "prova", "fonte_aquecimento", "recomendacao"));
+        return new BusinessEvidenceGate(approved, matchedCategories, missingCategories);
+    }
+
+    /** Define os pilares mínimos que impedem um dossiê operacional genérico de virar conclusão comercial. */
+    private Map<String, List<String>> requiredCommercialCategories() {
+        return Map.of(
+                "produto_publico", List.of("produto", "público", "publico", "persona", "cliente", "produtor", "marca"),
+                "dor_promessa_mecanismo", List.of("dor", "promessa", "mecanismo", "resultado", "transformação", "transformacao"),
+                "prova", List.of("prova", "evidência", "evidencia", "depoimento", "autoridade", "case", "review"),
+                "fonte_aquecimento", List.of("fonte", "canal", "youtube", "instagram", "afiliado", "review", "aquecimento", "comunidade"),
+                "oferta_risco", List.of("oferta", "preço", "preco", "garantia", "checkout", "cta", "risco", "objeção", "objecao"),
+                "recomendacao", List.of("recomendação", "recomendacao", "próximo teste", "proximo teste", "avançar", "avancar", "descartar"),
+                "oportunidade_adaptacao", List.of("adaptar", "oportunidade", "criativo", "funil", "landing", "campanha"));
+    }
+
+    /** Enriquece a evidência de auditoria com o resultado objetivo do gate comercial. */
+    private Map<String, Object> enrichedEvidence(Map<String, Object> auditEvidence, BusinessEvidenceGate gate) {
+        Map<String, Object> enriched = new LinkedHashMap<>(auditEvidence);
+        enriched.put("commercialEvidenceGateApproved", gate.approved());
+        enriched.put("commercialEvidenceCategoriesFound", gate.matchedCategories());
+        enriched.put("commercialEvidenceCategoriesMissing", gate.missingCategories());
+        return Map.copyOf(enriched);
     }
 
     /** Cria o artefato final separado dos metadados técnicos de auditoria. */
@@ -110,5 +135,9 @@ public class DossierDossierSynthesisProcessor implements StageProcessor {
                 "dossie/v1/" + context.dossierId() + "/" + STAGE_NAME + "/final",
                 output.finalConclusion(),
                 Instant.now());
+    }
+
+    /** Representa o resultado do gate comercial aplicado antes da síntese final. */
+    private record BusinessEvidenceGate(boolean approved, List<String> matchedCategories, List<String> missingCategories) {
     }
 }

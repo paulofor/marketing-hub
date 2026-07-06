@@ -20,6 +20,16 @@ export interface LeadPortalFunnelSummary {
   formSubmissions: number | null;
 }
 
+export interface CampaignStrategySummary {
+  objective: string | null;
+  preset: string | null;
+  maxSpendWithoutPurchase: number | null;
+  minimumCheckoutRate: number | null;
+  minimumLinkClicks: number | null;
+  minimumImpressions: number | null;
+  enabled: boolean;
+}
+
 export interface ExperimentSummary {
   id: number;
   name: string;
@@ -40,6 +50,7 @@ export interface ExperimentSummary {
   instagramAccount?: InstagramAccountSummary | null;
   leadPortalFunnel?: LeadPortalFunnelSummary | null;
   metrics?: CampaignMetricSummary | null;
+  campaignStrategy?: CampaignStrategySummary | null;
 }
 
 export function useFacebookCampaignExperiments(status: string) {

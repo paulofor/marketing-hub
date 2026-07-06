@@ -52,6 +52,8 @@ export default function FacebookCampaignExperimentsPage() {
     typeof value === "number" ? currencyFormatter.format(value) : "--";
   const formatDateTime = (value?: string | null) =>
     value ? new Date(value).toLocaleString("pt-BR") : "--";
+  const formatPercent = (value?: number | null) =>
+    typeof value === "number" ? `${numberFormatter.format(value * 100)}%` : "--";
 
   useEffect(() => {
     setCurrentPage(1);
@@ -120,6 +122,32 @@ export default function FacebookCampaignExperimentsPage() {
       </div>
     );
   };
+
+  const renderStrategy = (experiment: (typeof experiments)[number]) => {
+    const strategy = experiment.campaignStrategy;
+    if (!strategy) {
+      return <span className="text-muted">Aguardando campanha</span>;
+    }
+    return (
+      <div className="small">
+        <div className="fw-semibold">{strategy.preset ?? "--"}</div>
+        <div className="d-flex flex-wrap gap-3">
+          <span>
+            <strong>Objetivo</strong> {strategy.objective ?? "--"}
+          </span>
+          <span>
+            <strong>Limite</strong>{" "}
+            {formatCurrency(strategy.maxSpendWithoutPurchase)}
+          </span>
+          <span>
+            <strong>Checkout mín.</strong>{" "}
+            {formatPercent(strategy.minimumCheckoutRate)}
+          </span>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div>
       <PageTitle>Experimentos para Campanha</PageTitle>
@@ -175,6 +203,7 @@ export default function FacebookCampaignExperimentsPage() {
                 <th>Início</th>
                 <th>Término</th>
                 <th>Pendências</th>
+                <th>Estratégia</th>
                 <th>Desempenho</th>
               </tr>
             </thead>
@@ -207,6 +236,7 @@ export default function FacebookCampaignExperimentsPage() {
                       </span>
                     )}
                   </td>
+                  <td>{renderStrategy(e)}</td>
                   <td>{renderMetrics(e)}</td>
                 </tr>
               ))}

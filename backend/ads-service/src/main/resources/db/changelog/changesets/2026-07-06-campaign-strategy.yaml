@@ -1,0 +1,158 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-06-campaign-strategy
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: campaign_strategy
+      changes:
+        - createTable:
+            tableName: campaign_strategy
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: campaign_id
+                  type: CHAR(36)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: objective
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: preset
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: max_spend_without_purchase
+                  type: DECIMAL(12,2)
+              - column:
+                  name: minimum_checkout_rate
+                  type: DECIMAL(7,4)
+              - column:
+                  name: minimum_link_clicks
+                  type: BIGINT
+              - column:
+                  name: minimum_impressions
+                  type: BIGINT
+              - column:
+                  name: enabled
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: DATETIME(6)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: DATETIME(6)
+        - addForeignKeyConstraint:
+            baseTableName: campaign_strategy
+            baseColumnNames: campaign_id
+            constraintName: fk_campaign_strategy_campaign
+            referencedTableName: facebook_ads_campaign
+            referencedColumnNames: id
+  - changeSet:
+      id: 2026-07-06-campaign-strategy-evaluation
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: campaign_strategy_evaluation
+      changes:
+        - createTable:
+            tableName: campaign_strategy_evaluation
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: strategy_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: campaign_id
+                  type: CHAR(36)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: decision
+                  type: VARCHAR(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: reason
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: spend
+                  type: DECIMAL(12,2)
+              - column:
+                  name: impressions
+                  type: BIGINT
+              - column:
+                  name: clicks
+                  type: BIGINT
+              - column:
+                  name: checkout_attempts
+                  type: BIGINT
+              - column:
+                  name: checkout_clicks
+                  type: BIGINT
+              - column:
+                  name: purchases
+                  type: BIGINT
+              - column:
+                  name: checkout_rate
+                  type: DECIMAL(7,4)
+              - column:
+                  name: stop_reason
+                  type: VARCHAR(100)
+              - column:
+                  name: evaluated_at
+                  type: DATETIME(6)
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: campaign_strategy_evaluation
+            baseColumnNames: strategy_id
+            constraintName: fk_campaign_strategy_evaluation_strategy
+            referencedTableName: campaign_strategy
+            referencedColumnNames: id
+        - addForeignKeyConstraint:
+            baseTableName: campaign_strategy_evaluation
+            baseColumnNames: campaign_id
+            constraintName: fk_campaign_strategy_evaluation_campaign
+            referencedTableName: facebook_ads_campaign
+            referencedColumnNames: id
+        - createIndex:
+            tableName: campaign_strategy_evaluation
+            indexName: idx_campaign_strategy_eval_campaign
+            columns:
+              - column:
+                  name: campaign_id

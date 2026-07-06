@@ -1,5 +1,7 @@
 const HTML_HINT = /<\s*!doctype|<\s*html|<\s*body|<\s*(?:main|section|div|header|footer)/i;
 const FENCED_JSON = /```(?:json)?\s*([\s\S]*?)```/i;
+const LEGACY_MARKETING_HUB_ANALYTICS_PATH = /\/mh-api\/public\/lead-portal\/flows\//g;
+const LEAD_PORTAL_ANALYTICS_PATH = "/api/flows/";
 
 export interface CustomTemplateFormFieldSpec {
   name: string;
@@ -49,7 +51,7 @@ export function normalizeCustomTemplatePayload(raw?: string | null): CustomTempl
     return undefined;
   }
   if (looksLikeHtml(trimmed)) {
-    return { html: trimmed };
+    return { html: normalizeLegacyAnalyticsEndpoints(trimmed) };
   }
   return extractFromJson(trimmed);
 }
@@ -69,7 +71,7 @@ function findPayloadInValue(value: unknown): CustomTemplatePayload | undefined {
       return undefined;
     }
     if (looksLikeHtml(trimmed)) {
-      return { html: trimmed };
+      return { html: normalizeLegacyAnalyticsEndpoints(trimmed) };
     }
     if (looksLikeJsonCandidate(trimmed)) {
       return extractFromJson(trimmed);
@@ -104,6 +106,10 @@ function findPayloadInValue(value: unknown): CustomTemplatePayload | undefined {
     }
   }
   return undefined;
+}
+
+function normalizeLegacyAnalyticsEndpoints(html: string): string {
+  return html.replace(LEGACY_MARKETING_HUB_ANALYTICS_PATH, LEAD_PORTAL_ANALYTICS_PATH);
 }
 
 function normalizeFormSpec(raw: unknown): CustomTemplateFormSpec | undefined {

@@ -221,6 +221,7 @@ Documente qualquer alteração cross-módulo no cânone correspondente e sincron
 - Revise variáveis sensíveis nos pipelines antes de publicar artefatos.
 - Pull Requests só devem ser criados quando o usuário pedir explicitamente. Para abrir PR, use sempre o conector GitHub; o GitHub CLI fica permitido apenas para leitura, diagnóstico e validações quando necessário, nunca como caminho principal de publicação de branch ou criação de PR. Não use token restrito de pacote para publicar branch ou PR.
 - Token GitHub fornecido para testes deve ser usado exclusivamente para baixar o pacote `ads-service` necessário a testes do `ai-worker` e de outros módulos dependentes. Não reutilize esse token para push, criação de PR, configuração de remoto, acesso genérico ao GitHub ou qualquer operação fora desse escopo.
+- Antes de concluir que testes Maven estão bloqueados por `401 Unauthorized` no GitHub Packages, verifique se existe token disponível no ambiente e configure o acesso local apenas para resolver dependências privadas. Nunca imprima, commite ou reutilize esse token para push, PR ou acesso genérico ao GitHub.
 
 - 🚨 **CONTAMINAÇÃO DE ARTEFATO FINAL COM METADADO TÉCNICO (OBRIGATÓRIO)**:
   - **Definição**: é proibido inserir no artefato final publicado qualquer marcador técnico/operacional que não faça parte do contrato funcional do cliente (ex.: comentários `<!-- AUTO: ... -->`, flags internas de pipeline, observações de debug, metadados de regeneração).

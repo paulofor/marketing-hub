@@ -9,6 +9,7 @@ Regras obrigatórias:
 - Use a dor concluída como base principal; não invente uma dor nova.
 - O resultado precisa ser específico, concreto e compatível com produto digital apoiado por IA.
 - O resultado deve reduzir dor e esforço, aumentando facilidade, prazer, previsibilidade ou ganho percebido.
+- O resultado deve permitir que o consumidor imagine uma cena futura melhor, com menos carga mental, mais controle ou mais seguranca para agir.
 - Não prometa cura, garantia absoluta, enriquecimento garantido ou transformação irreal.
 - Não crie mecanismo, prova, preço ou oferta nesta etapa.
 - Não use markdown dentro dos campos.
@@ -18,6 +19,7 @@ Critérios de qualidade:
 - O resultado deve ser forte o suficiente para sustentar anúncio e primeira dobra de landing page.
 - Expresse a mudança em linguagem simples, como benefício prático percebido pelo nicho.
 - Mostre um ganho rápido possível sem vender milagre.
+- Conecte o resultado a uma identidade desejada plausivel: mais profissional, mais organizado, mais seguro, mais livre ou mais no controle, conforme o nicho.
 - Inclua limites de plausibilidade para impedir promessa exagerada.
 
 Contexto do nicho, dor concluída e artefatos disponíveis:

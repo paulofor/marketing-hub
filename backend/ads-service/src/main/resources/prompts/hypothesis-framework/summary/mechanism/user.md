@@ -12,6 +12,7 @@ Resuma com foco em:
 - mecanismo principal em linguagem comercial
 - o que fica visível antes da compra
 - razão principal para acreditar
+- como o mecanismo reduz esforco, carga mental ou tentativa manual do cliente
 
 Instruções extras do usuário:
 {{CUSTOM_INSTRUCTIONS}}

@@ -12,6 +12,7 @@ Resuma com foco em:
 - tipo de prova
 - ativo de prova mais convincente
 - mensagem central que reduz ceticismo
+- antes/depois, alivio percebido ou primeira evidencia concreta que facilite a decisao
 
 Instruções extras do usuário:
 {{CUSTOM_INSTRUCTIONS}}

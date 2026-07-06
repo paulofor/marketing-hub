@@ -5625,3 +5625,9 @@
 - Causa-raiz: o `ads-service` ainda mantinha endpoints públicos do Lead Portal, criando ambiguidade entre atendimento ao cliente e gestão interna do Marketing Hub.
 - Correção aplicada: removidos do `ads-service` os controllers públicos `/api/flows`, `/api/public/lead-portal/image-packages` e `/api/public/lead-portal/purchases`; o tracking de funil no Marketing Hub passou a ser callback interno em `/api/internal/lead-portal/flows`; a borda pública de pacotes ficou no `lead-portal`; e o redirecionamento público de checkout ficou no `lead-portal-payments-service`.
 - Prevenção de recorrência: regra ArchUnit bloqueia controllers de cliente do Lead Portal no pacote `leadportal.web` do `ads-service`, e a documentação canônica foi atualizada para não apontar atendimento de lead/cliente no backend principal.
+
+## 2026-07-06 - Psicologia aplicada a ofertas
+
+- Criado o canon `docs/canonical/psicologia-aplicada-ofertas-canon.v1.md`.
+- Consolidado o uso dos artigos de `docs/neuron` como regra operacional para dor, resultado, mecanismo, prova, oferta, anuncio, landing e quality review.
+- Ajustados prompts do `ai-worker` e prompts de resumo do backend para preservar sinais de dor emocional, esforco evitado, identidade, cena concreta e futuro imaginavel.

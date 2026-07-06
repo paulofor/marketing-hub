@@ -304,6 +304,113 @@ class ExperimentControllerTest {
         assertThat(prepared.getEntrega()).contains("Amostra visual personalizada");
     }
 
+    /** Garante que o preparo de prévia visual paga cria variante sem alterar o funil de amostra atual. */
+    @Test
+    void visualPreviewPreparationCreatesPaidVariantWithoutChangingPersonalizedSample() throws Exception {
+        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("AI variante").build());
+        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(nicheRepo.findById(nicheId).orElseThrow())
+                .title("DecoraIA Express")
+                .premiseAngle(angle)
+                .promise("Mostrar como o ambiente pode ficar antes de gastar com móveis")
+                .problem("A pessoa tem medo de gastar errado na decoração")
+                .persona("Morador que quer melhorar um cômodo")
+                .mechanism("Prévia visual gerada por IA com foto do ambiente")
+                .productAiSubtype(ProductAiSubtype.AI_PERSONALIZED_SAMPLE)
+                .price(new BigDecimal("27.00"))
+                .build());
+        var deliverable = deliverableRepository.save(com.marketinghub.deliverable.Deliverable.builder()
+                .niche(nicheRepo.findById(nicheId).orElseThrow())
+                .title("Amostra")
+                .description("Entrega da amostra")
+                .build());
+        var deliverablePackage = deliverablePackageRepository.save(com.marketinghub.deliverable.DeliverablePackage.builder()
+                .hypothesis(hyp)
+                .name("Pacote amostra")
+                .deliverables(new java.util.LinkedHashSet<>(java.util.List.of(deliverable)))
+                .build());
+        hyp.setOfferPackage(deliverablePackage);
+        hypothesisRepository.save(hyp);
+
+        mockMvc.perform(post("/api/product-ai/hypotheses/{hypothesisId}/experiment-preparation", hyp.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"productAiSubtype\":\"AI_VISUAL_PREVIEW\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.productAiSubtype").value("AI_VISUAL_PREVIEW"))
+                .andExpect(jsonPath("$.price").value(9.90))
+                .andExpect(jsonPath("$.offerPackageName").value("Pacote inicial de prévia paga"))
+                .andExpect(jsonPath("$.deliverableTitle").value("Prévia visual personalizada"))
+                .andExpect(jsonPath("$.experimentPreparation.ready").value(true))
+                .andExpect(jsonPath("$.experimentPreparation.draft.productAiSubtype").value("AI_VISUAL_PREVIEW"))
+                .andExpect(jsonPath("$.experimentPreparation.draft.primaryVariable").value("Prévia visual paga"));
+
+        var original = hypothesisRepository.findById(hyp.getId()).orElseThrow();
+        assertThat(original.getProductAiSubtype()).isEqualTo(ProductAiSubtype.AI_PERSONALIZED_SAMPLE);
+        assertThat(hypothesisRepository.findAll()).hasSize(2);
+        var variant = hypothesisRepository.findAll().stream()
+                .filter(candidate -> !candidate.getId().equals(hyp.getId()))
+                .findFirst()
+                .orElseThrow();
+        assertThat(variant.getProductAiSubtype()).isEqualTo(ProductAiSubtype.AI_VISUAL_PREVIEW);
+        assertThat(variant.getPrice()).isEqualByComparingTo("9.90");
+        assertThat(variant.getOfferPackage()).isNotNull();
+    }
+
+    /** Garante que o experimento não mistura hipótese preparada para amostra com subtipo de prévia paga. */
+    @Test
+    void createEndpointRejectsProductAiSubtypeMismatch() throws Exception {
+        var angle = angleRepository.save(com.marketinghub.creative.label.Angle.builder().name("AI divergente").build());
+        var hyp = hypothesisRepository.save(com.marketinghub.hypothesis.Hypothesis.builder()
+                .marketNiche(nicheRepo.findById(nicheId).orElseThrow())
+                .title("Hipótese amostra")
+                .premiseAngle(angle)
+                .promise("Promessa")
+                .problem("Problema")
+                .persona("Persona")
+                .mechanism("Mecanismo")
+                .entrega("Amostra visual personalizada")
+                .price(new BigDecimal("27.00"))
+                .productAiSubtype(ProductAiSubtype.AI_PERSONALIZED_SAMPLE)
+                .build());
+        var deliverable = deliverableRepository.save(com.marketinghub.deliverable.Deliverable.builder()
+                .niche(nicheRepo.findById(nicheId).orElseThrow())
+                .title("Amostra")
+                .description("Entrega da amostra")
+                .build());
+        var deliverablePackage = deliverablePackageRepository.save(com.marketinghub.deliverable.DeliverablePackage.builder()
+                .hypothesis(hyp)
+                .name("Pacote AI")
+                .deliverables(new java.util.LinkedHashSet<>(java.util.List.of(deliverable)))
+                .build());
+        hyp.setOfferPackage(deliverablePackage);
+        hypothesisRepository.save(hyp);
+        metricPresetRepository.save(com.marketinghub.experiment.MetricPreset.builder()
+                .id("LEAN_150")
+                .name("Lean-Startup 150")
+                .sampleSize(150)
+                .stopLossFactor(new BigDecimal("2"))
+                .defaultMdePp(new BigDecimal("12"))
+                .build());
+        JourneyTemplate template = journeyTemplateRepository.save(JourneyTemplate.builder().name("Lifecycle").build());
+        var instagramAccount = fixtures.createAndSaveInstagramAccount();
+        CreateExperimentRequest req = new CreateExperimentRequest();
+        applyStageDefaults(req);
+        req.setHypothesisId(hyp.getId());
+        req.setHypothesis("H1");
+        req.setProductAiSubtype(ProductAiSubtype.AI_VISUAL_PREVIEW);
+        req.setKpiTargetCpl(new BigDecimal("45"));
+        req.setMetricPresetId("LEAN_150");
+        req.setDailyBudget(new BigDecimal("10"));
+        req.setUnitPrice(new BigDecimal("9.90"));
+        req.setJourneyTemplateId(template.getId());
+        req.setInstagramAccountId(instagramAccount.getId());
+
+        mockMvc.perform(post("/api/niches/" + nicheId + "/experiments")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(mapper.writeValueAsString(req)))
+                .andExpect(status().isBadRequest());
+    }
+
     /** Garante que Produto IA incompleto não vira experimento por chamada direta de API. */
     @Test
     void createEndpointRejectsIncompleteProductAiHypothesis() throws Exception {

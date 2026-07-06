@@ -46,8 +46,42 @@ paths:
           description: Hipótese ainda não possui rastreabilidade mínima de nicho, dor, persona, promessa e mecanismo.
         '404':
           description: Hipótese não encontrada.
+  /api/product-ai/hypotheses/{hypothesisId}/experiment-preparation:
+    post:
+      summary: Prepara hipótese para o subtipo Produto IA informado
+      description: Completa a hipótese original ou cria/reaproveita uma variante paralela para o subtipo Produto IA solicitado, preservando o funil atual quando o subtipo for diferente.
+      parameters:
+        - name: hypothesisId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductAiHypothesisPreparationRequest'
+      responses:
+        '200':
+          description: Hipótese preparada e diagnóstico de experimento retornado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersonalizedSamplePreparation'
+        '400':
+          description: Hipótese ainda não possui rastreabilidade mínima de nicho, dor, persona, promessa e mecanismo.
+        '404':
+          description: Hipótese não encontrada.
 components:
   schemas:
+    ProductAiHypothesisPreparationRequest:
+      type: object
+      properties:
+        productAiSubtype:
+          type: string
+          example: AI_VISUAL_PREVIEW
     PersonalizedSamplePreparation:
       type: object
       properties:

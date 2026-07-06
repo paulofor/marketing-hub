@@ -5638,3 +5638,10 @@
 - Causa-raiz tratada: campanhas com gasto relevante, como o experimento 56, podiam continuar ativas porque a regra antiga olhava interesse intermediário ou regras específicas de low-ticket, não ausência de resultado primário.
 - Correção aplicada: o sync de métricas agora para campanha com menos de 100 impressões após 48h, R$ 25,00 sem `ENVIO_FORM`, `ABERTURA_EMAIL_AMOSTRA` ou `COMPRA`, ou qualquer etapa prioritária `STATISTICALLY_FAILED`.
 - Prevenção de recorrência: `CampaignStrategyService` ficou apenas como auditoria, o `ExperimentEngine` legado foi removido e os testes cobrem a política única no service e no endpoint de métricas.
+
+## 2026-07-06 — Funil B de prévia paga para Produto IA
+
+- Decisão: manter o funil atual `AI_PERSONALIZED_SAMPLE` como amostra personalizada e criar um funil paralelo `AI_VISUAL_PREVIEW` para venda de entrada.
+- Causa-raiz tratada: os últimos experimentos tinham interesse inicial, mas não validavam disposição real de pagamento antes da personalização; trocar o funil atual contaminaria o aprendizado.
+- Correção aplicada: o preparo sistêmico de Produto IA pode criar ou reaproveitar uma hipótese variante para `AI_VISUAL_PREVIEW`, com preço inicial de R$ 9,90, pacote de prévia paga e rascunho de experimento focado em checkout/compra.
+- Prevenção de recorrência: a criação de experimento bloqueia subtipo divergente entre hipótese preparada e experimento solicitado, evitando misturar métricas do funil de amostra gratuita com o funil de venda de entrada.

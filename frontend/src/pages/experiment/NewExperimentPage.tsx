@@ -12,7 +12,10 @@ import { useImageGenerationModels } from "../../api/ai/useImageGenerationModels"
 import { useNiches } from "../../api/niche/useNiches";
 import { useHypothesesByNiche } from "../../api/hypothesis/useHypothesesByNiche";
 import { useHypothesis } from "../../api/hypothesis/useHypothesis";
-import { useProductAiExperimentPreparation } from "../../api/product-ai/useProductAiExperimentPreparation";
+import {
+  usePrepareProductAiHypothesis,
+  useProductAiExperimentPreparation,
+} from "../../api/product-ai/useProductAiExperimentPreparation";
 import { useAllFacebookPages } from "../../api/useAllFacebookPages";
 import { useInstagramAccounts } from "../../api/useInstagramAccounts";
 import { useJourneyTemplates } from "../../api/journey/useJourneyTemplates";
@@ -69,6 +72,7 @@ export default function NewExperimentPage() {
   const nicheIdParam = params.get("nicheId") ?? "";
   const hypothesisIdParam = params.get("hypothesisId") ?? "";
   const create = useCreateExperiment();
+  const prepareProductAiHypothesis = usePrepareProductAiHypothesis();
   const generatePromiseOptions = useGeneratePromiseOptions();
   const dismissPromiseOptionsRequest = useDismissPromiseOptionsRequest();
   const latestPromiseOptionsDraft = useLatestPromiseOptionsDraft();
@@ -140,12 +144,18 @@ export default function NewExperimentPage() {
   );
   const isLowTicketProduct = form.experimentType === "LOW_TICKET_PRODUCT";
   const isProductAiExperiment = isLowTicketProduct && Boolean(form.productAiSubtype);
+  const selectedProductAiSubtype =
+    form.productAiSubtype || "AI_PERSONALIZED_SAMPLE";
   const productAiPreparation = useProductAiExperimentPreparation(
     isProductAiExperiment ? form.hypothesisId : undefined,
   );
   const productAiPreparationData = productAiPreparation.data;
   const productAiReady =
-    !isProductAiExperiment || Boolean(productAiPreparationData?.ready);
+    !isProductAiExperiment ||
+    Boolean(
+      productAiPreparationData?.ready &&
+        productAiPreparationData.productAiSubtype === selectedProductAiSubtype,
+    );
   const experimentTypeLabel = isLowTicketProduct
     ? "Produto low-ticket"
     : "Teste de nicho";
@@ -288,6 +298,35 @@ export default function NewExperimentPage() {
     }));
   };
 
+  const prepareSelectedProductAiSubtype = async () => {
+    if (!form.hypothesisId || !form.productAiSubtype) {
+      alert("Selecione a hipótese e o mecanismo de Produto IA.");
+      return null;
+    }
+    const prepared = await prepareProductAiHypothesis.mutateAsync({
+      hypothesisId: form.hypothesisId,
+      productAiSubtype: selectedProductAiSubtype,
+    });
+    const draft = prepared.experimentPreparation.draft;
+    setForm((prev) => ({
+      ...prev,
+      hypothesisId: prepared.hypothesisId,
+      hypothesis: prepared.hypothesisTitle,
+      experimentType: draft?.experimentType ?? prev.experimentType,
+      productAiSubtype: draft?.productAiSubtype ?? prepared.productAiSubtype,
+      stage: draft?.stage ?? prev.stage,
+      primaryVariable: draft?.primaryVariable ?? prev.primaryVariable,
+      primaryMetric: draft?.primaryMetric ?? prev.primaryMetric,
+      unitPrice:
+        draft?.unitPrice != null && draft.unitPrice > 0
+          ? String(draft.unitPrice)
+          : prepared.price != null && prepared.price > 0
+            ? String(prepared.price)
+            : prev.unitPrice,
+    }));
+    return prepared;
+  };
+
   const submit = async () => {
     try {
       if (noInstagramAccounts) {
@@ -300,9 +339,25 @@ export default function NewExperimentPage() {
         alert("Selecione uma conta do Instagram");
         return;
       }
-      if (!productAiReady) {
-        alert("Complete o preparo do Produto IA antes de criar o experimento.");
-        return;
+      let hypothesisIdForSubmit = form.hypothesisId;
+      let productAiSubtypeForSubmit =
+        form.experimentType === "LOW_TICKET_PRODUCT"
+          ? form.productAiSubtype || undefined
+          : undefined;
+      let unitPriceForSubmit = form.unitPrice;
+      if (isProductAiExperiment && !productAiReady) {
+        const prepared = await prepareSelectedProductAiSubtype();
+        if (!prepared?.experimentPreparation.ready) {
+          alert("Complete o preparo do Produto IA antes de criar o experimento.");
+          return;
+        }
+        hypothesisIdForSubmit = prepared.hypothesisId;
+        productAiSubtypeForSubmit = prepared.productAiSubtype;
+        const preparedUnitPrice =
+          prepared.experimentPreparation.draft?.unitPrice ?? prepared.price;
+        if (preparedUnitPrice != null && preparedUnitPrice > 0) {
+          unitPriceForSubmit = String(preparedUnitPrice);
+        }
       }
       const defaultJourneyTemplateId = journeyTemplates?.content?.[0]?.id;
       if (!defaultJourneyTemplateId) {
@@ -336,9 +391,9 @@ export default function NewExperimentPage() {
         alert("Informe um orçamento diário válido");
         return;
       }
-      const parsedUnitPrice = Number(form.unitPrice);
+      const parsedUnitPrice = Number(unitPriceForSubmit);
       if (
-        !form.unitPrice ||
+        !unitPriceForSubmit ||
         Number.isNaN(parsedUnitPrice) ||
         parsedUnitPrice <= 0
       ) {
@@ -347,7 +402,7 @@ export default function NewExperimentPage() {
       }
       await create.mutateAsync({
         nicheId: Number(form.nicheId),
-        hypothesisId: form.hypothesisId || undefined,
+        hypothesisId: hypothesisIdForSubmit || undefined,
         name: "",
         hypothesis: form.hypothesis,
         stage: "AD",
@@ -358,7 +413,7 @@ export default function NewExperimentPage() {
         experimentType: form.experimentType,
         productAiSubtype:
           form.experimentType === "LOW_TICKET_PRODUCT"
-            ? form.productAiSubtype || undefined
+            ? productAiSubtypeForSubmit
             : undefined,
         campaignObjective,
         kpiTarget: Number(form.kpiTarget),
@@ -570,9 +625,15 @@ export default function NewExperimentPage() {
               <div className="fw-semibold">Preparo do Produto IA</div>
               {productAiPreparation.isLoading ? (
                 <div className="small">Verificando hipótese e oferta...</div>
+              ) : productAiReady ? (
+                <div className="small">
+                  Hipótese pronta para o mecanismo selecionado.
+                </div>
               ) : productAiPreparationData?.ready ? (
                 <div className="small">
-                  Hipótese pronta para experimento com amostra personalizada.
+                  Existe preparo para{" "}
+                  {productAiPreparationData.productAiSubtype}, mas o mecanismo
+                  selecionado precisa de uma variante própria.
                 </div>
               ) : (
                 <div className="small">
@@ -582,13 +643,32 @@ export default function NewExperimentPage() {
                 </div>
               )}
             </div>
-            {productAiPreparationData?.ready && (
+            {productAiReady ? (
               <button
                 type="button"
                 className="btn btn-outline-primary btn-sm"
                 onClick={applyProductAiDraft}
               >
                 Aplicar rascunho
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="btn btn-outline-primary btn-sm"
+                disabled={prepareProductAiHypothesis.isPending}
+                onClick={prepareSelectedProductAiSubtype}
+              >
+                {prepareProductAiHypothesis.isPending ? (
+                  <span className="d-inline-flex align-items-center gap-1">
+                    <span
+                      className="spinner-border spinner-border-sm"
+                      aria-hidden="true"
+                    />
+                    Preparando...
+                  </span>
+                ) : (
+                  "Preparar mecanismo"
+                )}
               </button>
             )}
           </div>
@@ -914,12 +994,12 @@ export default function NewExperimentPage() {
         onClick={submit}
         disabled={
           create.isPending ||
+          prepareProductAiHypothesis.isPending ||
           noInstagramAccounts ||
-          !productAiReady ||
           (!isLoadingJourneyTemplates && !journeyTemplates?.content?.length)
         }
       >
-        {create.isPending ? (
+        {create.isPending || prepareProductAiHypothesis.isPending ? (
           <>
             <span
               className="spinner-border spinner-border-sm"

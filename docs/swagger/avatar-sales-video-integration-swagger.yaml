@@ -16,6 +16,8 @@ servers:
 tags:
   - name: InternalVideoJobs
     description: Endpoints internos consumidos pelo módulo de vídeo para orquestrar jobs.
+  - name: InternalAiSalesVideo
+    description: Endpoints internos consumidos pelo ai-worker para geração de scripts de vídeo.
   - name: PublicVideoProfiles
     description: Endpoints de leitura de perfil usados pelo módulo de vídeo.
 
@@ -193,6 +195,26 @@ paths:
               schema:
                 $ref: '#/components/schemas/SalesVideoJobDto'
 
+  /internal/ai/sales-videos/profiles/{profileId}:
+    get:
+      tags: [InternalAiSalesVideo]
+      summary: Carrega perfil de vídeo para geração de script pelo ai-worker
+      parameters:
+        - in: path
+          name: profileId
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Perfil encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SalesVideoProfileDto'
+        '404':
+          description: Perfil não encontrado
 
   /api/sales-videos/rollout/status:
     get:

@@ -106,8 +106,9 @@ public class SalesVideoBackendClient {
         return postOpenAiJob(jobId, "/fail", request, SalesVideoJobDto.class);
     }
 
+    /** Busca o perfil pelo contrato interno para evitar dependência de tenant administrativo. */
     public SalesVideoProfileDto getProfile(Long profileId) {
-        String url = UrlUtils.joinPath(backendBaseUrl, apiPrefix, "/sales-videos/profiles/" + profileId);
+        String url = UrlUtils.joinPath(backendBaseUrl, internalPrefix, "/ai/sales-videos/profiles/" + profileId);
         return get(url, SalesVideoProfileDto.class);
     }
 

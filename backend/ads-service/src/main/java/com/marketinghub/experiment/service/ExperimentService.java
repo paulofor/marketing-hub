@@ -1138,7 +1138,7 @@ public class ExperimentService {
         if (productAiSubtype == null) {
             return;
         }
-        productAiExperimentPreparationService.assertReadyForExperiment(hypothesisId);
+        productAiExperimentPreparationService.assertReadyForExperiment(hypothesisId, productAiSubtype);
     }
 
     /**

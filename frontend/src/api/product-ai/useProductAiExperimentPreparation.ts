@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import type {
   ExperimentCampaignObjective,
@@ -26,6 +26,18 @@ export interface ProductAiExperimentPreparation {
   draft?: ProductAiExperimentDraft | null;
 }
 
+export interface ProductAiHypothesisPreparation {
+  hypothesisId: string;
+  hypothesisTitle: string;
+  productAiSubtype: ProductAiSubtype;
+  price?: number | null;
+  offerPackageId?: number | null;
+  offerPackageName?: string | null;
+  deliverableId?: number | null;
+  deliverableTitle?: string | null;
+  experimentPreparation: ProductAiExperimentPreparation;
+}
+
 export function useProductAiExperimentPreparation(hypothesisId?: string) {
   return useQuery({
     queryKey: ["product-ai-experiment-preparation", hypothesisId],
@@ -33,6 +45,24 @@ export function useProductAiExperimentPreparation(hypothesisId?: string) {
     queryFn: async () => {
       const { data } = await axios.get<ProductAiExperimentPreparation>(
         `/api/product-ai/experiment-preparations/${hypothesisId}`,
+      );
+      return data;
+    },
+  });
+}
+
+export function usePrepareProductAiHypothesis() {
+  return useMutation({
+    mutationFn: async ({
+      hypothesisId,
+      productAiSubtype,
+    }: {
+      hypothesisId: string;
+      productAiSubtype: ProductAiSubtype;
+    }) => {
+      const { data } = await axios.post<ProductAiHypothesisPreparation>(
+        `/api/product-ai/hypotheses/${hypothesisId}/experiment-preparation`,
+        { productAiSubtype },
       );
       return data;
     },

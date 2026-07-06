@@ -4,7 +4,7 @@ import com.marketinghub.productai.ProductAiSubtype;
 import java.math.BigDecimal;
 import java.util.UUID;
 
-/** Responsabilidade: representar o resultado do preparo sistêmico de uma hipótese para amostra personalizada. */
+/** Responsabilidade: representar o resultado do preparo sistêmico de uma hipótese para experimento Produto IA. */
 public record PersonalizedSamplePreparationDto(
         UUID hypothesisId,
         String hypothesisTitle,

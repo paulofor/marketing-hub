@@ -13,6 +13,9 @@ type CollapsibleJsonViewerProps = {
   emptyMessage?: string;
   initiallyCollapsed?: boolean;
   parseAsJson?: boolean;
+  className?: string;
+  maxHeight?: string;
+  plainTextVariant?: "default" | "reading";
 };
 
 function parseJson(content?: string | null): JsonValue | null {
@@ -119,6 +122,9 @@ export default function CollapsibleJsonViewer({
   emptyMessage = "Sem conteúdo registrado.",
   initiallyCollapsed = false,
   parseAsJson = true,
+  className = "",
+  maxHeight = "28rem",
+  plainTextVariant = parseAsJson ? "default" : "reading",
 }: CollapsibleJsonViewerProps) {
   const parsed = useMemo(
     () => (parseAsJson ? parseJson(content) : null),
@@ -130,13 +136,18 @@ export default function CollapsibleJsonViewer({
   }
 
   if (!parsed) {
+    const isReadingVariant = plainTextVariant === "reading";
     return (
       <pre
-        className="bg-body-tertiary p-3 rounded small mb-0"
+        className={`bg-body-tertiary border rounded mb-0 ${isReadingVariant ? "p-4" : "p-3 small"} ${className}`}
         style={{
           whiteSpace: "pre-wrap",
           overflowWrap: "anywhere",
           wordBreak: "break-word",
+          maxHeight,
+          overflow: "auto",
+          fontSize: isReadingVariant ? "0.95rem" : undefined,
+          lineHeight: isReadingVariant ? 1.65 : undefined,
         }}
       >
         {decodeEscapedText(content)}
@@ -146,8 +157,8 @@ export default function CollapsibleJsonViewer({
 
   return (
     <div
-      className="bg-body-tertiary border rounded p-2"
-      style={{ maxHeight: "28rem", overflow: "auto" }}
+      className={`bg-body-tertiary border rounded p-2 ${className}`}
+      style={{ maxHeight, overflow: "auto" }}
     >
       <JsonNode value={parsed} initiallyCollapsed={initiallyCollapsed} />
     </div>

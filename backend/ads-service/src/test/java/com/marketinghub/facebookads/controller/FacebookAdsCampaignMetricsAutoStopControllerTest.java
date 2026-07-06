@@ -6,7 +6,6 @@ import com.marketinghub.ads.FacebookAccount;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentCampaignMetric;
 import com.marketinghub.experiment.ExperimentStatus;
-import com.marketinghub.experiment.ExperimentType;
 import com.marketinghub.experiment.funnel.ExperimentFunnelAutoStopService;
 import com.marketinghub.experiment.funnel.ExperimentFunnelDiagnosticService;
 import com.marketinghub.experiment.funnel.ExperimentFunnelStage;
@@ -149,10 +148,10 @@ class FacebookAdsCampaignMetricsAutoStopControllerTest {
     }
 
     /**
-     * Simula o POST de métricas do worker e confirma que baixo interesse estatístico grava o novo motivo de parada.
+     * Simula o POST de métricas do worker e confirma que gasto sem resultado primário grava o motivo único de parada.
      */
     @Test
-    void postMetricsPersistsTargetAudienceLowInterestStopReason() throws Exception {
+    void postMetricsPersistsZeroPrimaryResultStopReason() throws Exception {
         Experiment experiment = new Experiment();
         experiment.setId(123L);
         experiment.setStatus(ExperimentStatus.RUNNING);
@@ -218,7 +217,7 @@ class FacebookAdsCampaignMetricsAutoStopControllerTest {
 
         assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.INVALIDATED);
         assertThat(campaign.getStopReason())
-                .isEqualTo(FacebookCampaignStopReason.TARGET_AUDIENCE_LOW_INTEREST_STATISTICAL);
+                .isEqualTo(FacebookCampaignStopReason.CAMPAIGN_ZERO_RESULT_AFTER_MINIMUM_SPEND);
         assertThat(campaign.getStopRequestedAt()).isNotNull();
         assertThat(campaign.getStopLastError()).isNull();
         assertThat(campaign.getMetricsLastSyncedAt()).isNotNull();
@@ -227,24 +226,20 @@ class FacebookAdsCampaignMetricsAutoStopControllerTest {
     }
 
     /**
-     * Simula o sync de métricas e confirma que a regra low-ticket estatístico-financeira roda imediatamente.
+     * Simula o sync de métricas e confirma que a regra única não depende do tipo do experimento.
      */
     @Test
-    void postMetricsRunsLowTicketStatisticalFinancialStopRule() throws Exception {
+    void postMetricsRunsUniqueCampaignStopRuleForAnyExperimentType() throws Exception {
         Experiment experiment = new Experiment();
         experiment.setId(124L);
         experiment.setStatus(ExperimentStatus.RUNNING);
-        experiment.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
-        experiment.setUnitPrice(new BigDecimal("37.00"));
-        experiment.setStopLossCpl(new BigDecimal("74.00"));
-        experiment.setTotalCost(new BigDecimal("100.22"));
 
         FacebookAdsCampaign campaign = new FacebookAdsCampaign();
         campaign.setId(CAMPAIGN_ID);
         campaign.setExperiment(experiment);
         campaign.setFacebookAccount(new FacebookAccount());
         campaign.setAdAccountId("act_123");
-        campaign.setName("Campanha low-ticket");
+        campaign.setName("Campanha sem resultado primário");
         campaign.setObjective("OUTCOME_SALES");
         campaign.setStatus(FacebookAdStatus.ACTIVE);
         campaign.setCreatedAt(Instant.now());
@@ -273,7 +268,9 @@ class FacebookAdsCampaignMetricsAutoStopControllerTest {
                 eq(new BigDecimal("50.23"))
         )).thenReturn(metric);
         when(diagnosticService.diagnose(124L)).thenReturn(new ExperimentFunnelDiagnosticsResponseDto(
-                List.of(lowTicketCheckoutStage(593, 1, 0.0017), lowTicketPurchaseStage(1, 0)),
+                List.of(primaryResultStage(ExperimentFunnelStage.ENVIO_FORM, 80, 0),
+                        primaryResultStage(ExperimentFunnelStage.ABERTURA_EMAIL_AMOSTRA, 0, 0),
+                        primaryResultStage(ExperimentFunnelStage.COMPRA, 1, 0)),
                 null
         ));
         when(campaignMetricRepository.findByExperiment(experiment)).thenReturn(Optional.of(metric));
@@ -298,7 +295,7 @@ class FacebookAdsCampaignMetricsAutoStopControllerTest {
 
         assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.INVALIDATED);
         assertThat(campaign.getStopReason())
-                .isEqualTo(FacebookCampaignStopReason.LOW_TICKET_ZERO_PURCHASE_STATISTICAL_FINANCIAL);
+                .isEqualTo(FacebookCampaignStopReason.CAMPAIGN_ZERO_RESULT_AFTER_MINIMUM_SPEND);
     }
 
     /** Cria diagnóstico de interesse baixo com reprovação estatística na etapa de acesso ao formulário. */
@@ -319,32 +316,16 @@ class FacebookAdsCampaignMetricsAutoStopControllerTest {
         );
     }
 
-    /** Cria diagnóstico de intenção de checkout para experimentos low-ticket. */
-    private ExperimentFunnelStageDiagnosticDto lowTicketCheckoutStage(long attempts, long successes, double rate) {
+    /** Cria diagnóstico de etapa de resultado primário para a regra única de campanha. */
+    private ExperimentFunnelStageDiagnosticDto primaryResultStage(ExperimentFunnelStage stage,
+                                                                 long attempts,
+                                                                 long successes) {
         return new ExperimentFunnelStageDiagnosticDto(
-                ExperimentFunnelStage.ACESSO_CHECKOUT,
-                "Acesso checkout",
+                stage,
+                stage.getLabel(),
                 attempts,
                 successes,
-                rate,
-                0.03,
-                null,
-                List.of(new FunnelThresholdCheckDto(0.03, 100, rate, false, successes == 0)),
-                FunnelDiagnosticStatus.WEAK_SIGNAL,
-                FunnelDiagnosticReasonCode.BELOW_MIN_RATE,
-                "",
-                false
-        );
-    }
-
-    /** Cria diagnóstico de compra para experimentos low-ticket. */
-    private ExperimentFunnelStageDiagnosticDto lowTicketPurchaseStage(long attempts, long successes) {
-        return new ExperimentFunnelStageDiagnosticDto(
-                ExperimentFunnelStage.COMPRA,
-                "Compra",
-                attempts,
-                successes,
-                attempts > 0 ? (double) successes / attempts : 0.0,
+                attempts > 0 ? (double) successes / attempts : null,
                 0.03,
                 null,
                 List.of(),

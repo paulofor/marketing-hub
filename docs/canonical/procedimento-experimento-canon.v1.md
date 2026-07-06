@@ -106,24 +106,23 @@ Regras obrigatórias:
 - o status `STANDBY` por primeiro envio não substitui a validação estatística de 30+ envios qualificados, nem a regra de reprovação por 100 acessos sem envio;
 - a tela administrativa deve deixar claro que o experimento parou por sinal inicial, não por validação completa.
 
-### 4.1.3.1 Regra mandatória — invalidação estatístico-financeira de low-ticket
+### 4.1.3.1 Regra mandatória — política única de parada por campanha
 
-Experimentos do tipo `LOW_TICKET_PRODUCT` não devem continuar consumindo orçamento quando já existe amostra mínima, zero compras aprovadas e custo incompatível com a unidade econômica do produto.
+Campanhas pagas não devem depender de regra operacional por tipo de experimento. A decisão de parada deve ser única por campanha e orientada a prova comercial objetiva: se a campanha não prova que pode gerar resultado, ela deve parar antes de consumir mais orçamento.
 
 Regra canônica:
-- considerar a regra apenas para experimento em `RUNNING` e tipo `LOW_TICKET_PRODUCT`;
-- invalidar quando houver `0` compras aprovadas, pelo menos `100` sessões qualificadas na página/formulário ou `150` cliques de link, e o custo total do experimento atingir `3x` o ticket configurado;
-- também invalidar quando o custo total atingir o `stopLossCpl` configurado e não houver intenção forte de checkout, definida inicialmente como taxa de acesso ao checkout abaixo de `3%`;
-- antes da amostra completa, também invalidar por inviabilidade econômica inicial quando houver `0` compras, pelo menos `5` cliques de link, custo total acima do `stopLossCpl`, CPC maior ou igual a `10%` do ticket e ausência de intenção forte de checkout;
-- usar `experiment.total_cost` como custo total principal; quando esse campo ainda não estiver disponível, usar o gasto de mídia sincronizado em `experiment_campaign_metric.spend` como fallback operacional;
-- registrar `experiment.status = INVALIDATED` e solicitar pausa das campanhas vinculadas com motivo `LOW_TICKET_ZERO_PURCHASE_STATISTICAL_FINANCIAL`;
-- quando a parada ocorrer por tráfego caro antes da amostra completa, usar o motivo `LOW_TICKET_TRAFFIC_COST_ECONOMICALLY_UNVIABLE`;
-- não invalidar por essa regra quando já existir compra aprovada, quando a amostra mínima não tiver sido atingida ou quando o custo ainda estiver abaixo dos limites financeiros.
+- considerar a regra para toda campanha vinculada a experimento em `RUNNING`, independentemente de `experiment_type`, objetivo, oferta ou destino;
+- parar campanha com menos de `100` impressões após `48h` de criação, por falha de entrega mínima;
+- parar campanha quando o gasto sincronizado atingir `R$ 25,00` e não houver nenhum resultado primário: `ENVIO_FORM`, `ABERTURA_EMAIL_AMOSTRA` ou `COMPRA`;
+- parar campanha quando qualquer etapa prioritária do funil ficar `STATISTICALLY_FAILED`;
+- registrar `experiment.status = INVALIDATED` e solicitar pausa das campanhas vinculadas via `facebook_ads_campaign.stop_requested_at`;
+- usar `CAMPAIGN_ZERO_RESULT_AFTER_MINIMUM_SPEND` para gasto mínimo sem resultado primário e `CAMPAIGN_STATISTICALLY_FAILED_STAGE` para reprovação estatística de etapa;
+- manter motivos antigos de low-ticket apenas como histórico de dados já gravados, sem usá-los como caminho operacional novo.
 
 Interpretação de negócio:
-- a regra combina estatística e caixa: evita parar cedo demais sem amostra, mas impede manter tráfego pago quando o experimento já mostrou que a página/oferta/checkout não está convertendo dentro da economia do ticket;
-- para low-ticket, topo de funil barato não é suficiente para manter o teste ativo se não houver compra; CTR e CPC bons devem gerar aprendizado de criativo/público, mas não justificam gasto indefinido sem conversão;
-- quando a regra dispara, o próximo passo recomendado é revisar oferta, promessa, prova, checkout e percepção de valor antes de retomar mídia.
+- CTR, clique barato ou acesso intermediário não bastam para manter mídia ativa se não houver resultado primário;
+- uma campanha como a do experimento 56 deve parar ao cruzar `R$ 25,00` sem envio de formulário, abertura de email de amostra ou compra;
+- quando a regra dispara, o próximo passo recomendado é corrigir causa-raiz de oferta, promessa, público, landing, formulário, checkout ou tracking antes de retomar mídia.
 
 ### 4.1.4 Regra mandatória — execução auditável por `ExperimentRun`
 

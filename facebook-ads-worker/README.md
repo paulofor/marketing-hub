@@ -320,6 +320,14 @@ Quando a Graph API devolve `data=[]` no Insights (campanhas sem entrega ainda),
 o worker envia métricas zeradas ao backend para atualizar o
 `metrics_last_synced_at` sem marcar erro.
 
+O backend aplica uma política única de parada para toda campanha após receber
+as métricas sincronizadas. A campanha deve ser pausada pelo fluxo oficial
+quando tiver menos de 100 impressões após 48 horas, quando gastar R$ 25,00 sem
+resultado primário (`ENVIO_FORM`, `ABERTURA_EMAIL_AMOSTRA` ou `COMPRA`) ou
+quando qualquer etapa prioritária do funil ficar `STATISTICALLY_FAILED`. O
+worker não decide a regra: ele apenas envia métricas, consome
+`/api/facebook-campaigns/stop-requests` e aplica `status=PAUSED` na Meta.
+
 As chamadas de Insights da Graph API (`/{campaignId}/insights`) não registram
 mais logs de request/response em `INFO`, reduzindo ruído no processamento
 periódico de métricas. Erros continuam sendo logados normalmente.

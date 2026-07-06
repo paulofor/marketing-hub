@@ -5631,3 +5631,10 @@
 - Criado o canon `docs/canonical/psicologia-aplicada-ofertas-canon.v1.md`.
 - Consolidado o uso dos artigos de `docs/neuron` como regra operacional para dor, resultado, mecanismo, prova, oferta, anuncio, landing e quality review.
 - Ajustados prompts do `ai-worker` e prompts de resumo do backend para preservar sinais de dor emocional, esforco evitado, identidade, cena concreta e futuro imaginavel.
+
+## 2026-07-06 — Política única de parada de campanhas
+
+- Decisão: regras operacionais de parada deixam de depender do tipo de experimento; toda campanha usa a mesma política.
+- Causa-raiz tratada: campanhas com gasto relevante, como o experimento 56, podiam continuar ativas porque a regra antiga olhava interesse intermediário ou regras específicas de low-ticket, não ausência de resultado primário.
+- Correção aplicada: o sync de métricas agora para campanha com menos de 100 impressões após 48h, R$ 25,00 sem `ENVIO_FORM`, `ABERTURA_EMAIL_AMOSTRA` ou `COMPRA`, ou qualquer etapa prioritária `STATISTICALLY_FAILED`.
+- Prevenção de recorrência: `CampaignStrategyService` ficou apenas como auditoria, o `ExperimentEngine` legado foi removido e os testes cobrem a política única no service e no endpoint de métricas.

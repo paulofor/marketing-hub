@@ -409,10 +409,8 @@ public class FacebookAdsCampaignController {
         FacebookAdsCampaign campaign = metric.getCampaign();
         campaign.setMetricsLastSyncedAt(Instant.now());
         campaign.setMetricsLastError(null);
-        funnelAutoStopService.stopIfAdInterestStatisticallyLow(campaign.getExperiment());
-        funnelAutoStopService.stopIfLowFormEntryAndNoSubmissionAfterSpend(campaign.getExperiment());
-        funnelAutoStopService.stopIfLowTicketZeroPurchasesAfterStatisticalFinancialLimit(campaign.getExperiment());
-        funnelAutoStopService.stopIfLowTicketTrafficCostEconomicallyUnviable(campaign.getExperiment());
+        funnelAutoStopService.stopIfNoPrimaryResultAfterMinimumSpend(campaign.getExperiment());
+        funnelAutoStopService.stopIfAnyPrioritizedStageStatisticallyFailed(campaign.getExperiment());
         funnelAutoStopService.stopIfLowImpressionsAfterRunningTime(
                 campaign.getExperiment(),
                 metric.getImpressions(),

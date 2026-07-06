@@ -2,8 +2,6 @@ package com.marketinghub.facebookads.service;
 
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentCampaignMetric;
-import com.marketinghub.experiment.ExperimentStatus;
-import com.marketinghub.experiment.ExperimentType;
 import com.marketinghub.experiment.funnel.ExperimentFunnelDiagnosticService;
 import com.marketinghub.experiment.funnel.ExperimentFunnelStage;
 import com.marketinghub.experiment.funnel.dto.ExperimentFunnelDiagnosticsResponseDto;
@@ -16,7 +14,6 @@ import com.marketinghub.facebookads.FacebookAdsCampaign;
 import com.marketinghub.facebookads.FacebookCampaignStopReason;
 import com.marketinghub.repository.jpa.facebookads.CampaignStrategyEvaluationRepository;
 import com.marketinghub.repository.jpa.facebookads.CampaignStrategyRepository;
-import com.marketinghub.repository.jpa.facebookads.FacebookAdsCampaignRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -26,32 +23,26 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 /**
- * Orquestra a estrategia de campanha e decide quando a campanha deixou de ser util.
+ * Registra a estratégia auditável da campanha sem decidir parada operacional paralela.
  */
 @Service
 public class CampaignStrategyService {
     private static final Logger LOGGER = LoggerFactory.getLogger(CampaignStrategyService.class);
-    private static final BigDecimal DEFAULT_LOW_TICKET_SPEND_MULTIPLIER = new BigDecimal("3.00");
-    private static final BigDecimal DEFAULT_MINIMUM_CHECKOUT_RATE = new BigDecimal("0.0300");
-    private static final long DEFAULT_MINIMUM_LINK_CLICKS = 150L;
     private static final long DEFAULT_MINIMUM_IMPRESSIONS = 100L;
 
     private final CampaignStrategyRepository strategyRepository;
     private final CampaignStrategyEvaluationRepository evaluationRepository;
     private final ExperimentFunnelDiagnosticService diagnosticService;
-    private final FacebookAdsCampaignRepository campaignRepository;
 
     /**
-     * Cria o servico com repositorios e diagnostico de funil usados pela decisao.
+     * Cria o serviço com repositórios e diagnóstico de funil usados pela auditoria.
      */
     public CampaignStrategyService(CampaignStrategyRepository strategyRepository,
                                    CampaignStrategyEvaluationRepository evaluationRepository,
-                                   ExperimentFunnelDiagnosticService diagnosticService,
-                                   FacebookAdsCampaignRepository campaignRepository) {
+                                   ExperimentFunnelDiagnosticService diagnosticService) {
         this.strategyRepository = strategyRepository;
         this.evaluationRepository = evaluationRepository;
         this.diagnosticService = diagnosticService;
-        this.campaignRepository = campaignRepository;
     }
 
     /**
@@ -64,7 +55,7 @@ public class CampaignStrategyService {
     }
 
     /**
-     * Avalia as metricas sincronizadas e solicita parada quando a estrategia perder utilidade.
+     * Avalia as métricas sincronizadas apenas para auditoria da estratégia.
      */
     @Transactional
     public CampaignStrategyEvaluation evaluateAfterMetrics(ExperimentCampaignMetric metric) {
@@ -84,14 +75,8 @@ public class CampaignStrategyService {
                     funnel,
                     campaign.getStopReason());
         }
-        StrategyStopDecision stopDecision = decideStop(strategy, metric, funnel);
-        if (stopDecision.shouldStop()) {
-            requestCampaignStop(campaign, stopDecision.stopReason(), stopDecision.reason());
-            return recordEvaluation(strategy, metric, CampaignStrategyDecision.STOP_REQUESTED,
-                    stopDecision.reason(), funnel, stopDecision.stopReason());
-        }
         return recordEvaluation(strategy, metric, CampaignStrategyDecision.KEEP_LEARNING,
-                "Campanha ainda gera aprendizado ou nao atingiu os limites da estrategia.",
+                "Estratégia registrada apenas para auditoria; parada é decidida pela política única de campanha.",
                 funnel,
                 null);
     }
@@ -108,74 +93,18 @@ public class CampaignStrategyService {
     }
 
     /**
-     * Cria a estrategia padrao de acordo com o tipo comercial do experimento.
+     * Cria a estratégia padrão única para auditoria de campanha.
      */
     private CampaignStrategy buildDefaultStrategy(FacebookAdsCampaign campaign) {
-        Experiment experiment = campaign.getExperiment();
         CampaignStrategy strategy = new CampaignStrategy();
         strategy.setCampaign(campaign);
-        if (experiment != null && experiment.getExperimentType() == ExperimentType.LOW_TICKET_PRODUCT) {
-            strategy.setObjective(CampaignStrategyObjective.FIRST_PURCHASE_LOW_TICKET);
-            strategy.setPreset("LOW_TICKET_FIRST_PURCHASE");
-            strategy.setMaxSpendWithoutPurchase(resolveLowTicketSpendLimit(experiment));
-            strategy.setMinimumCheckoutRate(DEFAULT_MINIMUM_CHECKOUT_RATE);
-            strategy.setMinimumLinkClicks(DEFAULT_MINIMUM_LINK_CLICKS);
-            strategy.setMinimumImpressions(DEFAULT_MINIMUM_IMPRESSIONS);
-            return strategy;
-        }
         strategy.setObjective(CampaignStrategyObjective.LEAD_VALIDATION);
-        strategy.setPreset("LEAD_VALIDATION");
+        strategy.setPreset("UNIQUE_CAMPAIGN_POLICY_AUDIT");
         strategy.setMaxSpendWithoutPurchase(null);
         strategy.setMinimumCheckoutRate(null);
         strategy.setMinimumLinkClicks(0L);
         strategy.setMinimumImpressions(DEFAULT_MINIMUM_IMPRESSIONS);
         return strategy;
-    }
-
-    /**
-     * Decide se a campanha deve parar por limite financeiro e ausencia de sinal de compra.
-     */
-    private StrategyStopDecision decideStop(CampaignStrategy strategy,
-                                            ExperimentCampaignMetric metric,
-                                            FunnelSnapshot funnel) {
-        if (strategy.getObjective() != CampaignStrategyObjective.FIRST_PURCHASE_LOW_TICKET) {
-            return StrategyStopDecision.keep();
-        }
-        BigDecimal spend = positiveOrZero(metric.getSpend());
-        BigDecimal maxSpend = strategy.getMaxSpendWithoutPurchase();
-        long clicks = metric.getClicks() != null ? metric.getClicks() : 0L;
-        boolean reachedSpendLimit = maxSpend != null && spend.compareTo(maxSpend) >= 0;
-        boolean reachedClickSample = clicks >= nullToZero(strategy.getMinimumLinkClicks());
-        boolean hasPurchase = funnel != null && funnel.purchases() > 0;
-        boolean hasWeakCheckout = funnel == null
-                || funnel.checkoutRate() == null
-                || funnel.checkoutRate().compareTo(nullToZero(strategy.getMinimumCheckoutRate())) < 0;
-        if ((reachedSpendLimit || reachedClickSample) && !hasPurchase && hasWeakCheckout) {
-            return new StrategyStopDecision(
-                    true,
-                    FacebookCampaignStopReason.CAMPAIGN_STRATEGY_STOPPED,
-                    "Estrategia low-ticket: limite de gasto/amostra atingido sem compra e sem taxa minima de checkout."
-            );
-        }
-        return StrategyStopDecision.keep();
-    }
-
-    /**
-     * Solicita ao Facebook Ads Worker que pause a campanha na Meta.
-     */
-    private void requestCampaignStop(FacebookAdsCampaign campaign,
-                                     FacebookCampaignStopReason stopReason,
-                                     String reason) {
-        Experiment experiment = campaign.getExperiment();
-        if (experiment != null && experiment.getStatus() == ExperimentStatus.RUNNING) {
-            experiment.setStatus(ExperimentStatus.INVALIDATED);
-        }
-        campaign.setStopReason(stopReason);
-        campaign.setStopRequestedAt(java.time.Instant.now());
-        campaign.setStopCompletedAt(null);
-        campaign.setStopLastError(null);
-        campaignRepository.save(campaign);
-        LOGGER.warn("Estrategia solicitou parada da campanha {}: {}", campaign.getId(), reason);
     }
 
     /**
@@ -248,52 +177,9 @@ public class CampaignStrategyService {
                 .orElse(null);
     }
 
-    /**
-     * Resolve o limite financeiro padrao para primeira venda low-ticket.
-     */
-    private BigDecimal resolveLowTicketSpendLimit(Experiment experiment) {
-        BigDecimal unitPrice = experiment != null ? experiment.getUnitPrice() : null;
-        if (unitPrice == null || unitPrice.compareTo(BigDecimal.ZERO) <= 0) {
-            return null;
-        }
-        return unitPrice.multiply(DEFAULT_LOW_TICKET_SPEND_MULTIPLIER).setScale(2, RoundingMode.HALF_UP);
-    }
-
-    /**
-     * Normaliza valores monetarios nulos para zero.
-     */
-    private BigDecimal positiveOrZero(BigDecimal value) {
-        return value != null && value.compareTo(BigDecimal.ZERO) > 0 ? value : BigDecimal.ZERO;
-    }
-
-    /**
-     * Normaliza valores numericos nulos para zero.
-     */
-    private long nullToZero(Long value) {
-        return value != null ? value : 0L;
-    }
-
-    /**
-     * Normaliza percentuais nulos para zero.
-     */
-    private BigDecimal nullToZero(BigDecimal value) {
-        return value != null ? value : BigDecimal.ZERO;
-    }
-
     private record FunnelSnapshot(Long checkoutAttempts,
                                   Long checkoutClicks,
                                   Long purchases,
                                   BigDecimal checkoutRate) {
-    }
-
-    private record StrategyStopDecision(boolean shouldStop,
-                                        FacebookCampaignStopReason stopReason,
-                                        String reason) {
-        /**
-         * Representa decisao de manter a campanha em aprendizado.
-         */
-        private static StrategyStopDecision keep() {
-            return new StrategyStopDecision(false, null, null);
-        }
     }
 }

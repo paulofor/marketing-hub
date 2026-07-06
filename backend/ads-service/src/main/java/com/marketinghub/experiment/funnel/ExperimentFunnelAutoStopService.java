@@ -3,11 +3,9 @@ package com.marketinghub.experiment.funnel;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentCampaignMetric;
 import com.marketinghub.experiment.ExperimentStatus;
-import com.marketinghub.experiment.ExperimentType;
 import com.marketinghub.experiment.funnel.dto.ExperimentFunnelDiagnosticsResponseDto;
 import com.marketinghub.experiment.funnel.dto.ExperimentFunnelStageDiagnosticDto;
 import com.marketinghub.experiment.funnel.dto.FunnelDiagnosticStatus;
-import com.marketinghub.experiment.funnel.dto.FunnelThresholdCheckDto;
 import com.marketinghub.facebookads.FacebookCampaignStopReason;
 import com.marketinghub.repository.jpa.experiment.ExperimentCampaignMetricRepository;
 import org.slf4j.Logger;
@@ -17,7 +15,6 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Objects;
 
 /**
  * Serviço responsável por invalidar experimentos automaticamente quando há evidência operacional ruim.
@@ -25,18 +22,7 @@ import java.util.Objects;
 @Service
 public class ExperimentFunnelAutoStopService {
     private static final Logger LOGGER = LoggerFactory.getLogger(ExperimentFunnelAutoStopService.class);
-    private static final double THREE_PERCENT = 0.03d;
-    private static final double AD_INTEREST_MINIMUM_RATE = 0.015d;
-    private static final BigDecimal LOW_AD_INTEREST_STOP_MINIMUM_SPEND = new BigDecimal("25.00");
-    private static final BigDecimal LOW_FORM_ENTRY_NO_SUBMISSION_MINIMUM_SPEND = new BigDecimal("20.00");
-    private static final long LOW_FORM_ENTRY_NO_SUBMISSION_MINIMUM_IMPRESSIONS = 1500L;
-    private static final double LOW_FORM_ENTRY_NO_SUBMISSION_MAX_ACCESS_RATE = 0.012d;
-    private static final BigDecimal LOW_TICKET_TICKET_MULTIPLIER_STOP = new BigDecimal("3.00");
-    private static final long LOW_TICKET_MINIMUM_SESSIONS = 100L;
-    private static final long LOW_TICKET_MINIMUM_LINK_CLICKS = 150L;
-    private static final double LOW_TICKET_STRONG_CHECKOUT_INTENT_RATE = 0.03d;
-    private static final long LOW_TICKET_EXPENSIVE_TRAFFIC_MINIMUM_LINK_CLICKS = 5L;
-    private static final BigDecimal LOW_TICKET_EXPENSIVE_TRAFFIC_CPC_TICKET_RATE = new BigDecimal("0.10");
+    private static final BigDecimal ZERO_PRIMARY_RESULT_MINIMUM_SPEND = new BigDecimal("25.00");
     private static final Duration LOW_IMPRESSIONS_MIN_CAMPAIGN_AGE = Duration.ofHours(48);
     private static final long LOW_IMPRESSIONS_MINIMUM = 100L;
 
@@ -56,105 +42,72 @@ public class ExperimentFunnelAutoStopService {
     }
 
     /**
-     * Avalia a taxa de interesse inicial do anúncio e invalida o experimento quando a conversão para o formulário falha
-     * estatisticamente depois de atingir o gasto mínimo de mídia.
+     * Aplica a regra única de campanha: após R$ 25,00, campanha sem resultado primário deve parar.
      *
      * @return {@code true} quando o experimento foi parado automaticamente, {@code false} caso contrário.
      */
-    public boolean stopIfAdInterestStatisticallyLow(Experiment experiment) {
+    public boolean stopIfNoPrimaryResultAfterMinimumSpend(Experiment experiment) {
         if (experiment == null || experiment.getStatus() != ExperimentStatus.RUNNING) {
             return false;
         }
-        ExperimentFunnelDiagnosticsResponseDto diagnostics = diagnosticService.diagnose(experiment.getId());
-        ExperimentFunnelStageDiagnosticDto leadAccessStage = diagnostics.diagnostics().stream()
-                .filter(dto -> dto.stageKey() == ExperimentFunnelStage.ACESSO_FORM_LEAD)
-                .findFirst()
-                .orElse(null);
-        if (leadAccessStage == null || leadAccessStage.minAcceptableRate() == null) {
-            return false;
-        }
-        boolean lowInterestFailed = leadAccessStage.status() == FunnelDiagnosticStatus.STATISTICALLY_FAILED
-                && Math.abs(leadAccessStage.minAcceptableRate() - AD_INTEREST_MINIMUM_RATE) < 1e-9;
-        if (!lowInterestFailed) {
-            return false;
-        }
         BigDecimal campaignSpend = resolveCampaignSpend(experiment);
-        if (campaignSpend.compareTo(LOW_AD_INTEREST_STOP_MINIMUM_SPEND) < 0) {
-            LOGGER.info(
-                    "Low ad interest confirmed for experiment {}, but automatic stop is waiting for minimum spend: currentSpend={}, minimumSpend={}",
-                    experiment.getId(),
-                    campaignSpend,
-                    LOW_AD_INTEREST_STOP_MINIMUM_SPEND
-            );
+        if (campaignSpend.compareTo(ZERO_PRIMARY_RESULT_MINIMUM_SPEND) < 0) {
+            return false;
+        }
+        ExperimentFunnelDiagnosticsResponseDto diagnostics = diagnosticService.diagnose(experiment.getId());
+        long formSubmissions = successesFor(diagnostics, ExperimentFunnelStage.ENVIO_FORM);
+        long sampleEmailOpens = successesFor(diagnostics, ExperimentFunnelStage.ABERTURA_EMAIL_AMOSTRA);
+        long purchases = successesFor(diagnostics, ExperimentFunnelStage.COMPRA);
+        if (formSubmissions > 0 || sampleEmailOpens > 0 || purchases > 0) {
             return false;
         }
         LOGGER.warn(
-                "Automatic stop triggered for experiment {} due to statistically low ad interest after minimum spend: attempts={}, successes={}, observedRate={}, minimumRate={}, upper95={}, spend={}, minimumSpend={}",
+                "Automatic campaign stop triggered for experiment {} due to zero primary result after minimum spend: spend={}, minimumSpend={}, formSubmissions={}, sampleEmailOpens={}, purchases={}",
                 experiment.getId(),
-                leadAccessStage.attempts(),
-                leadAccessStage.successes(),
-                leadAccessStage.observedRate(),
-                leadAccessStage.minAcceptableRate(),
-                leadAccessStage.upper95RateIfZero(),
                 campaignSpend,
-                LOW_AD_INTEREST_STOP_MINIMUM_SPEND
+                ZERO_PRIMARY_RESULT_MINIMUM_SPEND,
+                formSubmissions,
+                sampleEmailOpens,
+                purchases
         );
         invalidateExperimentAndRequestStops(
                 experiment,
-                FacebookCampaignStopReason.TARGET_AUDIENCE_LOW_INTEREST_STATISTICAL,
-                "taxa de acesso ao formulário abaixo de 1,5% com confiança estatística de 95% após atingir R$ 25,00 de mídia"
+                FacebookCampaignStopReason.CAMPAIGN_ZERO_RESULT_AFTER_MINIMUM_SPEND,
+                "campanha gastou R$ 25,00 sem resultado primário: envio de formulário, abertura de email de amostra ou compra"
         );
         return true;
     }
 
     /**
-     * Avalia sinal composto de baixa entrada no formulário sem envio e invalida campanhas que já gastaram o piso
-     * operacional sem produzir lead.
+     * Aplica a regra única de campanha: qualquer etapa prioritária estatisticamente reprovada deve parar a campanha.
      *
      * @return {@code true} quando o experimento foi parado automaticamente, {@code false} caso contrário.
      */
-    public boolean stopIfLowFormEntryAndNoSubmissionAfterSpend(Experiment experiment) {
+    public boolean stopIfAnyPrioritizedStageStatisticallyFailed(Experiment experiment) {
         if (experiment == null || experiment.getStatus() != ExperimentStatus.RUNNING) {
             return false;
         }
-        BigDecimal campaignSpend = resolveCampaignSpend(experiment);
-        if (campaignSpend.compareTo(LOW_FORM_ENTRY_NO_SUBMISSION_MINIMUM_SPEND) < 0) {
-            return false;
-        }
         ExperimentFunnelDiagnosticsResponseDto diagnostics = diagnosticService.diagnose(experiment.getId());
-        ExperimentFunnelStageDiagnosticDto leadAccessStage = findStageDiagnostic(
-                diagnostics,
-                ExperimentFunnelStage.ACESSO_FORM_LEAD
-        );
-        ExperimentFunnelStageDiagnosticDto submissionStage = findStageDiagnostic(
-                diagnostics,
-                ExperimentFunnelStage.ENVIO_FORM
-        );
-        if (leadAccessStage == null || submissionStage == null || leadAccessStage.attempts() <= 0) {
-            return false;
-        }
-        double leadAccessRate = (double) leadAccessStage.successes() / leadAccessStage.attempts();
-        boolean hasEnoughDistribution = leadAccessStage.attempts() >= LOW_FORM_ENTRY_NO_SUBMISSION_MINIMUM_IMPRESSIONS;
-        boolean hasLowFormEntry = leadAccessRate <= LOW_FORM_ENTRY_NO_SUBMISSION_MAX_ACCESS_RATE;
-        boolean hasNoSubmission = submissionStage.successes() == 0;
-        if (!hasEnoughDistribution || !hasLowFormEntry || !hasNoSubmission) {
+        ExperimentFunnelStageDiagnosticDto failedStage = diagnostics.diagnostics().stream()
+                .filter(dto -> dto.status() == FunnelDiagnosticStatus.STATISTICALLY_FAILED)
+                .findFirst()
+                .orElse(null);
+        if (failedStage == null) {
             return false;
         }
         LOGGER.warn(
-                "Automatic stop triggered for experiment {} due to low form entry and no submissions after spend: impressions={}, formAccesses={}, formAccessRate={}, formViews={}, submissions={}, spend={}, minimumSpend={}",
+                "Automatic campaign stop triggered for experiment {} due to statistically failed funnel stage: stage={}, attempts={}, successes={}, observedRate={}, minimumRate={}",
                 experiment.getId(),
-                leadAccessStage.attempts(),
-                leadAccessStage.successes(),
-                leadAccessRate,
-                submissionStage.attempts(),
-                submissionStage.successes(),
-                campaignSpend,
-                LOW_FORM_ENTRY_NO_SUBMISSION_MINIMUM_SPEND
+                failedStage.stageKey(),
+                failedStage.attempts(),
+                failedStage.successes(),
+                failedStage.observedRate(),
+                failedStage.minAcceptableRate()
         );
         invalidateExperimentAndRequestStops(
                 experiment,
-                FacebookCampaignStopReason.LOW_FORM_ENTRY_NO_SUBMISSION_AFTER_SPEND,
-                "baixa entrada no formulário após 1.500 impressões e R$ 20,00 de mídia, sem nenhum envio de formulário"
+                FacebookCampaignStopReason.CAMPAIGN_STATISTICALLY_FAILED_STAGE,
+                "etapa prioritária do funil reprovada estatisticamente para a política única de campanha"
         );
         return true;
     }
@@ -169,159 +122,6 @@ public class ExperimentFunnelAutoStopService {
         return campaignMetricRepository.findByExperiment(experiment)
                 .map(ExperimentCampaignMetric::getSpend)
                 .orElse(BigDecimal.ZERO);
-    }
-
-    /**
-     * Avalia a etapa de envio de formulário e invalida o experimento quando a regra dos 3% falha.
-     *
-     * @return {@code true} quando o experimento foi parado automaticamente, {@code false} caso contrário.
-     */
-    public boolean stopIfFormSubmissionZeroConversions(Experiment experiment) {
-        if (experiment == null || experiment.getStatus() != ExperimentStatus.RUNNING) {
-            return false;
-        }
-        ExperimentFunnelDiagnosticsResponseDto diagnostics = diagnosticService.diagnose(experiment.getId());
-        ExperimentFunnelStageDiagnosticDto submissionStage = diagnostics.diagnostics().stream()
-                .filter(dto -> dto.stageKey() == ExperimentFunnelStage.ENVIO_FORM)
-                .findFirst()
-                .orElse(null);
-        if (submissionStage == null || submissionStage.thresholdChecks() == null) {
-            return false;
-        }
-        boolean threePercentFailed = submissionStage.thresholdChecks().stream()
-                .filter(Objects::nonNull)
-                .anyMatch(this::isThreePercentFailure);
-        if (!threePercentFailed) {
-            return false;
-        }
-        LOGGER.warn(
-                "Automatic stop triggered for experiment {} due to zero conversions after reaching the 3%% rule-of-three threshold.",
-                experiment.getId()
-        );
-        invalidateExperimentAndRequestStops(
-                experiment,
-                FacebookCampaignStopReason.FORM_ZERO_CONVERSION_RULE_OF_THREE,
-                "100 acessos sem envio de formulário pela regra estatística dos 3%"
-        );
-        return true;
-    }
-
-    /**
-     * Avalia experimento low-ticket e invalida quando zero compras já têm amostra e custo incompatíveis com o ticket.
-     *
-     * @return {@code true} quando o experimento foi parado automaticamente, {@code false} caso contrário.
-     */
-    public boolean stopIfLowTicketZeroPurchasesAfterStatisticalFinancialLimit(Experiment experiment) {
-        if (experiment == null
-                || experiment.getStatus() != ExperimentStatus.RUNNING
-                || experiment.getExperimentType() != ExperimentType.LOW_TICKET_PRODUCT) {
-            return false;
-        }
-        ExperimentFunnelDiagnosticsResponseDto diagnostics = diagnosticService.diagnose(experiment.getId());
-        ExperimentFunnelStageDiagnosticDto checkoutIntentStage = findStageDiagnostic(
-                diagnostics,
-                ExperimentFunnelStage.ACESSO_CHECKOUT
-        );
-        ExperimentFunnelStageDiagnosticDto purchaseStage = findStageDiagnostic(
-                diagnostics,
-                ExperimentFunnelStage.COMPRA
-        );
-        if (checkoutIntentStage == null || purchaseStage == null || purchaseStage.successes() > 0) {
-            return false;
-        }
-        ExperimentCampaignMetric metric = campaignMetricRepository.findByExperiment(experiment).orElse(null);
-        long sessions = checkoutIntentStage.attempts();
-        long linkClicks = metric != null && metric.getClicks() != null ? metric.getClicks() : 0L;
-        boolean sampleReached = sessions >= LOW_TICKET_MINIMUM_SESSIONS || linkClicks >= LOW_TICKET_MINIMUM_LINK_CLICKS;
-        if (!sampleReached) {
-            return false;
-        }
-        BigDecimal totalCost = resolveTotalExperimentCost(experiment, metric);
-        BigDecimal ticketStopLimit = resolveTicketStopLimit(experiment);
-        BigDecimal stopLossLimit = positiveOrNull(experiment.getStopLossCpl());
-        boolean reachedTicketLimit = ticketStopLimit != null && totalCost.compareTo(ticketStopLimit) >= 0;
-        boolean reachedStopLossWithoutStrongIntent = stopLossLimit != null
-                && totalCost.compareTo(stopLossLimit) >= 0
-                && !hasStrongCheckoutIntent(checkoutIntentStage);
-        if (!reachedTicketLimit && !reachedStopLossWithoutStrongIntent) {
-            return false;
-        }
-        LOGGER.warn(
-                "Automatic stop triggered for low-ticket experiment {} due to zero purchases after statistical-financial limit: sessions={}, linkClicks={}, checkouts={}, purchases={}, checkoutRate={}, totalCost={}, ticketStopLimit={}, stopLossLimit={}",
-                experiment.getId(),
-                sessions,
-                linkClicks,
-                checkoutIntentStage.successes(),
-                purchaseStage.successes(),
-                checkoutIntentStage.observedRate(),
-                totalCost,
-                ticketStopLimit,
-                stopLossLimit
-        );
-        invalidateExperimentAndRequestStops(
-                experiment,
-                FacebookCampaignStopReason.LOW_TICKET_ZERO_PURCHASE_STATISTICAL_FINANCIAL,
-                "produto low-ticket com zero compras após amostra mínima e custo total acima de 3x o ticket ou stop-loss sem intenção forte de checkout"
-        );
-        return true;
-    }
-
-    /**
-     * Avalia produto low-ticket com tráfego caro antes da amostra completa e invalida quando o CPC já torna a economia
-     * inviável sem sinal forte de checkout.
-     *
-     * @return {@code true} quando o experimento foi parado automaticamente, {@code false} caso contrário.
-     */
-    public boolean stopIfLowTicketTrafficCostEconomicallyUnviable(Experiment experiment) {
-        if (experiment == null
-                || experiment.getStatus() != ExperimentStatus.RUNNING
-                || experiment.getExperimentType() != ExperimentType.LOW_TICKET_PRODUCT) {
-            return false;
-        }
-        ExperimentFunnelDiagnosticsResponseDto diagnostics = diagnosticService.diagnose(experiment.getId());
-        ExperimentFunnelStageDiagnosticDto checkoutIntentStage = findStageDiagnostic(
-                diagnostics,
-                ExperimentFunnelStage.ACESSO_CHECKOUT
-        );
-        ExperimentFunnelStageDiagnosticDto purchaseStage = findStageDiagnostic(
-                diagnostics,
-                ExperimentFunnelStage.COMPRA
-        );
-        if (checkoutIntentStage == null || purchaseStage == null || purchaseStage.successes() > 0) {
-            return false;
-        }
-        ExperimentCampaignMetric metric = campaignMetricRepository.findByExperiment(experiment).orElse(null);
-        long linkClicks = metric != null && metric.getClicks() != null ? metric.getClicks() : 0L;
-        BigDecimal totalCost = resolveTotalExperimentCost(experiment, metric);
-        BigDecimal stopLossLimit = positiveOrNull(experiment.getStopLossCpl());
-        BigDecimal unitPrice = positiveOrNull(experiment.getUnitPrice());
-        BigDecimal cpc = resolveCpc(metric, linkClicks);
-        if (linkClicks < LOW_TICKET_EXPENSIVE_TRAFFIC_MINIMUM_LINK_CLICKS
-                || stopLossLimit == null
-                || totalCost.compareTo(stopLossLimit) < 0
-                || unitPrice == null
-                || cpc == null
-                || cpc.compareTo(unitPrice.multiply(LOW_TICKET_EXPENSIVE_TRAFFIC_CPC_TICKET_RATE)) < 0
-                || hasStrongCheckoutIntent(checkoutIntentStage)) {
-            return false;
-        }
-        LOGGER.warn(
-                "Automatic stop triggered for low-ticket experiment {} due to economically unviable traffic cost: linkClicks={}, cpc={}, unitPrice={}, totalCost={}, stopLossLimit={}, checkouts={}, checkoutRate={}",
-                experiment.getId(),
-                linkClicks,
-                cpc,
-                unitPrice,
-                totalCost,
-                stopLossLimit,
-                checkoutIntentStage.successes(),
-                checkoutIntentStage.observedRate()
-        );
-        invalidateExperimentAndRequestStops(
-                experiment,
-                FacebookCampaignStopReason.LOW_TICKET_TRAFFIC_COST_ECONOMICALLY_UNVIABLE,
-                "produto low-ticket com tráfego caro, zero compras, custo acima do stop-loss e sem intenção forte de checkout"
-        );
-        return true;
     }
 
     /**
@@ -378,63 +178,11 @@ public class ExperimentFunnelAutoStopService {
     }
 
     /**
-     * Confirma se a checagem estatística representa falha na regra dos 3%.
+     * Soma os sucessos de uma etapa quando o diagnóstico contém essa etapa.
      */
-    private boolean isThreePercentFailure(FunnelThresholdCheckDto check) {
-        if (check == null || check.minAcceptableRate() == null) {
-            return false;
-        }
-        return Math.abs(check.minAcceptableRate() - THREE_PERCENT) < 1e-9 && check.statisticallyFailed();
-    }
-
-    /**
-     * Resolve o custo total do experimento priorizando o acumulado do experimento e usando mídia como fallback.
-     */
-    private BigDecimal resolveTotalExperimentCost(Experiment experiment, ExperimentCampaignMetric metric) {
-        BigDecimal totalCost = positiveOrNull(experiment.getTotalCost());
-        if (totalCost != null) {
-            return totalCost;
-        }
-        BigDecimal mediaSpend = metric != null ? positiveOrNull(metric.getSpend()) : null;
-        return mediaSpend != null ? mediaSpend : BigDecimal.ZERO;
-    }
-
-    /**
-     * Calcula o limite financeiro de 3x o ticket do produto low-ticket quando o preço está configurado.
-     */
-    private BigDecimal resolveTicketStopLimit(Experiment experiment) {
-        BigDecimal unitPrice = positiveOrNull(experiment.getUnitPrice());
-        return unitPrice != null ? unitPrice.multiply(LOW_TICKET_TICKET_MULTIPLIER_STOP) : null;
-    }
-
-    /**
-     * Confirma se a taxa de checkout é forte o bastante para aguardar mais dados antes de parar por stop-loss.
-     */
-    private boolean hasStrongCheckoutIntent(ExperimentFunnelStageDiagnosticDto checkoutIntentStage) {
-        return checkoutIntentStage != null
-                && checkoutIntentStage.observedRate() != null
-                && checkoutIntentStage.observedRate() >= LOW_TICKET_STRONG_CHECKOUT_INTENT_RATE;
-    }
-
-    /**
-     * Resolve o CPC sincronizado e usa gasto por clique como fallback quando o campo calculado não veio preenchido.
-     */
-    private BigDecimal resolveCpc(ExperimentCampaignMetric metric, long linkClicks) {
-        BigDecimal cpc = metric != null ? positiveOrNull(metric.getCpc()) : null;
-        BigDecimal spend = metric != null ? positiveOrNull(metric.getSpend()) : null;
-        if (cpc != null) {
-            return cpc;
-        }
-        return spend != null && linkClicks > 0
-                ? spend.divide(BigDecimal.valueOf(linkClicks), 4, java.math.RoundingMode.HALF_UP)
-                : null;
-    }
-
-    /**
-     * Normaliza valores monetários positivos e descarta nulos, zero e negativos.
-     */
-    private BigDecimal positiveOrNull(BigDecimal value) {
-        return value != null && value.compareTo(BigDecimal.ZERO) > 0 ? value : null;
+    private long successesFor(ExperimentFunnelDiagnosticsResponseDto diagnostics, ExperimentFunnelStage stage) {
+        ExperimentFunnelStageDiagnosticDto diagnostic = findStageDiagnostic(diagnostics, stage);
+        return diagnostic != null ? diagnostic.successes() : 0L;
     }
 
     /**

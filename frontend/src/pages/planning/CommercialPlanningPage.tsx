@@ -4,9 +4,12 @@ import {
   CalendarClock,
   CheckCircle2,
   Circle,
+  Gauge,
   PauseCircle,
   PlayCircle,
   Save,
+  TrendingUp,
+  WalletCards,
 } from "lucide-react";
 import PageTitle from "../../components/PageTitle";
 import { useExperiments } from "../../api/experiment/useExperiments";
@@ -208,6 +211,13 @@ function formatCurrency(value?: number | null) {
   });
 }
 
+function formatExecutedCurrency(value?: number | null) {
+  return (value ?? 0).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
+}
+
 function formatNumber(value?: number | null) {
   return value == null ? "Não definido" : String(value);
 }
@@ -216,8 +226,50 @@ function formatExecutedNumber(value?: number | null) {
   return value == null ? "0" : String(value);
 }
 
+function progressPercentage(target?: number | null, actual?: number | null) {
+  if (!target || target <= 0) return 0;
+  return Math.min(100, Math.round(((actual ?? 0) / target) * 100));
+}
+
 function numberOrNull(value?: number | null) {
   return value == null ? null : Number(value);
+}
+
+function MonthlyMetricCard({
+  label,
+  target,
+  actual,
+  percentage,
+  tone = "primary",
+}: {
+  label: string;
+  target: string;
+  actual: string;
+  percentage: number;
+  tone?: "primary" | "success" | "warning" | "info";
+}) {
+  return (
+    <div className="commercial-planning-month-metric">
+      <div className="d-flex justify-content-between align-items-start gap-2">
+        <span className="commercial-planning-month-metric-label">{label}</span>
+        <span className={`badge text-bg-${tone}`}>{percentage}%</span>
+      </div>
+      <div className="commercial-planning-month-metric-values">
+        <strong>{target}</strong>
+        <span>Meta</span>
+      </div>
+      <div className="commercial-planning-month-metric-values executed">
+        <strong>{actual}</strong>
+        <span>Execução</span>
+      </div>
+      <div
+        className="commercial-planning-month-progress"
+        aria-hidden="true"
+      >
+        <span style={{ width: `${percentage}%` }} />
+      </div>
+    </div>
+  );
 }
 
 export default function CommercialPlanningPage() {
@@ -237,6 +289,43 @@ export default function CommercialPlanningPage() {
     () => plans.find((plan) => plan.id === selectedId) ?? plans[0],
     [plans, selectedId],
   );
+  const currentMonthPlan = useMemo<CommercialPlan>(
+    () =>
+      selectedPlan ?? {
+        id: 0,
+        name: julyPlanningForm.name,
+        planType: "FIRST_SALE",
+        status: julyPlanningForm.status ?? "DRAFT",
+        commercialObjective: julyPlanningForm.commercialObjective,
+        targetAudience: julyPlanningForm.targetAudience,
+        mainPain: julyPlanningForm.mainPain,
+        mainOffer: julyPlanningForm.mainOffer,
+        mainLeadMagnet: julyPlanningForm.mainLeadMagnet,
+        mainChannel: julyPlanningForm.mainChannel,
+        mainMetric: julyPlanningForm.mainMetric,
+        successCriteria: julyPlanningForm.successCriteria,
+        stopCriteria: julyPlanningForm.stopCriteria,
+        deadline: julyPlanningForm.deadline,
+        maxBudget: julyPlanningForm.maxBudget,
+        targetRevenue: julyPlanningForm.targetRevenue,
+        operationalRevenueTarget: julyPlanningForm.operationalRevenueTarget,
+        experimentsToCreate: julyPlanningForm.experimentsToCreate,
+        experimentsToPublish: julyPlanningForm.experimentsToPublish,
+        actualCampaignCost: null,
+        actualAiCost: null,
+        actualTotalCost: null,
+        actualRevenue: null,
+        actualExperimentsCreated: null,
+        actualExperimentsPublished: null,
+        daysRemaining: 25,
+        nextAction: julyPlanningForm.nextAction,
+        currentBlocker: julyPlanningForm.currentBlocker,
+        rootCause: julyPlanningForm.rootCause,
+        milestones: [],
+        simulations: [],
+      },
+    [selectedPlan],
+  );
   const [form, setForm] = useState<SaveCommercialPlanPayload>(emptyForm);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [simulationFeedback, setSimulationFeedback] = useState<{
@@ -252,6 +341,26 @@ export default function CommercialPlanningPage() {
       ? simulationFeedback.simulation
       : asArray(selectedPlan?.simulations)[0];
   const selectedMilestones = asArray(selectedPlan?.milestones);
+  const costProgress = progressPercentage(
+    currentMonthPlan.maxBudget,
+    currentMonthPlan.actualTotalCost,
+  );
+  const revenueProgress = progressPercentage(
+    currentMonthPlan.targetRevenue,
+    currentMonthPlan.actualRevenue,
+  );
+  const operationalRevenueProgress = progressPercentage(
+    currentMonthPlan.operationalRevenueTarget,
+    currentMonthPlan.actualRevenue,
+  );
+  const createdExperimentsProgress = progressPercentage(
+    currentMonthPlan.experimentsToCreate,
+    currentMonthPlan.actualExperimentsCreated,
+  );
+  const publishedExperimentsProgress = progressPercentage(
+    currentMonthPlan.experimentsToPublish,
+    currentMonthPlan.actualExperimentsPublished,
+  );
 
   function updateField<K extends keyof SaveCommercialPlanPayload>(
     field: K,
@@ -338,6 +447,166 @@ export default function CommercialPlanningPage() {
           Não foi possível carregar os planos comerciais.
         </div>
       ) : null}
+
+      <section className="commercial-planning-month-plan">
+        <div className="d-flex flex-column gap-4">
+          <div className="commercial-planning-month-heading">
+            <div>
+              <span
+                className={`badge ${planStatusClass(currentMonthPlan.status)} mb-3`}
+              >
+                {planStatusLabel(currentMonthPlan.status)}
+              </span>
+              <p className="commercial-planning-month-eyebrow mb-1">
+                Plano do mês corrente
+              </p>
+              <h2 className="commercial-planning-month-title mb-2">
+                Julho 2026
+              </h2>
+              <p className="commercial-planning-month-objective mb-0">
+                {currentMonthPlan.commercialObjective ||
+                  "Defina o objetivo comercial do mês."}
+              </p>
+            </div>
+            <div className="commercial-planning-month-summary">
+              <div>
+                <span>{selectedPlan ? "Plano ativo" : "Plano sugerido"}</span>
+                <strong>{currentMonthPlan.name}</strong>
+              </div>
+              <div>
+                <span>Prazo</span>
+                <strong>
+                  {currentMonthPlan.deadline
+                    ? new Date(currentMonthPlan.deadline).toLocaleDateString(
+                        "pt-BR",
+                      )
+                    : "Não definido"}
+                </strong>
+              </div>
+              <div>
+                <span>Dias restantes</span>
+                <strong>
+                  {currentMonthPlan.daysRemaining ?? "Não definido"}
+                </strong>
+              </div>
+            </div>
+          </div>
+
+          <div className="commercial-planning-month-metrics">
+            <MonthlyMetricCard
+              label="Custo total"
+              target={formatCurrency(currentMonthPlan.maxBudget)}
+              actual={formatExecutedCurrency(currentMonthPlan.actualTotalCost)}
+              percentage={costProgress}
+              tone="warning"
+            />
+            <MonthlyMetricCard
+              label="Receita mínima"
+              target={formatCurrency(currentMonthPlan.targetRevenue)}
+              actual={formatExecutedCurrency(currentMonthPlan.actualRevenue)}
+              percentage={revenueProgress}
+              tone="success"
+            />
+            <MonthlyMetricCard
+              label="Receita operacional"
+              target={formatCurrency(currentMonthPlan.operationalRevenueTarget)}
+              actual={formatExecutedCurrency(currentMonthPlan.actualRevenue)}
+              percentage={operationalRevenueProgress}
+              tone="info"
+            />
+            <MonthlyMetricCard
+              label="Experimentos criados"
+              target={formatNumber(currentMonthPlan.experimentsToCreate)}
+              actual={formatExecutedNumber(
+                currentMonthPlan.actualExperimentsCreated,
+              )}
+              percentage={createdExperimentsProgress}
+            />
+            <MonthlyMetricCard
+              label="Experimentos publicados"
+              target={formatNumber(currentMonthPlan.experimentsToPublish)}
+              actual={formatExecutedNumber(
+                currentMonthPlan.actualExperimentsPublished,
+              )}
+              percentage={publishedExperimentsProgress}
+            />
+          </div>
+
+          <div className="commercial-planning-month-grid">
+            <section className="commercial-planning-month-panel">
+              <div className="d-flex align-items-center gap-2 mb-3">
+                <WalletCards size={20} aria-hidden="true" />
+                <h3 className="h6 mb-0">Tipos de produto</h3>
+              </div>
+              <div className="commercial-planning-product-types">
+                <div>
+                  <strong>Low-ticket</strong>
+                  <span>Meta: produto comprável de R$ 19,90</span>
+                  <small>
+                    Execução:{" "}
+                    {currentMonthPlan.actualRevenue
+                      ? "venda registrada"
+                      : "aguardando primeira compra"}
+                  </small>
+                </div>
+                <div>
+                  <strong>Produto IA</strong>
+                  <span>Meta: material personalizado com custo controlado</span>
+                  <small>
+                    Execução:{" "}
+                    {formatExecutedCurrency(currentMonthPlan.actualAiCost)} em IA
+                  </small>
+                </div>
+                <div>
+                  <strong>Captura</strong>
+                  <span>Meta: recuperar interesse sem competir com checkout</span>
+                  <small>
+                    Execução:{" "}
+                    {formatExecutedNumber(
+                      currentMonthPlan.actualExperimentsPublished,
+                    )}{" "}
+                    experimento(s) publicado(s)
+                  </small>
+                </div>
+              </div>
+            </section>
+
+            <section className="commercial-planning-month-panel">
+              <div className="d-flex align-items-center gap-2 mb-3">
+                <Gauge size={20} aria-hidden="true" />
+                <h3 className="h6 mb-0">Critério de decisão</h3>
+              </div>
+              <p className="mb-2">
+                <strong>Métrica principal:</strong>{" "}
+                {currentMonthPlan.mainMetric || "Não definida"}
+              </p>
+              <p className="mb-2">
+                <strong>Sucesso:</strong>{" "}
+                {currentMonthPlan.successCriteria || "Não definido"}
+              </p>
+              <p className="mb-0">
+                <strong>Parada:</strong>{" "}
+                {currentMonthPlan.stopCriteria || "Não definido"}
+              </p>
+            </section>
+
+            <section className="commercial-planning-month-panel">
+              <div className="d-flex align-items-center gap-2 mb-3">
+                <TrendingUp size={20} aria-hidden="true" />
+                <h3 className="h6 mb-0">Execução imediata</h3>
+              </div>
+              <p className="mb-2">
+                {currentMonthPlan.nextAction || "Sem próxima ação definida."}
+              </p>
+              <p className="text-secondary mb-0">
+                Gargalo:{" "}
+                {currentMonthPlan.currentBlocker ||
+                  "nenhum bloqueio registrado."}
+              </p>
+            </section>
+          </div>
+        </div>
+      </section>
 
       <section className="commercial-planning-workspace">
         <aside className="commercial-planning-sidebar">

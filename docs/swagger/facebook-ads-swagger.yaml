@@ -380,7 +380,7 @@ paths:
   /api/facebook-campaigns/{campaignId}/metrics:
     post:
       tags: [Facebook Campaigns]
-      summary: Atualiza métricas sincronizadas para a campanha.
+      summary: Atualiza métricas sincronizadas, avalia a estratégia de campanha e pode solicitar parada.
       parameters:
         - $ref: '#/components/parameters/CampaignId'
       requestBody:
@@ -816,7 +816,36 @@ components:
           type: object
           nullable: true
           additionalProperties: true
+        campaignStrategy:
+          $ref: '#/components/schemas/CampaignStrategySummary'
       required: [id, name, followUpActionUrl, missingConfiguration, nextStepInstantForm, publicationJobId]
+    CampaignStrategySummary:
+      type: object
+      description: Estratégia automática usada pelo backend para decidir se a campanha ainda é útil.
+      properties:
+        objective:
+          type: string
+          nullable: true
+          enum: [FIRST_PURCHASE_LOW_TICKET, LEAD_VALIDATION]
+        preset:
+          type: string
+          nullable: true
+        maxSpendWithoutPurchase:
+          type: number
+          nullable: true
+        minimumCheckoutRate:
+          type: number
+          nullable: true
+        minimumLinkClicks:
+          type: integer
+          format: int64
+          nullable: true
+        minimumImpressions:
+          type: integer
+          format: int64
+          nullable: true
+        enabled:
+          type: boolean
     FacebookCampaignPublicationJobStepRequest:
       type: object
       description: Passo cronológico do job de publicação enviado pelo Facebook Ads Worker.

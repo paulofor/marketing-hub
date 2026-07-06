@@ -28,6 +28,7 @@ import com.marketinghub.repository.jpa.facebookads.FacebookAdsAdRepository;
 import com.marketinghub.facebookads.FacebookAdsAdSet;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
 import com.marketinghub.facebookads.FacebookAdStatus;
+import com.marketinghub.facebookads.service.CampaignStrategyService;
 import com.marketinghub.facebookads.service.publicationstep.FacebookCampaignPublicationJobStepService;
 import com.marketinghub.repository.jpa.facebookads.FacebookAdsAdSetRepository;
 import com.marketinghub.creative.Creative;
@@ -116,6 +117,8 @@ class FacebookAdsCampaignControllerTest {
     GeraSalesPagePublicationAuditRepository geraSalesPagePublicationAuditRepository;
     @MockBean
     FacebookCampaignPublicationJobStepService publicationJobStepService;
+    @MockBean
+    CampaignStrategyService campaignStrategyService;
 
     @MockBean
     LeadPortalMetricsService leadPortalMetricsService;

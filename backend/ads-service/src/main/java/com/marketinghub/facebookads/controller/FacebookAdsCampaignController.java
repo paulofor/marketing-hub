@@ -23,6 +23,7 @@ import com.marketinghub.leadportal.support.LeadPortalPublicUrlResolver;
 import com.marketinghub.leadportal.service.LeadPortalMetricsService;
 import com.marketinghub.facebookads.AdCreativeKind;
 import com.marketinghub.facebookads.BudgetMode;
+import com.marketinghub.facebookads.CampaignStrategy;
 import com.marketinghub.facebookads.FacebookAdsAd;
 import com.marketinghub.facebookads.FacebookAdsAdCreative;
 import com.marketinghub.repository.jpa.facebookads.FacebookAdsAdCreativeRepository;
@@ -31,6 +32,7 @@ import com.marketinghub.facebookads.FacebookAdsAdSet;
 import com.marketinghub.repository.jpa.facebookads.FacebookAdsAdSetRepository;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
 import com.marketinghub.facebookads.FacebookAdStatus;
+import com.marketinghub.facebookads.service.CampaignStrategyService;
 import com.marketinghub.facebookads.service.recommendation.FacebookCampaignRecommendationDto;
 import com.marketinghub.facebookads.service.recommendation.FacebookCampaignRecommendationIngestionRequest;
 import com.marketinghub.facebookads.service.recommendation.FacebookCampaignRecommendationService;
@@ -86,6 +88,7 @@ public class FacebookAdsCampaignController {
     private final LeadPortalMetricsService leadPortalMetricsService;
     private final FacebookCampaignRecommendationService recommendationService;
     private final FacebookCampaignPublicationJobStepService publicationJobStepService;
+    private final CampaignStrategyService campaignStrategyService;
 
     /**
      * Cria o controller com os repositórios e serviços usados pelos contratos de campanhas Facebook.
@@ -105,7 +108,8 @@ public class FacebookAdsCampaignController {
                                          LeadPortalPublicUrlResolver leadPortalPublicUrlResolver,
                                          LeadPortalMetricsService leadPortalMetricsService,
                                          FacebookCampaignRecommendationService recommendationService,
-                                         FacebookCampaignPublicationJobStepService publicationJobStepService) {
+                                         FacebookCampaignPublicationJobStepService publicationJobStepService,
+                                         CampaignStrategyService campaignStrategyService) {
         this.experimentService = experimentService;
         this.campaignRepository = campaignRepository;
         this.accountRepository = accountRepository;
@@ -122,6 +126,7 @@ public class FacebookAdsCampaignController {
         this.leadPortalMetricsService = leadPortalMetricsService;
         this.recommendationService = recommendationService;
         this.publicationJobStepService = publicationJobStepService;
+        this.campaignStrategyService = campaignStrategyService;
     }
 
     @GetMapping("/experiments-ready")
@@ -240,6 +245,7 @@ public class FacebookAdsCampaignController {
                         "Facebook campaign already belongs to another experiment: " + req.id());
             }
             reconcileExistingCampaignPublication(existingCampaign.get(), req);
+            campaignStrategyService.ensureDefaultStrategy(existingCampaign.get());
             experiment.setStatus(ExperimentStatus.RUNNING);
             return;
         }
@@ -261,6 +267,7 @@ public class FacebookAdsCampaignController {
         campaign.setExperiment(experiment);
         campaign.setFacebookAccount(account);
         FacebookAdsCampaign savedCampaign = campaignRepository.save(campaign);
+        campaignStrategyService.ensureDefaultStrategy(savedCampaign);
 
         FacebookAdsAdSet savedAdSet = null;
         if (req.adSet() != null) {
@@ -410,6 +417,7 @@ public class FacebookAdsCampaignController {
                 campaign.getExperiment(),
                 metric.getImpressions(),
                 campaign.getCreatedAt());
+        campaignStrategyService.evaluateAfterMetrics(metric);
         return toMetricSummary(metric);
     }
 
@@ -695,7 +703,23 @@ public class FacebookAdsCampaignController {
                 isNextStepInstantForm(experiment),
                 buildPublicationJobId(experiment),
                 toLeadPortalFunnelSummary(leadPortalMetrics),
-                toMetricSummary(experiment.getCampaignMetric()));
+                toMetricSummary(experiment.getCampaignMetric()),
+                toCampaignStrategySummary(campaignStrategyService.findLatestByExperimentId(experiment.getId())));
+    }
+
+    // Converte a estrategia de campanha para resumo consumido pela tela.
+    private CampaignStrategySummary toCampaignStrategySummary(CampaignStrategy strategy) {
+        if (strategy == null) {
+            return null;
+        }
+        return new CampaignStrategySummary(
+                strategy.getObjective() != null ? strategy.getObjective().name() : null,
+                strategy.getPreset(),
+                strategy.getMaxSpendWithoutPurchase(),
+                strategy.getMinimumCheckoutRate(),
+                strategy.getMinimumLinkClicks(),
+                strategy.getMinimumImpressions(),
+                strategy.isEnabled());
     }
 
     // Executa a operação resolveExperimentPageId da integração Facebook Ads.
@@ -870,7 +894,8 @@ public class FacebookAdsCampaignController {
             boolean nextStepInstantForm,
             String publicationJobId,
             LeadPortalFunnelSummary leadPortalFunnel,
-            CampaignMetricSummary metrics) {}
+            CampaignMetricSummary metrics,
+            CampaignStrategySummary campaignStrategy) {}
 
     public record LeadPortalFlowSummary(Long id, String name, String slug, String publicUrl) {}
 
@@ -901,6 +926,15 @@ public class FacebookAdsCampaignController {
             BigDecimal cpl,
             Instant lastSyncedAt,
             String lastSyncError) {}
+
+    public record CampaignStrategySummary(
+            String objective,
+            String preset,
+            BigDecimal maxSpendWithoutPurchase,
+            BigDecimal minimumCheckoutRate,
+            Long minimumLinkClicks,
+            Long minimumImpressions,
+            boolean enabled) {}
 
     public record CampaignMetricsSyncTarget(String campaignId, Long experimentId, Instant lastSyncedAt) {}
 

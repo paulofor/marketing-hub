@@ -3,7 +3,6 @@ package com.marketinghub.facebookads.service;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentCampaignMetric;
 import com.marketinghub.experiment.ExperimentStatus;
-import com.marketinghub.experiment.ExperimentType;
 import com.marketinghub.experiment.funnel.ExperimentFunnelDiagnosticService;
 import com.marketinghub.experiment.funnel.ExperimentFunnelStage;
 import com.marketinghub.experiment.funnel.dto.ExperimentFunnelDiagnosticsResponseDto;
@@ -15,10 +14,8 @@ import com.marketinghub.facebookads.CampaignStrategyDecision;
 import com.marketinghub.facebookads.CampaignStrategyEvaluation;
 import com.marketinghub.facebookads.CampaignStrategyObjective;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
-import com.marketinghub.facebookads.FacebookCampaignStopReason;
 import com.marketinghub.repository.jpa.facebookads.CampaignStrategyEvaluationRepository;
 import com.marketinghub.repository.jpa.facebookads.CampaignStrategyRepository;
-import com.marketinghub.repository.jpa.facebookads.FacebookAdsCampaignRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,9 +39,6 @@ class CampaignStrategyServiceTest {
     private CampaignStrategyEvaluationRepository evaluationRepository;
     @Mock
     private ExperimentFunnelDiagnosticService diagnosticService;
-    @Mock
-    private FacebookAdsCampaignRepository campaignRepository;
-
     private CampaignStrategyService service;
 
     /** Cria o servico com dependencias controladas por mock. */
@@ -53,19 +47,16 @@ class CampaignStrategyServiceTest {
         service = new CampaignStrategyService(
                 strategyRepository,
                 evaluationRepository,
-                diagnosticService,
-                campaignRepository
+                diagnosticService
         );
     }
 
-    /** Confirma que a estrategia low-ticket solicita parada quando gasto e amostra passam do limite sem compra. */
+    /** Confirma que a estratégia apenas audita métricas e não solicita parada paralela. */
     @Test
-    void evaluateAfterMetricsStopsLowTicketCampaignWithoutPurchaseSignal() {
+    void evaluateAfterMetricsKeepsCampaignDecisionAsAuditOnly() {
         Experiment experiment = new Experiment();
         experiment.setId(58L);
         experiment.setStatus(ExperimentStatus.RUNNING);
-        experiment.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
-        experiment.setUnitPrice(new BigDecimal("19.90"));
 
         FacebookAdsCampaign campaign = new FacebookAdsCampaign();
         campaign.setId("campaign-58");
@@ -82,11 +73,11 @@ class CampaignStrategyServiceTest {
         CampaignStrategy strategy = new CampaignStrategy();
         strategy.setId(10L);
         strategy.setCampaign(campaign);
-        strategy.setObjective(CampaignStrategyObjective.FIRST_PURCHASE_LOW_TICKET);
-        strategy.setPreset("LOW_TICKET_FIRST_PURCHASE");
-        strategy.setMaxSpendWithoutPurchase(new BigDecimal("59.70"));
-        strategy.setMinimumCheckoutRate(new BigDecimal("0.0300"));
-        strategy.setMinimumLinkClicks(150L);
+        strategy.setObjective(CampaignStrategyObjective.LEAD_VALIDATION);
+        strategy.setPreset("UNIQUE_CAMPAIGN_POLICY_AUDIT");
+        strategy.setMaxSpendWithoutPurchase(null);
+        strategy.setMinimumCheckoutRate(null);
+        strategy.setMinimumLinkClicks(0L);
         strategy.setMinimumImpressions(100L);
         strategy.setEnabled(true);
 
@@ -103,11 +94,11 @@ class CampaignStrategyServiceTest {
 
         CampaignStrategyEvaluation evaluation = service.evaluateAfterMetrics(metric);
 
-        assertThat(evaluation.getDecision()).isEqualTo(CampaignStrategyDecision.STOP_REQUESTED);
-        assertThat(evaluation.getStopReason()).isEqualTo(FacebookCampaignStopReason.CAMPAIGN_STRATEGY_STOPPED);
-        assertThat(campaign.getStopReason()).isEqualTo(FacebookCampaignStopReason.CAMPAIGN_STRATEGY_STOPPED);
-        assertThat(campaign.getStopRequestedAt()).isNotNull();
-        assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.INVALIDATED);
+        assertThat(evaluation.getDecision()).isEqualTo(CampaignStrategyDecision.KEEP_LEARNING);
+        assertThat(evaluation.getStopReason()).isNull();
+        assertThat(campaign.getStopReason()).isNull();
+        assertThat(campaign.getStopRequestedAt()).isNull();
+        assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.RUNNING);
     }
 
     /** Cria diagnostico sintetico de etapa para avaliacao de estrategia. */

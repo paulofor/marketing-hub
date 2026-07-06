@@ -3,12 +3,10 @@ package com.marketinghub.experiment.funnel;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentCampaignMetric;
 import com.marketinghub.experiment.ExperimentStatus;
-import com.marketinghub.experiment.ExperimentType;
 import com.marketinghub.experiment.funnel.dto.ExperimentFunnelDiagnosticsResponseDto;
 import com.marketinghub.experiment.funnel.dto.ExperimentFunnelStageDiagnosticDto;
 import com.marketinghub.experiment.funnel.dto.FunnelDiagnosticReasonCode;
 import com.marketinghub.experiment.funnel.dto.FunnelDiagnosticStatus;
-import com.marketinghub.experiment.funnel.dto.FunnelThresholdCheckDto;
 import com.marketinghub.facebookads.FacebookAdsCampaign;
 import com.marketinghub.facebookads.FacebookCampaignStopReason;
 import com.marketinghub.repository.jpa.experiment.ExperimentCampaignMetricRepository;
@@ -28,7 +26,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
-/** Testa as regras de parada automática do funil de experimentos. */
+/** Testa as regras atuais de parada automática por política única de campanha. */
 @ExtendWith(MockitoExtension.class)
 class ExperimentFunnelAutoStopServiceTest {
 
@@ -40,9 +38,9 @@ class ExperimentFunnelAutoStopServiceTest {
     private ExperimentCampaignMetricRepository campaignMetricRepository;
 
     private ExperimentFunnelAutoStopService service;
-
     private Experiment experiment;
 
+    /** Cria serviço real com dependências controladas por mock. */
     @BeforeEach
     void setUp() {
         service = new ExperimentFunnelAutoStopService(
@@ -55,432 +53,75 @@ class ExperimentFunnelAutoStopServiceTest {
         experiment.setStatus(ExperimentStatus.RUNNING);
     }
 
-    /**
-     * Garante parada quando o interesse no anúncio falha com confiança estatística após R$ 25,00 de mídia.
-     */
+    /** Garante parada quando a campanha gasta R$ 25,00 sem resultado primário. */
     @Test
-    void stopsExperimentWhenAdInterestStatisticallyFailsAfterMinimumSpend() {
-        ExperimentFunnelStageDiagnosticDto stage = new ExperimentFunnelStageDiagnosticDto(
-                ExperimentFunnelStage.ACESSO_FORM_LEAD,
-                "Acesso ao formulário",
-                1199,
-                6,
-                0.005,
-                0.015,
-                0.0108,
-                List.of(new FunnelThresholdCheckDto(0.015, 200, 0.0025, false, true)),
-                FunnelDiagnosticStatus.STATISTICALLY_FAILED,
-                FunnelDiagnosticReasonCode.BELOW_MIN_RATE,
-                "",
-                false
-        );
+    void stopsCampaignWhenMinimumSpendHasNoPrimaryResult() {
         when(diagnosticService.diagnose(99L))
-                .thenReturn(new ExperimentFunnelDiagnosticsResponseDto(List.of(stage), null));
+                .thenReturn(new ExperimentFunnelDiagnosticsResponseDto(
+                        List.of(
+                                stage(ExperimentFunnelStage.ENVIO_FORM, 80, 0, FunnelDiagnosticStatus.INSUFFICIENT_DATA),
+                                stage(ExperimentFunnelStage.ABERTURA_EMAIL_AMOSTRA, 0, 0, FunnelDiagnosticStatus.NO_DATA),
+                                stage(ExperimentFunnelStage.COMPRA, 1, 0, FunnelDiagnosticStatus.INSUFFICIENT_DATA)
+                        ),
+                        null
+                ));
         when(campaignMetricRepository.findByExperiment(experiment))
                 .thenReturn(Optional.of(metricWithSpend("25.00")));
-        FacebookAdsCampaign campaign = new FacebookAdsCampaign();
-        campaign.setId("camp-low-interest");
+        FacebookAdsCampaign campaign = campaign("camp-zero-primary-result");
         when(campaignRepository.findByExperimentId(99L)).thenReturn(List.of(campaign));
 
-        boolean stopped = service.stopIfAdInterestStatisticallyLow(experiment);
+        boolean stopped = service.stopIfNoPrimaryResultAfterMinimumSpend(experiment);
 
         assertThat(stopped).isTrue();
         assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.INVALIDATED);
         assertThat(campaign.getStopReason())
-                .isEqualTo(FacebookCampaignStopReason.TARGET_AUDIENCE_LOW_INTEREST_STATISTICAL);
+                .isEqualTo(FacebookCampaignStopReason.CAMPAIGN_ZERO_RESULT_AFTER_MINIMUM_SPEND);
         assertThat(campaign.getStopRequestedAt()).isNotNull();
         assertThat(campaign.getStopLastError()).isNull();
     }
 
-    /**
-     * Garante que a reprovação estatística aguarde o piso de R$ 25,00 antes de desativar a campanha.
-     */
+    /** Garante que resultado primário existente impede a parada por gasto mínimo. */
     @Test
-    void keepsExperimentRunningWhenAdInterestFailsBeforeMinimumSpend() {
-        ExperimentFunnelStageDiagnosticDto stage = new ExperimentFunnelStageDiagnosticDto(
-                ExperimentFunnelStage.ACESSO_FORM_LEAD,
-                "Acesso ao formulário",
-                1476,
-                8,
-                0.0054,
-                0.015,
-                0.011,
-                List.of(new FunnelThresholdCheckDto(0.015, 200, 0.002, false, true)),
-                FunnelDiagnosticStatus.STATISTICALLY_FAILED,
-                FunnelDiagnosticReasonCode.BELOW_MIN_RATE,
-                "",
-                false
-        );
+    void keepsCampaignRunningWhenPrimaryResultExists() {
         when(diagnosticService.diagnose(99L))
-                .thenReturn(new ExperimentFunnelDiagnosticsResponseDto(List.of(stage), null));
+                .thenReturn(new ExperimentFunnelDiagnosticsResponseDto(
+                        List.of(stage(ExperimentFunnelStage.ENVIO_FORM, 80, 1, FunnelDiagnosticStatus.HEALTHY_OR_INCONCLUSIVE)),
+                        null
+                ));
         when(campaignMetricRepository.findByExperiment(experiment))
-                .thenReturn(Optional.of(metricWithSpend("24.99")));
+                .thenReturn(Optional.of(metricWithSpend("25.00")));
 
-        boolean stopped = service.stopIfAdInterestStatisticallyLow(experiment);
+        boolean stopped = service.stopIfNoPrimaryResultAfterMinimumSpend(experiment);
 
         assertThat(stopped).isFalse();
         assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.RUNNING);
     }
 
-
-    /**
-     * Garante parada quando a campanha tem distribuição suficiente, pouca entrada no formulário e nenhum envio após R$ 20,00.
-     */
+    /** Garante parada quando qualquer etapa prioritária reprova estatisticamente. */
     @Test
-    void stopsExperimentWhenFormEntryIsLowAndNoSubmissionAfterMinimumSpend() {
-        ExperimentFunnelStageDiagnosticDto leadAccessStage = new ExperimentFunnelStageDiagnosticDto(
-                ExperimentFunnelStage.ACESSO_FORM_LEAD,
-                "Acesso ao formulário",
-                1521,
-                15,
-                0.0099,
-                0.015,
-                0.016,
-                List.of(new FunnelThresholdCheckDto(0.015, 200, 0.002, false, true)),
-                FunnelDiagnosticStatus.WEAK_SIGNAL,
-                FunnelDiagnosticReasonCode.BELOW_MIN_RATE,
-                "",
-                false
-        );
-        ExperimentFunnelStageDiagnosticDto submissionStage = new ExperimentFunnelStageDiagnosticDto(
-                ExperimentFunnelStage.ENVIO_FORM,
-                "Envio",
-                8,
-                0,
-                0.0,
-                0.10,
-                0.375,
-                List.of(new FunnelThresholdCheckDto(0.03, 100, 0.375, false, false)),
-                FunnelDiagnosticStatus.INSUFFICIENT_DATA,
-                FunnelDiagnosticReasonCode.LOW_SAMPLE_SIZE,
-                "",
-                false
-        );
-        when(campaignMetricRepository.findByExperiment(experiment))
-                .thenReturn(Optional.of(metricWithSpend("20.80")));
+    void stopsCampaignWhenAnyPrioritizedStageStatisticallyFails() {
         when(diagnosticService.diagnose(99L))
-                .thenReturn(new ExperimentFunnelDiagnosticsResponseDto(List.of(leadAccessStage, submissionStage), null));
-        FacebookAdsCampaign campaign = new FacebookAdsCampaign();
-        campaign.setId("camp-low-form-entry");
+                .thenReturn(new ExperimentFunnelDiagnosticsResponseDto(
+                        List.of(stage(ExperimentFunnelStage.COMPRA, 120, 0, FunnelDiagnosticStatus.STATISTICALLY_FAILED)),
+                        null
+                ));
+        FacebookAdsCampaign campaign = campaign("camp-statistically-failed");
         when(campaignRepository.findByExperimentId(99L)).thenReturn(List.of(campaign));
 
-        boolean stopped = service.stopIfLowFormEntryAndNoSubmissionAfterSpend(experiment);
+        boolean stopped = service.stopIfAnyPrioritizedStageStatisticallyFailed(experiment);
 
         assertThat(stopped).isTrue();
         assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.INVALIDATED);
         assertThat(campaign.getStopReason())
-                .isEqualTo(FacebookCampaignStopReason.LOW_FORM_ENTRY_NO_SUBMISSION_AFTER_SPEND);
+                .isEqualTo(FacebookCampaignStopReason.CAMPAIGN_STATISTICALLY_FAILED_STAGE);
         assertThat(campaign.getStopRequestedAt()).isNotNull();
         assertThat(campaign.getStopLastError()).isNull();
     }
 
-    /**
-     * Garante que a nova regra não invalida antes de atingir o piso financeiro.
-     */
-    @Test
-    void keepsExperimentRunningWhenLowFormEntryHasNotReachedMinimumSpend() {
-        when(campaignMetricRepository.findByExperiment(experiment))
-                .thenReturn(Optional.of(metricWithSpend("19.99")));
-
-        boolean stopped = service.stopIfLowFormEntryAndNoSubmissionAfterSpend(experiment);
-
-        assertThat(stopped).isFalse();
-        assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.RUNNING);
-    }
-
-    /**
-     * Garante standby e pausa da campanha no primeiro envio válido do formulário.
-     */
-    @Test
-    void putsRunningExperimentInStandbyAfterFirstValidFormSubmission() {
-        FacebookAdsCampaign campaign = new FacebookAdsCampaign();
-        campaign.setId("camp-first-submission");
-        when(campaignRepository.findByExperimentId(99L)).thenReturn(List.of(campaign));
-
-        boolean stopped = service.standbyOnFirstValidFormSubmission(experiment);
-
-        assertThat(stopped).isTrue();
-        assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.STANDBY);
-        assertThat(campaign.getStopReason()).isEqualTo(FacebookCampaignStopReason.FIRST_FORM_SUBMISSION_STANDBY);
-        assertThat(campaign.getStopRequestedAt()).isNotNull();
-        assertThat(campaign.getStopLastError()).isNull();
-    }
-
-    /**
-     * Garante que submissões duplicadas ou tardias não alterem experimento já pausado ou finalizado.
-     */
-    @Test
-    void doesNotStandbyExperimentWhenStatusIsNotRunning() {
-        experiment.setStatus(ExperimentStatus.STANDBY);
-
-        boolean stopped = service.standbyOnFirstValidFormSubmission(experiment);
-
-        assertThat(stopped).isFalse();
-        assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.STANDBY);
-    }
-
-    @Test
-    void stopsExperimentWhenThreePercentThresholdFails() {
-        ExperimentFunnelStageDiagnosticDto stage = new ExperimentFunnelStageDiagnosticDto(
-                ExperimentFunnelStage.ENVIO_FORM,
-                "Envio",
-                120,
-                0,
-                0.0,
-                0.10,
-                0.025,
-                List.of(new FunnelThresholdCheckDto(0.03, 100, 0.025, true, true)),
-                FunnelDiagnosticStatus.STATISTICALLY_FAILED,
-                FunnelDiagnosticReasonCode.RULE_OF_THREE_FAILED,
-                "",
-                false
-        );
-        when(diagnosticService.diagnose(99L))
-                .thenReturn(new ExperimentFunnelDiagnosticsResponseDto(List.of(stage), null));
-        FacebookAdsCampaign campaign = new FacebookAdsCampaign();
-        campaign.setId("camp-1");
-        when(campaignRepository.findByExperimentId(99L)).thenReturn(List.of(campaign));
-
-        boolean stopped = service.stopIfFormSubmissionZeroConversions(experiment);
-
-        assertThat(stopped).isTrue();
-        assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.INVALIDATED);
-        assertThat(campaign.getStopReason()).isEqualTo(FacebookCampaignStopReason.FORM_ZERO_CONVERSION_RULE_OF_THREE);
-        assertThat(campaign.getStopRequestedAt()).isNotNull();
-        assertThat(campaign.getStopLastError()).isNull();
-    }
-
-    /**
-     * Garante invalidação de produto low-ticket quando zero compras já têm amostra e custo acima de 3x o ticket.
-     */
-    @Test
-    void stopsLowTicketExperimentWhenZeroPurchasesReachTicketFinancialLimit() {
-        experiment.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
-        experiment.setUnitPrice(new BigDecimal("27.00"));
-        experiment.setTotalCost(new BigDecimal("129.04"));
-        ExperimentFunnelStageDiagnosticDto checkoutStage = new ExperimentFunnelStageDiagnosticDto(
-                ExperimentFunnelStage.ACESSO_CHECKOUT,
-                "Acesso checkout",
-                212,
-                1,
-                0.0047,
-                0.03,
-                null,
-                List.of(new FunnelThresholdCheckDto(0.03, 100, 0.0142, false, true)),
-                FunnelDiagnosticStatus.WEAK_SIGNAL,
-                FunnelDiagnosticReasonCode.BELOW_MIN_RATE,
-                "",
-                false
-        );
-        ExperimentFunnelStageDiagnosticDto purchaseStage = new ExperimentFunnelStageDiagnosticDto(
-                ExperimentFunnelStage.COMPRA,
-                "Compra",
-                1,
-                0,
-                0.0,
-                0.03,
-                3.0,
-                List.of(new FunnelThresholdCheckDto(0.03, 100, 3.0, false, false)),
-                FunnelDiagnosticStatus.INSUFFICIENT_DATA,
-                FunnelDiagnosticReasonCode.LOW_SAMPLE_SIZE,
-                "",
-                false
-        );
-        when(diagnosticService.diagnose(99L))
-                .thenReturn(new ExperimentFunnelDiagnosticsResponseDto(List.of(checkoutStage, purchaseStage), null));
-        when(campaignMetricRepository.findByExperiment(experiment))
-                .thenReturn(Optional.of(metricWithSpendAndClicks("47.99", 262L)));
-        FacebookAdsCampaign campaign = new FacebookAdsCampaign();
-        campaign.setId("camp-low-ticket-zero-sale");
-        when(campaignRepository.findByExperimentId(99L)).thenReturn(List.of(campaign));
-
-        boolean stopped = service.stopIfLowTicketZeroPurchasesAfterStatisticalFinancialLimit(experiment);
-
-        assertThat(stopped).isTrue();
-        assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.INVALIDATED);
-        assertThat(campaign.getStopReason())
-                .isEqualTo(FacebookCampaignStopReason.LOW_TICKET_ZERO_PURCHASE_STATISTICAL_FINANCIAL);
-        assertThat(campaign.getStopRequestedAt()).isNotNull();
-        assertThat(campaign.getStopLastError()).isNull();
-    }
-
-    /**
-     * Garante que produto low-ticket com amostra, mas custo abaixo do limite financeiro, continue em execução.
-     */
-    @Test
-    void keepsLowTicketExperimentRunningBeforeFinancialLimit() {
-        experiment.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
-        experiment.setUnitPrice(new BigDecimal("37.00"));
-        experiment.setTotalCost(new BigDecimal("66.88"));
-        ExperimentFunnelStageDiagnosticDto checkoutStage = new ExperimentFunnelStageDiagnosticDto(
-                ExperimentFunnelStage.ACESSO_CHECKOUT,
-                "Acesso checkout",
-                145,
-                1,
-                0.0069,
-                0.03,
-                null,
-                List.of(new FunnelThresholdCheckDto(0.03, 100, 0.0207, false, true)),
-                FunnelDiagnosticStatus.WEAK_SIGNAL,
-                FunnelDiagnosticReasonCode.BELOW_MIN_RATE,
-                "",
-                false
-        );
-        ExperimentFunnelStageDiagnosticDto purchaseStage = new ExperimentFunnelStageDiagnosticDto(
-                ExperimentFunnelStage.COMPRA,
-                "Compra",
-                1,
-                0,
-                0.0,
-                0.03,
-                3.0,
-                List.of(new FunnelThresholdCheckDto(0.03, 100, 3.0, false, false)),
-                FunnelDiagnosticStatus.INSUFFICIENT_DATA,
-                FunnelDiagnosticReasonCode.LOW_SAMPLE_SIZE,
-                "",
-                false
-        );
-        when(diagnosticService.diagnose(99L))
-                .thenReturn(new ExperimentFunnelDiagnosticsResponseDto(List.of(checkoutStage, purchaseStage), null));
-        when(campaignMetricRepository.findByExperiment(experiment))
-                .thenReturn(Optional.of(metricWithSpendAndClicks("33.45", 182L)));
-
-        boolean stopped = service.stopIfLowTicketZeroPurchasesAfterStatisticalFinancialLimit(experiment);
-
-        assertThat(stopped).isFalse();
-        assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.RUNNING);
-    }
-
-    /**
-     * Garante que uma compra registrada impede a invalidação automática por zero vendas.
-     */
-    @Test
-    void keepsLowTicketExperimentRunningWhenPurchaseExists() {
-        experiment.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
-        experiment.setUnitPrice(new BigDecimal("27.00"));
-        experiment.setTotalCost(new BigDecimal("129.04"));
-        ExperimentFunnelStageDiagnosticDto checkoutStage = new ExperimentFunnelStageDiagnosticDto(
-                ExperimentFunnelStage.ACESSO_CHECKOUT,
-                "Acesso checkout",
-                212,
-                5,
-                0.0236,
-                0.03,
-                null,
-                List.of(),
-                FunnelDiagnosticStatus.WEAK_SIGNAL,
-                FunnelDiagnosticReasonCode.BELOW_MIN_RATE,
-                "",
-                false
-        );
-        ExperimentFunnelStageDiagnosticDto purchaseStage = new ExperimentFunnelStageDiagnosticDto(
-                ExperimentFunnelStage.COMPRA,
-                "Compra",
-                5,
-                1,
-                0.20,
-                0.03,
-                null,
-                List.of(),
-                FunnelDiagnosticStatus.HEALTHY_OR_INCONCLUSIVE,
-                FunnelDiagnosticReasonCode.HEALTHY_OR_INCONCLUSIVE,
-                "",
-                false
-        );
-        when(diagnosticService.diagnose(99L))
-                .thenReturn(new ExperimentFunnelDiagnosticsResponseDto(List.of(checkoutStage, purchaseStage), null));
-
-        boolean stopped = service.stopIfLowTicketZeroPurchasesAfterStatisticalFinancialLimit(experiment);
-
-        assertThat(stopped).isFalse();
-        assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.RUNNING);
-    }
-
-    /**
-     * Garante parada quando o tráfego low-ticket já fica economicamente inviável antes da amostra completa.
-     */
-    @Test
-    void stopsLowTicketExperimentWhenTrafficCostIsEconomicallyUnviable() {
-        experiment.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
-        experiment.setUnitPrice(new BigDecimal("27.00"));
-        experiment.setStopLossCpl(new BigDecimal("54.00"));
-        experiment.setTotalCost(new BigDecimal("58.02"));
-        ExperimentFunnelStageDiagnosticDto checkoutStage = new ExperimentFunnelStageDiagnosticDto(
-                ExperimentFunnelStage.ACESSO_CHECKOUT,
-                "Acesso checkout",
-                22,
-                0,
-                0.0,
-                0.03,
-                null,
-                List.of(new FunnelThresholdCheckDto(0.03, 100, 0.1364, false, false)),
-                FunnelDiagnosticStatus.INSUFFICIENT_DATA,
-                FunnelDiagnosticReasonCode.LOW_SAMPLE_SIZE,
-                "",
-                false
-        );
-        ExperimentFunnelStageDiagnosticDto purchaseStage = new ExperimentFunnelStageDiagnosticDto(
-                ExperimentFunnelStage.COMPRA,
-                "Compra",
-                0,
-                0,
-                0.0,
-                0.03,
-                null,
-                List.of(),
-                FunnelDiagnosticStatus.INSUFFICIENT_DATA,
-                FunnelDiagnosticReasonCode.LOW_SAMPLE_SIZE,
-                "",
-                false
-        );
-        when(diagnosticService.diagnose(99L))
-                .thenReturn(new ExperimentFunnelDiagnosticsResponseDto(List.of(checkoutStage, purchaseStage), null));
-        ExperimentCampaignMetric metric = metricWithSpendAndClicks("29.06", 8L);
-        metric.setCpc(new BigDecimal("3.63"));
-        when(campaignMetricRepository.findByExperiment(experiment)).thenReturn(Optional.of(metric));
-        FacebookAdsCampaign campaign = new FacebookAdsCampaign();
-        campaign.setId("camp-low-ticket-expensive-traffic");
-        when(campaignRepository.findByExperimentId(99L)).thenReturn(List.of(campaign));
-
-        boolean stopped = service.stopIfLowTicketTrafficCostEconomicallyUnviable(experiment);
-
-        assertThat(stopped).isTrue();
-        assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.INVALIDATED);
-        assertThat(campaign.getStopReason())
-                .isEqualTo(FacebookCampaignStopReason.LOW_TICKET_TRAFFIC_COST_ECONOMICALLY_UNVIABLE);
-        assertThat(campaign.getStopRequestedAt()).isNotNull();
-        assertThat(campaign.getStopLastError()).isNull();
-    }
-
-    @Test
-    void doesNothingWhenThresholdNotReached() {
-        ExperimentFunnelStageDiagnosticDto stage = new ExperimentFunnelStageDiagnosticDto(
-                ExperimentFunnelStage.ENVIO_FORM,
-                "Envio",
-                20,
-                0,
-                0.0,
-                0.10,
-                0.15,
-                List.of(new FunnelThresholdCheckDto(0.03, 100, 0.15, false, false)),
-                FunnelDiagnosticStatus.INSUFFICIENT_DATA,
-                FunnelDiagnosticReasonCode.LOW_SAMPLE_SIZE,
-                "",
-                false
-        );
-        when(diagnosticService.diagnose(99L))
-                .thenReturn(new ExperimentFunnelDiagnosticsResponseDto(List.of(stage), null));
-
-        boolean stopped = service.stopIfFormSubmissionZeroConversions(experiment);
-
-        assertThat(stopped).isFalse();
-        assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.RUNNING);
-    }
-
+    /** Garante parada quando a campanha tem baixa entrega após dois dias. */
     @Test
     void stopsExperimentWhenCampaignHasLowImpressionsAfterTwoDays() {
-        FacebookAdsCampaign campaign = new FacebookAdsCampaign();
-        campaign.setId("camp-low-impressions");
+        FacebookAdsCampaign campaign = campaign("camp-low-impressions");
         campaign.setCreatedAt(Instant.now().minus(49, ChronoUnit.HOURS));
         when(campaignRepository.findByExperimentId(99L)).thenReturn(List.of(campaign));
 
@@ -493,31 +134,22 @@ class ExperimentFunnelAutoStopServiceTest {
         assertThat(campaign.getStopLastError()).isNull();
     }
 
+    /** Garante standby e pausa da campanha no primeiro envio válido do formulário. */
     @Test
-    void keepsExperimentRunningWhenLowImpressionsCampaignIsStillRecent() {
-        boolean stopped = service.stopIfLowImpressionsAfterRunningTime(
-                experiment,
-                42L,
-                Instant.now().minus(2, ChronoUnit.HOURS));
+    void putsRunningExperimentInStandbyAfterFirstValidFormSubmission() {
+        FacebookAdsCampaign campaign = campaign("camp-first-submission");
+        when(campaignRepository.findByExperimentId(99L)).thenReturn(List.of(campaign));
 
-        assertThat(stopped).isFalse();
-        assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.RUNNING);
+        boolean stopped = service.standbyOnFirstValidFormSubmission(experiment);
+
+        assertThat(stopped).isTrue();
+        assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.STANDBY);
+        assertThat(campaign.getStopReason()).isEqualTo(FacebookCampaignStopReason.FIRST_FORM_SUBMISSION_STANDBY);
+        assertThat(campaign.getStopRequestedAt()).isNotNull();
+        assertThat(campaign.getStopLastError()).isNull();
     }
 
-    @Test
-    void keepsExperimentRunningWhenImpressionsReachMinimumAfterTwoDays() {
-        boolean stopped = service.stopIfLowImpressionsAfterRunningTime(
-                experiment,
-                100L,
-                Instant.now().minus(49, ChronoUnit.HOURS));
-
-        assertThat(stopped).isFalse();
-        assertThat(experiment.getStatus()).isEqualTo(ExperimentStatus.RUNNING);
-    }
-
-    /**
-     * Cria uma métrica de campanha com gasto de mídia para os cenários de parada automática.
-     */
+    /** Cria métrica de campanha com gasto de mídia. */
     private ExperimentCampaignMetric metricWithSpend(String spend) {
         ExperimentCampaignMetric metric = new ExperimentCampaignMetric();
         metric.setExperiment(experiment);
@@ -525,13 +157,33 @@ class ExperimentFunnelAutoStopServiceTest {
         return metric;
     }
 
-    /**
-     * Cria uma métrica de campanha com gasto e cliques para os cenários de produto low-ticket.
-     */
-    private ExperimentCampaignMetric metricWithSpendAndClicks(String spend, Long clicks) {
-        ExperimentCampaignMetric metric = metricWithSpend(spend);
-        metric.setClicks(clicks);
-        return metric;
+    /** Cria campanha Facebook para validar pedido de parada. */
+    private FacebookAdsCampaign campaign(String id) {
+        FacebookAdsCampaign campaign = new FacebookAdsCampaign();
+        campaign.setId(id);
+        return campaign;
     }
 
+    /** Cria diagnóstico sintético para a política única de campanha. */
+    private ExperimentFunnelStageDiagnosticDto stage(ExperimentFunnelStage stage,
+                                                    long attempts,
+                                                    long successes,
+                                                    FunnelDiagnosticStatus status) {
+        return new ExperimentFunnelStageDiagnosticDto(
+                stage,
+                stage.getLabel(),
+                attempts,
+                successes,
+                attempts > 0 ? (double) successes / attempts : null,
+                0.03,
+                null,
+                List.of(),
+                status,
+                status == FunnelDiagnosticStatus.STATISTICALLY_FAILED
+                        ? FunnelDiagnosticReasonCode.RULE_OF_THREE_FAILED
+                        : FunnelDiagnosticReasonCode.LOW_SAMPLE_SIZE,
+                "",
+                false
+        );
+    }
 }

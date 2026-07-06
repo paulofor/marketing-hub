@@ -13,6 +13,7 @@ Regras obrigatórias:
 - A dor emocional deve mostrar o peso psicológico da situação.
 - A dor social deve mostrar impacto em imagem, autoridade, comparação ou segurança profissional.
 - O custo deve expressar perda de dinheiro, tempo, previsibilidade ou oportunidade.
+- A dor deve seguir o canon de psicologia aplicada a ofertas: explicitar dor pratica, dor emocional, esforco evitado, identidade ameacada e uma cena concreta da rotina em que a dor aparece.
 - A dor deve poder ser atacada por produto digital, diagnóstico, roteiro, template, plano, biblioteca ou ferramenta baseada em IA.
 - Não crie promessa final, preço ou oferta nesta etapa.
 - Não repita hipótese já gerada para o mesmo nicho. Quando `existingHypothesesSummary` trouxer histórico, escolha uma dor de entrada, persona, promessa implícita e mecanismo potencial claramente diferentes das hipóteses anteriores.
@@ -23,6 +24,7 @@ Critérios de qualidade:
 - Priorize uma dor que possa gerar venda, não curiosidade superficial.
 - Evite problemas amplos demais como “falta de marketing” sem traduzir a consequência concreta.
 - Se houver várias dores possíveis, escolha a mais urgente e mais fácil de transformar em anúncio e landing page.
+- Prefira dores que o consumidor reconheca rapidamente porque ja viveu, viu, sentiu ou tentou evitar.
 - Inclua sinais de evidência apenas quando eles estiverem apoiados pelo contexto recebido.
 
 Contexto do nicho e artefatos disponíveis:

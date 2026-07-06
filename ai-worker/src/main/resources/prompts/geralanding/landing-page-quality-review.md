@@ -14,6 +14,7 @@ A landing do GeraLanding não deve apenas parecer bonita. Ela precisa cumprir um
 4. oferecer uma microprova concreta do valor da solução;
 5. fazer o visitante sentir que vale a pena avançar para a ação principal: checkout em `SALES` ou e-mail em `LEADS`;
 6. conduzir visualmente para a ação principal sem confusão.
+7. reduzir carga cognitiva e tornar facil imaginar a melhoria concreta depois da acao.
 
 Use as imagens como evidência principal. Avalie o que aparece na tela, não o que provavelmente estava no briefing. Não recompense intenção invisível.
 
@@ -58,6 +59,8 @@ A página deve sustentar a sequência comercial:
 **Dor → Resultado → Mecanismo → Prova → Oferta → Ação**
 
 A landing deve vender primeiro a transformação percebida pelo visitante. O material gratuito, diagnóstico, checklist, plano, template, preview ou amostra deve funcionar como prova de valor e redução de risco, não como um item genérico sem desejo. Em `SALES`, essa prova deve preparar o clique no checkout, não substituir a compra.
+
+Tambem avalie se a pagina aplica psicologia comercial de forma saudavel: reconhecimento imediato da dor, cena concreta da rotina, alivio de esforco, identidade desejada plausivel e futuro facil de visualizar.
 
 ## Critérios de avaliação
 
@@ -152,13 +155,19 @@ Avalie:
 
 Penalize se a página parecer wireframe, template cru, layout monótono, tela genérica, página sem acabamento ou composição visual sem intenção.
 
-### 7. Especificidade do público
+### 7. Reconhecimento psicologico e baixo esforço
+
+A pagina deve fazer o visitante pensar rapidamente: "isso fala de mim", "esse problema me custa algo", "esse caminho parece possivel" e "o proximo passo e simples".
+
+Penalize se a pagina exigir muito esforco mental para entender a oferta, usar linguagem abstrata demais, nao mostrar cena concreta da rotina ou nao conectar dor atual a uma melhoria futura imaginavel.
+
+### 8. Especificidade do público
 
 A página deve parecer feita para um público real.
 
 Penalize se os textos e blocos poderiam servir para qualquer nicho. A dor, a promessa, a prova e a oferta devem conter sinais específicos do mercado, da situação e do desejo do público.
 
-### 8. Coerência entre promessa, prova e CTA
+### 9. Coerência entre promessa, prova e CTA
 
 Quando houver contrato de promessa única, a landing deve preservar a mesma `singlePain`, `freeReward`, `funnelPromise` e `primaryCta` do contrato.
 
@@ -172,7 +181,7 @@ Penalize se:
 - a oferta parece menor do que a promessa;
 - o formulário aparece antes de existir desejo suficiente.
 
-### 9. Responsividade e ausência de falhas técnicas visíveis
+### 10. Responsividade e ausência de falhas técnicas visíveis
 
 Verifique desktop e mobile:
 
@@ -211,6 +220,7 @@ Recomende `APPROVE_FOR_PUBLICATION` somente se todas as condições abaixo forem
 - primeira dobra comunica dor, resultado, mecanismo e CTA;
 - existe prova ou amostra concreta do valor da solução;
 - o formulário/CTA deixa claro o benefício de enviar o e-mail;
+- a pagina reduz carga cognitiva e ajuda o visitante a visualizar a transformacao concreta;
 - a página parece final, confiável e premium;
 - não há artefato técnico, metadado, texto provisório ou layout quebrado;
 - mobile e desktop estão visualmente corretos.

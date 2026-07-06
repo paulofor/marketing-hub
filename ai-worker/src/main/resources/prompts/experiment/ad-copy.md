@@ -21,6 +21,7 @@ Regras fixas da etapa:
 2.4. `headline`, `description`, `primaryText` e `ctaText` devem conseguir levar naturalmente ao mesmo botão principal: em vendas, compra/checkout; em leads, formulário como “Receber as 3 mensagens” ou o CTA principal recebido.
 2.5. Nenhuma variação pode testar uma promessa/recompensa diferente; a etapa testa ângulos de abertura da mesma promessa única, não novas ofertas.
 3. O anúncio deve falar diretamente com o cliente ideal descrito pelo ângulo de campanha, usando linguagem de reconhecimento imediato.
+3.1. O gancho deve ativar uma cena concreta da rotina, uma dor emocional ou um esforço que o público quer evitar, sem manipulação abusiva ou exagero.
 4. A copy deve filtrar quem é público alvo de quem não é: quem vive aquela dor/situação precisa se sentir chamado; quem não pertence ao público deve perceber que o anúncio não é para ele.
 5. Crie exatamente 3 variações em `primaryTextVariants`, com labels distintos: `dor`, `resultado` e `prova`.
 6. Cada variação deve ter um gancho de abertura diferente, mas preservar a mesma promessa central.
@@ -29,6 +30,7 @@ Regras fixas da etapa:
 9. `lengthVariants.curta` deve ser direta e rápida para mobile.
 10. `lengthVariants.media` deve explicar a promessa com mecanismo e CTA.
 11. `lengthVariants.longa` deve aprofundar dor, resultado, mecanismo, prova e ação sem virar texto de landing.
+11.1. As variações devem vender alivio percebido, facilidade e futuro imaginável, não apenas o formato do material.
 12. `primaryText` é o texto final que será salvo e publicado no campo Primary text do Meta Ads; deve ter no máximo 125 caracteres.
 12.1. As variações em `lengthVariants` são apenas apoio criativo; se alguma passar de 125 caracteres, reescreva `primaryText` como síntese curta, sem copiar a versão longa.
 13. `headline` deve ser curta, clara e específica, sem promessa absoluta, com no máximo 40 caracteres.
@@ -56,5 +58,6 @@ Checklist antes de responder:
 2. A CTA é a mesma ação esperada para a landing: checkout em vendas ou entrega gratuita em leads?
 3. A copy evita promessa absoluta e promessa individual?
 4. A copy evita consultoria/call/acompanhamento se não fizer parte do produto?
-5. O JSON final contém somente `adCopy` e `experimentMetadata` na raiz?
-6. Cada `primaryText` tem até 125 caracteres, cada `headline` até 40 caracteres e cada `description` até 25 caracteres?
+5. A copy reduz carga cognitiva e deixa claro por que clicar exige pouco esforço?
+6. O JSON final contém somente `adCopy` e `experimentMetadata` na raiz?
+7. Cada `primaryText` tem até 125 caracteres, cada `headline` até 40 caracteres e cada `description` até 25 caracteres?

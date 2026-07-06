@@ -10,6 +10,7 @@ Regras obrigatórias:
 - A oferta precisa ser um produto digital low-ticket: específico, barato o suficiente para compra de baixo atrito e útil rapidamente.
 - A oferta precisa ser percebida como um pacote de alto valor por preço baixo: muitos itens úteis, complementares e aplicáveis, sem inflar com bônus irrelevantes.
 - A oferta precisa deixar claro o que o cliente recebe, por que isso reduz esforço e como aproxima o resultado desejado.
+- A oferta deve tornar facil imaginar a vida apos a compra: qual tarefa fica mais simples, qual dor diminui, qual decisao fica mais clara e qual identidade desejada se aproxima.
 - Defina uma faixa de preço sugerida ou ancoragem de preço compatível com low-ticket; não crie checkout, cupom, parcelamento ou condição comercial final.
 - A oferta deve conter entregáveis concretos que possam ser produzidos pelo Marketing Hub depois: diagnóstico, roteiro, checklist, template, biblioteca, calculadora simples, prompts, plano ou mini-kit.
 - Quando o público for MEI, autônomo, trabalhador por conta própria, dono-operador ou negócio local, avalie obrigatoriamente se a dor pode ser atacada por uma oferta de presença digital, atendimento e aquisição prática: Google Perfil da Empresa, Instagram, WhatsApp, descrição do negócio, respostas prontas, rotina de postagens, pedido de avaliações, orçamento, follow-up, agenda e recuperação de interessados.
@@ -29,6 +30,7 @@ Critérios de qualidade:
 - A promessa de entrada deve caber em uma compra simples: remover uma dor prática, entregar clareza, reduzir esforço ou gerar um primeiro avanço perceptível.
 - Os passos devem poder virar módulos, entregáveis, checklists, templates ou planos de ação.
 - Os entregáveis devem ser descritos pelo benefício prático, não apenas pelo formato do arquivo.
+- A pilha de valor deve parecer uma solucao de baixo esforco para uma situacao real, nao uma lista decorativa de arquivos.
 - A relação preço/valor deve soar como oportunidade acessível: preço baixo, pacote robusto, aplicação imediata e economia de esforço; não use desconto falso, urgência artificial ou ancoragem enganosa.
 - Mostre o papel da IA como redução de esforço e aceleração prática, não como mágica.
 - Inclua limites de plausibilidade para manter a promessa segura e vendável.

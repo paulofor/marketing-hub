@@ -12,6 +12,7 @@ Resuma com foco em:
 - problema central mais acionável
 - consequência comercial principal
 - urgência percebida para agir
+- dor emocional, esforco evitado e cena concreta da rotina quando aparecerem no material
 
 Instruções extras do usuário:
 {{CUSTOM_INSTRUCTIONS}}

@@ -13,6 +13,7 @@ Resuma com foco em:
 - ativo de prova associado
 - entregáveis mais fortes
 - CTA preferencial
+- reducao de esforco percebida, facilidade de aplicacao e valor psicologico da oferta
 
 Instruções extras do usuário:
 {{CUSTOM_INSTRUCTIONS}}

@@ -45,6 +45,7 @@ Regra central de contrato:
 - Quando `campaignObjective` for `SALES`, escreva como página de venda direta low-ticket: o CTA principal deve comprar/ir ao checkout, `freeReward` deve aparecer como preview/prova visual da oferta e nenhum texto deve prometer entrega gratuita por formulário antes da compra.
 - Quando `campaignObjective` for `LEADS`, escreva como página de captura: o CTA principal pode prometer a entrega gratuita definida em `freeReward`.
 - Narrativa universal obrigatória: quando o wireframe pedir textos de promessa, dor, mecanismo, prova, oferta e ação, escreva seguindo **Dor → Resultado → Mecanismo → Prova → Oferta → Ação**.
+- Psicologia aplicada obrigatoria: a pagina deve ajudar o visitante a reconhecer a propria dor, imaginar uma cena futura melhor, perceber reducao de esforco e sentir que o proximo passo e simples.
 - Especificidade obrigatória: todo texto deve parecer feito para o nicho e para a dor recebidos no contexto; evite frases que serviriam para qualquer mercado.
 - Mecanismo plausível: em passos/cards explicativos, mostre por que a solução funciona de forma simples, sem promessa mágica e sem jargão interno.
 - CTA orientado ao benefício: botões e links devem repetir a ação principal recebida em `primaryCta`. Em `SALES`, use compra/checkout; em `LEADS`, use a recompensa gratuita, como “Receber as 3 mensagens”.
@@ -52,6 +53,7 @@ Regra central de contrato:
 - Clareza de formulário obrigatória: se o wireframe trouxer labels, placeholders, microcopy ou botão do formulário, escreva textos explícitos para `nome`, `email` e CTA, para que o usuário não veja campos vazios sem orientação.
 - CTA visualmente curto e forte: textos de botão devem ser curtos, específicos e com verbo de ação; evite frases longas que quebrem o layout, pareçam link comum ou reduzam a percepção de botão premium.
 - Prova de valor rápida: em listas e cards, prefira frases que conectem item entregue → benefício prático → redução de esforço/dor, sem depender de termos genéricos como “mini-kit”, “amostra” ou “material” isoladamente.
+- Linguagem experiencial: prefira cenas, tarefas, momentos de decisao, perdas de tempo, insegurancas e alivios concretos do nicho, em vez de beneficios abstratos.
 - A etapa copy não decide estrutura, não adiciona seções, não adiciona blocos e não cria metadados.
 - A etapa copy apenas escreve o valor `texto` para ids textuais existentes no wireframe.
 - Princípio de pouco esforço obrigatório: o usuário não quer fazer esforço para entender a comunicação da página; portanto, cada texto deve ser claro em leitura rápida, reduzir carga cognitiva, evitar explicação longa sem necessidade e conduzir naturalmente para o próximo CTA ou próximo passo definido pelo wireframe.
@@ -94,8 +96,9 @@ Regras obrigatórias:
 12. Para botão submit de formulário, use CTA compatível com o que o formulário realmente coleta; com apenas nome/e-mail, nunca sugira personalização profunda, briefing completo, diagnóstico detalhado imediato, prévia genérica ou sistema completo.
 13. Manter continuidade com promessa e CTA do anúncio somente dentro dos campos textuais que o wireframe já pediu, repetindo `funnelPromise`, `freeReward` e `primaryCta` quando estiverem disponíveis.
 14. Antes de responder, revise se H1, subtítulo, CTA do hero e submit contam a mesma história: dor removida, resultado prometido, mecanismo plausível, prova/entrega e ação de baixo esforço.
-15. Se houver conflito entre contexto e wireframe, priorize sempre o wireframe.
-16. Responder somente com JSON válido aderente ao schema da etapa.
+15. Antes de responder, revise se a pagina reduz carga cognitiva: o visitante entende para quem e, qual dor resolve, como funciona, o que recebe e qual proximo passo.
+16. Se houver conflito entre contexto e wireframe, priorize sempre o wireframe.
+17. Responder somente com JSON válido aderente ao schema da etapa.
 
 CASE_DATA
 {{CASE_DATA_BLOCK}}

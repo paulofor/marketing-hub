@@ -9,6 +9,7 @@ Regras obrigatórias:
 - Use a dor, o resultado e o mecanismo concluídos como base principal; não invente uma nova dor, promessa ou mecanismo.
 - A prova deve reduzir ceticismo e mostrar por que o mecanismo é plausível para o nicho.
 - A prova precisa ser viável para produto digital apoiado por IA: diagnóstico, checklist, amostra, simulação, mini-plano, antes/depois demonstrável ou evidência operacional.
+- A prova deve ajudar o consumidor a visualizar o antes/depois ou o primeiro alivio concreto antes de assumir risco maior.
 - Não prometa cura, renda garantida, resultado absoluto, automação total ou dependência de acesso interno ao negócio do cliente.
 - Não crie preço, checkout, campanha de anúncios ou página de vendas nesta etapa.
 - Não use markdown dentro dos campos.
@@ -17,6 +18,7 @@ Regras obrigatórias:
 Critérios de qualidade:
 - A prova deve ser específica, fácil de produzir e conectada à rotina real do nicho.
 - Explique qual objeção a prova reduz e como ela será coletada ou demonstrada.
+- Prefira provas que mostrem reducao de esforco, clareza, ganho de controle ou melhoria perceptivel na rotina.
 - Preserve o eixo Dor → Resultado → Mecanismo → Prova → Oferta.
 
 Contexto do nicho, dor concluída, resultado concluído e mecanismo concluído:

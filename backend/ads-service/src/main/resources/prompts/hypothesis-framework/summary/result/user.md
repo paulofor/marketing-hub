@@ -12,6 +12,7 @@ Resuma com foco em:
 - transformação desejada
 - outcome de negócio
 - marcador objetivo de sucesso
+- futuro imaginavel e identidade desejada que o publico busca alcancar
 
 Instruções extras do usuário:
 {{CUSTOM_INSTRUCTIONS}}

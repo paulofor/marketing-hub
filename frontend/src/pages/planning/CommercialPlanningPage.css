@@ -2,43 +2,6 @@
   min-width: 0;
 }
 
-.commercial-planning-workspace {
-  display: grid;
-  grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
-  gap: 1rem;
-  align-items: stretch;
-}
-
-.commercial-planning-sidebar,
-.commercial-planning-main {
-  min-width: 0;
-}
-
-.commercial-planning-plan-item {
-  min-width: 0;
-}
-
-.commercial-planning-plan-name {
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-
-.commercial-planning-plan-status {
-  flex: 0 0 auto;
-}
-
-.commercial-planning-plan-action {
-  display: -webkit-box;
-  margin-top: 0.25rem;
-  overflow: hidden;
-  color: inherit;
-  opacity: 0.78;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-}
-
-@media (max-width: 1199.98px) {
-  .commercial-planning-workspace {
-    grid-template-columns: 1fr;
-  }
+.commercial-planning-empty {
+  min-height: 60vh;
 }

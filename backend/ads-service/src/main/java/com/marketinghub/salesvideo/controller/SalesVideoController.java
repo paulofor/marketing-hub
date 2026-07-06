@@ -170,6 +170,12 @@ public class SalesVideoController {
         return salesVideoService.getJob(jobId);
     }
 
+    /** Consulta perfil de vídeo para processamento interno do ai-worker. */
+    @GetMapping("/internal/ai/sales-videos/profiles/{profileId}")
+    public SalesVideoProfileDto getOpenAiProfile(@PathVariable Long profileId) {
+        return salesVideoService.getProfile(profileId);
+    }
+
     /** Faz claim de job OpenAI interno. */
     @PostMapping("/internal/ai/openai-jobs/{jobId}/claim")
     public SalesVideoJobDto claimOpenAiJob(@PathVariable Long jobId,

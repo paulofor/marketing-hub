@@ -5,6 +5,7 @@ import com.marketinghub.media.AssetStatus;
 import com.marketinghub.media.AssetType;
 import com.marketinghub.media.MediaProvider;
 import com.marketinghub.media.mapper.AssetMapperImpl;
+import com.marketinghub.salesvideo.dto.SalesVideoProfileDto;
 import com.marketinghub.salesvideo.service.SalesVideoService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,11 +17,14 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+/** Responsabilidade: validar contratos internos de assets e perfis de vídeo. */
 @WebMvcTest(SalesVideoController.class)
 @Import(AssetMapperImpl.class)
 class SalesVideoAssetControllerTest {
@@ -31,6 +35,7 @@ class SalesVideoAssetControllerTest {
     @MockBean
     private SalesVideoService salesVideoService;
 
+    /** Deve aceitar upload interno e devolver o asset criado. */
     @Test
     void shouldUploadFileAndReturnAssetDto() throws Exception {
         Asset asset = Asset.builder()
@@ -54,5 +59,21 @@ class SalesVideoAssetControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(10L))
                 .andExpect(jsonPath("$.url").value("https://cdn.local/video.mp4"));
+    }
+
+    /** Deve expor perfil por endpoint interno sem exigir header de tenant. */
+    @Test
+    void shouldGetProfileFromInternalAiEndpointWithoutTenantHeader() throws Exception {
+        SalesVideoProfileDto profile = new SalesVideoProfileDto();
+        profile.setId(59L);
+        profile.setTitle("Manicure em domicílio");
+        when(salesVideoService.getProfile(59L)).thenReturn(profile);
+
+        mockMvc.perform(get("/internal/ai/sales-videos/profiles/59"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(59L))
+                .andExpect(jsonPath("$.title").value("Manicure em domicílio"));
+
+        verify(salesVideoService).getProfile(59L);
     }
 }

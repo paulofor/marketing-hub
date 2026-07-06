@@ -14,6 +14,7 @@ import com.marketinghub.targeting.TargetingElement;
 import com.marketinghub.targeting.TargetingElementStatus;
 import com.marketinghub.targeting.TargetingElementType;
 import com.marketinghub.repository.jpa.experiment.ExperimentTargetingSelectionRepository;
+import com.marketinghub.experiment.video.service.ExperimentVideoAssetService;
 import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -61,17 +62,20 @@ public class ExperimentReadinessService {
     );
 
     private final GeraLandingStageExecutionRepository geraLandingStageExecutionRepository;
+    private final ExperimentVideoAssetService experimentVideoAssetService;
     /** Cria o serviço com as fontes canônicas de prontidão do experimento. */
     public ExperimentReadinessService(ExperimentService experimentService,
                                       CreativeRepository creativeRepository,
                                       ExperimentTargetingSelectionRepository targetingSelectionRepository,
                                       GeraLandingStageExecutionRepository geraLandingStageExecutionRepository,
-                                      ExperimentCampaignDestinationPolicy campaignDestinationPolicy) {
+                                      ExperimentCampaignDestinationPolicy campaignDestinationPolicy,
+                                      ExperimentVideoAssetService experimentVideoAssetService) {
         this.experimentService = experimentService;
         this.creativeRepository = creativeRepository;
         this.targetingSelectionRepository = targetingSelectionRepository;
         this.geraLandingStageExecutionRepository = geraLandingStageExecutionRepository;
         this.campaignDestinationPolicy = campaignDestinationPolicy;
+        this.experimentVideoAssetService = experimentVideoAssetService;
     }
 
     /** Resume a prontidão do experimento usando apenas dados canônicos aprovados para publicação. */
@@ -93,6 +97,7 @@ public class ExperimentReadinessService {
         boolean purchaseIntent = campaignDestinationPolicy.requiresSalesPageBeforePurchase(experiment);
         boolean hasCommercialContract = campaignDestinationPolicy.hasCompleteCommercialContract(experiment);
         boolean hasGeraSalesPagePipeline = campaignDestinationPolicy.hasCompletedGeraSalesPagePipeline(experimentId);
+        boolean hasRequiredVideoBlockingRelease = hasRequiredVideoBlockingRelease(experiment);
         Optional<GeraSalesPagePublicationAudit> salesPagePublication =
                 campaignDestinationPolicy.latestSalesPagePublication(experimentId);
 
@@ -121,6 +126,15 @@ public class ExperimentReadinessService {
                     "Sem funil de coleta para personalização",
                     "Produto IA com amostra personalizada precisa coletar dados do lead antes de prometer uma entrega exclusiva.",
                     "Crie o funil pelo comando de Produto IA antes de liberar campanha ou venda.",
+                    List.of()
+            ));
+        }
+        if (hasRequiredVideoBlockingRelease) {
+            issues.add(new ExperimentReadinessIssueDto(
+                    ExperimentReadinessIssueType.VIDEO_ASSET,
+                    "Vídeo obrigatório ainda não aprovado",
+                    "Este experimento possui vídeo obrigatório para o funil, mas o ativo ainda não está pronto e aprovado.",
+                    "Finalize a geração, revise o vídeo e aprove o ativo antes de liberar tráfego.",
                     List.of()
             ));
         }
@@ -218,6 +232,9 @@ public class ExperimentReadinessService {
         if (isPersonalizedSampleProductAi(experiment) && !hasProductAiPersonalizationFunnel(experiment)) {
             missing.add("productAiPersonalizedSampleFunnel");
         }
+        if (hasRequiredVideoBlockingRelease(experiment)) {
+            missing.add("experimentVideoAsset");
+        }
         if (!hasConfiguredTargeting(experiment)) {
             missing.add("approvedTargetingPackage");
         }
@@ -312,6 +329,13 @@ public class ExperimentReadinessService {
                 .map(question -> question.getDataKey() == null ? "" : question.getDataKey().toLowerCase(Locale.ROOT))
                 .collect(java.util.stream.Collectors.toSet());
         return keys.containsAll(PRODUCT_AI_PERSONALIZED_SAMPLE_REQUIRED_KEYS);
+    }
+
+    /** Verifica se algum vídeo obrigatório do experimento ainda impede liberação comercial. */
+    private boolean hasRequiredVideoBlockingRelease(Experiment experiment) {
+        return experiment != null
+                && experiment.getId() != null
+                && experimentVideoAssetService.hasRequiredVideoBlockingRelease(experiment.getId());
     }
 
 }

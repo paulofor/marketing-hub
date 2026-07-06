@@ -9,6 +9,7 @@ import com.marketinghub.experiment.ExperimentType;
 import com.marketinghub.experiment.dto.ExperimentReadinessIssueDto;
 import com.marketinghub.experiment.dto.ExperimentReadinessIssueType;
 import com.marketinghub.experiment.dto.ExperimentReadinessSummaryDto;
+import com.marketinghub.experiment.video.service.ExperimentVideoAssetService;
 import com.marketinghub.gerasalespage.v1.GeraSalesPagePublicationAudit;
 import com.marketinghub.geralanding.GeraLandingStageExecution;
 import com.marketinghub.gerasalespage.v1.GeraSalesPageStageCode;
@@ -56,6 +57,8 @@ class ExperimentReadinessServiceTest {
     private GeraSalesPageStageExecutionRepository geraSalesPageStageExecutionRepository;
     @Mock
     private GeraSalesPagePublicationAuditRepository geraSalesPagePublicationAuditRepository;
+    @Mock
+    private ExperimentVideoAssetService experimentVideoAssetService;
 
     private ExperimentReadinessService service;
 
@@ -69,7 +72,8 @@ class ExperimentReadinessServiceTest {
                 creativeRepository,
                 targetingSelectionRepository,
                 geraLandingStageExecutionRepository,
-                campaignDestinationPolicy);
+                campaignDestinationPolicy,
+                experimentVideoAssetService);
     }
 
     @Test
@@ -136,6 +140,21 @@ class ExperimentReadinessServiceTest {
 
         assertThat(service.computeMissingConfiguration(experiment)).isEmpty();
         assertThat(service.isReadyForCampaign(experiment)).isTrue();
+    }
+
+    /** Garante que vídeo obrigatório sem aprovação bloqueia a campanha. */
+    @Test
+    void shouldBlockCampaignWhenRequiredVideoIsNotReadyAndApproved() {
+        Experiment experiment = buildExperiment(39L, 49L);
+        experiment.setFollowUpActionUrl("https://example.com/landing/39");
+
+        when(creativeRepository.existsByExperimentIdAndStatus(39L, CreativeStatus.READY)).thenReturn(true);
+        when(experimentVideoAssetService.hasRequiredVideoBlockingRelease(39L)).thenReturn(true);
+        mockPublishableSelection(39L, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
+
+        assertThat(service.computeMissingConfiguration(experiment))
+                .containsExactly("experimentVideoAsset");
+        assertThat(service.isReadyForCampaign(experiment)).isFalse();
     }
 
     @Test

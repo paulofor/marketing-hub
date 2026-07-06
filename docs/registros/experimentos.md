@@ -1,3 +1,11 @@
+## 2026-07-06 — Experimentos: camada Experiment Video Asset
+
+- decisão aplicada: vídeo passa a ser registrado como artefato mensurável do experimento, com slot no funil, objetivo comercial e métrica principal.
+- objetivo de negócio: permitir novos experimentos com vídeo na landing ou formulário sem tratar vídeo como módulo solto, preservando aprendizado por hipótese e por ponto do funil.
+- foi feito: criado contrato backend `/api/experiments/{experimentId}/video-assets` para listar, criar e atualizar vídeos do experimento.
+- foi feito: vídeo obrigatório bloqueia liberação de campanha enquanto não estiver `READY` e `APPROVED`.
+- prevenção de recorrência: o backend valida que `landing_video_slot` pertence ao mesmo experimento antes de vincular, evitando contaminação de aprendizado entre funis.
+
 ## 2026-07-02 — Definição canônica de tipos de produto e rastreio de prompt/schema por experimento
 
 - decisão registrada: produto low-ticket passa a significar pacote de infoprodutos de baixo custo produzido majoritariamente por IA; Produto IA passa a significar infoproduto/ferramenta com integração OpenAI por trás, entregue ao usuário como solução simples e prática, sem exigir entendimento de IA.

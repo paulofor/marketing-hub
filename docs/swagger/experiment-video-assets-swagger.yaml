@@ -1,0 +1,128 @@
+openapi: 3.0.3
+info:
+  title: Experiment Video Assets API
+  version: "1.0"
+  description: Contratos para registrar vídeos como ativos mensuráveis de experimentos.
+paths:
+  /api/experiments/{experimentId}/video-assets:
+    get:
+      summary: Lista vídeos de um experimento
+      parameters:
+        - name: experimentId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Vídeos encontrados
+    post:
+      summary: Cria vídeo comercial para um experimento
+      parameters:
+        - name: experimentId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateExperimentVideoAssetRequest"
+      responses:
+        "200":
+          description: Vídeo criado
+  /api/experiments/{experimentId}/video-assets/{videoAssetId}:
+    patch:
+      summary: Atualiza vídeo comercial de um experimento
+      parameters:
+        - name: experimentId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: videoAssetId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateExperimentVideoAssetRequest"
+      responses:
+        "200":
+          description: Vídeo atualizado
+components:
+  schemas:
+    CreateExperimentVideoAssetRequest:
+      type: object
+      required:
+        - slot
+        - objective
+        - primaryMetric
+        - provider
+        - model
+      properties:
+        slot:
+          type: string
+          enum: [AD, LANDING_HERO, FORM_EXPLAINER, PRE_CHECKOUT]
+        objective:
+          type: string
+        primaryMetric:
+          type: string
+        script:
+          type: string
+        prompt:
+          type: string
+        provider:
+          type: string
+          example: VEO
+        model:
+          type: string
+          example: veo-3.1-generate-preview
+        status:
+          type: string
+          enum: [PLANNED, GENERATING, READY, FAILED]
+        assetUrl:
+          type: string
+        thumbnailUrl:
+          type: string
+        durationSeconds:
+          type: integer
+        aspectRatio:
+          type: string
+          example: "9:16"
+        requestJson:
+          type: string
+        responseJson:
+          type: string
+        cost:
+          type: number
+        reviewStatus:
+          type: string
+          enum: [PENDING, APPROVED, REJECTED]
+        requiredForRelease:
+          type: boolean
+        salesVideoProfileId:
+          type: integer
+          format: int64
+        salesVideoJobId:
+          type: integer
+          format: int64
+        assetId:
+          type: integer
+          format: int64
+        landingVideoSlotId:
+          type: integer
+          format: int64
+    UpdateExperimentVideoAssetRequest:
+      allOf:
+        - $ref: "#/components/schemas/CreateExperimentVideoAssetRequest"

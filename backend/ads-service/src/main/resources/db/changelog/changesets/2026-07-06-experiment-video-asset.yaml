@@ -1,0 +1,57 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-06-01-create-experiment-video-asset
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            tableExists:
+              tableName: experiment_video_asset
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE TABLE experiment_video_asset (
+                  id BIGINT NOT NULL AUTO_INCREMENT,
+                  experiment_id BIGINT NOT NULL,
+                  slot VARCHAR(32) NOT NULL,
+                  objective VARCHAR(512) NOT NULL,
+                  primary_metric VARCHAR(191) NOT NULL,
+                  script LONGTEXT NULL,
+                  prompt LONGTEXT NULL,
+                  provider VARCHAR(64) NOT NULL,
+                  model VARCHAR(128) NOT NULL,
+                  status VARCHAR(32) NOT NULL,
+                  asset_url VARCHAR(1024) NULL,
+                  thumbnail_url VARCHAR(1024) NULL,
+                  duration_seconds INT NULL,
+                  aspect_ratio VARCHAR(16) NULL,
+                  request_json LONGTEXT NULL,
+                  response_json LONGTEXT NULL,
+                  cost DECIMAL(12, 4) NULL,
+                  review_status VARCHAR(32) NOT NULL,
+                  required_for_release BIT(1) NOT NULL DEFAULT b'0',
+                  sales_video_profile_id BIGINT NULL,
+                  sales_video_job_id BIGINT NULL,
+                  asset_id BIGINT NULL,
+                  landing_video_slot_id BIGINT NULL,
+                  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                  PRIMARY KEY (id),
+                  CONSTRAINT fk_experiment_video_asset_experiment
+                      FOREIGN KEY (experiment_id) REFERENCES experiment (id),
+                  CONSTRAINT fk_experiment_video_asset_profile
+                      FOREIGN KEY (sales_video_profile_id) REFERENCES sales_video_profile (id),
+                  CONSTRAINT fk_experiment_video_asset_job
+                      FOREIGN KEY (sales_video_job_id) REFERENCES sales_video_job (id),
+                  CONSTRAINT fk_experiment_video_asset_asset
+                      FOREIGN KEY (asset_id) REFERENCES asset (id),
+                  CONSTRAINT fk_experiment_video_asset_landing_slot
+                      FOREIGN KEY (landing_video_slot_id) REFERENCES landing_video_slot (id)
+              );
+              CREATE INDEX idx_experiment_video_asset_experiment ON experiment_video_asset (experiment_id);
+              CREATE INDEX idx_experiment_video_asset_release ON experiment_video_asset (experiment_id, required_for_release, status, review_status);
+              CREATE INDEX idx_experiment_video_asset_slot ON experiment_video_asset (experiment_id, slot);

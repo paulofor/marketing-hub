@@ -2,6 +2,165 @@
   min-width: 0;
 }
 
+.commercial-planning-month-plan {
+  min-width: 0;
+  padding: 1.25rem;
+  border: 1px solid #d9dee7;
+  border-radius: 0.5rem;
+  background: #ffffff;
+  box-shadow: 0 0.75rem 2rem rgba(15, 23, 42, 0.08);
+}
+
+.commercial-planning-month-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 320px);
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.commercial-planning-month-eyebrow {
+  color: #5d6678;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.commercial-planning-month-title {
+  color: #101828;
+  font-size: 2.25rem;
+  font-weight: 800;
+  line-height: 1.05;
+}
+
+.commercial-planning-month-objective {
+  max-width: 900px;
+  color: #344054;
+  font-size: 1rem;
+  line-height: 1.55;
+}
+
+.commercial-planning-month-summary {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid #e4e7ec;
+  border-radius: 0.5rem;
+  background: #f8fafc;
+}
+
+.commercial-planning-month-summary div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.commercial-planning-month-summary span,
+.commercial-planning-month-metric-label {
+  color: #667085;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.commercial-planning-month-summary strong {
+  min-width: 0;
+  color: #101828;
+  overflow-wrap: anywhere;
+}
+
+.commercial-planning-month-metrics {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.commercial-planning-month-metric {
+  display: grid;
+  min-width: 0;
+  min-height: 170px;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid #e4e7ec;
+  border-radius: 0.5rem;
+  background: #fcfcfd;
+}
+
+.commercial-planning-month-metric-values {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.commercial-planning-month-metric-values strong {
+  color: #101828;
+  font-size: 1.35rem;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.commercial-planning-month-metric-values span {
+  color: #667085;
+  font-size: 0.85rem;
+}
+
+.commercial-planning-month-metric-values.executed strong {
+  font-size: 1.05rem;
+}
+
+.commercial-planning-month-progress {
+  height: 0.5rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e4e7ec;
+}
+
+.commercial-planning-month-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #2563eb;
+}
+
+.commercial-planning-month-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.commercial-planning-month-panel {
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid #e4e7ec;
+  border-radius: 0.5rem;
+  background: #ffffff;
+}
+
+.commercial-planning-month-panel p {
+  color: #344054;
+}
+
+.commercial-planning-product-types {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.commercial-planning-product-types div {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.75rem;
+  border-left: 4px solid #2563eb;
+  background: #f8fafc;
+}
+
+.commercial-planning-product-types strong {
+  color: #101828;
+}
+
+.commercial-planning-product-types span,
+.commercial-planning-product-types small {
+  color: #667085;
+}
+
 .commercial-planning-workspace {
   display: grid;
   grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
@@ -38,7 +197,30 @@
 }
 
 @media (max-width: 1199.98px) {
+  .commercial-planning-month-heading,
+  .commercial-planning-month-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .commercial-planning-month-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .commercial-planning-workspace {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .commercial-planning-month-plan {
+    padding: 1rem;
+  }
+
+  .commercial-planning-month-title {
+    font-size: 1.75rem;
+  }
+
+  .commercial-planning-month-metrics {
     grid-template-columns: 1fr;
   }
 }

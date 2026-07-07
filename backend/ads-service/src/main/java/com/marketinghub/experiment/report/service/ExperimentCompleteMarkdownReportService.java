@@ -18,6 +18,8 @@ import com.marketinghub.niche.MarketNiche;
 import com.marketinghub.repository.jpa.experiment.ExperimentRepository;
 import com.marketinghub.repository.jpa.facebookads.FacebookAdsCampaignRepository;
 import com.marketinghub.repository.jpa.geralanding.GeraLandingStageExecutionRepository;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.LinkedHashMap;
@@ -158,7 +160,9 @@ public class ExperimentCompleteMarkdownReportService {
                 "targetCvr", experiment.getTargetCvr(),
                 "mdePercent", experiment.getMdePercent(),
                 "unitPrice", experiment.getUnitPrice(),
-                "totalCost", experiment.getTotalCost(),
+                "auditableTotalCost", auditableTotalCost(experiment),
+                "legacyTotalCost", experiment.getTotalCost(),
+                "unreconciledLegacyCost", unreconciledLegacyCost(experiment),
                 "expense", experiment.getExpense()
         ));
     }
@@ -169,6 +173,42 @@ public class ExperimentCompleteMarkdownReportService {
     private void appendHypothesisFramework(StringBuilder markdown, Hypothesis hypothesis) {
         markdown.append("## 2. Framework da hipótese\n\n");
         appendCodeBlock(markdown, "json", prettyJson(hypothesis != null ? hypothesis.getFrameworkJson() : null));
+    }
+
+    /**
+     * Calcula o custo rastreável em BRL a partir de origem, mídia e despesa operacional.
+     */
+    private BigDecimal auditableTotalCost(Experiment experiment) {
+        if (experiment == null) {
+            return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+        }
+        BigDecimal paidMedia = experiment.getCampaignMetric() != null
+                ? money(experiment.getCampaignMetric().getSpend())
+                : BigDecimal.ZERO;
+        return money(experiment.getCost())
+                .add(money(experiment.getExpense()))
+                .add(paidMedia)
+                .setScale(2, RoundingMode.HALF_UP);
+    }
+
+    /**
+     * Calcula a diferença positiva entre o total legado e as fontes rastreáveis.
+     */
+    private BigDecimal unreconciledLegacyCost(Experiment experiment) {
+        if (experiment == null) {
+            return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+        }
+        BigDecimal difference = money(experiment.getTotalCost()).subtract(auditableTotalCost(experiment));
+        return difference.compareTo(BigDecimal.ZERO) > 0
+                ? difference.setScale(2, RoundingMode.HALF_UP)
+                : BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+    }
+
+    /**
+     * Normaliza valor monetário ausente para zero.
+     */
+    private BigDecimal money(BigDecimal value) {
+        return value != null ? value : BigDecimal.ZERO;
     }
 
     /**

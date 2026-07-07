@@ -5661,3 +5661,10 @@
 - Correção aplicada: a publicação final do GeraSalesPage v1 passa a marcar automaticamente seções/blocos principais com `data-track-section`, injeta analytics mínimo quando faltar e salva/publica o HTML já rastreável.
 - Trava preventiva: a política de campanha/readiness agora bloqueia página de venda sem `data-track-section`, mesmo que contenha `page_view`, `page_load_metric`, `section_view_time` e `checkout_click`.
 - Tela: a página do experimento passa a exibir campanhas, conjuntos, anúncios e funis atribuídos por anúncio, permitindo visualizar também o Funil B quando o backend já tiver os dados.
+
+## 2026-07-07 — Reconciliação de custos do experimento
+
+- Problema: a tela de detalhe mostrava `total_cost` legado como custo total e misturava parcelas em BRL com custos técnicos em USD, fazendo diferenças antigas parecerem custo real.
+- Causa-raiz tratada: `CostAttributionService` podia alterar entidade gerenciada pelo JPA e também executar `incrementTotalCost` SQL na mesma operação, criando risco de dupla contagem; além disso, `experiment.total_cost` era usado como fonte principal sem reconciliação por origem.
+- Correção aplicada: o backend expõe custo rastreável em BRL por origem, mídia e despesa operacional, preserva `total_cost` como legado e calcula diferença não reconciliada; a tela destaca o total rastreável e separa custos técnicos em USD como auditoria.
+- Prevenção de recorrência: teste de atribuição impede incremento SQL quando a entidade já está gerenciada pelo JPA, e teste de resumo financeiro impede que diferença legada seja exibida como custo técnico real.

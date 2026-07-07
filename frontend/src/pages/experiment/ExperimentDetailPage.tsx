@@ -45,6 +45,7 @@ import {
 import { useExperimentCompleteMarkdownReport } from "../../api/experiment/useExperimentCompleteMarkdownReport";
 import { useGeraSalesPagePublications } from "../../api/experiment/useGeraSalesPagePublications";
 import { useExperimentPipelineJobHistory } from "../../api/experiment/useExperimentPipelineJobHistory";
+import { buildExperimentCostSummary } from "./experimentCostSummary";
 
 function formatPipelineStageModel(stageModel?: GeraLandingStageModel) {
   const name = stageModel?.openAiModelName?.trim();
@@ -1769,11 +1770,6 @@ export default function ExperimentDetailPage() {
       : null);
   const salesPagePublications = geraSalesPagePublications.data ?? [];
   const latestSalesPagePublication = salesPagePublications[0];
-  const originCostBrl = data.cost ?? 0;
-  const paidMediaCostBrl = data.campaignMetric?.spend ?? 0;
-  const operationalExpenseBrl = data.expense ?? 0;
-  const totalExperimentCostBrl =
-    data.totalCost ?? originCostBrl + paidMediaCostBrl + operationalExpenseBrl;
   const contentPipelineCostUsd =
     experimentPipelineJobHistory.data?.content.reduce(
       (sum, job) => sum + (job.costUsd ?? 0),
@@ -1788,35 +1784,12 @@ export default function ExperimentDetailPage() {
       ),
     0,
   );
-  const experimentCostRows = [
-    {
-      label: "Custo de origem",
-      value: formatCurrencyValue(originCostBrl, "BRL"),
-    },
-    {
-      label: "Mídia paga",
-      value: formatCurrencyValue(paidMediaCostBrl, "BRL"),
-    },
-    {
-      label: "Despesa operacional",
-      value: formatCurrencyValue(operationalExpenseBrl, "BRL"),
-    },
-    {
-      label: "Pipeline de conteúdo",
-      value: formatCurrencyValue(contentPipelineCostUsd, "USD"),
-    },
-    {
-      label: "GeraLanding",
-      value: formatCurrencyValue(
-        totalCompletedGeraLandingAllStagesCostUsd,
-        "USD",
-      ),
-    },
-    {
-      label: "GeraSalesPage",
-      value: formatCurrencyValue(geraSalesPageCostUsd, "USD"),
-    },
-  ];
+  const experimentCostSummary = buildExperimentCostSummary({
+    experiment: data,
+    contentPipelineCostUsd,
+    geraLandingCostUsd: totalCompletedGeraLandingAllStagesCostUsd,
+    geraSalesPageCostUsd,
+  });
   const experimentPage = data.facebookPage;
   const instagramAccount = data.instagramAccount;
   const hasCreativesReady =
@@ -2791,19 +2764,22 @@ export default function ExperimentDetailPage() {
                     <div>
                       <h5 className="card-title mb-1">Custos do experimento</h5>
                       <p className="text-muted small mb-0">
-                        Total consolidado em BRL e custos técnicos auditáveis em
+                        Total rastreável em BRL separado da auditoria técnica em
                         USD.
                       </p>
                     </div>
                     <div className="text-end">
-                      <div className="text-muted small">Custo total</div>
+                      <div className="text-muted small">Custo rastreável</div>
                       <div className="fs-4 fw-semibold">
-                        {formatCurrencyValue(totalExperimentCostBrl, "BRL")}
+                        {formatCurrencyValue(
+                          experimentCostSummary.auditableTotalBrl,
+                          "BRL",
+                        )}
                       </div>
                     </div>
                   </div>
                   <div className="row g-3">
-                    {experimentCostRows.map((costRow) => (
+                    {experimentCostSummary.brlRows.map((costRow) => (
                       <div
                         key={costRow.label}
                         className="col-12 col-md-6 col-xl-4"
@@ -2812,11 +2788,56 @@ export default function ExperimentDetailPage() {
                           <div className="text-muted small">
                             {costRow.label}
                           </div>
-                          <div className="fw-semibold">{costRow.value}</div>
+                          <div className="fw-semibold">
+                            {formatCurrencyValue(
+                              costRow.value,
+                              costRow.currency,
+                            )}
+                          </div>
                         </div>
                       </div>
                     ))}
                   </div>
+                  <div className="row g-3 mt-1">
+                    {experimentCostSummary.technicalRows.map((costRow) => (
+                      <div
+                        key={costRow.label}
+                        className="col-12 col-md-6 col-xl-4"
+                      >
+                        <div className="border rounded-3 p-3 h-100">
+                          <div className="text-muted small">
+                            {costRow.label}
+                          </div>
+                          <div className="fw-semibold">
+                            {formatCurrencyValue(
+                              costRow.value,
+                              costRow.currency,
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {experimentCostSummary.unreconciledLegacyCostBrl > 0 ? (
+                    <div className="alert alert-warning mt-3 mb-0">
+                      <div className="fw-semibold">
+                        Custo legado não reconciliado:{" "}
+                        {formatCurrencyValue(
+                          experimentCostSummary.unreconciledLegacyCostBrl,
+                          "BRL",
+                        )}
+                      </div>
+                      <div className="small">
+                        Total legado registrado:{" "}
+                        {formatCurrencyValue(
+                          experimentCostSummary.legacyTotalBrl,
+                          "BRL",
+                        )}
+                        . Esta diferença não é exibida como custo técnico real
+                        porque não tem origem auditável nas parcelas atuais.
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               </div>
               <div className="card">

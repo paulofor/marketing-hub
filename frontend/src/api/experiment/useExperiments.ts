@@ -115,6 +115,9 @@ export interface Experiment {
   unitPrice?: number | null;
   cost?: number | null;
   totalCost?: number | null;
+  auditableTotalCost?: number | null;
+  legacyTotalCost?: number | null;
+  unreconciledLegacyCost?: number | null;
   expense?: number | null;
   startDate: string | null;
   endDate: string | null;

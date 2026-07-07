@@ -500,6 +500,31 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
 - **Regra preventiva**:
   - nenhuma etapa OpenAI deve persistir execução sem modelo efetivo, tokens e regra de preço identificável.
 
+## LOOP-EXPERIMENT-COST-RECONCILIATION — Total de custo sem origem auditável
+
+- **Severidade**: ALTO.
+- **Status**: fechado em 2026-07-07.
+- **Sintomas recorrentes**:
+  - `experiment.total_cost` maior que a soma de origem, mídia e despesa;
+  - custo técnico em USD aparecendo como se fechasse total em BRL;
+  - diferença legada sendo interpretada como custo real de IA;
+  - reprocessamento ou sincronização de mídia inflando custo acumulado.
+- **Causa-raiz sistêmica provável**:
+  - custo total tratado como acumulador persistido e fonte principal de verdade, sem razão idempotente por origem;
+  - atualização do custo combinando entidade JPA gerenciada com `increment` SQL direto.
+- **O que resolveu efetivamente no histórico**:
+  - usar custo rastreável em BRL como total principal da tela;
+  - manter `total_cost` como legado e mostrar diferença positiva como custo não reconciliado;
+  - separar auditoria técnica em USD de parcelas financeiras em BRL;
+  - impedir `incrementTotalCost` SQL quando a entidade já está gerenciada pelo JPA.
+- **Fechamento mínimo do loop**:
+  - toda tela ou relatório de experimento deve diferenciar custo rastreável, total legado e diferença não reconciliada;
+  - custos OpenAI/GeraLanding/GeraSalesPage em USD entram como auditoria técnica, não como parcela BRL sem conversão rastreável;
+  - sincronização de mídia deve aplicar apenas delta e ter teste de regressão;
+  - atribuição de custo não pode persistir o mesmo delta por dois caminhos na mesma transação.
+- **Regra preventiva**:
+  - nunca usar `experiment.total_cost` isolado como explicação financeira principal; sempre reconciliar por origem auditável ou marcar como legado não reconciliado.
+
 ---
 
 ## Checklist rápido antes de corrigir problema recorrente

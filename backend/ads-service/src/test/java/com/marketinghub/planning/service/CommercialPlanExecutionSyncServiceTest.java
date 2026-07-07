@@ -36,12 +36,14 @@ class CommercialPlanExecutionSyncServiceTest {
                 BigDecimal.valueOf(120),
                 BigDecimal.valueOf(2),
                 BigDecimal.valueOf(4),
+                BigDecimal.valueOf(6),
                 BigDecimal.valueOf(81),
                 3,
                 2,
                 BigDecimal.valueOf(120),
                 BigDecimal.valueOf(2),
                 BigDecimal.valueOf(4),
+                BigDecimal.valueOf(6),
                 BigDecimal.valueOf(81),
                 3,
                 2);
@@ -54,14 +56,14 @@ class CommercialPlanExecutionSyncServiceTest {
 
         assertThat(plan.getActualCampaignCost()).isEqualByComparingTo("120.00");
         assertThat(plan.getActualAiCost()).isEqualByComparingTo("14.00");
-        assertThat(plan.getActualTotalCost()).isEqualByComparingTo("134.00");
+        assertThat(plan.getActualTotalCost()).isEqualByComparingTo("140.00");
         assertThat(plan.getActualRevenue()).isEqualByComparingTo("81.00");
         assertThat(plan.getActualExperimentsCreated()).isEqualTo(3);
         assertThat(plan.getActualExperimentsPublished()).isEqualTo(2);
         assertThat(plan.getExecutionSyncedAt()).isNotNull();
         assertThat(milestone.getActualCampaignCost()).isEqualByComparingTo("120.00");
         assertThat(milestone.getActualAiCost()).isEqualByComparingTo("14.00");
-        assertThat(milestone.getActualTotalCost()).isEqualByComparingTo("134.00");
+        assertThat(milestone.getActualTotalCost()).isEqualByComparingTo("140.00");
         assertThat(milestone.getActualRevenue()).isEqualByComparingTo("81.00");
         assertThat(milestone.getActualExperimentsCreated()).isEqualTo(3);
         assertThat(milestone.getActualExperimentsPublished()).isEqualTo(2);

@@ -60,9 +60,7 @@ describe("OprmEnrichedNicheDetailPage", () => {
     expect(
       await screen.findByText("IA para crescimento de Cabeleireiros"),
     ).toBeTruthy();
-    expect(
-      screen.getByRole("link", { name: "Criar hipótese" }),
-    ).toHaveAttribute("href", "/niches/18/hypotheses/new");
+    expect(screen.queryByRole("link", { name: "Criar hipótese" })).toBeNull();
     expect(
       screen.getByRole("link", { name: "Baixar pesquisa Markdown" }),
     ).toHaveAttribute(

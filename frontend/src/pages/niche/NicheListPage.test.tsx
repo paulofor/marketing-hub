@@ -34,7 +34,8 @@ describe("NicheListPage", () => {
   it("renders table", async () => {
     (axios.get as any).mockResolvedValue({ data: pageResponse([]) });
     renderPage();
-    expect(await screen.findByText(/Novo Nicho/)).toBeTruthy();
+    expect(await screen.findByText(/Nenhum nicho encontrado/)).toBeTruthy();
+    expect(screen.queryByText(/Novo Nicho/)).toBeNull();
   });
 
   it("shows detail button without linking the niche name", async () => {
@@ -50,7 +51,9 @@ describe("NicheListPage", () => {
     renderPage();
 
     expect(await screen.findByText("Detalhes")).toBeTruthy();
+    expect(screen.getByText("1")).toBeTruthy();
     expect(screen.getByText("Teste").closest("a")).toBeNull();
+    expect(screen.queryByText("Editar")).toBeNull();
     expect(screen.queryByText("Segmentação (I/C/B)")).toBeNull();
     expect(screen.getByText("R$ 25,00")).toBeTruthy();
   });

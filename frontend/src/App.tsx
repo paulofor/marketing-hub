@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useParams } from "react-router-dom";
 
 import FacebookAccountsPage from "./pages/FacebookAccountsPage";
 import InstagramAccountsPage from "./pages/InstagramAccountsPage";
@@ -20,8 +20,6 @@ import SuccessProductDetailPage from "./pages/successProduct/SuccessProductDetai
 import EditSuccessProductPage from "./pages/successProduct/EditSuccessProductPage";
 import InstagramPostsPage from "./pages/post/InstagramPostsPage";
 import NicheListPage from "./pages/niche/NicheListPage";
-import NewNichePage from "./pages/niche/NewNichePage";
-import EditNichePage from "./pages/niche/EditNichePage";
 import AiServiceListPage from "./pages/aiService/AiServiceListPage";
 import NewAiServicePage from "./pages/aiService/NewAiServicePage";
 import EditAiServicePage from "./pages/aiService/EditAiServicePage";
@@ -53,10 +51,8 @@ import NicheDetailPage from "./pages/niche/NicheDetailPage";
 import HypothesisDetailPage from "./pages/hypothesis/HypothesisDetailPage";
 import HypothesesPage from "./pages/hypothesis/HypothesesPage";
 import HypothesisListPage from "./pages/hypothesis/HypothesisListPage";
-import NewHypothesisPage from "./pages/hypothesis/NewHypothesisPage";
 import HypothesisPainStageExecutionDetailPage from "./pages/hypothesis/HypothesisPainStageExecutionDetailPage";
 import HypothesisPipelineSummaryPage from "./pages/hypothesis/HypothesisPipelineSummaryPage";
-import EditHypothesisPage from "./pages/hypothesis/EditHypothesisPage";
 import AppLayout from "./app/AppLayout";
 import AnglesPage from "./pages/AnglesPage";
 import VisualProofsPage from "./pages/VisualProofsPage";
@@ -144,6 +140,24 @@ import ClickbasePage from "./pages/clickbase/ClickbasePage";
 import OpsMonitorPage from "./pages/OpsMonitorPage";
 import CommercialPlanningPage from "./pages/planning/CommercialPlanningPage";
 
+function LegacyNicheRedirect() {
+  const { nicheId } = useParams();
+  return <Navigate to={nicheId ? `/niches/${nicheId}` : "/niches"} replace />;
+}
+
+function LegacyHypothesisRedirect() {
+  const { nicheId, hypothesisId } = useParams();
+  if (nicheId && hypothesisId) {
+    return (
+      <Navigate
+        to={`/niches/${nicheId}/hypotheses/${hypothesisId}`}
+        replace
+      />
+    );
+  }
+  return <Navigate to={nicheId ? `/niches/${nicheId}` : "/niches"} replace />;
+}
+
 export default function App() {
   return (
     <div className="app-shell">
@@ -201,12 +215,12 @@ export default function App() {
               />
               <Route path="/niches" element={<AppLayout />}>
                 <Route index element={<NicheListPage />} />
-                <Route path="new" element={<NewNichePage />} />
+                <Route path="new" element={<Navigate to=".." replace />} />
                 <Route path=":nicheId" element={<NicheDetailPage />} />
-                <Route path=":nicheId/edit" element={<EditNichePage />} />
+                <Route path=":nicheId/edit" element={<LegacyNicheRedirect />} />
                 <Route
                   path=":nicheId/hypotheses/new"
-                  element={<NewHypothesisPage />}
+                  element={<LegacyNicheRedirect />}
                 />
                 <Route
                   path=":nicheId/hypothesis-pipeline/summary"
@@ -222,7 +236,7 @@ export default function App() {
                 />
                 <Route
                   path=":nicheId/hypotheses/:hypothesisId/edit"
-                  element={<EditHypothesisPage />}
+                  element={<LegacyHypothesisRedirect />}
                 />
               </Route>
               <Route path="/experiments" element={<ExperimentListPage />} />

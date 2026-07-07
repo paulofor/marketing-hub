@@ -68,23 +68,6 @@ export default function OprmEnrichedNicheDetailPage() {
       <div className="d-flex align-items-center justify-content-between gap-3 mb-3">
         <PageTitle>Nicho enriquecido</PageTitle>
         <div className="d-flex gap-2">
-          {data.marketNicheId ? (
-            <Link
-              className="btn btn-success"
-              to={`/niches/${data.marketNicheId}/hypotheses/new`}
-            >
-              Criar hipótese
-            </Link>
-          ) : (
-            <button
-              type="button"
-              className="btn btn-success"
-              disabled
-              title="Nicho não informado para criar hipótese"
-            >
-              Criar hipótese
-            </button>
-          )}
           <a
             className="btn btn-primary"
             href={buildOprmEnrichedNichePipelineMarkdownUrl(

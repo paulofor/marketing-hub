@@ -76,9 +76,9 @@ function Card({
         <div className="mt-2 d-flex gap-1">
           <Link
             className="btn btn-sm btn-outline-dark"
-            to={`/niches/${item.marketNicheId}/hypotheses/${item.id}/edit`}
+            to={`/niches/${item.marketNicheId}/hypotheses/${item.id}`}
           >
-            Editar
+            Abrir
           </Link>
           <button className="btn btn-sm btn-outline-primary">
             Gerar Landing

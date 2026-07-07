@@ -1,5 +1,4 @@
 import { cleanup, render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import CommercialPlanningPage from "./CommercialPlanningPage";
 
@@ -57,26 +56,8 @@ vi.mock("../../api/planning/useCommercialPlans", async () => {
       isLoading: false,
       isError: false,
     }),
-    useCreateCommercialPlan: () => ({ isPending: false }),
-    useUpdateCommercialPlan: () => ({ isPending: false }),
-    useSimulateCommercialPlan: () => ({
-      isPending: false,
-      mutateAsync: vi.fn(),
-    }),
   };
 });
-
-vi.mock("../../api/niche/useNiches", () => ({
-  useNiches: () => ({ data: null }),
-}));
-
-vi.mock("../../api/hypothesis/useHypotheses", () => ({
-  useHypotheses: () => ({ data: null }),
-}));
-
-vi.mock("../../api/experiment/useExperiments", () => ({
-  useExperiments: () => ({ data: null }),
-}));
 
 afterEach(() => {
   mockPlans = defaultPlans;
@@ -84,53 +65,31 @@ afterEach(() => {
 });
 
 describe("CommercialPlanningPage", () => {
-  it("renderiza o planejamento mesmo quando listas auxiliares ou marcos vêm vazios", () => {
+  it("renderiza somente o planejamento superior", () => {
     render(<CommercialPlanningPage />);
 
     expect(screen.getByText("Planejamento")).toBeTruthy();
     expect(screen.getAllByText("Plano sem marcos").length).toBeGreaterThan(0);
-    expect(screen.getByText("Novo Plano de Primeira Venda")).toBeTruthy();
-    expect(
-      screen.getByText("Nenhum marco cadastrado para este plano."),
-    ).toBeTruthy();
+    expect(screen.getByText("Plano do mês corrente")).toBeTruthy();
+    expect(screen.queryByText("Planos de Primeira Venda")).toBeNull();
+    expect(screen.queryByText("Novo Plano de Primeira Venda")).toBeNull();
   });
 
-  it("preenche o formulario com o planejamento de julho em tres cenarios", async () => {
+  it("usa valores seguros quando status vem fora do contrato", () => {
     render(<CommercialPlanningPage />);
-
-    await userEvent.click(screen.getAllByText("Usar planejamento de julho")[0]);
-
-    expect(
-      screen.getByDisplayValue("Planejamento Julho 2026 - Primeira venda"),
-    ).toBeTruthy();
-    expect(screen.getByDisplayValue("2026-07-31")).toBeTruthy();
-    expect(screen.getByDisplayValue("300")).toBeTruthy();
-    expect(screen.getByDisplayValue("27")).toBeTruthy();
-    expect(screen.getByDisplayValue("81")).toBeTruthy();
-    expect(screen.getByDisplayValue("2")).toBeTruthy();
-    expect(screen.getByDisplayValue("3")).toBeTruthy();
-    expect(screen.getByDisplayValue(/Compra aprovada/)).toBeTruthy();
-    expect(screen.getByDisplayValue(/Cenario venda direta/)).toBeTruthy();
-  });
-
-  it("renderiza plano mesmo quando status e recomendacao vêm fora do contrato", async () => {
-    render(<CommercialPlanningPage />);
-
-    await userEvent.click(screen.getByText("Plano com dados inesperados"));
 
     expect(screen.getAllByText("Rascunho").length).toBeGreaterThan(0);
-    expect(screen.getByText("Corrigir")).toBeTruthy();
-    expect(screen.getByText(/Marco com status inesperado/)).toBeTruthy();
-    expect(screen.getByText(/Pendente/)).toBeTruthy();
   });
 
-  it("renderiza a tela quando a API ainda nao retorna planos", () => {
+  it("renderiza sugestao de julho quando a API ainda nao retorna planos", () => {
     mockPlans = [];
 
     render(<CommercialPlanningPage />);
 
     expect(screen.getByText("Planejamento")).toBeTruthy();
-    expect(screen.getByText("Novo Plano de Primeira Venda")).toBeTruthy();
-    expect(screen.getByText("Nenhum plano cadastrado ainda.")).toBeTruthy();
+    expect(
+      screen.getByText("Planejamento Julho 2026 - Primeira venda"),
+    ).toBeTruthy();
+    expect(screen.getByText("Plano sugerido")).toBeTruthy();
   });
 });

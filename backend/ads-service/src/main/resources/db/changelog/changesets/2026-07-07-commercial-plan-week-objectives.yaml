@@ -1,0 +1,67 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-07-01-commercial-plan-week-objectives
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - dbms:
+            type: mysql
+        - not:
+            - tableExists:
+                tableName: commercial_plan_week_objective
+      changes:
+        - createTable:
+            tableName: commercial_plan_week_objective
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: plan_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: week_number
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: sequence_order
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: objective_text
+                  type: LONGTEXT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: score
+                  type: INT
+              - column:
+                  name: created_at
+                  type: DATETIME(6)
+              - column:
+                  name: updated_at
+                  type: DATETIME(6)
+        - addForeignKeyConstraint:
+            baseTableName: commercial_plan_week_objective
+            baseColumnNames: plan_id
+            constraintName: fk_commercial_plan_week_objective_plan
+            referencedTableName: commercial_plan
+            referencedColumnNames: id
+        - createIndex:
+            tableName: commercial_plan_week_objective
+            indexName: idx_commercial_plan_week_objective_plan_week
+            columns:
+              - column:
+                  name: plan_id
+              - column:
+                  name: week_number
+              - column:
+                  name: sequence_order

@@ -2,8 +2,10 @@ import { useMemo } from "react";
 import PageTitle from "../../components/PageTitle";
 import {
   CommercialPlan,
+  CommercialPlanWeek,
   CommercialPlanStatus,
   SaveCommercialPlanPayload,
+  useCommercialPlanWeeks,
   useCommercialPlans,
 } from "../../api/planning/useCommercialPlans";
 import "./CommercialPlanningPage.css";
@@ -103,6 +105,11 @@ function formatExecutedNumber(value?: number | null) {
   return value == null ? "0" : String(value);
 }
 
+function formatDate(value?: string | null) {
+  if (!value) return "Não definido";
+  return new Date(value).toLocaleDateString("pt-BR", { timeZone: "UTC" });
+}
+
 function progressPercentage(target?: number | null, actual?: number | null) {
   if (!target || target <= 0) return 0;
   return Math.min(100, Math.round(((actual ?? 0) / target) * 100));
@@ -178,6 +185,71 @@ function MonthlyMetricCard({
   );
 }
 
+function WeeklyExperimentTable({ weeks }: { weeks: CommercialPlanWeek[] }) {
+  return (
+    <section className="commercial-planning-week-list">
+      {weeks.map((week) => (
+        <article className="commercial-planning-week-card" key={week.weekNumber}>
+          <div className="commercial-planning-week-card-header">
+            <div>
+              <h3>Semana {week.weekNumber}</h3>
+              <p>
+                {formatDate(week.startDate)} até {formatDate(week.endDate)}
+              </p>
+            </div>
+            <div className="commercial-planning-week-totals">
+              <span>{week.experimentsCreated} experimentos</span>
+              <strong>{formatExecutedCurrency(week.totalCost)}</strong>
+              <small>{formatExecutedCurrency(week.totalRevenue)} receita</small>
+            </div>
+          </div>
+
+          <div className="commercial-planning-week-table-wrap">
+            <table className="table table-sm align-middle mb-0 commercial-planning-week-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Nome</th>
+                  <th>Tipo</th>
+                  <th>Status</th>
+                  <th>Criado</th>
+                  <th>Custo total</th>
+                  <th>Vídeo</th>
+                  <th>Receita</th>
+                  <th>Resultado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {week.experiments.length > 0 ? (
+                  week.experiments.map((experiment) => (
+                    <tr key={experiment.id}>
+                      <td>{experiment.id}</td>
+                      <td>{experiment.name}</td>
+                      <td>{experiment.productType ?? "Não definido"}</td>
+                      <td>{experiment.status ?? "Não definido"}</td>
+                      <td>{formatDate(experiment.createdAt)}</td>
+                      <td>{formatExecutedCurrency(experiment.totalCost)}</td>
+                      <td>{formatExecutedCurrency(experiment.videoCost)}</td>
+                      <td>{formatExecutedCurrency(experiment.revenue)}</td>
+                      <td>{experiment.result ?? "Sem resultado"}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={9} className="text-muted">
+                      Nenhum experimento criado nesta semana.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </article>
+      ))}
+    </section>
+  );
+}
+
 export default function CommercialPlanningPage() {
   const plansQuery = useCommercialPlans();
   const plans = asArray(plansQuery.data);
@@ -185,6 +257,10 @@ export default function CommercialPlanningPage() {
     () => plans[0] ?? fallbackMonthPlan(),
     [plans],
   );
+  const planWeeksQuery = useCommercialPlanWeeks(
+    currentMonthPlan.id > 0 ? currentMonthPlan.id : null,
+  );
+  const weeks = asArray(planWeeksQuery.data);
   const costProgress = progressPercentage(
     currentMonthPlan.maxBudget,
     currentMonthPlan.actualTotalCost,
@@ -279,6 +355,14 @@ export default function CommercialPlanningPage() {
           </div>
         </div>
       </section>
+
+      {planWeeksQuery.isError ? (
+        <div className="alert alert-danger mb-0" role="alert">
+          Não foi possível carregar os experimentos por semana.
+        </div>
+      ) : null}
+
+      {weeks.length > 0 ? <WeeklyExperimentTable weeks={weeks} /> : null}
     </div>
   );
 }

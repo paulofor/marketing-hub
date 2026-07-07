@@ -1,5 +1,4 @@
 import { useMemo } from "react";
-import { CalendarClock, Gauge, TrendingUp, WalletCards } from "lucide-react";
 import PageTitle from "../../components/PageTitle";
 import {
   CommercialPlan,
@@ -212,16 +211,6 @@ export default function CommercialPlanningPage() {
       <header className="d-flex flex-column flex-xl-row justify-content-between gap-3">
         <div>
           <PageTitle>Planejamento</PageTitle>
-          <p className="text-secondary mb-0">
-            Direção comercial para manter nicho, hipótese, oferta, campanha e
-            landing conectados à primeira venda.
-          </p>
-        </div>
-        <div className="d-flex align-items-center gap-2 text-secondary">
-          <CalendarClock size={18} aria-hidden="true" />
-          <span>
-            Plano ativo precisa de prazo, métrica e critério de parada.
-          </span>
         </div>
       </header>
 
@@ -246,32 +235,6 @@ export default function CommercialPlanningPage() {
               <h2 className="commercial-planning-month-title mb-2">
                 Julho 2026
               </h2>
-              <p className="commercial-planning-month-objective mb-0">
-                {currentMonthPlan.commercialObjective ||
-                  "Defina o objetivo comercial do mês."}
-              </p>
-            </div>
-            <div className="commercial-planning-month-summary">
-              <div>
-                <span>{plans[0] ? "Plano ativo" : "Plano sugerido"}</span>
-                <strong>{currentMonthPlan.name}</strong>
-              </div>
-              <div>
-                <span>Prazo</span>
-                <strong>
-                  {currentMonthPlan.deadline
-                    ? new Date(currentMonthPlan.deadline).toLocaleDateString(
-                        "pt-BR",
-                      )
-                    : "Não definido"}
-                </strong>
-              </div>
-              <div>
-                <span>Dias restantes</span>
-                <strong>
-                  {currentMonthPlan.daysRemaining ?? "Não definido"}
-                </strong>
-              </div>
             </div>
           </div>
 
@@ -313,80 +276,6 @@ export default function CommercialPlanningPage() {
               )}
               percentage={publishedExperimentsProgress}
             />
-          </div>
-
-          <div className="commercial-planning-month-grid">
-            <section className="commercial-planning-month-panel">
-              <div className="d-flex align-items-center gap-2 mb-3">
-                <WalletCards size={20} aria-hidden="true" />
-                <h3 className="h6 mb-0">Tipos de produto</h3>
-              </div>
-              <div className="commercial-planning-product-types">
-                <div>
-                  <strong>Low-ticket</strong>
-                  <span>Meta: produto comprável de R$ 19,90</span>
-                  <small>
-                    Execução:{" "}
-                    {currentMonthPlan.actualRevenue
-                      ? "venda registrada"
-                      : "aguardando primeira compra"}
-                  </small>
-                </div>
-                <div>
-                  <strong>Produto IA</strong>
-                  <span>Meta: material personalizado com custo controlado</span>
-                  <small>
-                    Execução:{" "}
-                    {formatExecutedCurrency(currentMonthPlan.actualAiCost)} em IA
-                  </small>
-                </div>
-                <div>
-                  <strong>Captura</strong>
-                  <span>Meta: recuperar interesse sem competir com checkout</span>
-                  <small>
-                    Execução:{" "}
-                    {formatExecutedNumber(
-                      currentMonthPlan.actualExperimentsPublished,
-                    )}{" "}
-                    experimento(s) publicado(s)
-                  </small>
-                </div>
-              </div>
-            </section>
-
-            <section className="commercial-planning-month-panel">
-              <div className="d-flex align-items-center gap-2 mb-3">
-                <Gauge size={20} aria-hidden="true" />
-                <h3 className="h6 mb-0">Critério de decisão</h3>
-              </div>
-              <p className="mb-2">
-                <strong>Métrica principal:</strong>{" "}
-                {currentMonthPlan.mainMetric || "Não definida"}
-              </p>
-              <p className="mb-2">
-                <strong>Sucesso:</strong>{" "}
-                {currentMonthPlan.successCriteria || "Não definido"}
-              </p>
-              <p className="mb-0">
-                <strong>Parada:</strong>{" "}
-                {currentMonthPlan.stopCriteria || "Não definido"}
-              </p>
-            </section>
-
-            <section className="commercial-planning-month-panel">
-              <div className="d-flex align-items-center gap-2 mb-3">
-                <TrendingUp size={20} aria-hidden="true" />
-                <h3 className="h6 mb-0">Execução imediata</h3>
-              </div>
-              <p className="mb-2">
-                {currentMonthPlan.nextAction || "Sem próxima ação definida."}
-              </p>
-              <p className="text-secondary mb-0">
-                Gargalo:{" "}
-                {currentMonthPlan.currentBlocker ||
-                  "nenhum bloqueio registrado."}
-              </p>
-            </section>
           </div>
         </div>
       </section>

@@ -4,12 +4,14 @@ import com.marketinghub.planning.CommercialPlanStatus;
 import com.marketinghub.planning.dto.CommercialPlanDto;
 import com.marketinghub.planning.dto.CommercialPlanMilestoneDto;
 import com.marketinghub.planning.dto.CommercialPlanSimulationDto;
+import com.marketinghub.planning.dto.CommercialPlanWeekDto;
 import com.marketinghub.planning.dto.CreateCommercialPlanRequest;
 import com.marketinghub.planning.dto.CreateCommercialPlanSimulationRequest;
 import com.marketinghub.planning.dto.UpdateCommercialPlanMilestoneRequest;
 import com.marketinghub.planning.dto.UpdateCommercialPlanRequest;
 import com.marketinghub.planning.mapper.CommercialPlanMapper;
 import com.marketinghub.planning.service.CommercialPlanService;
+import com.marketinghub.planning.service.CommercialPlanWeeklyExperimentService;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -26,10 +28,15 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/planning/commercial-plans")
 public class CommercialPlanController {
     private final CommercialPlanService service;
+    private final CommercialPlanWeeklyExperimentService weeklyExperimentService;
     private final CommercialPlanMapper mapper;
 
-    public CommercialPlanController(CommercialPlanService service, CommercialPlanMapper mapper) {
+    public CommercialPlanController(
+            CommercialPlanService service,
+            CommercialPlanWeeklyExperimentService weeklyExperimentService,
+            CommercialPlanMapper mapper) {
         this.service = service;
+        this.weeklyExperimentService = weeklyExperimentService;
         this.mapper = mapper;
     }
 
@@ -52,6 +59,12 @@ public class CommercialPlanController {
     @GetMapping("/{id}")
     public CommercialPlanDto get(@PathVariable Long id) {
         return mapper.toDto(service.getPlan(id), service.listMilestones(id), service.listSimulations(id));
+    }
+
+    /** Lista os experimentos criados em cada semana do mês do plano. */
+    @GetMapping("/{id}/weeks")
+    public List<CommercialPlanWeekDto> listWeeks(@PathVariable Long id) {
+        return weeklyExperimentService.listWeeks(id);
     }
 
     /** Atualiza um plano comercial existente. */

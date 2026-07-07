@@ -118,6 +118,7 @@ class ExperimentServiceTest {
     private String trackedSalesPageHtml() {
         return """
                 <html><body>
+                <section data-track-section="oferta">Oferta</section>
                 <script data-mh-sales-page-analytics="true">
                 sendEvent('page_view');
                 sendEvent('page_load_metric');

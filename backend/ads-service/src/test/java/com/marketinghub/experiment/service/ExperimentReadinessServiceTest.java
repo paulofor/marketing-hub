@@ -255,6 +255,28 @@ class ExperimentReadinessServiceTest {
     }
 
     @Test
+    void shouldBlockLowTicketCampaignWhenSalesPageHasAnalyticsWithoutTrackableSections() {
+        Experiment experiment = buildExperiment(61L, 71L);
+        experiment.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
+        experiment.setFollowUpActionUrl("https://pagamentopalf.site/sales-page-exp61.html");
+        experiment.getNiche().setFacebookPixelId("pixel-exp61");
+        completeCommercialContract(experiment);
+
+        when(creativeRepository.existsByExperimentIdAndStatus(61L, CreativeStatus.READY)).thenReturn(true);
+        mockPublishableSelection(61L, TargetingCandidateType.INTEREST, TargetingElementType.INTEREST);
+        mockCompletedGeraSalesPagePublication(61L);
+        mockSalesPageAudit(
+                61L,
+                "https://pagamentopalf.site/sales-page-exp61.html",
+                "https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=exp61",
+                salesPageHtmlWithoutTrackableSections());
+
+        assertThat(service.computeMissingConfiguration(experiment))
+                .containsExactly("salesPageAnalyticsCollectors");
+        assertThat(service.isReadyForCampaign(experiment)).isFalse();
+    }
+
+    @Test
     void shouldRequireCommercialContractBeforeSalesPageForPurchaseIntent() {
         Experiment experiment = buildExperiment(56L, 66L);
         experiment.setExperimentType(ExperimentType.LOW_TICKET_PRODUCT);
@@ -343,6 +365,22 @@ class ExperimentReadinessServiceTest {
     private String trackedSalesPageHtml() {
         return """
                 <html><body>
+                <section data-track-section="oferta">Oferta</section>
+                <script data-mh-sales-page-analytics="true">
+                sendEvent('page_view');
+                sendEvent('page_load_metric');
+                sendEvent('section_view_time');
+                sendEvent('checkout_click');
+                </script>
+                </body></html>
+                """;
+    }
+
+    /** Retorna HTML com script antigo sem marcacao de secao, regressao que zerava tempo por secao. */
+    private String salesPageHtmlWithoutTrackableSections() {
+        return """
+                <html><body>
+                <section>Oferta sem rastreamento</section>
                 <script data-mh-sales-page-analytics="true">
                 sendEvent('page_view');
                 sendEvent('page_load_metric');

@@ -3,6 +3,7 @@ package com.marketinghub.experiment.service;
 import com.marketinghub.experiment.Experiment;
 import com.marketinghub.experiment.ExperimentCampaignObjective;
 import com.marketinghub.experiment.ExperimentType;
+import com.marketinghub.gerasalespage.v1.GeraSalesPageAnalyticsContract;
 import com.marketinghub.gerasalespage.v1.GeraSalesPagePublicationAudit;
 import com.marketinghub.gerasalespage.v1.GeraSalesPageStageCode;
 import com.marketinghub.repository.jpa.gerasalespage.v1.GeraSalesPagePublicationAuditRepository;
@@ -108,12 +109,7 @@ public class ExperimentCampaignDestinationPolicy {
         if (publication == null || !StringUtils.hasText(publication.getHtml())) {
             return false;
         }
-        String html = publication.getHtml();
-        return html.contains("data-mh-sales-page-analytics")
-                && html.contains("page_view")
-                && html.contains("page_load_metric")
-                && html.contains("section_view_time")
-                && html.contains("checkout_click");
+        return GeraSalesPageAnalyticsContract.hasRequiredCollectors(publication.getHtml());
     }
 
     /** Confirma se a etapa Oferta deixou um contrato comercial mínimo para venda. */

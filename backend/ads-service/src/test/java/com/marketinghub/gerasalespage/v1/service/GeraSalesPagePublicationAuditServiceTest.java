@@ -113,6 +113,10 @@ class GeraSalesPagePublicationAuditServiceTest {
                 .isEqualTo("https://oportunidadebrasil.shop/flows/exp-53-gerasalespage-v1");
         assertThat(audit.getValue().getCheckoutUrl()).isEqualTo("https://mp.test/checkout");
         assertThat(audit.getValue().getHtml()).contains("Venda");
+        assertThat(audit.getValue().getHtml()).contains("data-track-section");
+        assertThat(audit.getValue().getHtml()).contains("data-mh-sales-page-analytics");
+        assertThat(audit.getValue().getHtml()).contains("section_view_time");
+        assertThat(flow.getValue().getCustomFormHtml()).contains("data-track-section");
         assertThat(stages.getValue()).hasSize(2);
         assertThat(stages.getValue().getFirst().getPublicationAuditId()).isEqualTo(10L);
         assertThat(stages.getValue().getFirst().getStageCode()).isEqualTo("sales-page-offer-brief");

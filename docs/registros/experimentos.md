@@ -5653,3 +5653,11 @@
 - Causa-raiz tratada: os últimos experimentos tinham interesse inicial, mas não validavam disposição real de pagamento antes da personalização; trocar o funil atual contaminaria o aprendizado.
 - Correção aplicada: o preparo sistêmico de Produto IA pode criar ou reaproveitar uma hipótese variante para `AI_VISUAL_PREVIEW`, com preço inicial de R$ 9,90, pacote de prévia paga e rascunho de experimento focado em checkout/compra.
 - Prevenção de recorrência: a criação de experimento bloqueia subtipo divergente entre hipótese preparada e experimento solicitado, evitando misturar métricas do funil de amostra gratuita com o funil de venda de entrada.
+
+## 2026-07-07 — Analytics rastreável obrigatório no GeraSalesPage
+
+- Problema: páginas de venda podiam ter script de analytics, mas nenhuma seção marcada com `data-track-section`, fazendo `page_view` aparecer e `section_view_time` ficar zerado.
+- Causa-raiz tratada: a trava de prontidão validava apenas a presença textual dos coletores, não a existência de blocos rastreáveis para medir tempo real por seção.
+- Correção aplicada: a publicação final do GeraSalesPage v1 passa a marcar automaticamente seções/blocos principais com `data-track-section`, injeta analytics mínimo quando faltar e salva/publica o HTML já rastreável.
+- Trava preventiva: a política de campanha/readiness agora bloqueia página de venda sem `data-track-section`, mesmo que contenha `page_view`, `page_load_metric`, `section_view_time` e `checkout_click`.
+- Tela: a página do experimento passa a exibir campanhas, conjuntos, anúncios e funis atribuídos por anúncio, permitindo visualizar também o Funil B quando o backend já tiver os dados.

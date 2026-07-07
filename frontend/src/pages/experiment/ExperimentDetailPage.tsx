@@ -44,6 +44,7 @@ import {
 } from "../../api/pipeline/useGeraLandingStageModels";
 import { useExperimentCompleteMarkdownReport } from "../../api/experiment/useExperimentCompleteMarkdownReport";
 import { useGeraSalesPagePublications } from "../../api/experiment/useGeraSalesPagePublications";
+import { useExperimentPipelineJobHistory } from "../../api/experiment/useExperimentPipelineJobHistory";
 
 function formatPipelineStageModel(stageModel?: GeraLandingStageModel) {
   const name = stageModel?.openAiModelName?.trim();
@@ -288,6 +289,11 @@ export default function ExperimentDetailPage() {
   const navigate = useNavigate();
   const { data, isLoading } = useExperiment(expId);
   const geraSalesPagePublications = useGeraSalesPagePublications(expId);
+  const experimentPipelineJobHistory = useExperimentPipelineJobHistory({
+    experimentId: expId,
+    page: 0,
+    size: 50,
+  });
   const { data: geraLandingStageModels, isLoading: isLoadingStageModels } =
     useGeraLandingStageModels();
   const {
@@ -1729,6 +1735,11 @@ export default function ExperimentDetailPage() {
         }).format(n)
       : "—";
   const formatPercent = (n?: number | null) => (n != null ? `${n}%` : "—");
+  const formatCurrencyValue = (value: number, currency: "BRL" | "USD") =>
+    new Intl.NumberFormat(currency === "BRL" ? "pt-BR" : "en-US", {
+      style: "currency",
+      currency,
+    }).format(value);
   const formatDateTimeValue = (value?: string | null) => {
     if (!value) return "—";
     const date = new Date(value);
@@ -1756,6 +1767,57 @@ export default function ExperimentDetailPage() {
     (baseKpi != null && stopLossFactor != null
       ? baseKpi * stopLossFactor
       : null);
+  const salesPagePublications = geraSalesPagePublications.data ?? [];
+  const latestSalesPagePublication = salesPagePublications[0];
+  const originCostBrl = data.cost ?? 0;
+  const paidMediaCostBrl = data.campaignMetric?.spend ?? 0;
+  const operationalExpenseBrl = data.expense ?? 0;
+  const totalExperimentCostBrl =
+    data.totalCost ??
+    originCostBrl + paidMediaCostBrl + operationalExpenseBrl;
+  const contentPipelineCostUsd =
+    experimentPipelineJobHistory.data?.content.reduce(
+      (sum, job) => sum + (job.costUsd ?? 0),
+      0,
+    ) ?? 0;
+  const geraSalesPageCostUsd = salesPagePublications.reduce(
+    (sum, publication) =>
+      sum +
+      publication.stages.reduce(
+        (stageSum, stage) => stageSum + (stage.costUsd ?? 0),
+        0,
+      ),
+    0,
+  );
+  const experimentCostRows = [
+    {
+      label: "Custo de origem",
+      value: formatCurrencyValue(originCostBrl, "BRL"),
+    },
+    {
+      label: "Mídia paga",
+      value: formatCurrencyValue(paidMediaCostBrl, "BRL"),
+    },
+    {
+      label: "Despesa operacional",
+      value: formatCurrencyValue(operationalExpenseBrl, "BRL"),
+    },
+    {
+      label: "Pipeline de conteúdo",
+      value: formatCurrencyValue(contentPipelineCostUsd, "USD"),
+    },
+    {
+      label: "GeraLanding",
+      value: formatCurrencyValue(
+        totalCompletedGeraLandingAllStagesCostUsd,
+        "USD",
+      ),
+    },
+    {
+      label: "GeraSalesPage",
+      value: formatCurrencyValue(geraSalesPageCostUsd, "USD"),
+    },
+  ];
   const experimentPage = data.facebookPage;
   const instagramAccount = data.instagramAccount;
   const hasCreativesReady =
@@ -1929,8 +1991,6 @@ export default function ExperimentDetailPage() {
       action: () => window.scrollTo({ top: 0, behavior: "smooth" }),
     },
   ];
-  const salesPagePublications = geraSalesPagePublications.data ?? [];
-  const latestSalesPagePublication = salesPagePublications[0];
   const diagnosticsVariant: Record<string, string> = {
     ERROR: "danger",
     WARNING: "warning",
@@ -2588,6 +2648,42 @@ export default function ExperimentDetailPage() {
           <Tabs.Content value="overview" asChild>
             <div className="d-flex flex-column gap-3">
               <ExperimentRunPanel experimentId={expId} compact />
+              <div className="card">
+                <div className="card-body">
+                  <div className="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
+                    <div>
+                      <h5 className="card-title mb-1">
+                        Custos do experimento
+                      </h5>
+                      <p className="text-muted small mb-0">
+                        Total consolidado em BRL e custos técnicos auditáveis em
+                        USD.
+                      </p>
+                    </div>
+                    <div className="text-end">
+                      <div className="text-muted small">Custo total</div>
+                      <div className="fs-4 fw-semibold">
+                        {formatCurrencyValue(totalExperimentCostBrl, "BRL")}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="row g-3">
+                    {experimentCostRows.map((costRow) => (
+                      <div
+                        key={costRow.label}
+                        className="col-12 col-md-6 col-xl-4"
+                      >
+                        <div className="border rounded-3 p-3 h-100">
+                          <div className="text-muted small">
+                            {costRow.label}
+                          </div>
+                          <div className="fw-semibold">{costRow.value}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
               <div className="card">
                 <div className="card-body p-0">
                   <dl className="row mb-0">

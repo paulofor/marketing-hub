@@ -68,6 +68,9 @@ public class ExperimentDto {
     private BigDecimal unitPrice;
     private BigDecimal cost;
     private BigDecimal totalCost;
+    private BigDecimal auditableTotalCost;
+    private BigDecimal legacyTotalCost;
+    private BigDecimal unreconciledLegacyCost;
     private BigDecimal expense;
     private LocalDate startDate;
     private LocalDate endDate;

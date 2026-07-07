@@ -161,6 +161,72 @@
   color: #667085;
 }
 
+.commercial-planning-week-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.commercial-planning-week-card {
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid #d9dee7;
+  border-radius: 0.5rem;
+  background: #ffffff;
+}
+
+.commercial-planning-week-card-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.commercial-planning-week-card-header h3 {
+  margin: 0;
+  color: #101828;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.commercial-planning-week-card-header p {
+  margin: 0.2rem 0 0;
+  color: #667085;
+}
+
+.commercial-planning-week-totals {
+  display: grid;
+  justify-items: end;
+  gap: 0.1rem;
+  color: #667085;
+  text-align: right;
+}
+
+.commercial-planning-week-totals strong {
+  color: #101828;
+  font-size: 1.1rem;
+}
+
+.commercial-planning-week-table-wrap {
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.commercial-planning-week-table {
+  min-width: 900px;
+}
+
+.commercial-planning-week-table th {
+  color: #667085;
+  font-size: 0.76rem;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.commercial-planning-week-table td {
+  color: #344054;
+  overflow-wrap: anywhere;
+}
+
 @media (max-width: 1199.98px) {
   .commercial-planning-month-heading,
   .commercial-planning-month-grid {
@@ -169,6 +235,17 @@
 
   .commercial-planning-month-metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 767.98px) {
+  .commercial-planning-week-card-header {
+    flex-direction: column;
+  }
+
+  .commercial-planning-week-totals {
+    justify-items: start;
+    text-align: left;
   }
 }
 

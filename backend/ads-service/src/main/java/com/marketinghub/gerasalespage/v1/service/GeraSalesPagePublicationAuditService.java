@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marketinghub.experiment.Experiment;
+import com.marketinghub.gerasalespage.v1.GeraSalesPageAnalyticsContract;
 import com.marketinghub.gerasalespage.v1.GeraSalesPagePublicationAudit;
 import com.marketinghub.gerasalespage.v1.GeraSalesPagePublicationStageAudit;
 import com.marketinghub.gerasalespage.v1.GeraSalesPageStageCode;
@@ -30,6 +31,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.parser.Parser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -49,6 +54,7 @@ public class GeraSalesPagePublicationAuditService {
             "(?iu)(?<![\\p{L}])(" 
                     + "nao|voce|informacao|producao|pendencia|endereco|proximo|almoco|atencao|solucao"
                     + ")(?![\\p{L}@-])");
+    private static final Pattern NON_TRACK_SECTION_CHARS = Pattern.compile("[^a-z0-9_-]+");
 
     private final ExperimentRepository experimentRepository;
     private final GeraSalesPageStageExecutionRepository executionRepository;
@@ -144,9 +150,8 @@ public class GeraSalesPagePublicationAuditService {
                 packagePayload.get("publicUrl"),
                 packagePayload.get("publishedUrl"),
                 packagePayload.get("pageUrl"));
-        validatePublicPortugueseAccentuation(experiment, publicationExecution, html);
         PersonalizedSamplePublication personalizedSamplePublication =
-                publishPersonalizedSampleSalesPageIfNeeded(experiment, html);
+                publishPersonalizedSampleSalesPageIfNeeded(experiment, publicationExecution, html);
         boolean personalizedSampleSalesPage = personalizedSamplePublication != null;
         if (personalizedSamplePublication != null) {
             html = personalizedSamplePublication.html();
@@ -154,7 +159,7 @@ public class GeraSalesPagePublicationAuditService {
             checkoutUrl = null;
         } else {
             DirectCheckoutPublication directCheckoutPublication =
-                    publishDirectCheckoutSalesPage(experiment, html);
+                    publishDirectCheckoutSalesPage(experiment, publicationExecution, html);
             html = directCheckoutPublication.html();
             salesPageUrl = directCheckoutPublication.salesPageUrl();
         }
@@ -198,7 +203,7 @@ public class GeraSalesPagePublicationAuditService {
         log.warn(
                 "GeraSalesPage bloqueou HTML publico sem acentuacao: experimentId={}, idJob={}, termos={}",
                 experiment.getId(),
-                publicationExecution.getIdJob(),
+                publicationExecution != null ? publicationExecution.getIdJob() : null,
                 terms);
         throw new ResponseStatusException(
                 HttpStatus.CONFLICT,
@@ -221,13 +226,16 @@ public class GeraSalesPagePublicationAuditService {
     /** Publica pagina low-ticket standalone no Lead Portal e usa essa URL como destino oficial da campanha. */
     private DirectCheckoutPublication publishDirectCheckoutSalesPage(
             Experiment experiment,
+            GeraSalesPageStageExecution publicationExecution,
             String html) {
         if (!StringUtils.hasText(html)) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
                     "GeraSalesPage v1 exige HTML final para publicar pagina de venda standalone.");
         }
-        LeadPortalFlow flow = upsertDirectCheckoutFlow(experiment, html);
+        String flowSlug = "exp-" + experiment.getId() + "-gerasalespage-v1";
+        String publishableHtml = preparePublicSalesPageHtml(experiment, publicationExecution, html, flowSlug);
+        LeadPortalFlow flow = upsertDirectCheckoutFlow(experiment, publishableHtml);
         try {
             leadPortalFlowPublisher.publish(flow);
         } catch (LeadPortalPublicationException ex) {
@@ -247,7 +255,7 @@ public class GeraSalesPagePublicationAuditService {
         experiment.setLeadPortalFlow(flow);
         experiment.setSchemaFirstLeadPortalEnabled(true);
         experiment.setFollowUpActionUrl(publicUrl);
-        return new DirectCheckoutPublication(publicUrl, html);
+        return new DirectCheckoutPublication(publicUrl, publishableHtml);
     }
 
     /** Cria ou atualiza o fluxo publico usado exclusivamente como pagina de venda standalone. */
@@ -277,6 +285,7 @@ public class GeraSalesPagePublicationAuditService {
     /** Publica a pagina aprovada dentro do funil canonico quando o produto exige personalizacao. */
     private PersonalizedSamplePublication publishPersonalizedSampleSalesPageIfNeeded(
             Experiment experiment,
+            GeraSalesPageStageExecution publicationExecution,
             String html) {
         if (experiment.getProductAiSubtype() != ProductAiSubtype.AI_PERSONALIZED_SAMPLE) {
             return null;
@@ -289,6 +298,8 @@ public class GeraSalesPagePublicationAuditService {
         }
         String htmlWithManagedForm = ensureManagedFormAnchor(html);
         htmlWithManagedForm = removeSelfReferentialLeadPortalIframes(htmlWithManagedForm, flow);
+        htmlWithManagedForm =
+                preparePublicSalesPageHtml(experiment, publicationExecution, htmlWithManagedForm, flow.getSlug());
         flow.setCustomFormHtml(buildPersonalizedSampleTemplatePayload(flow, htmlWithManagedForm));
         flow.setSchemaFirst(true);
         flow.setApproved(true);
@@ -312,6 +323,169 @@ public class GeraSalesPagePublicationAuditService {
         String publicUrl = leadPortalPublicUrlResolver.resolve(flow);
         experiment.setFollowUpActionUrl(publicUrl);
         return new PersonalizedSamplePublication(publicUrl, htmlWithManagedForm);
+    }
+
+    /** Prepara o HTML publico com secoes rastreaveis e analytics minimo antes da publicacao. */
+    private String preparePublicSalesPageHtml(
+            Experiment experiment,
+            GeraSalesPageStageExecution publicationExecution,
+            String html,
+            String flowSlug) {
+        if (!StringUtils.hasText(html)) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "GeraSalesPage v1 exige HTML final para publicar pagina de venda.");
+        }
+        validatePublicPortugueseAccentuation(experiment, publicationExecution, html);
+        Document document = Jsoup.parse(html, "", Parser.htmlParser());
+        document.outputSettings().prettyPrint(false);
+        markTrackableSections(document);
+        injectAnalyticsScriptIfMissing(document, flowSlug);
+        return document.outerHtml();
+    }
+
+    /** Marca secoes estruturais ou blocos principais para permitir medicao de tempo por area da pagina. */
+    private void markTrackableSections(Document document) {
+        List<Element> candidates = document.select("section, main, article, header, footer");
+        if (candidates.isEmpty()) {
+            candidates = document.select("body > div, body > main, body > article");
+        }
+        int index = 1;
+        for (Element candidate : candidates) {
+            if (candidate.hasAttr(GeraSalesPageAnalyticsContract.TRACK_SECTION_ATTRIBUTE)) {
+                continue;
+            }
+            String sectionId = firstText(
+                    candidate.attr("data-section-id"),
+                    candidate.id(),
+                    candidate.attr("aria-label"),
+                    "secao-" + index);
+            candidate.attr(
+                    GeraSalesPageAnalyticsContract.TRACK_SECTION_ATTRIBUTE,
+                    normalizeTrackSectionId(sectionId, index));
+            index++;
+        }
+        if (document.select("[" + GeraSalesPageAnalyticsContract.TRACK_SECTION_ATTRIBUTE + "]").isEmpty()
+                && document.body() != null) {
+            document.body().attr(GeraSalesPageAnalyticsContract.TRACK_SECTION_ATTRIBUTE, "pagina");
+        }
+    }
+
+    /** Injeta o script minimo de analytics quando o pacote final ainda nao trouxe o contrato canonico. */
+    private void injectAnalyticsScriptIfMissing(Document document, String flowSlug) {
+        String html = document.outerHtml();
+        if (GeraSalesPageAnalyticsContract.hasRequiredCollectors(html)) {
+            return;
+        }
+        String endpointSlug = StringUtils.hasText(flowSlug) ? flowSlug.trim() : "";
+        Element script = document.createElement("script");
+        script.attr(GeraSalesPageAnalyticsContract.TRACKING_SCRIPT_ATTRIBUTE, "true");
+        script.appendChild(new org.jsoup.nodes.DataNode(buildAnalyticsScript(endpointSlug)));
+        if (document.body() != null) {
+            document.body().appendChild(script);
+        } else {
+            document.appendChild(script);
+        }
+    }
+
+    /** Monta o coletor minimo de page view, carga, tempo por secao e clique no checkout. */
+    private String buildAnalyticsScript(String flowSlug) {
+        return """
+                (function(){
+                  if (window.__mhSalesPageAnalyticsStarted) return;
+                  window.__mhSalesPageAnalyticsStarted = true;
+                  var flowSlug = '%s';
+                  var endpoint = flowSlug ? '/mh-api/public/lead-portal/flows/' + encodeURIComponent(flowSlug) + '/page-analytics' : '';
+                  var sessionId = localStorage.getItem('mh_session_id') || (Date.now() + '-' + Math.random().toString(16).slice(2));
+                  localStorage.setItem('mh_session_id', sessionId);
+                  function emit(eventType, extra) {
+                    if (!endpoint) return;
+                    var payload = Object.assign({
+                      eventType: eventType,
+                      sessionId: sessionId,
+                      pageUrl: window.location.href,
+                      referrer: document.referrer || null,
+                      userAgent: navigator.userAgent || null,
+                      occurredAt: new Date().toISOString(),
+                      screenWidth: window.screen && window.screen.width,
+                      screenHeight: window.screen && window.screen.height
+                    }, extra || {});
+                    var sent = false;
+                    try {
+                      sent = !!(navigator.sendBeacon && navigator.sendBeacon(endpoint, new Blob([new URLSearchParams(payload).toString()], {type:'application/x-www-form-urlencoded'})));
+                    } catch (ignored) {}
+                    if (sent) return;
+                    try {
+                      fetch(endpoint, {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:new URLSearchParams(payload), keepalive:true});
+                    } catch (ignored) {}
+                  }
+                  function start() {
+                    emit('page_view');
+                    if (performance && performance.timing) {
+                      var t = performance.timing;
+                      emit('page_load_metric', {elapsedMs: Math.max(0, t.loadEventEnd - t.navigationStart || 0)});
+                    }
+                    var state = new Map();
+                    var sections = Array.prototype.slice.call(document.querySelectorAll('[data-track-section]'));
+                    function closeSection(node, reason) {
+                      var id = node.getAttribute('data-track-section');
+                      var s = state.get(node);
+                      if (!s || !s.visibleSince) return;
+                      var elapsedMs = Date.now() - s.visibleSince;
+                      s.elapsedMs += elapsedMs;
+                      s.visibleSince = null;
+                      if (s.elapsedMs > 0) {
+                        emit('section_view_time', {sectionId:id, elapsedMs:s.elapsedMs, reason:reason || 'hidden'});
+                        s.elapsedMs = 0;
+                      }
+                    }
+                    if ('IntersectionObserver' in window) {
+                      var observer = new IntersectionObserver(function(entries){
+                        entries.forEach(function(entry){
+                          var current = state.get(entry.target) || {visibleSince:null, elapsedMs:0};
+                          state.set(entry.target, current);
+                          if (entry.isIntersecting) {
+                            if (!current.visibleSince) current.visibleSince = Date.now();
+                          } else {
+                            closeSection(entry.target, 'intersection');
+                          }
+                        });
+                      }, {threshold:0.35});
+                      sections.forEach(function(node){ observer.observe(node); });
+                    }
+                    document.addEventListener('visibilitychange', function(){
+                      if (document.hidden) sections.forEach(function(node){ closeSection(node, 'hidden'); });
+                    });
+                    window.addEventListener('beforeunload', function(){
+                      sections.forEach(function(node){ closeSection(node, 'beforeunload'); });
+                    });
+                    document.addEventListener('click', function(event){
+                      var link = event.target && event.target.closest ? event.target.closest('a[href]') : null;
+                      if (link && /checkout|mercadopago|pagamento|pref_id/i.test(link.href || '')) {
+                        emit('checkout_click', {checkoutUrl: link.href});
+                      }
+                    }, true);
+                  }
+                  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+                })();
+                """.formatted(escapeJavascriptString(flowSlug));
+    }
+
+    /** Normaliza identificadores de secao para evitar valores vazios ou instaveis no analytics. */
+    private String normalizeTrackSectionId(String value, int fallbackIndex) {
+        String normalized = StringUtils.hasText(value)
+                ? NON_TRACK_SECTION_CHARS.matcher(value.trim().toLowerCase(Locale.ROOT)).replaceAll("-")
+                : "";
+        normalized = normalized.replaceAll("^-+|-+$", "");
+        return StringUtils.hasText(normalized) ? normalized : "secao-" + fallbackIndex;
+    }
+
+    /** Escapa valor textual simples para uso dentro de string JavaScript. */
+    private String escapeJavascriptString(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.replace("\\", "\\\\").replace("'", "\\'");
     }
 
     /** Remove iframe que aponta para o proprio funil e causaria recursao visual no Lead Portal. */

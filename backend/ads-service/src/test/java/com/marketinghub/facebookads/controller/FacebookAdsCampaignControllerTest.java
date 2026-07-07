@@ -357,7 +357,7 @@ class FacebookAdsCampaignControllerTest {
                         .publicationJobId("job-exp53-publication")
                         .salesPageUrl("https://pagamentopalf.site/sales-page-exp53.html")
                         .checkoutUrl("https://mpago.la/checkout-exp53")
-                        .html("data-mh-sales-page-analytics page_view page_load_metric section_view_time checkout_click")
+                        .html("data-track-section data-mh-sales-page-analytics page_view page_load_metric section_view_time checkout_click")
                         .publishedAt(Instant.parse("2026-07-01T20:06:00Z"))
                         .createdAt(Instant.parse("2026-07-01T20:06:00Z"))
                         .build()));

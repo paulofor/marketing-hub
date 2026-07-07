@@ -72,7 +72,7 @@ class GeraSalesPagePublicationAuditServiceTest {
         GeraSalesPageStageExecution publication = execution(
                 "job-publication",
                 GeraSalesPageStageCode.PUBLICATION_PACKAGE.code(),
-                "{\"html\":\"<html>Venda</html>\",\"checkoutUrl\":\"https://mp.test/checkout\"}",
+                "{\"html\":\"" + salesPageHtml("Venda") + "\",\"checkoutUrl\":\"https://mp.test/checkout\"}",
                 Instant.parse("2026-07-01T10:10:00Z"));
 
         when(publicationRepository.existsByPublicationJobId("job-publication")).thenReturn(false);
@@ -156,9 +156,9 @@ class GeraSalesPagePublicationAuditServiceTest {
         GeraSalesPageStageExecution publication = execution(
                 "job-publication",
                 GeraSalesPageStageCode.PUBLICATION_PACKAGE.code(),
-                "{\"html\":\"<html><body><main>Venda Produto IA</main>"
+                "{\"html\":\"" + salesPageHtml("Venda Produto IA")
                         + "<iframe src='https://oportunidadebrasil.shop/flows/product-ai-exp-55-personalized-sample'></iframe>"
-                        + "</body></html>\",\"checkoutUrl\":\"https://pagamentopalf.site/checkout\"}",
+                        + "\",\"checkoutUrl\":\"https://pagamentopalf.site/checkout\"}",
                 Instant.parse("2026-07-01T10:10:00Z"));
 
         when(publicationRepository.existsByPublicationJobId("job-publication")).thenReturn(false);
@@ -221,6 +221,43 @@ class GeraSalesPagePublicationAuditServiceTest {
                 .hasMessageContaining("nao")
                 .hasMessageContaining("informacao")
                 .hasMessageContaining("endereco");
+    }
+
+    /** Deve bloquear pagina que fala da oferta sem cenas visuais suficientes da transformacao. */
+    @Test
+    void shouldBlockPublicationWithoutEnoughTransformationVisualScenes() {
+        Experiment experiment = new Experiment();
+        experiment.setId(53L);
+        experiment.setFollowUpActionUrl("https://pagamentopalf.site/checkout");
+        GeraSalesPageStageExecution publication = execution(
+                "job-publication",
+                GeraSalesPageStageCode.PUBLICATION_PACKAGE.code(),
+                "{\"html\":\"<html><body><main><h1>Venda com promessa forte</h1>"
+                        + "<p>Texto correto, mas sem prova visual suficiente do depois.</p>"
+                        + "<section data-transform-visual='after'><img src='https://cdn.test/depois.jpg' alt='Depois'></section>"
+                        + "</main></body></html>\",\"checkoutUrl\":\"https://mp.test/checkout\"}",
+                Instant.parse("2026-07-01T10:10:00Z"));
+
+        when(publicationRepository.existsByPublicationJobId("job-publication")).thenReturn(false);
+        when(experimentRepository.findById(53L)).thenReturn(Optional.of(experiment));
+        when(executionRepository.findByExperimentIdOrderByExecutionRequestedAtAsc(53L))
+                .thenReturn(List.of(publication));
+
+        assertThatThrownBy(() -> service.snapshotPublication(publication))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("menos de 3 cenas visuais de transformacao");
+    }
+
+    /** Monta HTML de venda com cenas visuais suficientes para a publicacao. */
+    private String salesPageHtml(String headline) {
+        return "<html><body><main>"
+                + "<header data-transform-visual='after'><h1>" + headline + "</h1>"
+                + "<img src='https://cdn.test/depois-hero.jpg' alt='Depois da transformacao'></header>"
+                + "<section data-transform-visual='pain'><h2>Antes</h2>"
+                + "<img src='https://cdn.test/dor-atual.jpg' alt='Dor atual reconhecivel'></section>"
+                + "<section data-transform-visual='preview'><h2>Preview</h2>"
+                + "<img src='https://cdn.test/preview-produto.jpg' alt='Preview do produto'></section>"
+                + "</main></body></html>";
     }
 
     /** Cria execução concluída mínima para snapshot de teste. */

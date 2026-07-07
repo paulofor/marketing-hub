@@ -43,6 +43,29 @@ const defaultPlans = [
 ];
 
 let mockPlans: unknown[] = defaultPlans;
+let mockWeeks: unknown[] = [
+  {
+    weekNumber: 1,
+    startDate: "2026-07-01",
+    endDate: "2026-07-07",
+    experimentsCreated: 1,
+    totalCost: 37,
+    totalRevenue: 27,
+    experiments: [
+      {
+        id: 39,
+        name: "Kit manutenção",
+        productType: "LOW_TICKET",
+        status: "ACTIVE",
+        createdAt: "2026-07-02T10:00:00Z",
+        totalCost: 37,
+        videoCost: 12,
+        revenue: 27,
+        result: "Receita parcial",
+      },
+    ],
+  },
+];
 
 vi.mock("../../api/planning/useCommercialPlans", async () => {
   const actual = await vi.importActual<
@@ -56,11 +79,39 @@ vi.mock("../../api/planning/useCommercialPlans", async () => {
       isLoading: false,
       isError: false,
     }),
+    useCommercialPlanWeeks: () => ({
+      data: mockWeeks,
+      isLoading: false,
+      isError: false,
+    }),
   };
 });
 
 afterEach(() => {
   mockPlans = defaultPlans;
+  mockWeeks = [
+    {
+      weekNumber: 1,
+      startDate: "2026-07-01",
+      endDate: "2026-07-07",
+      experimentsCreated: 1,
+      totalCost: 37,
+      totalRevenue: 27,
+      experiments: [
+        {
+          id: 39,
+          name: "Kit manutenção",
+          productType: "LOW_TICKET",
+          status: "ACTIVE",
+          createdAt: "2026-07-02T10:00:00Z",
+          totalCost: 37,
+          videoCost: 12,
+          revenue: 27,
+          result: "Receita parcial",
+        },
+      ],
+    },
+  ];
   cleanup();
 });
 
@@ -70,7 +121,7 @@ describe("CommercialPlanningPage", () => {
 
     expect(screen.getByText("Planejamento")).toBeTruthy();
     expect(screen.getByText("Plano do mês corrente")).toBeTruthy();
-    expect(screen.getByText("Custo total")).toBeTruthy();
+    expect(screen.getAllByText("Custo total").length).toBeGreaterThan(0);
     expect(screen.getByText("Receita mínima")).toBeTruthy();
     expect(screen.queryByText("Tipos de produto")).toBeNull();
     expect(screen.queryByText("Critério de decisão")).toBeNull();
@@ -78,6 +129,15 @@ describe("CommercialPlanningPage", () => {
     expect(screen.queryByText("Plano ativo")).toBeNull();
     expect(screen.queryByText("Planos de Primeira Venda")).toBeNull();
     expect(screen.queryByText("Novo Plano de Primeira Venda")).toBeNull();
+  });
+
+  it("renderiza experimentos criados por semana do mes", () => {
+    render(<CommercialPlanningPage />);
+
+    expect(screen.getByText("Semana 1")).toBeTruthy();
+    expect(screen.getByText("Kit manutenção")).toBeTruthy();
+    expect(screen.getByText("Vídeo")).toBeTruthy();
+    expect(screen.getByText("Receita parcial")).toBeTruthy();
   });
 
   it("usa valores seguros quando status vem fora do contrato", () => {

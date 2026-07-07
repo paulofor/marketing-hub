@@ -97,6 +97,30 @@ export interface CommercialPlan {
   updatedAt?: string | null;
 }
 
+export interface CommercialPlanWeekExperiment {
+  id: number;
+  name: string;
+  productType?: string | null;
+  status?: string | null;
+  createdAt?: string | null;
+  campaignCost?: number | null;
+  aiCost?: number | null;
+  videoCost?: number | null;
+  totalCost?: number | null;
+  revenue?: number | null;
+  result?: string | null;
+}
+
+export interface CommercialPlanWeek {
+  weekNumber: number;
+  startDate: string;
+  endDate: string;
+  experimentsCreated: number;
+  totalCost?: number | null;
+  totalRevenue?: number | null;
+  experiments: CommercialPlanWeekExperiment[];
+}
+
 export interface SaveCommercialPlanPayload {
   name: string;
   status?: CommercialPlanStatus;
@@ -129,6 +153,19 @@ export function useCommercialPlans() {
     queryFn: async () => {
       const { data } = await axios.get<CommercialPlan[]>(
         "/api/planning/commercial-plans",
+      );
+      return data;
+    },
+  });
+}
+
+export function useCommercialPlanWeeks(planId?: number | null) {
+  return useQuery({
+    queryKey: ["commercial-plan-weeks", planId],
+    enabled: !!planId,
+    queryFn: async () => {
+      const { data } = await axios.get<CommercialPlanWeek[]>(
+        `/api/planning/commercial-plans/${planId}/weeks`,
       );
       return data;
     },

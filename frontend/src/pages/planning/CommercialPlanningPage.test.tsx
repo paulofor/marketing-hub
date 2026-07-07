@@ -69,8 +69,13 @@ describe("CommercialPlanningPage", () => {
     render(<CommercialPlanningPage />);
 
     expect(screen.getByText("Planejamento")).toBeTruthy();
-    expect(screen.getAllByText("Plano sem marcos").length).toBeGreaterThan(0);
     expect(screen.getByText("Plano do mês corrente")).toBeTruthy();
+    expect(screen.getByText("Custo total")).toBeTruthy();
+    expect(screen.getByText("Receita mínima")).toBeTruthy();
+    expect(screen.queryByText("Tipos de produto")).toBeNull();
+    expect(screen.queryByText("Critério de decisão")).toBeNull();
+    expect(screen.queryByText("Execução imediata")).toBeNull();
+    expect(screen.queryByText("Plano ativo")).toBeNull();
     expect(screen.queryByText("Planos de Primeira Venda")).toBeNull();
     expect(screen.queryByText("Novo Plano de Primeira Venda")).toBeNull();
   });
@@ -87,9 +92,7 @@ describe("CommercialPlanningPage", () => {
     render(<CommercialPlanningPage />);
 
     expect(screen.getByText("Planejamento")).toBeTruthy();
-    expect(
-      screen.getByText("Planejamento Julho 2026 - Primeira venda"),
-    ).toBeTruthy();
-    expect(screen.getByText("Plano sugerido")).toBeTruthy();
+    expect(screen.getByText("Julho 2026")).toBeTruthy();
+    expect(screen.queryByText("Plano sugerido")).toBeNull();
   });
 });

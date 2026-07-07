@@ -155,9 +155,9 @@ export default function HypothesisPainStageExecutionDetailPage() {
       <div className="mb-3">
         <Link
           className="btn btn-outline-secondary"
-          to={`/niches/${nicheId}/hypotheses/new`}
+          to={`/niches/${nicheId}/hypothesis-pipeline/summary`}
         >
-          Voltar para nova hipótese
+          Voltar para o resumo
         </Link>
       </div>
 

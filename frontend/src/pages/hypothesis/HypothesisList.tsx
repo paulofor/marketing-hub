@@ -5,14 +5,11 @@ import { useHypotheses } from "../../api/hypothesis/useHypotheses";
 import { useNiches } from "../../api/niche/useNiches";
 import { useUpdateHypothesisStatus } from "../../api/hypothesis/useUpdateHypothesisStatus";
 import type { Hypothesis } from "../../api/hypothesis/useHypothesisBoard";
-import NewHypothesisModal from "./NewHypothesisModal";
-import Button from "../../components/ui/Button";
 
 const statuses = ["ALL", "BACKLOG", "TESTING", "VALIDATED", "INVALIDATED"] as const;
 
 export default function HypothesisList() {
   const [status, setStatus] = useState<string>("ALL");
-  const [open, setOpen] = useState(false);
   const { data, isLoading } = useHypotheses(status);
   const update = useUpdateHypothesisStatus();
   const { data: angles } = useAngles();
@@ -44,10 +41,6 @@ export default function HypothesisList() {
           ))}
         </select>
       </div>
-      <div className="flex justify-end mb-3">
-        <Button onClick={() => setOpen(true)}>Nova Hipótese</Button>
-      </div>
-      <NewHypothesisModal open={open} onOpenChange={setOpen} />
       <div className="table-responsive">
         <table className="table">
           <thead>
@@ -91,9 +84,9 @@ export default function HypothesisList() {
                 <td>
                   <Link
                     className="btn btn-sm btn-outline-dark me-1"
-                    to={`/niches/${h.marketNicheId}/hypotheses/${h.id}/edit`}
+                    to={`/niches/${h.marketNicheId}/hypotheses/${h.id}`}
                   >
-                    Editar
+                    Abrir
                   </Link>
                   <button className="btn btn-sm btn-outline-primary me-1">
                     Gerar Landing

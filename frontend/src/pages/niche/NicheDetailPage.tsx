@@ -544,13 +544,6 @@ export default function NicheDetailPage() {
           >
             <div className="niche-detail__hypotheses-card-header">
               <h3 className="niche-detail__card-title">Hipóteses do nicho</h3>
-              <Link
-                className="btn btn-primary niche-detail__hypotheses-create"
-                to={`/niches/${normalizedNicheId}/hypotheses/new`}
-              >
-                <Plus size={18} />
-                <span>Criar nova hipótese</span>
-              </Link>
             </div>
             <div className="niche-detail__card-content">
               {list.length === 0 ? (
@@ -575,7 +568,7 @@ export default function NicheDetailPage() {
                         <div className="niche-detail__hypothesis-main">
                           <Link
                             className="niche-detail__hypothesis-name"
-                            to={`hypotheses/new?hypothesisId=${hypothesis.id}`}
+                            to={`hypotheses/${hypothesis.id}`}
                           >
                             {hypothesis.title || "Hipótese sem nome"}
                           </Link>

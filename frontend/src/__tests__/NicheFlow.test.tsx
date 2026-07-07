@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import userEvent from "@testing-library/user-event";
@@ -13,6 +13,26 @@ function mockApi() {
     if (url === "/api/niches") {
       return Promise.resolve({ data: [{ id: 1, name: "Fitness" }] });
     }
+    if (url === "/api/niches/summary") {
+      return Promise.resolve({
+        data: {
+          items: [
+            {
+              id: 1,
+              name: "Fitness",
+              enrichedNicheProfileId: null,
+              totalCost: 0,
+              pipelineHypothesesCount: 1,
+              experimentsCount: 1,
+            },
+          ],
+          totalElements: 1,
+          totalPages: 1,
+          page: 0,
+          size: 30,
+        },
+      });
+    }
     if (url.startsWith("/api/niches/1/hypotheses")) {
       return Promise.resolve({
         data: [
@@ -23,6 +43,14 @@ function mockApi() {
             status: "BACKLOG",
             kpiTargetCpl: 5,
             createdAt: "",
+            framework: {
+              pain: { summary: "Dor principal" },
+              result: { summary: "Resultado esperado" },
+              mechanism: { summary: "Mecanismo claro" },
+              proof: { summary: "Prova objetiva" },
+              offer: { summary: "Oferta direta" },
+              checklist: {},
+            },
           },
         ],
       });
@@ -75,7 +103,7 @@ function mockApi() {
 }
 
 describe("niche navigation", () => {
-  it("navigates to experiment detail", async () => {
+  it("navigates from niche list to generated hypothesis detail", async () => {
     mockApi();
     const client = new QueryClient();
     render(
@@ -88,21 +116,15 @@ describe("niche navigation", () => {
 
     const user = userEvent.setup();
     await screen.findByText("Fitness");
-    await user.click(screen.getByText("Fitness"));
-    await screen.findByText("Ver detalhes");
-    await screen.findByText(/Entrega:/);
-    expect(
-      await screen.findByRole("link", { name: /^criar hipótese$/i }),
-    ).toHaveAttribute("href", "/niches/1/hypotheses/new");
-    await screen.findByRole("button", { name: /salvar em markdown/i });
-    await user.click(screen.getByText("Ver detalhes"));
+    await user.click(screen.getByRole("link", { name: "Detalhes" }));
+    await screen.findByText("Hipóteses do nicho");
+    expect(screen.queryByRole("link", { name: /^criar hipótese$/i })).toBeNull();
+    await user.click(screen.getByRole("link", { name: /entrar/i }));
+    await screen.findByText("Dor");
+    await screen.findByText("Resultado");
+    await screen.findByText("Mecanismo");
+    await screen.findByText("Prova");
+    await screen.findByText("Oferta");
     await screen.findByText("Criar Experimento");
-    await user.click(screen.getByText("Abrir"));
-    expect(await screen.findAllByText("Exp 1")).not.toHaveLength(0);
-    const bc = screen.getByRole("navigation", { name: /breadcrumb/i });
-    expect(bc).toBeTruthy();
-    expect(within(bc).getByText("Fitness")).toBeTruthy();
-    expect(await within(bc).findByText("Hip 1")).toBeTruthy();
-    expect(within(bc).queryByText("Nichos")).toBeNull();
   });
 });

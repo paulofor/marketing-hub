@@ -21,9 +21,9 @@ export default function HypothesisPipelineSummaryPage() {
       <div className="mb-3">
         <Link
           className="btn btn-outline-secondary"
-          to={`/niches/${nicheId}/hypotheses/new`}
+          to={`/niches/${nicheId}`}
         >
-          Voltar para nova hipótese
+          Voltar para o nicho
         </Link>
       </div>
 

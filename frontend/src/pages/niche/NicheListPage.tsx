@@ -18,19 +18,15 @@ export default function NicheListPage() {
   return (
     <div>
       <PageTitle icon={nicheIcon}>Nichos de Mercado</PageTitle>
-      <Link className="btn btn-primary mb-3" to="/niches/new">
-        Novo Nicho
-      </Link>
       {niches.length === 0 ? (
-        <p>
-          Nenhum nicho encontrado. <Link to="/niches/new">Crie um agora</Link>.
-        </p>
+        <p>Nenhum nicho encontrado.</p>
       ) : (
         <>
           <div className="table-responsive">
             <table className="table">
               <thead>
                 <tr>
+                  <th>ID</th>
                   <th>Nome</th>
                   <th>Hipóteses</th>
                   <th>Experimentos</th>
@@ -71,6 +67,7 @@ function NicheRow({
 }) {
   return (
     <tr>
+      <td>{niche.id}</td>
       <td>{niche.name}</td>
       <td>{niche.pipelineHypothesesCount}</td>
       <td>{niche.experimentsCount}</td>
@@ -90,12 +87,6 @@ function NicheRow({
             Nicho enriquecido
           </Link>
         ) : null}
-        <Link
-          className="btn btn-sm btn-outline-secondary"
-          to={`/niches/${niche.id}/edit`}
-        >
-          Editar
-        </Link>
       </td>
     </tr>
   );

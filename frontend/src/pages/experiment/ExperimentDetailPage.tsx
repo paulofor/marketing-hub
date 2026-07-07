@@ -1995,7 +1995,7 @@ export default function ExperimentDetailPage() {
     },
     {
       label: "Nicho",
-      value: <Link to={`/niches/${data.nicheId}/edit`}>{niche?.name}</Link>,
+      value: <Link to={`/niches/${data.nicheId}`}>{niche?.name}</Link>,
     },
     {
       label: "Hipótese",

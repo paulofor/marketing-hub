@@ -55,6 +55,7 @@ public class GeraSalesPagePublicationAuditService {
                     + "nao|voce|informacao|producao|pendencia|endereco|proximo|almoco|atencao|solucao"
                     + ")(?![\\p{L}@-])");
     private static final Pattern NON_TRACK_SECTION_CHARS = Pattern.compile("[^a-z0-9_-]+");
+    private static final int MIN_TRANSFORMATION_VISUAL_SCENES = 3;
 
     private final ExperimentRepository experimentRepository;
     private final GeraSalesPageStageExecutionRepository executionRepository;
@@ -339,9 +340,40 @@ public class GeraSalesPagePublicationAuditService {
         validatePublicPortugueseAccentuation(experiment, publicationExecution, html);
         Document document = Jsoup.parse(html, "", Parser.htmlParser());
         document.outputSettings().prettyPrint(false);
+        validateTransformationVisualScenes(experiment, publicationExecution, document);
         markTrackableSections(document);
         injectAnalyticsScriptIfMissing(document, flowSlug);
         return document.outerHtml();
+    }
+
+    /** Bloqueia paginas de venda sem prova visual suficiente da transformacao prometida. */
+    private void validateTransformationVisualScenes(
+            Experiment experiment,
+            GeraSalesPageStageExecution publicationExecution,
+            Document document) {
+        List<Element> visualScenes = document.select("[data-transform-visual]").stream()
+                .filter(this::hasConcreteVisualEvidence)
+                .toList();
+        if (visualScenes.size() >= MIN_TRANSFORMATION_VISUAL_SCENES) {
+            return;
+        }
+        log.warn(
+                "GeraSalesPage bloqueou publicacao sem transformacao visual suficiente: experimentId={}, idJob={}, cenas={}",
+                experiment.getId(),
+                publicationExecution != null ? publicationExecution.getIdJob() : null,
+                visualScenes.size());
+        throw new ResponseStatusException(
+                HttpStatus.CONFLICT,
+                "GeraSalesPage bloqueou a publicacao por menos de 3 cenas visuais de transformacao.");
+    }
+
+    /** Verifica se o bloco marcado possui imagem, video, picture, canvas ou fundo visual concreto. */
+    private boolean hasConcreteVisualEvidence(Element element) {
+        if (!element.select("img[src], picture, video[src], video source[src], canvas, svg").isEmpty()) {
+            return true;
+        }
+        String style = element.attr("style");
+        return StringUtils.hasText(style) && style.toLowerCase(Locale.ROOT).contains("background-image");
     }
 
     /** Marca secoes estruturais ou blocos principais para permitir medicao de tempo por area da pagina. */

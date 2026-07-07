@@ -5,10 +5,12 @@ import com.marketinghub.planning.dto.CommercialPlanDto;
 import com.marketinghub.planning.dto.CommercialPlanMilestoneDto;
 import com.marketinghub.planning.dto.CommercialPlanSimulationDto;
 import com.marketinghub.planning.dto.CommercialPlanWeekDto;
+import com.marketinghub.planning.dto.CommercialPlanWeekObjectiveDto;
 import com.marketinghub.planning.dto.CreateCommercialPlanRequest;
 import com.marketinghub.planning.dto.CreateCommercialPlanSimulationRequest;
 import com.marketinghub.planning.dto.UpdateCommercialPlanMilestoneRequest;
 import com.marketinghub.planning.dto.UpdateCommercialPlanRequest;
+import com.marketinghub.planning.dto.UpdateCommercialPlanWeekObjectivesRequest;
 import com.marketinghub.planning.mapper.CommercialPlanMapper;
 import com.marketinghub.planning.service.CommercialPlanService;
 import com.marketinghub.planning.service.CommercialPlanWeeklyExperimentService;
@@ -65,6 +67,15 @@ public class CommercialPlanController {
     @GetMapping("/{id}/weeks")
     public List<CommercialPlanWeekDto> listWeeks(@PathVariable Long id) {
         return weeklyExperimentService.listWeeks(id);
+    }
+
+    /** Atualiza os objetivos avaliaveis de uma semana do plano. */
+    @PutMapping("/{id}/weeks/{weekNumber}/objectives")
+    public List<CommercialPlanWeekObjectiveDto> updateWeekObjectives(
+            @PathVariable Long id,
+            @PathVariable Integer weekNumber,
+            @RequestBody UpdateCommercialPlanWeekObjectivesRequest request) {
+        return weeklyExperimentService.updateObjectives(id, weekNumber, request);
     }
 
     /** Atualiza um plano comercial existente. */

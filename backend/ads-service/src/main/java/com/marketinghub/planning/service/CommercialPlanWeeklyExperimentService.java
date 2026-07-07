@@ -1,8 +1,12 @@
 package com.marketinghub.planning.service;
 
 import com.marketinghub.planning.CommercialPlan;
+import com.marketinghub.planning.CommercialPlanWeekObjective;
 import com.marketinghub.planning.dto.CommercialPlanWeekDto;
 import com.marketinghub.planning.dto.CommercialPlanWeekExperimentDto;
+import com.marketinghub.planning.dto.CommercialPlanWeekObjectiveDto;
+import com.marketinghub.planning.dto.UpdateCommercialPlanWeekObjectivesRequest;
+import com.marketinghub.repository.jpa.planning.CommercialPlanWeekObjectiveRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.ResultSet;
@@ -21,14 +25,25 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class CommercialPlanWeeklyExperimentService {
     private static final BigDecimal ZERO = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+    private static final List<String> JULY_FIRST_WEEK_DEFAULT_OBJECTIVES = List.of(
+            "Parar de vender material, guia ou mapa como produto principal.",
+            "Vender uma transformacao mais concreta: recupere X clientes perdidas, preencha Y horarios vagos, monte seu antes/depois personalizado ou receba sua previa visual em minutos.",
+            "Colocar prova visual forte antes do preco.",
+            "Usar preco de entrada mais impulsivo, tipo R$ 9,90 para previa paga em Produto IA.",
+            "Medir como sucesso primario checkout_click, nao compra, ate a pagina provar intencao minima.");
 
     private final CommercialPlanService planService;
     private final JdbcTemplate jdbcTemplate;
+    private final CommercialPlanWeekObjectiveRepository objectiveRepository;
 
     /** Inicializa o serviço com a fonte de plano e acesso SQL de leitura operacional. */
-    public CommercialPlanWeeklyExperimentService(CommercialPlanService planService, JdbcTemplate jdbcTemplate) {
+    public CommercialPlanWeeklyExperimentService(
+            CommercialPlanService planService,
+            JdbcTemplate jdbcTemplate,
+            CommercialPlanWeekObjectiveRepository objectiveRepository) {
         this.planService = planService;
         this.jdbcTemplate = jdbcTemplate;
+        this.objectiveRepository = objectiveRepository;
     }
 
     /** Lista as semanas do mês do plano com os experimentos criados em cada período. */
@@ -50,11 +65,42 @@ public class CommercialPlanWeeklyExperimentService {
                     experiments.size(),
                     sumCost(experiments),
                     sumRevenue(experiments),
+                    listObjectives(plan, weekNumber),
                     experiments));
             start = end.plusDays(1);
             weekNumber++;
         }
         return weeks;
+    }
+
+    /** Atualiza os objetivos avaliaveis de uma semana do plano. */
+    @Transactional
+    public List<CommercialPlanWeekObjectiveDto> updateObjectives(
+            Long planId,
+            Integer weekNumber,
+            UpdateCommercialPlanWeekObjectivesRequest request) {
+        CommercialPlan plan = planService.getPlan(planId);
+        objectiveRepository.deleteByPlanIdAndWeekNumber(planId, weekNumber);
+        List<CommercialPlanWeekObjective> objectives = new ArrayList<>();
+        List<UpdateCommercialPlanWeekObjectivesRequest.Item> items =
+                request == null || request.objectives() == null ? List.of() : request.objectives();
+        int nextOrder = 1;
+        for (UpdateCommercialPlanWeekObjectivesRequest.Item item : items) {
+            if (item.objectiveText() == null || item.objectiveText().isBlank()) {
+                continue;
+            }
+            objectives.add(CommercialPlanWeekObjective.builder()
+                    .plan(plan)
+                    .weekNumber(weekNumber)
+                    .sequenceOrder(nextOrder)
+                    .objectiveText(item.objectiveText().trim())
+                    .score(normalizeScore(item.score()))
+                    .build());
+            nextOrder++;
+        }
+        return objectiveRepository.saveAll(objectives).stream()
+                .map(this::toObjectiveDto)
+                .toList();
     }
 
     /** Resolve o mês de referência do plano a partir do prazo ou da criação. */
@@ -65,6 +111,52 @@ public class CommercialPlanWeeklyExperimentService {
         Instant createdAt = plan.getCreatedAt() == null ? Instant.now() : plan.getCreatedAt();
         LocalDate createdDate = createdAt.atZone(ZoneOffset.UTC).toLocalDate();
         return createdDate.withDayOfMonth(createdDate.lengthOfMonth());
+    }
+
+    /** Lista objetivos persistidos ou a sugestao inicial da primeira semana de julho. */
+    private List<CommercialPlanWeekObjectiveDto> listObjectives(CommercialPlan plan, Integer weekNumber) {
+        List<CommercialPlanWeekObjectiveDto> objectives = objectiveRepository
+                .findByPlanIdAndWeekNumberOrderBySequenceOrderAsc(plan.getId(), weekNumber)
+                .stream()
+                .map(this::toObjectiveDto)
+                .toList();
+        if (!objectives.isEmpty() || !isJulyFirstWeek(plan, weekNumber)) {
+            return objectives;
+        }
+        List<CommercialPlanWeekObjectiveDto> defaults = new ArrayList<>();
+        for (int index = 0; index < JULY_FIRST_WEEK_DEFAULT_OBJECTIVES.size(); index++) {
+            defaults.add(new CommercialPlanWeekObjectiveDto(
+                    null,
+                    index + 1,
+                    JULY_FIRST_WEEK_DEFAULT_OBJECTIVES.get(index),
+                    null));
+        }
+        return defaults;
+    }
+
+    /** Verifica se a semana deve receber a sugestao inicial de objetivos de julho. */
+    private boolean isJulyFirstWeek(CommercialPlan plan, Integer weekNumber) {
+        return Integer.valueOf(1).equals(weekNumber)
+                && plan.getDeadline() != null
+                && plan.getDeadline().getYear() == 2026
+                && plan.getDeadline().getMonthValue() == 7;
+    }
+
+    /** Converte um objetivo semanal para o contrato da tela. */
+    private CommercialPlanWeekObjectiveDto toObjectiveDto(CommercialPlanWeekObjective objective) {
+        return new CommercialPlanWeekObjectiveDto(
+                objective.getId(),
+                objective.getSequenceOrder(),
+                objective.getObjectiveText(),
+                objective.getScore());
+    }
+
+    /** Mantem a nota dentro da escala simples de avaliacao semanal. */
+    private Integer normalizeScore(Integer score) {
+        if (score == null) {
+            return null;
+        }
+        return Math.max(0, Math.min(10, score));
     }
 
     /** Busca os experimentos criados no intervalo e agrega custos rastreáveis por experimento. */

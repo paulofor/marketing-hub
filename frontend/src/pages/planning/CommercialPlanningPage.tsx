@@ -1,12 +1,14 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import PageTitle from "../../components/PageTitle";
 import {
   CommercialPlan,
   CommercialPlanWeek,
+  CommercialPlanWeekObjective,
   CommercialPlanStatus,
   SaveCommercialPlanPayload,
   useCommercialPlanWeeks,
   useCommercialPlans,
+  useUpdateCommercialPlanWeekObjectives,
 } from "../../api/planning/useCommercialPlans";
 import "./CommercialPlanningPage.css";
 
@@ -185,7 +187,176 @@ function MonthlyMetricCard({
   );
 }
 
-function WeeklyExperimentTable({ weeks }: { weeks: CommercialPlanWeek[] }) {
+function WeeklyObjectiveEditor({
+  planId,
+  week,
+}: {
+  planId: number;
+  week: CommercialPlanWeek;
+}) {
+  const updateObjectives = useUpdateCommercialPlanWeekObjectives(planId);
+  const [objectives, setObjectives] = useState<CommercialPlanWeekObjective[]>(
+    () => normalizeObjectives(week.objectives),
+  );
+
+  useEffect(() => {
+    setObjectives(normalizeObjectives(week.objectives));
+  }, [week.objectives]);
+
+  function updateObjective(
+    index: number,
+    field: "objectiveText" | "score",
+    value: string,
+  ) {
+    setObjectives((current) =>
+      current.map((objective, objectiveIndex) => {
+        if (objectiveIndex !== index) return objective;
+        if (field === "score") {
+          return {
+            ...objective,
+            score: value === "" ? null : Number(value),
+          };
+        }
+        return { ...objective, objectiveText: value };
+      }),
+    );
+  }
+
+  function addObjective() {
+    setObjectives((current) => [
+      ...current,
+      {
+        id: null,
+        sequenceOrder: current.length + 1,
+        objectiveText: "",
+        score: null,
+      },
+    ]);
+  }
+
+  function removeObjective(index: number) {
+    setObjectives((current) =>
+      current
+        .filter((_, objectiveIndex) => objectiveIndex !== index)
+        .map((objective, objectiveIndex) => ({
+          ...objective,
+          sequenceOrder: objectiveIndex + 1,
+        })),
+    );
+  }
+
+  function saveObjectives() {
+    updateObjectives.mutate({
+      weekNumber: week.weekNumber,
+      objectives: objectives.map((objective, index) => ({
+        ...objective,
+        sequenceOrder: index + 1,
+        objectiveText: objective.objectiveText.trim(),
+      })),
+    });
+  }
+
+  return (
+    <div className="commercial-planning-week-objectives">
+      <div className="commercial-planning-week-objectives-header">
+        <h4>Objetivos da semana</h4>
+        <button
+          className="btn btn-sm btn-outline-primary"
+          type="button"
+          onClick={addObjective}
+        >
+          Adicionar tópico
+        </button>
+      </div>
+
+      <div className="commercial-planning-week-objective-list">
+        {objectives.map((objective, index) => (
+          <div
+            className="commercial-planning-week-objective"
+            key={`${objective.id ?? "new"}-${index}`}
+          >
+            <span className="commercial-planning-week-objective-bullet">
+              {index + 1}
+            </span>
+            <textarea
+              aria-label={`Objetivo ${index + 1} da semana ${week.weekNumber}`}
+              className="form-control form-control-sm"
+              rows={2}
+              value={objective.objectiveText}
+              onChange={(event) =>
+                updateObjective(index, "objectiveText", event.target.value)
+              }
+            />
+            <input
+              aria-label={`Nota do objetivo ${index + 1} da semana ${week.weekNumber}`}
+              className="form-control form-control-sm commercial-planning-week-score"
+              type="number"
+              min={0}
+              max={10}
+              placeholder="Nota"
+              value={objective.score ?? ""}
+              onChange={(event) =>
+                updateObjective(index, "score", event.target.value)
+              }
+            />
+            <button
+              className="btn btn-sm btn-outline-secondary"
+              type="button"
+              onClick={() => removeObjective(index)}
+            >
+              Remover
+            </button>
+          </div>
+        ))}
+      </div>
+
+      <div className="commercial-planning-week-objectives-actions">
+        <button
+          className="btn btn-sm btn-primary"
+          type="button"
+          disabled={updateObjectives.isPending}
+          onClick={saveObjectives}
+        >
+          {updateObjectives.isPending ? "Salvando..." : "Salvar objetivos"}
+        </button>
+        {updateObjectives.isError ? (
+          <span className="text-danger">Não foi possível salvar.</span>
+        ) : null}
+        {updateObjectives.isSuccess ? (
+          <span className="text-success">Objetivos salvos.</span>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function normalizeObjectives(
+  objectives?: CommercialPlanWeekObjective[] | null,
+): CommercialPlanWeekObjective[] {
+  if (Array.isArray(objectives) && objectives.length > 0) {
+    return objectives.map((objective, index) => ({
+      ...objective,
+      sequenceOrder: objective.sequenceOrder ?? index + 1,
+      score: objective.score ?? null,
+    }));
+  }
+  return [
+    {
+      id: null,
+      sequenceOrder: 1,
+      objectiveText: "",
+      score: null,
+    },
+  ];
+}
+
+function WeeklyExperimentTable({
+  planId,
+  weeks,
+}: {
+  planId: number;
+  weeks: CommercialPlanWeek[];
+}) {
   return (
     <section className="commercial-planning-week-list">
       {weeks.map((week) => (
@@ -203,6 +374,8 @@ function WeeklyExperimentTable({ weeks }: { weeks: CommercialPlanWeek[] }) {
               <small>{formatExecutedCurrency(week.totalRevenue)} receita</small>
             </div>
           </div>
+
+          <WeeklyObjectiveEditor planId={planId} week={week} />
 
           <div className="commercial-planning-week-table-wrap">
             <table className="table table-sm align-middle mb-0 commercial-planning-week-table">
@@ -362,7 +535,9 @@ export default function CommercialPlanningPage() {
         </div>
       ) : null}
 
-      {weeks.length > 0 ? <WeeklyExperimentTable weeks={weeks} /> : null}
+      {weeks.length > 0 ? (
+        <WeeklyExperimentTable planId={currentMonthPlan.id} weeks={weeks} />
+      ) : null}
     </div>
   );
 }

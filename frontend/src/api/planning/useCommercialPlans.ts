@@ -111,6 +111,13 @@ export interface CommercialPlanWeekExperiment {
   result?: string | null;
 }
 
+export interface CommercialPlanWeekObjective {
+  id?: number | null;
+  sequenceOrder: number;
+  objectiveText: string;
+  score?: number | null;
+}
+
 export interface CommercialPlanWeek {
   weekNumber: number;
   startDate: string;
@@ -118,6 +125,7 @@ export interface CommercialPlanWeek {
   experimentsCreated: number;
   totalCost?: number | null;
   totalRevenue?: number | null;
+  objectives: CommercialPlanWeekObjective[];
   experiments: CommercialPlanWeekExperiment[];
 }
 
@@ -169,6 +177,32 @@ export function useCommercialPlanWeeks(planId?: number | null) {
       );
       return data;
     },
+  });
+}
+
+export function useUpdateCommercialPlanWeekObjectives(planId?: number | null) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      weekNumber,
+      objectives,
+    }: {
+      weekNumber: number;
+      objectives: CommercialPlanWeekObjective[];
+    }) => {
+      if (!planId) {
+        throw new Error("Plano comercial não informado.");
+      }
+      const { data } = await axios.put<CommercialPlanWeekObjective[]>(
+        `/api/planning/commercial-plans/${planId}/weeks/${weekNumber}/objectives`,
+        { objectives },
+      );
+      return data;
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({
+        queryKey: ["commercial-plan-weeks", planId],
+      }),
   });
 }
 

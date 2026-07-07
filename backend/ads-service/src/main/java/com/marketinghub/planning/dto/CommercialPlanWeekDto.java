@@ -12,4 +12,5 @@ public record CommercialPlanWeekDto(
         Integer experimentsCreated,
         BigDecimal totalCost,
         BigDecimal totalRevenue,
+        List<CommercialPlanWeekObjectiveDto> objectives,
         List<CommercialPlanWeekExperimentDto> experiments) {}

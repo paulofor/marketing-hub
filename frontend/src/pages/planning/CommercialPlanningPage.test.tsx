@@ -51,6 +51,15 @@ let mockWeeks: unknown[] = [
     experimentsCreated: 1,
     totalCost: 37,
     totalRevenue: 27,
+    objectives: [
+      {
+        id: null,
+        sequenceOrder: 1,
+        objectiveText:
+          "Medir como sucesso primário checkout_click, não compra, até a página provar intenção mínima.",
+        score: null,
+      },
+    ],
     experiments: [
       {
         id: 39,
@@ -84,6 +93,12 @@ vi.mock("../../api/planning/useCommercialPlans", async () => {
       isLoading: false,
       isError: false,
     }),
+    useUpdateCommercialPlanWeekObjectives: () => ({
+      mutate: vi.fn(),
+      isPending: false,
+      isError: false,
+      isSuccess: false,
+    }),
   };
 });
 
@@ -97,6 +112,15 @@ afterEach(() => {
       experimentsCreated: 1,
       totalCost: 37,
       totalRevenue: 27,
+      objectives: [
+        {
+          id: null,
+          sequenceOrder: 1,
+          objectiveText:
+            "Medir como sucesso primário checkout_click, não compra, até a página provar intenção mínima.",
+          score: null,
+        },
+      ],
       experiments: [
         {
           id: 39,
@@ -138,6 +162,15 @@ describe("CommercialPlanningPage", () => {
     expect(screen.getByText("Kit manutenção")).toBeTruthy();
     expect(screen.getByText("Vídeo")).toBeTruthy();
     expect(screen.getByText("Receita parcial")).toBeTruthy();
+  });
+
+  it("renderiza objetivos semanais editaveis", () => {
+    render(<CommercialPlanningPage />);
+
+    expect(screen.getByText("Objetivos da semana")).toBeTruthy();
+    expect(screen.getByDisplayValue(/checkout_click/)).toBeTruthy();
+    expect(screen.getByLabelText("Nota do objetivo 1 da semana 1")).toBeTruthy();
+    expect(screen.getByText("Salvar objetivos")).toBeTruthy();
   });
 
   it("usa valores seguros quando status vem fora do contrato", () => {

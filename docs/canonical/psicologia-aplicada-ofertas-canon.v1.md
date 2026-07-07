@@ -108,9 +108,13 @@ A landing deve permitir que o visitante visualize rapidamente:
 - "a prova reduz meu risco";
 - "o proximo passo parece facil".
 
+Paginas de venda geradas para trafego pago devem materializar a transformacao em imagem mental concreta. O hero deve mostrar o estado depois da transformacao e a pagina deve ter pelo menos 3 cenas visuais relevantes, chegando a 5 quando a pagina tiver mais secoes. As cenas devem cumprir funcoes comerciais claras: dor atual reconhecivel, estado depois, antes/depois operacional, preview ou amostra do produto, prova visual do resultado ou contexto real de uso.
+
 ### Quality review
 
 Uma landing nao deve ser aprovada apenas por parecer bonita. Ela precisa gerar reconhecimento psicologico, desejo de transformacao, percepcao de facilidade e confianca suficiente para avancar.
+
+O quality review deve bloquear pagina de venda pobre visualmente: menos de 3 cenas de transformacao, hero sem imagem clara do depois, dependencia quase exclusiva de texto/cards/icones/gradientes, preview do produto que nao mostra a transformacao percebida ou demonstracao/midia nao testada antes da publicacao.
 
 ## Limites
 

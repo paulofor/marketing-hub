@@ -51,8 +51,27 @@ Quando houver divergência entre tentativa antiga e correção efetiva, a corre�
 | `LOOP-ARTIFACT-CONTAMINATION` | ALTO | Estabilizado com risco | Metadado técnico em artefato final | separação auditoria vs artefato publicável + whitelist de DTO final |
 | `LOOP-COST-MODEL-AUDIT` | MÉDIO | Em observação | Custos OpenAI e modelo por etapa | preço vindo do catálogo backend + modelo efetivo auditado por etapa |
 | `LOOP-LOW-TICKET-SALES-PAGE-BYPASS` | CRÍTICO | Fechado em 2026-07-01 | Low-ticket/GeraSalesPage | campanha bloqueada sem etapa final do pipeline concluída |
+| `LOOP-GERASALESPAGE-VISUAL-TRANSFORMATION` | ALTO | Fechado em 2026-07-07 | GeraSalesPage | prompts v5 + quality review + auditoria bloqueiam pagina sem cenas visuais |
 
 ---
+
+## LOOP-GERASALESPAGE-VISUAL-TRANSFORMATION — Pagina de venda sem transformacao visual
+
+- **Severidade**: ALTO.
+- **Status**: fechado em 2026-07-07.
+- **Sintomas recorrentes ou risco observado**:
+  - pagina publicada com promessa textual, mas pobre de imagens;
+  - usuario nao consegue sentir o estado depois da transformacao;
+  - pagina baseada quase so em texto, cards, icones ou gradientes;
+  - preview ou demonstracao do produto nao materializa a transformacao percebida.
+- **Causa-raiz sistemica confirmada**:
+  - os prompts pediam antes/depois de forma generica, mas o HTML e o quality review nao exigiam quantidade minima de cenas visuais nem bloqueavam pagina pobre de prova visual.
+- **Correcao efetiva**:
+  - criar templates v5 do GeraSalesPage para visual-plan, HTML, quality review e publication package exigindo hero com cena do depois e 3 a 5 blocos visuais de transformacao;
+  - marcar blocos visuais com `data-transform-visual`;
+  - bloquear deterministamente a publicacao quando o HTML final tiver menos de 3 cenas visuais.
+- **Regra preventiva**:
+  - pagina de venda para trafego pago nao pode ser aprovada apenas por texto e clareza de oferta; deve provar visualmente dor, depois, preview/prova e contexto real de uso antes de liberar publicacao.
 
 ## LOOP-LOW-TICKET-SALES-PAGE-BYPASS — Low-ticket sem página criada pelo pipeline
 
@@ -560,4 +579,3 @@ Use este checklist quando o problema estiver em algum loop acima:
 - documentos lidos para pesquisar e resolver o problema:
   - AGENTS.md
   - docs/registros/experimentos.md
-  - docs/registros/loops.md

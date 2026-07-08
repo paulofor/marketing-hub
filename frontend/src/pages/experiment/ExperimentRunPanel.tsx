@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type {
   ExperimentRun,
   ExperimentRunGateGroup,
@@ -92,6 +93,7 @@ export default function ExperimentRunPanel({ experimentId, compact = false }: Ex
   const runPreflight = useRunExperimentPreflight(experimentId);
   const preflight = preflightQuery.data;
   const gateGroups = groupGates(preflight?.gates ?? []);
+  const [openGateGroup, setOpenGateGroup] = useState<string | null>(null);
 
   const handleCreateRun = () => {
     if (!createRun.isPending) {
@@ -178,17 +180,18 @@ export default function ExperimentRunPanel({ experimentId, compact = false }: Ex
                       <div className="accordion-item" key={group}>
                         <h2 className="accordion-header">
                           <button
-                            className={`accordion-button ${index === 0 ? "" : "collapsed"}`}
+                            className={`accordion-button ${openGateGroup === group || (!openGateGroup && index === 0) ? "" : "collapsed"}`}
                             type="button"
-                            data-bs-toggle="collapse"
-                            data-bs-target={`#experiment-run-preflight-${currentRun.id}-${group}`}
+                            aria-expanded={openGateGroup === group || (!openGateGroup && index === 0)}
+                            aria-controls={`experiment-run-preflight-${currentRun.id}-${group}`}
+                            onClick={() => setOpenGateGroup(group)}
                           >
                             {gateGroupLabels[group as ExperimentRunGateGroup] ?? group}
                           </button>
                         </h2>
                         <div
                           id={`experiment-run-preflight-${currentRun.id}-${group}`}
-                          className={`accordion-collapse collapse ${index === 0 ? "show" : ""}`}
+                          className={`accordion-collapse collapse ${openGateGroup === group || (!openGateGroup && index === 0) ? "show" : ""}`}
                         >
                           <div className="accordion-body p-0">
                             <ul className="list-group list-group-flush">

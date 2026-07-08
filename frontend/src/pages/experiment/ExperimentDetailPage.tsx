@@ -313,6 +313,9 @@ export default function ExperimentDetailPage() {
   const { data: facebookCampaigns, isLoading: isLoadingFacebookCampaigns } =
     useExperimentFacebookCampaigns(expId);
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  const [openAuditStageJobId, setOpenAuditStageJobId] = useState<
+    string | null
+  >(null);
   const [copiedCardKey, setCopiedCardKey] = useState<string | null>(null);
   const [copyingCardKey, setCopyingCardKey] = useState<string | null>(null);
   const [downloadingCardKey, setDownloadingCardKey] = useState<string | null>(
@@ -2450,12 +2453,19 @@ export default function ExperimentDetailPage() {
                         id={`audit-stage-${stage.idJob}`}
                       >
                         <button
-                          className={`accordion-button ${index === 0 ? "" : "collapsed"}`}
+                          className={`accordion-button ${
+                            openAuditStageJobId === stage.idJob ||
+                            (!openAuditStageJobId && index === 0)
+                              ? ""
+                              : "collapsed"
+                          }`}
                           type="button"
-                          data-bs-toggle="collapse"
-                          data-bs-target={`#audit-stage-body-${stage.idJob}`}
-                          aria-expanded={index === 0}
+                          aria-expanded={
+                            openAuditStageJobId === stage.idJob ||
+                            (!openAuditStageJobId && index === 0)
+                          }
                           aria-controls={`audit-stage-body-${stage.idJob}`}
+                          onClick={() => setOpenAuditStageJobId(stage.idJob)}
                         >
                           <span className="fw-semibold me-2">
                             {stage.stageCode}
@@ -2472,7 +2482,12 @@ export default function ExperimentDetailPage() {
                       </h2>
                       <div
                         id={`audit-stage-body-${stage.idJob}`}
-                        className={`accordion-collapse collapse ${index === 0 ? "show" : ""}`}
+                        className={`accordion-collapse collapse ${
+                          openAuditStageJobId === stage.idJob ||
+                          (!openAuditStageJobId && index === 0)
+                            ? "show"
+                            : ""
+                        }`}
                         aria-labelledby={`audit-stage-${stage.idJob}`}
                       >
                         <div className="accordion-body">

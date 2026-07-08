@@ -26,11 +26,11 @@ import org.springframework.transaction.annotation.Transactional;
 public class CommercialPlanWeeklyExperimentService {
     private static final BigDecimal ZERO = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
     private static final List<String> JULY_FIRST_WEEK_DEFAULT_OBJECTIVES = List.of(
-            "Parar de vender material, guia ou mapa como produto principal.",
-            "Vender uma transformacao mais concreta: recupere X clientes perdidas, preencha Y horarios vagos, monte seu antes/depois personalizado ou receba sua previa visual em minutos.",
-            "Colocar prova visual forte antes do preco.",
-            "Usar preco de entrada mais impulsivo, tipo R$ 9,90 para previa paga em Produto IA.",
-            "Medir como sucesso primario checkout_click, nao compra, ate a pagina provar intencao minima.");
+            "Manter venda real como objetivo principal; checkout_click e lead servem apenas como diagnostico intermediario.",
+            "Garantir tracking confiavel antes de gastar: campanha sem metrica atualizada nao pode continuar rodando como aprendizado valido.",
+            "Colocar prova visual forte antes do preco para reduzir duvida e aumentar disposicao de pagamento.",
+            "Separar criterio por funil: venda direta mede compra, previa paga mede checkout iniciado e captura mede lead que avanca para checkout.",
+            "Aplicar trava de gasto: experimento sem resultado primario ou aprendizado acionavel deve ser parado ao atingir o limite operacional.");
 
     private final CommercialPlanService planService;
     private final JdbcTemplate jdbcTemplate;

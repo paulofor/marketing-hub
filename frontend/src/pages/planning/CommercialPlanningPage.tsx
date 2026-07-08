@@ -198,60 +198,32 @@ function WeeklyObjectiveEditor({
   const [objectives, setObjectives] = useState<CommercialPlanWeekObjective[]>(
     () => normalizeObjectives(week.objectives),
   );
+  const [isAddingObjective, setIsAddingObjective] = useState(false);
+  const [newObjectiveText, setNewObjectiveText] = useState("");
 
   useEffect(() => {
     setObjectives(normalizeObjectives(week.objectives));
+    setIsAddingObjective(false);
+    setNewObjectiveText("");
   }, [week.objectives]);
 
-  function updateObjective(
-    index: number,
-    field: "objectiveText" | "score",
-    value: string,
-  ) {
-    setObjectives((current) =>
-      current.map((objective, objectiveIndex) => {
-        if (objectiveIndex !== index) return objective;
-        if (field === "score") {
-          return {
-            ...objective,
-            score: value === "" ? null : Number(value),
-          };
-        }
-        return { ...objective, objectiveText: value };
-      }),
-    );
-  }
-
-  function addObjective() {
-    setObjectives((current) => [
-      ...current,
+  function saveNewObjective() {
+    const objectiveText = newObjectiveText.trim();
+    if (!objectiveText) return;
+    const nextObjectives = [
+      ...objectives,
       {
         id: null,
-        sequenceOrder: current.length + 1,
-        objectiveText: "",
+        sequenceOrder: objectives.length + 1,
+        objectiveText,
         score: null,
       },
-    ]);
-  }
-
-  function removeObjective(index: number) {
-    setObjectives((current) =>
-      current
-        .filter((_, objectiveIndex) => objectiveIndex !== index)
-        .map((objective, objectiveIndex) => ({
-          ...objective,
-          sequenceOrder: objectiveIndex + 1,
-        })),
-    );
-  }
-
-  function saveObjectives() {
+    ];
     updateObjectives.mutate({
       weekNumber: week.weekNumber,
-      objectives: objectives.map((objective, index) => ({
+      objectives: nextObjectives.map((objective, index) => ({
         ...objective,
         sequenceOrder: index + 1,
-        objectiveText: objective.objectiveText.trim(),
       })),
     });
   }
@@ -263,9 +235,9 @@ function WeeklyObjectiveEditor({
         <button
           className="btn btn-sm btn-outline-primary"
           type="button"
-          onClick={addObjective}
+          onClick={() => setIsAddingObjective((current) => !current)}
         >
-          Adicionar tópico
+          Inserir novo
         </button>
       </div>
 
@@ -278,52 +250,45 @@ function WeeklyObjectiveEditor({
             <span className="commercial-planning-week-objective-bullet">
               {index + 1}
             </span>
-            <textarea
-              aria-label={`Objetivo ${index + 1} da semana ${week.weekNumber}`}
-              className="form-control form-control-sm"
-              rows={2}
-              value={objective.objectiveText}
-              onChange={(event) =>
-                updateObjective(index, "objectiveText", event.target.value)
-              }
-            />
-            <input
-              aria-label={`Nota do objetivo ${index + 1} da semana ${week.weekNumber}`}
-              className="form-control form-control-sm commercial-planning-week-score"
-              type="number"
-              min={0}
-              max={10}
-              placeholder="Nota"
-              value={objective.score ?? ""}
-              onChange={(event) =>
-                updateObjective(index, "score", event.target.value)
-              }
-            />
-            <button
-              className="btn btn-sm btn-outline-secondary"
-              type="button"
-              onClick={() => removeObjective(index)}
-            >
-              Remover
-            </button>
+            <p className="commercial-planning-week-objective-text mb-0">
+              {objective.objectiveText || "Objetivo sem descrição."}
+            </p>
+            {objective.score != null ? (
+              <span className="badge text-bg-light border">
+                Nota {objective.score}
+              </span>
+            ) : null}
           </div>
         ))}
       </div>
 
+      {isAddingObjective ? (
+        <div className="commercial-planning-week-objective-form">
+          <textarea
+            aria-label={`Novo objetivo da semana ${week.weekNumber}`}
+            className="form-control form-control-sm"
+            rows={2}
+            value={newObjectiveText}
+            onChange={(event) => setNewObjectiveText(event.target.value)}
+            placeholder="Descreva o novo objetivo da semana"
+          />
+          <button
+            className="btn btn-sm btn-primary"
+            type="button"
+            disabled={updateObjectives.isPending || !newObjectiveText.trim()}
+            onClick={saveNewObjective}
+          >
+            {updateObjectives.isPending ? "Salvando..." : "Salvar novo"}
+          </button>
+        </div>
+      ) : null}
+
       <div className="commercial-planning-week-objectives-actions">
-        <button
-          className="btn btn-sm btn-primary"
-          type="button"
-          disabled={updateObjectives.isPending}
-          onClick={saveObjectives}
-        >
-          {updateObjectives.isPending ? "Salvando..." : "Salvar objetivos"}
-        </button>
         {updateObjectives.isError ? (
           <span className="text-danger">Não foi possível salvar.</span>
         ) : null}
         {updateObjectives.isSuccess ? (
-          <span className="text-success">Objetivos salvos.</span>
+          <span className="text-success">Objetivo inserido.</span>
         ) : null}
       </div>
     </div>
@@ -340,14 +305,7 @@ function normalizeObjectives(
       score: objective.score ?? null,
     }));
   }
-  return [
-    {
-      id: null,
-      sequenceOrder: 1,
-      objectiveText: "",
-      score: null,
-    },
-  ];
+  return [];
 }
 
 function WeeklyExperimentTable({
@@ -374,8 +332,6 @@ function WeeklyExperimentTable({
               <small>{formatExecutedCurrency(week.totalRevenue)} receita</small>
             </div>
           </div>
-
-          <WeeklyObjectiveEditor planId={planId} week={week} />
 
           <div className="commercial-planning-week-table-wrap">
             <table className="table table-sm align-middle mb-0 commercial-planning-week-table">
@@ -417,6 +373,8 @@ function WeeklyExperimentTable({
               </tbody>
             </table>
           </div>
+
+          <WeeklyObjectiveEditor planId={planId} week={week} />
         </article>
       ))}
     </section>
